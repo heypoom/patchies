@@ -236,6 +236,17 @@ match(data)
 
 See `KVObject.ts` for a complete example.
 
+### Schema Generation Gotcha
+
+Object schemas for docs are **generated at build time** via `bun run generate:schemas`. When adding new fields to `InletSchema` or `OutletSchema`:
+
+1. Add the field to `src/lib/objects/schemas/types.ts` (the TypeScript interface)
+2. Update `src/lib/objects/schemas/from-v2-node.ts` to pass the field through
+3. **MUST** update `scripts/generate-object-schemas.ts` `emitPort()` function to emit the new field
+4. Run `bun run generate:schemas` to regenerate `src/lib/generated/object-schemas.generated.ts`
+
+Without step 3, the field won't appear in the generated schemas even if it's in the source data.
+
 ## Audio V2 Migration
 
 **Pattern**: V2 nodes are self-contained classes implementing `AudioNodeV2` interface.

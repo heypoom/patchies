@@ -12,7 +12,9 @@
   let { port, defaultOpen = true, compact = false }: Props = $props();
 
   let isOpen = $state(defaultOpen);
+
   const hasMessages = $derived(port.messages && port.messages.length > 0);
+  const isAudioParam = $derived('isAudioParam' in port && port.isAudioParam);
 </script>
 
 <div class="rounded-lg border border-zinc-800 bg-zinc-900/50">
@@ -25,7 +27,19 @@
       ]}
     >
       <div>
-        <div class={['font-mono text-zinc-200', compact ? 'text-xs' : 'text-sm']}>{port.id}</div>
+        <div
+          class={[
+            'flex items-center gap-1.5 font-mono text-zinc-200',
+            compact ? 'text-xs' : 'text-sm'
+          ]}
+        >
+          {port.id}
+          {#if isAudioParam}
+            <span class="rounded bg-blue-500/20 px-1 text-[10px] font-light text-blue-400"
+              >a-rate</span
+            >
+          {/if}
+        </div>
 
         <div class={['text-zinc-400', compact ? 'mt-0.5 text-[11px]' : 'mt-1 text-sm']}>
           {port.description}
@@ -46,7 +60,17 @@
     {/if}
   {:else}
     <div class={compact ? 'p-2' : 'p-3'}>
-      <div class={['font-mono text-zinc-200', compact ? 'text-xs' : 'text-sm']}>{port.id}</div>
+      <div
+        class={[
+          'flex items-center gap-1.5 font-mono text-zinc-200',
+          compact ? 'text-xs' : 'text-sm'
+        ]}
+      >
+        {port.id}
+        {#if isAudioParam}
+          <span class="rounded bg-blue-500/20 px-1 text-[10px] font-medium text-blue-400">~</span>
+        {/if}
+      </div>
       <div class={['text-zinc-400', compact ? 'mt-0.5 text-[11px]' : 'mt-1 text-sm']}>
         {port.description}
       </div>

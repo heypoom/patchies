@@ -246,7 +246,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 22050 }),
             description: 'Center frequency in Hz'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'Q',
@@ -254,7 +255,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Quality factor',
         messages: [
           { schema: Type.Number({ minimum: 0.0001, maximum: 1000 }), description: 'Quality factor' }
-        ]
+        ],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
@@ -277,7 +279,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 22050 }),
             description: 'Center frequency in Hz'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'Q',
@@ -288,7 +291,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0.0001, maximum: 1000 }),
             description: 'Quality factor (bandwidth)'
           }
-        ]
+        ],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
@@ -334,13 +338,15 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'min',
         type: 'float',
         description: 'Minimum value',
-        messages: [{ schema: Type.Number(), description: 'Minimum clamp value' }]
+        messages: [{ schema: Type.Number(), description: 'Minimum clamp value' }],
+        isAudioParam: true
       },
       {
         id: 'max',
         type: 'float',
         description: 'Maximum value',
-        messages: [{ schema: Type.Number(), description: 'Maximum clamp value' }]
+        messages: [{ schema: Type.Number(), description: 'Maximum clamp value' }],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Clamped signal output' }],
@@ -357,13 +363,15 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'delay',
         type: 'float',
         description: 'Delay time in ms',
-        messages: [{ schema: Type.Number(), description: 'Delay time in milliseconds' }]
+        messages: [{ schema: Type.Number(), description: 'Delay time in milliseconds' }],
+        isAudioParam: true
       },
       {
         id: 'feedback',
         type: 'float',
         description: 'Feedback amount (-0.999 to 0.999)',
-        messages: [{ schema: Type.Number(), description: 'Feedback coefficient' }]
+        messages: [{ schema: Type.Number(), description: 'Feedback coefficient' }],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal output' }],
@@ -385,7 +393,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: -200, maximum: 0 }),
             description: 'The decibel value above which compression starts'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'knee',
@@ -396,7 +405,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 40 }),
             description: 'Decibel range above threshold for smooth transition'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'ratio',
@@ -407,7 +417,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 20 }),
             description: 'Amount of dB change in input for 1 dB change in output'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'attack',
@@ -418,7 +429,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 1 }),
             description: 'Time in seconds to reduce gain by 10dB'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'release',
@@ -429,7 +441,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 1 }),
             description: 'Time in seconds to increase gain by 10dB'
           }
-        ]
+        ],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Compressed signal' }],
@@ -529,7 +542,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Delay time in milliseconds (max 1000ms)',
         messages: [
           { schema: Type.Number(), description: 'Delay time in milliseconds (max 1000ms)' }
-        ]
+        ],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Delayed audio output' }],
@@ -706,7 +720,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number(),
             description: 'Gain value (1 = unity, >1 = amplify, <1 = attenuate)'
           }
-        ]
+        ],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Audio output' }],
@@ -728,7 +743,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 22050 }),
             description: 'Cutoff frequency in Hz'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'Q',
@@ -739,7 +755,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0.0001, maximum: 1000 }),
             description: 'Quality factor (resonance)'
           }
-        ]
+        ],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
@@ -761,7 +778,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 22050 }),
             description: 'Cutoff frequency in Hz'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'gain',
@@ -769,7 +787,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Gain in dB',
         messages: [
           { schema: Type.Number({ minimum: -40, maximum: 40 }), description: 'Gain in dB' }
-        ]
+        ],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
@@ -1015,7 +1034,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 22050 }),
             description: 'Cutoff frequency in Hz'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'Q',
@@ -1026,7 +1046,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0.0001, maximum: 1000 }),
             description: 'Quality factor (resonance)'
           }
-        ]
+        ],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
@@ -1048,7 +1069,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 22050 }),
             description: 'Cutoff frequency in Hz'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'gain',
@@ -1056,7 +1078,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Gain in dB',
         messages: [
           { schema: Type.Number({ minimum: -40, maximum: 40 }), description: 'Gain in dB' }
-        ]
+        ],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
@@ -1209,13 +1232,15 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'frequency',
         type: 'float',
         description: 'Center frequency',
-        messages: [{ schema: Type.Number(), description: 'Center frequency in Hz' }]
+        messages: [{ schema: Type.Number(), description: 'Center frequency in Hz' }],
+        isAudioParam: true
       },
       {
         id: 'Q',
         type: 'float',
         description: 'Width of the notch',
-        messages: [{ schema: Type.Number(), description: 'Q value' }]
+        messages: [{ schema: Type.Number(), description: 'Q value' }],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Filtered audio output' }],
@@ -1231,7 +1256,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'frequency',
         type: 'float',
         description: 'Oscillator frequency in hertz',
-        messages: [{ schema: Type.Number(), description: 'Oscillator frequency in hertz' }]
+        messages: [{ schema: Type.Number(), description: 'Oscillator frequency in hertz' }],
+        isAudioParam: true
       },
       {
         id: 'type',
@@ -1243,7 +1269,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'detune',
         type: 'float',
         description: 'Detune amount in cents',
-        messages: [{ schema: Type.Number(), description: 'Detune amount in cents' }]
+        messages: [{ schema: Type.Number(), description: 'Detune amount in cents' }],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Oscillator output' }],
@@ -1271,7 +1298,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Pan value (-1 = left, 0 = center, 1 = right)',
         messages: [
           { schema: Type.Number(), description: 'Pan value (-1 = left, 0 = center, 1 = right)' }
-        ]
+        ],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Panned audio output' }],
@@ -1293,7 +1321,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 22050 }),
             description: 'Center frequency in Hz'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'Q',
@@ -1304,7 +1333,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0.0001, maximum: 1000 }),
             description: 'Quality factor (width of peak)'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'gain',
@@ -1312,7 +1342,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Gain in dB',
         messages: [
           { schema: Type.Number({ minimum: -40, maximum: 40 }), description: 'Gain in dB' }
-        ]
+        ],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
@@ -1328,13 +1359,14 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'frequency',
         type: 'float',
         description: 'Frequency in Hz',
-        messages: [{ schema: Type.Number(), description: 'Frequency in Hz' }]
+        messages: [{ schema: Type.Number(), description: 'Frequency in Hz' }],
+        isAudioParam: true
       },
       {
         id: 'phase',
         type: 'float',
-        description: 'Phase reset (0 to 1)',
-        messages: [{ schema: Type.Number(), description: 'Phase reset value (0 to 1)' }]
+        description: 'Phase set (0 to 1)',
+        messages: [{ schema: Type.Number(), description: 'Phase set value (0 to 1)' }]
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Ramp output (0 to 1)' }],
@@ -1360,7 +1392,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'exponent',
         type: 'float',
         description: 'Exponent',
-        messages: [{ schema: Type.Number(), description: 'Exponent value' }]
+        messages: [{ schema: Type.Number(), description: 'Exponent value' }],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Signal raised to power' }],
@@ -1376,7 +1409,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'frequency',
         type: 'float',
         description: 'Frequency in Hz',
-        messages: [{ schema: Type.Number(), description: 'Frequency in Hz' }]
+        messages: [{ schema: Type.Number(), description: 'Frequency in Hz' }],
+        isAudioParam: true
       },
       {
         id: 'width',
@@ -1387,13 +1421,14 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number(),
             description: 'Pulse width (0 = silent, 0.5 = square, 1 = silent)'
           }
-        ]
+        ],
+        isAudioParam: true
       },
       {
         id: 'phase',
         type: 'float',
-        description: 'Phase reset (0 to 1)',
-        messages: [{ schema: Type.Number(), description: 'Phase reset value (0 to 1)' }]
+        description: 'Phase set (0 to 1)',
+        messages: [{ schema: Type.Number(), description: 'Phase set value (0 to 1)' }]
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Pulse wave signal' }],
@@ -1668,7 +1703,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'offset',
         type: 'float',
         description: 'Constant signal value',
-        messages: [{ schema: Type.Number(), description: 'Constant signal value' }]
+        messages: [{ schema: Type.Number(), description: 'Constant signal value' }],
+        isAudioParam: true
       }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Constant signal output' }],

@@ -80,7 +80,7 @@ function inletToSchema(inlet: ObjectInlet): InletSchema {
     }
   }
 
-  return { id, type: inlet.type, description, messages };
+  return { id, type: inlet.type, description, messages, isAudioParam: inlet.isAudioParam };
 }
 
 /**

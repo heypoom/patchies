@@ -63,6 +63,11 @@ function emitPort(port: InletSchema | OutletSchema): string {
   const msgs = emitMessages(port.messages);
   if (msgs) parts.push(`messages: ${msgs}`);
 
+  // Include isAudioParam for inlets that have it
+  if ('isAudioParam' in port && port.isAudioParam) {
+    parts.push('isAudioParam: true');
+  }
+
   return `{ ${parts.join(', ')} }`;
 }
 

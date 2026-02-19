@@ -42,6 +42,9 @@ export interface InletSchema {
 
   /** Message types this inlet accepts */
   messages?: MessageSchema[];
+
+  /** Whether this inlet is a modulatable audio parameter (can accept signal connections) */
+  isAudioParam?: boolean;
 }
 
 /**
