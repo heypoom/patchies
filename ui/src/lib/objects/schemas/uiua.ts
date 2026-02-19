@@ -8,7 +8,7 @@ import { Bang, SetCode } from './common';
 export const uiuaSchema: ObjectSchema = {
   type: 'uiua',
   category: 'programming',
-  description: 'Uiua array programming language with dynamic inlets using $1-$9 variables',
+  description: 'Uiua array programming language',
   inlets: [
     {
       id: 'hot',
