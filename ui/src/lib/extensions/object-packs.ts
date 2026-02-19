@@ -167,7 +167,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'compressor~',
       'waveshaper~',
       'convolver~',
-      'comb~'
+      'comb~',
+      'vcf~'
     ]
   },
   {
