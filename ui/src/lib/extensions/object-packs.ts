@@ -140,7 +140,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   },
   {
     id: 'audio-effects',
-    name: 'Filters & Effects',
+    name: 'Audio Effects',
     description: 'Signal filters, dynamics, and effects',
     icon: 'SlidersHorizontal',
     objects: [
