@@ -53,8 +53,7 @@ defineDSP({
     const entry = workletBufferRegistry.get(state.name)!;
     const bufLen = entry.length;
 
-    // Clip delay to [0, bufferSize] per PD spec
-    // Minimum of 1 vector (len) ensures we don't read unwritten samples
+    // Clip delay to [len, bufferSize] (minimum of one vector to avoid reading unwritten samples)
     const rawDelaySamples = (state.delayMs / 1000) * sampleRate;
     const delaySamples = Math.max(len, Math.min(bufLen, rawDelaySamples));
 
