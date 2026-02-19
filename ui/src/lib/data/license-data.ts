@@ -371,6 +371,12 @@ export const dependencies: ProjectLicense[] = [
     url: 'https://npmjs.com/package/ts-pattern'
   },
   {
+    name: 'uiua',
+    version: '0.15.0-dev',
+    license: 'MIT',
+    url: 'https://uiua.org'
+  },
+  {
     name: 'uxn.wasm',
     version: '^0.9.0',
     license: 'MIT',
@@ -724,5 +730,13 @@ export const supportLinks: SupportLink[] = [
     url: 'https://github.com/sponsors/sveltejs',
     type: 'github',
     projects: ['Svelte', 'SvelteKit']
+  },
+  {
+    name: 'Uiua',
+    description: 'Stack-based array programming language with a rich Unicode syntax',
+    category: 'library',
+    url: 'https://github.com/sponsors/uiua-lang',
+    type: 'github',
+    projects: ['Uiua']
   }
 ];
