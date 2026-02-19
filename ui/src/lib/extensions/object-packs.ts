@@ -128,18 +128,25 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['osc~', 'noise~', 'pink~', 'phasor~', 'pulse~', 'sig~']
   },
   {
-    id: 'audio-samples',
-    name: 'Audio Sampling',
-    description: 'Sample playback and tables',
-    icon: 'FileAudio',
-    objects: ['sampler~', 'table', 'tabwrite~', 'tabread~', 'tabread4~']
-  },
-  {
-    id: 'audio-math',
-    name: 'Audio Math',
-    description: 'Signal arithmetic and shaping',
-    icon: 'Calculator',
-    objects: ['+~', '*~', '-~', '/~', 'min~', 'max~', '>~', '<~', 'clip~', 'wrap~', 'abs~', 'pow~']
+    id: 'signal-processors',
+    name: 'Signal Processors',
+    description: 'DSP operators and programs',
+    icon: 'Activity',
+    objects: [
+      'elem~',
+      'expr~',
+      'dsp~',
+      'snapshot~',
+      'samphold~',
+      'bang~',
+      'latch~',
+      'threshold~',
+      'line~',
+      'vline~',
+      'adsr~',
+      'env~',
+      'adsr'
+    ]
   },
   {
     id: 'audio-filters',
@@ -163,25 +170,18 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     ]
   },
   {
-    id: 'dsp',
-    name: 'Signal Processors',
-    description: 'DSP operators and programs',
-    icon: 'Activity',
-    objects: [
-      'elem~',
-      'expr~',
-      'dsp~',
-      'snapshot~',
-      'samphold~',
-      'bang~',
-      'latch~',
-      'threshold~',
-      'line~',
-      'vline~',
-      'adsr~',
-      'env~',
-      'adsr'
-    ]
+    id: 'audio-math',
+    name: 'Audio Math',
+    description: 'Signal arithmetic and shaping',
+    icon: 'Calculator',
+    objects: ['+~', '*~', '-~', '/~', 'min~', 'max~', '>~', '<~', 'clip~', 'wrap~', 'abs~', 'pow~']
+  },
+  {
+    id: 'audio-samples',
+    name: 'Audio Sampling',
+    description: 'Sample playback and tables',
+    icon: 'FileAudio',
+    objects: ['sampler~', 'table', 'tabwrite~', 'tabread~', 'tabread4~']
   },
   {
     id: 'ai',
