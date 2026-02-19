@@ -174,7 +174,23 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Audio Math',
     description: 'Signal arithmetic and shaping',
     icon: 'Calculator',
-    objects: ['+~', '*~', '-~', '/~', 'min~', 'max~', '>~', '<~', 'clip~', 'wrap~', 'abs~', 'pow~']
+    objects: [
+      '+~',
+      '*~',
+      '-~',
+      '/~',
+      'min~',
+      'max~',
+      '>~',
+      '<~',
+      'clip~',
+      'wrap~',
+      'abs~',
+      'pow~',
+      'sqrt~',
+      'mtof~',
+      'ftom~'
+    ]
   },
   {
     id: 'audio-samples',
