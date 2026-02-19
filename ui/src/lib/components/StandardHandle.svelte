@@ -3,7 +3,12 @@
   import { getPortPosition } from '$lib/utils/node-utils';
   import { match, P } from 'ts-pattern';
   import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
-  import { isConnectionMode, isConnecting, connectingFromHandleId } from '../../stores/ui.store';
+  import {
+    isConnectionMode,
+    isConnecting,
+    connectingFromHandleId,
+    audioSourceConnections
+  } from '../../stores/ui.store';
   import { shouldDimHandle } from '$lib/utils/handle-dimming';
 
   interface Props {
@@ -65,14 +70,25 @@
   // Determine if this handle is the source of the current connection
   const isSourceHandle = $derived($isConnecting && $connectingFromHandleId === qualifiedHandleId);
 
-  // Determine if this AudioParam inlet should highlight as "audio-compatible"
-  // when dragging from an audio outlet (e.g. gain~ audio-out)
-  const shouldShowAsAudioCompatible = $derived.by(() => {
-    if (!$isConnecting || !$connectingFromHandleId) return false;
+  // Check if this AudioParam inlet is connected to an audio source
+  const isConnectedToAudioSource = $derived.by(() => {
     if (!isAudioParam || port !== 'inlet') return false;
 
-    // Check if dragging from an audio outlet
-    return $connectingFromHandleId.includes('audio-out');
+    return $audioSourceConnections.has(qualifiedHandleId);
+  });
+
+  // Determine if this AudioParam inlet should highlight as "audio-compatible"
+  // when dragging from an audio outlet OR when already connected to one
+  const shouldShowAsAudioCompatible = $derived.by(() => {
+    if (!isAudioParam || port !== 'inlet') return false;
+
+    // Show as audio if already connected to an audio source
+    if (isConnectedToAudioSource) return true;
+
+    // Show as audio if currently dragging from an audio outlet
+    if ($isConnecting && $connectingFromHandleId?.includes('audio-out')) return true;
+
+    return false;
   });
 
   // Determine if this handle should be dimmed
