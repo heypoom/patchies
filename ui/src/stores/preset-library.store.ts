@@ -49,7 +49,7 @@ function createUserLibrary(): PresetLibrary {
 }
 
 /**
- * Load libraries from localStorage
+ * Load libraries from localStorage (filters out any legacy readonly libraries)
  */
 function loadFromStorage(): PresetLibrary[] | null {
   if (typeof localStorage === 'undefined') return null;
@@ -57,7 +57,12 @@ function loadFromStorage(): PresetLibrary[] | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;
-    return JSON.parse(stored);
+
+    const libraries: PresetLibrary[] = JSON.parse(stored);
+
+    // Migration: filter out any readonly libraries that were previously persisted
+    // (e.g., built-in library from older versions)
+    return libraries.filter((lib) => !lib.readonly && lib.id !== BUILTIN_LIBRARY_ID);
   } catch {
     console.warn('Failed to load preset libraries from localStorage');
     return null;
@@ -65,13 +70,16 @@ function loadFromStorage(): PresetLibrary[] | null {
 }
 
 /**
- * Save libraries to localStorage
+ * Save libraries to localStorage (excludes readonly libraries)
  */
 function saveToStorage(libraries: PresetLibrary[]): void {
   if (typeof localStorage === 'undefined') return;
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(libraries));
+    // Only persist writable libraries - readonly ones are recreated from source on load
+    const writableLibraries = libraries.filter((lib) => !lib.readonly);
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(writableLibraries));
   } catch (e) {
     console.error('Failed to save preset libraries to localStorage', e);
   }
@@ -81,31 +89,17 @@ function saveToStorage(libraries: PresetLibrary[]): void {
  * Initialize libraries, ensuring built-in and user libraries exist
  */
 function initializeLibraries(): PresetLibrary[] {
-  const stored = loadFromStorage();
+  const stored = loadFromStorage() ?? [];
 
-  if (stored && stored.length > 0) {
-    // Always replace built-in library with fresh version to pick up changes
-    const builtinIndex = stored.findIndex((lib) => lib.id === BUILTIN_LIBRARY_ID);
+  // Ensure user library exists
+  const hasUser = stored.some((lib) => lib.id === USER_LIBRARY_ID);
 
-    if (builtinIndex >= 0) {
-      stored[builtinIndex] = createBuiltinLibrary();
-    } else {
-      stored.unshift(createBuiltinLibrary());
-    }
-
-    // Ensure user library exists
-    const hasUser = stored.some((lib) => lib.id === USER_LIBRARY_ID);
-    if (!hasUser) {
-      // Insert after built-in
-      const builtinIndex = stored.findIndex((lib) => lib.id === BUILTIN_LIBRARY_ID);
-      stored.splice(builtinIndex + 1, 0, createUserLibrary());
-    }
-
-    return stored;
+  if (!hasUser) {
+    stored.unshift(createUserLibrary());
   }
 
-  // First time: create built-in and user libraries
-  return [createBuiltinLibrary(), createUserLibrary()];
+  // Always prepend built-in library (never persisted, always created fresh from source)
+  return [createBuiltinLibrary(), ...stored];
 }
 
 /**
