@@ -177,6 +177,36 @@ export class BufferBridgeService {
   }
 
   /**
+   * Write an entire Float32Array to a buffer.
+   * Resizes the buffer if needed. Useful for loading samples from uiua, etc.
+   */
+  writeBuffer(name: string, data: Float32Array): void {
+    // Ensure buffer exists and is the right size
+    const existing = this.bufferViews.get(name);
+    if (!existing || existing.length !== data.length) {
+      // Resize or create with the new length
+      if (existing) {
+        this.resizeBuffer(name, data.length);
+      } else {
+        this.createBuffer(name, data.length, 1);
+      }
+    }
+
+    // Write data to the local view
+    const view = this.bufferViews.get(name);
+    if (view) {
+      view.view.set(data);
+    }
+
+    // Send to worklet (copy the data since it will be transferred)
+    this.bridgeNode?.port.postMessage({
+      type: 'write',
+      name,
+      data: new Float32Array(data)
+    });
+  }
+
+  /**
    * Read buffer data from the main thread (sync).
    *
    * SAB mode: returns the live Float32Array view (zero-copy, real-time).

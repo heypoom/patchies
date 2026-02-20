@@ -2069,6 +2069,10 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
           {
             schema: Type.Object({ type: Type.Literal('normalize') }),
             description: 'Normalize table to -1..1'
+          },
+          {
+            schema: Type.Unsafe({ type: 'Float32Array' }),
+            description: 'Write Float32Array directly to buffer'
           }
         ]
       },

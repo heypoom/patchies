@@ -23,6 +23,9 @@ const TableClear = sym('clear');
 /** Normalize the table to -1..1 range */
 const TableNormalize = sym('normalize');
 
+/** Float32Array for direct buffer write */
+const Float32ArrayData = Type.Unsafe<Float32Array>({ type: 'Float32Array' });
+
 const tableMessages = {
   set: schema(TableSet),
   get: schema(TableGet),
@@ -52,7 +55,8 @@ export class TableObject implements TextObjectV2 {
         { schema: TableGet, description: 'Get value at index' },
         { schema: TableResize, description: 'Resize table' },
         { schema: TableClear, description: 'Clear table (fill with zeros)' },
-        { schema: TableNormalize, description: 'Normalize table to -1..1' }
+        { schema: TableNormalize, description: 'Normalize table to -1..1' },
+        { schema: Float32ArrayData, description: 'Write Float32Array directly to buffer' }
       ]
     },
     {
@@ -115,6 +119,12 @@ export class TableObject implements TextObjectV2 {
   }
 
   private handleCommand(data: unknown): void {
+    // Handle Float32Array directly - write entire buffer
+    if (data instanceof Float32Array) {
+      this.writeFromFloat32Array(data);
+      return;
+    }
+
     match(data)
       .with(tableMessages.set, ({ index, value }) => {
         this.bridge.setBufferSample(this.bufferName, index, value);
@@ -155,5 +165,22 @@ export class TableObject implements TextObjectV2 {
         });
       })
       .otherwise(() => {});
+  }
+
+  /**
+   * Write Float32Array directly to the buffer.
+   * Resizes buffer if needed.
+   */
+  private writeFromFloat32Array(data: Float32Array): void {
+    // Resize if needed
+    if (data.length !== this.bufferSize) {
+      this.bufferSize = data.length;
+      this.bridge.resizeBuffer(this.bufferName, this.bufferSize);
+    }
+
+    // Write samples
+    for (let i = 0; i < data.length; i++) {
+      this.bridge.setBufferSample(this.bufferName, i, data[i]);
+    }
   }
 }

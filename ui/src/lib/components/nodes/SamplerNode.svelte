@@ -95,6 +95,35 @@
     }
   }
 
+  /**
+   * Handle Float32Array input (e.g., from uiua node).
+   * Creates AudioBuffer for UI display and sends to audio node.
+   */
+  function handleFloat32ArrayInput(samples: Float32Array) {
+    // Send to audio node first
+    audioService.send(node.id, 'message', samples);
+
+    // Create AudioBuffer for UI waveform display
+    const sampleRate = audioService.getAudioContext().sampleRate;
+    const buffer = audioService.getAudioContext().createBuffer(1, samples.length, sampleRate);
+    buffer.copyToChannel(new Float32Array(samples), 0);
+
+    // Update UI state
+    audioBuffer = buffer;
+    const duration = buffer.duration;
+
+    updateNodeData(node.id, {
+      ...node.data,
+      hasRecording: true,
+      duration: duration,
+      loopStart: 0,
+      loopEnd: duration
+    });
+
+    // Update AudioService's loop end point
+    audioService.send(node.id, 'message', { type: 'setEnd', value: duration });
+  }
+
   // Derive all state from node.data instead of duplicating
   const hasRecording = $derived(node.data.hasRecording || false);
   const recordingDuration = $derived(node.data.duration || 0);
@@ -109,6 +138,12 @@
   const height = $derived(node.height || 35);
 
   const handleMessage: MessageCallbackFn = (message) => {
+    // Handle Float32Array directly - update UI state
+    if (message instanceof Float32Array) {
+      handleFloat32ArrayInput(message);
+      return;
+    }
+
     match(message)
       .with(samplerMessages.record, () => startRecording())
       .with(samplerMessages.end, () => stopRecording())

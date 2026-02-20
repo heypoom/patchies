@@ -16,6 +16,7 @@ interface BridgeMessage {
   index?: number;
   channel?: number;
   value?: number;
+  data?: Float32Array;
 }
 
 class BufferBridgeProcessor extends AudioWorkletProcessor {
