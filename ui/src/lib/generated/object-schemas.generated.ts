@@ -1761,12 +1761,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'message',
         type: 'message',
         description:
-          'Control messages: record, play, stop, loop, loopOff, setStart, setEnd, playbackRate, detune',
+          'Control messages: record, play, stop, loop, loopOff, setStart, setEnd, playbackRate, detune. Also accepts Float32Array directly to set buffer.',
         messages: [
           {
             schema: Type.Any(),
             description:
-              'Control messages: record, play, stop, loop, loopOff, setStart, setEnd, playbackRate, detune'
+              'Control messages: record, play, stop, loop, loopOff, setStart, setEnd, playbackRate, detune. Also accepts Float32Array directly to set buffer.'
           }
         ]
       }
@@ -2069,6 +2069,10 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
           {
             schema: Type.Object({ type: Type.Literal('normalize') }),
             description: 'Normalize table to -1..1'
+          },
+          {
+            schema: Type.Unsafe({ type: 'Float32Array' }),
+            description: 'Write Float32Array directly to buffer'
           }
         ]
       },

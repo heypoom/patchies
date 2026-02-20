@@ -1,6 +1,6 @@
 # 76. Uiua Audio and Video Support
 
-**Status**: Planning
+**Status**: Implemented
 **Created**: 2025-02-20
 
 ## Problem

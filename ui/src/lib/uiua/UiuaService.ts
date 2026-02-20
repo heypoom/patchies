@@ -1,21 +1,52 @@
 /**
  * UiuaService - Lazy-loading Uiua WASM runtime
  *
- * Provides evaluation and formatting of Uiua code.
+ * Provides evaluation and formatting of Uiua code with media output support.
  * The 10MB WASM module is only loaded when first needed.
+ *
+ * Media detection (via SmartOutput):
+ * - Audio: arrays with ≥11,025 elements and values in [-5, 5] → WAV Uint8Array
+ * - Images: 2D/3D arrays ≥30×30 → PNG Uint8Array
+ * - Animations: 4D arrays with ≥5 frames → GIF Uint8Array
  */
 
-type UiuaModule = {
-  eval_uiua: (code: string) => string;
-  format_uiua: (code: string) => string;
-  uiua_version: () => string;
-};
+/**
+ * Output item representing a single stack value after media detection
+ */
+export type OutputItem =
+  | { type: 'text'; value: string }
+  | { type: 'audio'; data: Uint8Array; label?: string }
+  | { type: 'image'; data: Uint8Array; label?: string }
+  | { type: 'gif'; data: Uint8Array; label?: string }
+  | { type: 'svg'; svg: string };
 
-export type UiuaResult = { success: true; output: string } | { success: false; error: string };
+/**
+ * Result of evaluating Uiua code
+ */
+export type UiuaEvalResult =
+  | { success: true; stack: OutputItem[]; formatted?: string }
+  | { success: false; error: string; stack: OutputItem[]; formatted?: string };
 
+/**
+ * Result of formatting Uiua code
+ */
 export type UiuaFormatResult =
   | { success: true; formatted: string }
   | { success: false; error: string };
+
+/**
+ * Legacy result type for backward compatibility
+ * @deprecated Use UiuaEvalResult instead
+ */
+export type UiuaResult =
+  | { success: true; output: string; stack: OutputItem[]; formatted?: string }
+  | { success: false; error: string };
+
+type UiuaModule = {
+  eval_uiua: (code: string) => UiuaEvalResult;
+  format_uiua: (code: string) => UiuaFormatResult;
+  uiua_version: () => string;
+};
 
 export class UiuaService {
   private static instance: UiuaService | null = null;
@@ -80,17 +111,27 @@ export class UiuaService {
   }
 
   /**
-   * Evaluate Uiua code
+   * Evaluate Uiua code with full media support
+   *
+   * Returns stack items with automatic media detection:
+   * - Audio arrays → { type: 'audio', data: Uint8Array }
+   * - Image arrays → { type: 'image', data: Uint8Array }
+   * - GIF arrays → { type: 'gif', data: Uint8Array }
+   * - SVG → { type: 'svg', svg: string }
+   * - Other → { type: 'text', value: string }
    */
-  async eval(code: string): Promise<UiuaResult> {
+  async eval(code: string): Promise<UiuaEvalResult> {
     await this.ensureModule();
 
     try {
-      const resultJson = this.module!.eval_uiua(code);
-
-      return JSON.parse(resultJson) as UiuaResult;
+      // Returns native JS object via serde-wasm-bindgen (no JSON.parse needed)
+      return this.module!.eval_uiua(code);
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        stack: []
+      };
     }
   }
 
@@ -101,9 +142,8 @@ export class UiuaService {
     await this.ensureModule();
 
     try {
-      const resultJson = this.module!.format_uiua(code);
-
-      return JSON.parse(resultJson) as UiuaFormatResult;
+      // Returns native JS object via serde-wasm-bindgen (no JSON.parse needed)
+      return this.module!.format_uiua(code);
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
@@ -113,7 +153,7 @@ export class UiuaService {
    * Substitute $N placeholders with values and evaluate
    * Only supports $1-$9 (single-digit placeholders)
    */
-  async evalWithValues(code: string, values: unknown[]): Promise<UiuaResult> {
+  async evalWithValues(code: string, values: unknown[]): Promise<UiuaEvalResult> {
     // Replace in descending order ($9 first, then $8, etc.) to avoid
     // prefix collisions (e.g., replacing $1 before $10 would corrupt $10)
     let substituted = code;

@@ -15,7 +15,7 @@ export class SamplerNode implements AudioNodeV2 {
       name: 'message',
       type: 'message',
       description:
-        'Control messages: record, play, stop, loop, loopOff, setStart, setEnd, playbackRate, detune'
+        'Control messages: record, play, stop, loop, loopOff, setStart, setEnd, playbackRate, detune. Also accepts Float32Array directly to set buffer.'
     }
   ];
 
@@ -51,7 +51,17 @@ export class SamplerNode implements AudioNodeV2 {
   }
 
   send(key: string, message: unknown): void {
-    if (key !== 'message' || !message || typeof message !== 'object') {
+    if (key !== 'message' || message === null || message === undefined) {
+      return;
+    }
+
+    // Handle Float32Array directly - set as audio buffer
+    if (message instanceof Float32Array) {
+      this.setBufferFromFloats(message);
+      return;
+    }
+
+    if (typeof message !== 'object') {
       return;
     }
 
@@ -301,5 +311,25 @@ export class SamplerNode implements AudioNodeV2 {
     }
 
     return trimmedBuffer;
+  }
+
+  /**
+   * Set the audio buffer directly from a Float32Array.
+   * Assumes mono audio at the current sample rate.
+   */
+  private setBufferFromFloats(samples: Float32Array): void {
+    // Stop any existing playback
+    this.stopPlayback();
+
+    // Reset loop points
+    this.loopStart = 0;
+    this.loopEnd = 0;
+
+    // Create AudioBuffer from Float32Array (mono, at context sample rate)
+    const buffer = this.audioContext.createBuffer(1, samples.length, this.audioContext.sampleRate);
+    // Copy to a new Float32Array to ensure it's backed by ArrayBuffer (not SharedArrayBuffer)
+    buffer.copyToChannel(new Float32Array(samples), 0);
+
+    this.audioBuffer = buffer;
   }
 }

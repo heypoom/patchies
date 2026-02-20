@@ -1,0 +1,26 @@
+[package]
+name = "uiua_wasm"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+uiua = { git = "https://github.com/uiua-lang/uiua", default-features = false, features = ["batteries", "web"] }
+wasm-bindgen = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["Performance", "Window"] }
+
+# Required for WASM random number generation
+# Multiple versions may be pulled transitively, so we add both
+# getrandom 0.3 uses cfg flag (set in .cargo/config.toml)
+# getrandom 0.4 uses wasm_js feature
+getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
+getrandom = { version = "0.4", features = ["wasm_js"] }
+
+[profile.release]
+opt-level = "s"
+lto = true

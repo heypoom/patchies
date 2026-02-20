@@ -57,6 +57,7 @@
     hasError = false,
     allowEmptyExpr = false,
     dataKey = 'expr',
+    fontSize,
     children,
     handles,
     outlets
@@ -71,6 +72,7 @@
     editorClass?: string;
     previewContainerClass?: string;
     class?: string;
+    fontSize?: string;
     language?: SupportedLanguage;
     onRun?: () => void;
     onExpressionChange?: (expr: string) => void;
@@ -246,6 +248,7 @@
                 ]}
                 {nodeId}
                 {dataKey}
+                {fontSize}
               />
             </div>
           {:else}

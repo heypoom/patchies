@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { Settings, Eye, EllipsisVertical } from '@lucide/svelte/icons';
+  import * as Popover from '$lib/components/ui/popover';
+  import UiuaSettings from '$lib/components/settings/UiuaSettings.svelte';
+  import UiuaPreview from '$lib/components/settings/UiuaPreview.svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -9,9 +13,20 @@
   import { messages } from '$lib/objects/schemas';
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
-  import { UiuaService } from '$lib/uiua/UiuaService';
+  import { UiuaService, type OutputItem } from '$lib/uiua/UiuaService';
+  import { GLSystem } from '$lib/canvas/GLSystem';
+  import { GifPlayer } from '$lib/canvas/GifPlayer';
 
   const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
+
+  interface UiuaNodeData {
+    expr: string;
+    showConsole?: boolean;
+    enableMessageOutlet?: boolean;
+    enableVideoOutlet?: boolean;
+    view?: 'settings' | 'preview';
+  }
 
   let {
     id: nodeId,
@@ -19,7 +34,7 @@
     selected
   }: {
     id: string;
-    data: { expr: string; showConsole?: boolean };
+    data: UiuaNodeData;
     selected: boolean;
   } = $props();
 
@@ -30,10 +45,143 @@
   let isLoading = $state(false);
   let layoutRef = $state<CommonExprLayout | null>(null);
   let consoleRef: VirtualConsole | null = $state(null);
+  let resultStack = $state<OutputItem[]>([]);
+  let menuOpen = $state(false);
+
+  // Non-reactive tracking for blob URL cleanup
+  let currentBlobUrls: string[] = [];
+
+  // Track blob URLs by index
+  let blobUrlMap = $state<Map<number, string>>(new Map());
+
+  // Track measured image dimensions
+  let imageDimensions = $state<Map<number, { width: number; height: number }>>(new Map());
 
   const messageContext = new MessageContext(nodeId);
   const customConsole = createCustomConsole(nodeId);
   const uiuaService = UiuaService.getInstance();
+  const glSystem = GLSystem.getInstance();
+
+  // Shared AudioContext for decoding WAV to float array
+  let audioContext: AudioContext | null = null;
+
+  function getAudioContext(): AudioContext {
+    if (!audioContext) {
+      audioContext = new AudioContext();
+    }
+    return audioContext;
+  }
+
+  /**
+   * Decode WAV Uint8Array to float array using Web Audio API.
+   * Returns the first channel's raw samples for use with table/sampler~.
+   */
+  async function decodeWavToFloats(wavData: Uint8Array): Promise<Float32Array> {
+    const ctx = getAudioContext();
+    // Need to copy the buffer since decodeAudioData may detach the original
+    const buffer = wavData.buffer.slice(
+      wavData.byteOffset,
+      wavData.byteOffset + wavData.byteLength
+    ) as ArrayBuffer;
+    const audioBuffer = await ctx.decodeAudioData(buffer);
+    // Return first channel's samples
+    return audioBuffer.getChannelData(0);
+  }
+
+  // Track if we're registered with GLSystem
+  let isRegisteredWithGL = false;
+
+  // GIF animation player
+  const gifPlayer = new GifPlayer();
+
+  function ensureGLRegistered() {
+    if (!isRegisteredWithGL) {
+      glSystem.upsertNode(nodeId, 'img', {});
+      isRegisteredWithGL = true;
+    }
+  }
+
+  // Message outlet defaults to true (shown) when undefined
+  const messageOutletEnabled = $derived(data.enableMessageOutlet !== false);
+
+  // Dynamic outlet count based on toggles
+  const outletCount = $derived((messageOutletEnabled ? 1 : 0) + (data.enableVideoOutlet ? 1 : 0));
+
+  // Create blob URLs and measure dimensions for media items
+  $effect(() => {
+    // Clean up old URLs
+    currentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+    currentBlobUrls = [];
+
+    const newBlobUrlMap = new Map<number, string>();
+    const newDimensions = new Map<number, { width: number; height: number }>();
+
+    resultStack.forEach((item, index) => {
+      if (item.type === 'image' || item.type === 'gif') {
+        const mimeType = item.type === 'image' ? 'image/png' : 'image/gif';
+        const blob = new Blob([new Uint8Array(item.data)], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        currentBlobUrls.push(url);
+        newBlobUrlMap.set(index, url);
+
+        // Measure image dimensions
+        const img = new Image();
+        const capturedIndex = index;
+        img.onload = () => {
+          newDimensions.set(capturedIndex, { width: img.naturalWidth, height: img.naturalHeight });
+          imageDimensions = new Map(newDimensions);
+        };
+        img.src = url;
+      } else if (item.type === 'audio') {
+        const blob = new Blob([new Uint8Array(item.data)], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        currentBlobUrls.push(url);
+        newBlobUrlMap.set(index, url);
+      }
+    });
+
+    blobUrlMap = newBlobUrlMap;
+  });
+
+  // Handle GLSystem registration when video outlet is toggled
+  $effect(() => {
+    if (!data.enableVideoOutlet && isRegisteredWithGL) {
+      gifPlayer.stop();
+      glSystem.removeNode(nodeId);
+      isRegisteredWithGL = false;
+    }
+  });
+
+  function getBlobUrl(index: number): string | undefined {
+    return blobUrlMap.get(index);
+  }
+
+  function getImageDimensions(index: number): { width: number; height: number } | undefined {
+    return imageDimensions.get(index);
+  }
+
+  // Toggle message outlet
+  function toggleMessageOutlet() {
+    const newValue = !messageOutletEnabled;
+    data.enableMessageOutlet = newValue;
+    updateNodeData(nodeId, { enableMessageOutlet: newValue });
+    updateNodeInternals(nodeId);
+  }
+
+  // Toggle video outlet
+  function toggleVideoOutlet() {
+    const newValue = !data.enableVideoOutlet;
+    data.enableVideoOutlet = newValue;
+    updateNodeData(nodeId, { enableVideoOutlet: newValue });
+    updateNodeInternals(nodeId);
+  }
+
+  // Toggle view panel (mutually exclusive)
+  function setView(view: 'settings' | 'preview' | undefined) {
+    const newValue = data.view === view ? undefined : view;
+    data.view = newValue;
+    updateNodeData(nodeId, { view: newValue });
+  }
 
   // Parse $N placeholders to determine inlet count (only $1-$9 supported)
   const inletCount = $derived.by(() => {
@@ -84,9 +232,36 @@
     evaluateAndSend(nextInletValues);
   };
 
+  /**
+   * Extract text value from an OutputItem
+   * Text items return their value, media items return a placeholder/description
+   */
+  function extractTextValue(item: OutputItem): unknown {
+    if (item.type === 'text') {
+      // Try to parse as JSON (arrays, numbers)
+      try {
+        return JSON.parse(item.value);
+      } catch {
+        return item.value;
+      }
+    }
+
+    if (item.type === 'svg') {
+      return item.svg;
+    }
+
+    // Media items - return metadata for now
+    // Full media support will output via separate outlets
+    const label = 'label' in item ? item.label : undefined;
+
+    return label ?? `[${item.type} data]`;
+  }
+
   async function evaluateAndSend(values: unknown[]) {
     if (!expr.trim()) {
-      messageContext.send(values[0] ?? 0);
+      if (messageOutletEnabled) {
+        messageContext.send(values[0] ?? 0);
+      }
       return;
     }
 
@@ -97,21 +272,68 @@
 
       if (result.success) {
         hasError = false;
+        resultStack = result.stack;
 
-        // Try to parse the result as JSON (for arrays/numbers)
-        try {
-          const parsed = JSON.parse(result.output);
-          messageContext.send(parsed);
-        } catch {
-          // Send as string if not JSON
-          messageContext.send(result.output);
+        // Send values to message outlet if enabled
+        // Audio items are decoded to Float32Array for direct use with table/sampler~
+        if (messageOutletEnabled) {
+          const values = await Promise.all(
+            result.stack.map(async (item) => {
+              if (item.type === 'audio') {
+                // Decode WAV to float array for universal compatibility
+                try {
+                  return await decodeWavToFloats(item.data);
+                } catch (e) {
+                  customConsole.error(`Failed to decode audio: ${e}`);
+                  return null;
+                }
+              }
+              return extractTextValue(item);
+            })
+          );
+
+          // Filter out failed decodes
+          const validValues = values.filter((v) => v !== null);
+
+          if (validValues.length === 0) {
+            messageContext.send(0);
+          } else if (validValues.length === 1) {
+            messageContext.send(validValues[0]);
+          } else {
+            messageContext.send(validValues);
+          }
+        }
+
+        // Send to video outlet if enabled - use GLSystem for video pipeline
+        if (data.enableVideoOutlet) {
+          for (const item of result.stack) {
+            if (item.type === 'gif') {
+              // Use GifPlayer for animated GIF playback
+              gifPlayer.play(item.data, (bitmap) => {
+                ensureGLRegistered();
+                glSystem.setBitmap(nodeId, bitmap);
+              });
+              break;
+            } else if (item.type === 'image') {
+              // Static image - just set bitmap once
+              gifPlayer.stop();
+              const blob = new Blob([item.data], { type: 'image/png' });
+              createImageBitmap(blob).then((bitmap) => {
+                ensureGLRegistered();
+                glSystem.setBitmap(nodeId, bitmap);
+              });
+              break;
+            }
+          }
         }
       } else {
         hasError = true;
+        resultStack = result.stack;
         customConsole.error(result.error);
       }
     } catch (error) {
       hasError = true;
+      resultStack = [];
       customConsole.error(error instanceof Error ? error.message : String(error));
     } finally {
       isLoading = false;
@@ -181,6 +403,18 @@
   onDestroy(() => {
     messageContext.queue.removeCallback(handleMessage);
     messageContext.destroy();
+    // Clean up blob URLs
+    currentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+    // Clean up GIF playback and GLSystem registration
+    gifPlayer.stop();
+    if (isRegisteredWithGL) {
+      glSystem.removeNode(nodeId);
+    }
+    // Clean up AudioContext
+    if (audioContext) {
+      audioContext.close();
+      audioContext = null;
+    }
   });
 </script>
 
@@ -201,10 +435,72 @@
 {/snippet}
 
 {#snippet exprOutlets()}
-  <StandardHandle port="outlet" type="message" title="Result" total={1} index={0} {nodeId} />
+  {@const messageIndex = 0}
+  {@const videoIndex = messageOutletEnabled ? 1 : 0}
+
+  {#if messageOutletEnabled}
+    <StandardHandle
+      port="outlet"
+      type="message"
+      title="Text/arrays/audio samples"
+      total={outletCount}
+      index={messageIndex}
+      {nodeId}
+    />
+  {/if}
+  {#if data.enableVideoOutlet}
+    <StandardHandle
+      port="outlet"
+      type="video"
+      title="Video (ImageData)"
+      total={outletCount}
+      index={videoIndex}
+      {nodeId}
+    />
+  {/if}
 {/snippet}
 
-<div class="group relative flex flex-col gap-2">
+<div class="group relative flex flex-col gap-2 overflow-visible">
+  <!-- Overflow menu -->
+  {#if !isEditing}
+    <div
+      class={[
+        'absolute -top-7 right-0 z-10 flex gap-1 transition-opacity',
+        selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+      ]}
+    >
+      <Popover.Root bind:open={menuOpen}>
+        <Popover.Trigger>
+          <button class="cursor-pointer rounded p-1 hover:bg-zinc-700" title="More options">
+            <EllipsisVertical class="h-4 w-4 text-zinc-300" />
+          </button>
+        </Popover.Trigger>
+        <Popover.Content class="w-32 p-1" align="end">
+          <button
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700"
+            onclick={() => setView('preview')}
+          >
+            <Eye class="h-3.5 w-3.5" />
+            Preview
+            {#if data.view === 'preview'}
+              <span class="ml-auto text-blue-400">✓</span>
+            {/if}
+          </button>
+          <button
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700"
+            onclick={() => setView('settings')}
+          >
+            <Settings class="h-3.5 w-3.5" />
+            Settings
+            {#if data.view === 'settings'}
+              <span class="ml-auto text-blue-400">✓</span>
+            {/if}
+          </button>
+        </Popover.Content>
+      </Popover.Root>
+    </div>
+  {/if}
+
   <CommonExprLayout
     bind:this={layoutRef}
     {nodeId}
@@ -225,6 +521,7 @@
     runOnExit
     {hasError}
     dataKey="expr"
+    fontSize="14px"
   />
 
   <div class:hidden={!data.showConsole}>
@@ -236,6 +533,21 @@
       shouldAutoHideConsoleOnNoError
     />
   </div>
+
+  <!-- Floating preview panel -->
+  {#if data.view === 'preview'}
+    <UiuaPreview {resultStack} onRun={handleRun} {getBlobUrl} {getImageDimensions} />
+  {/if}
+
+  <!-- Floating settings panel -->
+  {#if data.view === 'settings'}
+    <UiuaSettings
+      {data}
+      onClose={() => setView(undefined)}
+      onToggleMessage={toggleMessageOutlet}
+      onToggleVideo={toggleVideoOutlet}
+    />
+  {/if}
 </div>
 
 <style>
@@ -247,6 +559,7 @@
   :global(.uiua-display .expr-preview .expr-preview-code) {
     --default-mono-font-family: 'Uiua';
     font-family: 'Uiua', 'IBM Plex Mono', monospace !important;
+    font-size: 14px;
     line-height: 17px;
   }
 </style>
