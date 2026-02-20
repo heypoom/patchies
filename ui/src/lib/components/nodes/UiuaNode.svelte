@@ -38,7 +38,9 @@
   let layoutRef = $state<CommonExprLayout | null>(null);
   let consoleRef: VirtualConsole | null = $state(null);
   let resultStack = $state<OutputItem[]>([]);
-  let blobUrls = $state<string[]>([]);
+
+  // Non-reactive tracking for blob URL cleanup (to avoid circular dependencies)
+  let currentBlobUrls: string[] = [];
 
   const messageContext = new MessageContext(nodeId);
   const customConsole = createCustomConsole(nodeId);
@@ -50,13 +52,8 @@
   );
 
   // Create blob URLs for media items - derived from resultStack
-  // This creates URLs lazily and tracks them for cleanup
   const mediaBlobUrls = $derived.by(() => {
-    // Clean up old URLs first
-    blobUrls.forEach((url) => URL.revokeObjectURL(url));
-
     const urls: Map<number, string> = new Map();
-    const newBlobUrls: string[] = [];
 
     resultStack.forEach((item, index) => {
       if (item.type === 'image') {
@@ -64,33 +61,30 @@
         const blob = new Blob([new Uint8Array(item.data)], { type: 'image/png' });
         const url = URL.createObjectURL(blob);
         urls.set(index, url);
-        newBlobUrls.push(url);
       } else if (item.type === 'gif') {
         const blob = new Blob([new Uint8Array(item.data)], { type: 'image/gif' });
         const url = URL.createObjectURL(blob);
         urls.set(index, url);
-        newBlobUrls.push(url);
       } else if (item.type === 'audio') {
         const blob = new Blob([new Uint8Array(item.data)], { type: 'audio/wav' });
         const url = URL.createObjectURL(blob);
         urls.set(index, url);
-        newBlobUrls.push(url);
       }
     });
 
-    // Store for cleanup (can't mutate blobUrls here, so we'll do it via effect)
-    // Actually we need to track these differently
-    return { urls, newBlobUrls };
+    return urls;
   });
 
-  // Track blob URLs for cleanup via effect
+  // Clean up old blob URLs when mediaBlobUrls changes
   $effect(() => {
-    // Update blobUrls when mediaBlobUrls changes
-    blobUrls = mediaBlobUrls.newBlobUrls;
+    // Cleanup previous URLs
+    currentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+    // Store new URLs for next cleanup
+    currentBlobUrls = [...mediaBlobUrls.values()];
   });
 
   function getBlobUrl(index: number): string | undefined {
-    return mediaBlobUrls.urls.get(index);
+    return mediaBlobUrls.get(index);
   }
 
   // Toggle audio outlet
@@ -319,7 +313,7 @@
     messageContext.queue.removeCallback(handleMessage);
     messageContext.destroy();
     // Clean up blob URLs
-    blobUrls.forEach((url) => URL.revokeObjectURL(url));
+    currentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
   });
 </script>
 
