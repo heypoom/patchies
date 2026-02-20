@@ -518,7 +518,7 @@
     outlets={exprOutlets}
     onRun={handleRun}
     exitOnRun={false}
-    runOnExit
+    runOnExit={false}
     {hasError}
     dataKey="expr"
     fontSize="14px"
