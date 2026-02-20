@@ -14,6 +14,7 @@
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { UiuaService, type OutputItem } from '$lib/uiua/UiuaService';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { GifPlayer } from '$lib/canvas/GifPlayer';
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -62,6 +63,16 @@
   // Track if we're registered with GLSystem
   let isRegisteredWithGL = false;
 
+  // GIF animation player
+  const gifPlayer = new GifPlayer();
+
+  function ensureGLRegistered() {
+    if (!isRegisteredWithGL) {
+      glSystem.upsertNode(nodeId, 'img', {});
+      isRegisteredWithGL = true;
+    }
+  }
+
   // Dynamic outlet count based on toggles
   const outletCount = $derived(
     1 + (data.enableAudioOutlet ? 1 : 0) + (data.enableVideoOutlet ? 1 : 0)
@@ -106,6 +117,7 @@
   // Handle GLSystem registration when video outlet is toggled
   $effect(() => {
     if (!data.enableVideoOutlet && isRegisteredWithGL) {
+      gifPlayer.stop();
       glSystem.removeNode(nodeId);
       isRegisteredWithGL = false;
     }
@@ -252,21 +264,21 @@
         // Send to video outlet if enabled - use GLSystem for video pipeline
         if (data.enableVideoOutlet) {
           for (const item of result.stack) {
-            if (item.type === 'image' || item.type === 'gif') {
-              // Decode PNG/GIF to ImageBitmap for GLSystem
-              const blob = new Blob([item.data], {
-                type: item.type === 'image' ? 'image/png' : 'image/gif'
-              });
-
-              createImageBitmap(blob).then((bitmap) => {
-                // Register with GLSystem if not already
-                if (!isRegisteredWithGL) {
-                  glSystem.upsertNode(nodeId, 'img', {});
-                  isRegisteredWithGL = true;
-                }
+            if (item.type === 'gif') {
+              // Use GifPlayer for animated GIF playback
+              gifPlayer.play(item.data, (bitmap) => {
+                ensureGLRegistered();
                 glSystem.setBitmap(nodeId, bitmap);
               });
-              // Only use first image for video output
+              break;
+            } else if (item.type === 'image') {
+              // Static image - just set bitmap once
+              gifPlayer.stop();
+              const blob = new Blob([item.data], { type: 'image/png' });
+              createImageBitmap(blob).then((bitmap) => {
+                ensureGLRegistered();
+                glSystem.setBitmap(nodeId, bitmap);
+              });
               break;
             }
           }
@@ -350,7 +362,8 @@
     messageContext.destroy();
     // Clean up blob URLs
     currentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
-    // Clean up GLSystem registration
+    // Clean up GIF playback and GLSystem registration
+    gifPlayer.stop();
     if (isRegisteredWithGL) {
       glSystem.removeNode(nodeId);
     }
