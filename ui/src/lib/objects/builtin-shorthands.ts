@@ -82,6 +82,15 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     })
   },
   {
+    names: ['uiua'],
+    nodeType: 'uiua',
+    description: 'Uiua array language with dynamic inlets',
+    transform: (expr, name) => ({
+      nodeType: 'uiua',
+      data: { expr: expr.replace(name, '').trim() }
+    })
+  },
+  {
     names: ['filter'],
     nodeType: 'filter',
     description: 'Filter messages with JS condition',
