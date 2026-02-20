@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import { Settings, Play, Eye, EllipsisVertical, X } from '@lucide/svelte/icons';
+  import { Settings, Eye, EllipsisVertical } from '@lucide/svelte/icons';
   import * as Popover from '$lib/components/ui/popover';
   import UiuaSettings from '$lib/components/settings/UiuaSettings.svelte';
+  import UiuaPreview from '$lib/components/settings/UiuaPreview.svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -23,7 +24,6 @@
     expr: string;
     showConsole?: boolean;
     enableMessageOutlet?: boolean;
-    enableAudioOutlet?: boolean;
     enableVideoOutlet?: boolean;
     view?: 'settings' | 'preview';
   }
@@ -62,6 +62,32 @@
   const uiuaService = UiuaService.getInstance();
   const glSystem = GLSystem.getInstance();
 
+  // Shared AudioContext for decoding WAV to float array
+  let audioContext: AudioContext | null = null;
+
+  function getAudioContext(): AudioContext {
+    if (!audioContext) {
+      audioContext = new AudioContext();
+    }
+    return audioContext;
+  }
+
+  /**
+   * Decode WAV Uint8Array to float array using Web Audio API.
+   * Returns the first channel's raw samples for use with table/sampler~.
+   */
+  async function decodeWavToFloats(wavData: Uint8Array): Promise<Float32Array> {
+    const ctx = getAudioContext();
+    // Need to copy the buffer since decodeAudioData may detach the original
+    const buffer = wavData.buffer.slice(
+      wavData.byteOffset,
+      wavData.byteOffset + wavData.byteLength
+    ) as ArrayBuffer;
+    const audioBuffer = await ctx.decodeAudioData(buffer);
+    // Return first channel's samples
+    return audioBuffer.getChannelData(0);
+  }
+
   // Track if we're registered with GLSystem
   let isRegisteredWithGL = false;
 
@@ -79,11 +105,7 @@
   const messageOutletEnabled = $derived(data.enableMessageOutlet !== false);
 
   // Dynamic outlet count based on toggles
-  const outletCount = $derived(
-    (messageOutletEnabled ? 1 : 0) +
-      (data.enableAudioOutlet ? 1 : 0) +
-      (data.enableVideoOutlet ? 1 : 0)
-  );
+  const outletCount = $derived((messageOutletEnabled ? 1 : 0) + (data.enableVideoOutlet ? 1 : 0));
 
   // Create blob URLs and measure dimensions for media items
   $effect(() => {
@@ -143,14 +165,6 @@
     const newValue = !messageOutletEnabled;
     data.enableMessageOutlet = newValue;
     updateNodeData(nodeId, { enableMessageOutlet: newValue });
-    updateNodeInternals(nodeId);
-  }
-
-  // Toggle audio outlet
-  function toggleAudioOutlet() {
-    const newValue = !data.enableAudioOutlet;
-    data.enableAudioOutlet = newValue;
-    updateNodeData(nodeId, { enableAudioOutlet: newValue });
     updateNodeInternals(nodeId);
   }
 
@@ -260,28 +274,33 @@
         hasError = false;
         resultStack = result.stack;
 
-        // Calculate outlet indices based on which outlets are enabled
-        const audioOutletIndex = messageOutletEnabled ? 1 : 0;
-
-        // Send text values to message outlet (outlet 0) if enabled
+        // Send values to message outlet if enabled
+        // Audio items are decoded to Float32Array for direct use with table/sampler~
         if (messageOutletEnabled) {
-          const textValues = result.stack.map(extractTextValue);
+          const values = await Promise.all(
+            result.stack.map(async (item) => {
+              if (item.type === 'audio') {
+                // Decode WAV to float array for universal compatibility
+                try {
+                  return await decodeWavToFloats(item.data);
+                } catch (e) {
+                  customConsole.error(`Failed to decode audio: ${e}`);
+                  return null;
+                }
+              }
+              return extractTextValue(item);
+            })
+          );
 
-          if (textValues.length === 0) {
+          // Filter out failed decodes
+          const validValues = values.filter((v) => v !== null);
+
+          if (validValues.length === 0) {
             messageContext.send(0);
-          } else if (textValues.length === 1) {
-            messageContext.send(textValues[0]);
+          } else if (validValues.length === 1) {
+            messageContext.send(validValues[0]);
           } else {
-            messageContext.send(textValues);
-          }
-        }
-
-        // Send to audio outlet if enabled
-        if (data.enableAudioOutlet) {
-          for (const item of result.stack) {
-            if (item.type === 'audio') {
-              messageContext.send(item.data, { to: audioOutletIndex });
-            }
+            messageContext.send(validValues);
           }
         }
 
@@ -391,6 +410,11 @@
     if (isRegisteredWithGL) {
       glSystem.removeNode(nodeId);
     }
+    // Clean up AudioContext
+    if (audioContext) {
+      audioContext.close();
+      audioContext = null;
+    }
   });
 </script>
 
@@ -412,26 +436,15 @@
 
 {#snippet exprOutlets()}
   {@const messageIndex = 0}
-  {@const audioIndex = messageOutletEnabled ? 1 : 0}
-  {@const videoIndex = audioIndex + (data.enableAudioOutlet ? 1 : 0)}
+  {@const videoIndex = messageOutletEnabled ? 1 : 0}
 
   {#if messageOutletEnabled}
     <StandardHandle
       port="outlet"
       type="message"
-      title="Text/arrays"
+      title="Text/arrays/audio samples"
       total={outletCount}
       index={messageIndex}
-      {nodeId}
-    />
-  {/if}
-  {#if data.enableAudioOutlet}
-    <StandardHandle
-      port="outlet"
-      type="audio"
-      title="Audio (WAV)"
-      total={outletCount}
-      index={audioIndex}
       {nodeId}
     />
   {/if}
@@ -523,61 +536,7 @@
 
   <!-- Floating preview panel -->
   {#if data.view === 'preview'}
-    <div class="absolute top-0 left-full z-20 ml-2">
-      <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button
-          onclick={handleRun}
-          class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
-          title="Run"
-        >
-          <Play class="h-4 w-4" />
-        </button>
-      </div>
-      <div
-        class="nodrag nowheel max-h-96 min-h-20 max-w-96 min-w-20 overflow-auto rounded-md border border-zinc-600 bg-zinc-900 p-2 shadow-xl"
-      >
-        {#if resultStack.length > 0}
-          {#each resultStack as item, index}
-            {#if item.type === 'image'}
-              {@const dims = getImageDimensions(index)}
-              <div style={dims ? `width: ${dims.width}px; height: ${dims.height}px;` : undefined}>
-                <img
-                  src={getBlobUrl(index)}
-                  alt={item.label ?? 'Uiua image'}
-                  class="block rounded"
-                  width={dims?.width}
-                  height={dims?.height}
-                  style={dims ? `width: ${dims.width}px; height: ${dims.height}px;` : undefined}
-                />
-              </div>
-            {:else if item.type === 'gif'}
-              {@const dims = getImageDimensions(index)}
-              <div style={dims ? `width: ${dims.width}px; height: ${dims.height}px;` : undefined}>
-                <img
-                  src={getBlobUrl(index)}
-                  alt={item.label ?? 'Uiua animation'}
-                  class="block rounded"
-                  width={dims?.width}
-                  height={dims?.height}
-                  style={dims ? `width: ${dims.width}px; height: ${dims.height}px;` : undefined}
-                />
-              </div>
-            {:else if item.type === 'audio'}
-              <audio controls src={getBlobUrl(index)} class="h-8 w-full"></audio>
-            {:else if item.type === 'svg'}
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="svg-container max-w-full overflow-auto">
-                {@html item.svg}
-              </div>
-            {:else if item.type === 'text'}
-              <pre class="font-mono text-xs whitespace-pre-wrap text-zinc-300">{item.value}</pre>
-            {/if}
-          {/each}
-        {:else}
-          <span class="text-xs text-zinc-500"></span>
-        {/if}
-      </div>
-    </div>
+    <UiuaPreview {resultStack} onRun={handleRun} {getBlobUrl} {getImageDimensions} />
   {/if}
 
   <!-- Floating settings panel -->
@@ -586,7 +545,6 @@
       {data}
       onClose={() => setView(undefined)}
       onToggleMessage={toggleMessageOutlet}
-      onToggleAudio={toggleAudioOutlet}
       onToggleVideo={toggleVideoOutlet}
     />
   {/if}

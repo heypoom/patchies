@@ -32,6 +32,9 @@ const SetEnd = msg('setEnd', { value: Type.Number() });
 const SetPlaybackRate = msg('setPlaybackRate', { value: Type.Number() });
 const SetDetune = msg('setDetune', { value: Type.Number() });
 
+// Float32Array for direct buffer setting (from uiua node, etc.)
+const Float32ArraySamples = Type.Unsafe<Float32Array>({ type: 'Float32Array' });
+
 /** Pre-wrapped matchers for use with ts-pattern */
 export const samplerMessages = {
   ...messages,
@@ -48,7 +51,8 @@ export const samplerMessages = {
   setStart: schema(SetStart),
   setEnd: schema(SetEnd),
   setPlaybackRate: schema(SetPlaybackRate),
-  setDetune: schema(SetDetune)
+  setDetune: schema(SetDetune),
+  float32Array: schema(Float32ArraySamples)
 };
 
 /**
@@ -81,7 +85,11 @@ export const samplerSchema: ObjectSchema = {
         { schema: SetStart, description: 'Set playback start position (seconds)' },
         { schema: SetEnd, description: 'Set playback end position (seconds)' },
         { schema: SetPlaybackRate, description: 'Set playback speed (1.0 = normal, 2.0 = double)' },
-        { schema: SetDetune, description: 'Set pitch shift in cents (1200 = one octave)' }
+        { schema: SetDetune, description: 'Set pitch shift in cents (1200 = one octave)' },
+        {
+          schema: Float32ArraySamples,
+          description: 'Set buffer directly from Float32Array audio samples'
+        }
       ]
     }
   ],

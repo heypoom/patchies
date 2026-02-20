@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { X, Volume2, Video, MessageSquare } from '@lucide/svelte/icons';
+  import { X, Video, MessageSquare } from '@lucide/svelte/icons';
 
   interface UiuaSettingsData {
     enableMessageOutlet?: boolean;
-    enableAudioOutlet?: boolean;
     enableVideoOutlet?: boolean;
   }
 
@@ -11,13 +10,11 @@
     data,
     onClose,
     onToggleMessage,
-    onToggleAudio,
     onToggleVideo
   }: {
     data: UiuaSettingsData;
     onClose: () => void;
     onToggleMessage: () => void;
-    onToggleAudio: () => void;
     onToggleVideo: () => void;
   } = $props();
 
@@ -54,20 +51,6 @@
         >
           <MessageSquare class="h-3.5 w-3.5" />
           Message
-        </button>
-
-        <button
-          onclick={onToggleAudio}
-          class={[
-            'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors',
-            data.enableAudioOutlet
-              ? 'bg-zinc-600 text-white'
-              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-          ]}
-          title="Audio outlet"
-        >
-          <Volume2 class="h-3.5 w-3.5" />
-          Audio
         </button>
 
         <button
