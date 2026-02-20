@@ -9,9 +9,16 @@
   import { messages } from '$lib/objects/schemas';
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
-  import { UiuaService } from '$lib/uiua/UiuaService';
+  import { UiuaService, type OutputItem } from '$lib/uiua/UiuaService';
 
   const { updateNodeData } = useSvelteFlow();
+
+  interface UiuaNodeData {
+    expr: string;
+    showConsole?: boolean;
+    enableAudioOutlet?: boolean;
+    enableVideoOutlet?: boolean;
+  }
 
   let {
     id: nodeId,
@@ -19,7 +26,7 @@
     selected
   }: {
     id: string;
-    data: { expr: string; showConsole?: boolean };
+    data: UiuaNodeData;
     selected: boolean;
   } = $props();
 
@@ -30,10 +37,75 @@
   let isLoading = $state(false);
   let layoutRef = $state<CommonExprLayout | null>(null);
   let consoleRef: VirtualConsole | null = $state(null);
+  let resultStack = $state<OutputItem[]>([]);
+  let blobUrls = $state<string[]>([]);
 
   const messageContext = new MessageContext(nodeId);
   const customConsole = createCustomConsole(nodeId);
   const uiuaService = UiuaService.getInstance();
+
+  // Dynamic outlet count based on toggles
+  const outletCount = $derived(
+    1 + (data.enableAudioOutlet ? 1 : 0) + (data.enableVideoOutlet ? 1 : 0)
+  );
+
+  // Create blob URLs for media items - derived from resultStack
+  // This creates URLs lazily and tracks them for cleanup
+  const mediaBlobUrls = $derived.by(() => {
+    // Clean up old URLs first
+    blobUrls.forEach((url) => URL.revokeObjectURL(url));
+
+    const urls: Map<number, string> = new Map();
+    const newBlobUrls: string[] = [];
+
+    resultStack.forEach((item, index) => {
+      if (item.type === 'image') {
+        // Copy to ensure proper ArrayBuffer (fixes TypeScript compatibility with serde-wasm-bindgen)
+        const blob = new Blob([new Uint8Array(item.data)], { type: 'image/png' });
+        const url = URL.createObjectURL(blob);
+        urls.set(index, url);
+        newBlobUrls.push(url);
+      } else if (item.type === 'gif') {
+        const blob = new Blob([new Uint8Array(item.data)], { type: 'image/gif' });
+        const url = URL.createObjectURL(blob);
+        urls.set(index, url);
+        newBlobUrls.push(url);
+      } else if (item.type === 'audio') {
+        const blob = new Blob([new Uint8Array(item.data)], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        urls.set(index, url);
+        newBlobUrls.push(url);
+      }
+    });
+
+    // Store for cleanup (can't mutate blobUrls here, so we'll do it via effect)
+    // Actually we need to track these differently
+    return { urls, newBlobUrls };
+  });
+
+  // Track blob URLs for cleanup via effect
+  $effect(() => {
+    // Update blobUrls when mediaBlobUrls changes
+    blobUrls = mediaBlobUrls.newBlobUrls;
+  });
+
+  function getBlobUrl(index: number): string | undefined {
+    return mediaBlobUrls.urls.get(index);
+  }
+
+  // Toggle audio outlet
+  function toggleAudioOutlet() {
+    const newValue = !data.enableAudioOutlet;
+    data.enableAudioOutlet = newValue;
+    updateNodeData(nodeId, { enableAudioOutlet: newValue });
+  }
+
+  // Toggle video outlet
+  function toggleVideoOutlet() {
+    const newValue = !data.enableVideoOutlet;
+    data.enableVideoOutlet = newValue;
+    updateNodeData(nodeId, { enableVideoOutlet: newValue });
+  }
 
   // Parse $N placeholders to determine inlet count (only $1-$9 supported)
   const inletCount = $derived.by(() => {
@@ -84,6 +156,31 @@
     evaluateAndSend(nextInletValues);
   };
 
+  /**
+   * Extract text value from an OutputItem
+   * Text items return their value, media items return a placeholder/description
+   */
+  function extractTextValue(item: OutputItem): unknown {
+    if (item.type === 'text') {
+      // Try to parse as JSON (arrays, numbers)
+      try {
+        return JSON.parse(item.value);
+      } catch {
+        return item.value;
+      }
+    }
+
+    if (item.type === 'svg') {
+      return item.svg;
+    }
+
+    // Media items - return metadata for now
+    // Full media support will output via separate outlets
+    const label = 'label' in item ? item.label : undefined;
+
+    return label ?? `[${item.type} data]`;
+  }
+
   async function evaluateAndSend(values: unknown[]) {
     if (!expr.trim()) {
       messageContext.send(values[0] ?? 0);
@@ -91,27 +188,67 @@
     }
 
     isLoading = true;
+    // Blob URLs are cleaned up automatically via the $derived that tracks resultStack
 
     try {
       const result = await uiuaService.evalWithValues(expr, values);
 
       if (result.success) {
         hasError = false;
+        resultStack = result.stack;
 
-        // Try to parse the result as JSON (for arrays/numbers)
-        try {
-          const parsed = JSON.parse(result.output);
-          messageContext.send(parsed);
-        } catch {
-          // Send as string if not JSON
-          messageContext.send(result.output);
+        // Send text values to message outlet (outlet 0)
+        const textValues = result.stack.map(extractTextValue);
+
+        if (textValues.length === 0) {
+          messageContext.send(0);
+        } else if (textValues.length === 1) {
+          messageContext.send(textValues[0]);
+        } else {
+          messageContext.send(textValues);
+        }
+
+        // Send to audio outlet if enabled (outlet 1)
+        if (data.enableAudioOutlet) {
+          for (const item of result.stack) {
+            if (item.type === 'audio') {
+              messageContext.send(item.data, { to: 1 });
+            }
+          }
+        }
+
+        // Send to video outlet if enabled (outlet 1 or 2 depending on audio)
+        if (data.enableVideoOutlet) {
+          const videoOutletIndex = data.enableAudioOutlet ? 2 : 1;
+
+          for (const item of result.stack) {
+            if (item.type === 'image' || item.type === 'gif') {
+              // Decode PNG/GIF to ImageData for video chain compatibility
+              const blob = new Blob([item.data], {
+                type: item.type === 'image' ? 'image/png' : 'image/gif'
+              });
+
+              createImageBitmap(blob).then((bitmap) => {
+                const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+                const ctx = canvas.getContext('2d');
+
+                if (ctx) {
+                  ctx.drawImage(bitmap, 0, 0);
+                  const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+                  messageContext.send(imageData, { to: videoOutletIndex });
+                }
+              });
+            }
+          }
         }
       } else {
         hasError = true;
+        resultStack = result.stack;
         customConsole.error(result.error);
       }
     } catch (error) {
       hasError = true;
+      resultStack = [];
       customConsole.error(error instanceof Error ? error.message : String(error));
     } finally {
       isLoading = false;
@@ -181,6 +318,8 @@
   onDestroy(() => {
     messageContext.queue.removeCallback(handleMessage);
     messageContext.destroy();
+    // Clean up blob URLs
+    blobUrls.forEach((url) => URL.revokeObjectURL(url));
   });
 </script>
 
@@ -201,7 +340,34 @@
 {/snippet}
 
 {#snippet exprOutlets()}
-  <StandardHandle port="outlet" type="message" title="Result" total={1} index={0} {nodeId} />
+  <StandardHandle
+    port="outlet"
+    type="message"
+    title="Text/arrays"
+    total={outletCount}
+    index={0}
+    {nodeId}
+  />
+  {#if data.enableAudioOutlet}
+    <StandardHandle
+      port="outlet"
+      type="audio"
+      title="Audio (WAV)"
+      total={outletCount}
+      index={1}
+      {nodeId}
+    />
+  {/if}
+  {#if data.enableVideoOutlet}
+    <StandardHandle
+      port="outlet"
+      type="video"
+      title="Video (ImageData)"
+      total={outletCount}
+      index={data.enableAudioOutlet ? 2 : 1}
+      {nodeId}
+    />
+  {/if}
 {/snippet}
 
 <div class="group relative flex flex-col gap-2">
@@ -226,6 +392,59 @@
     {hasError}
     dataKey="expr"
   />
+
+  <!-- Media output rendering (always shown when available) -->
+  {#if resultStack.some((item) => item.type !== 'text')}
+    <div class="max-h-48 overflow-auto rounded bg-zinc-900/50 p-2">
+      {#each resultStack as item, index}
+        {#if item.type === 'image'}
+          <img
+            src={getBlobUrl(index)}
+            alt={item.label ?? 'Uiua image'}
+            class="max-w-full rounded"
+          />
+        {:else if item.type === 'gif'}
+          <img
+            src={getBlobUrl(index)}
+            alt={item.label ?? 'Uiua animation'}
+            class="max-w-full rounded"
+          />
+        {:else if item.type === 'audio'}
+          <audio controls src={getBlobUrl(index)} class="h-8 w-full"></audio>
+        {:else if item.type === 'svg'}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="svg-container max-w-full overflow-auto">
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html item.svg}
+          </div>
+        {/if}
+      {/each}
+    </div>
+  {/if}
+
+  <!-- Outlet toggles (shown when not editing) -->
+  {#if !isEditing}
+    <div class="flex gap-3 px-2 py-1 text-xs text-zinc-400">
+      <label class="flex cursor-pointer items-center gap-1">
+        <input
+          type="checkbox"
+          checked={data.enableAudioOutlet ?? false}
+          onchange={toggleAudioOutlet}
+          class="h-3 w-3 rounded border-zinc-600"
+        />
+        Audio out
+      </label>
+      <label class="flex cursor-pointer items-center gap-1">
+        <input
+          type="checkbox"
+          checked={data.enableVideoOutlet ?? false}
+          onchange={toggleVideoOutlet}
+          class="h-3 w-3 rounded border-zinc-600"
+        />
+        Video out
+      </label>
+    </div>
+  {/if}
 
   <div class:hidden={!data.showConsole}>
     <VirtualConsole
