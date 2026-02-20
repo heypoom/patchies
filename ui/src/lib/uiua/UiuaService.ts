@@ -1,14 +1,18 @@
 /**
- * UiuaService - Lazy-loading Uiua WASM runtime
+ * UiuaService - Worker-based Uiua WASM runtime
  *
  * Provides evaluation and formatting of Uiua code with media output support.
- * The 10MB WASM module is only loaded when first needed.
+ * The 10MB WASM module runs in a web worker to avoid blocking the main thread.
  *
  * Media detection (via SmartOutput):
  * - Audio: arrays with ≥11,025 elements and values in [-5, 5] → WAV Uint8Array
  * - Images: 2D/3D arrays ≥30×30 → PNG Uint8Array
  * - Animations: 4D arrays with ≥5 frames → GIF Uint8Array
  */
+
+import { match } from 'ts-pattern';
+import type { UiuaWorkerMessage, UiuaWorkerResponse } from '../../workers/uiua/uiuaWorker';
+import UiuaWorker from '../../workers/uiua/uiuaWorker?worker';
 
 /**
  * Output item representing a single stack value after media detection
@@ -42,20 +46,23 @@ export type UiuaResult =
   | { success: true; output: string; stack: OutputItem[]; formatted?: string }
   | { success: false; error: string };
 
-type UiuaModule = {
-  eval_uiua: (code: string) => UiuaEvalResult;
-  format_uiua: (code: string) => UiuaFormatResult;
-  uiua_version: () => string;
+type PendingRequest<T> = {
+  resolve: (value: T) => void;
+  reject: (error: Error) => void;
 };
 
 export class UiuaService {
   private static instance: UiuaService | null = null;
 
-  private module: UiuaModule | null = null;
-  private loadPromise: Promise<UiuaModule> | null = null;
+  private worker: Worker;
+  private lastId = 0;
   private _isLoaded = false;
+  private pendingRequests = new Map<string, PendingRequest<unknown>>();
 
-  private constructor() {}
+  private constructor() {
+    this.worker = new UiuaWorker();
+    this.worker.addEventListener('message', this.handleWorkerMessage.bind(this));
+  }
 
   static getInstance(): UiuaService {
     if (!UiuaService.instance) {
@@ -68,46 +75,66 @@ export class UiuaService {
     return this._isLoaded;
   }
 
-  /**
-   * Lazy-load the Uiua WASM module
-   */
-  async ensureModule(): Promise<void> {
-    if (this.module) return;
+  private handleWorkerMessage = ({ data }: MessageEvent<UiuaWorkerResponse>) => {
+    match(data)
+      .with({ type: 'ready' }, () => {
+        // Worker is initialized but WASM not yet loaded
+      })
+      .with({ type: 'evalResult' }, ({ id, result }) => {
+        this._isLoaded = true;
+        this.resolveRequest(id, result);
+      })
+      .with({ type: 'formatResult' }, ({ id, result }) => {
+        this._isLoaded = true;
+        this.resolveRequest(id, result);
+      })
+      .with({ type: 'versionResult' }, ({ id, version }) => {
+        this._isLoaded = true;
+        this.resolveRequest(id, version);
+      })
+      .with({ type: 'error' }, ({ id, error }) => {
+        this.rejectRequest(id, new Error(error));
+      })
+      .otherwise(() => {});
+  };
 
-    if (!this.loadPromise) {
-      this.loadPromise = this.loadModule();
-    }
+  private resolveRequest(id: string, value: unknown) {
+    const pending = this.pendingRequests.get(id);
 
-    try {
-      this.module = await this.loadPromise;
-      this._isLoaded = true;
-    } catch (error) {
-      // Clear the failed promise so future calls will retry
-      this.loadPromise = null;
-      throw error;
+    if (pending) {
+      this.pendingRequests.delete(id);
+      pending.resolve(value);
     }
   }
 
-  private async loadModule(): Promise<UiuaModule> {
-    // Dynamic import to enable lazy loading
-    const wasmModule = await import('../../assets/uiua/uiua_wasm.js');
+  private rejectRequest(id: string, error: Error) {
+    const pending = this.pendingRequests.get(id);
+    if (pending) {
+      this.pendingRequests.delete(id);
+      pending.reject(error);
+    }
+  }
 
-    await wasmModule.default();
+  private send<T>(message: UiuaWorkerMessage): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.pendingRequests.set(message.id, {
+        resolve: resolve as (value: unknown) => void,
+        reject
+      });
 
-    return {
-      eval_uiua: wasmModule.eval_uiua,
-      format_uiua: wasmModule.format_uiua,
-      uiua_version: wasmModule.uiua_version
-    };
+      this.worker.postMessage(message);
+    });
+  }
+
+  private nextId(): string {
+    return String(++this.lastId);
   }
 
   /**
    * Get Uiua version string
    */
   async getVersion(): Promise<string> {
-    await this.ensureModule();
-
-    return this.module!.uiua_version();
+    return this.send<string>({ type: 'getVersion', id: this.nextId() });
   }
 
   /**
@@ -121,32 +148,14 @@ export class UiuaService {
    * - Other → { type: 'text', value: string }
    */
   async eval(code: string): Promise<UiuaEvalResult> {
-    await this.ensureModule();
-
-    try {
-      // Returns native JS object via serde-wasm-bindgen (no JSON.parse needed)
-      return this.module!.eval_uiua(code);
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        stack: []
-      };
-    }
+    return this.send<UiuaEvalResult>({ type: 'eval', id: this.nextId(), code });
   }
 
   /**
    * Format Uiua code using the built-in formatter
    */
   async format(code: string): Promise<UiuaFormatResult> {
-    await this.ensureModule();
-
-    try {
-      // Returns native JS object via serde-wasm-bindgen (no JSON.parse needed)
-      return this.module!.format_uiua(code);
-    } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
-    }
+    return this.send<UiuaFormatResult>({ type: 'format', id: this.nextId(), code });
   }
 
   /**
@@ -154,59 +163,14 @@ export class UiuaService {
    * Only supports $1-$9 (single-digit placeholders)
    */
   async evalWithValues(code: string, values: unknown[]): Promise<UiuaEvalResult> {
-    // Replace in descending order ($9 first, then $8, etc.) to avoid
-    // prefix collisions (e.g., replacing $1 before $10 would corrupt $10)
-    let substituted = code;
-    const maxIndex = Math.min(values.length, 9);
+    // Clone values to avoid Svelte $state Proxy objects that can't be cloned via postMessage
+    const clonedValues = JSON.parse(JSON.stringify(values));
 
-    for (let i = maxIndex - 1; i >= 0; i--) {
-      const placeholder = `$${i + 1}`;
-      const value = values[i];
-
-      // Convert value to Uiua-compatible representation
-      const uiuaValue = this.toUiuaValue(value);
-
-      substituted = substituted.replaceAll(placeholder, uiuaValue);
-    }
-
-    return this.eval(substituted);
-  }
-
-  /**
-   * Convert JavaScript value to Uiua literal
-   */
-  private toUiuaValue(value: unknown): string {
-    if (value === null || value === undefined) {
-      return '0';
-    }
-
-    if (typeof value === 'number') {
-      // Uiua uses ¯ for negative numbers
-      if (value < 0) {
-        return `¯${Math.abs(value)}`;
-      }
-
-      return String(value);
-    }
-
-    // Uiua strings use double quotes
-    if (typeof value === 'string') {
-      return `"${value.replace(/"/g, '\\"')}"`;
-    }
-
-    // Uiua arrays are space-separated in brackets
-    if (Array.isArray(value)) {
-      const items = value.map((v) => this.toUiuaValue(v)).join(' ');
-
-      return `[${items}]`;
-    }
-
-    // Uiua uses 1/0 for booleans
-    if (typeof value === 'boolean') {
-      return value ? '1' : '0';
-    }
-
-    // Fallback: convert to string
-    return String(value);
+    return this.send<UiuaEvalResult>({
+      type: 'evalWithValues',
+      id: this.nextId(),
+      code,
+      values: clonedValues
+    });
   }
 }
