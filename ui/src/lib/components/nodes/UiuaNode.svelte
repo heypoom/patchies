@@ -311,15 +311,19 @@
               // Use GifPlayer for animated GIF playback
               gifPlayer.play(item.data, (bitmap) => {
                 ensureGLRegistered();
+
                 glSystem.setBitmap(nodeId, bitmap);
               });
               break;
             } else if (item.type === 'image') {
               // Static image - just set bitmap once
               gifPlayer.stop();
-              const blob = new Blob([item.data], { type: 'image/png' });
+
+              const blob = new Blob([item.data as BlobPart], { type: 'image/png' });
+
               createImageBitmap(blob).then((bitmap) => {
                 ensureGLRegistered();
+
                 glSystem.setBitmap(nodeId, bitmap);
               });
               break;
