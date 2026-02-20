@@ -48,6 +48,15 @@ export class VideoTextureManager {
 
     // Get or create source texture (raw bitmap, not flipped)
     let sourceTexture = this.sourceTextures.get(nodeId);
+    const existingDestTexture = this.destinationTextures.get(nodeId);
+
+    const needsResize =
+      !sourceTexture ||
+      sourceTexture.width !== width ||
+      sourceTexture.height !== height ||
+      !existingDestTexture ||
+      existingDestTexture.width !== width ||
+      existingDestTexture.height !== height;
 
     if (!sourceTexture || sourceTexture.width !== width || sourceTexture.height !== height) {
       sourceTexture?.destroy();
@@ -57,7 +66,7 @@ export class VideoTextureManager {
     }
 
     // Get or create destination texture (flipped result)
-    let destTexture = this.destinationTextures.get(nodeId);
+    let destTexture = existingDestTexture;
 
     if (!destTexture || destTexture.width !== width || destTexture.height !== height) {
       destTexture?.destroy();
@@ -66,10 +75,10 @@ export class VideoTextureManager {
       this.destinationTextures.set(nodeId, destTexture);
     }
 
-    // Get or create destination FBO (CACHED - created once and reused)
+    // Get or create destination FBO - must recreate if texture was resized
     let destFBO = this.destinationFBOs.get(nodeId);
 
-    if (!destFBO || destTexture.width !== width || destTexture.height !== height) {
+    if (!destFBO || needsResize) {
       destFBO?.destroy();
       destFBO = this.regl.framebuffer({ color: destTexture });
 
