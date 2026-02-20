@@ -1,24 +1,21 @@
 <script lang="ts">
-  import { X, Volume2, Video, Eye } from '@lucide/svelte/icons';
+  import { X, Volume2, Video } from '@lucide/svelte/icons';
 
   interface UiuaSettingsData {
     enableAudioOutlet?: boolean;
     enableVideoOutlet?: boolean;
-    showPreview?: boolean;
   }
 
   let {
     data,
     onClose,
     onToggleAudio,
-    onToggleVideo,
-    onTogglePreview
+    onToggleVideo
   }: {
     data: UiuaSettingsData;
     onClose: () => void;
     onToggleAudio: () => void;
     onToggleVideo: () => void;
-    onTogglePreview: () => void;
   } = $props();
 </script>
 
@@ -65,25 +62,6 @@
         >
           <Video class="h-3.5 w-3.5" />
           Video
-        </button>
-      </div>
-    </div>
-
-    <div class="flex flex-col gap-2">
-      <span class="text-xs font-medium text-zinc-400">Display</span>
-      <div class="flex gap-1">
-        <button
-          onclick={onTogglePreview}
-          class={[
-            'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors',
-            (data.showPreview ?? true)
-              ? 'bg-zinc-600 text-white'
-              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-          ]}
-          title="Show media preview"
-        >
-          <Eye class="h-3.5 w-3.5" />
-          Preview
         </button>
       </div>
     </div>

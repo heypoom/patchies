@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { Settings, Play } from '@lucide/svelte/icons';
+  import { Settings, Play, Eye, EllipsisVertical } from '@lucide/svelte/icons';
+  import * as Popover from '$lib/components/ui/popover';
   import UiuaSettings from '$lib/components/settings/UiuaSettings.svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -20,7 +21,7 @@
     showConsole?: boolean;
     enableAudioOutlet?: boolean;
     enableVideoOutlet?: boolean;
-    showPreview?: boolean;
+    view?: 'settings' | 'preview';
   }
 
   let {
@@ -41,10 +42,16 @@
   let layoutRef = $state<CommonExprLayout | null>(null);
   let consoleRef: VirtualConsole | null = $state(null);
   let resultStack = $state<OutputItem[]>([]);
-  let showSettings = $state(false);
+  let menuOpen = $state(false);
 
-  // Non-reactive tracking for blob URL cleanup (to avoid circular dependencies)
+  // Non-reactive tracking for blob URL cleanup
   let currentBlobUrls: string[] = [];
+
+  // Track blob URLs by index
+  let blobUrlMap = $state<Map<number, string>>(new Map());
+
+  // Track measured image dimensions
+  let imageDimensions = $state<Map<number, { width: number; height: number }>>(new Map());
 
   const messageContext = new MessageContext(nodeId);
   const customConsole = createCustomConsole(nodeId);
@@ -55,40 +62,48 @@
     1 + (data.enableAudioOutlet ? 1 : 0) + (data.enableVideoOutlet ? 1 : 0)
   );
 
-  // Create blob URLs for media items - derived from resultStack
-  const mediaBlobUrls = $derived.by(() => {
-    const urls: Map<number, string> = new Map();
+  // Create blob URLs and measure dimensions for media items
+  $effect(() => {
+    // Clean up old URLs
+    currentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+    currentBlobUrls = [];
+
+    const newBlobUrlMap = new Map<number, string>();
+    const newDimensions = new Map<number, { width: number; height: number }>();
 
     resultStack.forEach((item, index) => {
-      if (item.type === 'image') {
-        // Copy to ensure proper ArrayBuffer (fixes TypeScript compatibility with serde-wasm-bindgen)
-        const blob = new Blob([new Uint8Array(item.data)], { type: 'image/png' });
+      if (item.type === 'image' || item.type === 'gif') {
+        const mimeType = item.type === 'image' ? 'image/png' : 'image/gif';
+        const blob = new Blob([new Uint8Array(item.data)], { type: mimeType });
         const url = URL.createObjectURL(blob);
-        urls.set(index, url);
-      } else if (item.type === 'gif') {
-        const blob = new Blob([new Uint8Array(item.data)], { type: 'image/gif' });
-        const url = URL.createObjectURL(blob);
-        urls.set(index, url);
+        currentBlobUrls.push(url);
+        newBlobUrlMap.set(index, url);
+
+        // Measure image dimensions
+        const img = new Image();
+        const capturedIndex = index;
+        img.onload = () => {
+          newDimensions.set(capturedIndex, { width: img.naturalWidth, height: img.naturalHeight });
+          imageDimensions = new Map(newDimensions);
+        };
+        img.src = url;
       } else if (item.type === 'audio') {
         const blob = new Blob([new Uint8Array(item.data)], { type: 'audio/wav' });
         const url = URL.createObjectURL(blob);
-        urls.set(index, url);
+        currentBlobUrls.push(url);
+        newBlobUrlMap.set(index, url);
       }
     });
 
-    return urls;
-  });
-
-  // Clean up old blob URLs when mediaBlobUrls changes
-  $effect(() => {
-    // Cleanup previous URLs
-    currentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
-    // Store new URLs for next cleanup
-    currentBlobUrls = [...mediaBlobUrls.values()];
+    blobUrlMap = newBlobUrlMap;
   });
 
   function getBlobUrl(index: number): string | undefined {
-    return mediaBlobUrls.get(index);
+    return blobUrlMap.get(index);
+  }
+
+  function getImageDimensions(index: number): { width: number; height: number } | undefined {
+    return imageDimensions.get(index);
   }
 
   // Toggle audio outlet
@@ -105,11 +120,11 @@
     updateNodeData(nodeId, { enableVideoOutlet: newValue });
   }
 
-  // Toggle preview
-  function togglePreview() {
-    const newValue = !(data.showPreview ?? true);
-    data.showPreview = newValue;
-    updateNodeData(nodeId, { showPreview: newValue });
+  // Toggle view panel (mutually exclusive)
+  function setView(view: 'settings' | 'preview' | undefined) {
+    const newValue = data.view === view ? undefined : view;
+    data.view = newValue;
+    updateNodeData(nodeId, { view: newValue });
   }
 
   // Parse $N placeholders to determine inlet count (only $1-$9 supported)
@@ -193,7 +208,6 @@
     }
 
     isLoading = true;
-    // Blob URLs are cleaned up automatically via the $derived that tracks resultStack
 
     try {
       const result = await uiuaService.evalWithValues(expr, values);
@@ -375,8 +389,8 @@
   {/if}
 {/snippet}
 
-<div class="group relative flex flex-col gap-2">
-  <!-- Run and Settings buttons -->
+<div class="group relative flex flex-col gap-2 overflow-visible">
+  <!-- Overflow menu -->
   {#if !isEditing}
     <div
       class={[
@@ -384,16 +398,45 @@
         selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
       ]}
     >
-      <button class="cursor-pointer rounded p-1 hover:bg-zinc-700" onclick={handleRun} title="Run">
-        <Play class="h-4 w-4 text-zinc-300" />
-      </button>
-      <button
-        class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-        onclick={() => (showSettings = !showSettings)}
-        title="Settings"
-      >
-        <Settings class="h-4 w-4 text-zinc-300" />
-      </button>
+      <Popover.Root bind:open={menuOpen}>
+        <Popover.Trigger>
+          <button class="cursor-pointer rounded p-1 hover:bg-zinc-700" title="More options">
+            <EllipsisVertical class="h-4 w-4 text-zinc-300" />
+          </button>
+        </Popover.Trigger>
+        <Popover.Content class="w-32 p-1" align="end">
+          <button
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700"
+            onclick={() => {
+              menuOpen = false;
+              handleRun();
+            }}
+          >
+            <Play class="h-3.5 w-3.5" />
+            Run
+          </button>
+          <button
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700"
+            onclick={() => setView('preview')}
+          >
+            <Eye class="h-3.5 w-3.5" />
+            Preview
+            {#if data.view === 'preview'}
+              <span class="ml-auto text-blue-400">✓</span>
+            {/if}
+          </button>
+          <button
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700"
+            onclick={() => setView('settings')}
+          >
+            <Settings class="h-3.5 w-3.5" />
+            Settings
+            {#if data.view === 'settings'}
+              <span class="ml-auto text-blue-400">✓</span>
+            {/if}
+          </button>
+        </Popover.Content>
+      </Popover.Root>
     </div>
   {/if}
 
@@ -417,36 +460,8 @@
     runOnExit
     {hasError}
     dataKey="expr"
+    fontSize="14px"
   />
-
-  <!-- Media output rendering (shown when preview enabled) -->
-  {#if (data.showPreview ?? true) && resultStack.some((item) => item.type !== 'text')}
-    <div class="nowheel max-h-48 overflow-auto rounded p-2">
-      {#each resultStack as item, index}
-        {#if item.type === 'image'}
-          <img
-            src={getBlobUrl(index)}
-            alt={item.label ?? 'Uiua image'}
-            class="max-w-full rounded"
-          />
-        {:else if item.type === 'gif'}
-          <img
-            src={getBlobUrl(index)}
-            alt={item.label ?? 'Uiua animation'}
-            class="max-w-full rounded"
-          />
-        {:else if item.type === 'audio'}
-          <audio controls src={getBlobUrl(index)} class="h-8 w-full"></audio>
-        {:else if item.type === 'svg'}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div class="svg-container max-w-full overflow-auto">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html item.svg}
-          </div>
-        {/if}
-      {/each}
-    </div>
-  {/if}
 
   <div class:hidden={!data.showConsole}>
     <VirtualConsole
@@ -458,14 +473,63 @@
     />
   </div>
 
+  <!-- Floating preview panel -->
+  {#if data.view === 'preview'}
+    <div class="absolute top-0 left-full z-20 ml-2">
+      <div
+        class="nodrag nowheel max-h-96 min-h-20 max-w-96 min-w-20 overflow-auto rounded-md border border-zinc-600 bg-zinc-900 p-2 shadow-xl"
+      >
+        {#if resultStack.length > 0}
+          {#each resultStack as item, index}
+            {#if item.type === 'image'}
+              {@const dims = getImageDimensions(index)}
+              <div style={dims ? `width: ${dims.width}px; height: ${dims.height}px;` : undefined}>
+                <img
+                  src={getBlobUrl(index)}
+                  alt={item.label ?? 'Uiua image'}
+                  class="block rounded"
+                  width={dims?.width}
+                  height={dims?.height}
+                  style={dims ? `width: ${dims.width}px; height: ${dims.height}px;` : undefined}
+                />
+              </div>
+            {:else if item.type === 'gif'}
+              {@const dims = getImageDimensions(index)}
+              <div style={dims ? `width: ${dims.width}px; height: ${dims.height}px;` : undefined}>
+                <img
+                  src={getBlobUrl(index)}
+                  alt={item.label ?? 'Uiua animation'}
+                  class="block rounded"
+                  width={dims?.width}
+                  height={dims?.height}
+                  style={dims ? `width: ${dims.width}px; height: ${dims.height}px;` : undefined}
+                />
+              </div>
+            {:else if item.type === 'audio'}
+              <audio controls src={getBlobUrl(index)} class="h-8 w-full"></audio>
+            {:else if item.type === 'svg'}
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div class="svg-container max-w-full overflow-auto">
+                {@html item.svg}
+              </div>
+            {:else if item.type === 'text'}
+              <pre class="font-mono text-xs whitespace-pre-wrap text-zinc-300">{item.value}</pre>
+            {/if}
+          {/each}
+        {:else}
+          <span class="text-xs text-zinc-500"></span>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
   <!-- Floating settings panel -->
-  {#if showSettings}
+  {#if data.view === 'settings'}
     <UiuaSettings
       {data}
-      onClose={() => (showSettings = false)}
+      onClose={() => setView(undefined)}
       onToggleAudio={toggleAudioOutlet}
       onToggleVideo={toggleVideoOutlet}
-      onTogglePreview={togglePreview}
     />
   {/if}
 </div>
@@ -479,6 +543,7 @@
   :global(.uiua-display .expr-preview .expr-preview-code) {
     --default-mono-font-family: 'Uiua';
     font-family: 'Uiua', 'IBM Plex Mono', monospace !important;
+    font-size: 14px;
     line-height: 17px;
   }
 </style>
