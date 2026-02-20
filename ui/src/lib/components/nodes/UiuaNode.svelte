@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
+  import { Settings, X } from '@lucide/svelte/icons';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -38,6 +39,7 @@
   let layoutRef = $state<CommonExprLayout | null>(null);
   let consoleRef: VirtualConsole | null = $state(null);
   let resultStack = $state<OutputItem[]>([]);
+  let showSettings = $state(false);
 
   // Non-reactive tracking for blob URL cleanup (to avoid circular dependencies)
   let currentBlobUrls: string[] = [];
@@ -365,6 +367,20 @@
 {/snippet}
 
 <div class="group relative flex flex-col gap-2">
+  <!-- Settings gear button -->
+  {#if !isEditing}
+    <button
+      class={[
+        'absolute -top-7 -right-0 z-10 cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+        selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+      ]}
+      onclick={() => (showSettings = !showSettings)}
+      title="Settings"
+    >
+      <Settings class="h-4 w-4 text-zinc-300" />
+    </button>
+  {/if}
+
   <CommonExprLayout
     bind:this={layoutRef}
     {nodeId}
@@ -416,30 +432,6 @@
     </div>
   {/if}
 
-  <!-- Outlet toggles (shown when not editing) -->
-  {#if !isEditing}
-    <div class="flex gap-3 px-2 py-1 text-xs text-zinc-400">
-      <label class="flex cursor-pointer items-center gap-1">
-        <input
-          type="checkbox"
-          checked={data.enableAudioOutlet ?? false}
-          onchange={toggleAudioOutlet}
-          class="h-3 w-3 rounded border-zinc-600"
-        />
-        Audio out
-      </label>
-      <label class="flex cursor-pointer items-center gap-1">
-        <input
-          type="checkbox"
-          checked={data.enableVideoOutlet ?? false}
-          onchange={toggleVideoOutlet}
-          class="h-3 w-3 rounded border-zinc-600"
-        />
-        Video out
-      </label>
-    </div>
-  {/if}
-
   <div class:hidden={!data.showConsole}>
     <VirtualConsole
       bind:this={consoleRef}
@@ -449,6 +441,43 @@
       shouldAutoHideConsoleOnNoError
     />
   </div>
+
+  <!-- Floating settings panel -->
+  {#if showSettings}
+    <div class="absolute left-full z-20 ml-2">
+      <div class="flex flex-col gap-2 rounded-lg bg-zinc-900 p-3 shadow-lg ring-1 ring-zinc-700">
+        <div class="flex items-center justify-between gap-4">
+          <span class="text-xs font-medium text-zinc-300">Outlets</span>
+          <button
+            onclick={() => (showSettings = false)}
+            class="cursor-pointer rounded p-0.5 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+          >
+            <X class="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        <label class="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
+          <input
+            type="checkbox"
+            checked={data.enableAudioOutlet ?? false}
+            onchange={toggleAudioOutlet}
+            class="h-3 w-3 rounded border-zinc-600"
+          />
+          Audio out
+        </label>
+
+        <label class="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
+          <input
+            type="checkbox"
+            checked={data.enableVideoOutlet ?? false}
+            onchange={toggleVideoOutlet}
+            class="h-3 w-3 rounded border-zinc-600"
+          />
+          Video out
+        </label>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
