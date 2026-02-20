@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { Settings, X } from '@lucide/svelte/icons';
+  import { Settings, X, Volume2, Video } from '@lucide/svelte/icons';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -444,37 +444,49 @@
 
   <!-- Floating settings panel -->
   {#if showSettings}
-    <div class="absolute left-full z-20 ml-2">
-      <div class="flex flex-col gap-2 rounded-lg bg-zinc-900 p-3 shadow-lg ring-1 ring-zinc-700">
-        <div class="flex items-center justify-between gap-4">
-          <span class="text-xs font-medium text-zinc-300">Outlets</span>
+    <div class="absolute top-0 left-full z-20 ml-2">
+      <div class="absolute -top-7 left-0 flex justify-end">
+        <button
+          onclick={() => (showSettings = false)}
+          class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
+        >
+          <X class="h-4 w-4" />
+        </button>
+      </div>
+
+      <div
+        class="nodrag flex flex-col gap-2 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl"
+      >
+        <span class="text-xs font-medium text-zinc-400">Outlets</span>
+        <div class="flex gap-1">
           <button
-            onclick={() => (showSettings = false)}
-            class="cursor-pointer rounded p-0.5 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+            onclick={toggleAudioOutlet}
+            class={[
+              'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors',
+              data.enableAudioOutlet
+                ? 'bg-zinc-600 text-white'
+                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+            ]}
+            title="Audio outlet"
           >
-            <X class="h-3.5 w-3.5" />
+            <Volume2 class="h-3.5 w-3.5" />
+            Audio
+          </button>
+
+          <button
+            onclick={toggleVideoOutlet}
+            class={[
+              'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors',
+              data.enableVideoOutlet
+                ? 'bg-zinc-600 text-white'
+                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+            ]}
+            title="Video outlet"
+          >
+            <Video class="h-3.5 w-3.5" />
+            Video
           </button>
         </div>
-
-        <label class="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
-          <input
-            type="checkbox"
-            checked={data.enableAudioOutlet ?? false}
-            onchange={toggleAudioOutlet}
-            class="h-3 w-3 rounded border-zinc-600"
-          />
-          Audio out
-        </label>
-
-        <label class="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
-          <input
-            type="checkbox"
-            checked={data.enableVideoOutlet ?? false}
-            onchange={toggleVideoOutlet}
-            class="h-3 w-3 rounded border-zinc-600"
-          />
-          Video out
-        </label>
       </div>
     </div>
   {/if}
