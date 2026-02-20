@@ -3,6 +3,34 @@ Executes [Uiua](https://www.uiua.org/) code, a stack-based array programming lan
 Tip: Write your Uiua code in [Array Box](https://arraybox.dev) or the
 [Uiua Website](https://www.uiua.org) for a nicer editing experience.
 
+## Outputs
+
+Uiua can output multiple data types:
+
+- **Message outlet**: Text, arrays, and audio samples (Float32Array)
+- **Video outlet**: Images and GIFs (enable in settings)
+
+### Audio Samples
+
+Uiua can generate audio as WAV data. When output through the message outlet,
+audio is automatically decoded to `Float32Array` which can be connected
+directly to:
+
+- `sampler~` - Load samples for playback
+- `table` - Store in a named buffer for use with `tabread~`
+
+### Images and GIFs
+
+Enable the video outlet in settings to send images and GIFs through the
+video pipeline. Static images and animated GIFs are both supported.
+
+## Preview and Settings
+
+Click the **⋮** menu (top-right when selected) to access:
+
+- **Preview**: View output images, GIFs, SVGs, and play audio
+- **Settings**: Toggle message/video outlets
+
 ## Hot/Cold Placeholders
 
 Use `$1`, `$2`, etc. as placeholders for inlet values
@@ -30,19 +58,45 @@ the sum is computed and output.
 
 Sum all elements in an array received at `$1`.
 
-### Reverse an array
+### Sine wave audio
 
 ```txt
-⇌ $1
+[0 4 7 10]     # Notes
+×220 ˜ⁿ2÷12    # Freqs
+∿×τ ⊞× ÷⟜⇡&asr # Generate
+÷⧻⟜/+⍉         # Mix
 ```
 
-### Generate range
+Generates a chord from MIDI note offsets. Connect output to `sampler~` or `table`.
+
+### Uiua Logo (image)
 
 ```txt
-⇡ $1
+U ← /=⊞<0.2_0.7 /+×⟜ⁿ1_2
+I ← <⊙(⌵/ℂ)
+u ← +0.1⧋↧ ⊃(I0.95|⊂⊙0.5⇌˙×)
+A ← ×⊃U(I1)
+⧋(⊂⊃u A) ˙⊞⊟-⊸¬÷⟜⇡200
 ```
 
-Creates an array from 0 to n-1.
+Generates the Uiua logo as an image. Enable video outlet to view.
+
+### Mandelbrot fractal
+
+```txt
+×2 ⊞ℂ⤙-1/4 -1/2÷⟜⇡300
+>2⌵ ⍥⟜⊸(+⊙°√) 50 ⟜∘
+÷⧻⟜/+
+```
+
+### Conway's Game of Life
+
+```txt
+Life ← ↥∩=₃⟜+⊸(/+↻⊂A₂C₂)
+⁅×0.6 gen⊙⚂ ˙⊟30
+⍥⊸Life100
+≡▽₂ 4
+```
 
 ## Uiua Syntax
 
@@ -67,6 +121,8 @@ Press Shift+Enter to format your code using Uiua's built-in formatter.
 
 - [Uiua documentation](https://www.uiua.org/docs)
 - [Uiua tutorial](https://www.uiua.org/tutorial/introduction)
+- `sampler~` - Play audio samples
+- `table` - Named float array storage
 
 ## Attribution
 
