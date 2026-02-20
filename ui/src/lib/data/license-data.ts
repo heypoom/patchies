@@ -742,10 +742,10 @@ export const supportLinks: SupportLink[] = [
     projects: ['Svelte', 'SvelteKit']
   },
   {
-    name: 'Uiua',
-    description: 'Stack-based array programming language with a rich Unicode syntax',
+    name: 'Kai Schmidt',
+    description: 'Creator of Uiua, a stack-based array programming language',
     category: 'library',
-    url: 'https://github.com/sponsors/uiua-lang',
+    url: 'https://github.com/sponsors/kaikalii',
     type: 'github',
     projects: ['Uiua']
   }

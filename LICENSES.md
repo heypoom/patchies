@@ -194,7 +194,9 @@ The `uiua` node uses a WASM build approach adapted from [Array Box](https://gith
 
 - **Original Project**: Array Box
 - **Author**: Conor Hoekstra (@codereport)
+- **Uiua Author**: Kai Schmidt (@kaikalii)
 - **Repository**: <https://github.com/codereport/array-box>
+- **Uiua Repository**: <https://github.com/uiua-lang/uiua>
 - **License**: MIT
 
 The WASM build script and wasm-bindgen wrapper for Uiua were adapted from Array Box. The build compiles the Uiua language to WebAssembly for browser execution.
