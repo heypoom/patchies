@@ -172,15 +172,7 @@ export class TableObject implements TextObjectV2 {
    * Resizes buffer if needed.
    */
   private writeFromFloat32Array(data: Float32Array): void {
-    // Resize if needed
-    if (data.length !== this.bufferSize) {
-      this.bufferSize = data.length;
-      this.bridge.resizeBuffer(this.bufferName, this.bufferSize);
-    }
-
-    // Write samples
-    for (let i = 0; i < data.length; i++) {
-      this.bridge.setBufferSample(this.bufferName, i, data[i]);
-    }
+    this.bufferSize = data.length;
+    this.bridge.writeBuffer(this.bufferName, data);
   }
 }

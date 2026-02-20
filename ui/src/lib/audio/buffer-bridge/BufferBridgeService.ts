@@ -168,6 +168,7 @@ export class BufferBridgeService {
   /** Set a single sample value */
   setBufferSample(name: string, index: number, value: number): void {
     const view = this.bufferViews.get(name);
+
     if (view) {
       const wrapped = ((index % view.length) + view.length) % view.length;
       view.view[wrapped] = value;
@@ -183,6 +184,7 @@ export class BufferBridgeService {
   writeBuffer(name: string, data: Float32Array): void {
     // Ensure buffer exists and is the right size
     const existing = this.bufferViews.get(name);
+
     if (!existing || existing.length !== data.length) {
       // Resize or create with the new length
       if (existing) {
