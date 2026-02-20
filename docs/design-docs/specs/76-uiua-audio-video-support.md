@@ -23,7 +23,7 @@ This means Uiua's audio and image generation capabilities cannot be used in Patc
 
 ## Solution
 
-Create a custom Uiua WASM build that uses `SmartOutput` to detect and encode media outputs, returning them as base64-encoded data alongside text output.
+Create a custom Uiua WASM build that uses `SmartOutput` to detect and encode media outputs, returning native `Uint8Array` typed arrays via `serde-wasm-bindgen`.
 
 ### Architecture
 
@@ -34,7 +34,7 @@ packages/uiua/           # New package at repo root
 ├── src/
 │   ├── lib.rs           # wasm-bindgen exports
 │   ├── backend.rs       # Minimal SysBackend implementation
-│   └── output.rs        # SmartOutput → JSON conversion
+│   └── output.rs        # SmartOutput → JsValue conversion
 ├── build.sh             # Build script
 └── README.md
 ```
@@ -55,69 +55,174 @@ Uiua automatically detects media based on array shape and values:
 **Current interface:**
 
 ```typescript
-eval_uiua(code: string): string  // JSON with text output only
+eval_uiua(code: string): string  // JSON string, text output only
 ```
 
 **New interface:**
 
 ```typescript
-eval_uiua(code: string): string  // JSON with media support
+eval_uiua(code: string): EvalResult  // Native JS object via serde-wasm-bindgen
 
-// Response types
 interface EvalResult {
   success: boolean;
   error?: string;
-  stack: OutputItem[];  // Changed from string[]
+  stack: OutputItem[];
   formatted?: string;
 }
 
 type OutputItem =
-  | { type: 'text'; value: string }
-  | { type: 'audio'; data: string; label?: string }   // base64 WAV
-  | { type: 'image'; data: string; label?: string }   // base64 PNG
-  | { type: 'gif'; data: string; label?: string }     // base64 GIF
-  | { type: 'svg'; svg: string };
+  | { type: "text"; value: string }
+  | { type: "audio"; data: Uint8Array; label?: string }
+  | { type: "image"; data: Uint8Array; label?: string }
+  | { type: "gif"; data: Uint8Array; label?: string }
+  | { type: "svg"; svg: string };
 ```
 
 ### Rust Implementation
 
+Uses `serde-wasm-bindgen` for zero-copy transfer of typed arrays:
+
+```rust
+// src/lib.rs
+use js_sys::Uint8Array;
+use serde::Serialize;
+use wasm_bindgen::prelude::*;
+
+mod backend;
+mod output;
+
+use backend::MinimalBackend;
+use output::value_to_output;
+
+#[derive(Serialize)]
+pub struct EvalResult {
+    pub success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    pub stack: Vec<OutputItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub formatted: Option<String>,
+}
+
+#[wasm_bindgen]
+pub fn eval_uiua(code: &str) -> JsValue {
+    let mut env = Uiua::with_safe_sys();
+    let backend = MinimalBackend::new(44100);
+
+    let formatted = uiua::format::format_str(code, &Default::default())
+        .ok()
+        .map(|f| f.output);
+
+    let code_to_run = formatted.as_deref().unwrap_or(code);
+
+    let result = match env.run_str(code_to_run) {
+        Ok(_) => {
+            let stack: Vec<OutputItem> = env
+                .stack()
+                .iter()
+                .map(|v| value_to_output(v.clone(), &backend))
+                .collect();
+
+            EvalResult {
+                success: true,
+                error: None,
+                stack,
+                formatted,
+            }
+        }
+        Err(e) => EvalResult {
+            success: false,
+            error: Some(e.to_string()),
+            stack: vec![],
+            formatted,
+        },
+    };
+
+    serde_wasm_bindgen::to_value(&result).unwrap()
+}
+```
+
 ```rust
 // src/output.rs
-use base64::{engine::general_purpose::STANDARD, Engine};
+use js_sys::Uint8Array;
 use serde::Serialize;
 use uiua::algorithm::SmartOutput;
 use uiua::Value;
+use wasm_bindgen::JsValue;
+
+use crate::backend::MinimalBackend;
+
+/// Custom serializer for Vec<u8> → Uint8Array
+fn serialize_bytes<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    // serde-wasm-bindgen will convert this to Uint8Array
+    serializer.serialize_bytes(bytes)
+}
 
 #[derive(Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum OutputItem {
-    Text { value: String },
-    Audio { data: String, label: Option<String> },
-    Image { data: String, label: Option<String> },
-    Gif { data: String, label: Option<String> },
-    Svg { svg: String },
+    Text {
+        value: String,
+    },
+    Audio {
+        #[serde(serialize_with = "serialize_bytes")]
+        data: Vec<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        label: Option<String>,
+    },
+    Image {
+        #[serde(serialize_with = "serialize_bytes")]
+        data: Vec<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        label: Option<String>,
+    },
+    Gif {
+        #[serde(serialize_with = "serialize_bytes")]
+        data: Vec<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        label: Option<String>,
+    },
+    Svg {
+        svg: String,
+    },
 }
 
-pub fn value_to_output(value: Value, sample_rate: u32) -> OutputItem {
-    let backend = MinimalBackend { sample_rate };
-
-    match SmartOutput::from_value(value.clone(), 30.0, &backend) {
-        SmartOutput::Wav(bytes, label) => OutputItem::Audio {
-            data: STANDARD.encode(&bytes),
-            label,
-        },
-        SmartOutput::Png(bytes, label) => OutputItem::Image {
-            data: STANDARD.encode(&bytes),
-            label,
-        },
-        SmartOutput::Gif(bytes, label) => OutputItem::Gif {
-            data: STANDARD.encode(&bytes),
-            label,
-        },
+pub fn value_to_output(value: Value, backend: &MinimalBackend) -> OutputItem {
+    match SmartOutput::from_value(value.clone(), 30.0, backend) {
+        SmartOutput::Wav(bytes, label) => OutputItem::Audio { data: bytes, label },
+        SmartOutput::Png(bytes, label) => OutputItem::Image { data: bytes, label },
+        SmartOutput::Gif(bytes, label) => OutputItem::Gif { data: bytes, label },
+        SmartOutput::Apng(bytes, label) => OutputItem::Gif { data: bytes, label }, // Treat as GIF
         SmartOutput::Svg { svg, .. } => OutputItem::Svg { svg },
         SmartOutput::Normal(s) => OutputItem::Text { value: s },
-        _ => OutputItem::Text { value: value.show() },
     }
+}
+```
+
+```rust
+// src/backend.rs
+use uiua::SysBackend;
+
+/// Minimal backend that only provides sample rate for audio encoding
+pub struct MinimalBackend {
+    sample_rate: u32,
+}
+
+impl MinimalBackend {
+    pub fn new(sample_rate: u32) -> Self {
+        Self { sample_rate }
+    }
+}
+
+impl SysBackend for MinimalBackend {
+    fn audio_sample_rate(&self) -> u32 {
+        self.sample_rate
+    }
+
+    // All other methods use default implementations (no-ops or errors)
 }
 ```
 
@@ -128,28 +233,48 @@ pub fn value_to_output(value: Value, sample_rate: u32) -> OutputItem {
 ```typescript
 export type OutputItem =
   | { type: "text"; value: string }
-  | { type: "audio"; data: string; label?: string }
-  | { type: "image"; data: string; label?: string }
-  | { type: "gif"; data: string; label?: string }
+  | { type: "audio"; data: Uint8Array; label?: string }
+  | { type: "image"; data: Uint8Array; label?: string }
+  | { type: "gif"; data: Uint8Array; label?: string }
   | { type: "svg"; svg: string };
 
 export type UiuaResult =
-  | { success: true; stack: OutputItem[] }
+  | { success: true; stack: OutputItem[]; formatted?: string }
   | { success: false; error: string };
+
+// No more JSON.parse needed - returns native JS object
+async eval(code: string): Promise<UiuaResult> {
+  await this.ensureModule();
+  return this.module!.eval_uiua(code) as UiuaResult;
+}
 ```
 
 ### UiuaNode Display
 
-The node will render media inline:
+The node renders media using Blob URLs (more efficient than data URIs):
 
 ```svelte
+<script lang="ts">
+  function createBlobUrl(data: Uint8Array, mimeType: string): string {
+    const blob = new Blob([data], { type: mimeType });
+    return URL.createObjectURL(blob);
+  }
+
+  // Clean up blob URLs when component unmounts
+  onDestroy(() => {
+    blobUrls.forEach(url => URL.revokeObjectURL(url));
+  });
+</script>
+
 {#each result.stack as item}
   {#if item.type === 'text'}
     <pre>{item.value}</pre>
-  {:else if item.type === 'image' || item.type === 'gif'}
-    <img src="data:image/{item.type === 'gif' ? 'gif' : 'png'};base64,{item.data}" />
+  {:else if item.type === 'image'}
+    <img src={createBlobUrl(item.data, 'image/png')} alt={item.label ?? 'Uiua image'} />
+  {:else if item.type === 'gif'}
+    <img src={createBlobUrl(item.data, 'image/gif')} alt={item.label ?? 'Uiua animation'} />
   {:else if item.type === 'audio'}
-    <audio controls src="data:audio/wav;base64,{item.data}" />
+    <audio controls src={createBlobUrl(item.data, 'audio/wav')} />
   {:else if item.type === 'svg'}
     {@html item.svg}
   {/if}
@@ -160,20 +285,20 @@ The node will render media inline:
 
 For video chain integration, UiuaNode can output image data to connected video nodes:
 
-1. When an image is generated, extract it as ImageData
-2. Send to outlet for downstream video processing
-3. This allows Uiua-generated images to flow into Hydra, GLSL, etc.
+1. Decode PNG Uint8Array to ImageBitmap
+2. Draw to canvas, extract ImageData
+3. Send to outlet for downstream video processing
 
 ```typescript
 // In UiuaNode, when image output detected:
 if (item.type === "image") {
-  const img = await loadImage(`data:image/png;base64,${item.data}`);
-  const canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
+  const blob = new Blob([item.data], { type: "image/png" });
+  const bitmap = await createImageBitmap(blob);
+
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
   const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(img, 0, 0);
-  const imageData = ctx.getImageData(0, 0, img.width, img.height);
+  ctx.drawImage(bitmap, 0, 0);
+  const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
 
   // Output to video chain
   sendToOutlet("video", imageData);
@@ -184,19 +309,37 @@ if (item.type === "image") {
 
 For audio chain integration:
 
-1. Decode WAV base64 to AudioBuffer
+1. Decode WAV Uint8Array to AudioBuffer using AudioContext.decodeAudioData()
 2. Either play directly or route to audio outlet
 3. Could create a one-shot sample player connected to audio graph
 
+```typescript
+if (item.type === "audio") {
+  const audioContext = getAudioContext();
+  const arrayBuffer = item.data.buffer.slice(
+    item.data.byteOffset,
+    item.data.byteOffset + item.data.byteLength
+  );
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+  // Play or route to outlet
+}
+```
+
 ## Performance Considerations
 
-| Data               | Size        | Base64 Overhead | Transfer Time |
-| ------------------ | ----------- | --------------- | ------------- |
-| 1s audio (44.1kHz) | ~176KB WAV  | +59KB           | <10ms         |
-| 200×200 image      | 10-50KB PNG | +3-17KB         | <5ms          |
-| 20-frame GIF       | 100-500KB   | +33-167KB       | <20ms         |
+| Approach       | Size Overhead | Memory Copies     | Encoding Time |
+| -------------- | ------------- | ----------------- | ------------- |
+| Base64 + JSON  | +33%          | 2 (encode+decode) | ~1ms/100KB    |
+| **Uint8Array** | **None**      | **1**             | **Zero**      |
 
-The encoding (WAV/PNG/GIF) happens in Rust, which is fast. Base64 overhead is acceptable for the simplicity it provides.
+Using native `Uint8Array` via `serde-wasm-bindgen`:
+
+- Zero encoding overhead (no base64)
+- Single memory copy from WASM to JS
+- Direct use with Blob API
+
+The media encoding (WAV/PNG/GIF) still happens in Rust, which is fast.
 
 ## Build Process
 
@@ -205,18 +348,37 @@ cd packages/uiua
 ./build.sh
 
 # build.sh contents:
+#!/bin/bash
+set -e
 wasm-pack build --target web --release --out-name uiua_wasm
-cp pkg/uiua_wasm.js pkg/uiua_wasm_bg.wasm ../../ui/src/assets/uiua/
+cp pkg/uiua_wasm.js pkg/uiua_wasm_bg.wasm pkg/uiua_wasm.d.ts ../../ui/src/assets/uiua/
+echo "Build complete!"
 ```
 
 ## Dependencies
 
-Cargo.toml additions:
-
 ```toml
+# Cargo.toml
+[package]
+name = "uiua_wasm"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
-uiua = { git = "https://github.com/uiua-lang/uiua", features = ["batteries", "web"] }
-base64 = "0.22"
+uiua = { git = "https://github.com/uiua-lang/uiua", default-features = false, features = ["batteries", "web"] }
+wasm-bindgen = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
+js-sys = "0.3"
+getrandom = { version = "0.3", features = ["wasm_js"] }
+web-sys = { version = "0.3", features = ["Performance", "Window"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
 ```
 
 The `batteries` feature enables:
@@ -229,9 +391,9 @@ The `batteries` feature enables:
 ## Migration
 
 1. Create `packages/uiua/` with proper Rust project structure
-2. Implement SmartOutput integration
+2. Implement SmartOutput integration with serde-wasm-bindgen
 3. Update TypeScript types in `ui/src/lib/uiua/`
-4. Update UiuaNode.svelte to render media
+4. Update UiuaNode.svelte to render media with Blob URLs
 5. Build new WASM and replace existing assets
 6. Add video/audio outlet support (optional, phase 2)
 
@@ -249,14 +411,16 @@ The `batteries` feature enables:
 
 **Modified files:**
 
-- `ui/src/lib/uiua/UiuaService.ts` - new types
+- `ui/src/lib/uiua/UiuaService.ts` - new types, remove JSON.parse
 - `ui/src/lib/uiua/uiua-wasm.d.ts` - updated declarations
-- `ui/src/lib/components/nodes/UiuaNode.svelte` - media rendering
+- `ui/src/lib/components/nodes/UiuaNode.svelte` - media rendering with Blob URLs
 - `ui/src/assets/uiua/uiua_wasm.js` - rebuilt
 - `ui/src/assets/uiua/uiua_wasm_bg.wasm` - rebuilt
+- `ui/src/assets/uiua/uiua_wasm.d.ts` - rebuilt (now auto-generated)
 
 ## References
 
+- [serde-wasm-bindgen](https://docs.rs/serde-wasm-bindgen/latest/serde_wasm_bindgen/) - Rust↔JS serialization
 - [Uiua SmartOutput](https://github.com/uiua-lang/uiua/blob/main/src/algorithm/media.rs)
 - [Array Box WASM build](https://github.com/codereport/array-box/blob/main/scripts/update-uiua-wasm.sh)
 - [Uiua pad/editor WebBackend](https://github.com/uiua-lang/uiua/blob/main/pad/editor/src/backend.rs)
