@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { Settings, Play, Eye, EllipsisVertical, X } from '@lucide/svelte/icons';
   import * as Popover from '$lib/components/ui/popover';
   import UiuaSettings from '$lib/components/settings/UiuaSettings.svelte';
@@ -17,10 +17,12 @@
   import { GifPlayer } from '$lib/canvas/GifPlayer';
 
   const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
 
   interface UiuaNodeData {
     expr: string;
     showConsole?: boolean;
+    enableMessageOutlet?: boolean;
     enableAudioOutlet?: boolean;
     enableVideoOutlet?: boolean;
     view?: 'settings' | 'preview';
@@ -73,9 +75,14 @@
     }
   }
 
+  // Message outlet defaults to true (shown) when undefined
+  const messageOutletEnabled = $derived(data.enableMessageOutlet !== false);
+
   // Dynamic outlet count based on toggles
   const outletCount = $derived(
-    1 + (data.enableAudioOutlet ? 1 : 0) + (data.enableVideoOutlet ? 1 : 0)
+    (messageOutletEnabled ? 1 : 0) +
+      (data.enableAudioOutlet ? 1 : 0) +
+      (data.enableVideoOutlet ? 1 : 0)
   );
 
   // Create blob URLs and measure dimensions for media items
@@ -131,11 +138,20 @@
     return imageDimensions.get(index);
   }
 
+  // Toggle message outlet
+  function toggleMessageOutlet() {
+    const newValue = !messageOutletEnabled;
+    data.enableMessageOutlet = newValue;
+    updateNodeData(nodeId, { enableMessageOutlet: newValue });
+    updateNodeInternals(nodeId);
+  }
+
   // Toggle audio outlet
   function toggleAudioOutlet() {
     const newValue = !data.enableAudioOutlet;
     data.enableAudioOutlet = newValue;
     updateNodeData(nodeId, { enableAudioOutlet: newValue });
+    updateNodeInternals(nodeId);
   }
 
   // Toggle video outlet
@@ -143,6 +159,7 @@
     const newValue = !data.enableVideoOutlet;
     data.enableVideoOutlet = newValue;
     updateNodeData(nodeId, { enableVideoOutlet: newValue });
+    updateNodeInternals(nodeId);
   }
 
   // Toggle view panel (mutually exclusive)
@@ -228,7 +245,9 @@
 
   async function evaluateAndSend(values: unknown[]) {
     if (!expr.trim()) {
-      messageContext.send(values[0] ?? 0);
+      if (messageOutletEnabled) {
+        messageContext.send(values[0] ?? 0);
+      }
       return;
     }
 
@@ -241,22 +260,27 @@
         hasError = false;
         resultStack = result.stack;
 
-        // Send text values to message outlet (outlet 0)
-        const textValues = result.stack.map(extractTextValue);
+        // Calculate outlet indices based on which outlets are enabled
+        const audioOutletIndex = messageOutletEnabled ? 1 : 0;
 
-        if (textValues.length === 0) {
-          messageContext.send(0);
-        } else if (textValues.length === 1) {
-          messageContext.send(textValues[0]);
-        } else {
-          messageContext.send(textValues);
+        // Send text values to message outlet (outlet 0) if enabled
+        if (messageOutletEnabled) {
+          const textValues = result.stack.map(extractTextValue);
+
+          if (textValues.length === 0) {
+            messageContext.send(0);
+          } else if (textValues.length === 1) {
+            messageContext.send(textValues[0]);
+          } else {
+            messageContext.send(textValues);
+          }
         }
 
-        // Send to audio outlet if enabled (outlet 1)
+        // Send to audio outlet if enabled
         if (data.enableAudioOutlet) {
           for (const item of result.stack) {
             if (item.type === 'audio') {
-              messageContext.send(item.data, { to: 1 });
+              messageContext.send(item.data, { to: audioOutletIndex });
             }
           }
         }
@@ -387,21 +411,27 @@
 {/snippet}
 
 {#snippet exprOutlets()}
-  <StandardHandle
-    port="outlet"
-    type="message"
-    title="Text/arrays"
-    total={outletCount}
-    index={0}
-    {nodeId}
-  />
+  {@const messageIndex = 0}
+  {@const audioIndex = messageOutletEnabled ? 1 : 0}
+  {@const videoIndex = audioIndex + (data.enableAudioOutlet ? 1 : 0)}
+
+  {#if messageOutletEnabled}
+    <StandardHandle
+      port="outlet"
+      type="message"
+      title="Text/arrays"
+      total={outletCount}
+      index={messageIndex}
+      {nodeId}
+    />
+  {/if}
   {#if data.enableAudioOutlet}
     <StandardHandle
       port="outlet"
       type="audio"
       title="Audio (WAV)"
       total={outletCount}
-      index={1}
+      index={audioIndex}
       {nodeId}
     />
   {/if}
@@ -411,7 +441,7 @@
       type="video"
       title="Video (ImageData)"
       total={outletCount}
-      index={data.enableAudioOutlet ? 2 : 1}
+      index={videoIndex}
       {nodeId}
     />
   {/if}
@@ -555,6 +585,7 @@
     <UiuaSettings
       {data}
       onClose={() => setView(undefined)}
+      onToggleMessage={toggleMessageOutlet}
       onToggleAudio={toggleAudioOutlet}
       onToggleVideo={toggleVideoOutlet}
     />

@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { X, Volume2, Video } from '@lucide/svelte/icons';
+  import { X, Volume2, Video, MessageSquare } from '@lucide/svelte/icons';
 
   interface UiuaSettingsData {
+    enableMessageOutlet?: boolean;
     enableAudioOutlet?: boolean;
     enableVideoOutlet?: boolean;
   }
@@ -9,14 +10,19 @@
   let {
     data,
     onClose,
+    onToggleMessage,
     onToggleAudio,
     onToggleVideo
   }: {
     data: UiuaSettingsData;
     onClose: () => void;
+    onToggleMessage: () => void;
     onToggleAudio: () => void;
     onToggleVideo: () => void;
   } = $props();
+
+  // Message outlet defaults to true (shown) when undefined
+  const messageOutletEnabled = $derived(data.enableMessageOutlet !== false);
 </script>
 
 <div class="absolute top-0 left-full z-20 ml-2">
@@ -35,7 +41,21 @@
   >
     <div class="flex flex-col gap-2">
       <span class="text-xs font-medium text-zinc-400">Outlets</span>
-      <div class="flex gap-1">
+      <div class="flex flex-wrap gap-1">
+        <button
+          onclick={onToggleMessage}
+          class={[
+            'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors',
+            messageOutletEnabled
+              ? 'bg-zinc-600 text-white'
+              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+          ]}
+          title="Message outlet"
+        >
+          <MessageSquare class="h-3.5 w-3.5" />
+          Message
+        </button>
+
         <button
           onclick={onToggleAudio}
           class={[
