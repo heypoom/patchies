@@ -124,6 +124,8 @@ export class TableObject implements TextObjectV2 {
     // Handle Float32Array directly - write entire buffer
     if (data instanceof Float32Array) {
       this.writeFromFloat32Array(data);
+      this.context.setParam('size', data.length, { notifyUI: true });
+
       return;
     }
 
