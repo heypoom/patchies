@@ -64,3 +64,8 @@ Press Shift+Enter to format your code using Uiua's built-in formatter.
 
 - [Uiua documentation](https://www.uiua.org/docs)
 - [Uiua tutorial](https://www.uiua.org/tutorial/introduction)
+
+## Attribution
+
+The Uiua WASM build is adapted from [Array Box](https://github.com/codereport/array-box)
+by Conor Hoekstra (@codereport).

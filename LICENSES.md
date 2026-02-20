@@ -188,6 +188,17 @@ The implementation was adapted to work within Shadow DOM for style isolation:
 
 This allows `dom` and `vue` nodes to use Tailwind utility classes without styles leaking to the rest of the application. The original MIT license is preserved.
 
+#### Array Box (Uiua WASM Build)
+
+The `uiua` node uses a WASM build approach adapted from [Array Box](https://github.com/codereport/array-box), an interactive playground for array programming languages.
+
+- **Original Project**: Array Box
+- **Author**: Conor Hoekstra (@codereport)
+- **Repository**: <https://github.com/codereport/array-box>
+- **License**: MIT
+
+The WASM build script and wasm-bindgen wrapper for Uiua were adapted from Array Box. The build compiles the Uiua language to WebAssembly for browser execution.
+
 ### Source Code Access
 
 The complete source code for Patchies is available on [GitHub](https://github.com/heypoom/patchies)

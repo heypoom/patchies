@@ -494,6 +494,16 @@ export const portedCode: PortedCode[] = [
     copyright: '© 1996 Miller Puckette and others',
     notes:
       "Patchies reimplements Pd's object designs using Web Audio API and AudioWorklets — no code was directly ported. The tilde (~) naming convention, inlet/outlet paradigm, hot/cold inlet semantics, and message-passing architecture all originate from Miller Puckette's work on Pure Data and its predecessor Max."
+  },
+  {
+    name: 'Array Box (Uiua WASM)',
+    description:
+      'The Uiua node uses a WASM build approach adapted from Array Box, an interactive playground for array programming languages.',
+    authors: 'Conor Hoekstra (@codereport)',
+    repository: 'https://github.com/codereport/array-box',
+    license: 'MIT',
+    notes:
+      'The WASM build script and wasm-bindgen wrapper for Uiua were adapted from Array Box. The build compiles the Uiua language to WebAssembly for browser execution.'
   }
 ];
 
