@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { Settings, X, Volume2, Video } from '@lucide/svelte/icons';
+  import { Settings, X, Volume2, Video, Play, Eye } from '@lucide/svelte/icons';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -19,6 +19,7 @@
     showConsole?: boolean;
     enableAudioOutlet?: boolean;
     enableVideoOutlet?: boolean;
+    showPreview?: boolean;
   }
 
   let {
@@ -101,6 +102,13 @@
     const newValue = !data.enableVideoOutlet;
     data.enableVideoOutlet = newValue;
     updateNodeData(nodeId, { enableVideoOutlet: newValue });
+  }
+
+  // Toggle preview
+  function togglePreview() {
+    const newValue = !(data.showPreview ?? true);
+    data.showPreview = newValue;
+    updateNodeData(nodeId, { showPreview: newValue });
   }
 
   // Parse $N placeholders to determine inlet count (only $1-$9 supported)
@@ -367,18 +375,25 @@
 {/snippet}
 
 <div class="group relative flex flex-col gap-2">
-  <!-- Settings gear button -->
+  <!-- Run and Settings buttons -->
   {#if !isEditing}
-    <button
+    <div
       class={[
-        'absolute -top-7 -right-0 z-10 cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+        'absolute -top-7 right-0 z-10 flex gap-1 transition-opacity',
         selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
       ]}
-      onclick={() => (showSettings = !showSettings)}
-      title="Settings"
     >
-      <Settings class="h-4 w-4 text-zinc-300" />
-    </button>
+      <button class="cursor-pointer rounded p-1 hover:bg-zinc-700" onclick={handleRun} title="Run">
+        <Play class="h-4 w-4 text-zinc-300" />
+      </button>
+      <button
+        class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+        onclick={() => (showSettings = !showSettings)}
+        title="Settings"
+      >
+        <Settings class="h-4 w-4 text-zinc-300" />
+      </button>
+    </div>
   {/if}
 
   <CommonExprLayout
@@ -403,9 +418,9 @@
     dataKey="expr"
   />
 
-  <!-- Media output rendering (always shown when available) -->
-  {#if resultStack.some((item) => item.type !== 'text')}
-    <div class="max-h-48 overflow-auto rounded bg-zinc-900/50 p-2">
+  <!-- Media output rendering (shown when preview enabled) -->
+  {#if (data.showPreview ?? true) && resultStack.some((item) => item.type !== 'text')}
+    <div class="nowheel max-h-48 overflow-auto rounded p-2">
       {#each resultStack as item, index}
         {#if item.type === 'image'}
           <img
@@ -445,47 +460,69 @@
   <!-- Floating settings panel -->
   {#if showSettings}
     <div class="absolute top-0 left-full z-20 ml-2">
-      <div class="absolute -top-7 left-0 flex justify-end">
+      <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
         <button
           onclick={() => (showSettings = false)}
           class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
+          title="Close"
         >
           <X class="h-4 w-4" />
         </button>
       </div>
 
       <div
-        class="nodrag flex flex-col gap-2 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl"
+        class="nodrag flex flex-col gap-4 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl"
       >
-        <span class="text-xs font-medium text-zinc-400">Outlets</span>
-        <div class="flex gap-1">
-          <button
-            onclick={toggleAudioOutlet}
-            class={[
-              'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors',
-              data.enableAudioOutlet
-                ? 'bg-zinc-600 text-white'
-                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-            ]}
-            title="Audio outlet"
-          >
-            <Volume2 class="h-3.5 w-3.5" />
-            Audio
-          </button>
+        <div class="flex flex-col gap-2">
+          <span class="text-xs font-medium text-zinc-400">Outlets</span>
+          <div class="flex gap-1">
+            <button
+              onclick={toggleAudioOutlet}
+              class={[
+                'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors',
+                data.enableAudioOutlet
+                  ? 'bg-zinc-600 text-white'
+                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+              ]}
+              title="Audio outlet"
+            >
+              <Volume2 class="h-3.5 w-3.5" />
+              Audio
+            </button>
 
-          <button
-            onclick={toggleVideoOutlet}
-            class={[
-              'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors',
-              data.enableVideoOutlet
-                ? 'bg-zinc-600 text-white'
-                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-            ]}
-            title="Video outlet"
-          >
-            <Video class="h-3.5 w-3.5" />
-            Video
-          </button>
+            <button
+              onclick={toggleVideoOutlet}
+              class={[
+                'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors',
+                data.enableVideoOutlet
+                  ? 'bg-zinc-600 text-white'
+                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+              ]}
+              title="Video outlet"
+            >
+              <Video class="h-3.5 w-3.5" />
+              Video
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <span class="text-xs font-medium text-zinc-400">Display</span>
+          <div class="flex gap-1">
+            <button
+              onclick={togglePreview}
+              class={[
+                'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors',
+                (data.showPreview ?? true)
+                  ? 'bg-zinc-600 text-white'
+                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+              ]}
+              title="Show media preview"
+            >
+              <Eye class="h-3.5 w-3.5" />
+              Preview
+            </button>
+          </div>
         </div>
       </div>
     </div>
