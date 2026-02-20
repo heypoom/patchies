@@ -1,9 +1,12 @@
 Executes [Uiua](https://www.uiua.org/) code, a stack-based array programming language.
 
+Tip: Write your Uiua code in [Array Box](https://arraybox.dev) or the
+[Uiua Website](https://www.uiua.org) for a nicer editing experience.
+
+## Hot/Cold Placeholders
+
 Use `$1`, `$2`, etc. as placeholders for inlet values
 that get substituted before evaluation.
-
-## Hot/Cold Inlet Pattern
 
 - **$1 (hot)**: First inlet triggers evaluation when it receives a value
 - **$2, $3, ...** (cold): Store values but don't trigger evaluation
