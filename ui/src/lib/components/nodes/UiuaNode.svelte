@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { Settings, Play, Eye, EllipsisVertical } from '@lucide/svelte/icons';
+  import { Settings, Play, Eye, EllipsisVertical, X } from '@lucide/svelte/icons';
   import * as Popover from '$lib/components/ui/popover';
   import UiuaSettings from '$lib/components/settings/UiuaSettings.svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -13,6 +13,7 @@
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { UiuaService, type OutputItem } from '$lib/uiua/UiuaService';
+  import { GLSystem } from '$lib/canvas/GLSystem';
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -56,6 +57,10 @@
   const messageContext = new MessageContext(nodeId);
   const customConsole = createCustomConsole(nodeId);
   const uiuaService = UiuaService.getInstance();
+  const glSystem = GLSystem.getInstance();
+
+  // Track if we're registered with GLSystem
+  let isRegisteredWithGL = false;
 
   // Dynamic outlet count based on toggles
   const outletCount = $derived(
@@ -96,6 +101,14 @@
     });
 
     blobUrlMap = newBlobUrlMap;
+  });
+
+  // Handle GLSystem registration when video outlet is toggled
+  $effect(() => {
+    if (!data.enableVideoOutlet && isRegisteredWithGL) {
+      glSystem.removeNode(nodeId);
+      isRegisteredWithGL = false;
+    }
   });
 
   function getBlobUrl(index: number): string | undefined {
@@ -236,27 +249,25 @@
           }
         }
 
-        // Send to video outlet if enabled (outlet 1 or 2 depending on audio)
+        // Send to video outlet if enabled - use GLSystem for video pipeline
         if (data.enableVideoOutlet) {
-          const videoOutletIndex = data.enableAudioOutlet ? 2 : 1;
-
           for (const item of result.stack) {
             if (item.type === 'image' || item.type === 'gif') {
-              // Decode PNG/GIF to ImageData for video chain compatibility
+              // Decode PNG/GIF to ImageBitmap for GLSystem
               const blob = new Blob([item.data], {
                 type: item.type === 'image' ? 'image/png' : 'image/gif'
               });
 
               createImageBitmap(blob).then((bitmap) => {
-                const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-                const ctx = canvas.getContext('2d');
-
-                if (ctx) {
-                  ctx.drawImage(bitmap, 0, 0);
-                  const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
-                  messageContext.send(imageData, { to: videoOutletIndex });
+                // Register with GLSystem if not already
+                if (!isRegisteredWithGL) {
+                  glSystem.upsertNode(nodeId, 'img', {});
+                  isRegisteredWithGL = true;
                 }
+                glSystem.setBitmap(nodeId, bitmap);
               });
+              // Only use first image for video output
+              break;
             }
           }
         }
@@ -339,6 +350,10 @@
     messageContext.destroy();
     // Clean up blob URLs
     currentBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+    // Clean up GLSystem registration
+    if (isRegisteredWithGL) {
+      glSystem.removeNode(nodeId);
+    }
   });
 </script>
 
@@ -407,16 +422,6 @@
         <Popover.Content class="w-32 p-1" align="end">
           <button
             class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700"
-            onclick={() => {
-              menuOpen = false;
-              handleRun();
-            }}
-          >
-            <Play class="h-3.5 w-3.5" />
-            Run
-          </button>
-          <button
-            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700"
             onclick={() => setView('preview')}
           >
             <Eye class="h-3.5 w-3.5" />
@@ -476,6 +481,15 @@
   <!-- Floating preview panel -->
   {#if data.view === 'preview'}
     <div class="absolute top-0 left-full z-20 ml-2">
+      <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+        <button
+          onclick={handleRun}
+          class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
+          title="Run"
+        >
+          <Play class="h-4 w-4" />
+        </button>
+      </div>
       <div
         class="nodrag nowheel max-h-96 min-h-20 max-w-96 min-w-20 overflow-auto rounded-md border border-zinc-600 bg-zinc-900 p-2 shadow-xl"
       >
