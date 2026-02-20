@@ -37,11 +37,14 @@ defineDSP({
     const channels = realOut.length;
 
     const qParam = parameters.q;
+    // Chromium returns single-element array when param is constant (k-rate),
+    // Firefox always returns 128 samples. Handle both cases.
+    const qIsKRate = qParam.length === 1;
     const twoPiOverSr = (2 * Math.PI) / sampleRate;
 
     for (let i = 0; i < len; i++) {
       const freq = freqInput[i];
-      const q = qParam[i];
+      const q = qIsKRate ? qParam[0] : qParam[i];
       const omega = freq * twoPiOverSr;
 
       // Calculate radius from Q

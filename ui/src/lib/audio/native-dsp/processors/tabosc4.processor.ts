@@ -28,6 +28,9 @@ defineDSP({
     const len = out[0].length;
     const channels = out.length;
     const freqParam = parameters.frequency;
+    // Chromium returns single-element array when param is constant (k-rate),
+    // Firefox always returns 128 samples. Handle both cases.
+    const freqIsKRate = freqParam.length === 1;
 
     // Get buffer info
     const bufferLength = state.tableName
@@ -42,7 +45,7 @@ defineDSP({
     }
 
     for (let i = 0; i < len; i++) {
-      const frequency = freqParam[i];
+      const frequency = freqIsKRate ? freqParam[0] : freqParam[i];
       const increment = frequency / sampleRate;
 
       // Convert phase (0-1) to table index

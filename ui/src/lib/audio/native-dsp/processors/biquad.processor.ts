@@ -40,14 +40,21 @@ defineDSP({
     const ff3Param = parameters.ff3;
     const fb1Param = parameters.fb1;
     const fb2Param = parameters.fb2;
+    // Chromium returns single-element array when param is constant (k-rate),
+    // Firefox always returns 128 samples. Handle both cases.
+    const ff1IsKRate = ff1Param.length === 1;
+    const ff2IsKRate = ff2Param.length === 1;
+    const ff3IsKRate = ff3Param.length === 1;
+    const fb1IsKRate = fb1Param.length === 1;
+    const fb2IsKRate = fb2Param.length === 1;
 
     for (let i = 0; i < len; i++) {
       const x0 = input[i];
-      const ff1 = ff1Param[i];
-      const ff2 = ff2Param[i];
-      const ff3 = ff3Param[i];
-      const fb1 = fb1Param[i];
-      const fb2 = fb2Param[i];
+      const ff1 = ff1IsKRate ? ff1Param[0] : ff1Param[i];
+      const ff2 = ff2IsKRate ? ff2Param[0] : ff2Param[i];
+      const ff3 = ff3IsKRate ? ff3Param[0] : ff3Param[i];
+      const fb1 = fb1IsKRate ? fb1Param[0] : fb1Param[i];
+      const fb2 = fb2IsKRate ? fb2Param[0] : fb2Param[i];
 
       // y[n] = ff1*x[n] + ff2*x[n-1] + ff3*x[n-2] - fb1*y[n-1] - fb2*y[n-2]
       const y0 = ff1 * x0 + ff2 * state.x1 + ff3 * state.x2 - fb1 * state.y1 - fb2 * state.y2;

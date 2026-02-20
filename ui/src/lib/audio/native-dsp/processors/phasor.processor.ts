@@ -24,10 +24,13 @@ defineDSP({
     const len = out[0].length;
     const channels = out.length;
     const freqParam = parameters.frequency;
+    // Chromium returns single-element array when param is constant (k-rate),
+    // Firefox always returns 128 samples. Handle both cases.
+    const freqIsKRate = freqParam.length === 1;
 
     for (let i = 0; i < len; i++) {
       // Use per-sample frequency from AudioParam (enables a-rate modulation)
-      const frequency = freqParam[i];
+      const frequency = freqIsKRate ? freqParam[0] : freqParam[i];
       const increment = frequency / sampleRate;
 
       for (let ch = 0; ch < channels; ch++) {

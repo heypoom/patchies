@@ -25,10 +25,14 @@ defineDSP({
     const channels = out.length;
     const freqParam = parameters.frequency;
     const widthParam = parameters.width;
+    // Chromium returns single-element array when param is constant (k-rate),
+    // Firefox always returns 128 samples. Handle both cases.
+    const freqIsKRate = freqParam.length === 1;
+    const widthIsKRate = widthParam.length === 1;
 
     for (let i = 0; i < len; i++) {
-      const frequency = freqParam[i];
-      const width = widthParam[i];
+      const frequency = freqIsKRate ? freqParam[0] : freqParam[i];
+      const width = widthIsKRate ? widthParam[0] : widthParam[i];
       const increment = frequency / sampleRate;
 
       const sample = state.phase < width ? 1 : -1;
