@@ -233,11 +233,13 @@ export class BufferBridgeService {
 
     return new Promise((resolve) => {
       const existing = this.snapshotCallbacks.get(name);
+
       if (existing) {
         existing.push(resolve);
       } else {
         this.snapshotCallbacks.set(name, [resolve]);
       }
+
       this.bridgeNode?.port.postMessage({ type: 'get-snapshot', name });
     });
   }

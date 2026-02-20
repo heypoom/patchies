@@ -6,6 +6,7 @@ import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
 import { msg, sym } from '$lib/objects/schemas/helpers';
 import { schema } from '$lib/objects/schemas/types';
+import { messages, Bang } from '$lib/objects/schemas';
 import { BufferBridgeService } from '$lib/audio/buffer-bridge';
 
 /** Set a value at index */
@@ -51,6 +52,7 @@ export class TableObject implements TextObjectV2 {
       type: 'message',
       description: 'Table commands',
       messages: [
+        { schema: Bang, description: 'Output entire table as Float32Array' },
         { schema: TableSet, description: 'Set value at index' },
         { schema: TableGet, description: 'Get value at index' },
         { schema: TableResize, description: 'Resize table' },
@@ -126,6 +128,18 @@ export class TableObject implements TextObjectV2 {
     }
 
     match(data)
+      .with(messages.bang, () => {
+        // Try sync read first (SAB mode), fallback to async
+        const buffer = this.bridge.readBuffer(this.bufferName);
+
+        if (buffer) {
+          this.context.send(new Float32Array(buffer));
+        } else {
+          this.bridge.readBufferAsync(this.bufferName).then((asyncBuf) => {
+            if (asyncBuf) this.context.send(new Float32Array(asyncBuf));
+          });
+        }
+      })
       .with(tableMessages.set, ({ index, value }) => {
         this.bridge.setBufferSample(this.bufferName, index, value);
       })

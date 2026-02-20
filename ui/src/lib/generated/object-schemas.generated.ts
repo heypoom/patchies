@@ -2047,6 +2047,10 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Table commands',
         messages: [
           {
+            schema: Type.Object({ type: Type.Literal('bang') }),
+            description: 'Output entire table as Float32Array'
+          },
+          {
             schema: Type.Object({
               type: Type.Literal('set'),
               index: Type.Number(),
