@@ -174,9 +174,13 @@ export class TableObject implements TextObjectV2 {
 
           if (maxAbs > 0) {
             const scale = 1 / maxAbs;
+            const normalized = new Float32Array(buf.length);
+
             for (let i = 0; i < buf.length; i++) {
-              this.bridge.setBufferSample(this.bufferName, i, buf[i] * scale);
+              normalized[i] = buf[i] * scale;
             }
+
+            this.bridge.writeBuffer(this.bufferName, normalized);
           }
         });
       })
