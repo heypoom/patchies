@@ -1,4 +1,4 @@
-import { defineDSP } from '../define-dsp';
+import { defineDSP, p } from '../define-dsp';
 import { PhasorPortSchema } from '../schemas/phasor.schema';
 
 defineDSP({
@@ -24,13 +24,9 @@ defineDSP({
     const len = out[0].length;
     const channels = out.length;
     const freqParam = parameters.frequency;
-    // Chromium returns single-element array when param is constant (k-rate),
-    // Firefox always returns 128 samples. Handle both cases.
-    const freqIsKRate = freqParam.length === 1;
 
     for (let i = 0; i < len; i++) {
-      // Use per-sample frequency from AudioParam (enables a-rate modulation)
-      const frequency = freqIsKRate ? freqParam[0] : freqParam[i];
+      const frequency = p(freqParam, i);
       const increment = frequency / sampleRate;
 
       for (let ch = 0; ch < channels; ch++) {

@@ -1,4 +1,4 @@
-import { defineDSP } from '../define-dsp';
+import { defineDSP, p } from '../define-dsp';
 import { CombPortSchema } from '../schemas/comb.schema';
 
 defineDSP({
@@ -24,12 +24,8 @@ defineDSP({
     const delaySamples = Math.round((delayMs / 1000) * sampleRate);
     const feedbackParam = parameters.feedback;
 
-    // Chromium returns single-element array when param is constant (k-rate),
-    // Firefox always returns 128 samples. Handle both cases.
-    const fbIsKRate = feedbackParam.length === 1;
-
     for (let i = 0; i < len; i++) {
-      const feedback = fbIsKRate ? feedbackParam[0] : feedbackParam[i];
+      const feedback = p(feedbackParam, i);
       const readIndex = (state.writeIndex - delaySamples + bufLen) % bufLen;
       const delayed = state.buffer[readIndex];
       const inSample = input[i];

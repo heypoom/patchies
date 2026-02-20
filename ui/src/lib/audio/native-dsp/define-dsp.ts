@@ -14,6 +14,20 @@ import { extractAudioParamDescriptors } from './types';
 type SendFn = (message: unknown, outlet?: number) => void;
 
 /**
+ * Read AudioParam value at sample index, handling k-rate (single value) arrays.
+ *
+ * Chromium returns single-element array when param is constant (not automated),
+ * Firefox always returns 128 samples. This helper handles both cases.
+ *
+ * @example
+ * import { defineDSP, p } from '../define-dsp';
+ * const frequency = p(freqParam, i);
+ */
+export function p(param: Float32Array, i: number): number {
+  return param.length === 1 ? param[0] : param[i];
+}
+
+/**
  * AudioParam values map passed to process().
  * For a-rate params: Float32Array with per-sample values.
  * For k-rate params: Float32Array with single value (length 1).

@@ -51,8 +51,10 @@ export interface ObjectInlet {
 
   /**
    * AudioParam automation rate for native DSP worklets.
+   *
    * - 'a-rate': per-sample automation (128 values per block) — good for audio-rate modulation
    * - 'k-rate': per-block automation (1 value per block) — more efficient for control signals
+   *
    * Only used when isAudioParam is true. Defaults to 'a-rate'.
    */
   audioParamAutomationRate?: 'a-rate' | 'k-rate';

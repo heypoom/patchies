@@ -1,4 +1,4 @@
-import { defineDSP } from '../define-dsp';
+import { defineDSP, p } from '../define-dsp';
 import { SlopPortSchema } from '../schemas/slop.schema';
 
 /**
@@ -37,14 +37,11 @@ defineDSP({
     const channels = out.length;
 
     const limitParam = parameters.limit;
-    // Chromium returns single-element array when param is constant (k-rate),
-    // Firefox always returns 128 samples. Handle both cases.
-    const limitIsKRate = limitParam.length === 1;
     const invSampleRate = 1 / sampleRate;
 
     for (let i = 0; i < len; i++) {
       const target = input[i];
-      const limit = limitIsKRate ? limitParam[0] : limitParam[i];
+      const limit = p(limitParam, i);
 
       // Max change per sample = limit / sampleRate
       const maxDelta = limit * invSampleRate;
