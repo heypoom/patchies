@@ -64,6 +64,7 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   'ai.img': 'AI image generation with Gemini',
   'ai.music': 'AI music generation with Lyria',
   'ai.tts': 'AI text-to-speech synthesis',
+  'ai.stt': 'AI speech-to-text transcription',
   'midi.in': 'MIDI input device receiver',
   'midi.out': 'MIDI output device sender',
   netsend: 'Network message sender via WebRTC',

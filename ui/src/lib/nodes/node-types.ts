@@ -20,6 +20,7 @@ import ButtonNode from '$lib/components/nodes/ButtonNode.svelte';
 import AiMusicNode from '$lib/components/nodes/AiMusicNode.svelte';
 import BackgroundOutputNode from '$lib/components/nodes/BackgroundOutputNode.svelte';
 import AiSpeechNode from '$lib/components/nodes/AiSpeechNode.svelte';
+import AiSttNode from '$lib/components/nodes/AiSttNode.svelte';
 import MIDIInputNode from '$lib/components/nodes/MIDIInputNode.svelte';
 import MIDIOutputNode from '$lib/components/nodes/MIDIOutputNode.svelte';
 import ObjectNode from '$lib/components/nodes/ObjectNode.svelte';
@@ -112,6 +113,7 @@ export const nodeTypes: Record<string, any> = {
   iframe: IframeNode,
   'ai.music': AiMusicNode,
   'ai.tts': AiSpeechNode,
+  'ai.stt': AiSttNode,
   'midi.in': MIDIInputNode,
   'midi.out': MIDIOutputNode,
   slider: SliderNode,

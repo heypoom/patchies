@@ -98,6 +98,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     }))
     .with('ai.music', () => ({}))
     .with('ai.tts', () => ({}))
+    .with('ai.stt', () => ({}))
     .with('bg.out', () => ({}))
     .with('midi.in', () => ({
       deviceId: '',
