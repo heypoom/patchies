@@ -562,7 +562,7 @@
 
 <style>
   :global(.uiua-node-code-editor .cm-content) {
-    padding: 6px 8px 7px 4px !important;
+    padding: 7px 5px !important;
     font-family: 'Uiua', 'IBM Plex Mono', monospace !important;
   }
 

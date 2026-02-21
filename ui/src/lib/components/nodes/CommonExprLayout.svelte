@@ -296,7 +296,7 @@
 
 <style>
   :global(.common-expr-node-code-editor .cm-content) {
-    padding: 6px 8px 7px 4px !important;
+    padding: 7px 5px !important;
   }
 
   .expr-display {
@@ -307,24 +307,31 @@
   :global(.uiua-monadic) {
     color: #7dcfff; /* cyan - monadic functions */
   }
+
   :global(.uiua-dyadic) {
     color: #9ece6a; /* green - dyadic functions */
   }
+
   :global(.uiua-mod1) {
     color: #bb9af7; /* pink/purple - 1-modifiers */
   }
+
   :global(.uiua-mod2) {
     color: #e0af68; /* yellow - 2-modifiers */
   }
+
   :global(.uiua-number) {
     color: #ff9e64; /* orange - numbers/constants */
   }
+
   :global(.uiua-string) {
     color: #9ece6a; /* green - strings */
   }
+
   :global(.uiua-comment) {
     color: #565f89; /* gray - comments */
   }
+
   :global(.uiua-stack) {
     color: #c0caf5; /* light - stack ops */
   }
