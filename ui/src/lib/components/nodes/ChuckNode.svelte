@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CirclePlus, Delete, Replace, Settings, Trash, X } from '@lucide/svelte/icons';
+  import { CirclePlus, Delete, Replace, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -12,6 +12,10 @@
   import { keymap } from '@codemirror/view';
   import type { ChuckShred, ChuckNode } from '$lib/audio/v2/nodes/ChuckNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
+  import ChuckSettings from '$lib/settings/ChuckSettings.svelte';
+
+  let contentContainer: HTMLDivElement | null = null;
+  let contentWidth = $state(100);
 
   let {
     id: nodeId,
@@ -114,6 +118,11 @@
     }
   }
 
+  function updateContentWidth() {
+    if (!contentContainer) return;
+    contentWidth = contentContainer.offsetWidth;
+  }
+
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
@@ -124,6 +133,20 @@
     if (isEditing) {
       setTimeout(() => layoutRef?.focus(), 10);
     }
+
+    updateContentWidth();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateContentWidth();
+    });
+
+    if (contentContainer) {
+      resizeObserver.observe(contentContainer);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   });
 
   onDestroy(() => {
@@ -176,7 +199,7 @@
 
 <div class="relative flex gap-x-3">
   <div class="group relative">
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2" bind:this={contentContainer}>
       <!-- Floating toolbar -->
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
         <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
@@ -245,54 +268,13 @@
   </div>
 
   {#if showSettings}
-    <div class="relative">
-      <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button onclick={stopChuck} class="rounded p-1 hover:bg-zinc-700">
-          <Trash class="h-4 w-4 text-zinc-300" />
-        </button>
-
-        <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-          <X class="h-4 w-4 text-zinc-300" />
-        </button>
-      </div>
-
-      <div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
-        <div class="space-y-4">
-          <div>
-            {#if shreds.length === 0}
-              <div class="text-xs text-zinc-500">No running shreds</div>
-            {:else}
-              <div class="space-y-2">
-                {#each shreds as shred, index (index)}
-                  <div class="relative flex items-center justify-between">
-                    <div class="flex-1">
-                      <div class="font-mono text-xs text-zinc-300">ID: {shred.id}</div>
-
-                      <div class="text-xs text-zinc-500">
-                        {shred.time}
-                      </div>
-
-                      <div class="mt-1 max-w-48 truncate font-mono text-xs text-zinc-400">
-                        {shred.code.slice(0, 30)}
-                      </div>
-                    </div>
-
-                    <div class="absolute top-0 right-0">
-                      <button
-                        onclick={() => removeShred(shred.id)}
-                        class="ml-2 rounded p-1 hover:bg-zinc-700"
-                        title="Remove shred"
-                      >
-                        <X class="h-3 w-3 text-red-400" />
-                      </button>
-                    </div>
-                  </div>
-                {/each}
-              </div>
-            {/if}
-          </div>
-        </div>
-      </div>
+    <div class="absolute" style="left: {contentWidth + 10}px">
+      <ChuckSettings
+        {shreds}
+        onRemoveShred={removeShred}
+        onStopAll={stopChuck}
+        onClose={() => (showSettings = false)}
+      />
     </div>
   {/if}
 </div>
