@@ -201,6 +201,18 @@ The `uiua` node uses a WASM build approach adapted from [Array Box](https://gith
 
 The WASM build script and wasm-bindgen wrapper for Uiua were adapted from Array Box. The build compiles the Uiua language to WebAssembly for browser execution.
 
+#### html5bytebeat (Local Fork)
+
+The `bytebeat~` node uses a local TypeScript fork of [html5bytebeat](https://github.com/greggman/html5bytebeat) for algorithmic bytebeat synthesis.
+
+- **Original Project**: html5bytebeat
+- **Author**: Greggman
+- **Repository**: <https://github.com/greggman/html5bytebeat>
+- **License**: MIT
+- **Local Fork**: `ui/src/lib/bytebeat/`
+
+The local fork converts the library to TypeScript and restructures it as a proper AudioWorklet module for Vite bundling compatibility. The original library uses `Function.toString()` to serialize classes into a Blob URL, which breaks under production minification. The fork preserves the core logic (ByteBeatCompiler, ByteBeatProcessor, WrappingStack) with minor TypeScript adaptations.
+
 ### Source Code Access
 
 The complete source code for Patchies is available on [GitHub](https://github.com/heypoom/patchies)

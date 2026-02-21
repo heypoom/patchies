@@ -504,6 +504,16 @@ export const portedCode: PortedCode[] = [
     license: 'MIT',
     notes:
       'The WASM build script and wasm-bindgen wrapper for Uiua were adapted from Array Box. The build compiles the Uiua language to WebAssembly for browser execution.'
+  },
+  {
+    name: 'html5bytebeat (local fork)',
+    description:
+      'The bytebeat~ node uses a local TypeScript fork of html5bytebeat for algorithmic bytebeat synthesis.',
+    authors: 'Greggman',
+    repository: 'https://github.com/greggman/html5bytebeat',
+    license: 'MIT',
+    notes:
+      'Local fork at ui/src/lib/bytebeat/ converts the library to TypeScript and restructures it as a proper AudioWorklet module for Vite bundling compatibility. Core logic (ByteBeatCompiler, ByteBeatProcessor, WrappingStack) is preserved with minor TypeScript adaptations.'
   }
 ];
 

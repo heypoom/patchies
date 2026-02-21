@@ -6,7 +6,8 @@ import { logger } from '$lib/utils/logger';
 import { Type } from '@sinclair/typebox';
 import { msg, sym } from '$lib/objects/schemas/helpers';
 import { schema } from '$lib/objects/schemas/types';
-import type ByteBeatNodeType from 'bytebeat.js';
+
+import workletUrl from '$lib/bytebeat/bytebeat-worklet?worker&url';
 
 // Message schemas
 export const PlayMsg = sym('play');
@@ -48,9 +49,23 @@ export const bytebeatMessages = {
 export type BytebeatType = 'bytebeat' | 'floatbeat' | 'signedBytebeat';
 export type BytebeatSyntax = 'infix' | 'postfix' | 'glitch' | 'function';
 
+// Type/syntax numeric mappings (matching bytebeat-processor.ts)
+const TypeMap: Record<BytebeatType, number> = {
+  bytebeat: 0,
+  floatbeat: 1,
+  signedBytebeat: 2
+};
+
+const SyntaxMap: Record<BytebeatSyntax, number> = {
+  infix: 0,
+  postfix: 1,
+  glitch: 2,
+  function: 3
+};
+
 /**
  * BytebeatNode implements the bytebeat~ audio node.
- * Uses bytebeat.js library for algorithmic bytebeat synthesis.
+ * Uses a local fork of bytebeat.js for algorithmic bytebeat synthesis.
  */
 export class BytebeatNode implements AudioNodeV2 {
   static type = 'bytebeat~';
@@ -79,12 +94,19 @@ export class BytebeatNode implements AudioNodeV2 {
 
   readonly nodeId: string;
 
-  // GainNode for play/pause control (bytebeat.js has no pause)
+  // GainNode for play/pause control
   audioNode: GainNode;
 
   private audioContext: AudioContext;
-  private byteBeatNode: ByteBeatNodeType | null = null;
+  private workletNode: AudioWorkletNode | null = null;
   private ready = false;
+
+  // Async message handling
+  private msgIdToResolveMap = new Map<
+    number,
+    { resolve: (v: unknown) => void; reject: (e: unknown) => void }
+  >();
+  private nextMsgId = 0;
 
   // Current settings
   private expr = '((t >> 10) & 42) * t';
@@ -175,8 +197,7 @@ export class BytebeatNode implements AudioNodeV2 {
     this.onPlayStateChange(false);
 
     // Reset t to 0
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.byteBeatNode as any)?.reset?.();
+    this.callFunc('reset');
   }
 
   async bang(): Promise<void> {
@@ -189,11 +210,8 @@ export class BytebeatNode implements AudioNodeV2 {
     this.onError(null);
 
     try {
-      const node = await this.ensureBytebeat();
-      if (!node) return;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (node as any).setExpressions([expression]);
+      await this.ensureBytebeat();
+      await this.callAsync('setExpressions', [expression], true);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       logger.error('[bytebeat~] expression error:', errorMsg);
@@ -203,49 +221,20 @@ export class BytebeatNode implements AudioNodeV2 {
 
   async setType(type: BytebeatType): Promise<void> {
     this.bytebeatType = type;
-
-    const node = await this.ensureBytebeat();
-    if (!node) return;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ByteBeatNode = (node as any).constructor;
-    const typeMap: Record<BytebeatType, number> = {
-      bytebeat: ByteBeatNode.Type?.byteBeat ?? 0,
-      floatbeat: ByteBeatNode.Type?.floatBeat ?? 1,
-      signedBytebeat: ByteBeatNode.Type?.signedByteBeat ?? 2
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (node as any).setType?.(typeMap[type]);
+    await this.ensureBytebeat();
+    this.callFunc('setType', TypeMap[type]);
   }
 
   async setSyntax(syntax: BytebeatSyntax): Promise<void> {
     this.syntax = syntax;
-
-    const node = await this.ensureBytebeat();
-    if (!node) return;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ByteBeatNode = (node as any).constructor;
-    const syntaxMap: Record<BytebeatSyntax, number> = {
-      infix: ByteBeatNode.ExpressionType?.infix ?? 0,
-      postfix: ByteBeatNode.ExpressionType?.postfix ?? 1,
-      glitch: ByteBeatNode.ExpressionType?.glitch ?? 2,
-      function: ByteBeatNode.ExpressionType?.function ?? 3
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (node as any).setExpressionType?.(syntaxMap[syntax]);
+    await this.ensureBytebeat();
+    this.callFunc('setExpressionType', SyntaxMap[syntax]);
   }
 
   async setSampleRate(rate: number): Promise<void> {
     this.sampleRate = rate;
-
-    const node = await this.ensureBytebeat();
-    if (!node) return;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (node as any).setDesiredSampleRate?.(rate);
+    await this.ensureBytebeat();
+    this.callFunc('setDesiredSampleRate', rate);
   }
 
   getExpression(): string {
@@ -268,48 +257,72 @@ export class BytebeatNode implements AudioNodeV2 {
     return this.isPlaying;
   }
 
-  private async ensureBytebeat(): Promise<ByteBeatNodeType | null> {
-    if (this.ready && this.byteBeatNode) return this.byteBeatNode;
+  // Send a command to the worklet (fire-and-forget)
+  private callFunc(fnName: string, ...args: unknown[]): void {
+    this.workletNode?.port.postMessage({
+      cmd: 'callFunc',
+      data: { fn: fnName, args }
+    });
+  }
+
+  // Send a command to the worklet and wait for response
+  private callAsync(fnName: string, ...args: unknown[]): Promise<unknown> {
+    const msgId = this.nextMsgId++;
+    this.workletNode?.port.postMessage({
+      cmd: 'callAsync',
+      data: { fn: fnName, msgId, args }
+    });
+
+    return new Promise((resolve, reject) => {
+      this.msgIdToResolveMap.set(msgId, { resolve, reject });
+    });
+  }
+
+  private async ensureBytebeat(): Promise<AudioWorkletNode | null> {
+    if (this.ready && this.workletNode) return this.workletNode;
 
     try {
-      const ByteBeatNode = (await import('bytebeat.js')).default;
+      // Register the worklet
+      await this.audioContext.audioWorklet.addModule(workletUrl);
 
-      // Setup worklet
-      await ByteBeatNode.setup(this.audioContext);
+      // Create the worklet node
+      this.workletNode = new AudioWorkletNode(this.audioContext, 'bytebeat-processor', {
+        outputChannelCount: [2]
+      });
 
-      // Create node
-      this.byteBeatNode = new ByteBeatNode(this.audioContext);
+      // Handle async responses
+      this.workletNode.port.onmessage = (event) => {
+        const { cmd, data } = event.data;
+        if (cmd === 'asyncResult') {
+          const { msgId, error, result } = data;
+          const handlers = this.msgIdToResolveMap.get(msgId);
+          if (handlers) {
+            this.msgIdToResolveMap.delete(msgId);
+            if (error) {
+              handlers.reject(error);
+            } else {
+              handlers.resolve(result);
+            }
+          }
+        }
+      };
 
-      // Apply settings
-      this.byteBeatNode.setType(
-        match(this.bytebeatType)
-          .with('bytebeat', () => ByteBeatNode.Type.byteBeat)
-          .with('floatbeat', () => ByteBeatNode.Type.floatBeat)
-          .with('signedBytebeat', () => ByteBeatNode.Type.signedByteBeat)
-          .exhaustive()
-      );
-
-      this.byteBeatNode.setExpressionType(
-        match(this.syntax)
-          .with('infix', () => ByteBeatNode.ExpressionType.infix)
-          .with('postfix', () => ByteBeatNode.ExpressionType.postfix)
-          .with('glitch', () => ByteBeatNode.ExpressionType.glitch)
-          .with('function', () => ByteBeatNode.ExpressionType.function)
-          .exhaustive()
-      );
-
-      this.byteBeatNode.setDesiredSampleRate(this.sampleRate);
+      // Apply initial settings
+      this.callFunc('setActualSampleRate', this.audioContext.sampleRate);
+      this.callFunc('setDesiredSampleRate', this.sampleRate);
+      this.callFunc('setType', TypeMap[this.bytebeatType]);
+      this.callFunc('setExpressionType', SyntaxMap[this.syntax]);
 
       // Set initial expression
-      await this.byteBeatNode.setExpressions([this.expr]);
+      await this.callAsync('setExpressions', [this.expr], true);
 
       // Connect to gain node for play/pause control
-      this.byteBeatNode.connect(this.audioNode);
+      this.workletNode.connect(this.audioNode);
 
       this.ready = true;
       logger.log('[bytebeat~] initialized');
 
-      return this.byteBeatNode;
+      return this.workletNode;
     } catch (error) {
       logger.error('[bytebeat~] initialization error:', error);
       return null;
@@ -317,16 +330,16 @@ export class BytebeatNode implements AudioNodeV2 {
   }
 
   destroy(): void {
-    if (this.byteBeatNode) {
+    if (this.workletNode) {
       try {
-        this.byteBeatNode.disconnect();
+        this.workletNode.disconnect();
       } catch {
         // Ignore disconnect errors
       }
     }
 
     this.audioNode.disconnect();
-    this.byteBeatNode = null;
+    this.workletNode = null;
     this.ready = false;
   }
 }

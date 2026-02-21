@@ -110,7 +110,6 @@
     "@xyflow/svelte": "^1.2.2",
     "butterchurn": "^2.6.7",
     "butterchurn-presets": "^2.4.7",
-    "bytebeat.js": "^2.0.0",
     "codemirror": "^6.0.2",
     "expr-eval": "^2.0.2",
     "fuse.js": "^7.1.0",
