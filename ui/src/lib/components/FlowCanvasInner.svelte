@@ -752,6 +752,9 @@
   }
 
   function resumeAudio() {
+    // Don't auto-resume if the user intentionally suspended DSP (mute/volume=0)
+    if (audioService.dspSuspendedByUser) return;
+
     const audioContext = audioService.getAudioContext();
 
     if (audioContext.state === 'suspended') {

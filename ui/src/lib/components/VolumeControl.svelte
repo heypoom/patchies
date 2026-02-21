@@ -12,10 +12,21 @@
   let volume = $state(0.8);
   let previousVolume = 0.8;
 
+  const isDspOff = $derived(isMuted || volume === 0);
+
   // Update AudioService when volume changes
   $effect(() => {
     if (!isMuted) {
       audioService.setOutVolume(volume);
+    }
+  });
+
+  // Suspend/resume DSP based on effective mute state
+  $effect(() => {
+    if (isDspOff) {
+      audioService.suspendDsp();
+    } else {
+      audioService.resumeDsp();
     }
   });
 
@@ -65,14 +76,14 @@
     {#snippet children()}
       <button
         title="Volume Control"
-        class="flex cursor-pointer items-center justify-center rounded bg-zinc-900/70 p-2 transition-colors hover:bg-zinc-700"
+        class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-900/70 p-2 transition-colors hover:bg-zinc-700"
         onclick={toggleMute}
         onmouseenter={() => (isHovered = true)}
         onmouseleave={() => (isHovered = false)}
       >
         <svelte:component
           this={volumeIcon}
-          class="h-4 w-4 {isMuted || volume === 0 ? 'text-red-400' : 'text-zinc-300'}"
+          class="h-4 w-4 {isDspOff ? 'text-red-400' : 'text-zinc-300'}"
         />
       </button>
     {/snippet}

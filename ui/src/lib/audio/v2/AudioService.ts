@@ -43,6 +43,9 @@ export class AudioService {
   /** Current edges - stored for retrying connections when nodes are created late */
   private currentEdges: Edge[] = [];
 
+  /** Whether DSP was intentionally suspended by the user (mute/volume=0) */
+  private _dspSuspendedByUser = false;
+
   getAudioContext(): AudioContext {
     if (!this.audioContext) {
       this.audioContext = new AudioContext({ latencyHint: 'interactive' });
@@ -239,6 +242,25 @@ export class AudioService {
     if (this.outGain) {
       this.outGain.gain.value = value ?? 0;
     }
+  }
+
+  /** Whether DSP is intentionally suspended by the user. */
+  get dspSuspendedByUser(): boolean {
+    return this._dspSuspendedByUser;
+  }
+
+  /** Suspend the AudioContext (DSP OFF). */
+  suspendDsp(): void {
+    if (!this.audioContext || this._dspSuspendedByUser) return;
+    this._dspSuspendedByUser = true;
+    this.audioContext.suspend();
+  }
+
+  /** Resume the AudioContext (DSP ON). */
+  resumeDsp(): void {
+    if (!this.audioContext || !this._dspSuspendedByUser) return;
+    this._dspSuspendedByUser = false;
+    this.audioContext.resume();
   }
 
   /**
