@@ -26,12 +26,13 @@ directly to:
 Enable the video outlet in settings to send images and GIFs through the
 video pipeline. Static images and animated GIFs are both supported.
 
-## Preview and Settings
+## Preview, Settings, and Glyph Palette
 
 Click the **⋮** menu (top-right when selected) to access:
 
 - **Preview**: View output images, GIFs, SVGs, and play audio
 - **Settings**: Toggle message/video outlets
+- **Glyphs**: Toggle the glyph insertion palette
 
 ## Hot/Cold Placeholders
 
@@ -114,6 +115,19 @@ Uiua uses Unicode glyphs for operations:
 - `⊏` - select
 
 Negative numbers use `¯` (not `-`): `¯5` means -5.
+
+## Glyph Palette
+
+Enable the glyph palette from the **⋮** menu to show a clickable grid of all
+Uiua glyphs below the editor. Glyphs are grouped by category (Stack, Monadic,
+Dyadic, 1-Modifier, 2-Modifier, Constants) and color-coded to match the
+syntax highlighting.
+
+- **Click** a glyph to insert it at the cursor position
+- **Shift+click** a glyph to open its documentation on [uiua.org](https://www.uiua.org/docs)
+- **Hover** over a glyph to see its name, type, signature, and description
+
+The palette is only visible while editing and is not persisted in the node data.
 
 ## Glyph Documentation
 

@@ -12,7 +12,7 @@
  */
 
 /** Delay in ms before showing glyph tooltips (shared by CodeMirror and preview mode) */
-export const UIUA_TOOLTIP_DELAY_MS = 400;
+export const UIUA_TOOLTIP_DELAY_MS = 300;
 
 export interface UiuaGlyphDoc {
   glyph: string;

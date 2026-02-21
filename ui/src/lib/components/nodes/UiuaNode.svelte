@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import { Settings, Eye, EllipsisVertical, Play } from '@lucide/svelte/icons';
+  import { Settings, Eye, EllipsisVertical, Play, Grid3x3 } from '@lucide/svelte/icons';
   import * as Popover from '$lib/components/ui/popover';
   import UiuaSettings from '$lib/components/settings/UiuaSettings.svelte';
   import UiuaPreview from '$lib/components/settings/UiuaPreview.svelte';
+  import UiuaGlyphPalette from '$lib/components/settings/UiuaGlyphPalette.svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -58,6 +59,7 @@
   let consoleRef: VirtualConsole | null = $state(null);
   let resultStack = $state<OutputItem[]>([]);
   let menuOpen = $state(false);
+  let showGlyphPalette = $state(false);
 
   // Tooltip state for preview mode glyph hover
   let tooltipDoc = $state<UiuaGlyphDoc | null>(null);
@@ -579,6 +581,19 @@
               <span class="ml-auto text-blue-400">✓</span>
             {/if}
           </button>
+          <button
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700"
+            onclick={() => {
+              showGlyphPalette = !showGlyphPalette;
+              menuOpen = false;
+            }}
+          >
+            <Grid3x3 class="h-3.5 w-3.5" />
+            Glyphs
+            {#if showGlyphPalette}
+              <span class="ml-auto text-blue-400">✓</span>
+            {/if}
+          </button>
         </Popover.Content>
       </Popover.Root>
     </div>
@@ -608,6 +623,11 @@
     onPreviewMouseOver={handlePreviewMouseOver}
     onPreviewMouseOut={handlePreviewMouseOut}
   />
+
+  <!-- Glyph palette (below editor when editing) -->
+  {#if showGlyphPalette && isEditing}
+    <UiuaGlyphPalette onInsert={(glyph) => layoutRef?.insertAtCursor(glyph)} />
+  {/if}
 
   <div class:hidden={!data.showConsole}>
     <VirtualConsole

@@ -341,6 +341,20 @@
     }
   });
 
+  /** Insert text at the current cursor position (or replace selection) */
+  export function insertAtCursor(text: string) {
+    if (!editorView) return;
+
+    const { main } = editorView.state.selection;
+
+    editorView.dispatch({
+      changes: { from: main.from, to: main.to, insert: text },
+      selection: { anchor: main.from + text.length }
+    });
+
+    editorView.focus();
+  }
+
   onDestroy(() => {
     if (editorView) {
       editorView.destroy();

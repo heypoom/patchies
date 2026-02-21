@@ -95,6 +95,7 @@
 
   const { updateNodeData, deleteElements } = useSvelteFlow();
 
+  let codeEditorRef: CodeEditor | null = $state(null);
   let originalExpr = expr; // Store original for escape functionality
 
   // Escape HTML for safe display
@@ -202,6 +203,10 @@
       focusEditor();
     }
   }
+
+  export function insertAtCursor(text: string) {
+    codeEditorRef?.insertAtCursor(text);
+  }
 </script>
 
 <div class="relative">
@@ -222,6 +227,7 @@
                 : undefined}
             >
               <CodeEditor
+                bind:this={codeEditorRef}
                 value={expr}
                 onchange={handleExpressionUpdate}
                 onrun={() => {
