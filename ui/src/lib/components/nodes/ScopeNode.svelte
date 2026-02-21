@@ -2,12 +2,14 @@
   import { onMount, onDestroy } from 'svelte';
   import { ChevronRight, RotateCcw, Settings, X } from '@lucide/svelte/icons';
   import * as Collapsible from '$lib/components/ui/collapsible';
-  import { NodeResizer, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { NodeResizer, useSvelteFlow, useUpdateNodeInternals, useEdges } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { ScopeAudioNode } from '$lib/audio/v2/nodes/ScopeAudioNode';
   import { useNodeDataTracker } from '$lib/history';
+  import { checkAudioConnections } from '$lib/composables/checkHandleConnections';
+  import { shouldShowHandles } from '../../../stores/ui.store';
 
   type PlotType = 'line' | 'point' | 'bezier';
   type ScopeMode = 'waveform' | 'xy';
@@ -30,7 +32,11 @@
 
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+  const edges = useEdges();
   const tracker = useNodeDataTracker(node.id);
+
+  // Check if handles have connections (for smart auto mode)
+  const connections = $derived(checkAudioConnections(edges.current, node.id));
 
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
@@ -56,6 +62,11 @@
   const displayWidth = $derived(node.width ?? DEFAULT_WIDTH);
   const displayHeight = $derived(node.height ?? DEFAULT_HEIGHT);
   const inletCount = $derived(mode === 'xy' ? 2 : 1);
+
+  const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
+  const handleInletClass = $derived(
+    node.selected || $shouldShowHandles || connections.hasInlet ? '' : HIDDEN_HANDLE_CLASS
+  );
 
   function setupCanvas() {
     if (!canvas) return;
@@ -394,7 +405,7 @@
         total={inletCount}
         index={0}
         title={mode === 'xy' ? 'X axis' : 'Audio input'}
-        class={`${node.selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
+        class={handleInletClass}
         nodeId={node.id}
       />
 
@@ -406,7 +417,7 @@
           total={inletCount}
           index={1}
           title="Y axis"
-          class={`${node.selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
+          class={handleInletClass}
           nodeId={node.id}
         />
       {/if}

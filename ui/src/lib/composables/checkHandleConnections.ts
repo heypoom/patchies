@@ -15,6 +15,20 @@ export const checkMessageConnections = (edges: Edge[], nodeId: string) => ({
 });
 
 /**
+ * Check if a node has audio inlet/outlet connections.
+ * Use with $derived in components for reactivity:
+ *
+ * ```ts
+ * const edges = useEdges();
+ * const connections = $derived(checkAudioConnections(edges.current, node.id));
+ * ```
+ */
+export const checkAudioConnections = (edges: Edge[], nodeId: string) => ({
+  hasInlet: edges.some((e) => e.target === nodeId && e.targetHandle?.startsWith('audio-in')),
+  hasOutlet: edges.some((e) => e.source === nodeId && e.sourceHandle?.startsWith('audio-out'))
+});
+
+/**
  * Build a set of qualified handle IDs that are connected to audio sources.
  * Used for O(1) lookup in StandardHandle to determine inlet color.
  *
