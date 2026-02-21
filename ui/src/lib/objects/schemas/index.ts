@@ -36,6 +36,7 @@ export * from './ai-txt';
 export * from './ai-img';
 export * from './ai-music';
 export * from './ai-tts';
+export * from './ai-stt';
 export * from './midi-in';
 export * from './midi-out';
 export * from './vdo-ninja-push';
@@ -116,6 +117,7 @@ import { aiTxtSchema } from './ai-txt';
 import { aiImgSchema } from './ai-img';
 import { aiMusicSchema } from './ai-music';
 import { aiTtsSchema } from './ai-tts';
+import { aiSttSchema } from './ai-stt';
 import { midiInSchema } from './midi-in';
 import { midiOutSchema } from './midi-out';
 import { vdoNinjaPushSchema } from './vdo-ninja-push';
@@ -205,6 +207,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'ai.img': aiImgSchema,
   'ai.music': aiMusicSchema,
   'ai.tts': aiTtsSchema,
+  'ai.stt': aiSttSchema,
   'midi.in': midiInSchema,
   'midi.out': midiOutSchema,
   'vdo.ninja.push': vdoNinjaPushSchema,

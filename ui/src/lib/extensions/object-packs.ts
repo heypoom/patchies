@@ -229,7 +229,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'AI',
     description: 'AI-powered generative objects',
     icon: 'Brain',
-    objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts', 'tts']
+    objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts', 'ai.stt', 'tts']
   },
   {
     id: 'experimental',

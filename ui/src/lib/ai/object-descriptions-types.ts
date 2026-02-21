@@ -84,6 +84,9 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - markdown: Markdown renderer
 - iframe: Embed web content
 
+## AI Objects
+- ai.stt: Transcribe speech to text using Gemini AI (send listen to start, stop to finish)
+
 ## Media Input
 - webcam: Webcam video input
 - screen: Screen capture
