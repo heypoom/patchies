@@ -185,4 +185,37 @@
   .object-container-error {
     @apply border-red-500 bg-zinc-900;
   }
+
+  /* Uiua glyph hover tooltip styles */
+  .cm-tooltip:has(.uiua-tooltip) {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .cm-tooltip .uiua-tooltip {
+    @apply rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 shadow-lg;
+    font-family: 'IBM Plex Mono', monospace;
+    max-width: 320px;
+  }
+
+  .cm-tooltip .uiua-tooltip-header {
+    @apply mb-1 flex items-center gap-2;
+  }
+
+  .cm-tooltip .uiua-tooltip-glyph {
+    font-family: 'Uiua', 'IBM Plex Mono', monospace;
+    @apply text-lg text-amber-400;
+  }
+
+  .cm-tooltip .uiua-tooltip-name {
+    @apply font-semibold text-zinc-100;
+  }
+
+  .cm-tooltip .uiua-tooltip-meta {
+    @apply mb-1 text-xs text-zinc-400;
+  }
+
+  .cm-tooltip .uiua-tooltip-desc {
+    @apply text-zinc-300;
+  }
 }

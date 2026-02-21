@@ -113,6 +113,11 @@ Uiua uses Unicode glyphs for operations:
 
 Negative numbers use `¯` (not `-`): `¯5` means -5.
 
+## Glyph Documentation
+
+Hover over any Uiua glyph in the code editor to see inline documentation
+showing the glyph's name, type, signature, and description.
+
 ## Auto-formatting
 
 Press Shift+Enter to format your code using Uiua's built-in formatter.
