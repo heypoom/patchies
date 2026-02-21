@@ -31,7 +31,7 @@
 
 <div class="absolute top-0 left-full z-20 ml-2">
   <div
-    class="nodrag nowheel flex max-h-96 min-h-20 max-w-96 min-w-20 items-center justify-center overflow-auto rounded-md border border-zinc-600 bg-zinc-900 p-2 shadow-xl"
+    class="nodrag nowheel flex max-h-96 min-h-20 max-w-96 min-w-20 flex-col items-center justify-center gap-1 overflow-auto rounded-md border border-zinc-600 bg-zinc-900 p-2 shadow-xl"
   >
     {#if resultStack.length > 0}
       {#each resultStack as item, index}
@@ -71,8 +71,14 @@
           <div class="svg-container max-w-full overflow-auto">
             {@html item.svg}
           </div>
-        {:else if item.type === 'text'}
-          <pre class="font-mono text-xs whitespace-pre-wrap text-zinc-300">{item.value}</pre>
+        {:else if item.type === 'text' && index === resultStack.findIndex((i) => i.type === 'text')}
+          {@const textValues = resultStack
+            .filter((i): i is Extract<OutputItem, { type: 'text' }> => i.type === 'text')
+            .map((i) => i.value)}
+          <pre
+            class="max-h-48 w-full overflow-auto rounded bg-zinc-800 px-2 py-1 font-mono text-xs whitespace-pre-wrap text-zinc-300">{textValues.join(
+              '\n'
+            )}</pre>
         {/if}
       {/each}
     {:else}
