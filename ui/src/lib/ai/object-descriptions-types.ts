@@ -86,6 +86,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 
 ## AI Objects
 - ai.stt: Transcribe speech to text using Gemini AI (send listen to start, stop to finish)
+- stt: Transcribe speech to text using browser Web Speech API (no API key, send listen to start, stop to finish)
 
 ## Media Input
 - webcam: Webcam video input

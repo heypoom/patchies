@@ -30,6 +30,7 @@ export * from './chuck';
 export * from './mqtt';
 export * from './sse';
 export * from './tts';
+export * from './stt';
 export * from './netsend';
 export * from './netrecv';
 export * from './ai-txt';
@@ -111,6 +112,7 @@ import { chuckSchema } from './chuck';
 import { mqttSchema } from './mqtt';
 import { sseSchema } from './sse';
 import { ttsSchema } from './tts';
+import { sttSchema } from './stt';
 import { netsendSchema } from './netsend';
 import { netrecvSchema } from './netrecv';
 import { aiTxtSchema } from './ai-txt';
@@ -201,6 +203,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   mqtt: mqttSchema,
   sse: sseSchema,
   tts: ttsSchema,
+  stt: sttSchema,
   netsend: netsendSchema,
   netrecv: netrecvSchema,
   'ai.txt': aiTxtSchema,

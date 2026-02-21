@@ -70,6 +70,7 @@ import VueNode from '$lib/components/nodes/VueNode.svelte';
 import MqttNode from '$lib/components/nodes/MqttNode.svelte';
 import EventSourceNode from '$lib/components/nodes/EventSourceNode.svelte';
 import TtsNode from '$lib/components/nodes/TtsNode.svelte';
+import SttNode from '$lib/components/nodes/SttNode.svelte';
 import VdoNinjaPushNode from '$lib/components/nodes/VdoNinjaPushNode.svelte';
 import VdoNinjaPullNode from '$lib/components/nodes/VdoNinjaPullNode.svelte';
 import PeekNode from '$lib/components/nodes/PeekNode.svelte';
@@ -158,6 +159,7 @@ export const nodeTypes: Record<string, any> = {
   mqtt: MqttNode,
   sse: EventSourceNode,
   tts: TtsNode,
+  stt: SttNode,
   'vdo.ninja.push': VdoNinjaPushNode,
   'vdo.ninja.pull': VdoNinjaPullNode,
   peek: PeekNode,
