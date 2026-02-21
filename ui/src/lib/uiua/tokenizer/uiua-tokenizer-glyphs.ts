@@ -1,145 +1,42 @@
 /**
  * Uiua glyph definitions for tokenizers.
- * Shared constants used by both preview and CodeMirror tokenizers.
+ * Derived from uiua-docs.ts - the single source of truth.
  */
 
-// Monadic functions (take 1 array argument) - cyan
-export const MONADIC_FUNCTIONS = new Set([
-  '¬',
-  '±',
-  '√',
-  '○',
-  '⌵',
-  '⌈',
-  '⌊',
-  '⧻',
-  '△',
-  '⇡',
-  '⊢',
-  '⇌',
-  '♭',
-  '¤',
-  '⊚',
-  '⊛',
-  '◴',
-  '⍏',
-  '⍖',
-  '⊝',
-  'ℂ',
-  '⁅',
-  '⍉',
-  '⋯',
-  '⍘',
-  '⚙',
-  '⸮',
-  '⬛',
-  '□',
-  '⊣',
-  '∿',
-  '⍆',
-  '⧆',
-  '⨪',
-  'ₑ'
-]);
+import { uiuaGlyphDocs } from '../uiua-docs';
 
-// Dyadic functions (take 2 array arguments) - green
-export const DYADIC_FUNCTIONS = new Set([
-  '+',
-  '-',
-  '×',
-  '÷',
-  '◿',
-  'ⁿ',
-  'ₙ',
-  '=',
-  '≠',
-  '<',
-  '>',
-  '≤',
-  '≥',
-  '↧',
-  '↥',
-  '∠',
-  '∨',
-  '⊻',
-  '⊼',
-  '⊽',
-  '⊂',
-  '⊏',
-  '⊡',
-  '↯',
-  '☇',
-  '↙',
-  '↘',
-  '↻',
-  '⊗',
-  '∈',
-  '⊟',
-  '▽',
-  '◫',
-  '▩',
-  '⤸',
-  '◠',
-  '≍',
-  '⌕',
-  '⦷',
-  '⨂',
-  '⊥'
-]);
+/** Helper to collect glyphs by their type */
+const glyphsByType = (...types: string[]): Set<string> =>
+  new Set(
+    Object.entries(uiuaGlyphDocs)
+      .filter(([, doc]) => types.includes(doc.type))
+      .map(([glyph]) => glyph)
+  );
 
-// 1-modifiers (take 1 function argument) - pink
-export const MONADIC_MODIFIERS = new Set([
-  '˙',
-  '˜',
-  '⊙',
-  '⋅',
-  '⟜',
-  '⊸',
-  '⤙',
-  '⤚',
-  '◡',
-  '∩',
-  '≡',
-  '⍚',
-  '⊞',
-  '⧅',
-  '⧈',
-  '⊕',
-  '⊜',
-  '/',
-  '∧',
-  '\\',
-  '⍥',
-  '⌅',
-  '°',
-  '⌝',
-  '⧋',
-  '◇',
-  '∪'
-]);
+// Monadic functions (including noadic) - cyan
+export const MONADIC_FUNCTIONS = glyphsByType('monadic function');
 
-// 2-modifiers (take 2+ function arguments) - yellow
-export const DYADIC_MODIFIERS = new Set(['⊃', '⊓', '⍜', '⍢', '⬚', '⨬', '⍣']);
+// Dyadic functions - green
+export const DYADIC_FUNCTIONS = glyphsByType('dyadic function');
 
-// Constants - purple (same as numbers)
-export const CONSTANTS = new Set(['η', 'π', 'τ', '∞']);
+// Monadic modifiers (1-modifiers) - pink
+export const MONADIC_MODIFIERS = glyphsByType('monadic modifier');
 
-// Stack operations
-export const STACK_OPS = new Set(['∘', '◌', '?']);
+// Dyadic modifiers (2-modifiers) - yellow
+export const DYADIC_MODIFIERS = glyphsByType('dyadic modifier');
 
-// Subscript characters
+// Constants - orange (same as numbers)
+export const CONSTANTS = glyphsByType('constant');
+
+// Stack operations - light
+export const STACK_OPS = glyphsByType('stack');
+
+// Subscript characters (not in docs, keep hardcoded)
 export const SUBSCRIPTS = '₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑₒₓₔₕₖₗₘₙₚₛₜ';
 
 /**
  * Check if a character is a Uiua glyph that has documentation
  */
 export function isUiuaGlyph(char: string): boolean {
-  return (
-    MONADIC_FUNCTIONS.has(char) ||
-    DYADIC_FUNCTIONS.has(char) ||
-    MONADIC_MODIFIERS.has(char) ||
-    DYADIC_MODIFIERS.has(char) ||
-    STACK_OPS.has(char) ||
-    CONSTANTS.has(char)
-  );
+  return char in uiuaGlyphDocs;
 }

@@ -42,7 +42,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⌝': {
     glyph: '⌝',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'anti',
     description: 'Invert the behavior of a function, treating its first argument as a constant',
     signature: '|1|',
@@ -50,7 +50,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '?': {
     glyph: '?',
-    type: 'debug',
+    type: 'stack',
     name: 'args',
     description: 'Debug print all arguments without consuming them',
     signature: '0 → 0',
@@ -58,7 +58,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⍤': {
     glyph: '⍤',
-    type: 'misc',
+    type: 'dyadic function',
     name: 'assert',
     description: 'Throw an error if a condition is not met',
     signature: '2 → 0',
@@ -74,7 +74,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '˜': {
     glyph: '˜',
-    type: 'stack',
+    type: 'monadic modifier',
     name: 'backward',
     description: 'Call a function with its arguments swapped',
     signature: '|1|',
@@ -90,7 +90,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '◡': {
     glyph: '◡',
-    type: 'stack',
+    type: 'monadic modifier',
     name: 'below',
     description: 'Keep all arguments to a function after the outputs',
     signature: '|1|',
@@ -106,7 +106,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '∩': {
     glyph: '∩',
-    type: 'stack',
+    type: 'monadic modifier',
     name: 'both',
     description: 'Call a function on two sets of values',
     signature: '|1|',
@@ -122,7 +122,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⊓': {
     glyph: '⊓',
-    type: 'stack',
+    type: 'dyadic modifier',
     name: 'bracket',
     description: 'Call two functions on two distinct sets of values',
     signature: '|2|',
@@ -130,7 +130,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⊸': {
     glyph: '⊸',
-    type: 'stack',
+    type: 'monadic modifier',
     name: 'by',
     description: 'Call a function but keep its last argument after its outputs',
     signature: '|1|',
@@ -138,7 +138,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⍩': {
     glyph: '⍩',
-    type: 'misc',
+    type: 'monadic modifier',
     name: 'case',
     description: 'Call a pattern matching case',
     signature: '|1|',
@@ -170,7 +170,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '◇': {
     glyph: '◇',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'content',
     description: 'Unbox the arguments to a function before calling it',
     signature: '|1|',
@@ -194,7 +194,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '∂': {
     glyph: '∂',
-    type: 'algorithm',
+    type: 'monadic modifier',
     name: 'derivative',
     description: 'Calculate the derivative of a mathematical expression',
     signature: '|1|',
@@ -210,7 +210,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⊙': {
     glyph: '⊙',
-    type: 'stack',
+    type: 'monadic modifier',
     name: 'dip',
     description: 'Skip the first argument and call a function on later arguments',
     signature: '|1|',
@@ -226,7 +226,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⍢': {
     glyph: '⍢',
-    type: 'modifier',
+    type: 'dyadic modifier',
     name: 'do',
     description: 'Repeat a function while a condition holds',
     signature: '|2|',
@@ -258,7 +258,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⧋': {
     glyph: '⧋',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'evert',
     description: "Call a function with its arguments' axes reversed",
     signature: '|1|',
@@ -282,7 +282,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⬚': {
     glyph: '⬚',
-    type: 'modifier',
+    type: 'dyadic modifier',
     name: 'fill',
     description: 'Set the fill value for a function',
     signature: '|2|',
@@ -322,7 +322,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '∧': {
     glyph: '∧',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'fold',
     description: 'Apply a function to aggregate arrays',
     signature: '|1|',
@@ -330,7 +330,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⊃': {
     glyph: '⊃',
-    type: 'stack',
+    type: 'dyadic modifier',
     name: 'fork',
     description: 'Call two functions on the same values',
     signature: '|2|',
@@ -338,7 +338,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⋅': {
     glyph: '⋅',
-    type: 'stack',
+    type: 'monadic modifier',
     name: 'gap',
     description: 'Discard the first argument then call a function',
     signature: '|1|',
@@ -346,7 +346,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⩜': {
     glyph: '⩜',
-    type: 'algorithm',
+    type: 'monadic modifier',
     name: 'geometric',
     description: 'Convert an operation to be in geometric algebra',
     signature: '|1|',
@@ -370,7 +370,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⊕': {
     glyph: '⊕',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'group',
     description: 'Group elements of an array into buckets by index',
     signature: '|1|',
@@ -402,7 +402,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '∫': {
     glyph: '∫',
-    type: 'algorithm',
+    type: 'monadic modifier',
     name: 'integral',
     description: 'Calculate an antiderivative of a mathematical expression',
     signature: '|1|',
@@ -410,7 +410,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⍚': {
     glyph: '⍚',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'inventory',
     description: 'Apply a function to each unboxed row of an array and re-box the results',
     signature: '|1|',
@@ -546,7 +546,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⌅': {
     glyph: '⌅',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'obverse',
     description: 'Define the various inverses of a function',
     signature: '|1|',
@@ -562,7 +562,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⤚': {
     glyph: '⤚',
-    type: 'stack',
+    type: 'monadic modifier',
     name: 'off',
     description: 'Call a function but keep its first argument after its outputs',
     signature: '|1|',
@@ -570,7 +570,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⟜': {
     glyph: '⟜',
-    type: 'stack',
+    type: 'monadic modifier',
     name: 'on',
     description: 'Call a function but keep its first argument before its outputs',
     signature: '|1|',
@@ -594,7 +594,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⋕': {
     glyph: '⋕',
-    type: 'encoding',
+    type: 'monadic function',
     name: 'parse',
     description: 'Parse a string as a number',
     signature: '1 → 1',
@@ -602,7 +602,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⊜': {
     glyph: '⊜',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'partition',
     description: 'Group sequential sections of an array',
     signature: '|1|',
@@ -642,7 +642,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⚂': {
     glyph: '⚂',
-    type: 'random',
+    type: 'monadic function',
     name: 'random',
     description: 'Generate a random number in the range [0, 1)',
     signature: '0 → 1',
@@ -658,7 +658,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '∪': {
     glyph: '∪',
-    type: 'stack',
+    type: 'monadic modifier',
     name: 'reach',
     description: 'Call a function skipping the second argument',
     signature: '|1|',
@@ -674,7 +674,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '/': {
     glyph: '/',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'reduce',
     description: 'Apply a reducing function to an array',
     signature: '|1|',
@@ -682,7 +682,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⍥': {
     glyph: '⍥',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'repeat',
     description: 'Repeat a function a number of times',
     signature: '|1|',
@@ -730,7 +730,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '≡': {
     glyph: '≡',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'rows',
     description: 'Apply a function to each row of an array or arrays',
     signature: '|1|',
@@ -738,7 +738,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '\\': {
     glyph: '\\',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'scan',
     description: 'Reduce, but keep intermediate values',
     signature: '|1| 1 → 1',
@@ -754,7 +754,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '˙': {
     glyph: '˙',
-    type: 'stack',
+    type: 'monadic modifier',
     name: 'self',
     description: 'Call a function with the same array as all arguments',
     signature: '|1|',
@@ -802,7 +802,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⧈': {
     glyph: '⧈',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'stencil',
     description: 'Call a function on windows of an array',
     signature: '|1| 2 → 1',
@@ -818,7 +818,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⨬': {
     glyph: '⨬',
-    type: 'modifier',
+    type: 'dyadic modifier',
     name: 'switch',
     description: 'Call the function at the given index',
     signature: '|2|',
@@ -826,7 +826,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⊞': {
     glyph: '⊞',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'table',
     description: 'Apply a function to each combination of rows of some arrays',
     signature: '|1|',
@@ -858,7 +858,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⍣': {
     glyph: '⍣',
-    type: 'misc',
+    type: 'dyadic modifier',
     name: 'try',
     description: 'Call a function and catch errors',
     signature: '|2|',
@@ -866,7 +866,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⧅': {
     glyph: '⧅',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'tuples',
     description: 'Get permutations or combinations of an array',
     signature: '|1|',
@@ -874,7 +874,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '°': {
     glyph: '°',
-    type: 'modifier',
+    type: 'monadic modifier',
     name: 'un',
     description: 'Invert the behavior of a function',
     signature: '|1|',
@@ -882,7 +882,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⍜': {
     glyph: '⍜',
-    type: 'modifier',
+    type: 'dyadic modifier',
     name: 'under',
     description: 'Operate on a transformed array, then reverse the transformation',
     signature: '|2|',
@@ -898,7 +898,7 @@ export const uiuaGlyphDocs: Record<string, UiuaGlyphDoc> = {
   },
   '⤙': {
     glyph: '⤙',
-    type: 'stack',
+    type: 'monadic modifier',
     name: 'with',
     description: 'Call a function but keep its last argument before its outputs',
     signature: '|1|',
