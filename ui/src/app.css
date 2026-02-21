@@ -218,4 +218,86 @@
   .uiua-tooltip-desc {
     @apply text-zinc-300;
   }
+
+  /* Cross-browser styled range slider for settings panels */
+  .settings-slider {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: transparent;
+    height: 20px;
+  }
+
+  .settings-slider::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(
+      to right,
+      #22c55e var(--value-percent, 0%),
+      #a1a1aa var(--value-percent, 0%)
+    );
+  }
+
+  .settings-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: #a1a1aa;
+    border: none;
+  }
+
+  .settings-slider::-moz-range-progress {
+    height: 4px;
+    border-radius: 2px 0 0 2px;
+    background: #22c55e;
+  }
+
+  .settings-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #52525b;
+    border: 2px solid #ffffff;
+    margin-top: -8px;
+    cursor: pointer;
+  }
+
+  .settings-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #52525b;
+    border: 2px solid #ffffff;
+    cursor: pointer;
+  }
+
+  /* Hover: darken active track and thumb */
+  .settings-slider:hover::-webkit-slider-runnable-track {
+    background: linear-gradient(
+      to right,
+      #16a34a var(--value-percent, 0%),
+      #a1a1aa var(--value-percent, 0%)
+    );
+  }
+
+  .settings-slider:hover::-moz-range-progress {
+    background: #16a34a;
+  }
+
+  .settings-slider:hover::-webkit-slider-thumb {
+    background: #3f3f46;
+  }
+
+  .settings-slider:hover::-moz-range-thumb {
+    background: #3f3f46;
+  }
+
+  /* Active: green thumb */
+  .settings-slider:active::-webkit-slider-thumb {
+    background: #22c55e;
+  }
+
+  .settings-slider:active::-moz-range-thumb {
+    background: #22c55e;
+  }
 }

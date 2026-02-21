@@ -54,6 +54,10 @@
   let plotType = $state<PlotType>(node.data.plotType ?? 'line');
   let decay = $state(node.data.decay ?? 1);
 
+  function sliderStyle(value: number, min: number, max: number): string {
+    return `--value-percent: ${((value - min) / (max - min)) * 100}%`;
+  }
+
   const DEFAULT_WIDTH = 200;
   const DEFAULT_HEIGHT = 120;
   const MIN_WIDTH = 100;
@@ -477,7 +481,8 @@
               onpointerup={bufferSizeTracker.onBlur}
               oninput={(e) =>
                 handleBufferSizeChange(parseInt((e.target as HTMLInputElement).value))}
-              class="w-full accent-green-500"
+              class="settings-slider w-full"
+              style={sliderStyle(bufferSize, 64, 2048)}
             />
           </div>
 
@@ -496,7 +501,8 @@
               onpointerdown={xScaleTracker.onFocus}
               onpointerup={xScaleTracker.onBlur}
               oninput={(e) => handleXScaleChange(parseFloat((e.target as HTMLInputElement).value))}
-              class="w-full accent-green-500"
+              class="settings-slider w-full"
+              style={sliderStyle(xScale, mode === 'xy' ? 0.1 : 0.5, mode === 'xy' ? 10 : 8)}
             />
           </div>
 
@@ -515,7 +521,8 @@
               onpointerdown={yScaleTracker.onFocus}
               onpointerup={yScaleTracker.onBlur}
               oninput={(e) => handleYScaleChange(parseFloat((e.target as HTMLInputElement).value))}
-              class="w-full accent-green-500"
+              class="settings-slider w-full"
+              style={sliderStyle(yScale, 0.1, 10)}
             />
           </div>
 
@@ -587,7 +594,8 @@
                   onpointerup={decayTracker.onBlur}
                   oninput={(e) =>
                     handleDecayChange(parseFloat((e.target as HTMLInputElement).value))}
-                  class="w-full accent-green-500"
+                  class="settings-slider w-full"
+                  style={sliderStyle(decay, 0.01, 1)}
                 />
               </div>
 
@@ -606,7 +614,8 @@
                   onpointerdown={fpsTracker.onFocus}
                   onpointerup={fpsTracker.onBlur}
                   oninput={(e) => handleFpsChange(parseInt((e.target as HTMLInputElement).value))}
-                  class="w-full accent-green-500"
+                  class="settings-slider w-full"
+                  style={sliderStyle(fps, 0, 120)}
                 />
               </div>
             </Collapsible.Content>
