@@ -4,20 +4,26 @@
 
   type Props = {
     languageHint: string;
+    prompt: string;
     transcription: string;
     onLanguageHintChange: (value: string) => void;
+    onPromptChange: (value: string) => void;
     onClose: () => void;
     onKeydown: (e: KeyboardEvent) => void;
     languageHintTracker: ContinuousTracker;
+    promptTracker: ContinuousTracker;
   };
 
   let {
     languageHint,
+    prompt,
     transcription,
     onLanguageHintChange,
+    onPromptChange,
     onClose,
     onKeydown,
-    languageHintTracker
+    languageHintTracker,
+    promptTracker
   }: Props = $props();
 </script>
 
@@ -50,7 +56,6 @@
               <div><span class="text-green-400">listen</span> start recording</div>
               <div><span class="text-green-400">stop</span> stop & transcribe</div>
               <div><span class="text-green-400">bang</span> toggle recording</div>
-              <div><span class="text-green-400">"en-US"</span> set language & start</div>
               <div>
                 <span class="text-green-400">setLanguage</span>
                 {`{value: "en-US"}`}
@@ -79,6 +84,20 @@
           onblur={languageHintTracker.onBlur}
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-600 focus:border-zinc-400 focus:outline-none"
         />
+      </div>
+
+      <!-- Prompt -->
+      <div>
+        <div class="mb-1 text-[8px] text-zinc-400">Prompt / Context</div>
+        <textarea
+          value={prompt}
+          placeholder="e.g. technical terms, speaker names..."
+          oninput={(e) => onPromptChange((e.target as HTMLTextAreaElement).value)}
+          onfocus={promptTracker.onFocus}
+          onblur={promptTracker.onBlur}
+          rows={2}
+          class="nowheel nodrag nopan w-full resize-none rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 placeholder-zinc-600 focus:border-zinc-400 focus:outline-none"
+        ></textarea>
       </div>
 
       <!-- Last Transcription -->

@@ -31,6 +31,7 @@
 
   const tracker = useNodeDataTracker(nodeId);
   const languageHintTracker = tracker.track('languageHint', () => data.languageHint ?? '');
+  const promptTracker = tracker.track('prompt', () => data.prompt ?? '');
 
   let messageContext: MessageContext;
   let audioService = AudioService.getInstance();
@@ -166,9 +167,11 @@
 
       let textPrompt =
         'Transcribe the speech in this audio accurately. Return only the transcribed text, no explanations or formatting.';
+
       if (languageHint) {
         textPrompt += ` The language is ${languageHint}.`;
       }
+
       if (prompt) {
         textPrompt += ` Context: ${prompt}`;
       }
@@ -415,11 +418,14 @@
   {#if showSettings}
     <AiSttSettings
       {languageHint}
+      {prompt}
       {transcription}
       onLanguageHintChange={(value) => updateNodeData(nodeId, { languageHint: value })}
+      onPromptChange={(value) => updateNodeData(nodeId, { prompt: value })}
       onClose={() => (showSettings = false)}
       onKeydown={handleKeydown}
       {languageHintTracker}
+      {promptTracker}
     />
   {/if}
 </div>

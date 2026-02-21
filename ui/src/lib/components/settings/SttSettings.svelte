@@ -60,7 +60,6 @@
               <div><span class="text-green-400">listen</span> start listening</div>
               <div><span class="text-green-400">stop</span> stop listening</div>
               <div><span class="text-green-400">bang</span> toggle listening</div>
-              <div><span class="text-green-400">"en-US"</span> set language</div>
               <div>
                 <span class="text-green-400">setLang</span>
                 {`{value: "en-US"}`}
