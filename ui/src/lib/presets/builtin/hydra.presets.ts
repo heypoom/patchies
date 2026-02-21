@@ -96,13 +96,13 @@ export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }
     type: 'hydra',
     data: { ...defaultsOneVideoIn, code: PIPE.trim() }
   },
-  'diff.hydra': {
-    type: 'hydra',
-    data: { ...defaultsTwoVideoIn, code: DIFF.trim() }
-  },
   'add.hydra': {
     type: 'hydra',
     data: { ...defaultsTwoVideoIn, code: ADD.trim() }
+  },
+  'diff.hydra': {
+    type: 'hydra',
+    data: { ...defaultsTwoVideoIn, code: DIFF.trim() }
   },
   'sub.hydra': {
     type: 'hydra',
@@ -116,14 +116,6 @@ export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }
     type: 'hydra',
     data: { ...defaultsTwoVideoIn, code: MASK.trim() }
   },
-  'beans.hydra': {
-    type: 'hydra',
-    data: { ...defaultsOneVideoIn, code: BEANS.trim(), videoInletCount: 0 }
-  },
-  'filet-mignon.hydra': {
-    type: 'hydra',
-    data: { ...defaultsOneVideoIn, code: FILET_MIGNON.trim(), videoInletCount: 0 }
-  },
   'fft.hydra': {
     type: 'hydra',
     data: {
@@ -133,5 +125,13 @@ export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }
       videoInletCount: 0,
       videoOutletCount: 1
     }
+  },
+  'beans.hydra': {
+    type: 'hydra',
+    data: { ...defaultsOneVideoIn, code: BEANS.trim(), videoInletCount: 0 }
+  },
+  'filet-mignon.hydra': {
+    type: 'hydra',
+    data: { ...defaultsOneVideoIn, code: FILET_MIGNON.trim(), videoInletCount: 0 }
   }
 };
