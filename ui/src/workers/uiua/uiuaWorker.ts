@@ -257,3 +257,8 @@ self.onmessage = async (event: MessageEvent<UiuaWorkerMessage>) => {
 // Signal that worker is ready
 postResponse({ type: 'ready', id: '0' });
 console.log('[uiua worker] initialized');
+
+// Prime WASM loading immediately to avoid delays on first evaluation
+ensureModule().catch((error) => {
+  console.error('[uiua worker] failed to pre-load WASM module:', error);
+});
