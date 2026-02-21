@@ -25,6 +25,7 @@
     type GoogleVoice
   } from '$lib/stores/googleTtsVoices';
   import { useNodeDataTracker } from '$lib/history';
+  import SettingsSlider from '$lib/components/SettingsSlider.svelte';
 
   export type AiTtsNodeData = {
     text?: string;
@@ -511,17 +512,14 @@
               <span class="text-xs text-zinc-400">Speed</span>
               <span class="text-[10px] text-zinc-500">{speakingRate.toFixed(2)}x</span>
             </div>
-            <input
-              type="range"
-              min="0.25"
-              max="4"
-              step="0.05"
+            <SettingsSlider
+              min={0.25}
+              max={4}
+              step={0.05}
               value={speakingRate}
-              onchange={(e) =>
-                updateNodeData(nodeId, { speakingRate: parseFloat(e.currentTarget.value) })}
+              onchange={(v) => updateNodeData(nodeId, { speakingRate: v })}
               onpointerdown={speakingRateTracker.onFocus}
               onpointerup={speakingRateTracker.onBlur}
-              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>0.25x</span>
@@ -535,16 +533,14 @@
               <span class="text-xs text-zinc-400">Pitch</span>
               <span class="text-[10px] text-zinc-500">{pitch.toFixed(1)}</span>
             </div>
-            <input
-              type="range"
-              min="-20"
-              max="20"
-              step="0.5"
+            <SettingsSlider
+              min={-20}
+              max={20}
+              step={0.5}
               value={pitch}
-              onchange={(e) => updateNodeData(nodeId, { pitch: parseFloat(e.currentTarget.value) })}
+              onchange={(v) => updateNodeData(nodeId, { pitch: v })}
               onpointerdown={pitchTracker.onFocus}
               onpointerup={pitchTracker.onBlur}
-              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>-20</span>
@@ -558,17 +554,14 @@
               <span class="text-xs text-zinc-400">Volume Gain</span>
               <span class="text-[10px] text-zinc-500">{volumeGainDb.toFixed(1)} dB</span>
             </div>
-            <input
-              type="range"
-              min="-10"
-              max="10"
-              step="0.5"
+            <SettingsSlider
+              min={-10}
+              max={10}
+              step={0.5}
               value={volumeGainDb}
-              onchange={(e) =>
-                updateNodeData(nodeId, { volumeGainDb: parseFloat(e.currentTarget.value) })}
+              onchange={(v) => updateNodeData(nodeId, { volumeGainDb: v })}
               onpointerdown={volumeGainDbTracker.onFocus}
               onpointerup={volumeGainDbTracker.onBlur}
-              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>-10 dB</span>

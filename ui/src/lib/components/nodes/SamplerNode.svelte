@@ -13,6 +13,7 @@
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
   import { useNodeDataTracker } from '$lib/history';
+  import SettingsSlider from '$lib/components/SettingsSlider.svelte';
 
   let node: NodeProps & {
     data: {
@@ -631,44 +632,47 @@
             <!-- Start Point -->
             <div class="mb-3">
               <div class="mb-1 flex items-center justify-between">
+                <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="text-xs text-zinc-400">Start (s)</label>
+
                 <span class="font-mono text-xs text-zinc-300">{loopStart.toFixed(2)}</span>
               </div>
-              <input
-                type="range"
-                min="0"
+
+              <SettingsSlider
+                min={0}
                 max={recordingDuration}
-                step="0.01"
+                step={0.01}
                 value={loopStart}
-                oninput={(e) => updateLoopStart(parseFloat(e.currentTarget.value))}
+                onchange={updateLoopStart}
                 onpointerdown={loopStartTracker.onFocus}
                 onpointerup={loopStartTracker.onBlur}
-                class="w-full"
               />
             </div>
 
             <!-- End Point -->
             <div class="mb-3">
               <div class="mb-1 flex items-center justify-between">
+                <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="text-xs text-zinc-400">End (s)</label>
+
                 <span class="font-mono text-xs text-zinc-300">{loopEnd.toFixed(2)}</span>
               </div>
-              <input
-                type="range"
-                min="0"
+
+              <SettingsSlider
+                min={0}
                 max={recordingDuration}
-                step="0.01"
+                step={0.01}
                 value={loopEnd}
-                oninput={(e) => updateLoopEnd(parseFloat(e.currentTarget.value))}
+                onchange={updateLoopEnd}
                 onpointerdown={loopEndTracker.onFocus}
                 onpointerup={loopEndTracker.onBlur}
-                class="w-full"
               />
             </div>
 
             <!-- Loop Toggle -->
             <div class="mb-3 flex items-center justify-between border-t border-zinc-700 pt-3">
               <span class="text-xs text-zinc-400">Loop</span>
+
               <button
                 onclick={() => {
                   const oldValue = loopEnabled;
@@ -686,38 +690,39 @@
             <!-- Playback Rate -->
             <div class="mb-3 border-t border-zinc-700 pt-3">
               <div class="mb-1 flex items-center justify-between">
+                <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="text-xs text-zinc-400">Playback Rate</label>
+
                 <span class="font-mono text-xs text-zinc-300">{playbackRate.toFixed(2)}</span>
               </div>
-              <input
-                type="range"
-                min="0.25"
-                max="4"
-                step="0.01"
+
+              <SettingsSlider
+                min={0.25}
+                max={4}
+                step={0.01}
                 value={playbackRate}
-                oninput={(e) => updatePlaybackRate(parseFloat(e.currentTarget.value))}
+                onchange={updatePlaybackRate}
                 onpointerdown={playbackRateTracker.onFocus}
                 onpointerup={playbackRateTracker.onBlur}
-                class="w-full"
               />
             </div>
 
             <!-- Detune -->
             <div class="mb-3">
               <div class="mb-1 flex items-center justify-between">
+                <!-- svelte-ignore a11y_label_has_associated_control -->
                 <label class="text-xs text-zinc-400">Detune (cents)</label>
+
                 <span class="font-mono text-xs text-zinc-300">{detune.toFixed(0)}</span>
               </div>
-              <input
-                type="range"
-                min="-1200"
-                max="1200"
-                step="1"
+
+              <SettingsSlider
+                min={-1200}
+                max={1200}
                 value={detune}
-                oninput={(e) => updateDetune(parseFloat(e.currentTarget.value))}
+                onchange={updateDetune}
                 onpointerdown={detuneTracker.onFocus}
                 onpointerup={detuneTracker.onBlur}
-                class="w-full"
               />
             </div>
           </div>

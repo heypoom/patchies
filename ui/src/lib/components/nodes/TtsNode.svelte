@@ -17,6 +17,7 @@
   import * as Popover from '$lib/components/ui/popover';
   import * as Command from '$lib/components/ui/command';
   import { useNodeDataTracker } from '$lib/history';
+  import SettingsSlider from '$lib/components/SettingsSlider.svelte';
 
   export type TtsNodeData = {
     voiceName?: string;
@@ -397,16 +398,14 @@
               <span class="text-xs text-zinc-400">Rate</span>
               <span class="text-[10px] text-zinc-500">{rate.toFixed(1)}x</span>
             </div>
-            <input
-              type="range"
-              min="0.1"
-              max="3"
-              step="0.1"
+            <SettingsSlider
+              min={0.1}
+              max={3}
+              step={0.1}
               value={rate}
-              onchange={(e) => updateNodeData(nodeId, { rate: parseFloat(e.currentTarget.value) })}
+              onchange={(v) => updateNodeData(nodeId, { rate: v })}
               onpointerdown={rateTracker.onFocus}
               onpointerup={rateTracker.onBlur}
-              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>0.1x</span>
@@ -420,16 +419,14 @@
               <span class="text-xs text-zinc-400">Pitch</span>
               <span class="text-[10px] text-zinc-500">{pitch.toFixed(1)}</span>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="2"
-              step="0.1"
+            <SettingsSlider
+              min={0}
+              max={2}
+              step={0.1}
               value={pitch}
-              onchange={(e) => updateNodeData(nodeId, { pitch: parseFloat(e.currentTarget.value) })}
+              onchange={(v) => updateNodeData(nodeId, { pitch: v })}
               onpointerdown={pitchTracker.onFocus}
               onpointerup={pitchTracker.onBlur}
-              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>Low</span>
@@ -443,17 +440,14 @@
               <span class="text-xs text-zinc-400">Volume</span>
               <span class="text-[10px] text-zinc-500">{Math.round(volume * 100)}%</span>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
+            <SettingsSlider
+              min={0}
+              max={1}
+              step={0.05}
               value={volume}
-              onchange={(e) =>
-                updateNodeData(nodeId, { volume: parseFloat(e.currentTarget.value) })}
+              onchange={(v) => updateNodeData(nodeId, { volume: v })}
               onpointerdown={volumeTracker.onFocus}
               onpointerup={volumeTracker.onBlur}
-              class="w-full accent-green-500"
             />
             <div class="mt-0.5 flex justify-between text-[8px] text-zinc-600">
               <span>0%</span>

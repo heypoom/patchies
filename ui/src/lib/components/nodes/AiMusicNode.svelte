@@ -9,6 +9,7 @@
   import { aiMusicMessages } from '$lib/objects/schemas';
   import type { LiveMusicGenerationConfig, Scale } from '@google/genai';
   import JSON5 from 'json5';
+  import SettingsSlider from '$lib/components/SettingsSlider.svelte';
 
   let { id: nodeId }: { id: string } = $props();
 
@@ -237,16 +238,12 @@
                   <div class="nodrag flex items-center gap-2">
                     <span class="text-[10px] text-zinc-300">weight</span>
 
-                    <input
-                      type="range"
+                    <SettingsSlider
+                      min={0}
+                      max={1}
+                      step={0.1}
                       value={prompt.weight}
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      oninput={(e) => {
-                        const target = e.target as HTMLInputElement;
-                        updatePromptWeight(text, parseFloat(target.value));
-                      }}
+                      onchange={(v) => updatePromptWeight(text, v)}
                       class="max-w-[180px]"
                     />
 

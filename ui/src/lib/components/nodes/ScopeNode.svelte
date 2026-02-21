@@ -10,6 +10,7 @@
   import { useNodeDataTracker } from '$lib/history';
   import { checkAudioConnections } from '$lib/composables/checkHandleConnections';
   import { shouldShowHandles } from '../../../stores/ui.store';
+  import SettingsSlider from '$lib/components/SettingsSlider.svelte';
 
   type PlotType = 'line' | 'point' | 'bezier';
   type ScopeMode = 'waveform' | 'xy';
@@ -53,10 +54,6 @@
   let fps = $state(node.data.fps ?? 0);
   let plotType = $state<PlotType>(node.data.plotType ?? 'line');
   let decay = $state(node.data.decay ?? 1);
-
-  function sliderStyle(value: number, min: number, max: number): string {
-    return `--value-percent: ${((value - min) / (max - min)) * 100}%`;
-  }
 
   const DEFAULT_WIDTH = 200;
   const DEFAULT_HEIGHT = 120;
@@ -471,18 +468,13 @@
               <span class="text-xs text-zinc-500">{bufferSize}</span>
             </div>
 
-            <input
-              type="range"
-              min="64"
-              max="2048"
-              step="1"
+            <SettingsSlider
+              min={64}
+              max={2048}
               value={bufferSize}
+              onchange={handleBufferSizeChange}
               onpointerdown={bufferSizeTracker.onFocus}
               onpointerup={bufferSizeTracker.onBlur}
-              oninput={(e) =>
-                handleBufferSizeChange(parseInt((e.target as HTMLInputElement).value))}
-              class="settings-slider w-full"
-              style={sliderStyle(bufferSize, 64, 2048)}
             />
           </div>
 
@@ -492,17 +484,14 @@
               <span class="text-xs font-medium text-zinc-300">X Scale</span>
               <span class="text-xs text-zinc-500">{xScale.toFixed(1)}x</span>
             </div>
-            <input
-              type="range"
-              min={mode === 'xy' ? '0.1' : '0.5'}
-              max={mode === 'xy' ? '10' : '8'}
-              step="0.1"
+            <SettingsSlider
+              min={mode === 'xy' ? 0.1 : 0.5}
+              max={mode === 'xy' ? 10 : 8}
+              step={0.1}
               value={xScale}
+              onchange={handleXScaleChange}
               onpointerdown={xScaleTracker.onFocus}
               onpointerup={xScaleTracker.onBlur}
-              oninput={(e) => handleXScaleChange(parseFloat((e.target as HTMLInputElement).value))}
-              class="settings-slider w-full"
-              style={sliderStyle(xScale, mode === 'xy' ? 0.1 : 0.5, mode === 'xy' ? 10 : 8)}
             />
           </div>
 
@@ -512,17 +501,14 @@
               <span class="text-xs font-medium text-zinc-300">Y Scale</span>
               <span class="text-xs text-zinc-500">{yScale.toFixed(1)}x</span>
             </div>
-            <input
-              type="range"
-              min="0.1"
-              max="10"
-              step="0.1"
+            <SettingsSlider
+              min={0.1}
+              max={10}
+              step={0.1}
               value={yScale}
+              onchange={handleYScaleChange}
               onpointerdown={yScaleTracker.onFocus}
               onpointerup={yScaleTracker.onBlur}
-              oninput={(e) => handleYScaleChange(parseFloat((e.target as HTMLInputElement).value))}
-              class="settings-slider w-full"
-              style={sliderStyle(yScale, 0.1, 10)}
             />
           </div>
 
@@ -584,18 +570,14 @@
                     >{decay >= 1 ? 'off' : `${(decay * 100).toFixed(0)}%`}</span
                   >
                 </div>
-                <input
-                  type="range"
-                  min="0.01"
-                  max="1"
-                  step="0.01"
+                <SettingsSlider
+                  min={0.01}
+                  max={1}
+                  step={0.01}
                   value={decay}
+                  onchange={handleDecayChange}
                   onpointerdown={decayTracker.onFocus}
                   onpointerup={decayTracker.onBlur}
-                  oninput={(e) =>
-                    handleDecayChange(parseFloat((e.target as HTMLInputElement).value))}
-                  class="settings-slider w-full"
-                  style={sliderStyle(decay, 0.01, 1)}
                 />
               </div>
 
@@ -605,17 +587,13 @@
                   <span class="text-xs font-medium text-zinc-300">Refresh</span>
                   <span class="text-xs text-zinc-500">{fps === 0 ? 'max' : `${fps} fps`}</span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="120"
-                  step="1"
+                <SettingsSlider
+                  min={0}
+                  max={120}
                   value={fps}
+                  onchange={handleFpsChange}
                   onpointerdown={fpsTracker.onFocus}
                   onpointerup={fpsTracker.onBlur}
-                  oninput={(e) => handleFpsChange(parseInt((e.target as HTMLInputElement).value))}
-                  class="settings-slider w-full"
-                  style={sliderStyle(fps, 0, 120)}
                 />
               </div>
             </Collapsible.Content>
