@@ -41,6 +41,13 @@ for each audio sample, creating sound from pure math.
 
 Lower rates produce crunchier, more lo-fi sound. Classic bytebeat uses 8000 Hz.
 
+### Run on Edit
+
+When enabled (default), expressions are evaluated as you type.
+
+Disable this to only evaluate when pressing **Shift+Enter**,
+useful for complex expressions that may cause errors while typing.
+
 ## Example Expressions
 
 ```javascript
