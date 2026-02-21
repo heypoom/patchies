@@ -272,6 +272,7 @@
           dataKey="expression"
           handles={bytebeatHandles}
           outlets={bytebeatOutlets}
+          lineWrap
         />
       </div>
 

@@ -118,6 +118,7 @@
     onready,
     nodeType,
     lineErrors,
+    lineWrap = false,
     ...restProps
   }: {
     value?: string;
@@ -140,6 +141,9 @@
     onready?: () => void;
     nodeType?: string;
     lineErrors?: Record<number, string[]>;
+
+    /** Enable line wrapping */
+    lineWrap?: boolean;
   } = $props();
 
   let editorElement: HTMLDivElement;
@@ -316,6 +320,11 @@
       // Add placeholder if provided
       if (placeholder) {
         extensions.push(cmPlaceholder(placeholder));
+      }
+
+      // Add line wrapping if enabled
+      if (lineWrap) {
+        extensions.push(EditorView.lineWrapping);
       }
 
       const state = EditorState.create({

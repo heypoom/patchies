@@ -58,6 +58,7 @@
     allowEmptyExpr = false,
     dataKey = 'expr',
     fontSize,
+    lineWrap = false,
     children,
     handles,
     outlets,
@@ -87,6 +88,7 @@
     handles?: any;
     outlets?: any;
     dataKey?: string;
+    lineWrap?: boolean;
     onPreviewMouseOver?: (e: MouseEvent) => void;
     onPreviewMouseOut?: (e: MouseEvent) => void;
   } = $props();
@@ -253,9 +255,11 @@
                 {nodeId}
                 {dataKey}
                 {fontSize}
+                {lineWrap}
               />
             </div>
           {:else}
+            <!-- svelte-ignore a11y_mouse_events_have_key_events -->
             <div
               bind:this={previewEl}
               ondblclick={handleDoubleClick}
@@ -283,7 +287,12 @@
                     {/if}
 
                     {#if expr}
-                      <code class="expr-preview-code text-xs whitespace-pre">
+                      <code
+                        class={[
+                          'expr-preview-code text-xs',
+                          lineWrap ? 'break-words whitespace-pre-wrap' : 'whitespace-pre'
+                        ]}
+                      >
                         {@html highlightedHtml}
                       </code>
                     {/if}
