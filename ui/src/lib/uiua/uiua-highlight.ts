@@ -54,3 +54,13 @@ export function highlightUiua(code: string): string {
     })
     .join('');
 }
+
+export function getUiuaGlyphColor(type: string): string {
+  return match(type)
+    .with('monadic function', () => 'text-[#7dcfff]')
+    .with('dyadic function', () => 'text-[#9ece6a]')
+    .with('monadic modifier', () => 'text-[#bb9af7]')
+    .with('dyadic modifier', () => 'text-[#e0af68]')
+    .with('constant', () => 'text-[#ff9e64]')
+    .otherwise(() => 'text-[#c0caf5]');
+}

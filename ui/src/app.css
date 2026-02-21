@@ -204,7 +204,7 @@
 
   .uiua-tooltip-glyph {
     font-family: 'Uiua', 'IBM Plex Mono', monospace;
-    @apply text-lg text-amber-400;
+    @apply text-lg;
   }
 
   .uiua-tooltip-name {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { uiuaGlyphDocs, type UiuaGlyphDoc } from '$lib/uiua/uiua-docs';
+  import { getUiuaGlyphColor } from '$lib/uiua/uiua-highlight';
   import { match } from 'ts-pattern';
 
   let {
@@ -32,16 +33,6 @@
     return grouped;
   });
 
-  function getGlyphColor(type: string): string {
-    return match(type)
-      .with('monadic function', () => 'text-[#7dcfff]')
-      .with('dyadic function', () => 'text-[#9ece6a]')
-      .with('monadic modifier', () => 'text-[#bb9af7]')
-      .with('dyadic modifier', () => 'text-[#e0af68]')
-      .with('constant', () => 'text-[#ff9e64]')
-      .otherwise(() => 'text-[#c0caf5]');
-  }
-
   function handleClick(e: MouseEvent, doc: UiuaGlyphDoc) {
     if (e.shiftKey) {
       window.open(doc.docUrl, '_blank');
@@ -70,7 +61,7 @@
             <button
               class={[
                 'flex h-6 w-6 cursor-pointer items-center justify-center rounded text-sm transition-colors hover:bg-zinc-700',
-                getGlyphColor(doc.type)
+                getUiuaGlyphColor(doc.type)
               ]}
               style="font-family: 'Uiua', 'IBM Plex Mono', monospace;"
               title={`${doc.name} (${doc.signature}) — shift+click for docs`}
@@ -91,7 +82,7 @@
     <div class="border-t border-zinc-700 px-4 pt-1.5 pb-1">
       <div class="flex items-center gap-2">
         <span
-          class={['text-lg', getGlyphColor(tooltipDoc.type)]}
+          class={['text-lg', getUiuaGlyphColor(tooltipDoc.type)]}
           style="font-family: 'Uiua', 'IBM Plex Mono', monospace;">{tooltipDoc.glyph}</span
         >
         <span class="text-xs font-semibold text-zinc-100">{tooltipDoc.name}</span>

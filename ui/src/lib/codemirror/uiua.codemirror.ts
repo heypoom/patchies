@@ -17,6 +17,7 @@ import { Prec } from '@codemirror/state';
 import { tags } from '@lezer/highlight';
 import { getUiuaGlyphDoc, UIUA_TOOLTIP_DELAY_MS } from '$lib/uiua/uiua-docs';
 import { uiuaStreamParser } from '$lib/uiua/tokenizer/uiua-codemirror-tokenizer';
+import { getUiuaGlyphColor } from '$lib/uiua/uiua-highlight';
 
 export const uiuaLanguage = StreamLanguage.define(uiuaStreamParser);
 
@@ -39,7 +40,7 @@ function createTooltipElement(doc: {
   header.className = 'uiua-tooltip-header';
 
   const glyph = document.createElement('span');
-  glyph.className = 'uiua-tooltip-glyph';
+  glyph.className = `uiua-tooltip-glyph ${getUiuaGlyphColor(doc.type)}`;
   glyph.textContent = doc.glyph;
   header.appendChild(glyph);
 

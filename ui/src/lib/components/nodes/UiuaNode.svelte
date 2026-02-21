@@ -30,6 +30,7 @@
     };
   };
   import { GifPlayer } from '$lib/canvas/GifPlayer';
+  import { getUiuaGlyphColor } from '$lib/uiua/uiua-highlight';
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -676,7 +677,9 @@
     style="left: {tooltipPos.x}px; top: {tooltipPos.y}px;"
   >
     <div class="uiua-tooltip-header">
-      <span class="uiua-tooltip-glyph">{tooltipDoc.glyph}</span>
+      <span class={['uiua-tooltip-glyph', getUiuaGlyphColor(tooltipDoc.type)]}
+        >{tooltipDoc.glyph}</span
+      >
       <span class="uiua-tooltip-name">{tooltipDoc.name}</span>
     </div>
     <div class="uiua-tooltip-meta">{tooltipDoc.type} {tooltipDoc.signature}</div>
