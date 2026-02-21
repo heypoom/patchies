@@ -11,7 +11,9 @@ export const UIUA_PRESETS = {
       expr: `Life ← ↥∩=₃⟜+⊸(/+↻⊂A₂C₂)
 ⁅×0.6 gen⊙⚂ ˙⊟30 # Init
 ⍥⊸Life100        # Run
-≡▽₂ 4            # Upscale`
+≡▽₂ 4            # Upscale`,
+      enableVideoOutlet: true,
+      enableMessageOutlet: false
     }
   },
   'uiua-logo.uiua': {
@@ -21,7 +23,9 @@ export const UIUA_PRESETS = {
 I ← <⊙(⌵/ℂ) # Circle
 u ← +0.1⧋↧ ⊃(I0.95|⊂⊙0.5⇌˙×)
 A ← ×⊃U(I1) # Alpha
-⧋(⊂⊃u A) ˙⊞⊟-⊸¬÷⟜⇡200`
+⧋(⊂⊃u A) ˙⊞⊟-⊸¬÷⟜⇡200`,
+      enableVideoOutlet: true,
+      enableMessageOutlet: false
     }
   },
   'sine.uiua': {
@@ -30,7 +34,9 @@ A ← ×⊃U(I1) # Alpha
       expr: `[0 4 7 10]     # Notes
 ×220 ˜ⁿ2÷12    # Freqs
 ∿×τ ⊞× ÷⟜⇡&asr # Generate
-÷⧻⟜/+⍉         # Mix`
+÷⧻⟜/+⍉         # Mix`,
+      enableVideoOutlet: false,
+      enableMessageOutlet: true
     }
   },
   'spiral.uiua': {
@@ -38,14 +44,18 @@ A ← ×⊃U(I1) # Alpha
     data: {
       expr: `↯⟜(×20-⊸¬÷⟜⇡)200 # Xs
 -⊃∠(⌵ℂ)⊸⍉        # Spiral field
--π◿τ⊞-×τ÷⟜⇡20    # Animate`
+-π◿τ⊞-×τ÷⟜⇡20    # Animate`,
+      enableVideoOutlet: true,
+      enableMessageOutlet: false
     }
   },
   'stripes.uiua': {
     type: 'uiua',
     data: {
       expr: `⍉ ˙[⊞⊃⊃+↥-] ⇡300
-÷2 +1.2 ∿ ÷10`
+÷2 +1.2 ∿ ÷10`,
+      enableVideoOutlet: true,
+      enableMessageOutlet: false
     }
   },
   'cellular-automata.uiua': {
@@ -53,7 +63,9 @@ A ← ×⊃U(I1) # Alpha
     data: {
       expr: `Rule ← ˜⊏⊓⋯₈(°⋯⧈⇌3⊂⊂⊃⊣⟜⊢)
 =⌊⊃÷₂⇡ 500        # Init
-⍥⟜⊸Rule ⌊÷2◡⋅⧻ 30 # Run`
+⍥⟜⊸Rule ⌊÷2◡⋅⧻ 30 # Run`,
+      enableVideoOutlet: true,
+      enableMessageOutlet: false
     }
   },
   'mandelbrot.uiua': {
@@ -61,7 +73,9 @@ A ← ×⊃U(I1) # Alpha
     data: {
       expr: `×2 ⊞ℂ⤙-1/4 -1/2÷⟜⇡300 # Init
 >2⌵ ⍥⟜⊸(+⊙°√) 50 ⟜∘   # Run
-÷⧻⟜/+                 # Normalize`
+÷⧻⟜/+                 # Normalize`,
+      enableVideoOutlet: true,
+      enableMessageOutlet: false
     }
   }
 };
