@@ -131,9 +131,6 @@
         .with(sttMessages.setLang, ({ value }) => {
           updateNodeData(nodeId, { lang: value });
         })
-        .with(sttMessages.string, (text) => {
-          updateNodeData(nodeId, { lang: text });
-        })
         .otherwise(() => {});
     } catch (error) {
       errorMessage = error instanceof Error ? error.message : String(error);

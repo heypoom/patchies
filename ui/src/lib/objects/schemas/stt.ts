@@ -32,8 +32,7 @@ export const sttSchema: ObjectSchema = {
         { schema: Stop, description: 'Stop listening' },
         { schema: Bang, description: 'Toggle listening on/off' },
         { schema: Toggle, description: 'Toggle listening on/off' },
-        { schema: SetLang, description: 'Set BCP-47 language (e.g. en-US, th-TH)' },
-        { schema: Type.String(), description: 'Set language and start listening' }
+        { schema: SetLang, description: 'Set BCP-47 language (e.g. en-US, th-TH)' }
       ]
     }
   ],
