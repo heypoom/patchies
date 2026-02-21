@@ -482,7 +482,10 @@
         <Popover.Content class="w-32 p-1" align="end">
           <button
             class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700"
-            onclick={() => setView('preview')}
+            onclick={() => {
+              setView('preview');
+              menuOpen = false;
+            }}
           >
             <Eye class="h-3.5 w-3.5" />
             Preview
@@ -492,7 +495,10 @@
           </button>
           <button
             class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700"
-            onclick={() => setView('settings')}
+            onclick={() => {
+              setView('settings');
+              menuOpen = false;
+            }}
           >
             <Settings class="h-3.5 w-3.5" />
             Settings
