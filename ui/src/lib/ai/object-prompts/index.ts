@@ -6,6 +6,7 @@
 import { asmPrompt } from './asm';
 import { bgOutPrompt } from './bg.out';
 import { buttonPrompt } from './button';
+import { bytebeatPrompt } from './bytebeat~';
 import { canvasDomPrompt } from './canvas.dom';
 import { canvasPrompt } from './canvas';
 import { chuckPrompt } from './chuck~';
@@ -92,7 +93,8 @@ export const objectPrompts: Record<string, string> = {
   send: sendPrompt,
   recv: recvPrompt,
   'send.vdo': sendVdoPrompt,
-  'recv.vdo': recvVdoPrompt
+  'recv.vdo': recvVdoPrompt,
+  'bytebeat~': bytebeatPrompt
 };
 
 /**

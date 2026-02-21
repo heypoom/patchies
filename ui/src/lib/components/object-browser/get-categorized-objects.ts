@@ -91,7 +91,8 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
   wgpu: 'WebGPU compute shaders for parallel data processing',
   'send.vdo': 'Send video frames to a named channel',
   'recv.vdo': 'Receive video frames from a named channel',
-  note: 'Post-it note for annotations and comments'
+  note: 'Post-it note for annotations and comments',
+  'bytebeat~': 'Bytebeat algorithmic synthesis with t-based expressions'
 };
 
 /**

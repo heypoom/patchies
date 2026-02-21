@@ -49,6 +49,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - sonic~: SuperSonic/SuperCollider synthesis
 - chuck~: ChucK audio programming
 - csound~: Csound sound and music computing
+- bytebeat~: Bytebeat algorithmic synthesis with t-based expressions
 - strudel: Strudel live coding (TidalCycles)
 - orca: Orca livecoding sequencer
 - expr~: Audio-rate mathematical expressions

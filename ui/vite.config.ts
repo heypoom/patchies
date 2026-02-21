@@ -259,7 +259,8 @@ export default defineConfig({
       '@codemirror/lang-sql',
       '@lezer/highlight',
       'machine',
-      'uxn.wasm'
+      'uxn.wasm',
+      'bytebeat.js' // Uses Function.toString() for worklet code
     ]
   },
   build: {

@@ -83,7 +83,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Music',
     description: 'Composition and audio synthesis',
     icon: 'Music',
-    objects: ['strudel', 'orca', 'sonic~', 'chuck~', 'csound~', 'tone~']
+    objects: ['strudel', 'orca', 'sonic~', 'chuck~', 'csound~', 'tone~', 'bytebeat~']
   },
   {
     id: 'scripting',

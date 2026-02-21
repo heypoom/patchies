@@ -41,6 +41,7 @@
         "@xyflow/svelte": "^1.2.2",
         "butterchurn": "^2.6.7",
         "butterchurn-presets": "^2.4.7",
+        "bytebeat.js": "^2.0.0",
         "codemirror": "^6.0.2",
         "expr-eval": "^2.0.2",
         "fuse.js": "^7.1.0",
@@ -1438,6 +1439,8 @@
     "butterchurn": ["butterchurn@2.6.7", "", { "dependencies": { "@babel/runtime": "^7.0.0", "ecma-proposal-math-extensions": "0.0.2" } }, "sha512-BJiRA8L0L2+84uoG2SSfkp0kclBuN+vQKf217pK7pMlwEO2ZEg3MtO2/o+l8Qpr8Nbejg8tmL1ZHD1jmhiaaqg=="],
 
     "butterchurn-presets": ["butterchurn-presets@2.4.7", "", { "dependencies": { "babel-runtime": "^6.26.0", "ecma-proposal-math-extensions": "0.0.2", "lodash": "^4.17.4" } }, "sha512-4MdM8ripz/VfH1BCldrIKdAc/1ryJFBDvqlyow6Ivo1frwj0H3duzvSMFC7/wIjAjxb1QpwVHVqGqS9uAFKhpg=="],
+
+    "bytebeat.js": ["bytebeat.js@2.0.0", "", {}, "sha512-gVL8QZoEv+/xyez9y4/+wjhK3Km2FxYyhIi9WCY6esznz8d7KkSReWoM7zkLBsWqxkx7/mzPGdmxyNqiVveaKQ=="],
 
     "cac": ["cac@6.7.14", "", {}, "sha512-b6Ilus+c3RrdDk+JhLKUAQfzzgLEPy6wcXqS7f/xe1EETvsDP6GORG7SFuOs6cID5YkqchW/LXZbX5bc8j7ZcQ=="],
 

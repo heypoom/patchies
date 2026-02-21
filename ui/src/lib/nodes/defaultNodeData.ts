@@ -250,5 +250,12 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       enableAudioOutlet: false,
       enableVideoOutlet: false
     }))
+    .with('bytebeat~', () => ({
+      expression: '((t >> 10) & 42) * t',
+      isPlaying: false,
+      type: 'bytebeat',
+      syntax: 'infix',
+      sampleRate: 8000
+    }))
     .otherwise(() => ({}));
 }
