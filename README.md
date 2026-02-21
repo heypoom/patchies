@@ -14,7 +14,7 @@ Patchies lets you use the audio, visual and computational tools and libraries th
 
 - Create interactive graphics with [P5.js](https://patchies.app/docs/objects/p5), [Three.js](https://patchies.app/docs/objects/three), [HTML5 Canvas](https://patchies.app/docs/objects/canvas) and [Textmode.js](https://patchies.app/docs/objects/textmode)
 - Synthesize and process video with [Hydra](https://patchies.app/docs/objects/hydra) and [GLSL shaders](https://patchies.app/docs/objects/glsl)
-- Live code music with [Strudel](https://patchies.app/docs/objects/strudel), [ChucK](https://patchies.app/docs/objects/chuck~), [SuperSonic](https://patchies.app/docs/objects/sonic~) and [Orca](https://patchies.app/docs/objects/orca)
+- Live code music with [Strudel](https://patchies.app/docs/objects/strudel), [ChucK](https://patchies.app/docs/objects/chuck~), [SuperSonic](https://patchies.app/docs/objects/sonic~), [Bytebeat](https://patchies.app/docs/objects/bytebeat~), [Csound](https://patchies.app/docs/objects/csound~) and [Orca](https://patchies.app/docs/objects/orca)
 - Synthesize audio with [Pure Data-style](https://patchies.app/docs/audio-chaining) objects, [Tone.js](https://patchies.app/docs/objects/tone~) and [Elementary Audio](https://patchies.app/docs/objects/elem~)
 - Run programs and games on the [Uxn](https://patchies.app/docs/objects/uxn) virtual machine and write your own with [Uxntal](https://wiki.xxiivv.com/site/uxntal.html) programs.
 - Compute like a witch with [Assembly](https://patchies.app/docs/objects/asm) and [Uiua](https://patchies.app/docs/objects/uiua), or like a wizard with [Ruby](https://patchies.app/docs/objects/ruby) and [Python](https://patchies.app/docs/objects/python)
