@@ -22,7 +22,7 @@ import { THREE_PRESETS } from './three.preset';
 import { IFRAME_PRESETS } from './iframe.presets';
 import { ASM_PRESETS } from './asm.presets';
 import { UIUA_PRESETS } from './uiua.presets';
-import { BYTEBEAT_PRESETS } from './bytebeat.presets';
+import { BYTEBEAT_PRESETS } from './bytebeat';
 
 // Re-export individual preset collections
 export {

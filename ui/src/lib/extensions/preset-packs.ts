@@ -230,6 +230,12 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Classic bytebeat formulas and demos',
     icon: 'AudioWaveform',
     requiredObjects: ['bytebeat~'],
-    presets: ['sine-power.beat', 'explosive.beat', 'rickroll.beat', 'floatbeat.beat']
+    presets: [
+      'sine-power.beat',
+      'explosive.beat',
+      'rickroll.beat',
+      'floatbeat.beat',
+      'ice-age.beat'
+    ]
   }
 ];

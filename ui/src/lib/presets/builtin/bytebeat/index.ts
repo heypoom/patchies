@@ -4,7 +4,12 @@
  * Pre-configured bytebeat formulas and demos
  */
 
-export const BYTEBEAT_PRESETS = {
+import { END_OF_ICE_AGE_PRESET } from './end-of-ice-age';
+
+const SMALL_PRESETS = {
+  // sine of power
+  // by: lhphr
+  // from: https://dollchan.net/btb/res/3.html#54
   'sine-power.beat': {
     type: 'bytebeat~',
     data: {
@@ -19,6 +24,8 @@ export const BYTEBEAT_PRESETS = {
     }
   },
 
+  // "Explosive beat"
+  // by: SthephanShi
   'explosive.beat': {
     type: 'bytebeat~',
     data: {
@@ -34,6 +41,9 @@ export const BYTEBEAT_PRESETS = {
     }
   },
 
+  // Never Gonna Give You Up
+  // by: gasman
+  // from: http://www.pouet.net/topic.php?which=8357&page=12#c389109
   'rickroll.beat': {
     type: 'bytebeat~',
     data: {
@@ -48,6 +58,8 @@ export const BYTEBEAT_PRESETS = {
     }
   },
 
+  // Floatbeat to bytebeat
+  // by: lehandsomeguy
   'floatbeat.beat': {
     type: 'bytebeat~',
     data: {
@@ -96,4 +108,9 @@ floattobyte(a)`,
       sampleRate: 32000
     }
   }
+};
+
+export const BYTEBEAT_PRESETS = {
+  ...SMALL_PRESETS,
+  ...END_OF_ICE_AGE_PRESET
 };
