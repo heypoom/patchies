@@ -20,6 +20,7 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
  * ```
  */
 export type NodeDataTracker = ReturnType<typeof useNodeDataTracker>;
+export type ContinuousTracker = ReturnType<NodeDataTracker['track']>;
 
 export function useNodeDataTracker(nodeId: string) {
   const eventBus = PatchiesEventBus.getInstance();

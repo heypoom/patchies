@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Circle, Mic, Play, RefreshCcw, Settings, Square, X } from '@lucide/svelte/icons';
+  import { Circle, Mic, Play, Settings, Square } from '@lucide/svelte/icons';
   import { useSvelteFlow, type NodeProps } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import WaveformDisplay from '$lib/components/nodes/WaveformDisplay.svelte';
@@ -13,7 +13,7 @@
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
   import { useNodeDataTracker } from '$lib/history';
-  import SettingsSlider from '$lib/components/SettingsSlider.svelte';
+  import SamplerSettings from '$lib/components/settings/SamplerSettings.svelte';
 
   let node: NodeProps & {
     data: {
@@ -484,11 +484,12 @@
           <!-- Record Button -->
           <button
             title={isRecording ? 'Stop Recording' : 'Start Recording'}
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0 {isRecording
+            class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0 {isRecording
               ? '!opacity-100'
               : ''}"
             onclick={toggleRecording}
           >
+            <!-- svelte-ignore svelte_component_deprecated -->
             <svelte:component
               this={isRecording ? Square : Circle}
               class="h-4 w-4 {isRecording ? 'text-red-500' : 'text-zinc-300'}"
@@ -499,7 +500,7 @@
           {#if hasRecording && !isRecording}
             <button
               title="Play Recording"
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
               onclick={playRecording}
             >
               <Play class="h-4 w-4 text-zinc-300" />
@@ -507,7 +508,7 @@
           {/if}
 
           <button
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+            class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
             onclick={() => (showSettings = !showSettings)}
             title="Settings"
           >
@@ -609,133 +610,26 @@
   </div>
 
   {#if showSettings && hasRecording}
-    <div class="relative">
-      <div class="absolute -top-7 left-0 flex w-full justify-end gap-1">
-        <button
-          onclick={resetSettings}
-          class="rounded p-1 hover:bg-zinc-700"
-          title="Reset all settings"
-        >
-          <RefreshCcw class="h-4 w-4 text-zinc-300" />
-        </button>
-
-        <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
-          <X class="h-4 w-4 text-zinc-300" />
-        </button>
-      </div>
-
-      <div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
-        <div class="space-y-4">
-          <div>
-            <div class="mb-2 text-xs font-medium text-zinc-300">Playback Settings</div>
-
-            <!-- Start Point -->
-            <div class="mb-3">
-              <div class="mb-1 flex items-center justify-between">
-                <!-- svelte-ignore a11y_label_has_associated_control -->
-                <label class="text-xs text-zinc-400">Start (s)</label>
-
-                <span class="font-mono text-xs text-zinc-300">{loopStart.toFixed(2)}</span>
-              </div>
-
-              <SettingsSlider
-                min={0}
-                max={recordingDuration}
-                step={0.01}
-                value={loopStart}
-                onchange={updateLoopStart}
-                onpointerdown={loopStartTracker.onFocus}
-                onpointerup={loopStartTracker.onBlur}
-              />
-            </div>
-
-            <!-- End Point -->
-            <div class="mb-3">
-              <div class="mb-1 flex items-center justify-between">
-                <!-- svelte-ignore a11y_label_has_associated_control -->
-                <label class="text-xs text-zinc-400">End (s)</label>
-
-                <span class="font-mono text-xs text-zinc-300">{loopEnd.toFixed(2)}</span>
-              </div>
-
-              <SettingsSlider
-                min={0}
-                max={recordingDuration}
-                step={0.01}
-                value={loopEnd}
-                onchange={updateLoopEnd}
-                onpointerdown={loopEndTracker.onFocus}
-                onpointerup={loopEndTracker.onBlur}
-              />
-            </div>
-
-            <!-- Loop Toggle -->
-            <div class="mb-3 flex items-center justify-between border-t border-zinc-700 pt-3">
-              <span class="text-xs text-zinc-400">Loop</span>
-
-              <button
-                onclick={() => {
-                  const oldValue = loopEnabled;
-                  toggleLoop();
-                  tracker.commit('loop', oldValue, !oldValue);
-                }}
-                class="rounded px-2 py-1 text-xs {loopEnabled
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-zinc-700 text-zinc-300'}"
-              >
-                {loopEnabled ? 'On' : 'Off'}
-              </button>
-            </div>
-
-            <!-- Playback Rate -->
-            <div class="mb-3 border-t border-zinc-700 pt-3">
-              <div class="mb-1 flex items-center justify-between">
-                <!-- svelte-ignore a11y_label_has_associated_control -->
-                <label class="text-xs text-zinc-400">Playback Rate</label>
-
-                <span class="font-mono text-xs text-zinc-300">{playbackRate.toFixed(2)}</span>
-              </div>
-
-              <SettingsSlider
-                min={0.25}
-                max={4}
-                step={0.01}
-                value={playbackRate}
-                onchange={updatePlaybackRate}
-                onpointerdown={playbackRateTracker.onFocus}
-                onpointerup={playbackRateTracker.onBlur}
-              />
-            </div>
-
-            <!-- Detune -->
-            <div class="mb-3">
-              <div class="mb-1 flex items-center justify-between">
-                <!-- svelte-ignore a11y_label_has_associated_control -->
-                <label class="text-xs text-zinc-400">Detune (cents)</label>
-
-                <span class="font-mono text-xs text-zinc-300">{detune.toFixed(0)}</span>
-              </div>
-
-              <SettingsSlider
-                min={-1200}
-                max={1200}
-                value={detune}
-                onchange={updateDetune}
-                onpointerdown={detuneTracker.onFocus}
-                onpointerup={detuneTracker.onBlur}
-              />
-            </div>
-          </div>
-
-          <!-- Sample Info -->
-          <div class="border-t border-zinc-700 pt-3">
-            <div class="text-xs text-zinc-500">
-              Duration: {recordingDuration.toFixed(2)}s
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <SamplerSettings
+      {loopStart}
+      {loopEnd}
+      {recordingDuration}
+      {loopEnabled}
+      {playbackRate}
+      {detune}
+      onLoopStartChange={updateLoopStart}
+      onLoopEndChange={updateLoopEnd}
+      onPlaybackRateChange={updatePlaybackRate}
+      onDetuneChange={updateDetune}
+      onToggleLoop={toggleLoop}
+      onReset={resetSettings}
+      onClose={() => (showSettings = false)}
+      {tracker}
+      {loopStartTracker}
+      {loopEndTracker}
+      {playbackRateTracker}
+      {detuneTracker}
+    />
   {/if}
 </div>
 
