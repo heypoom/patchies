@@ -76,7 +76,7 @@
             .filter((i): i is Extract<OutputItem, { type: 'text' }> => i.type === 'text')
             .map((i) => i.value)}
           <pre
-            class="max-h-48 w-full max-w-72 overflow-auto rounded bg-zinc-800 px-2 py-1 font-mono text-xs whitespace-pre-wrap text-zinc-300">{textValues.join(
+            class="max-h-48 w-full max-w-72 overflow-auto rounded px-2 py-1 font-mono text-xs whitespace-pre-wrap text-zinc-300">{textValues.join(
               '\n'
             )}</pre>
         {/if}
