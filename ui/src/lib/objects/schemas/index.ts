@@ -13,6 +13,7 @@ export * from './three';
 export * from './img';
 export * from './video';
 export * from './webcam';
+export * from './screen';
 export * from './iframe';
 export * from './button';
 export * from './toggle';
@@ -95,6 +96,7 @@ import { threeSchema, threeDomSchema } from './three';
 import { imgSchema } from './img';
 import { videoSchema } from './video';
 import { webcamSchema } from './webcam';
+import { screenSchema } from './screen';
 import { iframeSchema } from './iframe';
 import { buttonSchema } from './button';
 import { toggleSchema } from './toggle';
@@ -186,6 +188,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   img: imgSchema,
   video: videoSchema,
   webcam: webcamSchema,
+  screen: screenSchema,
   iframe: iframeSchema,
   button: buttonSchema,
   toggle: toggleSchema,

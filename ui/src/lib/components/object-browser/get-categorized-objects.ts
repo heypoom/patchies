@@ -22,7 +22,6 @@ export interface CategoryGroup {
  */
 const FALLBACK_DESCRIPTIONS: Record<string, string> = {
   bchrn: 'Butterchurn milkdrop visualizer with audio reactivity',
-  screen: 'Screen capture for desktop/window recording',
   label: 'Text label for annotations and notes',
   link: 'Clickable hyperlink button'
 };
