@@ -6,9 +6,16 @@
  * https://github.com/codereport/array-box
  */
 
-import { StreamLanguage, LanguageSupport } from '@codemirror/language';
+import {
+  StreamLanguage,
+  LanguageSupport,
+  HighlightStyle,
+  syntaxHighlighting
+} from '@codemirror/language';
 import type { StringStream } from '@codemirror/language';
 import { hoverTooltip, tooltips, type Tooltip } from '@codemirror/view';
+import { Prec } from '@codemirror/state';
+import { tags } from '@lezer/highlight';
 import { getUiuaGlyphDoc } from '$lib/uiua/uiua-docs';
 
 // Monadic functions (take 1 array argument)
@@ -355,6 +362,26 @@ const uiuaTooltipConfig = tooltips({
   parent: document.body
 });
 
+/**
+ * Custom syntax highlighting theme for Uiua
+ * Matches the preview mode colors from uiua-highlight.ts
+ */
+const uiuaHighlightStyle = HighlightStyle.define([
+  { tag: tags.keyword, color: '#7dcfff' }, // cyan - monadic functions
+  { tag: tags.variableName, color: '#9ece6a' }, // green - dyadic functions
+  { tag: tags.propertyName, color: '#bb9af7' }, // pink/purple - 1-modifiers
+  { tag: tags.typeName, color: '#e0af68' }, // yellow - 2-modifiers
+  { tag: tags.number, color: '#ff9e64' }, // orange - numbers/constants
+  { tag: tags.string, color: '#9ece6a' }, // green - strings
+  { tag: tags.comment, color: '#565f89' }, // gray - comments
+  { tag: tags.operator, color: '#c0caf5' } // light - stack ops
+]);
+
 export function uiua(): LanguageSupport {
-  return new LanguageSupport(uiuaLanguage, [uiuaHoverTooltip, uiuaTooltipConfig]);
+  return new LanguageSupport(uiuaLanguage, [
+    uiuaHoverTooltip,
+    uiuaTooltipConfig,
+    // Use Prec.highest to override tokyoNight theme colors
+    Prec.highest(syntaxHighlighting(uiuaHighlightStyle))
+  ]);
 }
