@@ -236,6 +236,13 @@ match(data)
 
 See `KVObject.ts` for a complete example.
 
+**When adding new preset packs:**
+
+1. Create preset file in `src/lib/presets/builtin/{name}.presets.ts`
+2. Update `src/lib/presets/builtin/index.ts` (import, export, and add to `BUILTIN_PRESETS`)
+3. Add pack to `src/lib/extensions/preset-packs.ts`
+4. **MUST** add icon to `src/lib/extensions/pack-icons.ts` (import from lucide + add to match)
+
 ### Schema Generation Gotcha
 
 Object schemas for docs are **generated at build time** via `bun run generate:schemas`. When adding new fields to `InletSchema` or `OutletSchema`:

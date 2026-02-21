@@ -21,6 +21,7 @@ import { TEXTMODE_PRESETS } from './textmode.presets';
 import { THREE_PRESETS } from './three.preset';
 import { IFRAME_PRESETS } from './iframe.presets';
 import { ASM_PRESETS } from './asm.presets';
+import { UIUA_PRESETS } from './uiua.presets';
 
 // Re-export individual preset collections
 export {
@@ -43,7 +44,8 @@ export {
   TEXTMODE_PRESETS,
   THREE_PRESETS,
   IFRAME_PRESETS,
-  ASM_PRESETS
+  ASM_PRESETS,
+  UIUA_PRESETS
 };
 
 /**
@@ -70,5 +72,6 @@ export const BUILTIN_PRESETS: Record<string, { type: string; data: unknown }> = 
   ...TEXTMODE_PRESETS,
   ...THREE_PRESETS,
   ...IFRAME_PRESETS,
-  ...ASM_PRESETS
+  ...ASM_PRESETS,
+  ...UIUA_PRESETS
 };

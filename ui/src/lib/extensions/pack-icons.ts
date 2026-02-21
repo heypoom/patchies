@@ -21,7 +21,8 @@ import {
   Package,
   Route,
   Calculator,
-  FileHeadphone
+  FileHeadphone,
+  Grid3x3
 } from '@lucide/svelte/icons';
 import { match } from 'ts-pattern';
 
@@ -53,5 +54,6 @@ export function getPackIcon(iconName: string) {
     .with('Route', () => Route)
     .with('Calculator', () => Calculator)
     .with('FileHeadphone', () => FileHeadphone)
+    .with('Grid3x3', () => Grid3x3)
     .otherwise(() => Package);
 }

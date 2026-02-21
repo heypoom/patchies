@@ -207,5 +207,21 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'bitcrusher.dsp',
       'hardsync.dsp'
     ]
+  },
+  {
+    id: 'uiua-demos',
+    name: 'Uiua Demos',
+    description: 'Visual array programming demos with Uiua',
+    icon: 'Grid3x3',
+    requiredObjects: ['uiua'],
+    presets: [
+      'game-of-life.uiua',
+      'uiua-logo.uiua',
+      'sine.uiua',
+      'spiral.uiua',
+      'stripes.uiua',
+      'cellular-automata.uiua',
+      'mandelbrot.uiua'
+    ]
   }
 ];
