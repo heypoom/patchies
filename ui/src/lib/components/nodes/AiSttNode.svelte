@@ -358,15 +358,7 @@
           {nodeId}
         />
 
-        <button
-          class={['cursor-pointer rounded-lg border px-3 py-2', containerClass]}
-          onclick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (isRecording) stopRecording();
-            else if (!isLoading) startRecording();
-          }}
-        >
+        <div class={['cursor-pointer rounded-lg border px-3 py-2', containerClass]}>
           <div class="flex items-center justify-center gap-2">
             <div class="relative h-4 w-4">
               {#if isLoading}
@@ -400,7 +392,7 @@
               <span class="text-[9px] text-red-400">{formatDuration(recordingDuration)}</span>
             </div>
           {/if}
-        </button>
+        </div>
 
         {#if errorMessage}
           <div class="mt-1 max-w-28 text-center text-[8px] text-red-400">{errorMessage}</div>
