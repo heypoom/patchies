@@ -91,7 +91,7 @@
     <div class="border-t border-zinc-700 px-4 pt-1.5 pb-1">
       <div class="flex items-center gap-2">
         <span
-          class="text-lg text-amber-400"
+          class={['text-lg', getGlyphColor(tooltipDoc.type)]}
           style="font-family: 'Uiua', 'IBM Plex Mono', monospace;">{tooltipDoc.glyph}</span
         >
         <span class="text-xs font-semibold text-zinc-100">{tooltipDoc.name}</span>
