@@ -11,7 +11,7 @@ Useful for scaling signals down or normalizing.
 
 A constant divisor can be set via the creation argument or the hidden float inlet.
 
-_Inspired by [Pure Data](https://pd.iem.sh/objects//~)._
+_Inspired by [Pure Data](https://pd.iem.sh/objects/slash~)._
 
 ## See Also
 

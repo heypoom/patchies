@@ -18,6 +18,7 @@ import { UniqbyObject } from './UniqbyObject';
 import { WebMidiLinkObject } from './WebMidiLinkObject';
 import { SendObject } from './SendObject';
 import { RecvObject } from './RecvObject';
+import { SamplerateObject } from './SamplerateObject';
 import { TableObject } from './TableObject';
 
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
@@ -41,6 +42,7 @@ export const TEXT_OBJECTS = [
   WebMidiLinkObject,
   SendObject,
   RecvObject,
+  SamplerateObject,
   TableObject
 ] as const satisfies TextObjectClass[];
 

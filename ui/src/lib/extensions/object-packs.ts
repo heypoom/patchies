@@ -204,7 +204,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'bang~',
       'latch~',
       'threshold~',
-      'env~'
+      'env~',
+      'samplerate~'
     ]
   },
   {

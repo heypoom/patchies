@@ -22,7 +22,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
   * Processing: gain~, pan~, delay~, compressor~, waveshaper~, convolver~
   * Filters: lowpass~, highpass~, bandpass~, allpass~, notch~, lowshelf~, highshelf~, peaking~
   * Synthesis: osc~ (oscillator), sig~ (signal)
-  * Control: mtof, loadbang, metro, adsr, send, recv, send~, recv~
+  * Control: mtof, loadbang, metro, adsr, send, recv, send~, recv~, samplerate~
     * send: send messages to a named channel
     * recv: receive messages from a named channel
     * send~: send audio to a named channel (wireless audio routing)
