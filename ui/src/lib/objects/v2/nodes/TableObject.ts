@@ -155,6 +155,7 @@ export class TableObject implements TextObjectV2 {
       })
       .with(tableMessages.resize, ({ length }) => {
         if (length > 0) {
+          this.context.setParam('size', length, { notifyUI: true });
           this.bufferSize = Math.round(length);
           this.bridge.resizeBuffer(this.bufferName, this.bufferSize);
         }
