@@ -45,6 +45,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | @sveltejs/kit                     | ^2.22.0      | MIT                    |
 | @uiw/codemirror-theme-tokyo-night | ^4.24.2      | MIT                    |
 | @xyflow/svelte                    | ^1.2.2       | MIT                    |
+| bytebeat.js                       | ^2.0.0       | MIT                    |
 | butterchurn                       | ^2.6.7       | MIT                    |
 | butterchurn-presets               | ^2.4.7       | MIT                    |
 | codemirror                        | ^6.0.2       | MIT                    |

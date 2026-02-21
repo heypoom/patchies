@@ -243,6 +243,12 @@ export const dependencies: ProjectLicense[] = [
     url: 'https://npmjs.com/package/@xyflow/svelte'
   },
   {
+    name: 'bytebeat.js',
+    version: '^2.0.0',
+    license: 'MIT',
+    url: 'https://github.com/greggman/html5bytebeat'
+  },
+  {
     name: 'butterchurn',
     version: '^2.6.7',
     license: 'MIT',
