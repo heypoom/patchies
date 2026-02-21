@@ -35,16 +35,16 @@ Click the **⋮** menu (top-right when selected) to access:
 
 ![Uiua glyph palette demo](/content/images/uiua-glyph-palette.webp)
 
-Enable the glyph palette from the **⋮** menu to show a clickable grid of all
-Uiua glyphs below the editor. Glyphs are grouped by category (Stack, Monadic,
-Dyadic, 1-Modifier, 2-Modifier, Constants) and color-coded to match the
-syntax highlighting.
+The glyph palette is shown by default below the editor when editing, displaying
+a clickable grid of all Uiua glyphs. Glyphs are grouped by category (Stack,
+Monadic, Dyadic, 1-Modifier, 2-Modifier, Constants) and color-coded to match
+the syntax highlighting. Toggle it from the **⋮** menu.
 
 - **Click** a glyph to insert it at the cursor position
 - **Shift+click** a glyph to open its documentation on [uiua.org](https://www.uiua.org/docs)
 - **Hover** over a glyph to see its name, type, signature, and description
 
-The palette is only visible while editing and is not persisted in the node data.
+The palette visibility is persisted in node data and only shown while editing.
 
 ## Glyph Hover Docs
 

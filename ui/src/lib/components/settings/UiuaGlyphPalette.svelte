@@ -54,7 +54,7 @@
 <!-- Prevent mousedown from stealing focus from the editor -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  class="nodrag nowheel nopan flex max-w-[400px] flex-col gap-1 rounded-md border border-zinc-600 bg-zinc-900 py-2 shadow-xl"
+  class="nodrag nopan flex max-w-[400px] flex-col gap-1 rounded-md border border-zinc-600 bg-zinc-900 py-2 shadow-xl"
   onmousedown={(e) => e.preventDefault()}
 >
   {#each categories as cat}

@@ -253,7 +253,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
 ≡▽₂ 4            # Upscale`,
       showConsole: false,
       enableMessageOutlet: true,
-      enableVideoOutlet: true
+      enableVideoOutlet: true,
+      showGlyphPalette: true
     }))
     .with('bytebeat~', () => ({
       expr: '((t >> 10) & 42) * t',

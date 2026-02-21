@@ -22,6 +22,7 @@
   // Portal action to render element in document.body
   const portal: Action<HTMLElement> = (node) => {
     document.body.appendChild(node);
+
     return {
       destroy() {
         node.remove();
@@ -38,6 +39,7 @@
     showConsole?: boolean;
     enableMessageOutlet?: boolean;
     enableVideoOutlet?: boolean;
+    showGlyphPalette?: boolean;
     view?: 'settings' | 'preview';
   }
 
@@ -59,7 +61,9 @@
   let consoleRef: VirtualConsole | null = $state(null);
   let resultStack = $state<OutputItem[]>([]);
   let menuOpen = $state(false);
-  let showGlyphPalette = $state(false);
+
+  // Glyph palette defaults to true (shown) when undefined
+  const showGlyphPalette = $derived(data.showGlyphPalette !== false);
 
   // Tooltip state for preview mode glyph hover
   let tooltipDoc = $state<UiuaGlyphDoc | null>(null);
@@ -435,6 +439,7 @@
 
     if (glyph) {
       const doc = getUiuaGlyphDoc(glyph);
+
       if (doc) {
         // Clear any pending timeout
         if (tooltipTimeout) clearTimeout(tooltipTimeout);
@@ -586,7 +591,8 @@
             onclick={() => {
               const willShow = !showGlyphPalette;
 
-              showGlyphPalette = willShow;
+              data.showGlyphPalette = willShow;
+              updateNodeData(nodeId, { showGlyphPalette: willShow });
               menuOpen = false;
 
               if (willShow) {
