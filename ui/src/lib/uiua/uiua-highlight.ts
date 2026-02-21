@@ -133,14 +133,13 @@ const STACK_OPS = new Set(['∘', '◌', '?']);
 // Subscript characters
 const SUBSCRIPTS = '₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑₒₓₔₕₖₗₘₙₚₛₜ';
 
-function escapeHtml(text: string): string {
-  return text
+const escapeHtml = (text: string): string =>
+  text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
-}
 
 type TokenType =
   | 'monadic'
@@ -300,8 +299,8 @@ function tokenize(code: string): Token[] {
   return tokens;
 }
 
-function getTokenClass(type: TokenType): string | null {
-  return match(type)
+const getTokenClass = (type: TokenType): string | null =>
+  match(type)
     .with('monadic', () => 'uiua-monadic')
     .with('dyadic', () => 'uiua-dyadic')
     .with('mod1', () => 'uiua-mod1')
@@ -312,10 +311,28 @@ function getTokenClass(type: TokenType): string | null {
     .with('stack', () => 'uiua-stack')
     .with('default', () => null)
     .exhaustive();
+
+/**
+ * Highlight Uiua code and return HTML string.
+ */
+/**
+ * Check if a character is a Uiua glyph that has documentation
+ */
+function isUiuaGlyph(char: string): boolean {
+  // Glyphs are single characters that are functions, modifiers, or stack ops
+  return (
+    MONADIC_FUNCTIONS.has(char) ||
+    DYADIC_FUNCTIONS.has(char) ||
+    MONADIC_MODIFIERS.has(char) ||
+    DYADIC_MODIFIERS.has(char) ||
+    STACK_OPS.has(char) ||
+    CONSTANTS.has(char)
+  );
 }
 
 /**
  * Highlight Uiua code and return HTML string.
+ * Glyph spans include data-glyph attribute for tooltip support.
  */
 export function highlightUiua(code: string): string {
   if (!code) return '';
@@ -328,6 +345,11 @@ export function highlightUiua(code: string): string {
       const cls = getTokenClass(token.type);
 
       if (cls) {
+        // Add data-glyph attribute for single-character glyphs
+        if (token.value.length === 1 && isUiuaGlyph(token.value)) {
+          return `<span class="${cls}" data-glyph="${escaped}">${escaped}</span>`;
+        }
+
         return `<span class="${cls}">${escaped}</span>`;
       }
       return escaped;

@@ -60,7 +60,9 @@
     fontSize,
     children,
     handles,
-    outlets
+    outlets,
+    onPreviewMouseOver,
+    onPreviewMouseOut
   }: {
     nodeId: string;
     data: any;
@@ -85,6 +87,8 @@
     handles?: any;
     outlets?: any;
     dataKey?: string;
+    onPreviewMouseOver?: (e: MouseEvent) => void;
+    onPreviewMouseOut?: (e: MouseEvent) => void;
   } = $props();
 
   const { updateNodeData, deleteElements } = useSvelteFlow();
@@ -255,6 +259,8 @@
             <div
               bind:this={previewEl}
               ondblclick={handleDoubleClick}
+              onmouseover={onPreviewMouseOver}
+              onmouseout={onPreviewMouseOut}
               class={[
                 'expr-display cursor-pointer rounded-lg border px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
                 containerClass,

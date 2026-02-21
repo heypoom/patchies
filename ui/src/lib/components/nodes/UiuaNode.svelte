@@ -14,7 +14,19 @@
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { UiuaService, type OutputItem } from '$lib/uiua/UiuaService';
+  import { getUiuaGlyphDoc, UIUA_TOOLTIP_DELAY_MS, type UiuaGlyphDoc } from '$lib/uiua/uiua-docs';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import type { Action } from 'svelte/action';
+
+  // Portal action to render element in document.body
+  const portal: Action<HTMLElement> = (node) => {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        node.remove();
+      }
+    };
+  };
   import { GifPlayer } from '$lib/canvas/GifPlayer';
 
   const { updateNodeData } = useSvelteFlow();
@@ -46,6 +58,23 @@
   let consoleRef: VirtualConsole | null = $state(null);
   let resultStack = $state<OutputItem[]>([]);
   let menuOpen = $state(false);
+
+  // Tooltip state for preview mode glyph hover
+  let tooltipDoc = $state<UiuaGlyphDoc | null>(null);
+  let tooltipPos = $state<{ x: number; y: number } | null>(null);
+  let tooltipTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Clear tooltip when entering edit mode
+  $effect(() => {
+    if (isEditing) {
+      if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+        tooltipTimeout = null;
+      }
+      tooltipDoc = null;
+      tooltipPos = null;
+    }
+  });
 
   // Non-reactive tracking for blob URL cleanup
   let currentBlobUrls: string[] = [];
@@ -395,6 +424,38 @@
     }
   }
 
+  function handlePreviewMouseOver(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    const glyph = target.dataset?.glyph;
+
+    if (glyph) {
+      const doc = getUiuaGlyphDoc(glyph);
+      if (doc) {
+        // Clear any pending timeout
+        if (tooltipTimeout) clearTimeout(tooltipTimeout);
+
+        // Delay showing tooltip
+        tooltipTimeout = setTimeout(() => {
+          tooltipDoc = doc;
+          const rect = target.getBoundingClientRect();
+          tooltipPos = { x: rect.left, y: rect.top };
+        }, UIUA_TOOLTIP_DELAY_MS);
+      }
+    }
+  }
+
+  function handlePreviewMouseOut(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    if (target.dataset?.glyph) {
+      if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+        tooltipTimeout = null;
+      }
+      tooltipDoc = null;
+      tooltipPos = null;
+    }
+  }
+
   onMount(() => {
     messageContext.queue.addCallback(handleMessage);
     inletValues = new Array(inletCount).fill(0);
@@ -532,6 +593,8 @@
     {hasError}
     dataKey="expr"
     fontSize="14px"
+    onPreviewMouseOver={handlePreviewMouseOver}
+    onPreviewMouseOut={handlePreviewMouseOut}
   />
 
   <div class:hidden={!data.showConsole}>
@@ -560,6 +623,22 @@
   {/if}
 </div>
 
+<!-- Glyph tooltip for preview mode (portaled to body) -->
+{#if tooltipDoc && tooltipPos}
+  <div
+    use:portal
+    class="uiua-tooltip uiua-tooltip-fixed"
+    style="left: {tooltipPos.x}px; top: {tooltipPos.y}px;"
+  >
+    <div class="uiua-tooltip-header">
+      <span class="uiua-tooltip-glyph">{tooltipDoc.glyph}</span>
+      <span class="uiua-tooltip-name">{tooltipDoc.name}</span>
+    </div>
+    <div class="uiua-tooltip-meta">{tooltipDoc.type} {tooltipDoc.signature}</div>
+    <div class="uiua-tooltip-desc">{tooltipDoc.description}</div>
+  </div>
+{/if}
+
 <style>
   :global(.uiua-node-code-editor .cm-content) {
     padding: 7px 5px !important;
@@ -571,5 +650,13 @@
     font-family: 'Uiua', 'IBM Plex Mono', monospace !important;
     font-size: 14px;
     line-height: 1.4; /* Match CodeMirror's default line-height */
+  }
+
+  /* Fixed positioning for preview mode tooltip */
+  :global(.uiua-tooltip-fixed) {
+    position: fixed;
+    transform: translateY(-100%) translateY(-8px);
+    z-index: 10000;
+    pointer-events: none;
   }
 </style>

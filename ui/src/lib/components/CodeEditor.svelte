@@ -233,7 +233,8 @@
             minHeight: '100%',
             maxHeight: '500px',
             maxWidth: '500px',
-            color: 'rgb(244 244 245)'
+            color: 'rgb(244 244 245)',
+            cursor: 'text'
           },
           '.cm-focused': {
             outline: 'none'

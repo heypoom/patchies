@@ -16,7 +16,7 @@ import type { StringStream } from '@codemirror/language';
 import { hoverTooltip, tooltips, type Tooltip } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
 import { tags } from '@lezer/highlight';
-import { getUiuaGlyphDoc } from '$lib/uiua/uiua-docs';
+import { getUiuaGlyphDoc, UIUA_TOOLTIP_DELAY_MS } from '$lib/uiua/uiua-docs';
 
 // Monadic functions (take 1 array argument)
 const MONADIC_FUNCTIONS = new Set([
@@ -310,50 +310,53 @@ function createTooltipElement(doc: {
 /**
  * Hover tooltip extension for Uiua glyphs
  */
-const uiuaHoverTooltip = hoverTooltip((view, pos): Tooltip | null => {
-  const { doc } = view.state;
+const uiuaHoverTooltip = hoverTooltip(
+  (view, pos): Tooltip | null => {
+    const { doc } = view.state;
 
-  // Get the character at the hover position
-  // Handle potential multi-byte Unicode characters
-  const line = doc.lineAt(pos);
-  const lineText = line.text;
-  const lineOffset = pos - line.from;
+    // Get the character at the hover position
+    // Handle potential multi-byte Unicode characters
+    const line = doc.lineAt(pos);
+    const lineText = line.text;
+    const lineOffset = pos - line.from;
 
-  // Find the character at this position
-  // Use spread to handle multi-byte chars correctly
-  const chars = [...lineText];
-  let charIndex = 0;
-  let byteOffset = 0;
+    // Find the character at this position
+    // Use spread to handle multi-byte chars correctly
+    const chars = [...lineText];
+    let charIndex = 0;
+    let byteOffset = 0;
 
-  for (let i = 0; i < chars.length; i++) {
-    const charLen = chars[i].length;
-    if (byteOffset + charLen > lineOffset) {
-      charIndex = i;
-      break;
+    for (let i = 0; i < chars.length; i++) {
+      const charLen = chars[i].length;
+      if (byteOffset + charLen > lineOffset) {
+        charIndex = i;
+        break;
+      }
+      byteOffset += charLen;
     }
-    byteOffset += charLen;
-  }
 
-  const char = chars[charIndex];
-  if (!char) return null;
+    const char = chars[charIndex];
+    if (!char) return null;
 
-  // Look up the glyph documentation
-  const glyphDoc = getUiuaGlyphDoc(char);
-  if (!glyphDoc) return null;
+    // Look up the glyph documentation
+    const glyphDoc = getUiuaGlyphDoc(char);
+    if (!glyphDoc) return null;
 
-  // Calculate the byte positions for highlighting
-  const charStart = line.from + byteOffset;
-  const charEnd = charStart + char.length;
+    // Calculate the byte positions for highlighting
+    const charStart = line.from + byteOffset;
+    const charEnd = charStart + char.length;
 
-  return {
-    pos: charStart,
-    end: charEnd,
-    above: true,
-    create: () => ({
-      dom: createTooltipElement(glyphDoc)
-    })
-  };
-});
+    return {
+      pos: charStart,
+      end: charEnd,
+      above: true,
+      create: () => ({
+        dom: createTooltipElement(glyphDoc)
+      })
+    };
+  },
+  { hoverTime: UIUA_TOOLTIP_DELAY_MS }
+);
 
 /**
  * Configure tooltips to render in document body so they can overflow node containers
