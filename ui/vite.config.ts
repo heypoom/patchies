@@ -260,7 +260,23 @@ export default defineConfig({
       '@lezer/highlight',
       'machine',
       'uxn.wasm'
-    ]
+    ],
+    esbuildOptions: {
+      plugins: [
+        {
+          // Prevent vite-plugin-wasm from treating the "uxn.wasm" npm package
+          // as a WASM file during dependency scanning (it's a JS package whose
+          // name happens to end in .wasm).
+          name: 'exclude-uxn-wasm',
+          setup(build) {
+            build.onResolve({ filter: /^uxn\.wasm/ }, (args) => ({
+              path: args.path,
+              external: true
+            }));
+          }
+        }
+      ]
+    }
   },
   build: {
     rollupOptions: {
