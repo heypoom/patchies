@@ -216,15 +216,7 @@
           {nodeId}
         />
 
-        <button
-          class={['cursor-pointer rounded-lg border px-3 py-2', containerClass]}
-          onclick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (isListening) stopListening();
-            else startListening();
-          }}
-        >
+        <div class={['cursor-pointer rounded-lg border px-3 py-2', containerClass]}>
           <div class="flex items-center justify-center gap-2">
             <Mic class={['h-4 w-4', isListening ? 'text-red-400' : 'text-zinc-500']} />
             <div class="font-mono text-xs text-zinc-300">stt</div>
@@ -236,7 +228,7 @@
               <span class="text-[9px] text-red-400">listening</span>
             </div>
           {/if}
-        </button>
+        </div>
 
         {#if errorMessage}
           <div class="mt-1 max-w-28 text-center text-[8px] text-red-400">{errorMessage}</div>
