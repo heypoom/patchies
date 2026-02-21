@@ -570,6 +570,6 @@
     --default-mono-font-family: 'Uiua';
     font-family: 'Uiua', 'IBM Plex Mono', monospace !important;
     font-size: 14px;
-    line-height: 17px;
+    line-height: 1.4; /* Match CodeMirror's default line-height */
   }
 </style>
