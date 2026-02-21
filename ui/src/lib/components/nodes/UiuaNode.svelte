@@ -584,8 +584,15 @@
           <button
             class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-700"
             onclick={() => {
-              showGlyphPalette = !showGlyphPalette;
+              const willShow = !showGlyphPalette;
+
+              showGlyphPalette = willShow;
               menuOpen = false;
+
+              if (willShow) {
+                isEditing = true;
+                setTimeout(() => layoutRef?.focus(), 10);
+              }
             }}
           >
             <Grid3x3 class="h-3.5 w-3.5" />
