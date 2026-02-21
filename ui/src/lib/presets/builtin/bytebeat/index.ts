@@ -103,7 +103,7 @@ a = noise(time)*pow(1-fract(time*8),4)*.25,
 a += sin(pow(1-fract(time*2),10)*100),
 a /= 3,
 floattobyte(a)`,
-      type: 'floatbeat',
+      type: 'bytebeat',
       syntax: 'infix',
       sampleRate: 32000
     }
