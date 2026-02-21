@@ -1,4 +1,6 @@
-Executes [Uiua](https://www.uiua.org/) code, a stack-based array programming language.
+Runs [Uiua](https://www.uiua.org/) code, a stack-based array programming language.
+
+![Uiua multimedia demo](/content/images/uiua-multimedia.webp)
 
 Tip: Write your Uiua code in [Array Box](https://arraybox.dev) or the
 [Uiua Website](https://www.uiua.org) for a nicer editing experience.
@@ -7,7 +9,7 @@ Tip: Write your Uiua code in [Array Box](https://arraybox.dev) or the
 
 Uiua can output multiple data types:
 
-- **Message outlet**: Text, arrays, and audio samples (Float32Array)
+- **Message outlet**: Text, arrays, and audio samples (`Float32Array`)
 - **Video outlet**: Images and GIFs (enable in settings)
 
 ### Audio Samples
