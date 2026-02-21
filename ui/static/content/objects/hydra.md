@@ -50,7 +50,7 @@ Patchies does NOT use standard Hydra audio reactivity APIs like `a.fft[0]`.
 Instead, use `fft()` inside arrow functions to get the FFT data. Hydra **must** be connected to a [fft~](/docs/objects/fft~) object. See the [Audio Reactivity](/docs/audio-reactivity) topic.
 
 ```javascript
-osc(() => fft().getEnergy('bass') / 255).out()
+osc(() => fft().getEnergy('bass')).out()
 ```
 
 ## Resources
