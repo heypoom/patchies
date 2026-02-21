@@ -288,7 +288,9 @@
   }
 
   const containerClass = $derived(
-    selected ? 'object-container-selected' : 'object-container-light'
+    selected
+      ? 'border-zinc-400 bg-zinc-800 shadow-glow-md'
+      : 'border-zinc-600 bg-zinc-900 hover:shadow-glow-sm'
   );
 </script>
 
@@ -333,7 +335,7 @@
           {#if showTextInput}
             <div
               class={[
-                'nodrag w-full min-w-[40px] resize-none rounded-lg border font-mono text-zinc-200',
+                'nodrag w-full min-w-[40px] resize-none rounded-lg border-1 border-dashed font-mono text-zinc-200',
                 containerClass
               ]}
             >
@@ -352,7 +354,7 @@
             <button
               onclick={sendMessage}
               class={[
-                'send-message-button rounded-lg border px-3 py-2 text-start text-xs font-medium whitespace-pre text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
+                'send-message-button rounded-lg border-1 border-dashed px-3 py-2 text-start text-xs font-medium whitespace-pre text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
                 containerClass
               ]}
             >
