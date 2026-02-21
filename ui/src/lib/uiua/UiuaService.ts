@@ -131,6 +131,13 @@ export class UiuaService {
   }
 
   /**
+   * Eagerly load the WASM module so it's ready before eval/format calls.
+   */
+  init(): void {
+    this.worker.postMessage({ type: 'init', id: this.nextId() });
+  }
+
+  /**
    * Get Uiua version string
    */
   async getVersion(): Promise<string> {

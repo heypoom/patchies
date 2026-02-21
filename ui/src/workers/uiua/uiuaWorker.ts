@@ -8,6 +8,7 @@ import type { UiuaEvalResult, UiuaFormatResult, OutputItem } from '$lib/uiua/Uiu
 
 // Message types sent from main thread to worker
 export type UiuaWorkerMessage = { id: string } & (
+  | { type: 'init' }
   | { type: 'eval'; code: string }
   | { type: 'evalWithValues'; code: string; values: unknown[] }
   | { type: 'format'; code: string }
@@ -247,6 +248,7 @@ self.onmessage = async (event: MessageEvent<UiuaWorkerMessage>) => {
   const { id } = event.data;
 
   match(event.data)
+    .with({ type: 'init' }, () => ensureModule())
     .with({ type: 'eval' }, ({ code }) => handleEval(id, code))
     .with({ type: 'evalWithValues' }, ({ code, values }) => handleEvalWithValues(id, code, values))
     .with({ type: 'format' }, ({ code }) => handleFormat(id, code))

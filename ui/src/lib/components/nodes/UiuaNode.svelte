@@ -457,6 +457,7 @@
   }
 
   onMount(() => {
+    uiuaService.init();
     messageContext.queue.addCallback(handleMessage);
     inletValues = new Array(inletCount).fill(0);
 
