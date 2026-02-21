@@ -1,6 +1,6 @@
 import Fuse from 'fuse.js';
 import { BUILT_IN_PACKS } from '../../stores/extensions.store';
-import { VISUAL_NODE_DESCRIPTIONS } from '../components/object-browser/get-categorized-objects';
+import { getObjectDescription } from '../components/object-browser/get-categorized-objects';
 
 export interface DisabledObjectInfo {
   name: string;
@@ -34,7 +34,7 @@ export function useDisabledObjectSuggestion(
 
         result.push({
           name: objName,
-          description: VISUAL_NODE_DESCRIPTIONS[objName] || `${objName} node`,
+          description: getObjectDescription(objName),
           packId: pack.id,
           packName: pack.name,
           packIcon: pack.icon

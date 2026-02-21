@@ -1,6 +1,7 @@
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 import { nodeNames } from '$lib/nodes/node-types';
+import { objectSchemas } from '$lib/objects/schemas';
 import { BUILT_IN_PACKS, type ExtensionPack } from '../../../stores/extensions.store';
 
 export interface ObjectItem {
@@ -17,84 +18,13 @@ export interface CategoryGroup {
 }
 
 /**
- * Manual descriptions for visual nodes and other special nodes
+ * Fallback descriptions for objects that don't have schemas
  */
-export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
-  p5: 'P5.js creative coding canvas for generative graphics',
-  hydra: 'Live coding video synthesizer with feedback loops',
-  glsl: 'GLSL fragment shader for GPU-accelerated graphics',
-  swgl: 'SwissGL shader programming with simplified syntax',
-  textmode: 'Textmode.js, ASCII text-mode rendering for retro graphics',
-  'textmode.dom': 'Textmode.js ASCII text-mode rendering with mouse and keyboard interactivity',
-  three: 'Three.js 3D graphics and WebGL rendering',
-  'three.dom': 'Three.js 3D graphics with mouse and keyboard interactivity',
-  canvas: 'Offscreen canvas for 2D drawing and animations',
-  'canvas.dom': 'Interactive canvas with mouse and keyboard inputs',
-  dom: 'DOM manipulation with direct JavaScript access to root element',
-  vue: 'Vue 3 reactive components with Composition API',
+const FALLBACK_DESCRIPTIONS: Record<string, string> = {
   bchrn: 'Butterchurn milkdrop visualizer with audio reactivity',
-  'bg.out': 'Background output canvas for fullscreen visuals',
-  img: 'Static image display from file or URL',
-  webcam: 'Live webcam video input capture',
   screen: 'Screen capture for desktop/window recording',
-  video: 'Video file player with playback controls',
-  button: 'Clickable button that sends bang messages',
-  toggle: 'Toggle button for boolean on/off states',
-  switch: 'Horizontal switch for boolean on/off states',
-  slider: 'Number slider for parameter control',
-  knob: 'Circular encoder knob for continuous values',
-  keyboard: 'Keyboard input capture for key events',
-  textbox: 'Text input field for string messages',
-  msg: 'Message box for sending fixed messages',
   label: 'Text label for annotations and notes',
-  markdown: 'Markdown text display with formatting',
-  js: 'JavaScript code execution environment',
-  python: 'Python code execution with Pyodide',
-  expr: 'Mathematical expression evaluator',
-  filter: 'Filter messages with JavaScript conditions',
-  map: 'Transform messages with JavaScript expressions',
-  tap: 'Execute side effects and pass messages through',
-  scan: 'Accumulate values with stateful scanning',
-  uniq: 'Filter consecutive duplicate values',
-  trigger: 'Send messages through multiple outlets in right-to-left order',
-  peek: 'Display latest received value',
-  worker: 'JavaScript execution in dedicated Web Worker thread',
-  ruby: 'Ruby code execution with ruby.wasm',
-  'ai.txt': 'AI text generation with Gemini',
-  'ai.img': 'AI image generation with Gemini',
-  'ai.music': 'AI music generation with Lyria',
-  'ai.tts': 'AI text-to-speech synthesis',
-  'ai.stt': 'AI speech-to-text transcription',
-  'midi.in': 'MIDI input device receiver',
-  'midi.out': 'MIDI output device sender',
-  netsend: 'Network message sender via WebRTC',
-  netrecv: 'Network message receiver via WebRTC',
-  send: 'Send messages to a named channel',
-  recv: 'Receive messages from a named channel',
-  kv: 'Persistent key-value storage for the patch',
-  mqtt: 'MQTT pub/sub client for IoT messaging',
-  sse: 'Server-Sent Events (EventSource) receiver',
-  tts: 'Text-to-speech using Web Speech API',
-  stt: 'Speech-to-text using Web Speech API',
-  asm: 'Virtual stack machine assembly interpreter',
-  'asm.mem': 'External memory buffer for assembly programs',
-  orca: 'Orca livecoding environment',
-  strudel: 'Strudel live coding for algorithmic patterns',
-  uxn: 'UXN virtual machine',
-  uiua: 'Uiua array language with dynamic inlets',
-  iframe: 'Embedded web page in iframe',
-  link: 'Clickable hyperlink button',
-  'merge~': 'Audio channel merger (mono to stereo)',
-  'split~': 'Audio channel splitter (stereo to mono)',
-  'meter~': 'Audio level meter display',
-  'scope~': 'Oscilloscope waveform display',
-  'vdo.ninja.push': 'Push video/audio/data to VDO.Ninja',
-  'vdo.ninja.pull': 'Pull video/audio/data from VDO.Ninja',
-  wgpu: 'WebGPU compute shaders for parallel data processing',
-  'send.vdo': 'Send video frames to a named channel',
-  'recv.vdo': 'Receive video frames from a named channel',
-  note: 'Post-it note for annotations and comments',
-  'bytebeat~': 'Bytebeat algorithmic synthesis with t-based expressions'
+  link: 'Clickable hyperlink button'
 };
 
 /**
@@ -102,37 +32,30 @@ export const VISUAL_NODE_DESCRIPTIONS: Record<string, string> = {
  */
 function buildObjectToPackMap(): Map<string, ExtensionPack> {
   const map = new Map<string, ExtensionPack>();
+
   for (const pack of BUILT_IN_PACKS) {
     for (const obj of pack.objects) {
       map.set(obj, pack);
     }
   }
+
   return map;
 }
 
 const objectToPackMap = buildObjectToPackMap();
 
 /**
- * Get the description for an object from various sources
+ * Get the description for an object, using schemas as the primary source
  */
-function getObjectDescription(name: string): string {
-  // Check manual descriptions first
-  if (VISUAL_NODE_DESCRIPTIONS[name]) {
-    return VISUAL_NODE_DESCRIPTIONS[name];
+export function getObjectDescription(name: string): string {
+  const schema = objectSchemas[name];
+
+  if (schema?.description) {
+    return schema.description;
   }
 
-  // Check audio registry
-  const audioRegistry = AudioRegistry.getInstance();
-  const audioNode = audioRegistry.get(name);
-  if (audioNode?.description) {
-    return audioNode.description;
-  }
-
-  // Check object registry
-  const objectRegistry = ObjectRegistry.getInstance();
-  const textObject = objectRegistry.get(name);
-  if (textObject?.description) {
-    return textObject.description;
+  if (FALLBACK_DESCRIPTIONS[name]) {
+    return FALLBACK_DESCRIPTIONS[name];
   }
 
   return `${name} node`;

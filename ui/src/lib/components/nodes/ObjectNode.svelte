@@ -22,7 +22,7 @@
   import { validateMessageToObject } from '$lib/objects/validate-object-message';
   import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
   import { getCombinedMetadata } from '$lib/objects/v2/get-metadata';
-  import { VISUAL_NODE_DESCRIPTIONS } from '$lib/components/object-browser/get-categorized-objects';
+  import { getObjectDescription } from '$lib/components/object-browser/get-categorized-objects';
   import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
   import { logger } from '$lib/utils/logger';
   import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
@@ -960,11 +960,8 @@
         return metadata.description ?? null;
       }
 
-      // Fall back to visual node descriptions
-      const visualDescription = VISUAL_NODE_DESCRIPTIONS[current.name];
-      if (visualDescription) {
-        return visualDescription;
-      }
+      // Fall back to schema/fallback descriptions
+      return getObjectDescription(current.name);
     }
 
     return null;

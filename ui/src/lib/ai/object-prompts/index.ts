@@ -89,7 +89,7 @@ export const objectPrompts: Record<string, string> = {
   label: labelPrompt,
   three: threePrompt,
   'three.dom': threeDomPrompt,
-  wgpu: wgpuPrompt,
+  'wgpu.compute': wgpuPrompt,
   worker: workerPrompt,
   send: sendPrompt,
   recv: recvPrompt,
