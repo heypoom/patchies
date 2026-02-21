@@ -1,15 +1,13 @@
 <script lang="ts">
-  import { Pause, Play, RotateCcw } from '@lucide/svelte/icons';
+  import { Pause, Play } from '@lucide/svelte/icons';
   import type { OutputItem } from '$lib/uiua/UiuaService';
 
   let {
     resultStack,
-    onRun,
     getBlobUrl,
     getImageDimensions
   }: {
     resultStack: OutputItem[];
-    onRun: () => void;
     getBlobUrl: (index: number) => string | undefined;
     getImageDimensions: (index: number) => { width: number; height: number } | undefined;
   } = $props();
@@ -32,16 +30,6 @@
 </script>
 
 <div class="absolute top-0 left-full z-20 ml-2">
-  <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-    <button
-      onclick={onRun}
-      class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
-      title="Re-run"
-    >
-      <RotateCcw class="h-4 w-4" />
-    </button>
-  </div>
-
   <div
     class="nodrag nowheel flex max-h-96 min-h-20 max-w-96 min-w-20 items-center justify-center overflow-auto rounded-md border border-zinc-600 bg-zinc-900 p-2 shadow-xl"
   >

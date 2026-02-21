@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import { Settings, Eye, EllipsisVertical } from '@lucide/svelte/icons';
+  import { Settings, Eye, EllipsisVertical, Play } from '@lucide/svelte/icons';
   import * as Popover from '$lib/components/ui/popover';
   import UiuaSettings from '$lib/components/settings/UiuaSettings.svelte';
   import UiuaPreview from '$lib/components/settings/UiuaPreview.svelte';
@@ -538,6 +538,14 @@
         selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
       ]}
     >
+      <button
+        onclick={handleRun}
+        class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+        title="Re-run"
+      >
+        <Play class="h-4 w-4 text-zinc-300" />
+      </button>
+
       <Popover.Root bind:open={menuOpen}>
         <Popover.Trigger>
           <button class="cursor-pointer rounded p-1 hover:bg-zinc-700" title="More options">
@@ -613,7 +621,7 @@
 
   <!-- Floating preview panel -->
   {#if data.view === 'preview'}
-    <UiuaPreview {resultStack} onRun={handleRun} {getBlobUrl} {getImageDimensions} />
+    <UiuaPreview {resultStack} {getBlobUrl} {getImageDimensions} />
   {/if}
 
   <!-- Floating settings panel -->
