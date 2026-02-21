@@ -115,6 +115,16 @@
   // Whether the message uses advanced syntax (sequential or space-separated)
   let isAdvancedSyntax = $derived(isSequential || hasSpaceTokens);
 
+  // For space-separated shorthands (e.g., "resize $1"), split into type + args for display
+  let shorthandParts = $derived.by(() => {
+    if (!hasSpaceTokens || isSequential) return null;
+
+    const tokens = splitByTopLevelSpaces(data.message ?? '');
+    if (tokens.length < 2) return null;
+
+    return { type: tokens[0], args: tokens.slice(1).join(' ') };
+  });
+
   // Fast heuristics to switch syntax highlighting modes.
   let shouldUseJsSyntax = $derived.by(() => {
     const msg = data.message ?? '';
@@ -358,7 +368,10 @@
                 containerClass
               ]}
             >
-              {#if msgText && (parsedObject !== CANNOT_PARSE_SYMBOL || isAdvancedSyntax) && typeof parsedObject !== 'number'}
+              {#if msgText && shorthandParts}
+                <span class="text-purple-300">{shorthandParts.type}</span>
+                <span class="text-zinc-400">{shorthandParts.args}</span>
+              {:else if msgText && (parsedObject !== CANNOT_PARSE_SYMBOL || isAdvancedSyntax) && typeof parsedObject !== 'number'}
                 <code class="whitespace-pre">
                   {@html highlightedHtml}
                 </code>
