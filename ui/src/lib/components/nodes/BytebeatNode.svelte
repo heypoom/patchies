@@ -17,6 +17,9 @@
     type BytebeatNode as BytebeatAudioNode
   } from '$lib/audio/v2/nodes/BytebeatNode';
 
+  let contentContainer: HTMLDivElement | null = null;
+  let contentWidth = $state(100);
+
   const TYPE_OPTIONS: { label: string; value: BytebeatType }[] = [
     { label: 'Bytebeat', value: 'bytebeat' },
     { label: 'Floatbeat', value: 'floatbeat' },
@@ -171,6 +174,11 @@
     e.stopPropagation();
   }
 
+  function updateContentWidth() {
+    if (!contentContainer) return;
+    contentWidth = contentContainer.offsetWidth;
+  }
+
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
@@ -192,6 +200,20 @@
     if (isEditing) {
       setTimeout(() => layoutRef?.focus(), 10);
     }
+
+    updateContentWidth();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateContentWidth();
+    });
+
+    if (contentContainer) {
+      resizeObserver.observe(contentContainer);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   });
 
   onDestroy(() => {
@@ -218,7 +240,7 @@
 
 <div class="relative flex gap-x-3">
   <div class="group relative">
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2" bind:this={contentContainer}>
       <!-- Floating toolbar -->
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
         <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
@@ -288,7 +310,7 @@
   {#if showSettings}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="relative" onclick={handleSettingsClick}>
+    <div class="absolute" style="left: {contentWidth + 10}px" onclick={handleSettingsClick}>
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
         <button
           onclick={() => (showSettings = false)}
