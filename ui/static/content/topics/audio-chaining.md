@@ -8,7 +8,7 @@ You can chain many audio objects together to create audio effects and soundscape
 
 ## Fun Examples
 
-Here's [a little patch](/?id=vdqg4fpgxeca8ot) by [@kijjaz](https://www.instagram.com/kijjaz) that uses mathematical expressions to make a beat:
+Here's [a little patch](/?id=93ip4c2tmua45ho) by [@kijjaz](https://www.instagram.com/kijjaz) that uses mathematical expressions to make a beat:
 
 ![Beat example](/content/images/patchies-audio-super-fun.png)
 
