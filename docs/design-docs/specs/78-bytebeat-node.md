@@ -180,6 +180,54 @@ Standard rates: 8000, 11025, 22050, 32000, 44100, 48000
 
 Lower rates = crunchier/lo-fi sound (classic bytebeat is 8000 Hz).
 
+## ByteBeatNode Library API
+
+Reference from [html5bytebeat](https://github.com/greggman/html5bytebeat):
+
+### Setup & Construction
+
+```typescript
+await ByteBeatNode.setup(context);           // Required before instantiation
+const node = new ByteBeatNode(context);      // Creates instance
+```
+
+### Enums (numeric values)
+
+```typescript
+// Type - accessed via ByteBeatNode.Type.*
+ByteBeatNode.Type.byteBeat        // 0-255 output
+ByteBeatNode.Type.floatBeat       // -1.0 to +1.0 output
+ByteBeatNode.Type.signedByteBeat  // -128 to 127 output
+
+// ExpressionType - accessed via ByteBeatNode.ExpressionType.*
+ByteBeatNode.ExpressionType.infix     // Standard: sin(t / 50)
+ByteBeatNode.ExpressionType.postfix   // RPN: t 50 / sin
+ByteBeatNode.ExpressionType.glitch    // Glitch machine format
+ByteBeatNode.ExpressionType.function  // Function body
+```
+
+### Methods
+
+```typescript
+// Configuration
+node.setType(ByteBeatNode.Type.byteBeat);
+node.setExpressionType(ByteBeatNode.ExpressionType.infix);
+node.setDesiredSampleRate(8000);
+
+// Expression (async!)
+await node.setExpressions(['((t >> 10) & 42) * t']);
+
+// Playback
+node.reset();           // Reset t to 0
+node.isRunning();       // Check if generating audio
+
+// Connection (extends AudioWorkletNode)
+node.connect(destination);
+node.disconnect();
+```
+
+**Important**: The library has no explicit `play()`/`pause()` methods. Playback is always on when connected.
+
 ## Implementation Details
 
 ### Library Integration
@@ -192,10 +240,37 @@ async create(context: AudioContext) {
   await ByteBeatNode.setup(context);
   this.byteBeatNode = new ByteBeatNode(context);
 
+  // GainNode for play/pause control (library has no pause)
+  this.gainNode = context.createGain();
+  this.gainNode.gain.value = 0;  // Start paused
+  this.byteBeatNode.connect(this.gainNode);
+
   // Apply initial settings from node data
   this.applySettings(nodeData);
 
-  return this.byteBeatNode;  // This is the AudioNode to connect
+  return this.gainNode;  // Return gain node as output
+}
+```
+
+### Play/Pause Implementation
+
+Since ByteBeatNode has no pause method, we control playback via a GainNode:
+
+```typescript
+play() {
+  this.gainNode.gain.value = 1;
+  this.isPlaying = true;
+}
+
+pause() {
+  this.gainNode.gain.value = 0;
+  this.isPlaying = false;
+}
+
+stop() {
+  this.gainNode.gain.value = 0;
+  this.byteBeatNode.reset();  // Reset t to 0
+  this.isPlaying = false;
 }
 ```
 
@@ -203,26 +278,35 @@ async create(context: AudioContext) {
 
 When the expression changes in the CodeEditor:
 
-1. Validate expression (bytebeat.js may throw on invalid expressions)
-2. If valid, call `byteBeatNode.setExpressions([expression])`
+1. Call `await byteBeatNode.setExpressions([expression])` (async!)
+2. The library validates internally - catch errors for invalid expressions
 3. Show error indicator if invalid (red border on editor?)
 
-### Playback State
+### Type/Syntax Mapping
 
-The `isPlaying` state controls the internal audio generation:
+Map our string values to library enums:
 
-- Play: The ByteBeatNode generates audio
-- Pause: Generation pauses but `t` is preserved
-- Stop: Generation stops AND `t` resets to 0
+```typescript
+const TYPE_MAP = {
+  'bytebeat': ByteBeatNode.Type.byteBeat,
+  'floatbeat': ByteBeatNode.Type.floatBeat,
+  'signedBytebeat': ByteBeatNode.Type.signedByteBeat,
+};
+
+const SYNTAX_MAP = {
+  'infix': ByteBeatNode.ExpressionType.infix,
+  'postfix': ByteBeatNode.ExpressionType.postfix,
+  'glitch': ByteBeatNode.ExpressionType.glitch,
+  'function': ByteBeatNode.ExpressionType.function,
+};
+```
 
 ### Connection to Audio Graph
 
-The ByteBeatNode from bytebeat.js extends AudioWorkletNode, so it can connect directly to the Web Audio graph:
+The ByteBeatNode extends AudioWorkletNode. We wrap it with a GainNode for volume control:
 
-```typescript
-connect(destination: AudioNode | AudioParam) {
-  this.byteBeatNode.connect(destination);
-}
+```text
+ByteBeatNode → GainNode → destination
 ```
 
 ## Undo/Redo Support
@@ -268,19 +352,16 @@ Good defaults and examples for documentation:
 
 ```javascript
 // Classic bytebeat
-((t >> 10) & 42) * t;
+((t >> 10) & 42) * t
 
 // Sierpinski harmony
-(t &
-  (t >>
-    8(
-      // 8-bit melody
-      (t * 5) & (t >> 7),
-    ))) |
-  ((t * 3) & (t >> 10));
+t & t >> 8
+
+// 8-bit melody
+(t * 5 & t >> 7) | (t * 3 & t >> 10)
 
 // Floatbeat sine
-Math.sin(t / 10) * 0.5;
+Math.sin(t / 10) * 0.5
 ```
 
 ## Edge Cases
