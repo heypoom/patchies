@@ -10,6 +10,8 @@ No API key required — uses your browser's native speech recognition engine.
 
 - **Language**: BCP-47 language code (e.g. `en-US`, `th-TH`, `ja-JP`)
 - **Continuous**: Keep listening after each utterance
+  - Continuous Off = only listens until end of the sentence. stops automatically.
+  - Continuous On = keeps listening until a manual stop
 - **Interim Results**: Output partial results while speaking
 
 ## Browser Support
