@@ -242,6 +242,7 @@
         // Update expression without triggering evaluation
         data.expr = value;
         updateNodeData(nodeId, { expr: value });
+        setTimeout(() => updateNodeInternals(nodeId), 5);
 
         return true;
       })
@@ -376,6 +377,7 @@
 
   function handleExpressionChange(newExpr: string) {
     data.expr = newExpr;
+    setTimeout(() => updateNodeInternals(nodeId), 5);
   }
 
   async function handleRun() {
@@ -396,6 +398,7 @@
           if (formatted && formatted !== currentExpr) {
             data.expr = formatted;
             updateNodeData(nodeId, { expr: formatted });
+            setTimeout(() => updateNodeInternals(nodeId), 5);
           }
         } else {
           hasError = true;
