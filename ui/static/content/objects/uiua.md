@@ -16,8 +16,8 @@ Uiua can generate audio as WAV data. When output through the message outlet,
 audio is automatically decoded to `Float32Array` which can be connected
 directly to:
 
-- `sampler~` - Load samples for playback
-- `table` - Store in a named buffer for use with `tabread~`
+- [sampler~](/docs/objects/sampler~) - Load samples for playback
+- [table](/docs/objects/table) - Store in a named buffer for use with [tabread~](/docs/objects/tabread~)
 
 ### Images and GIFs
 
