@@ -39,7 +39,6 @@
   } = $props();
 
   let isEditing = $state(!data.expr);
-  let expr = $state(data.expr || '');
   let inletValues = $state<unknown[]>([]);
   let hasError = $state(false);
   let isLoading = $state(false);
@@ -185,11 +184,12 @@
 
   // Parse $N placeholders to determine inlet count (only $1-$9 supported)
   const inletCount = $derived.by(() => {
-    if (!expr.trim()) return 1;
+    const currentExpr = data.expr?.trim() || '';
+    if (!currentExpr) return 1;
 
     // Only match single-digit non-zero references ($1 through $9)
     const dollarVarPattern = /\$([1-9])/g;
-    const matches = [...expr.matchAll(dollarVarPattern)];
+    const matches = [...currentExpr.matchAll(dollarVarPattern)];
     const maxIndex = Math.max(0, ...matches.map((m) => parseInt(m[1])));
 
     return Math.max(1, maxIndex);
@@ -211,7 +211,6 @@
       })
       .with(messages.setCode, ({ value }) => {
         // Update expression without triggering evaluation
-        expr = value;
         data.expr = value;
         updateNodeData(nodeId, { expr: value });
 
@@ -258,7 +257,9 @@
   }
 
   async function evaluateAndSend(values: unknown[]) {
-    if (!expr.trim()) {
+    const currentExpr = data.expr?.trim() || '';
+
+    if (!currentExpr) {
       if (messageOutletEnabled) {
         messageContext.send(values[0] ?? 0);
       }
@@ -268,7 +269,7 @@
     isLoading = true;
 
     try {
-      const result = await uiuaService.evalWithValues(expr, values);
+      const result = await uiuaService.evalWithValues(currentExpr, values);
 
       if (result.success) {
         hasError = false;
@@ -350,21 +351,20 @@
 
   async function handleRun() {
     consoleRef?.clearConsole();
-    expr = data.expr;
+    const currentExpr = data.expr?.trim() || '';
 
     // Try to format the code
-    if (expr.trim()) {
+    if (currentExpr) {
       isLoading = true;
 
       try {
-        const formatResult = await uiuaService.format(expr);
+        const formatResult = await uiuaService.format(currentExpr);
 
         if (formatResult.success) {
           hasError = false;
           const formatted = formatResult.formatted?.trim();
 
-          if (formatted !== expr) {
-            expr = formatted;
+          if (formatted && formatted !== currentExpr) {
             data.expr = formatted;
             updateNodeData(nodeId, { expr: formatted });
           }
