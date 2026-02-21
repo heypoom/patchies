@@ -3,7 +3,7 @@ Create expressive, dynamic music pieces and complex audio patterns.
 
 ![Patchies Strudel demo](/content/images/strudel-haunted.webp)
 
-> Try this patch [in the app](/?id=rtjfuwsnvame8bb)!
+> Try this patch [in the app](/?id=2ou2y708kz9n3g4)!
 
 ## Getting Started
 
