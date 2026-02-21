@@ -7,12 +7,14 @@ import { Bang, Stop, Toggle, messages } from './common';
 // STT-specific message schemas
 const Listen = sym('listen');
 const SetLang = msg('setLang', { value: Type.String() });
+const Interim = msg('interim', { text: Type.String() });
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const sttMessages = {
   ...messages,
   listen: schema(Listen),
   setLang: schema(SetLang),
+  interim: schema(Interim),
   string: schema(Type.String())
 };
 
@@ -40,7 +42,10 @@ export const sttSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Transcribed text output',
-      messages: [{ schema: Type.String(), description: 'Transcribed text string' }]
+      messages: [
+        { schema: Type.String(), description: 'Transcribed text string' },
+        { schema: Interim, description: 'Interim (partial) transcription result' }
+      ]
     }
   ],
   tags: ['stt', 'speech', 'transcription', 'microphone', 'web-api']
