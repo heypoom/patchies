@@ -263,11 +263,6 @@ export default defineConfig({
       'bytebeat.js' // Uses Function.toString() for worklet code
     ]
   },
-  esbuild: {
-    // Preserve class/function names - required for bytebeat.js which uses
-    // Function.toString() to generate worklet code
-    keepNames: true
-  },
   build: {
     rollupOptions: {
       output: {
