@@ -86,7 +86,7 @@
         <div>
           <div class="mb-1 text-[8px] text-zinc-400">Last Transcription</div>
           <div
-            class="max-h-20 overflow-y-auto rounded border border-zinc-700 bg-zinc-800/50 p-2 text-[10px] text-zinc-300"
+            class="nowheel nodrag nopan max-h-20 overflow-y-auto rounded border border-zinc-700 bg-zinc-800/50 p-2 text-[10px] text-zinc-300"
           >
             {transcription}
           </div>
