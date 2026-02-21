@@ -3,6 +3,11 @@ import { normalizeMessageType } from '$lib/messages/message-types';
 
 import type { ObjectShorthand } from './v2/interfaces/shorthands';
 
+const createExprTransform = (nodeType: string, field: string) => (expr: string, name: string) => ({
+  nodeType,
+  data: { [field]: expr.replace(name, '').trim() || getDefaultNodeData(nodeType)?.[field] }
+});
+
 /**
  * Default built-in shorthands.
  */
@@ -46,19 +51,13 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     names: ['msg', 'm'],
     nodeType: 'msg',
     description: 'Message object',
-    transform: (expr, name) => ({
-      nodeType: 'msg',
-      data: { message: expr.replace(name, '').trim() }
-    })
+    transform: createExprTransform('msg', 'message')
   },
   {
     names: ['label'],
     nodeType: 'label',
     description: 'Text label',
-    transform: (expr, name) => ({
-      nodeType: 'label',
-      data: { message: expr.replace(name, '').trim() }
-    })
+    transform: createExprTransform('label', 'message')
   },
   {
     names: ['link'],
@@ -76,73 +75,55 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     names: ['expr'],
     nodeType: 'expr',
     description: 'Expression evaluator',
-    transform: (expr, name) => ({
-      nodeType: 'expr',
-      data: { expr: expr.replace(name, '').trim() }
-    })
+    transform: createExprTransform('expr', 'expr')
   },
   {
     names: ['uiua'],
     nodeType: 'uiua',
     description: 'Uiua array language with dynamic inlets',
-    transform: (expr, name) => ({
-      nodeType: 'uiua',
-      data: { expr: expr.replace(name, '').trim() }
-    })
+    transform: createExprTransform('uiua', 'expr')
+  },
+  {
+    names: ['bytebeat~'],
+    nodeType: 'bytebeat~',
+    description: 'Bytebeat algorithmic synthesis',
+    transform: createExprTransform('bytebeat~', 'expr')
   },
   {
     names: ['filter'],
     nodeType: 'filter',
     description: 'Filter messages with JS condition',
-    transform: (expr, name) => ({
-      nodeType: 'filter',
-      data: { expr: expr.replace(name, '').trim() }
-    })
+    transform: createExprTransform('filter', 'expr')
   },
   {
     names: ['map'],
     nodeType: 'map',
     description: 'Transform messages with JS expression',
-    transform: (expr, name) => ({
-      nodeType: 'map',
-      data: { expr: expr.replace(name, '').trim() }
-    })
+    transform: createExprTransform('map', 'expr')
   },
   {
     names: ['tap'],
     nodeType: 'tap',
     description: 'Execute side effects and pass through',
-    transform: (expr, name) => ({
-      nodeType: 'tap',
-      data: { expr: expr.replace(name, '').trim() }
-    })
+    transform: createExprTransform('tap', 'expr')
   },
   {
     names: ['scan'],
     nodeType: 'scan',
     description: 'Accumulate values with stateful scanning',
-    transform: (expr, name) => ({
-      nodeType: 'scan',
-      data: { expr: expr.replace(name, '').trim() }
-    })
+    transform: createExprTransform('scan', 'expr')
   },
   {
     names: ['peek'],
     nodeType: 'peek',
     description: 'Display received values',
-    transform: (expr, name) => ({
-      nodeType: 'peek',
-      data: { expr: expr.replace(name, '').trim() }
-    })
+    transform: createExprTransform('peek', 'expr')
   },
   {
     names: ['expr~'],
     nodeType: 'expr~',
     description: 'Audio-rate expression',
-    transform: (expr, name) => ({
-      nodeType: 'expr~',
-      data: { expr: expr.replace(name, '').trim() }
-    })
+    transform: createExprTransform('expr~', 'expr')
   },
   {
     names: ['netsend'],

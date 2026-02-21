@@ -10,7 +10,7 @@ CRITICAL RULES:
 5. MUST connect to out~ for audio output
 
 Data Structure:
-- expression: JavaScript expression using t
+- expr: JavaScript expression using t
 - isPlaying: boolean (playback state)
 - type: "bytebeat" | "floatbeat" | "signedBytebeat"
 - syntax: "infix" | "postfix" | "glitch" | "function"
@@ -26,7 +26,7 @@ Example - Classic Bytebeat:
 {
   "type": "bytebeat~",
   "data": {
-    "expression": "((t >> 10) & 42) * t",
+    "expr": "((t >> 10) & 42) * t",
     "type": "bytebeat",
     "syntax": "infix",
     "sampleRate": 8000,
@@ -40,7 +40,7 @@ Example - Sierpinski Harmony:
 {
   "type": "bytebeat~",
   "data": {
-    "expression": "t & t >> 8",
+    "expr": "t & t >> 8",
     "type": "bytebeat",
     "syntax": "infix",
     "sampleRate": 8000,
@@ -54,7 +54,7 @@ Example - Floatbeat Sine:
 {
   "type": "bytebeat~",
   "data": {
-    "expression": "Math.sin(t / 10) * 0.5",
+    "expr": "Math.sin(t / 10) * 0.5",
     "type": "floatbeat",
     "syntax": "infix",
     "sampleRate": 44100,

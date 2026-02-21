@@ -290,7 +290,7 @@
                       <code
                         class={[
                           'expr-preview-code text-xs',
-                          lineWrap ? 'break-words whitespace-pre-wrap' : 'whitespace-pre'
+                          lineWrap ? 'break-all whitespace-pre-wrap' : 'whitespace-pre'
                         ]}
                       >
                         {@html highlightedHtml}

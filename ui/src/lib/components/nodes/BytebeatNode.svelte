@@ -33,7 +33,7 @@
   const SAMPLE_RATE_OPTIONS = [8000, 11025, 22050, 32000, 44100, 48000];
 
   interface BytebeatNodeData {
-    expression: string;
+    expr: string;
     isPlaying: boolean;
     type: BytebeatType;
     syntax: BytebeatSyntax;
@@ -51,7 +51,7 @@
     selected: boolean;
   } = $props();
 
-  let isEditing = $state(!data.expression);
+  let isEditing = $state(!data.expr);
   let layoutRef = $state<ReturnType<typeof CommonExprLayout>>();
   let showSettings = $state(false);
   let errorMessage = $state<string | null>(null);
@@ -64,7 +64,7 @@
   const tracker = useNodeDataTracker(nodeId);
 
   // Derived values
-  const expression = $derived(data.expression ?? '((t >> 10) & 42) * t');
+  const expr = $derived(data.expr ?? '((t >> 10) & 42) * t');
   const isPlaying = $derived(data.isPlaying ?? false);
   const bytebeatType = $derived(data.type ?? 'bytebeat');
   const syntax = $derived(data.syntax ?? 'infix');
@@ -120,15 +120,15 @@
   }
 
   async function handleExpressionChange(expr: string) {
-    updateNodeData(nodeId, { expression: expr });
+    updateNodeData(nodeId, { expr: expr });
     if (autoEval) {
-      await audioService.send(nodeId, 'expression', expr);
+      await audioService.send(nodeId, 'expr', expr);
     }
   }
 
   async function handleRun() {
     warnIfNoOutletConnection();
-    await audioService.send(nodeId, 'expression', expression);
+    await audioService.send(nodeId, 'expr', expr);
     await play();
   }
 
@@ -175,7 +175,7 @@
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
 
-    audioService.createNode(nodeId, 'bytebeat~', [expression, bytebeatType, syntax, sampleRate]);
+    audioService.createNode(nodeId, 'bytebeat~', [expr, bytebeatType, syntax, sampleRate]);
 
     // Set up callbacks for state updates
     const bytebeatNode = audioService.getNodeById(nodeId) as BytebeatAudioNode | undefined;
@@ -260,7 +260,7 @@
           {nodeId}
           {data}
           {selected}
-          expr={expression}
+          {expr}
           bind:isEditing
           placeholder="((t >> 10) & 42) * t"
           editorClass="bytebeat-node-code-editor"
@@ -269,7 +269,7 @@
           exitOnRun={false}
           onRun={handleRun}
           hasError={!!errorMessage}
-          dataKey="expression"
+          dataKey="expr"
           handles={bytebeatHandles}
           outlets={bytebeatOutlets}
           lineWrap

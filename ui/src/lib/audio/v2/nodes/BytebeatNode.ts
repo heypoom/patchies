@@ -87,7 +87,7 @@ export class BytebeatNode implements AudioNodeV2 {
   private ready = false;
 
   // Current settings
-  private expression = '((t >> 10) & 42) * t';
+  private expr = '((t >> 10) & 42) * t';
   private bytebeatType: BytebeatType = 'bytebeat';
   private syntax: BytebeatSyntax = 'infix';
   private sampleRate = 8000;
@@ -115,7 +115,7 @@ export class BytebeatNode implements AudioNodeV2 {
       number | undefined
     ];
 
-    if (expression) this.expression = expression;
+    if (expression) this.expr = expression;
     if (type) this.bytebeatType = type;
     if (syntax) this.syntax = syntax;
     if (sampleRate) this.sampleRate = sampleRate;
@@ -125,7 +125,7 @@ export class BytebeatNode implements AudioNodeV2 {
 
   async send(key: string, message: unknown): Promise<void> {
     // Handle expression updates
-    if (key === 'expression' && typeof message === 'string') {
+    if (key === 'expr' && typeof message === 'string') {
       await this.setExpression(message);
       return;
     }
@@ -180,12 +180,12 @@ export class BytebeatNode implements AudioNodeV2 {
   }
 
   async bang(): Promise<void> {
-    await this.setExpression(this.expression);
+    await this.setExpression(this.expr);
     await this.play();
   }
 
   async setExpression(expression: string): Promise<void> {
-    this.expression = expression;
+    this.expr = expression;
     this.onError(null);
 
     try {
@@ -249,7 +249,7 @@ export class BytebeatNode implements AudioNodeV2 {
   }
 
   getExpression(): string {
-    return this.expression;
+    return this.expr;
   }
 
   getType(): BytebeatType {
@@ -301,7 +301,7 @@ export class BytebeatNode implements AudioNodeV2 {
       this.byteBeatNode.setDesiredSampleRate(this.sampleRate);
 
       // Set initial expression
-      await this.byteBeatNode.setExpressions([this.expression]);
+      await this.byteBeatNode.setExpressions([this.expr]);
 
       // Connect to gain node for play/pause control
       this.byteBeatNode.connect(this.audioNode);
