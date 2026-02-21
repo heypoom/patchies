@@ -76,6 +76,15 @@ Control the node programmatically:
 - `{type: 'setSyntax', value: 'postfix'}` - Change syntax
 - `{type: 'setSampleRate', value: 11025}` - Change sample rate
 
+## Resources
+
+Bytebeat editors with lots of examples to explore and copy:
+
+- [Dollchan Bytebeat](https://dollchan.net/bytebeat)
+- [HTML5 Bytebeat](https://greggman.com/downloads/examples/html5bytebeat/html5bytebeat.html)
+- [EnBeat](https://chasyxx.github.io/EnBeat_NEW)
+- [html5bytebeat on GitHub](https://github.com/greggman/html5bytebeat)
+
 ## See Also
 
 - [strudel](/docs/objects/strudel) - Strudel music environment
