@@ -442,13 +442,8 @@ Transport.disableUpgrade(); // Stay on StubTransport forever
 - `src/lib/audio/v2/nodes/ToneNode.ts` - Ensure it uses shared `Tone.Transport`
 - Toolbar component - Add transport button, potentially remove/relocate volume button
 
-## Open Questions
+## Resolved Questions
 
-1. **Time signature**: Should we support configurable time signatures (4/4, 3/4, 6/8) in MVP or defer?
-   - _Recommendation_: Defer. Assume 4/4 for MVP.
-
-2. **Loop regions**: Should transport support loop start/end points?
-   - _Recommendation_: Defer. No looping in MVP.
-
-3. **Multiple transports**: Could advanced users want multiple independent clocks?
-   - _Recommendation_: Out of scope. Single global transport for simplicity.
+1. **Time signature**: Deferred. Assume 4/4 for MVP. Keep extensible for future time signature support.
+2. **Loop regions**: Deferred. No looping in MVP. Keep extensible for future loop start/end points.
+3. **Multiple transports**: Out of scope. Single global transport for simplicity.
