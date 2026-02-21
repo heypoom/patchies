@@ -245,10 +245,13 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('recv.vdo', () => ({ channel: 'foo' }))
     .with('note', () => ({ text: '', color: '#fef3c7', fontSize: 14 }))
     .with('uiua', () => ({
-      expr: '',
+      expr: `Life ← ↥∩=₃⟜+⊸(/+↻⊂A₂C₂)
+⁅×0.6 gen⊙⚂ ˙⊟30 # Init
+⍥⊸Life100        # Run
+≡▽₂ 4            # Upscale`,
       showConsole: false,
-      enableAudioOutlet: false,
-      enableVideoOutlet: false
+      enableMessageOutlet: true,
+      enableVideoOutlet: true
     }))
     .with('bytebeat~', () => ({
       expr: '((t >> 10) & 42) * t',

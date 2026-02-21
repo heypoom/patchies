@@ -5,7 +5,10 @@ import type { ObjectShorthand } from './v2/interfaces/shorthands';
 
 const createExprTransform = (nodeType: string, field: string) => (expr: string, name: string) => ({
   nodeType,
-  data: { [field]: expr.replace(name, '').trim() || getDefaultNodeData(nodeType)?.[field] }
+  data: {
+    ...getDefaultNodeData(nodeType),
+    [field]: expr.replace(name, '').trim() || getDefaultNodeData(nodeType)?.[field]
+  }
 });
 
 /**
