@@ -255,7 +255,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       isPlaying: false,
       type: 'bytebeat',
       syntax: 'infix',
-      sampleRate: 8000
+      sampleRate: 8000,
+      autoEval: true
     }))
     .otherwise(() => ({}));
 }

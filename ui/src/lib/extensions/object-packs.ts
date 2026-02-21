@@ -90,14 +90,14 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Scripting',
     description: 'Scripting languages and workers',
     icon: 'Code',
-    objects: ['worker', 'ruby', 'python', 'wgpu.compute']
+    objects: ['worker', 'ruby', 'python', 'uiua', 'wgpu.compute']
   },
   {
     id: 'low-level',
     name: 'Low Level',
     description: 'Low level VMs & languages',
     icon: 'Cpu',
-    objects: ['uxn', 'asm', 'asm.mem', 'uiua']
+    objects: ['uxn', 'asm', 'asm.mem']
   },
   {
     id: 'midi',

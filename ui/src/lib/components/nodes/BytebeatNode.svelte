@@ -38,6 +38,7 @@
     type: BytebeatType;
     syntax: BytebeatSyntax;
     sampleRate: number;
+    autoEval: boolean;
   }
 
   let {
@@ -68,6 +69,7 @@
   const bytebeatType = $derived(data.type ?? 'bytebeat');
   const syntax = $derived(data.syntax ?? 'infix');
   const sampleRate = $derived(data.sampleRate ?? 8000);
+  const autoEval = $derived(data.autoEval ?? true);
 
   const handleMessage: MessageCallbackFn = async (message) => {
     await match(message)
@@ -119,7 +121,9 @@
 
   async function handleExpressionChange(expr: string) {
     updateNodeData(nodeId, { expression: expr });
-    await audioService.send(nodeId, 'expression', expr);
+    if (autoEval) {
+      await audioService.send(nodeId, 'expression', expr);
+    }
   }
 
   async function handleRun() {
@@ -147,6 +151,12 @@
     updateNodeData(nodeId, { sampleRate: rate });
     tracker.commit('sampleRate', oldRate, rate);
     await audioService.send(nodeId, 'control', { type: 'setSampleRate', value: rate });
+  }
+
+  function setAutoEval(value: boolean) {
+    const oldValue = autoEval;
+    updateNodeData(nodeId, { autoEval: value });
+    tracker.commit('autoEval', oldValue, value);
   }
 
   function togglePlay() {
@@ -333,6 +343,17 @@
               {/each}
             </select>
           </div>
+
+          <!-- Auto-eval toggle -->
+          <label class="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={autoEval}
+              onchange={(e) => setAutoEval(e.currentTarget.checked)}
+              class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
+            />
+            <span class="text-xs text-zinc-300">Run on edit</span>
+          </label>
         </div>
       </div>
     </div>
