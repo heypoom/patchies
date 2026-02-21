@@ -371,6 +371,13 @@
     padding: 6px 8px 7px 4px !important;
   }
 
+  /* Add space after last line so it's not obscured by horizontal scrollbar */
+  :global(.bytebeat-node-code-editor .cm-content::after) {
+    content: '';
+    display: block;
+    height: 24px;
+  }
+
   :global(.bytebeat-node-container .expr-preview) {
     overflow-x: hidden;
   }
