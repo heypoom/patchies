@@ -16,7 +16,7 @@ import { hoverTooltip, tooltips, type Tooltip } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
 import { tags } from '@lezer/highlight';
 import { getUiuaGlyphDoc, UIUA_TOOLTIP_DELAY_MS } from '$lib/uiua/uiua-docs';
-import { uiuaStreamParser } from '$lib/uiua/highlighter/uiua-codemirror-tokenizer';
+import { uiuaStreamParser } from '$lib/uiua/tokenizer/uiua-codemirror-tokenizer';
 
 export const uiuaLanguage = StreamLanguage.define(uiuaStreamParser);
 

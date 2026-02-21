@@ -4,8 +4,8 @@
  */
 
 import { match } from 'ts-pattern';
-import { tokenize, type TokenType } from './uiua-preview-tokenizer';
-import { isUiuaGlyph } from './uiua-tokenizer-glyphs';
+import { tokenize, type TokenType } from './tokenizer/uiua-preview-tokenizer';
+import { isUiuaGlyph } from './tokenizer/uiua-tokenizer-glyphs';
 
 const escapeHtml = (text: string): string =>
   text

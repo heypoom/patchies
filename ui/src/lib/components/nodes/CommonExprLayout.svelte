@@ -5,7 +5,7 @@
   import CodeEditor from '../CodeEditor.svelte';
   import { keymap } from '@codemirror/view';
   import { EditorView } from 'codemirror';
-  import { highlightUiua } from '$lib/uiua/highlighter/uiua-highlight';
+  import { highlightUiua } from '$lib/uiua/uiua-highlight';
   import type { SupportedLanguage } from '$lib/codemirror/types';
 
   import 'highlight.js/styles/tokyo-night-dark.css';
