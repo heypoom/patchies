@@ -2,15 +2,17 @@ Runs [Uiua](https://www.uiua.org/) code, a stack-based array programming languag
 
 ![Uiua multimedia demo](/content/images/uiua-multimedia.webp)
 
-Tip: Write your Uiua code in [Array Box](https://arraybox.dev) or the
-[Uiua Website](https://www.uiua.org) for a nicer editing experience.
-
 ## Outputs
 
 Uiua can output multiple data types:
 
 - **Message outlet**: Text, arrays, and audio samples (`Float32Array`)
 - **Video outlet**: Images and GIFs (enable in settings)
+
+### Images and GIFs
+
+Enable the video outlet in settings to send images and GIFs through the
+video pipeline. Static images and animated GIFs are both supported.
 
 ### Audio Samples
 
@@ -21,11 +23,6 @@ directly to:
 - [sampler~](/docs/objects/sampler~) - Load samples for playback
 - [table](/docs/objects/table) - Store in a named buffer for use with [tabread~](/docs/objects/tabread~)
 
-### Images and GIFs
-
-Enable the video outlet in settings to send images and GIFs through the
-video pipeline. Static images and animated GIFs are both supported.
-
 ## Preview, Settings, and Glyph Palette
 
 Click the **⋮** menu (top-right when selected) to access:
@@ -33,6 +30,32 @@ Click the **⋮** menu (top-right when selected) to access:
 - **Preview**: View output images, GIFs, SVGs, and play audio
 - **Settings**: Toggle message/video outlets
 - **Glyphs**: Toggle the glyph insertion palette
+
+## Glyph Palette
+
+![Uiua glyph palette demo](/content/images/uiua-glyph-palette.webp)
+
+Enable the glyph palette from the **⋮** menu to show a clickable grid of all
+Uiua glyphs below the editor. Glyphs are grouped by category (Stack, Monadic,
+Dyadic, 1-Modifier, 2-Modifier, Constants) and color-coded to match the
+syntax highlighting.
+
+- **Click** a glyph to insert it at the cursor position
+- **Shift+click** a glyph to open its documentation on [uiua.org](https://www.uiua.org/docs)
+- **Hover** over a glyph to see its name, type, signature, and description
+
+The palette is only visible while editing and is not persisted in the node data.
+
+## Glyph Hover Docs
+
+![Uiua glyph hover docs demo](/content/images/uiua-hover-docs.webp)
+
+Hover over any Uiua glyph in the code editor to see inline documentation
+showing the glyph's name, type, signature, and description.
+
+## Auto-formatting
+
+Press Shift+Enter to format your code using Uiua's built-in formatter.
 
 ## Hot/Cold Placeholders
 
@@ -116,30 +139,10 @@ Uiua uses Unicode glyphs for operations:
 
 Negative numbers use `¯` (not `-`): `¯5` means -5.
 
-## Glyph Palette
-
-Enable the glyph palette from the **⋮** menu to show a clickable grid of all
-Uiua glyphs below the editor. Glyphs are grouped by category (Stack, Monadic,
-Dyadic, 1-Modifier, 2-Modifier, Constants) and color-coded to match the
-syntax highlighting.
-
-- **Click** a glyph to insert it at the cursor position
-- **Shift+click** a glyph to open its documentation on [uiua.org](https://www.uiua.org/docs)
-- **Hover** over a glyph to see its name, type, signature, and description
-
-The palette is only visible while editing and is not persisted in the node data.
-
-## Glyph Documentation
-
-Hover over any Uiua glyph in the code editor to see inline documentation
-showing the glyph's name, type, signature, and description.
-
-## Auto-formatting
-
-Press Shift+Enter to format your code using Uiua's built-in formatter.
-
 ## See also
 
+- [Array Box](https://arraybox.dev) - really nice website to edit and run Uiua code
+- [Uiua website](https://www.uiua.org)
 - [Uiua documentation](https://www.uiua.org/docs)
 - [Uiua tutorial](https://www.uiua.org/tutorial/introduction)
 - `sampler~` - Play audio samples
