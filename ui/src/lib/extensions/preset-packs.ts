@@ -223,5 +223,13 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'cellular-automata.uiua',
       'mandelbrot.uiua'
     ]
+  },
+  {
+    id: 'bytebeat-demos',
+    name: 'Bytebeat Demos',
+    description: 'Classic bytebeat formulas and demos',
+    icon: 'AudioWaveform',
+    requiredObjects: ['bytebeat~'],
+    presets: ['sine-power.beat', 'explosive.beat', 'rickroll.beat', 'floatbeat.beat']
   }
 ];

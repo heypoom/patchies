@@ -22,6 +22,7 @@ import { THREE_PRESETS } from './three.preset';
 import { IFRAME_PRESETS } from './iframe.presets';
 import { ASM_PRESETS } from './asm.presets';
 import { UIUA_PRESETS } from './uiua.presets';
+import { BYTEBEAT_PRESETS } from './bytebeat.presets';
 
 // Re-export individual preset collections
 export {
@@ -45,7 +46,8 @@ export {
   THREE_PRESETS,
   IFRAME_PRESETS,
   ASM_PRESETS,
-  UIUA_PRESETS
+  UIUA_PRESETS,
+  BYTEBEAT_PRESETS
 };
 
 /**
@@ -73,5 +75,6 @@ export const BUILTIN_PRESETS: Record<string, { type: string; data: unknown }> = 
   ...THREE_PRESETS,
   ...IFRAME_PRESETS,
   ...ASM_PRESETS,
-  ...UIUA_PRESETS
+  ...UIUA_PRESETS,
+  ...BYTEBEAT_PRESETS
 };
