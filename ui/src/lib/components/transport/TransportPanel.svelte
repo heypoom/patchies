@@ -83,7 +83,7 @@
   }
 
   function toggleMute() {
-    if (isMuted) {
+    if (isMuted || volume === 0) {
       isMuted = false;
       volume = previousVolume === 0 ? 0.5 : previousVolume;
       audioService.setOutVolume(volume);
@@ -157,8 +157,9 @@
   <!-- Play/Pause -->
   <button
     onclick={isPlaying ? handlePause : handlePlay}
-    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700"
-    title={isPlaying ? 'Pause' : 'Play'}
+    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+    title={!isDspEnabled ? 'Enable DSP first' : isPlaying ? 'Pause' : 'Play'}
+    disabled={!isDspEnabled}
   >
     {#if isPlaying}
       <Pause class="h-4 w-4 text-zinc-300" />
@@ -170,8 +171,9 @@
   <!-- Stop -->
   <button
     onclick={handleStop}
-    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700"
-    title="Stop"
+    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+    title={!isDspEnabled ? 'Enable DSP first' : 'Stop'}
+    disabled={!isDspEnabled}
   >
     <Square class="h-3.5 w-3.5 text-zinc-300" />
   </button>
@@ -216,11 +218,11 @@
     <button
       onclick={toggleMute}
       class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-700"
-      title={isMuted ? 'Unmute' : 'Mute'}
+      title={isMuted || volume === 0 ? 'Unmute' : 'Mute'}
     >
       <svelte:component
         this={volumeIcon}
-        class="h-4 w-4 {isMuted ? 'text-zinc-500' : 'text-zinc-300'}"
+        class="h-4 w-4 {isMuted || volume === 0 ? 'text-red-400' : 'text-zinc-300'}"
       />
     </button>
     <Slider

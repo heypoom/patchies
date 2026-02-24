@@ -2,8 +2,8 @@
   import { Code, Pin, PinOff, Play, X, Terminal } from '@lucide/svelte/icons';
   import { onMount, type Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';
-  import { derived } from 'svelte/store';
   import { useSvelteFlow } from '@xyflow/svelte';
+  import { transportStore } from '../../stores/transport.store';
 
   let previewContainer: HTMLDivElement | null = null;
   const { getNode, updateNodeData } = useSvelteFlow();
@@ -105,11 +105,13 @@
 
         <div class="flex gap-1">
           {#if showPauseButton}
+            {@const canPin = $transportStore.isPlaying}
             <Tooltip.Root>
               <Tooltip.Trigger>
                 <button
-                  class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                  class="cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700 disabled:cursor-not-allowed sm:opacity-0 sm:group-hover:opacity-100 sm:disabled:group-hover:opacity-50"
                   onclick={handlePlaybackToggle}
+                  disabled={!canPin && !paused}
                 >
                   {#if paused}
                     <PinOff class="h-4 w-4 text-red-400" />
@@ -118,7 +120,15 @@
                   {/if}
                 </button>
               </Tooltip.Trigger>
-              <Tooltip.Content>{paused ? 'Unfreeze frame' : 'Freeze frame'}</Tooltip.Content>
+              <Tooltip.Content>
+                {#if paused}
+                  Unfreeze frame
+                {:else if !canPin}
+                  Start playback to freeze frame
+                {:else}
+                  Freeze frame
+                {/if}
+              </Tooltip.Content>
             </Tooltip.Root>
           {/if}
 

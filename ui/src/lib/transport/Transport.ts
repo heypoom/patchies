@@ -1,5 +1,6 @@
 import { StubTransport } from './StubTransport';
 import type { ITransport, TransportState } from './types';
+import { transportStore } from '../../stores/transport.store';
 
 /**
  * Global transport manager with lazy upgrade from stub to Tone.js.
@@ -39,15 +40,18 @@ class TransportManager implements ITransport {
     if (!this.upgraded && !this.upgradeDisabled) {
       await this.upgrade();
     }
-    return this.impl.play();
+    await this.impl.play();
+    transportStore.setIsPlaying(true);
   }
 
   pause(): void {
     this.impl.pause();
+    transportStore.setIsPlaying(false);
   }
 
   stop(): void {
     this.impl.stop();
+    transportStore.setIsPlaying(false);
   }
 
   setBpm(bpm: number): void {

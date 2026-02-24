@@ -9,12 +9,14 @@ export interface TransportStoreState {
   bpm: number;
   timeDisplayFormat: TimeDisplayFormat;
   panelOpen: boolean;
+  isPlaying: boolean;
 }
 
 const defaultState: TransportStoreState = {
   bpm: DEFAULT_BPM,
   timeDisplayFormat: 'seconds',
-  panelOpen: false
+  panelOpen: false,
+  isPlaying: false
 };
 
 function loadFromStorage(): TransportStoreState {
@@ -27,7 +29,8 @@ function loadFromStorage(): TransportStoreState {
     return {
       bpm: parsed.bpm ?? DEFAULT_BPM,
       timeDisplayFormat: parsed.timeDisplayFormat ?? 'seconds',
-      panelOpen: false // Always start closed
+      panelOpen: false, // Always start closed
+      isPlaying: false // Always start stopped
     };
   } catch {
     console.warn('Failed to load transport state from localStorage');
@@ -81,6 +84,10 @@ function createTransportStore() {
 
     togglePanel() {
       update((s) => ({ ...s, panelOpen: !s.panelOpen }));
+    },
+
+    setIsPlaying(isPlaying: boolean) {
+      update((s) => ({ ...s, isPlaying }));
     }
   };
 }

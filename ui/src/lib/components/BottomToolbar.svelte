@@ -265,10 +265,7 @@
             {/if}
           </Drawer.Trigger>
           <Drawer.Content class="bg-zinc-900">
-            <Drawer.Header class="px-4 pt-2 pb-0">
-              <Drawer.Title class="text-sm text-zinc-400">Transport</Drawer.Title>
-            </Drawer.Header>
-            <div class="flex justify-center px-4 pb-6">
+            <div class="mt-4 flex justify-center px-4 pb-6">
               <TransportPanel />
             </div>
           </Drawer.Content>
