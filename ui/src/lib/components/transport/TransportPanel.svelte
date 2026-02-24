@@ -104,7 +104,7 @@
       clickTimer = setTimeout(() => {
         clickTimer = null;
         transportStore.toggleTimeDisplayFormat();
-      }, 250);
+      }, 225);
     }
   }
 
