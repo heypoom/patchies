@@ -290,7 +290,7 @@
           </Tooltip.Root>
 
           {#if $transportStore.panelOpen}
-            <div class="absolute right-0 bottom-full mb-2">
+            <div class="fixed right-[8px] bottom-[40px] mb-2">
               <TransportPanel />
             </div>
           {/if}
