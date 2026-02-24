@@ -195,7 +195,10 @@ export class CanvasRenderer {
         noPan: () => this.setInteraction('pan', false),
         noWheel: () => this.setInteraction('wheel', false),
         noInteract: () => this.setInteraction('interact', false),
-        noOutput: () => this.setVideoOutputEnabled(false)
+        noOutput: () => this.setVideoOutputEnabled(false),
+
+        // Worker-compatible clock (overrides JSRunner's main-thread Transport-based clock)
+        clock: this.renderer.createWorkerClock()
       };
 
       const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {

@@ -3,7 +3,9 @@ import { DEFAULT_BPM } from '$lib/transport/constants';
 
 const STORAGE_KEY = 'patchies:transport';
 
-export type TimeDisplayFormat = 'seconds' | 'bars';
+export type TimeDisplayFormat = 'seconds' | 'bars' | 'time';
+
+const DEFAULT_TIME_DISPLAY_FORMAT: TimeDisplayFormat = 'time';
 
 export interface TransportStoreState {
   bpm: number;
@@ -14,7 +16,7 @@ export interface TransportStoreState {
 
 const defaultState: TransportStoreState = {
   bpm: DEFAULT_BPM,
-  timeDisplayFormat: 'seconds',
+  timeDisplayFormat: DEFAULT_TIME_DISPLAY_FORMAT,
   panelOpen: false,
   isPlaying: false
 };
@@ -28,7 +30,7 @@ function loadFromStorage(): TransportStoreState {
     const parsed = JSON.parse(stored);
     return {
       bpm: parsed.bpm ?? DEFAULT_BPM,
-      timeDisplayFormat: parsed.timeDisplayFormat ?? 'seconds',
+      timeDisplayFormat: parsed.timeDisplayFormat ?? DEFAULT_TIME_DISPLAY_FORMAT,
       panelOpen: false, // Always start closed
       isPlaying: false // Always start stopped
     };
@@ -72,10 +74,12 @@ function createTransportStore() {
     },
 
     toggleTimeDisplayFormat() {
-      update((s) => ({
-        ...s,
-        timeDisplayFormat: s.timeDisplayFormat === 'seconds' ? 'bars' : 'seconds'
-      }));
+      update((s) => {
+        const formats: TimeDisplayFormat[] = ['time', 'bars', 'seconds'];
+        const currentIndex = formats.indexOf(s.timeDisplayFormat);
+        const nextIndex = (currentIndex + 1) % formats.length;
+        return { ...s, timeDisplayFormat: formats[nextIndex] };
+      });
     },
 
     setPanelOpen(open: boolean) {

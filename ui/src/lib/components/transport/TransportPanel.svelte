@@ -28,13 +28,18 @@
     return match($transportStore.timeDisplayFormat)
       .with('seconds', () => formatSeconds(seconds))
       .with('bars', () => formatBars(seconds, bpm))
+      .with('time', () => formatTime(seconds))
       .exhaustive();
   });
 
-  function formatSeconds(secs: number): string {
-    const mins = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${mins.toString().padStart(2, '0')}:${s.toFixed(2).padStart(5, '0')}`;
+  const formatSeconds = (secs: number): string => `${secs.toFixed(2)}`;
+
+  function formatTime(secs: number): string {
+    const hours = Math.floor(secs / 3600);
+    const mins = Math.floor((secs % 3600) / 60);
+    const s = Math.floor(secs % 60);
+
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }
 
   function formatBars(secs: number, bpm: number): string {
@@ -51,8 +56,10 @@
   // Volume icon
   const volumeIcon = $derived.by(() => {
     if (isMuted || volume === 0) return VolumeX;
+
     if (volume < 0.33) return Volume;
     if (volume < 0.66) return Volume1;
+
     return Volume2;
   });
 
@@ -72,6 +79,7 @@
   function handleBpmChange(e: Event) {
     const target = e.target as HTMLInputElement;
     const newBpm = parseFloat(target.value);
+
     if (!isNaN(newBpm) && newBpm > 0 && newBpm <= 999) {
       Transport.setBpm(newBpm);
       transportStore.setBpm(newBpm);
@@ -96,6 +104,7 @@
 
   function handleVolumeChange(newVolume: number) {
     volume = newVolume ?? 0;
+
     if (isMuted && volume > 0) {
       isMuted = false;
     }
@@ -103,6 +112,7 @@
 
   async function toggleDsp() {
     isDspEnabled = !isDspEnabled;
+
     if (isDspEnabled) {
       audioService.resumeDsp();
       await Transport.setDspEnabled(true);
@@ -122,6 +132,7 @@
   // Sync BPM from store on mount and when store changes
   $effect(() => {
     const storeBpm = $transportStore.bpm;
+
     if (storeBpm !== bpm) {
       bpm = storeBpm;
       Transport.setBpm(storeBpm);

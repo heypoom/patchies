@@ -176,7 +176,7 @@ export class FBORenderer {
       framebuffer: this.regl.prop<{ framebuffer: regl.Framebuffer2D }, 'framebuffer'>('framebuffer')
     });
 
-    this.defineGlobalHydraTime();
+    this.defineWorkerGlobals();
   }
 
   /** Build FBOs for all nodes in the render graph */
@@ -1345,10 +1345,10 @@ export class FBORenderer {
   }
 
   /**
-   * Define global `time` getter for Hydra compatibility
-   * This allows `() => time` to work in Hydra code!
+   * Define global `time` getter for Hydra compatibility.
+   * This allows `() => time` to work in Hydra code.
    */
-  private defineGlobalHydraTime() {
+  private defineWorkerGlobals() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const renderer: FBORenderer = this;
 
@@ -1358,5 +1358,33 @@ export class FBORenderer {
         return renderer.transportTime?.seconds ?? 0;
       }
     });
+  }
+
+  /**
+   * Create a worker-compatible clock object that reads from transportTime.
+   * Use this in extraContext to override JSRunner's broken main-thread Transport-based clock.
+   * Applies to: Hydra, Three.js, Canvas, Textmode renderers.
+   */
+  createWorkerClock() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const renderer: FBORenderer = this;
+
+    return {
+      get time() {
+        return renderer.transportTime?.seconds ?? 0;
+      },
+      get ticks() {
+        return renderer.transportTime?.ticks ?? 0;
+      },
+      get beat() {
+        return renderer.transportTime?.beat ?? 0;
+      },
+      get progress() {
+        return renderer.transportTime?.progress ?? 0;
+      },
+      get bpm() {
+        return renderer.transportTime?.bpm ?? 120;
+      }
+    };
   }
 }

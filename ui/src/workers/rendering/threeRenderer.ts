@@ -263,7 +263,10 @@ export class ThreeRenderer {
           this.setVideoOutputEnabled(false);
         },
 
-        requestAnimationFrame: () => {}
+        requestAnimationFrame: () => {},
+
+        // Worker-compatible clock (overrides JSRunner's main-thread Transport-based clock)
+        clock: this.renderer.createWorkerClock()
       };
 
       // Execute using JSRunner with Three.js-specific extra context

@@ -253,7 +253,10 @@ export class HydraRenderer {
 
         // Canvas dimensions for normalizing mouse coordinates
         width: this.renderer.outputSize[0],
-        height: this.renderer.outputSize[1]
+        height: this.renderer.outputSize[1],
+
+        // Worker-compatible clock object (overrides JSRunner's main-thread Transport-based clock)
+        clock: this.renderer.createWorkerClock()
       };
 
       // Use JSRunner's executeJavaScript method with full module support
