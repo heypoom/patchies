@@ -81,6 +81,45 @@ bun run test             # All tests
 - Support `class` prop for component extension
 - Icons: `@lucide/svelte`
 
+### Button Styling Rules
+
+**MUST follow these rules for all buttons:**
+
+1. **Always add `cursor-pointer`** - Buttons must show pointer cursor on hover
+2. **Use `disabled:cursor-not-allowed`** - If a button has a disabled state, add this class
+3. **Use shadcn-svelte Tooltip, NOT `title` attribute** - Native tooltips look inconsistent
+
+```svelte
+<!-- WRONG -->
+<button title="Save changes" onclick={handleSave}>
+  <Save class="h-4 w-4" />
+</button>
+
+<!-- RIGHT -->
+<Tooltip.Root>
+  <Tooltip.Trigger>
+    <button class="cursor-pointer ..." onclick={handleSave}>
+      <Save class="h-4 w-4" />
+    </button>
+  </Tooltip.Trigger>
+  <Tooltip.Content>Save Changes</Tooltip.Content>
+</Tooltip.Root>
+
+<!-- RIGHT - with disabled state -->
+<Tooltip.Root>
+  <Tooltip.Trigger>
+    <button
+      class="cursor-pointer disabled:cursor-not-allowed ..."
+      onclick={handleSave}
+      disabled={!canSave}
+    >
+      <Save class="h-4 w-4" />
+    </button>
+  </Tooltip.Trigger>
+  <Tooltip.Content>Save Changes</Tooltip.Content>
+</Tooltip.Root>
+```
+
 ## Node Development
 
 ### StandardHandle (Always use this)

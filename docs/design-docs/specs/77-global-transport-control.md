@@ -657,16 +657,17 @@ Completed: 2024-02-24
 
 ### Files Modified
 
-| File                                       | Changes                                                                                                    |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `src/lib/js-runner/JSRunner.ts`            | Added `clock` object to execution context with getters for `time`, `ticks`, `beat`, `progress`, `bpm`      |
-| `src/lib/canvas/GLSystem.ts`               | Added `startTransportSync()`, `stopTransportSync()`, `syncTransportTime()`. Transport syncs at 60fps       |
-| `src/workers/rendering/renderWorker.ts`    | Handles `syncTransportTime` message, passes to fboRenderer                                                 |
-| `src/workers/rendering/fboRenderer.ts`     | Added `transportTime` property and `setTransportTime()` method, passes to render props                     |
-| `src/lib/canvas/shadertoy-draw.ts`         | Changed `iTime` uniform to use `props.transportTime` instead of regl's internal clock                      |
-| `src/workers/rendering/hydraRenderer.ts`   | Changed to directly set `this.hydra.synth.time = params.transportTime`                                     |
-| `src/lib/rendering/types.ts`               | Added `transportTime: number` to `RenderParams` interface                                                  |
-| `src/lib/components/BottomToolbar.svelte`  | Replaced VolumeControl with Popover containing TransportPanel. Added tooltips to all toolbar buttons       |
+| File                                              | Changes                                                                                               |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `src/lib/js-runner/JSRunner.ts`                   | Added `clock` object to execution context with getters for `time`, `ticks`, `beat`, `progress`, `bpm` |
+| `src/lib/canvas/GLSystem.ts`                      | Added `startTransportSync()`, `stopTransportSync()`, `syncTransportTime()`. Transport syncs at 60fps  |
+| `src/workers/rendering/renderWorker.ts`           | Handles `syncTransportTime` message, passes to fboRenderer                                            |
+| `src/workers/rendering/fboRenderer.ts`            | Added `transportTime` property and `setTransportTime()` method, passes to render props                |
+| `src/lib/canvas/shadertoy-draw.ts`                | Changed `iTime` uniform to use `props.transportTime` instead of regl's internal clock                 |
+| `src/workers/rendering/hydraRenderer.ts`          | Changed to directly set `this.hydra.synth.time = params.transportTime`                                |
+| `src/lib/rendering/types.ts`                      | Added `transportTime: number` to `RenderParams` interface                                             |
+| `src/lib/components/BottomToolbar.svelte`         | Replaced VolumeControl with Popover containing TransportPanel. Added tooltips to all toolbar buttons  |
+| `src/lib/components/ObjectPreviewLayout.svelte`   | Renamed individual node toggle to Pin/PinOff icons. All buttons now use Tooltip components            |
 
 ### Key Implementation Details
 
@@ -697,6 +698,8 @@ Completed: 2024-02-24
 - BPM persisted to localStorage
 - All toolbar buttons use shadcn-svelte Tooltip components (replaced native `title` attributes)
 - Platform-aware keyboard shortcuts (⌘ on Mac, Ctrl on Windows/Linux)
+- Individual node "Pin" button (Pin/PinOff icons) stops rendering entirely for VJ freeze-frame effects
+  - Distinct from global Play/Pause which controls the transport clock
 
 ### Verification Checklist
 

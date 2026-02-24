@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code, Pause, Play, X, Terminal } from '@lucide/svelte/icons';
+  import { Code, Pin, PinOff, Play, X, Terminal } from '@lucide/svelte/icons';
   import { onMount, type Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';
   import { derived } from 'svelte/store';
@@ -105,29 +105,37 @@
 
         <div class="flex gap-1">
           {#if showPauseButton}
-            <button
-              title={paused ? 'Resume' : 'Pause'}
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              onclick={handlePlaybackToggle}
-            >
-              {#if paused}
-                <Play class="h-4 w-4 text-zinc-300" />
-              {:else}
-                <Pause class="h-4 w-4 text-zinc-300" />
-              {/if}
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                  onclick={handlePlaybackToggle}
+                >
+                  {#if paused}
+                    <PinOff class="h-4 w-4 text-red-400" />
+                  {:else}
+                    <Pin class="h-4 w-4 text-zinc-300" />
+                  {/if}
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>{paused ? 'Unfreeze frame' : 'Freeze frame'}</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
 
-          <button
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-            onclick={() => {
-              showEditor = !showEditor;
-              measureContainerWidth();
-            }}
-            title="Edit code"
-          >
-            <Code class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                onclick={() => {
+                  showEditor = !showEditor;
+                  measureContainerWidth();
+                }}
+              >
+                <Code class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Edit Code</Tooltip.Content>
+          </Tooltip.Root>
         </div>
       </div>
 
@@ -157,18 +165,24 @@
           {/if}
 
           {#if consoleSnippet}
-            <button
-              title="Toggle console"
-              class="rounded p-1 hover:bg-zinc-700"
-              onclick={handleConsoleToggle}
-            >
-              <Terminal class="h-4 w-4 text-zinc-300" />
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button class="rounded p-1 hover:bg-zinc-700" onclick={handleConsoleToggle}>
+                  <Terminal class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Toggle Console</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
 
-          <button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-            <X class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
+                <X class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Close Editor</Tooltip.Content>
+          </Tooltip.Root>
         </div>
       {/if}
 
