@@ -30,6 +30,7 @@ import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
 import { VideoTextureManager } from './VideoTextureManager.js';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
+import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -94,6 +95,9 @@ export class FBORenderer {
   private startTime: number = Date.now();
   private frameCancellable: regl.Cancellable | null = null;
   public jsRunner = JSRunner.getInstance();
+
+  /** Clock scheduler for worker-based scheduling (frame-based precision) */
+  public clockScheduler = new PollingClockScheduler();
 
   /** Shared pixel readback infrastructure */
   public pixelReadbackService: PixelReadbackService;
@@ -855,6 +859,14 @@ export class FBORenderer {
     this.lastTime = currentTime;
     this.frameCount++;
 
+    // Tick the clock scheduler with current transport state
+    const clockState: ClockState = {
+      time: this.transportTime?.seconds ?? 0,
+      beat: this.transportTime?.beat ?? 0,
+      bpm: this.transportTime?.bpm ?? 120
+    };
+    this.clockScheduler.tick(clockState);
+
     // Render each node in topological order
     for (const nodeId of this.renderGraph.sortedNodes) {
       if (!this.renderGraph) continue;
@@ -1364,10 +1376,14 @@ export class FBORenderer {
    * Create a worker-compatible clock object that reads from transportTime.
    * Use this in extraContext to override JSRunner's broken main-thread Transport-based clock.
    * Applies to: Hydra, Three.js, Canvas, Textmode renderers.
+   *
+   * Includes scheduling methods (onBeat, schedule, every, cancel, cancelAll) that
+   * use frame-based polling precision (~16ms at 60fps).
    */
   createWorkerClock() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const renderer: FBORenderer = this;
+    const scheduler = this.clockScheduler;
 
     return {
       get time() {
@@ -1384,7 +1400,13 @@ export class FBORenderer {
       },
       get bpm() {
         return renderer.transportTime?.bpm ?? 120;
-      }
+      },
+      // Scheduling methods
+      onBeat: scheduler.onBeat.bind(scheduler),
+      schedule: scheduler.schedule.bind(scheduler),
+      every: scheduler.every.bind(scheduler),
+      cancel: scheduler.cancel.bind(scheduler),
+      cancelAll: scheduler.cancelAll.bind(scheduler)
     };
   }
 }
