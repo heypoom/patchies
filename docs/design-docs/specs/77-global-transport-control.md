@@ -672,9 +672,12 @@ Completed: 2024-02-24
 | `src/lib/js-runner/JSRunner.ts`                 | Added `clock` object to execution context with getters for `time`, `ticks`, `beat`, `phase`, `bpm` |
 | `src/lib/canvas/GLSystem.ts`                    | Added `startTransportSync()`, `stopTransportSync()`, `syncTransportTime()`. Transport syncs at 60fps  |
 | `src/workers/rendering/renderWorker.ts`         | Handles `syncTransportTime` message, passes to fboRenderer                                            |
-| `src/workers/rendering/fboRenderer.ts`          | Added `transportTime` property and `setTransportTime()` method, passes to render props                |
+| `src/workers/rendering/fboRenderer.ts`          | Added `transportTime`, `setTransportTime()`, `defineWorkerGlobals()`, `createWorkerClock()`           |
 | `src/lib/canvas/shadertoy-draw.ts`              | Changed `iTime` uniform to use `props.transportTime` instead of regl's internal clock                 |
-| `src/workers/rendering/hydraRenderer.ts`        | Changed to directly set `this.hydra.synth.time = params.transportTime`                                |
+| `src/workers/rendering/hydraRenderer.ts`        | Uses `params.transportTime` for synth.time, passes `createWorkerClock()` to extraContext              |
+| `src/workers/rendering/threeRenderer.ts`        | Passes `createWorkerClock()` to extraContext for Three.js code                                        |
+| `src/workers/rendering/canvasRenderer.ts`       | Passes `createWorkerClock()` to extraContext for Canvas code                                          |
+| `src/workers/rendering/textmodeRenderer.ts`     | Passes `createWorkerClock()` to extraContext for Textmode code                                        |
 | `src/lib/rendering/types.ts`                    | Added `transportTime: number` to `RenderParams` interface                                             |
 | `src/lib/components/BottomToolbar.svelte`       | Replaced VolumeControl with Popover containing TransportPanel. Added tooltips to all toolbar buttons  |
 | `src/lib/components/ObjectPreviewLayout.svelte` | Renamed individual node toggle to Pin/PinOff icons. All buttons now use Tooltip components            |
@@ -694,6 +697,53 @@ Completed: 2024-02-24
 - Transport state (`seconds`, `ticks`, `bpm`, `isPlaying`, `beat`, `phase`) sent via `syncTransportTime` message
 - fboRenderer stores state and passes `transportTime` to all render props
 
+##### JSRunner Clock Limitation in Workers
+
+JSRunner's default `clock` object reads from the main-thread `Transport` singleton. In web workers, `Transport` is undefined/disconnected, so `clock.time` etc. always return 0.
+
+Solution: All worker-based renderers override `clock` via `extraContext`:
+
+```typescript
+// In each worker renderer (Hydra, Three.js, Canvas, Textmode):
+const extraContext = {
+  clock: this.renderer.createWorkerClock()
+};
+```
+
+##### Worker Clock Helper
+
+`createWorkerClock()` in fboRenderer.ts provides a shared clock object for all worker renderers:
+
+```typescript
+createWorkerClock() {
+  const renderer: FBORenderer = this;
+  return {
+    get time() { return renderer.transportTime?.seconds ?? 0; },
+    get ticks() { return renderer.transportTime?.ticks ?? 0; },
+    get beat() { return renderer.transportTime?.beat ?? 0; },
+    get phase() { return renderer.transportTime?.phase ?? 0; },
+    get bpm() { return renderer.transportTime?.bpm ?? 120; }
+  };
+}
+```
+
+##### Global `time` Variable for Hydra
+
+Hydra code often uses bare `time` variable: `osc(10, 0.1, () => time)`. Since `time` isn't a parameter in JSRunner's function signature, we define it on `globalThis`:
+
+```typescript
+// In fboRenderer constructor:
+private defineWorkerGlobals() {
+  const renderer: FBORenderer = this;
+  Object.defineProperty(globalThis, 'time', {
+    configurable: true,
+    get() { return renderer.transportTime?.seconds ?? 0; }
+  });
+}
+```
+
+This ensures `() => time` returns live transport time, not a stale value.
+
 #### DSP vs Volume Independence
 
 - DSP toggle controls `AudioContext.suspend()`/`resume()` and `Transport.setDspEnabled()`
@@ -704,7 +754,7 @@ Completed: 2024-02-24
 
 - Floating popover panel anchored to transport button in bottom toolbar
 - `onInteractOutside={(e) => e.preventDefault()}` keeps panel open when clicking outside
-- Time display toggles between seconds (`00:04.25`) and bars:beats:sixteenths (`2:3:04`)
+- Time display toggles between 3 formats: time (`00:00:04`), bars:beats:sixteenths (`001:1:01`), seconds (`00000.25`)
 - BPM persisted to localStorage
 - All toolbar buttons use shadcn-svelte Tooltip components (replaced native `title` attributes)
 - Platform-aware keyboard shortcuts (⌘ on Mac, Ctrl on Windows/Linux)
@@ -717,8 +767,9 @@ Completed: 2024-02-24
 - [x] Stop resets time to 0 across all nodes
 - [x] BPM changes affect JSRunner `clock.beat` and `clock.phase`
 - [x] GLSL `iTime` matches Transport.seconds
-- [x] Hydra `time` variable matches Transport.seconds
+- [x] Hydra `time` variable matches Transport.seconds (both `() => time` and `clock.time`)
 - [x] DSP toggle suspends/resumes audio independently of volume
 - [x] Volume control works in transport panel
 - [x] Panel stays open when clicking outside
 - [x] BPM persists across sessions
+- [x] Worker renderers (Three.js, Canvas, Textmode) have working `clock` object
