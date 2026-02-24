@@ -101,7 +101,8 @@ export class HydraRenderer {
     const time = performance.now();
     const deltaTime = time - this.timestamp;
 
-    this.hydra.synth.time += deltaTime * 0.001 * this.hydra.synth.speed;
+    // Use global transport time for synchronized timing
+    this.hydra.synth.time = params.transportTime;
     this.hydra.timeSinceLastUpdate += deltaTime;
 
     this.hydra.sources.forEach((source, sourceIndex) => {

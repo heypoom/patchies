@@ -5,6 +5,7 @@ import { debounce } from 'lodash';
 import { createGetVfsUrl, revokeObjectUrls } from '$lib/vfs';
 import { handleCodeError } from './handleCodeError';
 import { createKVStore } from '$lib/storage';
+import { Transport } from '$lib/transport';
 
 export interface JSRunnerOptions {
   customConsole?: {
@@ -344,8 +345,28 @@ export class JSRunner {
       'setTitle',
       'setHidePorts',
       'getVfsUrl',
+      'clock',
       ...Object.keys(extraContext)
     ];
+
+    // Clock object for transport-synced timing
+    const clock = {
+      get time() {
+        return Transport.seconds;
+      },
+      get ticks() {
+        return Transport.ticks;
+      },
+      get beat() {
+        return Transport.beat;
+      },
+      get progress() {
+        return Transport.progress;
+      },
+      get bpm() {
+        return Transport.bpm;
+      }
+    };
 
     const functionArgs = [
       customConsole,
@@ -364,6 +385,7 @@ export class JSRunner {
       setTitle,
       setHidePorts,
       createGetVfsUrl(nodeId),
+      clock,
       ...Object.values(extraContext)
     ];
 

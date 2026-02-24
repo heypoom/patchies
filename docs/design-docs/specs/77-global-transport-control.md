@@ -422,25 +422,213 @@ import { Transport } from "$lib/transport/Transport";
 Transport.disableUpgrade(); // Stay on StubTransport forever
 ```
 
+## Implementation Details
+
+### Worker Bridge (Critical Challenge)
+
+GLSL and Hydra run in a web worker (`renderWorker.ts`), but Transport lives on the main thread. We need to bridge time values across this boundary.
+
+#### Current Time Handling
+
+**fboRenderer.ts** (lines 79-84):
+
+```typescript
+private lastTime: number = 0;
+private startTime: number = Date.now();
+// In renderFrame():
+const currentTime = (Date.now() - this.startTime) / 1000;
+```
+
+**shadertoy-draw.ts** (line 124):
+
+```typescript
+iTime: ({ time }) => time, // Uses regl's internal clock
+```
+
+**hydraRenderer.ts** (line 104):
+
+```typescript
+this.hydra.synth.time += deltaTime * 0.001 * this.hydra.synth.speed;
+```
+
+#### Solution: Transport Time Sync Message
+
+Main thread sends periodic time updates to worker via GLSystem:
+
+```typescript
+// GLSystem.ts - add to animation frame loop
+syncTransportTime(state: TransportState): void {
+  this.send('syncTransportTime', state);
+}
+
+// Call at 60fps for smooth visual sync
+```
+
+Worker receives and stores transport state:
+
+```typescript
+// renderWorker.ts - handle sync message
+.with({ type: 'syncTransportTime' }, ({ data }) => {
+  fboRenderer.setTransportTime(data);
+})
+
+// fboRenderer.ts - store transport time
+private transportTime: TransportState | null = null;
+
+setTransportTime(data: TransportState): void {
+  this.transportTime = data;
+}
+```
+
+#### GLSL Integration
+
+Change `shadertoy-draw.ts` to use transport time via props:
+
+```typescript
+// Add to P type:
+type P = {
+  // ... existing
+  transportTime: number;
+};
+
+// Change uniform:
+iTime: (_, props: P) => props.transportTime,
+```
+
+Pass from fboRenderer when rendering:
+
+```typescript
+fboNode.draw({
+  // ... existing props
+  transportTime: this.transportTime?.seconds ?? this.lastTime
+});
+```
+
+#### Hydra Integration
+
+Change `hydraRenderer.ts` to use transport time:
+
+```typescript
+renderFrame(params: RenderParams) {
+  if (this.renderer.transportTime) {
+    // Use global transport time
+    this.hydra.synth.time = this.renderer.transportTime.seconds;
+  } else {
+    // Fallback to local accumulator
+    this.hydra.synth.time += deltaTime * 0.001 * this.hydra.synth.speed;
+  }
+}
+```
+
+### JSRunner Integration
+
+Add `clock` object to JSRunner context (`JSRunner.ts` lines 330-368):
+
+```typescript
+// Add to functionParams:
+const functionParams = [
+  // ... existing
+  'clock'
+];
+
+// Add to functionArgs:
+import { Transport } from '$lib/transport';
+
+const clock = {
+  get time() { return Transport.seconds; },
+  get ticks() { return Transport.ticks; },
+  get beat() { return Transport.beat; },
+  get progress() { return Transport.progress; },
+  get bpm() { return Transport.bpm; }
+};
+
+const functionArgs = [
+  // ... existing
+  clock
+];
+```
+
+### State Persistence
+
+Create `src/stores/transport.store.ts` following existing patterns (see `preset-library.store.ts`):
+
+```typescript
+const STORAGE_KEY = 'patchies:transport';
+
+export interface TransportStoreState {
+  bpm: number;
+  timeDisplayFormat: 'seconds' | 'bars';
+}
+
+// Persist BPM preference to localStorage
+// Sync with TransportManager on load
+```
+
+### Toolbar Integration
+
+The existing `VolumeControl.svelte` in `BottomToolbar.svelte` will be replaced with a `TransportButton` that opens the `TransportPanel`. Volume control moves inside the panel.
+
+**BottomToolbar.svelte** changes:
+
+- Replace `<VolumeControl />` with `<TransportButton />`
+- TransportButton uses Popover pattern (like overflow menu)
+
 ## Files to Create/Modify
 
 ### New Files
 
-- `src/lib/transport/types.ts` - `ITransport` interface
-- `src/lib/transport/StubTransport.ts` - Lightweight `performance.now()` implementation
-- `src/lib/transport/ToneTransport.ts` - Full Tone.js implementation
-- `src/lib/transport/Transport.ts` - Global singleton with lazy upgrade
-- `src/lib/transport/constants.ts` - Default values (BPM, PPQ)
-- `src/lib/components/transport/TransportPanel.svelte` - UI panel
-- `src/lib/components/transport/TransportButton.svelte` - Toolbar button
+| File                                                 | Purpose                            |
+| ---------------------------------------------------- | ---------------------------------- |
+| `src/lib/transport/types.ts`                         | `ITransport` interface             |
+| `src/lib/transport/constants.ts`                     | `DEFAULT_BPM`, `DEFAULT_PPQ`       |
+| `src/lib/transport/StubTransport.ts`                 | `performance.now()` implementation |
+| `src/lib/transport/ToneTransport.ts`                 | Tone.js wrapper                    |
+| `src/lib/transport/Transport.ts`                     | Global singleton with lazy upgrade |
+| `src/lib/transport/index.ts`                         | Barrel exports                     |
+| `src/stores/transport.store.ts`                      | BPM/format persistence             |
+| `src/lib/components/transport/TransportPanel.svelte` | Floating panel UI                  |
+| `src/lib/components/transport/TimeDisplay.svelte`    | Clickable time format toggle       |
+| `src/lib/components/transport/index.ts`              | Barrel exports                     |
 
 ### Modifications
 
-- `src/lib/components/nodes/GLSLNode.svelte` - Use `Transport.seconds` for `iTime`
-- `src/lib/components/nodes/HydraNode.svelte` - Use `Transport.seconds` for `time`
-- `src/lib/js-runner/JSRunner.ts` - Expose `clock` object in context
-- `src/lib/audio/v2/nodes/ToneNode.ts` - Ensure it uses shared `Tone.Transport`
-- Toolbar component - Add transport button, potentially remove/relocate volume button
+| File                                      | Change                                       |
+| ----------------------------------------- | -------------------------------------------- |
+| `src/lib/canvas/GLSystem.ts`              | Add `syncTransportTime()` method             |
+| `src/workers/rendering/renderWorker.ts`   | Handle `syncTransportTime` message           |
+| `src/workers/rendering/fboRenderer.ts`    | Store and distribute transport time to nodes |
+| `src/lib/canvas/shadertoy-draw.ts`        | Use `props.transportTime` for `iTime`        |
+| `src/workers/rendering/hydraRenderer.ts`  | Use transport time for `synth.time`          |
+| `src/lib/js-runner/JSRunner.ts`           | Add `clock` object to execution context      |
+| `src/lib/components/BottomToolbar.svelte` | Replace VolumeControl with TransportButton   |
+| `src/lib/components/VolumeControl.svelte` | Move into TransportPanel (or inline)         |
+
+## Implementation Order
+
+1. **Transport Core** - Create types, constants, StubTransport, ToneTransport, Transport singleton
+2. **State Store** - Create transport.store.ts for persistence
+3. **JSRunner Integration** - Add clock object (main thread only, quick win)
+4. **Worker Bridge** - GLSystem sync, renderWorker handler, fboRenderer storage
+5. **GLSL/Hydra Integration** - Update shadertoy-draw.ts and hydraRenderer.ts
+6. **UI Components** - TransportPanel, TimeDisplay, toolbar integration
+
+## Verification
+
+### Unit Tests
+
+- StubTransport: seconds/ticks/beat/progress calculations
+- BPM changes affect tick rate correctly
+- State transfer during stub→tone upgrade
+
+### Manual Testing
+
+1. Play/pause freezes ALL visuals simultaneously
+2. Stop resets time to 0 across all nodes
+3. BPM changes affect JSRunner `clock.beat` and `clock.progress`
+4. GLSL `iTime` matches Transport.seconds
+5. Hydra `time` variable matches Transport.seconds
+6. DSP toggle mutes audio but visuals continue
+7. Volume control works in new location
 
 ## Resolved Questions
 

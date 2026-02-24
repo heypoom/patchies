@@ -79,6 +79,16 @@ export class FBORenderer {
   private lastTime: number = 0;
   private frameCount: number = 0;
 
+  /** Transport time from main thread for synchronized timing */
+  public transportTime: {
+    seconds: number;
+    ticks: number;
+    bpm: number;
+    isPlaying: boolean;
+    beat: number;
+    progress: number;
+  } | null = null;
+
   /** Profiler for frame timing and regl.read() metrics */
   public profiler = new RenderingProfiler();
   private startTime: number = Date.now();
@@ -791,6 +801,21 @@ export class FBORenderer {
     this.uniformDataByNode.get(nodeId)!.set(uniformName, uniformValue);
   }
 
+  /**
+   * Set transport time from main thread for synchronized timing.
+   * Called at 60fps to keep GLSL/Hydra in sync with global transport.
+   */
+  setTransportTime(state: {
+    seconds: number;
+    ticks: number;
+    bpm: number;
+    isPlaying: boolean;
+    beat: number;
+    progress: number;
+  }) {
+    this.transportTime = state;
+  }
+
   setPreviewEnabled(nodeId: string, enabled: boolean) {
     this.previewRenderer.setPreviewEnabled(nodeId, enabled);
     this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();
@@ -918,6 +943,9 @@ export class FBORenderer {
     const mouseData = this.mouseDataByNode.get(node.id) ?? [0, 0, 0, 0];
 
     // Render to FBO
+    // Use transport time if available, otherwise fall back to local time
+    const transportTime = this.transportTime?.seconds ?? this.lastTime;
+
     fboNode.framebuffer.use(() => {
       fboNode.render({
         lastTime: this.lastTime,
@@ -926,7 +954,8 @@ export class FBORenderer {
         mouseY: mouseData[1],
         mouseZ: mouseData[2],
         mouseW: mouseData[3],
-        userParams: userUniformParams as UserParam[]
+        userParams: userUniformParams as UserParam[],
+        transportTime
       });
     });
   }

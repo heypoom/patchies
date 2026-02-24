@@ -48,6 +48,8 @@ export interface RenderParams {
   mouseZ: number;
   mouseW: number;
   userParams: UserParam[];
+  /** Global transport time in seconds for synchronized timing */
+  transportTime: number;
 }
 
 export type RenderFunction = (renderParams: RenderParams) => void;

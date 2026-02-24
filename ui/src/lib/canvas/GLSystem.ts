@@ -24,6 +24,7 @@ import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
 import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
+import { Transport, type TransportState } from '$lib/transport';
 
 export type UserUniformValue = number | boolean | number[];
 
@@ -54,6 +55,9 @@ export class GLSystem {
 
   /** Cache for outgoing video connections to avoid recalculating on every frame */
   private outgoingConnectionsCache = new Map<string, boolean>();
+
+  /** Interval ID for transport time sync to worker */
+  private transportSyncInterval: ReturnType<typeof setInterval> | null = null;
 
   public outputSize = DEFAULT_OUTPUT_SIZE;
 
@@ -307,6 +311,7 @@ export class GLSystem {
 
     this.send('startAnimation');
     isGlslPlaying.set(true);
+    this.startTransportSync();
   }
 
   stop() {
@@ -314,6 +319,36 @@ export class GLSystem {
 
     this.send('stopAnimation');
     isGlslPlaying.set(false);
+    this.stopTransportSync();
+  }
+
+  /**
+   * Start syncing transport time to the render worker.
+   * Sends at 60fps for smooth visual sync.
+   */
+  private startTransportSync(): void {
+    if (this.transportSyncInterval) return;
+
+    this.transportSyncInterval = setInterval(() => {
+      this.syncTransportTime(Transport.getState());
+    }, 1000 / 60);
+  }
+
+  /**
+   * Stop syncing transport time to the render worker.
+   */
+  private stopTransportSync(): void {
+    if (this.transportSyncInterval) {
+      clearInterval(this.transportSyncInterval);
+      this.transportSyncInterval = null;
+    }
+  }
+
+  /**
+   * Send transport state to render worker for GLSL/Hydra time sync.
+   */
+  syncTransportTime(state: TransportState): void {
+    this.send('syncTransportTime', state);
   }
 
   setOutputEnabled(enabled: boolean) {

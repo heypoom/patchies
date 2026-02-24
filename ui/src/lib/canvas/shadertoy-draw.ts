@@ -30,6 +30,7 @@ type P = {
   mouseZ: number;
   mouseW: number;
   userParams: unknown[];
+  transportTime: number;
 };
 
 export function createShaderToyDrawCommand({
@@ -121,8 +122,8 @@ export function createShaderToyDrawCommand({
 
       uniforms: {
         iResolution: ({ pixelRatio }) => [width * pixelRatio, height * pixelRatio, 1.0],
-        iTime: ({ time }) => time,
-        iTimeDelta: ({ time }, props: P) => time - props.lastTime,
+        iTime: (_, props: P) => props.transportTime,
+        iTimeDelta: (_, props: P) => props.transportTime - props.lastTime,
         iFrame: (_, props: P) => props.iFrame,
         iMouse: (_, props: P) => [props.mouseX, props.mouseY, props.mouseZ, props.mouseW],
         iDate: () => getDate(),
