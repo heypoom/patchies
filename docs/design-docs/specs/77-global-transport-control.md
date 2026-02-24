@@ -55,6 +55,7 @@ export interface ITransport {
   play(): Promise<void>;
   pause(): void;
   stop(): void;
+  seek(seconds: number): void;
   setBpm(bpm: number): void;
 
   // DSP control (no-op in stub)
@@ -755,6 +756,7 @@ This ensures `() => time` returns live transport time, not a stale value.
 - Floating popover panel anchored to transport button in bottom toolbar
 - `onInteractOutside={(e) => e.preventDefault()}` keeps panel open when clicking outside
 - Time display toggles between 3 formats: time (`00:00:04`), bars:beats:sixteenths (`001:1:01`), seconds (`00000.25`)
+- Double-click time display to edit and seek to a specific time (parses current format)
 - BPM persisted to localStorage
 - All toolbar buttons use shadcn-svelte Tooltip components (replaced native `title` attributes)
 - Platform-aware keyboard shortcuts (⌘ on Mac, Ctrl on Windows/Linux)
@@ -773,3 +775,6 @@ This ensures `() => time` returns live transport time, not a stale value.
 - [x] Panel stays open when clicking outside
 - [x] BPM persists across sessions
 - [x] Worker renderers (Three.js, Canvas, Textmode) have working `clock` object
+- [x] Double-click time display to edit and seek to specific time
+- [x] Seek while playing continues playback from new position
+- [x] Seek while paused stays paused at new position

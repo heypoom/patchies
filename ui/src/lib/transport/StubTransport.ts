@@ -52,6 +52,14 @@ export class StubTransport implements ITransport {
     this._isPlaying = false;
   }
 
+  seek(seconds: number): void {
+    this.pausedAt = Math.max(0, seconds);
+    if (this._isPlaying) {
+      // Adjust startTime so (performance.now() - startTime) / 1000 = seconds
+      this.startTime = performance.now() - this.pausedAt * 1000;
+    }
+  }
+
   setBpm(bpm: number): void {
     this._bpm = bpm;
   }

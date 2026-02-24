@@ -24,6 +24,12 @@
   // DSP state (independent of volume/mute)
   let isDspEnabled = $state(true);
 
+  // Time edit state
+  let isEditingTime = $state(false);
+  let editTimeValue = $state('');
+  let timeInputRef: HTMLInputElement | null = null;
+  let clickTimer: ReturnType<typeof setTimeout> | null = null;
+
   // Format time display
   const timeDisplay = $derived.by(() => {
     return match($transportStore.timeDisplayFormat)
@@ -87,8 +93,75 @@
     }
   }
 
-  function toggleTimeFormat() {
-    transportStore.toggleTimeDisplayFormat();
+  function handleTimeDisplayClick() {
+    if (clickTimer !== null) {
+      // Second click within timeout → double-click → enter edit mode
+      clearTimeout(clickTimer);
+      clickTimer = null;
+      enterTimeEditMode();
+    } else {
+      // First click → start timer, toggle format if no second click
+      clickTimer = setTimeout(() => {
+        clickTimer = null;
+        transportStore.toggleTimeDisplayFormat();
+      }, 250);
+    }
+  }
+
+  function enterTimeEditMode() {
+    editTimeValue = timeDisplay;
+    isEditingTime = true;
+    // Focus input after state update
+    requestAnimationFrame(() => timeInputRef?.select());
+  }
+
+  function handleTimeEditComplete() {
+    const parsed = parseTimeInput(editTimeValue, $transportStore.timeDisplayFormat, bpm);
+
+    if (parsed !== null) {
+      Transport.seek(parsed);
+    }
+
+    isEditingTime = false;
+  }
+
+  function handleTimeEditKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTimeEditComplete();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      isEditingTime = false;
+    }
+  }
+
+  function parseTimeInput(
+    input: string,
+    format: TimeDisplayFormat,
+    currentBpm: number
+  ): number | null {
+    return match(format)
+      .with('seconds', () => {
+        const val = parseFloat(input);
+        return isNaN(val) ? null : Math.max(0, val);
+      })
+      .with('time', () => {
+        // Parse HH:MM:SS
+        const parts = input.split(':').map(Number);
+        if (parts.some(isNaN)) return null;
+        const [h = 0, m = 0, s = 0] = parts;
+        return Math.max(0, h * 3600 + m * 60 + s);
+      })
+      .with('bars', () => {
+        // Parse bars:beats:sixteenths (1-indexed in display)
+        const parts = input.split(':').map(Number);
+        if (parts.some(isNaN)) return null;
+        const [bars = 1, beats = 1, sixteenths = 1] = parts;
+        // Convert to 0-indexed for calculation
+        const totalBeats = (bars - 1) * 4 + (beats - 1) + (sixteenths - 1) / 4;
+        return Math.max(0, totalBeats / (currentBpm / 60));
+      })
+      .exhaustive();
   }
 
   function toggleMute() {
@@ -213,17 +286,28 @@
   <div class="h-6 w-px bg-zinc-700"></div>
 
   <!-- Time Display -->
-  <Tooltip.Root>
-    <Tooltip.Trigger>
-      <button
-        onclick={toggleTimeFormat}
-        class="min-w-[80px] cursor-pointer rounded bg-zinc-800 px-2 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
-      >
-        {timeDisplay}
-      </button>
-    </Tooltip.Trigger>
-    <Tooltip.Content>Click to toggle format</Tooltip.Content>
-  </Tooltip.Root>
+  {#if isEditingTime}
+    <input
+      type="text"
+      bind:this={timeInputRef}
+      bind:value={editTimeValue}
+      onblur={handleTimeEditComplete}
+      onkeydown={handleTimeEditKeydown}
+      class="w-[90px] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none"
+    />
+  {:else}
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <button
+          onclick={handleTimeDisplayClick}
+          class="w-[90px] cursor-pointer rounded bg-zinc-800 px-2 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+        >
+          {timeDisplay}
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>Click to toggle format, double-click to edit</Tooltip.Content>
+    </Tooltip.Root>
+  {/if}
 
   <div class="h-6 w-px bg-zinc-700"></div>
 

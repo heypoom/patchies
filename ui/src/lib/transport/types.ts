@@ -15,6 +15,7 @@ export interface ITransport {
   play(): Promise<void>;
   pause(): void;
   stop(): void;
+  seek(seconds: number): void;
   setBpm(bpm: number): void;
 
   // DSP control (no-op in stub)

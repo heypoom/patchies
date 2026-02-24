@@ -60,6 +60,10 @@ class TransportManager implements ITransport {
     transportStore.setIsPlaying(false);
   }
 
+  seek(seconds: number): void {
+    this.context.seek(seconds);
+  }
+
   setBpm(bpm: number): void {
     this.context.setBpm(bpm);
   }

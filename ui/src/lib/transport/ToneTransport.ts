@@ -54,6 +54,10 @@ export class ToneTransport implements ITransport {
     this.tone.Transport.seconds = 0;
   }
 
+  seek(seconds: number): void {
+    this.tone.Transport.seconds = Math.max(0, seconds);
+  }
+
   setBpm(bpm: number): void {
     this._bpm = bpm;
     this.tone.Transport.bpm.value = bpm;
