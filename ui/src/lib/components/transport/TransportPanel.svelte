@@ -33,7 +33,7 @@
       .exhaustive();
   });
 
-  const formatSeconds = (secs: number): string => `${secs.toFixed(2)}`;
+  const formatSeconds = (secs: number): string => `${secs.toFixed(2).padStart(8, '0')}`;
 
   function formatTime(secs: number): string {
     const hours = Math.floor(secs / 3600);
