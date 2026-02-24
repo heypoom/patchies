@@ -42,11 +42,11 @@
   const formatSeconds = (secs: number): string => `${secs.toFixed(2).padStart(8, '0')}`;
 
   function formatTime(secs: number): string {
-    const hours = Math.floor(secs / 3600);
-    const mins = Math.floor((secs % 3600) / 60);
+    const mins = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
+    const ms = Math.floor((secs % 1) * 100);
 
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}:${ms.toString().padStart(2, '0')}`;
   }
 
   function formatBars(secs: number, bpm: number): string {
@@ -143,22 +143,28 @@
     return match(format)
       .with('seconds', () => {
         const val = parseFloat(input);
+
         return isNaN(val) ? null : Math.max(0, val);
       })
       .with('time', () => {
-        // Parse HH:MM:SS
+        // Parse MM:SS:CS (minutes:seconds:centiseconds)
         const parts = input.split(':').map(Number);
         if (parts.some(isNaN)) return null;
-        const [h = 0, m = 0, s = 0] = parts;
-        return Math.max(0, h * 3600 + m * 60 + s);
+
+        const [m = 0, s = 0, cs = 0] = parts;
+
+        return Math.max(0, m * 60 + s + cs / 100);
       })
       .with('bars', () => {
         // Parse bars:beats:sixteenths (1-indexed in display)
         const parts = input.split(':').map(Number);
         if (parts.some(isNaN)) return null;
+
         const [bars = 1, beats = 1, sixteenths = 1] = parts;
+
         // Convert to 0-indexed for calculation
         const totalBeats = (bars - 1) * 4 + (beats - 1) + (sixteenths - 1) / 4;
+
         return Math.max(0, totalBeats / (currentBpm / 60));
       })
       .exhaustive();

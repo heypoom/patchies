@@ -15,13 +15,13 @@ There is no way to keep visual and audio in perfect sync (beat-match) in Patchie
 
 ### Transport Controls
 
-| Control          | Behavior                                                                                                    |
-| ---------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Play/Pause**   | Toggle button. Pause freezes the clock at current position.                                                 |
-| **Stop**         | Resets clock to 0 and pauses.                                                                               |
-| **BPM**          | Manual number input. Default: 120.                                                                          |
-| **Time Display** | Shows current position. Default: seconds (`00:04.25`). Click to toggle to bars:beats:sixteenths (`2:3:04`). |
-| **DSP On/Off**   | Mute-style button. Red when DSP is off (AudioContext suspended).                                            |
+| Control          | Behavior                                                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Play/Pause**   | Toggle button. Pause freezes the clock at current position. Spacebar keyboard shortcut.                                                               |
+| **Stop**         | Resets clock to 0 and pauses.                                                                                                                         |
+| **BPM**          | Manual number input. Default: 120.                                                                                                                    |
+| **Time Display** | Shows current position. Click to toggle formats: time (`02:35:42` = MM:SS:CS), bars (`001:1:01`), seconds (`00004.25`). Double-click to edit & seek. |
+| **DSP On/Off**   | Mute-style button. Red when DSP is off (AudioContext suspended).                                                                                      |
 
 ### UI
 
@@ -755,7 +755,7 @@ This ensures `() => time` returns live transport time, not a stale value.
 
 - Floating popover panel anchored to transport button in bottom toolbar
 - `onInteractOutside={(e) => e.preventDefault()}` keeps panel open when clicking outside
-- Time display toggles between 3 formats: time (`00:00:04`), bars:beats:sixteenths (`001:1:01`), seconds (`00000.25`)
+- Time display toggles between 3 formats: time (`02:35:42` = MM:SS:CS centiseconds), bars:beats:sixteenths (`001:1:01`), seconds (`00004.25`)
 - Double-click time display to edit and seek to a specific time (parses current format)
 - BPM persisted to localStorage
 - All toolbar buttons use shadcn-svelte Tooltip components (replaced native `title` attributes)
