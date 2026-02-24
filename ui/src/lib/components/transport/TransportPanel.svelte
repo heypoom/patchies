@@ -43,7 +43,9 @@
     const bars = Math.floor(totalBeats / 4) + 1;
     const beatInBar = Math.floor(totalBeats % 4) + 1;
     const sixteenths = Math.floor((totalBeats % 1) * 4) + 1;
-    return `${bars}:${beatInBar}:${sixteenths.toString().padStart(2, '0')}`;
+
+    // Zero-pad bars to 3 digits to prevent layout shifts (e.g., 001:1:01)
+    return `${bars.toString().padStart(3, '0')}:${beatInBar}:${sixteenths.toString().padStart(2, '0')}`;
   }
 
   // Volume icon
