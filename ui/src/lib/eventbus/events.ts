@@ -18,6 +18,7 @@ export type PatchiesEvent =
   | VfsPathRenamedEvent
   | InsertVfsFileToCanvasEvent
   | InsertPresetToCanvasEvent
+  | RequestSaveSelectedAsPresetEvent
   | WorkerSendMessageEvent
   | WorkerCallbackRegisteredEvent
   | WorkerFlashEvent
@@ -176,6 +177,15 @@ export interface InsertPresetToCanvasEvent {
     name: string;
     data: unknown;
   };
+}
+
+/**
+ * Request to save the currently selected node as a preset.
+ * Dispatched from places like the Presets sidebar.
+ * Handled by FlowCanvasInner which has access to selected node data.
+ */
+export interface RequestSaveSelectedAsPresetEvent {
+  type: 'requestSaveSelectedAsPreset';
 }
 
 // Worker node events - for JavaScript execution in dedicated Web Workers

@@ -480,6 +480,7 @@
     eventBus.addEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
+    eventBus.addEventListener('requestSaveSelectedAsPreset', handleRequestSaveSelectedAsPreset);
     eventBus.addEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.addEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.addEventListener('objectDataCommit', handleObjectDataCommit);
@@ -508,6 +509,7 @@
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
+    eventBus.removeEventListener('requestSaveSelectedAsPreset', handleRequestSaveSelectedAsPreset);
     eventBus.removeEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.removeEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.removeEventListener('objectDataCommit', handleObjectDataCommit);
@@ -614,6 +616,17 @@
   }) {
     const position = getViewportCenter();
     getDragDropManager().insertPreset(event.preset, position);
+  }
+
+  // Handle request to save selected node as preset (from sidebar, etc.)
+  function handleRequestSaveSelectedAsPreset() {
+    if (selectedNodeIds.length === 1) {
+      const node = nodes.find((n) => n.id === selectedNodeIds[0]);
+      if (node) {
+        nodeToSaveAsPreset = node;
+        showSavePresetDialog = true;
+      }
+    }
   }
 
   // Handle Quick Add confirmation - record the final node to history
