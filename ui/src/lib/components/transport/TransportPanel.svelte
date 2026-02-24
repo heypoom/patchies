@@ -197,6 +197,12 @@
       type="number"
       value={bpm}
       onchange={handleBpmChange}
+      onkeydown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
       min="1"
       max="999"
       class="w-17 rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 outline-none focus:ring-1 focus:ring-zinc-600"

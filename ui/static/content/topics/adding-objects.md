@@ -23,7 +23,7 @@ There are two ways to add objects to your canvas: quick add and the object brows
 
 ## Presets
 
-Presets are pre-made objects that help you get started quickly. You can [manage your own presets](/docs/manage-presets) in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas, or create your own.
+Presets are pre-made objects that help you get started quickly. You can [manage your own presets](/docs/manage-presets) in the sidebar: `Ctrl/Cmd + B > Presets`. Drag them into your canvas, or create your own by selecting an object and using the overflow menu (`...`) > "Save as Preset".
 
 ## See Also
 

@@ -223,17 +223,6 @@
         </Tooltip.Root>
       {/if}
 
-      {#if canSaveAsPreset}
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            <button class={buttonClass} onclick={onSaveSelectedAsPreset}>
-              <Bookmark class={iconClass} />
-            </button>
-          </Tooltip.Trigger>
-          <Tooltip.Content>Save as Preset</Tooltip.Content>
-        </Tooltip.Root>
-      {/if}
-
       {#if $isAiFeaturesVisible && hasGeminiApiKey}
         <Tooltip.Root>
           <Tooltip.Trigger>
@@ -265,31 +254,50 @@
         </Tooltip.Root>
       {/if}
 
-      {#if !$isMobile}
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            <Popover.Root bind:open={$transportStore.panelOpen}>
-              <Popover.Trigger>
-                <button class={buttonClass}>
-                  {#if isPlaying}
-                    <Pause class={iconClass} />
-                  {:else}
-                    <Play class={iconClass} />
-                  {/if}
-                </button>
-              </Popover.Trigger>
-              <Popover.Content
-                side="top"
-                sideOffset={8}
-                class="w-auto border-none bg-transparent p-0"
-                onInteractOutside={(e) => e.preventDefault()}
+      {#if $isMobile}
+        <!-- Mobile: Drawer for transport -->
+        <Drawer.Root bind:open={$transportStore.panelOpen}>
+          <Drawer.Trigger class={buttonClass}>
+            {#if isPlaying}
+              <Pause class={iconClass} />
+            {:else}
+              <Play class={iconClass} />
+            {/if}
+          </Drawer.Trigger>
+          <Drawer.Content class="bg-zinc-900">
+            <Drawer.Header class="px-4 pt-2 pb-0">
+              <Drawer.Title class="text-sm text-zinc-400">Transport</Drawer.Title>
+            </Drawer.Header>
+            <div class="flex justify-center px-4 pb-6">
+              <TransportPanel />
+            </div>
+          </Drawer.Content>
+        </Drawer.Root>
+      {:else}
+        <!-- Desktop: positioned panel -->
+        <div class="relative">
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class={buttonClass}
+                onclick={() => ($transportStore.panelOpen = !$transportStore.panelOpen)}
               >
-                <TransportPanel />
-              </Popover.Content>
-            </Popover.Root>
-          </Tooltip.Trigger>
-          <Tooltip.Content>Transport Controls</Tooltip.Content>
-        </Tooltip.Root>
+                {#if isPlaying}
+                  <Pause class={iconClass} />
+                {:else}
+                  <Play class={iconClass} />
+                {/if}
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Transport Controls</Tooltip.Content>
+          </Tooltip.Root>
+
+          {#if $transportStore.panelOpen}
+            <div class="absolute right-0 bottom-full mb-2">
+              <TransportPanel />
+            </div>
+          {/if}
+        </div>
       {/if}
 
       <Tooltip.Root>
@@ -328,6 +336,19 @@
               <Drawer.Title class="text-sm text-zinc-400">More Actions</Drawer.Title>
             </Drawer.Header>
             <div class="flex flex-col pb-6">
+              {#if canSaveAsPreset}
+                <button
+                  class={menuItemClass}
+                  onclick={() => {
+                    onSaveSelectedAsPreset();
+                    overflowOpen = false;
+                  }}
+                >
+                  <Bookmark class="h-5 w-5 text-zinc-400" />
+                  <span>Save as Preset</span>
+                </button>
+              {/if}
+
               <button
                 class={menuItemClass}
                 onclick={() => {
@@ -425,6 +446,19 @@
             sideOffset={8}
           >
             <div class="flex flex-col py-1">
+              {#if canSaveAsPreset}
+                <button
+                  class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                  onclick={() => {
+                    onSaveSelectedAsPreset();
+                    overflowOpen = false;
+                  }}
+                >
+                  <Bookmark class="h-4 w-4 text-zinc-400" />
+                  <span>Save as Preset</span>
+                </button>
+              {/if}
+
               <button
                 class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed"
                 disabled={$aiButtonState.isLoading}

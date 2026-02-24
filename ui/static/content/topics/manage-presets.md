@@ -8,10 +8,13 @@ Presets are saved configurations of objects that you can reuse across patches.
 
 Use `Ctrl/Cmd + B > Presets` to browse and manage your presets.
 
+## Saving Presets
+
+Select an object on the canvas, then use the overflow menu (`...`) in the bottom toolbar and choose "Save as Preset".
+
 ## Organization
 
 - Presets are organized into libraries and can be filtered by category
-- Select an object and click the bookmark button to save it as a preset
 
 ## Custom Libraries
 

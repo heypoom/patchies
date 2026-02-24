@@ -954,6 +954,7 @@
       <LibraryBig class="h-3.5 w-3.5" />
       <span>New Library</span>
     </button>
+
     <button
       class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
       onclick={handleImportClick}
