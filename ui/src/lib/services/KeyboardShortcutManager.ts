@@ -28,6 +28,9 @@ export interface KeyboardShortcutActions {
   openObjectBrowser: () => void;
   openCommandPalette: () => void;
 
+  // Transport
+  togglePlayPause: () => void;
+
   // Patch operations
   newPatch: () => void;
   quickSave: () => void;
@@ -203,6 +206,14 @@ export class KeyboardShortcutManager {
     if (key === 'enter' && !this.actions.isCommandPaletteOpen() && !isTyping && !hasNodeSelected) {
       event.preventDefault();
       this.actions.quickAddNode();
+
+      return;
+    }
+
+    // Spacebar: Toggle play/pause (when not typing)
+    if (key === ' ' && !isTyping) {
+      event.preventDefault();
+      this.actions.togglePlayPause();
 
       return;
     }

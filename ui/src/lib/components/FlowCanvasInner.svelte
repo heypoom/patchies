@@ -73,6 +73,7 @@
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
 
   import { toast } from 'svelte-sonner';
+  import { Transport } from '$lib/transport';
   import { initializeVFS } from '$lib/vfs';
   import {
     HistoryManager,
@@ -455,6 +456,13 @@
       toggleSidebar: () => ($isSidebarOpen = !$isSidebarOpen),
       openObjectBrowser: () => ($isObjectBrowserOpen = true),
       openCommandPalette: triggerCommandPalette,
+      togglePlayPause: () => {
+        if (Transport.isPlaying) {
+          Transport.pause();
+        } else {
+          Transport.play();
+        }
+      },
       newPatch,
       quickSave,
       saveAs: () => (showSavePatchModal = true),

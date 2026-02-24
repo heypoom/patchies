@@ -3,6 +3,7 @@
   import { transportStore, type TimeDisplayFormat } from '../../../stores/transport.store';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { Slider } from '$lib/components/ui/slider';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import { Play, Pause, Square, Volume2, VolumeX, Volume, Volume1 } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
   import { match } from 'ts-pattern';
@@ -166,39 +167,63 @@
   class="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/95 px-3 py-2 shadow-xl backdrop-blur-sm"
 >
   <!-- Play/Pause -->
-  <button
-    onclick={isPlaying ? handlePause : handlePlay}
-    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-    title={!isDspEnabled ? 'Enable DSP first' : isPlaying ? 'Pause' : 'Play'}
-    disabled={!isDspEnabled}
-  >
-    {#if isPlaying}
-      <Pause class="h-4 w-4 text-zinc-300" />
-    {:else}
-      <Play class="h-4 w-4 text-zinc-300" />
-    {/if}
-  </button>
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      <button
+        onclick={isPlaying ? handlePause : handlePlay}
+        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!isDspEnabled}
+      >
+        {#if isPlaying}
+          <Pause class="h-4 w-4 text-zinc-300" />
+        {:else}
+          <Play class="h-4 w-4 text-zinc-300" />
+        {/if}
+      </button>
+    </Tooltip.Trigger>
+    <Tooltip.Content>
+      {#if !isDspEnabled}
+        Enable DSP first
+      {:else}
+        {isPlaying ? 'Pause' : 'Play'} (Space)
+      {/if}
+    </Tooltip.Content>
+  </Tooltip.Root>
 
   <!-- Stop -->
-  <button
-    onclick={handleStop}
-    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-    title={!isDspEnabled ? 'Enable DSP first' : 'Stop'}
-    disabled={!isDspEnabled}
-  >
-    <Square class="h-3.5 w-3.5 text-zinc-300" />
-  </button>
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      <button
+        onclick={handleStop}
+        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!isDspEnabled}
+      >
+        <Square class="h-3.5 w-3.5 text-zinc-300" />
+      </button>
+    </Tooltip.Trigger>
+    <Tooltip.Content>
+      {#if !isDspEnabled}
+        Enable DSP first
+      {:else}
+        Stop
+      {/if}
+    </Tooltip.Content>
+  </Tooltip.Root>
 
   <div class="h-6 w-px bg-zinc-700"></div>
 
   <!-- Time Display -->
-  <button
-    onclick={toggleTimeFormat}
-    class="min-w-[80px] cursor-pointer rounded bg-zinc-800 px-2 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
-    title="Click to toggle format"
-  >
-    {timeDisplay}
-  </button>
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      <button
+        onclick={toggleTimeFormat}
+        class="min-w-[80px] cursor-pointer rounded bg-zinc-800 px-2 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+      >
+        {timeDisplay}
+      </button>
+    </Tooltip.Trigger>
+    <Tooltip.Content>Click to toggle format</Tooltip.Content>
+  </Tooltip.Root>
 
   <div class="h-6 w-px bg-zinc-700"></div>
 
@@ -226,16 +251,20 @@
 
   <!-- Volume -->
   <div class="flex items-center gap-2">
-    <button
-      onclick={toggleMute}
-      class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-700"
-      title={isMuted || volume === 0 ? 'Unmute' : 'Mute'}
-    >
-      <svelte:component
-        this={volumeIcon}
-        class="h-4 w-4 {isMuted || volume === 0 ? 'text-red-400' : 'text-zinc-300'}"
-      />
-    </button>
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <button
+          onclick={toggleMute}
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-700"
+        >
+          <svelte:component
+            this={volumeIcon}
+            class="h-4 w-4 {isMuted || volume === 0 ? 'text-red-400' : 'text-zinc-300'}"
+          />
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>{isMuted || volume === 0 ? 'Unmute' : 'Mute'}</Tooltip.Content>
+    </Tooltip.Root>
     <Slider
       value={volume}
       onValueChange={handleVolumeChange}
@@ -250,13 +279,19 @@
   <div class="h-6 w-px bg-zinc-700"></div>
 
   <!-- DSP Toggle -->
-  <button
-    onclick={toggleDsp}
-    class="cursor-pointer rounded px-2 py-1 text-xs font-medium transition-colors {isDspEnabled
-      ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-      : 'bg-red-900/50 text-red-400 hover:bg-red-900/70'}"
-    title={isDspEnabled ? 'DSP On - Click to disable' : 'DSP Off - Click to enable'}
-  >
-    DSP
-  </button>
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      <button
+        onclick={toggleDsp}
+        class="cursor-pointer rounded px-2 py-1 text-xs font-medium transition-colors {isDspEnabled
+          ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+          : 'bg-red-900/50 text-red-400 hover:bg-red-900/70'}"
+      >
+        DSP
+      </button>
+    </Tooltip.Trigger>
+    <Tooltip.Content>
+      {isDspEnabled ? 'DSP On - Click to disable' : 'DSP Off - Click to enable'}
+    </Tooltip.Content>
+  </Tooltip.Root>
 </div>
