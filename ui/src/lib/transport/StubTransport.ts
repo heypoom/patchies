@@ -1,19 +1,21 @@
 import type { ITransport } from './types';
-import { DEFAULT_BPM, DEFAULT_PPQ } from './constants';
+import { DEFAULT_AUTOPLAY, DEFAULT_BPM, DEFAULT_PPQ } from './constants';
 
 /**
  * Stub transport implementation using performance.now().
  * Default implementation that doesn't require Tone.js.
  */
 export class StubTransport implements ITransport {
-  private startTime = 0;
+  private startTime = DEFAULT_AUTOPLAY ? performance.now() : 0;
   private pausedAt = 0;
-  private _isPlaying = false;
+  private _isPlaying = DEFAULT_AUTOPLAY;
   private _bpm = DEFAULT_BPM;
+
   private readonly ppq = DEFAULT_PPQ;
 
   get seconds(): number {
     if (!this._isPlaying) return this.pausedAt;
+
     return (performance.now() - this.startTime) / 1000;
   }
 
@@ -54,6 +56,7 @@ export class StubTransport implements ITransport {
 
   seek(seconds: number): void {
     this.pausedAt = Math.max(0, seconds);
+
     if (this._isPlaying) {
       // Adjust startTime so (performance.now() - startTime) / 1000 = seconds
       this.startTime = performance.now() - this.pausedAt * 1000;
@@ -64,7 +67,7 @@ export class StubTransport implements ITransport {
     this._bpm = bpm;
   }
 
-  async setDspEnabled(_enabled: boolean): Promise<void> {
+  async setDspEnabled(): Promise<void> {
     // No-op in stub - no audio context to suspend
   }
 }

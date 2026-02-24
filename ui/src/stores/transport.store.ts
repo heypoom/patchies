@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { DEFAULT_BPM } from '$lib/transport/constants';
+import { DEFAULT_AUTOPLAY, DEFAULT_BPM } from '$lib/transport/constants';
 
 const STORAGE_KEY = 'patchies:transport';
 
@@ -18,7 +18,7 @@ const defaultState: TransportStoreState = {
   bpm: DEFAULT_BPM,
   timeDisplayFormat: DEFAULT_TIME_DISPLAY_FORMAT,
   panelOpen: false,
-  isPlaying: false
+  isPlaying: DEFAULT_AUTOPLAY
 };
 
 function loadFromStorage(): TransportStoreState {
@@ -32,7 +32,7 @@ function loadFromStorage(): TransportStoreState {
       bpm: parsed.bpm ?? DEFAULT_BPM,
       timeDisplayFormat: parsed.timeDisplayFormat ?? DEFAULT_TIME_DISPLAY_FORMAT,
       panelOpen: false, // Always start closed
-      isPlaying: false // Always start stopped
+      isPlaying: DEFAULT_AUTOPLAY
     };
   } catch {
     console.warn('Failed to load transport state from localStorage');
