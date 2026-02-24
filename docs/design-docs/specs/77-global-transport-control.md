@@ -635,3 +635,77 @@ The existing `VolumeControl.svelte` in `BottomToolbar.svelte` will be replaced w
 1. **Time signature**: Deferred. Assume 4/4 for MVP. Keep extensible for future time signature support.
 2. **Loop regions**: Deferred. No looping in MVP. Keep extensible for future loop start/end points.
 3. **Multiple transports**: Out of scope. Single global transport for simplicity.
+
+---
+
+## Implementation Status
+
+Completed: 2024-02-24
+
+### Files Created
+
+| File                                                  | Purpose                                                           |
+| ----------------------------------------------------- | ----------------------------------------------------------------- |
+| `src/lib/transport/types.ts`                          | `ITransport` interface and `TransportState` type for worker sync  |
+| `src/lib/transport/StubTransport.ts`                  | Default transport using `performance.now()`, no Tone.js           |
+| `src/lib/transport/ToneTransport.ts`                  | Tone.js wrapper for sample-accurate audio scheduling              |
+| `src/lib/transport/Transport.ts`                      | `TransportManager` singleton with lazy upgrade pattern            |
+| `src/lib/transport/index.ts`                          | Barrel exports                                                    |
+| `src/stores/transport.store.ts`                       | Persists BPM, timeDisplayFormat, panelOpen to localStorage        |
+| `src/lib/components/transport/TransportPanel.svelte`  | Full transport panel UI                                           |
+| `src/lib/components/transport/index.ts`               | Barrel exports                                                    |
+
+### Files Modified
+
+| File                                       | Changes                                                                                                    |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `src/lib/js-runner/JSRunner.ts`            | Added `clock` object to execution context with getters for `time`, `ticks`, `beat`, `progress`, `bpm`      |
+| `src/lib/canvas/GLSystem.ts`               | Added `startTransportSync()`, `stopTransportSync()`, `syncTransportTime()`. Transport syncs at 60fps       |
+| `src/workers/rendering/renderWorker.ts`    | Handles `syncTransportTime` message, passes to fboRenderer                                                 |
+| `src/workers/rendering/fboRenderer.ts`     | Added `transportTime` property and `setTransportTime()` method, passes to render props                     |
+| `src/lib/canvas/shadertoy-draw.ts`         | Changed `iTime` uniform to use `props.transportTime` instead of regl's internal clock                      |
+| `src/workers/rendering/hydraRenderer.ts`   | Changed to directly set `this.hydra.synth.time = params.transportTime`                                     |
+| `src/lib/rendering/types.ts`               | Added `transportTime: number` to `RenderParams` interface                                                  |
+| `src/lib/components/BottomToolbar.svelte`  | Replaced VolumeControl with Popover containing TransportPanel. Added tooltips to all toolbar buttons       |
+
+### Key Implementation Details
+
+#### Transport Architecture
+
+- StubTransport is the default, using `performance.now()` for zero Tone.js bundle cost
+- ToneTransport is lazy-loaded on first `play()` call
+- State (BPM) transfers seamlessly during upgrade
+- `disableUpgrade()` method available for embed mode
+
+#### Worker Bridge
+
+- GLSystem starts 60fps sync interval when animation starts (`startTransportSync()`)
+- Transport state (`seconds`, `ticks`, `bpm`, `isPlaying`, `beat`, `progress`) sent via `syncTransportTime` message
+- fboRenderer stores state and passes `transportTime` to all render props
+
+#### DSP vs Volume Independence
+
+- DSP toggle controls `AudioContext.suspend()`/`resume()` and `Transport.setDspEnabled()`
+- Volume/mute controls `AudioService.setOutVolume()` independently
+- Both can be controlled separately - muting doesn't disable DSP, disabling DSP doesn't affect volume state
+
+#### UI Features
+
+- Floating popover panel anchored to transport button in bottom toolbar
+- `onInteractOutside={(e) => e.preventDefault()}` keeps panel open when clicking outside
+- Time display toggles between seconds (`00:04.25`) and bars:beats:sixteenths (`2:3:04`)
+- BPM persisted to localStorage
+- All toolbar buttons use shadcn-svelte Tooltip components (replaced native `title` attributes)
+- Platform-aware keyboard shortcuts (⌘ on Mac, Ctrl on Windows/Linux)
+
+### Verification Checklist
+
+- [x] Play/pause freezes all visuals simultaneously
+- [x] Stop resets time to 0 across all nodes
+- [x] BPM changes affect JSRunner `clock.beat` and `clock.progress`
+- [x] GLSL `iTime` matches Transport.seconds
+- [x] Hydra `time` variable matches Transport.seconds
+- [x] DSP toggle suspends/resumes audio independently of volume
+- [x] Volume control works in transport panel
+- [x] Panel stays open when clicking outside
+- [x] BPM persists across sessions
