@@ -255,7 +255,13 @@
   });
 </script>
 
-<ObjectPreviewLayout title={data.title ?? 'vue'} {nodeId} onrun={runCode} {editorReady}>
+<ObjectPreviewLayout
+  title={data.title ?? 'vue'}
+  objectType="vue"
+  {nodeId}
+  onrun={runCode}
+  {editorReady}
+>
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index}
       <StandardHandle

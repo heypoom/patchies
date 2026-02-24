@@ -235,6 +235,7 @@
 
 <CanvasPreviewLayout
   title={data.title ?? 'canvas'}
+  objectType="canvas"
   {nodeId}
   onrun={updateCanvas}
   bind:previewCanvas

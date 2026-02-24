@@ -32,6 +32,7 @@
       hidePorts?: boolean;
       executeCode?: number;
       showConsole?: boolean;
+      paused?: boolean;
     };
     selected?: boolean;
   } = $props();
@@ -65,6 +66,7 @@
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
   let animationFrameId: number | null = null;
+  let pausedCallback: FrameRequestCallback | null = null;
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -144,11 +146,14 @@
       // Use changedTouches for touchend/touchcancel, touches for touchstart/touchmove
       const touchList = useChangedTouches ? e.changedTouches : e.touches;
       if (touchList.length === 0) return;
+
       const touch = touchList[0];
       const rect = canvas!.getBoundingClientRect();
+
       // Scale touch coordinates to canvas resolution (outputWidth × outputHeight)
       mouse.x = ((touch.clientX - rect.left) / rect.width) * outputWidth;
       mouse.y = ((touch.clientY - rect.top) / rect.height) * outputHeight;
+
       // Set buttons to 1 (primary button) for touch events
       mouse.buttons = 1;
     };
@@ -294,6 +299,28 @@
     await glSystem.setBitmapSource(nodeId, canvas);
   }
 
+  function togglePlayback() {
+    if (data.paused) {
+      // Unpause - restart the animation loop with stored callback
+      updateNodeData(nodeId, { paused: false });
+
+      if (pausedCallback) {
+        animationFrameId = requestAnimationFrame((time) => {
+          pausedCallback!(time);
+          sendBitmap();
+        });
+      }
+    } else {
+      // Pause - cancel animation frame
+      updateNodeData(nodeId, { paused: true });
+
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    }
+  }
+
   async function runCode() {
     if (!canvas || !ctx) return;
 
@@ -367,6 +394,14 @@
           },
           // Override JSRunner's requestAnimationFrame to also send bitmap
           requestAnimationFrame: (callback: FrameRequestCallback) => {
+            // Store callback for restart after unpause
+            pausedCallback = callback;
+
+            // Don't schedule if paused
+            if (data.paused) {
+              return -1;
+            }
+
             animationFrameId = requestAnimationFrame((time) => {
               callback(time);
               sendBitmap();
@@ -434,8 +469,12 @@
 
 <CanvasPreviewLayout
   title={data.title ?? 'canvas.dom'}
+  objectType="canvas.dom"
   {nodeId}
   onrun={runCode}
+  onPlaybackToggle={togglePlayback}
+  paused={data.paused}
+  showPauseButton={true}
   bind:previewCanvas={canvas}
   nodrag={!dragEnabled}
   nopan={!panEnabled}

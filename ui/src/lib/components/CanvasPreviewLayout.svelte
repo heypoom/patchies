@@ -5,11 +5,14 @@
   let {
     title,
     nodeId,
+    objectType,
     selected = false,
     hasError = false,
     onrun,
     onPlaybackToggle,
+    onPreviewToggle,
     paused = false,
+    previewVisible = true,
     showPauseButton = false,
     showConsoleButton = false,
     previewCanvas = $bindable<HTMLCanvasElement>(),
@@ -31,11 +34,14 @@
   }: {
     title: string;
     nodeId?: string;
+    objectType?: string;
     selected?: boolean;
     hasError?: boolean;
     onrun?: () => void;
     onPlaybackToggle?: () => void;
+    onPreviewToggle?: () => void;
     paused?: boolean;
+    previewVisible?: boolean;
     showPauseButton?: boolean;
     showConsoleButton?: boolean;
     previewCanvas?: HTMLCanvasElement;
@@ -71,9 +77,12 @@
 <ObjectPreviewLayout
   {title}
   {nodeId}
+  {objectType}
   {onrun}
   {onPlaybackToggle}
+  {onPreviewToggle}
   {paused}
+  {previewVisible}
   {showPauseButton}
   {showConsoleButton}
   {topHandle}

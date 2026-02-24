@@ -254,6 +254,7 @@
 
 <CanvasPreviewLayout
   title={data.title ?? 'three'}
+  objectType="three"
   {nodeId}
   onrun={updateThree}
   bind:previewCanvas

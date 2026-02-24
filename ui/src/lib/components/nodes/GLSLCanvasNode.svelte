@@ -219,6 +219,7 @@
 
 <CanvasPreviewLayout
   title={data.title ?? 'glsl'}
+  objectType="glsl"
   {nodeId}
   onrun={updateShader}
   onPlaybackToggle={togglePause}

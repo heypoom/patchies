@@ -104,6 +104,7 @@
 
 <CanvasPreviewLayout
   title="butterchurn"
+  objectType="bchrn"
   onPlaybackToggle={isPlaying ? stop : start}
   paused={!isPlaying}
   showPauseButton={true}

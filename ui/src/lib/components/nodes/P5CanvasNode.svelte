@@ -266,6 +266,7 @@
 
 <ObjectPreviewLayout
   title={data.title ?? 'p5'}
+  objectType="p5"
   {nodeId}
   onrun={updateSketch}
   previewWidth={previewContainerWidth}

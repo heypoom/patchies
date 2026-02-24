@@ -95,6 +95,7 @@
 
 <CanvasPreviewLayout
   title="swgl"
+  objectType="swgl"
   onrun={updateSwissGL}
   onPlaybackToggle={togglePause}
   paused={isPaused}

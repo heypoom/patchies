@@ -101,7 +101,7 @@
   }
 </script>
 
-<ObjectPreviewLayout title="ai.txt" onrun={generateText} {editorReady}>
+<ObjectPreviewLayout title="ai.txt" objectType="ai.txt" onrun={generateText} {editorReady}>
   {#snippet topHandle()}
     <StandardHandle port="inlet" type="message" total={2} index={0} {nodeId} />
     <StandardHandle

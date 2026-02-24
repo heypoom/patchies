@@ -425,6 +425,7 @@
 
 <CanvasPreviewLayout
   title={data.title ?? 'three.dom'}
+  objectType="three.dom"
   {nodeId}
   onrun={runCode}
   bind:previewCanvas={canvas}
