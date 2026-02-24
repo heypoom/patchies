@@ -500,7 +500,7 @@ Pass from fboRenderer when rendering:
 ```typescript
 fboNode.draw({
   // ... existing props
-  transportTime: this.transportTime?.seconds ?? this.lastTime
+  transportTime: this.transportTime?.seconds ?? this.lastTime,
 });
 ```
 
@@ -528,23 +528,33 @@ Add `clock` object to JSRunner context (`JSRunner.ts` lines 330-368):
 // Add to functionParams:
 const functionParams = [
   // ... existing
-  'clock'
+  "clock",
 ];
 
 // Add to functionArgs:
-import { Transport } from '$lib/transport';
+import { Transport } from "$lib/transport";
 
 const clock = {
-  get time() { return Transport.seconds; },
-  get ticks() { return Transport.ticks; },
-  get beat() { return Transport.beat; },
-  get progress() { return Transport.progress; },
-  get bpm() { return Transport.bpm; }
+  get time() {
+    return Transport.seconds;
+  },
+  get ticks() {
+    return Transport.ticks;
+  },
+  get beat() {
+    return Transport.beat;
+  },
+  get progress() {
+    return Transport.progress;
+  },
+  get bpm() {
+    return Transport.bpm;
+  },
 };
 
 const functionArgs = [
   // ... existing
-  clock
+  clock,
 ];
 ```
 
@@ -553,11 +563,11 @@ const functionArgs = [
 Create `src/stores/transport.store.ts` following existing patterns (see `preset-library.store.ts`):
 
 ```typescript
-const STORAGE_KEY = 'patchies:transport';
+const STORAGE_KEY = "patchies:transport";
 
 export interface TransportStoreState {
   bpm: number;
-  timeDisplayFormat: 'seconds' | 'bars';
+  timeDisplayFormat: "seconds" | "bars";
 }
 
 // Persist BPM preference to localStorage
@@ -644,30 +654,30 @@ Completed: 2024-02-24
 
 ### Files Created
 
-| File                                                  | Purpose                                                           |
-| ----------------------------------------------------- | ----------------------------------------------------------------- |
-| `src/lib/transport/types.ts`                          | `ITransport` interface and `TransportState` type for worker sync  |
-| `src/lib/transport/StubTransport.ts`                  | Default transport using `performance.now()`, no Tone.js           |
-| `src/lib/transport/ToneTransport.ts`                  | Tone.js wrapper for sample-accurate audio scheduling              |
-| `src/lib/transport/Transport.ts`                      | `TransportManager` singleton with lazy upgrade pattern            |
-| `src/lib/transport/index.ts`                          | Barrel exports                                                    |
-| `src/stores/transport.store.ts`                       | Persists BPM, timeDisplayFormat, panelOpen to localStorage        |
-| `src/lib/components/transport/TransportPanel.svelte`  | Full transport panel UI                                           |
-| `src/lib/components/transport/index.ts`               | Barrel exports                                                    |
+| File                                                 | Purpose                                                          |
+| ---------------------------------------------------- | ---------------------------------------------------------------- |
+| `src/lib/transport/types.ts`                         | `ITransport` interface and `TransportState` type for worker sync |
+| `src/lib/transport/StubTransport.ts`                 | Default transport using `performance.now()`, no Tone.js          |
+| `src/lib/transport/ToneTransport.ts`                 | Tone.js wrapper for sample-accurate audio scheduling             |
+| `src/lib/transport/Transport.ts`                     | `TransportManager` singleton with lazy upgrade pattern           |
+| `src/lib/transport/index.ts`                         | Barrel exports                                                   |
+| `src/stores/transport.store.ts`                      | Persists BPM, timeDisplayFormat, panelOpen to localStorage       |
+| `src/lib/components/transport/TransportPanel.svelte` | Full transport panel UI                                          |
+| `src/lib/components/transport/index.ts`              | Barrel exports                                                   |
 
 ### Files Modified
 
-| File                                              | Changes                                                                                               |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `src/lib/js-runner/JSRunner.ts`                   | Added `clock` object to execution context with getters for `time`, `ticks`, `beat`, `progress`, `bpm` |
-| `src/lib/canvas/GLSystem.ts`                      | Added `startTransportSync()`, `stopTransportSync()`, `syncTransportTime()`. Transport syncs at 60fps  |
-| `src/workers/rendering/renderWorker.ts`           | Handles `syncTransportTime` message, passes to fboRenderer                                            |
-| `src/workers/rendering/fboRenderer.ts`            | Added `transportTime` property and `setTransportTime()` method, passes to render props                |
-| `src/lib/canvas/shadertoy-draw.ts`                | Changed `iTime` uniform to use `props.transportTime` instead of regl's internal clock                 |
-| `src/workers/rendering/hydraRenderer.ts`          | Changed to directly set `this.hydra.synth.time = params.transportTime`                                |
-| `src/lib/rendering/types.ts`                      | Added `transportTime: number` to `RenderParams` interface                                             |
-| `src/lib/components/BottomToolbar.svelte`         | Replaced VolumeControl with Popover containing TransportPanel. Added tooltips to all toolbar buttons  |
-| `src/lib/components/ObjectPreviewLayout.svelte`   | Renamed individual node toggle to Pin/PinOff icons. All buttons now use Tooltip components            |
+| File                                            | Changes                                                                                               |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `src/lib/js-runner/JSRunner.ts`                 | Added `clock` object to execution context with getters for `time`, `ticks`, `beat`, `progress`, `bpm` |
+| `src/lib/canvas/GLSystem.ts`                    | Added `startTransportSync()`, `stopTransportSync()`, `syncTransportTime()`. Transport syncs at 60fps  |
+| `src/workers/rendering/renderWorker.ts`         | Handles `syncTransportTime` message, passes to fboRenderer                                            |
+| `src/workers/rendering/fboRenderer.ts`          | Added `transportTime` property and `setTransportTime()` method, passes to render props                |
+| `src/lib/canvas/shadertoy-draw.ts`              | Changed `iTime` uniform to use `props.transportTime` instead of regl's internal clock                 |
+| `src/workers/rendering/hydraRenderer.ts`        | Changed to directly set `this.hydra.synth.time = params.transportTime`                                |
+| `src/lib/rendering/types.ts`                    | Added `transportTime: number` to `RenderParams` interface                                             |
+| `src/lib/components/BottomToolbar.svelte`       | Replaced VolumeControl with Popover containing TransportPanel. Added tooltips to all toolbar buttons  |
+| `src/lib/components/ObjectPreviewLayout.svelte` | Renamed individual node toggle to Pin/PinOff icons. All buttons now use Tooltip components            |
 
 ### Key Implementation Details
 
