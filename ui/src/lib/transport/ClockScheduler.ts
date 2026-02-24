@@ -146,6 +146,12 @@ export class PollingClockScheduler implements ClockScheduler {
 
     // Check repeating schedules
     for (const [, item] of this.repeatCallbacks) {
+      // Detect transport rewind (stop -> play from beginning)
+      // Reset lastFired so the callback can fire again
+      if (clock.time < item.lastFired) {
+        item.lastFired = 0;
+      }
+
       // Recalculate interval if BPM changed
       if (item.bpm !== clock.bpm) {
         // Preserve relative position when BPM changes
