@@ -175,6 +175,8 @@ export class FBORenderer {
       count: 6,
       framebuffer: this.regl.prop<{ framebuffer: regl.Framebuffer2D }, 'framebuffer'>('framebuffer')
     });
+
+    this.defineGlobalHydraTime();
   }
 
   /** Build FBOs for all nodes in the render graph */
@@ -1340,5 +1342,21 @@ export class FBORenderer {
     } else {
       this.jsRunner.modules.set(moduleName, code);
     }
+  }
+
+  /**
+   * Define global `time` getter for Hydra compatibility
+   * This allows `() => time` to work in Hydra code!
+   */
+  private defineGlobalHydraTime() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const renderer: FBORenderer = this;
+
+    Object.defineProperty(globalThis, 'time', {
+      configurable: true,
+      get() {
+        return renderer.transportTime?.seconds ?? 0;
+      }
+    });
   }
 }

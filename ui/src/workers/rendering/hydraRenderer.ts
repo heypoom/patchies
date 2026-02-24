@@ -253,10 +253,7 @@ export class HydraRenderer {
 
         // Canvas dimensions for normalizing mouse coordinates
         width: this.renderer.outputSize[0],
-        height: this.renderer.outputSize[1],
-
-        // Hydra time helper
-        time: performance.now()
+        height: this.renderer.outputSize[1]
       };
 
       // Use JSRunner's executeJavaScript method with full module support
