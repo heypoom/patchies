@@ -37,6 +37,7 @@ export class CanvasRenderer {
   private sampleRate: number = 44000;
   private animationId: number | null = null;
   private drawCommand: regl.DrawCommand | null = null;
+  private pausedCallback: FrameRequestCallback | null = null;
 
   // FFT state tracking
   public isFFTEnabled = false;
@@ -161,8 +162,17 @@ export class CanvasRenderer {
         height: height,
 
         requestAnimationFrame: (callback: FrameRequestCallback) => {
+          // Store callback for resume
+          this.pausedCallback = callback;
+
+          // Don't schedule if paused
+          if (this.renderer.isNodePaused(this.config.nodeId)) {
+            return -1;
+          }
+
           this.animationId = requestAnimationFrame(() => {
             callback(performance.now());
+
             this.drawCanvasToTexture();
           });
 
@@ -336,6 +346,19 @@ export class CanvasRenderer {
 
   handleMessage(message: Message) {
     this.onMessage?.(message.data, message);
+  }
+
+  /** Resume animation loop after unpausing */
+  resumeAnimation() {
+    if (this.pausedCallback && !this.renderer.isNodePaused(this.config.nodeId)) {
+      const callback = this.pausedCallback;
+
+      this.animationId = requestAnimationFrame(() => {
+        callback(performance.now());
+
+        this.drawCanvasToTexture();
+      });
+    }
   }
 
   /**

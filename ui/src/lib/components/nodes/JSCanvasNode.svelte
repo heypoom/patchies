@@ -37,6 +37,7 @@
       hidePorts?: boolean;
       executeCode?: number;
       showConsole?: boolean;
+      paused?: boolean;
     };
     selected?: boolean;
   } = $props();
@@ -180,6 +181,11 @@
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
       updateCanvas();
+
+      // Sync initial pause state with worker
+      if (data.paused) {
+        glSystem.toggleNodePause(nodeId);
+      }
     }, 50);
   });
 
@@ -214,6 +220,11 @@
     return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
   });
 
+  function togglePlayback() {
+    updateNodeData(nodeId, { paused: !data.paused });
+    glSystem.toggleNodePause(nodeId);
+  }
+
   function updateCanvas() {
     // Clear console and error highlighting on re-run
     consoleRef?.clearConsole();
@@ -238,6 +249,9 @@
   objectType="canvas"
   {nodeId}
   onrun={updateCanvas}
+  onPlaybackToggle={togglePlayback}
+  paused={data.paused}
+  showPauseButton={true}
   bind:previewCanvas
   nodrag={!dragEnabled}
   nopan={!panEnabled}

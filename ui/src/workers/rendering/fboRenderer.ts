@@ -830,7 +830,35 @@ export class FBORenderer {
   /** Toggle pause state for a node */
   toggleNodePause(nodeId: string) {
     const currentState = this.nodePausedMap.get(nodeId) ?? false;
-    this.nodePausedMap.set(nodeId, !currentState);
+    const newState = !currentState;
+    this.nodePausedMap.set(nodeId, newState);
+
+    // If resuming (unpausing), trigger animation resume on the renderer
+    if (!newState) {
+      this.resumeNodeAnimation(nodeId);
+    }
+  }
+
+  /** Resume animation for a node's renderer (if it supports resuming) */
+  private resumeNodeAnimation(nodeId: string) {
+    // Check all renderer maps for the node
+    const renderers = [
+      this.canvasByNode.get(nodeId),
+      this.hydraByNode.get(nodeId),
+      this.textmodeByNode.get(nodeId),
+      this.threeByNode.get(nodeId),
+      this.swglByNode.get(nodeId)
+    ];
+
+    for (const renderer of renderers) {
+      if (
+        renderer &&
+        'resumeAnimation' in renderer &&
+        typeof renderer.resumeAnimation === 'function'
+      ) {
+        renderer.resumeAnimation();
+      }
+    }
   }
 
   /** Check if a node is paused */
