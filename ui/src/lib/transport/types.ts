@@ -9,7 +9,7 @@ export interface ITransport {
   readonly bpm: number;
   readonly isPlaying: boolean;
   readonly beat: number; // current beat in measure (0-3)
-  readonly progress: number; // 0.0-1.0 position in current bar
+  readonly phase: number; // 0.0-1.0 position within current beat
 
   // Controls
   play(): Promise<void>;
@@ -30,5 +30,5 @@ export interface TransportState {
   bpm: number;
   isPlaying: boolean;
   beat: number;
-  progress: number;
+  phase: number;
 }

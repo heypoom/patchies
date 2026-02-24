@@ -360,8 +360,8 @@ export class JSRunner {
       get beat() {
         return Transport.beat;
       },
-      get progress() {
-        return Transport.progress;
+      get phase() {
+        return Transport.phase;
       },
       get bpm() {
         return Transport.bpm;

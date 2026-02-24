@@ -49,7 +49,7 @@ export interface ITransport {
   readonly bpm: number;
   readonly isPlaying: boolean;
   readonly beat: number; // current beat in measure (0-3)
-  readonly progress: number; // 0.0-1.0 position in current bar
+  readonly phase: number; // 0.0-1.0 position within current beat
 
   // Controls
   play(): Promise<void>;
@@ -96,7 +96,7 @@ export class StubTransport implements ITransport {
     return Math.floor(this.ticks / this.ppq) % 4;
   }
 
-  get progress(): number {
+  get phase(): number {
     return (this.ticks % this.ppq) / this.ppq;
   }
 
@@ -162,7 +162,7 @@ export class ToneTransport implements ITransport {
     return Math.floor(this.ticks / 192) % 4;
   }
 
-  get progress(): number {
+  get phase(): number {
     return (this.ticks % 192) / 192;
   }
 
@@ -225,8 +225,8 @@ class TransportManager {
   get beat() {
     return this.impl.beat;
   }
-  get progress() {
-    return this.impl.progress;
+  get phase() {
+    return this.impl.phase;
   }
 
   async play(): Promise<void> {
@@ -298,7 +298,7 @@ const clock = {
   time: Transport.seconds,
   ticks: Transport.ticks,
   beat: Transport.beat,
-  progress: Transport.progress, // (ticks % PPQ) / PPQ
+  progress: Transport.phase, // (ticks % PPQ) / PPQ
   bpm: Transport.bpm,
 };
 ```
@@ -544,8 +544,8 @@ const clock = {
   get beat() {
     return Transport.beat;
   },
-  get progress() {
-    return Transport.progress;
+  get phase() {
+    return Transport.phase;
   },
   get bpm() {
     return Transport.bpm;
@@ -626,7 +626,7 @@ The existing `VolumeControl.svelte` in `BottomToolbar.svelte` will be replaced w
 
 ### Unit Tests
 
-- StubTransport: seconds/ticks/beat/progress calculations
+- StubTransport: seconds/ticks/beat/phase calculations
 - BPM changes affect tick rate correctly
 - State transfer during stub→tone upgrade
 
@@ -634,7 +634,7 @@ The existing `VolumeControl.svelte` in `BottomToolbar.svelte` will be replaced w
 
 1. Play/pause freezes ALL visuals simultaneously
 2. Stop resets time to 0 across all nodes
-3. BPM changes affect JSRunner `clock.beat` and `clock.progress`
+3. BPM changes affect JSRunner `clock.beat` and `clock.phase`
 4. GLSL `iTime` matches Transport.seconds
 5. Hydra `time` variable matches Transport.seconds
 6. DSP toggle mutes audio but visuals continue
@@ -669,7 +669,7 @@ Completed: 2024-02-24
 
 | File                                            | Changes                                                                                               |
 | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `src/lib/js-runner/JSRunner.ts`                 | Added `clock` object to execution context with getters for `time`, `ticks`, `beat`, `progress`, `bpm` |
+| `src/lib/js-runner/JSRunner.ts`                 | Added `clock` object to execution context with getters for `time`, `ticks`, `beat`, `phase`, `bpm` |
 | `src/lib/canvas/GLSystem.ts`                    | Added `startTransportSync()`, `stopTransportSync()`, `syncTransportTime()`. Transport syncs at 60fps  |
 | `src/workers/rendering/renderWorker.ts`         | Handles `syncTransportTime` message, passes to fboRenderer                                            |
 | `src/workers/rendering/fboRenderer.ts`          | Added `transportTime` property and `setTransportTime()` method, passes to render props                |
@@ -691,7 +691,7 @@ Completed: 2024-02-24
 #### Worker Bridge
 
 - GLSystem starts 60fps sync interval when animation starts (`startTransportSync()`)
-- Transport state (`seconds`, `ticks`, `bpm`, `isPlaying`, `beat`, `progress`) sent via `syncTransportTime` message
+- Transport state (`seconds`, `ticks`, `bpm`, `isPlaying`, `beat`, `phase`) sent via `syncTransportTime` message
 - fboRenderer stores state and passes `transportTime` to all render props
 
 #### DSP vs Volume Independence
@@ -715,7 +715,7 @@ Completed: 2024-02-24
 
 - [x] Play/pause freezes all visuals simultaneously
 - [x] Stop resets time to 0 across all nodes
-- [x] BPM changes affect JSRunner `clock.beat` and `clock.progress`
+- [x] BPM changes affect JSRunner `clock.beat` and `clock.phase`
 - [x] GLSL `iTime` matches Transport.seconds
 - [x] Hydra `time` variable matches Transport.seconds
 - [x] DSP toggle suspends/resumes audio independently of volume

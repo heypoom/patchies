@@ -86,7 +86,7 @@ export class FBORenderer {
     bpm: number;
     isPlaying: boolean;
     beat: number;
-    progress: number;
+    phase: number;
   } | null = null;
 
   /** Profiler for frame timing and regl.read() metrics */
@@ -813,7 +813,7 @@ export class FBORenderer {
     bpm: number;
     isPlaying: boolean;
     beat: number;
-    progress: number;
+    phase: number;
   }) {
     this.transportTime = state;
   }
@@ -1379,8 +1379,8 @@ export class FBORenderer {
       get beat() {
         return renderer.transportTime?.beat ?? 0;
       },
-      get progress() {
-        return renderer.transportTime?.progress ?? 0;
+      get phase() {
+        return renderer.transportTime?.phase ?? 0;
       },
       get bpm() {
         return renderer.transportTime?.bpm ?? 120;

@@ -36,7 +36,7 @@ export class ToneTransport implements ITransport {
     return Math.floor(this.ticks / this.ppq) % 4;
   }
 
-  get progress(): number {
+  get phase(): number {
     return (this.ticks % this.ppq) / this.ppq;
   }
 

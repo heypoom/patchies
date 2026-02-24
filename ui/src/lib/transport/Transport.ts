@@ -1,5 +1,6 @@
 import { StubTransport } from './StubTransport';
 import type { ITransport, TransportState } from './types';
+
 import { transportStore } from '../../stores/transport.store';
 
 /**
@@ -7,59 +8,64 @@ import { transportStore } from '../../stores/transport.store';
  * Starts with StubTransport and upgrades on first play().
  */
 class TransportManager implements ITransport {
-  private impl: ITransport = new StubTransport();
+  private context: ITransport = new StubTransport();
+
   private upgraded = false;
   private upgradeDisabled = false;
 
   // Proxy all reads to current implementation
   get seconds(): number {
-    return this.impl.seconds;
+    return this.context.seconds;
   }
 
   get ticks(): number {
-    return this.impl.ticks;
+    return this.context.ticks;
   }
 
   get bpm(): number {
-    return this.impl.bpm;
+    return this.context.bpm;
   }
 
   get isPlaying(): boolean {
-    return this.impl.isPlaying;
+    return this.context.isPlaying;
   }
 
   get beat(): number {
-    return this.impl.beat;
+    return this.context.beat;
   }
 
-  get progress(): number {
-    return this.impl.progress;
+  get phase(): number {
+    return this.context.phase;
   }
 
   async play(): Promise<void> {
     if (!this.upgraded && !this.upgradeDisabled) {
       await this.upgrade();
     }
-    await this.impl.play();
+
+    await this.context.play();
+
     transportStore.setIsPlaying(true);
   }
 
   pause(): void {
-    this.impl.pause();
+    this.context.pause();
+
     transportStore.setIsPlaying(false);
   }
 
   stop(): void {
-    this.impl.stop();
+    this.context.stop();
+
     transportStore.setIsPlaying(false);
   }
 
   setBpm(bpm: number): void {
-    this.impl.setBpm(bpm);
+    this.context.setBpm(bpm);
   }
 
   setDspEnabled(enabled: boolean): Promise<void> {
-    return this.impl.setDspEnabled(enabled);
+    return this.context.setDspEnabled(enabled);
   }
 
   /**
@@ -72,7 +78,7 @@ class TransportManager implements ITransport {
       bpm: this.bpm,
       isPlaying: this.isPlaying,
       beat: this.beat,
-      progress: this.progress
+      phase: this.phase
     };
   }
 
@@ -96,10 +102,10 @@ class TransportManager implements ITransport {
     const { ToneTransport } = await import('./ToneTransport');
 
     // Transfer state from stub to full transport
-    const currentBpm = this.impl.bpm;
+    const currentBpm = this.context.bpm;
 
-    this.impl = new ToneTransport(Tone);
-    this.impl.setBpm(currentBpm);
+    this.context = new ToneTransport(Tone);
+    this.context.setBpm(currentBpm);
     this.upgraded = true;
   }
 }
