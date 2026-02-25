@@ -16,7 +16,11 @@
     id: nodeId,
     data,
     selected
-  }: { id: string; data: { currentPreset: string }; selected: boolean } = $props();
+  }: {
+    id: string;
+    data: { currentPreset: string; hidePreview?: boolean };
+    selected: boolean;
+  } = $props();
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -104,8 +108,10 @@
 
 <CanvasPreviewLayout
   title="butterchurn"
+  {nodeId}
   onPlaybackToggle={isPlaying ? stop : start}
   paused={!isPlaying}
+  hidePreview={data.hidePreview}
   showPauseButton={true}
   bind:previewCanvas={canvasElement}
   {selected}

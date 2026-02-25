@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code, Pause, Play, X, Terminal } from '@lucide/svelte/icons';
+  import { Code, Eye, EyeOff, Pause, Play, X, Terminal } from '@lucide/svelte/icons';
   import { onMount, type Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';
   import { derived } from 'svelte/store';
@@ -14,6 +14,7 @@
     onrun,
     onPlaybackToggle,
     paused = false,
+    hidePreview = false,
     showPauseButton = false,
     showConsoleButton = false,
 
@@ -30,6 +31,7 @@
     onrun?: () => void;
     onPlaybackToggle?: () => void;
     paused?: boolean;
+    hidePreview?: boolean;
     showPauseButton?: boolean;
     showConsoleButton?: boolean;
 
@@ -56,6 +58,15 @@
 
   function handlePlaybackToggle() {
     onPlaybackToggle?.();
+  }
+
+  function handleHidePreviewToggle() {
+    if (nodeId) {
+      const node = getNode(nodeId);
+      if (node) {
+        updateNodeData(nodeId, { ...node.data, hidePreview: !node.data.hidePreview });
+      }
+    }
   }
 
   function handleRun() {
@@ -118,6 +129,20 @@
             </button>
           {/if}
 
+          {#if nodeId}
+            <button
+              title={hidePreview ? 'Show preview' : 'Hide preview'}
+              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              onclick={handleHidePreviewToggle}
+            >
+              {#if hidePreview}
+                <Eye class="h-4 w-4 text-zinc-300" />
+              {:else}
+                <EyeOff class="h-4 w-4 text-zinc-300" />
+              {/if}
+            </button>
+          {/if}
+
           <button
             class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
             onclick={() => {
@@ -133,7 +158,7 @@
 
       <div class="relative">
         {@render topHandle?.()}
-        <div bind:this={previewContainer}>{@render preview?.()}</div>
+        <div class:hidden={hidePreview} bind:this={previewContainer}>{@render preview?.()}</div>
         {@render bottomHandle?.()}
       </div>
     </div>

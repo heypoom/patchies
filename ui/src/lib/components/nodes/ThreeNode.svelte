@@ -39,6 +39,7 @@
       hidePorts?: boolean;
       executeCode?: number;
       showConsole?: boolean;
+      hidePreview?: boolean;
     };
     selected?: boolean;
   } = $props();
@@ -256,6 +257,7 @@
   title={data.title ?? 'three'}
   {nodeId}
   onrun={updateThree}
+  hidePreview={data.hidePreview}
   bind:previewCanvas
   nodrag={!dragEnabled}
   nopan={!panEnabled}

@@ -12,7 +12,8 @@
   import { match } from 'ts-pattern';
   import { aiTxtMessages } from '$lib/objects/schemas';
 
-  let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
+  let { id: nodeId, data }: { id: string; data: { prompt: string; hidePreview?: boolean } } =
+    $props();
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -101,7 +102,13 @@
   }
 </script>
 
-<ObjectPreviewLayout title="ai.txt" onrun={generateText} {editorReady}>
+<ObjectPreviewLayout
+  title="ai.txt"
+  {nodeId}
+  hidePreview={data.hidePreview}
+  onrun={generateText}
+  {editorReady}
+>
   {#snippet topHandle()}
     <StandardHandle port="inlet" type="message" total={2} index={0} {nodeId} />
     <StandardHandle

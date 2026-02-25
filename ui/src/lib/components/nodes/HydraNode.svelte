@@ -34,6 +34,7 @@
       videoOutletCount?: number;
       executeCode?: number;
       showConsole?: boolean;
+      hidePreview?: boolean;
     };
   } = $props();
 
@@ -257,6 +258,7 @@
   onrun={updateHydra}
   onPlaybackToggle={togglePause}
   paused={isPaused}
+  hidePreview={data.hidePreview}
   showPauseButton={true}
   nodrag={usesMouseVariable}
   nopan={usesMouseVariable}

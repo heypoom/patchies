@@ -14,7 +14,12 @@
     id: nodeId,
     data,
     selected
-  }: { id: string; type: string; data: { code: string }; selected: boolean } = $props();
+  }: {
+    id: string;
+    type: string;
+    data: { code: string; hidePreview?: boolean };
+    selected: boolean;
+  } = $props();
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -95,9 +100,11 @@
 
 <CanvasPreviewLayout
   title="swgl"
+  {nodeId}
   onrun={updateSwissGL}
   onPlaybackToggle={togglePause}
   paused={isPaused}
+  hidePreview={data.hidePreview}
   showPauseButton={true}
   {selected}
   {editorReady}

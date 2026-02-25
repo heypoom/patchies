@@ -33,6 +33,7 @@
       showConsole?: boolean;
       width?: number;
       height?: number;
+      hidePreview?: boolean;
     };
     selected?: boolean;
   } = $props();
@@ -203,7 +204,13 @@
   });
 </script>
 
-<ObjectPreviewLayout title={data.title ?? 'dom'} {nodeId} onrun={runCode} {editorReady}>
+<ObjectPreviewLayout
+  title={data.title ?? 'dom'}
+  {nodeId}
+  hidePreview={data.hidePreview}
+  onrun={runCode}
+  {editorReady}
+>
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index}
       <StandardHandle

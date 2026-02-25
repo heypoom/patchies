@@ -28,6 +28,7 @@
       glUniformDefs: GLUniformDef[];
       executeCode?: number;
       showConsole?: boolean;
+      hidePreview?: boolean;
     };
     selected: boolean;
   } = $props();
@@ -223,6 +224,7 @@
   onrun={updateShader}
   onPlaybackToggle={togglePause}
   paused={isPaused}
+  hidePreview={data.hidePreview}
   showPauseButton={true}
   nodrag={usesMouseUniform}
   nopan={usesMouseUniform}

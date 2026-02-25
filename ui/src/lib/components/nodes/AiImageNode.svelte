@@ -14,7 +14,8 @@
   import { aiImgMessages } from '$lib/objects/schemas';
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 
-  let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
+  let { id: nodeId, data }: { id: string; data: { prompt: string; hidePreview?: boolean } } =
+    $props();
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -132,7 +133,13 @@
   }
 </script>
 
-<ObjectPreviewLayout title="ai.img" onrun={generateImage} {editorReady}>
+<ObjectPreviewLayout
+  title="ai.img"
+  {nodeId}
+  hidePreview={data.hidePreview}
+  onrun={generateImage}
+  {editorReady}
+>
   {#snippet topHandle()}
     <StandardHandle
       port="inlet"

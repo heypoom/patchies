@@ -32,6 +32,7 @@
       hidePorts?: boolean;
       executeCode?: number;
       showConsole?: boolean;
+      hidePreview?: boolean;
     };
     selected?: boolean;
   } = $props();
@@ -42,11 +43,9 @@
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
   const eventBus = PatchiesEventBus.getInstance();
 
-  // Listen for console output events to capture lineErrors
   function handleConsoleOutput(event: ConsoleOutputEvent) {
     if (event.nodeId !== nodeId) return;
 
-    // If this error has lineErrors, update state for code highlighting
     if (event.messageType === 'error' && event.lineErrors) {
       lineErrors = event.lineErrors;
     }
@@ -436,6 +435,7 @@
   title={data.title ?? 'canvas.dom'}
   {nodeId}
   onrun={runCode}
+  hidePreview={data.hidePreview}
   bind:previewCanvas={canvas}
   nodrag={!dragEnabled}
   nopan={!panEnabled}

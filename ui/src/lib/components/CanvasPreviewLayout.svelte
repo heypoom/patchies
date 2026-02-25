@@ -10,6 +10,7 @@
     onrun,
     onPlaybackToggle,
     paused = false,
+    hidePreview = false,
     showPauseButton = false,
     showConsoleButton = false,
     previewCanvas = $bindable<HTMLCanvasElement>(),
@@ -36,6 +37,7 @@
     onrun?: () => void;
     onPlaybackToggle?: () => void;
     paused?: boolean;
+    hidePreview?: boolean;
     showPauseButton?: boolean;
     showConsoleButton?: boolean;
     previewCanvas?: HTMLCanvasElement;
@@ -74,6 +76,7 @@
   {onrun}
   {onPlaybackToggle}
   {paused}
+  {hidePreview}
   {showPauseButton}
   {showConsoleButton}
   {topHandle}

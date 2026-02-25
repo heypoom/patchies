@@ -35,6 +35,7 @@
       showConsole?: boolean;
       fontSize?: number;
       frameRate?: number;
+      hidePreview?: boolean;
     };
     selected?: boolean;
   } = $props();
@@ -335,6 +336,7 @@
   title={data.title ?? 'textmode.dom'}
   {nodeId}
   onrun={runCode}
+  hidePreview={data.hidePreview}
   bind:previewCanvas={canvas}
   nodrag={!dragEnabled}
   nopan={!panEnabled}

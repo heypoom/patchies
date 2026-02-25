@@ -37,6 +37,7 @@
       hidePorts?: boolean;
       executeCode?: number;
       showConsole?: boolean;
+      hidePreview?: boolean;
     };
     selected?: boolean;
   } = $props();
@@ -237,6 +238,7 @@
   title={data.title ?? 'canvas'}
   {nodeId}
   onrun={updateCanvas}
+  hidePreview={data.hidePreview}
   bind:previewCanvas
   nodrag={!dragEnabled}
   nopan={!panEnabled}

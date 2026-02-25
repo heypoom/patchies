@@ -33,6 +33,7 @@
       showConsole?: boolean;
       width?: number;
       height?: number;
+      hidePreview?: boolean;
     };
     selected?: boolean;
   } = $props();
@@ -255,7 +256,13 @@
   });
 </script>
 
-<ObjectPreviewLayout title={data.title ?? 'vue'} {nodeId} onrun={runCode} {editorReady}>
+<ObjectPreviewLayout
+  title={data.title ?? 'vue'}
+  {nodeId}
+  hidePreview={data.hidePreview}
+  onrun={runCode}
+  {editorReady}
+>
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index}
       <StandardHandle

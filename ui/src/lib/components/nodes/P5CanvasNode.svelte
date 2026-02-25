@@ -32,6 +32,7 @@
       hidePorts?: boolean;
       executeCode?: number;
       paused?: boolean;
+      hidePreview?: boolean;
       showConsole?: boolean;
     };
     selected: boolean;
@@ -271,6 +272,7 @@
   previewWidth={previewContainerWidth}
   showPauseButton
   paused={data.paused}
+  hidePreview={data.hidePreview}
   onPlaybackToggle={togglePlayback}
   {editorReady}
 >
