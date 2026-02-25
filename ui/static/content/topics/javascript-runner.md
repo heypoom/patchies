@@ -75,6 +75,23 @@ Top-level `await` is supported. Use `await delay(ms)` to pause execution.
 
 Use `fft()` to get audio frequency data from a connected `fft~` object. See [Audio Reactivity](/docs/audio-reactivity) for details.
 
+### Clock & Timing
+
+The `clock` object provides beat-synced timing from the global transport:
+
+```javascript
+clock.time    // seconds
+clock.beat    // current beat (0-3)
+clock.phase   // position in beat (0.0-1.0)
+clock.bpm     // tempo
+
+// Schedule callbacks
+clock.onBeat(0, () => flash());
+clock.every('1:0:0', () => pulse());
+```
+
+See [Clock API](/docs/clock-api) for full scheduling documentation.
+
 ### LLM Integration
 
 Use `await llm(prompt, options?)` to call Google's Gemini API:
@@ -144,6 +161,8 @@ Note: Constants are NOT shared across objects. Each object has its own isolated 
 
 ## See Also
 
+- [Clock API](/docs/clock-api) - Beat-synced timing and scheduling
+- [Transport Control](/docs/transport-control) - Global play/pause, BPM, time display
 - [Virtual Filesystem](/docs/virtual-filesystem) - Loading files and assets
 - [Data Storage](/docs/data-storage) - Persistent key-value storage
 - [Canvas Interaction](/docs/canvas-interaction)

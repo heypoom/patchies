@@ -88,6 +88,10 @@ export class FBORenderer {
     isPlaying: boolean;
     beat: number;
     phase: number;
+    bar: number;
+    beatsPerBar: number;
+    subdivision: number;
+    subdivisionsPerBeat: number;
   } | null = null;
 
   /** Profiler for frame timing and regl.read() metrics */
@@ -818,6 +822,10 @@ export class FBORenderer {
     isPlaying: boolean;
     beat: number;
     phase: number;
+    bar: number;
+    beatsPerBar: number;
+    subdivision: number;
+    subdivisionsPerBeat: number;
   }) {
     this.transportTime = state;
   }
@@ -1407,13 +1415,22 @@ export class FBORenderer {
    *
    * Includes scheduling methods (onBeat, schedule, every, cancel, cancelAll) that
    * use frame-based polling precision (~16ms at 60fps).
+   *
+   * Also includes control methods (play, pause, stop, setBpm, etc.) that send
+   * commands back to the main thread.
    */
   createWorkerClock() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const renderer: FBORenderer = this;
     const scheduler = this.clockScheduler;
 
+    // Helper to send clock commands to main thread
+    const sendCommand = (command: { action: string; value?: number }) => {
+      self.postMessage({ type: 'clockCommand', command });
+    };
+
     return {
+      // Read properties
       get time() {
         return renderer.transportTime?.seconds ?? 0;
       },
@@ -1429,6 +1446,29 @@ export class FBORenderer {
       get bpm() {
         return renderer.transportTime?.bpm ?? 120;
       },
+      get bar() {
+        return renderer.transportTime?.bar ?? 0;
+      },
+      get beatsPerBar() {
+        return renderer.transportTime?.beatsPerBar ?? 4;
+      },
+      get subdivision() {
+        return renderer.transportTime?.subdivision ?? 0;
+      },
+      get subdivisionsPerBeat() {
+        return renderer.transportTime?.subdivisionsPerBeat ?? 4;
+      },
+
+      // Control methods (send to main thread)
+      play: () => sendCommand({ action: 'play' }),
+      pause: () => sendCommand({ action: 'pause' }),
+      stop: () => sendCommand({ action: 'stop' }),
+      setBpm: (bpm: number) => sendCommand({ action: 'setBpm', value: bpm }),
+      setTimeSignature: (beats: number) =>
+        sendCommand({ action: 'setTimeSignature', value: beats }),
+      setSubdivisions: (n: number) => sendCommand({ action: 'setSubdivisions', value: n }),
+      seek: (time: number) => sendCommand({ action: 'seek', value: time }),
+
       // Scheduling methods
       onBeat: scheduler.onBeat.bind(scheduler),
       schedule: scheduler.schedule.bind(scheduler),

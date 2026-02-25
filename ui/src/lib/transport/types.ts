@@ -8,8 +8,14 @@ export interface ITransport {
   readonly ticks: number;
   readonly bpm: number;
   readonly isPlaying: boolean;
-  readonly beat: number; // current beat in measure (0-3)
+  readonly beat: number; // current beat in measure (0 to beatsPerBar-1)
   readonly phase: number; // 0.0-1.0 position within current beat
+
+  // Time signature & subdivision
+  readonly bar: number; // current bar (0-indexed)
+  readonly beatsPerBar: number; // beats per bar (default: 4)
+  readonly subdivision: number; // current subdivision within beat (0 to subdivisionsPerBeat-1)
+  readonly subdivisionsPerBeat: number; // subdivisions per beat (default: 4 = sixteenths)
 
   // Controls
   play(): Promise<void>;
@@ -17,6 +23,8 @@ export interface ITransport {
   stop(): void;
   seek(seconds: number): void;
   setBpm(bpm: number): void;
+  setTimeSignature(beatsPerBar: number): void;
+  setSubdivisions(subdivisionsPerBeat: number): void;
 
   // DSP control (no-op in stub)
   setDspEnabled(enabled: boolean): Promise<void>;
@@ -32,4 +40,23 @@ export interface TransportState {
   isPlaying: boolean;
   beat: number;
   phase: number;
+  bar: number;
+  beatsPerBar: number;
+  subdivision: number;
+  subdivisionsPerBeat: number;
+}
+
+/**
+ * Clock command message sent from worker to main thread.
+ */
+export interface ClockCommandMessage {
+  type: 'clockCommand';
+  command:
+    | { action: 'play' }
+    | { action: 'pause' }
+    | { action: 'stop' }
+    | { action: 'setBpm'; value: number }
+    | { action: 'setTimeSignature'; value: number }
+    | { action: 'setSubdivisions'; value: number }
+    | { action: 'seek'; value: number };
 }

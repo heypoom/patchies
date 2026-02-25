@@ -170,7 +170,18 @@ export type RenderWorkerMessage =
   | { type: 'mediaBunnyFirstFrame'; nodeId: string }
   | { type: 'mediaBunnyTimeUpdate'; nodeId: string; currentTime: number }
   | { type: 'mediaBunnyEnded'; nodeId: string }
-  | { type: 'mediaBunnyError'; nodeId: string; error: string };
+  | { type: 'mediaBunnyError'; nodeId: string; error: string }
+  | {
+      type: 'clockCommand';
+      command:
+        | { action: 'play' }
+        | { action: 'pause' }
+        | { action: 'stop' }
+        | { action: 'setBpm'; value: number }
+        | { action: 'setTimeSignature'; value: number }
+        | { action: 'setSubdivisions'; value: number }
+        | { action: 'seek'; value: number };
+    };
 
 export type PreviewState = Record<string, boolean>;
 

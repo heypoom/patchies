@@ -10,6 +10,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'audio-chaining': 'Audio Chaining',
   'audio-reactivity': 'Audio Reactivity',
   'canvas-interaction': 'Canvas Interaction',
+  'clock-api': 'Clock API',
   'connecting-objects': 'Connecting Objects',
   'connection-rules': 'Connection Rules',
   'data-storage': 'Data Storage',
@@ -29,6 +30,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'sharing-links': 'Sharing Links',
   shortcuts: 'Shortcuts',
   'supporting-open-source': 'Supporting Open Source',
+  'transport-control': 'Transport Control',
   'video-chaining': 'Video Chaining',
   'virtual-filesystem': 'Virtual Filesystem'
 };

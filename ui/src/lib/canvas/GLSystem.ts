@@ -277,6 +277,18 @@ export class GLSystem {
           nodeId: data.nodeId,
           error: data.error
         });
+      })
+      .with({ type: 'clockCommand' }, (data) => {
+        // Handle clock control commands from worker
+        match(data.command)
+          .with({ action: 'play' }, () => Transport.play())
+          .with({ action: 'pause' }, () => Transport.pause())
+          .with({ action: 'stop' }, () => Transport.stop())
+          .with({ action: 'setBpm' }, ({ value }) => Transport.setBpm(value))
+          .with({ action: 'setTimeSignature' }, ({ value }) => Transport.setTimeSignature(value))
+          .with({ action: 'setSubdivisions' }, ({ value }) => Transport.setSubdivisions(value))
+          .with({ action: 'seek' }, ({ value }) => Transport.seek(value))
+          .exhaustive();
       });
   };
 

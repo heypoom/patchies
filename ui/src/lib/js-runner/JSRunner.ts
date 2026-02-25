@@ -418,6 +418,7 @@ export class JSRunner {
 
     // Clock object for transport-synced timing with scheduling methods
     const clock = {
+      // Read properties
       get time() {
         return Transport.seconds;
       },
@@ -433,6 +434,26 @@ export class JSRunner {
       get bpm() {
         return Transport.bpm;
       },
+      get bar() {
+        return Transport.bar;
+      },
+      get beatsPerBar() {
+        return Transport.beatsPerBar;
+      },
+      get subdivision() {
+        return Transport.subdivision;
+      },
+      get subdivisionsPerBeat() {
+        return Transport.subdivisionsPerBeat;
+      },
+      // Control methods
+      play: () => Transport.play(),
+      pause: () => Transport.pause(),
+      stop: () => Transport.stop(),
+      setBpm: (bpm: number) => Transport.setBpm(bpm),
+      setTimeSignature: (beats: number) => Transport.setTimeSignature(beats),
+      setSubdivisions: (n: number) => Transport.setSubdivisions(n),
+      seek: (time: number) => Transport.seek(time),
       // Scheduling methods
       onBeat: scheduler.onBeat.bind(scheduler),
       schedule: scheduler.schedule.bind(scheduler),

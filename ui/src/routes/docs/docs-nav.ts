@@ -12,8 +12,20 @@ export const categoryOrder = [
 export const topicOrder: Record<string, string[]> = {
   'Getting Started': ['demos', 'adding-objects', 'modifying-objects', 'shortcuts'],
   Connections: ['connecting-objects', 'message-passing', 'hot-cold-inlets', 'network-p2p'],
-  'Audio & Video': ['audio-chaining', 'video-chaining', 'audio-reactivity', 'connection-rules'],
-  Scripting: ['javascript-runner', 'canvas-interaction', 'virtual-filesystem', 'data-storage'],
+  'Audio & Video': [
+    'audio-chaining',
+    'video-chaining',
+    'audio-reactivity',
+    'transport-control',
+    'connection-rules'
+  ],
+  Scripting: [
+    'javascript-runner',
+    'clock-api',
+    'canvas-interaction',
+    'virtual-filesystem',
+    'data-storage'
+  ],
   Sidebar: ['manage-files', 'manage-presets', 'manage-saves', 'manage-packs', 'in-app-help'],
   Other: [
     'sharing-links',
