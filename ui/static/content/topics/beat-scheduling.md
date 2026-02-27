@@ -155,16 +155,11 @@ Schedule a one-shot callback at a specific time.
 
 ```javascript
 // Absolute time in seconds
-clock.schedule(clock.time + 2, () => drop());
+clock.schedule(clock.time + 2, (time) => drop(time));
 
 // Bar:beat:sixteenth notation
-clock.schedule('4:0:0', () => breakdown());  // bar 4, beat 0
-clock.schedule('8:2:0', () => buildUp());    // bar 8, beat 2
-
-// Use time for precise audio scheduling
-clock.schedule('4:0:0', (time) => {
-  osc.frequency.setValueAtTime(440, time);
-});
+clock.schedule('4:0:0', (time) => breakdown(time));  // bar 4, beat 0
+clock.schedule('8:2:0', (time) => buildUp(time));    // bar 8, beat 2
 ```
 
 ### every
@@ -176,12 +171,6 @@ Schedule a repeating callback at a musical interval.
 clock.every('1:0:0', () => flash());    // every bar
 clock.every('0:1:0', () => pulse());    // every beat
 clock.every('0:0:1', () => tick());     // every sixteenth
-
-// Schedule audio events with precise timing
-clock.every('0:1:0', (time) => {
-  osc.frequency.setValueAtTime(440, time);
-  osc.frequency.setValueAtTime(0, time + 0.1);
-});
 ```
 
 ### cancel
