@@ -48,22 +48,7 @@ All visual objects automatically read from the global transport:
 
 When you pause, ALL visuals freeze simultaneously. When you stop, everything resets to time 0.
 
-## Example: Beat-Synced Visuals
-
-```javascript
-// In a js, p5, canvas, or hydra object
-// Flash on every beat
-if (clock.beat !== lastBeat) {
-  flash();
-  lastBeat = clock.beat;
-}
-
-// Pulse based on beat phase
-const pulse = 1 + Math.sin(clock.phase * Math.PI * 2) * 0.2;
-circle(width/2, height/2, 100 * pulse);
-```
-
-For more advanced scheduling (callbacks on specific beats, repeating patterns), see [Clock API](/docs/clock-api).
+For scheduling sample-accurate callbacks on specific beats and creating repeated patterns, see [Clock API](/docs/clock-api).
 
 ## See Also
 
