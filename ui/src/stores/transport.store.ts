@@ -19,6 +19,7 @@ export interface TransportStoreState {
   timeDisplayFormat: TimeDisplayFormat;
   panelOpen: boolean;
   isPlaying: boolean;
+  dspEnabled: boolean;
 }
 
 const defaultState: TransportStoreState = {
@@ -27,7 +28,8 @@ const defaultState: TransportStoreState = {
   denominator: DEFAULT_DENOMINATOR,
   timeDisplayFormat: DEFAULT_TIME_DISPLAY_FORMAT,
   panelOpen: false,
-  isPlaying: DEFAULT_AUTOPLAY
+  isPlaying: DEFAULT_AUTOPLAY,
+  dspEnabled: true
 };
 
 function loadFromStorage(): TransportStoreState {
@@ -43,7 +45,8 @@ function loadFromStorage(): TransportStoreState {
       denominator: parsed.denominator ?? DEFAULT_DENOMINATOR,
       timeDisplayFormat: parsed.timeDisplayFormat ?? DEFAULT_TIME_DISPLAY_FORMAT,
       panelOpen: false, // Always start closed
-      isPlaying: DEFAULT_AUTOPLAY
+      isPlaying: DEFAULT_AUTOPLAY,
+      dspEnabled: true
     };
   } catch {
     console.warn('Failed to load transport state from localStorage');
@@ -111,6 +114,10 @@ function createTransportStore() {
 
     setIsPlaying(isPlaying: boolean) {
       update((s) => ({ ...s, isPlaying }));
+    },
+
+    setDspEnabled(dspEnabled: boolean) {
+      update((s) => ({ ...s, dspEnabled }));
     }
   };
 }

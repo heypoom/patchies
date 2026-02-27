@@ -74,6 +74,7 @@
 
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
+  import { transportStore } from '../../stores/transport.store';
   import { initializeVFS } from '$lib/vfs';
   import {
     HistoryManager,
@@ -895,7 +896,7 @@
     {/if}
 
     <!-- Audio Resume Hint -->
-    {#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal && !($isMobile && $isSidebarOpen)}
+    {#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal && !($isMobile && $isSidebarOpen) && $transportStore.dspEnabled}
       <div
         class="absolute right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 {$helpModeObject ||
         isReadOnlyMode
