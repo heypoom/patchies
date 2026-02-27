@@ -59,7 +59,7 @@
     const displayBeat = currentBeat + 1;
     const sixteenths = Math.floor(currentPhase * 4) + 1;
 
-    return `${displayBar.toString().padStart(3, '0')}:${displayBeat}:${sixteenths.toString().padStart(2, '0')}`;
+    return `${displayBar.toString().padStart(3, '0')}:${displayBeat}:${sixteenths.toString()}`;
   }
 
   // Volume icon
