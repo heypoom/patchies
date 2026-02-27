@@ -19,6 +19,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: [
       'loadbang',
       'metro',
+      'beat',
       'trigger',
       'spigot',
       'delay',

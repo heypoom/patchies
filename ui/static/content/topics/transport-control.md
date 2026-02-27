@@ -53,6 +53,7 @@ For scheduling sample-accurate callbacks on specific beats and creating repeated
 ## See Also
 
 - [Clock API](/docs/clock-api) — Beat-synced scheduling for code
+- [beat](/docs/objects/beat) — Outputs current beat on each beat change
 - [Audio Chaining](/docs/audio-chaining)
 - [Video Chaining](/docs/video-chaining)
 - [Audio Reactivity](/docs/audio-reactivity)

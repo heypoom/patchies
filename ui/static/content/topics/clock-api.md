@@ -341,6 +341,7 @@ osc(10, 0.1, () => time)  // shorthand
 
 ## See Also
 
+- [beat](/docs/objects/beat) — Outputs current beat as a message on each beat change
 - [Parameter Automation](/docs/parameter-automation) — Automate audio parameters with sample-accurate timing
 - [Transport Control](/docs/transport-control) — Play/pause, BPM, time display
 - [JavaScript Runner](/docs/javascript-runner) — Full JSRunner documentation

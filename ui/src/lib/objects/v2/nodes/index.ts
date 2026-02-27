@@ -3,6 +3,7 @@
  */
 
 import { AdsrObject } from './AdsrObject';
+import { BeatObject } from './BeatObject';
 import { DebounceObject } from './DebounceObject';
 import { DelayObject } from './DelayObject';
 import { FloatObject } from './FloatObject';
@@ -27,6 +28,7 @@ import type { TextObjectClass } from '../interfaces/text-objects';
 
 export const TEXT_OBJECTS = [
   AdsrObject,
+  BeatObject,
   DebounceObject,
   DelayObject,
   FloatObject,
