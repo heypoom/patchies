@@ -21,9 +21,9 @@ signals. For control value-based ADSR, use [line~](/docs/objects/line~) instead.
 
 ## Scheduled Messages
 
-Under the hood, `adsr` sends [scheduled parameter messages](/docs/scheduled-parameters).
+Under the hood, `adsr` sends [parameter automation messages](/docs/parameter-automation).
 You can also send these directly from `js` nodes — see the full API
-in the [Scheduled Parameters](/docs/scheduled-parameters) topic.
+in the [Parameter Automation](/docs/parameter-automation) topic.
 
 Try the `midi-adsr.js` preset. See [this patch](/?id=4ezt0ne0frsf694) for usage.
 

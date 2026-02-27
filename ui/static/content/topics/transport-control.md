@@ -63,11 +63,11 @@ const pulse = 1 + Math.sin(clock.phase * Math.PI * 2) * 0.2;
 circle(width/2, height/2, 100 * pulse);
 ```
 
-For more advanced scheduling (callbacks on specific beats, repeating patterns), see [Beat Scheduling API](/docs/beat-scheduling).
+For more advanced scheduling (callbacks on specific beats, repeating patterns), see [Clock API](/docs/clock-api).
 
 ## See Also
 
-- [Beat Scheduling API](/docs/beat-scheduling) — Beat-synced scheduling for code
+- [Clock API](/docs/clock-api) — Beat-synced scheduling for code
 - [Audio Chaining](/docs/audio-chaining)
 - [Video Chaining](/docs/video-chaining)
 - [Audio Reactivity](/docs/audio-reactivity)

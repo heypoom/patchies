@@ -1,4 +1,4 @@
-# Beat Scheduling
+# Clock API
 
 The `clock` object provides beat-synced timing and scheduling for JavaScript-based objects. It reads from the global [Transport](/docs/transport-control) and works identically across all environments (main thread and workers).
 
@@ -292,7 +292,7 @@ Always use the `time` callback argument (not `Tone.now()`) for sample-accurate t
 
 ### Scheduling Audio Parameters
 
-The `time` argument from `clock.schedule` callback works with [scheduled parameter messages](/docs/scheduled-parameters) via `timeMode: 'absolute'`.
+The `time` argument from `clock.schedule` callback works with [parameter automation messages](/docs/parameter-automation) via `timeMode: 'absolute'`.
 
 This lets you automate audio parameters (`gain~`, `osc~`, filters, etc.) with beat-synced, sample-accurate timing:
 
@@ -341,7 +341,7 @@ osc(10, 0.1, () => time)  // shorthand
 
 ## See Also
 
-- [Scheduled Parameters](/docs/scheduled-parameters) — Automate audio parameters with sample-accurate timing
+- [Parameter Automation](/docs/parameter-automation) — Automate audio parameters with sample-accurate timing
 - [Transport Control](/docs/transport-control) — Play/pause, BPM, time display
 - [JavaScript Runner](/docs/javascript-runner) — Full JSRunner documentation
 - [Audio Reactivity](/docs/audio-reactivity) — Using FFT data in visuals

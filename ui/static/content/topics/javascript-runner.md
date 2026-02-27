@@ -90,7 +90,7 @@ clock.onBeat(0, () => flash());
 clock.every('1:0:0', () => pulse());
 ```
 
-See [Beat Scheduling API](/docs/beat-scheduling) for full scheduling documentation.
+See [Clock API](/docs/clock-api) for full scheduling documentation.
 
 ### LLM Integration
 
@@ -161,7 +161,7 @@ Note: Constants are NOT shared across objects. Each object has its own isolated 
 
 ## See Also
 
-- [Beat Scheduling API](/docs/beat-scheduling) - Beat-synced timing and scheduling
+- [Clock API](/docs/clock-api) - Beat-synced timing and scheduling
 - [Transport Control](/docs/transport-control) - Global play/pause, BPM, time display
 - [Virtual Filesystem](/docs/virtual-filesystem) - Loading files and assets
 - [Data Storage](/docs/data-storage) - Persistent key-value storage

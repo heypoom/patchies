@@ -1,6 +1,6 @@
-# Scheduled Parameters
+# Parameter Automation
 
-Automate audio parameters with sample-accurate timing from any `js` node with scheduled parameter messages.
+Automate audio parameters with sample-accurate timing from any `js` node with scheduled audio parameter messages.
 
 They work with any audio node that has an audio parameter inlet (`gain~`, `osc~`, `pan~`, `delay~`, filters, etc.). When you drag from an audio signal outlet, the audio parameter inlets will turn blue to indicate that it can be automated.
 
@@ -21,7 +21,7 @@ send({ type: 'set', value: 0.5, time: 0.5 });
 send({ type: 'set', value: 0.5, time: 1.0, timeMode: 'absolute' });
 ```
 
-The `timeMode: 'absolute'` option is useful with [clock.schedule](/docs/beat-scheduling) — pass the precise `time` argument from the callback directly:
+The `timeMode: 'absolute'` option is useful with [clock.schedule](/docs/clock-api) — pass the precise `time` argument from the callback directly:
 
 ```js
 // Schedule a parameter change on beat 0 with audio-precise timing
@@ -119,6 +119,6 @@ Any audio node with an AudioParam inlet accepts scheduled messages. Common targe
 
 ## See Also
 
-- [Beat Scheduling](/docs/beat-scheduling) — transport-synced scheduling with `clock.schedule`
+- [Clock API](/docs/clock-api) — transport-synced scheduling with `clock.schedule`
 - [adsr](/docs/objects/adsr) — envelope generator that sends scheduled messages
 - [line~](/docs/objects/line~) — control-value ramp generator (signal-based alternative)
