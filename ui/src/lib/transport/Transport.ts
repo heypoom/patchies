@@ -52,8 +52,6 @@ class TransportManager implements ITransport {
   }
 
   async play(): Promise<void> {
-    await this.ensureToneUpgraded();
-
     await this.context.play();
 
     transportStore.setIsPlaying(true);
