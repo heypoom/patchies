@@ -1,11 +1,5 @@
 import type { ITransport } from './types';
-import {
-  DEFAULT_AUTOPLAY,
-  DEFAULT_BPM,
-  DEFAULT_PPQ,
-  DEFAULT_BEATS_PER_BAR,
-  DEFAULT_DENOMINATOR
-} from './constants';
+import { DEFAULT_AUTOPLAY, DEFAULT_BPM, DEFAULT_PPQ, DEFAULT_TIME_SIGNATURE } from './constants';
 
 /**
  * Default transport implementation using AudioContext.currentTime when available,
@@ -16,8 +10,8 @@ export class DefaultTransport implements ITransport {
   private _lastSync = DEFAULT_AUTOPLAY ? performance.now() / 1000 : 0;
   private _isPlaying = DEFAULT_AUTOPLAY;
   private _bpm = DEFAULT_BPM;
-  private _beatsPerBar = DEFAULT_BEATS_PER_BAR;
-  private _denominator = DEFAULT_DENOMINATOR;
+  private _beatsPerBar = DEFAULT_TIME_SIGNATURE[0];
+  private _denominator = DEFAULT_TIME_SIGNATURE[1];
   private _audioContext: AudioContext | null = null;
 
   readonly ppq = DEFAULT_PPQ;

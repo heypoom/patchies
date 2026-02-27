@@ -105,6 +105,7 @@
   function enterTimeSigEditMode() {
     editTimeSigValue = timeSigDisplay;
     isEditingTimeSig = true;
+
     requestAnimationFrame(() => timeSigInputRef?.select());
   }
 
@@ -157,6 +158,7 @@
   function enterTimeEditMode() {
     editTimeValue = timeDisplay;
     isEditingTime = true;
+
     // Focus input after state update
     requestAnimationFrame(() => timeInputRef?.select());
   }
@@ -223,10 +225,12 @@
     if (isMuted || volume === 0) {
       isMuted = false;
       volume = previousVolume === 0 ? 0.5 : previousVolume;
+
       audioService.setOutVolume(volume);
     } else {
       previousVolume = volume;
       isMuted = true;
+
       audioService.setOutVolume(0);
     }
   }
@@ -271,13 +275,13 @@
 
   // Sync time signature from store on mount and when store changes
   $effect(() => {
-    const storeBpb = $transportStore.beatsPerBar;
-    const storeDenom = $transportStore.denominator;
+    const [storeBeatsPerBar, storeDenominator] = $transportStore.timeSignature;
 
-    if (storeBpb !== beatsPerBar || storeDenom !== denominator) {
-      beatsPerBar = storeBpb;
-      denominator = storeDenom;
-      Transport.setTimeSignature(storeBpb, storeDenom);
+    if (storeBeatsPerBar !== beatsPerBar || storeDenominator !== denominator) {
+      beatsPerBar = storeBeatsPerBar;
+      denominator = storeDenominator;
+
+      Transport.setTimeSignature(storeBeatsPerBar, storeDenominator);
     }
   });
 

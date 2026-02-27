@@ -1,6 +1,6 @@
 import type * as ToneType from 'tone';
 import type { ITransport } from './types';
-import { DEFAULT_BPM, DEFAULT_PPQ, DEFAULT_BEATS_PER_BAR, DEFAULT_DENOMINATOR } from './constants';
+import { DEFAULT_BPM, DEFAULT_PPQ, DEFAULT_TIME_SIGNATURE } from './constants';
 
 /**
  * Full transport implementation wrapping Tone.Transport.
@@ -9,8 +9,8 @@ import { DEFAULT_BPM, DEFAULT_PPQ, DEFAULT_BEATS_PER_BAR, DEFAULT_DENOMINATOR } 
 export class ToneTransport implements ITransport {
   private tone: typeof ToneType;
   private _bpm = DEFAULT_BPM;
-  private _beatsPerBar = DEFAULT_BEATS_PER_BAR;
-  private _denominator = DEFAULT_DENOMINATOR;
+  private _beatsPerBar = DEFAULT_TIME_SIGNATURE[0];
+  private _denominator = DEFAULT_TIME_SIGNATURE[1];
 
   readonly ppq = DEFAULT_PPQ;
 
