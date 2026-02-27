@@ -259,28 +259,6 @@ const secondsPerBar = (60 / clock.bpm) * clock.beatsPerBar;
 clock.seek(8 * secondsPerBar);
 ```
 
-## Look-Ahead Scheduling for Audio
-
-`clock.schedule` uses a **look-ahead** pattern for audio-precise timing. The scheduler checks every ~25ms and fires callbacks whose deadline falls within a 100ms window ahead of the current time. Each callback receives the precise `time` argument, which you can pass directly to Web Audio API methods for sample-accurate scheduling — no Tone.js required.
-
-```javascript
-// Schedule a note 2 seconds from now
-clock.schedule(clock.time + 2, (time) => {
-  osc.frequency.setValueAtTime(440, time);
-  gain.gain.setValueAtTime(0.5, time);
-  gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
-});
-
-// Schedule at a specific bar position
-clock.schedule('4:0:0', (time) => {
-  osc.frequency.setValueAtTime(880, time);
-});
-```
-
-The callback runs ~100ms before the deadline, giving you time to call `setValueAtTime()`, `start()`, etc. with the precise `time`. The Web Audio API handles the sample-accurate part.
-
-This works in any [js](/docs/objects/js) node — you just need access to audio nodes (via `recv` from audio objects, or by creating your own `AudioContext`).
-
 ## Audio-Rate Beat Sync (`beat~`)
 
 For **continuous** beat-synced signals in the audio graph, use the [beat~](/docs/objects/beat~) object. Unlike `clock.schedule` which fires discrete callbacks, `beat~` outputs a sample-by-sample 0→1 sawtooth ramp synchronized to the transport BPM.
