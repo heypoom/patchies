@@ -42,12 +42,17 @@ export type UserParam = number | boolean | regl.Texture2D | regl.Framebuffer;
 
 export interface RenderParams {
   lastTime: number;
+
+  /** Previous frame's transport time for delta computation */
+  prevTransportTime: number;
+
   iFrame: number;
   mouseX: number;
   mouseY: number;
   mouseZ: number;
   mouseW: number;
   userParams: UserParam[];
+
   /** Global transport time in seconds for synchronized timing */
   transportTime: number;
 }

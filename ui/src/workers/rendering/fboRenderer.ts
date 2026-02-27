@@ -79,6 +79,7 @@ export class FBORenderer {
   private fboNodes = new Map<string, FBONode>();
   private fallbackTexture: regl.Texture2D;
   private lastTime: number = 0;
+  private prevTransportTime: number = 0;
   private frameCount: number = 0;
 
   /** Transport time from main thread for synchronized timing */
@@ -925,6 +926,9 @@ export class FBORenderer {
         this.renderNodeToMainOutput(outputFBONode);
       }
     }
+
+    // Track previous transport time for iTimeDelta computation
+    this.prevTransportTime = this.transportTime?.seconds ?? this.lastTime;
   }
 
   renderFboNode(node: RenderNode, fboNode: FBONode): void {
@@ -1000,6 +1004,7 @@ export class FBORenderer {
     fboNode.framebuffer.use(() => {
       fboNode.render({
         lastTime: this.lastTime,
+        prevTransportTime: this.prevTransportTime,
         iFrame: this.frameCount,
         mouseX: mouseData[0],
         mouseY: mouseData[1],

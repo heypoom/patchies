@@ -100,7 +100,8 @@
   const canConnect = $derived(nodes.length >= 2);
   const hasCurrentPatch = $derived(!!$currentPatchName);
 
-  const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
+  const isMac =
+    typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
 
   // Overflow menu state
   let overflowOpen = $state(false);
