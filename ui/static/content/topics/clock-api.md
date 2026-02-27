@@ -17,8 +17,6 @@ The `clock` object is available in: [js](/docs/objects/js), [worker](/docs/objec
 | `clock.bpm` | number | Current tempo in BPM |
 | `clock.bar` | number | Current bar (0-indexed) |
 | `clock.beatsPerBar` | number | Beats per bar (default: 4) |
-| `clock.subdivision` | number | Current subdivision within beat (0 to subdivisionsPerBeat-1) |
-| `clock.subdivisionsPerBeat` | number | Subdivisions per beat (default: 4 = sixteenths) |
 
 ## Basic Usage
 
@@ -48,7 +46,6 @@ Control the transport directly from your code:
 | `clock.stop()` | Stop and reset to 0 |
 | `clock.setBpm(bpm)` | Set tempo |
 | `clock.setTimeSignature(beatsPerBar)` | Set beats per bar (e.g., 3 for 3/4) |
-| `clock.setSubdivisions(n)` | Set subdivisions per beat (e.g., 5 for quintuplets) |
 | `clock.seek(seconds)` | Seek to time in seconds |
 
 ### Transport Control Example
@@ -80,14 +77,46 @@ clock.onBeat(0, () => kick());   // downbeat of each bar
 clock.onBeat(2, () => snare());  // beat 3 of each bar
 ```
 
+## Subdivision Methods
+
+Subdivisions are computed **per-node** — different nodes can use different subdivisions simultaneously (e.g., one node with triplets, another with quintuplets).
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `clock.subdiv(n)` | number | Current subdivision index (0 to n-1) within the beat |
+| `clock.subdivPhase(n)` | number | Progress within current subdivision (0.0 to 1.0) |
+
 ### Quintuplets Example
 
 ```javascript
-// 5 subdivisions per beat
-clock.setSubdivisions(5);
+// Each node picks its own subdivision count — no global state
+clock.subdiv(5);       // → 0, 1, 2, 3, 4 within each beat
+clock.subdiv(3);       // → 0, 1, 2 (triplets, can run simultaneously)
+clock.subdiv(4);       // → 0, 1, 2, 3 (sixteenths)
+```
 
-// clock.subdivision now cycles 0, 1, 2, 3, 4 within each beat
-const angle = (clock.subdivision / 5) * Math.PI * 2;
+### Polyrhythmic Patterns
+
+```javascript
+// Node A uses triplets, Node B uses quintuplets — at the same time
+const triAngle = clock.subdiv(3) / 3 * TAU;
+const quintAngle = clock.subdiv(5) / 5 * TAU;
+```
+
+### Smooth Animation with subdivPhase
+
+```javascript
+// Pulse that breathes once per sixteenth note
+const t = clock.subdivPhase(4);
+const radius = 50 + 20 * Math.sin(t * Math.PI);
+circle(width/2, height/2, radius);
+```
+
+### Rhythmic Color Changes
+
+```javascript
+const colors = ['red', 'orange', 'yellow', 'green', 'blue'];
+fill(colors[clock.subdiv(5)]);
 ```
 
 ## Scheduling Methods

@@ -90,8 +90,7 @@ export class FBORenderer {
     phase: number;
     bar: number;
     beatsPerBar: number;
-    subdivision: number;
-    subdivisionsPerBeat: number;
+    ppq: number;
   } | null = null;
 
   /** Profiler for frame timing and regl.read() metrics */
@@ -824,8 +823,7 @@ export class FBORenderer {
     phase: number;
     bar: number;
     beatsPerBar: number;
-    subdivision: number;
-    subdivisionsPerBeat: number;
+    ppq: number;
   }) {
     this.transportTime = state;
   }
@@ -1452,11 +1450,19 @@ export class FBORenderer {
       get beatsPerBar() {
         return renderer.transportTime?.beatsPerBar ?? 4;
       },
-      get subdivision() {
-        return renderer.transportTime?.subdivision ?? 0;
+
+      // Per-node subdivision helpers (computed locally from ticks + ppq)
+      subdiv(n: number) {
+        const ticks = renderer.transportTime?.ticks ?? 0;
+        const ppq = renderer.transportTime?.ppq ?? 192;
+        const ticksPerSubdiv = ppq / n;
+        return Math.floor((ticks % ppq) / ticksPerSubdiv);
       },
-      get subdivisionsPerBeat() {
-        return renderer.transportTime?.subdivisionsPerBeat ?? 4;
+      subdivPhase(n: number) {
+        const ticks = renderer.transportTime?.ticks ?? 0;
+        const ppq = renderer.transportTime?.ppq ?? 192;
+        const ticksPerSubdiv = ppq / n;
+        return ((ticks % ppq) % ticksPerSubdiv) / ticksPerSubdiv;
       },
 
       // Control methods (send to main thread)
@@ -1466,7 +1472,6 @@ export class FBORenderer {
       setBpm: (bpm: number) => sendCommand({ action: 'setBpm', value: bpm }),
       setTimeSignature: (beats: number) =>
         sendCommand({ action: 'setTimeSignature', value: beats }),
-      setSubdivisions: (n: number) => sendCommand({ action: 'setSubdivisions', value: n }),
       seek: (time: number) => sendCommand({ action: 'seek', value: time }),
 
       // Scheduling methods

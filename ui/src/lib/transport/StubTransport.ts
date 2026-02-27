@@ -1,11 +1,5 @@
 import type { ITransport } from './types';
-import {
-  DEFAULT_AUTOPLAY,
-  DEFAULT_BPM,
-  DEFAULT_PPQ,
-  DEFAULT_BEATS_PER_BAR,
-  DEFAULT_SUBDIVISIONS_PER_BEAT
-} from './constants';
+import { DEFAULT_AUTOPLAY, DEFAULT_BPM, DEFAULT_PPQ, DEFAULT_BEATS_PER_BAR } from './constants';
 
 /**
  * Stub transport implementation using performance.now().
@@ -17,9 +11,8 @@ export class StubTransport implements ITransport {
   private _isPlaying = DEFAULT_AUTOPLAY;
   private _bpm = DEFAULT_BPM;
   private _beatsPerBar = DEFAULT_BEATS_PER_BAR;
-  private _subdivisionsPerBeat = DEFAULT_SUBDIVISIONS_PER_BEAT;
 
-  private readonly ppq = DEFAULT_PPQ;
+  readonly ppq = DEFAULT_PPQ;
 
   get seconds(): number {
     if (!this._isPlaying) return this.pausedAt;
@@ -53,17 +46,8 @@ export class StubTransport implements ITransport {
     return (this.ticks % this.ppq) / this.ppq;
   }
 
-  get subdivision(): number {
-    const ticksPerSubdivision = this.ppq / this._subdivisionsPerBeat;
-    return Math.floor((this.ticks % this.ppq) / ticksPerSubdivision);
-  }
-
   get beatsPerBar(): number {
     return this._beatsPerBar;
-  }
-
-  get subdivisionsPerBeat(): number {
-    return this._subdivisionsPerBeat;
   }
 
   async play(): Promise<void> {
@@ -96,10 +80,6 @@ export class StubTransport implements ITransport {
 
   setTimeSignature(beatsPerBar: number): void {
     this._beatsPerBar = Math.max(1, Math.floor(beatsPerBar));
-  }
-
-  setSubdivisions(subdivisionsPerBeat: number): void {
-    this._subdivisionsPerBeat = Math.max(1, Math.floor(subdivisionsPerBeat));
   }
 
   async setDspEnabled(): Promise<void> {

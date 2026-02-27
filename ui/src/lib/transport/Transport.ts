@@ -42,16 +42,12 @@ class TransportManager implements ITransport {
     return this.context.phase;
   }
 
-  get subdivision(): number {
-    return this.context.subdivision;
+  get ppq(): number {
+    return this.context.ppq;
   }
 
   get beatsPerBar(): number {
     return this.context.beatsPerBar;
-  }
-
-  get subdivisionsPerBeat(): number {
-    return this.context.subdivisionsPerBeat;
   }
 
   async play(): Promise<void> {
@@ -89,11 +85,6 @@ class TransportManager implements ITransport {
     transportStore.setBeatsPerBar(beatsPerBar);
   }
 
-  setSubdivisions(subdivisionsPerBeat: number): void {
-    this.context.setSubdivisions(subdivisionsPerBeat);
-    transportStore.setSubdivisionsPerBeat(subdivisionsPerBeat);
-  }
-
   setDspEnabled(enabled: boolean): Promise<void> {
     return this.context.setDspEnabled(enabled);
   }
@@ -111,8 +102,7 @@ class TransportManager implements ITransport {
       phase: this.phase,
       bar: this.bar,
       beatsPerBar: this.beatsPerBar,
-      subdivision: this.subdivision,
-      subdivisionsPerBeat: this.subdivisionsPerBeat
+      ppq: this.ppq
     };
   }
 
@@ -138,12 +128,10 @@ class TransportManager implements ITransport {
     // Transfer state from stub to full transport
     const currentBpm = this.context.bpm;
     const currentBeatsPerBar = this.context.beatsPerBar;
-    const currentSubdivisions = this.context.subdivisionsPerBeat;
 
     this.context = new ToneTransport(Tone);
     this.context.setBpm(currentBpm);
     this.context.setTimeSignature(currentBeatsPerBar);
-    this.context.setSubdivisions(currentSubdivisions);
     this.upgraded = true;
   }
 }

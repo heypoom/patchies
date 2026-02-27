@@ -10,12 +10,11 @@ export interface ITransport {
   readonly isPlaying: boolean;
   readonly beat: number; // current beat in measure (0 to beatsPerBar-1)
   readonly phase: number; // 0.0-1.0 position within current beat
+  readonly ppq: number; // pulses per quarter note
 
-  // Time signature & subdivision
+  // Time signature
   readonly bar: number; // current bar (0-indexed)
   readonly beatsPerBar: number; // beats per bar (default: 4)
-  readonly subdivision: number; // current subdivision within beat (0 to subdivisionsPerBeat-1)
-  readonly subdivisionsPerBeat: number; // subdivisions per beat (default: 4 = sixteenths)
 
   // Controls
   play(): Promise<void>;
@@ -24,7 +23,6 @@ export interface ITransport {
   seek(seconds: number): void;
   setBpm(bpm: number): void;
   setTimeSignature(beatsPerBar: number): void;
-  setSubdivisions(subdivisionsPerBeat: number): void;
 
   // DSP control (no-op in stub)
   setDspEnabled(enabled: boolean): Promise<void>;
@@ -42,8 +40,7 @@ export interface TransportState {
   phase: number;
   bar: number;
   beatsPerBar: number;
-  subdivision: number;
-  subdivisionsPerBeat: number;
+  ppq: number;
 }
 
 /**
@@ -57,6 +54,5 @@ export interface ClockCommandMessage {
     | { action: 'stop' }
     | { action: 'setBpm'; value: number }
     | { action: 'setTimeSignature'; value: number }
-    | { action: 'setSubdivisions'; value: number }
     | { action: 'seek'; value: number };
 }

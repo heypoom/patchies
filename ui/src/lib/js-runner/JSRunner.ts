@@ -440,19 +440,27 @@ export class JSRunner {
       get beatsPerBar() {
         return Transport.beatsPerBar;
       },
-      get subdivision() {
-        return Transport.subdivision;
+
+      // Per-node subdivision helpers (computed locally from ticks + ppq)
+      subdiv(n: number) {
+        const ticks = Transport.ticks;
+        const ppq = Transport.ppq;
+        const ticksPerSubdiv = ppq / n;
+        return Math.floor((ticks % ppq) / ticksPerSubdiv);
       },
-      get subdivisionsPerBeat() {
-        return Transport.subdivisionsPerBeat;
+      subdivPhase(n: number) {
+        const ticks = Transport.ticks;
+        const ppq = Transport.ppq;
+        const ticksPerSubdiv = ppq / n;
+        return ((ticks % ppq) % ticksPerSubdiv) / ticksPerSubdiv;
       },
+
       // Control methods
       play: () => Transport.play(),
       pause: () => Transport.pause(),
       stop: () => Transport.stop(),
       setBpm: (bpm: number) => Transport.setBpm(bpm),
       setTimeSignature: (beats: number) => Transport.setTimeSignature(beats),
-      setSubdivisions: (n: number) => Transport.setSubdivisions(n),
       seek: (time: number) => Transport.seek(time),
       // Scheduling methods
       onBeat: scheduler.onBeat.bind(scheduler),

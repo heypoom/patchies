@@ -179,7 +179,6 @@ export type RenderWorkerMessage =
         | { action: 'stop' }
         | { action: 'setBpm'; value: number }
         | { action: 'setTimeSignature'; value: number }
-        | { action: 'setSubdivisions'; value: number }
         | { action: 'seek'; value: number };
     };
 

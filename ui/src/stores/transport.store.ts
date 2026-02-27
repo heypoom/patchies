@@ -1,10 +1,5 @@
 import { writable } from 'svelte/store';
-import {
-  DEFAULT_AUTOPLAY,
-  DEFAULT_BPM,
-  DEFAULT_BEATS_PER_BAR,
-  DEFAULT_SUBDIVISIONS_PER_BEAT
-} from '$lib/transport/constants';
+import { DEFAULT_AUTOPLAY, DEFAULT_BPM, DEFAULT_BEATS_PER_BAR } from '$lib/transport/constants';
 
 const STORAGE_KEY = 'patchies:transport';
 
@@ -15,7 +10,6 @@ const DEFAULT_TIME_DISPLAY_FORMAT: TimeDisplayFormat = 'time';
 export interface TransportStoreState {
   bpm: number;
   beatsPerBar: number;
-  subdivisionsPerBeat: number;
   timeDisplayFormat: TimeDisplayFormat;
   panelOpen: boolean;
   isPlaying: boolean;
@@ -24,7 +18,6 @@ export interface TransportStoreState {
 const defaultState: TransportStoreState = {
   bpm: DEFAULT_BPM,
   beatsPerBar: DEFAULT_BEATS_PER_BAR,
-  subdivisionsPerBeat: DEFAULT_SUBDIVISIONS_PER_BEAT,
   timeDisplayFormat: DEFAULT_TIME_DISPLAY_FORMAT,
   panelOpen: false,
   isPlaying: DEFAULT_AUTOPLAY
@@ -40,7 +33,6 @@ function loadFromStorage(): TransportStoreState {
     return {
       bpm: parsed.bpm ?? DEFAULT_BPM,
       beatsPerBar: parsed.beatsPerBar ?? DEFAULT_BEATS_PER_BAR,
-      subdivisionsPerBeat: parsed.subdivisionsPerBeat ?? DEFAULT_SUBDIVISIONS_PER_BEAT,
       timeDisplayFormat: parsed.timeDisplayFormat ?? DEFAULT_TIME_DISPLAY_FORMAT,
       panelOpen: false, // Always start closed
       isPlaying: DEFAULT_AUTOPLAY
@@ -82,10 +74,6 @@ function createTransportStore() {
 
     setBeatsPerBar(beatsPerBar: number) {
       update((s) => ({ ...s, beatsPerBar }));
-    },
-
-    setSubdivisionsPerBeat(subdivisionsPerBeat: number) {
-      update((s) => ({ ...s, subdivisionsPerBeat }));
     },
 
     setTimeDisplayFormat(format: TimeDisplayFormat) {
