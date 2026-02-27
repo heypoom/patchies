@@ -290,6 +290,34 @@ Always use the `time` callback argument (not `Tone.now()`) for sample-accurate t
 | `tone~` + Tone.Transport | Scheduling with Tone.js synths/effects                           |
 | `clock.onBeat` / `every` | Visual sync and frame-rate callbacks                             |
 
+### Scheduling Audio Parameters
+
+The `time` argument from `clock.schedule` callback works with [scheduled parameter messages](/docs/scheduled-parameters) via `timeMode: 'absolute'`.
+
+This lets you automate audio parameters (`gain~`, `osc~`, filters, etc.) with beat-synced, sample-accurate timing:
+
+```javascript
+// Trigger an envelope on every downbeat
+clock.onBeat(0, (time) => {
+  send({
+    type: 'trigger',
+    values: { start: 0, peak: 1, sustain: 0.7 },
+    attack: { time: 0.01 },
+    decay: { time: 0.1 }
+  });
+});
+
+// Schedule a filter sweep at bar 4
+clock.schedule('4:0:0', (time) => {
+  send({
+    type: 'set',
+    value: 2000,
+    time,
+    timeMode: 'absolute'
+  });
+});
+```
+
 ## Precision
 
 `clock.schedule` uses look-ahead scheduling (~25ms poll interval, 100ms schedule-ahead window). Callbacks fire before the deadline with the precise `time` argument, suitable for Web Audio API scheduling at the exact sample.
@@ -298,7 +326,8 @@ Always use the `time` callback argument (not `Tone.now()`) for sample-accurate t
 
 In worker environments (worker, canvas), all scheduling uses frame-based polling (~16ms at 60fps).
 
-For continuous audio-rate signals, use [beat~](/docs/objects/beat~). For Tone.js integration, use [tone~](/docs/objects/tone~).
+For continuous audio-rate signals, use [beat~](/docs/objects/beat~).
+For Tone.js integration, use [tone~](/docs/objects/tone~).
 
 ## Hydra Note
 
@@ -312,6 +341,7 @@ osc(10, 0.1, () => time)  // shorthand
 
 ## See Also
 
+- [Scheduled Parameters](/docs/scheduled-parameters) — Automate audio parameters with sample-accurate timing
 - [Transport Control](/docs/transport-control) — Play/pause, BPM, time display
 - [JavaScript Runner](/docs/javascript-runner) — Full JSRunner documentation
 - [Audio Reactivity](/docs/audio-reactivity) — Using FFT data in visuals

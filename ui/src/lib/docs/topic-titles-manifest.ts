@@ -27,6 +27,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'network-p2p': 'P2P Messaging',
   'offline-usage': 'Offline Usage',
   'rendering-pipeline': 'Rendering Pipeline',
+  'scheduled-parameters': 'Scheduled Parameters',
   'sharing-links': 'Sharing Links',
   shortcuts: 'Shortcuts',
   'supporting-open-source': 'Supporting Open Source',

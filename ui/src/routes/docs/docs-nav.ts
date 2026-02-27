@@ -17,6 +17,7 @@ export const topicOrder: Record<string, string[]> = {
     'video-chaining',
     'audio-reactivity',
     'transport-control',
+    'scheduled-parameters',
     'connection-rules'
   ],
   Scripting: [
