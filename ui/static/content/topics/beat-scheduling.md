@@ -128,7 +128,7 @@ fill(colors[clock.subdiv(5)]);
 
 Instead of manually tracking beat changes, use these scheduling methods for cleaner code. All scheduling callbacks receive a `time` argument — the precise transport time of the event. You can use this for audio-precise scheduling with the Web Audio API, or ignore it for visual-only use.
 
-### `clock.onBeat(beat, callback)`
+### onBeat
 
 Subscribe to beat changes. Callback fires when the specified beat is reached.
 
@@ -149,7 +149,7 @@ clock.onBeat(0, (time) => {
 });
 ```
 
-### `clock.schedule(time, callback)`
+### schedule
 
 Schedule a one-shot callback at a specific time.
 
@@ -167,7 +167,7 @@ clock.schedule('4:0:0', (time) => {
 });
 ```
 
-### `clock.every(interval, callback)`
+### every
 
 Schedule a repeating callback at a musical interval.
 
@@ -184,7 +184,7 @@ clock.every('0:1:0', (time) => {
 });
 ```
 
-### `clock.cancel(id)` / `clock.cancelAll()`
+### cancel
 
 Cancel scheduled callbacks.
 
