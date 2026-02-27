@@ -1,6 +1,8 @@
 # Scheduled Parameters
 
-Scheduled parameter messages let you automate audio parameters with sample-accurate timing from any `js` node. They work with any audio node that has an AudioParam inlet (`gain~`, `osc~`, `pan~`, `delay~`, filters, etc.).
+Automate audio parameters with sample-accurate timing from any `js` node with scheduled parameter messages.
+
+They work with any audio node that has an audio parameter inlet (`gain~`, `osc~`, `pan~`, `delay~`, filters, etc.). When you drag from an audio signal outlet, the audio parameter inlets will turn blue to indicate that it can be automated.
 
 ## Message Types
 
