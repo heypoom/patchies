@@ -131,6 +131,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'pink~',
       'phasor~',
       'pulse~',
+      'beat~',
       'sig~',
       'line~',
       'vline~',
