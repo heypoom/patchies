@@ -13,7 +13,7 @@ Click the **transport button** (play icon) in the bottom toolbar to open the flo
 | **Play/Pause** | Toggle playback. Pause freezes the clock at current position. Use `Space` as keyboard shortcut. |
 | **Stop** | Resets clock to 0 and pauses. |
 | **BPM** | Set tempo (beats per minute). Default: 120. Persisted across sessions. |
-| **Time Signature** | Set numerator and denominator (e.g., 4/4, 6/8, 3/4). Denominator selects which note value gets one beat. Persisted across sessions. |
+| **Time Signature** | Displays as `4/4`. Click to edit — type a fraction like `6/8` or `3/4` and press Enter. Denominator must be 2, 4, 8, or 16. Persisted across sessions. |
 | **Time Display** | Shows current position. Click to toggle formats (see below). Double-click to edit and seek. |
 | **Volume** | Master volume slider. |
 | **DSP** | Toggle audio processing. Red when DSP is off (AudioContext suspended). |

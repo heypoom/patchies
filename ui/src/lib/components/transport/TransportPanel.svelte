@@ -410,14 +410,14 @@
       bind:value={editTimeSigValue}
       onblur={handleTimeSigEditComplete}
       onkeydown={handleTimeSigKeydown}
-      class="w-11 rounded bg-zinc-800 px-1 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none"
+      class="w-[46px] rounded bg-zinc-800 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none"
     />
   {:else}
     <Tooltip.Root>
       <Tooltip.Trigger>
         <button
           onclick={enterTimeSigEditMode}
-          class="cursor-pointer rounded bg-zinc-800 px-2 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+          class="w-[46px] cursor-pointer rounded bg-zinc-800 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
         >
           {timeSigDisplay}
         </button>
@@ -436,6 +436,7 @@
           onclick={toggleMute}
           class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-700"
         >
+          <!-- svelte-ignore svelte_component_deprecated -->
           <svelte:component
             this={volumeIcon}
             class="h-4 w-4 {isMuted || volume === 0 ? 'text-red-400' : 'text-zinc-300'}"
