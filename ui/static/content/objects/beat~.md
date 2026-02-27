@@ -12,5 +12,8 @@ The ramp automatically follows transport play/pause/stop and BPM changes. When t
 
 ## See Also
 
+- [Transport Control](/docs/transport-control) - play/pause, BPM, time display
+- [Beat Scheduling](/docs/beat-scheduling) - transport-synced scheduling from JS
+- [Scheduled Parameters](/docs/scheduled-parameters) - automate audio params
 - [phasor~](/docs/objects/phasor~) - free-running ramp oscillator (Hz-based)
 - [osc~](/docs/objects/osc~) - standard oscillator with waveform types

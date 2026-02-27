@@ -119,6 +119,6 @@ Any audio node with an AudioParam inlet accepts scheduled messages. Common targe
 
 ## See Also
 
-- [adsr](/docs/objects/adsr) — envelope generator that sends scheduled messages
 - [Beat Scheduling](/docs/beat-scheduling) — transport-synced scheduling with `clock.schedule`
+- [adsr](/docs/objects/adsr) — envelope generator that sends scheduled messages
 - [line~](/docs/objects/line~) — control-value ramp generator (signal-based alternative)
