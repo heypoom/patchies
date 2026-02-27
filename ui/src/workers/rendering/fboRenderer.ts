@@ -899,8 +899,8 @@ export class FBORenderer {
 
     // Tick the clock scheduler with current transport state
     const clockState: ClockState = {
-      time: this.transportTime?.seconds ?? 0,
-      beat: this.transportTime?.beat ?? 0,
+      time: this.transportTime?.seconds ?? this.lastTime,
+      beat: this.transportTime?.beat ?? -1,
       bpm: this.transportTime?.bpm ?? 120
     };
     this.clockScheduler.tick(clockState);

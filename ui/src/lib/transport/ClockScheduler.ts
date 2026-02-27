@@ -63,6 +63,7 @@ export interface ClockState {
 
 type ClockWithScheduler = {
   readonly time: number;
+  readonly ticks: number;
   readonly beat: number;
   readonly phase: number;
   readonly bpm: number;
@@ -91,8 +92,25 @@ export function parseBarBeatSixteenth(notation: string, bpm: number): number {
   const beats = parts[1] ?? 0;
   const sixteenths = parts[2] ?? 0;
 
+  if (!Number.isFinite(bars)) {
+    throw new Error(`Invalid bar value in notation "${notation}": parsed bars as NaN`);
+  }
+
+  if (!Number.isFinite(beats)) {
+    throw new Error(`Invalid beat value in notation "${notation}": parsed beats as NaN`);
+  }
+
+  if (!Number.isFinite(sixteenths)) {
+    throw new Error(`Invalid sixteenth value in notation "${notation}": parsed sixteenths as NaN`);
+  }
+
+  if (!Number.isFinite(bpm) || bpm <= 0) {
+    throw new Error(`Invalid bpm (${bpm}): must be a finite number greater than 0`);
+  }
+
   const beatsPerSecond = bpm / 60;
   const totalBeats = bars * 4 + beats + sixteenths / 4;
+
   return totalBeats / beatsPerSecond;
 }
 
@@ -385,6 +403,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
  */
 export const createClockWithScheduler = (
   getTime: () => number,
+  getTicks: () => number,
   getBeat: () => number,
   getPhase: () => number,
   getBpm: () => number,
@@ -392,6 +411,9 @@ export const createClockWithScheduler = (
 ): ClockWithScheduler => ({
   get time() {
     return getTime();
+  },
+  get ticks() {
+    return getTicks();
   },
   get beat() {
     return getBeat();
