@@ -58,8 +58,9 @@
     const displayBar = currentBar + 1;
     const displayBeat = currentBeat + 1;
     const sixteenths = Math.floor(currentPhase * 4) + 1;
+    let beatPad = beatsPerBar > 9 ? 2 : 1;
 
-    return `${displayBar.toString().padStart(3, '0')}:${displayBeat}:${sixteenths.toString()}`;
+    return `${displayBar.toString().padStart(4, '0')}:${displayBeat.toString().padStart(beatPad, '0')}:${sixteenths.toString()}`;
   }
 
   // Volume icon

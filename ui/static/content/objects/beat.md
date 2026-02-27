@@ -1,6 +1,6 @@
 Output the current beat from the global transport.
 
-Bang the inlet to get the current beat number (0 to beatsPerBar-1). Connect a [metro](/docs/objects/metro) to poll continuously.
+Automatically outputs the current beat number (0 to beatsPerBar-1) on every beat change.
 
 ## See Also
 
