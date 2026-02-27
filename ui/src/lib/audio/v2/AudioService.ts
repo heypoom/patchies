@@ -14,6 +14,7 @@ import { registerAudioNodes } from './nodes';
 import { getObjectType } from '$lib/objects/get-type';
 import { hasSomeAudioNode } from '../../../stores/canvas.store';
 import { BufferBridgeService } from '$lib/audio/buffer-bridge';
+import { Transport } from '$lib/transport';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -284,6 +285,7 @@ export class AudioService {
 
     const audioContext = this.getAudioContext();
     hasSomeAudioNode.set(true);
+    Transport.ensureToneUpgraded();
 
     const node = new NodeClass(nodeId, audioContext);
     this.nodesById.set(node.nodeId, node);

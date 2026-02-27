@@ -1,17 +1,18 @@
-import { StubTransport } from './StubTransport';
+import { DefaultTransport } from './DefaultTransport';
 import type { ITransport, TransportState } from './types';
 
 import { transportStore } from '../../stores/transport.store';
 
 /**
- * Global transport manager with lazy upgrade from stub to Tone.js.
- * Starts with StubTransport and upgrades on first play().
+ * Global transport manager with lazy upgrade from default to Tone.js.
+ * Starts with DefaultTransport (performance.now / AudioContext.currentTime)
+ * and upgrades to ToneTransport on first play().
  */
 class TransportManager implements ITransport {
-  private context: ITransport = new StubTransport();
+  private context: ITransport = new DefaultTransport();
 
-  private upgraded = false;
-  private upgradeDisabled = false;
+  private toneUpgraded = false;
+  private toneUpgradeDisabled = false;
 
   // Proxy all reads to current implementation
   get seconds(): number {
@@ -51,9 +52,7 @@ class TransportManager implements ITransport {
   }
 
   async play(): Promise<void> {
-    if (!this.upgraded && !this.upgradeDisabled) {
-      await this.upgrade();
-    }
+    await this.ensureToneUpgraded();
 
     await this.context.play();
 
@@ -107,32 +106,60 @@ class TransportManager implements ITransport {
   }
 
   /**
+   * Provide an AudioContext for jank-resistant timing.
+   * Only applies to DefaultTransport — ToneTransport uses its own AudioContext.
+   */
+  setAudioContext(ctx: AudioContext): void {
+    if (this.context instanceof DefaultTransport) {
+      this.context.setAudioContext(ctx);
+    }
+  }
+
+  /**
+   * Upgrade to Tone.js transport if not already upgraded.
+   * Called by AudioService when an audio node is created,
+   * so the upgrade happens immediately even if already playing.
+   */
+  async ensureToneUpgraded(): Promise<void> {
+    if (this.toneUpgraded || this.toneUpgradeDisabled) return;
+
+    const wasPlaying = this.isPlaying;
+    await this.upgradeToTone();
+
+    if (wasPlaying) {
+      await this.context.play();
+    }
+  }
+
+  /**
    * Disable upgrade to Tone.js transport.
    * Use for lite/embed mode where sample-accurate audio isn't needed.
    */
-  disableUpgrade(): void {
-    this.upgradeDisabled = true;
+  disableToneUpgrade(): void {
+    this.toneUpgradeDisabled = true;
   }
 
   /**
    * Check if transport has been upgraded to Tone.js.
    */
-  get isUpgraded(): boolean {
-    return this.upgraded;
+  get isToneUpgraded(): boolean {
+    return this.toneUpgraded;
   }
 
-  private async upgrade(): Promise<void> {
+  private async upgradeToTone(): Promise<void> {
     const Tone = await import('tone');
     const { ToneTransport } = await import('./ToneTransport');
 
-    // Transfer state from stub to full transport
+    // Transfer state from default to full transport
     const currentBpm = this.context.bpm;
     const currentBeatsPerBar = this.context.beatsPerBar;
 
     this.context = new ToneTransport(Tone);
     this.context.setBpm(currentBpm);
     this.context.setTimeSignature(currentBeatsPerBar);
-    this.upgraded = true;
+    this.toneUpgraded = true;
+
+    console.log('[transport] upgraded to Tone.js transport');
   }
 }
 

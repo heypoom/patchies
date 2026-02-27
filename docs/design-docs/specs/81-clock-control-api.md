@@ -206,7 +206,7 @@ clock.seek(8 * secondsPerBar);
 | -------------------------------------- | ---------------------------------------------------- |
 | `src/lib/transport/types.ts`           | Remove global subdivision, add `ppq` to state        |
 | `src/lib/transport/constants.ts`       | Remove `DEFAULT_SUBDIVISIONS_PER_BEAT`               |
-| `src/lib/transport/StubTransport.ts`   | Remove subdivision state, expose `ppq`               |
+| `src/lib/transport/DefaultTransport.ts`| Remove subdivision state, expose `ppq`               |
 | `src/lib/transport/ToneTransport.ts`   | Remove subdivision state, expose `ppq`               |
 | `src/lib/transport/Transport.ts`       | Remove subdivision proxies, add `ppq`                |
 | `src/lib/canvas/GLSystem.ts`           | Remove `setSubdivisions` from clockCommand handler   |

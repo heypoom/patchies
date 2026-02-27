@@ -778,6 +778,9 @@
 
     const audioContext = audioService.getAudioContext();
 
+    // Give transport the AudioContext for jank-resistant timing
+    Transport.setAudioContext(audioContext);
+
     if (audioContext.state === 'suspended') {
       audioContext.resume();
       audioService.updateEdges(edges);

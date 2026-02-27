@@ -1,6 +1,6 @@
 /**
  * Transport interface for unified timing control.
- * Both StubTransport and ToneTransport implement this interface.
+ * Both DefaultTransport and ToneTransport implement this interface.
  */
 export interface ITransport {
   // State (read-only)
