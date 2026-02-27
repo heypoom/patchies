@@ -398,7 +398,8 @@
       }}
       min="1"
       max="999"
-      class="w-17 rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 outline-none focus:ring-1 focus:ring-zinc-600"
+      class="w-[46px] [appearance:textfield] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 outline-none focus:ring-1 focus:ring-zinc-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      title="Beats per minute"
     />
   </div>
 
