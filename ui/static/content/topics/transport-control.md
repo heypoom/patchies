@@ -48,15 +48,6 @@ All visual objects automatically read from the global transport:
 
 When you pause, ALL visuals freeze simultaneously. When you stop, everything resets to time 0.
 
-## Pin (Freeze Frame)
-
-Individual objects have a **Pin** button (in the object's context menu or preview) that freezes just that object's rendering. This is different from transport pause:
-
-- **Transport Pause**: Freezes ALL objects, stops the global clock
-- **Pin**: Freezes ONE object, clock keeps running for others
-
-Use Pin for VJ-style freeze-frame effects while other visuals continue.
-
 ## Example: Beat-Synced Visuals
 
 ```javascript
