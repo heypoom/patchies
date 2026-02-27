@@ -1413,7 +1413,7 @@ export class FBORenderer {
     Object.defineProperty(globalThis, 'time', {
       configurable: true,
       get() {
-        return renderer.transportTime?.seconds ?? 0;
+        return renderer.transportTime?.seconds ?? renderer.lastTime ?? 0;
       }
     });
   }
@@ -1441,7 +1441,7 @@ export class FBORenderer {
     return {
       // Read properties
       get time() {
-        return renderer.transportTime?.seconds ?? 0;
+        return renderer.transportTime?.seconds ?? renderer.lastTime ?? 0;
       },
       get ticks() {
         return renderer.transportTime?.ticks ?? 0;
