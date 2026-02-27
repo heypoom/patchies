@@ -243,9 +243,25 @@ const secondsPerBar = (60 / clock.bpm) * clock.beatsPerBar;
 clock.seek(8 * secondsPerBar);
 ```
 
+## Audio-Rate Beat Sync (`beat~`)
+
+The `clock` object works at frame rate (~60fps), which is fine for visuals. For **sample-accurate** beat sync in the audio graph, use the [beat~](/docs/objects/beat~) object.
+
+`beat~` outputs a continuous 0→1 sawtooth ramp synchronized to the transport BPM. It runs on the audio thread, so it's usable for beat-synced tremolo, FM, waveshaping, and other audio-rate modulation.
+
+```text
+beat~       → ramp 0→1 once per beat
+beat~ 4     → ramp 0→1 four times per beat (16th notes)
+beat~ 0.25  → ramp 0→1 once per bar (in 4/4)
+```
+
+The multiply parameter scales the beat frequency: `1` = per beat (default), `2` = 8th notes, `4` = 16ths, `0.25` = per bar. It's an AudioParam, so other signals can modulate it.
+
+The output follows transport play/pause/stop — it freezes when paused and resets on stop.
+
 ## Precision
 
-All scheduling uses frame-based polling (~16ms at 60fps). This is imperceptible for visual sync. For sample-accurate audio scheduling, use [tone~](/docs/objects/tone~) with Tone.js Transport.
+All scheduling uses frame-based polling (~16ms at 60fps). This is imperceptible for visual sync. For sample-accurate audio-rate beat sync, use [beat~](/docs/objects/beat~).
 
 ## Hydra Note
 
