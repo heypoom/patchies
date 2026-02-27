@@ -1,5 +1,11 @@
 import type { ITransport } from './types';
-import { DEFAULT_AUTOPLAY, DEFAULT_BPM, DEFAULT_PPQ, DEFAULT_BEATS_PER_BAR } from './constants';
+import {
+  DEFAULT_AUTOPLAY,
+  DEFAULT_BPM,
+  DEFAULT_PPQ,
+  DEFAULT_BEATS_PER_BAR,
+  DEFAULT_DENOMINATOR
+} from './constants';
 
 /**
  * Default transport implementation using AudioContext.currentTime when available,
@@ -11,6 +17,7 @@ export class DefaultTransport implements ITransport {
   private _isPlaying = DEFAULT_AUTOPLAY;
   private _bpm = DEFAULT_BPM;
   private _beatsPerBar = DEFAULT_BEATS_PER_BAR;
+  private _denominator = DEFAULT_DENOMINATOR;
   private _audioContext: AudioContext | null = null;
 
   readonly ppq = DEFAULT_PPQ;
@@ -77,22 +84,31 @@ export class DefaultTransport implements ITransport {
     return this._isPlaying;
   }
 
+  /** Ticks per beat, adjusted for denominator. 4/4 = ppq, 6/8 = ppq/2 */
+  private get ticksPerBeat(): number {
+    return this.ppq * (4 / this._denominator);
+  }
+
   get bar(): number {
-    const totalBeats = Math.floor(this.ticks / this.ppq);
+    const totalBeats = Math.floor(this.ticks / this.ticksPerBeat);
     return Math.floor(totalBeats / this._beatsPerBar);
   }
 
   get beat(): number {
-    const totalBeats = Math.floor(this.ticks / this.ppq);
+    const totalBeats = Math.floor(this.ticks / this.ticksPerBeat);
     return totalBeats % this._beatsPerBar;
   }
 
   get phase(): number {
-    return (this.ticks % this.ppq) / this.ppq;
+    return (this.ticks % this.ticksPerBeat) / this.ticksPerBeat;
   }
 
   get beatsPerBar(): number {
     return this._beatsPerBar;
+  }
+
+  get denominator(): number {
+    return this._denominator;
   }
 
   async play(): Promise<void> {
@@ -122,8 +138,9 @@ export class DefaultTransport implements ITransport {
     this._bpm = bpm;
   }
 
-  setTimeSignature(beatsPerBar: number): void {
-    this._beatsPerBar = Math.max(1, Math.floor(beatsPerBar));
+  setTimeSignature(numerator: number, denominator = 4): void {
+    this._beatsPerBar = Math.max(1, Math.floor(numerator));
+    this._denominator = Math.max(1, Math.floor(denominator));
   }
 
   async setDspEnabled(): Promise<void> {

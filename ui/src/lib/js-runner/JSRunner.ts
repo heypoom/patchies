@@ -440,6 +440,9 @@ export class JSRunner {
       get beatsPerBar() {
         return Transport.beatsPerBar;
       },
+      get denominator() {
+        return Transport.denominator;
+      },
 
       // Per-node subdivision helpers (computed locally from ticks + ppq)
       subdiv(n: number) {
@@ -460,7 +463,8 @@ export class JSRunner {
       pause: () => Transport.pause(),
       stop: () => Transport.stop(),
       setBpm: (bpm: number) => Transport.setBpm(bpm),
-      setTimeSignature: (beats: number) => Transport.setTimeSignature(beats),
+      setTimeSignature: (numerator: number, denominator = 4) =>
+        Transport.setTimeSignature(numerator, denominator),
       seek: (time: number) => Transport.seek(time),
       // Scheduling methods
       onBeat: scheduler.onBeat.bind(scheduler),

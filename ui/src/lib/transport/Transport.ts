@@ -51,6 +51,10 @@ class TransportManager implements ITransport {
     return this.context.beatsPerBar;
   }
 
+  get denominator(): number {
+    return this.context.denominator;
+  }
+
   async play(): Promise<void> {
     await this.context.play();
 
@@ -77,9 +81,9 @@ class TransportManager implements ITransport {
     this.context.setBpm(bpm);
   }
 
-  setTimeSignature(beatsPerBar: number): void {
-    this.context.setTimeSignature(beatsPerBar);
-    transportStore.setBeatsPerBar(beatsPerBar);
+  setTimeSignature(numerator: number, denominator = 4): void {
+    this.context.setTimeSignature(numerator, denominator);
+    transportStore.setTimeSignature(numerator, denominator);
   }
 
   setDspEnabled(enabled: boolean): Promise<void> {
@@ -99,6 +103,7 @@ class TransportManager implements ITransport {
       phase: this.phase,
       bar: this.bar,
       beatsPerBar: this.beatsPerBar,
+      denominator: this.denominator,
       ppq: this.ppq
     };
   }
@@ -151,11 +156,12 @@ class TransportManager implements ITransport {
     // Transfer state from default to full transport
     const currentBpm = this.context.bpm;
     const currentBeatsPerBar = this.context.beatsPerBar;
+    const currentDenominator = this.context.denominator;
     const currentSeconds = this.context.seconds;
 
     this.context = new ToneTransport(Tone);
     this.context.setBpm(currentBpm);
-    this.context.setTimeSignature(currentBeatsPerBar);
+    this.context.setTimeSignature(currentBeatsPerBar, currentDenominator);
     this.context.seek(currentSeconds);
     this.toneUpgraded = true;
 

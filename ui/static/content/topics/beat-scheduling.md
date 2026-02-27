@@ -1,4 +1,4 @@
-# Clock API
+# Beat Scheduling
 
 The `clock` object provides beat-synced timing and scheduling for JavaScript-based objects. It reads from the global [Transport](/docs/transport-control) and works identically across all environments (main thread and workers).
 
@@ -17,6 +17,7 @@ The `clock` object is available in: [js](/docs/objects/js), [worker](/docs/objec
 | `clock.bpm` | number | Current tempo in BPM |
 | `clock.bar` | number | Current bar (0-indexed) |
 | `clock.beatsPerBar` | number | Beats per bar (default: 4) |
+| `clock.denominator` | number | Note value per beat (default: 4 = quarter note) |
 
 ## Basic Usage
 
@@ -45,7 +46,7 @@ Control the transport directly from your code:
 | `clock.pause()` | Pause transport |
 | `clock.stop()` | Stop and reset to 0 |
 | `clock.setBpm(bpm)` | Set tempo |
-| `clock.setTimeSignature(beatsPerBar)` | Set beats per bar (e.g., 3 for 3/4) |
+| `clock.setTimeSignature(numerator, denominator = 4)` | Set time signature (e.g., `6, 8` for 6/8) |
 | `clock.seek(seconds)` | Seek to time in seconds |
 
 ### Transport Control Example
@@ -69,8 +70,11 @@ clock.play();
 ### Time Signature Example
 
 ```javascript
-// Set 3/4 time
-clock.setTimeSignature(3);
+// Set 3/4 time (3 quarter-note beats per bar)
+clock.setTimeSignature(3, 4);
+
+// Set 6/8 time (6 eighth-note beats per bar)
+clock.setTimeSignature(6, 8);
 
 // Now clock.beat cycles 0, 1, 2, 0, 1, 2...
 clock.onBeat(0, () => kick());   // downbeat of each bar

@@ -178,7 +178,7 @@ export type RenderWorkerMessage =
         | { action: 'pause' }
         | { action: 'stop' }
         | { action: 'setBpm'; value: number }
-        | { action: 'setTimeSignature'; value: number }
+        | { action: 'setTimeSignature'; numerator: number; denominator: number }
         | { action: 'seek'; value: number };
     };
 

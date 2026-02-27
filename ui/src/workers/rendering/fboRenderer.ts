@@ -7,6 +7,7 @@ import type {
   RenderFunction,
   UserParam
 } from '../../lib/rendering/types';
+import type { ClockCommandMessage } from '$lib/transport/types';
 import { DEFAULT_OUTPUT_SIZE, WEBGL_EXTENSIONS, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
@@ -90,6 +91,7 @@ export class FBORenderer {
     phase: number;
     bar: number;
     beatsPerBar: number;
+    denominator: number;
     ppq: number;
   } | null = null;
 
@@ -823,6 +825,7 @@ export class FBORenderer {
     phase: number;
     bar: number;
     beatsPerBar: number;
+    denominator: number;
     ppq: number;
   }) {
     this.transportTime = state;
@@ -1318,9 +1321,11 @@ export class FBORenderer {
    */
   capturePreviewBitmap(nodeId: string, customSize?: [number, number]): ImageBitmap | null {
     const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
+
     if (externalTexture) {
       // Use cached FBO to avoid creating/destroying on every capture
       const sourceFbo = this.videoTextures.getDestinationFBO(nodeId);
+
       if (sourceFbo) {
         const bitmap = this.captureRenderer.capturePreviewBitmapSync(
           sourceFbo,
@@ -1328,6 +1333,7 @@ export class FBORenderer {
           externalTexture.height,
           customSize
         );
+
         return bitmap;
       }
     }
@@ -1336,6 +1342,7 @@ export class FBORenderer {
     if (!fboNode) return null;
 
     const [sourceWidth, sourceHeight] = this.outputSize;
+
     return this.captureRenderer.capturePreviewBitmapSync(
       fboNode.framebuffer,
       sourceWidth,
@@ -1423,9 +1430,8 @@ export class FBORenderer {
     const scheduler = this.clockScheduler;
 
     // Helper to send clock commands to main thread
-    const sendCommand = (command: { action: string; value?: number }) => {
+    const send = (command: ClockCommandMessage['command']) =>
       self.postMessage({ type: 'clockCommand', command });
-    };
 
     return {
       // Read properties
@@ -1450,29 +1456,36 @@ export class FBORenderer {
       get beatsPerBar() {
         return renderer.transportTime?.beatsPerBar ?? 4;
       },
+      get denominator() {
+        return renderer.transportTime?.denominator ?? 4;
+      },
 
-      // Per-node subdivision helpers (computed locally from ticks + ppq)
+      // Subdivision helpers. Computed locally from ticks + ppq.
       subdiv(n: number) {
         const ticks = renderer.transportTime?.ticks ?? 0;
         const ppq = renderer.transportTime?.ppq ?? 192;
         const ticksPerSubdiv = ppq / n;
+
         return Math.floor((ticks % ppq) / ticksPerSubdiv);
       },
       subdivPhase(n: number) {
         const ticks = renderer.transportTime?.ticks ?? 0;
         const ppq = renderer.transportTime?.ppq ?? 192;
         const ticksPerSubdiv = ppq / n;
+
         return ((ticks % ppq) % ticksPerSubdiv) / ticksPerSubdiv;
       },
 
       // Control methods (send to main thread)
-      play: () => sendCommand({ action: 'play' }),
-      pause: () => sendCommand({ action: 'pause' }),
-      stop: () => sendCommand({ action: 'stop' }),
-      setBpm: (bpm: number) => sendCommand({ action: 'setBpm', value: bpm }),
-      setTimeSignature: (beats: number) =>
-        sendCommand({ action: 'setTimeSignature', value: beats }),
-      seek: (time: number) => sendCommand({ action: 'seek', value: time }),
+      play: () => send({ action: 'play' }),
+      pause: () => send({ action: 'pause' }),
+      stop: () => send({ action: 'stop' }),
+      seek: (time: number) => send({ action: 'seek', value: time }),
+
+      // Set BPM and time signature
+      setBpm: (bpm: number) => send({ action: 'setBpm', value: bpm }),
+      setTimeSignature: (numerator: number, denominator = 4) =>
+        send({ action: 'setTimeSignature', numerator, denominator }),
 
       // Scheduling methods
       onBeat: scheduler.onBeat.bind(scheduler),

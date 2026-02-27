@@ -285,7 +285,9 @@ export class GLSystem {
           .with({ action: 'pause' }, () => Transport.pause())
           .with({ action: 'stop' }, () => Transport.stop())
           .with({ action: 'setBpm' }, ({ value }) => Transport.setBpm(value))
-          .with({ action: 'setTimeSignature' }, ({ value }) => Transport.setTimeSignature(value))
+          .with({ action: 'setTimeSignature' }, ({ numerator, denominator }) =>
+            Transport.setTimeSignature(numerator, denominator)
+          )
           .with({ action: 'seek' }, ({ value }) => Transport.seek(value))
           .exhaustive();
       });

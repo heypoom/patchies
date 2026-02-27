@@ -21,10 +21,10 @@ export const topicOrder: Record<string, string[]> = {
   ],
   Scripting: [
     'javascript-runner',
-    'clock-api',
     'canvas-interaction',
     'virtual-filesystem',
-    'data-storage'
+    'data-storage',
+    'beat-scheduling'
   ],
   Sidebar: ['manage-files', 'manage-presets', 'manage-saves', 'manage-packs', 'in-app-help'],
   Other: [

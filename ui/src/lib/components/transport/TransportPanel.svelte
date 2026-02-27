@@ -14,7 +14,11 @@
   let isPlaying = $state(false);
   let seconds = $state(0);
   let beat = $state(0);
+  let bar = $state(0);
+  let phase = $state(0);
   let bpm = $state(120);
+  let beatsPerBar = $state(4);
+  let denominator = $state(4);
 
   // Volume state (independent of DSP)
   let volume = $state(0.8);
@@ -34,7 +38,7 @@
   const timeDisplay = $derived.by(() => {
     return match($transportStore.timeDisplayFormat)
       .with('seconds', () => formatSeconds(seconds))
-      .with('bars', () => formatBars(seconds, bpm))
+      .with('bars', () => formatBars(bar, beat, phase))
       .with('time', () => formatTime(seconds))
       .exhaustive();
   });
@@ -49,15 +53,13 @@
     return `${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}:${ms.toString().padStart(2, '0')}`;
   }
 
-  function formatBars(secs: number, bpm: number): string {
-    const beatsPerSecond = bpm / 60;
-    const totalBeats = secs * beatsPerSecond;
-    const bars = Math.floor(totalBeats / 4) + 1;
-    const beatInBar = Math.floor(totalBeats % 4) + 1;
-    const sixteenths = Math.floor((totalBeats % 1) * 4) + 1;
+  function formatBars(currentBar: number, currentBeat: number, currentPhase: number): string {
+    // Display as 1-indexed: bar:beat:subdivision
+    const displayBar = currentBar + 1;
+    const displayBeat = currentBeat + 1;
+    const sixteenths = Math.floor(currentPhase * 4) + 1;
 
-    // Zero-pad bars to 3 digits to prevent layout shifts (e.g., 001:1:01)
-    return `${bars.toString().padStart(3, '0')}:${beatInBar}:${sixteenths.toString().padStart(2, '0')}`;
+    return `${displayBar.toString().padStart(3, '0')}:${displayBeat}:${sixteenths.toString().padStart(2, '0')}`;
   }
 
   // Volume icon
@@ -91,6 +93,50 @@
       Transport.setBpm(newBpm);
       transportStore.setBpm(newBpm);
     }
+  }
+
+  // Time signature edit state
+  let isEditingTimeSig = $state(false);
+  let editTimeSigValue = $state('');
+  let timeSigInputRef: HTMLInputElement | null = null;
+
+  const timeSigDisplay = $derived(`${beatsPerBar}/${denominator}`);
+
+  function enterTimeSigEditMode() {
+    editTimeSigValue = timeSigDisplay;
+    isEditingTimeSig = true;
+    requestAnimationFrame(() => timeSigInputRef?.select());
+  }
+
+  function handleTimeSigEditComplete() {
+    const parsed = parseTimeSigInput(editTimeSigValue);
+
+    if (parsed) {
+      Transport.setTimeSignature(parsed.numerator, parsed.denominator);
+    }
+
+    isEditingTimeSig = false;
+  }
+
+  function handleTimeSigKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTimeSigEditComplete();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      isEditingTimeSig = false;
+    }
+  }
+
+  function parseTimeSigInput(input: string): { numerator: number; denominator: number } | null {
+    const parts = input.split('/').map((s) => parseInt(s.trim()));
+    if (parts.length !== 2 || parts.some(isNaN)) return null;
+
+    const [num, denom] = parts;
+    if (num < 1 || num > 16) return null;
+    if (![2, 4, 8, 16].includes(denom)) return null;
+
+    return { numerator: num, denominator: denom };
   }
 
   function handleTimeDisplayClick() {
@@ -163,9 +209,12 @@
         const [bars = 1, beats = 1, sixteenths = 1] = parts;
 
         // Convert to 0-indexed for calculation
-        const totalBeats = (bars - 1) * 4 + (beats - 1) + (sixteenths - 1) / 4;
+        // Each beat is (4/denominator) quarter notes long
+        const quarterNotesPerBeat = 4 / denominator;
+        const totalQuarterNotes =
+          ((bars - 1) * beatsPerBar + (beats - 1) + (sixteenths - 1) / 4) * quarterNotesPerBeat;
 
-        return Math.max(0, totalBeats / (currentBpm / 60));
+        return Math.max(0, totalQuarterNotes / (currentBpm / 60));
       })
       .exhaustive();
   }
@@ -219,13 +268,29 @@
     }
   });
 
+  // Sync time signature from store on mount and when store changes
+  $effect(() => {
+    const storeBpb = $transportStore.beatsPerBar;
+    const storeDenom = $transportStore.denominator;
+
+    if (storeBpb !== beatsPerBar || storeDenom !== denominator) {
+      beatsPerBar = storeBpb;
+      denominator = storeDenom;
+      Transport.setTimeSignature(storeBpb, storeDenom);
+    }
+  });
+
   onMount(() => {
     // Poll transport state at 30fps for UI
     const interval = setInterval(() => {
       isPlaying = Transport.isPlaying;
       seconds = Transport.seconds;
       beat = Transport.beat;
+      bar = Transport.bar;
+      phase = Transport.phase;
       bpm = Transport.bpm;
+      beatsPerBar = Transport.beatsPerBar;
+      denominator = Transport.denominator;
     }, 1000 / 30);
 
     // Sync volume from AudioService
@@ -336,6 +401,30 @@
       class="w-17 rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 outline-none focus:ring-1 focus:ring-zinc-600"
     />
   </div>
+
+  <!-- Time Signature -->
+  {#if isEditingTimeSig}
+    <input
+      type="text"
+      bind:this={timeSigInputRef}
+      bind:value={editTimeSigValue}
+      onblur={handleTimeSigEditComplete}
+      onkeydown={handleTimeSigKeydown}
+      class="w-11 rounded bg-zinc-800 px-1 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none"
+    />
+  {:else}
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <button
+          onclick={enterTimeSigEditMode}
+          class="cursor-pointer rounded bg-zinc-800 px-2 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+        >
+          {timeSigDisplay}
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>Time signature — click to edit</Tooltip.Content>
+    </Tooltip.Root>
+  {/if}
 
   <div class="h-6 w-px bg-zinc-700"></div>
 

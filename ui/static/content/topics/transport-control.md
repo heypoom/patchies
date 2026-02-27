@@ -1,6 +1,6 @@
 # Transport Control
 
-Patchies has a unified timing system that synchronizes all time-based objects (GLSL, Hydra, P5, Canvas, Three.js, JSRunner) to a single clock source. This enables perfect audio-visual sync across your entire patch.
+Patchies has a master clock that synchronizes all time-based objects (e.g. GLSL, Hydra, P5, Canvas, Three.js, JSRunner) to a single clock source. This enables perfect audio-visual sync across the patch.
 
 ## Opening the Transport Panel
 
@@ -13,6 +13,7 @@ Click the **transport button** (play icon) in the bottom toolbar to open the flo
 | **Play/Pause** | Toggle playback. Pause freezes the clock at current position. Use `Space` as keyboard shortcut. |
 | **Stop** | Resets clock to 0 and pauses. |
 | **BPM** | Set tempo (beats per minute). Default: 120. Persisted across sessions. |
+| **Time Signature** | Set numerator and denominator (e.g., 4/4, 6/8, 3/4). Denominator selects which note value gets one beat. Persisted across sessions. |
 | **Time Display** | Shows current position. Click to toggle formats (see below). Double-click to edit and seek. |
 | **Volume** | Master volume slider. |
 | **DSP** | Toggle audio processing. Red when DSP is off (AudioContext suspended). |
@@ -22,7 +23,7 @@ Click the **transport button** (play icon) in the bottom toolbar to open the flo
 Click the time display to cycle through formats:
 
 - **Time** `02:35:42` — Minutes:Seconds:Centiseconds
-- **Bars** `001:1:01` — Bars:Beats:Sixteenths (assumes 4/4 time)
+- **Bars** `001:1:01` — Bars:Beats:Sixteenths (respects current time signature)
 - **Seconds** `00004.25` — Raw seconds with decimals
 
 Double-click to edit the value and seek to a specific time.
@@ -71,11 +72,11 @@ const pulse = 1 + Math.sin(clock.phase * Math.PI * 2) * 0.2;
 circle(width/2, height/2, 100 * pulse);
 ```
 
-For more advanced scheduling (callbacks on specific beats, repeating patterns), see [Clock API](/docs/clock-api).
+For more advanced scheduling (callbacks on specific beats, repeating patterns), see [Beat Scheduling API](/docs/beat-scheduling).
 
 ## See Also
 
-- [Clock API](/docs/clock-api) — Beat-synced scheduling for code
+- [Beat Scheduling API](/docs/beat-scheduling) — Beat-synced scheduling for code
 - [Audio Chaining](/docs/audio-chaining)
 - [Video Chaining](/docs/video-chaining)
 - [Audio Reactivity](/docs/audio-reactivity)

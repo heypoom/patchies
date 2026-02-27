@@ -14,7 +14,8 @@ export interface ITransport {
 
   // Time signature
   readonly bar: number; // current bar (0-indexed)
-  readonly beatsPerBar: number; // beats per bar (default: 4)
+  readonly beatsPerBar: number; // numerator (beats per bar)
+  readonly denominator: number; // note value that gets one beat (4 = quarter)
 
   // Controls
   play(): Promise<void>;
@@ -22,7 +23,7 @@ export interface ITransport {
   stop(): void;
   seek(seconds: number): void;
   setBpm(bpm: number): void;
-  setTimeSignature(beatsPerBar: number): void;
+  setTimeSignature(numerator: number, denominator?: number): void;
 
   // DSP control (no-op in stub)
   setDspEnabled(enabled: boolean): Promise<void>;
@@ -40,6 +41,7 @@ export interface TransportState {
   phase: number;
   bar: number;
   beatsPerBar: number;
+  denominator: number;
   ppq: number;
 }
 
@@ -53,6 +55,6 @@ export interface ClockCommandMessage {
     | { action: 'pause' }
     | { action: 'stop' }
     | { action: 'setBpm'; value: number }
-    | { action: 'setTimeSignature'; value: number }
+    | { action: 'setTimeSignature'; numerator: number; denominator: number }
     | { action: 'seek'; value: number };
 }

@@ -23,6 +23,7 @@ Add control methods to the clock object that work uniformly in main thread and w
 | ----------------- | ------ | -------------------------- |
 | `clock.bar`       | number | Current bar (0-indexed)    |
 | `clock.beatsPerBar` | number | Beats per bar (default: 4) |
+| `clock.denominator` | number | Note value that gets one beat (default: 4 = quarter note) |
 
 ### Per-Node Subdivisions
 
@@ -41,7 +42,7 @@ These are pure computations from `ticks` and `ppq` — no global state, no synci
 | `clock.pause()`                       | Pause transport                      |
 | `clock.stop()`                        | Stop and reset to 0                  |
 | `clock.setBpm(bpm)`                   | Set tempo                            |
-| `clock.setTimeSignature(beatsPerBar)` | Set beats per bar (e.g., 3 for 3/4) |
+| `clock.setTimeSignature(numerator, denominator = 4)` | Set time signature (e.g., `6, 8` for 6/8) |
 | `clock.seek(time)`                    | Seek to time in seconds              |
 
 ## Implementation
@@ -76,13 +77,14 @@ export interface ITransport {
 
   readonly bar: number;
   readonly beatsPerBar: number;
+  readonly denominator: number;
 
   play(): Promise<void>;
   pause(): void;
   stop(): void;
   seek(seconds: number): void;
   setBpm(bpm: number): void;
-  setTimeSignature(beatsPerBar: number): void;
+  setTimeSignature(numerator: number, denominator?: number): void;
   setDspEnabled(enabled: boolean): Promise<void>;
 }
 ```
@@ -99,6 +101,7 @@ export interface TransportState {
   phase: number;
   bar: number;
   beatsPerBar: number;
+  denominator: number;
   ppq: number;
 }
 ```
@@ -115,7 +118,7 @@ interface ClockCommandMessage {
     | { action: "pause" }
     | { action: "stop" }
     | { action: "setBpm"; value: number }
-    | { action: "setTimeSignature"; value: number }
+    | { action: "setTimeSignature"; numerator: number; denominator: number }
     | { action: "seek"; value: number };
 }
 ```
@@ -143,8 +146,11 @@ The worker reads `ticks` and `ppq` from the synced `transportTime`. The main thr
 ### Time Signature
 
 ```javascript
-// Set 3/4 time
-clock.setTimeSignature(3);
+// Set 3/4 time (3 quarter-note beats per bar)
+clock.setTimeSignature(3, 4);
+
+// Set 6/8 time (6 eighth-note beats per bar)
+clock.setTimeSignature(6, 8);
 
 // Now clock.beat cycles 0, 1, 2, 0, 1, 2...
 clock.onBeat(0, () => kick()); // downbeat of each bar
@@ -214,9 +220,17 @@ clock.seek(8 * secondsPerBar);
 | `src/lib/js-runner/JSRunner.ts`        | Replace subdivision getters with `subdiv`/`subdivPhase` |
 | `src/stores/transport.store.ts`        | Remove `subdivisionsPerBeat` persistence             |
 
+## Tick Math
+
+The denominator determines `ticksPerBeat = ppq * (4 / denominator)`:
+- 4/4: `192 * (4/4) = 192` ticks/beat (quarter note beats)
+- 6/8: `192 * (4/8) = 96` ticks/beat (eighth note beats)
+- 3/2: `192 * (4/2) = 384` ticks/beat (half note beats)
+
+The `seconds → ticks` direction is unchanged: `ticks = seconds * (bpm / 60) * ppq` (ticks always count quarter notes). Only the interpretation (how ticks map to beats/bars) changes.
+
 ## Future Considerations
 
-- **Compound time signatures**: 6/8 feels like 2 groups of 3, not 6 beats
 - **Swing/groove**: Offset subdivisions for swing feel
 - **Per-node time signature**: Different objects in different meters (polymetric)
 - **Tempo automation**: Ramp BPM over time
