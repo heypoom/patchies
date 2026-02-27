@@ -46,20 +46,21 @@ Control the transport directly from your code:
 | `clock.pause()` | Pause transport |
 | `clock.stop()` | Stop and reset to 0 |
 | `clock.setBpm(bpm)` | Set tempo |
-| `clock.setTimeSignature(numerator, denominator = 4)` | Set time signature (e.g., `6, 8` for 6/8) |
+| `clock.setTimeSignature(numerator, denominator)` | Set time signature (e.g., `6, 8` for 6/8) |
 | `clock.seek(seconds)` | Seek to time in seconds |
 
 ### Transport Control Example
 
 ```javascript
 // React to messages
-recv((data) => {
-  if (data === 'go') {
+recv((m) => {
+  if (m === 'go') {
     clock.setBpm(140);
     clock.play();
   }
-  if (data === 'drop') {
-    clock.setBpm(70);  // half-time feel
+
+  if (m === 'drop') {
+    clock.setBpm(70); // half-time feel
   }
 });
 
