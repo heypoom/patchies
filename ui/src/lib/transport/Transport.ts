@@ -151,10 +151,12 @@ class TransportManager implements ITransport {
     // Transfer state from default to full transport
     const currentBpm = this.context.bpm;
     const currentBeatsPerBar = this.context.beatsPerBar;
+    const currentSeconds = this.context.seconds;
 
     this.context = new ToneTransport(Tone);
     this.context.setBpm(currentBpm);
     this.context.setTimeSignature(currentBeatsPerBar);
+    this.context.seek(currentSeconds);
     this.toneUpgraded = true;
 
     console.log('[transport] upgraded to Tone.js transport');
