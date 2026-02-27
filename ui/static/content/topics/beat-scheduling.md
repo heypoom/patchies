@@ -259,9 +259,41 @@ The multiply parameter scales the beat frequency: `1` = per beat (default), `2` 
 
 The output follows transport play/pause/stop — it freezes when paused and resets on stop.
 
+## Sample-Accurate Scheduling with Tone.js
+
+For sample-accurate **event** scheduling (triggering notes, envelopes, parameter changes at exact beat positions), use [tone~](/docs/objects/tone~) with Tone.js Transport. Unlike `beat~` which outputs a continuous signal, `tone~` lets you schedule discrete callbacks with audio-clock precision.
+
+```javascript
+// In a tone~ object — Tone.js Transport is synced to the global transport
+
+// Trigger a synth on every beat
+const synth = new Tone.Synth().connect(outputNode);
+
+Tone.getTransport().scheduleRepeat((time) => {
+  synth.triggerAttackRelease('C4', '8n', time);
+}, '4n');
+
+// Schedule at specific bar positions
+Tone.getTransport().schedule((time) => {
+  synth.triggerAttackRelease('E4', '2n', time);
+}, '4:0:0'); // bar 4, beat 0
+
+// Use the `time` callback argument (not Tone.now()) for sample-accurate timing
+```
+
+The `time` argument in Tone.js scheduling callbacks is the precise audio-context time — always use it instead of `Tone.now()` for scheduled events.
+
+**When to use which:**
+
+| Approach                 | Best for                                                    |
+|--------------------------|-------------------------------------------------------------|
+| `clock.*`                | Visual sync, frame-rate callbacks (~60fps)                  |
+| `beat~`                  | Continuous audio-rate modulation (tremolo, FM, waveshaping) |
+| `tone~` + Tone.Transport | Sample-accurate note/event scheduling                       |
+
 ## Precision
 
-All scheduling uses frame-based polling (~16ms at 60fps). This is imperceptible for visual sync. For sample-accurate audio-rate beat sync, use [beat~](/docs/objects/beat~).
+All `clock` scheduling uses frame-based polling (~16ms at 60fps). This is imperceptible for visual sync. For sample-accurate audio, use [beat~](/docs/objects/beat~) (continuous signals) or [tone~](/docs/objects/tone~) (event scheduling).
 
 ## Hydra Note
 
