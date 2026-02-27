@@ -6,7 +6,7 @@ import { createGetVfsUrl, revokeObjectUrls } from '$lib/vfs';
 import { handleCodeError } from './handleCodeError';
 import { createKVStore } from '$lib/storage';
 import { Transport } from '$lib/transport';
-import { PollingClockScheduler, type ClockState } from '$lib/transport/ClockScheduler';
+import { LookaheadClockScheduler } from '$lib/transport/ClockScheduler';
 
 export interface JSRunnerOptions {
   customConsole?: {
@@ -33,8 +33,7 @@ export class JSRunner {
   public moduleProviderUrl = `https://esm.sh/`;
   public modules: Map<string, string> = new Map();
   private messageContextMap: Map<string, MessageContext> = new Map();
-  private schedulerMap: Map<string, PollingClockScheduler> = new Map();
-  private schedulerTickLoops: Map<string, number> = new Map();
+  private schedulerMap: Map<string, LookaheadClockScheduler> = new Map();
 
   /** Avoid collision caused by multiple nodes having same library names. */
   private libraryNamesByNode: Map<string, string> = new Map();
@@ -255,54 +254,22 @@ export class JSRunner {
   }
 
   /**
-   * Get or create a clock scheduler for a node.
+   * Get or create a look-ahead clock scheduler for a node.
    * Schedulers persist across code executions but are cleaned up when the node is destroyed.
+   * Each scheduler self-ticks via setInterval (~25ms) — no external tick loop needed.
    */
-  getScheduler(nodeId: string): PollingClockScheduler {
+  getScheduler(nodeId: string): LookaheadClockScheduler {
     if (!this.schedulerMap.has(nodeId)) {
-      this.schedulerMap.set(nodeId, new PollingClockScheduler());
-    }
-
-    return this.schedulerMap.get(nodeId)!;
-  }
-
-  /**
-   * Start the scheduler tick loop for a node using requestAnimationFrame.
-   * This is called once per node and persists until the node is destroyed.
-   */
-  private startSchedulerTickLoop(nodeId: string): void {
-    // Don't start if already running
-    if (this.schedulerTickLoops.has(nodeId)) return;
-
-    const scheduler = this.getScheduler(nodeId);
-
-    const tick = () => {
-      const clockState: ClockState = {
+      const scheduler = new LookaheadClockScheduler(() => ({
         time: Transport.seconds,
         beat: Transport.beat,
         bpm: Transport.bpm
-      };
-      scheduler.tick(clockState);
-
-      // Continue the loop
-      const frameId = requestAnimationFrame(tick);
-      this.schedulerTickLoops.set(nodeId, frameId);
-    };
-
-    // Start the loop
-    const frameId = requestAnimationFrame(tick);
-    this.schedulerTickLoops.set(nodeId, frameId);
-  }
-
-  /**
-   * Stop the scheduler tick loop for a node.
-   */
-  private stopSchedulerTickLoop(nodeId: string): void {
-    const frameId = this.schedulerTickLoops.get(nodeId);
-    if (frameId !== undefined) {
-      cancelAnimationFrame(frameId);
-      this.schedulerTickLoops.delete(nodeId);
+      }));
+      scheduler.start();
+      this.schedulerMap.set(nodeId, scheduler);
     }
+
+    return this.schedulerMap.get(nodeId)!;
   }
 
   destroy(nodeId: string): void {
@@ -321,11 +288,10 @@ export class JSRunner {
 
     this.messageContextMap.delete(nodeId);
 
-    // Clean up scheduler
-    this.stopSchedulerTickLoop(nodeId);
+    // Clean up scheduler (stops interval + cancels all callbacks)
     const scheduler = this.schedulerMap.get(nodeId);
     if (scheduler) {
-      scheduler.cancelAll();
+      scheduler.dispose();
       this.schedulerMap.delete(nodeId);
     }
 
@@ -393,7 +359,6 @@ export class JSRunner {
     // Set up clock scheduler - cancel previous callbacks before executing new code
     const scheduler = this.getScheduler(nodeId);
     scheduler.cancelAll();
-    this.startSchedulerTickLoop(nodeId);
 
     const functionParams = [
       'console',

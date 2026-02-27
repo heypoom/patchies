@@ -1,40 +1,45 @@
 /**
  * Clock Scheduling API
  *
- * Unified scheduling interface for beat-synced visuals that works across
+ * Unified scheduling interface for beat-synced callbacks that works across
  * all environments (main thread and workers) with best-available precision.
  *
- * - Main thread + Tone.js: Audio-synced (~5ms precision)
- * - Main thread + Stub / Workers: Frame-based (~16ms precision)
+ * - Main thread (LookaheadClockScheduler): Look-ahead scheduling with precise
+ *   audio time passed to callbacks (~25ms look-ahead, sub-ms scheduling accuracy)
+ * - Workers (PollingClockScheduler): Frame-based polling (~16ms precision)
  */
+
+/** Callback that receives the precise transport time of the event. */
+export type SchedulerCallback = (time: number) => void;
 
 /**
  * Clock scheduler interface for beat-synced callbacks.
+ * All callbacks receive a `time` argument — the precise transport time of the event.
  */
 export interface ClockScheduler {
   /**
    * Subscribe to beat changes. Callback fires when the specified beat is reached.
    * @param beat - Beat number (0-3), array of beats, or "*" for all beats
-   * @param callback - Function to call when beat is reached
+   * @param callback - Function to call when beat is reached (receives transport time)
    * @returns ID for cancellation
    */
-  onBeat(beat: number | number[] | '*', callback: () => void): string;
+  onBeat(beat: number | number[] | '*', callback: SchedulerCallback): string;
 
   /**
    * Schedule a one-shot callback at a specific transport time.
    * @param time - Absolute time in seconds, or "bar:beat:sixteenth" notation
-   * @param callback - Function to call at the specified time
+   * @param callback - Function to call at the specified time (receives scheduled time)
    * @returns ID for cancellation
    */
-  schedule(time: number | string, callback: () => void): string;
+  schedule(time: number | string, callback: SchedulerCallback): string;
 
   /**
    * Schedule a repeating callback at a musical interval.
    * @param interval - Interval in "bar:beat:sixteenth" notation (e.g., "1:0:0" = every bar)
-   * @param callback - Function to call at each interval
+   * @param callback - Function to call at each interval (receives transport time)
    * @returns ID for cancellation
    */
-  every(interval: string, callback: () => void): string;
+  every(interval: string, callback: SchedulerCallback): string;
 
   /**
    * Cancel a scheduled callback by its ID.
@@ -91,9 +96,14 @@ export function parseBarBeatSixteenth(notation: string, bpm: number): number {
   return totalBeats / beatsPerSecond;
 }
 
-type BeatCallback = { beats: number[] | '*'; callback: () => void };
-type ScheduleCallback = { time: number; callback: () => void; fired: boolean };
-type RepeatCallback = { interval: number; lastFired: number; callback: () => void; bpm: number };
+type BeatCallback = { beats: number[] | '*'; callback: SchedulerCallback };
+type ScheduleCallback = { time: number; callback: SchedulerCallback; fired: boolean };
+type RepeatCallback = {
+  interval: number;
+  lastFired: number;
+  callback: SchedulerCallback;
+  bpm: number;
+};
 
 /**
  * Polling-based clock scheduler for stub transport and worker environments.
@@ -120,7 +130,7 @@ export class PollingClockScheduler implements ClockScheduler {
 
         if (shouldFire) {
           try {
-            callback();
+            callback(clock.time);
           } catch (e) {
             console.error('[ClockScheduler] onBeat callback error:', e);
           }
@@ -134,7 +144,7 @@ export class PollingClockScheduler implements ClockScheduler {
     for (const [id, item] of this.scheduleCallbacks) {
       if (!item.fired && clock.time >= item.time) {
         try {
-          item.callback();
+          item.callback(item.time);
         } catch (e) {
           console.error('[ClockScheduler] schedule callback error:', e);
         }
@@ -163,7 +173,7 @@ export class PollingClockScheduler implements ClockScheduler {
 
       if (clock.time >= item.lastFired + item.interval) {
         try {
-          item.callback();
+          item.callback(clock.time);
         } catch (e) {
           console.error('[ClockScheduler] every callback error:', e);
         }
@@ -173,7 +183,7 @@ export class PollingClockScheduler implements ClockScheduler {
     }
   }
 
-  onBeat(beat: number | number[] | '*', callback: () => void): string {
+  onBeat(beat: number | number[] | '*', callback: SchedulerCallback): string {
     const id = generateId();
     const beats = typeof beat === 'number' ? [beat] : beat;
 
@@ -182,7 +192,7 @@ export class PollingClockScheduler implements ClockScheduler {
     return id;
   }
 
-  schedule(time: number | string, callback: () => void): string {
+  schedule(time: number | string, callback: SchedulerCallback): string {
     const id = generateId();
     const timeNum = typeof time === 'string' ? parseBarBeatSixteenth(time, this.currentBpm) : time;
 
@@ -191,7 +201,7 @@ export class PollingClockScheduler implements ClockScheduler {
     return id;
   }
 
-  every(interval: string, callback: () => void): string {
+  every(interval: string, callback: SchedulerCallback): string {
     const id = generateId();
     const intervalSecs = parseBarBeatSixteenth(interval, this.currentBpm);
 
@@ -202,6 +212,156 @@ export class PollingClockScheduler implements ClockScheduler {
       bpm: this.currentBpm
     });
 
+    return id;
+  }
+
+  cancel(id: string): void {
+    this.beatCallbacks.delete(id);
+    this.scheduleCallbacks.delete(id);
+    this.repeatCallbacks.delete(id);
+  }
+
+  cancelAll(): void {
+    this.beatCallbacks.clear();
+    this.scheduleCallbacks.clear();
+    this.repeatCallbacks.clear();
+    this.lastBeat = -1;
+  }
+}
+
+/**
+ * Look-ahead clock scheduler for main-thread use with audio-precise timing.
+ *
+ * Runs its own setInterval loop (~25ms) and fires callbacks whose deadline
+ * falls within a configurable look-ahead window (~100ms). Each callback receives
+ * the precise transport time of the event, allowing Web Audio API scheduling
+ * at the exact sample.
+ */
+export class LookaheadClockScheduler implements ClockScheduler {
+  private intervalId: ReturnType<typeof setInterval> | null = null;
+  private lastBeat = -1;
+  private currentBpm = 120;
+
+  private beatCallbacks = new Map<string, BeatCallback>();
+  private scheduleCallbacks = new Map<string, ScheduleCallback>();
+  private repeatCallbacks = new Map<string, RepeatCallback>();
+
+  constructor(
+    private getState: () => ClockState,
+    private lookAheadMs = 25,
+    private scheduleAheadS = 0.1
+  ) {}
+
+  /** Start the internal scheduling loop. */
+  start(): void {
+    if (this.intervalId) return;
+    this.intervalId = setInterval(() => this.tick(), this.lookAheadMs);
+  }
+
+  /** Stop the internal scheduling loop. */
+  stop(): void {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+  }
+
+  /** Stop the loop and cancel all callbacks. */
+  dispose(): void {
+    this.stop();
+    this.cancelAll();
+  }
+
+  private tick(): void {
+    const clock = this.getState();
+    this.currentBpm = clock.bpm;
+    const horizon = clock.time + this.scheduleAheadS;
+
+    // Check beat changes
+    if (clock.beat !== this.lastBeat) {
+      for (const [, { beats, callback }] of this.beatCallbacks) {
+        const shouldFire = beats === '*' || (Array.isArray(beats) && beats.includes(clock.beat));
+
+        if (shouldFire) {
+          try {
+            callback(clock.time);
+          } catch (e) {
+            console.error('[ClockScheduler] onBeat callback error:', e);
+          }
+        }
+      }
+
+      this.lastBeat = clock.beat;
+    }
+
+    // Check one-shot schedules (fire if deadline within horizon)
+    for (const [id, item] of this.scheduleCallbacks) {
+      if (!item.fired && item.time <= horizon) {
+        try {
+          item.callback(item.time);
+        } catch (e) {
+          console.error('[ClockScheduler] schedule callback error:', e);
+        }
+
+        item.fired = true;
+        this.scheduleCallbacks.delete(id);
+      }
+    }
+
+    // Check repeating schedules
+    for (const [, item] of this.repeatCallbacks) {
+      // Detect transport rewind (stop -> play from beginning)
+      if (clock.time < item.lastFired) {
+        item.lastFired = 0;
+      }
+
+      // Recalculate interval if BPM changed
+      if (item.bpm !== clock.bpm) {
+        const ratio = item.bpm / clock.bpm;
+        item.interval = item.interval * ratio;
+        item.bpm = clock.bpm;
+      }
+
+      if (clock.time >= item.lastFired + item.interval) {
+        // Compute precise fire time aligned to the interval grid
+        const fireTime = item.lastFired + item.interval;
+
+        if (fireTime <= horizon) {
+          try {
+            item.callback(fireTime);
+          } catch (e) {
+            console.error('[ClockScheduler] every callback error:', e);
+          }
+
+          item.lastFired = fireTime;
+        }
+      }
+    }
+  }
+
+  onBeat(beat: number | number[] | '*', callback: SchedulerCallback): string {
+    const id = generateId();
+    const beats = typeof beat === 'number' ? [beat] : beat;
+    this.beatCallbacks.set(id, { beats, callback });
+    return id;
+  }
+
+  schedule(time: number | string, callback: SchedulerCallback): string {
+    const id = generateId();
+    const timeNum = typeof time === 'string' ? parseBarBeatSixteenth(time, this.currentBpm) : time;
+    this.scheduleCallbacks.set(id, { time: timeNum, callback, fired: false });
+    return id;
+  }
+
+  every(interval: string, callback: SchedulerCallback): string {
+    const id = generateId();
+    const intervalSecs = parseBarBeatSixteenth(interval, this.currentBpm);
+    this.repeatCallbacks.set(id, {
+      interval: intervalSecs,
+      lastFired: 0,
+      callback,
+      bpm: this.currentBpm
+    });
     return id;
   }
 

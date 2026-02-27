@@ -126,7 +126,7 @@ fill(colors[clock.subdiv(5)]);
 
 ## Scheduling Methods
 
-Instead of manually tracking beat changes, use these scheduling methods for cleaner code.
+Instead of manually tracking beat changes, use these scheduling methods for cleaner code. All scheduling callbacks receive a `time` argument — the precise transport time of the event. You can use this for audio-precise scheduling with the Web Audio API, or ignore it for visual-only use.
 
 ### `clock.onBeat(beat, callback)`
 
@@ -142,6 +142,11 @@ clock.onBeat([0, 2], () => snare()); // beats 1 and 3
 
 // Fire on every beat
 clock.onBeat('*', () => hihat());
+
+// Use the time argument for audio-precise scheduling
+clock.onBeat(0, (time) => {
+  oscillator.start(time);
+});
 ```
 
 ### `clock.schedule(time, callback)`
@@ -155,6 +160,11 @@ clock.schedule(clock.time + 2, () => drop());
 // Bar:beat:sixteenth notation
 clock.schedule('4:0:0', () => breakdown());  // bar 4, beat 0
 clock.schedule('8:2:0', () => buildUp());    // bar 8, beat 2
+
+// Use time for precise audio scheduling
+clock.schedule('4:0:0', (time) => {
+  osc.frequency.setValueAtTime(440, time);
+});
 ```
 
 ### `clock.every(interval, callback)`
@@ -166,6 +176,12 @@ Schedule a repeating callback at a musical interval.
 clock.every('1:0:0', () => flash());    // every bar
 clock.every('0:1:0', () => pulse());    // every beat
 clock.every('0:0:1', () => tick());     // every sixteenth
+
+// Schedule audio events with precise timing
+clock.every('0:1:0', (time) => {
+  osc.frequency.setValueAtTime(440, time);
+  osc.frequency.setValueAtTime(0, time + 0.1);
+});
 ```
 
 ### `clock.cancel(id)` / `clock.cancelAll()`
@@ -243,11 +259,31 @@ const secondsPerBar = (60 / clock.bpm) * clock.beatsPerBar;
 clock.seek(8 * secondsPerBar);
 ```
 
+## Look-Ahead Scheduling for Audio
+
+`clock.schedule` uses a **look-ahead** pattern for audio-precise timing. The scheduler checks every ~25ms and fires callbacks whose deadline falls within a 100ms window ahead of the current time. Each callback receives the precise `time` argument, which you can pass directly to Web Audio API methods for sample-accurate scheduling — no Tone.js required.
+
+```javascript
+// Schedule a note 2 seconds from now
+clock.schedule(clock.time + 2, (time) => {
+  osc.frequency.setValueAtTime(440, time);
+  gain.gain.setValueAtTime(0.5, time);
+  gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+});
+
+// Schedule at a specific bar position
+clock.schedule('4:0:0', (time) => {
+  osc.frequency.setValueAtTime(880, time);
+});
+```
+
+The callback runs ~100ms before the deadline, giving you time to call `setValueAtTime()`, `start()`, etc. with the precise `time`. The Web Audio API handles the sample-accurate part.
+
+This works in any [js](/docs/objects/js) node — you just need access to audio nodes (via `recv` from audio objects, or by creating your own `AudioContext`).
+
 ## Audio-Rate Beat Sync (`beat~`)
 
-The `clock` object works at frame rate (~60fps), which is fine for visuals. For **sample-accurate** beat sync in the audio graph, use the [beat~](/docs/objects/beat~) object.
-
-`beat~` outputs a continuous 0→1 sawtooth ramp synchronized to the transport BPM. It runs on the audio thread, so it's usable for beat-synced tremolo, FM, waveshaping, and other audio-rate modulation.
+For **continuous** beat-synced signals in the audio graph, use the [beat~](/docs/objects/beat~) object. Unlike `clock.schedule` which fires discrete callbacks, `beat~` outputs a sample-by-sample 0→1 sawtooth ramp synchronized to the transport BPM.
 
 ```text
 beat~       → ramp 0→1 once per beat
@@ -259,41 +295,43 @@ The multiply parameter scales the beat frequency: `1` = per beat (default), `2` 
 
 The output follows transport play/pause/stop — it freezes when paused and resets on stop.
 
-## Sample-Accurate Scheduling with Tone.js
+## Tone.js Scheduling
 
-For sample-accurate **event** scheduling (triggering notes, envelopes, parameter changes at exact beat positions), use [tone~](/docs/objects/tone~) with Tone.js Transport. Unlike `beat~` which outputs a continuous signal, `tone~` lets you schedule discrete callbacks with audio-clock precision.
+If you're using [Tone.js](/docs/objects/tone~), you can also schedule events through the Tone.js Transport. This is useful when working with Tone.js synths and effects, since they integrate directly with `Tone.getTransport()`.
 
 ```javascript
 // In a tone~ object — Tone.js Transport is synced to the global transport
-
-// Trigger a synth on every beat
 const synth = new Tone.Synth().connect(outputNode);
 
 Tone.getTransport().scheduleRepeat((time) => {
   synth.triggerAttackRelease('C4', '8n', time);
 }, '4n');
 
-// Schedule at specific bar positions
 Tone.getTransport().schedule((time) => {
   synth.triggerAttackRelease('E4', '2n', time);
-}, '4:0:0'); // bar 4, beat 0
-
-// Use the `time` callback argument (not Tone.now()) for sample-accurate timing
+}, '4:0:0');
 ```
 
-The `time` argument in Tone.js scheduling callbacks is the precise audio-context time — always use it instead of `Tone.now()` for scheduled events.
+Always use the `time` callback argument (not `Tone.now()`) for sample-accurate timing.
 
 **When to use which:**
 
-| Approach                 | Best for                                                    |
-|--------------------------|-------------------------------------------------------------|
-| `clock.*`                | Visual sync, frame-rate callbacks (~60fps)                  |
-| `beat~`                  | Continuous audio-rate modulation (tremolo, FM, waveshaping) |
-| `tone~` + Tone.Transport | Sample-accurate note/event scheduling                       |
+| Approach                 | Best for                                                         |
+|--------------------------|------------------------------------------------------------------|
+| `clock.schedule`         | Audio event scheduling from js nodes (look-ahead, no deps)       |
+| `beat~`                  | Continuous audio-rate modulation (tremolo, FM, waveshaping)      |
+| `tone~` + Tone.Transport | Scheduling with Tone.js synths/effects                           |
+| `clock.onBeat` / `every` | Visual sync and frame-rate callbacks                             |
 
 ## Precision
 
-All `clock` scheduling uses frame-based polling (~16ms at 60fps). This is imperceptible for visual sync. For sample-accurate audio, use [beat~](/docs/objects/beat~) (continuous signals) or [tone~](/docs/objects/tone~) (event scheduling).
+`clock.schedule` uses look-ahead scheduling (~25ms poll interval, 100ms schedule-ahead window). Callbacks fire before the deadline with the precise `time` argument, suitable for Web Audio API scheduling at the exact sample.
+
+`clock.onBeat` and `clock.every` fire at poll time when the event has occurred — accurate to ~25ms, which is imperceptible for visual sync.
+
+In worker environments (worker, canvas), all scheduling uses frame-based polling (~16ms at 60fps).
+
+For continuous audio-rate signals, use [beat~](/docs/objects/beat~). For Tone.js integration, use [tone~](/docs/objects/tone~).
 
 ## Hydra Note
 
