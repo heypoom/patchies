@@ -24,6 +24,32 @@
   /** Active flash animations keyed by event id. */
   let activeFlashes = new Map<string, { color: string; x: number; wallTime: number }>();
 
+  /** Hover x position in CSS pixels relative to canvas, or null if not hovering. */
+  let hoverX = $state<number | null>(null);
+
+  /** Cached window parameters from the last render frame (for pointer event calculations). */
+  let lastWindow = { start: 0, duration: 1 };
+
+  function xToTime(x: number): number {
+    const cw = wrapperRef?.clientWidth ?? 1;
+    return lastWindow.start + (x / cw) * lastWindow.duration;
+  }
+
+  function handlePointerMove(e: PointerEvent) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    hoverX = e.clientX - rect.left;
+  }
+
+  function handlePointerLeave() {
+    hoverX = null;
+  }
+
+  function handleClick(e: MouseEvent) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    Transport.seek(xToTime(x));
+  }
+
   onMount(() => {
     const registry = SchedulerRegistry.getInstance();
 
@@ -59,6 +85,8 @@
       const windowStart = pageStart * barDuration;
       const windowDuration = barsVisible * barDuration;
       const windowEnd = windowStart + windowDuration;
+
+      lastWindow = { start: windowStart, duration: windowDuration };
 
       const timeToX = (t: number) => ((t - windowStart) / windowDuration) * cw;
 
@@ -97,7 +125,7 @@
         const barX = timeToX(windowStart + bar * barDuration);
         ctx.fillStyle = '#71717a';
         ctx.font = '9px ui-monospace, monospace';
-        ctx.fillText(`${pageStart + bar + 1}`, barX + 3, 10);
+        ctx.fillText(`${pageStart + bar}`, barX + 3, 10);
       }
 
       // Draw event markers per-node
@@ -176,6 +204,18 @@
         drawFlash(ctx, flash.x, ch, flash.color, alpha);
       }
 
+      // Draw hover line
+      if (hoverX !== null) {
+        ctx.strokeStyle = '#a1a1aa';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(hoverX, 0);
+        ctx.lineTo(hoverX, ch);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
       // Draw playhead
       const playheadX = timeToX(currentTime);
       ctx.strokeStyle = '#fafafa';
@@ -241,6 +281,18 @@
   }
 </script>
 
-<div bind:this={wrapperRef} style="width: {width}px; max-width: 100%; height: {RULER_HEIGHT}px;">
+<div
+  bind:this={wrapperRef}
+  style="width: {width}px; max-width: 100%; height: {RULER_HEIGHT}px;"
+  class="cursor-pointer"
+  role="slider"
+  tabindex="0"
+  aria-label="Timeline seek"
+  aria-valuemin={0}
+  aria-valuenow={Transport.seconds}
+  onpointermove={handlePointerMove}
+  onpointerleave={handlePointerLeave}
+  onclick={handleClick}
+>
   <canvas bind:this={canvasRef} class="rounded" style="width: 100%; height: 100%;"></canvas>
 </div>
