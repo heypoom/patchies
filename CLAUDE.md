@@ -8,7 +8,40 @@
 - **CRITICAL**: Never git commit or push for the user unless explicitly asked to do so. Wait for user review.
 - **CRITICAL**: Never batch Read and Edit on the same file in parallel. Always Read a file first, wait for the result, then Edit it. The Edit tool requires the file to have been read in a prior step.
 - Before implementing: update relevant spec files in `docs/design-docs/specs/`. Make sure specs are prefixed with numbers e.g. `50-foo-bar.md` and in the title too `# 50. Foo Bar`
-- If asked explicitly to commit, write clear, short and concise commit messages.
+- If asked explicitly to commit, write clear, short and concise commit messages following this format:
+
+### Commit Message Format
+
+```text
+scope: description          # Most common — scope is the area of codebase
+type(scope): description    # When type adds clarity (fix, feat, refactor, docs)
+type(scope)!: description   # Breaking change
+type: description           # No scope needed (docs, spec, chore)
+```
+
+**Common types**: `fix`, `feat`, `refactor`, `docs`, `spec`, `add`, `chore`
+**Common scopes**: `transport`, `strudel`, `orca`, `clock`, `canvas`, `audio`, `bytebeat`, `csound`, `glsl`, `p5`, `hydra`.
+
+- Use the object name as the scope when changes are object-specific.
+- Use the module name as the scope when changes are module-specific.
+
+Examples from this repo:
+
+```text
+transport: make transport panel beat indicator zero-indexed
+feat(clock)!: use absolute time by default in parameter automation messages
+fix(transport): reset lastPlayState on unsubscribe
+refactor(orca): extract settings component into OrcaSettings
+docs: shorten time signature docs
+add beat object
+```
+
+Rules:
+
+- Lowercase first word after colon
+- No period at end
+- Keep under ~72 characters
+- Use imperative mood ("add" not "added")
 
 ## Core Stack
 
