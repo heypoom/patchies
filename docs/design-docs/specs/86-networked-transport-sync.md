@@ -206,6 +206,8 @@ export const transportSyncStore = $state({
 
 The existing transport (`DefaultTransport` or `ToneTransport`) is already the single source of truth for the clock. `TransportSyncManager` calls the same `Transport.play()`, `Transport.stop()`, `Transport.setBpm()`, `Transport.seek()` methods that the transport panel uses — no special hooks needed.
 
+**No Tone.js upgrade required.** Unlike MIDI clock sync (spec 85) which must schedule `0xF8` pulses with AudioContext timestamps, network sync sends JSON over WebRTC data channels where ±25ms precision is acceptable. All operations (`play`, `setBpm`, `seek`, BPM nudge) are available on `DefaultTransport`. `TransportSyncManager` works against the generic transport interface and does not call `ensureToneUpgraded()`. If Tone.js is already loaded for another reason, it transparently operates on the Tone.js transport instead.
+
 When the local instance is a follower, the `TransportSyncManager` sets a `following` flag that the transport panel reads to disable its controls.
 
 ## Relationship to MIDI Sync (Spec 85)
