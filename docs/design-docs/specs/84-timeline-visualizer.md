@@ -1,4 +1,4 @@
-# 83. Timeline Visualizer
+# 84. Timeline Visualizer
 
 ## Overview
 
@@ -29,6 +29,7 @@ interface FiredEventRecord {
 ```
 
 Methods:
+
 - `register(nodeId, scheduler)` / `unregister(nodeId)`
 - `getAllEvents()` → `Map<nodeId, ScheduledEventDescriptor[]>`
 - `getAllFiredEvents()` → `Map<nodeId, FiredEventRecord[]>` (drains buffer)
@@ -36,6 +37,7 @@ Methods:
 ### Scheduler Introspection
 
 `LookaheadClockScheduler` gains:
+
 - `getEventSnapshot()` — returns descriptors from the three internal Maps (no callback references)
 - `drainFiredEvents()` — returns and clears a ring buffer (max 64) of recently-fired events
 - `recordFired(id, firedAt)` — called internally after each successful callback invocation in `tick()`
