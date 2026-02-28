@@ -737,6 +737,9 @@ export class FBORenderer {
       render: (params) => {
         if (!userRenderFunc) return;
 
+        // Skip rendering when transport is paused — FBO retains last frame
+        if (this.transportTime && !this.transportTime.isPlaying) return;
+
         framebuffer.use(() => {
           try {
             userRenderFunc({ t: params.transportTime });
