@@ -76,20 +76,18 @@ Like `attack`/`decay`, the `release` field accepts a number (seconds) or a full 
 
 ### Trigger + Release Example
 
-A common pattern — trigger on note-on, release on note-off:
+A common pattern — trigger on noteOn, release on noteOff:
 
 ```js
-recv((msg) => {
-  if (msg.type === 'noteon') {
+recv((m) => {
+  if (m.type === 'noteOn') {
     send({
       type: 'trigger',
       values: { peak: 1, sustain: 0.7 },
       attack: 0.02,
       decay: 0.1
     });
-  }
-
-  if (msg.type === 'noteoff') {
+  } else if (m.type === 'noteOff') {
     send({ type: 'release', release: 0.3, endValue: 0 });
   }
 });
