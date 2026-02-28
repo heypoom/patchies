@@ -67,6 +67,8 @@ For scheduling sample-accurate callbacks on specific beats and creating repeated
 
 ## Timeline Viewer
 
+![Timeline viewer](/content/images/timeline-viewer.webp)
+
 The timeline viewer shows a real-time visualization of all scheduled clock events (from `clock.onBeat`, `clock.schedule` and `clock.every`) across your patch. It helps you see when events fire and how they align with the beat grid.
 
 Click the **timeline button** (bar chart icon) in the transport panel to toggle the timeline.
