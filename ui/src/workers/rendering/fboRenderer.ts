@@ -711,7 +711,9 @@ export class FBORenderer {
             data,
             options
           });
-        }
+        },
+
+        clock: this.createWorkerClock()
       };
 
       const funcBody = `
