@@ -423,7 +423,7 @@
     <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
     <!-- Group 2: Time Display (highest priority to expand) -->
-    <div class="min-w-[90px] flex-1 sm:flex-initial" class:sm:flex-[3]={isExpanded}>
+    <div class="min-w-[90px] flex-1 {isExpanded ? 'sm:flex-[3]' : 'sm:flex-none'}">
       {#if isEditingTime}
         <input
           type="text"
@@ -432,9 +432,7 @@
           bind:value={editTimeValue}
           onblur={handleTimeEditComplete}
           onkeydown={handleTimeEditKeydown}
-          class="max-w-full min-w-[90px] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none {isExpanded
-            ? 'w-full'
-            : 'w-[90px]'}"
+          class="w-full min-w-[90px] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none"
         />
       {:else}
         <Tooltip.Root>
