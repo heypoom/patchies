@@ -22,12 +22,12 @@ recv(m => {
   if (m.type === 'noteOn') {
     send({
       type: 'trigger',
-      values: { start: 0, peak: 1, sustain: 0.7 },
-      attack: { time: 0.02 },
-      decay: { time: 0.1 }
+      values: { peak: 1, sustain: 0.7 },
+      attack: 0.02,
+      decay: 0.1
     })
   } else if (m.type === 'noteOff') {
-    send({ type: 'release', release: {time: 0.3}, endValue: 0 })
+    send({ type: 'release', release: 0.3, endValue: 0 })
   }
 })`;
 

@@ -3,48 +3,57 @@ export type CurveType = 'linear' | 'exponential' | 'targetAtTime' | 'valueCurve'
 
 export interface TriggerPhaseConfig {
   time: number;
+
   curve?: CurveType;
   timeConstant?: number; // For targetAtTime curve
   values?: number[] | Float32Array; // For valueCurve
 }
 
-export interface SetMessage {
+/** A phase config or a number shorthand (seconds with linear curve). */
+export type PhaseInput = number | TriggerPhaseConfig;
+
+export type TriggerValues = {
+  start?: number; // defaults to 0
+  peak: number;
+  sustain: number;
+};
+
+type WithTime = {
+  time?: number;
+  timeMode?: TimeMode;
+};
+
+export interface SetMessage extends WithTime {
   type: 'set';
   value: number;
-  time?: number;
-  timeMode?: TimeMode;
 }
 
-export interface TriggerMessage {
+export interface TriggerMessage extends WithTime {
   type: 'trigger';
-  values: {
-    start: number;
-    peak: number;
-    sustain: number;
-  };
-  attack: TriggerPhaseConfig;
-  decay: TriggerPhaseConfig;
-  time?: number;
-  timeMode?: TimeMode;
+
+  attack: PhaseInput;
+  decay: PhaseInput;
+
+  values: TriggerValues;
 }
 
-export interface ReleaseMessage {
+export interface ReleaseMessage extends WithTime {
   type: 'release';
-  release: TriggerPhaseConfig;
+
+  release: PhaseInput;
   endValue: number;
-  time?: number;
-  timeMode?: TimeMode;
 }
 
 export type ScheduledMessage = SetMessage | TriggerMessage | ReleaseMessage;
 
-export function isScheduledMessage(value: unknown): value is ScheduledMessage {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'type' in value &&
-    (['set', 'trigger', 'release'] as const).includes(
-      (value as { type: 'set' | 'trigger' | 'release' }).type
-    )
+/** Normalize a number shorthand to a full TriggerPhaseConfig. */
+export const normalizePhaseConfig = (input: PhaseInput): TriggerPhaseConfig =>
+  typeof input === 'number' ? { time: input } : input;
+
+export const isScheduledMessage = (value: unknown): value is ScheduledMessage =>
+  typeof value === 'object' &&
+  value !== null &&
+  'type' in value &&
+  (['set', 'trigger', 'release'] as const).includes(
+    (value as { type: 'set' | 'trigger' | 'release' }).type
   );
-}

@@ -17,7 +17,7 @@ send({ type: 'set', value: 0.5 });
 // Set at a specific time (absolute by default)
 send({ type: 'set', value: 0.5, time: 1.0 });
 
-// Set at a relative time (seconds from now)
+// Set at a relative time (n seconds from now)
 send({ type: 'set', value: 0.5, time: 0.5, timeMode: 'relative' });
 ```
 
@@ -43,20 +43,22 @@ Trigger an attack-decay-sustain envelope.
 // Trigger immediately
 send({
   type: 'trigger',
-  values: { start: 0, peak: 1, sustain: 0.7 },
-  attack: { time: 0.02 },  // seconds
-  decay: { time: 0.1 }
+  values: { peak: 1, sustain: 0.7 },
+  attack: 0.02,  // seconds
+  decay: 0.1
 });
 
 // Trigger at a precise time (for beat-synced envelopes)
 send({
   type: 'trigger',
-  values: { start: 0, peak: 1, sustain: 0.7 },
-  attack: { time: 0.02 },
-  decay: { time: 0.1 },
+  values: { peak: 1, sustain: 0.7 },
+  attack: 0.02,
+  decay: 0.1,
   time
 });
 ```
+
+`values.start` defaults to `0`. The `attack` and `decay` fields accept a number (seconds with linear curve) or a full config object `{ time, curve, ... }` for custom curves (see [Curve Types](#curve-types)).
 
 ### Release
 
@@ -64,11 +66,13 @@ Trigger a release phase (ramp down from current value).
 
 ```js
 // Release immediately
-send({ type: 'release', release: { time: 0.3 }, endValue: 0 });
+send({ type: 'release', release: 0.3, endValue: 0 });
 
 // Release at a precise time
-send({ type: 'release', release: { time: 0.3 }, endValue: 0, time });
+send({ type: 'release', release: 0.3, endValue: 0, time });
 ```
+
+Like `attack`/`decay`, the `release` field accepts a number (seconds) or a full config object.
 
 ### Trigger + Release Example
 
@@ -79,14 +83,14 @@ recv((msg) => {
   if (msg.type === 'noteon') {
     send({
       type: 'trigger',
-      values: { start: 0, peak: 1, sustain: 0.7 },
-      attack: { time: 0.02 },
-      decay: { time: 0.1 }
+      values: { peak: 1, sustain: 0.7 },
+      attack: 0.02,
+      decay: 0.1
     });
   }
 
   if (msg.type === 'noteoff') {
-    send({ type: 'release', release: { time: 0.3 }, endValue: 0 });
+    send({ type: 'release', release: 0.3, endValue: 0 });
   }
 });
 ```
@@ -95,20 +99,43 @@ The [adsr](/docs/objects/adsr) object wraps this pattern with convenient inlets 
 
 ## Curve Types
 
-Each phase (`attack`, `decay`, `release`) can specify a `curve`:
+When you pass a number for `attack`, `decay`, or `release`, it uses a linear curve. For custom curves, pass an object with `time` and `curve`:
 
-| Curve            | Description                                            |
-|------------------|--------------------------------------------------------|
-| `'linear'`       | Straight-line ramp (default)                           |
-| `'exponential'`  | Exponential ramp (target must not be 0)                |
-| `'targetAtTime'` | Asymptotic approach, optional `timeConstant`           |
-| `'valueCurve'`   | Custom curve from an array of absolute values          |
+| Curve            | Description                                                       |
+|------------------|-------------------------------------------------------------------|
+| `'linear'`       | Straight-line ramp (default)                                      |
+| `'exponential'`  | Exponential ramp (target must not be 0)                           |
+| `'targetAtTime'` | Asymptotic approach — eases toward target, never fully reaches it |
+| `'valueCurve'`   | Custom curve from an array of absolute values                     |
+
+The full config object shape is `{ time, curve, timeConstant?, values? }`:
 
 ```js
-// Exponential decay with custom attack curve
+// number shorthand — equivalent to { time: 0.02, curve: 'linear' }
+attack: 0.02
+
+// object form — specify a curve type
+attack: { time: 0.1, curve: 'exponential' }
+
+// targetAtTime — approaches the target asymptotically (never fully arrives)
+// timeConstant controls speed: smaller = faster.
+// Reaches ~63% of the way in one time constant.
+// Defaults to time * 0.3 if omitted.
+decay: { time: 0.3, curve: 'targetAtTime', timeConstant: 0.1 }
+
+// valueCurve — custom shape from an array of values
+attack: {
+  time: 0.1,
+  curve: 'valueCurve',
+  values: [0, 0.05, 0.2, 0.5, 0.8, 0.95, 1.0]
+}
+```
+
+```js
+// Full example: exponential decay with custom attack curve
 send({
   type: 'trigger',
-  values: { start: 0, peak: 1, sustain: 0.7 },
+  values: { peak: 1, sustain: 0.7 },
   attack: {
     time: 0.1,
     curve: 'valueCurve',

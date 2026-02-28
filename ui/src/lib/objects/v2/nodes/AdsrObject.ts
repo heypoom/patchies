@@ -111,9 +111,9 @@ export class AdsrObject implements TextObjectV2 {
 
     this.context.send({
       type: 'trigger',
-      values: { start: 0, peak, sustain },
-      attack: { time: attack / 1000 },
-      decay: { time: decay / 1000 }
+      values: { peak, sustain },
+      attack: attack / 1000,
+      decay: decay / 1000
     });
   }
 
@@ -122,7 +122,7 @@ export class AdsrObject implements TextObjectV2 {
 
     this.context.send({
       type: 'release',
-      release: { time: release / 1000 },
+      release: release / 1000,
       endValue: 0
     });
   }

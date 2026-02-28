@@ -185,9 +185,9 @@ clock.every('0:0:1', () => tick());     // every sixteenth
 clock.every('0:1:0', (time) => {
   send({
     type: 'trigger',
-    values: { start: 0, peak: 1, sustain: 0.7 },
-    attack: { time: 0.01 },
-    decay: { time: 0.1 },
+    values: { peak: 1, sustain: 0.7 },
+    attack: 0.01,
+    decay: 0.1,
     time
   });
 }, { audio: true });
@@ -321,9 +321,9 @@ This lets you automate audio parameters (`gain~`, `osc~`, filters, etc.) with be
 clock.onBeat(0, (time) => {
   send({
     type: 'trigger',
-    values: { start: 0, peak: 1, sustain: 0.7 },
-    attack: { time: 0.01 },
-    decay: { time: 0.1 },
+    values: { peak: 1, sustain: 0.7 },
+    attack: 0.01,
+    decay: 0.1,
     time
   });
 }, { audio: true });
@@ -337,9 +337,9 @@ clock.schedule('4:0:0', (time) => {
 clock.every('0:1:0', (time) => {
   send({
     type: 'trigger',
-    values: { start: 0, peak: 1, sustain: 0.7 },
-    attack: { time: 0.01 },
-    decay: { time: 0.1 },
+    values: { peak: 1, sustain: 0.7 },
+    attack: 0.01,
+    decay: 0.1,
     time
   });
 }, { audio: true });

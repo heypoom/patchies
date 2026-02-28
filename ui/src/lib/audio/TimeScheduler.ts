@@ -7,6 +7,7 @@ import type {
   TimeMode,
   TriggerPhaseConfig
 } from './time-scheduling-types';
+import { normalizePhaseConfig } from './time-scheduling-types';
 
 export class TimeScheduler {
   private audioContext: AudioContext;
@@ -37,25 +38,29 @@ export class TimeScheduler {
 
   private handleTriggerMessage(param: AudioParam, message: TriggerMessage) {
     const startTime = this.getTime(message.time, message.timeMode);
+    const attack = normalizePhaseConfig(message.attack);
+    const decay = normalizePhaseConfig(message.decay);
 
     param.cancelScheduledValues(startTime);
-    param.setValueAtTime(message.values.start, startTime);
+    param.setValueAtTime(message.values.start ?? 0, startTime);
 
-    this.applyPhase(param, message.values.peak, startTime, message.attack);
+    this.applyPhase(param, message.values.peak, startTime, attack);
 
-    const decayStartTime = startTime + message.attack.time;
-    this.applyPhase(param, message.values.sustain, decayStartTime, message.decay);
+    const decayStartTime = startTime + attack.time;
+    this.applyPhase(param, message.values.sustain, decayStartTime, decay);
   }
 
   private handleReleaseMessage(param: AudioParam, message: ReleaseMessage) {
     const startTime = this.getTime(message.time, message.timeMode);
+    const release = normalizePhaseConfig(message.release);
 
     // Capture the current value before canceling scheduled values.
     const currentValue = param.value;
+
     param.cancelScheduledValues(startTime);
     param.setValueAtTime(currentValue, startTime);
 
-    this.applyPhase(param, message.endValue ?? 0, startTime, message.release);
+    this.applyPhase(param, message.endValue ?? 0, startTime, release);
   }
 
   private applyPhase(
