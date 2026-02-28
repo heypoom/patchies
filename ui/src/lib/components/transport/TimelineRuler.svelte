@@ -35,19 +35,40 @@
     return lastWindow.start + (x / cw) * lastWindow.duration;
   }
 
+  let isDragging = $state(false);
+
+  function handlePointerDown(e: PointerEvent) {
+    isDragging = true;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+
+    seekFromEvent(e);
+  }
+
   function handlePointerMove(e: PointerEvent) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     hoverX = e.clientX - rect.left;
+
+    if (isDragging) {
+      seekFromEvent(e);
+    }
+  }
+
+  function handlePointerUp(e: PointerEvent) {
+    isDragging = false;
   }
 
   function handlePointerLeave() {
     hoverX = null;
   }
 
-  function handleClick(e: MouseEvent) {
+  function seekFromEvent(e: PointerEvent) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    Transport.seek(xToTime(x));
+    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const t = xToTime(x);
+
+    // Clamp within the current page window so dragging can't trigger a page jump
+    const maxTime = lastWindow.start + lastWindow.duration - 0.001;
+    Transport.seek(Math.max(0, Math.min(t, maxTime)));
   }
 
   onMount(() => {
@@ -86,7 +107,9 @@
       const windowDuration = barsVisible * barDuration;
       const windowEnd = windowStart + windowDuration;
 
-      lastWindow = { start: windowStart, duration: windowDuration };
+      if (!isDragging) {
+        lastWindow = { start: windowStart, duration: windowDuration };
+      }
 
       const timeToX = (t: number) => ((t - windowStart) / windowDuration) * cw;
 
@@ -290,9 +313,10 @@
   aria-label="Timeline seek"
   aria-valuemin={0}
   aria-valuenow={Transport.seconds}
+  onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
+  onpointerup={handlePointerUp}
   onpointerleave={handlePointerLeave}
-  onclick={handleClick}
 >
   <canvas bind:this={canvasRef} class="rounded" style="width: 100%; height: 100%;"></canvas>
 </div>
