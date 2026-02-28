@@ -311,7 +311,7 @@
 </script>
 
 <div
-  class="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/95 px-3 py-2 shadow-xl backdrop-blur-sm"
+  class="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/95 px-3 py-2 shadow-xl backdrop-blur-sm"
 >
   <!-- Play/Pause -->
   <Tooltip.Root>
@@ -357,7 +357,7 @@
     </Tooltip.Content>
   </Tooltip.Root>
 
-  <div class="h-6 w-px bg-zinc-700"></div>
+  <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
   <!-- Time Display -->
   {#if isEditingTime}
@@ -383,7 +383,7 @@
     </Tooltip.Root>
   {/if}
 
-  <div class="h-6 w-px bg-zinc-700"></div>
+  <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
   <!-- BPM -->
   <div class="flex items-center gap-1.5">
@@ -430,7 +430,7 @@
     </Tooltip.Root>
   {/if}
 
-  <div class="h-6 w-px bg-zinc-700"></div>
+  <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
   <!-- Volume -->
   <div class="flex items-center gap-2">
@@ -460,7 +460,7 @@
     />
   </div>
 
-  <div class="h-6 w-px bg-zinc-700"></div>
+  <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
   <!-- DSP Toggle -->
   <Tooltip.Root>
