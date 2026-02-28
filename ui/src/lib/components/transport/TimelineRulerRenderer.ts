@@ -77,7 +77,10 @@ export class TimelineRulerRenderer {
     const firedByNode = registry.getAllFiredEvents();
 
     for (const [nodeId, events] of firedByNode) {
-      const color = getNodeTimelineColor(nodeId);
+      const style = registry.getNodeStyle(nodeId);
+      if (style?.visible === false) continue;
+
+      const color = style?.color ?? getNodeTimelineColor(nodeId);
 
       for (const ev of events) {
         const x = timeToX(ev.firedAt);
@@ -172,11 +175,15 @@ export class TimelineRulerRenderer {
 
     for (let nodeIndex = 0; nodeIndex < nodeIds.length; nodeIndex++) {
       const nodeId = nodeIds[nodeIndex];
+
+      const style = registry.getNodeStyle(nodeId);
+      if (style?.visible === false) continue;
+
       const events = eventsByNode.get(nodeId)!;
 
       const drawCtx: EventDrawContext = {
         ...params,
-        color: getNodeTimelineColor(nodeId),
+        color: style?.color ?? getNodeTimelineColor(nodeId),
         yBase: 14 + (nodeIndex % 3) * 5
       };
 
@@ -245,6 +252,7 @@ export class TimelineRulerRenderer {
 
   private drawTriangle(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
     ctx.fillStyle = color;
+
     ctx.beginPath();
     ctx.moveTo(x, y - 3);
     ctx.lineTo(x - 3, y + 3);
@@ -255,6 +263,7 @@ export class TimelineRulerRenderer {
 
   private drawDiamond(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
     ctx.fillStyle = color;
+
     ctx.beginPath();
     ctx.moveTo(x, y - 3);
     ctx.lineTo(x + 3, y);

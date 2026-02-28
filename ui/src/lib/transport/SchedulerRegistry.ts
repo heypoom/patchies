@@ -1,4 +1,4 @@
-import type { LookaheadClockScheduler } from './LookaheadClockScheduler';
+import type { LookaheadClockScheduler, NodeTimelineStyle } from './LookaheadClockScheduler';
 
 /** Describes one scheduled event for timeline visualization. */
 export interface ScheduledEventDescriptor {
@@ -47,6 +47,10 @@ export class SchedulerRegistry {
     }
 
     return result;
+  }
+
+  getNodeStyle(nodeId: string): NodeTimelineStyle | undefined {
+    return this.entries.get(nodeId)?.timelineStyle;
   }
 
   /** Drain fired event buffers across all registered schedulers. */

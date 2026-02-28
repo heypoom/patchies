@@ -18,6 +18,11 @@ import {
 } from './ClockScheduler';
 import type { ScheduledEventDescriptor, FiredEventRecord } from './SchedulerRegistry';
 
+export interface NodeTimelineStyle {
+  color?: string;
+  visible?: boolean;
+}
+
 export class LookaheadClockScheduler implements ClockScheduler {
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private lastBeat = -1;
@@ -30,6 +35,9 @@ export class LookaheadClockScheduler implements ClockScheduler {
   /** Ring buffer of recently-fired events for timeline visualization. */
   private firedEvents: FiredEventRecord[] = [];
   private static MAX_FIRED_BUFFER = 64;
+
+  /** Per-node timeline appearance overrides. */
+  private _timelineStyle: NodeTimelineStyle = {};
 
   constructor(
     private getState: () => ClockState,
@@ -56,6 +64,15 @@ export class LookaheadClockScheduler implements ClockScheduler {
     this.stop();
     this.cancelAll();
     this.firedEvents = [];
+    this._timelineStyle = {};
+  }
+
+  get timelineStyle(): NodeTimelineStyle {
+    return this._timelineStyle;
+  }
+
+  setTimelineStyle(options: NodeTimelineStyle): void {
+    this._timelineStyle = { ...this._timelineStyle, ...options };
   }
 
   /** Return a snapshot of all registered events for timeline visualization. */
@@ -266,5 +283,6 @@ export class LookaheadClockScheduler implements ClockScheduler {
     this.scheduleCallbacks.clear();
     this.repeatCallbacks.clear();
     this.lastBeat = -1;
+    this._timelineStyle = {};
   }
 }

@@ -441,7 +441,8 @@ export class JSRunner {
       schedule: scheduler.schedule.bind(scheduler),
       every: scheduler.every.bind(scheduler),
       cancel: scheduler.cancel.bind(scheduler),
-      cancelAll: scheduler.cancelAll.bind(scheduler)
+      cancelAll: scheduler.cancelAll.bind(scheduler),
+      setTimelineStyle: scheduler.setTimelineStyle.bind(scheduler)
     };
 
     const functionArgs = [

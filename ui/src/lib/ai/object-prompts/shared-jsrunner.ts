@@ -55,8 +55,11 @@ export const jsRunnerInstructions = `
 - clock.setBpm(bpm), clock.setTimeSignature(num, denom), clock.seek(seconds)
 - clock.onBeat(beat, cb, opts?) - fire on beat (number, array, or '*' for all). cb receives (time). Pass { audio: true } for lookahead scheduling
 - clock.schedule(time, cb, opts?) - One-shot at seconds or 'bar:beat:sixteenth' notation. Pass { audio: true } for audio-precise timing
-- clock.every(interval, cb, opts?) - Repeating at 'bar:beat:sixteenth' interval (e.g. '1:0:0' = every bar). Pass { audio: true } for audio-precise timing
+- clock.every(interval, cb, opts?) - Repeating at 'bar:beat:sixteenth' interval
+  - e.g. '1:0:0' = every bar, '0:1:0' = every beat
+  - Pass { audio: true } for audio-precise timing
 - clock.cancel(id), clock.cancelAll() - Cancel scheduled callbacks
+- clock.setTimelineStyle({ color?, visible? }) - Customize this node's appearance in the timeline (color: CSS color string, visible: false to hide)
 `.trim();
 
 /**

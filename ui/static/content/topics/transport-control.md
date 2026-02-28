@@ -83,6 +83,8 @@ Click the **timeline button** (bar chart icon) in the transport panel to toggle 
 
 Each node is assigned its own color. When an event fires, a brief radial glow appears at its position.
 
+Use `clock.setTimelineStyle()` in your code to customize a node's color or hide it from the timeline entirely. See [Clock API](/docs/clock-api) for details.
+
 ### Interacting with the timeline
 
 - _Click_ anywhere on the timeline to seek to that position.

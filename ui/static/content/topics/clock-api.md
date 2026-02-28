@@ -193,9 +193,30 @@ clock.every('0:1:0', (time) => {
 }, { audio: true });
 ```
 
-### Timeline Visualization
+### setTimelineStyle
 
-All `onBeat`, `schedule`, and `every` callbacks are automatically visualized in the [Timeline Viewer](/docs/transport-control) when it's open. Each node gets a unique color, and you'll see markers for upcoming events and brief flash animations when they fire.
+All `onBeat`, `schedule`, and `every` callbacks are automatically visualized
+in the [Timeline Viewer](/docs/transport-control) when it's open.
+Each node gets a unique color, and you'll see markers for upcoming
+events and brief flash animations when they fire.
+
+Use `setTimelineStyle` to customize how this node appears in the Timeline Viewer.
+
+```javascript
+// Set a custom color for this node in the timeline
+clock.setTimelineStyle({ color: '#ff6b6b' });
+
+// Hide this node from the timeline entirely
+clock.setTimelineStyle({ visible: false });
+
+// Show again with a specific color
+clock.setTimelineStyle({ color: '#4af', visible: true });
+```
+
+| Option    | Type    | Description                                                 |
+|-----------|---------|-------------                                                |
+| `color`   | string  | CSS color for this node's markers and label                 |
+| `visible` | boolean | Whether this node appears in the timeline (default: `true`) |
 
 ### cancel
 
@@ -224,7 +245,7 @@ clock.onBeat(0, () => {
 // Pulse circle on every beat
 function draw() {
   const size = 100 + clock.phase * 50;
-  circle(width/2, height/2, size);
+  circle(width / 2, height / 2, size);
 }
 ```
 
