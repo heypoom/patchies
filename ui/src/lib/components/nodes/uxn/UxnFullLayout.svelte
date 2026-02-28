@@ -37,6 +37,8 @@
     onHideScreen: () => void;
     onMeasureContainerWidth: () => void;
   } = $props();
+
+  let menuOpen = $state(false);
 </script>
 
 <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -75,20 +77,31 @@
       </Tooltip.Content>
     </Tooltip.Root>
 
-    <Popover.Root>
+    <Popover.Root bind:open={menuOpen}>
       <Popover.Trigger>
         <button
-          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-          title="Menu"
+          class={[
+            'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+            !menuOpen && 'sm:opacity-0 sm:group-hover:opacity-100'
+          ]}
         >
           <EllipsisVertical class="h-4 w-4 text-zinc-300" />
         </button>
       </Popover.Trigger>
 
-      <Popover.Content class="w-48 p-1" align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+      <Popover.Content
+        class="w-48 p-1"
+        side="right"
+        align="start"
+        sideOffset={10}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         <button
           class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
-          onclick={onOpenFileDialog}
+          onclick={() => {
+            onOpenFileDialog();
+            menuOpen = false;
+          }}
         >
           <FolderOpen class="h-4 w-4" />
           Load ROM
@@ -96,7 +109,10 @@
 
         <button
           class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
-          onclick={onToggleConsole}
+          onclick={() => {
+            onToggleConsole();
+            menuOpen = false;
+          }}
         >
           <Terminal class="h-4 w-4" />
           Toggle Console
@@ -104,8 +120,10 @@
 
         <button
           class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-red-400 hover:bg-red-900/50"
-          onclick={onHideScreen}
-          title="ROM will be reloaded when shown again"
+          onclick={() => {
+            onHideScreen();
+            menuOpen = false;
+          }}
         >
           <Monitor class="h-4 w-4" />
           Hide Screen

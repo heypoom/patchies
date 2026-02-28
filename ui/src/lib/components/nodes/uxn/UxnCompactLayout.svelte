@@ -53,6 +53,8 @@
     return 'border-zinc-600';
   });
 
+  let menuOpen = $state(false);
+
   // Match CodeBlockBase width: 70 + max(2, 2) * 15 = 100px for 1 inlet + 1 outlet
   const minContainerWidth = 100;
 </script>
@@ -62,20 +64,31 @@
     <div class="font-mono text-xs font-medium text-zinc-400">uxn</div>
   </div>
 
-  <Popover.Root>
+  <Popover.Root bind:open={menuOpen}>
     <Popover.Trigger>
       <button
-        class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-        title="Menu"
+        class={[
+          'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+          !menuOpen && 'sm:opacity-0 sm:group-hover:opacity-100'
+        ]}
       >
         <EllipsisVertical class="h-4 w-4 text-zinc-300" />
       </button>
     </Popover.Trigger>
 
-    <Popover.Content class="w-40 p-1" align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+    <Popover.Content
+      class="w-40 p-1"
+      side="right"
+      align="start"
+      sideOffset={10}
+      onCloseAutoFocus={(e) => e.preventDefault()}
+    >
       <button
         class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
-        onclick={onOpenFileDialog}
+        onclick={() => {
+          onOpenFileDialog();
+          menuOpen = false;
+        }}
       >
         <FolderOpen class="h-4 w-4" />
         Load ROM
@@ -83,7 +96,10 @@
 
       <button
         class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
-        onclick={onToggleConsole}
+        onclick={() => {
+          onToggleConsole();
+          menuOpen = false;
+        }}
       >
         <Terminal class="h-4 w-4" />
         {showConsole ? 'Hide Console' : 'Show Console'}
@@ -91,7 +107,10 @@
 
       <button
         class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
-        onclick={onToggleEditor}
+        onclick={() => {
+          onToggleEditor();
+          menuOpen = false;
+        }}
       >
         <Code class="h-4 w-4" />
         {showEditor ? 'Hide Editor' : 'Edit Code'}
@@ -99,8 +118,10 @@
 
       <button
         class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
-        onclick={onShowScreen}
-        title="ROM will be reloaded"
+        onclick={() => {
+          onShowScreen();
+          menuOpen = false;
+        }}
       >
         <Monitor class="h-4 w-4" />
         Show Screen

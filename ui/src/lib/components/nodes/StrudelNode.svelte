@@ -272,7 +272,7 @@
               class="w-48 p-1"
               side="right"
               align="start"
-              sideOffset={12}
+              sideOffset={10}
               onCloseAutoFocus={(e) => e.preventDefault()}
             >
               <button
