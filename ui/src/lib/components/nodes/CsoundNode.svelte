@@ -13,6 +13,7 @@
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import { useNodeDataTracker } from '$lib/history';
   import TransportSyncSettings from '$lib/components/settings/TransportSyncSettings.svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let {
     id: nodeId,
@@ -38,7 +39,7 @@
   const { warnIfNoAudioConnection } = useAudioOutletWarning(nodeId);
   const tracker = useNodeDataTracker(nodeId);
 
-  const syncTransport = $derived(data.syncTransport ?? true);
+  const syncTransport = $derived(data.syncTransport ?? false);
 
   function setSyncTransport(value: boolean) {
     const oldValue = syncTransport;
@@ -112,8 +113,8 @@
     audioService.createNode(nodeId, 'csound~', [null, data.expr]);
 
     // Sync initial syncTransport state from node data
-    if (!syncTransport) {
-      getCsoundNode()?.setSyncTransport(false);
+    if (syncTransport) {
+      getCsoundNode()?.setSyncTransport(true);
     }
 
     if (isEditing) {
@@ -171,23 +172,31 @@
         <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
           <!-- Play/Pause button (hidden when synced to transport) -->
           {#if !syncTransport}
-            <button
-              onclick={handlePlayPause}
-              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-              title={isPlaying ? 'Pause' : 'Play'}
-            >
-              <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4" />
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  onclick={handlePlayPause}
+                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                >
+                  <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>{isPlaying ? 'Pause' : 'Play'}</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
 
           <!-- Settings button -->
-          <button
-            class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-            onclick={() => (showSettings = !showSettings)}
-            title="Settings"
-          >
-            <Settings class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                onclick={() => (showSettings = !showSettings)}
+              >
+                <Settings class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Settings</Tooltip.Content>
+          </Tooltip.Root>
         </div>
       </div>
 

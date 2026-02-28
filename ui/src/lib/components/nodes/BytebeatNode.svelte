@@ -17,6 +17,7 @@
     type BytebeatNode as BytebeatAudioNode
   } from '$lib/audio/v2/nodes/BytebeatNode';
   import BytebeatSettings from '$lib/settings/BytebeatSettings.svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let contentContainer: HTMLDivElement | null = null;
   let contentWidth = $state(100);
@@ -60,7 +61,7 @@
   const syntax = $derived(data.syntax ?? 'infix');
   const sampleRate = $derived(data.sampleRate ?? 8000);
   const autoEval = $derived(data.autoEval ?? true);
-  const syncTransport = $derived(data.syncTransport ?? true);
+  const syncTransport = $derived(data.syncTransport ?? false);
 
   const handleMessage: MessageCallbackFn = async (message) => {
     await match(message)
@@ -190,8 +191,8 @@
       };
 
       // Sync initial syncTransport state from node data
-      if (!syncTransport) {
-        bytebeatNode.setSyncTransport(false);
+      if (syncTransport) {
+        bytebeatNode.setSyncTransport(true);
       }
     }
 
@@ -244,36 +245,42 @@
         <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
           {#if !syncTransport}
             <!-- Play/Pause button -->
-            <button
-              onclick={togglePlay}
-              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-              title={isPlaying ? 'Pause' : 'Play'}
-            >
-              {#if isPlaying}
-                <Pause class="h-4 w-4 text-zinc-300" />
-              {:else}
-                <Play class="h-4 w-4 text-zinc-300" />
-              {/if}
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button onclick={togglePlay} class="cursor-pointer rounded p-1 hover:bg-zinc-700">
+                  {#if isPlaying}
+                    <Pause class="h-4 w-4 text-zinc-300" />
+                  {:else}
+                    <Play class="h-4 w-4 text-zinc-300" />
+                  {/if}
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>{isPlaying ? 'Pause' : 'Play'}</Tooltip.Content>
+            </Tooltip.Root>
 
             <!-- Stop button -->
-            <button
-              onclick={stop}
-              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-              title="Stop (reset t=0)"
-            >
-              <Square class="h-4 w-4 text-zinc-300" />
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button onclick={stop} class="cursor-pointer rounded p-1 hover:bg-zinc-700">
+                  <Square class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Stop (reset t=0)</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
         </div>
 
-        <button
-          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-          onclick={() => (showSettings = !showSettings)}
-          title="Settings"
-        >
-          <Settings class="h-4 w-4 text-zinc-300" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              onclick={() => (showSettings = !showSettings)}
+            >
+              <Settings class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Settings</Tooltip.Content>
+        </Tooltip.Root>
       </div>
 
       <div class={['bytebeat-node-container relative']}>

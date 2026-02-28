@@ -14,6 +14,7 @@
   import { useNodeDataTracker } from '$lib/history';
   import TransportSyncSettings from '$lib/components/settings/TransportSyncSettings.svelte';
   import { StrudelTransportSync } from '$lib/strudel/StrudelTransportSync';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -187,7 +188,7 @@
   });
 
   const consoleLeftPos = $derived(editorContainerWidth + consoleGap);
-  const syncTransport = $derived(data.syncTransport ?? true);
+  const syncTransport = $derived(data.syncTransport ?? false);
   const tracker = useNodeDataTracker(nodeId);
 
   function setSyncTransport(value: boolean) {
@@ -220,48 +221,59 @@
 
         <div class="flex items-center gap-1">
           <!-- Console toggle button -->
-          <button
-            class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-            onclick={() => {
-              updateNodeData(nodeId, { showConsole: !data.showConsole });
-              if (!data.showConsole) showSettings = false;
-            }}
-            title="Toggle Console"
-          >
-            <Terminal class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                onclick={() => {
+                  updateNodeData(nodeId, { showConsole: !data.showConsole });
+                  if (!data.showConsole) showSettings = false;
+                }}
+              >
+                <Terminal class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Toggle Console</Tooltip.Content>
+          </Tooltip.Root>
 
           <!-- Settings button -->
-          <button
-            class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-            onclick={() => {
-              showSettings = !showSettings;
-              if (showSettings) updateNodeData(nodeId, { showConsole: false });
-            }}
-            title="Settings"
-          >
-            <Settings class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                onclick={() => {
+                  showSettings = !showSettings;
+                  if (showSettings) updateNodeData(nodeId, { showConsole: false });
+                }}
+              >
+                <Settings class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Settings</Tooltip.Content>
+          </Tooltip.Root>
 
           <!-- Play/Stop button (hidden when synced to transport) -->
           {#if isInitialized && !syncTransport}
-            {#if isPlaying}
-              <button
-                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                onclick={stop}
-                title="Stop"
-              >
-                <Square class="h-4 w-4 text-zinc-300" />
-              </button>
-            {:else}
-              <button
-                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                onclick={evaluate}
-                title="Play"
-              >
-                <Play class="h-4 w-4 text-zinc-300" />
-              </button>
-            {/if}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                {#if isPlaying}
+                  <button
+                    class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                    onclick={stop}
+                  >
+                    <Square class="h-4 w-4 text-zinc-300" />
+                  </button>
+                {:else}
+                  <button
+                    class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                    onclick={evaluate}
+                  >
+                    <Play class="h-4 w-4 text-zinc-300" />
+                  </button>
+                {/if}
+              </Tooltip.Trigger>
+              <Tooltip.Content>{isPlaying ? 'Stop' : 'Play'}</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
         </div>
       </div>

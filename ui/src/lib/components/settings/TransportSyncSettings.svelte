@@ -23,6 +23,7 @@
     <button
       onclick={onClose}
       class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
+      aria-label="Close"
     >
       <X class="h-4 w-4" />
     </button>

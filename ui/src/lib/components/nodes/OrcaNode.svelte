@@ -10,7 +10,7 @@
   import { IO } from '$lib/orca/io/IO';
   import { OrcaRenderer } from '$lib/orca/OrcaRenderer';
   import { library } from '$lib/orca/library';
-  import { match } from 'ts-pattern';
+  import { match, P } from 'ts-pattern';
   import { orcaMessages } from '$lib/objects/schemas';
 
   import StandardHandle from '../StandardHandle.svelte';
@@ -18,6 +18,7 @@
   import { useNodeDataTracker } from '$lib/history';
   import { transportStore } from '../../../stores/transport.store';
   import { Transport } from '$lib/transport/Transport';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let {
     id: nodeId,
@@ -347,11 +348,10 @@
 
       case ' ':
         if (syncTransport) {
-          if ($transportStore.playState === 'playing') {
-            Transport.pause();
-          } else {
-            Transport.play();
-          }
+          match($transportStore.playState)
+            .with('playing', () => Transport.pause())
+            .with(P.union('paused', 'stopped'), () => Transport.play())
+            .exhaustive();
         } else {
           togglePlay();
         }
@@ -535,7 +535,7 @@
     }
   }
 
-  const syncTransport = $derived(data.syncTransport ?? true);
+  const syncTransport = $derived(data.syncTransport ?? false);
 
   // Sync BPM to transport
   $effect(() => {
@@ -555,18 +555,14 @@
       .with('playing', () => {
         if (!isPlaying) {
           clock!.start();
+
           isPlaying = true;
         }
       })
-      .with('paused', () => {
+      .with(P.union('paused', 'stopped'), () => {
         if (isPlaying) {
           clock!.stop();
-          isPlaying = false;
-        }
-      })
-      .with('stopped', () => {
-        if (isPlaying) {
-          clock!.stop();
+
           isPlaying = false;
         }
       })
@@ -585,26 +581,34 @@
 
         <div class="flex gap-1">
           {#if !syncTransport}
-            <button
-              title={isPlaying ? 'Pause' : 'Play'}
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              onclick={togglePlay}
-            >
-              <!-- svelte-ignore svelte_component_deprecated -->
-              <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4 text-zinc-300" />
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                  onclick={togglePlay}
+                >
+                  <!-- svelte-ignore svelte_component_deprecated -->
+                  <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>{isPlaying ? 'Pause' : 'Play'}</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
 
-          <button
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-            onclick={() => {
-              showSettings = !showSettings;
-              measureWidth();
-            }}
-            title="Settings"
-          >
-            <Settings class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                onclick={() => {
+                  showSettings = !showSettings;
+                  measureWidth();
+                }}
+              >
+                <Settings class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Settings</Tooltip.Content>
+          </Tooltip.Root>
         </div>
       </div>
 
