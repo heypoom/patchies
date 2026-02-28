@@ -47,7 +47,7 @@ export class CsoundNode implements AudioNodeV2 {
   private codeString = '';
 
   // Transport sync
-  private syncTransport = true;
+  private syncTransport = false;
   private transportUnsub: (() => void) | null = null;
   private lastPlayState: TransportPlayState | null = null;
 
@@ -98,7 +98,12 @@ export class CsoundNode implements AudioNodeV2 {
       match(playState)
         .with('playing', () => this.resume())
         .with('paused', () => this.pause())
-        .with('stopped', () => this.csound?.stop())
+        .with('stopped', async () => {
+          await this.csound?.stop();
+
+          this.isPaused = true;
+          this.isProgramLoaded = false;
+        })
         .exhaustive();
     });
   }
@@ -106,6 +111,7 @@ export class CsoundNode implements AudioNodeV2 {
   private unsubscribeTransport(): void {
     this.transportUnsub?.();
     this.transportUnsub = null;
+    this.lastPlayState = null;
   }
 
   async send(key: string, value: unknown): Promise<void> {

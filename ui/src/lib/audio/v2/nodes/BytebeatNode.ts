@@ -117,7 +117,7 @@ export class BytebeatNode implements AudioNodeV2 {
   private isPlaying = false;
 
   // Transport sync
-  private syncTransport = true;
+  private syncTransport = false;
   private transportUnsub: (() => void) | null = null;
   private lastPlayState: TransportPlayState | null = null;
 
@@ -183,6 +183,7 @@ export class BytebeatNode implements AudioNodeV2 {
   private unsubscribeTransport(): void {
     this.transportUnsub?.();
     this.transportUnsub = null;
+    this.lastPlayState = null;
   }
 
   async send(key: string, message: unknown): Promise<void> {
