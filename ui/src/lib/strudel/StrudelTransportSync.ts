@@ -7,7 +7,7 @@ import {
 import { Transport } from '$lib/transport/Transport';
 
 // Minimal type for the Strudel Cyclist scheduler.
-// We access internal properties for phase sync and resume.
+// We access internal properties for phase sync and pause/resume bypass.
 interface CyclistScheduler {
   cps: number;
   started: boolean;
@@ -21,9 +21,7 @@ interface CyclistScheduler {
   clock: { start(): void; stop(): void; pause(): void };
   setCps(cps: number): void;
 
-  pause(): void;
   stop(): void;
-  setStarted(v: boolean): void;
   getTime(): number;
 }
 
@@ -37,8 +35,9 @@ export interface StrudelTransportSyncOptions {
 /**
  * Syncs a Strudel Cyclist scheduler to the global transport.
  *
- * Handles CPS (tempo), play/pause/stop, phase alignment, and
- * pause-resume without re-evaluation.
+ * Handles CPS (tempo), play/pause/stop, and phase alignment.
+ * On pause, bypasses scheduler.pause() to avoid onToggle(false) → cleanupDraw()
+ * which would kill visualization animation frames (_pianoroll, _scope, etc.).
  */
 export class StrudelTransportSync {
   private options: StrudelTransportSyncOptions;
@@ -118,14 +117,26 @@ export class StrudelTransportSync {
   private handlePause(): void {
     if (!this.playing) return;
 
-    this.options.getScheduler()?.pause();
+    const scheduler = this.options.getScheduler();
+    if (scheduler) {
+      // Pause clock directly without triggering onToggle(false).
+      // scheduler.pause() calls setStarted(false) → onToggle(false) → cleanupDraw(),
+      // which kills Pattern.prototype.draw() animation frames used by visualizations
+      // (_pianoroll, _scope, etc.). By bypassing this, the draw loops stay alive
+      // and freeze at time 0 (since scheduler.now() returns 0 when started=false).
+      scheduler.clock.pause();
+      scheduler.started = false;
+    }
+
     this.wasPaused = true;
     this.playing = false;
     this.options.onPlayingChange(false);
   }
 
   private handleStop(): void {
-    if (this.playing) {
+    if (this.playing || this.wasPaused) {
+      // Call stop() to fully clean up (including draw loops via onToggle(false)).
+      // This is the correct behavior for stop — unlike pause, we want a full teardown.
       this.options.stop();
     }
 
@@ -161,10 +172,10 @@ export class StrudelTransportSync {
     const scheduler = this.options.getScheduler();
     if (!scheduler) return;
 
-    // Restart clock + re-enable without resetting cycle counters
-    // (scheduler.start() would reset num_cycles_at_cps_change to 0)
-    scheduler.num_cycles_at_cps_change = scheduler.lastEnd;
-    scheduler.num_ticks_since_cps_change = 0;
+    // Re-align cycle position to the transport to prevent drift across pause/resume cycles.
+    // Using lastEnd (Strudel's paused position) would accumulate small timing differences
+    // vs the transport's clock over multiple pause/resume cycles.
+    this.syncSchedulerPhase();
 
     // Update lastTick so now() doesn't overshoot due to the pause gap.
     // Without this, now() = lastBegin + (currentTime - staleLastTick) * cps → way in the future,
@@ -175,6 +186,9 @@ export class StrudelTransportSync {
     // clock.stop() only resets the clock's internal timer — Cyclist's lastEnd is preserved.
     scheduler.clock.stop();
     scheduler.clock.start();
-    scheduler.setStarted(true);
+
+    // Set started directly (not via setStarted) to avoid triggering onToggle(true)
+    // which would double-start the Drawer (it was never stopped during our bypass pause).
+    scheduler.started = true;
   }
 }
