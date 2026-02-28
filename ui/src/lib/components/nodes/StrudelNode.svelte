@@ -186,19 +186,25 @@
     tracker.commit('syncTransport', oldValue, value);
   }
 
-  // Sync CPS to transport BPM/time signature
-  $effect(() => {
-    if (!syncTransport || !isInitialized || !strudelEditor?.editor) return;
+  function getTransportCps() {
+    return $transportStore.bpm / 60;
+  }
 
-    const { bpm, timeSignature } = $transportStore;
-    const [beatsPerBar] = timeSignature;
-    const cps = bpm / beatsPerBar / 60;
-
+  function applyTransportCps() {
     try {
-      strudelEditor.editor.repl.scheduler.setCps(cps);
+      strudelEditor?.editor?.repl.scheduler.setCps(getTransportCps());
     } catch {
       // Scheduler may not be ready yet
     }
+  }
+
+  // Sync CPS to transport BPM
+  $effect(() => {
+    if (!syncTransport || !isInitialized || !strudelEditor?.editor) return;
+
+    // Track bpm so the effect re-runs on changes
+    $transportStore.bpm;
+    applyTransportCps();
   });
 
   // Sync play/stop to transport state
@@ -209,7 +215,11 @@
 
     match(playState)
       .with('playing', () => {
-        if (!isPlaying) evaluate();
+        if (!isPlaying) {
+          evaluate();
+          // Re-apply transport CPS after evaluate (user code may call setcpm/setcps)
+          applyTransportCps();
+        }
       })
       .with('paused', () => {
         if (isPlaying) stop();
@@ -232,7 +242,7 @@
         <div class="flex items-center gap-1">
           <!-- Console toggle button -->
           <button
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+            class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
             onclick={() => {
               updateNodeData(nodeId, { showConsole: !data.showConsole });
               if (!data.showConsole) showSettings = false;
@@ -258,7 +268,7 @@
           {#if isInitialized && !syncTransport}
             {#if isPlaying}
               <button
-                class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
                 onclick={stop}
                 title="Stop"
               >
@@ -266,7 +276,7 @@
               </button>
             {:else}
               <button
-                class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
                 onclick={evaluate}
                 title="Play"
               >
