@@ -6,6 +6,8 @@ Patchies has a master clock that synchronizes all time-based objects (e.g. GLSL,
 
 Click the **transport button** (play icon) in the bottom toolbar to open the floating transport panel.
 
+![Transport control bar](/content/images/transport-control-bar.webp)
+
 ## Controls
 
 | Control | Description |
