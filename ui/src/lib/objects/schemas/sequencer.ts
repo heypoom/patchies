@@ -3,7 +3,7 @@ import { type ObjectSchema } from './types';
 import { Bang } from './common';
 import { msg } from './helpers';
 
-const Schedule = msg('schedule', {
+const SetSchedule = msg('set', {
   time: Type.Number(),
   value: Type.Number({ minimum: 0, maximum: 1 })
 });
@@ -28,7 +28,7 @@ export const sequencerSchema: ObjectSchema = {
           description: 'Velocity value 0–1 when output mode is "value"'
         },
         {
-          schema: Schedule,
+          schema: SetSchedule,
           description:
             'Lookahead-scheduled audio event with precise Web Audio time and velocity, when output mode is "audio"'
         }

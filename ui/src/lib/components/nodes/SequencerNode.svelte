@@ -110,7 +110,7 @@
       const value = track.stepValues[stepIndex] ?? 1.0;
 
       const payload = match(mode)
-        .with('audio', () => ({ type: 'schedule', time, value }))
+        .with('audio', () => ({ type: 'set', time, value }))
         .with('value', () => value)
         .with('bang', () => ({ type: 'bang' }))
         .exhaustive();
@@ -129,8 +129,16 @@
     const beatDuration = (60 / Transport.bpm) * (4 / Transport.denominator);
     const stepInterval = (beatDuration * Transport.beatsPerBar) / numSteps;
 
+    // Swing operates at the 8th-note level: the off-beat 8th note in each beat pair is delayed.
+    // halfBeat = steps per 8th note. For 8 steps in 4/4: halfBeat=1 → odd steps swung.
+    // For 16 steps in 4/4: halfBeat=2 → steps 2,6,10,14 swung (the actual 8th off-beats).
+    const stepsPerBeat = numSteps / Transport.beatsPerBar;
+    const halfBeat = Math.max(1, Math.round(stepsPerBeat / 2));
+    const eighthInterval = stepInterval * halfBeat;
+
     for (let i = 0; i < numSteps; i++) {
-      const swingOffset = i % 2 === 1 && swingVal > 0 ? (swingVal / 100) * 0.5 * stepInterval : 0;
+      const isSwung = swingVal > 0 && i % (halfBeat * 2) === halfBeat;
+      const swingOffset = isSwung ? (swingVal / 100) * 0.5 * eighthInterval : 0;
       const stepTime = barTime + i * stepInterval + swingOffset;
       const id = scheduler!.schedule(stepTime, (t) => fireAtStep(i, t), { audio: true });
       stepScheduleIds.push(id);
