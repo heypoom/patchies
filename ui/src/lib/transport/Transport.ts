@@ -79,6 +79,7 @@ class TransportManager implements ITransport {
 
   setBpm(bpm: number): void {
     this.context.setBpm(bpm);
+    transportStore.setBpm(bpm);
   }
 
   setTimeSignature(numerator: number, denominator = 4): void {

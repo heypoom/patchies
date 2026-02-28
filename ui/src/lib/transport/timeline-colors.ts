@@ -12,8 +12,10 @@ const TIMELINE_PALETTE = [
 /** Deterministic color for a nodeId based on string hash. */
 export function getNodeTimelineColor(nodeId: string): string {
   let hash = 0;
+
   for (let i = 0; i < nodeId.length; i++) {
     hash = ((hash << 5) - hash + nodeId.charCodeAt(i)) | 0;
   }
+
   return TIMELINE_PALETTE[Math.abs(hash) % TIMELINE_PALETTE.length];
 }
