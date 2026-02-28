@@ -504,7 +504,7 @@
 
     <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
-    <!-- Group 4: Volume & DSP -->
+    <!-- Group 4: Volume -->
     <div class="flex items-center gap-2" class:flex-[2]={isExpanded}>
       <Tooltip.Root>
         <Tooltip.Trigger>
@@ -532,9 +532,12 @@
         step={0.01}
         class="w-20 cursor-pointer {isExpanded ? 'flex-1' : ''}"
       />
+    </div>
 
-      <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
+    <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
+    <!-- Group 5: DSP & Timeline -->
+    <div class="flex items-center gap-2">
       <Tooltip.Root>
         <Tooltip.Trigger>
           <button
@@ -574,6 +577,8 @@
   </div>
 
   {#if $transportStore.timelineVisible}
-    <TimelineRuler width={rulerWidth} />
+    <div class="mt-1 sm:mt-0.5">
+      <TimelineRuler width={rulerWidth} />
+    </div>
   {/if}
 </div>
