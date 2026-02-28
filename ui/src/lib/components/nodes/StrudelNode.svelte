@@ -187,7 +187,7 @@
   }
 
   function getTransportCps() {
-    return $transportStore.bpm / 60;
+    return $transportStore.bpm / $transportStore.timeSignature[0] / 60;
   }
 
   function applyTransportCps() {
