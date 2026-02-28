@@ -140,7 +140,11 @@
       const isSwung = swingVal > 0 && i % (halfBeat * 2) === halfBeat;
       const swingOffset = isSwung ? (swingVal / 100) * 0.5 * eighthInterval : 0;
       const stepTime = barTime + i * stepInterval + swingOffset;
-      const id = scheduler!.schedule(stepTime, (t) => fireAtStep(i, t), { audio: true });
+
+      const id = scheduler!.schedule(stepTime, (t) => fireAtStep(i, t), {
+        audio: outputMode === 'audio'
+      });
+
       stepScheduleIds.push(id);
     }
   }
@@ -156,13 +160,21 @@
     for (const id of stepScheduleIds) scheduler.cancel(id);
     stepScheduleIds = [];
 
-    barSubId = scheduler.onBeat(0, (barTime) => scheduleBar(barTime), { audio: true });
+    barSubId = scheduler.onBeat(0, (barTime) => scheduleBar(barTime), {
+      audio: outputMode === 'audio'
+    });
   }
 
   // Update xyflow handle positions when track count changes
   $effect(() => {
     trackCount;
     setTimeout(() => updateNodeInternals(nodeId), 0);
+  });
+
+  // Re-setup scheduler when outputMode changes so the audio flag is updated
+  $effect(() => {
+    outputMode;
+    if (scheduler) setupScheduler();
   });
 
   onMount(() => {
