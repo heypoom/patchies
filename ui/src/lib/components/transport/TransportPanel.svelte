@@ -92,7 +92,7 @@
   // green = enabled with peers, blue = enabled but waiting, gray = disabled
   const syncColor = $derived.by(() =>
     match({ enabled: $transportSyncStore.enabled, peers: $transportSyncStore.peerCount })
-      .with({ enabled: false }, () => 'text-zinc-400')
+      .with({ enabled: false }, () => 'text-zinc-500 hover:text-zinc-300')
       .with({ enabled: true, peers: 0 }, () => 'text-blue-400')
       .otherwise(() => 'text-green-400')
   );
@@ -632,12 +632,12 @@
         <Tooltip.Trigger>
           <button
             onclick={toggleSync}
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-800 {$transportSyncStore.enabled
+            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-800 {syncColor} {$transportSyncStore.enabled
               ? 'bg-zinc-800'
               : ''}"
             aria-label="Toggle sync"
           >
-            <Wifi class="h-4 w-4 {syncColor}" />
+            <Wifi class="h-4 w-4" />
           </button>
         </Tooltip.Trigger>
         <Tooltip.Content>
