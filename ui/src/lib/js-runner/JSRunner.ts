@@ -7,6 +7,7 @@ import { handleCodeError } from './handleCodeError';
 import { createKVStore } from '$lib/storage';
 import { Transport } from '$lib/transport';
 import { LookaheadClockScheduler } from '$lib/transport/ClockScheduler';
+import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
 
 export interface JSRunnerOptions {
   customConsole?: {
@@ -269,6 +270,7 @@ export class JSRunner {
       }));
       scheduler.start();
       this.schedulerMap.set(nodeId, scheduler);
+      SchedulerRegistry.getInstance().register(nodeId, scheduler);
     }
 
     return this.schedulerMap.get(nodeId)!;
@@ -293,6 +295,7 @@ export class JSRunner {
     // Clean up scheduler (stops interval + cancels all callbacks)
     const scheduler = this.schedulerMap.get(nodeId);
     if (scheduler) {
+      SchedulerRegistry.getInstance().unregister(nodeId);
       scheduler.dispose();
       this.schedulerMap.delete(nodeId);
     }

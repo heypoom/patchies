@@ -17,6 +17,7 @@ export interface TransportStoreState {
   isPlaying: boolean;
   playState: TransportPlayState;
   dspEnabled: boolean;
+  timelineVisible: boolean;
 }
 
 const defaultState: TransportStoreState = {
@@ -26,7 +27,8 @@ const defaultState: TransportStoreState = {
   panelOpen: false,
   isPlaying: DEFAULT_AUTOPLAY,
   playState: DEFAULT_AUTOPLAY ? 'playing' : 'stopped',
-  dspEnabled: true
+  dspEnabled: true,
+  timelineVisible: false
 };
 
 function loadFromStorage(): TransportStoreState {
@@ -35,7 +37,9 @@ function loadFromStorage(): TransportStoreState {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return defaultState;
-    const parsed = JSON.parse(stored);
+
+    const parsed: TransportStoreState = JSON.parse(stored);
+
     return {
       bpm: parsed.bpm ?? DEFAULT_BPM,
       timeSignature: parsed.timeSignature ?? DEFAULT_TIME_SIGNATURE,
@@ -43,7 +47,8 @@ function loadFromStorage(): TransportStoreState {
       panelOpen: false, // Always start closed
       isPlaying: DEFAULT_AUTOPLAY,
       playState: DEFAULT_AUTOPLAY ? 'playing' : 'stopped',
-      dspEnabled: true
+      dspEnabled: true,
+      timelineVisible: parsed.timelineVisible === true
     };
   } catch {
     console.warn('Failed to load transport state from localStorage');
@@ -114,6 +119,10 @@ function createTransportStore() {
 
     setDspEnabled(dspEnabled: boolean) {
       update((s) => ({ ...s, dspEnabled }));
+    },
+
+    toggleTimeline() {
+      update((s) => ({ ...s, timelineVisible: !s.timelineVisible }));
     }
   };
 }

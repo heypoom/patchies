@@ -47,6 +47,13 @@ export class PollingClockScheduler implements ClockScheduler {
 
     // Check one-shot schedules
     for (const [id, item] of this.scheduleCallbacks) {
+      // Recalculate time if BPM changed (only for musical notation times)
+      if (item.bpm !== undefined && item.bpm !== clock.bpm) {
+        const ratio = item.bpm / clock.bpm;
+        item.time = item.time * ratio;
+        item.bpm = clock.bpm;
+      }
+
       if (!item.fired && clock.time >= item.time) {
         try {
           item.callback(item.time);
@@ -103,13 +110,15 @@ export class PollingClockScheduler implements ClockScheduler {
 
   schedule(time: number | string, callback: SchedulerCallback, options?: SchedulerOptions): string {
     const id = generateId();
-    const timeNum = typeof time === 'string' ? parseBarBeatSixteenth(time, this.currentBpm) : time;
+    const isMusical = typeof time === 'string';
+    const timeNum = isMusical ? parseBarBeatSixteenth(time, this.currentBpm) : time;
 
     this.scheduleCallbacks.set(id, {
       time: timeNum,
       callback,
       fired: false,
-      audio: options?.audio ?? false
+      audio: options?.audio ?? false,
+      bpm: isMusical ? this.currentBpm : undefined
     });
 
     return id;

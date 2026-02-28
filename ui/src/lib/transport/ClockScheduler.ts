@@ -109,6 +109,9 @@ export type ScheduleCallback = {
   callback: SchedulerCallback;
   fired: boolean;
   audio: boolean;
+
+  /** BPM at registration time (set when time came from bar:beat:sixteenth notation). */
+  bpm?: number;
 };
 export type RepeatCallback = {
   interval: number;
