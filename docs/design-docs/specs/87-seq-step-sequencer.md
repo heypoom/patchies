@@ -112,7 +112,7 @@ Always a value — there's no bang-only mode. The value is always present.
 
 ## Files
 
-- `ui/src/lib/components/nodes/SeqNode.svelte` — visual node
+- `ui/src/lib/components/nodes/SequencerNode.svelte` — visual node
 - `ui/src/lib/nodes/node-types.ts` — registration
 - `ui/src/lib/nodes/defaultNodeData.ts` — default data
 - `ui/src/lib/extensions/object-packs.ts` — add to Control pack

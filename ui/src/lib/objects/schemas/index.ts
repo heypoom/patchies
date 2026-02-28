@@ -79,6 +79,7 @@ export * from './send-vdo';
 export * from './recv-vdo';
 export * from './note';
 export * from './meter';
+export * from './sequencer';
 export * from './from-v2-node';
 
 import type { ObjectSchemaRegistry } from './types';
@@ -162,6 +163,7 @@ import { sendVdoSchema } from './send-vdo';
 import { recvVdoSchema } from './recv-vdo';
 import { noteSchema } from './note';
 import { meterSchema } from './meter';
+import { sequencerSchema } from './sequencer';
 
 /**
  * Registry of all object schemas.
@@ -253,7 +255,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'send.vdo': sendVdoSchema,
   'recv.vdo': recvVdoSchema,
   note: noteSchema,
-  'meter~': meterSchema
+  'meter~': meterSchema,
+  sequencer: sequencerSchema
 };
 
 /**

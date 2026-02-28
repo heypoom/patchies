@@ -32,6 +32,8 @@ export class BeatObject implements TextObjectV2 {
       phase: Transport.phase,
       beatsPerBar: Transport.beatsPerBar
     }));
+
+    this.scheduler.setTimelineStyle({ visible: false });
   }
 
   create(): void {

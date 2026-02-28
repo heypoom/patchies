@@ -73,6 +73,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - keyboard: Keyboard input controller
 - label: Text label for annotations
 - link: Clickable link button
+- sequencer: Multi-track step sequencer synced to transport clock (drum machine style; one outlet per track)
 
 ## MIDI & Network Objects
 - midi.in: MIDI input from devices

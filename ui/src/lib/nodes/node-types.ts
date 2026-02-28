@@ -84,6 +84,7 @@ import PostItNode from '$lib/components/nodes/PostItNode.svelte';
 import ScopeNode from '$lib/components/nodes/ScopeNode.svelte';
 import UiuaNode from '$lib/components/nodes/UiuaNode.svelte';
 import BytebeatNode from '$lib/components/nodes/BytebeatNode.svelte';
+import SequencerNode from '$lib/components/nodes/SequencerNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -172,7 +173,8 @@ export const nodeTypes: Record<string, any> = {
   note: PostItNode,
   'scope~': ScopeNode,
   uiua: UiuaNode,
-  'bytebeat~': BytebeatNode
+  'bytebeat~': BytebeatNode,
+  sequencer: SequencerNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

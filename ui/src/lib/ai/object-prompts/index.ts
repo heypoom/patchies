@@ -48,6 +48,7 @@ import { threePrompt } from './three';
 import { threeDomPrompt } from './three.dom';
 import { wgpuPrompt } from './wgpu';
 import { workerPrompt } from './worker';
+import { sequencerPrompt } from './sequencer';
 
 /**
  * Mapping of object types to their instruction prompts.
@@ -96,7 +97,8 @@ export const objectPrompts: Record<string, string> = {
   'send.vdo': sendVdoPrompt,
   'recv.vdo': recvVdoPrompt,
   'bytebeat~': bytebeatPrompt,
-  'samplerate~': sampleratePrompt
+  'samplerate~': sampleratePrompt,
+  sequencer: sequencerPrompt
 };
 
 /**
