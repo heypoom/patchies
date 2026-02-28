@@ -268,7 +268,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       syncTransport: false
     }))
     .with('sequencer', () => ({
-      steps: 16,
+      steps: 8,
       tracks: [
         {
           name: 'KICK',
