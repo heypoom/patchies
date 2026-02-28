@@ -14,10 +14,13 @@ interface CyclistScheduler {
   lastBegin: number;
   lastEnd: number;
   lastTick: number;
+
   num_cycles_at_cps_change: number;
   num_ticks_since_cps_change: number;
+
   clock: { start(): void; stop(): void; pause(): void };
   setCps(cps: number): void;
+
   pause(): void;
   stop(): void;
   setStarted(v: boolean): void;

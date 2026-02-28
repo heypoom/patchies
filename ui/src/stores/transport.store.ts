@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { match } from 'ts-pattern';
 import { DEFAULT_AUTOPLAY, DEFAULT_BPM, DEFAULT_TIME_SIGNATURE } from '$lib/transport/constants';
 
 const STORAGE_KEY = 'patchies:transport';
@@ -105,7 +106,10 @@ function createTransportStore() {
     },
 
     setPlayState(playState: TransportPlayState) {
-      update((s) => ({ ...s, playState, isPlaying: playState === 'playing' }));
+      const isPlaying = match(playState)
+        .with('playing', () => true)
+        .otherwise(() => false);
+      update((s) => ({ ...s, playState, isPlaying }));
     },
 
     setDspEnabled(dspEnabled: boolean) {
