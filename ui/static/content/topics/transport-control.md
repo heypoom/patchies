@@ -10,15 +10,17 @@ Click the **transport button** (play icon) in the bottom toolbar to open the flo
 
 ## Controls
 
-| Control | Description |
-|---------|-------------|
-| **Play/Pause** | Toggle playback. Pause freezes the clock at current position. Use `Space` as keyboard shortcut. |
-| **Stop** | Resets clock to 0 and pauses. |
-| **BPM** | Set tempo (beats per minute). Default: 120. Persisted across sessions. |
-| **Time Signature** | Displays as `4/4`. Click to edit — type a fraction like `6/8` or `3/4` and press Enter. Denominator must be 2, 4, 8, or 16. Persisted across sessions. |
-| **Time Display** | Shows current position. Click to toggle formats (see below). Double-click to edit and seek. |
-| **Volume** | Master volume slider. |
-| **DSP** | Toggle audio processing. Red when DSP is off (AudioContext suspended). |
+| Control            | Description                                                                                       |
+|--------------------|---------------------------------------------------------------------------------------------------|
+| **Play/Pause**     | Toggle playback. Pause freezes the clock at current position. Use `Space` as keyboard shortcut.   |
+| **Stop**           | Resets clock to 0 and pauses.                                                                     |
+| **BPM**            | Set tempo (beats per minute). Default: 120. Persisted across sessions.                            |
+| **Time Signature** | Displays as `4/4`. Click to edit — type a fraction like `6/8` or `3/4` and press Enter.           |
+| **Time Display**   | Shows current position. Click to toggle formats (see below). Double-click to edit and seek.       |
+| **Volume**         | Master volume slider.                                                                             |
+| **DSP**            | Toggle audio processing. Red when DSP is off (AudioContext suspended).                            |
+
+For time signatures, the denominator must be 2, 4, 8, or 16. Time signatures are persisted across sessions.
 
 ## Time Display Formats
 
@@ -62,6 +64,28 @@ Musical objects have their own internal clocks and can optionally sync to the tr
 - [csound~](/docs/objects/csound~)
 
 For scheduling sample-accurate callbacks on specific beats and creating repeated patterns, see [Clock API](/docs/clock-api).
+
+## Timeline Viewer
+
+The timeline viewer shows a real-time visualization of all scheduled clock events (from `clock.onBeat`, `clock.schedule` and `clock.every`) across your patch. It helps you see when events fire and how they align with the beat grid.
+
+Click the **timeline button** (bar chart icon) in the transport panel to toggle the timeline.
+
+### Timeline markers
+
+| Marker       | Shape    | Scheduling Method                                         |
+|--------------|----------|-----------------------------------------------------------|
+| Triangle ▲   | Filled   | `clock.onBeat()` — drawn at each registered beat position |
+| Diamond ◆    | Filled   | `clock.every()` — drawn at each upcoming repeat interval  |
+| Dashed line  | Vertical | `clock.schedule()` — drawn at the scheduled time          |
+
+Each node is assigned its own color. When an event fires, a brief radial glow appears at its position.
+
+### Interacting with the timeline
+
+- _Click_ anywhere on the timeline to seek to that position.
+- _Click and drag_ to scrub through time continuously.
+- _Resize_ by dragging the left edge of the transport panel (desktop only).
 
 ## See Also
 
