@@ -58,7 +58,7 @@ send({
 });
 ```
 
-`values.start` defaults to `0`. The `attack` and `decay` fields accept a number (seconds with linear curve) or a full config object `{ time, curve, ... }` for custom curves (see [Curve Types](#curve-types)).
+`values.start` defaults to `0`. The `attack` and `decay` fields accept a number (seconds with linear curve) or a full config object `{ time, curve, ... }` for custom curves. See the curve types section below.
 
 ### Release
 

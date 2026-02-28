@@ -4,7 +4,16 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { Slider } from '$lib/components/ui/slider';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { Play, Pause, Square, Volume2, VolumeX, Volume, Volume1 } from '@lucide/svelte/icons';
+  import {
+    Play,
+    Pause,
+    Square,
+    Volume2,
+    VolumeX,
+    Volume,
+    Volume1,
+    ChartNoAxesGantt
+  } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
   import { match } from 'ts-pattern';
   import TimelineRuler from './TimelineRuler.svelte';
@@ -351,14 +360,16 @@
 <div
   class="relative flex max-w-full flex-col gap-1 rounded-lg border border-zinc-700 bg-zinc-900/95 px-3 py-2 shadow-xl backdrop-blur-sm"
 >
-  <!-- Resize handle (left edge, desktop only) -->
-  <div
-    class="absolute top-0 -left-2 hidden h-full w-2 cursor-col-resize items-center justify-center opacity-0 transition-opacity hover:opacity-100 sm:flex"
-    class:opacity-100={isResizing}
-    onpointerdown={onResizePointerDown}
-  >
-    <div class="h-4 w-px bg-zinc-500"></div>
-  </div>
+  <!-- Resize handle (left edge, desktop only, only when timeline visible) -->
+  {#if $transportStore.timelineVisible}
+    <div
+      class="absolute top-0 -left-2 hidden h-full w-2 cursor-col-resize items-center justify-center opacity-0 transition-opacity hover:opacity-100 sm:flex"
+      class:opacity-100={isResizing}
+      onpointerdown={onResizePointerDown}
+    >
+      <div class="h-4 w-px bg-zinc-500"></div>
+    </div>
+  {/if}
 
   <div class="flex flex-wrap items-center gap-2">
     <!-- Group 1: Play/Pause & Stop -->
@@ -532,8 +543,28 @@
           {isDspEnabled ? 'DSP On - Click to disable' : 'DSP Off - Click to enable'}
         </Tooltip.Content>
       </Tooltip.Root>
+
+      <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
+
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            onclick={() => transportStore.toggleTimeline()}
+            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors {$transportStore.timelineVisible
+              ? 'bg-zinc-700 text-zinc-200'
+              : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+          >
+            <ChartNoAxesGantt class="h-4 w-4" />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          {$transportStore.timelineVisible ? 'Hide timeline' : 'Show timeline'}
+        </Tooltip.Content>
+      </Tooltip.Root>
     </div>
   </div>
 
-  <TimelineRuler width={rulerWidth} />
+  {#if $transportStore.timelineVisible}
+    <TimelineRuler width={rulerWidth} />
+  {/if}
 </div>

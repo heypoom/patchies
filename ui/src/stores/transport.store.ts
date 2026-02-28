@@ -17,6 +17,7 @@ export interface TransportStoreState {
   isPlaying: boolean;
   playState: TransportPlayState;
   dspEnabled: boolean;
+  timelineVisible: boolean;
 }
 
 const defaultState: TransportStoreState = {
@@ -26,7 +27,8 @@ const defaultState: TransportStoreState = {
   panelOpen: false,
   isPlaying: DEFAULT_AUTOPLAY,
   playState: DEFAULT_AUTOPLAY ? 'playing' : 'stopped',
-  dspEnabled: true
+  dspEnabled: true,
+  timelineVisible: false
 };
 
 function loadFromStorage(): TransportStoreState {
@@ -43,7 +45,8 @@ function loadFromStorage(): TransportStoreState {
       panelOpen: false, // Always start closed
       isPlaying: DEFAULT_AUTOPLAY,
       playState: DEFAULT_AUTOPLAY ? 'playing' : 'stopped',
-      dspEnabled: true
+      dspEnabled: true,
+      timelineVisible: parsed.timelineVisible ?? false
     };
   } catch {
     console.warn('Failed to load transport state from localStorage');
@@ -114,6 +117,10 @@ function createTransportStore() {
 
     setDspEnabled(dspEnabled: boolean) {
       update((s) => ({ ...s, dspEnabled }));
+    },
+
+    toggleTimeline() {
+      update((s) => ({ ...s, timelineVisible: !s.timelineVisible }));
     }
   };
 }
