@@ -19,7 +19,8 @@ Click the **transport button** (play icon) in the bottom toolbar to open the flo
 | **Time Display**   | Shows current position. Click to toggle formats (see below). Double-click to edit and seek.       |
 | **Volume**         | Master volume slider.                                                                             |
 | **DSP**            | Toggle audio processing. Red when DSP is off (AudioContext suspended).                            |
-| **⋯**              | Overflow menu — contains **Timeline** and **Sync** toggles.                                       |
+| **Timeline**       | Toggle the timeline viewer. Icon highlights when timeline is visible.                             |
+| **Sync**           | Toggle network sync. Icon color reflects connection state (gray = off, blue = waiting, green = connected).  |
 
 For time signatures, the denominator must be 2, 4, 8, or 16. Time signatures are persisted across sessions.
 
@@ -72,7 +73,7 @@ For scheduling sample-accurate callbacks on specific beats and creating repeated
 
 The timeline viewer shows a real-time visualization of all scheduled clock events (from `clock.onBeat`, `clock.schedule` and `clock.every`) across your patch. It helps you see when events fire and how they align with the beat grid.
 
-Open the **⋯** overflow menu in the transport panel and click **Timeline** to toggle it.
+Click the **Timeline** button (gantt chart icon) in the transport panel to toggle it.
 
 ### Timeline markers
 
@@ -100,10 +101,10 @@ Network Sync lets multiple Patchies instances in the same [peer-to-peer room](/d
 
 ### Enabling
 
-Open the **⋯** overflow menu and click **Sync**. The label updates to show your role:
+Click the **Sync** button (wifi icon) in the transport panel. The tooltip updates to show your role:
 
-- **Sync (leader)** — your transport is the source of truth; others follow you
-- **Sync (2 peers)** — you are following the leader; transport controls are read-only
+- **Sync: leader** — your transport is the source of truth; others follow you
+- **Sync: 2 peers** — you are following the leader; transport controls are read-only
 
 All peers in the room must enable Sync. The leader is elected automatically. If the leader disconnects, the next peer becomes leader.
 
