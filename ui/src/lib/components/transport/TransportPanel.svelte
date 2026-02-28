@@ -588,7 +588,7 @@
         {#if showOverflow}
           <div class="fixed inset-0 z-10" onclick={() => (showOverflow = false)} role="none"></div>
           <div
-            class="absolute right-0 bottom-full z-20 mb-2 flex min-w-[140px] flex-col rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl"
+            class="absolute right-0 bottom-full z-20 mb-2 flex min-w-[180px] flex-col rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl"
           >
             <button
               onclick={() => {
