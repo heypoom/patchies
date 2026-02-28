@@ -14,24 +14,24 @@ Set a parameter value immediately, or at a specific time.
 // Set immediately
 send({ type: 'set', value: 0.5 });
 
-// Set at a relative time (seconds from now)
-send({ type: 'set', value: 0.5, time: 0.5 });
+// Set at a specific time (absolute by default)
+send({ type: 'set', value: 0.5, time: 1.0 });
 
-// Set at an absolute audio context time
-send({ type: 'set', value: 0.5, time: 1.0, timeMode: 'absolute' });
+// Set at a relative time (seconds from now)
+send({ type: 'set', value: 0.5, time: 0.5, timeMode: 'relative' });
 ```
 
-The `timeMode: 'absolute'` option is useful with [clock scheduling](/docs/clock-api) — pass `{ audio: true }` for lookahead scheduling, then use the precise `time` argument from the callback:
+The `time` field uses absolute time by default, which works naturally with [clock scheduling](/docs/clock-api) — pass `{ audio: true }` for lookahead scheduling, then pass the `time` argument from the callback directly:
 
 ```js
 // Schedule a parameter change on beat 0 with audio-precise timing
 clock.onBeat(0, (time) => {
-  send({ type: 'set', value: 440, time, timeMode: 'absolute' });
+  send({ type: 'set', value: 440, time });
 }, { audio: true });
 
 // Schedule at a specific bar position
 clock.schedule('4:0:0', (time) => {
-  send({ type: 'set', value: 880, time, timeMode: 'absolute' });
+  send({ type: 'set', value: 880, time });
 }, { audio: true });
 ```
 
@@ -40,11 +40,21 @@ clock.schedule('4:0:0', (time) => {
 Trigger an attack-decay-sustain envelope.
 
 ```js
+// Trigger immediately
 send({
   type: 'trigger',
   values: { start: 0, peak: 1, sustain: 0.7 },
   attack: { time: 0.02 },  // seconds
   decay: { time: 0.1 }
+});
+
+// Trigger at a precise time (for beat-synced envelopes)
+send({
+  type: 'trigger',
+  values: { start: 0, peak: 1, sustain: 0.7 },
+  attack: { time: 0.02 },
+  decay: { time: 0.1 },
+  time
 });
 ```
 
@@ -53,7 +63,11 @@ send({
 Trigger a release phase (ramp down from current value).
 
 ```js
+// Release immediately
 send({ type: 'release', release: { time: 0.3 }, endValue: 0 });
+
+// Release at a precise time
+send({ type: 'release', release: { time: 0.3 }, endValue: 0, time });
 ```
 
 ### Trigger + Release Example

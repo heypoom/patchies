@@ -61,7 +61,7 @@ clock.schedule("8:2:0", () => buildUp()); // bar 8, beat 2
 
 // Audio-precise — fires early with precise time
 clock.schedule("4:0:0", (time) => {
-  send({ type: 'set', value: 880, time, timeMode: 'absolute' });
+  send({ type: 'set', value: 880, time });
 }, { audio: true });
 
 // Returns ID for cleanup

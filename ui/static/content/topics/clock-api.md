@@ -165,7 +165,7 @@ clock.schedule('8:2:0', () => buildUp());    // bar 8, beat 2
 
 // Audio-precise — fires early with precise time
 clock.schedule('4:0:0', (time) => {
-  send({ type: 'set', value: 880, time, timeMode: 'absolute' });
+  send({ type: 'set', value: 880, time });
 }, { audio: true });
 ```
 
@@ -181,8 +181,13 @@ clock.every('0:0:1', () => tick());     // every sixteenth
 
 // Audio-precise repeating — fires early with grid-aligned time
 clock.every('0:1:0', (time) => {
-  send({ type: 'trigger', values: { start: 0, peak: 1, sustain: 0.7 },
-    attack: { time: 0.01 }, decay: { time: 0.1 } });
+  send({
+    type: 'trigger',
+    values: { start: 0, peak: 1, sustain: 0.7 },
+    attack: { time: 0.01 },
+    decay: { time: 0.1 },
+    time
+  });
 }, { audio: true });
 ```
 
@@ -305,7 +310,7 @@ Always use the `time` callback argument (not `Tone.now()`) for sample-accurate t
 
 ### Scheduling Audio Parameters
 
-Pass `{ audio: true }` to use lookahead scheduling with [parameter automation messages](/docs/parameter-automation) via `timeMode: 'absolute'`.
+Pass `{ audio: true }` to use lookahead scheduling with [parameter automation messages](/docs/parameter-automation). Then, pass the `time` argument from the callback into the `set`, `trigger` and `release` messages — this is used as an absolute time by default.
 
 This lets you automate audio parameters (`gain~`, `osc~`, filters, etc.) with beat-synced, sample-accurate timing:
 
@@ -316,18 +321,14 @@ clock.onBeat(0, (time) => {
     type: 'trigger',
     values: { start: 0, peak: 1, sustain: 0.7 },
     attack: { time: 0.01 },
-    decay: { time: 0.1 }
+    decay: { time: 0.1 },
+    time
   });
 }, { audio: true });
 
 // Schedule a filter sweep at bar 4
 clock.schedule('4:0:0', (time) => {
-  send({
-    type: 'set',
-    value: 2000,
-    time,
-    timeMode: 'absolute'
-  });
+  send({ type: 'set', value: 2000, time });
 }, { audio: true });
 
 // Repeating audio-precise scheduling every beat
@@ -336,7 +337,8 @@ clock.every('0:1:0', (time) => {
     type: 'trigger',
     values: { start: 0, peak: 1, sustain: 0.7 },
     attack: { time: 0.01 },
-    decay: { time: 0.1 }
+    decay: { time: 0.1 },
+    time
   });
 }, { audio: true });
 ```
@@ -347,14 +349,14 @@ All scheduling methods (`onBeat`, `schedule`, `every`) poll every ~25ms.
 
 **Default (visual):** Callbacks fire **after** the event has occurred — accurate to ~25ms, imperceptible for visual sync.
 
-**`{ audio: true }`:** Callbacks fire **before** the event, within a ~100ms lookahead window. The `time` argument contains the precise transport time of the event, suitable for Web Audio API scheduling at the exact sample (e.g., `oscillator.start(time)` or `send({ time, timeMode: 'absolute' })`).
+**`{ audio: true }`:** Callbacks fire **before** the event, within a ~100ms lookahead window. The `time` argument contains the precise transport time of the event.
 
 In worker environments (worker, canvas), all scheduling uses frame-based polling (~16ms at 60fps).
 
 For continuous audio-rate signals, use [beat~](/docs/objects/beat~).
 For Tone.js integration, use [tone~](/docs/objects/tone~).
 
-## Hydra Note
+## Hydra
 
 In Hydra, you can use either `clock.time` or the bare `time` variable:
 

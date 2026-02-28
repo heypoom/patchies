@@ -19,7 +19,7 @@ First, the `set` message. At the simplest form it sets the value via `data.value
 }
 ```
 
-You can schedule the value to be set at a specific time in the future by adding the `time` and `timeMode` properties. By default, `timeMode` is `relative`, but `absolute` sets the time directly.
+You can schedule the value to be set at a specific time in the future by adding the `time` and `timeMode` properties. By default, `timeMode` is `absolute` (the `time` value is used directly as the AudioContext time). Use `timeMode: 'relative'` to offset from `audioContext.currentTime`.
 
 ```ts
 {
@@ -34,8 +34,8 @@ Example Implementation of `set`:
 
 ```ts
 const time = match(data.timeMode)
-  .with('absolute', () => data.time)
-  .otherwise(() => audioContext.currentTime + data.time)
+  .with('relative', () => audioContext.currentTime + data.time)
+  .otherwise(() => data.time ?? audioContext.currentTime)
 
 param.setValueAtTime(data.value, time)
 ```

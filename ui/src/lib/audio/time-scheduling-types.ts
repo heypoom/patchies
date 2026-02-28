@@ -24,12 +24,16 @@ export interface TriggerMessage {
   };
   attack: TriggerPhaseConfig;
   decay: TriggerPhaseConfig;
+  time?: number;
+  timeMode?: TimeMode;
 }
 
 export interface ReleaseMessage {
   type: 'release';
   release: TriggerPhaseConfig;
   endValue: number;
+  time?: number;
+  timeMode?: TimeMode;
 }
 
 export type ScheduledMessage = SetMessage | TriggerMessage | ReleaseMessage;

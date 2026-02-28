@@ -4,6 +4,7 @@ import type {
   SetMessage,
   TriggerMessage,
   ReleaseMessage,
+  TimeMode,
   TriggerPhaseConfig
 } from './time-scheduling-types';
 
@@ -21,34 +22,40 @@ export class TimeScheduler {
       .with({ type: 'release' }, (msg) => this.handleReleaseMessage(param, msg));
   }
 
+  /** Resolve a time value based on timeMode (default: absolute), falling back to audioContext.currentTime. */
+  private getTime(time?: number, timeMode?: TimeMode): number {
+    return match(timeMode)
+      .with('relative', () => this.audioContext.currentTime + (time ?? 0))
+      .otherwise(() => time ?? this.audioContext.currentTime);
+  }
+
   private handleSetMessage(param: AudioParam, message: SetMessage) {
-    const time = match(message.timeMode)
-      .with('absolute', () => message.time ?? this.audioContext.currentTime)
-      .otherwise(() => this.audioContext.currentTime + (message.time ?? 0));
+    const time = this.getTime(message.time, message.timeMode);
 
     param.setValueAtTime(message.value, time);
   }
 
   private handleTriggerMessage(param: AudioParam, message: TriggerMessage) {
-    const c = this.audioContext;
+    const startTime = this.getTime(message.time, message.timeMode);
 
-    param.cancelScheduledValues(c.currentTime);
-    param.setValueAtTime(message.values.start, c.currentTime);
+    param.cancelScheduledValues(startTime);
+    param.setValueAtTime(message.values.start, startTime);
 
-    this.applyPhase(param, message.values.peak, c.currentTime, message.attack);
+    this.applyPhase(param, message.values.peak, startTime, message.attack);
 
-    const decayStartTime = c.currentTime + message.attack.time;
+    const decayStartTime = startTime + message.attack.time;
     this.applyPhase(param, message.values.sustain, decayStartTime, message.decay);
   }
 
   private handleReleaseMessage(param: AudioParam, message: ReleaseMessage) {
-    const c = this.audioContext;
+    const startTime = this.getTime(message.time, message.timeMode);
 
     // Capture the current value before canceling scheduled values.
     const currentValue = param.value;
-    param.cancelScheduledValues(c.currentTime);
-    param.setValueAtTime(currentValue, c.currentTime);
-    this.applyPhase(param, message.endValue ?? 0, c.currentTime, message.release);
+    param.cancelScheduledValues(startTime);
+    param.setValueAtTime(currentValue, startTime);
+
+    this.applyPhase(param, message.endValue ?? 0, startTime, message.release);
   }
 
   private applyPhase(
