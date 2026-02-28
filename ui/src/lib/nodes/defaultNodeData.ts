@@ -296,8 +296,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
         }
       ],
       swing: 0,
-      audioRate: false,
-      outputFormat: 'bang',
+      outputMode: 'bang',
       showVelocity: false
     }))
     .otherwise(() => ({}));

@@ -7,18 +7,22 @@
 
   const STEP_COUNTS = [4, 8, 12, 16, 24, 32] as const;
 
+  const OUTPUT_MODES = [
+    { id: 'bang', label: 'bang', tip: 'Sends {type:"bang"} — works with sampler~, trigger, etc.' },
+    { id: 'value', label: 'value', tip: 'Sends velocity value (0–1)' },
+    { id: 'audio', label: 'audio', tip: 'Sends {time, value} for Web Audio lookahead scheduling' }
+  ] as const;
+
   let {
     steps,
     swing,
-    audioRate,
-    outputFormat,
+    outputMode,
     showVelocity,
     tracks,
     swingTracker,
     onSetStepCount,
     onSetSwing,
-    onSetAudioRate,
-    onSetOutputFormat,
+    onSetOutputMode,
     onSetShowVelocity,
     onAddTrack,
     onRemoveTrack,
@@ -27,15 +31,13 @@
   }: {
     steps: number;
     swing: number;
-    audioRate: boolean;
-    outputFormat: 'bang' | 'value';
+    outputMode: 'bang' | 'value' | 'audio';
     showVelocity: boolean;
     tracks: TrackData[];
     swingTracker: ContinuousTracker;
     onSetStepCount: (n: number) => void;
     onSetSwing: (v: number) => void;
-    onSetAudioRate: (v: boolean) => void;
-    onSetOutputFormat: (v: 'bang' | 'value') => void;
+    onSetOutputMode: (v: 'bang' | 'value' | 'audio') => void;
     onSetShowVelocity: (v: boolean) => void;
     onAddTrack: () => void;
     onRemoveTrack: (idx: number) => void;
@@ -66,85 +68,49 @@
       </div>
     </div>
 
-    <!-- Audio Rate -->
-    <div class="flex items-center justify-between">
-      <label class="text-xs font-medium text-zinc-300">Audio Rate</label>
-
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          <button
-            onclick={() => onSetAudioRate(!audioRate)}
-            class="cursor-pointer rounded px-2 py-1 text-xs transition-colors"
-            class:bg-zinc-600={audioRate}
-            class:text-white={audioRate}
-            class:bg-zinc-800={!audioRate}
-            class:text-zinc-400={!audioRate}
-            class:hover:bg-zinc-700={!audioRate}
-          >
-            {audioRate ? 'On' : 'Off'}
-          </button>
-        </Tooltip.Trigger>
-
-        <Tooltip.Content>
-          {audioRate
-            ? 'Sends {time, value} — suitable for Web Audio scheduling'
-            : 'Sends value — suitable for visual/message scheduling'}
-        </Tooltip.Content>
-      </Tooltip.Root>
-    </div>
-
-    <!-- Output Format -->
-    <div class="flex items-center justify-between" class:opacity-50={audioRate}>
-      <label class="text-xs font-medium text-zinc-300">Output</label>
-
+    <!-- Output mode (bang / value / audio) -->
+    <div>
+      <label class="mb-2 block text-xs font-medium text-zinc-300">Output</label>
       <div class="flex gap-1">
-        {#each ['bang', 'value'] as const as fmt}
+        {#each OUTPUT_MODES as mode}
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
-                onclick={() => !audioRate && onSetOutputFormat(fmt)}
-                disabled={audioRate}
-                class="cursor-pointer rounded px-2 py-1 text-xs transition-colors disabled:cursor-not-allowed"
-                class:bg-zinc-600={outputFormat === fmt && !audioRate}
-                class:text-white={outputFormat === fmt && !audioRate}
-                class:bg-zinc-800={outputFormat !== fmt || audioRate}
-                class:text-zinc-300={outputFormat !== fmt}
-                class:hover:bg-zinc-700={outputFormat !== fmt && !audioRate}
+                onclick={() => onSetOutputMode(mode.id)}
+                class="cursor-pointer rounded px-2 py-1 text-xs transition-colors"
+                class:bg-zinc-600={outputMode === mode.id}
+                class:text-white={outputMode === mode.id}
+                class:bg-zinc-800={outputMode !== mode.id}
+                class:text-zinc-300={outputMode !== mode.id}
+                class:hover:bg-zinc-700={outputMode !== mode.id}
               >
-                {fmt}
+                {mode.label}
               </button>
             </Tooltip.Trigger>
-            <Tooltip.Content>
-              {fmt === 'bang'
-                ? 'Sends {type: "bang"} — works with sampler~, trigger, etc.'
-                : 'Sends velocity value (0–1)'}
-            </Tooltip.Content>
+            <Tooltip.Content>{mode.tip}</Tooltip.Content>
           </Tooltip.Root>
         {/each}
       </div>
-    </div>
 
-    <!-- Velocity Lane -->
-    <div class="flex items-center justify-between">
-      <label class="text-xs font-medium text-zinc-300">Velocity Lane</label>
-
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          <button
-            onclick={() => onSetShowVelocity(!showVelocity)}
-            class="cursor-pointer rounded px-2 py-1 text-xs transition-colors"
-            class:bg-zinc-600={showVelocity}
-            class:text-white={showVelocity}
-            class:bg-zinc-800={!showVelocity}
-            class:text-zinc-400={!showVelocity}
-            class:hover:bg-zinc-700={!showVelocity}
-          >
-            {showVelocity ? 'On' : 'Off'}
-          </button>
-        </Tooltip.Trigger>
-
-        <Tooltip.Content>Show per-step velocity bars (drag to set 0–1)</Tooltip.Content>
-      </Tooltip.Root>
+      <!-- Velocity Lane — compact checkbox, subordinate to Output -->
+      <button
+        class="mt-2 flex cursor-pointer items-center gap-1.5 transition-colors"
+        onclick={() => onSetShowVelocity(!showVelocity)}
+      >
+        <div
+          class="h-3 w-3 shrink-0 rounded-sm border transition-colors"
+          class:border-zinc-500={showVelocity}
+          class:bg-zinc-500={showVelocity}
+          class:border-zinc-600={!showVelocity}
+        ></div>
+        <span
+          class="text-xs"
+          class:text-zinc-400={showVelocity}
+          class:text-zinc-500={!showVelocity}
+        >
+          Velocity lane
+        </span>
+      </button>
     </div>
 
     <!-- Swing -->

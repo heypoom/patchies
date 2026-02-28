@@ -67,8 +67,7 @@
       steps?: number;
       tracks?: TrackData[];
       swing?: number;
-      audioRate?: boolean;
-      outputFormat?: 'bang' | 'value';
+      outputMode?: 'bang' | 'value' | 'audio';
       showVelocity?: boolean;
     };
   } = $props();
@@ -91,8 +90,8 @@
   const steps = $derived(data.steps ?? 16);
   const tracks = $derived((data.tracks ?? DEFAULT_TRACKS) as TrackData[]);
   const swing = $derived(data.swing ?? 0);
-  const audioRate = $derived(data.audioRate ?? false);
-  const outputFormat = $derived(data.outputFormat ?? 'bang');
+  const outputMode = $derived(data.outputMode ?? 'bang');
+
   const showVelocity = $derived(data.showVelocity ?? false);
   const trackCount = $derived(tracks.length);
   const stepsPerRow = $derived(Math.min(steps, 16));
@@ -104,24 +103,27 @@
     const stepInterval = (60 / bpm) * (beatsPerBar / numSteps);
     const barDuration = (60 / bpm) * beatsPerBar;
     const posInBar = ((time % barDuration) + barDuration) % barDuration;
+
     return Math.floor(posInBar / stepInterval) % numSteps;
   }
 
   function fireAtStep(stepIndex: number, time: number): void {
     if (!messageContext) return;
+
     const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
-    const isAudio = data.audioRate ?? false;
-    const format = data.outputFormat ?? 'bang';
+    const mode = outputMode;
 
     for (let t = 0; t < currentTracks.length; t++) {
       const track = currentTracks[t];
       if (!(track.stepOn[stepIndex] ?? false)) continue;
 
       const value = track.stepValues[stepIndex] ?? 1.0;
-      const payload = match({ isAudio, format })
-        .with({ isAudio: true }, () => ({ time, value }))
-        .with({ format: 'value' }, () => value)
-        .otherwise(() => ({ type: 'bang' }));
+
+      const payload = match(mode)
+        .with('audio', () => ({ time, value }))
+        .with('value', () => value)
+        .with('bang', () => ({ type: 'bang' }))
+        .exhaustive();
 
       messageContext.send(payload, { to: t });
     }
@@ -135,23 +137,20 @@
       schedulerSubId = null;
     }
 
-    const bpb = Transport.beatsPerBar;
-    const numSteps = steps;
-    const beatsPerStep = bpb / numSteps;
+    const beatsPerStep = Transport.beatsPerBar / steps;
 
     schedulerSubId = scheduler.every(
       `0:${beatsPerStep}:0`,
       (time) => {
-        const numS = data.steps ?? 16;
-        const stepIndex = computeStepAtTime(time, numS);
+        const steps = data.steps ?? 16;
+        const stepIndex = computeStepAtTime(time, steps);
         const isOdd = stepIndex % 2 === 1;
         const swingVal = data.swing ?? 0;
 
         if (isOdd && swingVal > 0) {
-          const bpm = Transport.bpm;
-          const bpbNow = Transport.beatsPerBar;
-          const stepInterval = (60 / bpm) * (bpbNow / numS);
+          const stepInterval = (60 / Transport.bpm) * (Transport.beatsPerBar / steps);
           const swingOffset = (swingVal / 100) * 0.5 * stepInterval;
+
           scheduler!.schedule(time + swingOffset, (t) => fireAtStep(stepIndex, t), {
             audio: true
           });
@@ -185,6 +184,9 @@
       phase: Transport.phase,
       beatsPerBar: Transport.beatsPerBar
     }));
+
+    // hide the sequencer node from the timeline
+    scheduler.setTimelineStyle({ visible: false });
 
     setupScheduler();
     scheduler.start();
@@ -437,20 +439,15 @@
       <SequencerSettings
         {steps}
         {swing}
-        {audioRate}
-        {outputFormat}
+        {outputMode}
         {showVelocity}
         {tracks}
         {swingTracker}
         onSetStepCount={setStepCount}
         onSetSwing={(v) => updateNodeData(nodeId, { ...data, swing: v })}
-        onSetAudioRate={(v) => {
-          updateNodeData(nodeId, { ...data, audioRate: v });
-          tracker.commit('audioRate', audioRate, v);
-        }}
-        onSetOutputFormat={(v) => {
-          updateNodeData(nodeId, { ...data, outputFormat: v });
-          tracker.commit('outputFormat', outputFormat, v);
+        onSetOutputMode={(v) => {
+          updateNodeData(nodeId, { ...data, outputMode: v });
+          tracker.commit('outputMode', outputMode, v);
         }}
         onSetShowVelocity={(v) => {
           updateNodeData(nodeId, { ...data, showVelocity: v });
