@@ -18,7 +18,7 @@ export const sequencerSchema: ObjectSchema = {
   inlets: [],
   outlets: [
     {
-      id: 'track-0',
+      id: 'track',
       description:
         'Per-track trigger outlet (one outlet per track, numbered 0–7). Fires on each active step.',
       messages: [

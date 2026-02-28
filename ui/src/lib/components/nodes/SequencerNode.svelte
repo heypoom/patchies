@@ -264,8 +264,10 @@
   }
 
   function updateTrackName(trackIdx: number, name: string): void {
+    const oldTracks = tracks;
     const newTracks = tracks.map((t, i) => (i === trackIdx ? { ...t, name } : t));
     updateNodeData(nodeId, { ...data, tracks: newTracks });
+    tracker.commit('tracks', oldTracks, newTracks);
   }
 
   function updateTrackColor(trackIdx: number, color: string): void {

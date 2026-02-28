@@ -5,7 +5,7 @@ Multi-track step sequencer synced to the global transport clock. Works like a dr
 CRITICAL RULES:
 1. No code needed — configuration only (stepOn patterns, track names, colors)
 2. One outlet per track: outlet 0 = track 0, outlet 1 = track 1, etc.
-3. Output is \`number\` (velocity 0.0–1.0) in normal mode, \`{time, value}\` in audioRate mode
+3. Output is \`{type:"bang"}\` (default), \`number\` (velocity 0–1), or \`{type:"set",time,value}\` (audio mode)
 4. All tracks share the same step count and transport clock
 5. Steps always fill exactly one bar
 
@@ -20,7 +20,8 @@ Node data shape:
     { "name": "OHH",   "color": "#b39ddb", "stepOn": [...16 booleans], "stepValues": [...16 floats] }
   ],
   "swing": 0,
-  "audioRate": false
+  "outputMode": "bang",
+  "showVelocity": false
 }
 \`\`\`
 
@@ -69,7 +70,8 @@ Example — basic drum pattern:
       }
     ],
     "swing": 0,
-    "audioRate": false
+    "outputMode": "bang",
+    "showVelocity": false
   }
 }
 \`\`\``;

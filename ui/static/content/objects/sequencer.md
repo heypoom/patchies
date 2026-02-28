@@ -21,8 +21,9 @@ Set via **Output** in the settings panel:
 - **bang** (default) — sends `{type: "bang"}` on each active step. Works with
   `sampler~`, `trigger`, and most nodes that expect a trigger signal.
 - **value** — sends the step's velocity as a number from `0.0` to `1.0`.
-- **audio** — sends `{time, value}` with the precise Web Audio lookahead time.
-  Use this for sample-accurate scheduling with `sampler~` or custom `dsp~` nodes.
+- **audio** — sends `{type: "set", time, value}` with the precise Web Audio
+  lookahead time. Use this for sample-accurate scheduling with `sampler~` or
+  custom `dsp~` nodes.
 
 ## Velocity Lane
 
