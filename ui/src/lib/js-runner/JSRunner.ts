@@ -263,7 +263,9 @@ export class JSRunner {
       const scheduler = new LookaheadClockScheduler(() => ({
         time: Transport.seconds,
         beat: Transport.beat,
-        bpm: Transport.bpm
+        bpm: Transport.bpm,
+        phase: Transport.phase,
+        beatsPerBar: Transport.beatsPerBar
       }));
       scheduler.start();
       this.schedulerMap.set(nodeId, scheduler);

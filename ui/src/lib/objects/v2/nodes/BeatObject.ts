@@ -27,7 +27,9 @@ export class BeatObject implements TextObjectV2 {
     this.scheduler = new LookaheadClockScheduler(() => ({
       time: Transport.seconds,
       beat: Transport.beat,
-      bpm: Transport.bpm
+      bpm: Transport.bpm,
+      phase: Transport.phase,
+      beatsPerBar: Transport.beatsPerBar
     }));
   }
 

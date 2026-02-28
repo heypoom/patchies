@@ -10,7 +10,8 @@ import {
   type ClockState,
   type RepeatCallback,
   type ScheduleCallback,
-  type SchedulerCallback
+  type SchedulerCallback,
+  type SchedulerOptions
 } from './ClockScheduler';
 
 export class PollingClockScheduler implements ClockScheduler {
@@ -87,25 +88,34 @@ export class PollingClockScheduler implements ClockScheduler {
     }
   }
 
-  onBeat(beat: number | number[] | '*', callback: SchedulerCallback): string {
+  onBeat(
+    beat: number | number[] | '*',
+    callback: SchedulerCallback,
+    options?: SchedulerOptions
+  ): string {
     const id = generateId();
     const beats = typeof beat === 'number' ? [beat] : beat;
 
-    this.beatCallbacks.set(id, { beats, callback });
+    this.beatCallbacks.set(id, { beats, callback, audio: options?.audio ?? false });
 
     return id;
   }
 
-  schedule(time: number | string, callback: SchedulerCallback): string {
+  schedule(time: number | string, callback: SchedulerCallback, options?: SchedulerOptions): string {
     const id = generateId();
     const timeNum = typeof time === 'string' ? parseBarBeatSixteenth(time, this.currentBpm) : time;
 
-    this.scheduleCallbacks.set(id, { time: timeNum, callback, fired: false });
+    this.scheduleCallbacks.set(id, {
+      time: timeNum,
+      callback,
+      fired: false,
+      audio: options?.audio ?? false
+    });
 
     return id;
   }
 
-  every(interval: string, callback: SchedulerCallback): string {
+  every(interval: string, callback: SchedulerCallback, options?: SchedulerOptions): string {
     const id = generateId();
     const intervalSecs = parseBarBeatSixteenth(interval, this.currentBpm);
 
@@ -113,7 +123,8 @@ export class PollingClockScheduler implements ClockScheduler {
       interval: intervalSecs,
       lastFired: 0,
       callback,
-      bpm: this.currentBpm
+      bpm: this.currentBpm,
+      audio: options?.audio ?? false
     });
 
     return id;

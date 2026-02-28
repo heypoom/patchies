@@ -21,18 +21,18 @@ send({ type: 'set', value: 0.5, time: 0.5 });
 send({ type: 'set', value: 0.5, time: 1.0, timeMode: 'absolute' });
 ```
 
-The `timeMode: 'absolute'` option is useful with [clock.schedule](/docs/clock-api) — pass the precise `time` argument from the callback directly:
+The `timeMode: 'absolute'` option is useful with [clock scheduling](/docs/clock-api) — pass `{ audio: true }` for lookahead scheduling, then use the precise `time` argument from the callback:
 
 ```js
 // Schedule a parameter change on beat 0 with audio-precise timing
 clock.onBeat(0, (time) => {
   send({ type: 'set', value: 440, time, timeMode: 'absolute' });
-});
+}, { audio: true });
 
 // Schedule at a specific bar position
 clock.schedule('4:0:0', (time) => {
   send({ type: 'set', value: 880, time, timeMode: 'absolute' });
-});
+}, { audio: true });
 ```
 
 ### Trigger

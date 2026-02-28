@@ -1,10 +1,9 @@
 /**
- * Look-ahead clock scheduler for main-thread use with audio-precise timing.
+ * Look-ahead clock scheduler for main-thread use.
  *
- * Runs its own setInterval loop (~25ms) and fires callbacks whose deadline
- * falls within a configurable look-ahead window (~100ms). Each callback receives
- * the precise transport time of the event, allowing Web Audio API scheduling
- * at the exact sample.
+ * By default, callbacks fire **after** the event (visual-friendly).
+ * With `{ audio: true }`, callbacks fire within a look-ahead window (~100ms)
+ * before the event, with the precise transport time for Web Audio API scheduling.
  */
 import {
   generateId,
@@ -14,7 +13,8 @@ import {
   type ClockState,
   type RepeatCallback,
   type ScheduleCallback,
-  type SchedulerCallback
+  type SchedulerCallback,
+  type SchedulerOptions
 } from './ClockScheduler';
 
 export class LookaheadClockScheduler implements ClockScheduler {
@@ -57,14 +57,16 @@ export class LookaheadClockScheduler implements ClockScheduler {
     this.currentBpm = clock.bpm;
     const horizon = clock.time + this.scheduleAheadS;
 
-    // Check beat changes
+    // --- onBeat: visual mode (fire after beat change) ---
     if (clock.beat !== this.lastBeat) {
-      for (const [, { beats, callback }] of this.beatCallbacks) {
-        const shouldFire = beats === '*' || (Array.isArray(beats) && beats.includes(clock.beat));
+      for (const [, item] of this.beatCallbacks) {
+        if (item.audio) continue;
+        const shouldFire =
+          item.beats === '*' || (Array.isArray(item.beats) && item.beats.includes(clock.beat));
 
         if (shouldFire) {
           try {
-            callback(clock.time);
+            item.callback(clock.time);
           } catch (e) {
             console.error('[ClockScheduler] onBeat callback error:', e);
           }
@@ -74,9 +76,40 @@ export class LookaheadClockScheduler implements ClockScheduler {
       this.lastBeat = clock.beat;
     }
 
-    // Check one-shot schedules (fire if deadline within horizon)
+    // --- onBeat: audio mode (lookahead — predict next beat) ---
+    if (clock.phase != null && clock.beatsPerBar != null) {
+      const beatDuration = 60 / clock.bpm;
+      const timeUntilNextBeat = (1 - clock.phase) * beatDuration;
+      const nextBeatTime = clock.time + timeUntilNextBeat;
+      const nextBeat = (clock.beat + 1) % clock.beatsPerBar;
+
+      if (nextBeatTime <= horizon) {
+        for (const [, item] of this.beatCallbacks) {
+          if (!item.audio) continue;
+          const shouldFire =
+            item.beats === '*' || (Array.isArray(item.beats) && item.beats.includes(nextBeat));
+
+          if (shouldFire && item.lastFiredBeatTime !== nextBeatTime) {
+            try {
+              item.callback(nextBeatTime);
+            } catch (e) {
+              console.error('[ClockScheduler] onBeat audio callback error:', e);
+            }
+            item.lastFiredBeatTime = nextBeatTime;
+          }
+        }
+      }
+    }
+
+    // --- schedule ---
     for (const [id, item] of this.scheduleCallbacks) {
-      if (!item.fired && item.time <= horizon) {
+      if (item.fired) continue;
+
+      const shouldFire = item.audio
+        ? item.time <= horizon // audio: fire when within lookahead window
+        : clock.time >= item.time; // visual: fire after the event
+
+      if (shouldFire) {
         try {
           item.callback(item.time);
         } catch (e) {
@@ -88,7 +121,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
       }
     }
 
-    // Check repeating schedules
+    // --- every ---
     for (const [, item] of this.repeatCallbacks) {
       // Detect transport rewind (stop -> play from beginning)
       if (clock.time < item.lastFired) {
@@ -102,45 +135,64 @@ export class LookaheadClockScheduler implements ClockScheduler {
         item.bpm = clock.bpm;
       }
 
-      if (clock.time >= item.lastFired + item.interval) {
-        // Compute precise fire time aligned to the interval grid
-        const fireTime = item.lastFired + item.interval;
+      const fireTime = item.lastFired + item.interval;
 
+      if (item.audio) {
+        // Audio mode: lookahead with grid-aligned fire time
         if (fireTime <= horizon) {
           try {
             item.callback(fireTime);
           } catch (e) {
             console.error('[ClockScheduler] every callback error:', e);
           }
-
           item.lastFired = fireTime;
+        }
+      } else {
+        // Visual mode: fire after the event
+        if (clock.time >= fireTime) {
+          try {
+            item.callback(clock.time);
+          } catch (e) {
+            console.error('[ClockScheduler] every callback error:', e);
+          }
+          item.lastFired = clock.time;
         }
       }
     }
   }
 
-  onBeat(beat: number | number[] | '*', callback: SchedulerCallback): string {
+  onBeat(
+    beat: number | number[] | '*',
+    callback: SchedulerCallback,
+    options?: SchedulerOptions
+  ): string {
     const id = generateId();
     const beats = typeof beat === 'number' ? [beat] : beat;
-    this.beatCallbacks.set(id, { beats, callback });
+    this.beatCallbacks.set(id, { beats, callback, audio: options?.audio ?? false });
     return id;
   }
 
-  schedule(time: number | string, callback: SchedulerCallback): string {
+  schedule(time: number | string, callback: SchedulerCallback, options?: SchedulerOptions): string {
     const id = generateId();
     const timeNum = typeof time === 'string' ? parseBarBeatSixteenth(time, this.currentBpm) : time;
-    this.scheduleCallbacks.set(id, { time: timeNum, callback, fired: false });
+    this.scheduleCallbacks.set(id, {
+      time: timeNum,
+      callback,
+      fired: false,
+      audio: options?.audio ?? false
+    });
     return id;
   }
 
-  every(interval: string, callback: SchedulerCallback): string {
+  every(interval: string, callback: SchedulerCallback, options?: SchedulerOptions): string {
     const id = generateId();
     const intervalSecs = parseBarBeatSixteenth(interval, this.currentBpm);
     this.repeatCallbacks.set(id, {
       interval: intervalSecs,
       lastFired: 0,
       callback,
-      bpm: this.currentBpm
+      bpm: this.currentBpm,
+      audio: options?.audio ?? false
     });
     return id;
   }

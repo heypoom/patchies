@@ -23,11 +23,11 @@ This is tedious and requires boilerplate in every node.
 
 ## Solution
 
-Add scheduling methods to the `clock` object that work uniformly across all environments with frame-based precision (~16ms at 60fps).
+Add scheduling methods to the `clock` object that work uniformly across all environments. By default, callbacks fire **after** the event (visual-friendly). Pass `{ audio: true }` for lookahead scheduling where callbacks fire early with the precise transport time for Web Audio API scheduling.
 
 ## API
 
-### `clock.onBeat(beat, callback)` - Beat Change Subscription
+### `clock.onBeat(beat, callback, options?)` - Beat Change Subscription
 
 Subscribe to beat changes. Callback fires when the specified beat is reached.
 
@@ -47,7 +47,7 @@ const id = clock.onBeat(0, () => flash());
 clock.cancel(id);
 ```
 
-### `clock.schedule(time, callback)` - One-Shot Schedule
+### `clock.schedule(time, callback, options?)` - One-Shot Schedule
 
 Schedule a callback at a specific transport time.
 
@@ -59,12 +59,17 @@ clock.schedule(clock.time + 2, () => drop());
 clock.schedule("4:0:0", () => breakdown()); // bar 4, beat 0
 clock.schedule("8:2:0", () => buildUp()); // bar 8, beat 2
 
+// Audio-precise — fires early with precise time
+clock.schedule("4:0:0", (time) => {
+  send({ type: 'set', value: 880, time, timeMode: 'absolute' });
+}, { audio: true });
+
 // Returns ID for cleanup
 const id = clock.schedule("16:0:0", () => finale());
 clock.cancel(id);
 ```
 
-### `clock.every(interval, callback)` - Repeating Schedule
+### `clock.every(interval, callback, options?)` - Repeating Schedule
 
 Schedule a repeating callback at a musical interval.
 
@@ -73,6 +78,11 @@ Schedule a repeating callback at a musical interval.
 clock.every("1:0:0", () => flash()); // every bar
 clock.every("0:1:0", () => pulse()); // every beat
 clock.every("0:0:1", () => tick()); // every sixteenth
+
+// Audio-precise repeating
+clock.every("0:1:0", (time) => {
+  send({ type: 'trigger', ... });
+}, { audio: true });
 
 // Returns ID for cleanup
 const id = clock.every("4:0:0", () => transition());
@@ -103,10 +113,15 @@ clock.cancelAll();
 
 ```typescript
 // src/lib/transport/ClockScheduler.ts
+interface SchedulerOptions {
+  /** When true, use lookahead scheduling for audio-precise timing. Default: false. */
+  audio?: boolean;
+}
+
 interface ClockScheduler {
-  onBeat(beat: number | number[] | "*", callback: () => void): string;
-  schedule(time: number | string, callback: () => void): string;
-  every(interval: string, callback: () => void): string;
+  onBeat(beat: number | number[] | "*", callback: (time: number) => void, options?: SchedulerOptions): string;
+  schedule(time: number | string, callback: (time: number) => void, options?: SchedulerOptions): string;
+  every(interval: string, callback: (time: number) => void, options?: SchedulerOptions): string;
   cancel(id: string): void;
   cancelAll(): void;
 }
@@ -115,6 +130,8 @@ interface ClockState {
   time: number;
   beat: number;
   bpm: number;
+  phase?: number;
+  beatsPerBar?: number;
 }
 ```
 
@@ -322,12 +339,14 @@ function parseBarBeatSixteenth(notation: string, bpm: number): number {
 
 ## Precision
 
-All environments use frame-based polling (~16ms at 60fps). This is imperceptible for visual sync.
+**Default (visual):** Callbacks fire **after** the event — ~25ms main thread, ~16ms workers. Imperceptible for visual sync.
 
-| Environment | Precision           |
-| ----------- | ------------------- |
-| Main Thread | Frame-based (~16ms) |
-| Worker      | Frame-based (~16ms) |
+**`{ audio: true }` (lookahead):** Main thread only. Callbacks fire **before** the event within a ~100ms lookahead window. The `time` argument contains the precise transport time for Web Audio API scheduling.
+
+| Environment | Visual precision    | Audio lookahead   |
+| ----------- | ------------------- | ----------------- |
+| Main Thread | Poll-based (~25ms)  | ~100ms ahead      |
+| Worker      | Frame-based (~16ms) | Not available     |
 
 ## Examples
 
@@ -398,8 +417,6 @@ Worker renderers (hydraRenderer, canvasRenderer, threeRenderer, textmodeRenderer
 
 ## Future Enhancements
 
-- **ToneClockScheduler**: Audio-synced precision (~5ms) using `Tone.Transport.schedule` + `Tone.Draw.schedule`
 - **Quantized scheduling**: `clock.scheduleQuantized(callback, '1:0:0')` - schedule to next bar boundary
 - **Swing/groove**: `clock.setSwing(0.3)` - add swing to beat timing
-- **Time signature**: Support for non-4/4 time signatures
 - **Named events**: `clock.on('drop', callback)` - subscribe to user-defined markers

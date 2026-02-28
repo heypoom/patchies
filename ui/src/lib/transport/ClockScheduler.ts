@@ -4,13 +4,27 @@
  * Unified scheduling interface for beat-synced callbacks that works across
  * all environments (main thread and workers) with best-available precision.
  *
- * - Main thread (LookaheadClockScheduler): Look-ahead scheduling with precise
- *   audio time passed to callbacks (~25ms look-ahead, sub-ms scheduling accuracy)
- * - Workers (PollingClockScheduler): Frame-based polling (~16ms precision)
+ * By default, all methods fire **after** the event (visual-friendly).
+ * Pass `{ audio: true }` for lookahead scheduling — callbacks fire ~100ms
+ * before the event with the precise transport time for Web Audio API scheduling.
+ *
+ * - Main thread (LookaheadClockScheduler): Supports both visual and audio modes
+ * - Workers (PollingClockScheduler): Frame-based polling (~16ms precision), audio flag accepted but no lookahead
  */
 
 /** Callback that receives the precise transport time of the event. */
 export type SchedulerCallback = (time: number) => void;
+
+/** Options for scheduling methods. */
+export interface SchedulerOptions {
+  /**
+   * When true, use lookahead scheduling for audio-precise timing.
+   * Callbacks fire ~100ms before the event with the precise transport time,
+   * suitable for Web Audio API scheduling (e.g., `oscillator.start(time)`).
+   * Default: false (fire after the event, suitable for visuals).
+   */
+  audio?: boolean;
+}
 
 /**
  * Clock scheduler interface for beat-synced callbacks.
@@ -21,25 +35,32 @@ export interface ClockScheduler {
    * Subscribe to beat changes. Callback fires when the specified beat is reached.
    * @param beat - Beat number (0-3), array of beats, or "*" for all beats
    * @param callback - Function to call when beat is reached (receives transport time)
+   * @param options - Pass `{ audio: true }` for lookahead scheduling
    * @returns ID for cancellation
    */
-  onBeat(beat: number | number[] | '*', callback: SchedulerCallback): string;
+  onBeat(
+    beat: number | number[] | '*',
+    callback: SchedulerCallback,
+    options?: SchedulerOptions
+  ): string;
 
   /**
    * Schedule a one-shot callback at a specific transport time.
    * @param time - Absolute time in seconds, or "bar:beat:sixteenth" notation
    * @param callback - Function to call at the specified time (receives scheduled time)
+   * @param options - Pass `{ audio: true }` for lookahead scheduling
    * @returns ID for cancellation
    */
-  schedule(time: number | string, callback: SchedulerCallback): string;
+  schedule(time: number | string, callback: SchedulerCallback, options?: SchedulerOptions): string;
 
   /**
    * Schedule a repeating callback at a musical interval.
    * @param interval - Interval in "bar:beat:sixteenth" notation (e.g., "1:0:0" = every bar)
    * @param callback - Function to call at each interval (receives transport time)
+   * @param options - Pass `{ audio: true }` for lookahead scheduling
    * @returns ID for cancellation
    */
-  every(interval: string, callback: SchedulerCallback): string;
+  every(interval: string, callback: SchedulerCallback, options?: SchedulerOptions): string;
 
   /**
    * Cancel a scheduled callback by its ID.
@@ -59,6 +80,8 @@ export interface ClockState {
   time: number;
   beat: number;
   bpm: number;
+  phase?: number;
+  beatsPerBar?: number;
 }
 
 type ClockWithScheduler = {
@@ -75,13 +98,24 @@ type ClockWithScheduler = {
 };
 
 // Shared internal types used by both scheduler implementations
-export type BeatCallback = { beats: number[] | '*'; callback: SchedulerCallback };
-export type ScheduleCallback = { time: number; callback: SchedulerCallback; fired: boolean };
+export type BeatCallback = {
+  beats: number[] | '*';
+  callback: SchedulerCallback;
+  audio: boolean;
+  lastFiredBeatTime?: number;
+};
+export type ScheduleCallback = {
+  time: number;
+  callback: SchedulerCallback;
+  fired: boolean;
+  audio: boolean;
+};
 export type RepeatCallback = {
   interval: number;
   lastFired: number;
   callback: SchedulerCallback;
   bpm: number;
+  audio: boolean;
 };
 
 let idCounter = 0;

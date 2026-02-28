@@ -126,7 +126,9 @@ fill(colors[clock.subdiv(5)]);
 
 ## Scheduling Methods
 
-Instead of manually tracking beat changes, use these scheduling methods for cleaner code. All scheduling callbacks receive a `time` argument — the precise transport time of the event. You can use this for audio-precise scheduling with the Web Audio API, or ignore it for visual-only use.
+Instead of manually tracking beat changes, use these scheduling methods for cleaner code. All scheduling callbacks receive a `time` argument — the precise transport time of the event.
+
+By default, callbacks fire **after** the event — ideal for visuals. Pass `{ audio: true }` as the last argument for **lookahead scheduling**, where callbacks fire ~100ms early with the precise time for Web Audio API scheduling.
 
 ### onBeat
 
@@ -143,10 +145,10 @@ clock.onBeat([0, 2], () => snare()); // beats 1 and 3
 // Fire on every beat
 clock.onBeat('*', () => hihat());
 
-// Use the time argument for audio-precise scheduling
+// Audio-precise scheduling — fires early with precise time
 clock.onBeat(0, (time) => {
   oscillator.start(time);
-});
+}, { audio: true });
 ```
 
 ### schedule
@@ -155,11 +157,16 @@ Schedule a one-shot callback at a specific time.
 
 ```javascript
 // Absolute time in seconds
-clock.schedule(clock.time + 2, (time) => drop(time));
+clock.schedule(clock.time + 2, () => drop());
 
 // Bar:beat:sixteenth notation
-clock.schedule('4:0:0', (time) => breakdown(time));  // bar 4, beat 0
-clock.schedule('8:2:0', (time) => buildUp(time));    // bar 8, beat 2
+clock.schedule('4:0:0', () => breakdown());  // bar 4, beat 0
+clock.schedule('8:2:0', () => buildUp());    // bar 8, beat 2
+
+// Audio-precise — fires early with precise time
+clock.schedule('4:0:0', (time) => {
+  send({ type: 'set', value: 880, time, timeMode: 'absolute' });
+}, { audio: true });
 ```
 
 ### every
@@ -171,6 +178,12 @@ Schedule a repeating callback at a musical interval.
 clock.every('1:0:0', () => flash());    // every bar
 clock.every('0:1:0', () => pulse());    // every beat
 clock.every('0:0:1', () => tick());     // every sixteenth
+
+// Audio-precise repeating — fires early with grid-aligned time
+clock.every('0:1:0', (time) => {
+  send({ type: 'trigger', values: { start: 0, peak: 1, sustain: 0.7 },
+    attack: { time: 0.01 }, decay: { time: 0.1 } });
+}, { audio: true });
 ```
 
 ### cancel
@@ -283,16 +296,16 @@ Always use the `time` callback argument (not `Tone.now()`) for sample-accurate t
 
 **When to use which:**
 
-| Approach                 | Best for                                                         |
-|--------------------------|------------------------------------------------------------------|
-| `clock.schedule`         | Audio event scheduling from js nodes (look-ahead, no deps)       |
-| `beat~`                  | Continuous audio-rate modulation (tremolo, FM, waveshaping)      |
-| `tone~` + Tone.Transport | Scheduling with Tone.js synths/effects                           |
-| `clock.onBeat` / `every` | Visual sync and frame-rate callbacks                             |
+| Approach | Best for |
+| -------- | -------- |
+| `clock.onBeat` / `every` / `schedule` | Visual sync — fires after event (~25ms precision) |
+| Any method + `{ audio: true }` | Audio scheduling — fires early with precise `time` arg |
+| `beat~` | Continuous audio-rate modulation (tremolo, FM, waveshaping) |
+| `tone~` + Tone.Transport | Scheduling with Tone.js synths/effects |
 
 ### Scheduling Audio Parameters
 
-The `time` argument from `clock.schedule` callback works with [parameter automation messages](/docs/parameter-automation) via `timeMode: 'absolute'`.
+Pass `{ audio: true }` to use lookahead scheduling with [parameter automation messages](/docs/parameter-automation) via `timeMode: 'absolute'`.
 
 This lets you automate audio parameters (`gain~`, `osc~`, filters, etc.) with beat-synced, sample-accurate timing:
 
@@ -305,7 +318,7 @@ clock.onBeat(0, (time) => {
     attack: { time: 0.01 },
     decay: { time: 0.1 }
   });
-});
+}, { audio: true });
 
 // Schedule a filter sweep at bar 4
 clock.schedule('4:0:0', (time) => {
@@ -315,14 +328,26 @@ clock.schedule('4:0:0', (time) => {
     time,
     timeMode: 'absolute'
   });
-});
+}, { audio: true });
+
+// Repeating audio-precise scheduling every beat
+clock.every('0:1:0', (time) => {
+  send({
+    type: 'trigger',
+    values: { start: 0, peak: 1, sustain: 0.7 },
+    attack: { time: 0.01 },
+    decay: { time: 0.1 }
+  });
+}, { audio: true });
 ```
 
 ## Precision
 
-`clock.schedule` uses look-ahead scheduling (~25ms poll interval, 100ms schedule-ahead window). Callbacks fire before the deadline with the precise `time` argument, suitable for Web Audio API scheduling at the exact sample.
+All scheduling methods (`onBeat`, `schedule`, `every`) poll every ~25ms.
 
-`clock.onBeat` and `clock.every` fire at poll time when the event has occurred — accurate to ~25ms, which is imperceptible for visual sync.
+**Default (visual):** Callbacks fire **after** the event has occurred — accurate to ~25ms, imperceptible for visual sync.
+
+**`{ audio: true }`:** Callbacks fire **before** the event, within a ~100ms lookahead window. The `time` argument contains the precise transport time of the event, suitable for Web Audio API scheduling at the exact sample (e.g., `oscillator.start(time)` or `send({ time, timeMode: 'absolute' })`).
 
 In worker environments (worker, canvas), all scheduling uses frame-based polling (~16ms at 60fps).
 
