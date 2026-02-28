@@ -193,17 +193,13 @@
               }
             })
             .with('every', () => {
-              if (event.interval && event.lastFired !== undefined) {
-                let t = event.lastFired + event.interval;
-
-                // If lastFired is 0 (never fired), start from windowStart
-                if (event.lastFired === 0 && t < windowStart) {
-                  const periods = Math.ceil((windowStart - t) / event.interval);
-                  t += periods * event.interval;
-                }
+              if (event.interval) {
+                // Anchor to absolute time (multiples of interval from 0)
+                // so markers don't shift when lastFired changes during scrubbing
+                let t = Math.ceil(windowStart / event.interval) * event.interval;
 
                 while (t <= windowEnd) {
-                  if (t >= windowStart) {
+                  if (t >= windowStart && t > currentTime) {
                     const x = timeToX(t);
                     drawDiamond(ctx, x, yBase, color);
                   }
