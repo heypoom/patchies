@@ -8,6 +8,7 @@ Use the `render` function with the `glsl` helper:
 function render({ t }) {
   glsl({
     t,
+    Clear: 0,
     Mesh: [10, 10],
     VP: `XY*0.8+sin(t+XY.yx*2.0)*0.2,0,1`,
     FP: `UV,0.5,1`,

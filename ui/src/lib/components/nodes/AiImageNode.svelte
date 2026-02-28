@@ -132,7 +132,7 @@
   }
 </script>
 
-<ObjectPreviewLayout title="ai.img" onrun={generateImage} {editorReady}>
+<ObjectPreviewLayout title="ai.img" objectType="ai.img" onrun={generateImage} {editorReady}>
   {#snippet topHandle()}
     <StandardHandle
       port="inlet"

@@ -1,9 +1,24 @@
 <script lang="ts">
-  import { Code, Pause, Play, X, Terminal } from '@lucide/svelte/icons';
+  import {
+    CircleHelp,
+    Code,
+    Ellipsis,
+    Eye,
+    EyeOff,
+    Pin,
+    PinOff,
+    Play,
+    X,
+    Terminal
+  } from '@lucide/svelte/icons';
   import { onMount, type Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';
-  import { derived } from 'svelte/store';
+  import * as Popover from './ui/popover';
+  import * as ContextMenu from './ui/context-menu';
   import { useSvelteFlow } from '@xyflow/svelte';
+  import { transportStore } from '../../stores/transport.store';
+  import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
+  import { helpViewStore } from '../../stores/help-view.store';
 
   let previewContainer: HTMLDivElement | null = null;
   const { getNode, updateNodeData } = useSvelteFlow();
@@ -11,9 +26,12 @@
   let {
     title,
     nodeId,
+    objectType,
     onrun,
     onPlaybackToggle,
+    onPreviewToggle,
     paused = false,
+    previewVisible = true,
     showPauseButton = false,
     showConsoleButton = false,
 
@@ -27,9 +45,12 @@
   }: {
     title: string;
     nodeId?: string;
+    objectType?: string;
     onrun?: () => void;
     onPlaybackToggle?: () => void;
+    onPreviewToggle?: () => void;
     paused?: boolean;
+    previewVisible?: boolean;
     showPauseButton?: boolean;
     showConsoleButton?: boolean;
 
@@ -56,6 +77,17 @@
 
   function handlePlaybackToggle() {
     onPlaybackToggle?.();
+  }
+
+  function handlePreviewToggle() {
+    onPreviewToggle?.();
+  }
+
+  function handleOpenHelp() {
+    const helpObject = objectType ?? title;
+    helpViewStore.setLastViewed({ type: 'object', object: helpObject });
+    sidebarView.set('help');
+    isSidebarOpen.set(true);
   }
 
   function handleRun() {
@@ -93,51 +125,135 @@
   let editorLeftPos = $derived.by(() => {
     return (previewWidth ?? previewContainerWidth) + editorGap;
   });
+
+  let canPin = $derived($transportStore.isPlaying);
 </script>
 
 <div class="relative flex gap-x-3">
-  <div class="group relative">
-    <div class="flex flex-col gap-2">
-      <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-        <div class="z-10 rounded-lg bg-black/60 px-2 py-1">
-          <div class="font-mono text-xs font-medium text-zinc-400">{title}</div>
-        </div>
+  <ContextMenu.Root>
+    <ContextMenu.Trigger>
+      <div class="group relative">
+        <div class="flex flex-col gap-2">
+          <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
+            <div class="z-10 rounded-lg bg-black/60 px-2 py-1">
+              <div class="font-mono text-xs font-medium text-zinc-400">{title}</div>
+            </div>
 
-        <div class="flex gap-1">
-          {#if showPauseButton}
-            <button
-              title={paused ? 'Resume' : 'Pause'}
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              onclick={handlePlaybackToggle}
-            >
-              {#if paused}
-                <Play class="h-4 w-4 text-zinc-300" />
-              {:else}
-                <Pause class="h-4 w-4 text-zinc-300" />
-              {/if}
-            </button>
+            <div class="flex gap-1">
+              <Popover.Root>
+                <Popover.Trigger>
+                  <button
+                    class="cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700 sm:opacity-0 sm:group-hover:opacity-100"
+                  >
+                    <Ellipsis class="h-4 w-4 text-zinc-300" />
+                  </button>
+                </Popover.Trigger>
+                <Popover.Content class="flex w-auto flex-col p-1" align="end" sideOffset={4}>
+                  {#if showPauseButton}
+                    <Popover.Close class="contents">
+                      <button
+                        class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        onclick={handlePlaybackToggle}
+                        disabled={!canPin && !paused}
+                      >
+                        {#if paused}
+                          <PinOff class="h-4 w-4 text-red-400" />
+                          <span>Unfreeze frame</span>
+                        {:else}
+                          <Pin class="h-4 w-4 text-zinc-300" />
+                          <span>Freeze frame</span>
+                        {/if}
+                      </button>
+                    </Popover.Close>
+                  {/if}
+
+                  {#if onPreviewToggle}
+                    <Popover.Close class="contents">
+                      <button
+                        class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
+                        onclick={handlePreviewToggle}
+                      >
+                        {#if previewVisible}
+                          <EyeOff class="h-4 w-4 text-zinc-300" />
+                          <span>Hide preview</span>
+                        {:else}
+                          <Eye class="h-4 w-4 text-zinc-300" />
+                          <span>Show preview</span>
+                        {/if}
+                      </button>
+                    </Popover.Close>
+                  {/if}
+
+                  <Popover.Close class="contents">
+                    <button
+                      class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
+                      onclick={handleOpenHelp}
+                    >
+                      <CircleHelp class="h-4 w-4 text-zinc-300" />
+                      <span>Help</span>
+                    </button>
+                  </Popover.Close>
+                </Popover.Content>
+              </Popover.Root>
+
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <button
+                    class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                    onclick={() => {
+                      showEditor = !showEditor;
+                      measureContainerWidth();
+                    }}
+                  >
+                    <Code class="h-4 w-4 text-zinc-300" />
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>Edit Code</Tooltip.Content>
+              </Tooltip.Root>
+            </div>
+          </div>
+
+          <div class="relative">
+            {@render topHandle?.()}
+            <div bind:this={previewContainer}>{@render preview?.()}</div>
+            {@render bottomHandle?.()}
+          </div>
+        </div>
+      </div>
+    </ContextMenu.Trigger>
+
+    <ContextMenu.Content>
+      {#if showPauseButton}
+        <ContextMenu.Item onclick={handlePlaybackToggle} disabled={!canPin && !paused}>
+          {#if paused}
+            <PinOff class="mr-2 h-4 w-4 text-red-400" />
+            Unfreeze frame
+          {:else}
+            <Pin class="mr-2 h-4 w-4" />
+            Freeze frame
           {/if}
-
-          <button
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-            onclick={() => {
-              showEditor = !showEditor;
-              measureContainerWidth();
-            }}
-            title="Edit code"
-          >
-            <Code class="h-4 w-4 text-zinc-300" />
-          </button>
-        </div>
-      </div>
-
-      <div class="relative">
-        {@render topHandle?.()}
-        <div bind:this={previewContainer}>{@render preview?.()}</div>
-        {@render bottomHandle?.()}
-      </div>
-    </div>
-  </div>
+        </ContextMenu.Item>
+      {/if}
+      {#if onPreviewToggle}
+        <ContextMenu.Item onclick={handlePreviewToggle}>
+          {#if previewVisible}
+            <EyeOff class="mr-2 h-4 w-4" />
+            Hide preview
+          {:else}
+            <Eye class="mr-2 h-4 w-4" />
+            Show preview
+          {/if}
+        </ContextMenu.Item>
+      {/if}
+      {#if showPauseButton || onPreviewToggle}
+        <ContextMenu.Separator />
+      {/if}
+      <ContextMenu.Item onclick={handleOpenHelp}>
+        <CircleHelp class="mr-2 h-4 w-4" />
+        Help
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu.Root>
 
   {#if showEditor}
     <div class="absolute" style="left: {editorLeftPos}px;">
@@ -157,18 +273,24 @@
           {/if}
 
           {#if consoleSnippet}
-            <button
-              title="Toggle console"
-              class="rounded p-1 hover:bg-zinc-700"
-              onclick={handleConsoleToggle}
-            >
-              <Terminal class="h-4 w-4 text-zinc-300" />
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button class="rounded p-1 hover:bg-zinc-700" onclick={handleConsoleToggle}>
+                  <Terminal class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Toggle Console</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
 
-          <button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-            <X class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
+                <X class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Close Editor</Tooltip.Content>
+          </Tooltip.Root>
         </div>
       {/if}
 

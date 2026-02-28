@@ -94,6 +94,9 @@ self.onmessage = (event) => {
     })
     .with('unregisterWorkerRenderPort', () => {
       handleUnregisterWorkerRenderPort(data.nodeId);
+    })
+    .with('syncTransportTime', () => {
+      fboRenderer.setTransportTime(data);
     });
 };
 

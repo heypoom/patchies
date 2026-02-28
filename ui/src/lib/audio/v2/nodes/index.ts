@@ -3,6 +3,7 @@
  */
 
 import { AddNode } from '$lib/audio/native-dsp/nodes/add.node';
+import { BeatNode } from '$lib/audio/native-dsp/nodes/beat.node';
 import { AiSttAudioNode } from './AiSttAudioNode';
 import { AllpassNode } from './AllpassNode';
 import { BandpassNode } from './BandpassNode';
@@ -91,6 +92,7 @@ import type { AudioNodeClass } from '../interfaces/audio-nodes';
 export const AUDIO_NODES = [
   AddNode,
   AiSttAudioNode,
+  BeatNode,
   AllpassNode,
   BandpassNode,
   ChuckNode,

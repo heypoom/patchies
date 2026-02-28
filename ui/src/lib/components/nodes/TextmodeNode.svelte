@@ -235,6 +235,7 @@
 
 <CanvasPreviewLayout
   title={data.title ?? 'textmode'}
+  objectType="textmode"
   {nodeId}
   onrun={updateTextmode}
   bind:previewCanvas

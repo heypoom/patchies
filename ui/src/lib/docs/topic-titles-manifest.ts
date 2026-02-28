@@ -10,6 +10,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'audio-chaining': 'Audio Chaining',
   'audio-reactivity': 'Audio Reactivity',
   'canvas-interaction': 'Canvas Interaction',
+  'clock-api': 'Clock API',
   'connecting-objects': 'Connecting Objects',
   'connection-rules': 'Connection Rules',
   'data-storage': 'Data Storage',
@@ -25,10 +26,12 @@ export const TOPIC_TITLES: Record<string, string> = {
   'modifying-objects': 'Modifying Objects',
   'network-p2p': 'P2P Messaging',
   'offline-usage': 'Offline Usage',
+  'parameter-automation': 'Parameter Automation',
   'rendering-pipeline': 'Rendering Pipeline',
   'sharing-links': 'Sharing Links',
   shortcuts: 'Shortcuts',
   'supporting-open-source': 'Supporting Open Source',
+  'transport-control': 'Transport Control',
   'video-chaining': 'Video Chaining',
   'virtual-filesystem': 'Virtual Filesystem'
 };

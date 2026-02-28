@@ -16,7 +16,8 @@
     RotateCcw,
     Plus,
     FolderInput,
-    Ellipsis
+    Ellipsis,
+    Bookmark
   } from '@lucide/svelte/icons';
   import SearchBar from './SearchBar.svelte';
   import * as ContextMenu from '$lib/components/ui/context-menu';
@@ -33,8 +34,11 @@
     PresetPath
   } from '$lib/presets/types';
   import { isPreset } from '$lib/presets/preset-utils';
-  import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
+  import { isMobile, isSidebarOpen, selectedNodeInfo } from '../../../stores/ui.store';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+
+  // Derived: can save as preset when exactly one node is selected
+  const canSaveAsPreset = $derived($selectedNodeInfo !== null);
   import FolderPickerDialog, { type FolderNode } from './FolderPickerDialog.svelte';
 
   // Load expanded paths from localStorage, defaulting to built-in and user
@@ -546,6 +550,12 @@
       handleCreateLibrary();
     }
   }
+
+  // Request save selected node as preset via event bus
+  function handleSaveAsPreset() {
+    if (!canSaveAsPreset) return;
+    eventBus.dispatch({ type: 'requestSaveSelectedAsPreset' });
+  }
 </script>
 
 {#snippet presetEntry(
@@ -946,22 +956,52 @@
     class="sticky bottom-0 flex items-center gap-1 border-t border-zinc-800 bg-zinc-950 px-2 pt-1.5"
     style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px))"
   >
-    <button
-      class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-      onclick={createNewLibrary}
-      title="New Library"
-    >
-      <LibraryBig class="h-3.5 w-3.5" />
-      <span>New Library</span>
-    </button>
-    <button
-      class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-      onclick={handleImportClick}
-      title="Import Library"
-    >
-      <Upload class="h-3.5 w-3.5" />
-      <span>Import</span>
-    </button>
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <button
+          class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-50 {canSaveAsPreset
+            ? 'text-zinc-300 hover:bg-zinc-700'
+            : 'text-zinc-600'}"
+          onclick={handleSaveAsPreset}
+          disabled={!canSaveAsPreset}
+        >
+          <Bookmark class="h-3.5 w-3.5" />
+          <span>Save Preset</span>
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>
+        {#if canSaveAsPreset}
+          Save selected object as preset
+        {:else}
+          Select an object on canvas first
+        {/if}
+      </Tooltip.Content>
+    </Tooltip.Root>
+
+    <Popover.Root>
+      <Popover.Trigger
+        class="ml-auto flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+      >
+        <LibraryBig class="h-3.5 w-3.5" />
+        <span>Manage</span>
+      </Popover.Trigger>
+      <Popover.Content class="w-40 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
+        <button
+          class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+          onclick={createNewLibrary}
+        >
+          <Plus class="h-4 w-4 text-zinc-400" />
+          New Library
+        </button>
+        <button
+          class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+          onclick={handleImportClick}
+        >
+          <Upload class="h-4 w-4 text-zinc-400" />
+          Import Library
+        </button>
+      </Popover.Content>
+    </Popover.Root>
   </div>
 </div>
 

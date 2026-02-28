@@ -20,15 +20,19 @@ const PLACEHOLDER_MAIN_IMAGE = `
 	}
 `;
 
-type UserUniformInputs = Record<string, (_: regl.DefaultContext, props: P) => void>;
+type UserUniformInputs = Record<string, (_: regl.DefaultContext, props: Props) => void>;
 
-type P = {
-  lastTime: number;
+type Props = {
+  transportTime: number;
+  prevTransportTime: number;
+
   iFrame: number;
+
   mouseX: number;
   mouseY: number;
   mouseZ: number;
   mouseW: number;
+
   userParams: unknown[];
 };
 
@@ -121,10 +125,10 @@ export function createShaderToyDrawCommand({
 
       uniforms: {
         iResolution: ({ pixelRatio }) => [width * pixelRatio, height * pixelRatio, 1.0],
-        iTime: ({ time }) => time,
-        iTimeDelta: ({ time }, props: P) => time - props.lastTime,
-        iFrame: (_, props: P) => props.iFrame,
-        iMouse: (_, props: P) => [props.mouseX, props.mouseY, props.mouseZ, props.mouseW],
+        iTime: (_, props: Props) => props.transportTime,
+        iTimeDelta: (_, props: Props) => props.transportTime - props.prevTransportTime,
+        iFrame: (_, props: Props) => props.iFrame,
+        iMouse: (_, props: Props) => [props.mouseX, props.mouseY, props.mouseZ, props.mouseW],
         iDate: () => getDate(),
         ...userUniformInputs
       }

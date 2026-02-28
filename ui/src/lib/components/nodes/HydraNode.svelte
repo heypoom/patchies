@@ -253,6 +253,7 @@
 
 <CanvasPreviewLayout
   title={data.title ?? 'hydra'}
+  objectType="hydra"
   {nodeId}
   onrun={updateHydra}
   onPlaybackToggle={togglePause}

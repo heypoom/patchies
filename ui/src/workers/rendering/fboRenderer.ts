@@ -7,6 +7,7 @@ import type {
   RenderFunction,
   UserParam
 } from '../../lib/rendering/types';
+import type { ClockCommandMessage } from '$lib/transport/types';
 import { DEFAULT_OUTPUT_SIZE, WEBGL_EXTENSIONS, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
@@ -30,6 +31,7 @@ import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
 import { VideoTextureManager } from './VideoTextureManager.js';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
+import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -77,13 +79,31 @@ export class FBORenderer {
   private fboNodes = new Map<string, FBONode>();
   private fallbackTexture: regl.Texture2D;
   private lastTime: number = 0;
+  private prevTransportTime: number = 0;
   private frameCount: number = 0;
+
+  /** Transport time from main thread for synchronized timing */
+  public transportTime: {
+    seconds: number;
+    ticks: number;
+    bpm: number;
+    isPlaying: boolean;
+    beat: number;
+    phase: number;
+    bar: number;
+    beatsPerBar: number;
+    denominator: number;
+    ppq: number;
+  } | null = null;
 
   /** Profiler for frame timing and regl.read() metrics */
   public profiler = new RenderingProfiler();
   private startTime: number = Date.now();
   private frameCancellable: regl.Cancellable | null = null;
   public jsRunner = JSRunner.getInstance();
+
+  /** Clock scheduler for worker-based scheduling (frame-based precision) */
+  public clockScheduler = new PollingClockScheduler();
 
   /** Shared pixel readback infrastructure */
   public pixelReadbackService: PixelReadbackService;
@@ -165,6 +185,8 @@ export class FBORenderer {
       count: 6,
       framebuffer: this.regl.prop<{ framebuffer: regl.Framebuffer2D }, 'framebuffer'>('framebuffer')
     });
+
+    this.defineWorkerGlobals();
   }
 
   /** Build FBOs for all nodes in the render graph */
@@ -689,7 +711,9 @@ export class FBORenderer {
             data,
             options
           });
-        }
+        },
+
+        clock: this.createWorkerClock()
       };
 
       const funcBody = `
@@ -715,9 +739,12 @@ export class FBORenderer {
       render: (params) => {
         if (!userRenderFunc) return;
 
+        // Skip rendering when transport is paused — FBO retains last frame
+        if (this.transportTime && !this.transportTime.isPlaying) return;
+
         framebuffer.use(() => {
           try {
-            userRenderFunc({ t: params.lastTime });
+            userRenderFunc({ t: params.transportTime });
           } catch (error) {
             console.error('SwissGL render error:', error);
           }
@@ -791,6 +818,25 @@ export class FBORenderer {
     this.uniformDataByNode.get(nodeId)!.set(uniformName, uniformValue);
   }
 
+  /**
+   * Set transport time from main thread for synchronized timing.
+   * Called at 60fps to keep GLSL/Hydra in sync with global transport.
+   */
+  setTransportTime(state: {
+    seconds: number;
+    ticks: number;
+    bpm: number;
+    isPlaying: boolean;
+    beat: number;
+    phase: number;
+    bar: number;
+    beatsPerBar: number;
+    denominator: number;
+    ppq: number;
+  }) {
+    this.transportTime = state;
+  }
+
   setPreviewEnabled(nodeId: string, enabled: boolean) {
     this.previewRenderer.setPreviewEnabled(nodeId, enabled);
     this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();
@@ -799,7 +845,35 @@ export class FBORenderer {
   /** Toggle pause state for a node */
   toggleNodePause(nodeId: string) {
     const currentState = this.nodePausedMap.get(nodeId) ?? false;
-    this.nodePausedMap.set(nodeId, !currentState);
+    const newState = !currentState;
+    this.nodePausedMap.set(nodeId, newState);
+
+    // If resuming (unpausing), trigger animation resume on the renderer
+    if (!newState) {
+      this.resumeNodeAnimation(nodeId);
+    }
+  }
+
+  /** Resume animation for a node's renderer (if it supports resuming) */
+  private resumeNodeAnimation(nodeId: string) {
+    // Check all renderer maps for the node
+    const renderers = [
+      this.canvasByNode.get(nodeId),
+      this.hydraByNode.get(nodeId),
+      this.textmodeByNode.get(nodeId),
+      this.threeByNode.get(nodeId),
+      this.swglByNode.get(nodeId)
+    ];
+
+    for (const renderer of renderers) {
+      if (
+        renderer &&
+        'resumeAnimation' in renderer &&
+        typeof renderer.resumeAnimation === 'function'
+      ) {
+        renderer.resumeAnimation();
+      }
+    }
   }
 
   /** Check if a node is paused */
@@ -828,6 +902,14 @@ export class FBORenderer {
     this.lastTime = currentTime;
     this.frameCount++;
 
+    // Tick the clock scheduler with current transport state
+    const clockState: ClockState = {
+      time: this.transportTime?.seconds ?? this.lastTime,
+      beat: this.transportTime?.beat ?? -1,
+      bpm: this.transportTime?.bpm ?? 120
+    };
+    this.clockScheduler.tick(clockState);
+
     // Render each node in topological order
     for (const nodeId of this.renderGraph.sortedNodes) {
       if (!this.renderGraph) continue;
@@ -849,6 +931,9 @@ export class FBORenderer {
         this.renderNodeToMainOutput(outputFBONode);
       }
     }
+
+    // Track previous transport time for iTimeDelta computation
+    this.prevTransportTime = this.transportTime?.seconds ?? this.lastTime;
   }
 
   renderFboNode(node: RenderNode, fboNode: FBONode): void {
@@ -918,15 +1003,19 @@ export class FBORenderer {
     const mouseData = this.mouseDataByNode.get(node.id) ?? [0, 0, 0, 0];
 
     // Render to FBO
+    // Use transport time if available, otherwise fall back to local time
+    const transportTime = this.transportTime?.seconds ?? this.lastTime;
+
     fboNode.framebuffer.use(() => {
       fboNode.render({
-        lastTime: this.lastTime,
+        prevTransportTime: this.prevTransportTime,
         iFrame: this.frameCount,
         mouseX: mouseData[0],
         mouseY: mouseData[1],
         mouseZ: mouseData[2],
         mouseW: mouseData[3],
-        userParams: userUniformParams as UserParam[]
+        userParams: userUniformParams as UserParam[],
+        transportTime
       });
     });
   }
@@ -1241,9 +1330,11 @@ export class FBORenderer {
    */
   capturePreviewBitmap(nodeId: string, customSize?: [number, number]): ImageBitmap | null {
     const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
+
     if (externalTexture) {
       // Use cached FBO to avoid creating/destroying on every capture
       const sourceFbo = this.videoTextures.getDestinationFBO(nodeId);
+
       if (sourceFbo) {
         const bitmap = this.captureRenderer.capturePreviewBitmapSync(
           sourceFbo,
@@ -1251,6 +1342,7 @@ export class FBORenderer {
           externalTexture.height,
           customSize
         );
+
         return bitmap;
       }
     }
@@ -1259,6 +1351,7 @@ export class FBORenderer {
     if (!fboNode) return null;
 
     const [sourceWidth, sourceHeight] = this.outputSize;
+
     return this.captureRenderer.capturePreviewBitmapSync(
       fboNode.framebuffer,
       sourceWidth,
@@ -1311,5 +1404,104 @@ export class FBORenderer {
     } else {
       this.jsRunner.modules.set(moduleName, code);
     }
+  }
+
+  /**
+   * Define global `time` getter for Hydra compatibility.
+   * This allows `() => time` to work in Hydra code.
+   */
+  private defineWorkerGlobals() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const renderer: FBORenderer = this;
+
+    Object.defineProperty(globalThis, 'time', {
+      configurable: true,
+      get() {
+        return renderer.transportTime?.seconds ?? renderer.lastTime ?? 0;
+      }
+    });
+  }
+
+  /**
+   * Create a worker-compatible clock object that reads from transportTime.
+   * Use this in extraContext to override JSRunner's broken main-thread Transport-based clock.
+   * Applies to: Hydra, Three.js, Canvas, Textmode renderers.
+   *
+   * Includes scheduling methods (onBeat, schedule, every, cancel, cancelAll) that
+   * use frame-based polling precision (~16ms at 60fps).
+   *
+   * Also includes control methods (play, pause, stop, setBpm, etc.) that send
+   * commands back to the main thread.
+   */
+  createWorkerClock() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const renderer: FBORenderer = this;
+    const scheduler = this.clockScheduler;
+
+    // Helper to send clock commands to main thread
+    const send = (command: ClockCommandMessage['command']) =>
+      self.postMessage({ type: 'clockCommand', command });
+
+    return {
+      // Read properties
+      get time() {
+        return renderer.transportTime?.seconds ?? renderer.lastTime ?? 0;
+      },
+      get ticks() {
+        return renderer.transportTime?.ticks ?? 0;
+      },
+      get beat() {
+        return renderer.transportTime?.beat ?? 0;
+      },
+      get phase() {
+        return renderer.transportTime?.phase ?? 0;
+      },
+      get bpm() {
+        return renderer.transportTime?.bpm ?? 120;
+      },
+      get bar() {
+        return renderer.transportTime?.bar ?? 0;
+      },
+      get beatsPerBar() {
+        return renderer.transportTime?.beatsPerBar ?? 4;
+      },
+      get denominator() {
+        return renderer.transportTime?.denominator ?? 4;
+      },
+
+      // Subdivision helpers. Computed locally from ticks + ppq.
+      subdiv(n: number) {
+        const ticks = renderer.transportTime?.ticks ?? 0;
+        const ppq = renderer.transportTime?.ppq ?? 192;
+        const ticksPerSubdiv = ppq / n;
+
+        return Math.floor((ticks % ppq) / ticksPerSubdiv);
+      },
+      subdivPhase(n: number) {
+        const ticks = renderer.transportTime?.ticks ?? 0;
+        const ppq = renderer.transportTime?.ppq ?? 192;
+        const ticksPerSubdiv = ppq / n;
+
+        return ((ticks % ppq) % ticksPerSubdiv) / ticksPerSubdiv;
+      },
+
+      // Control methods (send to main thread)
+      play: () => send({ action: 'play' }),
+      pause: () => send({ action: 'pause' }),
+      stop: () => send({ action: 'stop' }),
+      seek: (time: number) => send({ action: 'seek', value: time }),
+
+      // Set BPM and time signature
+      setBpm: (bpm: number) => send({ action: 'setBpm', value: bpm }),
+      setTimeSignature: (numerator: number, denominator = 4) =>
+        send({ action: 'setTimeSignature', numerator, denominator }),
+
+      // Scheduling methods
+      onBeat: scheduler.onBeat.bind(scheduler),
+      schedule: scheduler.schedule.bind(scheduler),
+      every: scheduler.every.bind(scheduler),
+      cancel: scheduler.cancel.bind(scheduler),
+      cancelAll: scheduler.cancelAll.bind(scheduler)
+    };
   }
 }

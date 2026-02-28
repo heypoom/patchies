@@ -41,13 +41,18 @@ export interface RenderGraph {
 export type UserParam = number | boolean | regl.Texture2D | regl.Framebuffer;
 
 export interface RenderParams {
-  lastTime: number;
+  /** Previous frame's transport time for delta computation */
+  prevTransportTime: number;
+
   iFrame: number;
   mouseX: number;
   mouseY: number;
   mouseZ: number;
   mouseW: number;
   userParams: UserParam[];
+
+  /** Global transport time in seconds for synchronized timing */
+  transportTime: number;
 }
 
 export type RenderFunction = (renderParams: RenderParams) => void;
@@ -168,7 +173,17 @@ export type RenderWorkerMessage =
   | { type: 'mediaBunnyFirstFrame'; nodeId: string }
   | { type: 'mediaBunnyTimeUpdate'; nodeId: string; currentTime: number }
   | { type: 'mediaBunnyEnded'; nodeId: string }
-  | { type: 'mediaBunnyError'; nodeId: string; error: string };
+  | { type: 'mediaBunnyError'; nodeId: string; error: string }
+  | {
+      type: 'clockCommand';
+      command:
+        | { action: 'play' }
+        | { action: 'pause' }
+        | { action: 'stop' }
+        | { action: 'setBpm'; value: number }
+        | { action: 'setTimeSignature'; numerator: number; denominator: number }
+        | { action: 'seek'; value: number };
+    };
 
 export type PreviewState = Record<string, boolean>;
 

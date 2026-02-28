@@ -203,7 +203,13 @@
   });
 </script>
 
-<ObjectPreviewLayout title={data.title ?? 'dom'} {nodeId} onrun={runCode} {editorReady}>
+<ObjectPreviewLayout
+  title={data.title ?? 'dom'}
+  objectType="dom"
+  {nodeId}
+  onrun={runCode}
+  {editorReady}
+>
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index}
       <StandardHandle

@@ -5,6 +5,8 @@ import { debounce } from 'lodash';
 import { createGetVfsUrl, revokeObjectUrls } from '$lib/vfs';
 import { handleCodeError } from './handleCodeError';
 import { createKVStore } from '$lib/storage';
+import { Transport } from '$lib/transport';
+import { LookaheadClockScheduler } from '$lib/transport/ClockScheduler';
 
 export interface JSRunnerOptions {
   customConsole?: {
@@ -31,6 +33,7 @@ export class JSRunner {
   public moduleProviderUrl = `https://esm.sh/`;
   public modules: Map<string, string> = new Map();
   private messageContextMap: Map<string, MessageContext> = new Map();
+  private schedulerMap: Map<string, LookaheadClockScheduler> = new Map();
 
   /** Avoid collision caused by multiple nodes having same library names. */
   private libraryNamesByNode: Map<string, string> = new Map();
@@ -250,6 +253,25 @@ export class JSRunner {
     return this.messageContextMap.get(nodeId)!;
   }
 
+  /**
+   * Get or create a look-ahead clock scheduler for a node.
+   * Schedulers persist across code executions but are cleaned up when the node is destroyed.
+   * Each scheduler self-ticks via setInterval (~25ms) — no external tick loop needed.
+   */
+  getScheduler(nodeId: string): LookaheadClockScheduler {
+    if (!this.schedulerMap.has(nodeId)) {
+      const scheduler = new LookaheadClockScheduler(() => ({
+        time: Transport.seconds,
+        beat: Transport.beat,
+        bpm: Transport.bpm
+      }));
+      scheduler.start();
+      this.schedulerMap.set(nodeId, scheduler);
+    }
+
+    return this.schedulerMap.get(nodeId)!;
+  }
+
   destroy(nodeId: string): void {
     const libraryName = this.libraryNamesByNode.get(nodeId);
 
@@ -265,6 +287,13 @@ export class JSRunner {
     }
 
     this.messageContextMap.delete(nodeId);
+
+    // Clean up scheduler (stops interval + cancels all callbacks)
+    const scheduler = this.schedulerMap.get(nodeId);
+    if (scheduler) {
+      scheduler.dispose();
+      this.schedulerMap.delete(nodeId);
+    }
 
     revokeObjectUrls(nodeId);
 
@@ -327,6 +356,10 @@ export class JSRunner {
       };
     }
 
+    // Set up clock scheduler - cancel previous callbacks before executing new code
+    const scheduler = this.getScheduler(nodeId);
+    scheduler.cancelAll();
+
     const functionParams = [
       'console',
       'send',
@@ -344,8 +377,67 @@ export class JSRunner {
       'setTitle',
       'setHidePorts',
       'getVfsUrl',
+      'clock',
       ...Object.keys(extraContext)
     ];
+
+    // Clock object for transport-synced timing with scheduling methods
+    const clock = {
+      // Read properties
+      get time() {
+        return Transport.seconds;
+      },
+      get ticks() {
+        return Transport.ticks;
+      },
+      get beat() {
+        return Transport.beat;
+      },
+      get phase() {
+        return Transport.phase;
+      },
+      get bpm() {
+        return Transport.bpm;
+      },
+      get bar() {
+        return Transport.bar;
+      },
+      get beatsPerBar() {
+        return Transport.beatsPerBar;
+      },
+      get denominator() {
+        return Transport.denominator;
+      },
+
+      // Per-node subdivision helpers (computed locally from ticks + ppq)
+      subdiv(n: number) {
+        const ticks = Transport.ticks;
+        const ppq = Transport.ppq;
+        const ticksPerSubdiv = ppq / n;
+        return Math.floor((ticks % ppq) / ticksPerSubdiv);
+      },
+      subdivPhase(n: number) {
+        const ticks = Transport.ticks;
+        const ppq = Transport.ppq;
+        const ticksPerSubdiv = ppq / n;
+        return ((ticks % ppq) % ticksPerSubdiv) / ticksPerSubdiv;
+      },
+
+      // Control methods
+      play: () => Transport.play(),
+      pause: () => Transport.pause(),
+      stop: () => Transport.stop(),
+      setBpm: (bpm: number) => Transport.setBpm(bpm),
+      setTimeSignature: (numerator: number, denominator = 4) =>
+        Transport.setTimeSignature(numerator, denominator),
+      seek: (time: number) => Transport.seek(time),
+      // Scheduling methods
+      onBeat: scheduler.onBeat.bind(scheduler),
+      schedule: scheduler.schedule.bind(scheduler),
+      every: scheduler.every.bind(scheduler),
+      cancel: scheduler.cancel.bind(scheduler),
+      cancelAll: scheduler.cancelAll.bind(scheduler)
+    };
 
     const functionArgs = [
       customConsole,
@@ -364,6 +456,7 @@ export class JSRunner {
       setTitle,
       setHidePorts,
       createGetVfsUrl(nodeId),
+      clock,
       ...Object.values(extraContext)
     ];
 

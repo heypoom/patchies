@@ -37,6 +37,7 @@ export class CanvasRenderer {
   private sampleRate: number = 44000;
   private animationId: number | null = null;
   private drawCommand: regl.DrawCommand | null = null;
+  private pausedCallback: FrameRequestCallback | null = null;
 
   // FFT state tracking
   public isFFTEnabled = false;
@@ -161,8 +162,17 @@ export class CanvasRenderer {
         height: height,
 
         requestAnimationFrame: (callback: FrameRequestCallback) => {
+          // Store callback for resume
+          this.pausedCallback = callback;
+
+          // Don't schedule if paused
+          if (this.renderer.isNodePaused(this.config.nodeId)) {
+            return -1;
+          }
+
           this.animationId = requestAnimationFrame(() => {
             callback(performance.now());
+
             this.drawCanvasToTexture();
           });
 
@@ -195,7 +205,10 @@ export class CanvasRenderer {
         noPan: () => this.setInteraction('pan', false),
         noWheel: () => this.setInteraction('wheel', false),
         noInteract: () => this.setInteraction('interact', false),
-        noOutput: () => this.setVideoOutputEnabled(false)
+        noOutput: () => this.setVideoOutputEnabled(false),
+
+        // Worker-compatible clock (overrides JSRunner's main-thread Transport-based clock)
+        clock: this.renderer.createWorkerClock()
       };
 
       const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {
@@ -333,6 +346,19 @@ export class CanvasRenderer {
 
   handleMessage(message: Message) {
     this.onMessage?.(message.data, message);
+  }
+
+  /** Resume animation loop after unpausing */
+  resumeAnimation() {
+    if (this.pausedCallback && !this.renderer.isNodePaused(this.config.nodeId)) {
+      const callback = this.pausedCallback;
+
+      this.animationId = requestAnimationFrame(() => {
+        callback(performance.now());
+
+        this.drawCanvasToTexture();
+      });
+    }
   }
 
   /**

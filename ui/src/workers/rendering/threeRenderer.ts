@@ -108,6 +108,9 @@ export class ThreeRenderer {
   renderFrame(params: RenderParams) {
     if (!this.threeWebGLRenderer || !this.renderTarget || !this.userRenderFunc) return;
 
+    // Skip rendering when transport is paused — FBO retains last frame
+    if (this.renderer.transportTime && !this.renderer.transportTime.isPlaying) return;
+
     const gl = this.renderer.gl;
     if (!gl) return;
 
@@ -125,8 +128,8 @@ export class ThreeRenderer {
     this.threeWebGLRenderer.setRenderTarget(this.renderTarget);
 
     try {
-      // Call user's render function with current time
-      this.userRenderFunc(params.lastTime);
+      // Call user's render function with transport time
+      this.userRenderFunc(params.transportTime);
     } catch (error) {
       this.handleRuntimeError(error);
     }
@@ -263,7 +266,10 @@ export class ThreeRenderer {
           this.setVideoOutputEnabled(false);
         },
 
-        requestAnimationFrame: () => {}
+        requestAnimationFrame: () => {},
+
+        // Worker-compatible clock (overrides JSRunner's main-thread Transport-based clock)
+        clock: this.renderer.createWorkerClock()
       };
 
       // Execute using JSRunner with Three.js-specific extra context

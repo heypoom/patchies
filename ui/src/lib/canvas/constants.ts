@@ -35,7 +35,7 @@ export const DEFAULT_BUTTERCHURN_PRESET = '$$$ Royal - Mashup (431)';
 export const DEFAULT_JS_CANVAS_CODE = `function draw() {
   ctx.clearRect(0, 0, width, height)
 
-  const time = Date.now() * 0.004
+  const time = clock.time * 2
   const x = width/2 + Math.cos(time) * 60
   const y = height/2 + Math.sin(time) * 50
 
@@ -52,6 +52,7 @@ draw()`;
 export const DEFAULT_SWISSGL_CODE = `function render({t}) {
   glsl({
     t,
+    Clear: 0,
     Mesh: [10, 10],
     VP: \`XY*0.8+sin(t+XY.yx*2.0)*0.2,0,1\`,
     FP: \`UV,0.5,1\`,

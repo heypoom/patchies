@@ -25,6 +25,12 @@ export interface WorkletDspNodeConfig {
 
   tags?: string[];
   aliases?: string[];
+
+  /**
+   * Optional lifecycle hook called after the AudioWorkletNode is created.
+   * Return a cleanup function to be called on destroy.
+   */
+  afterCreate?: (audioNode: AudioWorkletNode) => (() => void) | void;
 }
 
 // Track module loading state per worklet URL
@@ -96,6 +102,7 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
     private audioContext: AudioContext;
     private messageSystem: MessageSystem;
     private directChannelService: WorkletDirectChannelService;
+    private afterCreateCleanup: (() => void) | null = null;
 
     constructor(nodeId: string, audioContext: AudioContext) {
       this.nodeId = nodeId;
@@ -151,6 +158,15 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
           message: params[i],
           inlet: resolveWorkletInlet(config.inlets, i)
         });
+      }
+
+      // Call afterCreate hook if provided
+      if (config.afterCreate) {
+        const cleanup = config.afterCreate(this.audioNode);
+
+        if (cleanup) {
+          this.afterCreateCleanup = cleanup;
+        }
       }
     }
 
@@ -214,6 +230,9 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
     }
 
     destroy(): void {
+      this.afterCreateCleanup?.();
+      this.afterCreateCleanup = null;
+
       this.directChannelService.unregisterWorklet(this.nodeId);
 
       if (this.audioNode) {

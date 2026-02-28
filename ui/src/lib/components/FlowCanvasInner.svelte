@@ -73,6 +73,8 @@
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
 
   import { toast } from 'svelte-sonner';
+  import { Transport } from '$lib/transport';
+  import { transportStore } from '../../stores/transport.store';
   import { initializeVFS } from '$lib/vfs';
   import {
     HistoryManager,
@@ -455,6 +457,13 @@
       toggleSidebar: () => ($isSidebarOpen = !$isSidebarOpen),
       openObjectBrowser: () => ($isObjectBrowserOpen = true),
       openCommandPalette: triggerCommandPalette,
+      togglePlayPause: () => {
+        if (Transport.isPlaying) {
+          Transport.pause();
+        } else {
+          Transport.play();
+        }
+      },
       newPatch,
       quickSave,
       saveAs: () => (showSavePatchModal = true),
@@ -480,6 +489,7 @@
     eventBus.addEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
+    eventBus.addEventListener('requestSaveSelectedAsPreset', handleRequestSaveSelectedAsPreset);
     eventBus.addEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.addEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.addEventListener('objectDataCommit', handleObjectDataCommit);
@@ -508,6 +518,7 @@
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
+    eventBus.removeEventListener('requestSaveSelectedAsPreset', handleRequestSaveSelectedAsPreset);
     eventBus.removeEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.removeEventListener('quickAddCancelled', handleQuickAddCancelled);
     eventBus.removeEventListener('objectDataCommit', handleObjectDataCommit);
@@ -614,6 +625,17 @@
   }) {
     const position = getViewportCenter();
     getDragDropManager().insertPreset(event.preset, position);
+  }
+
+  // Handle request to save selected node as preset (from sidebar, etc.)
+  function handleRequestSaveSelectedAsPreset() {
+    if (selectedNodeIds.length === 1) {
+      const node = nodes.find((n) => n.id === selectedNodeIds[0]);
+      if (node) {
+        nodeToSaveAsPreset = node;
+        showSavePresetDialog = true;
+      }
+    }
   }
 
   // Handle Quick Add confirmation - record the final node to history
@@ -757,6 +779,9 @@
 
     const audioContext = audioService.getAudioContext();
 
+    // Give transport the AudioContext for jank-resistant timing
+    Transport.setAudioContext(audioContext);
+
     if (audioContext.state === 'suspended') {
       audioContext.resume();
       audioService.updateEdges(edges);
@@ -871,7 +896,7 @@
     {/if}
 
     <!-- Audio Resume Hint -->
-    {#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal && !($isMobile && $isSidebarOpen)}
+    {#if showAudioHint && !isLoadingFromUrl && $hasSomeAudioNode && !showStartupModal && !($isMobile && $isSidebarOpen) && $transportStore.dspEnabled}
       <div
         class="absolute right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 {$helpModeObject ||
         isReadOnlyMode

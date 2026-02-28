@@ -1,4 +1,5 @@
 import { toast } from 'svelte-sonner';
+import { match } from 'ts-pattern';
 
 /**
  * Checks if the keyboard event target is in a typing context.
@@ -14,6 +15,24 @@ const isTypingContext = (target: HTMLElement): boolean =>
   // Allow copy in sidebar
   !!target.closest('[data-sidebar]');
 
+const INTERACTIVE_TAGS = ['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA'];
+
+/**
+ * Checks if the currently focused element is an interactive control
+ * that should receive spacebar/enter activation instead of global shortcuts.
+ */
+const isInteractiveFocus = (): boolean => {
+  const el = document.activeElement;
+  if (!el || el === document.body) return false;
+
+  if (INTERACTIVE_TAGS.includes(el.tagName)) return true;
+  if (el instanceof HTMLAnchorElement && el.hasAttribute('href')) return true;
+  if ((el as HTMLElement).contentEditable === 'true') return true;
+  if (el.getAttribute('role') === 'button') return true;
+
+  return false;
+};
+
 export interface KeyboardShortcutActions {
   // Clipboard
   copy: () => void;
@@ -27,6 +46,9 @@ export interface KeyboardShortcutActions {
   toggleSidebar: () => void;
   openObjectBrowser: () => void;
   openCommandPalette: () => void;
+
+  // Transport
+  togglePlayPause: () => void;
 
   // Patch operations
   newPatch: () => void;
@@ -206,5 +228,13 @@ export class KeyboardShortcutManager {
 
       return;
     }
+
+    // Spacebar: Toggle play/pause (when not typing or on interactive element)
+    match([key, isTyping || isInteractiveFocus()] as const)
+      .with([' ', false], () => {
+        event.preventDefault();
+        this.actions.togglePlayPause();
+      })
+      .otherwise(() => {});
   }
 }

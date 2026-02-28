@@ -5,6 +5,7 @@ export const categoryOrder = [
   'Sidebar',
   'Audio & Video',
   'Scripting',
+  'Timing & Sync',
   'Other'
 ];
 
@@ -12,8 +13,9 @@ export const categoryOrder = [
 export const topicOrder: Record<string, string[]> = {
   'Getting Started': ['demos', 'adding-objects', 'modifying-objects', 'shortcuts'],
   Connections: ['connecting-objects', 'message-passing', 'hot-cold-inlets', 'network-p2p'],
-  'Audio & Video': ['audio-chaining', 'video-chaining', 'audio-reactivity', 'connection-rules'],
+  'Audio & Video': ['audio-chaining', 'video-chaining', 'connection-rules'],
   Scripting: ['javascript-runner', 'canvas-interaction', 'virtual-filesystem', 'data-storage'],
+  'Timing & Sync': ['audio-reactivity', 'transport-control', 'clock-api', 'parameter-automation'],
   Sidebar: ['manage-files', 'manage-presets', 'manage-saves', 'manage-packs', 'in-app-help'],
   Other: [
     'sharing-links',

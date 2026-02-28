@@ -240,7 +240,10 @@ export class TextmodeRenderer {
 
         noOutput: () => {
           this.setVideoOutputEnabled(false);
-        }
+        },
+
+        // Worker-compatible clock (overrides JSRunner's main-thread Transport-based clock)
+        clock: this.renderer.createWorkerClock()
       };
 
       const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {

@@ -333,6 +333,7 @@
 
 <CanvasPreviewLayout
   title={data.title ?? 'textmode.dom'}
+  objectType="textmode.dom"
   {nodeId}
   onrun={runCode}
   bind:previewCanvas={canvas}

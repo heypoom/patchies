@@ -101,7 +101,8 @@ export class HydraRenderer {
     const time = performance.now();
     const deltaTime = time - this.timestamp;
 
-    this.hydra.synth.time += deltaTime * 0.001 * this.hydra.synth.speed;
+    // Use global transport time for synchronized timing
+    this.hydra.synth.time = params.transportTime;
     this.hydra.timeSinceLastUpdate += deltaTime;
 
     this.hydra.sources.forEach((source, sourceIndex) => {
@@ -254,8 +255,8 @@ export class HydraRenderer {
         width: this.renderer.outputSize[0],
         height: this.renderer.outputSize[1],
 
-        // Hydra time helper
-        time: performance.now()
+        // Worker-compatible clock object (overrides JSRunner's main-thread Transport-based clock)
+        clock: this.renderer.createWorkerClock()
       };
 
       // Use JSRunner's executeJavaScript method with full module support

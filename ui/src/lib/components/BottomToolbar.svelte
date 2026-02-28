@@ -28,10 +28,14 @@
   } from '../../stores/ui.store';
   import { aiButtonState } from '../../stores/ai-prompt.store';
   import { createAndCopyShareLink } from '$lib/save-load/share';
-  import VolumeControl from './VolumeControl.svelte';
+  import { TransportPanel } from './transport';
+  import { transportStore } from '../../stores/transport.store';
+  import { Transport } from '$lib/transport';
+  import { Play, Pause } from '@lucide/svelte/icons';
   import StartupModal from './startup-modal/StartupModal.svelte';
   import * as Popover from '$lib/components/ui/popover';
   import * as Drawer from '$lib/components/ui/drawer';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   import type { Tab } from './startup-modal/types';
 
@@ -96,8 +100,22 @@
   const canConnect = $derived(nodes.length >= 2);
   const hasCurrentPatch = $derived(!!$currentPatchName);
 
+  const isMac =
+    typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
+
   // Overflow menu state
   let overflowOpen = $state(false);
+
+  // Transport state (for button icon)
+  let isPlaying = $state(false);
+
+  // Poll transport state for button icon
+  $effect(() => {
+    const interval = setInterval(() => {
+      isPlaying = Transport.isPlaying;
+    }, 100);
+    return () => clearInterval(interval);
+  });
 
   // Hide toolbar on mobile when sidebar is open to prevent overlap
   const hideOnMobile = $derived($isMobile && isLeftSidebarOpen);
@@ -158,80 +176,151 @@
     <div class="flex items-center gap-1">
       <!-- Selection actions (inline for both mobile and desktop) -->
       {#if hasSelection}
-        <button title="Delete (Del)" class={buttonClass} onclick={handleDelete}>
-          <Trash2 class="h-4 w-4 text-red-400" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button class={buttonClass} onclick={handleDelete}>
+              <Trash2 class="h-4 w-4 text-red-400" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Delete (Del)</Tooltip.Content>
+        </Tooltip.Root>
       {/if}
 
-      <button
-        title="Browse Objects (Ctrl/Cmd+O)"
-        class={buttonClass}
-        onclick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onBrowseObjects();
-        }}
-      >
-        <CirclePlus class={iconClass} />
-      </button>
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            class={buttonClass}
+            onclick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onBrowseObjects();
+            }}
+          >
+            <CirclePlus class={iconClass} />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Browse Objects ({isMac ? '⌘O' : 'Ctrl + O'})</Tooltip.Content>
+      </Tooltip.Root>
 
       {#if canCopy}
-        <button title="Copy" class={buttonClass} onclick={onCopy}>
-          <Copy class={iconClass} />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button class={buttonClass} onclick={onCopy}>
+              <Copy class={iconClass} />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Copy</Tooltip.Content>
+        </Tooltip.Root>
       {/if}
 
       {#if canPaste}
-        <button title="Paste" class={buttonClass} onclick={onPaste}>
-          <ClipboardPaste class={iconClass} />
-        </button>
-      {/if}
-
-      {#if canSaveAsPreset}
-        <button title="Save as Preset" class={buttonClass} onclick={onSaveSelectedAsPreset}>
-          <Bookmark class={iconClass} />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button class={buttonClass} onclick={onPaste}>
+              <ClipboardPaste class={iconClass} />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Paste</Tooltip.Content>
+        </Tooltip.Root>
       {/if}
 
       {#if $isAiFeaturesVisible && hasGeminiApiKey}
-        <button title="AI Create/Edit" class={aiButtonClass()} onclick={onAiInsertOrEdit}>
-          {#if $aiButtonState.isLoading}
-            <Loader class="{iconClass} animate-spin cursor-not-allowed" />
-          {:else}
-            <Sparkles class={iconClass} />
-          {/if}
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button class={aiButtonClass()} onclick={onAiInsertOrEdit}>
+              {#if $aiButtonState.isLoading}
+                <Loader class="{iconClass} animate-spin cursor-not-allowed" />
+              {:else}
+                <Sparkles class={iconClass} />
+              {/if}
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>AI Create/Edit ({isMac ? '⌘I' : 'Ctrl + I'})</Tooltip.Content>
+        </Tooltip.Root>
       {/if}
 
       {#if canConnect}
-        <button
-          title={$isConnectionMode ? 'Exit Easy Connect' : 'Easy Connect'}
-          class={$isConnectionMode ? activeButtonClass : buttonClass}
-          onclick={handleConnectionToggle}
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class={$isConnectionMode ? activeButtonClass : buttonClass}
+              onclick={handleConnectionToggle}
+            >
+              <Cable class={iconClass} />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content
+            >{$isConnectionMode ? 'Exit Easy Connect' : 'Easy Connect'}</Tooltip.Content
+          >
+        </Tooltip.Root>
+      {/if}
+
+      {#if $isMobile}
+        <!-- Mobile: Drawer for transport -->
+        <Drawer.Root bind:open={$transportStore.panelOpen}>
+          <Drawer.Trigger class={buttonClass}>
+            {#if isPlaying}
+              <Pause class={iconClass} />
+            {:else}
+              <Play class={iconClass} />
+            {/if}
+          </Drawer.Trigger>
+          <Drawer.Content class="bg-zinc-900">
+            <div class="mt-4 flex justify-center px-4 pb-6">
+              <TransportPanel />
+            </div>
+          </Drawer.Content>
+        </Drawer.Root>
+      {:else}
+        <!-- Desktop: positioned panel -->
+        <div class="relative">
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class={buttonClass}
+                onclick={() => ($transportStore.panelOpen = !$transportStore.panelOpen)}
+              >
+                {#if isPlaying}
+                  <Pause class={iconClass} />
+                {:else}
+                  <Play class={iconClass} />
+                {/if}
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Transport Controls</Tooltip.Content>
+          </Tooltip.Root>
+
+          {#if $transportStore.panelOpen}
+            <div class="fixed right-[8px] bottom-[40px] mb-2">
+              <TransportPanel />
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            class={buttonClass}
+            onclick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleLeftSidebar();
+            }}
+          >
+            {#if isLeftSidebarOpen}
+              <PanelLeftClose class={iconClass} />
+            {:else}
+              <PanelLeftOpen class={iconClass} />
+            {/if}
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content
+          >{isLeftSidebarOpen ? 'Close' : 'Open'} Sidebar ({isMac
+            ? '⌘B'
+            : 'Ctrl + B'})</Tooltip.Content
         >
-          <Cable class={iconClass} />
-        </button>
-      {/if}
-
-      {#if !$isMobile}
-        <VolumeControl />
-      {/if}
-
-      <button
-        title={isLeftSidebarOpen ? 'Close Sidebar (Ctrl/Cmd+B)' : 'Open Sidebar (Ctrl/Cmd+B)'}
-        class={buttonClass}
-        onclick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onToggleLeftSidebar();
-        }}
-      >
-        {#if isLeftSidebarOpen}
-          <PanelLeftClose class={iconClass} />
-        {:else}
-          <PanelLeftOpen class={iconClass} />
-        {/if}
-      </button>
+      </Tooltip.Root>
 
       <!-- Overflow menu -->
       {#if $isMobile}
@@ -245,6 +334,19 @@
               <Drawer.Title class="text-sm text-zinc-400">More Actions</Drawer.Title>
             </Drawer.Header>
             <div class="flex flex-col pb-6">
+              {#if canSaveAsPreset}
+                <button
+                  class={menuItemClass}
+                  onclick={() => {
+                    onSaveSelectedAsPreset();
+                    overflowOpen = false;
+                  }}
+                >
+                  <Bookmark class="h-5 w-5 text-zinc-400" />
+                  <span>Save as Preset</span>
+                </button>
+              {/if}
+
               <button
                 class={menuItemClass}
                 onclick={() => {
@@ -342,6 +444,19 @@
             sideOffset={8}
           >
             <div class="flex flex-col py-1">
+              {#if canSaveAsPreset}
+                <button
+                  class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                  onclick={() => {
+                    onSaveSelectedAsPreset();
+                    overflowOpen = false;
+                  }}
+                >
+                  <Bookmark class="h-4 w-4 text-zinc-400" />
+                  <span>Save as Preset</span>
+                </button>
+              {/if}
+
               <button
                 class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed"
                 disabled={$aiButtonState.isLoading}
