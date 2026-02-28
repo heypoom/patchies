@@ -37,7 +37,9 @@ function loadFromStorage(): TransportStoreState {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return defaultState;
-    const parsed = JSON.parse(stored);
+
+    const parsed: TransportStoreState = JSON.parse(stored);
+
     return {
       bpm: parsed.bpm ?? DEFAULT_BPM,
       timeSignature: parsed.timeSignature ?? DEFAULT_TIME_SIGNATURE,
@@ -46,7 +48,7 @@ function loadFromStorage(): TransportStoreState {
       isPlaying: DEFAULT_AUTOPLAY,
       playState: DEFAULT_AUTOPLAY ? 'playing' : 'stopped',
       dspEnabled: true,
-      timelineVisible: parsed.timelineVisible ?? false
+      timelineVisible: parsed.timelineVisible === true
     };
   } catch {
     console.warn('Failed to load transport state from localStorage');

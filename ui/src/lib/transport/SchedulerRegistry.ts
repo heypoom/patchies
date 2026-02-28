@@ -26,13 +26,6 @@ export class SchedulerRegistry {
   private static instance: SchedulerRegistry;
   private entries = new Map<string, LookaheadClockScheduler>();
 
-  static getInstance(): SchedulerRegistry {
-    if (!SchedulerRegistry.instance) {
-      SchedulerRegistry.instance = new SchedulerRegistry();
-    }
-    return SchedulerRegistry.instance;
-  }
-
   register(nodeId: string, scheduler: LookaheadClockScheduler): void {
     this.entries.set(nodeId, scheduler);
   }
@@ -48,21 +41,36 @@ export class SchedulerRegistry {
   /** Get event snapshots across all registered schedulers. */
   getAllEvents(): Map<string, ScheduledEventDescriptor[]> {
     const result = new Map<string, ScheduledEventDescriptor[]>();
+
     for (const [nodeId, scheduler] of this.entries) {
       result.set(nodeId, scheduler.getEventSnapshot());
     }
+
     return result;
   }
 
   /** Drain fired event buffers across all registered schedulers. */
   getAllFiredEvents(): Map<string, FiredEventRecord[]> {
     const result = new Map<string, FiredEventRecord[]>();
+
     for (const [nodeId, scheduler] of this.entries) {
       const events = scheduler.drainFiredEvents();
+
       if (events.length > 0) {
         result.set(nodeId, events);
       }
     }
+
     return result;
+  }
+
+  private constructor() {}
+
+  static getInstance(): SchedulerRegistry {
+    if (!SchedulerRegistry.instance) {
+      SchedulerRegistry.instance = new SchedulerRegistry();
+    }
+
+    return SchedulerRegistry.instance;
   }
 }

@@ -45,14 +45,18 @@
       );
     };
 
-    const onUp = () => {
+    const cleanup = () => {
       isResizing = false;
       target.removeEventListener('pointermove', onMove);
-      target.removeEventListener('pointerup', onUp);
+      target.removeEventListener('pointerup', cleanup);
+      target.removeEventListener('pointercancel', cleanup);
+      target.removeEventListener('lostpointercapture', cleanup);
     };
 
     target.addEventListener('pointermove', onMove);
-    target.addEventListener('pointerup', onUp);
+    target.addEventListener('pointerup', cleanup);
+    target.addEventListener('pointercancel', cleanup);
+    target.addEventListener('lostpointercapture', cleanup);
   }
 
   // Transport state (updated via polling)
@@ -135,7 +139,6 @@
 
     if (!isNaN(newBpm) && newBpm > 0 && newBpm <= 999) {
       Transport.setBpm(newBpm);
-      transportStore.setBpm(newBpm);
     }
   }
 
@@ -378,6 +381,7 @@
             onclick={isPlaying ? handlePause : handlePlay}
             class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!isDspEnabled}
+            aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {#if isPlaying}
               <Pause class="h-4 w-4 text-zinc-300" />
@@ -401,6 +405,7 @@
             onclick={handleStop}
             class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!isDspEnabled}
+            aria-label="Stop"
           >
             <Square class="h-3.5 w-3.5 text-zinc-300" />
           </button>
@@ -452,21 +457,25 @@
     <div class="flex items-center gap-2">
       <div class="flex items-center gap-1.5">
         <span class="text-xs text-zinc-500">BPM</span>
-        <input
-          type="number"
-          value={bpm}
-          onchange={handleBpmChange}
-          onkeydown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
-          min="1"
-          max="999"
-          class="w-[46px] [appearance:textfield] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 outline-none focus:ring-1 focus:ring-zinc-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          title="Beats per minute"
-        />
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <input
+              type="number"
+              value={bpm}
+              onchange={handleBpmChange}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              min="1"
+              max="999"
+              class="w-[46px] [appearance:textfield] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 outline-none focus:ring-1 focus:ring-zinc-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            />
+          </Tooltip.Trigger>
+          <Tooltip.Content>Beats per minute</Tooltip.Content>
+        </Tooltip.Root>
       </div>
 
       {#if isEditingTimeSig}
@@ -502,6 +511,7 @@
           <button
             onclick={toggleMute}
             class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-700"
+            aria-label={isMuted || volume === 0 ? 'Unmute' : 'Mute'}
           >
             <!-- svelte-ignore svelte_component_deprecated -->
             <svelte:component
@@ -551,6 +561,7 @@
             class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors {$transportStore.timelineVisible
               ? 'bg-zinc-700 text-zinc-200'
               : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+            aria-label={$transportStore.timelineVisible ? 'Hide timeline' : 'Show timeline'}
           >
             <ChartNoAxesGantt class="h-4 w-4" />
           </button>
