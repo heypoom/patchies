@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Transport } from '$lib/transport';
+  import { toast } from 'svelte-sonner';
   import { transportStore, type TimeDisplayFormat } from '../../../stores/transport.store';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { Slider } from '$lib/components/ui/slider';
@@ -20,9 +21,11 @@
   import { onMount } from 'svelte';
   import { match } from 'ts-pattern';
   import TimelineRuler from './TimelineRuler.svelte';
+  import SetRoomDialog from './SetRoomDialog.svelte';
   import { MAX_RULER_WIDTH, MIN_RULER_WIDTH } from './constants';
   import { transportSyncManager } from '$lib/transport/TransportSyncManager';
   import { transportSyncStore } from '../../../stores/transport-sync.store';
+  import { getSearchParam, deleteSearchParam } from '$lib/utils/search-params';
 
   const audioService = AudioService.getInstance();
 
@@ -88,11 +91,34 @@
   // Whether this peer is a follower (sync enabled but not the leader)
   const isFollowing = $derived($transportSyncStore.enabled && !$transportSyncStore.isLeader);
 
+  let showSetRoomDialog = $state(false);
+
+  // Color reflects sync connection status:
+  // green = enabled with peers, blue = enabled but waiting, gray = disabled
+  const syncColor = $derived.by(() =>
+    match({ enabled: $transportSyncStore.enabled, peers: $transportSyncStore.peerCount })
+      .with({ enabled: false }, () => 'text-zinc-400')
+      .with({ enabled: true, peers: 0 }, () => 'text-blue-400')
+      .otherwise(() => 'text-green-400')
+  );
+
   async function toggleSync() {
     if ($transportSyncStore.enabled) {
       transportSyncManager.disable();
+      toast.info('Transport sync disabled');
     } else {
-      await transportSyncManager.enable();
+      const room = getSearchParam('room');
+      if (!room) {
+        showSetRoomDialog = true;
+        return;
+      }
+      try {
+        await transportSyncManager.enable();
+        toast.success('Transport sync connected');
+      } catch (err) {
+        toast.error('Failed to connect sync');
+        console.error('[sync] enable failed', err);
+      }
     }
   }
 
@@ -351,6 +377,21 @@
   });
 
   onMount(() => {
+    // Auto-enable sync if ?sync=true is in the URL (set by SetRoomDialog after room is chosen)
+    if (getSearchParam('sync') === 'true') {
+      deleteSearchParam('sync');
+
+      transportSyncManager
+        .enable()
+        .then(() => {
+          toast.success('Transport sync connected');
+        })
+        .catch((err) => {
+          toast.error('Failed to connect sync');
+          console.error('[sync] auto-enable failed', err);
+        });
+    }
+
     // Poll transport state at 30fps for UI
     const interval = setInterval(() => {
       isPlaying = Transport.isPlaying;
@@ -610,11 +651,9 @@
                 toggleSync();
                 showOverflow = false;
               }}
-              class="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm transition-colors hover:bg-zinc-800 {$transportSyncStore.enabled
-                ? 'text-zinc-200'
-                : 'text-zinc-400'}"
+              class="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm transition-colors hover:bg-zinc-800 {syncColor}"
             >
-              <Wifi class="h-4 w-4" />
+              <Wifi class="h-4 w-4 {syncColor}" />
               <span>
                 {#if $transportSyncStore.enabled}
                   {$transportSyncStore.isLeader
@@ -640,3 +679,7 @@
     </div>
   {/if}
 </div>
+
+{#if showSetRoomDialog}
+  <SetRoomDialog onClose={() => (showSetRoomDialog = false)} />
+{/if}
