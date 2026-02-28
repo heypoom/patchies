@@ -22,20 +22,24 @@
     syntax,
     sampleRate,
     autoEval,
+    syncTransport,
     onTypeChange,
     onSyntaxChange,
     onSampleRateChange,
     onAutoEvalChange,
+    onSyncTransportChange,
     onClose
   }: {
     bytebeatType: BytebeatType;
     syntax: BytebeatSyntax;
     sampleRate: number;
     autoEval: boolean;
+    syncTransport: boolean;
     onTypeChange: (type: BytebeatType) => void;
     onSyntaxChange: (syntax: BytebeatSyntax) => void;
     onSampleRateChange: (rate: number) => void;
     onAutoEvalChange: (value: boolean) => void;
+    onSyncTransportChange: (value: boolean) => void;
     onClose: () => void;
   } = $props();
 
@@ -112,6 +116,17 @@
           class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
         />
         <span class="text-xs text-zinc-300">Run on edit</span>
+      </label>
+
+      <!-- Sync transport toggle -->
+      <label class="flex cursor-pointer items-center gap-2">
+        <input
+          type="checkbox"
+          checked={syncTransport}
+          onchange={(e) => onSyncTransportChange(e.currentTarget.checked)}
+          class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
+        />
+        <span class="text-xs text-zinc-300">Sync to transport</span>
       </label>
     </div>
   </div>

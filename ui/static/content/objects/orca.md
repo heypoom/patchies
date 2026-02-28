@@ -21,6 +21,12 @@ Orca emits standard Patchies MIDI messages (`noteOn`, `noteOff`,
 - Connect to `midi.out` for hardware MIDI output
 - Try the `poly-synth-midi.tone` preset for a polyphonic synth
 
+## Transport Sync
+
+Enable **Sync to transport** in settings to lock Orca's clock to the global
+[transport](/docs/transport-control). When synced, BPM and play/pause are
+controlled by the transport bar instead of per-node controls.
+
 ## Controls
 
 - Click on the canvas and type characters to edit the grid

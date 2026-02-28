@@ -1,9 +1,11 @@
 import { writable } from 'svelte/store';
+import { match } from 'ts-pattern';
 import { DEFAULT_AUTOPLAY, DEFAULT_BPM, DEFAULT_TIME_SIGNATURE } from '$lib/transport/constants';
 
 const STORAGE_KEY = 'patchies:transport';
 
 export type TimeDisplayFormat = 'seconds' | 'bars' | 'time';
+export type TransportPlayState = 'playing' | 'paused' | 'stopped';
 
 const DEFAULT_TIME_DISPLAY_FORMAT: TimeDisplayFormat = 'time';
 
@@ -13,6 +15,7 @@ export interface TransportStoreState {
   timeDisplayFormat: TimeDisplayFormat;
   panelOpen: boolean;
   isPlaying: boolean;
+  playState: TransportPlayState;
   dspEnabled: boolean;
 }
 
@@ -22,6 +25,7 @@ const defaultState: TransportStoreState = {
   timeDisplayFormat: DEFAULT_TIME_DISPLAY_FORMAT,
   panelOpen: false,
   isPlaying: DEFAULT_AUTOPLAY,
+  playState: DEFAULT_AUTOPLAY ? 'playing' : 'stopped',
   dspEnabled: true
 };
 
@@ -38,6 +42,7 @@ function loadFromStorage(): TransportStoreState {
       timeDisplayFormat: parsed.timeDisplayFormat ?? DEFAULT_TIME_DISPLAY_FORMAT,
       panelOpen: false, // Always start closed
       isPlaying: DEFAULT_AUTOPLAY,
+      playState: DEFAULT_AUTOPLAY ? 'playing' : 'stopped',
       dspEnabled: true
     };
   } catch {
@@ -100,8 +105,11 @@ function createTransportStore() {
       update((s) => ({ ...s, panelOpen: !s.panelOpen }));
     },
 
-    setIsPlaying(isPlaying: boolean) {
-      update((s) => ({ ...s, isPlaying }));
+    setPlayState(playState: TransportPlayState) {
+      const isPlaying = match(playState)
+        .with('playing', () => true)
+        .otherwise(() => false);
+      update((s) => ({ ...s, playState, isPlaying }));
     },
 
     setDspEnabled(dspEnabled: boolean) {

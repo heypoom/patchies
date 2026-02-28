@@ -22,6 +22,12 @@ for each audio sample, creating sound from pure math.
 - **Stop**: Stop and reset time counter to zero
 - **Settings**: Configure type, syntax, and sample rate
 
+## Transport Sync
+
+Enable **Sync to transport** in settings to lock playback to the global
+[transport](/docs/transport-control). When synced, play/pause is controlled by
+the transport bar instead of per-node controls.
+
 ## Settings
 
 ### Type

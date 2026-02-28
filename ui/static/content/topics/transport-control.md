@@ -50,6 +50,13 @@ All visual objects automatically read from the global transport:
 
 When you pause, ALL visuals freeze simultaneously. When you stop, everything resets to time 0.
 
+Musical objects have their own internal clocks and can optionally sync to the transport. Enable **Sync to transport** in each node's settings to lock its playback and BPM to the global transport. This is opt-in — by default these nodes run independently.
+
+- [strudel](/docs/objects/strudel)
+- [orca](/docs/objects/orca)
+- [bytebeat~](/docs/objects/bytebeat~)
+- [csound~](/docs/objects/csound~)
+
 For scheduling sample-accurate callbacks on specific beats and creating repeated patterns, see [Clock API](/docs/clock-api).
 
 ## See Also

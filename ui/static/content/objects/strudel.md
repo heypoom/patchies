@@ -24,6 +24,12 @@ Strudel runs in a separate runtime and does NOT use the
 - `recv` only works with a few functions, e.g. `setcpm`. Try `recv(setcpm)` to
   automate the cpm value.
 
+## Transport Sync
+
+Enable **Sync to transport** in settings to lock Strudel's playback to the
+global [transport](/docs/transport-control). When synced, play/pause is
+controlled by the transport bar instead of per-node controls.
+
 ## Multiple Instances
 
 You can create multiple `strudel` objects, but only **one** plays at a time.

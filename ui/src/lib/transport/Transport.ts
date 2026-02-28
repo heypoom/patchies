@@ -58,19 +58,19 @@ class TransportManager implements ITransport {
   async play(): Promise<void> {
     await this.context.play();
 
-    transportStore.setIsPlaying(true);
+    transportStore.setPlayState('playing');
   }
 
   pause(): void {
     this.context.pause();
 
-    transportStore.setIsPlaying(false);
+    transportStore.setPlayState('paused');
   }
 
   stop(): void {
     this.context.stop();
 
-    transportStore.setIsPlaying(false);
+    transportStore.setPlayState('stopped');
   }
 
   seek(seconds: number): void {

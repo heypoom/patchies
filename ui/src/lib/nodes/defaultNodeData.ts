@@ -40,7 +40,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('js', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
     .with('python', () => ({ code: DEFAULT_PYTHON_CODE, showConsole: true }))
     .with('glsl', () => ({ code: DEFAULT_GLSL_CODE }))
-    .with('strudel', () => ({ code: DEFAULT_STRUDEL_CODE }))
+    .with('strudel', () => ({ code: DEFAULT_STRUDEL_CODE, syncTransport: false }))
     .with('ai.img', () => ({ prompt: DEFAULT_AI_IMAGE_PROMPT }))
     .with('ai.txt', () => ({ prompt: 'Write a creative story about...' }))
     .with('msg', () => ({ message: '' }))
@@ -146,7 +146,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     }))
     .with('elem~', () => ({ code: DEFAULT_ELEM_CODE, messageInletCount: 1, messageOutletCount: 0 }))
     .with('csound~', () => ({
-      expr: DEFAULT_CSOUND_CODE
+      expr: DEFAULT_CSOUND_CODE,
+      syncTransport: false
     }))
     .with('label', () => ({ message: 'label' }))
     .with('link', () => ({ displayText: 'example.com', url: 'http://example.com' }))
@@ -207,7 +208,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       width: DEFAULT_ORCA_WIDTH,
       height: DEFAULT_ORCA_HEIGHT,
       bpm: 120,
-      frame: 0
+      frame: 0,
+      syncTransport: false
     }))
     .with('uxn', () => ({
       code: '',
@@ -262,7 +264,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       type: 'bytebeat',
       syntax: 'infix',
       sampleRate: 8000,
-      autoEval: true
+      autoEval: true,
+      syncTransport: false
     }))
     .otherwise(() => ({}));
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Play, Square, Terminal } from '@lucide/svelte/icons';
+  import { Play, Square, Terminal, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -11,6 +11,10 @@
   import { strudelMessages } from '$lib/objects/schemas';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
+  import { useNodeDataTracker } from '$lib/history';
+  import TransportSyncSettings from '$lib/components/settings/TransportSyncSettings.svelte';
+  import { StrudelTransportSync } from '$lib/strudel/StrudelTransportSync';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -23,6 +27,7 @@
       fontFamily?: string;
       fontSize?: number;
       showConsole?: boolean;
+      syncTransport?: boolean;
       styles?: Record<string, any>;
     };
   } = $props();
@@ -34,9 +39,12 @@
   let strudelEditor: StrudelEditor | null = null;
   let messageContext: MessageContext;
   let consoleRef: VirtualConsole | null = $state(null);
+  let initTimeout: ReturnType<typeof setTimeout> | null = null;
+  let destroyed = false;
   let hasError = $state(false);
   let isPlaying = $state(false);
   let isInitialized = $state(false);
+  let showSettings = $state(false);
 
   const code = $derived(data.code || '');
   const customConsole = createCustomConsole(nodeId);
@@ -96,17 +104,37 @@
     document.addEventListener('strudel.log', handleStrudelLog);
 
     // Wait for the StrudelEditor to be ready
-    setTimeout(() => {
-      if (strudelEditor?.editor) {
-        isInitialized = true;
+    initTimeout = setTimeout(() => {
+      initTimeout = null;
+      if (destroyed || !strudelEditor?.editor) return;
 
-        // @ts-expect-error -- for debugging
-        window.strudel = strudelEditor.editor;
-      }
+      isInitialized = true;
+
+      transportSync = new StrudelTransportSync({
+        getScheduler: () => strudelEditor?.editor?.repl.scheduler,
+        evaluate,
+        stop,
+        onPlayingChange: (playing) => {
+          isPlaying = playing;
+        }
+      });
+
+      // @ts-expect-error -- for debugging
+      window.strudel = strudelEditor.editor;
     }, 1000);
   });
 
   onDestroy(() => {
+    destroyed = true;
+
+    if (initTimeout) {
+      clearTimeout(initTimeout);
+      initTimeout = null;
+    }
+
+    transportSync?.destroy();
+    transportSync = null;
+
     stop();
     document.removeEventListener('strudel.log', handleStrudelLog);
 
@@ -172,6 +200,27 @@
   });
 
   const consoleLeftPos = $derived(editorContainerWidth + consoleGap);
+  const syncTransport = $derived(data.syncTransport ?? false);
+  const tracker = useNodeDataTracker(nodeId);
+
+  function setSyncTransport(value: boolean) {
+    const oldValue = syncTransport;
+    updateNodeData(nodeId, { syncTransport: value });
+    tracker.commit('syncTransport', oldValue, value);
+  }
+
+  // Transport sync (CPS, phase, play/pause/stop)
+  let transportSync: StrudelTransportSync | null = null;
+
+  $effect(() => {
+    if (!isInitialized || !transportSync) return;
+
+    if (syncTransport) {
+      transportSync.subscribe();
+    } else {
+      transportSync.unsubscribe();
+    }
+  });
 </script>
 
 <div class="relative">
@@ -184,33 +233,59 @@
 
         <div class="flex items-center gap-1">
           <!-- Console toggle button -->
-          <button
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-            onclick={() => updateNodeData(nodeId, { showConsole: !data.showConsole })}
-            title="Toggle Console"
-          >
-            <Terminal class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                onclick={() => {
+                  updateNodeData(nodeId, { showConsole: !data.showConsole });
+                  if (!data.showConsole) showSettings = false;
+                }}
+              >
+                <Terminal class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Toggle Console</Tooltip.Content>
+          </Tooltip.Root>
 
-          <!-- Play/Stop button -->
-          {#if isInitialized}
-            {#if isPlaying}
+          <!-- Settings button -->
+          <Tooltip.Root>
+            <Tooltip.Trigger>
               <button
-                class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                onclick={stop}
-                title="Stop"
+                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                onclick={() => {
+                  showSettings = !showSettings;
+                  if (showSettings) updateNodeData(nodeId, { showConsole: false });
+                }}
               >
-                <Square class="h-4 w-4 text-zinc-300" />
+                <Settings class="h-4 w-4 text-zinc-300" />
               </button>
-            {:else}
-              <button
-                class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                onclick={evaluate}
-                title="Play"
-              >
-                <Play class="h-4 w-4 text-zinc-300" />
-              </button>
-            {/if}
+            </Tooltip.Trigger>
+            <Tooltip.Content>Settings</Tooltip.Content>
+          </Tooltip.Root>
+
+          <!-- Play/Stop button (hidden when synced to transport) -->
+          {#if isInitialized && !syncTransport}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                {#if isPlaying}
+                  <button
+                    class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                    onclick={stop}
+                  >
+                    <Square class="h-4 w-4 text-zinc-300" />
+                  </button>
+                {:else}
+                  <button
+                    class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                    onclick={evaluate}
+                  >
+                    <Play class="h-4 w-4 text-zinc-300" />
+                  </button>
+                {/if}
+              </Tooltip.Trigger>
+              <Tooltip.Content>{isPlaying ? 'Stop' : 'Play'}</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
         </div>
       </div>
@@ -264,4 +339,15 @@
       shouldAutoShowConsoleOnError
     />
   </div>
+
+  <!-- Settings Panel (right side, absolutely positioned) -->
+  {#if showSettings}
+    <div class="absolute top-0" style="left: {consoleLeftPos}px;">
+      <TransportSyncSettings
+        {syncTransport}
+        onSyncTransportChange={setSyncTransport}
+        onClose={() => (showSettings = false)}
+      />
+    </div>
+  {/if}
 </div>

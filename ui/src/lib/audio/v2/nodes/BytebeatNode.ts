@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
+import { transportStore, type TransportPlayState } from '../../../../stores/transport.store';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { logger } from '$lib/utils/logger';
 import { Type } from '@sinclair/typebox';
@@ -115,6 +116,11 @@ export class BytebeatNode implements AudioNodeV2 {
   private sampleRate = 8000;
   private isPlaying = false;
 
+  // Transport sync
+  private syncTransport = false;
+  private transportUnsub: (() => void) | null = null;
+  private lastPlayState: TransportPlayState | null = null;
+
   // Callbacks for UI updates
   public onPlayStateChange: (isPlaying: boolean) => void = () => {};
   public onError: (error: string | null) => void = () => {};
@@ -143,6 +149,41 @@ export class BytebeatNode implements AudioNodeV2 {
     if (sampleRate) this.sampleRate = sampleRate;
 
     await this.ensureBytebeat();
+    this.subscribeTransport();
+  }
+
+  setSyncTransport(sync: boolean): void {
+    this.syncTransport = sync;
+
+    if (sync) {
+      this.subscribeTransport();
+    } else {
+      this.unsubscribeTransport();
+    }
+  }
+
+  private subscribeTransport(): void {
+    if (this.transportUnsub || !this.syncTransport) return;
+
+    this.transportUnsub = transportStore.subscribe((state) => {
+      if (!this.syncTransport) return;
+
+      const { playState } = state;
+      if (playState === this.lastPlayState) return;
+      this.lastPlayState = playState;
+
+      match(playState)
+        .with('playing', () => this.play())
+        .with('paused', () => this.pause())
+        .with('stopped', () => this.stop())
+        .exhaustive();
+    });
+  }
+
+  private unsubscribeTransport(): void {
+    this.transportUnsub?.();
+    this.transportUnsub = null;
+    this.lastPlayState = null;
   }
 
   async send(key: string, message: unknown): Promise<void> {
@@ -330,6 +371,8 @@ export class BytebeatNode implements AudioNodeV2 {
   }
 
   destroy(): void {
+    this.unsubscribeTransport();
+
     if (this.workletNode) {
       try {
         this.workletNode.disconnect();

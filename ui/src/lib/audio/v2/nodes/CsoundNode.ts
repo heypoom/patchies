@@ -4,6 +4,7 @@ import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
 import type { CsoundObj } from '@csound/browser';
 import { canUseSharedArrayBuffer } from '$lib/audio/buffer-bridge';
+import { transportStore, type TransportPlayState } from '../../../../stores/transport.store';
 
 /**
  * CsoundNode implements the csound~ audio node.
@@ -45,6 +46,11 @@ export class CsoundNode implements AudioNodeV2 {
   private optionsString = '';
   private codeString = '';
 
+  // Transport sync
+  private syncTransport = false;
+  private transportUnsub: (() => void) | null = null;
+  private lastPlayState: TransportPlayState | null = null;
+
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
     this.audioContext = audioContext;
@@ -65,6 +71,47 @@ export class CsoundNode implements AudioNodeV2 {
     if (code) {
       await this.setCode(code);
     }
+
+    this.subscribeTransport();
+  }
+
+  setSyncTransport(sync: boolean): void {
+    this.syncTransport = sync;
+
+    if (sync) {
+      this.subscribeTransport();
+    } else {
+      this.unsubscribeTransport();
+    }
+  }
+
+  private subscribeTransport(): void {
+    if (this.transportUnsub || !this.syncTransport) return;
+
+    this.transportUnsub = transportStore.subscribe((state) => {
+      if (!this.syncTransport) return;
+
+      const { playState } = state;
+      if (playState === this.lastPlayState) return;
+      this.lastPlayState = playState;
+
+      match(playState)
+        .with('playing', () => this.resume())
+        .with('paused', () => this.pause())
+        .with('stopped', async () => {
+          await this.csound?.stop();
+
+          this.isPaused = true;
+          this.isProgramLoaded = false;
+        })
+        .exhaustive();
+    });
+  }
+
+  private unsubscribeTransport(): void {
+    this.transportUnsub?.();
+    this.transportUnsub = null;
+    this.lastPlayState = null;
   }
 
   async send(key: string, value: unknown): Promise<void> {
@@ -287,6 +334,8 @@ export class CsoundNode implements AudioNodeV2 {
   }
 
   async destroy() {
+    this.unsubscribeTransport();
+
     if (!this.csound) return;
 
     try {
