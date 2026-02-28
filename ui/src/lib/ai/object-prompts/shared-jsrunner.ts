@@ -34,12 +34,28 @@ export const jsRunnerInstructions = `
 - requestAnimationFrame(cb) - Animation frame with auto-cleanup
 - onCleanup(cb) - Register cleanup callback for unmount/re-execution
 - await llm(prompt, options?) - Call Gemini API (requires API key in settings)
-  * Options: { imageNodeId?: string, abortSignal?: AbortSignal }
+  * Options: { abortSignal?: AbortSignal }
 
 **Named Channels (wireless messaging):**
 - send(data, { to: 'name' }) - Broadcast to all listeners on channel (string 'to' = channel)
 - recv(cb, { from: 'name' }) - Receive from channel (cb receives data, meta with source/channel)
 - Works with visual send/recv objects on same channel
+
+**Clock (beat-synced timing from global transport):**
+- clock.time - time in seconds
+- clock.beat - beat in measure (0 to beatsPerBar-1)
+- clock.phase - position within current beat (0.0 to 1.0)
+- clock.bpm - tempo in BPM
+- clock.bar - 0-indexed bar
+- clock.beatsPerBar, clock.denominator - time signature
+- clock.subdiv(n) - subdivision index (0 to n-1) within beat (per-node, polyrhythm-safe)
+- clock.subdivPhase(n) - progress within current subdivision (0.0 to 1.0)
+- clock.play(), clock.pause(), clock.stop() - transport control
+- clock.setBpm(bpm), clock.setTimeSignature(num, denom), clock.seek(seconds)
+- clock.onBeat(beat, cb) - fire on beat (number, array, or '*' for all). cb receives (time)
+- clock.schedule(time, cb) - One-shot at seconds or 'bar:beat:sixteenth' notation
+- clock.every(interval, cb) - Repeating at 'bar:beat:sixteenth' interval (e.g. '1:0:0' = every bar)
+- clock.cancel(id), clock.cancelAll() - Cancel scheduled callbacks
 `.trim();
 
 /**
