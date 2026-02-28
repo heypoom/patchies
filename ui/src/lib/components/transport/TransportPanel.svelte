@@ -504,8 +504,8 @@
 
     <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
-    <!-- Group 4: Volume -->
-    <div class="flex items-center gap-2" class:flex-[2]={isExpanded}>
+    <!-- Group 4: Volume, DSP & Timeline -->
+    <div class="flex w-full items-center gap-2 sm:w-auto" class:sm:flex-[2]={isExpanded}>
       <Tooltip.Root>
         <Tooltip.Trigger>
           <button
@@ -530,14 +530,11 @@
         min={0}
         max={1}
         step={0.01}
-        class="w-20 cursor-pointer {isExpanded ? 'flex-1' : ''}"
+        class="w-20 flex-1 cursor-pointer {isExpanded ? 'sm:flex-1' : ''}"
       />
-    </div>
 
-    <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
+      <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
-    <!-- Group 5: DSP & Timeline -->
-    <div class="flex items-center gap-2">
       <Tooltip.Root>
         <Tooltip.Trigger>
           <button
