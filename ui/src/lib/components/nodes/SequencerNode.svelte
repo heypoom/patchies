@@ -110,7 +110,7 @@
       const value = track.stepValues[stepIndex] ?? 1.0;
 
       const payload = match(mode)
-        .with('audio', () => ({ time, value }))
+        .with('audio', () => ({ type: 'schedule', time, value }))
         .with('value', () => value)
         .with('bang', () => ({ type: 'bang' }))
         .exhaustive();
