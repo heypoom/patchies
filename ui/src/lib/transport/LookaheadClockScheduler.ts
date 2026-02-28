@@ -16,6 +16,7 @@ import {
   type SchedulerCallback,
   type SchedulerOptions
 } from './ClockScheduler';
+import type { ScheduledEventDescriptor, FiredEventRecord } from './SchedulerRegistry';
 
 export class LookaheadClockScheduler implements ClockScheduler {
   private intervalId: ReturnType<typeof setInterval> | null = null;
@@ -25,6 +26,10 @@ export class LookaheadClockScheduler implements ClockScheduler {
   private beatCallbacks = new Map<string, BeatCallback>();
   private scheduleCallbacks = new Map<string, ScheduleCallback>();
   private repeatCallbacks = new Map<string, RepeatCallback>();
+
+  /** Ring buffer of recently-fired events for timeline visualization. */
+  private firedEvents: FiredEventRecord[] = [];
+  private static MAX_FIRED_BUFFER = 64;
 
   constructor(
     private getState: () => ClockState,
@@ -50,6 +55,41 @@ export class LookaheadClockScheduler implements ClockScheduler {
   dispose(): void {
     this.stop();
     this.cancelAll();
+    this.firedEvents = [];
+  }
+
+  /** Return a snapshot of all registered events for timeline visualization. */
+  getEventSnapshot(): ScheduledEventDescriptor[] {
+    const events: ScheduledEventDescriptor[] = [];
+
+    for (const [id, cb] of this.beatCallbacks) {
+      events.push({ id, kind: 'beat', beats: cb.beats });
+    }
+
+    for (const [id, cb] of this.scheduleCallbacks) {
+      events.push({ id, kind: 'schedule', time: cb.time, fired: cb.fired });
+    }
+
+    for (const [id, cb] of this.repeatCallbacks) {
+      events.push({ id, kind: 'every', interval: cb.interval, lastFired: cb.lastFired });
+    }
+
+    return events;
+  }
+
+  /** Drain fired events buffer. Returns and clears accumulated events. */
+  drainFiredEvents(): FiredEventRecord[] {
+    const events = this.firedEvents;
+    this.firedEvents = [];
+    return events;
+  }
+
+  /** Record that a callback fired (for timeline flash animation). */
+  private recordFired(id: string, firedAt: number): void {
+    this.firedEvents.push({ id, firedAt, wallTime: performance.now() });
+    if (this.firedEvents.length > LookaheadClockScheduler.MAX_FIRED_BUFFER) {
+      this.firedEvents.shift();
+    }
   }
 
   private tick(): void {
@@ -59,7 +99,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
 
     // --- onBeat: visual mode (fire after beat change) ---
     if (clock.beat !== this.lastBeat) {
-      for (const [, item] of this.beatCallbacks) {
+      for (const [id, item] of this.beatCallbacks) {
         if (item.audio) continue;
         const shouldFire =
           item.beats === '*' || (Array.isArray(item.beats) && item.beats.includes(clock.beat));
@@ -67,6 +107,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
         if (shouldFire) {
           try {
             item.callback(clock.time);
+            this.recordFired(id, clock.time);
           } catch (e) {
             console.error('[ClockScheduler] onBeat callback error:', e);
           }
@@ -84,7 +125,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
       const nextBeat = (clock.beat + 1) % clock.beatsPerBar;
 
       if (nextBeatTime <= horizon) {
-        for (const [, item] of this.beatCallbacks) {
+        for (const [id, item] of this.beatCallbacks) {
           if (!item.audio) continue;
           const shouldFire =
             item.beats === '*' || (Array.isArray(item.beats) && item.beats.includes(nextBeat));
@@ -92,6 +133,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
           if (shouldFire && item.lastFiredBeatTime !== nextBeatTime) {
             try {
               item.callback(nextBeatTime);
+              this.recordFired(id, nextBeatTime);
             } catch (e) {
               console.error('[ClockScheduler] onBeat audio callback error:', e);
             }
@@ -112,6 +154,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
       if (shouldFire) {
         try {
           item.callback(item.time);
+          this.recordFired(id, item.time);
         } catch (e) {
           console.error('[ClockScheduler] schedule callback error:', e);
         }
@@ -122,7 +165,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
     }
 
     // --- every ---
-    for (const [, item] of this.repeatCallbacks) {
+    for (const [id, item] of this.repeatCallbacks) {
       // Detect transport rewind (stop -> play from beginning)
       if (clock.time < item.lastFired) {
         item.lastFired = 0;
@@ -142,6 +185,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
         if (fireTime <= horizon) {
           try {
             item.callback(fireTime);
+            this.recordFired(id, fireTime);
           } catch (e) {
             console.error('[ClockScheduler] every callback error:', e);
           }
@@ -152,6 +196,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
         if (clock.time >= fireTime) {
           try {
             item.callback(clock.time);
+            this.recordFired(id, clock.time);
           } catch (e) {
             console.error('[ClockScheduler] every callback error:', e);
           }

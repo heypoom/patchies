@@ -1,5 +1,6 @@
 import { Transport } from '$lib/transport';
 import { LookaheadClockScheduler } from '$lib/transport/ClockScheduler';
+import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2 } from '../interfaces/text-objects';
@@ -39,9 +40,11 @@ export class BeatObject implements TextObjectV2 {
     });
 
     this.scheduler.start();
+    SchedulerRegistry.getInstance().register(this.nodeId, this.scheduler);
   }
 
   destroy(): void {
+    SchedulerRegistry.getInstance().unregister(this.nodeId);
     this.scheduler.dispose();
   }
 }

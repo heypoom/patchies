@@ -7,6 +7,7 @@
   import { Play, Pause, Square, Volume2, VolumeX, Volume, Volume1 } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
   import { match } from 'ts-pattern';
+  import TimelineRuler from './TimelineRuler.svelte';
 
   const audioService = AudioService.getInstance();
 
@@ -311,171 +312,175 @@
 </script>
 
 <div
-  class="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/95 px-3 py-2 shadow-xl backdrop-blur-sm"
+  class="flex flex-col gap-1 rounded-lg border border-zinc-700 bg-zinc-900/95 px-3 py-2 shadow-xl backdrop-blur-sm"
 >
-  <!-- Play/Pause -->
-  <Tooltip.Root>
-    <Tooltip.Trigger>
-      <button
-        onclick={isPlaying ? handlePause : handlePlay}
-        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={!isDspEnabled}
-      >
-        {#if isPlaying}
-          <Pause class="h-4 w-4 text-zinc-300" />
+  <div class="flex flex-wrap items-center gap-2">
+    <!-- Play/Pause -->
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <button
+          onclick={isPlaying ? handlePause : handlePlay}
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!isDspEnabled}
+        >
+          {#if isPlaying}
+            <Pause class="h-4 w-4 text-zinc-300" />
+          {:else}
+            <Play class="h-4 w-4 text-zinc-300" />
+          {/if}
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>
+        {#if !isDspEnabled}
+          Enable DSP first
         {:else}
-          <Play class="h-4 w-4 text-zinc-300" />
+          {isPlaying ? 'Pause' : 'Play'} (Space)
         {/if}
-      </button>
-    </Tooltip.Trigger>
-    <Tooltip.Content>
-      {#if !isDspEnabled}
-        Enable DSP first
-      {:else}
-        {isPlaying ? 'Pause' : 'Play'} (Space)
-      {/if}
-    </Tooltip.Content>
-  </Tooltip.Root>
+      </Tooltip.Content>
+    </Tooltip.Root>
 
-  <!-- Stop -->
-  <Tooltip.Root>
-    <Tooltip.Trigger>
-      <button
-        onclick={handleStop}
-        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={!isDspEnabled}
-      >
-        <Square class="h-3.5 w-3.5 text-zinc-300" />
-      </button>
-    </Tooltip.Trigger>
-    <Tooltip.Content>
-      {#if !isDspEnabled}
-        Enable DSP first
-      {:else}
-        Stop
-      {/if}
-    </Tooltip.Content>
-  </Tooltip.Root>
-
-  <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
-
-  <!-- Time Display -->
-  {#if isEditingTime}
-    <input
-      type="text"
-      bind:this={timeInputRef}
-      bind:value={editTimeValue}
-      onblur={handleTimeEditComplete}
-      onkeydown={handleTimeEditKeydown}
-      class="w-[90px] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none"
-    />
-  {:else}
+    <!-- Stop -->
     <Tooltip.Root>
       <Tooltip.Trigger>
         <button
-          onclick={handleTimeDisplayClick}
-          class="w-[90px] cursor-pointer rounded bg-zinc-800 px-2 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+          onclick={handleStop}
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!isDspEnabled}
         >
-          {timeDisplay}
+          <Square class="h-3.5 w-3.5 text-zinc-300" />
         </button>
       </Tooltip.Trigger>
-      <Tooltip.Content>Click to toggle format, double-click to edit</Tooltip.Content>
+      <Tooltip.Content>
+        {#if !isDspEnabled}
+          Enable DSP first
+        {:else}
+          Stop
+        {/if}
+      </Tooltip.Content>
     </Tooltip.Root>
-  {/if}
 
-  <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
+    <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
-  <!-- BPM -->
-  <div class="flex items-center gap-1.5">
-    <span class="text-xs text-zinc-500">BPM</span>
+    <!-- Time Display -->
+    {#if isEditingTime}
+      <input
+        type="text"
+        bind:this={timeInputRef}
+        bind:value={editTimeValue}
+        onblur={handleTimeEditComplete}
+        onkeydown={handleTimeEditKeydown}
+        class="w-[90px] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none"
+      />
+    {:else}
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            onclick={handleTimeDisplayClick}
+            class="w-[90px] cursor-pointer rounded bg-zinc-800 px-2 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+          >
+            {timeDisplay}
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Click to toggle format, double-click to edit</Tooltip.Content>
+      </Tooltip.Root>
+    {/if}
 
-    <input
-      type="number"
-      value={bpm}
-      onchange={handleBpmChange}
-      onkeydown={(e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-      min="1"
-      max="999"
-      class="w-[46px] [appearance:textfield] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 outline-none focus:ring-1 focus:ring-zinc-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-      title="Beats per minute"
-    />
+    <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
+
+    <!-- BPM -->
+    <div class="flex items-center gap-1.5">
+      <span class="text-xs text-zinc-500">BPM</span>
+
+      <input
+        type="number"
+        value={bpm}
+        onchange={handleBpmChange}
+        onkeydown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        min="1"
+        max="999"
+        class="w-[46px] [appearance:textfield] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 outline-none focus:ring-1 focus:ring-zinc-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        title="Beats per minute"
+      />
+    </div>
+
+    <!-- Time Signature -->
+    {#if isEditingTimeSig}
+      <input
+        type="text"
+        bind:this={timeSigInputRef}
+        bind:value={editTimeSigValue}
+        onblur={handleTimeSigEditComplete}
+        onkeydown={handleTimeSigKeydown}
+        class="w-[46px] rounded bg-zinc-800 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none"
+      />
+    {:else}
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            onclick={enterTimeSigEditMode}
+            class="w-[46px] cursor-pointer rounded bg-zinc-800 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+          >
+            {timeSigDisplay}
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Time signature — click to edit</Tooltip.Content>
+      </Tooltip.Root>
+    {/if}
+
+    <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
+
+    <!-- Volume -->
+    <div class="flex items-center gap-2">
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            onclick={toggleMute}
+            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-700"
+          >
+            <!-- svelte-ignore svelte_component_deprecated -->
+            <svelte:component
+              this={volumeIcon}
+              class="h-4 w-4 {isMuted || volume === 0 ? 'text-red-400' : 'text-zinc-300'}"
+            />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>{isMuted || volume === 0 ? 'Unmute' : 'Mute'}</Tooltip.Content>
+      </Tooltip.Root>
+      <Slider
+        value={volume}
+        onValueChange={handleVolumeChange}
+        type="single"
+        min={0}
+        max={1}
+        step={0.01}
+        class="w-20 cursor-pointer"
+      />
+    </div>
+
+    <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
+
+    <!-- DSP Toggle -->
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <button
+          onclick={toggleDsp}
+          class="cursor-pointer rounded px-2 py-1 text-xs font-medium transition-colors {isDspEnabled
+            ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+            : 'bg-red-900/50 text-red-400 hover:bg-red-900/70'}"
+        >
+          DSP
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>
+        {isDspEnabled ? 'DSP On - Click to disable' : 'DSP Off - Click to enable'}
+      </Tooltip.Content>
+    </Tooltip.Root>
   </div>
 
-  <!-- Time Signature -->
-  {#if isEditingTimeSig}
-    <input
-      type="text"
-      bind:this={timeSigInputRef}
-      bind:value={editTimeSigValue}
-      onblur={handleTimeSigEditComplete}
-      onkeydown={handleTimeSigKeydown}
-      class="w-[46px] rounded bg-zinc-800 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none"
-    />
-  {:else}
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        <button
-          onclick={enterTimeSigEditMode}
-          class="w-[46px] cursor-pointer rounded bg-zinc-800 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
-        >
-          {timeSigDisplay}
-        </button>
-      </Tooltip.Trigger>
-      <Tooltip.Content>Time signature — click to edit</Tooltip.Content>
-    </Tooltip.Root>
-  {/if}
-
-  <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
-
-  <!-- Volume -->
-  <div class="flex items-center gap-2">
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        <button
-          onclick={toggleMute}
-          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-700"
-        >
-          <!-- svelte-ignore svelte_component_deprecated -->
-          <svelte:component
-            this={volumeIcon}
-            class="h-4 w-4 {isMuted || volume === 0 ? 'text-red-400' : 'text-zinc-300'}"
-          />
-        </button>
-      </Tooltip.Trigger>
-      <Tooltip.Content>{isMuted || volume === 0 ? 'Unmute' : 'Mute'}</Tooltip.Content>
-    </Tooltip.Root>
-    <Slider
-      value={volume}
-      onValueChange={handleVolumeChange}
-      type="single"
-      min={0}
-      max={1}
-      step={0.01}
-      class="w-20 cursor-pointer"
-    />
-  </div>
-
-  <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
-
-  <!-- DSP Toggle -->
-  <Tooltip.Root>
-    <Tooltip.Trigger>
-      <button
-        onclick={toggleDsp}
-        class="cursor-pointer rounded px-2 py-1 text-xs font-medium transition-colors {isDspEnabled
-          ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-          : 'bg-red-900/50 text-red-400 hover:bg-red-900/70'}"
-      >
-        DSP
-      </button>
-    </Tooltip.Trigger>
-    <Tooltip.Content>
-      {isDspEnabled ? 'DSP On - Click to disable' : 'DSP Off - Click to enable'}
-    </Tooltip.Content>
-  </Tooltip.Root>
+  <TimelineRuler />
 </div>
