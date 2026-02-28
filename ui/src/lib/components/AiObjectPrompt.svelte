@@ -7,7 +7,8 @@
     Minus,
     Maximize2,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    PenLine
   } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import { isMobile, isSidebarOpen } from '../../stores/ui.store';
@@ -53,6 +54,7 @@
   let isPromptExpanded = $state(false);
 
   const isEditMode = $derived(editingNode !== null);
+
   const title = $derived(
     isEditMode
       ? 'AI Object Edit'
@@ -60,6 +62,7 @@
         ? 'AI Multi-Object Insert'
         : 'AI Object Insert'
   );
+
   const description = $derived(
     isEditMode
       ? `Editing: ${editingNode?.data?.name || editingNode?.data?.title || editingNode?.type || 'object'}`
@@ -67,7 +70,9 @@
         ? 'Describe connected objects to create'
         : 'Describe the object you want to create'
   );
+
   const buttonText = $derived(isEditMode ? 'Update' : 'Insert');
+
   const placeholderText = $derived(
     isEditMode
       ? 'e.g., "make it go faster"'
@@ -79,7 +84,14 @@
   // Auto-focus input when opened and reset position
   $effect(() => {
     if (open) {
-      dialogPosition = { x: position.x, y: position.y };
+      // On desktop: center screen (right offset = half of remaining space). On mobile: canvas click.
+      dialogPosition = $isMobile
+        ? { x: position.x, y: position.y }
+        : {
+            x: Math.max(16, (window.innerWidth - 384) / 2),
+            y: Math.max(16, window.innerHeight / 3)
+          };
+
       setTimeout(() => {
         promptInput?.focus();
       }, 0);
@@ -89,6 +101,7 @@
   // Sync state with the global store for toolbar button styling
   $effect(() => {
     const mode: AiPromptMode = isEditMode ? 'edit' : isMultiObjectMode ? 'multi' : 'single';
+
     if (open) {
       aiPromptStore.open(mode);
     } else {
@@ -103,6 +116,7 @@
   $effect(() => {
     if (open) {
       const mode: AiPromptMode = isEditMode ? 'edit' : isMultiObjectMode ? 'multi' : 'single';
+
       aiPromptStore.setMode(mode);
     }
   });
@@ -113,6 +127,10 @@
 
   function handleRestore() {
     isMinimized = false;
+    // On desktop: snap to top-right when restoring the thinking view
+    if (!$isMobile) {
+      dialogPosition = { x: 16, y: 16 };
+    }
     setTimeout(() => promptInput?.focus(), 0);
   }
 
@@ -153,23 +171,43 @@
   function handleHeaderMouseDown(event: MouseEvent) {
     // Only start drag on left click and not on buttons
     if (event.button !== 0) return;
+
     const target = event.target as HTMLElement;
     if (target.closest('button')) return;
 
     isDragging = true;
-    dragOffset = {
-      x: event.clientX - dialogPosition.x,
-      y: event.clientY - dialogPosition.y
-    };
+
+    if ($isMobile) {
+      dragOffset = {
+        x: event.clientX - dialogPosition.x,
+        y: event.clientY - dialogPosition.y
+      };
+    } else {
+      // Desktop: x tracks offset from right edge of viewport
+      dragOffset = {
+        x: window.innerWidth - event.clientX - dialogPosition.x,
+        y: event.clientY - dialogPosition.y
+      };
+    }
+
     event.preventDefault();
   }
 
   function handleMouseMove(event: MouseEvent) {
     if (!isDragging) return;
-    dialogPosition = {
-      x: event.clientX - dragOffset.x,
-      y: event.clientY - dragOffset.y
-    };
+
+    if ($isMobile) {
+      dialogPosition = {
+        x: event.clientX - dragOffset.x,
+        y: event.clientY - dragOffset.y
+      };
+    } else {
+      // Desktop: keep right-based tracking
+      dialogPosition = {
+        x: window.innerWidth - event.clientX - dragOffset.x,
+        y: event.clientY - dragOffset.y
+      };
+    }
   }
 
   function handleMouseUp() {
@@ -361,7 +399,9 @@
   {/if}
 
   <div
-    class="ai-prompt-dialog absolute z-50 w-96 rounded-lg border {isLoading
+    class="ai-prompt-dialog {$isMobile
+      ? 'absolute'
+      : 'fixed'} z-50 w-96 rounded-lg border {isLoading
       ? isEditMode
         ? 'border-amber-500'
         : isMultiObjectMode
@@ -374,7 +414,9 @@
           ? 'ring-2 ring-blue-500/50'
           : 'ring-2 ring-purple-500/50'
       : ''} {isDragging ? 'cursor-grabbing' : ''} {isMinimized ? 'hidden' : ''}"
-    style="left: {dialogPosition.x}px; top: {dialogPosition.y}px;"
+    style={$isMobile
+      ? `left: ${dialogPosition.x}px; top: ${dialogPosition.y}px;`
+      : `right: ${dialogPosition.x}px; top: ${dialogPosition.y}px;`}
   >
     <!-- Header -->
     <div
@@ -386,7 +428,7 @@
       tabindex="-1"
     >
       {#if isEditMode}
-        <Edit3 class="h-5 w-5 text-amber-400" />
+        <PenLine class="h-5 w-5 text-amber-400" />
       {:else if isMultiObjectMode}
         <Network class="h-5 w-5 text-blue-400" />
       {:else}
