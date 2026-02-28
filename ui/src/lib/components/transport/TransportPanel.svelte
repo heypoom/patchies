@@ -423,7 +423,7 @@
     <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
     <!-- Group 2: Time Display (highest priority to expand) -->
-    <div class="min-w-[90px]" class:flex-[3]={isExpanded}>
+    <div class="min-w-[90px] flex-1 sm:flex-initial" class:sm:flex-[3]={isExpanded}>
       {#if isEditingTime}
         <input
           type="text"
@@ -454,7 +454,7 @@
     <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
     <!-- Group 3: BPM & Time Signature -->
-    <div class="flex items-center gap-2">
+    <div class="flex flex-1 items-center gap-2 sm:flex-initial">
       <div class="flex items-center gap-1.5">
         <span class="text-xs text-zinc-500">BPM</span>
         <Tooltip.Root>
