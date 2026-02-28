@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import { match } from 'ts-pattern';
 import { DEFAULT_AUTOPLAY, DEFAULT_BPM, DEFAULT_TIME_SIGNATURE } from '$lib/transport/constants';
+import _ from 'lodash';
 
 const STORAGE_KEY = 'patchies:transport';
 
@@ -61,8 +62,7 @@ function saveToStorage(state: TransportStoreState): void {
 
   try {
     // Don't persist panelOpen state
-    const { panelOpen: _, ...persistedState } = state;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedState));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(_.omit(state, 'panelOpen')));
   } catch (e) {
     console.error('Failed to save transport state to localStorage', e);
   }
