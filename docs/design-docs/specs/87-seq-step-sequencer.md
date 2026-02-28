@@ -6,7 +6,7 @@ A DAW-style multi-track step sequencer (drum machine) driven by the global trans
 
 ## Concept
 
-N tracks, each with 16 (configurable) steps. All tracks share the same clock — one bar divided into `steps` equal parts. When step `s` fires, every track with `stepOn[s] = true` sends a message on its own outlet. Supports swing, audio-rate scheduling, and per-step values (velocity).
+ hN tracks, each with 16 (configurable) steps. All tracks share the same clock — one bar divided into `steps` equal parts. When step `s` fires, every track with `stepOn[s] = true` sends a message on its own outlet. Supports swing, audio-rate scheduling, and per-step values (velocity).
 
 ## Node Data
 
@@ -112,7 +112,7 @@ Always a value — there's no bang-only mode. The value is always present.
 
 ## Files
 
-- `ui/src/lib/components/nodes/SeqNode.svelte` — visual node
+- `ui/src/lib/components/nodes/SequencerNode.svelte` — visual node
 - `ui/src/lib/nodes/node-types.ts` — registration
 - `ui/src/lib/nodes/defaultNodeData.ts` — default data
 - `ui/src/lib/extensions/object-packs.ts` — add to Control pack

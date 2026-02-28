@@ -267,5 +267,36 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       autoEval: true,
       syncTransport: false
     }))
+    .with('sequencer', () => ({
+      steps: 16,
+      tracks: [
+        {
+          name: 'KICK',
+          color: '#e57373',
+          stepOn: Array(16).fill(false),
+          stepValues: Array(16).fill(1.0)
+        },
+        {
+          name: 'SNARE',
+          color: '#64b5f6',
+          stepOn: Array(16).fill(false),
+          stepValues: Array(16).fill(1.0)
+        },
+        {
+          name: 'CHH',
+          color: '#ffd54f',
+          stepOn: Array(16).fill(false),
+          stepValues: Array(16).fill(1.0)
+        },
+        {
+          name: 'OHH',
+          color: '#b39ddb',
+          stepOn: Array(16).fill(false),
+          stepValues: Array(16).fill(1.0)
+        }
+      ],
+      swing: 0,
+      audioRate: false
+    }))
     .otherwise(() => ({}));
 }

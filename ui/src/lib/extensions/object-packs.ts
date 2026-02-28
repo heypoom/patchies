@@ -20,6 +20,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'loadbang',
       'metro',
       'beat',
+      'sequencer',
       'trigger',
       'spigot',
       'delay',
