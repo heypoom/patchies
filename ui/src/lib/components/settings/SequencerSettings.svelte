@@ -47,7 +47,7 @@
 </script>
 
 <div class="nodrag w-56 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
-  <div class="space-y-4">
+  <div class="flex flex-col gap-3">
     <!-- Steps -->
     <div>
       <label class="mb-2 block text-xs font-medium text-zinc-300">Steps</label>
@@ -69,7 +69,7 @@
     </div>
 
     <!-- Output mode (bang / value / audio) -->
-    <div>
+    <div class="py-1.5">
       <label class="mb-2 block text-xs font-medium text-zinc-300">Output</label>
       <div class="flex gap-1">
         {#each OUTPUT_MODES as mode}
@@ -144,6 +144,7 @@
               <Plus class="h-3.5 w-3.5" />
             </button>
           </Tooltip.Trigger>
+
           <Tooltip.Content>Add track (max 8)</Tooltip.Content>
         </Tooltip.Root>
       </div>
