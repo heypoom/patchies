@@ -155,13 +155,15 @@ clock.onBeat(0, (time) => {
 
 Schedule a one-shot callback at a specific time.
 
+The `bar:beat:sixteenth` notation is **zero-indexed** (like Tone.js) — `'0:0:0'` is the start, `'1:0:0'` is 1 bar from the start, and so on. This differs from DAWs like Ableton (which start at `1.1.1`).
+
 ```javascript
 // Absolute time in seconds
 clock.schedule(clock.time + 2, () => drop());
 
-// Bar:beat:sixteenth notation
-clock.schedule('4:0:0', () => breakdown());  // bar 4, beat 0
-clock.schedule('8:2:0', () => buildUp());    // bar 8, beat 2
+// Bar:beat:sixteenth notation (zero-indexed)
+clock.schedule('4:0:0', () => breakdown());  // 4 bars from start
+clock.schedule('8:2:0', () => buildUp());    // 8 bars + 2 beats from start
 
 // Audio-precise — fires early with precise time
 clock.schedule('4:0:0', (time) => {

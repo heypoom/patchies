@@ -54,13 +54,11 @@
   }
 
   function formatBars(currentBar: number, currentBeat: number, currentPhase: number): string {
-    // Display as 1-indexed: bar:beat:subdivision
-    const displayBar = currentBar + 1;
-    const displayBeat = currentBeat + 1;
-    const sixteenths = Math.floor(currentPhase * 4) + 1;
+    // Display as 0-indexed to match clock scheduling API (like Tone.js)
+    const sixteenths = Math.floor(currentPhase * 4);
     let beatPad = beatsPerBar > 9 ? 2 : 1;
 
-    return `${displayBar.toString().padStart(4, '0')}:${displayBeat.toString().padStart(beatPad, '0')}:${sixteenths.toString()}`;
+    return `${currentBar.toString().padStart(4, '0')}:${currentBeat.toString().padStart(beatPad, '0')}:${sixteenths.toString()}`;
   }
 
   // Volume icon
@@ -205,17 +203,16 @@
         return Math.max(0, m * 60 + s + cs / 100);
       })
       .with('bars', () => {
-        // Parse bars:beats:sixteenths (1-indexed in display)
+        // Parse bars:beats:sixteenths (0-indexed, matching clock scheduling API)
         const parts = input.split(':').map(Number);
         if (parts.some(isNaN)) return null;
 
-        const [bars = 1, beats = 1, sixteenths = 1] = parts;
+        const [bars = 0, beats = 0, sixteenths = 0] = parts;
 
-        // Convert to 0-indexed for calculation
         // Each beat is (4/denominator) quarter notes long
         const quarterNotesPerBeat = 4 / denominator;
         const totalQuarterNotes =
-          ((bars - 1) * beatsPerBar + (beats - 1) + (sixteenths - 1) / 4) * quarterNotesPerBeat;
+          (bars * beatsPerBar + beats + sixteenths / 4) * quarterNotesPerBeat;
 
         return Math.max(0, totalQuarterNotes / (currentBpm / 60));
       })
