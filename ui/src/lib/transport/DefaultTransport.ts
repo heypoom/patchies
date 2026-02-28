@@ -31,11 +31,20 @@ export class DefaultTransport implements ITransport {
   /**
    * Capture current elapsed time and record new clock timestamp.
    * Called when clock source changes (e.g., AudioContext suspended → running).
+   *
+   * Guards against clock domain switches: performance.now() and AudioContext.currentTime
+   * have different epochs, so the delta can go negative when switching between them.
    */
   private resync(): void {
     if (this._isPlaying) {
-      this._elapsed = this.seconds;
-      this._lastSync = this.now();
+      const newNow = this.now();
+      const delta = newNow - this._lastSync;
+
+      if (delta >= 0) {
+        this._elapsed += delta;
+      }
+
+      this._lastSync = newNow;
     }
   }
 
@@ -46,7 +55,18 @@ export class DefaultTransport implements ITransport {
    */
   setAudioContext(ctx: AudioContext): void {
     if (this._audioContext === ctx) return;
+
+    // Capture elapsed time using the CURRENT clock before switching source
+    if (this._isPlaying) {
+      this._elapsed += this.now() - this._lastSync;
+    }
+
     this._audioContext = ctx;
+
+    // Re-anchor to the (possibly new) clock source
+    if (this._isPlaying) {
+      this._lastSync = this.now();
+    }
 
     ctx.addEventListener('statechange', () => {
       if (ctx.state === 'running') {
@@ -57,13 +77,12 @@ export class DefaultTransport implements ITransport {
 
     if (ctx.state === 'running') {
       console.log('[transport] clock source: AudioContext.currentTime');
-      this.resync();
     }
   }
 
   get seconds(): number {
     if (!this._isPlaying) return this._elapsed;
-    return this._elapsed + (this.now() - this._lastSync);
+    return Math.max(0, this._elapsed + (this.now() - this._lastSync));
   }
 
   get ticks(): number {
