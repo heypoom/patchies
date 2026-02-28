@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Play, Square, Terminal, Settings } from '@lucide/svelte/icons';
+  import { Ellipsis, Play, Square } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -12,9 +12,9 @@
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import { useNodeDataTracker } from '$lib/history';
-  import TransportSyncSettings from '$lib/components/settings/TransportSyncSettings.svelte';
   import { StrudelTransportSync } from '$lib/strudel/StrudelTransportSync';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import * as Popover from '$lib/components/ui/popover';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -44,7 +44,6 @@
   let hasError = $state(false);
   let isPlaying = $state(false);
   let isInitialized = $state(false);
-  let showSettings = $state(false);
 
   const code = $derived(data.code || '');
   const customConsole = createCustomConsole(nodeId);
@@ -232,38 +231,6 @@
         </div>
 
         <div class="flex items-center gap-1">
-          <!-- Console toggle button -->
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                onclick={() => {
-                  updateNodeData(nodeId, { showConsole: !data.showConsole });
-                  if (!data.showConsole) showSettings = false;
-                }}
-              >
-                <Terminal class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>Toggle Console</Tooltip.Content>
-          </Tooltip.Root>
-
-          <!-- Settings button -->
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                onclick={() => {
-                  showSettings = !showSettings;
-                  if (showSettings) updateNodeData(nodeId, { showConsole: false });
-                }}
-              >
-                <Settings class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>Settings</Tooltip.Content>
-          </Tooltip.Root>
-
           <!-- Play/Stop button (hidden when synced to transport) -->
           {#if isInitialized && !syncTransport}
             <Tooltip.Root>
@@ -287,6 +254,49 @@
               <Tooltip.Content>{isPlaying ? 'Stop' : 'Play'}</Tooltip.Content>
             </Tooltip.Root>
           {/if}
+
+          <Popover.Root>
+            <Popover.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700 sm:opacity-0 sm:group-hover:opacity-100"
+              >
+                <Ellipsis class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Popover.Trigger>
+
+            <Popover.Content
+              class="flex w-auto flex-col p-1"
+              align="end"
+              sideOffset={4}
+              onCloseAutoFocus={(e) => e.preventDefault()}
+            >
+              <label
+                class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
+              >
+                <input
+                  type="checkbox"
+                  checked={data.showConsole ?? false}
+                  onchange={() => updateNodeData(nodeId, { showConsole: !data.showConsole })}
+                  class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
+                />
+
+                <span class="text-zinc-300">Show console</span>
+              </label>
+
+              <label
+                class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
+              >
+                <input
+                  type="checkbox"
+                  checked={syncTransport}
+                  onchange={(e) => setSyncTransport(e.currentTarget.checked)}
+                  class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
+                />
+
+                <span class="text-zinc-300">Sync to transport</span>
+              </label>
+            </Popover.Content>
+          </Popover.Root>
         </div>
       </div>
 
@@ -339,15 +349,4 @@
       shouldAutoShowConsoleOnError
     />
   </div>
-
-  <!-- Settings Panel (right side, absolutely positioned) -->
-  {#if showSettings}
-    <div class="absolute top-0" style="left: {consoleLeftPos}px;">
-      <TransportSyncSettings
-        {syncTransport}
-        onSyncTransportChange={setSyncTransport}
-        onClose={() => (showSettings = false)}
-      />
-    </div>
-  {/if}
 </div>
