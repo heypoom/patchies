@@ -739,7 +739,7 @@ export class FBORenderer {
 
         framebuffer.use(() => {
           try {
-            userRenderFunc({ t: params.lastTime });
+            userRenderFunc({ t: params.transportTime });
           } catch (error) {
             console.error('SwissGL render error:', error);
           }

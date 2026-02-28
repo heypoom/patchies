@@ -125,8 +125,8 @@ export class ThreeRenderer {
     this.threeWebGLRenderer.setRenderTarget(this.renderTarget);
 
     try {
-      // Call user's render function with current time
-      this.userRenderFunc(params.lastTime);
+      // Call user's render function with transport time
+      this.userRenderFunc(params.transportTime);
     } catch (error) {
       this.handleRuntimeError(error);
     }
