@@ -80,6 +80,7 @@ export class StrudelTransportSync {
     // Handle BPM changes (re-apply CPS while playing)
     if (bpm !== this.lastBpm) {
       this.lastBpm = bpm;
+
       if (this.playing) {
         this.applyTransportCps(bpm, beatsPerBar);
       }

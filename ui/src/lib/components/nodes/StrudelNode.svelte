@@ -296,7 +296,7 @@
         <div
           bind:this={editorContainer}
           class={[
-            'nodrag nopan flex w-full items-center justify-center rounded-md border border-zinc-600 bg-zinc-900 p-1',
+            'nodrag nopan flex w-full items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 p-1',
             hasError ? 'border-red-500' : 'border-transparent'
           ]}
           style={data.styles?.container}
