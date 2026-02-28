@@ -92,15 +92,11 @@
       const cw = displayWidth;
       const ch = RULER_HEIGHT;
 
-      const bpm = Transport.bpm;
-      const beatsPerBar = Transport.beatsPerBar;
-      const currentTime = Transport.seconds;
-      const currentBar = Transport.bar;
-      const beatDuration = 60 / bpm;
-      const barDuration = beatDuration * beatsPerBar;
+      const beatDuration = (60 / Transport.bpm) * (4 / Transport.denominator);
+      const barDuration = beatDuration * Transport.beatsPerBar;
 
       // Window: page in chunks of barsVisible so the playhead sweeps across
-      const pageStart = Math.floor(currentBar / barsVisible) * barsVisible;
+      const pageStart = Math.floor(Transport.bar / barsVisible) * barsVisible;
       const windowStart = pageStart * barDuration;
       const windowDuration = barsVisible * barDuration;
       const windowEnd = windowStart + windowDuration;
@@ -130,7 +126,7 @@
 
       // Draw beat grid
       for (let bar = 0; bar < barsVisible; bar++) {
-        for (let beat = 0; beat < beatsPerBar; beat++) {
+        for (let beat = 0; beat < Transport.beatsPerBar; beat++) {
           const t = windowStart + bar * barDuration + beat * beatDuration;
           const x = timeToX(t);
 
@@ -169,7 +165,7 @@
               const beats = event.beats;
 
               for (let bar = 0; bar < barsVisible; bar++) {
-                for (let beat = 0; beat < beatsPerBar; beat++) {
+                for (let beat = 0; beat < Transport.beatsPerBar; beat++) {
                   const shouldDraw =
                     beats === '*' || (Array.isArray(beats) && beats.includes(beat));
 
@@ -200,10 +196,11 @@
                 let t = Math.ceil(windowStart / event.interval) * event.interval;
 
                 while (t <= windowEnd) {
-                  if (t >= windowStart && t > currentTime) {
+                  if (t >= windowStart && t > Transport.seconds) {
                     const x = timeToX(t);
                     drawDiamond(ctx, x, yBase, color);
                   }
+
                   t += event.interval;
                 }
               }
@@ -241,7 +238,8 @@
       }
 
       // Draw playhead
-      const playheadX = timeToX(currentTime);
+      const playheadX = timeToX(Transport.seconds);
+
       ctx.strokeStyle = '#fafafa';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
