@@ -12,12 +12,17 @@
     VolumeX,
     Volume,
     Volume1,
-    ChartNoAxesGantt
+    ChartNoAxesGantt,
+    MoreHorizontal,
+    Check,
+    Wifi
   } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
   import { match } from 'ts-pattern';
   import TimelineRuler from './TimelineRuler.svelte';
   import { MAX_RULER_WIDTH, MIN_RULER_WIDTH } from './constants';
+  import { transportSyncManager } from '$lib/transport/TransportSyncManager';
+  import { transportSyncStore } from '../../../stores/transport-sync.store';
 
   const audioService = AudioService.getInstance();
 
@@ -76,6 +81,20 @@
 
   // DSP state (independent of volume/mute)
   let isDspEnabled = $state(true);
+
+  // Overflow menu
+  let showOverflow = $state(false);
+
+  // Whether this peer is a follower (sync enabled but not the leader)
+  const isFollowing = $derived($transportSyncStore.enabled && !$transportSyncStore.isLeader);
+
+  async function toggleSync() {
+    if ($transportSyncStore.enabled) {
+      transportSyncManager.disable();
+    } else {
+      await transportSyncManager.enable();
+    }
+  }
 
   // Time edit state
   let isEditingTime = $state(false);
@@ -380,7 +399,7 @@
           <button
             onclick={isPlaying ? handlePause : handlePlay}
             class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!isDspEnabled}
+            disabled={!isDspEnabled || isFollowing}
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {#if isPlaying}
@@ -391,7 +410,9 @@
           </button>
         </Tooltip.Trigger>
         <Tooltip.Content>
-          {#if !isDspEnabled}
+          {#if isFollowing}
+            Controlled by room leader
+          {:else if !isDspEnabled}
             Enable DSP first
           {:else}
             {isPlaying ? 'Pause' : 'Play'} (Space)
@@ -404,7 +425,7 @@
           <button
             onclick={handleStop}
             class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!isDspEnabled}
+            disabled={!isDspEnabled || isFollowing}
             aria-label="Stop"
           >
             <Square class="h-3.5 w-3.5 text-zinc-300" />
@@ -552,22 +573,64 @@
 
       <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          <button
-            onclick={() => transportStore.toggleTimeline()}
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors {$transportStore.timelineVisible
-              ? 'bg-zinc-700 text-zinc-200'
-              : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-            aria-label={$transportStore.timelineVisible ? 'Hide timeline' : 'Show timeline'}
+      <!-- Overflow menu -->
+      <div class="relative">
+        <button
+          onclick={() => (showOverflow = !showOverflow)}
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors {showOverflow
+            ? 'bg-zinc-700 text-zinc-200'
+            : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+          aria-label="More options"
+        >
+          <MoreHorizontal class="h-4 w-4" />
+        </button>
+
+        {#if showOverflow}
+          <div class="fixed inset-0 z-10" onclick={() => (showOverflow = false)} role="none"></div>
+          <div
+            class="absolute right-0 bottom-full z-20 mb-2 flex min-w-[180px] flex-col rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl"
           >
-            <ChartNoAxesGantt class="h-4 w-4" />
-          </button>
-        </Tooltip.Trigger>
-        <Tooltip.Content>
-          {$transportStore.timelineVisible ? 'Hide timeline' : 'Show timeline'}
-        </Tooltip.Content>
-      </Tooltip.Root>
+            <button
+              onclick={() => {
+                transportStore.toggleTimeline();
+                showOverflow = false;
+              }}
+              class="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm transition-colors hover:bg-zinc-800 {$transportStore.timelineVisible
+                ? 'text-zinc-200'
+                : 'text-zinc-400'}"
+            >
+              <ChartNoAxesGantt class="h-4 w-4" />
+              <span>Timeline</span>
+              {#if $transportStore.timelineVisible}
+                <Check class="ml-auto h-3.5 w-3.5" />
+              {/if}
+            </button>
+            <button
+              onclick={() => {
+                toggleSync();
+                showOverflow = false;
+              }}
+              class="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm transition-colors hover:bg-zinc-800 {$transportSyncStore.enabled
+                ? 'text-zinc-200'
+                : 'text-zinc-400'}"
+            >
+              <Wifi class="h-4 w-4" />
+              <span>
+                {#if $transportSyncStore.enabled}
+                  {$transportSyncStore.isLeader
+                    ? 'Sync (leader)'
+                    : `Sync (${$transportSyncStore.peerCount} peer${$transportSyncStore.peerCount === 1 ? '' : 's'})`}
+                {:else}
+                  Sync
+                {/if}
+              </span>
+              {#if $transportSyncStore.enabled}
+                <Check class="ml-auto h-3.5 w-3.5" />
+              {/if}
+            </button>
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
 

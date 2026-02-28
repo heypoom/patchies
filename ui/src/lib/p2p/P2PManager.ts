@@ -9,6 +9,8 @@ type ChannelEntry = {
   handlers: Set<P2PMessageHandler>;
 };
 
+export type P2PPeerCallback = (peerId: string) => void;
+
 /**
  * P2P Manager using Trystero for WebRTC-based peer-to-peer communication.
  * Trystero handles peer discovery and full-mesh room connections for us.
@@ -21,6 +23,8 @@ export class P2PManager {
   private peers = new Set<string>();
   private initializePromise: Promise<void> | null = null;
   private connectionState: P2PConnectionState = 'disconnected';
+  private peerJoinCallbacks = new Set<P2PPeerCallback>();
+  private peerLeaveCallbacks = new Set<P2PPeerCallback>();
 
   private constructor() {
     const room = getSearchParam('room');
@@ -58,10 +62,12 @@ export class P2PManager {
 
     this.room.onPeerJoin((peerId) => {
       this.peers.add(peerId);
+      this.peerJoinCallbacks.forEach((cb) => cb(peerId));
     });
 
     this.room.onPeerLeave((peerId) => {
       this.peers.delete(peerId);
+      this.peerLeaveCallbacks.forEach((cb) => cb(peerId));
     });
 
     const currentPeers = this.room.getPeers();
@@ -98,6 +104,20 @@ export class P2PManager {
     return this.peers.size;
   }
 
+  public getPeerIds(): string[] {
+    return Array.from(this.peers);
+  }
+
+  public onPeerJoin(callback: P2PPeerCallback): () => void {
+    this.peerJoinCallbacks.add(callback);
+    return () => this.peerJoinCallbacks.delete(callback);
+  }
+
+  public onPeerLeave(callback: P2PPeerCallback): () => void {
+    this.peerLeaveCallbacks.add(callback);
+    return () => this.peerLeaveCallbacks.delete(callback);
+  }
+
   public getConnectionState(): P2PConnectionState {
     return this.connectionState;
   }
@@ -122,6 +142,8 @@ export class P2PManager {
 
     this.channels.clear();
     this.peers.clear();
+    this.peerJoinCallbacks.clear();
+    this.peerLeaveCallbacks.clear();
     this.connectionState = 'disconnected';
     this.initializePromise = null;
     P2PManager.instance = null;
