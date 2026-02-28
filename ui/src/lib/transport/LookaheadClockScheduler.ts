@@ -147,6 +147,13 @@ export class LookaheadClockScheduler implements ClockScheduler {
     for (const [id, item] of this.scheduleCallbacks) {
       if (item.fired) continue;
 
+      // Recalculate time if BPM changed (only for musical notation times)
+      if (item.bpm !== undefined && item.bpm !== clock.bpm) {
+        const ratio = item.bpm / clock.bpm;
+        item.time = item.time * ratio;
+        item.bpm = clock.bpm;
+      }
+
       const shouldFire = item.audio
         ? item.time <= horizon // audio: fire when within lookahead window
         : clock.time >= item.time; // visual: fire after the event
@@ -219,19 +226,24 @@ export class LookaheadClockScheduler implements ClockScheduler {
 
   schedule(time: number | string, callback: SchedulerCallback, options?: SchedulerOptions): string {
     const id = generateId();
-    const timeNum = typeof time === 'string' ? parseBarBeatSixteenth(time, this.currentBpm) : time;
+    const isMusical = typeof time === 'string';
+    const timeNum = isMusical ? parseBarBeatSixteenth(time, this.currentBpm) : time;
+
     this.scheduleCallbacks.set(id, {
       time: timeNum,
       callback,
       fired: false,
-      audio: options?.audio ?? false
+      audio: options?.audio ?? false,
+      bpm: isMusical ? this.currentBpm : undefined
     });
+
     return id;
   }
 
   every(interval: string, callback: SchedulerCallback, options?: SchedulerOptions): string {
     const id = generateId();
     const intervalSecs = parseBarBeatSixteenth(interval, this.currentBpm);
+
     this.repeatCallbacks.set(id, {
       interval: intervalSecs,
       lastFired: 0,
@@ -239,6 +251,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
       bpm: this.currentBpm,
       audio: options?.audio ?? false
     });
+
     return id;
   }
 
