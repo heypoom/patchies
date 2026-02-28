@@ -206,7 +206,7 @@ class TransportSyncManager {
       bpm: Transport.bpm,
       timeSignature: [Transport.beatsPerBar, Transport.denominator],
       transportTime: Transport.seconds,
-      leaderSendTime: performance.now()
+      leaderSendTime: Date.now() // wall-clock ms; synced across machines via NTP
     };
   }
 
@@ -220,7 +220,7 @@ class TransportSyncManager {
     const p2p = P2PManager.getInstance();
     const msg: TransportSyncMessage = {
       type: 'heartbeat',
-      payload: { transportTime: Transport.seconds, leaderSendTime: performance.now() }
+      payload: { transportTime: Transport.seconds, leaderSendTime: Date.now() }
     };
     p2p.sendToChannel(CHANNEL, msg);
   }
@@ -244,9 +244,11 @@ class TransportSyncManager {
   // ── Follower: apply ───────────────────────────────────────────────────────
 
   private applyState(payload: TransportStatePayload): void {
-    // Estimate true leader time accounting for one-way network latency
-    const networkLatency = (performance.now() - payload.leaderSendTime) / 2;
-    const estimatedTime = payload.transportTime + networkLatency / 1000;
+    // Estimate true leader time accounting for one-way network latency.
+    // Date.now() is wall-clock time shared across machines (NTP-synced),
+    // so the difference is the actual one-way trip time — no /2 needed.
+    const oneWayLatency_ms = Date.now() - payload.leaderSendTime;
+    const estimatedTime = payload.transportTime + Math.max(0, oneWayLatency_ms) / 1000;
 
     // Sync BPM
     if (Math.abs(Transport.bpm - payload.bpm) > 0.01) {
@@ -284,8 +286,8 @@ class TransportSyncManager {
   private applyDriftCorrection(payload: HeartbeatPayload): void {
     if (!Transport.isPlaying) return;
 
-    const networkLatency = (performance.now() - payload.leaderSendTime) / 2;
-    const estimatedLeaderTime = payload.transportTime + networkLatency / 1000;
+    const oneWayLatency_ms = Date.now() - payload.leaderSendTime;
+    const estimatedLeaderTime = payload.transportTime + Math.max(0, oneWayLatency_ms) / 1000;
     const drift = estimatedLeaderTime - Transport.seconds;
 
     if (Math.abs(drift) >= DRIFT_THRESHOLD) {
