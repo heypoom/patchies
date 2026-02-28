@@ -6,7 +6,7 @@ A DAW-style multi-track step sequencer (drum machine) driven by the global trans
 
 ## Concept
 
- hN tracks, each with 16 (configurable) steps. All tracks share the same clock — one bar divided into `steps` equal parts. When step `s` fires, every track with `stepOn[s] = true` sends a message on its own outlet. Supports swing, audio-rate scheduling, and per-step values (velocity).
+N tracks, each with 16 (configurable) steps. All tracks share the same clock — one bar divided into `steps` equal parts. When step `s` fires, every track with `stepOn[s] = true` sends a message on its own outlet. Supports swing, audio-rate scheduling, and per-step values (velocity).
 
 ## Node Data
 
