@@ -405,8 +405,8 @@ export class JSRunner {
       get beatsPerBar() {
         return Transport.beatsPerBar;
       },
-      get denominator() {
-        return Transport.denominator;
+      get timeSignature(): [number, number] {
+        return [Transport.beatsPerBar, Transport.denominator];
       },
 
       // Per-node subdivision helpers (computed locally from ticks + ppq)

@@ -47,7 +47,8 @@ export const jsRunnerInstructions = `
 - clock.phase - position within current beat (0.0 to 1.0)
 - clock.bpm - tempo in BPM
 - clock.bar - 0-indexed bar
-- clock.beatsPerBar, clock.denominator - time signature
+- clock.beatsPerBar - beats per bar (numerator)
+- clock.timeSignature - [numerator, denominator] tuple (e.g. [4, 4], [6, 8])
 - clock.subdiv(n) - subdivision index (0 to n-1) within beat (per-node, polyrhythm-safe)
 - clock.subdivPhase(n) - progress within current subdivision (0.0 to 1.0)
 - clock.play(), clock.pause(), clock.stop() - transport control

@@ -17,7 +17,7 @@ The `clock` object is available in: [js](/docs/objects/js), [worker](/docs/objec
 | `clock.bpm` | number | Current tempo in BPM |
 | `clock.bar` | number | Current bar (0-indexed) |
 | `clock.beatsPerBar` | number | Beats per bar (default: 4) |
-| `clock.denominator` | number | Note value per beat (default: 4 = quarter note) |
+| `clock.timeSignature` | [number, number] | Time signature as [numerator, denominator] (e.g. [4, 4], [6, 8]) |
 
 ## Basic Usage
 
