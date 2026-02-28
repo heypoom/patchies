@@ -14,6 +14,7 @@ Click the **transport button** (play icon) in the bottom toolbar to open the flo
 |--------------------|---------------------------------------------------------------------------------------------------|
 | **Play/Pause**     | Toggle playback. Pause freezes the clock at current position. Use `Space` as keyboard shortcut.   |
 | **Stop**           | Resets clock to 0 and pauses.                                                                     |
+| **Metronome**      | Tap tempo and click sounds. Click to open — tap the TAP area to set BPM, toggle click sounds.     |
 | **BPM**            | Set tempo (beats per minute). Default: 120. Persisted across sessions.                            |
 | **Time Signature** | Displays as `4/4`. Click to edit — type a fraction like `6/8` or `3/4` and press Enter.           |
 | **Time Display**   | Shows current position. Click to toggle formats (see below). Double-click to edit and seek.       |
@@ -66,6 +67,13 @@ Musical objects have their own internal clocks and can optionally sync to the tr
 - [csound~](/docs/objects/csound~)
 
 For scheduling sample-accurate callbacks on specific beats and creating repeated patterns, see [Clock API](/docs/clock-api).
+
+## Metronome
+
+Click the metronome icon next to the BPM field to open the metronome panel:
+
+- Click the _tap tempo_ area repeatedly in time with your music. After the second tap, the BPM updates with each tap. Tapping resets if you stop for more than 2 seconds.
+- Toggle _click sounds_ to hear a metronome tick on every beat.
 
 ## Timeline Viewer
 
