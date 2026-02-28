@@ -11,6 +11,34 @@
 
   const audioService = AudioService.getInstance();
 
+  // Timeline ruler resize state
+  let rulerWidth = $state(500);
+  let isResizing = $state(false);
+
+  function onResizePointerDown(e: PointerEvent) {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = rulerWidth;
+    isResizing = true;
+
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+
+    const onMove = (ev: PointerEvent) => {
+      // Dragging left increases width (panel is right-docked)
+      rulerWidth = Math.max(200, Math.min(1200, startWidth - (ev.clientX - startX)));
+    };
+
+    const onUp = () => {
+      isResizing = false;
+      target.removeEventListener('pointermove', onMove);
+      target.removeEventListener('pointerup', onUp);
+    };
+
+    target.addEventListener('pointermove', onMove);
+    target.addEventListener('pointerup', onUp);
+  }
+
   // Transport state (updated via polling)
   let isPlaying = $state(false);
   let seconds = $state(0);
@@ -312,8 +340,17 @@
 </script>
 
 <div
-  class="flex flex-col gap-1 rounded-lg border border-zinc-700 bg-zinc-900/95 px-3 py-2 shadow-xl backdrop-blur-sm"
+  class="relative flex max-w-full flex-col gap-1 rounded-lg border border-zinc-700 bg-zinc-900/95 px-3 py-2 shadow-xl backdrop-blur-sm"
 >
+  <!-- Resize handle (left edge, desktop only) -->
+  <div
+    class="absolute top-0 -left-2 hidden h-full w-2 cursor-col-resize items-center justify-center opacity-0 transition-opacity hover:opacity-100 sm:flex"
+    class:opacity-100={isResizing}
+    onpointerdown={onResizePointerDown}
+  >
+    <div class="h-4 w-px bg-zinc-500"></div>
+  </div>
+
   <div class="flex flex-wrap items-center gap-2">
     <!-- Play/Pause -->
     <Tooltip.Root>
@@ -482,5 +519,5 @@
     </Tooltip.Root>
   </div>
 
-  <TimelineRuler />
+  <TimelineRuler width={rulerWidth} />
 </div>

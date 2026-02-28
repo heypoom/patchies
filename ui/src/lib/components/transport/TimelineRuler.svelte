@@ -5,11 +5,18 @@
   import { onMount } from 'svelte';
   import { match } from 'ts-pattern';
 
+  interface Props {
+    width?: number;
+  }
+
+  const { width = 500 }: Props = $props();
+
   const RULER_HEIGHT = 28;
   const BARS_VISIBLE = 4;
   const FLASH_DURATION_MS = 300;
   const DPR = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 2;
 
+  let wrapperRef = $state<HTMLDivElement>();
   let canvasRef = $state<HTMLCanvasElement>();
 
   /** Active flash animations keyed by event id. */
@@ -19,14 +26,14 @@
     const registry = SchedulerRegistry.getInstance();
 
     const interval = setInterval(() => {
-      if (!canvasRef) return;
+      if (!canvasRef || !wrapperRef) return;
 
       const ctx = canvasRef.getContext('2d');
       if (!ctx) return;
 
-      // Resize canvas to match container width at high DPI
-      const rect = canvasRef.getBoundingClientRect();
-      const w = Math.round(rect.width * DPR);
+      // Measure actual container width (respects mobile constraints)
+      const displayWidth = wrapperRef.clientWidth;
+      const w = Math.round(displayWidth * DPR);
       const h = Math.round(RULER_HEIGHT * DPR);
 
       if (canvasRef.width !== w || canvasRef.height !== h) {
@@ -35,7 +42,7 @@
       }
 
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      const cw = rect.width;
+      const cw = displayWidth;
       const ch = RULER_HEIGHT;
 
       const bpm = Transport.bpm;
@@ -232,4 +239,6 @@
   }
 </script>
 
-<canvas bind:this={canvasRef} class="w-full rounded" style="height: {RULER_HEIGHT}px;"></canvas>
+<div bind:this={wrapperRef} style="width: {width}px; max-width: 100%; height: {RULER_HEIGHT}px;">
+  <canvas bind:this={canvasRef} class="rounded" style="width: 100%; height: 100%;"></canvas>
+</div>
