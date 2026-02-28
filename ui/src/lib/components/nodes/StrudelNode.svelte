@@ -39,6 +39,8 @@
   let strudelEditor: StrudelEditor | null = null;
   let messageContext: MessageContext;
   let consoleRef: VirtualConsole | null = $state(null);
+  let initTimeout: ReturnType<typeof setTimeout> | null = null;
+  let destroyed = false;
   let hasError = $state(false);
   let isPlaying = $state(false);
   let isInitialized = $state(false);
@@ -102,27 +104,37 @@
     document.addEventListener('strudel.log', handleStrudelLog);
 
     // Wait for the StrudelEditor to be ready
-    setTimeout(() => {
-      if (strudelEditor?.editor) {
-        isInitialized = true;
+    initTimeout = setTimeout(() => {
+      initTimeout = null;
+      if (destroyed || !strudelEditor?.editor) return;
 
-        transportSync = new StrudelTransportSync({
-          getScheduler: () => strudelEditor?.editor?.repl.scheduler,
-          evaluate,
-          stop,
-          onPlayingChange: (playing) => {
-            isPlaying = playing;
-          }
-        });
+      isInitialized = true;
 
-        // @ts-expect-error -- for debugging
-        window.strudel = strudelEditor.editor;
-      }
+      transportSync = new StrudelTransportSync({
+        getScheduler: () => strudelEditor?.editor?.repl.scheduler,
+        evaluate,
+        stop,
+        onPlayingChange: (playing) => {
+          isPlaying = playing;
+        }
+      });
+
+      // @ts-expect-error -- for debugging
+      window.strudel = strudelEditor.editor;
     }, 1000);
   });
 
   onDestroy(() => {
+    destroyed = true;
+
+    if (initTimeout) {
+      clearTimeout(initTimeout);
+      initTimeout = null;
+    }
+
     transportSync?.destroy();
+    transportSync = null;
+
     stop();
     document.removeEventListener('strudel.log', handleStrudelLog);
 

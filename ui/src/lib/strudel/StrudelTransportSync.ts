@@ -101,6 +101,7 @@ export class StrudelTransportSync {
     if (this.playing) return;
 
     if (this.wasPaused) {
+      this.applyTransportCps(bpm, beatsPerBar);
       this.resumeScheduler();
     } else {
       this.options.evaluate();
@@ -123,9 +124,10 @@ export class StrudelTransportSync {
   }
 
   private handleStop(): void {
-    if (!this.playing) return;
+    if (this.playing) {
+      this.options.stop();
+    }
 
-    this.options.stop();
     this.wasPaused = false;
     this.playing = false;
     this.options.onPlayingChange(false);
