@@ -17,11 +17,9 @@
   import { onMount } from 'svelte';
   import { match } from 'ts-pattern';
   import TimelineRuler from './TimelineRuler.svelte';
+  import { MAX_RULER_WIDTH, MIN_RULER_WIDTH } from './constants';
 
   const audioService = AudioService.getInstance();
-
-  const MIN_RULER_WIDTH = 500;
-  const MAX_RULER_WIDTH = 1100;
 
   // Timeline ruler resize state
   let rulerWidth = $state(MIN_RULER_WIDTH);

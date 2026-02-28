@@ -4,15 +4,13 @@
   import { getNodeTimelineColor } from '$lib/transport/timeline-colors';
   import { onMount } from 'svelte';
   import { match } from 'ts-pattern';
+  import { RULER_FLASH_DURATION_MS, RULER_HEIGHT, MIN_RULER_WIDTH } from './constants';
 
   interface Props {
     width?: number;
   }
 
-  const { width = 500 }: Props = $props();
-
-  const RULER_HEIGHT = 28;
-  const FLASH_DURATION_MS = 300;
+  const { width = MIN_RULER_WIDTH }: Props = $props();
 
   // Scale visible bars with width: ~1 bar per 125px, minimum 4
   const barsVisible = $derived(Math.max(4, Math.floor(width / 125)));
@@ -156,26 +154,29 @@
       const nodeIds = Array.from(eventsByNode.keys());
       const nodeCount = nodeIds.length;
 
-      for (let ni = 0; ni < nodeCount; ni++) {
-        const nodeId = nodeIds[ni];
+      for (let nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
+        const nodeId = nodeIds[nodeIndex];
         const events = eventsByNode.get(nodeId)!;
         const color = getNodeTimelineColor(nodeId);
 
         // Vertically offset each node's markers to avoid overlap
-        const yBase = 14 + (ni % 3) * 5;
+        const yBase = 14 + (nodeIndex % 3) * 5;
 
         for (const event of events) {
           match(event.kind)
             .with('beat', () => {
               // Draw markers at beat positions in each visible bar
               const beats = event.beats;
+
               for (let bar = 0; bar < barsVisible; bar++) {
-                for (let b = 0; b < beatsPerBar; b++) {
-                  const shouldDraw = beats === '*' || (Array.isArray(beats) && beats.includes(b));
+                for (let beat = 0; beat < beatsPerBar; beat++) {
+                  const shouldDraw =
+                    beats === '*' || (Array.isArray(beats) && beats.includes(beat));
 
                   if (shouldDraw) {
-                    const t = windowStart + bar * barDuration + b * beatDuration;
+                    const t = windowStart + bar * barDuration + beat * beatDuration;
                     const x = timeToX(t);
+
                     drawTriangle(ctx, x, yBase, color);
                   }
                 }
@@ -213,13 +214,17 @@
 
       // Draw flash overlays
       const now = performance.now();
+
       for (const [key, flash] of activeFlashes) {
         const elapsed = now - flash.wallTime;
-        if (elapsed > FLASH_DURATION_MS) {
+
+        if (elapsed > RULER_FLASH_DURATION_MS) {
           activeFlashes.delete(key);
           continue;
         }
-        const alpha = 1 - elapsed / FLASH_DURATION_MS;
+
+        const alpha = 1 - elapsed / RULER_FLASH_DURATION_MS;
+
         drawFlash(ctx, flash.x, ch, flash.color, alpha);
       }
 
@@ -288,12 +293,14 @@
     alpha: number
   ) {
     const gradient = ctx.createRadialGradient(x, h / 2, 0, x, h / 2, 12);
+
     gradient.addColorStop(
       0,
       `${color}${Math.round(alpha * 0.6 * 255)
         .toString(16)
         .padStart(2, '0')}`
     );
+
     gradient.addColorStop(1, `${color}00`);
     ctx.fillStyle = gradient;
     ctx.fillRect(x - 12, 0, 24, h);
