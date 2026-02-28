@@ -14,8 +14,6 @@
     Volume,
     Volume1,
     ChartNoAxesGantt,
-    MoreHorizontal,
-    Check,
     Wifi
   } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
@@ -84,9 +82,6 @@
 
   // DSP state (independent of volume/mute)
   let isDspEnabled = $state(true);
-
-  // Overflow menu
-  let showOverflow = $state(false);
 
   // Whether this peer is a follower (sync enabled but not the leader)
   const isFollowing = $derived($transportSyncStore.enabled && !$transportSyncStore.isLeader);
@@ -614,66 +609,47 @@
 
       <div class="hidden h-6 w-px bg-zinc-700 sm:block"></div>
 
-      <!-- Overflow menu -->
-      <div class="relative">
-        <button
-          onclick={() => (showOverflow = !showOverflow)}
-          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors {showOverflow
-            ? 'bg-zinc-700 text-zinc-200'
-            : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-          aria-label="More options"
-        >
-          <MoreHorizontal class="h-4 w-4" />
-        </button>
-
-        {#if showOverflow}
-          <div class="fixed inset-0 z-10" onclick={() => (showOverflow = false)} role="none"></div>
-
-          <div
-            class="absolute right-0 bottom-full z-20 mb-4 flex min-w-[180px] flex-col rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl"
+      <!-- Timeline toggle -->
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            onclick={() => transportStore.toggleTimeline()}
+            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors {$transportStore.timelineVisible
+              ? 'bg-zinc-800 text-zinc-200'
+              : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+            aria-label="Toggle timeline"
           >
-            <button
-              onclick={() => {
-                transportStore.toggleTimeline();
-                showOverflow = false;
-              }}
-              class="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm transition-colors hover:bg-zinc-800 {$transportStore.timelineVisible
-                ? 'text-zinc-200'
-                : 'text-zinc-400'}"
-            >
-              <ChartNoAxesGantt class="h-4 w-4" />
-              <span>Timeline</span>
-              {#if $transportStore.timelineVisible}
-                <Check class="ml-auto h-3.5 w-3.5" />
-              {/if}
-            </button>
+            <ChartNoAxesGantt class="h-4 w-4" />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          {$transportStore.timelineVisible ? 'Hide timeline' : 'Show timeline'}
+        </Tooltip.Content>
+      </Tooltip.Root>
 
-            <button
-              onclick={() => {
-                toggleSync();
-                showOverflow = false;
-              }}
-              class="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm transition-colors hover:bg-zinc-800 {syncColor}"
-            >
-              <Wifi class="h-4 w-4 {syncColor}" />
-
-              <span>
-                {#if $transportSyncStore.enabled}
-                  {$transportSyncStore.isLeader
-                    ? 'Sync (leader)'
-                    : `Sync (${$transportSyncStore.peerCount} peer${$transportSyncStore.peerCount === 1 ? '' : 's'})`}
-                {:else}
-                  Sync
-                {/if}
-              </span>
-
-              {#if $transportSyncStore.enabled}
-                <Check class="ml-auto h-3.5 w-3.5" />
-              {/if}
-            </button>
-          </div>
-        {/if}
-      </div>
+      <!-- Sync toggle -->
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            onclick={toggleSync}
+            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-800 {$transportSyncStore.enabled
+              ? 'bg-zinc-800'
+              : ''}"
+            aria-label="Toggle sync"
+          >
+            <Wifi class="h-4 w-4 {syncColor}" />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          {#if $transportSyncStore.enabled}
+            {$transportSyncStore.isLeader
+              ? 'Sync: leader — click to disable'
+              : `Sync: ${$transportSyncStore.peerCount} peer${$transportSyncStore.peerCount === 1 ? '' : 's'} — click to disable`}
+          {:else}
+            Enable transport sync
+          {/if}
+        </Tooltip.Content>
+      </Tooltip.Root>
     </div>
   </div>
 
