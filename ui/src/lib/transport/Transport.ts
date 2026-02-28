@@ -6,7 +6,7 @@ import { transportStore } from '../../stores/transport.store';
 /**
  * Global transport manager with lazy upgrade from default to Tone.js.
  * Starts with DefaultTransport (performance.now / AudioContext.currentTime)
- * and upgrades to ToneTransport on first play().
+ * and upgrades to ToneTransport when the Tone.js (tone~) object is mounted.
  */
 class TransportManager implements ITransport {
   private context: ITransport = new DefaultTransport();
