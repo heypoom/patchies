@@ -126,12 +126,7 @@ class TransportManager implements ITransport {
   async ensureToneUpgraded(): Promise<void> {
     if (this.toneUpgraded || this.toneUpgradeDisabled) return;
 
-    const wasPlaying = this.isPlaying;
     await this.upgradeToTone();
-
-    if (wasPlaying) {
-      await this.context.play();
-    }
   }
 
   /**
@@ -153,7 +148,14 @@ class TransportManager implements ITransport {
     const Tone = await import('tone');
     const { ToneTransport } = await import('./ToneTransport');
 
-    // Transfer state from default to full transport
+    // Wait for AudioContext to be running before swapping.
+    // Tone.start() resolves once the user has interacted with the page,
+    // so DefaultTransport keeps running until then.
+    await Tone.start();
+
+    // Capture state from DefaultTransport *after* Tone.start() resolves,
+    // so we get the most up-to-date time.
+    const wasPlaying = this.isPlaying;
     const currentBpm = this.context.bpm;
     const currentBeatsPerBar = this.context.beatsPerBar;
     const currentDenominator = this.context.denominator;
@@ -164,6 +166,10 @@ class TransportManager implements ITransport {
     this.context.setTimeSignature(currentBeatsPerBar, currentDenominator);
     this.context.seek(currentSeconds);
     this.toneUpgraded = true;
+
+    if (wasPlaying) {
+      await this.context.play();
+    }
 
     console.log('[transport] upgraded to Tone.js transport');
   }
