@@ -1003,7 +1003,6 @@ export class FBORenderer {
 
     fboNode.framebuffer.use(() => {
       fboNode.render({
-        lastTime: this.lastTime,
         prevTransportTime: this.prevTransportTime,
         iFrame: this.frameCount,
         mouseX: mouseData[0],

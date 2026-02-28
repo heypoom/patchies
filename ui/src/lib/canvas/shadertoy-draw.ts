@@ -23,8 +23,6 @@ const PLACEHOLDER_MAIN_IMAGE = `
 type UserUniformInputs = Record<string, (_: regl.DefaultContext, props: Props) => void>;
 
 type Props = {
-  lastTime: number;
-
   transportTime: number;
   prevTransportTime: number;
 

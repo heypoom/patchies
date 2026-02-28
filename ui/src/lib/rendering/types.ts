@@ -41,8 +41,6 @@ export interface RenderGraph {
 export type UserParam = number | boolean | regl.Texture2D | regl.Framebuffer;
 
 export interface RenderParams {
-  lastTime: number;
-
   /** Previous frame's transport time for delta computation */
   prevTransportTime: number;
 
