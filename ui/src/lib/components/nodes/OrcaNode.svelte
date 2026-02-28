@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Pause, Play, Settings, X } from '@lucide/svelte/icons';
+  import OrcaSettings from '../settings/OrcaSettings.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useViewport } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -35,7 +36,7 @@
     selected: boolean;
   } = $props();
 
-  const { updateNodeData, screenToFlowPosition } = useSvelteFlow();
+  const { updateNodeData } = useSvelteFlow();
   const viewport = useViewport();
   let messageContext = new MessageContext(nodeId);
 
@@ -571,14 +572,6 @@
       })
       .exhaustive();
   });
-
-  function clearGrid(): void {
-    if (orca) {
-      orca.reset(orca.w, orca.h);
-      updateNodeData(nodeId, { grid: orca.s, frame: 0 });
-      render();
-    }
-  }
 </script>
 
 <div class="relative flex gap-x-3">
@@ -597,6 +590,7 @@
               class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
               onclick={togglePlay}
             >
+              <!-- svelte-ignore svelte_component_deprecated -->
               <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4 text-zinc-300" />
             </button>
           {/if}
@@ -662,177 +656,70 @@
         </button>
       </div>
 
-      <div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
-        <div class="space-y-3 p-4">
-          <div class="space-y-2">
-            <div class="text-xs font-medium text-zinc-400">Grid Settings</div>
-            <div class="grid grid-cols-2 gap-2">
-              <label class="flex flex-col text-xs text-zinc-400">
-                <span>Width:</span>
-                <input
-                  type="number"
-                  min="4"
-                  max="256"
-                  value={orca?.w ?? gridWidth}
-                  onchange={(e) => {
-                    const val = parseInt(e.currentTarget.value);
-                    if (orca && !isNaN(val) && val > 0) {
-                      const oldWidth = orca.w;
-                      // Preserve existing content when resizing
-                      const oldGrid = orca.s;
-                      orca.load(val, orca.h, oldGrid, orca.f);
-                      updateNodeData(nodeId, { width: val, grid: orca.s });
-                      tracker.commit('width', oldWidth, val);
-                      render();
-                      measureWidth();
-                    }
-                  }}
-                  class="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-xs text-white"
-                />
-              </label>
-              <label class="flex flex-col text-xs text-zinc-400">
-                <span>Height:</span>
-                <input
-                  type="number"
-                  min="4"
-                  max="256"
-                  value={orca?.h ?? gridHeight}
-                  onchange={(e) => {
-                    const val = parseInt(e.currentTarget.value);
-                    if (orca && !isNaN(val) && val > 0) {
-                      const oldHeight = orca.h;
-                      // Preserve existing content when resizing
-                      const oldGrid = orca.s;
-                      orca.load(orca.w, val, oldGrid, orca.f);
-                      updateNodeData(nodeId, { height: val, grid: orca.s });
-                      tracker.commit('height', oldHeight, val);
-                      render();
-                      measureWidth();
-                    }
-                  }}
-                  class="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-xs text-white"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <div class="text-xs font-medium text-zinc-400">Clock</div>
-
-            <label class="flex items-center gap-2 text-xs text-zinc-400">
-              <input
-                type="checkbox"
-                checked={syncTransport}
-                onchange={() => {
-                  const oldValue = syncTransport;
-                  updateNodeData(nodeId, { syncTransport: !syncTransport });
-                  tracker.commit('syncTransport', oldValue, !oldValue);
-                }}
-                class="rounded"
-              />
-              <span>Sync to transport</span>
-            </label>
-
-            <label class="flex flex-col text-xs text-zinc-400">
-              <span>BPM:</span>
-
-              <input
-                type="number"
-                min="60"
-                max="300"
-                value={syncTransport ? $transportStore.bpm : bpm}
-                disabled={syncTransport}
-                onchange={(e) => {
-                  const val = parseInt(e.currentTarget.value);
-                  if (clock && !isNaN(val)) {
-                    const oldBpm = bpm;
-                    clock.setSpeed(val, val);
-                    updateNodeData(nodeId, { bpm: val });
-                    tracker.commit('bpm', oldBpm, val);
-                  }
-                }}
-                class="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </label>
-          </div>
-
-          <div class="space-y-2">
-            <div class="text-xs font-medium text-zinc-400">Display Options</div>
-            <label class="flex items-center gap-2 text-xs text-zinc-400">
-              <input
-                type="checkbox"
-                bind:checked={showInterface}
-                onchange={() => render()}
-                class="rounded"
-              />
-              <span>Show Status Interface</span>
-            </label>
-
-            <label class="flex items-center gap-2 text-xs text-zinc-400">
-              <input
-                type="checkbox"
-                bind:checked={showGuide}
-                onchange={() => render()}
-                class="rounded"
-              />
-              <span>Show Operator Guide</span>
-            </label>
-
-            <label class="flex flex-col text-xs text-zinc-400">
-              <span>Font Size: {fontSize.toFixed(1)}x</span>
-              <div class="mt-1 flex items-center gap-2">
-                <button
-                  onclick={() => {
-                    fontSize = Math.max(0.5, fontSize - 0.1);
-                    render();
-                    measureWidth();
-                  }}
-                  class="rounded bg-zinc-700 px-2 py-1 text-xs hover:bg-zinc-600"
-                >
-                  −
-                </button>
-                <button
-                  onclick={() => {
-                    fontSize = Math.min(2.0, fontSize + 0.1);
-                    render();
-                    measureWidth();
-                  }}
-                  class="rounded bg-zinc-700 px-2 py-1 text-xs hover:bg-zinc-600"
-                >
-                  +
-                </button>
-                <span class="flex-1 text-xs text-zinc-500">(Ctrl +/−)</span>
-              </div>
-            </label>
-
-            <label class="flex flex-col text-xs text-zinc-400">
-              <span>Canvas Density: {canvasDensity}x</span>
-              <div class="mt-1 flex items-center gap-2">
-                <button
-                  onclick={() => {
-                    canvasDensity = Math.max(1, canvasDensity - 1);
-                    if (renderer) renderer.updateCanvasScale(canvasDensity);
-                    render();
-                  }}
-                  class="rounded bg-zinc-700 px-2 py-1 text-xs hover:bg-zinc-600"
-                >
-                  −
-                </button>
-                <button
-                  onclick={() => {
-                    canvasDensity = Math.min(5, canvasDensity + 1);
-                    if (renderer) renderer.updateCanvasScale(canvasDensity);
-                    render();
-                  }}
-                  class="rounded bg-zinc-700 px-2 py-1 text-xs hover:bg-zinc-600"
-                >
-                  +
-                </button>
-              </div>
-            </label>
-          </div>
-        </div>
-      </div>
+      <OrcaSettings
+        gridWidth={orca?.w ?? gridWidth}
+        gridHeight={orca?.h ?? gridHeight}
+        {syncTransport}
+        {bpm}
+        transportBpm={$transportStore.bpm}
+        {showInterface}
+        {showGuide}
+        {fontSize}
+        {canvasDensity}
+        onGridWidthChange={(val) => {
+          if (orca) {
+            const oldWidth = orca.w;
+            const oldGrid = orca.s;
+            orca.load(val, orca.h, oldGrid, orca.f);
+            updateNodeData(nodeId, { width: val, grid: orca.s });
+            tracker.commit('width', oldWidth, val);
+            render();
+            measureWidth();
+          }
+        }}
+        onGridHeightChange={(val) => {
+          if (orca) {
+            const oldHeight = orca.h;
+            const oldGrid = orca.s;
+            orca.load(orca.w, val, oldGrid, orca.f);
+            updateNodeData(nodeId, { height: val, grid: orca.s });
+            tracker.commit('height', oldHeight, val);
+            render();
+            measureWidth();
+          }
+        }}
+        onSyncTransportChange={() => {
+          const oldValue = syncTransport;
+          updateNodeData(nodeId, { syncTransport: !syncTransport });
+          tracker.commit('syncTransport', oldValue, !oldValue);
+        }}
+        onBpmChange={(val) => {
+          if (clock) {
+            const oldBpm = bpm;
+            clock.setSpeed(val, val);
+            updateNodeData(nodeId, { bpm: val });
+            tracker.commit('bpm', oldBpm, val);
+          }
+        }}
+        onShowInterfaceChange={(show) => {
+          showInterface = show;
+          render();
+        }}
+        onShowGuideChange={(show) => {
+          showGuide = show;
+          render();
+        }}
+        onFontSizeChange={(size) => {
+          fontSize = size;
+          render();
+          measureWidth();
+        }}
+        onCanvasDensityChange={(density) => {
+          canvasDensity = density;
+          if (renderer) renderer.updateCanvasScale(canvasDensity);
+          render();
+        }}
+      />
     </div>
   {/if}
 </div>
