@@ -11,11 +11,15 @@
     steps,
     swing,
     audioRate,
+    outputFormat,
+    showVelocity,
     tracks,
     swingTracker,
     onSetStepCount,
     onSetSwing,
     onSetAudioRate,
+    onSetOutputFormat,
+    onSetShowVelocity,
     onAddTrack,
     onRemoveTrack,
     onUpdateTrackName,
@@ -24,11 +28,15 @@
     steps: number;
     swing: number;
     audioRate: boolean;
+    outputFormat: 'bang' | 'value';
+    showVelocity: boolean;
     tracks: TrackData[];
     swingTracker: ContinuousTracker;
     onSetStepCount: (n: number) => void;
     onSetSwing: (v: number) => void;
     onSetAudioRate: (v: boolean) => void;
+    onSetOutputFormat: (v: 'bang' | 'value') => void;
+    onSetShowVelocity: (v: boolean) => void;
     onAddTrack: () => void;
     onRemoveTrack: (idx: number) => void;
     onUpdateTrackName: (idx: number, name: string) => void;
@@ -82,6 +90,60 @@
             ? 'Sends {time, value} — suitable for Web Audio scheduling'
             : 'Sends value — suitable for visual/message scheduling'}
         </Tooltip.Content>
+      </Tooltip.Root>
+    </div>
+
+    <!-- Output Format -->
+    <div class="flex items-center justify-between" class:opacity-50={audioRate}>
+      <label class="text-xs font-medium text-zinc-300">Output</label>
+
+      <div class="flex gap-1">
+        {#each ['bang', 'value'] as const as fmt}
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={() => !audioRate && onSetOutputFormat(fmt)}
+                disabled={audioRate}
+                class="cursor-pointer rounded px-2 py-1 text-xs transition-colors disabled:cursor-not-allowed"
+                class:bg-zinc-600={outputFormat === fmt && !audioRate}
+                class:text-white={outputFormat === fmt && !audioRate}
+                class:bg-zinc-800={outputFormat !== fmt || audioRate}
+                class:text-zinc-300={outputFormat !== fmt}
+                class:hover:bg-zinc-700={outputFormat !== fmt && !audioRate}
+              >
+                {fmt}
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              {fmt === 'bang'
+                ? 'Sends {type: "bang"} — works with sampler~, trigger, etc.'
+                : 'Sends velocity value (0–1)'}
+            </Tooltip.Content>
+          </Tooltip.Root>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Velocity Lane -->
+    <div class="flex items-center justify-between">
+      <label class="text-xs font-medium text-zinc-300">Velocity Lane</label>
+
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            onclick={() => onSetShowVelocity(!showVelocity)}
+            class="cursor-pointer rounded px-2 py-1 text-xs transition-colors"
+            class:bg-zinc-600={showVelocity}
+            class:text-white={showVelocity}
+            class:bg-zinc-800={!showVelocity}
+            class:text-zinc-400={!showVelocity}
+            class:hover:bg-zinc-700={!showVelocity}
+          >
+            {showVelocity ? 'On' : 'Off'}
+          </button>
+        </Tooltip.Trigger>
+
+        <Tooltip.Content>Show per-step velocity bars (drag to set 0–1)</Tooltip.Content>
       </Tooltip.Root>
     </div>
 

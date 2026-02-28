@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { match } from 'ts-pattern';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals, useStore, type NodeProps } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -67,6 +68,8 @@
       tracks?: TrackData[];
       swing?: number;
       audioRate?: boolean;
+      outputFormat?: 'bang' | 'value';
+      showVelocity?: boolean;
     };
   } = $props();
 
@@ -81,6 +84,7 @@
   let schedulerSubId: string | null = null;
   let showSettings = $state(false);
   let currentVisualStep = $state(-1);
+  let velocityDragOldTracks: TrackData[] | null = null;
   let pollingIntervalId: ReturnType<typeof setInterval> | null = null;
   let lastBeatsPerBar = Transport.beatsPerBar;
 
@@ -88,6 +92,8 @@
   const tracks = $derived((data.tracks ?? DEFAULT_TRACKS) as TrackData[]);
   const swing = $derived(data.swing ?? 0);
   const audioRate = $derived(data.audioRate ?? false);
+  const outputFormat = $derived(data.outputFormat ?? 'bang');
+  const showVelocity = $derived(data.showVelocity ?? false);
   const trackCount = $derived(tracks.length);
   const stepsPerRow = $derived(Math.min(steps, 16));
   const rowCount = $derived(Math.ceil(steps / 16));
@@ -105,13 +111,19 @@
     if (!messageContext) return;
     const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
     const isAudio = data.audioRate ?? false;
+    const format = data.outputFormat ?? 'bang';
 
     for (let t = 0; t < currentTracks.length; t++) {
       const track = currentTracks[t];
       if (!(track.stepOn[stepIndex] ?? false)) continue;
 
       const value = track.stepValues[stepIndex] ?? 1.0;
-      messageContext.send(isAudio ? { time, value } : value, { to: t });
+      const payload = match({ isAudio, format })
+        .with({ isAudio: true }, () => ({ time, value }))
+        .with({ format: 'value' }, () => value)
+        .otherwise(() => ({ type: 'bang' }));
+
+      messageContext.send(payload, { to: t });
     }
   }
 
@@ -263,6 +275,17 @@
     updateNodeData(nodeId, { ...data, tracks: newTracks });
     tracker.commit('tracks', oldTracks, newTracks);
   }
+
+  function setStepValue(trackIdx: number, stepIdx: number, value: number): void {
+    const clamped = Math.max(0, Math.min(1, value));
+    const newTracks = tracks.map((t, i) => {
+      if (i !== trackIdx) return t;
+      const newValues = [...t.stepValues];
+      newValues[stepIdx] = clamped;
+      return { ...t, stepValues: newValues };
+    });
+    updateNodeData(nodeId, { ...data, tracks: newTracks });
+  }
 </script>
 
 <div class="relative">
@@ -301,14 +324,18 @@
           <!-- Step grid: up to 16 per row, wrap for 24/32 -->
           <div class="flex flex-col gap-0.5">
             {#each Array.from({ length: rowCount }) as _, rowIdx (rowIdx)}
-              <div class="flex gap-0.5">
+              <div class="nodrag flex gap-0.5">
                 {#each Array.from({ length: stepsPerRow }) as _, colIdx (colIdx)}
                   {@const stepIdx = rowIdx * 16 + colIdx}
                   {#if stepIdx < steps}
                     {@const isOn = track.stepOn[stepIdx] ?? false}
                     {@const isCurrent = stepIdx === currentVisualStep}
+
                     <button
-                      class="h-6 w-[18px] cursor-pointer rounded-sm transition-all duration-75"
+                      class={[
+                        'w-[18px] cursor-pointer rounded-sm transition-all duration-75',
+                        showVelocity ? 'h-[20px]' : 'h-[24px]'
+                      ]}
                       class:ring-1={isCurrent}
                       class:ring-white={isCurrent}
                       class:ring-offset-0={isCurrent}
@@ -320,6 +347,56 @@
                   {/if}
                 {/each}
               </div>
+
+              {#if showVelocity}
+                <div class="flex gap-0.5">
+                  {#each Array.from({ length: stepsPerRow }) as _, colIdx (colIdx)}
+                    {@const stepIdx = rowIdx * 16 + colIdx}
+
+                    {#if stepIdx < steps}
+                      {@const barValue = track.stepValues[stepIdx] ?? 1.0}
+                      {@const isStepOn = track.stepOn[stepIdx] ?? false}
+                      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                      <div
+                        role="slider"
+                        aria-valuenow={barValue}
+                        aria-valuemin={0}
+                        aria-valuemax={1}
+                        tabindex="-1"
+                        class="nodrag relative h-[48px] w-[18px] cursor-ns-resize overflow-hidden rounded-sm bg-zinc-800"
+                        onpointerdown={(e) => {
+                          e.stopPropagation();
+                          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                          velocityDragOldTracks = tracks;
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          setStepValue(trackIdx, stepIdx, 1 - (e.clientY - rect.top) / rect.height);
+                        }}
+                        onpointermove={(e) => {
+                          if (!velocityDragOldTracks) return;
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          setStepValue(trackIdx, stepIdx, 1 - (e.clientY - rect.top) / rect.height);
+                        }}
+                        onpointerup={() => {
+                          if (!velocityDragOldTracks) return;
+                          tracker.commit(
+                            'tracks',
+                            velocityDragOldTracks,
+                            (data.tracks ?? DEFAULT_TRACKS) as TrackData[]
+                          );
+                          velocityDragOldTracks = null;
+                        }}
+                      >
+                        <div
+                          class="absolute right-0 bottom-0 left-0 rounded-sm"
+                          style:background-color={track.color}
+                          style:opacity={isStepOn ? '0.85' : '0.2'}
+                          style:height="{barValue * 100}%"
+                        />
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+              {/if}
             {/each}
           </div>
         </div>
@@ -361,6 +438,8 @@
         {steps}
         {swing}
         {audioRate}
+        {outputFormat}
+        {showVelocity}
         {tracks}
         {swingTracker}
         onSetStepCount={setStepCount}
@@ -368,6 +447,14 @@
         onSetAudioRate={(v) => {
           updateNodeData(nodeId, { ...data, audioRate: v });
           tracker.commit('audioRate', audioRate, v);
+        }}
+        onSetOutputFormat={(v) => {
+          updateNodeData(nodeId, { ...data, outputFormat: v });
+          tracker.commit('outputFormat', outputFormat, v);
+        }}
+        onSetShowVelocity={(v) => {
+          updateNodeData(nodeId, { ...data, showVelocity: v });
+          tracker.commit('showVelocity', showVelocity, v);
         }}
         onAddTrack={addTrack}
         onRemoveTrack={removeTrack}
