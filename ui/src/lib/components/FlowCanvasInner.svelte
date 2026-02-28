@@ -464,6 +464,7 @@
           Transport.play();
         }
       },
+      toggleTransportPanel: () => transportStore.togglePanel(),
       newPatch,
       quickSave,
       saveAs: () => (showSavePatchModal = true),

@@ -49,6 +49,7 @@ export interface KeyboardShortcutActions {
 
   // Transport
   togglePlayPause: () => void;
+  toggleTransportPanel: () => void;
 
   // Patch operations
   newPatch: () => void;
@@ -225,6 +226,14 @@ export class KeyboardShortcutManager {
     if (key === 'enter' && !this.actions.isCommandPaletteOpen() && !isTyping && !hasNodeSelected) {
       event.preventDefault();
       this.actions.quickAddNode();
+
+      return;
+    }
+
+    // Shift+Space: Toggle transport panel
+    if (key === ' ' && event.shiftKey && !isTyping) {
+      event.preventDefault();
+      this.actions.toggleTransportPanel();
 
       return;
     }

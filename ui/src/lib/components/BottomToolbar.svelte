@@ -287,7 +287,8 @@
                 {/if}
               </button>
             </Tooltip.Trigger>
-            <Tooltip.Content>Transport Controls</Tooltip.Content>
+
+            <Tooltip.Content>Transport Controls (⇧ + Space)</Tooltip.Content>
           </Tooltip.Root>
 
           {#if $transportStore.panelOpen}
