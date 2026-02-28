@@ -12,8 +12,10 @@
   const { width = 500 }: Props = $props();
 
   const RULER_HEIGHT = 28;
-  const BARS_VISIBLE = 4;
   const FLASH_DURATION_MS = 300;
+
+  // Scale visible bars with width: ~1 bar per 125px, minimum 4
+  const barsVisible = $derived(Math.max(4, Math.floor(width / 125)));
   const DPR = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 2;
 
   let wrapperRef = $state<HTMLDivElement>();
@@ -52,10 +54,10 @@
       const beatDuration = 60 / bpm;
       const barDuration = beatDuration * beatsPerBar;
 
-      // Window: page in chunks of BARS_VISIBLE so the playhead sweeps across
-      const pageStart = Math.floor(currentBar / BARS_VISIBLE) * BARS_VISIBLE;
+      // Window: page in chunks of barsVisible so the playhead sweeps across
+      const pageStart = Math.floor(currentBar / barsVisible) * barsVisible;
       const windowStart = pageStart * barDuration;
-      const windowDuration = BARS_VISIBLE * barDuration;
+      const windowDuration = barsVisible * barDuration;
       const windowEnd = windowStart + windowDuration;
 
       const timeToX = (t: number) => ((t - windowStart) / windowDuration) * cw;
@@ -78,7 +80,7 @@
       ctx.clearRect(0, 0, cw, ch);
 
       // Draw beat grid
-      for (let bar = 0; bar < BARS_VISIBLE; bar++) {
+      for (let bar = 0; bar < barsVisible; bar++) {
         for (let beat = 0; beat < beatsPerBar; beat++) {
           const t = windowStart + bar * barDuration + beat * beatDuration;
           const x = timeToX(t);
@@ -116,7 +118,7 @@
             .with('beat', () => {
               // Draw markers at beat positions in each visible bar
               const beats = event.beats;
-              for (let bar = 0; bar < BARS_VISIBLE; bar++) {
+              for (let bar = 0; bar < barsVisible; bar++) {
                 for (let b = 0; b < beatsPerBar; b++) {
                   const shouldDraw = beats === '*' || (Array.isArray(beats) && beats.includes(b));
 
