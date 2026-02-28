@@ -45,8 +45,9 @@
       const beatDuration = 60 / bpm;
       const barDuration = beatDuration * beatsPerBar;
 
-      // Window: starts at current bar
-      const windowStart = currentBar * barDuration;
+      // Window: page in chunks of BARS_VISIBLE so the playhead sweeps across
+      const pageStart = Math.floor(currentBar / BARS_VISIBLE) * BARS_VISIBLE;
+      const windowStart = pageStart * barDuration;
       const windowDuration = BARS_VISIBLE * barDuration;
       const windowEnd = windowStart + windowDuration;
 
@@ -87,7 +88,7 @@
         const barX = timeToX(windowStart + bar * barDuration);
         ctx.fillStyle = '#71717a';
         ctx.font = '9px ui-monospace, monospace';
-        ctx.fillText(`${currentBar + bar + 1}`, barX + 3, 10);
+        ctx.fillText(`${pageStart + bar + 1}`, barX + 3, 10);
       }
 
       // Draw event markers per-node
