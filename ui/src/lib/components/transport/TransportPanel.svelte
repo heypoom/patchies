@@ -628,8 +628,9 @@
 
         {#if showOverflow}
           <div class="fixed inset-0 z-10" onclick={() => (showOverflow = false)} role="none"></div>
+
           <div
-            class="absolute right-0 bottom-full z-20 mb-2 flex min-w-[180px] flex-col rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl"
+            class="absolute right-0 bottom-full z-20 mb-4 flex min-w-[180px] flex-col rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl"
           >
             <button
               onclick={() => {
@@ -646,6 +647,7 @@
                 <Check class="ml-auto h-3.5 w-3.5" />
               {/if}
             </button>
+
             <button
               onclick={() => {
                 toggleSync();
@@ -654,6 +656,7 @@
               class="flex cursor-pointer items-center gap-2 rounded px-3 py-2 text-sm transition-colors hover:bg-zinc-800 {syncColor}"
             >
               <Wifi class="h-4 w-4 {syncColor}" />
+
               <span>
                 {#if $transportSyncStore.enabled}
                   {$transportSyncStore.isLeader
@@ -663,6 +666,7 @@
                   Sync
                 {/if}
               </span>
+
               {#if $transportSyncStore.enabled}
                 <Check class="ml-auto h-3.5 w-3.5" />
               {/if}

@@ -19,6 +19,7 @@ Click the **transport button** (play icon) in the bottom toolbar to open the flo
 | **Time Display**   | Shows current position. Click to toggle formats (see below). Double-click to edit and seek.       |
 | **Volume**         | Master volume slider.                                                                             |
 | **DSP**            | Toggle audio processing. Red when DSP is off (AudioContext suspended).                            |
+| **⋯**              | Overflow menu — contains **Timeline** and **Sync** toggles.                                       |
 
 For time signatures, the denominator must be 2, 4, 8, or 16. Time signatures are persisted across sessions.
 
@@ -71,7 +72,7 @@ For scheduling sample-accurate callbacks on specific beats and creating repeated
 
 The timeline viewer shows a real-time visualization of all scheduled clock events (from `clock.onBeat`, `clock.schedule` and `clock.every`) across your patch. It helps you see when events fire and how they align with the beat grid.
 
-Click the **timeline button** (bar chart icon) in the transport panel to toggle the timeline.
+Open the **⋯** overflow menu in the transport panel and click **Timeline** to toggle it.
 
 ### Timeline markers
 
@@ -91,9 +92,40 @@ Use `clock.setTimelineStyle()` in your code to customize a node's color or hide 
 - _Click and drag_ to scrub through time continuously.
 - _Resize_ by dragging the left edge of the transport panel (desktop only).
 
+## Network Sync
+
+![Transport network sync](/content/images/transport-network-sync.webp)
+
+Network Sync lets multiple Patchies instances in the same [peer-to-peer room](/docs/network-p2p) share a single transport. When enabled, all peers start, stop, and change BPM together — useful for multi-screen installations or collaborative live performance.
+
+### Enabling
+
+Open the **⋯** overflow menu and click **Sync**. The label updates to show your role:
+
+- **Sync (leader)** — your transport is the source of truth; others follow you
+- **Sync (2 peers)** — you are following the leader; transport controls are read-only
+
+All peers in the room must enable Sync. The leader is elected automatically. If the leader disconnects, the next peer becomes leader.
+
+### What gets synced
+
+| Property | Behaviour |
+| -------- | --------- |
+| Play / Pause / Stop | Followers mirror the leader's state immediately |
+| BPM | Updated on followers whenever the leader changes it |
+| Time signature | Updated on followers whenever the leader changes it |
+| Transport position | Followers seek to the leader's position on connect and correct drift every second |
+
+When you enable Sync while the leader is already playing, your transport seeks forward to the leader's current position automatically — you join in the middle of the performance rather than starting from 0.
+
+### Precision
+
+Sync targets **beat-level accuracy** (~25 ms). It is not sample-accurate. For triggering audio precisely on a shared beat, use `clock.onBeat` or `clock.every` with `{ audio: true }` on each machine independently — the synchronized BPM and time origin ensure they fire at the same musical moment.
+
 ## See Also
 
 - [Clock API](/docs/clock-api) — Beat-synced scheduling for code
+- [P2P Messaging](/docs/network-p2p) — How rooms and peer connections work
 - [beat](/docs/objects/beat) — Outputs current beat on each beat change
 - [Audio Chaining](/docs/audio-chaining)
 - [Video Chaining](/docs/video-chaining)
