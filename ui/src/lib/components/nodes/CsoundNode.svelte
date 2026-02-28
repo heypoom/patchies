@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Pause, Play } from '@lucide/svelte/icons';
+  import { Pause, Play, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -11,6 +11,8 @@
   import { csoundMessages } from '$lib/objects/schemas';
   import type { CsoundNode } from '$lib/audio/v2/nodes/CsoundNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
+  import { useNodeDataTracker } from '$lib/history';
+  import TransportSyncSettings from '$lib/components/settings/TransportSyncSettings.svelte';
 
   let {
     id: nodeId,
@@ -18,19 +20,39 @@
     selected
   }: {
     id: string;
-    data: { expr: string };
+    data: { expr: string; syncTransport?: boolean };
     selected: boolean;
   } = $props();
 
   let isEditing = $state(!data.expr);
   let layoutRef = $state<any>();
   let isPlaying = $state(false);
+  let showSettings = $state(false);
+  let contentContainer: HTMLDivElement | null = null;
+  let contentWidth = $state(100);
 
   let messageContext: MessageContext;
   let audioService = AudioService.getInstance();
 
   const { updateNodeData } = useSvelteFlow();
   const { warnIfNoAudioConnection } = useAudioOutletWarning(nodeId);
+  const tracker = useNodeDataTracker(nodeId);
+
+  const syncTransport = $derived(data.syncTransport ?? true);
+
+  function setSyncTransport(value: boolean) {
+    const oldValue = syncTransport;
+    updateNodeData(nodeId, { syncTransport: value });
+    tracker.commit('syncTransport', oldValue, value);
+
+    const csoundNode = getCsoundNode();
+    csoundNode?.setSyncTransport(value);
+  }
+
+  function updateContentWidth() {
+    if (!contentContainer) return;
+    contentWidth = contentContainer.offsetWidth;
+  }
 
   const getCsoundNode = () => audioService.getNodeById(nodeId) as CsoundNode | undefined;
 
@@ -89,9 +111,28 @@
 
     audioService.createNode(nodeId, 'csound~', [null, data.expr]);
 
+    // Sync initial syncTransport state from node data
+    if (!syncTransport) {
+      getCsoundNode()?.setSyncTransport(false);
+    }
+
     if (isEditing) {
       setTimeout(() => layoutRef?.focus(), 10);
     }
+
+    updateContentWidth();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateContentWidth();
+    });
+
+    if (contentContainer) {
+      resizeObserver.observe(contentContainer);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   });
 
   onDestroy(() => {
@@ -122,19 +163,30 @@
 
 <div class="relative flex gap-x-3">
   <div class="group relative">
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2" bind:this={contentContainer}>
       <!-- Floating toolbar -->
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
         <div></div>
 
         <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
-          <!-- Play/Pause button -->
+          <!-- Play/Pause button (hidden when synced to transport) -->
+          {#if !syncTransport}
+            <button
+              onclick={handlePlayPause}
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              title={isPlaying ? 'Pause' : 'Play'}
+            >
+              <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4" />
+            </button>
+          {/if}
+
+          <!-- Settings button -->
           <button
-            onclick={handlePlayPause}
-            class="rounded p-1 hover:bg-zinc-700"
-            title={isPlaying ? 'Pause' : 'Play'}
+            class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+            onclick={() => (showSettings = !showSettings)}
+            title="Settings"
           >
-            <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4" />
+            <Settings class="h-4 w-4 text-zinc-300" />
           </button>
         </div>
       </div>
@@ -158,6 +210,17 @@
       </div>
     </div>
   </div>
+
+  <!-- Settings Panel -->
+  {#if showSettings}
+    <div class="absolute" style="left: {contentWidth + 10}px">
+      <TransportSyncSettings
+        {syncTransport}
+        onSyncTransportChange={setSyncTransport}
+        onClose={() => (showSettings = false)}
+      />
+    </div>
+  {/if}
 </div>
 
 <style>

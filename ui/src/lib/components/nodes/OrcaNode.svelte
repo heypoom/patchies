@@ -16,6 +16,7 @@
   import { DEFAULT_ORCA_HEIGHT, DEFAULT_ORCA_WIDTH } from '$lib/orca/constants';
   import { useNodeDataTracker } from '$lib/history';
   import { transportStore } from '../../../stores/transport.store';
+  import { Transport } from '$lib/transport/Transport';
 
   let {
     id: nodeId,
@@ -344,7 +345,15 @@
         return true;
 
       case ' ':
-        togglePlay();
+        if (syncTransport) {
+          if ($transportStore.playState === 'playing') {
+            Transport.pause();
+          } else {
+            Transport.play();
+          }
+        } else {
+          togglePlay();
+        }
         return true;
 
       case 'Delete':
@@ -582,13 +591,15 @@
         </div>
 
         <div class="flex gap-1">
-          <button
-            title={isPlaying ? 'Pause' : 'Play'}
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-            onclick={togglePlay}
-          >
-            <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4 text-zinc-300" />
-          </button>
+          {#if !syncTransport}
+            <button
+              title={isPlaying ? 'Pause' : 'Play'}
+              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              onclick={togglePlay}
+            >
+              <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4 text-zinc-300" />
+            </button>
+          {/if}
 
           <button
             class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
@@ -707,13 +718,30 @@
 
           <div class="space-y-2">
             <div class="text-xs font-medium text-zinc-400">Clock</div>
+
+            <label class="flex items-center gap-2 text-xs text-zinc-400">
+              <input
+                type="checkbox"
+                checked={syncTransport}
+                onchange={() => {
+                  const oldValue = syncTransport;
+                  updateNodeData(nodeId, { syncTransport: !syncTransport });
+                  tracker.commit('syncTransport', oldValue, !oldValue);
+                }}
+                class="rounded"
+              />
+              <span>Sync to transport</span>
+            </label>
+
             <label class="flex flex-col text-xs text-zinc-400">
               <span>BPM:</span>
+
               <input
                 type="number"
                 min="60"
                 max="300"
-                value={bpm}
+                value={syncTransport ? $transportStore.bpm : bpm}
+                disabled={syncTransport}
                 onchange={(e) => {
                   const val = parseInt(e.currentTarget.value);
                   if (clock && !isNaN(val)) {
@@ -723,7 +751,7 @@
                     tracker.commit('bpm', oldBpm, val);
                   }
                 }}
-                class="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-xs text-white"
+                class="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:opacity-50"
               />
             </label>
           </div>

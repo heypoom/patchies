@@ -28,6 +28,7 @@
     syntax: BytebeatSyntax;
     sampleRate: number;
     autoEval: boolean;
+    syncTransport: boolean;
   }
 
   let {
@@ -59,6 +60,7 @@
   const syntax = $derived(data.syntax ?? 'infix');
   const sampleRate = $derived(data.sampleRate ?? 8000);
   const autoEval = $derived(data.autoEval ?? true);
+  const syncTransport = $derived(data.syncTransport ?? true);
 
   const handleMessage: MessageCallbackFn = async (message) => {
     await match(message)
@@ -148,6 +150,15 @@
     tracker.commit('autoEval', oldValue, value);
   }
 
+  function setSyncTransport(value: boolean) {
+    const oldValue = syncTransport;
+    updateNodeData(nodeId, { syncTransport: value });
+    tracker.commit('syncTransport', oldValue, value);
+
+    const bytebeatNode = audioService.getNodeById(nodeId) as BytebeatAudioNode | undefined;
+    bytebeatNode?.setSyncTransport(value);
+  }
+
   function togglePlay() {
     if (isPlaying) {
       pause();
@@ -177,6 +188,11 @@
       bytebeatNode.onError = (error: string | null) => {
         errorMessage = error;
       };
+
+      // Sync initial syncTransport state from node data
+      if (!syncTransport) {
+        bytebeatNode.setSyncTransport(false);
+      }
     }
 
     if (isEditing) {
@@ -225,29 +241,31 @@
     <div class="flex flex-col gap-2" bind:this={contentContainer}>
       <!-- Floating toolbar -->
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-        <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
-          <!-- Play/Pause button -->
-          <button
-            onclick={togglePlay}
-            class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-            title={isPlaying ? 'Pause' : 'Play'}
-          >
-            {#if isPlaying}
-              <Pause class="h-4 w-4 text-zinc-300" />
-            {:else}
-              <Play class="h-4 w-4 text-zinc-300" />
-            {/if}
-          </button>
+        {#if !syncTransport}
+          <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
+            <!-- Play/Pause button -->
+            <button
+              onclick={togglePlay}
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              title={isPlaying ? 'Pause' : 'Play'}
+            >
+              {#if isPlaying}
+                <Pause class="h-4 w-4 text-zinc-300" />
+              {:else}
+                <Play class="h-4 w-4 text-zinc-300" />
+              {/if}
+            </button>
 
-          <!-- Stop button -->
-          <button
-            onclick={stop}
-            class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-            title="Stop (reset t=0)"
-          >
-            <Square class="h-4 w-4 text-zinc-300" />
-          </button>
-        </div>
+            <!-- Stop button -->
+            <button
+              onclick={stop}
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              title="Stop (reset t=0)"
+            >
+              <Square class="h-4 w-4 text-zinc-300" />
+            </button>
+          </div>
+        {/if}
 
         <button
           class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
@@ -296,10 +314,12 @@
         {syntax}
         {sampleRate}
         {autoEval}
+        {syncTransport}
         onTypeChange={setType}
         onSyntaxChange={setSyntax}
         onSampleRateChange={setSampleRate}
         onAutoEvalChange={setAutoEval}
+        onSyncTransportChange={setSyncTransport}
         onClose={() => (showSettings = false)}
       />
     </div>
