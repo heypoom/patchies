@@ -41,7 +41,9 @@ When DSP is off and you press Play, visuals advance but audio remains silent.
 
 ## How Sync Works
 
-All visual objects automatically read from the global transport:
+### Visual Objects
+
+Visual objects automatically read from the global transport:
 
 - **GLSL**: `iTime` uniform matches transport seconds
 - **Hydra**: `time` variable matches transport seconds
@@ -50,7 +52,9 @@ All visual objects automatically read from the global transport:
 
 When you pause, ALL visuals freeze simultaneously. When you stop, everything resets to time 0.
 
-Musical objects have their own internal clocks and can optionally sync to the transport. Enable **Sync to transport** in each node's settings to lock its playback and BPM to the global transport. This is opt-in — by default these nodes run independently.
+### Musical Objects
+
+Musical objects have their own internal clocks and can optionally sync to the transport. Enable **Sync to transport** in each node's overflow menu to lock its playback and BPM to the global transport. This is opt-in — by default these nodes run independently.
 
 - [strudel](/docs/objects/strudel)
 - [orca](/docs/objects/orca)
