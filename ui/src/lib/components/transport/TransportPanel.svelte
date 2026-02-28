@@ -453,10 +453,10 @@
 
     <!-- Group 3: BPM & Time Signature -->
     <div class="flex flex-1 items-center gap-2 sm:flex-initial">
-      <div class="flex items-center gap-1.5">
+      <div class="flex flex-1 items-center gap-1.5 sm:flex-initial">
         <span class="text-xs text-zinc-500">BPM</span>
         <Tooltip.Root>
-          <Tooltip.Trigger>
+          <Tooltip.Trigger class="flex-1 sm:flex-initial">
             <input
               type="number"
               value={bpm}
@@ -469,7 +469,7 @@
               }}
               min="1"
               max="999"
-              class="w-[46px] [appearance:textfield] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 outline-none focus:ring-1 focus:ring-zinc-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              class="w-full min-w-[46px] [appearance:textfield] rounded bg-zinc-800 px-2 py-1 text-center font-mono text-sm text-zinc-300 outline-none focus:ring-1 focus:ring-zinc-500 sm:w-[46px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             />
           </Tooltip.Trigger>
           <Tooltip.Content>Beats per minute</Tooltip.Content>
@@ -483,14 +483,14 @@
           bind:value={editTimeSignatureValue}
           onblur={handleTimeSigEditComplete}
           onkeydown={handleTimeSigKeydown}
-          class="w-[46px] rounded bg-zinc-800 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none"
+          class="w-full min-w-[46px] flex-1 rounded bg-zinc-800 py-1 text-center font-mono text-sm text-zinc-300 ring-1 ring-zinc-500 outline-none sm:w-[46px] sm:flex-initial"
         />
       {:else}
         <Tooltip.Root>
-          <Tooltip.Trigger>
+          <Tooltip.Trigger class="flex-1 sm:flex-initial">
             <button
               onclick={enterTimeSigEditMode}
-              class="w-[46px] cursor-pointer rounded bg-zinc-800 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+              class="w-full min-w-[46px] cursor-pointer rounded bg-zinc-800 py-1 font-mono text-sm text-zinc-300 transition-colors hover:bg-zinc-700 sm:w-[46px]"
             >
               {timeSignatureDisplay}
             </button>
