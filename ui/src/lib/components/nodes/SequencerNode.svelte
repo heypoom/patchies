@@ -80,12 +80,12 @@
 
   let messageContext: MessageContext | null = null;
   let scheduler: LookaheadClockScheduler | null = null;
-  let schedulerSubId: string | null = null;
+  let barSubId: string | null = null;
+  let stepScheduleIds: string[] = [];
   let showSettings = $state(false);
   let currentVisualStep = $state(-1);
   let velocityDragOldTracks: TrackData[] | null = null;
   let pollingIntervalId: ReturnType<typeof setInterval> | null = null;
-  let lastBeatsPerBar = Transport.beatsPerBar;
 
   const steps = $derived(data.steps ?? 16);
   const tracks = $derived((data.tracks ?? DEFAULT_TRACKS) as TrackData[]);
@@ -96,16 +96,6 @@
   const trackCount = $derived(tracks.length);
   const stepsPerRow = $derived(Math.min(steps, 16));
   const rowCount = $derived(Math.ceil(steps / 16));
-
-  function computeStepAtTime(time: number, numSteps: number): number {
-    const bpm = Transport.bpm;
-    const beatsPerBar = Transport.beatsPerBar;
-    const stepInterval = (60 / bpm) * (beatsPerBar / numSteps);
-    const barDuration = (60 / bpm) * beatsPerBar;
-    const posInBar = ((time % barDuration) + barDuration) % barDuration;
-
-    return Math.floor(posInBar / stepInterval) % numSteps;
-  }
 
   function fireAtStep(stepIndex: number, time: number): void {
     if (!messageContext) return;
@@ -129,44 +119,37 @@
     }
   }
 
+  function scheduleBar(barTime: number): void {
+    // Cancel any leftover step schedules from the previous bar
+    for (const id of stepScheduleIds) scheduler!.cancel(id);
+    stepScheduleIds = [];
+
+    const numSteps = data.steps ?? 16;
+    const swingVal = data.swing ?? 0;
+    const beatDuration = (60 / Transport.bpm) * (4 / Transport.denominator);
+    const stepInterval = (beatDuration * Transport.beatsPerBar) / numSteps;
+
+    for (let i = 0; i < numSteps; i++) {
+      const swingOffset = i % 2 === 1 && swingVal > 0 ? (swingVal / 100) * 0.5 * stepInterval : 0;
+      const stepTime = barTime + i * stepInterval + swingOffset;
+      const id = scheduler!.schedule(stepTime, (t) => fireAtStep(i, t), { audio: true });
+      stepScheduleIds.push(id);
+    }
+  }
+
   function setupScheduler(): void {
     if (!scheduler) return;
 
-    if (schedulerSubId) {
-      scheduler.cancel(schedulerSubId);
-      schedulerSubId = null;
+    if (barSubId) {
+      scheduler.cancel(barSubId);
+      barSubId = null;
     }
 
-    const beatsPerStep = Transport.beatsPerBar / steps;
+    for (const id of stepScheduleIds) scheduler.cancel(id);
+    stepScheduleIds = [];
 
-    schedulerSubId = scheduler.every(
-      `0:${beatsPerStep}:0`,
-      (time) => {
-        const steps = data.steps ?? 16;
-        const stepIndex = computeStepAtTime(time, steps);
-        const isOdd = stepIndex % 2 === 1;
-        const swingVal = data.swing ?? 0;
-
-        if (isOdd && swingVal > 0) {
-          const stepInterval = (60 / Transport.bpm) * (Transport.beatsPerBar / steps);
-          const swingOffset = (swingVal / 100) * 0.5 * stepInterval;
-
-          scheduler!.schedule(time + swingOffset, (t) => fireAtStep(stepIndex, t), {
-            audio: true
-          });
-        } else {
-          fireAtStep(stepIndex, time);
-        }
-      },
-      { audio: true }
-    );
+    barSubId = scheduler.onBeat(0, (barTime) => scheduleBar(barTime), { audio: true });
   }
-
-  // Re-subscribe when step count changes (interval string changes)
-  $effect(() => {
-    steps;
-    if (scheduler) setupScheduler();
-  });
 
   // Update xyflow handle positions when track count changes
   $effect(() => {
@@ -197,19 +180,13 @@
         const ppq = Transport.ppq;
         const bpb = Transport.beatsPerBar;
         const numSteps = data.steps ?? 16;
-        const ticksPerBar = ppq * bpb;
+        const ticksPerBeat = ppq * (4 / Transport.denominator);
+        const ticksPerBar = ticksPerBeat * bpb;
         const ticksPerStep = ticksPerBar / numSteps;
         const ticksInBar = Transport.ticks % ticksPerBar;
         currentVisualStep = Math.floor(ticksInBar / ticksPerStep) % numSteps;
       } else {
         currentVisualStep = -1;
-      }
-
-      // Re-subscribe if time signature changed (affects step interval)
-      const newBpb = Transport.beatsPerBar;
-      if (newBpb !== lastBeatsPerBar) {
-        lastBeatsPerBar = newBpb;
-        setupScheduler();
       }
     }, 1000 / 30);
   });
