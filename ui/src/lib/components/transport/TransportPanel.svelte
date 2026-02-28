@@ -20,6 +20,7 @@
   import { match } from 'ts-pattern';
   import TimelineRuler from './TimelineRuler.svelte';
   import SetRoomDialog from './SetRoomDialog.svelte';
+  import MetronomeButton from './MetronomeButton.svelte';
   import { MAX_RULER_WIDTH, MIN_RULER_WIDTH } from './constants';
   import { transportSyncManager } from '$lib/transport/TransportSyncManager';
   import { transportSyncStore } from '../../../stores/transport-sync.store';
@@ -511,7 +512,8 @@
     <!-- Group 3: BPM & Time Signature -->
     <div class="flex flex-1 items-center gap-2 sm:flex-initial">
       <div class="flex flex-1 items-center gap-1.5 sm:flex-initial">
-        <span class="text-xs text-zinc-500">BPM</span>
+        <MetronomeButton {bpm} />
+
         <Tooltip.Root>
           <Tooltip.Trigger class="flex-1 sm:flex-initial">
             <input
