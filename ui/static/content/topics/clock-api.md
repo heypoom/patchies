@@ -195,7 +195,7 @@ clock.every('0:1:0', (time) => {
 
 ### Timeline Visualization
 
-All `onBeat`, `schedule`, and `every` callbacks are automatically visualized in the [Timeline Viewer](/docs/transport-control#timeline-viewer) when it's open. Each node gets a unique color, and you'll see markers for upcoming events and brief flash animations when they fire.
+All `onBeat`, `schedule`, and `every` callbacks are automatically visualized in the [Timeline Viewer](/docs/transport-control) when it's open. Each node gets a unique color, and you'll see markers for upcoming events and brief flash animations when they fire.
 
 ### cancel
 
