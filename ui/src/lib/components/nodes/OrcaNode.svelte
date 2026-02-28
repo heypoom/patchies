@@ -15,6 +15,7 @@
   import StandardHandle from '../StandardHandle.svelte';
   import { DEFAULT_ORCA_HEIGHT, DEFAULT_ORCA_WIDTH } from '$lib/orca/constants';
   import { useNodeDataTracker } from '$lib/history';
+  import { transportStore } from '../../../stores/transport.store';
 
   let {
     id: nodeId,
@@ -22,7 +23,14 @@
     selected
   }: {
     id: string;
-    data: { grid: string; width: number; height: number; bpm: number; frame: number };
+    data: {
+      grid: string;
+      width: number;
+      height: number;
+      bpm: number;
+      frame: number;
+      syncTransport?: boolean;
+    };
     selected: boolean;
   } = $props();
 
@@ -262,16 +270,16 @@
       return true;
     }
 
-    // Speed increase: >
-    if (e.key === '>' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    // Speed increase: > (disabled when synced to transport)
+    if (e.key === '>' && !e.ctrlKey && !e.metaKey && !e.altKey && !syncTransport) {
       e.preventDefault();
       increaseBpm();
 
       return true;
     }
 
-    // Speed decrease: <
-    if (e.key === '<' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    // Speed decrease: < (disabled when synced to transport)
+    if (e.key === '<' && !e.ctrlKey && !e.metaKey && !e.altKey && !syncTransport) {
       e.preventDefault();
       decreaseBpm();
 
@@ -516,6 +524,44 @@
       updateNodeData(nodeId, { bpm: clock.speed.value });
     }
   }
+
+  const syncTransport = $derived(data.syncTransport ?? true);
+
+  // Sync BPM to transport
+  $effect(() => {
+    if (!syncTransport || !clock) return;
+
+    const { bpm: transportBpm } = $transportStore;
+    clock.setSpeed(transportBpm, transportBpm);
+  });
+
+  // Sync play/stop to transport state
+  $effect(() => {
+    if (!syncTransport || !clock) return;
+
+    const { playState } = $transportStore;
+
+    match(playState)
+      .with('playing', () => {
+        if (!isPlaying) {
+          clock!.start();
+          isPlaying = true;
+        }
+      })
+      .with('paused', () => {
+        if (isPlaying) {
+          clock!.stop();
+          isPlaying = false;
+        }
+      })
+      .with('stopped', () => {
+        if (isPlaying) {
+          clock!.stop();
+          isPlaying = false;
+        }
+      })
+      .exhaustive();
+  });
 
   function clearGrid(): void {
     if (orca) {

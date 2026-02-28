@@ -11,6 +11,7 @@
   import { strudelMessages } from '$lib/objects/schemas';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
+  import { transportStore } from '../../../stores/transport.store';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -23,6 +24,7 @@
       fontFamily?: string;
       fontSize?: number;
       showConsole?: boolean;
+      syncTransport?: boolean;
       styles?: Record<string, any>;
     };
   } = $props();
@@ -172,6 +174,41 @@
   });
 
   const consoleLeftPos = $derived(editorContainerWidth + consoleGap);
+  const syncTransport = $derived(data.syncTransport ?? true);
+
+  // Sync CPS to transport BPM/time signature
+  $effect(() => {
+    if (!syncTransport || !isInitialized || !strudelEditor?.editor) return;
+
+    const { bpm, timeSignature } = $transportStore;
+    const [beatsPerBar] = timeSignature;
+    const cps = bpm / beatsPerBar / 60;
+
+    try {
+      strudelEditor.editor.repl.scheduler.setCps(cps);
+    } catch {
+      // Scheduler may not be ready yet
+    }
+  });
+
+  // Sync play/stop to transport state
+  $effect(() => {
+    if (!syncTransport || !isInitialized || !strudelEditor?.editor) return;
+
+    const { playState } = $transportStore;
+
+    match(playState)
+      .with('playing', () => {
+        if (!isPlaying) evaluate();
+      })
+      .with('paused', () => {
+        if (isPlaying) stop();
+      })
+      .with('stopped', () => {
+        if (isPlaying) stop();
+      })
+      .exhaustive();
+  });
 </script>
 
 <div class="relative">
