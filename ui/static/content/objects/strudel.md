@@ -26,9 +26,9 @@ Strudel runs in a separate runtime and does NOT use the
 
 ## Transport Sync
 
-Enable **Sync to transport** in settings to lock Strudel's playback to the
-global [transport](/docs/transport-control). When synced, play/pause is
-controlled by the transport bar instead of per-node controls.
+Enable **Sync to transport** in the overflow menu to lock Strudel's playback to
+the global [transport](/docs/transport-control). When synced, play/pause and CPM
+is controlled by the transport bar instead of per-node controls.
 
 ## Multiple Instances
 
