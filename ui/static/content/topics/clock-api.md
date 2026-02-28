@@ -46,7 +46,7 @@ Control the transport directly from your code:
 | `clock.pause()` | Pause transport |
 | `clock.stop()` | Stop and reset to 0 |
 | `clock.setBpm(bpm)` | Set tempo |
-| `clock.setTimeSignature(numerator, denominator)` | Set time signature (e.g., `6, 8` for 6/8) |
+| `clock.setTimeSignature(n, d)` | Set time signature (e.g., `6, 8` for 6/8) |
 | `clock.seek(seconds)` | Seek to time in seconds |
 
 ### Transport Control Example
