@@ -13,8 +13,7 @@
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import { useNodeDataTracker } from '$lib/history';
   import TransportSyncSettings from '$lib/components/settings/TransportSyncSettings.svelte';
-  import { transportStore } from '../../../stores/transport.store';
-  import { Transport } from '$lib/transport/Transport';
+  import { StrudelTransportSync } from '$lib/strudel/StrudelTransportSync';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -106,6 +105,15 @@
       if (strudelEditor?.editor) {
         isInitialized = true;
 
+        transportSync = new StrudelTransportSync({
+          getScheduler: () => strudelEditor?.editor?.repl.scheduler,
+          evaluate,
+          stop,
+          onPlayingChange: (playing) => {
+            isPlaying = playing;
+          }
+        });
+
         // @ts-expect-error -- for debugging
         window.strudel = strudelEditor.editor;
       }
@@ -113,6 +121,7 @@
   });
 
   onDestroy(() => {
+    transportSync?.destroy();
     stop();
     document.removeEventListener('strudel.log', handleStrudelLog);
 
@@ -187,105 +196,17 @@
     tracker.commit('syncTransport', oldValue, value);
   }
 
-  function getTransportCps() {
-    return $transportStore.bpm / $transportStore.timeSignature[0] / 60;
-  }
+  // Transport sync (CPS, phase, play/pause/stop)
+  let transportSync: StrudelTransportSync | null = null;
 
-  function applyTransportCps() {
-    try {
-      strudelEditor?.editor?.repl.scheduler.setCps(getTransportCps());
-    } catch {
-      // Scheduler may not be ready yet
+  $effect(() => {
+    if (!isInitialized || !transportSync) return;
+
+    if (syncTransport) {
+      transportSync.subscribe();
+    } else {
+      transportSync.unsubscribe();
     }
-  }
-
-  /** Set the scheduler's cycle position to match the transport's current bar/beat. */
-  function syncSchedulerPhase() {
-    const scheduler = strudelEditor?.editor?.repl.scheduler;
-    if (!scheduler) return;
-
-    const { bar, beat, phase, beatsPerBar } = Transport.getState();
-    const targetCycle = bar + (beat + phase) / beatsPerBar;
-
-    scheduler.num_cycles_at_cps_change = targetCycle;
-    scheduler.lastEnd = targetCycle;
-    scheduler.lastBegin = targetCycle;
-    scheduler.num_ticks_since_cps_change = 0;
-  }
-
-  /** Resume the scheduler from its paused position without re-evaluating. */
-  function resumeScheduler() {
-    const scheduler = strudelEditor?.editor?.repl.scheduler;
-    if (!scheduler) return;
-
-    // Restart clock + re-enable without resetting cycle counters
-    // (scheduler.start() would reset num_cycles_at_cps_change to 0)
-    scheduler.num_cycles_at_cps_change = scheduler.lastEnd;
-    scheduler.num_ticks_since_cps_change = 0;
-
-    // Update lastTick so now() doesn't overshoot due to the pause gap.
-    // Without this, now() = lastBegin + (currentTime - staleLastTick) * cps → way in the future,
-    // causing the Drawer to query empty future cycles and freeze.
-    scheduler.lastTick = scheduler.getTime();
-
-    // Reset the zyklus clock phase so ticks use current timestamps (not stale ones from before pause).
-    // clock.stop() only resets the clock's internal timer — Cyclist's lastEnd is preserved.
-    scheduler.clock.stop();
-    scheduler.clock.start();
-    scheduler.setStarted(true);
-
-    isPlaying = true;
-  }
-
-  let strudelWasPaused = false;
-
-  // Sync CPS to transport BPM
-  $effect(() => {
-    if (!syncTransport || !isInitialized || !strudelEditor?.editor) return;
-
-    // Track bpm so the effect re-runs on changes
-    $transportStore.bpm;
-    applyTransportCps();
-  });
-
-  // Sync play/stop to transport state
-  $effect(() => {
-    if (!syncTransport || !isInitialized || !strudelEditor?.editor) return;
-
-    const { playState } = $transportStore;
-
-    match(playState)
-      .with('playing', () => {
-        if (!isPlaying) {
-          if (strudelWasPaused) {
-            // Resume from paused position
-            resumeScheduler();
-          } else {
-            // Start fresh — evaluate and sync phase to transport
-            evaluate();
-            applyTransportCps();
-            syncSchedulerPhase();
-          }
-
-          strudelWasPaused = false;
-        }
-      })
-      .with('paused', () => {
-        if (isPlaying) {
-          // Pause the scheduler — preserves cycle position for resume
-          strudelEditor?.editor?.repl.scheduler.pause();
-
-          isPlaying = false;
-          strudelWasPaused = true;
-        }
-      })
-      .with('stopped', () => {
-        if (isPlaying) {
-          stop();
-          strudelWasPaused = false;
-        }
-      })
-      .exhaustive();
   });
 </script>
 
