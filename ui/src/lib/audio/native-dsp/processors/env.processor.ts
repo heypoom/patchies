@@ -15,7 +15,7 @@ defineDSP({
 
   recv(state, data, inlet) {
     if (inlet === 1) {
-      const size = parseInt(data as string, 10);
+      const size = Math.round(Number(data));
       if (!isNaN(size) && size > 0) {
         state.windowSize = size;
         state.buffer = new Float32Array(size);
@@ -27,8 +27,7 @@ defineDSP({
   },
 
   process(state, inputs, _outputs, send) {
-    const input = inputs[0]?.[0];
-    if (!input) return;
+    const input = inputs[0][0];
 
     for (let i = 0; i < input.length; i++) {
       const sample = input[i];
