@@ -173,9 +173,7 @@ export class CsoundNode implements AudioNodeV2 {
       }
 
       this.initialized = true;
-
-      // Ramp up after a brief settling period to let the worklet stabilize
-      this.protectionGain.gain.setTargetAtTime(1, this.audioContext.currentTime + 0.1, 0.05);
+      // protectionGain stays at 0 until audio actually starts (see unmute())
     } catch (error) {
       logger.error('failed to initialize csound~:', error);
     }
@@ -234,9 +232,15 @@ export class CsoundNode implements AudioNodeV2 {
     if (!this.csound) return;
 
     await this.setCode(code);
+    this.unmute();
     await this.csound.start();
     this.isPaused = false;
     this.isProgramLoaded = true;
+  }
+
+  private unmute() {
+    this.protectionGain.gain.cancelScheduledValues(this.audioContext.currentTime);
+    this.protectionGain.gain.setTargetAtTime(1, this.audioContext.currentTime, 0.01);
   }
 
   async setOptions(options: string) {
@@ -321,14 +325,24 @@ export class CsoundNode implements AudioNodeV2 {
   }
 
   async resume() {
-    if (!this.csound || !this.isPaused) return;
+    if (!this.isPaused) return;
+
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    if (!this.csound) return;
 
     if (!this.isProgramLoaded && this.codeString) {
       await this.runCode(this.codeString);
+      return;
     }
+
+    this.unmute();
 
     try {
       await this.csound.resume();
+
       this.isPaused = false;
     } catch (error) {
       logger.error('error resuming csound~:', error);
