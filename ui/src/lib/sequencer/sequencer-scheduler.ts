@@ -46,8 +46,7 @@ export class SequencerScheduler {
     for (const id of this.stepScheduleIds) this.scheduler.cancel(id);
     this.stepScheduleIds = [];
 
-    for (const id of this.stepMarkerIds) this.scheduler.cancelMarker(id);
-    this.stepMarkerIds = [];
+    this.clearMarkers();
 
     const beatDuration = (60 / Transport.bpm) * (4 / Transport.denominator);
     const stepInterval = (beatDuration * Transport.beatsPerBar) / steps;
@@ -86,8 +85,7 @@ export class SequencerScheduler {
     for (const id of this.stepScheduleIds) this.scheduler.cancel(id);
     this.stepScheduleIds = [];
 
-    for (const id of this.stepMarkerIds) this.scheduler.cancelMarker(id);
-    this.stepMarkerIds = [];
+    this.clearMarkers();
 
     if (clockMode === 'manual') return;
 
@@ -116,6 +114,15 @@ export class SequencerScheduler {
     const ticksInBar = Transport.ticks % ticksPerBar;
 
     return Math.floor(ticksInBar / ticksPerStep) % numSteps;
+  }
+
+  /** Immediately remove all current step markers from the timeline. */
+  clearMarkers(): void {
+    for (const id of this.stepMarkerIds) {
+      this.scheduler.cancelMarker(id);
+    }
+
+    this.stepMarkerIds = [];
   }
 
   dispose(): void {

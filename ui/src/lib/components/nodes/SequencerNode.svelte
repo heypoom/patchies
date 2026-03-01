@@ -255,6 +255,13 @@
     schedulerHandle?.setup();
   });
 
+  // Immediately clear timeline markers when muted or showInTimeline is disabled
+  $effect(() => {
+    if (muted || !showInTimeline) {
+      schedulerHandle?.clearMarkers();
+    }
+  });
+
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.messageCallback = handleInletMessage;
