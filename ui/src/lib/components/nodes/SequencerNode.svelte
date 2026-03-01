@@ -11,7 +11,7 @@
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SequencerSettings from '$lib/components/settings/SequencerSettings.svelte';
-  import { Settings, X } from '@lucide/svelte/icons';
+  import { Settings, VolumeX, X } from '@lucide/svelte/icons';
 
   type NodeData = {
     steps?: number;
@@ -21,6 +21,7 @@
     clockMode?: 'auto' | 'manual';
     showVelocity?: boolean;
     showInTimeline?: boolean;
+    muted?: boolean;
   };
 
   let {
@@ -53,12 +54,13 @@
 
   const showVelocity = $derived(data.showVelocity ?? false);
   const showInTimeline = $derived(data.showInTimeline ?? true);
+  const muted = $derived(data.muted ?? false);
   const trackCount = $derived(tracks.length);
   const stepsPerRow = $derived(Math.min(steps, 16));
   const rowCount = $derived(Math.ceil(steps / 16));
 
   function fireAtStep(stepIndex: number, time: number): void {
-    if (!messageContext) return;
+    if (!messageContext || data.muted) return;
 
     const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
     const mode = outputMode;
@@ -234,6 +236,8 @@
       .with(sequencerMessages.setStepCount, ({ value }) => {
         setStepCount(value);
       })
+      .with(sequencerMessages.mute, () => setNodeData('muted', true))
+      .with(sequencerMessages.unmute, () => setNodeData('muted', false))
       .otherwise(() => {});
   }
 
@@ -351,9 +355,24 @@
 <div class="relative">
   <!-- Main sequencer body -->
   <div class="group relative">
-    <!-- Settings gear (visible on hover) -->
+    <!-- Header buttons (visible on hover, mute always visible when active) -->
     {#if store.nodesDraggable}
-      <div class="absolute -top-7 right-0 z-10">
+      <div class="absolute -top-7 right-0 z-10 flex items-center">
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+              class:text-red-400={muted}
+              class:text-zinc-300={!muted}
+              onclick={() => setNodeData('muted', !muted)}
+            >
+              <VolumeX class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+
+          <Tooltip.Content>{muted ? 'Unmute' : 'Mute'}</Tooltip.Content>
+        </Tooltip.Root>
+
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button
@@ -371,8 +390,9 @@
 
     <div
       class={[
-        'rounded-md border bg-zinc-900 p-1.5',
-        selected ? 'border-zinc-600' : 'border-zinc-800'
+        'rounded-md border bg-zinc-900 p-1.5 transition-opacity',
+        selected ? 'border-zinc-600' : 'border-zinc-800',
+        muted ? 'opacity-40' : 'opacity-100'
       ]}
     >
       {#each tracks as track, trackIdx (trackIdx)}

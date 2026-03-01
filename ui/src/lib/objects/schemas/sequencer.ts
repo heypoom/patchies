@@ -38,6 +38,10 @@ const FillTrack = msg('fill', { track: Type.Number() });
 const RandomAll = sym('random');
 const Rotate = msg('rotate', { track: Type.Number(), amount: Type.Number() });
 
+// --- Mute ---
+const Mute = sym('mute');
+const Unmute = sym('unmute');
+
 // --- Config ---
 const SetSwing = msg('setSwing', { value: Type.Number() });
 
@@ -69,6 +73,8 @@ export const sequencerMessages = {
   bang: messages.bang,
   reset: messages.reset,
   goto: schema(Goto),
+  mute: schema(Mute),
+  unmute: schema(Unmute),
   setStep: schema(SetStep),
   setVelocityAll: schema(SetVelocityAll),
   setVelocityOne: schema(SetVelocityOne),
@@ -98,6 +104,10 @@ export const sequencerSchema: ObjectSchema = {
       id: 'message',
       description: 'Control inlet',
       messages: [
+        // Mute
+        { schema: Mute, description: 'Silence all output (scheduler keeps running)' },
+        { schema: Unmute, description: 'Restore output after mute' },
+
         // Configuration
         { schema: SetSwing, description: 'Set swing amount (0–100)' },
         { schema: SetOutputMode, description: 'Set output mode (bang / value / audio)' },
