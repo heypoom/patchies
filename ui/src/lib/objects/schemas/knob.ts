@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 
 import type { ObjectSchema } from './types';
-import { Bang, Reset } from './common';
+import { Bang, Reset, SetMin, SetMax, SetDefault, SetValue } from './common';
 
 /**
  * Schema for the knob (circular encoder) object.
@@ -17,7 +17,11 @@ export const knobSchema: ObjectSchema = {
       messages: [
         { schema: Bang, description: 'Output the current knob value' },
         { schema: Reset, description: 'Reset the knob value back to its default' },
-        { schema: Type.Number(), description: 'Set knob to value and output' }
+        { schema: Type.Number(), description: 'Set knob to value and output' },
+        { schema: SetMin, description: 'Set the minimum bound' },
+        { schema: SetMax, description: 'Set the maximum bound' },
+        { schema: SetDefault, description: 'Set the default value (used by reset)' },
+        { schema: SetValue, description: 'Set value silently without triggering output' }
       ]
     }
   ],
