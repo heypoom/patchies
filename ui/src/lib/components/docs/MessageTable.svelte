@@ -106,11 +106,13 @@
   </table>
 
   {#if messages.length > SHOW_LIMIT}
-    <button
-      onclick={() => (showAll = !showAll)}
-      class="mt-2 cursor-pointer text-xs text-zinc-500 hover:text-zinc-300"
-    >
-      {showAll ? 'Show less' : `Show ${messages.length - SHOW_LIMIT} more…`}
-    </button>
+    <div class="w-full text-center">
+      <button
+        onclick={() => (showAll = !showAll)}
+        class="mt-2 w-full cursor-pointer text-xs text-zinc-500 hover:text-blue-300"
+      >
+        {showAll ? 'Show less' : `Show ${messages.length - SHOW_LIMIT} more…`}
+      </button>
+    </div>
   {/if}
 </div>
