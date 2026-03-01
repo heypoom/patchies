@@ -4,7 +4,7 @@
   import { useSvelteFlow, useUpdateNodeInternals, useStore, type NodeProps } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import { AudioService } from '$lib/audio/v2/AudioService';
-  import { SequencerScheduler } from './sequencer-scheduler';
+  import { SequencerScheduler } from '../../sequencer/sequencer-scheduler';
   import { type TrackData, DEFAULT_TRACKS, TRACK_COLORS } from '$lib/nodes/sequencer-constants';
   import { useNodeDataTracker } from '$lib/history';
   import { sequencerMessages } from '$lib/objects/schemas';
@@ -188,6 +188,15 @@
       })
       .with(sequencerMessages.fillAll, () => {
         applyTracks(tracks.map((t) => ({ ...t, stepOn: Array(steps).fill(true) })));
+      })
+      .with(sequencerMessages.randomAll, () => {
+        applyTracks(
+          tracks.map((t) => ({
+            ...t,
+            stepOn: Array.from({ length: steps }, () => Math.random() < 0.5),
+            stepValues: Array.from({ length: steps }, () => Math.random())
+          }))
+        );
       })
       .with(sequencerMessages.rotate, ({ track, amount }) => {
         if (track < 0 || track >= tracks.length) return;

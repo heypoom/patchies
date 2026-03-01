@@ -35,6 +35,7 @@ const SetPattern = msg('setPattern', {
 const ClearTrack = msg('clear', { track: Type.Number() });
 const FillAll = sym('fill');
 const FillTrack = msg('fill', { track: Type.Number() });
+const RandomAll = sym('random');
 const Rotate = msg('rotate', { track: Type.Number(), amount: Type.Number() });
 
 // --- Config ---
@@ -76,6 +77,7 @@ export const sequencerMessages = {
   clearAll: messages.clear,
   fillTrack: schema(FillTrack),
   fillAll: schema(FillAll),
+  randomAll: schema(RandomAll),
   rotate: schema(Rotate),
   setSwing: schema(SetSwing),
   setOutputMode: schema(SetOutputMode),
@@ -123,6 +125,7 @@ export const sequencerSchema: ObjectSchema = {
         },
         { schema: Clear, description: 'Clear all steps' },
         { schema: FillAll, description: 'Turn on all steps' },
+        { schema: RandomAll, description: 'Randomize on/off and velocity' },
         { schema: ClearTrack, description: 'Clear all steps for a track' },
         { schema: FillTrack, description: 'Turn on all steps for a track' },
         {
