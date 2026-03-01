@@ -105,7 +105,7 @@ export const sequencerSchema: ObjectSchema = {
       description: 'Control inlet',
       messages: [
         // Mute
-        { schema: Mute, description: 'Silence all output (scheduler keeps running)' },
+        { schema: Mute, description: 'Silence all output' },
         { schema: Unmute, description: 'Restore output after mute' },
 
         // Configuration
