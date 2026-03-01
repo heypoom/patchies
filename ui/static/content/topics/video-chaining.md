@@ -29,6 +29,15 @@ Try out the presets to get started. Enable them in the [preset packs](/docs/mana
 - Connect the orange outlet of a source object to the orange inlet of a target object
   - Try connecting `p5` → `pipe.hydra` → `pipe.gl` to see visual passthrough in action
 
+## Output to Background
+
+Any visual object can be sent directly to the background output without connecting it to `bg.out`. This is useful for live performance when you want to quickly switch what is displayed.
+
+Right-click any visual object (or use its **···** menu) and choose **Output to background**. The object's output immediately becomes the background, overriding the normal `bg.out` connection.
+
+- Clicking **Output to background** again on the same node removes the override and falls back to the `bg.out` connection.
+- Switching to a different node replaces the current output. Only one node can output at a time.
+
 ## Wireless Video Routing
 
 Connect distant visual objects without cables using named channels.
