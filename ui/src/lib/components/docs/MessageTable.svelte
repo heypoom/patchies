@@ -18,8 +18,11 @@
 
   let { messages, class: className = '', compact = false, isAudioParam = false }: Props = $props();
 
+  const SHOW_LIMIT = 6;
+
   // Track which complex messages are expanded (by index)
   let expanded = $state<Set<number>>(new Set());
+  let showAll = $state(false);
 
   function toggleExpand(index: number) {
     if (expanded.has(index)) {
@@ -42,7 +45,7 @@
     </thead>
 
     <tbody class="divide-y divide-zinc-800/50">
-      {#each messages as msg, i}
+      {#each showAll ? messages : messages.slice(0, SHOW_LIMIT) as msg, i}
         {@const isComplex = isComplexSchema(msg.schema)}
         {@const typeName = getSchemaTypeName(msg.schema)}
         {@const isExpanded = expanded.has(i)}
@@ -101,4 +104,13 @@
       {/each}
     </tbody>
   </table>
+
+  {#if messages.length > SHOW_LIMIT}
+    <button
+      onclick={() => (showAll = !showAll)}
+      class="mt-2 cursor-pointer text-xs text-zinc-500 hover:text-zinc-300"
+    >
+      {showAll ? 'Show less' : `Show ${messages.length - SHOW_LIMIT} more…`}
+    </button>
+  {/if}
 </div>
