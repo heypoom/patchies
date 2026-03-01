@@ -3,12 +3,14 @@ import type { LookaheadClockScheduler, NodeTimelineStyle } from './LookaheadCloc
 /** Describes one scheduled event for timeline visualization. */
 export interface ScheduledEventDescriptor {
   id: string;
-  kind: 'beat' | 'schedule' | 'every';
+  kind: 'beat' | 'schedule' | 'every' | 'marker';
   beats?: number[] | '*';
   time?: number;
   interval?: number;
   lastFired?: number;
   fired?: boolean;
+  /** Per-marker color override. Only used for kind: 'marker'. */
+  color?: string;
 }
 
 /** A record of a recently fired event for flash animation. */
@@ -38,15 +40,27 @@ export class SchedulerRegistry {
     return Array.from(this.entries.keys());
   }
 
-  /** Get event snapshots across all registered schedulers. */
+  /**
+   * Get event snapshots across all registered schedulers.
+   *
+   * When a scheduler has `visible: false`, only explicit
+   * markers with kind of 'marker' are included.
+   **/
   getAllEvents(): Map<string, ScheduledEventDescriptor[]> {
-    const result = new Map<string, ScheduledEventDescriptor[]>();
+    const eventsMap = new Map<string, ScheduledEventDescriptor[]>();
 
     for (const [nodeId, scheduler] of this.entries) {
-      result.set(nodeId, scheduler.getEventSnapshot());
+      const events = scheduler.getEventSnapshot();
+
+      const visibleEvents =
+        scheduler.timelineStyle.visible === false
+          ? events.filter((e) => e.kind === 'marker')
+          : events;
+
+      if (visibleEvents.length > 0) eventsMap.set(nodeId, visibleEvents);
     }
 
-    return result;
+    return eventsMap;
   }
 
   getNodeStyle(nodeId: string): NodeTimelineStyle | undefined {

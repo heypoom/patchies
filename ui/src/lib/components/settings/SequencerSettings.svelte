@@ -24,6 +24,7 @@
     outputMode,
     clockMode,
     showVelocity,
+    showInTimeline,
     tracks,
     swingTracker,
     onSetStepCount,
@@ -31,6 +32,7 @@
     onSetOutputMode,
     onSetClockMode,
     onSetShowVelocity,
+    onSetShowInTimeline,
     onAddTrack,
     onRemoveTrack,
     onUpdateTrackName,
@@ -41,6 +43,7 @@
     outputMode: 'bang' | 'value' | 'audio';
     clockMode: 'auto' | 'manual';
     showVelocity: boolean;
+    showInTimeline: boolean;
     tracks: TrackData[];
     swingTracker: ContinuousTracker;
     onSetStepCount: (n: number) => void;
@@ -48,6 +51,7 @@
     onSetOutputMode: (v: 'bang' | 'value' | 'audio') => void;
     onSetClockMode: (v: 'auto' | 'manual') => void;
     onSetShowVelocity: (v: boolean) => void;
+    onSetShowInTimeline: (v: boolean) => void;
     onAddTrack: () => void;
     onRemoveTrack: (idx: number) => void;
     onUpdateTrackName: (idx: number, name: string) => void;
@@ -118,6 +122,26 @@
           class:text-zinc-500={!showVelocity}
         >
           Velocity lane
+        </span>
+      </button>
+
+      <!-- Show in timeline -->
+      <button
+        class="mt-1 flex cursor-pointer items-center gap-1.5 transition-colors"
+        onclick={() => onSetShowInTimeline(!showInTimeline)}
+      >
+        <div
+          class="h-3 w-3 shrink-0 rounded-sm border transition-colors"
+          class:border-zinc-500={showInTimeline}
+          class:bg-zinc-500={showInTimeline}
+          class:border-zinc-600={!showInTimeline}
+        ></div>
+        <span
+          class="text-xs"
+          class:text-zinc-400={showInTimeline}
+          class:text-zinc-500={!showInTimeline}
+        >
+          Show in timeline
         </span>
       </button>
     </div>

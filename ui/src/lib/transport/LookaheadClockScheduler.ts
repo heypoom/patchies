@@ -36,6 +36,9 @@ export class LookaheadClockScheduler implements ClockScheduler {
   private firedEvents: FiredEventRecord[] = [];
   private static MAX_FIRED_BUFFER = 64;
 
+  /** Explicit visual markers (no callbacks). Always shown in timeline regardless of timelineStyle.visible. */
+  private markers = new Map<string, { time: number; color?: string }>();
+
   /** Per-node timeline appearance overrides. */
   private _timelineStyle: NodeTimelineStyle = {};
 
@@ -63,6 +66,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
   dispose(): void {
     this.stop();
     this.cancelAll();
+    this.markers.clear();
     this.firedEvents = [];
     this._timelineStyle = {};
   }
@@ -73,6 +77,23 @@ export class LookaheadClockScheduler implements ClockScheduler {
 
   setTimelineStyle(options: NodeTimelineStyle): void {
     this._timelineStyle = { ...this._timelineStyle, ...options };
+  }
+
+  /**
+   * Place a visual-only marker in the timeline at an absolute transport time.
+   * Unlike `schedule()`, this has no callback — it exists purely for visualization.
+   * Markers are always shown regardless of `setTimelineStyle({ visible: false })`.
+   * @returns ID for cancellation via `cancelMarker()`
+   */
+  addMarker(time: number, color?: string): string {
+    const id = generateId();
+    this.markers.set(id, { time, color });
+    return id;
+  }
+
+  /** Remove a previously placed marker. */
+  cancelMarker(id: string): void {
+    this.markers.delete(id);
   }
 
   /** Return a snapshot of all registered events for timeline visualization. */
@@ -89,6 +110,10 @@ export class LookaheadClockScheduler implements ClockScheduler {
 
     for (const [id, cb] of this.repeatCallbacks) {
       events.push({ id, kind: 'every', interval: cb.interval, lastFired: cb.lastFired });
+    }
+
+    for (const [id, { time, color }] of this.markers) {
+      events.push({ id, kind: 'marker', time, color });
     }
 
     return events;
@@ -112,6 +137,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
   private tick(): void {
     const clock = this.getState();
     this.currentBpm = clock.bpm;
+
     const horizon = clock.time + this.scheduleAheadS;
 
     // --- onBeat: visual mode (fire after beat change) ---

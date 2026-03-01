@@ -20,6 +20,7 @@
     outputMode?: 'bang' | 'value' | 'audio';
     clockMode?: 'auto' | 'manual';
     showVelocity?: boolean;
+    showInTimeline?: boolean;
   };
 
   let {
@@ -51,6 +52,7 @@
   const clockMode = $derived(data.clockMode ?? 'auto');
 
   const showVelocity = $derived(data.showVelocity ?? false);
+  const showInTimeline = $derived(data.showInTimeline ?? true);
   const trackCount = $derived(tracks.length);
   const stepsPerRow = $derived(Math.min(steps, 16));
   const rowCount = $derived(Math.ceil(steps / 16));
@@ -256,7 +258,14 @@
     schedulerHandle = new SequencerScheduler(
       nodeId,
       () => ({ clockMode, outputMode, steps, swing }),
-      fireAtStep
+      fireAtStep,
+      (step) => {
+        if (!(data.showInTimeline ?? true)) return [];
+        const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
+        return currentTracks
+          .filter((t) => (t.stepOn[step] ?? false) && (t.stepValues[step] ?? 1.0) > 0)
+          .map((t) => t.color);
+      }
     );
 
     schedulerHandle.start();
@@ -499,6 +508,7 @@
         {outputMode}
         {clockMode}
         {showVelocity}
+        {showInTimeline}
         {tracks}
         {swingTracker}
         onSetStepCount={setStepCount}
@@ -506,6 +516,7 @@
         onSetOutputMode={(v) => setNodeData('outputMode', v)}
         onSetClockMode={(v) => setNodeData('clockMode', v)}
         onSetShowVelocity={(v) => setNodeData('showVelocity', v)}
+        onSetShowInTimeline={(v) => setNodeData('showInTimeline', v)}
         onAddTrack={addTrack}
         onRemoveTrack={removeTrack}
         onUpdateTrackName={updateTrackName}

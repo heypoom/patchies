@@ -177,8 +177,6 @@ export class TimelineRulerRenderer {
       const nodeId = nodeIds[nodeIndex];
 
       const style = registry.getNodeStyle(nodeId);
-      if (style?.visible === false) continue;
-
       const events = eventsByNode.get(nodeId)!;
 
       const drawCtx: EventDrawContext = {
@@ -192,6 +190,19 @@ export class TimelineRulerRenderer {
           .with('beat', () => this.drawBeatEvent(event.beats, drawCtx))
           .with('schedule', () => this.drawScheduleEvent(event.time, event.fired, drawCtx))
           .with('every', () => this.drawEveryEvent(event.interval, drawCtx))
+          .with('marker', () => {
+            if (
+              event.time !== undefined &&
+              event.time >= drawCtx.windowStart &&
+              event.time <= drawCtx.windowEnd
+            )
+              this.drawDiamond(
+                drawCtx.ctx,
+                drawCtx.timeToX(event.time),
+                drawCtx.yBase,
+                event.color ?? drawCtx.color
+              );
+          })
           .exhaustive();
       }
     }

@@ -17,11 +17,14 @@ export class SequencerScheduler {
   private scheduler: LookaheadClockScheduler;
   private barSubId: string | null = null;
   private stepScheduleIds: string[] = [];
+  private stepMarkerIds: string[] = [];
 
   constructor(
     private nodeId: string,
     private getConfig: () => SequencerConfig,
-    private onFire: (step: number, time: number) => void
+    private onFire: (step: number, time: number) => void,
+    /** Optional: returns the colors of all active tracks at a given step for timeline markers. */
+    private getStepColors?: (step: number) => string[]
   ) {
     this.scheduler = new LookaheadClockScheduler(() => ({
       time: Transport.seconds,
@@ -31,15 +34,20 @@ export class SequencerScheduler {
       beatsPerBar: Transport.beatsPerBar
     }));
 
+    // Hide callback-derived markers (onBeat bar subscription, per-step schedules).
+    // Explicit addMarker() calls still show through via SchedulerRegistry.getAllEvents().
     this.scheduler.setTimelineStyle({ visible: false });
   }
 
   private scheduleBar(barTime: number): void {
     const { steps, swing, outputMode } = this.getConfig();
 
-    // Cancel any leftover step schedules from the previous bar
+    // Cancel any leftover step schedules and markers from the previous bar
     for (const id of this.stepScheduleIds) this.scheduler.cancel(id);
     this.stepScheduleIds = [];
+
+    for (const id of this.stepMarkerIds) this.scheduler.cancelMarker(id);
+    this.stepMarkerIds = [];
 
     const beatDuration = (60 / Transport.bpm) * (4 / Transport.denominator);
     const stepInterval = (beatDuration * Transport.beatsPerBar) / steps;
@@ -59,6 +67,10 @@ export class SequencerScheduler {
       });
 
       this.stepScheduleIds.push(id);
+
+      for (const color of this.getStepColors?.(i) ?? []) {
+        this.stepMarkerIds.push(this.scheduler.addMarker(stepTime, color));
+      }
     }
   }
 
@@ -73,6 +85,9 @@ export class SequencerScheduler {
 
     for (const id of this.stepScheduleIds) this.scheduler.cancel(id);
     this.stepScheduleIds = [];
+
+    for (const id of this.stepMarkerIds) this.scheduler.cancelMarker(id);
+    this.stepMarkerIds = [];
 
     if (clockMode === 'manual') return;
 

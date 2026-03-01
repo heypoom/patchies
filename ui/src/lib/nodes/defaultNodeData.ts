@@ -273,7 +273,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       tracks: DEFAULT_TRACKS,
       swing: 0,
       outputMode: 'bang',
-      showVelocity: false
+      showVelocity: false,
+      showInTimeline: true
     }))
     .otherwise(() => ({}));
 }
