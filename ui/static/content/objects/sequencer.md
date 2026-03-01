@@ -45,6 +45,11 @@ draggable velocity bar below each step row. Drag up/down to set the step's
 value between `0.0` and `1.0`. Velocity is always stored internally even when
 output mode is **bang**.
 
+## Mute
+
+Click the **mute** button to silence all output. The sequencer keeps running
+but no messages are sent on any outlet. Click again to restore output.
+
 ## Swing
 
 The **Swing** slider offsets every odd-numbered step (1, 3, 5, …) later in
