@@ -19,8 +19,6 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: [
       'loadbang',
       'metro',
-      'beat',
-      'sequencer',
       'trigger',
       'spigot',
       'delay',
@@ -85,7 +83,17 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Music',
     description: 'Composition and audio synthesis',
     icon: 'Music',
-    objects: ['strudel', 'orca', 'sonic~', 'chuck~', 'csound~', 'tone~', 'bytebeat~']
+    objects: [
+      'beat',
+      'sequencer',
+      'strudel',
+      'orca',
+      'sonic~',
+      'chuck~',
+      'csound~',
+      'tone~',
+      'bytebeat~'
+    ]
   },
   {
     id: 'scripting',

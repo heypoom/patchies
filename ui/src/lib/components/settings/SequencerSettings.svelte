@@ -13,16 +13,23 @@
     { id: 'audio', label: 'audio', tip: 'Sends {time, value} for Web Audio lookahead scheduling' }
   ] as const;
 
+  const CLOCK_MODES = [
+    { id: 'auto', label: 'auto', tip: 'Advance steps automatically with the transport clock' },
+    { id: 'manual', label: 'manual', tip: 'Advance one step per bang received on the clock inlet' }
+  ] as const;
+
   let {
     steps,
     swing,
     outputMode,
+    clockMode,
     showVelocity,
     tracks,
     swingTracker,
     onSetStepCount,
     onSetSwing,
     onSetOutputMode,
+    onSetClockMode,
     onSetShowVelocity,
     onAddTrack,
     onRemoveTrack,
@@ -32,12 +39,14 @@
     steps: number;
     swing: number;
     outputMode: 'bang' | 'value' | 'audio';
+    clockMode: 'auto' | 'manual';
     showVelocity: boolean;
     tracks: TrackData[];
     swingTracker: ContinuousTracker;
     onSetStepCount: (n: number) => void;
     onSetSwing: (v: number) => void;
     onSetOutputMode: (v: 'bang' | 'value' | 'audio') => void;
+    onSetClockMode: (v: 'auto' | 'manual') => void;
     onSetShowVelocity: (v: boolean) => void;
     onAddTrack: () => void;
     onRemoveTrack: (idx: number) => void;
@@ -111,6 +120,31 @@
           Velocity lane
         </span>
       </button>
+    </div>
+
+    <!-- Clock mode -->
+    <div>
+      <label class="mb-2 block text-xs font-medium text-zinc-300">Clock</label>
+      <div class="flex gap-1">
+        {#each CLOCK_MODES as mode}
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={() => onSetClockMode(mode.id)}
+                class="cursor-pointer rounded px-2 py-1 text-xs transition-colors"
+                class:bg-zinc-600={clockMode === mode.id}
+                class:text-white={clockMode === mode.id}
+                class:bg-zinc-800={clockMode !== mode.id}
+                class:text-zinc-300={clockMode !== mode.id}
+                class:hover:bg-zinc-700={clockMode !== mode.id}
+              >
+                {mode.label}
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>{mode.tip}</Tooltip.Content>
+          </Tooltip.Root>
+        {/each}
+      </div>
     </div>
 
     <!-- Swing -->

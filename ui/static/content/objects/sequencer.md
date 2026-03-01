@@ -1,6 +1,6 @@
-A DAW-style step sequencer with up to 8 tracks, driven by the global
-[transport](/docs/transport-control). Each track has its own outlet and fires on
-every active step.
+A DAW-style step sequencer with up to 8 tracks. Each track has its own outlet
+and fires on every active step. Can run locked to the global
+[transport](/docs/transport-control) or advance one step per incoming bang.
 
 ## Tracks
 
@@ -13,6 +13,19 @@ Click any step button to toggle it on or off.
 
 Choose 4, 8, 12, 16, 24, or 32 steps per bar from the settings panel. Steps
 always fill exactly one bar regardless of time signature.
+
+## Clock Modes
+
+Set via **Clock** in the settings panel:
+
+- **auto** (default) — steps advance automatically in sync with the transport.
+  Swing and BPM apply normally.
+- **manual** — a clock inlet appears on the node. Each bang received advances
+  the sequencer by one step, completely independent of the transport. Send
+  `{type: "reset"}` on the same inlet to jump back to step 1.
+
+In manual mode you can use `metro` for a free-running clock at any rate.
+Swing has no effect in manual mode.
 
 ## Output Modes
 

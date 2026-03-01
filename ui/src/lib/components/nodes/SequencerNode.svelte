@@ -6,6 +6,7 @@
   import { LookaheadClockScheduler } from '$lib/transport/ClockScheduler';
   import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
   import { Transport } from '$lib/transport';
+  import { AudioService } from '$lib/audio/v2/AudioService';
   import { useNodeDataTracker } from '$lib/history';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -68,6 +69,7 @@
       tracks?: TrackData[];
       swing?: number;
       outputMode?: 'bang' | 'value' | 'audio';
+      clockMode?: 'auto' | 'manual';
       showVelocity?: boolean;
     };
   } = $props();
@@ -84,6 +86,7 @@
   let stepScheduleIds: string[] = [];
   let showSettings = $state(false);
   let currentVisualStep = $state(-1);
+  let manualStep = $state(0);
   let velocityDragOldTracks: TrackData[] | null = null;
   let pollingIntervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -91,6 +94,7 @@
   const tracks = $derived((data.tracks ?? DEFAULT_TRACKS) as TrackData[]);
   const swing = $derived(data.swing ?? 0);
   const outputMode = $derived(data.outputMode ?? 'bang');
+  const clockMode = $derived(data.clockMode ?? 'auto');
 
   const showVelocity = $derived(data.showVelocity ?? false);
   const trackCount = $derived(tracks.length);
@@ -160,25 +164,48 @@
     for (const id of stepScheduleIds) scheduler.cancel(id);
     stepScheduleIds = [];
 
+    if (clockMode === 'manual') return;
+
     barSubId = scheduler.onBeat(0, (barTime) => scheduleBar(barTime), {
       audio: outputMode === 'audio'
     });
   }
 
-  // Update xyflow handle positions when track count changes
+  function handleClockMessage(data: unknown): void {
+    const msg = data as Record<string, unknown> | null | undefined;
+
+    if (msg && typeof msg === 'object' && msg.type === 'reset') {
+      manualStep = 0;
+      currentVisualStep = 0;
+      return;
+    }
+
+    const step = manualStep;
+    const audioTime =
+      outputMode === 'audio' ? AudioService.getInstance().getAudioContext().currentTime : 0;
+
+    fireAtStep(step, audioTime);
+    currentVisualStep = step;
+    manualStep = (step + 1) % steps;
+  }
+
+  // Update xyflow handle positions when track count or clockMode changes
   $effect(() => {
     trackCount;
+    clockMode;
     setTimeout(() => updateNodeInternals(nodeId), 0);
   });
 
-  // Re-setup scheduler when outputMode changes so the audio flag is updated
+  // Re-setup scheduler when outputMode or clockMode changes
   $effect(() => {
     outputMode;
+    clockMode;
     if (scheduler) setupScheduler();
   });
 
   onMount(() => {
     messageContext = new MessageContext(nodeId);
+    messageContext.messageCallback = handleClockMessage;
 
     scheduler = new LookaheadClockScheduler(() => ({
       time: Transport.seconds,
@@ -196,6 +223,8 @@
     SchedulerRegistry.getInstance().register(nodeId, scheduler);
 
     pollingIntervalId = setInterval(() => {
+      if (clockMode === 'manual') return;
+
       if (Transport.isPlaying) {
         const ppq = Transport.ppq;
         const bpb = Transport.beatsPerBar;
@@ -404,6 +433,11 @@
       {/each}
     </div>
 
+    <!-- Clock inlet (manual mode only) -->
+    {#if clockMode === 'manual'}
+      <StandardHandle port="inlet" title="Clock / Reset" total={1} index={0} {nodeId} />
+    {/if}
+
     <!-- Dynamic outlets: one per track -->
     {#each tracks as track, trackIdx (trackIdx)}
       <StandardHandle
@@ -439,6 +473,7 @@
         {steps}
         {swing}
         {outputMode}
+        {clockMode}
         {showVelocity}
         {tracks}
         {swingTracker}
@@ -447,6 +482,10 @@
         onSetOutputMode={(v) => {
           updateNodeData(nodeId, { ...data, outputMode: v });
           tracker.commit('outputMode', outputMode, v);
+        }}
+        onSetClockMode={(v) => {
+          updateNodeData(nodeId, { ...data, clockMode: v });
+          tracker.commit('clockMode', clockMode, v);
         }}
         onSetShowVelocity={(v) => {
           updateNodeData(nodeId, { ...data, showVelocity: v });
