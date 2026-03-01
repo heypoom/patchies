@@ -264,8 +264,10 @@
       () => ({ clockMode, outputMode, steps, swing }),
       fireAtStep,
       (step) => {
-        if (!(data.showInTimeline ?? true)) return [];
+        if (!(data.showInTimeline ?? true) || (data.muted ?? false)) return [];
+
         const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
+
         return currentTracks
           .filter((t) => (t.stepOn[step] ?? false) && (t.stepValues[step] ?? 1.0) > 0)
           .map((t) => t.color);
