@@ -3,10 +3,8 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals, useStore, type NodeProps } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import { LookaheadClockScheduler } from '$lib/transport/ClockScheduler';
-  import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
-  import { Transport } from '$lib/transport';
   import { AudioService } from '$lib/audio/v2/AudioService';
+  import { SequencerScheduler } from './sequencer-scheduler';
   import { useNodeDataTracker } from '$lib/history';
   import { sequencerMessages } from '$lib/objects/schemas';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -84,9 +82,7 @@
   const swingTracker = tracker.track('swing', () => data.swing ?? 0);
 
   let messageContext: MessageContext | null = null;
-  let scheduler: LookaheadClockScheduler | null = null;
-  let barSubId: string | null = null;
-  let stepScheduleIds: string[] = [];
+  let schedulerHandle: SequencerScheduler | null = null;
   let showSettings = $state(false);
   let currentVisualStep = $state(-1);
   let manualStep = $state(0);
@@ -124,54 +120,6 @@
 
       messageContext.send(payload, { to: t });
     }
-  }
-
-  function scheduleBar(barTime: number): void {
-    // Cancel any leftover step schedules from the previous bar
-    for (const id of stepScheduleIds) scheduler!.cancel(id);
-    stepScheduleIds = [];
-
-    const numSteps = data.steps ?? 16;
-    const swingVal = data.swing ?? 0;
-    const beatDuration = (60 / Transport.bpm) * (4 / Transport.denominator);
-    const stepInterval = (beatDuration * Transport.beatsPerBar) / numSteps;
-
-    // Swing operates at the 8th-note level: the off-beat 8th note in each beat pair is delayed.
-    // halfBeat = steps per 8th note. For 8 steps in 4/4: halfBeat=1 → odd steps swung.
-    // For 16 steps in 4/4: halfBeat=2 → steps 2,6,10,14 swung (the actual 8th off-beats).
-    const stepsPerBeat = numSteps / Transport.beatsPerBar;
-    const halfBeat = Math.max(1, Math.round(stepsPerBeat / 2));
-    const eighthInterval = stepInterval * halfBeat;
-
-    for (let i = 0; i < numSteps; i++) {
-      const isSwung = swingVal > 0 && i % (halfBeat * 2) === halfBeat;
-      const swingOffset = isSwung ? (swingVal / 100) * 0.5 * eighthInterval : 0;
-      const stepTime = barTime + i * stepInterval + swingOffset;
-
-      const id = scheduler!.schedule(stepTime, (t) => fireAtStep(i, t), {
-        audio: outputMode === 'audio'
-      });
-
-      stepScheduleIds.push(id);
-    }
-  }
-
-  function setupScheduler(): void {
-    if (!scheduler) return;
-
-    if (barSubId) {
-      scheduler.cancel(barSubId);
-      barSubId = null;
-    }
-
-    for (const id of stepScheduleIds) scheduler.cancel(id);
-    stepScheduleIds = [];
-
-    if (clockMode === 'manual') return;
-
-    barSubId = scheduler.onBeat(0, (barTime) => scheduleBar(barTime), {
-      audio: outputMode === 'audio'
-    });
   }
 
   function setNodeData<T extends keyof NodeData>(key: T, value: NodeData[T]): void {
@@ -334,61 +282,42 @@
   $effect(() => {
     outputMode;
     clockMode;
-    if (scheduler) setupScheduler();
+    schedulerHandle?.setup();
   });
 
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.messageCallback = handleInletMessage;
 
-    scheduler = new LookaheadClockScheduler(() => ({
-      time: Transport.seconds,
-      beat: Transport.beat,
-      bpm: Transport.bpm,
-      phase: Transport.phase,
-      beatsPerBar: Transport.beatsPerBar
-    }));
+    schedulerHandle = new SequencerScheduler(
+      nodeId,
+      () => ({ clockMode, outputMode, steps, swing }),
+      fireAtStep
+    );
 
-    // hide the sequencer node from the timeline
-    scheduler.setTimelineStyle({ visible: false });
-
-    setupScheduler();
-    scheduler.start();
-    SchedulerRegistry.getInstance().register(nodeId, scheduler);
+    schedulerHandle.start();
 
     pollingIntervalId = setInterval(() => {
       if (clockMode === 'manual') return;
-
-      if (Transport.isPlaying) {
-        const ppq = Transport.ppq;
-        const bpb = Transport.beatsPerBar;
-        const numSteps = data.steps ?? 16;
-        const ticksPerBeat = ppq * (4 / Transport.denominator);
-        const ticksPerBar = ticksPerBeat * bpb;
-        const ticksPerStep = ticksPerBar / numSteps;
-        const ticksInBar = Transport.ticks % ticksPerBar;
-        currentVisualStep = Math.floor(ticksInBar / ticksPerStep) % numSteps;
-      } else {
-        currentVisualStep = -1;
-      }
+      currentVisualStep = schedulerHandle!.getVisualStep(steps);
     }, 1000 / 30);
   });
 
   onDestroy(() => {
     if (pollingIntervalId) clearInterval(pollingIntervalId);
-    if (scheduler) {
-      SchedulerRegistry.getInstance().unregister(nodeId);
-      scheduler.dispose();
-    }
+    schedulerHandle?.dispose();
     messageContext?.destroy();
   });
 
   function toggleStep(trackIdx: number, stepIdx: number): void {
-    const currentTracks = tracks.map((t) => ({ ...t, stepOn: [...t.stepOn] }));
-    currentTracks[trackIdx].stepOn[stepIdx] = !currentTracks[trackIdx].stepOn[stepIdx];
-    const oldTracks = tracks;
-    updateNodeData(nodeId, { ...data, tracks: currentTracks });
-    tracker.commit('tracks', oldTracks, currentTracks);
+    applyTracks(
+      tracks.map((t, i) => {
+        if (i !== trackIdx) return t;
+        const newOn = [...t.stepOn];
+        newOn[stepIdx] = !newOn[stepIdx];
+        return { ...t, stepOn: newOn };
+      })
+    );
   }
 
   function setStepCount(newSteps: number): void {
@@ -410,39 +339,28 @@
     const usedColors = new Set(tracks.map((t) => t.color));
     const nextColor = TRACK_COLORS.find((c) => !usedColors.has(c)) ?? TRACK_COLORS[0];
 
-    const newTrack: TrackData = {
-      name: `T${tracks.length + 1}`,
-      color: nextColor,
-      stepOn: Array(steps).fill(false),
-      stepValues: Array(steps).fill(1.0)
-    };
-
-    const oldTracks = tracks;
-    const newTracks = [...tracks, newTrack];
-    updateNodeData(nodeId, { ...data, tracks: newTracks });
-    tracker.commit('tracks', oldTracks, newTracks);
+    applyTracks([
+      ...tracks,
+      {
+        name: `T${tracks.length + 1}`,
+        color: nextColor,
+        stepOn: Array(steps).fill(false),
+        stepValues: Array(steps).fill(1.0)
+      }
+    ]);
   }
 
   function removeTrack(trackIdx: number): void {
     if (tracks.length <= 1) return;
-    const oldTracks = tracks;
-    const newTracks = tracks.filter((_, i) => i !== trackIdx);
-    updateNodeData(nodeId, { ...data, tracks: newTracks });
-    tracker.commit('tracks', oldTracks, newTracks);
+    applyTracks(tracks.filter((_, i) => i !== trackIdx));
   }
 
   function updateTrackName(trackIdx: number, name: string): void {
-    const oldTracks = tracks;
-    const newTracks = tracks.map((t, i) => (i === trackIdx ? { ...t, name } : t));
-    updateNodeData(nodeId, { ...data, tracks: newTracks });
-    tracker.commit('tracks', oldTracks, newTracks);
+    applyTracks(tracks.map((t, i) => (i === trackIdx ? { ...t, name } : t)));
   }
 
   function updateTrackColor(trackIdx: number, color: string): void {
-    const oldTracks = tracks;
-    const newTracks = tracks.map((t, i) => (i === trackIdx ? { ...t, color } : t));
-    updateNodeData(nodeId, { ...data, tracks: newTracks });
-    tracker.commit('tracks', oldTracks, newTracks);
+    applyTracks(tracks.map((t, i) => (i === trackIdx ? { ...t, color } : t)));
   }
 
   function setStepValue(trackIdx: number, stepIdx: number, value: number): void {
@@ -621,18 +539,9 @@
         {swingTracker}
         onSetStepCount={setStepCount}
         onSetSwing={(v) => updateNodeData(nodeId, { ...data, swing: v })}
-        onSetOutputMode={(v) => {
-          updateNodeData(nodeId, { ...data, outputMode: v });
-          tracker.commit('outputMode', outputMode, v);
-        }}
-        onSetClockMode={(v) => {
-          updateNodeData(nodeId, { ...data, clockMode: v });
-          tracker.commit('clockMode', clockMode, v);
-        }}
-        onSetShowVelocity={(v) => {
-          updateNodeData(nodeId, { ...data, showVelocity: v });
-          tracker.commit('showVelocity', showVelocity, v);
-        }}
+        onSetOutputMode={(v) => setNodeData('outputMode', v)}
+        onSetClockMode={(v) => setNodeData('clockMode', v)}
+        onSetShowVelocity={(v) => setNodeData('showVelocity', v)}
         onAddTrack={addTrack}
         onRemoveTrack={removeTrack}
         onUpdateTrackName={updateTrackName}
