@@ -8,6 +8,7 @@
   import { Transport } from '$lib/transport';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { useNodeDataTracker } from '$lib/history';
+  import { sequencerMessages } from '$lib/objects/schemas';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SequencerSettings from '$lib/components/settings/SequencerSettings.svelte';
@@ -59,19 +60,21 @@
     '#ff8a65'
   ] as const;
 
+  type NodeData = {
+    steps?: number;
+    tracks?: TrackData[];
+    swing?: number;
+    outputMode?: 'bang' | 'value' | 'audio';
+    clockMode?: 'auto' | 'manual';
+    showVelocity?: boolean;
+  };
+
   let {
     id: nodeId,
     data,
     selected
   }: NodeProps & {
-    data: {
-      steps?: number;
-      tracks?: TrackData[];
-      swing?: number;
-      outputMode?: 'bang' | 'value' | 'audio';
-      clockMode?: 'auto' | 'manual';
-      showVelocity?: boolean;
-    };
+    data: NodeData;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
@@ -171,22 +174,153 @@
     });
   }
 
-  function handleClockMessage(data: unknown): void {
-    const msg = data as Record<string, unknown> | null | undefined;
+  function setNodeData<T extends keyof NodeData>(key: T, value: NodeData[T]): void {
+    updateNodeData(nodeId, { ...data, [key]: value });
+    tracker.commit(key, data[key], value);
+  }
 
-    if (msg && typeof msg === 'object' && msg.type === 'reset') {
-      manualStep = 0;
-      currentVisualStep = 0;
-      return;
-    }
+  function applyTracks(newTracks: TrackData[]): void {
+    const oldTracks = tracks;
+    updateNodeData(nodeId, { ...data, tracks: newTracks });
+    tracker.commit('tracks', oldTracks, newTracks);
+  }
 
-    const step = manualStep;
-    const audioTime =
-      outputMode === 'audio' ? AudioService.getInstance().getAudioContext().currentTime : 0;
+  function handleInletMessage(raw: unknown): void {
+    match(raw)
+      // --- Manual clock ---
+      .with(sequencerMessages.bang, () => {
+        if (clockMode !== 'manual') return;
+        const step = manualStep;
 
-    fireAtStep(step, audioTime);
-    currentVisualStep = step;
-    manualStep = (step + 1) % steps;
+        const audioTime =
+          outputMode === 'audio' ? AudioService.getInstance().getAudioContext().currentTime : 0;
+
+        fireAtStep(step, audioTime);
+
+        currentVisualStep = step;
+        manualStep = (step + 1) % steps;
+      })
+      .with(sequencerMessages.reset, () => {
+        if (clockMode !== 'manual') return;
+        manualStep = 0;
+        currentVisualStep = 0;
+      })
+      .with(sequencerMessages.goto, ({ step }) => {
+        if (clockMode !== 'manual') return;
+        const clamped = Math.max(0, Math.min(steps - 1, step));
+        manualStep = clamped;
+        currentVisualStep = clamped;
+      })
+
+      // --- Step control ---
+      .with(sequencerMessages.setStep, ({ track, step, on }) => {
+        if (track < 0 || track >= tracks.length || step < 0 || step >= steps) return;
+        applyTracks(
+          tracks.map((t, i) => {
+            if (i !== track) return t;
+            const newOn = [...t.stepOn];
+            newOn[step] = on;
+            return { ...t, stepOn: newOn };
+          })
+        );
+      })
+      .with(sequencerMessages.setVelocityAll, ({ track, values }) => {
+        if (track < 0 || track >= tracks.length) return;
+
+        applyTracks(
+          tracks.map((t, i) => {
+            if (i !== track) return t;
+
+            const newValues = Array.from({ length: steps }, (_, j) =>
+              Math.max(0, Math.min(1, values[j] ?? t.stepValues[j] ?? 1.0))
+            );
+
+            return { ...t, stepValues: newValues };
+          })
+        );
+      })
+      .with(sequencerMessages.setVelocityOne, ({ track, step, value }) => {
+        if (track < 0 || track >= tracks.length || step < 0 || step >= steps) return;
+
+        applyTracks(
+          tracks.map((t, i) => {
+            if (i !== track) return t;
+
+            const newValues = [...t.stepValues];
+            newValues[step] = Math.max(0, Math.min(1, value));
+
+            return { ...t, stepValues: newValues };
+          })
+        );
+      })
+      .with(sequencerMessages.setPattern, ({ track, pattern }) => {
+        if (track < 0 || track >= tracks.length) return;
+
+        applyTracks(
+          tracks.map((t, i) => {
+            if (i !== track) return t;
+
+            return { ...t, stepOn: Array.from({ length: steps }, (_, j) => pattern[j] ?? false) };
+          })
+        );
+      })
+
+      // --- Pattern manipulation (specific track matched before all-tracks) ---
+      .with(sequencerMessages.clearTrack, ({ track }) => {
+        if (track < 0 || track >= tracks.length) return;
+
+        applyTracks(
+          tracks.map((t, i) => (i === track ? { ...t, stepOn: Array(steps).fill(false) } : t))
+        );
+      })
+      .with(sequencerMessages.clearAll, () => {
+        applyTracks(tracks.map((t) => ({ ...t, stepOn: Array(steps).fill(false) })));
+      })
+      .with(sequencerMessages.fillTrack, ({ track }) => {
+        if (track < 0 || track >= tracks.length) return;
+
+        applyTracks(
+          tracks.map((t, i) => (i === track ? { ...t, stepOn: Array(steps).fill(true) } : t))
+        );
+      })
+      .with(sequencerMessages.fillAll, () => {
+        applyTracks(tracks.map((t) => ({ ...t, stepOn: Array(steps).fill(true) })));
+      })
+      .with(sequencerMessages.rotate, ({ track, amount }) => {
+        if (track < 0 || track >= tracks.length) return;
+
+        const n = steps;
+        const shift = ((amount % n) + n) % n;
+
+        applyTracks(
+          tracks.map((t, i) => {
+            if (i !== track) return t;
+
+            return {
+              ...t,
+              stepOn: [...t.stepOn.slice(n - shift), ...t.stepOn.slice(0, n - shift)],
+              stepValues: [...t.stepValues.slice(n - shift), ...t.stepValues.slice(0, n - shift)]
+            };
+          })
+        );
+      })
+
+      // --- Config ---
+      .with(sequencerMessages.setSwing, ({ value }) => {
+        const clamped = Math.max(0, Math.min(100, value));
+
+        setNodeData('swing', clamped);
+      })
+      .with(sequencerMessages.setOutputMode, ({ value }) => {
+        setNodeData('outputMode', value);
+      })
+      .with(sequencerMessages.setClockMode, ({ value }) => {
+        setNodeData('clockMode', value);
+      })
+      .with(sequencerMessages.setStepCount, ({ value }) => {
+        setStepCount(value);
+      })
+      .otherwise(() => {});
   }
 
   // Update xyflow handle positions when track count or clockMode changes
@@ -205,7 +339,7 @@
 
   onMount(() => {
     messageContext = new MessageContext(nodeId);
-    messageContext.messageCallback = handleClockMessage;
+    messageContext.messageCallback = handleInletMessage;
 
     scheduler = new LookaheadClockScheduler(() => ({
       time: Transport.seconds,
@@ -263,21 +397,26 @@
       stepOn: Array.from({ length: newSteps }, (_, i) => track.stepOn[i] ?? false),
       stepValues: Array.from({ length: newSteps }, (_, i) => track.stepValues[i] ?? 1.0)
     }));
+
     const oldSteps = steps;
+
     updateNodeData(nodeId, { ...data, steps: newSteps, tracks: newTracks });
     tracker.commit('steps', oldSteps, newSteps);
   }
 
   function addTrack(): void {
     if (tracks.length >= 8) return;
+
     const usedColors = new Set(tracks.map((t) => t.color));
     const nextColor = TRACK_COLORS.find((c) => !usedColors.has(c)) ?? TRACK_COLORS[0];
+
     const newTrack: TrackData = {
       name: `T${tracks.length + 1}`,
       color: nextColor,
       stepOn: Array(steps).fill(false),
       stepValues: Array(steps).fill(1.0)
     };
+
     const oldTracks = tracks;
     const newTracks = [...tracks, newTrack];
     updateNodeData(nodeId, { ...data, tracks: newTracks });
@@ -339,7 +478,12 @@
       </div>
     {/if}
 
-    <div class="rounded-md border border-zinc-700 bg-zinc-900 p-1.5">
+    <div
+      class={[
+        'rounded-md border bg-zinc-900 p-1.5',
+        selected ? 'border-zinc-600' : 'border-zinc-800'
+      ]}
+    >
       {#each tracks as track, trackIdx (trackIdx)}
         <div class="flex items-center gap-1.5 py-0.5">
           <!-- Track label -->
@@ -433,10 +577,8 @@
       {/each}
     </div>
 
-    <!-- Clock inlet (manual mode only) -->
-    {#if clockMode === 'manual'}
-      <StandardHandle port="inlet" title="Clock / Reset" total={1} index={0} {nodeId} />
-    {/if}
+    <!-- Control inlet: always present, smart-hidden when not connected -->
+    <StandardHandle port="inlet" type="message" title="Control" total={1} index={0} {nodeId} />
 
     <!-- Dynamic outlets: one per track -->
     {#each tracks as track, trackIdx (trackIdx)}
