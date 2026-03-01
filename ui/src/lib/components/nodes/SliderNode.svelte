@@ -89,6 +89,24 @@
       })
       .with(messages.bang, () => {
         messageContext.send(currentValue);
+      })
+      .with(messages.setMin, ({ value }) => {
+        const clampedValue = Math.min(Math.max(currentValue, value), max);
+        updateNodeData(node.id, { ...node.data, min: value, value: clampedValue });
+      })
+      .with(messages.setMax, ({ value }) => {
+        const clampedValue = Math.min(Math.max(currentValue, min), value);
+        updateNodeData(node.id, { ...node.data, max: value, value: clampedValue });
+      })
+      .with(messages.setDefault, ({ value }) => {
+        updateNodeData(node.id, { ...node.data, defaultValue: value });
+      })
+      .with(messages.setValue, ({ value }) => {
+        const newValue = isFloat ? Math.round(value * 100) / 100 : Math.round(value);
+        const clamped = Math.min(Math.max(newValue, min), max);
+        updateNodeData(node.id, { ...node.data, value: clamped });
+
+        if (sliderElement) sliderElement.value = clamped.toString();
       });
   };
 

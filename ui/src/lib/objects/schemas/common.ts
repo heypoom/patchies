@@ -21,6 +21,10 @@ export const Pause = sym('pause');
 export const Play = sym('play');
 export const Run = sym('run');
 export const Toggle = sym('toggle');
+export const SetMin = msg('setMin', { value: Type.Number() });
+export const SetMax = msg('setMax', { value: Type.Number() });
+export const SetDefault = msg('setDefault', { value: Type.Number() });
+export const SetValue = msg('setValue', { value: Type.Number() });
 
 /** All common schemas as an array, for building the common message type map. */
 export const COMMON_SCHEMAS = [
@@ -36,7 +40,11 @@ export const COMMON_SCHEMAS = [
   Pause,
   Play,
   Run,
-  Toggle
+  Toggle,
+  SetMin,
+  SetMax,
+  SetDefault,
+  SetValue
 ];
 
 /**
@@ -56,5 +64,9 @@ export const messages = {
   pause: schema(Pause),
   play: schema(Play),
   run: schema(Run),
-  toggle: schema(Toggle)
+  toggle: schema(Toggle),
+  setMin: schema(SetMin),
+  setMax: schema(SetMax),
+  setDefault: schema(SetDefault),
+  setValue: schema(SetValue)
 };
