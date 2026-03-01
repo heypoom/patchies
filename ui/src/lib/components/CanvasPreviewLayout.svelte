@@ -85,6 +85,7 @@
   {previewVisible}
   {showPauseButton}
   {showConsoleButton}
+  showBgOutputOption
   {topHandle}
   {bottomHandle}
   {codeEditor}

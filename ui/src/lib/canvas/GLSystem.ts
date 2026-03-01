@@ -56,6 +56,9 @@ export class GLSystem {
   /** Cache for outgoing video connections to avoid recalculating on every frame */
   private outgoingConnectionsCache = new Map<string, boolean>();
 
+  /** Tracks the current override output node for use in syncOutputEnabled */
+  private overrideOutputNodeId: string | null = null;
+
   /** Interval ID for transport time sync to worker */
   private transportSyncInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -386,6 +389,29 @@ export class GLSystem {
     this.send('toggleNodePause', { nodeId });
   }
 
+  /** Override background output to a specific node, bypassing bg.out. Pass null to clear. */
+  setOverrideOutputNode(nodeId: string | null) {
+    this.overrideOutputNodeId = nodeId;
+
+    this.send('setOverrideOutputNode', { nodeId });
+    this.syncOutputEnabled();
+  }
+
+  /**
+   * Sync the output-enabled state to the worker
+   * and canvas store based on current edges + override.
+   **/
+  private syncOutputEnabled() {
+    const hasBgOutEdge = this.edges.some((edge) => edge.target.startsWith('bg.out'));
+    const outputEnabled = this.overrideOutputNodeId !== null || hasBgOutEdge;
+
+    if (this.ipcSystem.outputWindow === null) {
+      isBackgroundOutputCanvasEnabled.set(outputEnabled);
+    }
+
+    this.setOutputEnabled(outputEnabled);
+  }
+
   send<T>(type: string, data?: T) {
     this.renderWorker.postMessage({ type, ...data });
   }
@@ -459,15 +485,9 @@ export class GLSystem {
 
   updateEdges(edges: REdge[]) {
     this.edges = edges;
+
     this.updateRenderGraph();
-
-    const hasOutputNode = edges.some((edge) => edge.target.startsWith('bg.out'));
-
-    if (this.ipcSystem.outputWindow === null) {
-      isBackgroundOutputCanvasEnabled.set(hasOutputNode);
-    }
-
-    this.setOutputEnabled(hasOutputNode);
+    this.syncOutputEnabled();
   }
 
   private updateRenderGraph(force = false) {

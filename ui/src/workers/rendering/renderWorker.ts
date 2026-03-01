@@ -97,6 +97,9 @@ self.onmessage = (event) => {
     })
     .with('syncTransportTime', () => {
       fboRenderer.setTransportTime(data);
+    })
+    .with('setOverrideOutputNode', () => {
+      fboRenderer.overrideOutputNodeId = data.nodeId ?? null;
     });
 };
 

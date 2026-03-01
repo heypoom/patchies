@@ -37,7 +37,12 @@ export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
 
   public renderGraph: RenderGraph | null = null;
+
+  /** Output node determined by bg.out connection in the render graph */
   public outputNodeId: string | null = null;
+
+  /** Override output node set by the user (bypasses bg.out). Falls back to outputNodeId if the override node doesn't exist. */
+  public overrideOutputNodeId: string | null = null;
 
   public isOutputEnabled: boolean = false;
   public shouldProcessPreviews: boolean = false;
@@ -922,10 +927,15 @@ export class FBORenderer {
       this.renderFboNode(node, fboNode);
     }
 
-    // Render the final result to the main canvas
-    // Use the node that is connected to bg.out in the graph
-    if (this.outputNodeId !== null) {
-      const outputFBONode = this.fboNodes.get(this.outputNodeId);
+    // Render the final result to the main canvas.
+    // Use override if set and the node exists; otherwise fall back to bg.out.
+    const effectiveOutputNodeId =
+      this.overrideOutputNodeId && this.fboNodes.has(this.overrideOutputNodeId)
+        ? this.overrideOutputNodeId
+        : this.outputNodeId;
+
+    if (effectiveOutputNodeId !== null) {
+      const outputFBONode = this.fboNodes.get(effectiveOutputNodeId);
 
       if (outputFBONode) {
         this.renderNodeToMainOutput(outputFBONode);

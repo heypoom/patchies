@@ -5,6 +5,8 @@
     Ellipsis,
     Eye,
     EyeOff,
+    Monitor,
+    MonitorOff,
     Pin,
     PinOff,
     Play,
@@ -19,6 +21,8 @@
   import { transportStore } from '../../stores/transport.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
+  import { overrideOutputNodeId } from '../../stores/renderer.store';
+  import { GLSystem } from '$lib/canvas/GLSystem';
 
   let previewContainer: HTMLDivElement | null = null;
   const { getNode, updateNodeData } = useSvelteFlow();
@@ -34,6 +38,7 @@
     previewVisible = true,
     showPauseButton = false,
     showConsoleButton = false,
+    showBgOutputOption = false,
 
     topHandle,
     bottomHandle,
@@ -53,6 +58,7 @@
     previewVisible?: boolean;
     showPauseButton?: boolean;
     showConsoleButton?: boolean;
+    showBgOutputOption?: boolean;
 
     topHandle?: Snippet;
     bottomHandle?: Snippet;
@@ -127,6 +133,17 @@
   });
 
   let canPin = $derived($transportStore.isPlaying);
+
+  let isOutputOverride = $derived(
+    showBgOutputOption && nodeId !== undefined && $overrideOutputNodeId === nodeId
+  );
+
+  function handleBgOutputToggle() {
+    if (!nodeId) return;
+    const next = isOutputOverride ? null : nodeId;
+    overrideOutputNodeId.set(next);
+    GLSystem.getInstance().setOverrideOutputNode(next);
+  }
 </script>
 
 <div class="relative flex gap-x-3">
@@ -149,6 +166,23 @@
                   </button>
                 </Popover.Trigger>
                 <Popover.Content class="flex w-auto flex-col p-1" align="end" sideOffset={4}>
+                  {#if showBgOutputOption && nodeId !== undefined}
+                    <Popover.Close class="contents">
+                      <button
+                        class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
+                        onclick={handleBgOutputToggle}
+                      >
+                        {#if isOutputOverride}
+                          <MonitorOff class="h-4 w-4 text-orange-400" />
+                          <span>Remove background output</span>
+                        {:else}
+                          <Monitor class="h-4 w-4 text-zinc-300" />
+                          <span>Output to background</span>
+                        {/if}
+                      </button>
+                    </Popover.Close>
+                  {/if}
+
                   {#if showPauseButton}
                     <Popover.Close class="contents">
                       <button
@@ -223,6 +257,18 @@
     </ContextMenu.Trigger>
 
     <ContextMenu.Content>
+      {#if showBgOutputOption && nodeId !== undefined}
+        <ContextMenu.Item onclick={handleBgOutputToggle}>
+          {#if isOutputOverride}
+            <MonitorOff class="mr-2 h-4 w-4 text-orange-400" />
+            Remove background output
+          {:else}
+            <Monitor class="mr-2 h-4 w-4" />
+            Output to background
+          {/if}
+        </ContextMenu.Item>
+        <ContextMenu.Separator />
+      {/if}
       {#if showPauseButton}
         <ContextMenu.Item onclick={handlePlaybackToggle} disabled={!canPin && !paused}>
           {#if paused}
