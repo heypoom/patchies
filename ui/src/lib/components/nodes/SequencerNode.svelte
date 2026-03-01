@@ -5,58 +5,13 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { SequencerScheduler } from './sequencer-scheduler';
+  import { type TrackData, DEFAULT_TRACKS, TRACK_COLORS } from '$lib/nodes/sequencer-constants';
   import { useNodeDataTracker } from '$lib/history';
   import { sequencerMessages } from '$lib/objects/schemas';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SequencerSettings from '$lib/components/settings/SequencerSettings.svelte';
   import { Settings, X } from '@lucide/svelte/icons';
-
-  export interface TrackData {
-    name: string;
-    color: string;
-    stepOn: boolean[];
-    stepValues: number[];
-  }
-
-  const DEFAULT_TRACKS: TrackData[] = [
-    {
-      name: 'KICK',
-      color: '#e57373',
-      stepOn: Array(16).fill(false),
-      stepValues: Array(16).fill(1.0)
-    },
-    {
-      name: 'SNARE',
-      color: '#64b5f6',
-      stepOn: Array(16).fill(false),
-      stepValues: Array(16).fill(1.0)
-    },
-    {
-      name: 'CHH',
-      color: '#ffd54f',
-      stepOn: Array(16).fill(false),
-      stepValues: Array(16).fill(1.0)
-    },
-    {
-      name: 'OHH',
-      color: '#b39ddb',
-      stepOn: Array(16).fill(false),
-      stepValues: Array(16).fill(1.0)
-    }
-  ];
-
-  // Palette for new tracks. Max 8 tracks (0–7 = single digit handle IDs).
-  const TRACK_COLORS = [
-    '#e57373',
-    '#64b5f6',
-    '#ffd54f',
-    '#b39ddb',
-    '#80cbc4',
-    '#a5d6a7',
-    '#ffb74d',
-    '#ff8a65'
-  ] as const;
 
   type NodeData = {
     steps?: number;

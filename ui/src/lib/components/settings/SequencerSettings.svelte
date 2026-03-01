@@ -3,7 +3,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
   import { Plus, Trash2 } from '@lucide/svelte/icons';
-  import type { TrackData } from '$lib/components/nodes/SequencerNode.svelte';
+  import type { TrackData } from '$lib/nodes/sequencer-constants';
 
   const STEP_COUNTS = [4, 8, 12, 16, 24, 32] as const;
 

@@ -28,6 +28,7 @@ import {
 } from '$lib/assembly/constants';
 import { DEFAULT_ORCA_WIDTH, DEFAULT_ORCA_HEIGHT } from '$lib/orca/constants';
 import { DEFAULT_WGSL_CODE } from '$lib/webgpu/constants';
+import { DEFAULT_TRACKS } from '$lib/nodes/sequencer-constants';
 
 // TODO: make this type-safe!
 export type NodeData = {
@@ -269,32 +270,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     }))
     .with('sequencer', () => ({
       steps: 8,
-      tracks: [
-        {
-          name: 'KICK',
-          color: '#e57373',
-          stepOn: Array(8).fill(false),
-          stepValues: Array(8).fill(1.0)
-        },
-        {
-          name: 'SNARE',
-          color: '#64b5f6',
-          stepOn: Array(8).fill(false),
-          stepValues: Array(8).fill(1.0)
-        },
-        {
-          name: 'CHH',
-          color: '#ffd54f',
-          stepOn: Array(8).fill(false),
-          stepValues: Array(8).fill(1.0)
-        },
-        {
-          name: 'OHH',
-          color: '#b39ddb',
-          stepOn: Array(8).fill(false),
-          stepValues: Array(8).fill(1.0)
-        }
-      ],
+      tracks: DEFAULT_TRACKS,
       swing: 0,
       outputMode: 'bang',
       showVelocity: false
