@@ -33,9 +33,9 @@ Try out the presets to get started. Enable them in the [preset packs](/docs/mana
 
 ## Output to Background
 
-Right-click any visual object (or use its **···** menu) and choose **Output to background**. The object's output becomes the background. This also overrides the `bg.out` connection if there is one.
+Right-click any visual object (or use its **···** menu) and choose **Output to background**. The object's output temporarily becomes the background. This also overrides the `bg.out` connection if there is one.
 
-This is useful for live performance when you want to quickly switch what is displayed.
+This is useful for live performance when you want to quickly switch what is displayed. This is not persisted across sessions.
 
 - Clicking **Output to background** again on the same node removes the override and falls back to the `bg.out` connection.
 - Switching to a different node replaces the current output. Only one node can output at a time.
