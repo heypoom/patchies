@@ -36,6 +36,7 @@ export class CsoundNode implements AudioNodeV2 {
   readonly nodeId: string;
 
   private inputNode: GainNode;
+  private protectionGain: GainNode;
   private audioContext: AudioContext;
 
   // Csound state
@@ -59,6 +60,11 @@ export class CsoundNode implements AudioNodeV2 {
     this.audioNode = audioContext.createGain();
     this.audioNode.gain.value = 1.0;
 
+    // Protection gain: starts silent so Csound init noise never reaches output
+    this.protectionGain = audioContext.createGain();
+    this.protectionGain.gain.value = 0;
+    this.protectionGain.connect(this.audioNode);
+
     this.inputNode = audioContext.createGain();
     this.inputNode.gain.value = 1.0;
   }
@@ -66,10 +72,9 @@ export class CsoundNode implements AudioNodeV2 {
   async create(params: unknown[]): Promise<void> {
     const [, code] = params as [unknown, string];
 
-    await this.initialize();
-
+    // Store code but defer initialization until first use to avoid init noise
     if (code) {
-      await this.setCode(code);
+      this.codeString = code;
     }
 
     this.subscribeTransport();
@@ -162,17 +167,25 @@ export class CsoundNode implements AudioNodeV2 {
 
       const node = await this.csound.getNode();
 
+      // Route through protectionGain so init noise never reaches output
       if (node) {
-        node.connect(this.audioNode);
+        node.connect(this.protectionGain);
       }
 
       this.initialized = true;
+
+      // Ramp up after a brief settling period to let the worklet stabilize
+      this.protectionGain.gain.setTargetAtTime(1, this.audioContext.currentTime + 0.1, 0.05);
     } catch (error) {
       logger.error('failed to initialize csound~:', error);
     }
   }
 
   async setCode(code: string) {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
     if (!this.csound) return;
 
     this.codeString = code;
@@ -347,6 +360,7 @@ export class CsoundNode implements AudioNodeV2 {
     }
 
     this.audioNode.disconnect();
+    this.protectionGain.disconnect();
     this.inputNode.disconnect();
   }
 }
