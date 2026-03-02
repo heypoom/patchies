@@ -1,10 +1,5 @@
 import type { CurvePoint as Point, CurveMode as Mode } from './constants';
-import {
-  CURVE_PADDING as PADDING,
-  CURVE_HIT_RADIUS,
-  CURVE_DELETE_DX,
-  CURVE_DELETE_DY
-} from './constants';
+import { CURVE_HIT_RADIUS, CURVE_DELETE_DX, CURVE_DELETE_DY } from './constants';
 
 // ── Hit testing ───────────────────────────────────────────────────────────────
 
@@ -52,13 +47,13 @@ export function getHoveredIdx(
 // ── Coordinate transforms: normalized [0,1] ↔ SVG pixel space ────────────────
 
 export function toSvg(p: Point, innerW: number, innerH: number): [number, number] {
-  return [PADDING + p.x * innerW, PADDING + (1 - p.y) * innerH];
+  return [p.x * innerW, (1 - p.y) * innerH];
 }
 
 export function fromSvg(svgX: number, svgY: number, innerW: number, innerH: number): Point {
   return {
-    x: Math.max(0, Math.min(1, (svgX - PADDING) / innerW)),
-    y: Math.max(0, Math.min(1, 1 - (svgY - PADDING) / innerH))
+    x: Math.max(0, Math.min(1, svgX / innerW)),
+    y: Math.max(0, Math.min(1, 1 - svgY / innerH))
   };
 }
 

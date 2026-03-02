@@ -23,8 +23,7 @@
     CURVE_HIT_RADIUS as HIT_RADIUS,
     CURVE_DELETE_RADIUS as DELETE_RADIUS,
     CURVE_DELETE_DX as DELETE_DX,
-    CURVE_DELETE_DY as DELETE_DY,
-    CURVE_PADDING as PADDING
+    CURVE_DELETE_DY as DELETE_DY
   } from './constants';
   import { toSvg, fromSvg, buildPath, evaluate, getHoveredIdx } from './utils';
   import CurveSettings from './CurveSettings.svelte';
@@ -51,8 +50,8 @@
   const mode = $derived<Mode>(node.data.mode ?? 'linear');
   const isLocked = $derived(node.data.locked ?? false);
 
-  const innerW = $derived(displayWidth - PADDING * 2);
-  const innerH = $derived(displayHeight - PADDING * 2);
+  const innerW = $derived(displayWidth);
+  const innerH = $derived(displayHeight);
 
   const pathData = $derived(buildPath(mode, points, innerW, innerH));
 
@@ -61,7 +60,7 @@
     if (!pathData || points.length < 2) return '';
     const [sx0] = toSvg(points[0], innerW, innerH);
     const [sxN] = toSvg(points[points.length - 1], innerW, innerH);
-    const bottom = PADDING + innerH;
+    const bottom = innerH;
     return `M ${sx0},${bottom} ` + pathData.replace(/^M /, 'L ') + ` L ${sxN},${bottom} Z`;
   });
 
@@ -252,6 +251,7 @@
         class="absolute -top-7 left-0 z-10 flex items-center gap-1.5 rounded-lg bg-zinc-900 px-2 py-1"
       >
         <span class="font-mono text-xs font-medium text-zinc-400">curve</span>
+
         {#if isLocked}
           <Lock class="h-3 w-3 text-zinc-500" />
         {/if}
@@ -281,9 +281,8 @@
         <Tooltip.Trigger>
           <button
             class={[
-              'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-              isLocked ? 'text-white opacity-100' : 'text-zinc-500 hover:text-zinc-300',
-              !isLocked && (node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')
+              'cursor-pointer rounded p-1 text-zinc-300 transition-opacity hover:bg-zinc-700',
+              node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
             ]}
             onclick={(e) => {
               e.stopPropagation();
@@ -299,6 +298,7 @@
         </Tooltip.Trigger>
         <Tooltip.Content>{isLocked ? 'Unlock curve' : 'Lock curve'}</Tooltip.Content>
       </Tooltip.Root>
+
       <button
         class={[
           'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
@@ -330,6 +330,7 @@
             bind:this={svgEl}
             width={displayWidth}
             height={displayHeight}
+            overflow="visible"
             class={[
               'nodrag rounded border bg-zinc-950',
               isLocked ? 'cursor-default' : 'cursor-crosshair',
@@ -347,17 +348,17 @@
                 <stop offset="100%" stop-color="#4ade80" stop-opacity="0" />
               </linearGradient>
               <clipPath id={clipId}>
-                <rect x={PADDING} y={PADDING} width={innerW} height={innerH} />
+                <rect x={0} y={0} width={innerW} height={innerH} />
               </clipPath>
             </defs>
 
             <!-- Grid lines -->
             {#each [0.25, 0.5, 0.75] as t}
               <line
-                x1={PADDING + t * innerW}
-                y1={PADDING}
-                x2={PADDING + t * innerW}
-                y2={PADDING + innerH}
+                x1={t * innerW}
+                y1={0}
+                x2={t * innerW}
+                y2={innerH}
                 stroke="#272729"
                 stroke-width="1"
                 pointer-events="none"
@@ -365,10 +366,10 @@
               />
 
               <line
-                x1={PADDING}
-                y1={PADDING + (1 - t) * innerH}
-                x2={PADDING + innerW}
-                y2={PADDING + (1 - t) * innerH}
+                x1={0}
+                y1={(1 - t) * innerH}
+                x2={innerW}
+                y2={(1 - t) * innerH}
                 stroke={t === 0.5 ? '#3f3f46' : '#272729'}
                 opacity={t === 0.5 ? 0.4 : 0.3}
                 stroke-width="1"

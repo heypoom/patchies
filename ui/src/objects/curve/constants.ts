@@ -15,4 +15,3 @@ export const CURVE_HIT_RADIUS = 14; // transparent hit-target radius
 export const CURVE_DELETE_RADIUS = 9; // delete button radius
 export const CURVE_DELETE_DX = 18; // delete button offset from point (x)
 export const CURVE_DELETE_DY = -18; // delete button offset from point (y)
-export const CURVE_PADDING = 10;
