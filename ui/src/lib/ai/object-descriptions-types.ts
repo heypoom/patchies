@@ -7,6 +7,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - toggle: Binary on/off switch
 - msg: Send predefined messages
 - textbox: Text input and display
+- curve: Breakpoint curve editor
 
 ## Audio I/O (Dedicated node types)
 - mic~: Audio input from microphone

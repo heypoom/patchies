@@ -164,6 +164,7 @@ import { recvVdoSchema } from './recv-vdo';
 import { noteSchema } from './note';
 import { meterSchema } from './meter';
 import { sequencerSchema } from './sequencer';
+import { curveSchema } from '$objects/curve/schema';
 
 /**
  * Registry of all object schemas.
@@ -256,7 +257,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'recv.vdo': recvVdoSchema,
   note: noteSchema,
   'meter~': meterSchema,
-  sequencer: sequencerSchema
+  sequencer: sequencerSchema,
+  curve: curveSchema
 };
 
 /**

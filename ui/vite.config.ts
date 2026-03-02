@@ -338,7 +338,8 @@ export default defineConfig(async () => ({
   },
   resolve: {
     alias: {
-      $workers: '/src/workers'
+      $workers: '/src/workers',
+      $objects: '/src/objects'
     }
   },
   test: {
