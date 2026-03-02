@@ -74,6 +74,7 @@
   let hoveredIdx = $state(-1);
   let dragIndex = $state(-1);
   let dragStartPoints: Point[] = [];
+  let isMouseOver = $state(false);
 
   function getSvgCoords(event: PointerEvent): [number, number] {
     const rect = svgEl.getBoundingClientRect();
@@ -85,7 +86,7 @@
   // ── Pointer handlers ──────────────────────────────────────────────────────
 
   function onSvgPointerDown(event: PointerEvent) {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || isLocked) return;
     const [sx, sy] = getSvgCoords(event);
 
     // Skip adding if near an existing point
@@ -98,13 +99,14 @@
 
     const idx = newPoints.findIndex((p) => p === newPt);
     dragIndex = idx;
+    hoveredIdx = idx;
     dragStartPoints = newPoints.map((p) => ({ ...p }));
     svgEl.setPointerCapture(event.pointerId);
     event.stopPropagation();
   }
 
   function onPointPointerDown(event: PointerEvent, index: number) {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || isLocked) return;
     dragIndex = index;
     dragStartPoints = points.map((p) => ({ ...p }));
     svgEl.setPointerCapture(event.pointerId);
@@ -144,6 +146,7 @@
 
   function onSvgPointerLeave() {
     if (dragIndex < 0) hoveredIdx = -1;
+    isMouseOver = false;
   }
 
   // ── Delete ────────────────────────────────────────────────────────────────
@@ -213,15 +216,13 @@
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Delete' || e.key === 'Backspace' || e.key === 'x') {
-        // When locked and selected, block node deletion entirely
-        if (isLocked && node.selected) {
+        // Mouse is over the canvas — intercept to prevent accidental node deletion
+        if (isMouseOver) {
           e.stopImmediatePropagation();
-          return;
-        }
-        // Otherwise delete hovered breakpoint (non-endpoint)
-        if (hoveredIdx > 0 && hoveredIdx < points.length - 1) {
-          e.stopImmediatePropagation();
-          deletePoint(hoveredIdx);
+          // Delete hovered non-endpoint breakpoint (only when not locked)
+          if (!isLocked && hoveredIdx > 0 && hoveredIdx < points.length - 1) {
+            deletePoint(hoveredIdx);
+          }
         }
       }
     }
@@ -245,6 +246,18 @@
   <NodeResizer isVisible={node.selected} minWidth={MIN_WIDTH} minHeight={MIN_HEIGHT} />
 
   <div class="group relative">
+    <!-- Title label (safe click target for selecting without entering canvas) -->
+    {#if node.selected || isLocked}
+      <div
+        class="absolute -top-7 left-0 z-10 flex items-center gap-1.5 rounded-lg bg-zinc-900 px-2 py-1"
+      >
+        <span class="font-mono text-xs font-medium text-zinc-400">curve</span>
+        {#if isLocked}
+          <Lock class="h-3 w-3 text-zinc-500" />
+        {/if}
+      </div>
+    {/if}
+
     <!-- Header buttons -->
     <div class="absolute -top-7 right-0 z-10 flex gap-x-1">
       <Tooltip.Root>
@@ -284,7 +297,7 @@
             {/if}
           </button>
         </Tooltip.Trigger>
-        <Tooltip.Content>{isLocked ? 'Unlock' : 'Lock'}</Tooltip.Content>
+        <Tooltip.Content>{isLocked ? 'Unlock curve' : 'Lock curve'}</Tooltip.Content>
       </Tooltip.Root>
       <button
         class={[
@@ -318,9 +331,11 @@
             width={displayWidth}
             height={displayHeight}
             class={[
-              'nodrag cursor-crosshair rounded border bg-zinc-950',
+              'nodrag rounded border bg-zinc-950',
+              isLocked ? 'cursor-default' : 'cursor-crosshair',
               node.selected ? 'object-container-selected' : 'border-zinc-800'
             ]}
+            onpointerenter={() => (isMouseOver = true)}
             onpointerdown={onSvgPointerDown}
             onpointermove={onSvgPointerMove}
             onpointerup={onSvgPointerUp}
@@ -400,7 +415,7 @@
                 r={HIT_RADIUS}
                 fill="transparent"
                 pointer-events="all"
-                class="cursor-grab active:cursor-grabbing"
+                class={isLocked ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}
                 onpointerdown={(e) => onPointPointerDown(e, i)}
               />
 
@@ -415,8 +430,8 @@
                 pointer-events="none"
               />
 
-              <!-- Delete button (non-endpoints, on hover) -->
-              {#if isHovered && !isEndpoint}
+              <!-- Delete button (non-endpoints, on hover, not locked) -->
+              {#if isHovered && !isEndpoint && !isLocked}
                 {@const bx = sx + DELETE_DX}
                 {@const by = sy + DELETE_DY}
                 {@const s = DELETE_RADIUS * 0.45}
@@ -476,11 +491,11 @@
         <ContextMenu.Content>
           <ContextMenu.Item onclick={toggleLock} class="gap-2">
             {#if isLocked}
-              <Lock class="h-3.5 w-3.5" />
-              Unlock
-            {:else}
               <LockOpen class="h-3.5 w-3.5" />
-              Lock
+              Unlock curve
+            {:else}
+              <Lock class="h-3.5 w-3.5" />
+              Lock curve
             {/if}
           </ContextMenu.Item>
           <ContextMenu.Separator />
