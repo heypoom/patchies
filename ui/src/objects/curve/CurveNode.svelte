@@ -482,7 +482,7 @@
                   font-size="9"
                   pointer-events="none"
                 >
-                  {(point.x * 100).toFixed(0)}% / {(point.y * 100).toFixed(0)}%
+                  ({point.x.toFixed(2)}, {point.y.toFixed(2)})
                 </text>
               {/if}
             {/each}
