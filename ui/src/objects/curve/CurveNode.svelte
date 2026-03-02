@@ -264,9 +264,12 @@
         <Tooltip.Trigger>
           <button
             class={[
-              'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-              node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700 disabled:cursor-not-allowed',
+              node.selected
+                ? 'opacity-100 disabled:opacity-30'
+                : 'opacity-0 group-hover:opacity-100 group-hover:disabled:opacity-30'
             ]}
+            disabled={isLocked}
             onclick={(e) => {
               e.stopPropagation();
               resetPoints();
@@ -296,7 +299,10 @@
             {/if}
           </button>
         </Tooltip.Trigger>
-        <Tooltip.Content>{isLocked ? 'Unlock curve' : 'Lock curve'}</Tooltip.Content>
+
+        <Tooltip.Content>
+          {isLocked ? 'Unlock curve' : 'Lock curve'}
+        </Tooltip.Content>
       </Tooltip.Root>
 
       <button
@@ -506,8 +512,9 @@
             {/each}
           </svg>
         </ContextMenu.Trigger>
+
         <ContextMenu.Content>
-          <ContextMenu.Item onclick={toggleLock} class="gap-2">
+          <ContextMenu.Item onclick={toggleLock} class="cursor-pointer gap-2">
             {#if isLocked}
               <LockOpen class="h-3.5 w-3.5" />
               Unlock curve
@@ -516,8 +523,10 @@
               Lock curve
             {/if}
           </ContextMenu.Item>
+
           <ContextMenu.Separator />
-          <ContextMenu.Item onclick={resetPoints} class="gap-2">
+
+          <ContextMenu.Item onclick={resetPoints} disabled={isLocked} class="cursor-pointer gap-2">
             <RotateCcw class="h-3.5 w-3.5" />
             Reset points
           </ContextMenu.Item>
