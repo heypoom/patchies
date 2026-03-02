@@ -20,7 +20,8 @@ const server = await createServer({
   resolve: {
     alias: {
       $lib: resolve(root, 'src/lib'),
-      $workers: resolve(root, 'src/workers')
+      $workers: resolve(root, 'src/workers'),
+      $objects: resolve(root, 'src/objects')
     }
   },
   optimizeDeps: { noDiscovery: true }
