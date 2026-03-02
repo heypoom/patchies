@@ -4,7 +4,7 @@ import { Bang, Reset } from '$lib/objects/schemas/common';
 
 // Raw TypeBox schemas
 export const CurveFloat = Type.Number();
-export const CurveList = Type.Array(Type.Number());
+export const CurveList = Type.Array(Type.Number(), { minItems: 4 });
 
 // ts-pattern matchers
 export const curveMessages = {

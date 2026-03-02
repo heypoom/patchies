@@ -92,7 +92,10 @@
     if (getHoveredIdx(sx, sy, points, innerW, innerH) !== -1) return;
 
     const pt = fromSvg(sx, sy, innerW, innerH);
-    const newPt: Point = { x: Math.max(0.001, Math.min(0.999, pt.x)), y: pt.y };
+    const newPt: Point = {
+      x: Math.max(0.001, Math.min(0.999, pt.x)),
+      y: Math.max(0, Math.min(1, pt.y))
+    };
     const newPoints = [...points, newPt].sort((a, b) => a.x - b.x);
     updateNodeData(node.id, { points: newPoints });
 
@@ -126,11 +129,14 @@
     const newPoints = points.map((p) => ({ ...p }));
 
     if (isEndpoint) {
-      newPoints[dragIndex] = { x: newPoints[dragIndex].x, y: pt.y };
+      newPoints[dragIndex] = { x: newPoints[dragIndex].x, y: Math.max(0, Math.min(1, pt.y)) };
     } else {
       const xMin = (newPoints[dragIndex - 1]?.x ?? 0) + 0.001;
       const xMax = (newPoints[dragIndex + 1]?.x ?? 1) - 0.001;
-      newPoints[dragIndex] = { x: Math.max(xMin, Math.min(xMax, pt.x)), y: pt.y };
+      newPoints[dragIndex] = {
+        x: Math.max(xMin, Math.min(xMax, pt.x)),
+        y: Math.max(0, Math.min(1, pt.y))
+      };
     }
 
     updateNodeData(node.id, { points: newPoints });

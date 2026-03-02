@@ -5,20 +5,23 @@
   let {
     mode,
     onModeChange,
-    onClose
+    onClose,
+    class: className
   }: {
     mode: CurveMode;
     onModeChange: (mode: CurveMode) => void;
     onClose: () => void;
+    class?: string;
   } = $props();
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div onclick={(e) => e.stopPropagation()}>
+<div class={className} onclick={(e) => e.stopPropagation()}>
   <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
     <button
       onclick={onClose}
+      aria-label="Close"
       class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
     >
       <X class="h-4 w-4" />

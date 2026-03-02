@@ -1,5 +1,6 @@
 import type { CurvePoint as Point, CurveMode as Mode } from './constants';
 import { CURVE_HIT_RADIUS, CURVE_DELETE_DX, CURVE_DELETE_DY } from './constants';
+import { match } from 'ts-pattern';
 
 // ── Hit testing ───────────────────────────────────────────────────────────────
 
@@ -95,9 +96,10 @@ export function buildCurvePath(pts: Point[], innerW: number, innerH: number): st
 }
 
 export function buildPath(mode: Mode, pts: Point[], innerW: number, innerH: number): string {
-  return mode === 'linear'
-    ? buildLinearPath(pts, innerW, innerH)
-    : buildCurvePath(pts, innerW, innerH);
+  return match(mode)
+    .with('linear', () => buildLinearPath(pts, innerW, innerH))
+    .with('curve', () => buildCurvePath(pts, innerW, innerH))
+    .exhaustive();
 }
 
 // ── Curve evaluation ──────────────────────────────────────────────────────────
@@ -156,5 +158,8 @@ export function evaluateCurve(x: number, pts: Point[]): number {
 }
 
 export function evaluate(mode: Mode, x: number, pts: Point[]): number {
-  return mode === 'linear' ? evaluateLinear(x, pts) : evaluateCurve(x, pts);
+  return match(mode)
+    .with('linear', () => evaluateLinear(x, pts))
+    .with('curve', () => evaluateCurve(x, pts))
+    .exhaustive();
 }
