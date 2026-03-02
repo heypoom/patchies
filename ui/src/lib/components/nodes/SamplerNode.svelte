@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Circle, Mic, Play, Settings, Square } from '@lucide/svelte/icons';
+  import { Circle, CloudDownload, Mic, Play, Settings, Square } from '@lucide/svelte/icons';
   import { useSvelteFlow, type NodeProps } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import WaveformDisplay from '$lib/components/nodes/WaveformDisplay.svelte';
@@ -9,6 +9,7 @@
   import { match } from 'ts-pattern';
   import { samplerMessages } from '$lib/objects/schemas';
   import { AudioService } from '$lib/audio/v2/AudioService';
+  import { downloadAsWav } from '$lib/audio/wav-encoder';
   import type { SamplerNode as SamplerNodeV2 } from '$lib/audio/v2/nodes/SamplerNode';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
@@ -194,6 +195,7 @@
         updateNodeData(node.id, { ...node.data, detune: msg.value });
         audioService.send(node.id, 'message', { type: 'setDetune', value: msg.value });
       })
+      .with(samplerMessages.download, (msg) => downloadBuffer(msg.name))
       .otherwise(() => audioService.send(node.id, 'message', message));
   };
 
@@ -394,6 +396,10 @@
     audioService.send(node.id, 'message', { type: 'setDetune', value });
   }
 
+  function downloadBuffer(name?: string) {
+    if (audioBuffer) downloadAsWav(audioBuffer, name);
+  }
+
   function resetSettings() {
     updateNodeData(node.id, {
       ...node.data,
@@ -504,6 +510,15 @@
               onclick={playRecording}
             >
               <Play class="h-4 w-4 text-zinc-300" />
+            </button>
+
+            <!-- Download Button -->
+            <button
+              title="Download as WAV"
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              onclick={() => downloadBuffer()}
+            >
+              <CloudDownload class="h-4 w-4 text-zinc-300" />
             </button>
           {/if}
 
