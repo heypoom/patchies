@@ -3,7 +3,11 @@ import type { RenderGraph, RenderNode, RenderWorkerMessage } from '$lib/renderin
 import RenderWorker from '$workers/rendering/renderWorker?worker';
 
 import * as ohash from 'ohash';
-import { previewVisibleMap, isGlslPlaying } from '../../stores/renderer.store';
+import {
+  previewVisibleMap,
+  isGlslPlaying,
+  overrideOutputNodeId
+} from '../../stores/renderer.store';
 import { get } from 'svelte/store';
 import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 import { currentPatchId } from '../../stores/ui.store';
@@ -473,6 +477,12 @@ export class GLSystem {
 
     // Clear connection cache for this node
     this.outgoingConnectionsCache.delete(nodeId);
+
+    // If the deleted node was the background override, unpin it
+    if (this.overrideOutputNodeId === nodeId) {
+      this.setOverrideOutputNode(null);
+      overrideOutputNodeId.set(null);
+    }
 
     this.updateRenderGraph();
   }
