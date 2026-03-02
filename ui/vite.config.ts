@@ -6,7 +6,7 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import wasm from 'vite-plugin-wasm';
-import topLevelAwait from 'vite-plugin-top-level-await';
+import type topLevelAwaitType from 'vite-plugin-top-level-await';
 
 // @ts-expect-error -- no typedef
 import bundleAudioWorkletPlugin from 'vite-plugin-bundle-audioworklet';
@@ -31,7 +31,12 @@ export function viteStaticCopyPyodide() {
   });
 }
 
-export default defineConfig({
+const topLevelAwait: typeof topLevelAwaitType =
+  typeof Bun !== 'undefined'
+    ? () => ({ name: 'vite-plugin-top-level-await-noop' })
+    : (await import('vite-plugin-top-level-await')).default;
+
+export default defineConfig(async () => ({
   plugins: [
     // Cross-origin isolation headers (enables SharedArrayBuffer for BufferBridge).
     // Must be a Vite middleware plugin so headers are set before SvelteKit handles the request.
@@ -342,4 +347,4 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{js,ts}'],
     exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', 'e2e/**', '**/node_modules/**', '**/dist/**']
   }
-});
+}));
