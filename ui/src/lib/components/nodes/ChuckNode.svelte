@@ -12,7 +12,7 @@
   import { keymap } from '@codemirror/view';
   import type { ChuckShred, ChuckNode } from '$lib/audio/v2/nodes/ChuckNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
-  import ChuckSettings from '$lib/settings/ChuckSettings.svelte';
+  import ChuckSettings from '$lib/components/settings/ChuckSettings.svelte';
 
   let contentContainer: HTMLDivElement | null = null;
   let contentWidth = $state(100);

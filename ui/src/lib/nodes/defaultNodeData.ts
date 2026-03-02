@@ -29,6 +29,7 @@ import {
 import { DEFAULT_ORCA_WIDTH, DEFAULT_ORCA_HEIGHT } from '$lib/orca/constants';
 import { DEFAULT_WGSL_CODE } from '$lib/webgpu/constants';
 import { DEFAULT_TRACKS } from '$lib/nodes/sequencer-constants';
+import { CURVE_DEFAULT_POINTS } from '$objects/curve/constants';
 
 // TODO: make this type-safe!
 export type NodeData = {
@@ -275,6 +276,10 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       outputMode: 'bang',
       showVelocity: false,
       showInTimeline: true
+    }))
+    .with('curve', () => ({
+      points: CURVE_DEFAULT_POINTS,
+      mode: 'linear'
     }))
     .otherwise(() => ({}));
 }

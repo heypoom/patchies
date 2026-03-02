@@ -16,7 +16,7 @@
     type BytebeatSyntax,
     type BytebeatNode as BytebeatAudioNode
   } from '$lib/audio/v2/nodes/BytebeatNode';
-  import BytebeatSettings from '$lib/settings/BytebeatSettings.svelte';
+  import BytebeatSettings from '$lib/components/settings/BytebeatSettings.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
   let contentContainer: HTMLDivElement | null = null;

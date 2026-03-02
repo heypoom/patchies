@@ -9,7 +9,19 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Starters',
     description: 'Building blocks everyone needs',
     icon: 'Box',
-    objects: ['js', 'msg', 'button', 'toggle', 'slider', 'textbox', 'peek', 'label', 'note', 'knob']
+    objects: [
+      'js',
+      'msg',
+      'button',
+      'toggle',
+      'slider',
+      'knob',
+      'curve',
+      'textbox',
+      'peek',
+      'label',
+      'note'
+    ]
   },
   {
     id: 'control',
