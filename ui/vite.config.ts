@@ -1,7 +1,7 @@
 import devtoolsJson from 'vite-plugin-devtools-json';
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, type ViteDevServer } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -32,17 +32,17 @@ export function viteStaticCopyPyodide() {
 }
 
 const topLevelAwait: typeof topLevelAwaitType =
-  typeof Bun !== 'undefined'
+  typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined'
     ? () => ({ name: 'vite-plugin-top-level-await-noop' })
     : (await import('vite-plugin-top-level-await')).default;
 
-export default defineConfig(async () => ({
+export default defineConfig(() => ({
   plugins: [
     // Cross-origin isolation headers (enables SharedArrayBuffer for BufferBridge).
     // Must be a Vite middleware plugin so headers are set before SvelteKit handles the request.
     {
       name: 'cross-origin-isolation',
-      configureServer(server) {
+      configureServer(server: ViteDevServer) {
         server.middlewares.use((_req, res, next) => {
           res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
           res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
@@ -273,7 +273,7 @@ export default defineConfig(async () => ({
           // as a WASM file during dependency scanning (it's a JS package whose
           // name happens to end in .wasm).
           name: 'exclude-uxn-wasm',
-          setup(build) {
+          setup(build: import('esbuild').PluginBuild) {
             build.onResolve({ filter: /^uxn\.wasm/ }, (args) => ({
               path: args.path,
               external: true
@@ -286,7 +286,7 @@ export default defineConfig(async () => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
+        manualChunks: (id: string) => {
           // Skip chunking for worker files
           if (id.includes('/workers/')) return;
 
