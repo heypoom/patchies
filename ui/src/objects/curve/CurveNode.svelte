@@ -332,8 +332,8 @@
             height={displayHeight}
             overflow="visible"
             class={[
-              'nodrag rounded border bg-zinc-950',
-              isLocked ? 'cursor-default' : 'cursor-crosshair',
+              'rounded border bg-zinc-950',
+              isLocked ? 'cursor-grab' : 'nodrag cursor-crosshair',
               node.selected ? 'object-container-selected' : 'border-zinc-800'
             ]}
             onpointerenter={() => (isMouseOver = true)}
@@ -416,7 +416,7 @@
                 r={HIT_RADIUS}
                 fill="transparent"
                 pointer-events="all"
-                class={isLocked ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}
+                class={isLocked ? 'cursor-grab' : 'cursor-grab active:cursor-grabbing'}
                 onpointerdown={(e) => onPointPointerDown(e, i)}
               />
 
@@ -450,6 +450,7 @@
                 {@const bx = sx + DELETE_DX}
                 {@const by = sy + DELETE_DY}
                 {@const s = DELETE_RADIUS * 0.3}
+
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <circle
                   cx={bx}
@@ -465,6 +466,7 @@
                     deletePoint(i);
                   }}
                 />
+
                 <line
                   x1={bx - s}
                   y1={by - s}
@@ -475,6 +477,7 @@
                   stroke-linecap="round"
                   pointer-events="none"
                 />
+
                 <line
                   x1={bx + s}
                   y1={by - s}
