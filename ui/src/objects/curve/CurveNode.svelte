@@ -448,14 +448,14 @@
               {#if isHovered && !isEndpoint && !isLocked}
                 {@const bx = sx + DELETE_DX}
                 {@const by = sy + DELETE_DY}
-                {@const s = DELETE_RADIUS * 0.45}
+                {@const s = DELETE_RADIUS * 0.3}
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <circle
                   cx={bx}
                   cy={by}
                   r={DELETE_RADIUS}
-                  fill="#3f3f46"
-                  stroke="#71717a"
+                  fill="#18181b"
+                  stroke="#4ade80"
                   stroke-width="1"
                   class="cursor-pointer"
                   pointer-events="all"
@@ -469,7 +469,7 @@
                   y1={by - s}
                   x2={bx + s}
                   y2={by + s}
-                  stroke="white"
+                  stroke="#4ade80"
                   stroke-width="1.5"
                   stroke-linecap="round"
                   pointer-events="none"
@@ -479,7 +479,7 @@
                   y1={by - s}
                   x2={bx - s}
                   y2={by + s}
-                  stroke="white"
+                  stroke="#4ade80"
                   stroke-width="1.5"
                   stroke-linecap="round"
                   pointer-events="none"
