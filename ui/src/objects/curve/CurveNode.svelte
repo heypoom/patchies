@@ -419,12 +419,26 @@
                 onpointerdown={(e) => onPointPointerDown(e, i)}
               />
 
+              <!-- Outer halo ring (hover / drag) -->
+              {#if isHovered || isDragging}
+                <circle
+                  cx={sx}
+                  cy={sy}
+                  r={POINT_RADIUS + 5}
+                  fill="none"
+                  stroke="#4ade80"
+                  stroke-width="1"
+                  stroke-opacity={isDragging ? 0.45 : 0.25}
+                  pointer-events="none"
+                />
+              {/if}
+
               <!-- Visual circle -->
               <circle
                 cx={sx}
                 cy={sy}
-                r={isHovered || isDragging ? POINT_RADIUS + 1 : POINT_RADIUS}
-                fill={isDragging || isHovered ? '#4ade80' : '#18181b'}
+                r={POINT_RADIUS}
+                fill="#18181b"
                 stroke={isEndpoint ? '#a1a1aa' : '#4ade80'}
                 stroke-width="1.5"
                 pointer-events="none"
