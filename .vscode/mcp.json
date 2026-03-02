@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "wallaby": {
+      "command": "npx",
+      "args": ["-y", "-c", "node ~/.wallaby/mcp/"],
+      "type": "stdio"
+    }
+  },
+  "inputs": []
+}
