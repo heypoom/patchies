@@ -265,10 +265,6 @@
       ]}
     >
       <span class="font-mono text-xs font-medium text-zinc-400">curve</span>
-
-      {#if isLocked}
-        <Lock class="h-3 w-3 text-zinc-500" />
-      {/if}
     </div>
 
     <!-- Header buttons -->
