@@ -251,18 +251,21 @@
   <NodeResizer isVisible={node.selected} minWidth={MIN_WIDTH} minHeight={MIN_HEIGHT} />
 
   <div class="group relative">
+    <!-- Transparent bridge so group-hover stays active between title and node -->
+    <div class="absolute inset-x-0 -top-7 h-7" />
     <!-- Title label (safe click target for selecting without entering canvas) -->
-    {#if node.selected || isLocked}
-      <div
-        class="absolute -top-7 left-0 z-10 flex items-center gap-1.5 rounded-lg bg-zinc-900 px-2 py-1"
-      >
-        <span class="font-mono text-xs font-medium text-zinc-400">curve</span>
+    <div
+      class={[
+        'absolute -top-7 left-0 z-10 flex items-center gap-1.5 rounded-lg bg-zinc-900 px-2 py-1 transition-opacity',
+        node.selected || isLocked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+      ]}
+    >
+      <span class="font-mono text-xs font-medium text-zinc-400">curve</span>
 
-        {#if isLocked}
-          <Lock class="h-3 w-3 text-zinc-500" />
-        {/if}
-      </div>
-    {/if}
+      {#if isLocked}
+        <Lock class="h-3 w-3 text-zinc-500" />
+      {/if}
+    </div>
 
     <!-- Header buttons -->
     <div class="absolute -top-7 right-0 z-10 flex gap-x-1">
