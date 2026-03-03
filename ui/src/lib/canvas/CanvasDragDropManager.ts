@@ -4,6 +4,33 @@ import { VirtualFilesystem } from '$lib/vfs';
 import { logger } from '$lib/utils/logger';
 
 /**
+ * Escape a string for safe embedding inside a JS string literal (single or double-quoted).
+ * Escapes backslashes, single quotes, double quotes, and control characters.
+ */
+function escapeJS(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
+}
+
+/**
+ * Generate a module-scoped unique base for synth node IDs seeded from a
+ * high-entropy value so that IDs created in separate drops never collide.
+ * Returns a starting integer that is very unlikely to overlap across calls.
+ */
+function generateNodeIdBase(): number {
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  // Use the random 32-bit value as the base; keep it positive and well above
+  // typical patch node IDs by ORing the high bit then masking to 30 bits.
+  return (buf[0] & 0x3fffffff) + 100_000;
+}
+
+/**
  * Callback to create a node with type, position, and optional custom data
  */
 export type CreateNodeCallback = (
@@ -54,6 +81,8 @@ export class CanvasDragDropManager {
     const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
     const presetData = event.dataTransfer?.getData('application/x-preset');
     const sampleData = event.dataTransfer?.getData('application/x-sample-url');
+    const synthdefData = event.dataTransfer?.getData('application/x-supersonic-synthdef');
+    const scSampleData = event.dataTransfer?.getData('application/x-supersonic-sample');
 
     // Check if the drop target is within a node (to avoid duplicate handling)
     const target = event.target as HTMLElement;
@@ -78,6 +107,18 @@ export class CanvasDragDropManager {
     // Handle sample URL drops - create soundfile~ node with _initialUrl
     if (sampleData && !isDropOnNode) {
       this.handleSampleDrop(sampleData, position);
+      return;
+    }
+
+    // Handle SuperSonic synthdef drops - create sonic~ node with synthdef boilerplate
+    if (synthdefData && !isDropOnNode) {
+      this.handleSynthdefDrop(synthdefData, position);
+      return;
+    }
+
+    // Handle SuperSonic sample drops - create sonic~ node with sample player boilerplate
+    if (scSampleData && !isDropOnNode) {
+      this.handleScSampleDrop(scSampleData, position);
       return;
     }
 
@@ -127,8 +168,10 @@ export class CanvasDragDropManager {
     const hasVfsData = event.dataTransfer?.types.includes('application/x-vfs-path');
     const hasPresetData = event.dataTransfer?.types.includes('application/x-preset');
     const hasSampleData = event.dataTransfer?.types.includes('application/x-sample-url');
+    const hasSynthdefData = event.dataTransfer?.types.includes('application/x-supersonic-synthdef');
+    const hasScSampleData = event.dataTransfer?.types.includes('application/x-supersonic-sample');
 
-    if (hasPresetData || hasSampleData) {
+    if (hasPresetData || hasSampleData || hasSynthdefData || hasScSampleData) {
       event.dataTransfer!.dropEffect = 'copy';
     } else if (hasVfsData) {
       event.dataTransfer!.dropEffect = 'copy';
@@ -500,5 +543,116 @@ export class CanvasDragDropManager {
         }
       })
       .otherwise(() => Promise.resolve(getDefaultNodeData(nodeType)));
+  }
+
+  /**
+   * Handle SuperSonic synthdef drops — creates a sonic~ node with synthdef boilerplate
+   */
+  private handleSynthdefDrop(data: string, position: { x: number; y: number }): void {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(data);
+    } catch {
+      logger.warn('Failed to parse synthdef drag data:', data);
+      return;
+    }
+
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof (parsed as Record<string, unknown>).synthdef !== 'string'
+    ) {
+      logger.warn('Invalid synthdef drag payload:', parsed);
+      return;
+    }
+
+    const { synthdef } = parsed as { synthdef: string };
+    const safeSynthdef = escapeJS(synthdef);
+    const nodeIdBase = generateNodeIdBase();
+
+    const code = `setPortCount(1);
+setTitle("${safeSynthdef}");
+
+await sonic.loadSynthDef('${safeSynthdef}');
+
+const activeNotes = new Map();
+let nextNodeId = ${nodeIdBase};
+
+recv(msg => {
+  if (!msg || typeof msg !== 'object') return;
+
+  const { type, note, velocity } = msg;
+
+  if (type === 'noteOn') {
+    if (activeNotes.has(note)) {
+      sonic.send('/n_set', activeNotes.get(note), 'gate', 0);
+    }
+    const id = nextNodeId++;
+    activeNotes.set(note, id);
+    sonic.send('/s_new', '${safeSynthdef}', id, 0, 0,
+      'note', note,
+      'amp', (velocity || 127) / 127,
+      'gate', 1
+    );
+  } else if (type === 'noteOff') {
+    const id = activeNotes.get(note);
+    if (id !== undefined) {
+      sonic.send('/n_set', id, 'gate', 0);
+      activeNotes.delete(note);
+    }
+  }
+});
+
+onCleanup(() => {
+  activeNotes.forEach(id => sonic.send('/n_free', id));
+  activeNotes.clear();
+});`;
+
+    this.createNode('sonic~', position, {
+      ...getDefaultNodeData('sonic~'),
+      code
+    });
+  }
+
+  /**
+   * Handle SuperSonic sample drops — creates a sonic~ node with sample player boilerplate
+   */
+  private handleScSampleDrop(data: string, position: { x: number; y: number }): void {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(data);
+    } catch {
+      logger.warn('Failed to parse sc-sample drag data:', data);
+      return;
+    }
+
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof (parsed as Record<string, unknown>).name !== 'string'
+    ) {
+      logger.warn('Invalid sc-sample drag payload:', parsed);
+      return;
+    }
+
+    const { name } = parsed as { name: string };
+    const safeName = escapeJS(name);
+
+    const code = `setPortCount(1);
+setTitle("${safeName}");
+
+await sonic.loadSynthDef('sonic-pi-basic_stereo_player');
+await sonic.loadSample(0, '${safeName}.flac');
+await sonic.sync();
+
+recv(() => {
+  sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0,
+    'buf', 0, 'rate', 1);
+});`;
+
+    this.createNode('sonic~', position, {
+      ...getDefaultNodeData('sonic~'),
+      code
+    });
   }
 }

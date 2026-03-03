@@ -2,8 +2,15 @@ import type { SampleResult } from './types';
 import { TidalDrumMachinesProvider } from './providers/tidal-drum-machines';
 import { DoughSamplesProvider } from './providers/dough-samples';
 import { StrudelJsonProvider } from './providers/strudel-json';
+import { SupersonicSamplesProvider } from './providers/supersonic-samples';
+import { SupersonicSynthdefsProvider } from './providers/supersonic-synthdefs';
 
 const STRUDEL_PROVIDERS = [
+  new StrudelJsonProvider({
+    id: 'dirt-samples',
+    name: 'Dirt Samples',
+    indexUrl: 'https://raw.githubusercontent.com/tidalcycles/Dirt-Samples/master/strudel.json'
+  }),
   new StrudelJsonProvider({
     id: 'spicule',
     name: 'Spicule',
@@ -51,7 +58,9 @@ const MAX_RESULTS = 500;
 const ALL_PROVIDERS = [
   new TidalDrumMachinesProvider(),
   new DoughSamplesProvider(),
-  ...STRUDEL_PROVIDERS
+  ...STRUDEL_PROVIDERS,
+  new SupersonicSamplesProvider(),
+  new SupersonicSynthdefsProvider()
 ];
 
 class SampleSearchStore {

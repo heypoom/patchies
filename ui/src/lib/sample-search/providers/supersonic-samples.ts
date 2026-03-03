@@ -1,0 +1,278 @@
+import type { SampleProvider, SampleResult } from '../types';
+
+// CDN base for SuperSonic samples (unpkg)
+const CDN_BASE = 'https://unpkg.com/supersonic-scsynth-samples@0.57.0/samples/';
+
+// All 206 Sonic Pi samples from supersonic-scsynth-samples
+// Source: https://github.com/samaaron/supersonic/tree/main/packages/supersonic-scsynth-samples
+const SAMPLE_NAMES = [
+  'ambi_choir',
+  'ambi_dark_woosh',
+  'ambi_drone',
+  'ambi_glass_hum',
+  'ambi_glass_rub',
+  'ambi_haunted_hum',
+  'ambi_lunar_land',
+  'ambi_piano',
+  'ambi_sauna',
+  'ambi_soft_buzz',
+  'ambi_swoosh',
+  'arovane_beat_a',
+  'arovane_beat_b',
+  'arovane_beat_c',
+  'arovane_beat_d',
+  'arovane_beat_e',
+  'bass_dnb_f',
+  'bass_drop_c',
+  'bass_hard_c',
+  'bass_hit_c',
+  'bass_thick_c',
+  'bass_trance_c',
+  'bass_voxy_c',
+  'bass_voxy_hit_c',
+  'bass_woodsy_c',
+  'bd_808',
+  'bd_ada',
+  'bd_boom',
+  'bd_chip',
+  'bd_fat',
+  'bd_gas',
+  'bd_haus',
+  'bd_jazz',
+  'bd_klub',
+  'bd_mehackit',
+  'bd_pure',
+  'bd_sone',
+  'bd_tek',
+  'bd_zome',
+  'bd_zum',
+  'drum_bass_hard',
+  'drum_bass_soft',
+  'drum_cowbell',
+  'drum_cymbal_closed',
+  'drum_cymbal_hard',
+  'drum_cymbal_open',
+  'drum_cymbal_pedal',
+  'drum_cymbal_soft',
+  'drum_heavy_kick',
+  'drum_roll',
+  'drum_snare_hard',
+  'drum_snare_soft',
+  'drum_splash_hard',
+  'drum_splash_soft',
+  'drum_tom_hi_hard',
+  'drum_tom_hi_soft',
+  'drum_tom_lo_hard',
+  'drum_tom_lo_soft',
+  'drum_tom_mid_hard',
+  'drum_tom_mid_soft',
+  'elec_beep',
+  'elec_bell',
+  'elec_blip',
+  'elec_blip2',
+  'elec_blup',
+  'elec_bong',
+  'elec_chime',
+  'elec_cymbal',
+  'elec_filt_snare',
+  'elec_flip',
+  'elec_fuzz_tom',
+  'elec_hi_snare',
+  'elec_hollow_kick',
+  'elec_lo_snare',
+  'elec_mid_snare',
+  'elec_ping',
+  'elec_plip',
+  'elec_pop',
+  'elec_snare',
+  'elec_soft_kick',
+  'elec_tick',
+  'elec_triangle',
+  'elec_twang',
+  'elec_twip',
+  'elec_wood',
+  'glitch_bass_g',
+  'glitch_perc1',
+  'glitch_perc2',
+  'glitch_perc3',
+  'glitch_perc4',
+  'glitch_perc5',
+  'glitch_robot1',
+  'glitch_robot2',
+  'guit_e_fifths',
+  'guit_e_slide',
+  'guit_em9',
+  'guit_harmonics',
+  'hat_bdu',
+  'hat_cab',
+  'hat_cats',
+  'hat_gem',
+  'hat_gnu',
+  'hat_gump',
+  'hat_hier',
+  'hat_len',
+  'hat_mess',
+  'hat_metal',
+  'hat_noiz',
+  'hat_psych',
+  'hat_raw',
+  'hat_sci',
+  'hat_snap',
+  'hat_star',
+  'hat_tap',
+  'hat_yosh',
+  'hat_zan',
+  'hat_zap',
+  'hat_zild',
+  'loop_3d_printer',
+  'loop_amen',
+  'loop_amen_full',
+  'loop_breakbeat',
+  'loop_compus',
+  'loop_drone_g_97',
+  'loop_electric',
+  'loop_garzul',
+  'loop_industrial',
+  'loop_mehackit1',
+  'loop_mehackit2',
+  'loop_mika',
+  'loop_perc1',
+  'loop_perc2',
+  'loop_safari',
+  'loop_tabla',
+  'loop_weirdo',
+  'mehackit_phone1',
+  'mehackit_phone2',
+  'mehackit_phone3',
+  'mehackit_phone4',
+  'mehackit_robot1',
+  'mehackit_robot2',
+  'mehackit_robot3',
+  'mehackit_robot4',
+  'mehackit_robot5',
+  'mehackit_robot6',
+  'mehackit_robot7',
+  'misc_burp',
+  'misc_cineboom',
+  'misc_crow',
+  'perc_bell',
+  'perc_bell2',
+  'perc_door',
+  'perc_impact1',
+  'perc_impact2',
+  'perc_snap',
+  'perc_snap2',
+  'perc_swash',
+  'perc_swoosh',
+  'perc_till',
+  'ride_tri',
+  'ride_via',
+  'sn_dolf',
+  'sn_dub',
+  'sn_generic',
+  'sn_zome',
+  'tabla_dhec',
+  'tabla_ghe1',
+  'tabla_ghe2',
+  'tabla_ghe3',
+  'tabla_ghe4',
+  'tabla_ghe5',
+  'tabla_ghe6',
+  'tabla_ghe7',
+  'tabla_ghe8',
+  'tabla_ke1',
+  'tabla_ke2',
+  'tabla_ke3',
+  'tabla_na',
+  'tabla_na_o',
+  'tabla_na_s',
+  'tabla_re',
+  'tabla_tas1',
+  'tabla_tas2',
+  'tabla_tas3',
+  'tabla_te1',
+  'tabla_te2',
+  'tabla_te_m',
+  'tabla_te_ne',
+  'tabla_tun1',
+  'tabla_tun2',
+  'tabla_tun3',
+  'tbd_fxbed_loop',
+  'tbd_highkey_c4',
+  'tbd_pad_1',
+  'tbd_pad_2',
+  'tbd_pad_3',
+  'tbd_pad_4',
+  'tbd_perc_blip',
+  'tbd_perc_hat',
+  'tbd_perc_tap_1',
+  'tbd_perc_tap_2',
+  'tbd_voctone',
+  'vinyl_backspin',
+  'vinyl_hiss',
+  'vinyl_rewind',
+  'vinyl_scratch'
+] as const;
+
+/** Derive a category prefix from a sample name, e.g. "ambi_choir" → "ambi" */
+function categoryFromName(name: string): string {
+  const under = name.indexOf('_');
+  return under > 0 ? name.slice(0, under) : name;
+}
+
+export class SupersonicSamplesProvider implements SampleProvider {
+  readonly id = 'supersonic-samples';
+  readonly name = 'SuperSonic Samples';
+
+  private loaded = false;
+  private samples: SampleResult[] = [];
+
+  isLoaded(): boolean {
+    return this.loaded;
+  }
+
+  async loadIndex(): Promise<void> {
+    const categoryCounters = new Map<string, number>();
+    this.samples = SAMPLE_NAMES.map((name) => {
+      const category = categoryFromName(name);
+      const index = categoryCounters.get(category) ?? 0;
+      categoryCounters.set(category, index + 1);
+      return {
+        id: `${this.id}:${name}`,
+        name,
+        // Samples are .flac files on the CDN
+        url: `${CDN_BASE}${name}.flac`,
+        format: 'flac',
+        provider: this.id,
+        category,
+        index,
+        kind: 'sc-sample' as const
+      };
+    });
+    this.loaded = true;
+  }
+
+  search(query: string): SampleResult[] {
+    if (!query.trim()) return [];
+
+    const q = query.toLowerCase();
+    const exact: SampleResult[] = [];
+    const starts: SampleResult[] = [];
+    const contains: SampleResult[] = [];
+
+    for (const s of this.samples) {
+      const name = s.name.toLowerCase();
+      const cat = (s.category ?? '').toLowerCase();
+
+      if (name === q) {
+        exact.push(s);
+      } else if (name.startsWith(q) || cat.startsWith(q)) {
+        starts.push(s);
+      } else if (name.includes(q) || cat.includes(q)) {
+        contains.push(s);
+      }
+    }
+
+    return [...exact, ...starts, ...contains];
+  }
+}

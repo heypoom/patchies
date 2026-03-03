@@ -5,7 +5,7 @@ export interface SampleResult {
   /** Display name, e.g. "Bassdrum.wav" */
   name: string;
 
-  /** Direct URL to the audio file */
+  /** Direct URL to the audio file (for samples), or synthdef name (for synthdefs) */
   url: string;
 
   /** Duration in seconds, if known */
@@ -22,6 +22,14 @@ export interface SampleResult {
 
   /** Zero-based index within the category, for Strudel s("category:index") notation */
   index?: number;
+
+  /**
+   * Result kind — determines UI behaviour.
+   * 'sample'  → playable audio, drag creates soundfile~ node (default)
+   * 'synthdef' → SuperCollider synthdef, no audio preview, drag creates sonic~ node
+   * 'sc-sample' → SuperCollider sample (playable via CDN URL), drag creates sonic~ node
+   */
+  kind?: 'sample' | 'synthdef' | 'sc-sample';
 }
 
 export interface SampleProvider {

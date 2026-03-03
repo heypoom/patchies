@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Mic, Play, Square, Upload, Volume2 } from '@lucide/svelte/icons';
+  import { Mic, Play, Square, Table, Upload, Volume2 } from '@lucide/svelte/icons';
+  import { BufferBridgeService } from '$lib/audio/buffer-bridge';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -14,6 +15,7 @@
   import { getObjectType } from '$lib/objects/get-type';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import * as ContextMenu from '$lib/components/ui/context-menu';
+  import * as Dialog from '$lib/components/ui/dialog';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
 
@@ -33,6 +35,10 @@
   let audioService = AudioService.getInstance();
   let messageSystem = MessageSystem.getInstance();
   let v2Node: SoundfileNodeV2 | null = null;
+
+  // Table name dialog state
+  let showTableNameDialog = $state(false);
+  let tableNameInput = $state('');
 
   // Use VFS media composable for file handling
   const vfsMedia = useVfsMedia({
@@ -161,6 +167,76 @@
 
     return 'border-dashed border-zinc-600 bg-zinc-900';
   });
+
+  /**
+   * Open the table name dialog with an auto-derived name pre-filled.
+   */
+  function openConvertToTableDialog() {
+    if (!vfsMedia.hasVfsPath || !node.data.vfsPath) return;
+    const rawName = node.data.fileName ?? node.id;
+    tableNameInput =
+      rawName
+        .replace(/\.[^.]+$/, '') // strip extension
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .slice(0, 32) || node.id;
+    showTableNameDialog = true;
+  }
+
+  /**
+   * Convert this soundfile~ node to a table object, loading the audio as a Float32Array.
+   * The table will contain a mono mix of the audio at its native sample rate.
+   */
+  async function convertToTable() {
+    if (!vfsMedia.hasVfsPath || !node.data.vfsPath) return;
+
+    showTableNameDialog = false;
+
+    const bufferName = tableNameInput.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32) || node.id;
+
+    const eventBus = PatchiesEventBus.getInstance();
+
+    try {
+      const { VirtualFilesystem } = await import('$lib/vfs');
+      const vfs = VirtualFilesystem.getInstance();
+      const fileOrBlob = await vfs.resolve(node.data.vfsPath);
+
+      const buffer = await fileOrBlob.arrayBuffer();
+      const audioBuffer = await audioService.getAudioContext().decodeAudioData(buffer);
+
+      // Build a mono mix as Float32Array
+      const length = audioBuffer.length;
+      const channelCount = audioBuffer.numberOfChannels;
+      const samples = new Float32Array(length);
+      for (let ch = 0; ch < channelCount; ch++) {
+        const channelData = audioBuffer.getChannelData(ch);
+        for (let i = 0; i < length; i++) {
+          samples[i] += channelData[i];
+        }
+      }
+      if (channelCount > 1) {
+        for (let i = 0; i < length; i++) samples[i] /= channelCount;
+      }
+
+      const expr = `table ${bufferName} ${length}`;
+
+      eventBus.dispatch({
+        type: 'nodeReplace',
+        nodeId: node.id,
+        newType: 'object',
+        newData: {
+          expr,
+          name: 'table',
+          params: [bufferName, length]
+        }
+      });
+
+      // Write PCM data; BufferBridgeService.writeBuffer handles buffer creation if needed
+      const bridge = BufferBridgeService.getInstance();
+      bridge.writeBuffer(bufferName, samples);
+    } catch (err) {
+      logger.error('Failed to decode audio for table conversion:', err);
+    }
+  }
 
   /**
    * Convert this soundfile~ node to a sampler~ node, preserving the audio file.
@@ -315,6 +391,10 @@
         <Mic class="mr-2 h-4 w-4" />
         Convert to Sampler
       </ContextMenu.Item>
+      <ContextMenu.Item onclick={openConvertToTableDialog}>
+        <Table class="mr-2 h-4 w-4" />
+        Convert to Table
+      </ContextMenu.Item>
     {/if}
   </ContextMenu.Content>
 </ContextMenu.Root>
@@ -327,3 +407,44 @@
   onchange={vfsMedia.handleFileSelect}
   class="hidden"
 />
+
+<!-- Table name dialog -->
+<Dialog.Root bind:open={showTableNameDialog}>
+  <Dialog.Content class="sm:max-w-sm">
+    <Dialog.Header>
+      <Dialog.Title>Convert to Table</Dialog.Title>
+      <Dialog.Description>
+        Name the buffer. Use this name with <code class="font-mono text-zinc-300">tabread~</code>,
+        <code class="font-mono text-zinc-300">tabwrite~</code>, or
+        <code class="font-mono text-zinc-300">tabosc4~</code>.
+      </Dialog.Description>
+    </Dialog.Header>
+    <div class="py-2">
+      <input
+        class="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-200 outline-none focus:border-zinc-500"
+        placeholder="table name"
+        bind:value={tableNameInput}
+        onkeydown={(e) => {
+          if (e.key === 'Enter') convertToTable();
+          if (e.key === 'Escape') showTableNameDialog = false;
+        }}
+        autofocus
+      />
+    </div>
+    <Dialog.Footer class="flex gap-2">
+      <button
+        onclick={() => (showTableNameDialog = false)}
+        class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
+      >
+        Cancel
+      </button>
+      <button
+        onclick={convertToTable}
+        disabled={!tableNameInput.trim()}
+        class="flex-1 cursor-pointer rounded bg-zinc-600 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Convert
+      </button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
