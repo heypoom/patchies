@@ -46,7 +46,7 @@ const STRUDEL_PROVIDERS = [
   })
 ];
 
-const MAX_RESULTS = 100;
+const MAX_RESULTS = 500;
 
 const ALL_PROVIDERS = [
   new TidalDrumMachinesProvider(),

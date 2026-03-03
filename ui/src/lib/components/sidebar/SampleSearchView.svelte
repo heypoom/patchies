@@ -7,22 +7,36 @@
   import type { SampleResult } from '$lib/sample-search/types';
 
   const GROUP_INITIAL = 5;
+  const ROW_H = 28; // px — all row types use the same height for simplicity
+  const OVERSCAN = 4; // extra rows above/below viewport
+
+  // ── row model ────────────────────────────────────────────────────────────────
+
+  type HeaderRow = { type: 'header'; category: string; provider: string };
+  type SampleRow = { type: 'sample'; result: SampleResult };
+  type MoreRow = { type: 'more'; category: string; hidden: number; total: number };
+  type Row = HeaderRow | SampleRow | MoreRow;
 
   let searchQuery = $state('');
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  // Start loading indexes as soon as this component mounts
-  onMount(() => {
-    sampleSearchStore.loadIndexes();
-  });
+  let scrollTop = $state(0);
+  let viewportHeight = $state(400);
+  let scrollEl = $state<HTMLElement | null>(null);
 
   // Per-category expanded state: category key -> number of items shown
   let expandedGroups = $state(new Map<string, number>());
 
-  // Reset expanded groups when query changes
+  // Reset expanded groups and scroll to top when query changes
   $effect(() => {
     searchQuery; // track
     expandedGroups = new Map();
+    scrollTop = 0;
+    scrollEl?.scrollTo({ top: 0 });
+  });
+
+  // Start loading indexes as soon as this component mounts
+  onMount(() => {
+    sampleSearchStore.loadIndexes();
   });
 
   // Debounced search — fires 300ms after user stops typing
@@ -37,24 +51,62 @@
     };
   });
 
-  // Group results by category, preserving insertion order
-  const groupedResults = $derived.by(() => {
+  // Flat row list derived from results + expandedGroups
+  const rows = $derived.by<Row[]>(() => {
+    const out: Row[] = [];
     const groups = new Map<string, SampleResult[]>();
-    for (const result of sampleSearchStore.results) {
-      const key = result.category ?? '';
-      const group = groups.get(key);
-      if (group) {
-        group.push(result);
-      } else {
-        groups.set(key, [result]);
-      }
+    for (const r of sampleSearchStore.results) {
+      const key = r.category ?? '';
+      const g = groups.get(key);
+      if (g) g.push(r);
+      else groups.set(key, [r]);
     }
-    return groups;
+    for (const [category, samples] of groups) {
+      if (category) {
+        out.push({ type: 'header', category, provider: samples[0].provider });
+      }
+      const limit = expandedGroups.get(category) ?? GROUP_INITIAL;
+      const visible = samples.slice(0, limit);
+      for (const s of visible) out.push({ type: 'sample', result: s });
+      const hidden = samples.length - visible.length;
+      if (hidden > 0) out.push({ type: 'more', category, hidden, total: samples.length });
+    }
+    return out;
   });
 
-  function visibleSamples(category: string, samples: SampleResult[]): SampleResult[] {
-    const limit = expandedGroups.get(category) ?? GROUP_INITIAL;
-    return samples.slice(0, limit);
+  // Virtual window
+  const totalH = $derived(rows.length * ROW_H);
+  const startIdx = $derived(Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN));
+  const endIdx = $derived(
+    Math.min(rows.length, Math.ceil((scrollTop + viewportHeight) / ROW_H) + OVERSCAN)
+  );
+  const visibleRows = $derived(rows.slice(startIdx, endIdx));
+  const paddingTop = $derived(startIdx * ROW_H);
+  const paddingBottom = $derived(Math.max(0, (rows.length - endIdx) * ROW_H));
+
+  // Sticky header: last header row that is above or at the current scroll position
+  const stickyHeader = $derived.by<HeaderRow | null>(() => {
+    if (!rows.length) return null;
+    const firstVisibleRow = Math.floor(scrollTop / ROW_H);
+    let last: HeaderRow | null = null;
+    for (let i = 0; i <= Math.min(firstVisibleRow, rows.length - 1); i++) {
+      if (rows[i].type === 'header') last = rows[i] as HeaderRow;
+    }
+    return last;
+  });
+
+  function onScroll(e: Event) {
+    const el = e.currentTarget as HTMLElement;
+    scrollTop = el.scrollTop;
+  }
+
+  function onResize(el: HTMLElement) {
+    const ro = new ResizeObserver(() => {
+      viewportHeight = el.clientHeight;
+    });
+    ro.observe(el);
+    viewportHeight = el.clientHeight;
+    return { destroy: () => ro.disconnect() };
   }
 
   function showMore(category: string, total: number) {
@@ -72,12 +124,9 @@
     const payload = JSON.stringify({ url: result.url, name: result.name });
     event.dataTransfer?.setData('application/x-sample-url', payload);
     event.dataTransfer?.setData('text/plain', result.name);
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'copy';
-    }
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';
   }
 
-  /** Short badge label from provider id */
   function providerBadge(provider: string): string {
     if (provider === 'tidal-drum-machines') return 'TDM';
     if (provider === 'dough-samples') return 'DS';
@@ -92,7 +141,6 @@
     return provider.slice(0, 3).toUpperCase();
   }
 
-  /** Full provider name for tooltip */
   function providerLabel(provider: string): string {
     if (provider === 'tidal-drum-machines') return 'Tidal Drum Machines (geikha)';
     if (provider === 'dough-samples')
@@ -113,7 +161,6 @@
     return provider;
   }
 
-  /** Badge color per provider */
   function providerColor(provider: string): string {
     if (provider === 'tidal-drum-machines') return 'text-cyan-400 bg-cyan-900/30';
     if (provider === 'dough-samples') return 'text-purple-400 bg-purple-900/30';
@@ -153,7 +200,7 @@
   {/if}
 
   <!-- Results list -->
-  <div class="flex-1 overflow-y-auto">
+  <div class="relative flex-1 overflow-hidden">
     {#if sampleSearchStore.isLoading}
       <div class="px-4 py-8 text-center text-xs text-zinc-500">Loading...</div>
     {:else if sampleSearchStore.error}
@@ -165,83 +212,104 @@
         <Music class="h-6 w-6 opacity-40" />
         <span>Type to search samples</span>
       </div>
-    {:else if sampleSearchStore.results.length === 0}
+    {:else if rows.length === 0}
       <div class="px-4 py-8 text-center text-xs text-zinc-500">
         No samples matching "{searchQuery}"
       </div>
     {:else}
-      {#each groupedResults as [category, samples]}
-        {@const visible = visibleSamples(category, samples)}
-        {@const hidden = samples.length - visible.length}
-
-        <!-- Sticky category header -->
-        {#if category}
-          <div
-            class="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-900/95 px-2 py-0.5 backdrop-blur-sm"
+      <!-- Sticky header overlay — always rendered on top when scrolled past a header -->
+      {#if stickyHeader && scrollTop > 0}
+        <div
+          class="absolute top-0 right-0 left-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-900/95 px-2 backdrop-blur-sm"
+          style="height: {ROW_H}px"
+        >
+          <span class="font-mono text-[10px] font-medium text-zinc-500"
+            >{stickyHeader.category}</span
           >
-            <span class="font-mono text-[10px] font-medium text-zinc-500">{category}</span>
-            <span
-              class="shrink-0 cursor-help rounded px-1 py-0.5 font-mono text-[9px] font-medium {providerColor(
-                samples[0].provider
-              )}"
-              title={providerLabel(samples[0].provider)}
-            >
-              {providerBadge(samples[0].provider)}
-            </span>
-          </div>
-        {/if}
-
-        {#each visible as result (result.id)}
-          {@const isPlaying = sampleSearchStore.playingId === result.id}
-
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="group flex w-full cursor-pointer items-center gap-1.5 py-1 pr-1 pl-4 text-xs hover:bg-zinc-800"
-            draggable="true"
-            ondragstart={(e) => handleDragStart(e, result)}
+          <span
+            class="shrink-0 cursor-help rounded px-1 py-0.5 font-mono text-[9px] font-medium {providerColor(
+              stickyHeader.provider
+            )}"
+            title={providerLabel(stickyHeader.provider)}
           >
-            <!-- Play/stop button -->
-            <button
-              class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
-                ? 'text-blue-400 hover:text-blue-300'
-                : ''}"
-              title={isPlaying ? 'Stop preview' : 'Preview'}
-              onclick={() => sampleSearchStore.togglePreview(result)}
-            >
-              {#if isPlaying}
-                <Square class="h-3 w-3" />
-              {:else}
-                <Play class="h-3 w-3" />
-              {/if}
-            </button>
+            {providerBadge(stickyHeader.provider)}
+          </span>
+        </div>
+      {/if}
 
-            <!-- Sample name -->
-            <span class="flex-1 truncate font-mono text-zinc-300" title={result.name}>
-              {result.name}
-            </span>
-          </div>
-        {/each}
+      <!-- Scrollable virtual list -->
+      <div class="h-full overflow-y-auto" onscroll={onScroll} bind:this={scrollEl} use:onResize>
+        <!-- Total height spacer -->
+        <div style="height: {totalH}px; position: relative;">
+          <!-- Top padding -->
+          <div style="height: {paddingTop}px"></div>
 
-        <!-- "X more" expand row -->
-        {#if hidden > 0}
-          <div class="flex items-center gap-2 py-0.5 pr-2 pl-4">
-            <button
-              class="cursor-pointer font-mono text-[10px] text-zinc-500 hover:text-zinc-300"
-              onclick={() => showMore(category, samples.length)}
-            >
-              +{hidden > 20 ? 20 : hidden} more
-            </button>
-            {#if hidden > 20}
-              <button
-                class="cursor-pointer font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
-                onclick={() => showAll(category, samples.length)}
+          {#each visibleRows as row (row.type === 'sample' ? row.result.id : row.type === 'header' ? `h:${row.category}` : `m:${row.category}`)}
+            {#if row.type === 'header'}
+              <div
+                class="flex items-center justify-between border-b border-zinc-800 px-2"
+                style="height: {ROW_H}px"
               >
-                show all {samples.length}
-              </button>
+                <span class="font-mono text-[10px] font-medium text-zinc-500">{row.category}</span>
+                <span
+                  class="shrink-0 cursor-help rounded px-1 py-0.5 font-mono text-[9px] font-medium {providerColor(
+                    row.provider
+                  )}"
+                  title={providerLabel(row.provider)}
+                >
+                  {providerBadge(row.provider)}
+                </span>
+              </div>
+            {:else if row.type === 'sample'}
+              {@const isPlaying = sampleSearchStore.playingId === row.result.id}
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div
+                class="group flex w-full cursor-pointer items-center gap-1.5 pr-1 pl-4 text-xs hover:bg-zinc-800"
+                style="height: {ROW_H}px"
+                draggable="true"
+                ondragstart={(e) => handleDragStart(e, row.result)}
+              >
+                <button
+                  class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
+                    ? 'text-blue-400 hover:text-blue-300'
+                    : ''}"
+                  title={isPlaying ? 'Stop preview' : 'Preview'}
+                  onclick={() => sampleSearchStore.togglePreview(row.result)}
+                >
+                  {#if isPlaying}
+                    <Square class="h-3 w-3" />
+                  {:else}
+                    <Play class="h-3 w-3" />
+                  {/if}
+                </button>
+                <span class="flex-1 truncate font-mono text-zinc-300" title={row.result.name}>
+                  {row.result.name}
+                </span>
+              </div>
+            {:else if row.type === 'more'}
+              <div class="flex items-center gap-2 pr-2 pl-4" style="height: {ROW_H}px">
+                <button
+                  class="cursor-pointer font-mono text-[10px] text-zinc-500 hover:text-zinc-300"
+                  onclick={() => showMore(row.category, row.total)}
+                >
+                  +{row.hidden > 20 ? 20 : row.hidden} more
+                </button>
+                {#if row.hidden > 20}
+                  <button
+                    class="cursor-pointer font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
+                    onclick={() => showAll(row.category, row.total)}
+                  >
+                    show all {row.total}
+                  </button>
+                {/if}
+              </div>
             {/if}
-          </div>
-        {/if}
-      {/each}
+          {/each}
+
+          <!-- Bottom padding -->
+          <div style="height: {paddingBottom}px"></div>
+        </div>
+      </div>
     {/if}
   </div>
 
