@@ -67,7 +67,13 @@ class SampleSearchStore {
   /** Set of enabled provider ids — all enabled by default */
   enabledProviders = $state<Set<string>>(new Set(ALL_PROVIDERS.map((p) => p.id)));
 
+  /** Number of providers that have successfully loaded their index */
+  loadedCount = $state(0);
+  /** Whether index loading has started */
+  isIndexLoading = $state(false);
+
   private indexesLoaded = false;
+  private indexLoadingPromise: Promise<void> | null = null;
   private currentAudio: HTMLAudioElement | null = null;
 
   toggleProvider(id: string): void {
@@ -84,6 +90,52 @@ class SampleSearchStore {
     if (this.query.trim()) this.search(this.query);
   }
 
+  /** Eagerly load all provider indexes. Safe to call multiple times — only runs once. */
+  loadIndexes(): Promise<void> {
+    if (this.indexesLoaded) return Promise.resolve();
+    if (this.indexLoadingPromise) return this.indexLoadingPromise;
+
+    this.isIndexLoading = true;
+    this.loadedCount = 0;
+
+    this.indexLoadingPromise = (async () => {
+      let successCount = 0;
+      const failures: string[] = [];
+
+      for (const p of this.providers) {
+        if (p.isLoaded()) {
+          successCount++;
+          this.loadedCount++;
+          continue;
+        }
+        try {
+          await p.loadIndex();
+          successCount++;
+        } catch (e) {
+          failures.push(p.name);
+          console.warn(`[sample-search] Failed to load ${p.name}:`, e);
+        }
+        this.loadedCount++;
+      }
+
+      if (successCount === 0) {
+        this.error = 'Could not load sample indexes. Check your connection.';
+      } else {
+        this.indexesLoaded = true;
+      }
+
+      this.isIndexLoading = false;
+
+      if (failures.length > 0) {
+        console.warn(
+          `[sample-search] ${failures.length} provider(s) failed to load: ${failures.join(', ')}`
+        );
+      }
+    })();
+
+    return this.indexLoadingPromise;
+  }
+
   async search(query: string): Promise<void> {
     this.query = query;
     const currentQuery = query;
@@ -98,43 +150,18 @@ class SampleSearchStore {
     this.isLoading = true;
     this.error = null;
 
-    // Lazily load indexes on first search — per-provider, non-blocking
+    // Ensure indexes are loaded (reuses in-flight promise if already loading)
     if (!this.indexesLoaded) {
-      let successCount = 0;
-      const failures: string[] = [];
-
-      for (const p of this.providers) {
-        if (p.isLoaded()) {
-          successCount++;
-          continue;
-        }
-        try {
-          await p.loadIndex();
-          successCount++;
-        } catch (e) {
-          failures.push(p.name);
-          console.warn(`[sample-search] Failed to load ${p.name}:`, e);
-        }
-      }
-
-      if (this.query !== currentQuery) return;
-
-      if (successCount === 0) {
-        this.error = 'Could not load sample indexes. Check your connection.';
-        this.isLoading = false;
-        return;
-      }
-
-      this.indexesLoaded = true;
-
-      if (failures.length > 0) {
-        console.warn(
-          `[sample-search] ${failures.length} provider(s) failed to load: ${failures.join(', ')}`
-        );
-      }
+      await this.loadIndexes();
     }
 
     if (this.query !== currentQuery) return;
+
+    if (!this.indexesLoaded) {
+      // loadIndexes set an error already
+      this.isLoading = false;
+      return;
+    }
 
     // Run all enabled provider searches in parallel
     const enabledProviders = this.providers.filter((p) => this.enabledProviders.has(p.id));

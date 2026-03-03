@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { Play, Square, Music, SlidersHorizontal } from '@lucide/svelte/icons';
   import SearchBar from './SearchBar.svelte';
   import * as Popover from '$lib/components/ui/popover/index.js';
@@ -10,6 +11,11 @@
 
   let searchQuery = $state('');
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Start loading indexes as soon as this component mounts
+  onMount(() => {
+    sampleSearchStore.loadIndexes();
+  });
 
   // Per-category expanded state: category key -> number of items shown
   let expandedGroups = $state(new Map<string, number>());
@@ -127,6 +133,25 @@
 <div class="flex h-full flex-col">
   <!-- Search input -->
   <SearchBar bind:value={searchQuery} placeholder="Search samples..." />
+
+  <!-- Index loading progress bar -->
+  {#if sampleSearchStore.isIndexLoading}
+    {@const total = sampleSearchStore.providers.length}
+    {@const loaded = sampleSearchStore.loadedCount}
+    {@const pct = total > 0 ? (loaded / total) * 100 : 0}
+    <div class="border-b border-zinc-800 px-3 py-1.5">
+      <div class="mb-1 flex items-center justify-between">
+        <span class="font-mono text-[9px] text-zinc-600">Loading indexes</span>
+        <span class="font-mono text-[9px] text-zinc-500">{loaded}/{total}</span>
+      </div>
+      <div class="h-0.5 w-full overflow-hidden rounded-full bg-zinc-800">
+        <div
+          class="h-full rounded-full bg-zinc-500 transition-all duration-300"
+          style="width: {pct}%"
+        ></div>
+      </div>
+    </div>
+  {/if}
 
   <!-- Results list -->
   <div class="flex-1 overflow-y-auto">
