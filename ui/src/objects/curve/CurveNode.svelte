@@ -20,13 +20,11 @@
     CURVE_MIN_WIDTH as MIN_WIDTH,
     CURVE_MIN_HEIGHT as MIN_HEIGHT,
     CURVE_POINT_RADIUS as POINT_RADIUS,
-    CURVE_HIT_RADIUS as HIT_RADIUS,
-    CURVE_DELETE_RADIUS as DELETE_RADIUS,
-    CURVE_DELETE_DX as DELETE_DX,
-    CURVE_DELETE_DY as DELETE_DY
+    CURVE_HIT_RADIUS as HIT_RADIUS
   } from './constants';
   import { toSvg, fromSvg, buildPath, evaluate, getHoveredIdx } from './utils';
   import CurveSettings from './CurveSettings.svelte';
+  import CurveNodeDeleteButton from './CurveNodeDeleteButton.svelte';
 
   let node: {
     id: string;
@@ -462,47 +460,7 @@
 
               <!-- Delete button (non-endpoints, on hover, not locked) -->
               {#if isHovered && !isEndpoint && !isLocked}
-                {@const bx = sx + DELETE_DX}
-                {@const by = sy + DELETE_DY}
-                {@const s = DELETE_RADIUS * 0.3}
-
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <circle
-                  cx={bx}
-                  cy={by}
-                  r={DELETE_RADIUS}
-                  fill="#18181b"
-                  stroke="#4ade80"
-                  stroke-width="1"
-                  class="cursor-pointer"
-                  pointer-events="all"
-                  onpointerdown={(e) => {
-                    e.stopPropagation();
-                    deletePoint(i);
-                  }}
-                />
-
-                <line
-                  x1={bx - s}
-                  y1={by - s}
-                  x2={bx + s}
-                  y2={by + s}
-                  stroke="#4ade80"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  pointer-events="none"
-                />
-
-                <line
-                  x1={bx + s}
-                  y1={by - s}
-                  x2={bx - s}
-                  y2={by + s}
-                  stroke="#4ade80"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  pointer-events="none"
-                />
+                <CurveNodeDeleteButton index={i} {sx} {sy} {deletePoint} />
               {/if}
 
               <!-- Coordinate label on hover -->
