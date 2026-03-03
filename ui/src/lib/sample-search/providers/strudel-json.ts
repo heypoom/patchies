@@ -55,7 +55,8 @@ export class StrudelJsonProvider implements SampleProvider {
           url: new URL(filename, base).toString(),
           format: ext,
           provider: this.id,
-          category: key
+          category: key,
+          index: i
         });
       }
     }

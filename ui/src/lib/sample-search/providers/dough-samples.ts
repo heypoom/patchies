@@ -63,7 +63,8 @@ export class DoughSamplesProvider implements SampleProvider {
             url: base + filename,
             format: ext,
             provider: this.id,
-            category: key
+            category: key,
+            index: i
           });
         }
       }

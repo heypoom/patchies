@@ -45,7 +45,8 @@ export class TidalDrumMachinesProvider implements SampleProvider {
           url: new URL(relativePath, base).toString(),
           format: ext,
           provider: this.id,
-          category: key
+          category: key,
+          index: i
         });
       }
     }

@@ -3,6 +3,8 @@
   import { Play, Square, Music, SlidersHorizontal } from '@lucide/svelte/icons';
   import SearchBar from './SearchBar.svelte';
   import * as Popover from '$lib/components/ui/popover/index.js';
+  import * as ContextMenu from '$lib/components/ui/context-menu';
+  import { toast } from 'svelte-sonner';
   import { sampleSearchStore } from '$lib/sample-search/sample-search-store.svelte';
   import type { SampleResult } from '$lib/sample-search/types';
 
@@ -191,6 +193,17 @@
   function providerColor(provider: string): string {
     return PROVIDER_META[provider]?.color ?? 'text-zinc-400 bg-zinc-800';
   }
+
+  function strudelName(result: SampleResult): string {
+    const cat = result.category ?? result.name;
+    const idx = result.index ?? 0;
+    return idx === 0 ? `s("${cat}")` : `s("${cat}:${idx}")`;
+  }
+
+  async function copyAsStrudelName(result: SampleResult) {
+    await navigator.clipboard.writeText(strudelName(result));
+    toast.success('Copied to clipboard');
+  }
 </script>
 
 <div class="flex h-full flex-col">
@@ -279,30 +292,39 @@
               </div>
             {:else if row.type === 'sample'}
               {@const isPlaying = sampleSearchStore.playingId === row.result.id}
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div
-                class="group flex w-full cursor-pointer items-center gap-1.5 pr-1 pl-4 text-xs hover:bg-zinc-800"
-                style="height: {ROW_H}px"
-                draggable="true"
-                ondragstart={(e) => handleDragStart(e, row.result)}
-              >
-                <button
-                  class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
-                    ? 'text-blue-400 hover:text-blue-300'
-                    : ''}"
-                  title={isPlaying ? 'Stop preview' : 'Preview'}
-                  onclick={() => sampleSearchStore.togglePreview(row.result)}
-                >
-                  {#if isPlaying}
-                    <Square class="h-3 w-3" />
-                  {:else}
-                    <Play class="h-3 w-3" />
-                  {/if}
-                </button>
-                <span class="flex-1 truncate font-mono text-zinc-300" title={row.result.name}>
-                  {row.result.name}
-                </span>
-              </div>
+              <ContextMenu.Root>
+                <ContextMenu.Trigger>
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <div
+                    class="group flex w-full cursor-pointer items-center gap-1.5 pr-1 pl-4 text-xs hover:bg-zinc-800"
+                    style="height: {ROW_H}px"
+                    draggable="true"
+                    ondragstart={(e) => handleDragStart(e, row.result)}
+                  >
+                    <button
+                      class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
+                        ? 'text-blue-400 hover:text-blue-300'
+                        : ''}"
+                      title={isPlaying ? 'Stop preview' : 'Preview'}
+                      onclick={() => sampleSearchStore.togglePreview(row.result)}
+                    >
+                      {#if isPlaying}
+                        <Square class="h-3 w-3" />
+                      {:else}
+                        <Play class="h-3 w-3" />
+                      {/if}
+                    </button>
+                    <span class="flex-1 truncate font-mono text-zinc-300" title={row.result.name}>
+                      {row.result.name}
+                    </span>
+                  </div>
+                </ContextMenu.Trigger>
+                <ContextMenu.Content>
+                  <ContextMenu.Item onclick={() => copyAsStrudelName(row.result)}>
+                    Copy as Strudel name
+                  </ContextMenu.Item>
+                </ContextMenu.Content>
+              </ContextMenu.Root>
             {:else if row.type === 'more'}
               <div class="flex items-center gap-2 pr-2 pl-4" style="height: {ROW_H}px">
                 <button
