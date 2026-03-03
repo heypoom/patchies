@@ -2,7 +2,7 @@ import type { SampleResult } from './types';
 import { TidalDrumMachinesProvider } from './providers/tidal-drum-machines';
 import { DoughSamplesProvider } from './providers/dough-samples';
 
-const MAX_RESULTS = 100;
+const MAX_RESULTS = 500;
 
 class SampleSearchStore {
   query = $state('');

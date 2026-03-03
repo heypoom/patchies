@@ -19,6 +19,21 @@
     };
   });
 
+  // Group results by category, preserving insertion order
+  const groupedResults = $derived.by(() => {
+    const groups = new Map<string, SampleResult[]>();
+    for (const result of sampleSearchStore.results) {
+      const key = result.category ?? '';
+      const group = groups.get(key);
+      if (group) {
+        group.push(result);
+      } else {
+        groups.set(key, [result]);
+      }
+    }
+    return groups;
+  });
+
   function handleDragStart(event: DragEvent, result: SampleResult) {
     const payload = JSON.stringify({ url: result.url, name: result.name });
     event.dataTransfer?.setData('application/x-sample-url', payload);
@@ -65,44 +80,53 @@
         No samples matching "{searchQuery}"
       </div>
     {:else}
-      {#each sampleSearchStore.results as result (result.id)}
-        {@const isPlaying = sampleSearchStore.playingId === result.id}
-
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="group flex w-full cursor-pointer items-center gap-1.5 py-1 pr-1 pl-2 text-xs hover:bg-zinc-800"
-          draggable="true"
-          ondragstart={(e) => handleDragStart(e, result)}
-        >
-          <!-- Play/stop button -->
-          <button
-            class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
-              ? 'text-blue-400 hover:text-blue-300'
-              : ''}"
-            onclick={() => sampleSearchStore.togglePreview(result)}
-            title={isPlaying ? 'Stop preview' : 'Preview'}
+      {#each groupedResults as [category, samples]}
+        <!-- Sticky category header -->
+        {#if category}
+          <div
+            class="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-900/95 px-2 py-0.5 backdrop-blur-sm"
           >
-            {#if isPlaying}
-              <Square class="h-3 w-3" />
-            {:else}
-              <Play class="h-3 w-3" />
-            {/if}
-          </button>
+            <span class="font-mono text-[10px] font-medium text-zinc-500">{category}</span>
+            <span
+              class="shrink-0 rounded px-1 py-0.5 font-mono text-[9px] font-medium {providerColor(
+                samples[0].provider
+              )}"
+            >
+              {providerBadge(samples[0].provider)}
+            </span>
+          </div>
+        {/if}
 
-          <!-- Sample name -->
-          <span class="flex-1 truncate font-mono text-zinc-300" title={result.name}>
-            {result.name}
-          </span>
+        {#each samples as result (result.id)}
+          {@const isPlaying = sampleSearchStore.playingId === result.id}
 
-          <!-- Source badge -->
-          <span
-            class="shrink-0 rounded px-1 py-0.5 font-mono text-[9px] font-medium {providerColor(
-              result.provider
-            )}"
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="group flex w-full cursor-pointer items-center gap-1.5 py-1 pr-1 pl-4 text-xs hover:bg-zinc-800"
+            draggable="true"
+            ondragstart={(e) => handleDragStart(e, result)}
           >
-            {providerBadge(result.provider)}
-          </span>
-        </div>
+            <!-- Play/stop button -->
+            <button
+              class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
+                ? 'text-blue-400 hover:text-blue-300'
+                : ''}"
+              onclick={() => sampleSearchStore.togglePreview(result)}
+              title={isPlaying ? 'Stop preview' : 'Preview'}
+            >
+              {#if isPlaying}
+                <Square class="h-3 w-3" />
+              {:else}
+                <Play class="h-3 w-3" />
+              {/if}
+            </button>
+
+            <!-- Sample name -->
+            <span class="flex-1 truncate font-mono text-zinc-300" title={result.name}>
+              {result.name}
+            </span>
+          </div>
+        {/each}
       {/each}
     {/if}
   </div>
