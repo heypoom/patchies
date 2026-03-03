@@ -8,7 +8,8 @@
     CircleQuestionMark,
     AppWindow,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Music
   } from '@lucide/svelte/icons';
 
   import FileTreeView from './FileTreeView.svelte';
@@ -17,6 +18,7 @@
   import SavesTreeView from './SavesTreeView.svelte';
   import HelpView from './HelpView.svelte';
   import AppPreviewView from './AppPreviewView.svelte';
+  import SampleSearchView from './SampleSearchView.svelte';
   import { usePreviewTab } from './usePreviewTab.svelte';
 
   import {
@@ -52,7 +54,8 @@
 
   // Expandable items (just Patch to App for now)
   const expandableItems = [
-    { id: 'preview' as SidebarView, icon: AppWindow, title: 'Patch to App' }
+    { id: 'samples', icon: Music, title: 'Samples' },
+    { id: 'preview', icon: AppWindow, title: 'Patch to App' }
   ];
 
   // Preview tab promotion logic
@@ -64,10 +67,23 @@
 
   // State for the expandable section
   let isExpanded = $state(false);
+  // Tracks whether 'samples' has been promoted to the top bar
+  let isSamplesPromoted = $state(false);
 
-  function handleExpandableItemClick() {
-    previewTab.handleExpandableItemClick();
+  function handleExpandableItemClick(id: SidebarView) {
+    if (id === 'preview') {
+      previewTab.handleExpandableItemClick();
+    } else {
+      if (id === 'samples') isSamplesPromoted = true;
+      view = id;
+    }
     isExpanded = false;
+  }
+
+  function handleBaseViewClick(id: SidebarView) {
+    previewTab.handleBaseViewClick(id);
+    // Demote samples when switching to a different base tab
+    if (id !== 'samples') isSamplesPromoted = false;
   }
 
   let isDragging = $state(false);
@@ -116,7 +132,7 @@
               class="cursor-pointer rounded p-1.5 transition-colors {view === v.id
                 ? 'bg-zinc-700 text-zinc-200'
                 : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-              onclick={() => previewTab.handleBaseViewClick(v.id)}
+              onclick={() => handleBaseViewClick(v.id)}
               title={v.title}
             >
               <v.icon class="h-4 w-4" />
@@ -133,6 +149,19 @@
               title={$hasAppPreview ? 'App Preview' : 'Patch to App'}
             >
               <AppWindow class="h-4 w-4" />
+            </button>
+          {/if}
+
+          <!-- Promoted samples button (when active) -->
+          {#if isSamplesPromoted}
+            <button
+              class="cursor-pointer rounded p-1.5 transition-colors {view === 'samples'
+                ? 'bg-zinc-700 text-zinc-200'
+                : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+              onclick={() => (view = 'samples')}
+              title="Samples"
+            >
+              <Music class="h-4 w-4" />
             </button>
           {/if}
 
@@ -163,10 +192,10 @@
       {#if isExpanded}
         <div class="flex items-center gap-1 border-t border-zinc-800 px-2 py-1.5">
           {#each expandableItems as item}
-            {#if !previewTab.isPromoted || item.id !== 'preview'}
+            {#if (!previewTab.isPromoted || item.id !== 'preview') && (!isSamplesPromoted || item.id !== 'samples')}
               <button
                 class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
-                onclick={handleExpandableItemClick}
+                onclick={() => handleExpandableItemClick(item.id as SidebarView)}
                 title={item.title}
               >
                 <item.icon class="h-3.5 w-3.5" />
@@ -174,7 +203,8 @@
               </button>
             {/if}
           {/each}
-          {#if previewTab.isPromoted && expandableItems.length === 1}
+
+          {#if previewTab.isPromoted && isSamplesPromoted}
             <span class="text-xs text-zinc-600 italic">No more items</span>
           {/if}
         </div>
@@ -193,6 +223,8 @@
         <SavesTreeView {onSavePatch} />
       {:else if view === 'help'}
         <HelpView />
+      {:else if view === 'samples'}
+        <SampleSearchView />
       {:else if view === 'preview'}
         <AppPreviewView {onRequestApiKey} {onOpenPatchToApp} />
       {/if}

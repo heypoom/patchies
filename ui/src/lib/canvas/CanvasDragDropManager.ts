@@ -53,6 +53,7 @@ export class CanvasDragDropManager {
     const memoryData = event.dataTransfer?.getData('application/asm-memory');
     const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
     const presetData = event.dataTransfer?.getData('application/x-preset');
+    const sampleData = event.dataTransfer?.getData('application/x-sample-url');
 
     // Check if the drop target is within a node (to avoid duplicate handling)
     const target = event.target as HTMLElement;
@@ -71,6 +72,12 @@ export class CanvasDragDropManager {
     // Handle preset drops - create node from preset
     if (presetData && !isDropOnNode) {
       this.handlePresetDrop(presetData, position);
+      return;
+    }
+
+    // Handle sample URL drops - create soundfile~ node with _initialUrl
+    if (sampleData && !isDropOnNode) {
+      this.handleSampleDrop(sampleData, position);
       return;
     }
 
@@ -119,8 +126,9 @@ export class CanvasDragDropManager {
     const hasSvelteFlowData = event.dataTransfer?.types.includes('application/svelteflow');
     const hasVfsData = event.dataTransfer?.types.includes('application/x-vfs-path');
     const hasPresetData = event.dataTransfer?.types.includes('application/x-preset');
+    const hasSampleData = event.dataTransfer?.types.includes('application/x-sample-url');
 
-    if (hasPresetData) {
+    if (hasPresetData || hasSampleData) {
       event.dataTransfer!.dropEffect = 'copy';
     } else if (hasVfsData) {
       event.dataTransfer!.dropEffect = 'copy';
@@ -147,6 +155,24 @@ export class CanvasDragDropManager {
       this.createNode(preset.type, position, preset.data);
     } catch (error) {
       logger.warn('Failed to parse preset drag data:', error);
+    }
+  }
+
+  /**
+   * Handle sample URL drops from the sample search sidebar
+   * Creates a soundfile~ node with _initialUrl set to the remote URL
+   */
+  private handleSampleDrop(sampleData: string, position: { x: number; y: number }): void {
+    try {
+      const { url, name } = JSON.parse(sampleData) as { url: string; name: string };
+
+      this.createNode('soundfile~', position, {
+        ...getDefaultNodeData('soundfile~'),
+        _initialUrl: url,
+        fileName: name
+      });
+    } catch (error) {
+      logger.warn('Failed to parse sample drag data:', error);
     }
   }
 
