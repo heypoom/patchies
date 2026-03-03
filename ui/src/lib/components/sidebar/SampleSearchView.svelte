@@ -127,52 +127,69 @@
     if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';
   }
 
+  const PROVIDER_META: Record<string, { badge: string; label: string; color: string }> = {
+    'tidal-drum-machines': {
+      badge: 'TDM',
+      label: 'Tidal Drum Machines (geikha)',
+      color: 'text-cyan-400 bg-cyan-900/30'
+    },
+    'dough-samples': {
+      badge: 'DS',
+      label: 'Dough Samples (felixroos) — piano, EmuSP12, mridangam, VCSL, Dirt-Samples',
+      color: 'text-purple-400 bg-purple-900/30'
+    },
+    spicule: {
+      badge: 'SPC',
+      label: 'Spicule (yaxu) — diverse drums, synths, foley, breaks',
+      color: 'text-emerald-400 bg-emerald-900/30'
+    },
+    'clean-breaks': {
+      badge: 'CLN',
+      label: 'Clean Breaks (yaxu) — classic breakbeat loops',
+      color: 'text-lime-400 bg-lime-900/30'
+    },
+    'estuary-samples': {
+      badge: 'EST',
+      label: 'Estuary Samples (felixroos) — world & acoustic instruments',
+      color: 'text-amber-400 bg-amber-900/30'
+    },
+    'dough-fox': {
+      badge: 'FOX',
+      label: 'Dough Fox (Bubobubobubobubo) — drum machine hits & percussion',
+      color: 'text-orange-400 bg-orange-900/30'
+    },
+    'dough-amen': {
+      badge: 'AMN',
+      label: 'Dough Amen (Bubobubobubobubo) — amen break loops',
+      color: 'text-red-400 bg-red-900/30'
+    },
+    'dough-amiga': {
+      badge: 'AMG',
+      label: 'Dough Amiga (Bubobubobubobubo) — Amiga/chiptune samples',
+      color: 'text-sky-400 bg-sky-900/30'
+    },
+    'dough-samples-bubo': {
+      badge: 'DBB',
+      label: 'Dough Samples (Bubobubobubobubo) — general purpose kit',
+      color: 'text-violet-400 bg-violet-900/30'
+    },
+    'emptyflash-samples': {
+      badge: 'EF',
+      label: 'Emptyflash Samples — Legowelt & ER-1 drum machines',
+      color: 'text-pink-400 bg-pink-900/30'
+    }
+  };
+
   function providerBadge(provider: string): string {
-    if (provider === 'tidal-drum-machines') return 'TDM';
-    if (provider === 'dough-samples') return 'DS';
-    if (provider === 'spicule') return 'SPC';
-    if (provider === 'clean-breaks') return 'CLN';
-    if (provider === 'estuary-samples') return 'EST';
-    if (provider === 'dough-fox') return 'FOX';
-    if (provider === 'dough-amen') return 'AMN';
-    if (provider === 'dough-amiga') return 'AMG';
-    if (provider === 'dough-samples-bubo') return 'DBB';
-    if (provider === 'emptyflash-samples') return 'EF';
-    return provider.slice(0, 3).toUpperCase();
+    return PROVIDER_META[provider]?.badge ?? provider.slice(0, 3).toUpperCase();
   }
 
   function providerLabel(provider: string): string {
-    if (provider === 'tidal-drum-machines') return 'Tidal Drum Machines (geikha)';
-    if (provider === 'dough-samples')
-      return 'Dough Samples (felixroos) — piano, EmuSP12, mridangam, VCSL, Dirt-Samples';
-    if (provider === 'spicule') return 'Spicule (yaxu) — diverse drums, synths, foley, breaks';
-    if (provider === 'clean-breaks') return 'Clean Breaks (yaxu) — classic breakbeat loops';
-    if (provider === 'estuary-samples')
-      return 'Estuary Samples (felixroos) — world & acoustic instruments';
-    if (provider === 'dough-fox')
-      return 'Dough Fox (Bubobubobubobubo) — drum machine hits & percussion';
-    if (provider === 'dough-amen') return 'Dough Amen (Bubobubobubobubo) — amen break loops';
-    if (provider === 'dough-amiga')
-      return 'Dough Amiga (Bubobubobubobubo) — Amiga/chiptune samples';
-    if (provider === 'dough-samples-bubo')
-      return 'Dough Samples (Bubobubobubobubo) — general purpose kit';
-    if (provider === 'emptyflash-samples')
-      return 'Emptyflash Samples — Legowelt & ER-1 drum machines';
-    return provider;
+    return PROVIDER_META[provider]?.label ?? provider;
   }
 
   function providerColor(provider: string): string {
-    if (provider === 'tidal-drum-machines') return 'text-cyan-400 bg-cyan-900/30';
-    if (provider === 'dough-samples') return 'text-purple-400 bg-purple-900/30';
-    if (provider === 'spicule') return 'text-emerald-400 bg-emerald-900/30';
-    if (provider === 'clean-breaks') return 'text-lime-400 bg-lime-900/30';
-    if (provider === 'estuary-samples') return 'text-amber-400 bg-amber-900/30';
-    if (provider === 'dough-fox') return 'text-orange-400 bg-orange-900/30';
-    if (provider === 'dough-amen') return 'text-red-400 bg-red-900/30';
-    if (provider === 'dough-amiga') return 'text-sky-400 bg-sky-900/30';
-    if (provider === 'dough-samples-bubo') return 'text-violet-400 bg-violet-900/30';
-    if (provider === 'emptyflash-samples') return 'text-pink-400 bg-pink-900/30';
-    return 'text-zinc-400 bg-zinc-800';
+    return PROVIDER_META[provider]?.color ?? 'text-zinc-400 bg-zinc-800';
   }
 </script>
 
