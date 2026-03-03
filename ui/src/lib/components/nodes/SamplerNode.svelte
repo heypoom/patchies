@@ -67,10 +67,21 @@
   /**
    * Called when VFS successfully loads a file.
    * Decodes audio and sets up the sampler.
+   * For URL-backed VFS entries, `sourceUrl` is provided and the file is fetched
+   * from the URL directly (the `file` arg is a metadata-only placeholder).
    */
-  async function handleFileLoaded(file: File) {
+  async function handleFileLoaded(file: File, sourceUrl?: string) {
     try {
-      const arrayBuffer = await file.arrayBuffer();
+      let arrayBuffer: ArrayBuffer;
+
+      if (sourceUrl) {
+        const response = await fetch(sourceUrl);
+        if (!response.ok) throw new Error(`Failed to fetch ${sourceUrl}: ${response.status}`);
+        arrayBuffer = await response.arrayBuffer();
+      } else {
+        arrayBuffer = await file.arrayBuffer();
+      }
+
       const decodedBuffer = await audioService.getAudioContext().decodeAudioData(arrayBuffer);
 
       // Set the audio buffer on the V2 node
@@ -510,15 +521,6 @@
               onclick={playRecording}
             >
               <Play class="h-4 w-4 text-zinc-300" />
-            </button>
-
-            <!-- Download Button -->
-            <button
-              title="Download as WAV"
-              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              onclick={() => downloadBuffer()}
-            >
-              <CloudDownload class="h-4 w-4 text-zinc-300" />
             </button>
           {/if}
 
