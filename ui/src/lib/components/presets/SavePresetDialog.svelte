@@ -40,10 +40,7 @@
   // Reset form when dialog opens with a new node
   $effect(() => {
     if (open && node) {
-      // Default name from node type or expression
-      const nodeData = node.data as Record<string, unknown>;
-      presetName =
-        (nodeData.expr as string) || (nodeData.name as string) || node.type || 'New Preset';
+      presetName = '';
       presetDescription = '';
       selectedLibraryId = 'user';
       selectedFolderPath = [];
