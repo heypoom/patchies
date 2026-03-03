@@ -42,7 +42,7 @@ export class TidalDrumMachinesProvider implements SampleProvider {
         results.push({
           id: `${this.id}:${key}:${i}`,
           name: filename,
-          url: base + relativePath,
+          url: new URL(relativePath, base).toString(),
           format: ext,
           provider: this.id,
           category: key

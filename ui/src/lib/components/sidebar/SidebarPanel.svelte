@@ -20,6 +20,7 @@
   import AppPreviewView from './AppPreviewView.svelte';
   import SampleSearchView from './SampleSearchView.svelte';
   import { usePreviewTab } from './usePreviewTab.svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   import {
     sidebarWidth,
@@ -68,7 +69,7 @@
   // State for the expandable section
   let isExpanded = $state(false);
   // Tracks whether 'samples' has been promoted to the top bar
-  let isSamplesPromoted = $state(false);
+  let isSamplesPromoted = $state(view === 'samples');
 
   function handleExpandableItemClick(id: SidebarView) {
     if (id === 'preview') {
@@ -141,42 +142,58 @@
 
           <!-- Promoted preview button (when active) -->
           {#if previewTab.isPromoted}
-            <button
-              class="cursor-pointer rounded p-1.5 transition-colors {view === 'preview'
-                ? 'bg-zinc-700 text-zinc-200'
-                : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-              onclick={previewTab.handlePromotedClick}
-              title={$hasAppPreview ? 'App Preview' : 'Patch to App'}
-            >
-              <AppWindow class="h-4 w-4" />
-            </button>
+            <Tooltip.Root delayDuration={300}>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1.5 transition-colors {view === 'preview'
+                    ? 'bg-zinc-700 text-zinc-200'
+                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+                  onclick={previewTab.handlePromotedClick}
+                >
+                  <AppWindow class="h-4 w-4" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">
+                {$hasAppPreview ? 'App Preview' : 'Patch to App'}
+              </Tooltip.Content>
+            </Tooltip.Root>
           {/if}
 
           <!-- Promoted samples button (when active) -->
           {#if isSamplesPromoted}
-            <button
-              class="cursor-pointer rounded p-1.5 transition-colors {view === 'samples'
-                ? 'bg-zinc-700 text-zinc-200'
-                : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-              onclick={() => (view = 'samples')}
-              title="Samples"
-            >
-              <Music class="h-4 w-4" />
-            </button>
+            <Tooltip.Root delayDuration={300}>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1.5 transition-colors {view === 'samples'
+                    ? 'bg-zinc-700 text-zinc-200'
+                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+                  onclick={() => (view = 'samples')}
+                >
+                  <Music class="h-4 w-4" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">Samples</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
 
           <!-- Expand/collapse chevron -->
-          <button
-            class="cursor-pointer rounded p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
-            onclick={() => (isExpanded = !isExpanded)}
-            title={isExpanded ? 'Collapse' : 'More options'}
-          >
-            {#if isExpanded}
-              <ChevronUp class="h-4 w-4" />
-            {:else}
-              <ChevronDown class="h-4 w-4" />
-            {/if}
-          </button>
+          <Tooltip.Root delayDuration={300}>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+                onclick={() => (isExpanded = !isExpanded)}
+              >
+                {#if isExpanded}
+                  <ChevronUp class="h-4 w-4" />
+                {:else}
+                  <ChevronDown class="h-4 w-4" />
+                {/if}
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content side="bottom">
+              {isExpanded ? 'Collapse' : 'More options'}
+            </Tooltip.Content>
+          </Tooltip.Root>
         </div>
 
         <button

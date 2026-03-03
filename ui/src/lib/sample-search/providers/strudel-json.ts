@@ -31,7 +31,11 @@ export class StrudelJsonProvider implements SampleProvider {
   }
 
   async loadIndex(): Promise<void> {
-    const data: StrudelIndex = await fetch(this.indexUrl).then((r) => r.json());
+    const response = await fetch(this.indexUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${this.id} index (${response.status}): ${this.indexUrl}`);
+    }
+    const data = (await response.json()) as StrudelIndex;
     const base: string = typeof data._base === 'string' ? data._base : '';
     const results: SampleResult[] = [];
 
@@ -48,7 +52,7 @@ export class StrudelJsonProvider implements SampleProvider {
         results.push({
           id: `${this.id}:${key}:${i}`,
           name: displayName,
-          url: base + filename,
+          url: new URL(filename, base).toString(),
           format: ext,
           provider: this.id,
           category: key

@@ -86,34 +86,63 @@ class SampleSearchStore {
 
   async search(query: string): Promise<void> {
     this.query = query;
+    const currentQuery = query;
 
     if (!query.trim()) {
       this.results = [];
+      this.isLoading = false;
+      this.error = null;
       return;
     }
 
     this.isLoading = true;
     this.error = null;
 
-    // Lazily load indexes on first search
+    // Lazily load indexes on first search — per-provider, non-blocking
     if (!this.indexesLoaded) {
-      try {
-        await Promise.all(this.providers.filter((p) => !p.isLoaded()).map((p) => p.loadIndex()));
-        this.indexesLoaded = true;
-      } catch (e) {
+      let successCount = 0;
+      const failures: string[] = [];
+
+      for (const p of this.providers) {
+        if (p.isLoaded()) {
+          successCount++;
+          continue;
+        }
+        try {
+          await p.loadIndex();
+          successCount++;
+        } catch (e) {
+          failures.push(p.name);
+          console.warn(`[sample-search] Failed to load ${p.name}:`, e);
+        }
+      }
+
+      if (this.query !== currentQuery) return;
+
+      if (successCount === 0) {
         this.error = 'Could not load sample indexes. Check your connection.';
         this.isLoading = false;
         return;
       }
+
+      this.indexesLoaded = true;
+
+      if (failures.length > 0) {
+        console.warn(
+          `[sample-search] ${failures.length} provider(s) failed to load: ${failures.join(', ')}`
+        );
+      }
     }
 
-    // Collect results from enabled providers only
-    const allResults: SampleResult[] = [];
-    for (const provider of this.providers) {
-      if (!this.enabledProviders.has(provider.id)) continue;
-      const providerResults = await provider.search(query);
-      allResults.push(...providerResults);
-    }
+    if (this.query !== currentQuery) return;
+
+    // Run all enabled provider searches in parallel
+    const enabledProviders = this.providers.filter((p) => this.enabledProviders.has(p.id));
+    const resultArrays = await Promise.all(enabledProviders.map((p) => p.search(query)));
+
+    if (this.query !== currentQuery) return;
+
+    const allResults = resultArrays.flat();
 
     // Cap total results
     this.results = allResults.slice(0, MAX_RESULTS);
@@ -139,16 +168,20 @@ class SampleSearchStore {
     this.playingId = result.id;
 
     audio.play().catch(() => {
-      // Silently ignore playback errors (CORS, missing file, etc.)
-      this.playingId = null;
-      this.currentAudio = null;
+      // Only clear state if this audio instance is still the active one
+      if (this.currentAudio === audio) {
+        this.playingId = null;
+        this.currentAudio = null;
+      }
     });
 
     audio.onended = () => {
-      if (this.playingId === result.id) {
+      if (this.playingId === result.id && this.currentAudio === audio) {
         this.playingId = null;
       }
-      this.currentAudio = null;
+      if (this.currentAudio === audio) {
+        this.currentAudio = null;
+      }
     };
   }
 

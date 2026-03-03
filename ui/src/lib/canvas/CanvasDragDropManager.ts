@@ -163,17 +163,44 @@ export class CanvasDragDropManager {
    * Creates a soundfile~ node with _initialUrl set to the remote URL
    */
   private handleSampleDrop(sampleData: string, position: { x: number; y: number }): void {
+    let parsed: unknown;
     try {
-      const { url, name } = JSON.parse(sampleData) as { url: string; name: string };
-
-      this.createNode('soundfile~', position, {
-        ...getDefaultNodeData('soundfile~'),
-        _initialUrl: url,
-        fileName: name
-      });
+      parsed = JSON.parse(sampleData);
     } catch (error) {
       logger.warn('Failed to parse sample drag data:', error);
+      return;
     }
+
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof (parsed as Record<string, unknown>).url !== 'string' ||
+      typeof (parsed as Record<string, unknown>).name !== 'string'
+    ) {
+      logger.warn('Invalid sample drag payload — missing url or name:', parsed);
+      return;
+    }
+
+    const { url, name } = parsed as { url: string; name: string };
+
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      logger.warn('Invalid sample URL in drag payload:', url);
+      return;
+    }
+
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      logger.warn('Rejected sample URL with disallowed protocol:', url);
+      return;
+    }
+
+    this.createNode('soundfile~', position, {
+      ...getDefaultNodeData('soundfile~'),
+      _initialUrl: url,
+      fileName: name
+    });
   }
 
   /**
