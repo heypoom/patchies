@@ -7,6 +7,11 @@ import { SupersonicSynthdefsProvider } from './providers/supersonic-synthdefs';
 
 const STRUDEL_PROVIDERS = [
   new StrudelJsonProvider({
+    id: 'dirt-samples',
+    name: 'Dirt Samples',
+    indexUrl: 'https://raw.githubusercontent.com/tidalcycles/Dirt-Samples/master/strudel.json'
+  }),
+  new StrudelJsonProvider({
     id: 'spicule',
     name: 'Spicule',
     indexUrl: 'https://raw.githubusercontent.com/yaxu/spicule/master/strudel.json'
