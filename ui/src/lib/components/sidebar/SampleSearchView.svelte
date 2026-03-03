@@ -4,8 +4,19 @@
   import { sampleSearchStore } from '$lib/sample-search/sample-search-store.svelte';
   import type { SampleResult } from '$lib/sample-search/types';
 
+  const GROUP_INITIAL = 5;
+
   let searchQuery = $state('');
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Per-category expanded state: category key -> number of items shown
+  let expandedGroups = $state(new Map<string, number>());
+
+  // Reset expanded groups when query changes
+  $effect(() => {
+    searchQuery; // track
+    expandedGroups = new Map();
+  });
 
   // Debounced search — fires 300ms after user stops typing
   $effect(() => {
@@ -33,6 +44,22 @@
     }
     return groups;
   });
+
+  function visibleSamples(category: string, samples: SampleResult[]): SampleResult[] {
+    const limit = expandedGroups.get(category) ?? GROUP_INITIAL;
+    return samples.slice(0, limit);
+  }
+
+  function showMore(category: string, total: number) {
+    const current = expandedGroups.get(category) ?? GROUP_INITIAL;
+    expandedGroups.set(category, Math.min(current + 20, total));
+    expandedGroups = new Map(expandedGroups);
+  }
+
+  function showAll(category: string, total: number) {
+    expandedGroups.set(category, total);
+    expandedGroups = new Map(expandedGroups);
+  }
 
   function handleDragStart(event: DragEvent, result: SampleResult) {
     const payload = JSON.stringify({ url: result.url, name: result.name });
@@ -81,6 +108,9 @@
       </div>
     {:else}
       {#each groupedResults as [category, samples]}
+        {@const visible = visibleSamples(category, samples)}
+        {@const hidden = samples.length - visible.length}
+
         <!-- Sticky category header -->
         {#if category}
           <div
@@ -97,7 +127,7 @@
           </div>
         {/if}
 
-        {#each samples as result (result.id)}
+        {#each visible as result (result.id)}
           {@const isPlaying = sampleSearchStore.playingId === result.id}
 
           <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -127,6 +157,26 @@
             </span>
           </div>
         {/each}
+
+        <!-- "X more" expand row -->
+        {#if hidden > 0}
+          <div class="flex items-center gap-2 py-0.5 pr-2 pl-4">
+            <button
+              class="cursor-pointer font-mono text-[10px] text-zinc-500 hover:text-zinc-300"
+              onclick={() => showMore(category, samples.length)}
+            >
+              +{hidden > 20 ? 20 : hidden} more
+            </button>
+            {#if hidden > 20}
+              <button
+                class="cursor-pointer font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
+                onclick={() => showAll(category, samples.length)}
+              >
+                show all {samples.length}
+              </button>
+            {/if}
+          </div>
+        {/if}
       {/each}
     {/if}
   </div>
