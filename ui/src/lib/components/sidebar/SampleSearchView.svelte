@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { Play, Square, Music } from '@lucide/svelte/icons';
+  import { Play, Square, Music, SlidersHorizontal } from '@lucide/svelte/icons';
   import SearchBar from './SearchBar.svelte';
+  import * as Popover from '$lib/components/ui/popover/index.js';
   import { sampleSearchStore } from '$lib/sample-search/sample-search-store.svelte';
   import type { SampleResult } from '$lib/sample-search/types';
 
@@ -219,13 +220,64 @@
     {/if}
   </div>
 
-  <!-- Footer: result count -->
-  {#if sampleSearchStore.results.length > 0}
-    <div
-      class="border-t border-zinc-800 px-3 py-1.5 text-[10px] text-zinc-600"
-      style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px))"
-    >
-      {sampleSearchStore.results.length} result{sampleSearchStore.results.length === 1 ? '' : 's'}
-    </div>
-  {/if}
+  <!-- Footer: result count + filter -->
+  <div
+    class="flex items-center justify-between border-t border-zinc-800 px-3 py-1.5"
+    style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px))"
+  >
+    <span class="text-[10px] text-zinc-600">
+      {#if sampleSearchStore.results.length > 0}
+        {sampleSearchStore.results.length} result{sampleSearchStore.results.length === 1 ? '' : 's'}
+      {/if}
+    </span>
+    <Popover.Root>
+      <Popover.Trigger>
+        {#snippet child({ props })}
+          {@const total = sampleSearchStore.providers.length}
+          {@const enabled = sampleSearchStore.enabledProviders.size}
+          <button
+            {...props}
+            class="relative cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 {enabled <
+            total
+              ? 'text-blue-400'
+              : ''}"
+            title="Filter sources"
+          >
+            <SlidersHorizontal class="h-3 w-3" />
+            {#if enabled < total}
+              <span
+                class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-blue-500 font-mono text-[7px] text-white"
+                >{enabled}</span
+              >
+            {/if}
+          </button>
+        {/snippet}
+      </Popover.Trigger>
+      <Popover.Content class="w-48 p-2" align="end" side="top">
+        <p
+          class="mb-1.5 px-1 font-mono text-[9px] font-medium tracking-wider text-zinc-500 uppercase"
+        >
+          Sources
+        </p>
+        <div class="flex flex-col gap-0.5">
+          {#each sampleSearchStore.providers as provider}
+            {@const enabled = sampleSearchStore.enabledProviders.has(provider.id)}
+            <button
+              class="flex w-full cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-zinc-800 {enabled
+                ? ''
+                : 'opacity-40'}"
+              onclick={() => sampleSearchStore.toggleProvider(provider.id)}
+            >
+              <span
+                class="shrink-0 rounded px-1 py-0.5 font-mono text-[9px] font-medium {providerColor(
+                  provider.id
+                )}">{providerBadge(provider.id)}</span
+              >
+              <span class="truncate font-mono text-[10px] text-zinc-300">{provider.name}</span>
+            </button>
+          {/each}
+        </div>
+      </Popover.Content>
+    </Popover.Root>
+  </div>
 </div>

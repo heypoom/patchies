@@ -48,6 +48,12 @@ const STRUDEL_PROVIDERS = [
 
 const MAX_RESULTS = 500;
 
+const ALL_PROVIDERS = [
+  new TidalDrumMachinesProvider(),
+  new DoughSamplesProvider(),
+  ...STRUDEL_PROVIDERS
+];
+
 class SampleSearchStore {
   query = $state('');
   results = $state<SampleResult[]>([]);
@@ -55,13 +61,28 @@ class SampleSearchStore {
   error = $state<string | null>(null);
   playingId = $state<string | null>(null);
 
-  private providers = [
-    new TidalDrumMachinesProvider(),
-    new DoughSamplesProvider(),
-    ...STRUDEL_PROVIDERS
-  ];
+  /** Ordered list of all providers — read-only for the UI */
+  readonly providers = ALL_PROVIDERS;
+
+  /** Set of enabled provider ids — all enabled by default */
+  enabledProviders = $state<Set<string>>(new Set(ALL_PROVIDERS.map((p) => p.id)));
+
   private indexesLoaded = false;
   private currentAudio: HTMLAudioElement | null = null;
+
+  toggleProvider(id: string): void {
+    const next = new Set(this.enabledProviders);
+    if (next.has(id)) {
+      // Don't allow disabling the last one
+      if (next.size === 1) return;
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    this.enabledProviders = next;
+    // Re-run search with current query against new filter
+    if (this.query.trim()) this.search(this.query);
+  }
 
   async search(query: string): Promise<void> {
     this.query = query;
@@ -86,9 +107,10 @@ class SampleSearchStore {
       }
     }
 
-    // Collect results from all providers
+    // Collect results from enabled providers only
     const allResults: SampleResult[] = [];
     for (const provider of this.providers) {
+      if (!this.enabledProviders.has(provider.id)) continue;
       const providerResults = await provider.search(query);
       allResults.push(...providerResults);
     }
