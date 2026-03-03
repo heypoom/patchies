@@ -232,17 +232,23 @@ export class SupersonicSamplesProvider implements SampleProvider {
   }
 
   async loadIndex(): Promise<void> {
-    this.samples = SAMPLE_NAMES.map((name) => ({
-      id: `${this.id}:${name}`,
-      name,
-      // Samples are .flac files on the CDN
-      url: `${CDN_BASE}${name}.flac`,
-      format: 'flac',
-      provider: this.id,
-      category: categoryFromName(name),
-      index: 0,
-      kind: 'sc-sample' as const
-    }));
+    const categoryCounters = new Map<string, number>();
+    this.samples = SAMPLE_NAMES.map((name) => {
+      const category = categoryFromName(name);
+      const index = categoryCounters.get(category) ?? 0;
+      categoryCounters.set(category, index + 1);
+      return {
+        id: `${this.id}:${name}`,
+        name,
+        // Samples are .flac files on the CDN
+        url: `${CDN_BASE}${name}.flac`,
+        format: 'flac',
+        provider: this.id,
+        category,
+        index,
+        kind: 'sc-sample' as const
+      };
+    });
     this.loaded = true;
   }
 

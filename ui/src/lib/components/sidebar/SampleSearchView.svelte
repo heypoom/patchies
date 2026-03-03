@@ -4,6 +4,7 @@
   import SearchBar from './SearchBar.svelte';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import * as ContextMenu from '$lib/components/ui/context-menu';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import { toast } from 'svelte-sonner';
   import { sampleSearchStore } from '$lib/sample-search/sample-search-store.svelte';
   import type { SampleResult } from '$lib/sample-search/types';
@@ -339,19 +340,23 @@
                     ondragstart={(e) => handleDragStart(e, row.result)}
                   >
                     {#if playable}
-                      <button
-                        class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
-                          ? 'text-blue-400 hover:text-blue-300'
-                          : ''}"
-                        title={isPlaying ? 'Stop preview' : 'Preview'}
-                        onclick={() => sampleSearchStore.togglePreview(row.result)}
-                      >
-                        {#if isPlaying}
-                          <Square class="h-3 w-3" />
-                        {:else}
-                          <Play class="h-3 w-3" />
-                        {/if}
-                      </button>
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          <button
+                            class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
+                              ? 'text-blue-400 hover:text-blue-300'
+                              : ''}"
+                            onclick={() => sampleSearchStore.togglePreview(row.result)}
+                          >
+                            {#if isPlaying}
+                              <Square class="h-3 w-3" />
+                            {:else}
+                              <Play class="h-3 w-3" />
+                            {/if}
+                          </button>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>{isPlaying ? 'Stop preview' : 'Preview'}</Tooltip.Content>
+                      </Tooltip.Root>
                     {/if}
                     <span class="flex-1 truncate font-mono text-zinc-300" title={row.result.name}>
                       {row.result.name}

@@ -4,6 +4,33 @@ import { VirtualFilesystem } from '$lib/vfs';
 import { logger } from '$lib/utils/logger';
 
 /**
+ * Escape a string for safe embedding inside a JS string literal (single or double-quoted).
+ * Escapes backslashes, single quotes, double quotes, and control characters.
+ */
+function escapeJS(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
+}
+
+/**
+ * Generate a module-scoped unique base for synth node IDs seeded from a
+ * high-entropy value so that IDs created in separate drops never collide.
+ * Returns a starting integer that is very unlikely to overlap across calls.
+ */
+function generateNodeIdBase(): number {
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  // Use the random 32-bit value as the base; keep it positive and well above
+  // typical patch node IDs by ORing the high bit then masking to 30 bits.
+  return (buf[0] & 0x3fffffff) + 100_000;
+}
+
+/**
  * Callback to create a node with type, position, and optional custom data
  */
 export type CreateNodeCallback = (
@@ -540,14 +567,16 @@ export class CanvasDragDropManager {
     }
 
     const { synthdef } = parsed as { synthdef: string };
+    const safeSynthdef = escapeJS(synthdef);
+    const nodeIdBase = generateNodeIdBase();
 
     const code = `setPortCount(1);
-setTitle("${synthdef}");
+setTitle("${safeSynthdef}");
 
-await sonic.loadSynthDef('${synthdef}');
+await sonic.loadSynthDef('${safeSynthdef}');
 
 const activeNotes = new Map();
-let nextNodeId = 2000;
+let nextNodeId = ${nodeIdBase};
 
 recv(msg => {
   if (!msg || typeof msg !== 'object') return;
@@ -560,7 +589,7 @@ recv(msg => {
     }
     const id = nextNodeId++;
     activeNotes.set(note, id);
-    sonic.send('/s_new', '${synthdef}', id, 0, 0,
+    sonic.send('/s_new', '${safeSynthdef}', id, 0, 0,
       'note', note,
       'amp', (velocity || 127) / 127,
       'gate', 1
@@ -607,12 +636,13 @@ onCleanup(() => {
     }
 
     const { name } = parsed as { name: string };
+    const safeName = escapeJS(name);
 
     const code = `setPortCount(1);
-setTitle("${name}");
+setTitle("${safeName}");
 
 await sonic.loadSynthDef('sonic-pi-basic_stereo_player');
-await sonic.loadSample(0, '${name}.flac');
+await sonic.loadSample(0, '${safeName}.flac');
 await sonic.sync();
 
 recv(() => {
