@@ -197,7 +197,7 @@
   function strudelName(result: SampleResult): string {
     const cat = result.category ?? result.name;
     const idx = result.index ?? 0;
-    return idx === 0 ? `s("${cat}")` : `s("${cat}:${idx}")`;
+    return idx === 0 ? cat : `${cat}:${idx}`;
   }
 
   async function copyAsStrudelName(result: SampleResult) {
