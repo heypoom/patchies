@@ -123,9 +123,19 @@
   }
 
   function handleDragStart(event: DragEvent, result: SampleResult) {
-    const payload = JSON.stringify({ url: result.url, name: result.name });
-    event.dataTransfer?.setData('application/x-sample-url', payload);
-    event.dataTransfer?.setData('text/plain', result.name);
+    if (result.kind === 'synthdef') {
+      const payload = JSON.stringify({ synthdef: result.url });
+      event.dataTransfer?.setData('application/x-supersonic-synthdef', payload);
+      event.dataTransfer?.setData('text/plain', result.url);
+    } else if (result.kind === 'sc-sample') {
+      const payload = JSON.stringify({ name: result.name });
+      event.dataTransfer?.setData('application/x-supersonic-sample', payload);
+      event.dataTransfer?.setData('text/plain', result.name);
+    } else {
+      const payload = JSON.stringify({ url: result.url, name: result.name });
+      event.dataTransfer?.setData('application/x-sample-url', payload);
+      event.dataTransfer?.setData('text/plain', result.name);
+    }
     if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';
   }
 
@@ -179,6 +189,16 @@
       badge: 'EF',
       label: 'Emptyflash Samples — Legowelt & ER-1 drum machines',
       color: 'text-pink-400 bg-pink-900/30'
+    },
+    'supersonic-samples': {
+      badge: 'SCS',
+      label: 'SuperSonic Samples (Sam Aaron) — 206 built-in Sonic Pi samples',
+      color: 'text-teal-400 bg-teal-900/30'
+    },
+    'supersonic-synthdefs': {
+      badge: 'SCD',
+      label: 'SuperSonic SynthDefs (Sam Aaron) — 120 built-in SuperCollider synthdefs',
+      color: 'text-indigo-400 bg-indigo-900/30'
     }
   };
 
@@ -203,6 +223,22 @@
   async function copyAsStrudelName(result: SampleResult) {
     await navigator.clipboard.writeText(strudelName(result));
     toast.success('Copied to clipboard');
+  }
+
+  async function copySynthdefName(result: SampleResult) {
+    // result.url holds the raw synthdef name for synthdef kind
+    await navigator.clipboard.writeText(result.url);
+    toast.success('Copied to clipboard');
+  }
+
+  async function copyScSampleName(result: SampleResult) {
+    await navigator.clipboard.writeText(result.name);
+    toast.success('Copied to clipboard');
+  }
+
+  /** Whether this result has audio that can be previewed */
+  function isPlayable(result: SampleResult): boolean {
+    return result.kind !== 'synthdef';
   }
 </script>
 
@@ -292,6 +328,7 @@
               </div>
             {:else if row.type === 'sample'}
               {@const isPlaying = sampleSearchStore.playingId === row.result.id}
+              {@const playable = isPlayable(row.result)}
               <ContextMenu.Root>
                 <ContextMenu.Trigger>
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -301,28 +338,40 @@
                     draggable="true"
                     ondragstart={(e) => handleDragStart(e, row.result)}
                   >
-                    <button
-                      class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
-                        ? 'text-blue-400 hover:text-blue-300'
-                        : ''}"
-                      title={isPlaying ? 'Stop preview' : 'Preview'}
-                      onclick={() => sampleSearchStore.togglePreview(row.result)}
-                    >
-                      {#if isPlaying}
-                        <Square class="h-3 w-3" />
-                      {:else}
-                        <Play class="h-3 w-3" />
-                      {/if}
-                    </button>
+                    {#if playable}
+                      <button
+                        class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
+                          ? 'text-blue-400 hover:text-blue-300'
+                          : ''}"
+                        title={isPlaying ? 'Stop preview' : 'Preview'}
+                        onclick={() => sampleSearchStore.togglePreview(row.result)}
+                      >
+                        {#if isPlaying}
+                          <Square class="h-3 w-3" />
+                        {:else}
+                          <Play class="h-3 w-3" />
+                        {/if}
+                      </button>
+                    {/if}
                     <span class="flex-1 truncate font-mono text-zinc-300" title={row.result.name}>
                       {row.result.name}
                     </span>
                   </div>
                 </ContextMenu.Trigger>
                 <ContextMenu.Content>
-                  <ContextMenu.Item onclick={() => copyAsStrudelName(row.result)}>
-                    Copy as Strudel name
-                  </ContextMenu.Item>
+                  {#if row.result.kind === 'synthdef'}
+                    <ContextMenu.Item onclick={() => copySynthdefName(row.result)}>
+                      Copy synthdef name
+                    </ContextMenu.Item>
+                  {:else if row.result.kind === 'sc-sample'}
+                    <ContextMenu.Item onclick={() => copyScSampleName(row.result)}>
+                      Copy sample name
+                    </ContextMenu.Item>
+                  {:else}
+                    <ContextMenu.Item onclick={() => copyAsStrudelName(row.result)}>
+                      Copy as Strudel name
+                    </ContextMenu.Item>
+                  {/if}
                 </ContextMenu.Content>
               </ContextMenu.Root>
             {:else if row.type === 'more'}

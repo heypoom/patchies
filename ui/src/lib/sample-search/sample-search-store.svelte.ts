@@ -2,6 +2,8 @@ import type { SampleResult } from './types';
 import { TidalDrumMachinesProvider } from './providers/tidal-drum-machines';
 import { DoughSamplesProvider } from './providers/dough-samples';
 import { StrudelJsonProvider } from './providers/strudel-json';
+import { SupersonicSamplesProvider } from './providers/supersonic-samples';
+import { SupersonicSynthdefsProvider } from './providers/supersonic-synthdefs';
 
 const STRUDEL_PROVIDERS = [
   new StrudelJsonProvider({
@@ -51,7 +53,9 @@ const MAX_RESULTS = 500;
 const ALL_PROVIDERS = [
   new TidalDrumMachinesProvider(),
   new DoughSamplesProvider(),
-  ...STRUDEL_PROVIDERS
+  ...STRUDEL_PROVIDERS,
+  new SupersonicSamplesProvider(),
+  new SupersonicSynthdefsProvider()
 ];
 
 class SampleSearchStore {

@@ -54,6 +54,8 @@ export class CanvasDragDropManager {
     const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
     const presetData = event.dataTransfer?.getData('application/x-preset');
     const sampleData = event.dataTransfer?.getData('application/x-sample-url');
+    const synthdefData = event.dataTransfer?.getData('application/x-supersonic-synthdef');
+    const scSampleData = event.dataTransfer?.getData('application/x-supersonic-sample');
 
     // Check if the drop target is within a node (to avoid duplicate handling)
     const target = event.target as HTMLElement;
@@ -78,6 +80,18 @@ export class CanvasDragDropManager {
     // Handle sample URL drops - create soundfile~ node with _initialUrl
     if (sampleData && !isDropOnNode) {
       this.handleSampleDrop(sampleData, position);
+      return;
+    }
+
+    // Handle SuperSonic synthdef drops - create sonic~ node with synthdef boilerplate
+    if (synthdefData && !isDropOnNode) {
+      this.handleSynthdefDrop(synthdefData, position);
+      return;
+    }
+
+    // Handle SuperSonic sample drops - create sonic~ node with sample player boilerplate
+    if (scSampleData && !isDropOnNode) {
+      this.handleScSampleDrop(scSampleData, position);
       return;
     }
 
@@ -127,8 +141,10 @@ export class CanvasDragDropManager {
     const hasVfsData = event.dataTransfer?.types.includes('application/x-vfs-path');
     const hasPresetData = event.dataTransfer?.types.includes('application/x-preset');
     const hasSampleData = event.dataTransfer?.types.includes('application/x-sample-url');
+    const hasSynthdefData = event.dataTransfer?.types.includes('application/x-supersonic-synthdef');
+    const hasScSampleData = event.dataTransfer?.types.includes('application/x-supersonic-sample');
 
-    if (hasPresetData || hasSampleData) {
+    if (hasPresetData || hasSampleData || hasSynthdefData || hasScSampleData) {
       event.dataTransfer!.dropEffect = 'copy';
     } else if (hasVfsData) {
       event.dataTransfer!.dropEffect = 'copy';
@@ -500,5 +516,113 @@ export class CanvasDragDropManager {
         }
       })
       .otherwise(() => Promise.resolve(getDefaultNodeData(nodeType)));
+  }
+
+  /**
+   * Handle SuperSonic synthdef drops — creates a sonic~ node with synthdef boilerplate
+   */
+  private handleSynthdefDrop(data: string, position: { x: number; y: number }): void {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(data);
+    } catch {
+      logger.warn('Failed to parse synthdef drag data:', data);
+      return;
+    }
+
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof (parsed as Record<string, unknown>).synthdef !== 'string'
+    ) {
+      logger.warn('Invalid synthdef drag payload:', parsed);
+      return;
+    }
+
+    const { synthdef } = parsed as { synthdef: string };
+
+    const code = `setPortCount(1);
+setTitle("${synthdef}");
+
+await sonic.loadSynthDef('${synthdef}');
+
+const activeNotes = new Map();
+let nextNodeId = 2000;
+
+recv(msg => {
+  if (!msg || typeof msg !== 'object') return;
+
+  const { type, note, velocity } = msg;
+
+  if (type === 'noteOn') {
+    if (activeNotes.has(note)) {
+      sonic.send('/n_set', activeNotes.get(note), 'gate', 0);
+    }
+    const id = nextNodeId++;
+    activeNotes.set(note, id);
+    sonic.send('/s_new', '${synthdef}', id, 0, 0,
+      'note', note,
+      'amp', (velocity || 127) / 127,
+      'gate', 1
+    );
+  } else if (type === 'noteOff') {
+    const id = activeNotes.get(note);
+    if (id !== undefined) {
+      sonic.send('/n_set', id, 'gate', 0);
+      activeNotes.delete(note);
+    }
+  }
+});
+
+onCleanup(() => {
+  activeNotes.forEach(id => sonic.send('/n_free', id));
+  activeNotes.clear();
+});`;
+
+    this.createNode('sonic~', position, {
+      ...getDefaultNodeData('sonic~'),
+      code
+    });
+  }
+
+  /**
+   * Handle SuperSonic sample drops — creates a sonic~ node with sample player boilerplate
+   */
+  private handleScSampleDrop(data: string, position: { x: number; y: number }): void {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(data);
+    } catch {
+      logger.warn('Failed to parse sc-sample drag data:', data);
+      return;
+    }
+
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof (parsed as Record<string, unknown>).name !== 'string'
+    ) {
+      logger.warn('Invalid sc-sample drag payload:', parsed);
+      return;
+    }
+
+    const { name } = parsed as { name: string };
+
+    const code = `setPortCount(1);
+setTitle("${name}");
+
+await sonic.loadSynthDef('sonic-pi-basic_stereo_player');
+await sonic.loadSample(0, '${name}.flac');
+await sonic.sync();
+
+recv(() => {
+  sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0,
+    'buf', 0, 'rate', 1);
+});`;
+
+    this.createNode('sonic~', position, {
+      ...getDefaultNodeData('sonic~'),
+      code
+    });
   }
 }

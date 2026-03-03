@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Mic, Play, Square, Upload, Volume2 } from '@lucide/svelte/icons';
+  import { Mic, Play, Square, Table, Upload, Volume2 } from '@lucide/svelte/icons';
+  import { BufferBridgeService } from '$lib/audio/buffer-bridge';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -163,6 +164,67 @@
   });
 
   /**
+   * Convert this soundfile~ node to a table object, loading the audio as a Float32Array.
+   * The table will contain a mono mix of the audio at its native sample rate.
+   */
+  async function convertToTable() {
+    if (!vfsMedia.hasVfsPath || !node.data.vfsPath) return;
+
+    const eventBus = PatchiesEventBus.getInstance();
+
+    try {
+      const { VirtualFilesystem } = await import('$lib/vfs');
+      const vfs = VirtualFilesystem.getInstance();
+      const fileOrBlob = await vfs.resolve(node.data.vfsPath);
+
+      const buffer = await fileOrBlob.arrayBuffer();
+      const audioBuffer = await audioService.getAudioContext().decodeAudioData(buffer);
+
+      // Build a mono mix as Float32Array
+      const length = audioBuffer.length;
+      const channelCount = audioBuffer.numberOfChannels;
+      const samples = new Float32Array(length);
+      for (let ch = 0; ch < channelCount; ch++) {
+        const channelData = audioBuffer.getChannelData(ch);
+        for (let i = 0; i < length; i++) {
+          samples[i] += channelData[i];
+        }
+      }
+      if (channelCount > 1) {
+        for (let i = 0; i < length; i++) samples[i] /= channelCount;
+      }
+
+      // Derive a stable buffer name from the filename (strip extension, sanitize)
+      const rawName = node.data.fileName ?? node.id;
+      const bufferName =
+        rawName
+          .replace(/\.[^.]+$/, '') // strip extension
+          .replace(/[^a-zA-Z0-9_-]/g, '_')
+          .slice(0, 32) || node.id;
+
+      const expr = `table ${bufferName} ${length}`;
+
+      eventBus.dispatch({
+        type: 'nodeReplace',
+        nodeId: node.id,
+        newType: 'object',
+        newData: {
+          expr,
+          name: 'table',
+          params: [bufferName, length]
+        }
+      });
+
+      // Write PCM data after a tick so the table object has time to create() its buffer
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      const bridge = BufferBridgeService.getInstance();
+      bridge.writeBuffer(bufferName, samples);
+    } catch (err) {
+      logger.error('Failed to decode audio for table conversion:', err);
+    }
+  }
+
+  /**
    * Convert this soundfile~ node to a sampler~ node, preserving the audio file.
    */
   async function convertToSampler() {
@@ -314,6 +376,10 @@
       <ContextMenu.Item onclick={convertToSampler}>
         <Mic class="mr-2 h-4 w-4" />
         Convert to Sampler
+      </ContextMenu.Item>
+      <ContextMenu.Item onclick={convertToTable}>
+        <Table class="mr-2 h-4 w-4" />
+        Convert to Table
       </ContextMenu.Item>
     {/if}
   </ContextMenu.Content>
