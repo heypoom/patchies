@@ -9,6 +9,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'ai-experiments': 'AI Experiments',
   'audio-chaining': 'Audio Chaining',
   'audio-reactivity': 'Audio Reactivity',
+  'browse-samples': 'Samples',
   'canvas-interaction': 'Canvas Interaction',
   'clock-api': 'Clock API',
   'connecting-objects': 'Connecting Objects',

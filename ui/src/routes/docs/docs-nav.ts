@@ -16,7 +16,14 @@ export const topicOrder: Record<string, string[]> = {
   'Audio & Video': ['audio-chaining', 'video-chaining', 'connection-rules'],
   Scripting: ['javascript-runner', 'canvas-interaction', 'virtual-filesystem', 'data-storage'],
   'Timing & Sync': ['audio-reactivity', 'transport-control', 'clock-api', 'parameter-automation'],
-  Sidebar: ['manage-files', 'manage-presets', 'manage-saves', 'manage-packs', 'in-app-help'],
+  Sidebar: [
+    'manage-files',
+    'manage-presets',
+    'manage-saves',
+    'manage-packs',
+    'in-app-help',
+    'browse-samples'
+  ],
   Other: [
     'sharing-links',
     'offline-usage',
