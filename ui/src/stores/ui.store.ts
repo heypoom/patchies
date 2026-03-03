@@ -60,7 +60,7 @@ const storedSidebarOpen =
 export const isSidebarOpen = writable(storedSidebarOpen === 'true');
 
 // Sidebar view state - persisted to localStorage
-export type SidebarView = 'files' | 'presets' | 'packs' | 'saves' | 'help' | 'preview';
+export type SidebarView = 'files' | 'presets' | 'packs' | 'saves' | 'help' | 'preview' | 'samples';
 
 const storedSidebarView =
   typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-sidebar-view') : null;
