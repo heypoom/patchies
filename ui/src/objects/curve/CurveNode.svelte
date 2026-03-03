@@ -261,7 +261,7 @@
     <div
       class={[
         'absolute -top-7 left-0 z-10 flex items-center gap-1.5 rounded-lg bg-zinc-900 px-2 py-1 transition-opacity',
-        node.selected || isLocked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
       ]}
     >
       <span class="font-mono text-xs font-medium text-zinc-400">curve</span>
