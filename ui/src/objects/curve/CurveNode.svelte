@@ -72,6 +72,7 @@
   let dragIndex = $state(-1);
   let dragStartPoints: Point[] = [];
   let isMouseOver = $state(false);
+  let touchSelectedIdx = $state(-1); // touch-only: persists after pointerup so delete button stays visible
 
   function getSvgCoords(event: PointerEvent): [number, number] {
     const rect = svgEl.getBoundingClientRect();
@@ -87,7 +88,22 @@
     const [sx, sy] = getSvgCoords(event);
 
     // Skip adding if near an existing point
-    if (getHoveredIdx(sx, sy, points, innerW, innerH) !== -1) return;
+    if (getHoveredIdx(sx, sy, points, innerW, innerH) !== -1) {
+      // On touch: tapping a point is handled in onPointPointerDown; tapping it here clears any
+      // other touch selection (the point's own handler will set the new one)
+      if (event.pointerType === 'touch') {
+        touchSelectedIdx = -1;
+        hoveredIdx = -1;
+      }
+      return;
+    }
+
+    // On touch: tapping empty space while a point is selected → clear selection, don't insert
+    if (event.pointerType === 'touch' && touchSelectedIdx >= 0) {
+      touchSelectedIdx = -1;
+      hoveredIdx = -1;
+      return;
+    }
 
     const pt = fromSvg(sx, sy, innerW, innerH);
     const newPt: Point = {
@@ -107,6 +123,23 @@
 
   function onPointPointerDown(event: PointerEvent, index: number) {
     if (event.button !== 0 || isLocked) return;
+
+    if (event.pointerType === 'touch') {
+      const isEndpoint = index === 0 || index === points.length - 1;
+      if (!isEndpoint && touchSelectedIdx === index) {
+        // Second tap on same non-endpoint: clear selection (delete button will hide)
+        touchSelectedIdx = -1;
+        hoveredIdx = -1;
+        event.stopPropagation();
+        return;
+      }
+      // First tap: select the point and show delete button, don't start drag yet
+      touchSelectedIdx = index;
+      hoveredIdx = index;
+      event.stopPropagation();
+      return;
+    }
+
     dragIndex = index;
     dragStartPoints = points.map((p) => ({ ...p }));
     svgEl.setPointerCapture(event.pointerId);
@@ -117,6 +150,19 @@
     const [sx, sy] = getSvgCoords(event);
 
     if (dragIndex < 0) {
+      if (event.pointerType === 'touch') {
+        // On touch, if a point is selected and the finger moves far enough, start dragging it
+        if (touchSelectedIdx >= 0) {
+          const [ptx, pty] = toSvg(points[touchSelectedIdx], innerW, innerH);
+          const dist = Math.hypot(sx - ptx, sy - pty);
+          if (dist > HIT_RADIUS) {
+            dragIndex = touchSelectedIdx;
+            dragStartPoints = points.map((p) => ({ ...p }));
+            svgEl.setPointerCapture(event.pointerId);
+          }
+        }
+        return;
+      }
       hoveredIdx = getHoveredIdx(sx, sy, points, innerW, innerH);
       return;
     }
@@ -143,12 +189,16 @@
   function onSvgPointerUp() {
     if (dragIndex < 0) return;
     tracker.commit('points', dragStartPoints, points);
+    // If this was a touch drag, keep the point highlighted; clear touch selection on next tap elsewhere
     dragIndex = -1;
     dragStartPoints = [];
   }
 
   function onSvgPointerLeave() {
-    if (dragIndex < 0) hoveredIdx = -1;
+    if (dragIndex < 0) {
+      hoveredIdx = -1;
+      // Don't clear touchSelectedIdx here — touch users need the delete button to persist
+    }
     isMouseOver = false;
   }
 
@@ -161,6 +211,7 @@
     updateNodeData(node.id, { points: newPoints });
     tracker.commit('points', oldPoints, newPoints);
     hoveredIdx = -1;
+    touchSelectedIdx = -1;
   }
 
   // ── Settings ──────────────────────────────────────────────────────────────
@@ -259,7 +310,9 @@
     <div
       class={[
         'absolute -top-7 left-0 z-10 flex items-center gap-1.5 rounded-lg bg-zinc-900 px-2 py-1 transition-opacity',
-        node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        node.selected
+          ? 'opacity-100'
+          : 'opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100'
       ]}
     >
       <span class="font-mono text-xs font-medium text-zinc-400">curve</span>
@@ -433,8 +486,8 @@
                 onpointerdown={(e) => onPointPointerDown(e, i)}
               />
 
-              <!-- Outer halo ring (hover / drag) -->
-              {#if isHovered || isDragging}
+              <!-- Outer halo ring (hover / drag / touch-selected) -->
+              {#if isHovered || isDragging || touchSelectedIdx === i}
                 <circle
                   cx={sx}
                   cy={sy}
@@ -458,8 +511,8 @@
                 pointer-events="none"
               />
 
-              <!-- Delete button (non-endpoints, on hover, not locked) -->
-              {#if isHovered && !isEndpoint && !isLocked}
+              <!-- Delete button (non-endpoints, on hover/touch-select, not locked) -->
+              {#if (isHovered || touchSelectedIdx === i) && !isEndpoint && !isLocked}
                 <CurveNodeDeleteButton index={i} {sx} {sy} {deletePoint} />
               {/if}
 
