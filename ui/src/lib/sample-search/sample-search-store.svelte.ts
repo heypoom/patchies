@@ -1,6 +1,50 @@
 import type { SampleResult } from './types';
 import { TidalDrumMachinesProvider } from './providers/tidal-drum-machines';
 import { DoughSamplesProvider } from './providers/dough-samples';
+import { StrudelJsonProvider } from './providers/strudel-json';
+
+const STRUDEL_PROVIDERS = [
+  new StrudelJsonProvider({
+    id: 'spicule',
+    name: 'Spicule',
+    indexUrl: 'https://raw.githubusercontent.com/yaxu/spicule/master/strudel.json'
+  }),
+  new StrudelJsonProvider({
+    id: 'clean-breaks',
+    name: 'Clean Breaks',
+    indexUrl: 'https://raw.githubusercontent.com/yaxu/clean-breaks/main/strudel.json'
+  }),
+  new StrudelJsonProvider({
+    id: 'estuary-samples',
+    name: 'Estuary Samples',
+    indexUrl: 'https://raw.githubusercontent.com/felixroos/estuary-samples/main/strudel.json'
+  }),
+  new StrudelJsonProvider({
+    id: 'dough-fox',
+    name: 'Dough Fox',
+    indexUrl: 'https://raw.githubusercontent.com/Bubobubobubobubo/Dough-Fox/main/strudel.json'
+  }),
+  new StrudelJsonProvider({
+    id: 'dough-amen',
+    name: 'Dough Amen',
+    indexUrl: 'https://raw.githubusercontent.com/Bubobubobubobubo/Dough-Amen/main/strudel.json'
+  }),
+  new StrudelJsonProvider({
+    id: 'dough-amiga',
+    name: 'Dough Amiga',
+    indexUrl: 'https://raw.githubusercontent.com/Bubobubobubobubo/Dough-Amiga/main/strudel.json'
+  }),
+  new StrudelJsonProvider({
+    id: 'dough-samples-bubo',
+    name: 'Dough Samples',
+    indexUrl: 'https://raw.githubusercontent.com/Bubobubobubobubo/Dough-Samples/main/strudel.json'
+  }),
+  new StrudelJsonProvider({
+    id: 'emptyflash-samples',
+    name: 'Emptyflash Samples',
+    indexUrl: 'https://raw.githubusercontent.com/emptyflash/samples/main/strudel.json'
+  })
+];
 
 const MAX_RESULTS = 500;
 
@@ -11,7 +55,11 @@ class SampleSearchStore {
   error = $state<string | null>(null);
   playingId = $state<string | null>(null);
 
-  private providers = [new TidalDrumMachinesProvider(), new DoughSamplesProvider()];
+  private providers = [
+    new TidalDrumMachinesProvider(),
+    new DoughSamplesProvider(),
+    ...STRUDEL_PROVIDERS
+  ];
   private indexesLoaded = false;
   private currentAudio: HTMLAudioElement | null = null;
 
