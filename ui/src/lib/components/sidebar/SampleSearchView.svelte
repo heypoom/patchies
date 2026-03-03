@@ -3,7 +3,6 @@
   import { Play, Square, Music, SlidersHorizontal } from '@lucide/svelte/icons';
   import SearchBar from './SearchBar.svelte';
   import * as Popover from '$lib/components/ui/popover/index.js';
-  import * as Tooltip from '$lib/components/ui/tooltip';
   import { sampleSearchStore } from '$lib/sample-search/sample-search-store.svelte';
   import type { SampleResult } from '$lib/sample-search/types';
 
@@ -202,25 +201,19 @@
             ondragstart={(e) => handleDragStart(e, result)}
           >
             <!-- Play/stop button -->
-            <Tooltip.Root delayDuration={300}>
-              <Tooltip.Trigger>
-                <button
-                  class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
-                    ? 'text-blue-400 hover:text-blue-300'
-                    : ''}"
-                  onclick={() => sampleSearchStore.togglePreview(result)}
-                >
-                  {#if isPlaying}
-                    <Square class="h-3 w-3" />
-                  {:else}
-                    <Play class="h-3 w-3" />
-                  {/if}
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="right">
-                {isPlaying ? 'Stop preview' : 'Preview'}
-              </Tooltip.Content>
-            </Tooltip.Root>
+            <button
+              class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
+                ? 'text-blue-400 hover:text-blue-300'
+                : ''}"
+              title={isPlaying ? 'Stop preview' : 'Preview'}
+              onclick={() => sampleSearchStore.togglePreview(result)}
+            >
+              {#if isPlaying}
+                <Square class="h-3 w-3" />
+              {:else}
+                <Play class="h-3 w-3" />
+              {/if}
+            </button>
 
             <!-- Sample name -->
             <span class="flex-1 truncate font-mono text-zinc-300" title={result.name}>
