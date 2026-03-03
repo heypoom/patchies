@@ -248,7 +248,11 @@
 </script>
 
 <div class="relative">
-  <NodeResizer isVisible={node.selected} minWidth={MIN_WIDTH} minHeight={MIN_HEIGHT} />
+  <NodeResizer
+    isVisible={node.selected && dragIndex < 0}
+    minWidth={MIN_WIDTH}
+    minHeight={MIN_HEIGHT}
+  />
 
   <div class="group relative">
     <!-- Transparent bridge so group-hover stays active between title and node -->
