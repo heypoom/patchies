@@ -226,7 +226,7 @@
         newData: {
           expr,
           name: 'table',
-          params: [bufferName, length]
+          params: [null, bufferName, length]
         }
       });
 
