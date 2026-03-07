@@ -217,16 +217,14 @@
         for (let i = 0; i < length; i++) samples[i] /= channelCount;
       }
 
-      const expr = `table ${bufferName} ${length}`;
-
       eventBus.dispatch({
         type: 'nodeReplace',
         nodeId: node.id,
-        newType: 'object',
+        newType: 'table',
         newData: {
-          expr,
-          name: 'table',
-          params: [null, bufferName, length]
+          bufferName,
+          size: length,
+          showVisual: false
         }
       });
 

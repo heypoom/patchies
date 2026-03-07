@@ -247,6 +247,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('ruby', () => ({ code: 'puts "Hello, Ruby!"', showConsole: true }))
     .with('wgpu.compute', () => ({ code: DEFAULT_WGSL_CODE, showConsole: true }))
     .with('trigger', () => ({ types: ['b', 'n'], shorthand: false, showHelp: false }))
+    .with('table', () => ({ bufferName: 'table1', size: 100, showVisual: false }))
     .with('send.vdo', () => ({ channel: 'foo' }))
     .with('recv.vdo', () => ({ channel: 'foo' }))
     .with('note', () => ({ text: '', color: '#fef3c7', fontSize: 14 }))
