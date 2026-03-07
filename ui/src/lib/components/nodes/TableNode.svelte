@@ -20,6 +20,9 @@
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { Eye, EyeOff } from '@lucide/svelte/icons';
+  import { AudioService } from '$lib/audio/v2/AudioService';
+  import { useVfsMedia } from '$lib/vfs';
+  import { VfsRelinkOverlay } from '$lib/vfs/components';
 
   let {
     id: nodeId,
@@ -27,7 +30,7 @@
     selected
   }: {
     id: string;
-    data: { bufferName: string; size: number; showVisual: boolean };
+    data: { bufferName: string; size: number; showVisual: boolean; vfsPath?: string };
     selected: boolean;
   } = $props();
 
@@ -53,6 +56,51 @@
       : 'border-zinc-700 bg-zinc-900/80 hover:shadow-glow-sm'
   );
 
+  // --- VFS source loading ---
+
+  async function handleFileLoaded(file: File, sourceUrl?: string) {
+    let arrayBuffer: ArrayBuffer;
+
+    if (sourceUrl) {
+      const response = await fetch(sourceUrl);
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+      arrayBuffer = await response.arrayBuffer();
+    } else {
+      arrayBuffer = await file.arrayBuffer();
+    }
+
+    const audioCtx = AudioService.getInstance().getAudioContext();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+    // Mono mix
+    const length = audioBuffer.length;
+    const channelCount = audioBuffer.numberOfChannels;
+    const samples = new Float32Array(length);
+    for (let ch = 0; ch < channelCount; ch++) {
+      const channelData = audioBuffer.getChannelData(ch);
+      for (let i = 0; i < length; i++) samples[i] += channelData[i];
+    }
+    if (channelCount > 1) {
+      for (let i = 0; i < length; i++) samples[i] /= channelCount;
+    }
+
+    bridge.writeBuffer(bufferName, samples);
+    updateNodeData(nodeId, { ...data, size: length });
+    vfsMedia.markLoaded();
+  }
+
+  const vfsMedia = useVfsMedia({
+    nodeId,
+    acceptMimePrefix: 'audio/',
+    onFileLoaded: handleFileLoaded,
+    updateNodeData: (d) => updateNodeData(nodeId, { ...data, ...d }),
+    getVfsPath: () => data.vfsPath,
+    filePickerAccept: ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'],
+    filePickerDescription: 'Audio Files'
+  });
+
+  // --- Editing ---
+
   function enterEditingMode() {
     editValue = `${bufferName} ${bufferSize}`;
     isEditing = true;
@@ -74,14 +122,9 @@
     if (!nameChanged && !sizeChanged) return;
 
     if (nameChanged) {
-      // Copy data to new buffer name then delete old
       const oldData = await bridge.readBufferAsync(bufferName);
       bridge.createBuffer(newName, validSize);
-
-      if (oldData) {
-        bridge.writeBuffer(newName, oldData);
-      }
-
+      if (oldData) bridge.writeBuffer(newName, oldData);
       bridge.deleteBuffer(bufferName);
     } else if (sizeChanged) {
       bridge.resizeBuffer(bufferName, validSize);
@@ -102,9 +145,10 @@
 
   function handleBlur() {
     if (!isEditing) return;
-
     setTimeout(() => exitEditingMode(true), 150);
   }
+
+  // --- Message handling ---
 
   const tableMessages = {
     set: schema(TableSet),
@@ -117,14 +161,14 @@
   const handleMessage: MessageCallbackFn = (message) => {
     if (message instanceof Float32Array) {
       bridge.writeBuffer(bufferName, message);
-      updateNodeData(nodeId, { ...data, size: message.length });
+      // Programmatic write — detach from VFS source
+      updateNodeData(nodeId, { ...data, size: message.length, vfsPath: undefined });
       return;
     }
 
     match(message)
       .with(messages.bang, () => {
         const buf = bridge.readBuffer(bufferName);
-
         if (buf) {
           messageContext.send(new Float32Array(buf));
         } else {
@@ -158,20 +202,14 @@
         bridge.readBufferAsync(bufferName).then((buffer) => {
           if (!buffer) return;
           let maxAbs = 0;
-
           for (let i = 0; i < buffer.length; i++) {
             const abs = Math.abs(buffer[i]);
             if (abs > maxAbs) maxAbs = abs;
           }
-
           if (maxAbs > 0) {
             const scale = 1 / maxAbs;
             const normalized = new Float32Array(buffer.length);
-
-            for (let i = 0; i < buffer.length; i++) {
-              normalized[i] = buffer[i] * scale;
-            }
-
+            for (let i = 0; i < buffer.length; i++) normalized[i] = buffer[i] * scale;
             bridge.writeBuffer(bufferName, normalized);
           }
         });
@@ -187,7 +225,6 @@
 
   function startVisualization() {
     if (bridge.isSharedMemory) {
-      // SAB: live zero-copy reads via RAF
       function loop() {
         const buffer = bridge.readBuffer(bufferName);
         if (canvas && buffer) drawWaveform(canvas, buffer, zoom.view);
@@ -195,7 +232,6 @@
       }
       rafId = requestAnimationFrame(loop);
     } else {
-      // non-SAB: async polling at ~10 fps
       pollTimer = setInterval(() => {
         bridge.readBufferAsync(bufferName).then((buf) => {
           if (canvas && buf) drawWaveform(canvas, buf, zoom.view);
@@ -228,12 +264,16 @@
     return () => stopVisualization();
   });
 
-  onMount(() => {
+  onMount(async () => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
 
     if (!bridge.getBufferInfo(bufferName)) {
       bridge.createBuffer(bufferName, bufferSize);
+    }
+
+    if (data.vfsPath) {
+      await vfsMedia.loadFromVfsPath(data.vfsPath);
     }
   });
 
@@ -276,6 +316,9 @@
               selected ? 'border-zinc-700' : 'border-zinc-800'
             ]}
             ondblclick={enterEditingMode}
+            ondragover={vfsMedia.handleDragOver}
+            ondragleave={vfsMedia.handleDragLeave}
+            ondrop={vfsMedia.handleDrop}
             role="button"
             tabindex="0"
             onkeydown={(e) => e.key === 'Enter' && enterEditingMode()}
@@ -283,9 +326,38 @@
             <div class="px-2 pt-1.5 pb-1 font-mono text-[10px] text-zinc-500">
               {bufferName}
               <span class="text-zinc-600">({bufferSize})</span>
+              {#if vfsMedia.hasVfsPath}
+                <span class="ml-1 text-zinc-700">·</span>
+                <span
+                  class="cursor-pointer text-zinc-700 hover:text-zinc-500"
+                  onclick={vfsMedia.openFileDialog}
+                >
+                  {data.vfsPath?.split('/').pop() ?? ''}
+                </span>
+              {/if}
             </div>
-            <canvas bind:this={canvas} class="nowheel block rounded-b-lg" onwheel={zoom.handleWheel}
-            ></canvas>
+
+            {#if vfsMedia.needsFolderRelink || vfsMedia.needsReselect}
+              <VfsRelinkOverlay
+                needsReselect={vfsMedia.needsReselect}
+                needsFolderRelink={vfsMedia.needsFolderRelink}
+                linkedFolderName={vfsMedia.linkedFolderName}
+                vfsPath={data.vfsPath}
+                width={CANVAS_W}
+                height={CANVAS_H}
+                isDragging={vfsMedia.isDragging}
+                onRequestPermission={vfsMedia.requestFilePermission}
+                onDragOver={vfsMedia.handleDragOver}
+                onDragLeave={vfsMedia.handleDragLeave}
+                onDrop={vfsMedia.handleDrop}
+              />
+            {:else}
+              <canvas
+                bind:this={canvas}
+                class="nowheel block rounded-b-lg"
+                onwheel={zoom.handleWheel}
+              ></canvas>
+            {/if}
           </div>
         {:else}
           <div
@@ -354,3 +426,12 @@
     </ContextMenu.Item>
   </ContextMenu.Content>
 </ContextMenu.Root>
+
+<!-- Hidden file input -->
+<input
+  bind:this={vfsMedia.fileInputRef}
+  type="file"
+  accept="audio/*"
+  onchange={vfsMedia.handleFileSelect}
+  class="hidden"
+/>
