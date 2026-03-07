@@ -302,8 +302,12 @@
           stickyNegative[index] = true;
         }
 
-        if (inlet?.type === 'float' && inlet.maxPrecision !== undefined) {
-          const currentPrecision = getDecimalPrecision(param, inlet.maxPrecision);
+        const isFloatLike =
+          inlet?.type === 'float' || (inlet?.type === 'signal' && inlet?.acceptsFloat);
+
+        if (isFloatLike) {
+          const maxPrecision = inlet?.maxPrecision ?? 6;
+          const currentPrecision = getDecimalPrecision(param, maxPrecision);
           const existing = stickyPrecision[index] ?? 0;
 
           if (currentPrecision > existing) {
@@ -1163,7 +1167,7 @@
 
         <!-- Dynamic outlets -->
         {#if outlets}
-          {#each outlets as outlet, index}
+          {#each outlets as outlet, index (index)}
             <StandardHandle
               port="outlet"
               type={getPortType(outlet)}

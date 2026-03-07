@@ -97,8 +97,12 @@ export const stringifyParamByType = (
     return str;
   };
 
-  // acceptsFloat signal inlets display their value like a plain number
+  // acceptsFloat signal inlets display like float inlets (sticky precision for stable width)
   if (inlet.type === 'signal' && inlet.acceptsFloat) {
+    if (stickyPrecision !== undefined && stickyPrecision > 0) {
+      return applySignPadding((value as number)?.toFixed(stickyPrecision));
+    }
+
     return applySignPadding(String(value));
   }
 
