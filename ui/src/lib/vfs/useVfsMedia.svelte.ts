@@ -207,6 +207,7 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
   async function loadFromUrl(url: string): Promise<void> {
     try {
       isLoading = true;
+
       const vfsPath = await vfs.registerUrl(url);
 
       // Update node data with VFS path
@@ -389,6 +390,23 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
           entry?.mimeType
         );
         return;
+      }
+    }
+
+    // Check for sample URL drop from SampleSearchView
+    const sampleUrlData = event.dataTransfer?.getData('application/x-sample-url');
+
+    if (sampleUrlData) {
+      try {
+        const { url } = JSON.parse(sampleUrlData) as { url: string; name: string };
+
+        if (url) {
+          await loadFromUrl(url);
+
+          return;
+        }
+      } catch {
+        // Malformed payload
       }
     }
 

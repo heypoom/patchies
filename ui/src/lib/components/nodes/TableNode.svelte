@@ -325,16 +325,8 @@
           >
             <div class="px-2 pt-1.5 pb-1 font-mono text-[10px] text-zinc-500">
               {bufferName}
+
               <span class="text-zinc-600">({bufferSize})</span>
-              {#if vfsMedia.hasVfsPath}
-                <span class="ml-1 text-zinc-700">·</span>
-                <span
-                  class="cursor-pointer text-zinc-700 hover:text-zinc-500"
-                  onclick={vfsMedia.openFileDialog}
-                >
-                  {data.vfsPath?.split('/').pop() ?? ''}
-                </span>
-              {/if}
             </div>
 
             {#if vfsMedia.needsFolderRelink || vfsMedia.needsReselect}
