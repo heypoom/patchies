@@ -16,7 +16,8 @@ export const Delread4Node = createWorkletDspNode({
     {
       name: 'delay',
       type: 'signal',
-      description: 'Delay time in ms (signal rate)'
+      description: 'Delay time in ms',
+      acceptsFloat: true
     },
     {
       name: 'name',

@@ -11,7 +11,8 @@ export const VcfPortSchema: DspPortSchema = {
     {
       name: 'frequency',
       type: 'signal',
-      description: 'Center frequency in Hz (signal rate)'
+      description: 'Center frequency in Hz',
+      acceptsFloat: true
     },
     {
       name: 'q',
