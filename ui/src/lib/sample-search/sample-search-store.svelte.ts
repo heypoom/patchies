@@ -69,6 +69,9 @@ class SampleSearchStore {
   isLoading = $state(false);
   error = $state<string | null>(null);
   playingId = $state<string | null>(null);
+  selectedId = $state<string | null>(null);
+  autoPreview = $state(localStorage.getItem('sample-search:auto-preview') === 'true');
+  previewVolume = $state(Number(localStorage.getItem('sample-search:preview-volume') ?? '0.8'));
 
   /** Ordered list of all providers — read-only for the UI */
   readonly providers = ALL_PROVIDERS;
@@ -185,26 +188,42 @@ class SampleSearchStore {
     this.isLoading = false;
   }
 
-  togglePreview(result: SampleResult): void {
-    // Stop currently playing
+  selectSample(result: SampleResult, toggle = true): void {
+    if (toggle && this.selectedId === result.id) {
+      this.selectedId = null;
+      return;
+    }
+    this.selectedId = result.id;
+    if (this.autoPreview && result.kind !== 'synthdef') {
+      this.playPreview(result);
+    }
+  }
+
+  setAutoPreview(value: boolean): void {
+    this.autoPreview = value;
+    localStorage.setItem('sample-search:auto-preview', String(value));
+  }
+
+  setPreviewVolume(value: number): void {
+    this.previewVolume = value;
+    localStorage.setItem('sample-search:preview-volume', String(value));
+    if (this.currentAudio) {
+      this.currentAudio.volume = value;
+    }
+  }
+
+  private playPreview(result: SampleResult): void {
     if (this.currentAudio) {
       this.currentAudio.pause();
       this.currentAudio = null;
     }
 
-    // If same sample, just stop
-    if (this.playingId === result.id) {
-      this.playingId = null;
-      return;
-    }
-
-    // Play new sample
     const audio = new Audio(result.url);
+    audio.volume = this.previewVolume;
     this.currentAudio = audio;
     this.playingId = result.id;
 
     audio.play().catch(() => {
-      // Only clear state if this audio instance is still the active one
       if (this.currentAudio === audio) {
         this.playingId = null;
         this.currentAudio = null;
@@ -221,11 +240,22 @@ class SampleSearchStore {
     };
   }
 
+  togglePreview(result: SampleResult): void {
+    // If same sample, stop
+    if (this.playingId === result.id) {
+      this.stopPreview();
+      return;
+    }
+
+    this.playPreview(result);
+  }
+
   stopPreview(): void {
     if (this.currentAudio) {
       this.currentAudio.pause();
       this.currentAudio = null;
     }
+
     this.playingId = null;
   }
 }

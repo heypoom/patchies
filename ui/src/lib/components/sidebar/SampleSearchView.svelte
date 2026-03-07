@@ -1,6 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Play, Square, Music, SlidersHorizontal } from '@lucide/svelte/icons';
+  import {
+    Play,
+    Square,
+    Music,
+    SlidersHorizontal,
+    Volume2,
+    Headphones
+  } from '@lucide/svelte/icons';
   import SearchBar from './SearchBar.svelte';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import * as ContextMenu from '$lib/components/ui/context-menu';
@@ -110,6 +117,45 @@
     ro.observe(el);
     viewportHeight = el.clientHeight;
     return { destroy: () => ro.disconnect() };
+  }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+
+    const sampleRows = rows.filter((r): r is SampleRow => r.type === 'sample');
+    if (!sampleRows.length) return;
+
+    const currentIdx = sampleRows.findIndex((r) => r.result.id === sampleSearchStore.selectedId);
+    let nextIdx: number;
+
+    if (currentIdx === -1) {
+      nextIdx = e.key === 'ArrowDown' ? 0 : sampleRows.length - 1;
+    } else {
+      nextIdx =
+        e.key === 'ArrowDown'
+          ? Math.min(currentIdx + 1, sampleRows.length - 1)
+          : Math.max(currentIdx - 1, 0);
+    }
+
+    const nextResult = sampleRows[nextIdx].result;
+    sampleSearchStore.selectSample(nextResult, false);
+
+    // Scroll into view
+    const rowIdx = rows.findIndex(
+      (row) => row.type === 'sample' && (row as SampleRow).result.id === nextResult.id
+    );
+
+    if (rowIdx !== -1 && scrollEl) {
+      const top = rowIdx * ROW_H;
+      const bottom = top + ROW_H;
+
+      if (top < scrollTop) {
+        scrollEl.scrollTo({ top });
+      } else if (bottom > scrollTop + viewportHeight) {
+        scrollEl.scrollTo({ top: bottom - viewportHeight });
+      }
+    }
   }
 
   function showMore(category: string, total: number) {
@@ -305,7 +351,16 @@
       {/if}
 
       <!-- Scrollable virtual list -->
-      <div class="h-full overflow-y-auto" onscroll={onScroll} bind:this={scrollEl} use:onResize>
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="h-full overflow-y-auto outline-none"
+        onscroll={onScroll}
+        onkeydown={handleKeyDown}
+        bind:this={scrollEl}
+        use:onResize
+        tabindex="0"
+      >
         <!-- Total height spacer -->
         <div style="height: {totalH}px; position: relative;">
           <!-- Top padding -->
@@ -329,15 +384,19 @@
               </div>
             {:else if row.type === 'sample'}
               {@const isPlaying = sampleSearchStore.playingId === row.result.id}
+              {@const isSelected = sampleSearchStore.selectedId === row.result.id}
               {@const playable = isPlayable(row.result)}
               <ContextMenu.Root>
                 <ContextMenu.Trigger>
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
                   <div
-                    class="group flex w-full cursor-pointer items-center gap-1.5 pr-1 pl-4 text-xs hover:bg-zinc-800"
+                    class="group flex w-full cursor-pointer items-center gap-1.5 pr-1 pl-4 text-xs {isSelected
+                      ? 'bg-zinc-700 hover:bg-zinc-700'
+                      : 'hover:bg-zinc-800'}"
                     style="height: {ROW_H}px"
                     draggable="true"
                     ondragstart={(e) => handleDragStart(e, row.result)}
+                    onclick={() => sampleSearchStore.selectSample(row.result)}
                   >
                     {#if playable}
                       <Tooltip.Root>
@@ -346,7 +405,10 @@
                             class="shrink-0 cursor-pointer rounded p-0.5 text-zinc-500 hover:text-zinc-200 {isPlaying
                               ? 'text-blue-400 hover:text-blue-300'
                               : ''}"
-                            onclick={() => sampleSearchStore.togglePreview(row.result)}
+                            onclick={(e) => {
+                              e.stopPropagation();
+                              sampleSearchStore.togglePreview(row.result);
+                            }}
                           >
                             {#if isPlaying}
                               <Square class="h-3 w-3" />
@@ -416,54 +478,117 @@
         {sampleSearchStore.results.length} result{sampleSearchStore.results.length === 1 ? '' : 's'}
       {/if}
     </span>
-    <Popover.Root>
-      <Popover.Trigger>
-        {#snippet child({ props })}
-          {@const total = sampleSearchStore.providers.length}
-          {@const enabled = sampleSearchStore.enabledProviders.size}
+    <div class="flex items-center gap-0.5">
+      <!-- Volume control -->
+      <Popover.Root>
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  {...props}
+                  class="cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+                >
+                  <Volume2 class="h-3 w-3" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Preview volume</Tooltip.Content>
+            </Tooltip.Root>
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Content class="w-14 p-3" align="end" side="top">
+          <div class="flex flex-col items-center gap-2">
+            <span class="font-mono text-[9px] text-zinc-500">
+              {Math.round(sampleSearchStore.previewVolume * 100)}%
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={sampleSearchStore.previewVolume}
+              oninput={(e) =>
+                sampleSearchStore.setPreviewVolume(
+                  Number((e.currentTarget as HTMLInputElement).value)
+                )}
+              class="h-24 cursor-pointer accent-zinc-400"
+              style="writing-mode: vertical-lr; direction: rtl;"
+            />
+          </div>
+        </Popover.Content>
+      </Popover.Root>
+
+      <!-- Auto-preview toggle -->
+      <Tooltip.Root>
+        <Tooltip.Trigger>
           <button
-            {...props}
-            class="relative cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 {enabled <
-            total
-              ? 'text-blue-400'
-              : ''}"
-            title="Filter sources"
+            class="cursor-pointer rounded p-1 hover:bg-zinc-800 {sampleSearchStore.autoPreview
+              ? 'text-blue-400 hover:text-blue-300'
+              : 'text-zinc-500 hover:text-zinc-300'}"
+            onclick={() => sampleSearchStore.setAutoPreview(!sampleSearchStore.autoPreview)}
           >
-            <SlidersHorizontal class="h-3 w-3" />
-            {#if enabled < total}
-              <span
-                class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-blue-500 font-mono text-[7px] text-white"
-                >{enabled}</span
-              >
-            {/if}
+            <Headphones class="h-3 w-3" />
           </button>
-        {/snippet}
-      </Popover.Trigger>
-      <Popover.Content class="w-48 p-2" align="end" side="top">
-        <p
-          class="mb-1.5 px-1 font-mono text-[9px] font-medium tracking-wider text-zinc-500 uppercase"
-        >
-          Sources
-        </p>
-        <div class="flex flex-col gap-0.5">
-          {#each sampleSearchStore.providers as provider}
-            {@const enabled = sampleSearchStore.enabledProviders.has(provider.id)}
-            <button
-              class="flex w-full cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-zinc-800 {enabled
-                ? ''
-                : 'opacity-40'}"
-              onclick={() => sampleSearchStore.toggleProvider(provider.id)}
-            >
-              <span
-                class="shrink-0 rounded px-1 py-0.5 font-mono text-[9px] font-medium {providerColor(
-                  provider.id
-                )}">{providerBadge(provider.id)}</span
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          Auto-preview: {sampleSearchStore.autoPreview ? 'on' : 'off'}
+        </Tooltip.Content>
+      </Tooltip.Root>
+
+      <!-- Sources filter -->
+      <Popover.Root>
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                {@const total = sampleSearchStore.providers.length}
+                {@const enabled = sampleSearchStore.enabledProviders.size}
+                <button
+                  {...props}
+                  class="relative cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 {enabled <
+                  total
+                    ? 'text-blue-400'
+                    : ''}"
+                >
+                  <SlidersHorizontal class="h-3 w-3" />
+                  {#if enabled < total}
+                    <span
+                      class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-blue-500 font-mono text-[7px] text-white"
+                      >{enabled}</span
+                    >
+                  {/if}
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Filter sources</Tooltip.Content>
+            </Tooltip.Root>
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Content class="w-48 p-2" align="end" side="top">
+          <p
+            class="mb-1.5 px-1 font-mono text-[9px] font-medium tracking-wider text-zinc-500 uppercase"
+          >
+            Sources
+          </p>
+          <div class="flex flex-col gap-0.5">
+            {#each sampleSearchStore.providers as provider (provider.id)}
+              {@const enabled = sampleSearchStore.enabledProviders.has(provider.id)}
+              <button
+                class="flex w-full cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-zinc-800 {enabled
+                  ? ''
+                  : 'opacity-40'}"
+                onclick={() => sampleSearchStore.toggleProvider(provider.id)}
               >
-              <span class="truncate font-mono text-[10px] text-zinc-300">{provider.name}</span>
-            </button>
-          {/each}
-        </div>
-      </Popover.Content>
-    </Popover.Root>
+                <span
+                  class="shrink-0 rounded px-1 py-0.5 font-mono text-[9px] font-medium {providerColor(
+                    provider.id
+                  )}">{providerBadge(provider.id)}</span
+                >
+                <span class="truncate font-mono text-[10px] text-zinc-300">{provider.name}</span>
+              </button>
+            {/each}
+          </div>
+        </Popover.Content>
+      </Popover.Root>
+    </div>
   </div>
 </div>
