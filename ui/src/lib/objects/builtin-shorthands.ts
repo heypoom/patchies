@@ -2,6 +2,7 @@ import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 import { normalizeMessageType } from '$lib/messages/message-types';
 
 import type { ObjectShorthand } from './v2/interfaces/shorthands';
+import { tableShorthandTransform } from '$objects/table/shorthand';
 
 const createExprTransform = (nodeType: string, field: string) => (expr: string, name: string) => ({
   nodeType,
@@ -286,6 +287,12 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
 
       return { nodeType: 'sse', data: { url } };
     }
+  },
+  {
+    names: ['table'],
+    nodeType: 'table',
+    description: 'Array buffer. Format: table [name] [size]',
+    transform: tableShorthandTransform
   },
   {
     names: ['soundfile~'],
