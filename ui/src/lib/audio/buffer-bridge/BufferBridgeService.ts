@@ -56,6 +56,9 @@ export class BufferBridgeService {
   /** Queued createBuffer calls made before init() */
   private pendingCreates: Array<{ name: string; length: number; channels: number }> = [];
 
+  /** Queued writeBuffer calls made before init() */
+  private pendingWrites: Array<{ name: string; data: Float32Array }> = [];
+
   private constructor() {
     this.useSAB = canUseSharedArrayBuffer();
   }
@@ -94,6 +97,13 @@ export class BufferBridgeService {
       }
 
       this.pendingCreates = [];
+
+      // Flush any writes that were queued before init
+      for (const pending of this.pendingWrites) {
+        this.writeBuffer(pending.name, pending.data);
+      }
+
+      this.pendingWrites = [];
 
       logger.info(`BufferBridge initialized (SAB: ${this.useSAB})`);
     } catch (error) {
@@ -179,9 +189,28 @@ export class BufferBridgeService {
 
   /**
    * Write an entire Float32Array to a buffer.
-   * Resizes the buffer if needed. Useful for loading samples from uiua, etc.
+   * Resizes the buffer if needed.
+   * Useful for loading samples from uiua, etc.
    */
   writeBuffer(name: string, data: Float32Array): void {
+    if (!this.bridgeNode) {
+      // Queue both a create and a write — flushed after init()
+      if (!this.pendingCreates.some((p) => p.name === name)) {
+        this.pendingCreates.push({ name, length: data.length, channels: 1 });
+      }
+
+      const writeIndex = this.pendingWrites.findIndex((w) => w.name === name);
+      const copy = new Float32Array(data);
+
+      if (writeIndex >= 0) {
+        this.pendingWrites[writeIndex] = { name, data: copy };
+      } else {
+        this.pendingWrites.push({ name, data: copy });
+      }
+
+      return;
+    }
+
     // Ensure buffer exists and is the right size
     const existing = this.bufferViews.get(name);
 
@@ -196,6 +225,7 @@ export class BufferBridgeService {
 
     // Write data to the local view
     const view = this.bufferViews.get(name);
+
     if (view) {
       view.view.set(data);
     }
@@ -277,6 +307,8 @@ export class BufferBridgeService {
     this.bufferViews.clear();
     this.snapshotCallbacks.clear();
     this.changeListeners.clear();
+    this.pendingCreates = [];
+    this.pendingWrites = [];
     this.initialized = false;
   }
 
