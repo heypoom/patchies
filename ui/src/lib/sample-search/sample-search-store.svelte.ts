@@ -114,21 +114,23 @@ class SampleSearchStore {
       let successCount = 0;
       const failures: string[] = [];
 
-      for (const p of this.providers) {
-        if (p.isLoaded()) {
-          successCount++;
+      await Promise.all(
+        this.providers.map(async (p) => {
+          if (p.isLoaded()) {
+            successCount++;
+            this.loadedCount++;
+            return;
+          }
+          try {
+            await p.loadIndex();
+            successCount++;
+          } catch (e) {
+            failures.push(p.name);
+            console.warn(`[sample-search] Failed to load ${p.name}:`, e);
+          }
           this.loadedCount++;
-          continue;
-        }
-        try {
-          await p.loadIndex();
-          successCount++;
-        } catch (e) {
-          failures.push(p.name);
-          console.warn(`[sample-search] Failed to load ${p.name}:`, e);
-        }
-        this.loadedCount++;
-      }
+        })
+      );
 
       if (successCount === 0) {
         this.error = 'Could not load sample indexes. Check your connection.';
