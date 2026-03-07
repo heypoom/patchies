@@ -105,7 +105,11 @@ export class TableObject implements TextObjectV2 {
     this.bufferName = typeof name === 'string' && name.length > 0 ? name : this.nodeId;
     this.bufferSize = typeof size === 'number' && size > 0 ? Math.round(size) : 100;
 
-    this.bridge.createBuffer(this.bufferName, this.bufferSize);
+    // Only create if buffer doesn't already exist — skip to preserve pre-loaded data
+    // (e.g. when convertToTable writes samples before this node mounts)
+    if (!this.bridge.getBufferInfo(this.bufferName)) {
+      this.bridge.createBuffer(this.bufferName, this.bufferSize);
+    }
   }
 
   destroy(): void {
