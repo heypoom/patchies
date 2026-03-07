@@ -68,7 +68,7 @@
   $effect(() => {
     void searchQuery; // track
 
-    expandedGroups = new SvelteMap();
+    expandedGroups.clear();
     scrollTop = 0;
     scrollElement?.scrollTo({ top: 0 });
   });
@@ -215,12 +215,10 @@
     const current = expandedGroups.get(category) ?? GROUP_INITIAL;
 
     expandedGroups.set(category, Math.min(current + 20, total));
-    expandedGroups = new SvelteMap(expandedGroups);
   }
 
   function showAll(category: string, total: number) {
     expandedGroups.set(category, total);
-    expandedGroups = new SvelteMap(expandedGroups);
   }
 
   function handleDragStart(event: DragEvent, result: SampleResult) {
