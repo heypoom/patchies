@@ -4,6 +4,7 @@ import { DoughSamplesProvider } from './providers/dough-samples';
 import { StrudelJsonProvider } from './providers/strudel-json';
 import { SupersonicSamplesProvider } from './providers/supersonic-samples';
 import { SupersonicSynthdefsProvider } from './providers/supersonic-synthdefs';
+import { SvelteSet } from 'svelte/reactivity';
 
 const STRUDEL_PROVIDERS = [
   new StrudelJsonProvider({
@@ -89,7 +90,8 @@ class SampleSearchStore {
   private currentAudio: HTMLAudioElement | null = null;
 
   toggleProvider(id: string): void {
-    const next = new Set(this.enabledProviders);
+    const next = new SvelteSet(this.enabledProviders);
+
     if (next.has(id)) {
       // Don't allow disabling the last one
       if (next.size === 1) return;
@@ -97,9 +99,13 @@ class SampleSearchStore {
     } else {
       next.add(id);
     }
+
     this.enabledProviders = next;
+
     // Re-run search with current query against new filter
-    if (this.query.trim()) this.search(this.query);
+    if (this.query.trim()) {
+      this.search(this.query);
+    }
   }
 
   /** Eagerly load all provider indexes. Safe to call multiple times — only runs once. */

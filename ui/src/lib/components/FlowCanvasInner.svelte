@@ -96,6 +96,7 @@
   import { KeyboardShortcutManager } from '$lib/services/KeyboardShortcutManager';
   import { AiOperationsService } from '$lib/services/AiOperationsService';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
+  import { SvelteSet } from 'svelte/reactivity';
 
   const AUTOSAVE_INTERVAL = 2500;
 
@@ -310,7 +311,7 @@
 
   // Update patchObjectTypes store for components outside the flow context (e.g., ObjectBrowserModal)
   $effect(() => {
-    const types = new Set<string>();
+    const types = new SvelteSet<string>();
 
     for (const node of nodes) {
       if (node.type === 'object' && node.data?.name) {

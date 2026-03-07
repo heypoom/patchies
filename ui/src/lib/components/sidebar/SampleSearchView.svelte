@@ -23,6 +23,8 @@
   import type { SampleResult } from '$lib/sample-search/types';
   import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { PROVIDER_META, SAMPLE_VIEW_MAX_PRELOAD } from '$lib/sample-search/constants';
+  import { match } from 'ts-pattern';
 
   const eventBus = PatchiesEventBus.getInstance();
 
@@ -41,10 +43,10 @@
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
   let scrollTop = $state(0);
   let viewportHeight = $state(400);
-  let scrollEl = $state<HTMLElement | null>(null);
+  let scrollElement = $state<HTMLElement | null>(null);
 
   // Per-category expanded state: category key -> number of items shown
-  let expandedGroups = $state(new Map<string, number>());
+  let expandedGroups = new SvelteMap<string, number>();
 
   // New tag input — shared across all open context menus (only one can be open at a time)
   let newTagInput = $state('');
@@ -58,12 +60,17 @@
     isTagMode ? sampleTagsStore.getSamplesByTag(tagQuery) : sampleSearchStore.results
   );
 
+  // Mobile state
+  let mobileSelectedSample = $state<SampleResult | null>(null);
+  let mobileMoreOpen = $state(false);
+
   // Reset expanded groups and scroll to top when query changes
   $effect(() => {
-    searchQuery; // track
-    expandedGroups = new Map();
+    void searchQuery; // track
+
+    expandedGroups = new SvelteMap();
     scrollTop = 0;
-    scrollEl?.scrollTo({ top: 0 });
+    scrollElement?.scrollTo({ top: 0 });
   });
 
   // Start loading indexes as soon as this component mounts
@@ -87,32 +94,44 @@
   // Flat row list derived from results + expandedGroups
   const rows = $derived.by<Row[]>(() => {
     const out: Row[] = [];
-    const groups = new Map<string, SampleResult[]>();
+    const groups = new SvelteMap<string, SampleResult[]>();
+
     for (const r of activeResults) {
       const key = r.category ?? '';
       const g = groups.get(key);
-      if (g) g.push(r);
-      else groups.set(key, [r]);
+
+      if (g) {
+        g.push(r);
+      } else {
+        groups.set(key, [r]);
+      }
     }
+
     for (const [category, samples] of groups) {
       if (category) {
         out.push({ type: 'header', category, provider: samples[0].provider });
       }
+
       const limit = expandedGroups.get(category) ?? GROUP_INITIAL;
       const visible = samples.slice(0, limit);
+
       for (const s of visible) out.push({ type: 'sample', result: s });
       const hidden = samples.length - visible.length;
+
       if (hidden > 0) out.push({ type: 'more', category, hidden, total: samples.length });
     }
+
     return out;
   });
 
   // Virtual window
   const totalH = $derived(rows.length * ROW_H);
+
   const startIdx = $derived(Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN));
   const endIdx = $derived(
     Math.min(rows.length, Math.ceil((scrollTop + viewportHeight) / ROW_H) + OVERSCAN)
   );
+
   const visibleRows = $derived(rows.slice(startIdx, endIdx));
   const paddingTop = $derived(startIdx * ROW_H);
   const paddingBottom = $derived(Math.max(0, (rows.length - endIdx) * ROW_H));
@@ -121,156 +140,114 @@
   const stickyHeader = $derived.by<HeaderRow | null>(() => {
     if (!rows.length) return null;
     const firstVisibleRow = Math.floor(scrollTop / ROW_H);
+
     let last: HeaderRow | null = null;
+
     for (let i = 0; i <= Math.min(firstVisibleRow, rows.length - 1); i++) {
-      if (rows[i].type === 'header') last = rows[i] as HeaderRow;
+      if (rows[i].type === 'header') {
+        last = rows[i] as HeaderRow;
+      }
     }
+
     return last;
   });
 
   function onScroll(e: Event) {
     const el = e.currentTarget as HTMLElement;
+
     scrollTop = el.scrollTop;
   }
 
   function onResize(el: HTMLElement) {
-    const ro = new ResizeObserver(() => {
+    const observer = new ResizeObserver(() => {
       viewportHeight = el.clientHeight;
     });
-    ro.observe(el);
+
+    observer.observe(el);
+
     viewportHeight = el.clientHeight;
-    return { destroy: () => ro.disconnect() };
+
+    return { destroy: () => observer.disconnect() };
   }
 
   function handleKeyDown(e: KeyboardEvent) {
     if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+
     e.preventDefault();
 
     const sampleRows = rows.filter((r): r is SampleRow => r.type === 'sample');
     if (!sampleRows.length) return;
 
-    const currentIdx = sampleRows.findIndex((r) => r.result.id === sampleSearchStore.selectedId);
-    let nextIdx: number;
+    const currentIndex = sampleRows.findIndex((r) => r.result.id === sampleSearchStore.selectedId);
+    let nextIndex: number;
 
-    if (currentIdx === -1) {
-      nextIdx = e.key === 'ArrowDown' ? 0 : sampleRows.length - 1;
+    if (currentIndex === -1) {
+      nextIndex = e.key === 'ArrowDown' ? 0 : sampleRows.length - 1;
     } else {
-      nextIdx =
+      nextIndex =
         e.key === 'ArrowDown'
-          ? Math.min(currentIdx + 1, sampleRows.length - 1)
-          : Math.max(currentIdx - 1, 0);
+          ? Math.min(currentIndex + 1, sampleRows.length - 1)
+          : Math.max(currentIndex - 1, 0);
     }
 
-    const nextResult = sampleRows[nextIdx].result;
+    const nextResult = sampleRows[nextIndex].result;
+
     sampleSearchStore.selectSample(nextResult, false);
 
     // Scroll into view
-    const rowIdx = rows.findIndex(
+    const rowIndex = rows.findIndex(
       (row) => row.type === 'sample' && (row as SampleRow).result.id === nextResult.id
     );
 
-    if (rowIdx !== -1 && scrollEl) {
-      const top = rowIdx * ROW_H;
+    if (rowIndex !== -1 && scrollElement) {
+      const top = rowIndex * ROW_H;
       const bottom = top + ROW_H;
 
       if (top < scrollTop) {
-        scrollEl.scrollTo({ top });
+        scrollElement.scrollTo({ top });
       } else if (bottom > scrollTop + viewportHeight) {
-        scrollEl.scrollTo({ top: bottom - viewportHeight });
+        scrollElement.scrollTo({ top: bottom - viewportHeight });
       }
     }
   }
 
   function showMore(category: string, total: number) {
     const current = expandedGroups.get(category) ?? GROUP_INITIAL;
+
     expandedGroups.set(category, Math.min(current + 20, total));
-    expandedGroups = new Map(expandedGroups);
+    expandedGroups = new SvelteMap(expandedGroups);
   }
 
   function showAll(category: string, total: number) {
     expandedGroups.set(category, total);
-    expandedGroups = new Map(expandedGroups);
+    expandedGroups = new SvelteMap(expandedGroups);
   }
 
   function handleDragStart(event: DragEvent, result: SampleResult) {
-    if (result.kind === 'synthdef') {
-      const payload = JSON.stringify({ synthdef: result.url });
-      event.dataTransfer?.setData('application/x-supersonic-synthdef', payload);
-      event.dataTransfer?.setData('text/plain', result.url);
-    } else if (result.kind === 'sc-sample') {
-      const payload = JSON.stringify({ name: result.name });
-      event.dataTransfer?.setData('application/x-supersonic-sample', payload);
-      event.dataTransfer?.setData('text/plain', result.name);
-    } else {
-      const payload = JSON.stringify({ url: result.url, name: result.name });
-      event.dataTransfer?.setData('application/x-sample-url', payload);
-      event.dataTransfer?.setData('text/plain', result.name);
-    }
-    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';
-  }
+    match(result)
+      .with({ kind: 'synthdef' }, () => {
+        const payload = JSON.stringify({ synthdef: result.url });
 
-  const PROVIDER_META: Record<string, { badge: string; label: string; color: string }> = {
-    'tidal-drum-machines': {
-      badge: 'TDM',
-      label: 'Tidal Drum Machines (geikha)',
-      color: 'text-cyan-400 bg-cyan-900/30'
-    },
-    'dough-samples': {
-      badge: 'DS',
-      label: 'Dough Samples (felixroos) — piano, EmuSP12, mridangam, VCSL, Dirt-Samples',
-      color: 'text-purple-400 bg-purple-900/30'
-    },
-    spicule: {
-      badge: 'SPC',
-      label: 'Spicule (yaxu) — diverse drums, synths, foley, breaks',
-      color: 'text-emerald-400 bg-emerald-900/30'
-    },
-    'clean-breaks': {
-      badge: 'CLN',
-      label: 'Clean Breaks (yaxu) — classic breakbeat loops',
-      color: 'text-lime-400 bg-lime-900/30'
-    },
-    'estuary-samples': {
-      badge: 'EST',
-      label: 'Estuary Samples (felixroos) — world & acoustic instruments',
-      color: 'text-amber-400 bg-amber-900/30'
-    },
-    'dough-fox': {
-      badge: 'FOX',
-      label: 'Dough Fox (Bubobubobubobubo) — drum machine hits & percussion',
-      color: 'text-orange-400 bg-orange-900/30'
-    },
-    'dough-amen': {
-      badge: 'AMN',
-      label: 'Dough Amen (Bubobubobubobubo) — amen break loops',
-      color: 'text-red-400 bg-red-900/30'
-    },
-    'dough-amiga': {
-      badge: 'AMG',
-      label: 'Dough Amiga (Bubobubobubobubo) — Amiga/chiptune samples',
-      color: 'text-sky-400 bg-sky-900/30'
-    },
-    'dough-samples-bubo': {
-      badge: 'DBB',
-      label: 'Dough Samples (Bubobubobubobubo) — general purpose kit',
-      color: 'text-violet-400 bg-violet-900/30'
-    },
-    'emptyflash-samples': {
-      badge: 'EF',
-      label: 'Emptyflash Samples — Legowelt & ER-1 drum machines',
-      color: 'text-pink-400 bg-pink-900/30'
-    },
-    'supersonic-samples': {
-      badge: 'SCS',
-      label: 'SuperSonic Samples (Sam Aaron) — 206 built-in Sonic Pi samples',
-      color: 'text-teal-400 bg-teal-900/30'
-    },
-    'supersonic-synthdefs': {
-      badge: 'SCD',
-      label: 'SuperSonic SynthDefs (Sam Aaron) — 120 built-in SuperCollider synthdefs',
-      color: 'text-indigo-400 bg-indigo-900/30'
+        event.dataTransfer?.setData('application/x-supersonic-synthdef', payload);
+        event.dataTransfer?.setData('text/plain', result.url);
+      })
+      .with({ kind: 'sc-sample' }, () => {
+        const payload = JSON.stringify({ name: result.name });
+
+        event.dataTransfer?.setData('application/x-supersonic-sample', payload);
+        event.dataTransfer?.setData('text/plain', result.name);
+      })
+      .otherwise(() => {
+        const payload = JSON.stringify({ url: result.url, name: result.name });
+
+        event.dataTransfer?.setData('application/x-sample-url', payload);
+        event.dataTransfer?.setData('text/plain', result.name);
+      });
+
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'copy';
     }
-  };
+  }
 
   function providerBadge(provider: string): string {
     return PROVIDER_META[provider]?.badge ?? provider.slice(0, 3).toUpperCase();
@@ -285,41 +262,42 @@
   }
 
   function strudelName(result: SampleResult): string {
-    const cat = result.category ?? result.name;
-    const idx = result.index ?? 0;
-    return idx === 0 ? cat : `${cat}:${idx}`;
+    const category = result.category ?? result.name;
+    const index = result.index ?? 0;
+
+    return index === 0 ? category : `${category}:${index}`;
   }
 
   async function copyAsStrudelName(result: SampleResult) {
     await navigator.clipboard.writeText(strudelName(result));
+
     toast.success('Copied to clipboard');
   }
 
   async function copySynthdefName(result: SampleResult) {
     // result.url holds the raw synthdef name for synthdef kind
     await navigator.clipboard.writeText(result.url);
+
     toast.success('Copied to clipboard');
   }
 
   async function copyScSampleName(result: SampleResult) {
     await navigator.clipboard.writeText(result.name);
+
     toast.success('Copied to clipboard');
   }
 
   /** Whether this result has audio that can be previewed */
-  function isPlayable(result: SampleResult): boolean {
-    return result.kind !== 'synthdef';
-  }
+  const isPlayable = (result: SampleResult): boolean => result.kind !== 'synthdef';
 
   function addNewTag(result: SampleResult) {
     const tag = newTagInput.trim();
     if (!tag) return;
+
     sampleTagsStore.addTag(result, tag);
+
     newTagInput = '';
   }
-
-  // Preload audio for visible samples
-  const MAX_PRELOAD = 50;
 
   const preloadCache = new SvelteMap<string, HTMLAudioElement>();
 
@@ -328,26 +306,26 @@
       if (row.type !== 'sample') continue;
 
       const { result } = row;
+
       if (!isPlayable(result) || preloadCache.has(result.id)) continue;
 
-      if (preloadCache.size >= MAX_PRELOAD) {
+      if (preloadCache.size >= SAMPLE_VIEW_MAX_PRELOAD) {
         const oldest = preloadCache.keys().next().value!;
+
         preloadCache.get(oldest)!.src = '';
         preloadCache.delete(oldest);
       }
 
       const audio = new Audio(result.url);
       audio.preload = 'auto';
+
       preloadCache.set(result.id, audio);
     }
   });
 
-  // Mobile state
-  let mobileSelectedSample = $state<SampleResult | null>(null);
-  let mobileMoreOpen = $state(false);
-
   function handleInsertSampleToCanvas() {
     if (!mobileSelectedSample) return;
+
     eventBus.dispatch({
       type: 'insertSampleToCanvas',
       result: {
@@ -356,20 +334,18 @@
         name: mobileSelectedSample.name
       }
     });
+
     mobileSelectedSample = null;
     $isSidebarOpen = false;
+
     toast.success('Added to canvas');
   }
 
-  async function mobileCopy(result: SampleResult) {
-    if (result.kind === 'synthdef') {
-      await copySynthdefName(result);
-    } else if (result.kind === 'sc-sample') {
-      await copyScSampleName(result);
-    } else {
-      await copyAsStrudelName(result);
-    }
-  }
+  const mobileCopy = async (result: SampleResult) =>
+    match(result)
+      .with({ kind: 'synthdef' }, () => copySynthdefName(result))
+      .with({ kind: 'sc-sample' }, () => copyScSampleName(result))
+      .otherwise(() => copyAsStrudelName(result));
 </script>
 
 <div class="flex h-full flex-col">
@@ -463,7 +439,7 @@
         class="h-full overflow-y-auto outline-none"
         onscroll={onScroll}
         onkeydown={handleKeyDown}
-        bind:this={scrollEl}
+        bind:this={scrollElement}
         use:onResize
         tabindex="0"
       >
