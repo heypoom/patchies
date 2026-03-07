@@ -355,42 +355,49 @@
           <div
             class={[
               'w-fit cursor-pointer rounded-lg border px-3 pt-0.5 pb-1.5',
-              textualContainerClass
+              vfsMedia.isDragging ? 'border-blue-400 bg-blue-50/10' : textualContainerClass
             ]}
             ondblclick={enterEditingMode}
+            ondragover={vfsMedia.handleDragOver}
+            ondragleave={vfsMedia.handleDragLeave}
+            ondrop={vfsMedia.handleDrop}
             role="button"
             tabindex="0"
             onkeydown={(e) => e.key === 'Enter' && enterEditingMode()}
           >
-            <span class="font-mono text-xs text-zinc-200">table</span>
+            {#if vfsMedia.isDragging}
+              <span class="font-mono text-xs text-blue-400">Drop audio file</span>
+            {:else}
+              <span class="font-mono text-xs text-zinc-200">table</span>
 
-            <Tooltip.Root>
-              <Tooltip.Trigger>
-                <span
-                  class="ml-0.5 font-mono text-xs text-zinc-400 underline-offset-2 hover:text-blue-500 hover:underline"
-                >
-                  {bufferName}
-                </span>
-              </Tooltip.Trigger>
-              <Tooltip.Content>
-                <p class="font-semibold">Buffer name</p>
-                <p class="text-xs text-zinc-500">Reference with tabread~, tabwrite~, tabosc4~</p>
-              </Tooltip.Content>
-            </Tooltip.Root>
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <span
+                    class="ml-0.5 font-mono text-xs text-zinc-400 underline-offset-2 hover:text-blue-500 hover:underline"
+                  >
+                    {bufferName}
+                  </span>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <p class="font-semibold">Buffer name</p>
+                  <p class="text-xs text-zinc-500">Reference with tabread~, tabwrite~, tabosc4~</p>
+                </Tooltip.Content>
+              </Tooltip.Root>
 
-            <Tooltip.Root>
-              <Tooltip.Trigger>
-                <span
-                  class="ml-0.5 font-mono text-xs text-zinc-400 underline-offset-2 hover:text-yellow-500 hover:underline"
-                >
-                  {bufferSize}
-                </span>
-              </Tooltip.Trigger>
-              <Tooltip.Content>
-                <p class="font-semibold">Size</p>
-                <p class="text-xs text-zinc-500">{bufferSize} samples</p>
-              </Tooltip.Content>
-            </Tooltip.Root>
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <span
+                    class="ml-0.5 font-mono text-xs text-zinc-400 underline-offset-2 hover:text-yellow-500 hover:underline"
+                  >
+                    {bufferSize}
+                  </span>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <p class="font-semibold">Size</p>
+                  <p class="text-xs text-zinc-500">{bufferSize} samples</p>
+                </Tooltip.Content>
+              </Tooltip.Root>
+            {/if}
           </div>
         {/if}
 
