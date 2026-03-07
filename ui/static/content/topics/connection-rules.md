@@ -8,8 +8,8 @@ These rules define what handles can be connected together.
 
 - You can connect multiple outlets to a single inlet and vice-versa
 - **Video outlets** (orange) can _only_ connect to video inlets
-- **Message outlets** (gray) can _only_ connect to message inlets
-- **Audio outlets** (blue) can connect to audio inlets
+- **Audio outlets** (blue) can connect to audio inlets, and to _audio parameter_ inlets (see below)
+- **Message outlets** (gray) can connect to message inlets, and to signal inlets that _accept floats_ (see below)
 - **Analysis outlets** (purple) from `fft~` output can connect to message and video inlets
 
 ## Audio Parameter Modulation
@@ -19,6 +19,15 @@ Audio outlets can connect to _audio parameter_ inlets for parameter modulation:
 - `osc~`'s `frequency` and `gain~`'s `gain` are both audio param inlets
 - Message _and_ audio outlets (like `osc~` out and `gain~` out) can connect to audio param inlets
 - If you start dragging from an audio outlet (blue), the audio param inlets will _turn from grey to blue_ to indicate they're connectable
+
+## Float-to-Signal Inlets
+
+Some signal inlets accept float messages to set a constant value (Pure Data style):
+
+- Arithmetic objects (`+~`, `*~`, `-~`, `/~`) and comparison objects (`>~`, `<~`, `min~`, `max~`) have a right signal inlet that accepts floats
+- You can connect a **message outlet** _or_ an **audio outlet** to these inlets
+- Sending a float number directly sets the constant used when no signal is connected
+- The constant can also be set as a creation argument, e.g. `*~ 0.5` multiplies by 0.5
 
 ## Handle Colors
 
