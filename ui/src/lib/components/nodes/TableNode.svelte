@@ -479,6 +479,7 @@
 
   <ContextMenu.Content>
     <ContextMenu.Item
+      class="cursor-pointer"
       onclick={() => {
         updateNodeData(nodeId, { ...data, showVisual: !showVisual });
 
@@ -493,6 +494,16 @@
         Show Visualizer
       {/if}
     </ContextMenu.Item>
+
+    {#if data.vfsPath}
+      <ContextMenu.Item
+        class="cursor-pointer"
+        onclick={() => updateNodeData(nodeId, { ...data, vfsPath: undefined })}
+      >
+        <Unlink class="mr-2 h-4 w-4" />
+        Unlink Virtual File
+      </ContextMenu.Item>
+    {/if}
   </ContextMenu.Content>
 </ContextMenu.Root>
 
