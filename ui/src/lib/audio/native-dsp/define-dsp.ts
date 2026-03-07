@@ -125,6 +125,7 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
 
     constructor(nodeOptions?: { processorOptions?: { nodeId?: string; floatInlets?: number[] } }) {
       super();
+
       this.nodeId = nodeOptions?.processorOptions?.nodeId ?? '';
       this.state = options.state();
 
@@ -136,6 +137,7 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
       // Initialize constant buffers for acceptsFloat signal inlets (default 0).
       // These are passed from createWorkletDspNode so processors don't need inletDefaults.
       const floatInlets = nodeOptions?.processorOptions?.floatInlets ?? [];
+
       for (const inlet of floatInlets) {
         if (!this.inletValues.has(inlet)) {
           this.setInletValue(inlet, 0);
@@ -183,6 +185,7 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
     /** Update an inlet's constant value and refill its buffer */
     private setInletValue(inlet: number, value: number): void {
       this.inletValues.set(inlet, value);
+
       const buf = this.inletBuffers.get(inlet);
       if (buf) buf.fill(value);
     }
