@@ -8,6 +8,7 @@
     isConnecting,
     connectingFromHandleId,
     connectingFromAcceptsFloat,
+    connectingFromIsAudioParam,
     audioSourceConnections
   } from '../../stores/ui.store';
   import { shouldDimHandle } from '$lib/utils/handle-dimming';
@@ -105,7 +106,8 @@
       currentHandlePort: port,
       isAudioParam,
       acceptsFloat,
-      connectingFromAcceptsFloat: $connectingFromAcceptsFloat
+      connectingFromAcceptsFloat: $connectingFromAcceptsFloat,
+      connectingFromIsAudioParam: $connectingFromIsAudioParam
     })
   );
 

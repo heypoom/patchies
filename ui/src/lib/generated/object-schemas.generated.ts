@@ -717,7 +717,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Read from delay line with 4-point interpolation for variable delays',
     inlets: [
-      { id: 'delay', type: 'signal', description: 'Delay time in ms (signal rate)' },
+      { id: 'delay', type: 'signal', description: 'Delay time in ms' },
       {
         id: 'name',
         type: 'string',
@@ -2333,7 +2333,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     description: 'Voltage-controlled resonant filter with signal-rate frequency modulation',
     inlets: [
       { id: 'signal', type: 'signal', description: 'Audio input to filter' },
-      { id: 'frequency', type: 'signal', description: 'Center frequency in Hz (signal rate)' },
+      { id: 'frequency', type: 'signal', description: 'Center frequency in Hz' },
       {
         id: 'q',
         type: 'float',

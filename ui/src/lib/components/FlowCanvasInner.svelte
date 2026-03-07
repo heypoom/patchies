@@ -34,7 +34,8 @@
     selectedNodeInfo,
     audioSourceConnections,
     isCablesVisible,
-    connectingFromAcceptsFloat
+    connectingFromAcceptsFloat,
+    connectingFromIsAudioParam
   } from '../../stores/ui.store';
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
@@ -723,12 +724,14 @@
       sourceNode?.type === 'object' ? (sourceNode.data?.name as string) : undefined;
 
     connectingFromAcceptsFloat.set(isAcceptsFloatInlet(sourceObjectName, params.handleId));
+    connectingFromIsAudioParam.set(isAudioParamInlet(sourceObjectName, params.handleId));
   }
 
   function handleConnectEnd() {
     isConnecting.set(false);
     connectingFromHandleId.set(null);
     connectingFromAcceptsFloat.set(false);
+    connectingFromIsAudioParam.set(false);
   }
 
   function cancelConnectionMode() {

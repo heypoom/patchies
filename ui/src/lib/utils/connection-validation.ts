@@ -74,6 +74,12 @@ export interface ConnectionValidationOptions {
    * Used when dragging FROM an acceptsFloat inlet toward a message outlet (reverse drag).
    */
   isSourceAcceptsFloat?: boolean;
+
+  /**
+   * Whether the source inlet is an AudioParam.
+   * Used when dragging FROM an AudioParam inlet toward an audio outlet (reverse drag).
+   */
+  isSourceAudioParam?: boolean;
 }
 
 /**
@@ -149,6 +155,11 @@ export function isValidConnectionBetweenHandles(
 
   // Source is an acceptsFloat signal inlet being dragged toward a message outlet (reverse drag).
   if (isSourceAudio && isTargetMessage && options?.isSourceAcceptsFloat) {
+    return true;
+  }
+
+  // Source is an AudioParam inlet (message handle) being dragged toward an audio outlet (reverse drag).
+  if (isSourceMessage && normalizedTarget.startsWith('audio-out') && options?.isSourceAudioParam) {
     return true;
   }
 

@@ -152,6 +152,33 @@ describe('isValidConnectionBetweenHandles with acceptsFloat', () => {
   });
 });
 
+describe('isValidConnectionBetweenHandles with isSourceAudioParam', () => {
+  it('allows reverse drag: AudioParam inlet (message handle) → audio outlet', () => {
+    expect(
+      isValidConnectionBetweenHandles('message-in', 'audio-out', { isSourceAudioParam: true })
+    ).toBe(true);
+  });
+
+  it('rejects reverse drag: AudioParam inlet → audio outlet without the flag', () => {
+    expect(isValidConnectionBetweenHandles('message-in', 'audio-out')).toBe(false);
+    expect(
+      isValidConnectionBetweenHandles('message-in', 'audio-out', { isSourceAudioParam: false })
+    ).toBe(false);
+  });
+
+  it('rejects reverse drag: AudioParam inlet → audio inlet (same direction)', () => {
+    expect(
+      isValidConnectionBetweenHandles('message-in', 'audio-in', { isSourceAudioParam: true })
+    ).toBe(false);
+  });
+
+  it('rejects reverse drag: AudioParam inlet → video outlet', () => {
+    expect(
+      isValidConnectionBetweenHandles('message-in', 'video-out', { isSourceAudioParam: true })
+    ).toBe(false);
+  });
+});
+
 describe('isAcceptsFloatInlet', () => {
   it('returns false for non-audio nodes', () => {
     expect(isAcceptsFloatInlet('print', 'in-0')).toBe(false);
