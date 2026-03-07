@@ -1,0 +1,48 @@
+import { Type } from '@sinclair/typebox';
+import type { ObjectSchema } from './types';
+import { msg, sym } from './helpers';
+import { Bang } from './common';
+
+// Table-specific message schemas
+export const TableSet = msg('set', { index: Type.Number(), value: Type.Number() });
+export const TableGet = msg('get', { index: Type.Number() });
+export const TableResize = msg('resize', { length: Type.Number() });
+export const TableClear = sym('clear');
+export const TableNormalize = sym('normalize');
+
+/**
+ * Schema for the table object — named float array with waveform visualizer.
+ */
+export const tableSchema: ObjectSchema = {
+  type: 'table',
+  category: 'audio',
+  description: 'Named array of floats — shared with tabread~, tabwrite~, tabosc4~',
+  inlets: [
+    {
+      id: 'command',
+      description: 'Table commands',
+      messages: [
+        { schema: Bang, description: 'Output the entire table as a Float32Array' },
+        { schema: TableSet, description: 'Set value at index' },
+        {
+          schema: TableGet,
+          description: 'Get value at index — outputs {type:"get", index, value}'
+        },
+        { schema: TableResize, description: 'Resize the table (preserves data up to new length)' },
+        { schema: TableClear, description: 'Fill the table with zeros' },
+        { schema: TableNormalize, description: 'Normalize table values to -1..1 range' },
+        {
+          schema: Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
+          description: 'Write a Float32Array directly into the buffer'
+        }
+      ]
+    }
+  ],
+  outlets: [
+    {
+      id: 'result',
+      description: 'Float32Array on bang, or {type:"get", index, value} on get command'
+    }
+  ],
+  tags: ['audio', 'buffer', 'array', 'wavetable', 'sample']
+};

@@ -2,13 +2,18 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
-  import { Type } from '@sinclair/typebox';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { BufferBridgeService } from '$lib/audio/buffer-bridge';
-  import { messages } from '$lib/objects/schemas';
-  import { msg, sym } from '$lib/objects/schemas/helpers';
+  import {
+    messages,
+    TableSet,
+    TableGet,
+    TableResize,
+    TableClear,
+    TableNormalize
+  } from '$lib/objects/schemas';
   import { schema } from '$lib/objects/schemas/types';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -70,7 +75,11 @@
       // Copy data to new buffer name then delete old
       const oldData = await bridge.readBufferAsync(bufferName);
       bridge.createBuffer(newName, validSize);
-      if (oldData) bridge.writeBuffer(newName, oldData);
+
+      if (oldData) {
+        bridge.writeBuffer(newName, oldData);
+      }
+
       bridge.deleteBuffer(bufferName);
     } else if (sizeChanged) {
       bridge.resizeBuffer(bufferName, validSize);
@@ -91,15 +100,9 @@
 
   function handleBlur() {
     if (!isEditing) return;
+
     setTimeout(() => exitEditingMode(true), 150);
   }
-
-  // --- Message schemas (mirroring TableObject.ts) ---
-  const TableSet = msg('set', { index: Type.Number(), value: Type.Number() });
-  const TableGet = msg('get', { index: Type.Number() });
-  const TableResize = msg('resize', { length: Type.Number() });
-  const TableClear = sym('clear');
-  const TableNormalize = sym('normalize');
 
   const tableMessages = {
     set: schema(TableSet),
@@ -199,17 +202,23 @@
 
     for (let px = 0; px < CANVAS_W; px++) {
       const start = Math.floor((px / CANVAS_W) * buf.length);
+
       const end = Math.max(start + 1, Math.floor(((px + 1) / CANVAS_W) * buf.length));
-      let min = 0,
-        max = 0;
+
+      let min = 0;
+      let max = 0;
+
       for (let i = start; i < end; i++) {
         const v = buf[i];
         if (v < min) min = v;
         if (v > max) max = v;
       }
+
       const yMax = mid - max * (mid - 2);
       const yMin = mid - min * (mid - 2);
+
       if (px === 0) ctx.moveTo(px + 0.5, yMax);
+
       ctx.lineTo(px + 0.5, yMax);
       ctx.lineTo(px + 0.5, yMin);
     }
@@ -221,10 +230,12 @@
     if (bridge.isSharedMemory) {
       // SAB: live zero-copy reads via RAF
       function loop() {
-        const buf = bridge.readBuffer(bufferName);
-        if (buf) drawWaveform(buf);
+        const buffer = bridge.readBuffer(bufferName);
+        if (buffer) drawWaveform(buffer);
+
         rafId = requestAnimationFrame(loop);
       }
+
       rafId = requestAnimationFrame(loop);
     } else {
       // non-SAB: async polling at ~10 fps

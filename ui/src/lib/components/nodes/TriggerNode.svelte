@@ -301,7 +301,7 @@
               bind:this={resultsContainer}
               class="nopan nodrag nowheel absolute top-full left-0 z-50 mt-1 max-h-48 w-fit min-w-40 overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-lg"
             >
-              {#each filteredSuggestions as suggestion, index}
+              {#each filteredSuggestions as suggestion, index (suggestion.value)}
                 <button
                   type="button"
                   class={[

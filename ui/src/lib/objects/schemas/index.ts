@@ -25,6 +25,7 @@ export * from './textbox';
 export * from './keyboard';
 export * from './soundfile';
 export * from './sampler';
+export * from './table';
 export * from './orca';
 export * from './strudel';
 export * from './chuck';
@@ -109,6 +110,7 @@ import { textboxSchema } from './textbox';
 import { keyboardSchema } from './keyboard';
 import { soundfileSchema } from './soundfile';
 import { samplerSchema } from './sampler';
+import { tableSchema } from './table';
 import { orcaSchema } from './orca';
 import { strudelSchema } from './strudel';
 import { chuckSchema } from './chuck';
@@ -203,6 +205,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   keyboard: keyboardSchema,
   'soundfile~': soundfileSchema,
   'sampler~': samplerSchema,
+  table: tableSchema,
   orca: orcaSchema,
   strudel: strudelSchema,
   'chuck~': chuckSchema,
