@@ -30,6 +30,7 @@ import { DEFAULT_ORCA_WIDTH, DEFAULT_ORCA_HEIGHT } from '$lib/orca/constants';
 import { DEFAULT_WGSL_CODE } from '$lib/webgpu/constants';
 import { DEFAULT_TRACKS } from '$lib/nodes/sequencer-constants';
 import { CURVE_DEFAULT_OBJECT_DATA } from '$objects/curve/constants';
+import { TABLE_DEFAULT_NODE_DATA } from '$objects/table/constants';
 
 // TODO: make this type-safe!
 export type NodeData = {
@@ -247,6 +248,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('ruby', () => ({ code: 'puts "Hello, Ruby!"', showConsole: true }))
     .with('wgpu.compute', () => ({ code: DEFAULT_WGSL_CODE, showConsole: true }))
     .with('trigger', () => ({ types: ['b', 'n'], shorthand: false, showHelp: false }))
+    .with('table', () => TABLE_DEFAULT_NODE_DATA)
     .with('send.vdo', () => ({ channel: 'foo' }))
     .with('recv.vdo', () => ({ channel: 'foo' }))
     .with('note', () => ({ text: '', color: '#fef3c7', fontSize: 14 }))

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Mic, Play, Square, Table, Upload, Volume2 } from '@lucide/svelte/icons';
-  import { BufferBridgeService } from '$lib/audio/buffer-bridge';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
@@ -183,59 +182,27 @@
   }
 
   /**
-   * Convert this soundfile~ node to a table object, loading the audio as a Float32Array.
-   * The table will contain a mono mix of the audio at its native sample rate.
+   * Convert this soundfile~ node to a table object.
+   * The table's VFS support handles decoding on mount.
    */
-  async function convertToTable() {
+  function convertToTable() {
     if (!vfsMedia.hasVfsPath || !node.data.vfsPath) return;
 
     showTableNameDialog = false;
 
     const bufferName = tableNameInput.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32) || node.id;
 
-    const eventBus = PatchiesEventBus.getInstance();
-
-    try {
-      const { VirtualFilesystem } = await import('$lib/vfs');
-      const vfs = VirtualFilesystem.getInstance();
-      const fileOrBlob = await vfs.resolve(node.data.vfsPath);
-
-      const buffer = await fileOrBlob.arrayBuffer();
-      const audioBuffer = await audioService.getAudioContext().decodeAudioData(buffer);
-
-      // Build a mono mix as Float32Array
-      const length = audioBuffer.length;
-      const channelCount = audioBuffer.numberOfChannels;
-      const samples = new Float32Array(length);
-      for (let ch = 0; ch < channelCount; ch++) {
-        const channelData = audioBuffer.getChannelData(ch);
-        for (let i = 0; i < length; i++) {
-          samples[i] += channelData[i];
-        }
+    PatchiesEventBus.getInstance().dispatch({
+      type: 'nodeReplace',
+      nodeId: node.id,
+      newType: 'table',
+      newData: {
+        bufferName,
+        size: 0,
+        showVisual: true,
+        vfsPath: node.data.vfsPath
       }
-      if (channelCount > 1) {
-        for (let i = 0; i < length; i++) samples[i] /= channelCount;
-      }
-
-      const expr = `table ${bufferName} ${length}`;
-
-      eventBus.dispatch({
-        type: 'nodeReplace',
-        nodeId: node.id,
-        newType: 'object',
-        newData: {
-          expr,
-          name: 'table',
-          params: [null, bufferName, length]
-        }
-      });
-
-      // Write PCM data; BufferBridgeService.writeBuffer handles buffer creation if needed
-      const bridge = BufferBridgeService.getInstance();
-      bridge.writeBuffer(bufferName, samples);
-    } catch (err) {
-      logger.error('Failed to decode audio for table conversion:', err);
-    }
+    });
   }
 
   /**
@@ -293,7 +260,7 @@
               <div class="flex gap-1">
                 <button
                   title="Play"
-                  class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                  class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
                   onclick={playFile}
                 >
                   <Play class="h-4 w-4 text-zinc-300" />
@@ -301,7 +268,7 @@
 
                 <button
                   title="Stop"
-                  class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                  class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
                   onclick={stopFile}
                 >
                   <Square class="h-4 w-4 text-zinc-300" />

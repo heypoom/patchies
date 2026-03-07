@@ -20,7 +20,6 @@ import { WebMidiLinkObject } from './WebMidiLinkObject';
 import { SendObject } from './SendObject';
 import { RecvObject } from './RecvObject';
 import { SamplerateObject } from './SamplerateObject';
-import { TableObject } from './TableObject';
 import { UnpackObject } from './UnpackObject';
 
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
@@ -46,7 +45,6 @@ export const TEXT_OBJECTS = [
   SendObject,
   RecvObject,
   SamplerateObject,
-  TableObject,
   UnpackObject
 ] as const satisfies TextObjectClass[];
 

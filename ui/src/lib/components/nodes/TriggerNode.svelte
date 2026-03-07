@@ -13,11 +13,7 @@
     getTypedOutput,
     type MessageType
   } from '$lib/messages/message-types';
-  import {
-    TRIGGER_TYPE_SPECS,
-    getTriggerTypeSpec,
-    type TriggerTypeKey
-  } from '$lib/objects/schemas/trigger';
+  import { TRIGGER_TYPE_SPECS, getTriggerTypeSpec } from '$lib/objects/schemas/trigger';
 
   let {
     id: nodeId,
@@ -261,7 +257,7 @@
       <!-- Help button above node -->
       <div class="absolute -top-7 right-0 flex items-center">
         <button
-          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
           onclick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -305,7 +301,7 @@
               bind:this={resultsContainer}
               class="nopan nodrag nowheel absolute top-full left-0 z-50 mt-1 max-h-48 w-fit min-w-40 overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-lg"
             >
-              {#each filteredSuggestions as suggestion, index}
+              {#each filteredSuggestions as suggestion, index (suggestion.value)}
                 <button
                   type="button"
                   class={[

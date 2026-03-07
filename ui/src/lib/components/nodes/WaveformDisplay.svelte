@@ -1,4 +1,13 @@
 <script lang="ts">
+  import {
+    setupDprCanvas,
+    drawWaveform,
+    drawLoopOverlay,
+    drawPlaybackHead,
+    type ViewWindow
+  } from '$lib/canvas/waveform-renderer';
+  import { useWaveformZoom } from '$lib/canvas/use-waveform-zoom.svelte';
+
   let {
     audioBuffer,
     analyser,
@@ -24,245 +33,144 @@
   let canvasRef = $state<HTMLCanvasElement>();
   let animationFrameId: number | null = null;
 
-  // Store a reference to the last audioBuffer we drew
-  let lastDrawnBuffer: AudioBuffer | null = null;
-  // Cache the base waveform as an OffscreenCanvas for better performance
+  // Offscreen cache for the static waveform — keyed to buffer + view
   let waveformCache: HTMLCanvasElement | null = null;
+  let lastDrawnBuffer: AudioBuffer | null = null;
+  let lastDrawnView: ViewWindow | null = null;
 
   // For real-time recording visualization
   let recordingHistory: number[] = [];
-  const MAX_HISTORY_SAMPLES = 2048; // Keep last ~2 seconds at 1024 samples/sec
+  const MAX_HISTORY_SAMPLES = 2048;
 
-  // Real-time waveform drawing for analyser - time-based scrolling plot
-  function drawRealtimeWaveform() {
-    if (!canvasRef || !analyser) return;
+  const zoom = useWaveformZoom();
+
+  // --- Canvas setup ---
+
+  $effect(() => {
+    void width;
+    void height;
+    if (canvasRef) {
+      setupDprCanvas(canvasRef, width, height);
+      waveformCache = null;
+      lastDrawnBuffer = null;
+      lastDrawnView = null;
+    }
+  });
+
+  // --- Static waveform (AudioBuffer) ---
+
+  function viewChanged(v: ViewWindow): boolean {
+    return !lastDrawnView || lastDrawnView.start !== v.start || lastDrawnView.end !== v.end;
+  }
+
+  function buildCache(buffer: AudioBuffer, view: ViewWindow) {
+    if (!canvasRef) return;
+    const cache = document.createElement('canvas');
+    cache.width = canvasRef.width;
+    cache.height = canvasRef.height;
+    drawWaveform(cache, buffer.getChannelData(0), view);
+    waveformCache = cache;
+    lastDrawnBuffer = buffer;
+    lastDrawnView = { start: view.start, end: view.end };
+  }
+
+  function drawStatic(view: ViewWindow) {
+    if (!canvasRef || !audioBuffer) return;
+
+    if (audioBuffer !== lastDrawnBuffer || viewChanged(view)) {
+      buildCache(audioBuffer, view);
+    }
 
     const ctx = canvasRef.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !waveformCache) return;
 
-    const canvasWidth = canvasRef.width;
-    const canvasHeight = canvasRef.height;
+    ctx.drawImage(waveformCache, 0, 0);
+
+    if (showLoopPoints && loopEnd > loopStart) {
+      drawLoopOverlay(canvasRef, audioBuffer.duration, loopStart, loopEnd, view);
+    }
+    if (playbackProgress > 0) {
+      drawPlaybackHead(canvasRef, audioBuffer.duration, playbackProgress, view);
+    }
+  }
+
+  // --- Real-time waveform (AnalyserNode while recording) ---
+
+  function startRealtimeDrawing() {
+    if (!canvasRef || !analyser) return;
 
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
+    const downsampleFactor = Math.ceil(bufferLength / 256);
 
     const draw = () => {
-      if (!analyser) return;
+      if (!analyser || !canvasRef) return;
 
       analyser.getByteTimeDomainData(dataArray);
 
-      // Accumulate samples into history
-      // Take a downsampled average to keep history manageable
-      const downsampleFactor = Math.ceil(bufferLength / 256); // Get ~256 samples per frame
       for (let i = 0; i < bufferLength; i += downsampleFactor) {
-        const sample = dataArray[i] / 128.0 - 1.0; // Convert to -1 to 1 range
-        recordingHistory.push(sample);
+        recordingHistory.push(dataArray[i] / 128.0 - 1.0);
       }
-
-      // Keep only the most recent samples
       if (recordingHistory.length > MAX_HISTORY_SAMPLES) {
         recordingHistory = recordingHistory.slice(-MAX_HISTORY_SAMPLES);
       }
 
-      // Clear canvas
-      ctx.fillStyle = '#080809'; // zinc-900
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-      // Draw accumulated waveform
-      if (recordingHistory.length > 1) {
-        ctx.strokeStyle = '#f97316'; // orange-500 for recording
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-
-        const step = Math.max(1, Math.ceil(recordingHistory.length / canvasWidth));
-        const amp = canvasHeight / 2;
-
-        for (let i = 0; i < canvasWidth; i++) {
-          const startIdx = i * step;
-          const endIdx = Math.min(startIdx + step, recordingHistory.length);
-
-          if (endIdx > startIdx) {
-            const slice = recordingHistory.slice(startIdx, endIdx);
-            const min = Math.min(...slice);
-            const max = Math.max(...slice);
-
-            ctx.moveTo(i, (1 + min) * amp);
-            ctx.lineTo(i, (1 + max) * amp);
-          }
-        }
-
-        ctx.stroke();
-      }
-
+      drawWaveform(canvasRef, Float32Array.from(recordingHistory));
       animationFrameId = requestAnimationFrame(draw);
     };
 
     draw();
   }
 
-  // Create and cache the base waveform
-  function createWaveformCache(buffer: AudioBuffer) {
-    if (!canvasRef) return;
-
-    const canvasWidth = canvasRef.width;
-    const canvasHeight = canvasRef.height;
-
-    // Create a cache canvas
-    const cacheCanvas = document.createElement('canvas');
-    cacheCanvas.width = canvasWidth;
-    cacheCanvas.height = canvasHeight;
-    const ctx = cacheCanvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.fillStyle = '#080809'; // zinc-900
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-    // Get waveform data
-    const channelData = buffer.getChannelData(0);
-    const step = Math.ceil(channelData.length / canvasWidth);
-    const amp = canvasHeight / 2;
-
-    // Draw waveform
-    ctx.strokeStyle = '#52525b'; // zinc-600
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-
-    for (let i = 0; i < canvasWidth; i++) {
-      const min = Math.min(...Array.from(channelData.slice(i * step, (i + 1) * step)));
-      const max = Math.max(...Array.from(channelData.slice(i * step, (i + 1) * step)));
-
-      ctx.moveTo(i, (1 + min) * amp);
-      ctx.lineTo(i, (1 + max) * amp);
-    }
-
-    ctx.stroke();
-
-    waveformCache = cacheCanvas;
-    lastDrawnBuffer = buffer;
-  }
-
-  // Draw the complete canvas with cached waveform + overlays
-  function drawComplete() {
-    if (!canvasRef || !waveformCache || !audioBuffer) return;
-
-    const ctx = canvasRef.getContext('2d');
-    if (!ctx) return;
-
-    const canvasWidth = canvasRef.width;
-    const canvasHeight = canvasRef.height;
-
-    // Draw the cached waveform
-    ctx.drawImage(waveformCache, 0, 0);
-
-    // Draw loop points if enabled
-    if (showLoopPoints && loopEnd > loopStart) {
-      const duration = audioBuffer.duration;
-      const startX = (loopStart / duration) * canvasWidth;
-      const endX = (loopEnd / duration) * canvasWidth;
-
-      // Draw loop region highlight
-      ctx.fillStyle = 'rgba(249, 115, 22, 0.1)'; // orange-500 with opacity
-      ctx.fillRect(startX, 0, endX - startX, canvasHeight);
-
-      // Draw loop markers
-      ctx.strokeStyle = '#f97316'; // orange-500
-      ctx.lineWidth = 2;
-
-      // Start marker
-      ctx.beginPath();
-      ctx.moveTo(startX, 0);
-      ctx.lineTo(startX, canvasHeight);
-      ctx.stroke();
-
-      // End marker
-      ctx.beginPath();
-      ctx.moveTo(endX, 0);
-      ctx.lineTo(endX, canvasHeight);
-      ctx.stroke();
-    }
-
-    // Draw playback progress
-    if (playbackProgress > 0 && audioBuffer.duration > 0) {
-      const duration = audioBuffer.duration;
-      const progressX = (playbackProgress / duration) * canvasWidth;
-
-      ctx.strokeStyle = '#a1a1aa'; // zinc-400
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(progressX, 0);
-      ctx.lineTo(progressX, canvasHeight);
-      ctx.stroke();
-    }
-  }
-
-  // Main effect for audioBuffer/analyser changes
-  $effect(() => {
-    if (!canvasRef) return;
-
-    // Clean up any existing animation
-    if (animationFrameId) {
+  function stopAnimation() {
+    if (animationFrameId !== null) {
       cancelAnimationFrame(animationFrameId);
       animationFrameId = null;
     }
+  }
+
+  // --- Main effect: react to audioBuffer / analyser / zoom changes ---
+
+  $effect(() => {
+    const view = zoom.view;
+    if (!canvasRef) return;
+
+    stopAnimation();
 
     if (analyser) {
-      // Real-time mode - clear cache and reset history
       waveformCache = null;
       lastDrawnBuffer = null;
       recordingHistory = [];
-      drawRealtimeWaveform();
-      return () => {
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-          animationFrameId = null;
-        }
-      };
+      startRealtimeDrawing();
+      return () => stopAnimation();
     }
 
     if (audioBuffer) {
-      // Clear recording history when showing recorded buffer
       recordingHistory = [];
-
-      // Only recreate cache if the buffer changed
-      if (audioBuffer !== lastDrawnBuffer) {
-        createWaveformCache(audioBuffer);
-      }
-      drawComplete();
+      drawStatic(view);
     } else {
-      // audioBuffer is null - clear everything
       waveformCache = null;
       lastDrawnBuffer = null;
+      lastDrawnView = null;
       recordingHistory = [];
-
-      // Clear the canvas
       const ctx = canvasRef.getContext('2d');
       if (ctx) {
-        ctx.fillStyle = '#080809'; // zinc-900
+        ctx.fillStyle = '#09090b';
         ctx.fillRect(0, 0, canvasRef.width, canvasRef.height);
       }
     }
   });
 
-  // Effect for overlay changes only
-  $effect(() => {
-    // Track these dependencies
-    const _loopStart = loopStart;
-    const _loopEnd = loopEnd;
-    const _showLoopPoints = showLoopPoints;
-    const _playbackProgress = playbackProgress;
+  // --- Overlay-only effect (loop points / playback head) ---
 
-    // Only redraw if we have a cache and no analyser
-    if (waveformCache && audioBuffer && !analyser) {
-      drawComplete();
-    }
+  $effect(() => {
+    void loopStart;
+    void loopEnd;
+    void showLoopPoints;
+    void playbackProgress;
+    if (waveformCache && audioBuffer && !analyser) drawStatic(zoom.view);
   });
 </script>
 
-<canvas
-  bind:this={canvasRef}
-  width={width * 2}
-  height={height * 2}
-  class="rounded {className}"
-  style="width: {width}px; height: {height}px;"
+<canvas bind:this={canvasRef} class="nowheel rounded {className}" onwheel={zoom.handleWheel}
 ></canvas>

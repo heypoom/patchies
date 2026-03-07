@@ -22,11 +22,13 @@ interface BridgeMessage {
 class BufferBridgeProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
+
     this.port.onmessage = (e: MessageEvent<BridgeMessage>) => this.handleMessage(e.data);
   }
 
   private handleMessage(msg: BridgeMessage): void {
     const { type, name } = msg;
+
     if (!name && type !== 'list') return;
 
     if (type === 'create') {
@@ -34,33 +36,10 @@ class BufferBridgeProcessor extends AudioWorkletProcessor {
     } else if (type === 'delete') {
       workletBufferRegistry.delete(name!);
     } else if (type === 'resize') {
-      const entry = workletBufferRegistry.get(name!);
-      if (!entry) return;
-
-      const newLength = msg.length ?? entry.length;
-      const oldChannels = entry.channels;
-      const newChannels = msg.channels ?? oldChannels;
-      const oldData = new Float32Array(entry.data);
-      const oldLength = entry.length;
-
-      workletBufferRegistry.delete(name!);
-      workletBufferRegistry.create(name!, newLength, newChannels, msg.sab);
-
-      const newEntry = workletBufferRegistry.get(name!);
-
-      if (newEntry) {
-        // Copy per-channel samples, handling channel count changes
-        const copySamples = Math.min(oldLength, newLength);
-        const copyChannels = Math.min(oldChannels, newChannels);
-
-        for (let s = 0; s < copySamples; s++) {
-          for (let c = 0; c < copyChannels; c++) {
-            newEntry.data[s * newChannels + c] = oldData[s * oldChannels + c];
-          }
-        }
-      }
+      this.resize(msg);
     } else if (type === 'clear') {
       const entry = workletBufferRegistry.get(name!);
+
       if (entry) {
         entry.data.fill(0);
         entry.writeHead = 0;
@@ -78,18 +57,57 @@ class BufferBridgeProcessor extends AudioWorkletProcessor {
       }
     } else if (type === 'get-snapshot') {
       const entry = workletBufferRegistry.get(name!);
+
       if (!entry) {
         this.port.postMessage({ type: 'snapshot', name, data: null });
         return;
       }
 
       const copy = new Float32Array(entry.data);
+
       this.port.postMessage(
         { type: 'snapshot', name, data: copy, length: entry.length, channels: entry.channels },
         [copy.buffer]
       );
     } else if (type === 'list') {
       this.port.postMessage({ type: 'buffer-list', names: workletBufferRegistry.list() });
+    }
+  }
+
+  resize(msg: BridgeMessage): void {
+    const { name } = msg;
+
+    const entry = workletBufferRegistry.get(name!);
+    if (!entry) return;
+
+    const oldChannels = entry.channels;
+    const newChannels = msg.channels ?? oldChannels;
+
+    const oldData = new Float32Array(entry.data);
+
+    const oldLength = entry.length;
+    const newLength = msg.length ?? entry.length;
+
+    workletBufferRegistry.delete(name!);
+    workletBufferRegistry.create(name!, newLength, newChannels, msg.sab);
+
+    // In SAB mode the main thread already wrote the correct data
+    // into the SAB before sending this message.
+    // Do not clobber it with old data.
+    if (!msg.sab) {
+      const newEntry = workletBufferRegistry.get(name!);
+
+      if (newEntry) {
+        // Copy per-channel samples, handling channel count changes
+        const copySamples = Math.min(oldLength, newLength);
+        const copyChannels = Math.min(oldChannels, newChannels);
+
+        for (let s = 0; s < copySamples; s++) {
+          for (let c = 0; c < copyChannels; c++) {
+            newEntry.data[s * newChannels + c] = oldData[s * oldChannels + c];
+          }
+        }
+      }
     }
   }
 
