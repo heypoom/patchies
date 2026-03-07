@@ -589,6 +589,8 @@
         throw new Error('Invalid patch format');
       }
 
+      const migrated = migratePatch(data);
+
       let baseName = file.name.replace(/\.json$/i, '');
       let finalName = baseName;
       let counter = 1;
@@ -597,7 +599,7 @@
         counter++;
       }
 
-      localStorage.setItem(`patchies-patch-${finalName}`, text);
+      localStorage.setItem(`patchies-patch-${finalName}`, JSON.stringify(migrated));
       addSavedPatch(finalName);
       toast.success(`Imported "${finalName}"`);
     } catch (err) {

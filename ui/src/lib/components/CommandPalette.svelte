@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import { match } from 'ts-pattern';
   import {
     isAiFeaturesVisible,
@@ -9,8 +10,12 @@
     isConnecting,
     connectingFromHandleId,
     currentPatchId,
+    currentPatchName as currentPatchNameStore,
+    generateNewPatchId,
     isCablesVisible
   } from '../../stores/ui.store';
+  import { savePatchToLocalStorage, getUniquePatchName } from '$lib/save-load/save-local-storage';
+  import { toast } from 'svelte-sonner';
   import { useWebCodecs, toggleWebCodecs, toggleVideoStats } from '../../stores/video.store';
   import type { Node, Edge } from '@xyflow/svelte';
   import { IpcSystem } from '$lib/canvas/IpcSystem';
@@ -504,11 +509,40 @@
         const reader = new FileReader();
         reader.onload = (e) => {
           try {
-            const patchData = JSON.parse(e.target?.result as string);
-            loadPatchData(patchData);
+            const rawData = JSON.parse(e.target?.result as string);
+            if (!rawData || !rawData.nodes || !rawData.edges) {
+              throw new Error('Invalid patch data format');
+            }
+
+            const migrated = migratePatch(rawData) as PatchSaveFormat;
+
+            // 1. Auto-save current patch before overwriting
+            const currentName = get(currentPatchNameStore);
+            if (currentName) {
+              savePatchToLocalStorage({ name: currentName, nodes, edges });
+            }
+
+            // 2. Save the imported patch as a new named save with a unique name
+            const baseName = migrated.name || file.name.replace(/\.json$/i, '') || 'imported-patch';
+            const uniqueName = getUniquePatchName(baseName, null);
+            generateNewPatchId();
+            savePatchToLocalStorage({
+              name: uniqueName,
+              nodes: migrated.nodes,
+              edges: migrated.edges
+            });
+
+            // 3. Load into canvas and set as current
+            setNodes(migrated.nodes);
+            setEdges(migrated.edges);
+            AudioService.getInstance().getAudioContext().resume();
+            currentPatchNameStore.set(uniqueName);
+
+            toast.success(`Imported "${uniqueName}"`);
             onCancel();
           } catch (error) {
-            console.error('Error loading patch:', error);
+            console.error('Error importing patch:', error);
+            toast.error('Failed to import patch');
           }
         };
         reader.readAsText(file);
