@@ -123,14 +123,25 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
       });
     };
 
-    constructor(nodeOptions?: { processorOptions?: { nodeId?: string } }) {
+    constructor(nodeOptions?: { processorOptions?: { nodeId?: string; floatInlets?: number[] } }) {
       super();
+
       this.nodeId = nodeOptions?.processorOptions?.nodeId ?? '';
       this.state = options.state();
 
       // Initialize inlet default values
       for (const [inlet, value] of Object.entries(inletDefaults)) {
         this.setInletValue(Number(inlet), value);
+      }
+
+      // Initialize constant buffers for acceptsFloat signal inlets (default 0).
+      // These are passed from createWorkletDspNode so processors don't need inletDefaults.
+      const floatInlets = nodeOptions?.processorOptions?.floatInlets ?? [];
+
+      for (const inlet of floatInlets) {
+        if (!this.inletValues.has(inlet)) {
+          this.setInletValue(inlet, 0);
+        }
       }
 
       // Register with worklet direct channel for receiving direct messages
@@ -154,10 +165,13 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
 
     /** Route incoming messages: update inlet constants or forward to user recv */
     private handleMessage(data: unknown, inlet: number): void {
-      // Auto-update constant for inlets with defaults
+      // Auto-update constant for inlets with defaults.
+      // Use Number() (not parseFloat) to reject strings with trailing non-numeric chars,
+      // e.g. "0.5ms" → NaN (rejected), "0.5" → 0.5 (accepted).
       if (this.inletValues.has(inlet)) {
-        const val = typeof data === 'number' ? data : parseFloat(data as string);
-        if (!isNaN(val)) {
+        const val = typeof data === 'number' ? data : Number(data);
+
+        if (Number.isFinite(val)) {
           this.setInletValue(inlet, val);
         }
       }
@@ -171,6 +185,7 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
     /** Update an inlet's constant value and refill its buffer */
     private setInletValue(inlet: number, value: number): void {
       this.inletValues.set(inlet, value);
+
       const buf = this.inletBuffers.get(inlet);
       if (buf) buf.fill(value);
     }

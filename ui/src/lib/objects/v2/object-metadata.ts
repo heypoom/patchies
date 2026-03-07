@@ -79,6 +79,16 @@ export interface ObjectInlet {
   controlsSignalInlet?: number;
 
   /**
+   * When true, this signal inlet also accepts float messages (Pure Data style).
+   * A float message sets the constant value used when no signal is connected.
+   * Eliminates the need for a hidden float inlet with controlsSignalInlet.
+   *
+   * Requires the DSP processor to have inletDefaults set for this inlet index,
+   * OR the node must be defined via createWorkletDspNode (auto-initialized to 0).
+   */
+  acceptsFloat?: boolean;
+
+  /**
    * When true, the text parameter display is hidden from the node label.
    * The parameter still functions normally and can be set via messages.
    */

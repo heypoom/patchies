@@ -15,13 +15,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     description: 'Subtract right signal from left signal',
     inlets: [
       { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' },
-      {
-        id: 'value',
-        type: 'float',
-        description: 'Constant to subtract',
-        messages: [{ schema: Type.Number(), description: 'Constant to subtract' }]
-      }
+      { id: 'right', type: 'signal', description: 'Right signal input' }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Difference of left − right' }],
     tags: ['audio', 'math', 'subtract', 'signal']
@@ -33,13 +27,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     description: 'Multiply two audio signals',
     inlets: [
       { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' },
-      {
-        id: 'value',
-        type: 'float',
-        description: 'Constant multiplier',
-        messages: [{ schema: Type.Number(), description: 'Constant multiplier' }]
-      }
+      { id: 'right', type: 'signal', description: 'Right signal input' }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Product of left × right' }],
     tags: ['audio', 'math', 'multiply', 'ring modulation', 'signal']
@@ -51,13 +39,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     description: 'Divide left signal by right signal',
     inlets: [
       { id: 'left', type: 'signal', description: 'Left signal input (dividend)' },
-      { id: 'right', type: 'signal', description: 'Right signal input (divisor)' },
-      {
-        id: 'value',
-        type: 'float',
-        description: 'Constant divisor',
-        messages: [{ schema: Type.Number(), description: 'Constant divisor' }]
-      }
+      { id: 'right', type: 'signal', description: 'Right signal input (divisor)' }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Quotient of left ÷ right' }],
     tags: ['audio', 'math', 'divide', 'signal']
@@ -69,13 +51,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     description: 'Add two audio signals',
     inlets: [
       { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' },
-      {
-        id: 'value',
-        type: 'float',
-        description: 'Constant to add',
-        messages: [{ schema: Type.Number(), description: 'Constant to add' }]
-      }
+      { id: 'right', type: 'signal', description: 'Right signal input' }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Sum of left + right' }],
     tags: ['audio', 'math', 'add', 'sum', 'signal']
@@ -87,13 +63,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     description: 'Output 1 if left < right, else 0',
     inlets: [
       { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' },
-      {
-        id: 'value',
-        type: 'float',
-        description: 'Constant threshold',
-        messages: [{ schema: Type.Number(), description: 'Constant threshold' }]
-      }
+      { id: 'right', type: 'signal', description: 'Right signal input' }
     ],
     outlets: [{ id: 'out', type: 'signal', description: '1 if left < right, else 0' }],
     tags: ['audio', 'math', 'compare', 'less', 'gate', 'signal']
@@ -105,13 +75,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     description: 'Output 1 if left > right, else 0',
     inlets: [
       { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' },
-      {
-        id: 'value',
-        type: 'float',
-        description: 'Constant threshold',
-        messages: [{ schema: Type.Number(), description: 'Constant threshold' }]
-      }
+      { id: 'right', type: 'signal', description: 'Right signal input' }
     ],
     outlets: [{ id: 'out', type: 'signal', description: '1 if left > right, else 0' }],
     tags: ['audio', 'math', 'compare', 'greater', 'gate', 'signal']
@@ -1377,13 +1341,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     description: 'Per-sample maximum of two signals',
     inlets: [
       { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' },
-      {
-        id: 'value',
-        type: 'float',
-        description: 'Constant threshold',
-        messages: [{ schema: Type.Number(), description: 'Constant threshold' }]
-      }
+      { id: 'right', type: 'signal', description: 'Right signal input' }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Maximum of left and right' }],
     tags: ['audio', 'math', 'maximum', 'signal']
@@ -1465,13 +1423,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     description: 'Per-sample minimum of two signals',
     inlets: [
       { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' },
-      {
-        id: 'value',
-        type: 'float',
-        description: 'Constant threshold',
-        messages: [{ schema: Type.Number(), description: 'Constant threshold' }]
-      }
+      { id: 'right', type: 'signal', description: 'Right signal input' }
     ],
     outlets: [{ id: 'out', type: 'signal', description: 'Minimum of left and right' }],
     tags: ['audio', 'math', 'minimum', 'signal']
