@@ -68,6 +68,12 @@ export interface ConnectionValidationOptions {
    * Allows message connections to signal inlets marked with acceptsFloat: true.
    */
   isTargetAcceptsFloat?: boolean;
+
+  /**
+   * Whether the source signal inlet accepts float messages (Pure Data style).
+   * Used when dragging FROM an acceptsFloat inlet toward a message outlet (reverse drag).
+   */
+  isSourceAcceptsFloat?: boolean;
 }
 
 /**
@@ -139,6 +145,11 @@ export function isValidConnectionBetweenHandles(
     }
 
     return isSourceAudio;
+  }
+
+  // Source is an acceptsFloat signal inlet being dragged toward a message outlet (reverse drag).
+  if (isSourceAudio && isTargetMessage && options?.isSourceAcceptsFloat) {
+    return true;
   }
 
   // Message-to-message connections are allowed

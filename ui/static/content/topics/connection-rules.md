@@ -22,11 +22,11 @@ Audio outlets can connect to _audio parameter_ inlets for parameter modulation:
 
 ## Float-to-Signal Inlets
 
-Some signal inlets accept float messages to set a constant value (Pure Data style):
+Some signal inlets accept floats to set a constant value (Pure Data style).
 
 - Arithmetic objects (`+~`, `*~`, `-~`, `/~`), comparison objects (`>~`, `<~`, `min~`, `max~`), `vcf~`'s `frequency`, and `delread4~`'s `delay` all have signal inlets that accept floats
-- You can connect a **message outlet** _or_ an **audio outlet** to these inlets
-- Sending a float number directly sets the constant used when no signal is connected
+- You can connect a **message outlet** or an **audio outlet** to these inlets
+- Sending a float number sets the constant used when no signal is connected
 - The constant can also be set as a creation argument, e.g. `*~ 0.5` multiplies by 0.5
 
 ## Handle Colors

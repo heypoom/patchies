@@ -131,6 +131,25 @@ describe('isValidConnectionBetweenHandles with acceptsFloat', () => {
   it('still rejects message-to-audio-in without the flag', () => {
     expect(isValidConnectionBetweenHandles('message-out', 'audio-in')).toBe(false);
   });
+
+  it('allows reverse drag: audio-in (acceptsFloat) → message-out', () => {
+    expect(
+      isValidConnectionBetweenHandles('audio-in', 'message-out', { isSourceAcceptsFloat: true })
+    ).toBe(true);
+  });
+
+  it('rejects reverse drag: audio-in without acceptsFloat → message-out', () => {
+    expect(
+      isValidConnectionBetweenHandles('audio-in', 'message-out', { isSourceAcceptsFloat: false })
+    ).toBe(false);
+    expect(isValidConnectionBetweenHandles('audio-in', 'message-out')).toBe(false);
+  });
+
+  it('rejects reverse drag: audio-in (acceptsFloat) → video-out', () => {
+    expect(
+      isValidConnectionBetweenHandles('audio-in', 'video-out', { isSourceAcceptsFloat: true })
+    ).toBe(false);
+  });
 });
 
 describe('isAcceptsFloatInlet', () => {

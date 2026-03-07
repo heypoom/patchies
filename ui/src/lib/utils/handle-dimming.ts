@@ -17,6 +17,8 @@ export function shouldDimHandle(params: {
   currentHandlePort: 'inlet' | 'outlet';
   isAudioParam: boolean;
   acceptsFloat?: boolean;
+  /** Whether the handle initiating the connection is an acceptsFloat signal inlet */
+  connectingFromAcceptsFloat?: boolean;
 }): boolean {
   const {
     isConnecting,
@@ -24,7 +26,8 @@ export function shouldDimHandle(params: {
     currentHandleQualifiedId,
     currentHandlePort,
     isAudioParam,
-    acceptsFloat
+    acceptsFloat,
+    connectingFromAcceptsFloat
   } = params;
 
   // Only dim when actively connecting
@@ -75,7 +78,12 @@ export function shouldDimHandle(params: {
     currentHandleQualifiedId,
     sourcePort,
     currentHandlePort,
-    { isTargetAudioParam: isAudioParam, isTargetAcceptsFloat: acceptsFloat }
+    {
+      isTargetAudioParam: isAudioParam,
+      isTargetAcceptsFloat: acceptsFloat,
+      // When dragging FROM an acceptsFloat inlet, allow connecting to message outlets
+      isSourceAcceptsFloat: connectingIsInlet ? connectingFromAcceptsFloat : undefined
+    }
   );
 
   if (!wouldBeValidConnection) {

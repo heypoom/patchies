@@ -112,6 +112,7 @@ if (typeof localStorage !== 'undefined') {
 export const isConnecting = writable(false);
 
 export const connectingFromHandleId = writable<string | null>(null); // ID of the source handle being connected
+export const connectingFromAcceptsFloat = writable(false); // Whether the connecting-from inlet has acceptsFloat
 
 // Derived store: true when either connection mode is active OR actively connecting
 export const shouldShowHandles = derived(

@@ -163,10 +163,13 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
 
     /** Route incoming messages: update inlet constants or forward to user recv */
     private handleMessage(data: unknown, inlet: number): void {
-      // Auto-update constant for inlets with defaults
+      // Auto-update constant for inlets with defaults.
+      // Use Number() (not parseFloat) to reject strings with trailing non-numeric chars,
+      // e.g. "0.5ms" → NaN (rejected), "0.5" → 0.5 (accepted).
       if (this.inletValues.has(inlet)) {
-        const val = typeof data === 'number' ? data : parseFloat(data as string);
-        if (!isNaN(val)) {
+        const val = typeof data === 'number' ? data : Number(data);
+
+        if (Number.isFinite(val)) {
           this.setInletValue(inlet, val);
         }
       }

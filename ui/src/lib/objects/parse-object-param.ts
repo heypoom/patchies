@@ -31,7 +31,9 @@ export const ALWAYS_VALID = [
 export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) => {
   // Signal inlets with acceptsFloat behave like float inlets for creation args
   if (inlet.type === 'signal' && inlet.acceptsFloat) {
-    return strValue === '' ? 0 : parseFloat(strValue) || 0;
+    return strValue === ''
+      ? (inlet.defaultValue ?? 0)
+      : limitToValidNumber(inlet, parseFloat(strValue));
   }
 
   return match(inlet.type)

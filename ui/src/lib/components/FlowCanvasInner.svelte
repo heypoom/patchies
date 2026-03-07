@@ -33,7 +33,8 @@
     helpModeObject,
     selectedNodeInfo,
     audioSourceConnections,
-    isCablesVisible
+    isCablesVisible,
+    connectingFromAcceptsFloat
   } from '../../stores/ui.store';
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
@@ -710,6 +711,7 @@
     isConnectionMode.set(false);
     isConnecting.set(false);
     connectingFromHandleId.set(null);
+    connectingFromAcceptsFloat.set(false);
   }
 
   // Track mouse position for palette positioning
@@ -1046,10 +1048,19 @@
               ? `${params.nodeId}/${params.handleId}`
               : params.handleId || null;
           connectingFromHandleId.set(qualifiedHandleId);
+
+          // Track whether the source inlet has acceptsFloat (for reverse-drag dimming)
+          const sourceNode = params.nodeId ? getNode(params.nodeId) : undefined;
+
+          const sourceObjectName =
+            sourceNode?.type === 'object' ? (sourceNode.data?.name as string) : undefined;
+
+          connectingFromAcceptsFloat.set(isAcceptsFloatInlet(sourceObjectName, params.handleId));
         }}
         onconnectend={() => {
           isConnecting.set(false);
           connectingFromHandleId.set(null);
+          connectingFromAcceptsFloat.set(false);
         }}
         onclickconnectstart={(event, params) => {
           isConnecting.set(true);
@@ -1059,10 +1070,19 @@
               ? `${params.nodeId}/${params.handleId}`
               : params.handleId || null;
           connectingFromHandleId.set(qualifiedHandleId);
+
+          // Track whether the source inlet has acceptsFloat (for reverse-drag dimming)
+          const sourceNode = params.nodeId ? getNode(params.nodeId) : undefined;
+
+          const sourceObjectName =
+            sourceNode?.type === 'object' ? (sourceNode.data?.name as string) : undefined;
+
+          connectingFromAcceptsFloat.set(isAcceptsFloatInlet(sourceObjectName, params.handleId));
         }}
         onclickconnectend={(event, connectionState) => {
           isConnecting.set(false);
           connectingFromHandleId.set(null);
+          connectingFromAcceptsFloat.set(false);
 
           // Show success toast if connection was successfully made
           // connectionState will have connection details if successful
