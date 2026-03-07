@@ -6,7 +6,8 @@
     Music,
     SlidersHorizontal,
     Volume2,
-    Headphones
+    Headphones,
+    Tag
   } from '@lucide/svelte/icons';
   import SearchBar from './SearchBar.svelte';
   import * as Popover from '$lib/components/ui/popover/index.js';
@@ -14,6 +15,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { toast } from 'svelte-sonner';
   import { sampleSearchStore } from '$lib/sample-search/sample-search-store.svelte';
+  import { sampleTagsStore, getTagColor } from '$lib/sample-search/sample-tags.store.svelte';
   import type { SampleResult } from '$lib/sample-search/types';
 
   const GROUP_INITIAL = 5;
@@ -36,6 +38,18 @@
   // Per-category expanded state: category key -> number of items shown
   let expandedGroups = $state(new Map<string, number>());
 
+  // New tag input — shared across all open context menus (only one can be open at a time)
+  let newTagInput = $state('');
+
+  // Tag search mode: query starts with '#'
+  const isTagMode = $derived(searchQuery.startsWith('#'));
+  const tagQuery = $derived(isTagMode ? searchQuery.slice(1) : '');
+
+  // Active results: tag search or normal provider search
+  const activeResults = $derived(
+    isTagMode ? sampleTagsStore.getSamplesByTag(tagQuery) : sampleSearchStore.results
+  );
+
   // Reset expanded groups and scroll to top when query changes
   $effect(() => {
     searchQuery; // track
@@ -49,10 +63,11 @@
     sampleSearchStore.loadIndexes();
   });
 
-  // Debounced search — fires 300ms after user stops typing
+  // Debounced search — fires 300ms after user stops typing (skipped in tag mode)
   $effect(() => {
     const q = searchQuery;
     if (searchTimeout) clearTimeout(searchTimeout);
+    if (q.startsWith('#')) return;
     searchTimeout = setTimeout(() => {
       sampleSearchStore.search(q);
     }, 300);
@@ -65,7 +80,7 @@
   const rows = $derived.by<Row[]>(() => {
     const out: Row[] = [];
     const groups = new Map<string, SampleResult[]>();
-    for (const r of sampleSearchStore.results) {
+    for (const r of activeResults) {
       const key = r.category ?? '';
       const g = groups.get(key);
       if (g) g.push(r);
@@ -287,11 +302,28 @@
   function isPlayable(result: SampleResult): boolean {
     return result.kind !== 'synthdef';
   }
+
+  function addNewTag(result: SampleResult) {
+    const tag = newTagInput.trim();
+    if (!tag) return;
+    sampleTagsStore.addTag(result, tag);
+    newTagInput = '';
+  }
 </script>
 
 <div class="flex h-full flex-col">
   <!-- Search input -->
-  <SearchBar bind:value={searchQuery} placeholder="Search samples..." />
+  <SearchBar bind:value={searchQuery} placeholder="Search samples… or #tag" />
+
+  <!-- Tag mode indicator -->
+  {#if isTagMode}
+    <div class="flex items-center gap-1.5 border-b border-zinc-800 bg-amber-950/20 px-3 py-1">
+      <Tag class="h-3 w-3 text-amber-400" />
+      <span class="font-mono text-[10px] text-amber-400">
+        {tagQuery.trim() ? `Tag: ${tagQuery.trim()}` : 'All tagged samples'}
+      </span>
+    </div>
+  {/if}
 
   <!-- Index loading progress bar -->
   {#if sampleSearchStore.isIndexLoading}
@@ -314,9 +346,9 @@
 
   <!-- Results list -->
   <div class="relative flex-1 overflow-hidden">
-    {#if sampleSearchStore.isLoading}
+    {#if !isTagMode && sampleSearchStore.isLoading}
       <div class="px-4 py-8 text-center text-xs text-zinc-500">Loading...</div>
-    {:else if sampleSearchStore.error}
+    {:else if !isTagMode && sampleSearchStore.error}
       <div class="px-4 py-6 text-center text-xs text-red-400">
         {sampleSearchStore.error}
       </div>
@@ -324,10 +356,23 @@
       <div class="flex flex-col items-center gap-2 px-4 py-12 text-center text-xs text-zinc-600">
         <Music class="h-6 w-6 opacity-40" />
         <span>Type to search samples</span>
+        <span class="text-[10px]"
+          >Use <span class="font-mono text-zinc-500">#</span> to browse tagged samples</span
+        >
+      </div>
+    {:else if isTagMode && sampleTagsStore.getAllTags().length === 0}
+      <div class="flex flex-col items-center gap-2 px-4 py-12 text-center text-xs text-zinc-600">
+        <Tag class="h-6 w-6 opacity-40" />
+        <span>No tagged samples yet</span>
+        <span class="text-[10px]">Right-click any sample to add tags</span>
       </div>
     {:else if rows.length === 0}
       <div class="px-4 py-8 text-center text-xs text-zinc-500">
-        No samples matching "{searchQuery}"
+        {#if isTagMode}
+          No samples tagged with "{tagQuery.trim()}"
+        {:else}
+          No samples matching "{searchQuery}"
+        {/if}
       </div>
     {:else}
       <!-- Sticky header overlay — always rendered on top when scrolled past a header -->
@@ -386,9 +431,13 @@
               {@const isPlaying = sampleSearchStore.playingId === row.result.id}
               {@const isSelected = sampleSearchStore.selectedId === row.result.id}
               {@const playable = isPlayable(row.result)}
-              <ContextMenu.Root>
+              {@const tagged = sampleTagsStore.isTagged(row.result.id)}
+              {@const sampleTags = sampleTagsStore.getTags(row.result.id)}
+              {@const allTags = sampleTagsStore.getAllTags()}
+              <ContextMenu.Root onOpenChange={() => (newTagInput = '')}>
                 <ContextMenu.Trigger>
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <div
                     class="group flex w-full cursor-pointer items-center gap-1.5 pr-1 pl-4 text-xs {isSelected
                       ? 'bg-zinc-700 hover:bg-zinc-700'
@@ -420,11 +469,24 @@
                         <Tooltip.Content>{isPlaying ? 'Stop preview' : 'Preview'}</Tooltip.Content>
                       </Tooltip.Root>
                     {/if}
+
                     <span class="flex-1 truncate font-mono text-zinc-300" title={row.result.name}>
                       {row.result.name}
                     </span>
+
+                    {#if tagged}
+                      <div class="mr-0.5 flex shrink-0 items-center gap-0.5">
+                        {#each sampleTags.slice(0, 4) as tag (tag)}
+                          <div
+                            class="h-1.5 w-1.5 rounded-full {getTagColor(tag).dot}"
+                            title={tag}
+                          ></div>
+                        {/each}
+                      </div>
+                    {/if}
                   </div>
                 </ContextMenu.Trigger>
+
                 <ContextMenu.Content>
                   {#if row.result.kind === 'synthdef'}
                     <ContextMenu.Item onclick={() => copySynthdefName(row.result)}>
@@ -439,6 +501,51 @@
                       Copy as Strudel name
                     </ContextMenu.Item>
                   {/if}
+                  <ContextMenu.Separator />
+
+                  <ContextMenu.Sub>
+                    <ContextMenu.SubTrigger class="flex items-center gap-1.5">
+                      <Tag class="h-3 w-3" />
+                      Tags
+                      {#if tagged}
+                        <span class="ml-auto font-mono text-[9px] text-amber-400">
+                          {sampleTags.length}
+                        </span>
+                      {/if}
+                    </ContextMenu.SubTrigger>
+                    <ContextMenu.SubContent class="min-w-36 p-1">
+                      <!-- New tag input -->
+                      <div class="px-1 pb-1">
+                        <input
+                          class="w-full rounded bg-zinc-800 px-2 py-1 font-mono text-[10px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:ring-1 focus:ring-zinc-600"
+                          placeholder="New tag…"
+                          bind:value={newTagInput}
+                          onkeydown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === 'Enter') addNewTag(row.result);
+                          }}
+                          onclick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      {#if allTags.length > 0}
+                        <ContextMenu.Separator />
+
+                        {#each allTags as tag (tag)}
+                          {@const color = getTagColor(tag)}
+
+                          <ContextMenu.CheckboxItem
+                            checked={sampleTagsStore.hasTag(row.result.id, tag)}
+                            onCheckedChange={() => sampleTagsStore.toggleTag(row.result, tag)}
+                          >
+                            <span class="flex w-full items-center gap-1.5">
+                              <span class="h-2 w-2 shrink-0 rounded-full {color.dot}"></span>
+                              {tag}
+                            </span>
+                          </ContextMenu.CheckboxItem>
+                        {/each}
+                      {/if}
+                    </ContextMenu.SubContent>
+                  </ContextMenu.Sub>
                 </ContextMenu.Content>
               </ContextMenu.Root>
             {:else if row.type === 'more'}
@@ -474,8 +581,8 @@
     style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px))"
   >
     <span class="text-[10px] text-zinc-600">
-      {#if sampleSearchStore.results.length > 0}
-        {sampleSearchStore.results.length} result{sampleSearchStore.results.length === 1 ? '' : 's'}
+      {#if activeResults.length > 0}
+        {activeResults.length} result{activeResults.length === 1 ? '' : 's'}
       {/if}
     </span>
     <div class="flex items-center gap-0.5">
@@ -535,60 +642,62 @@
         </Tooltip.Content>
       </Tooltip.Root>
 
-      <!-- Sources filter -->
-      <Popover.Root>
-        <Popover.Trigger>
-          {#snippet child({ props })}
-            <Tooltip.Root>
-              <Tooltip.Trigger>
-                {@const total = sampleSearchStore.providers.length}
-                {@const enabled = sampleSearchStore.enabledProviders.size}
+      <!-- Sources filter (hidden in tag mode) -->
+      {#if !isTagMode}
+        <Popover.Root>
+          <Popover.Trigger>
+            {#snippet child({ props })}
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  {@const total = sampleSearchStore.providers.length}
+                  {@const enabled = sampleSearchStore.enabledProviders.size}
+                  <button
+                    {...props}
+                    class="relative cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 {enabled <
+                    total
+                      ? 'text-blue-400'
+                      : ''}"
+                  >
+                    <SlidersHorizontal class="h-3 w-3" />
+                    {#if enabled < total}
+                      <span
+                        class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-blue-500 font-mono text-[7px] text-white"
+                        >{enabled}</span
+                      >
+                    {/if}
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>Filter sources</Tooltip.Content>
+              </Tooltip.Root>
+            {/snippet}
+          </Popover.Trigger>
+          <Popover.Content class="w-48 p-2" align="end" side="top">
+            <p
+              class="mb-1.5 px-1 font-mono text-[9px] font-medium tracking-wider text-zinc-500 uppercase"
+            >
+              Sources
+            </p>
+            <div class="flex flex-col gap-0.5">
+              {#each sampleSearchStore.providers as provider (provider.id)}
+                {@const enabled = sampleSearchStore.enabledProviders.has(provider.id)}
                 <button
-                  {...props}
-                  class="relative cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 {enabled <
-                  total
-                    ? 'text-blue-400'
-                    : ''}"
+                  class="flex w-full cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-zinc-800 {enabled
+                    ? ''
+                    : 'opacity-40'}"
+                  onclick={() => sampleSearchStore.toggleProvider(provider.id)}
                 >
-                  <SlidersHorizontal class="h-3 w-3" />
-                  {#if enabled < total}
-                    <span
-                      class="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-blue-500 font-mono text-[7px] text-white"
-                      >{enabled}</span
-                    >
-                  {/if}
+                  <span
+                    class="shrink-0 rounded px-1 py-0.5 font-mono text-[9px] font-medium {providerColor(
+                      provider.id
+                    )}">{providerBadge(provider.id)}</span
+                  >
+                  <span class="truncate font-mono text-[10px] text-zinc-300">{provider.name}</span>
                 </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content>Filter sources</Tooltip.Content>
-            </Tooltip.Root>
-          {/snippet}
-        </Popover.Trigger>
-        <Popover.Content class="w-48 p-2" align="end" side="top">
-          <p
-            class="mb-1.5 px-1 font-mono text-[9px] font-medium tracking-wider text-zinc-500 uppercase"
-          >
-            Sources
-          </p>
-          <div class="flex flex-col gap-0.5">
-            {#each sampleSearchStore.providers as provider (provider.id)}
-              {@const enabled = sampleSearchStore.enabledProviders.has(provider.id)}
-              <button
-                class="flex w-full cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-zinc-800 {enabled
-                  ? ''
-                  : 'opacity-40'}"
-                onclick={() => sampleSearchStore.toggleProvider(provider.id)}
-              >
-                <span
-                  class="shrink-0 rounded px-1 py-0.5 font-mono text-[9px] font-medium {providerColor(
-                    provider.id
-                  )}">{providerBadge(provider.id)}</span
-                >
-                <span class="truncate font-mono text-[10px] text-zinc-300">{provider.name}</span>
-              </button>
-            {/each}
-          </div>
-        </Popover.Content>
-      </Popover.Root>
+              {/each}
+            </div>
+          </Popover.Content>
+        </Popover.Root>
+      {/if}
     </div>
   </div>
 </div>
