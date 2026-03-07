@@ -10,7 +10,7 @@ export interface ViewWindow {
   end: number;
 }
 
-const FULL_VIEW: ViewWindow = { start: 0, end: 1 };
+export const FULL_VIEW: ViewWindow = { start: 0, end: 1 };
 
 /** Set canvas physical dimensions for the device pixel ratio, CSS size to logical dimensions. */
 export function setupDprCanvas(canvas: HTMLCanvasElement, width: number, height: number): void {

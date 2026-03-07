@@ -1,5 +1,5 @@
 export const TABLE_DEFAULT_NODE_DATA = {
-  bufferName: 'table1',
+  bufferName: '',
   size: 100,
   showVisual: false
 };
