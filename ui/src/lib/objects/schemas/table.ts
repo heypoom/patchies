@@ -6,6 +6,7 @@ import { Bang } from './common';
 // Table-specific message schemas
 export const TableSet = msg('set', { index: Type.Number(), value: Type.Number() });
 export const TableGet = msg('get', { index: Type.Number() });
+export const TableGetResult = msg('get', { index: Type.Number(), value: Type.Number() });
 export const TableResize = msg('resize', { length: Type.Number() });
 export const TableClear = sym('clear');
 export const TableNormalize = sym('normalize');
@@ -41,7 +42,14 @@ export const tableSchema: ObjectSchema = {
   outlets: [
     {
       id: 'result',
-      description: 'Float32Array on bang, or {type:"get", index, value} on get command'
+      description: 'Table data output',
+      messages: [
+        {
+          schema: Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
+          description: 'Entire table contents as Float32Array (on bang)'
+        },
+        { schema: TableGetResult, description: 'Value at index (on get command)' }
+      ]
     }
   ],
   tags: ['audio', 'buffer', 'array', 'wavetable', 'sample']
