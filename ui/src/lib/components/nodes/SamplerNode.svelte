@@ -209,6 +209,7 @@
         audioService.send(node.id, 'message', { type: 'setDetune', value: msg.value });
       })
       .with(samplerMessages.download, (msg) => downloadBuffer(msg.name))
+      .with(samplerMessages.load, ({ src }) => vfsMedia.loadFromPath(src))
       .otherwise(() => audioService.send(node.id, 'message', message));
   };
 
