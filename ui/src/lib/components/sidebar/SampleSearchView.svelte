@@ -311,12 +311,15 @@
 
       const { result } = row;
 
-      if (!isPlayable(result) || preloadCache.has(result.id)) continue;
+      if (!isPlayable(result) || !result.url || preloadCache.has(result.id)) continue;
 
       if (preloadCache.size >= SAMPLE_VIEW_MAX_PRELOAD) {
         const oldest = preloadCache.keys().next().value!;
+        const oldAudio = preloadCache.get(oldest)!;
 
-        preloadCache.get(oldest)!.src = '';
+        oldAudio.pause();
+        oldAudio.removeAttribute('src');
+        oldAudio.load();
         preloadCache.delete(oldest);
       }
 

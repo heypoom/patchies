@@ -68,7 +68,8 @@ export class SoundfileNode implements AudioNodeV2 {
       URL.revokeObjectURL(this.audioElement.src);
     }
 
-    this.audioElement.src = '';
+    this.audioElement.removeAttribute('src');
+    this.audioElement.load();
     this.audioNode.disconnect();
   }
 }
