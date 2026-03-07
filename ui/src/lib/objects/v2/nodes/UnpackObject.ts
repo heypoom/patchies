@@ -21,8 +21,8 @@ export class UnpackObject implements TextObjectV2 {
   ];
 
   static outlets: ObjectOutlet[] = [
-    { name: '0', type: 'message', description: 'Element 0' },
-    { name: '1', type: 'message', description: 'Element 1' }
+    { name: 'n', type: 'message', description: 'Nth element' },
+    { name: 'remaining', type: 'message', description: 'Remaining elements beyond count' }
   ];
 
   readonly nodeId: string;
@@ -51,13 +51,26 @@ export class UnpackObject implements TextObjectV2 {
     for (let i = 0; i < this.count; i++) {
       this.context.send(list[i] ?? null, { to: i });
     }
+
+    // Send remaining elements as a slice to the last outlet
+    if (list.length > this.count) {
+      this.context.send(list.slice(this.count), { to: this.count });
+    }
   }
 
   getOutlets(): ObjectOutlet[] {
-    return Array.from({ length: this.count }, (_, i) => ({
+    const outlets: ObjectOutlet[] = Array.from({ length: this.count }, (_, i) => ({
       name: String(i),
       type: 'message' as const,
       description: `Element ${i}`
     }));
+
+    outlets.push({
+      name: 'remaining',
+      type: 'message' as const,
+      description: 'Remaining elements beyond count'
+    });
+
+    return outlets;
   }
 }

@@ -2430,8 +2430,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       }
     ],
     outlets: [
-      { id: '0', type: 'message', description: 'Element 0' },
-      { id: '1', type: 'message', description: 'Element 1' }
+      { id: 'n', type: 'message', description: 'Nth element' },
+      { id: 'remaining', type: 'message', description: 'Remaining elements beyond count' }
     ],
     tags: ['unpack']
   },

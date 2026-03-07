@@ -10,24 +10,31 @@ unpack <count>
 
 - `count` — number of elements to unpack (default: `2`)
 
-`unpack 4` creates 4 outlets and sends `array[0]` through `array[3]`.
+`unpack 4` creates 4 element outlets plus a `remaining` outlet (5 total).
+
+## Outlets
+
+The rightmost outlet is always `remaining` — it fires only when the input array
+has more elements than `count`, sending the leftover slice.
 
 ## Examples
 
-`unpack 3` receives `[10, 20, 30]`:
+`unpack 3` receives `[1, 2, 3, 4, 5]`:
 
-1. Outlet 0: `10`
-2. Outlet 1: `20`
-3. Outlet 2: `30`
+1. Outlet 0: `1`
+2. Outlet 1: `2`
+3. Outlet 2: `3`
+4. Outlet 3 (remaining): `[4, 5]`
 
-`unpack 3` receives `[10, 20]` (fewer elements than outlets):
+`unpack 3` receives `[10, 20]` (fewer elements than count):
 
 1. Outlet 0: `10`
 2. Outlet 1: `20`
 3. Outlet 2: `null`
+4. Outlet 3 (remaining): nothing
 
 If the input is not an array, it is treated as a single-element array — outlet 0
-gets the value, remaining outlets get `null`.
+gets the value, remaining named outlets get `null`.
 
 ## See Also
 
