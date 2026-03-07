@@ -707,11 +707,33 @@
     hasGeminiApiKey = !!localStorage.getItem('gemini-api-key');
   }
 
-  function cancelConnectionMode() {
-    isConnectionMode.set(false);
+  function handleConnectStart(params: { nodeId?: string | null; handleId?: string | null }) {
+    isConnecting.set(true);
+
+    const qualifiedHandleId =
+      params.nodeId && params.handleId
+        ? `${params.nodeId}/${params.handleId}`
+        : params.handleId || null;
+
+    connectingFromHandleId.set(qualifiedHandleId);
+
+    const sourceNode = params.nodeId ? getNode(params.nodeId) : undefined;
+
+    const sourceObjectName =
+      sourceNode?.type === 'object' ? (sourceNode.data?.name as string) : undefined;
+
+    connectingFromAcceptsFloat.set(isAcceptsFloatInlet(sourceObjectName, params.handleId));
+  }
+
+  function handleConnectEnd() {
     isConnecting.set(false);
     connectingFromHandleId.set(null);
     connectingFromAcceptsFloat.set(false);
+  }
+
+  function cancelConnectionMode() {
+    isConnectionMode.set(false);
+    handleConnectEnd();
   }
 
   // Track mouse position for palette positioning
@@ -1040,52 +1062,12 @@
             historyManager.record(new AddEdgeCommand(newEdge, canvasAccessors));
           }
         }}
-        onconnectstart={(event, params) => {
-          isConnecting.set(true);
-          // Construct fully qualified handle identifier (nodeId/handleId)
-          const qualifiedHandleId =
-            params.nodeId && params.handleId
-              ? `${params.nodeId}/${params.handleId}`
-              : params.handleId || null;
-          connectingFromHandleId.set(qualifiedHandleId);
-
-          // Track whether the source inlet has acceptsFloat (for reverse-drag dimming)
-          const sourceNode = params.nodeId ? getNode(params.nodeId) : undefined;
-
-          const sourceObjectName =
-            sourceNode?.type === 'object' ? (sourceNode.data?.name as string) : undefined;
-
-          connectingFromAcceptsFloat.set(isAcceptsFloatInlet(sourceObjectName, params.handleId));
-        }}
-        onconnectend={() => {
-          isConnecting.set(false);
-          connectingFromHandleId.set(null);
-          connectingFromAcceptsFloat.set(false);
-        }}
-        onclickconnectstart={(event, params) => {
-          isConnecting.set(true);
-          // Construct fully qualified handle identifier (nodeId/handleId)
-          const qualifiedHandleId =
-            params.nodeId && params.handleId
-              ? `${params.nodeId}/${params.handleId}`
-              : params.handleId || null;
-          connectingFromHandleId.set(qualifiedHandleId);
-
-          // Track whether the source inlet has acceptsFloat (for reverse-drag dimming)
-          const sourceNode = params.nodeId ? getNode(params.nodeId) : undefined;
-
-          const sourceObjectName =
-            sourceNode?.type === 'object' ? (sourceNode.data?.name as string) : undefined;
-
-          connectingFromAcceptsFloat.set(isAcceptsFloatInlet(sourceObjectName, params.handleId));
-        }}
+        onconnectstart={(event, params) => handleConnectStart(params)}
+        onconnectend={handleConnectEnd}
+        onclickconnectstart={(event, params) => handleConnectStart(params)}
         onclickconnectend={(event, connectionState) => {
-          isConnecting.set(false);
-          connectingFromHandleId.set(null);
-          connectingFromAcceptsFloat.set(false);
+          handleConnectEnd();
 
-          // Show success toast if connection was successfully made
-          // connectionState will have connection details if successful
           if (connectionState?.isValid) {
             toast.success('Objects connected by tap.');
           }
