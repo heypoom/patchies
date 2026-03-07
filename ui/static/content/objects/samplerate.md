@@ -2,12 +2,12 @@ Get the current audio sample rate.
 
 ## Usage
 
-`samplerate~` - send a bang to output the sample rate in Hz
+`samplerate` - send a bang to output the sample rate in Hz
 
 Outputs the current audio context sample rate (typically 44100 or 48000)
 when triggered with a bang message.
 
-_Inspired by [Pure Data](https://pd.iem.sh/objects/samplerate~)._
+_Inspired by [Pure Data](https://pd.iem.sh/objects/samplerate)._
 
 ## See Also
 

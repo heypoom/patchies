@@ -1896,8 +1896,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     tags: ['processors', 'audio', 'sampler']
   },
 
-  'samplerate~': {
-    type: 'samplerate~',
+  samplerate: {
+    type: 'samplerate',
     category: 'control',
     description: 'Outputs the current audio sample rate in Hz',
     inlets: [
