@@ -3,17 +3,28 @@ import { match } from 'ts-pattern';
 
 /**
  * Checks if the keyboard event target is in a typing context.
+ * Checks composedPath() to handle inputs inside shadow DOM (e.g. Vue/DOM nodes).
  */
-const isTypingContext = (target: HTMLElement): boolean =>
-  target instanceof HTMLInputElement ||
-  target instanceof HTMLTextAreaElement ||
-  !!target.closest('.cm-editor') ||
-  !!target.closest('.cm-content') ||
-  target.contentEditable === 'true' ||
-  // Allow text selection in virtual console
-  !!target.closest('[role="log"]') ||
-  // Allow copy in sidebar
-  !!target.closest('[data-sidebar]');
+const isTypingContext = (target: HTMLElement, event?: KeyboardEvent): boolean => {
+  if (event) {
+    for (const el of event.composedPath()) {
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return true;
+      if (el instanceof HTMLElement && el.contentEditable === 'true') return true;
+    }
+  }
+
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    !!target.closest('.cm-editor') ||
+    !!target.closest('.cm-content') ||
+    target.contentEditable === 'true' ||
+    // Allow text selection in virtual console
+    !!target.closest('[role="log"]') ||
+    // Allow copy in sidebar
+    !!target.closest('[data-sidebar]')
+  );
+};
 
 const INTERACTIVE_TAGS = ['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA'];
 
@@ -104,7 +115,7 @@ export class KeyboardShortcutManager {
 
   private handleKeydown(event: KeyboardEvent): void {
     const target = event.target as HTMLElement;
-    const isTyping = isTypingContext(target);
+    const isTyping = isTypingContext(target, event);
     const hasNodeSelected = this.actions.hasNodeSelected();
     const hasTextSelection = this.actions.hasTextSelection();
     const key = event.key.toLowerCase();
@@ -231,7 +242,7 @@ export class KeyboardShortcutManager {
     }
 
     // Shift+Space: Toggle transport panel
-    if (key === ' ' && event.shiftKey && !isTyping) {
+    if (key === ' ' && event.shiftKey && !isTyping && !isInteractiveFocus()) {
       event.preventDefault();
       this.actions.toggleTransportPanel();
 
