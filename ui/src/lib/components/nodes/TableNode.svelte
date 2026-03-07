@@ -23,6 +23,7 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
+  import { useNodeDataTracker } from '$lib/history';
 
   let {
     id: nodeId,
@@ -36,6 +37,7 @@
 
   const { updateNodeData } = useSvelteFlow();
   const bridge = BufferBridgeService.getInstance();
+  const tracker = useNodeDataTracker(nodeId);
 
   let messageContext: MessageContext;
   let canvas = $state<HTMLCanvasElement | undefined>();
@@ -121,16 +123,50 @@
 
     if (!nameChanged && !sizeChanged) return;
 
+    const oldName = bufferName;
+    const oldSize = bufferSize;
+
     if (nameChanged) {
       const oldData = await bridge.readBufferAsync(bufferName);
+
       bridge.createBuffer(newName, validSize);
-      if (oldData) bridge.writeBuffer(newName, oldData);
+
+      if (oldData) {
+        // Truncate or pad oldData to match validSize exactly
+        let dataToWrite: Float32Array;
+
+        if (oldData.length === validSize) {
+          dataToWrite = oldData;
+        } else if (oldData.length > validSize) {
+          dataToWrite = oldData.slice(0, validSize);
+        } else {
+          dataToWrite = new Float32Array(validSize);
+          dataToWrite.set(oldData);
+        }
+
+        bridge.writeBuffer(newName, dataToWrite);
+      }
+
       bridge.deleteBuffer(bufferName);
     } else if (sizeChanged) {
       bridge.resizeBuffer(bufferName, validSize);
     }
 
-    updateNodeData(nodeId, { ...data, bufferName: newName, size: validSize });
+    // Only unlink VFS source if the size changed (contents were altered)
+    updateNodeData(nodeId, {
+      ...data,
+      bufferName: newName,
+      size: validSize,
+      vfsPath: sizeChanged ? undefined : data.vfsPath
+    });
+
+    if (nameChanged) {
+      tracker.commit('bufferName', oldName, newName);
+    }
+
+    if (sizeChanged) {
+      tracker.commit('size', oldSize, validSize);
+    }
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -192,11 +228,12 @@
         if (length > 0) {
           const rounded = Math.round(length);
           bridge.resizeBuffer(bufferName, rounded);
-          updateNodeData(nodeId, { ...data, size: rounded });
+          updateNodeData(nodeId, { ...data, size: rounded, vfsPath: undefined });
         }
       })
       .with(tableMessages.clear, () => {
         bridge.clearBuffer(bufferName);
+        if (data.vfsPath) updateNodeData(nodeId, { ...data, vfsPath: undefined });
       })
       .with(tableMessages.normalize, () => {
         bridge.readBufferAsync(bufferName).then((buffer) => {
@@ -211,6 +248,7 @@
             const normalized = new Float32Array(buffer.length);
             for (let i = 0; i < buffer.length; i++) normalized[i] = buffer[i] * scale;
             bridge.writeBuffer(bufferName, normalized);
+            if (data.vfsPath) updateNodeData(nodeId, { ...data, vfsPath: undefined });
           }
         });
       })
@@ -227,14 +265,21 @@
     if (bridge.isSharedMemory) {
       function loop() {
         const buffer = bridge.readBuffer(bufferName);
-        if (canvas && buffer) drawWaveform(canvas, buffer, zoom.view);
+
+        if (canvas && buffer) {
+          drawWaveform(canvas, buffer, zoom.view);
+        }
+
         rafId = requestAnimationFrame(loop);
       }
+
       rafId = requestAnimationFrame(loop);
     } else {
       pollTimer = setInterval(() => {
         bridge.readBufferAsync(bufferName).then((buf) => {
-          if (canvas && buf) drawWaveform(canvas, buf, zoom.view);
+          if (canvas && buf) {
+            drawWaveform(canvas, buf, zoom.view);
+          }
         });
       }, 100);
     }
@@ -245,6 +290,7 @@
       cancelAnimationFrame(rafId);
       rafId = null;
     }
+
     if (pollTimer !== null) {
       clearInterval(pollTimer);
       pollTimer = null;
@@ -432,7 +478,13 @@
   </ContextMenu.Trigger>
 
   <ContextMenu.Content>
-    <ContextMenu.Item onclick={() => updateNodeData(nodeId, { ...data, showVisual: !showVisual })}>
+    <ContextMenu.Item
+      onclick={() => {
+        updateNodeData(nodeId, { ...data, showVisual: !showVisual });
+
+        tracker.commit('showVisual', showVisual, !showVisual);
+      }}
+    >
       {#if showVisual}
         <EyeOff class="mr-2 h-4 w-4" />
         Hide Visualizer
