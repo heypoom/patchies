@@ -7,6 +7,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { BufferBridgeService } from '$lib/audio/buffer-bridge';
   import { setupDprCanvas, drawWaveform } from '$lib/canvas/waveform-renderer';
+  import { useWaveformZoom } from '$lib/canvas/use-waveform-zoom.svelte';
   import {
     messages,
     TableSet,
@@ -182,12 +183,14 @@
   const CANVAS_W = 200;
   const CANVAS_H = 60;
 
+  const zoom = useWaveformZoom();
+
   function startVisualization() {
     if (bridge.isSharedMemory) {
       // SAB: live zero-copy reads via RAF
       function loop() {
         const buffer = bridge.readBuffer(bufferName);
-        if (canvas && buffer) drawWaveform(canvas, buffer);
+        if (canvas && buffer) drawWaveform(canvas, buffer, zoom.view);
         rafId = requestAnimationFrame(loop);
       }
       rafId = requestAnimationFrame(loop);
@@ -195,7 +198,7 @@
       // non-SAB: async polling at ~10 fps
       pollTimer = setInterval(() => {
         bridge.readBufferAsync(bufferName).then((buf) => {
-          if (canvas && buf) drawWaveform(canvas, buf);
+          if (canvas && buf) drawWaveform(canvas, buf, zoom.view);
         });
       }, 100);
     }
@@ -281,7 +284,8 @@
               {bufferName}
               <span class="text-zinc-600">({bufferSize})</span>
             </div>
-            <canvas bind:this={canvas} class="block rounded-b-lg"></canvas>
+            <canvas bind:this={canvas} class="nowheel block rounded-b-lg" onwheel={zoom.handleWheel}
+            ></canvas>
           </div>
         {:else}
           <div

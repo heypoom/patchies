@@ -4,6 +4,14 @@
  * Call setupDprCanvas() first to configure the canvas for the device pixel ratio.
  */
 
+/** Fraction of the data that is visible (both values in [0, 1]). */
+export interface ViewWindow {
+  start: number;
+  end: number;
+}
+
+const FULL_VIEW: ViewWindow = { start: 0, end: 1 };
+
 /** Set canvas physical dimensions for the device pixel ratio, CSS size to logical dimensions. */
 export function setupDprCanvas(canvas: HTMLCanvasElement, width: number, height: number): void {
   const dpr = window.devicePixelRatio || 1;
@@ -15,9 +23,13 @@ export function setupDprCanvas(canvas: HTMLCanvasElement, width: number, height:
 
 /**
  * Draw a filled min/max envelope waveform with orange gradient + glow.
- * Operates in physical pixel space (canvas.width × canvas.height).
+ * Operates in physical pixel space. Pass a ViewWindow to draw only a slice.
  */
-export function drawWaveform(canvas: HTMLCanvasElement, data: Float32Array): void {
+export function drawWaveform(
+  canvas: HTMLCanvasElement,
+  data: Float32Array,
+  view: ViewWindow = FULL_VIEW
+): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
@@ -39,14 +51,19 @@ export function drawWaveform(canvas: HTMLCanvasElement, data: Float32Array): voi
 
   if (!data.length) return;
 
+  // Map view window to sample indices
+  const dataStart = view.start * data.length;
+  const dataEnd = view.end * data.length;
+  const dataLen = dataEnd - dataStart;
+  const margin = 2; // physical pixels of headroom
+
   // Build min/max envelope — one entry per physical pixel column
   const maxEnv = new Float32Array(w);
   const minEnv = new Float32Array(w);
-  const margin = 2; // physical pixels of headroom
 
   for (let px = 0; px < w; px++) {
-    const start = Math.floor((px / w) * data.length);
-    const end = Math.max(start + 1, Math.floor(((px + 1) / w) * data.length));
+    const start = Math.floor(dataStart + (px / w) * dataLen);
+    const end = Math.max(start + 1, Math.floor(dataStart + ((px + 1) / w) * dataLen));
     let min = 0,
       max = 0;
     for (let i = start; i < end; i++) {
@@ -78,13 +95,15 @@ export function drawWaveform(canvas: HTMLCanvasElement, data: Float32Array): voi
 
 /**
  * Draw loop region highlight + start/end markers.
- * loopStart / loopEnd / duration are all in the same unit (e.g. seconds).
+ * loopStart / loopEnd / duration are in the same unit (e.g. seconds or samples).
+ * Pass the current ViewWindow so markers are clipped to the visible range.
  */
 export function drawLoopOverlay(
   canvas: HTMLCanvasElement,
   duration: number,
   loopStart: number,
-  loopEnd: number
+  loopEnd: number,
+  view: ViewWindow = FULL_VIEW
 ): void {
   if (loopEnd <= loopStart || duration <= 0) return;
 
@@ -93,26 +112,40 @@ export function drawLoopOverlay(
 
   const w = canvas.width;
   const h = canvas.height;
-  const startX = (loopStart / duration) * w;
-  const endX = (loopEnd / duration) * w;
+  const viewSpan = view.end - view.start;
+
+  const loopStartFrac = loopStart / duration;
+  const loopEndFrac = loopEnd / duration;
+
+  // Skip if entirely outside the view
+  if (loopEndFrac <= view.start || loopStartFrac >= view.end) return;
+
+  const toX = (frac: number) => ((frac - view.start) / viewSpan) * w;
+
+  const startX = Math.max(0, toX(loopStartFrac));
+  const endX = Math.min(w, toX(loopEndFrac));
 
   // Region tint
   ctx.fillStyle = 'rgba(249,115,22,0.12)';
   ctx.fillRect(startX, 0, endX - startX, h);
 
-  // Markers
+  // Markers — only draw if they're actually in view
   ctx.strokeStyle = 'rgba(249,115,22,0.7)';
-  ctx.lineWidth = window.devicePixelRatio || 1; // 1 logical pixel
+  ctx.lineWidth = window.devicePixelRatio || 1;
 
-  ctx.beginPath();
-  ctx.moveTo(startX, 0);
-  ctx.lineTo(startX, h);
-  ctx.stroke();
+  if (loopStartFrac >= view.start) {
+    ctx.beginPath();
+    ctx.moveTo(startX, 0);
+    ctx.lineTo(startX, h);
+    ctx.stroke();
+  }
 
-  ctx.beginPath();
-  ctx.moveTo(endX, 0);
-  ctx.lineTo(endX, h);
-  ctx.stroke();
+  if (loopEndFrac <= view.end) {
+    ctx.beginPath();
+    ctx.moveTo(endX, 0);
+    ctx.lineTo(endX, h);
+    ctx.stroke();
+  }
 }
 
 /**
@@ -122,14 +155,18 @@ export function drawLoopOverlay(
 export function drawPlaybackHead(
   canvas: HTMLCanvasElement,
   duration: number,
-  progress: number
+  progress: number,
+  view: ViewWindow = FULL_VIEW
 ): void {
   if (progress <= 0 || duration <= 0) return;
+
+  const progressFrac = progress / duration;
+  if (progressFrac < view.start || progressFrac > view.end) return;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const x = (progress / duration) * canvas.width;
+  const x = ((progressFrac - view.start) / (view.end - view.start)) * canvas.width;
 
   ctx.strokeStyle = 'rgba(161,161,170,0.85)';
   ctx.lineWidth = window.devicePixelRatio || 1;

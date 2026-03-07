@@ -3,8 +3,10 @@
     setupDprCanvas,
     drawWaveform,
     drawLoopOverlay,
-    drawPlaybackHead
+    drawPlaybackHead,
+    type ViewWindow
   } from '$lib/canvas/waveform-renderer';
+  import { useWaveformZoom } from '$lib/canvas/use-waveform-zoom.svelte';
 
   let {
     audioBuffer,
@@ -31,13 +33,16 @@
   let canvasRef = $state<HTMLCanvasElement>();
   let animationFrameId: number | null = null;
 
-  // Offscreen cache for the static waveform (re-created when buffer changes)
+  // Offscreen cache for the static waveform — keyed to buffer + view
   let waveformCache: HTMLCanvasElement | null = null;
   let lastDrawnBuffer: AudioBuffer | null = null;
+  let lastDrawnView: ViewWindow | null = null;
 
   // For real-time recording visualization
   let recordingHistory: number[] = [];
   const MAX_HISTORY_SAMPLES = 2048;
+
+  const zoom = useWaveformZoom();
 
   // --- Canvas setup ---
 
@@ -46,36 +51,46 @@
     void height;
     if (canvasRef) {
       setupDprCanvas(canvasRef, width, height);
-      // Invalidate cache — physical dimensions may have changed
       waveformCache = null;
       lastDrawnBuffer = null;
+      lastDrawnView = null;
     }
   });
 
   // --- Static waveform (AudioBuffer) ---
 
-  function buildCache(buffer: AudioBuffer) {
+  function viewChanged(v: ViewWindow): boolean {
+    return !lastDrawnView || lastDrawnView.start !== v.start || lastDrawnView.end !== v.end;
+  }
+
+  function buildCache(buffer: AudioBuffer, view: ViewWindow) {
     if (!canvasRef) return;
     const cache = document.createElement('canvas');
     cache.width = canvasRef.width;
     cache.height = canvasRef.height;
-    drawWaveform(cache, buffer.getChannelData(0));
+    drawWaveform(cache, buffer.getChannelData(0), view);
     waveformCache = cache;
     lastDrawnBuffer = buffer;
+    lastDrawnView = { start: view.start, end: view.end };
   }
 
-  function drawStatic() {
-    if (!canvasRef || !waveformCache || !audioBuffer) return;
+  function drawStatic(view: ViewWindow) {
+    if (!canvasRef || !audioBuffer) return;
+
+    if (audioBuffer !== lastDrawnBuffer || viewChanged(view)) {
+      buildCache(audioBuffer, view);
+    }
+
     const ctx = canvasRef.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !waveformCache) return;
 
     ctx.drawImage(waveformCache, 0, 0);
 
     if (showLoopPoints && loopEnd > loopStart) {
-      drawLoopOverlay(canvasRef, audioBuffer.duration, loopStart, loopEnd);
+      drawLoopOverlay(canvasRef, audioBuffer.duration, loopStart, loopEnd, view);
     }
     if (playbackProgress > 0) {
-      drawPlaybackHead(canvasRef, audioBuffer.duration, playbackProgress);
+      drawPlaybackHead(canvasRef, audioBuffer.duration, playbackProgress, view);
     }
   }
 
@@ -114,9 +129,10 @@
     }
   }
 
-  // --- Main effect: react to audioBuffer / analyser changes ---
+  // --- Main effect: react to audioBuffer / analyser / zoom changes ---
 
   $effect(() => {
+    const view = zoom.view;
     if (!canvasRef) return;
 
     stopAnimation();
@@ -131,11 +147,11 @@
 
     if (audioBuffer) {
       recordingHistory = [];
-      if (audioBuffer !== lastDrawnBuffer) buildCache(audioBuffer);
-      drawStatic();
+      drawStatic(view);
     } else {
       waveformCache = null;
       lastDrawnBuffer = null;
+      lastDrawnView = null;
       recordingHistory = [];
       const ctx = canvasRef.getContext('2d');
       if (ctx) {
@@ -152,8 +168,9 @@
     void loopEnd;
     void showLoopPoints;
     void playbackProgress;
-    if (waveformCache && audioBuffer && !analyser) drawStatic();
+    if (waveformCache && audioBuffer && !analyser) drawStatic(zoom.view);
   });
 </script>
 
-<canvas bind:this={canvasRef} class="rounded {className}"></canvas>
+<canvas bind:this={canvasRef} class="nowheel rounded {className}" onwheel={zoom.handleWheel}
+></canvas>
