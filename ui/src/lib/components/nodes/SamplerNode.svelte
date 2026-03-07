@@ -52,7 +52,7 @@
   let playbackInterval: ReturnType<typeof setInterval> | null = null;
   let audioBuffer = $state<AudioBuffer | null>(null);
   let showSettings = $state(false);
-  let recordingAnalyser: AnalyserNode | null = null;
+  let recordingAnalyser = $state<AnalyserNode | null>(null);
   let recordingAnimationFrame: number | null = null;
 
   // Use VFS media composable for file handling (drag/drop, persistence, relink)
