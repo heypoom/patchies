@@ -74,8 +74,15 @@
   const DEFAULT_WIDTH = 400;
   const DEFAULT_HEIGHT = 300;
 
-  // @ts-ignore - credentialless is a valid iframe attribute but not in TS types yet
-  const iframeSecurity = { credentialless: true, anonymous: true };
+  const iframeSecurity = {};
+
+  if (supportsCredentiallessIframes) {
+    // @ts-expect-error - credentialless is a valid iframe attribute but not in TS types yet
+    iframeSecurity['credentialless'] = 'credentialless';
+
+    // @ts-expect-error - crossorigin is a valid iframe attribute but not in TS types yet
+    iframeSecurity['crossorigin'] = 'anonymous';
+  }
 
   const hasUrl = $derived(!!node.data.url);
 
