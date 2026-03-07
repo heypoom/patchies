@@ -22,6 +22,7 @@ export const isMobile = createIsMobileStore();
 
 export const isBottomBarVisible = writable(true);
 export const isFpsMonitorVisible = writable(false);
+export const isCablesVisible = writable(true);
 
 // Help mode - when viewing a help patch (read-only, no autosave)
 // Stores the object name being helped, or null if not in help mode

@@ -8,7 +8,8 @@
     isConnectionMode,
     isConnecting,
     connectingFromHandleId,
-    currentPatchId
+    currentPatchId,
+    isCablesVisible
   } from '../../stores/ui.store';
   import { useWebCodecs, toggleWebCodecs, toggleVideoStats } from '../../stores/video.store';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -219,6 +220,11 @@
       description: 'Enable or disable Vim keybindings in code editors'
     },
     {
+      id: 'toggle-cables',
+      name: 'Toggle Cables',
+      description: `${$isCablesVisible ? 'Hide' : 'Show'} cables (edges) between objects`
+    },
+    {
       id: 'toggle-fps-monitor',
       name: 'Toggle FPS Monitor',
       description: 'Show or hide the FPS monitor'
@@ -378,6 +384,10 @@
       })
       .with('toggle-bottom-bar', () => {
         $isBottomBarVisible = !$isBottomBarVisible;
+        onCancel();
+      })
+      .with('toggle-cables', () => {
+        $isCablesVisible = !$isCablesVisible;
         onCancel();
       })
       .with('toggle-fps-monitor', () => {

@@ -10,6 +10,7 @@
   } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
   import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
+  import { isCablesVisible } from '../../../stores/ui.store';
 
   let {
     id,
@@ -69,4 +70,9 @@
   );
 </script>
 
-<BaseEdge path={edgePath} {markerEnd} class={edgeClass} />
+<BaseEdge
+  path={edgePath}
+  {markerEnd}
+  class={edgeClass}
+  style={$isCablesVisible ? '' : 'display: none'}
+/>
