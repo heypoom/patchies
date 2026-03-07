@@ -105,6 +105,7 @@ bun run test             # All tests
 - TypeScript for all code
 - Svelte 5: `$state`, `$props`, `$effect`, `$derived` (no `on:click`, use `onclick`)
 - Prefer editing existing files
+- **Shared functions over duplication**: When the same logic appears in multiple places (e.g., a message handler AND a context menu item), extract it into a named function and call it from both. Do NOT inline the same logic twice. If it's unclear whether a shared abstraction is appropriate, ask the user before duplicating.
 - **Persistence**: Never store localStorage keys or persistence logic in components. Create a dedicated store in `src/stores/` (see `preset-library.store.ts` or `help-view.store.ts` for pattern)
 
 ## Styling

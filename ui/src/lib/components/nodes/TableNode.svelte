@@ -20,7 +20,7 @@
   import { schema } from '$lib/objects/schemas/types';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { Eye, EyeOff, Unlink } from '@lucide/svelte/icons';
+  import { Eye, EyeOff, Unlink, Trash2, ArrowUpDown } from '@lucide/svelte/icons';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
@@ -185,6 +185,31 @@
     setTimeout(() => exitEditingMode(true), 150);
   }
 
+  // --- Buffer operations ---
+
+  function clearBuffer() {
+    bridge.clearBuffer(bufferName);
+    if (data.vfsPath) updateNodeData(nodeId, { ...data, vfsPath: undefined });
+  }
+
+  function normalizeBuffer() {
+    bridge.readBufferAsync(bufferName).then((buffer) => {
+      if (!buffer) return;
+      let maxAbs = 0;
+      for (let i = 0; i < buffer.length; i++) {
+        const abs = Math.abs(buffer[i]);
+        if (abs > maxAbs) maxAbs = abs;
+      }
+      if (maxAbs > 0) {
+        const scale = 1 / maxAbs;
+        const normalized = new Float32Array(buffer.length);
+        for (let i = 0; i < buffer.length; i++) normalized[i] = buffer[i] * scale;
+        bridge.writeBuffer(bufferName, normalized);
+        if (data.vfsPath) updateNodeData(nodeId, { ...data, vfsPath: undefined });
+      }
+    });
+  }
+
   // --- Message handling ---
 
   const tableMessages = {
@@ -252,27 +277,8 @@
           updateNodeData(nodeId, { ...data, size: rounded, vfsPath: undefined });
         }
       })
-      .with(tableMessages.clear, () => {
-        bridge.clearBuffer(bufferName);
-        if (data.vfsPath) updateNodeData(nodeId, { ...data, vfsPath: undefined });
-      })
-      .with(tableMessages.normalize, () => {
-        bridge.readBufferAsync(bufferName).then((buffer) => {
-          if (!buffer) return;
-          let maxAbs = 0;
-          for (let i = 0; i < buffer.length; i++) {
-            const abs = Math.abs(buffer[i]);
-            if (abs > maxAbs) maxAbs = abs;
-          }
-          if (maxAbs > 0) {
-            const scale = 1 / maxAbs;
-            const normalized = new Float32Array(buffer.length);
-            for (let i = 0; i < buffer.length; i++) normalized[i] = buffer[i] * scale;
-            bridge.writeBuffer(bufferName, normalized);
-            if (data.vfsPath) updateNodeData(nodeId, { ...data, vfsPath: undefined });
-          }
-        });
-      })
+      .with(tableMessages.clear, () => clearBuffer())
+      .with(tableMessages.normalize, () => normalizeBuffer())
       .with(tableMessages.load, ({ src }) => {
         vfsMedia.loadFromPath(src);
       })
@@ -519,7 +525,20 @@
       {/if}
     </ContextMenu.Item>
 
+    <ContextMenu.Separator />
+
+    <ContextMenu.Item class="cursor-pointer" onclick={clearBuffer}>
+      <Trash2 class="mr-2 h-4 w-4" />
+      Clear
+    </ContextMenu.Item>
+
+    <ContextMenu.Item class="cursor-pointer" onclick={normalizeBuffer}>
+      <ArrowUpDown class="mr-2 h-4 w-4" />
+      Normalize
+    </ContextMenu.Item>
+
     {#if data.vfsPath}
+      <ContextMenu.Separator />
       <ContextMenu.Item
         class="cursor-pointer"
         onclick={() => updateNodeData(nodeId, { ...data, vfsPath: undefined })}
