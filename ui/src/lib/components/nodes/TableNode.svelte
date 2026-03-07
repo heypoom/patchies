@@ -19,7 +19,7 @@
   import { schema } from '$lib/objects/schemas/types';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { Eye, EyeOff } from '@lucide/svelte/icons';
+  import { Eye, EyeOff, Unlink } from '@lucide/svelte/icons';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
@@ -323,10 +323,28 @@
             tabindex="0"
             onkeydown={(e) => e.key === 'Enter' && enterEditingMode()}
           >
-            <div class="px-2 pt-1.5 pb-1 font-mono text-[10px] text-zinc-500">
+            <div
+              class="flex items-center gap-1 px-2 pt-1.5 pb-1 font-mono text-[10px] text-zinc-500"
+            >
               {bufferName}
 
               <span class="text-zinc-600">({bufferSize})</span>
+
+              {#if data.vfsPath}
+                <Tooltip.Root>
+                  <Tooltip.Trigger
+                    class="ml-auto cursor-pointer"
+                    onclick={() => updateNodeData(nodeId, { ...data, vfsPath: undefined })}
+                  >
+                    <Unlink class="h-2.5 w-2.5 text-zinc-500 hover:text-red-400" />
+                  </Tooltip.Trigger>
+
+                  <Tooltip.Content>
+                    <p class="font-semibold text-red-500">Unlink virtual file?</p>
+                    <p class="max-w-xs font-mono text-xs break-all text-zinc-500">{data.vfsPath}</p>
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              {/if}
             </div>
 
             {#if vfsMedia.needsFolderRelink || vfsMedia.needsReselect}
