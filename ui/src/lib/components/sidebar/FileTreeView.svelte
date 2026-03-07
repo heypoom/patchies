@@ -72,7 +72,7 @@
     return new Set(['user://', 'obj://']);
   }
 
-  let expandedPaths = $state(loadExpandedPaths());
+  let expandedPaths = new SvelteSet(loadExpandedPaths());
   let searchQuery = $state('');
 
   // Search result type for flat display
@@ -157,7 +157,7 @@
       localStorage.setItem('patchies-file-tree-expanded', JSON.stringify([...expandedPaths]));
     }
   });
-  let selectedPaths = $state(new Set<string>());
+  let selectedPaths = new SvelteSet<string>();
   let lastSelectedPath = $state<string | null>(null);
   let dropTargetPath = $state<string | null>(null);
 
@@ -255,7 +255,7 @@
       vfsPath: selectedFilePath
     });
 
-    selectedPaths = new SvelteSet();
+    selectedPaths.clear();
     lastSelectedPath = null;
 
     $isSidebarOpen = false;
@@ -269,16 +269,17 @@
 
     await moveVfsFile(selectedFilePath, targetFolder);
 
-    selectedPaths = new SvelteSet();
+    selectedPaths.clear();
     lastSelectedPath = null;
   }
 
   function toggleSelected(path: string) {
     if (selectedPaths.has(path)) {
-      selectedPaths = new SvelteSet();
+      selectedPaths.clear();
       lastSelectedPath = null;
     } else {
-      selectedPaths = new SvelteSet([path]);
+      selectedPaths.clear();
+      selectedPaths.add(path);
       lastSelectedPath = path;
     }
   }
@@ -313,7 +314,8 @@
       const endIdx = visiblePaths.indexOf(path);
       if (startIdx !== -1 && endIdx !== -1) {
         const [from, to] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
-        selectedPaths = new SvelteSet(visiblePaths.slice(from, to + 1));
+        selectedPaths.clear();
+        for (const p of visiblePaths.slice(from, to + 1)) selectedPaths.add(p);
 
         return; // keep lastSelectedPath as anchor
       }
@@ -344,7 +346,7 @@
       }
     }
 
-    selectedPaths = new SvelteSet();
+    selectedPaths.clear();
     lastSelectedPath = null;
   }
 
@@ -447,8 +449,6 @@
     } else {
       expandedPaths.add(path);
     }
-
-    expandedPaths = new SvelteSet(expandedPaths);
   }
 
   function getSortedChildren(node: TreeNode): TreeNode[] {
@@ -635,7 +635,6 @@
     if (selectedPaths.has(oldPath)) {
       selectedPaths.delete(oldPath);
       selectedPaths.add(newBasePath);
-      selectedPaths = new SvelteSet(selectedPaths);
     }
   }
 
@@ -708,7 +707,6 @@
         // Expand parent and the new folder
         expandedPaths.add(parentPath);
         expandedPaths.add(newFolderPath);
-        expandedPaths = new SvelteSet(expandedPaths);
       }
       showFolderInput = null;
       folderInputValue = '';
@@ -763,8 +761,6 @@
           if (selectedPaths.has(oldPath)) {
             selectedPaths.delete(oldPath);
             selectedPaths.add(newPath);
-
-            selectedPaths = new SvelteSet(selectedPaths);
           }
         }
       }
@@ -798,7 +794,7 @@
       }
     }
 
-    selectedPaths = new SvelteSet();
+    selectedPaths.clear();
     lastSelectedPath = null;
   }
 
@@ -875,12 +871,13 @@
   // The path key can be either:
   // - A VFS path for the root linked folder (e.g., "user://my-folder")
   // - A VFS-style path for subdirectories (e.g., "user://my-folder/subdir")
-  let localFolderContents = $state(
-    new Map<string, Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }>>()
-  );
+  let localFolderContents = new SvelteMap<
+    string,
+    Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }>
+  >();
 
   // Cache for directory handles within linked folders (for expanding subdirs)
-  let subdirHandleCache = $state(new Map<string, FileSystemDirectoryHandle>());
+  let subdirHandleCache = new SvelteMap<string, FileSystemDirectoryHandle>();
 
   async function handleLinkFolderClick(event: MouseEvent) {
     event.stopPropagation();
@@ -897,8 +894,6 @@
       // Expand the new folder
       expandedPaths.add('user://');
       expandedPaths.add(path);
-
-      expandedPaths = new SvelteSet(expandedPaths);
 
       // Load its contents
       await loadLocalFolderContents(path);
@@ -933,10 +928,7 @@
         }
       }
 
-      subdirHandleCache = new SvelteMap(subdirHandleCache);
-
       localFolderContents.set(path, contents);
-      localFolderContents = new SvelteMap(localFolderContents);
     } catch (err) {
       console.error('Failed to load local folder contents:', err);
     }
@@ -969,8 +961,6 @@
 
       // Expand the folder
       expandedPaths.add(path);
-
-      expandedPaths = new SvelteSet(expandedPaths);
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         console.error('Failed to relink folder:', err);
@@ -989,7 +979,6 @@
     } else {
       expandedPaths.delete(subdirPath);
     }
-    expandedPaths = new SvelteSet(expandedPaths);
 
     // Load contents if expanding and not already loaded
     if (willExpand && !localFolderContents.has(subdirPath)) {
@@ -1120,7 +1109,8 @@
 
               if (isFolder && node.path && !isNamespace) {
                 // For non-namespace folders: select (without deselect) and toggle expand
-                selectedPaths = new SvelteSet([node.path]);
+                selectedPaths.clear();
+                selectedPaths.add(node.path);
                 lastSelectedPath = node.path;
 
                 // Check if we're about to expand (before toggling)
@@ -1441,8 +1431,8 @@
 
                 if (startIdx !== -1 && endIdx !== -1) {
                   const [from, to] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
-
-                  selectedPaths = new SvelteSet(paths.slice(from, to + 1));
+                  selectedPaths.clear();
+                  for (const p of paths.slice(from, to + 1)) selectedPaths.add(p);
 
                   return;
                 }
@@ -1545,7 +1535,7 @@
       <button
         class="ml-auto text-xs text-zinc-500 hover:text-zinc-300"
         onclick={() => {
-          selectedPaths = new SvelteSet();
+          selectedPaths.clear();
           lastSelectedPath = null;
         }}
       >
