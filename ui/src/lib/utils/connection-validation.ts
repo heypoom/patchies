@@ -30,6 +30,31 @@ export function isAudioParamInlet(
   return inlet?.isAudioParam ?? false;
 }
 
+/**
+ * Checks if a target signal inlet accepts float messages (Pure Data style).
+ *
+ * @param objectName - The name of the target node (e.g., '+~', '*~')
+ * @param targetHandle - The handle ID of the target inlet
+ * @returns true if the inlet has acceptsFloat: true, false otherwise
+ */
+export function isAcceptsFloatInlet(
+  objectName: string | undefined,
+  targetHandle: string | null | undefined
+): boolean {
+  if (objectName === undefined) return false;
+  if (!objectName?.endsWith('~')) return false;
+
+  const audioNodeClass = audioRegistry.get(objectName);
+  if (!audioNodeClass?.inlets) return false;
+
+  const inletIndex = handleToPortIndex(targetHandle ?? null);
+  if (inletIndex === null || isNaN(inletIndex)) return false;
+
+  const inlet = audioNodeClass.inlets[inletIndex];
+
+  return inlet?.acceptsFloat ?? false;
+}
+
 export interface ConnectionValidationOptions {
   /**
    * Whether the target inlet is an AudioParam.
@@ -37,6 +62,12 @@ export interface ConnectionValidationOptions {
    * and message connections (for parameter automation).
    */
   isTargetAudioParam?: boolean;
+
+  /**
+   * Whether the target signal inlet accepts float messages (Pure Data style).
+   * Allows message connections to signal inlets marked with acceptsFloat: true.
+   */
+  isTargetAcceptsFloat?: boolean;
 }
 
 /**
@@ -100,8 +131,13 @@ export function isValidConnectionBetweenHandles(
     return isSourceVideo && isTargetVideo;
   }
 
-  // Target audio inlets (e.g. out~) must be connected to audio outputs/sources
+  // Target audio inlets (e.g. out~) must be connected to audio outputs/sources.
+  // Signal inlets with acceptsFloat also accept message connections (Pure Data style).
   if (isTargetAudioInlet) {
+    if (options?.isTargetAcceptsFloat) {
+      return isSourceAudio || isSourceMessage;
+    }
+
     return isSourceAudio;
   }
 

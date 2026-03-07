@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   isValidConnectionBetweenHandles,
   canAcceptConnection,
-  isAudioParamInlet
+  isAudioParamInlet,
+  isAcceptsFloatInlet
 } from './connection-validation';
 
 describe('isValidConnectionBetweenHandles', () => {
@@ -101,5 +102,46 @@ describe('isAudioParamInlet', () => {
     expect(isAudioParamInlet(undefined, 'in-0')).toBe(false);
     expect(isAudioParamInlet('gain~', undefined)).toBe(false);
     expect(isAudioParamInlet('gain~', null)).toBe(false);
+  });
+});
+
+describe('isValidConnectionBetweenHandles with acceptsFloat', () => {
+  it('allows both audio and message to acceptsFloat signal inlets', () => {
+    expect(
+      isValidConnectionBetweenHandles('audio-out', 'audio-in', {
+        isTargetAcceptsFloat: true
+      })
+    ).toBe(true);
+
+    expect(
+      isValidConnectionBetweenHandles('message-out', 'audio-in', {
+        isTargetAcceptsFloat: true
+      })
+    ).toBe(true);
+  });
+
+  it('rejects video to acceptsFloat signal inlets', () => {
+    expect(
+      isValidConnectionBetweenHandles('video-out', 'audio-in', {
+        isTargetAcceptsFloat: true
+      })
+    ).toBe(false);
+  });
+
+  it('still rejects message-to-audio-in without the flag', () => {
+    expect(isValidConnectionBetweenHandles('message-out', 'audio-in')).toBe(false);
+  });
+});
+
+describe('isAcceptsFloatInlet', () => {
+  it('returns false for non-audio nodes', () => {
+    expect(isAcceptsFloatInlet('print', 'in-0')).toBe(false);
+    expect(isAcceptsFloatInlet('p5', 'message-in-1')).toBe(false);
+  });
+
+  it('returns false for undefined or invalid inputs', () => {
+    expect(isAcceptsFloatInlet(undefined, 'audio-in-1')).toBe(false);
+    expect(isAcceptsFloatInlet('*~', undefined)).toBe(false);
+    expect(isAcceptsFloatInlet('*~', null)).toBe(false);
   });
 });

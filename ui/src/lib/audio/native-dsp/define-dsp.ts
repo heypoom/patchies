@@ -123,7 +123,7 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
       });
     };
 
-    constructor(nodeOptions?: { processorOptions?: { nodeId?: string } }) {
+    constructor(nodeOptions?: { processorOptions?: { nodeId?: string; floatInlets?: number[] } }) {
       super();
       this.nodeId = nodeOptions?.processorOptions?.nodeId ?? '';
       this.state = options.state();
@@ -131,6 +131,15 @@ export function defineDSP<S>(options: DefineDSPOptions<S>): void {
       // Initialize inlet default values
       for (const [inlet, value] of Object.entries(inletDefaults)) {
         this.setInletValue(Number(inlet), value);
+      }
+
+      // Initialize constant buffers for acceptsFloat signal inlets (default 0).
+      // These are passed from createWorkletDspNode so processors don't need inletDefaults.
+      const floatInlets = nodeOptions?.processorOptions?.floatInlets ?? [];
+      for (const inlet of floatInlets) {
+        if (!this.inletValues.has(inlet)) {
+          this.setInletValue(inlet, 0);
+        }
       }
 
       // Register with worklet direct channel for receiving direct messages

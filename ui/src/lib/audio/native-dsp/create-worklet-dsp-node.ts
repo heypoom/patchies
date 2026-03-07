@@ -114,10 +114,19 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
     async create(params: unknown[]): Promise<void> {
       await ensureModule(config.workletUrl, this.audioContext);
 
+      // Collect signal inlet indices that accept float messages so the worklet
+      // can initialize their constant buffers automatically (no inletDefaults needed).
+      const floatInlets = config.inlets
+        .map((inlet, i) => (inlet.type === 'signal' && inlet.acceptsFloat ? i : -1))
+        .filter((i) => i >= 0);
+
       this.audioNode = new AudioWorkletNode(this.audioContext, config.type, {
         numberOfInputs: config.audioInlets ?? 0,
         numberOfOutputs: config.audioOutlets ?? 1,
-        processorOptions: { nodeId: this.nodeId }
+        processorOptions: {
+          nodeId: this.nodeId,
+          floatInlets: floatInlets.length > 0 ? floatInlets : undefined
+        }
       });
 
       // Register with direct channel service for worklet-to-worklet routing
@@ -141,7 +150,8 @@ export function createWorkletDspNode(config: WorkletDspNodeConfig): NativeDspNod
         if (params[i] === undefined || params[i] === null) continue;
 
         const inlet = config.inlets[i];
-        const isSignalOnly = inlet.type === 'signal' && !inlet.messages?.length;
+        const isSignalOnly =
+          inlet.type === 'signal' && !inlet.messages?.length && !inlet.acceptsFloat;
         if (isSignalOnly) continue;
 
         // For AudioParam inlets, set the param value directly

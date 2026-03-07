@@ -474,7 +474,7 @@
         .map((value, index) => ({ value, index }))
         .filter(
           ({ value, index }) =>
-            !isUnmodifiableType(inlets[index]?.type) &&
+            (!isUnmodifiableType(inlets[index]?.type) || inlets[index]?.acceptsFloat) &&
             !inlets[index]?.hideTextParam &&
             value != null
         )
@@ -566,7 +566,8 @@
     const isScheduled = isScheduledMessage(message);
     const isSetImmediate = isScheduled && message.type === 'set' && message.time === undefined;
 
-    if (!isUnmodifiableType(inlet.type) && !isScheduled) {
+    const isAcceptsFloatSignal = inlet.type === 'signal' && inlet.acceptsFloat;
+    if ((!isUnmodifiableType(inlet.type) || isAcceptsFloatSignal) && !isScheduled) {
       // Do not update parameter if it is a unmodifiable type or a scheduled message.
       // For typed inlets with message schemas (e.g., string inlet that also accepts bang/stop),
       // only update the displayed param when the value matches the base type.
@@ -577,6 +578,7 @@
         (inlet.type === 'float' && typeof message === 'number') ||
         (inlet.type === 'int' && typeof message === 'number') ||
         (inlet.type === 'bool' && typeof message === 'boolean') ||
+        (isAcceptsFloatSignal && typeof message === 'number') ||
         !inlet.type;
 
       if (matchesBaseType) updateParamByIndex(meta.inlet, message);
@@ -901,10 +903,15 @@
   });
 
   const getInletTypeHoverClass = (inletIndex: number) => {
-    const type = inlets[inletIndex]?.type;
+    const inlet = inlets[inletIndex];
+    const type = inlet?.type;
 
     if (isAutomated[inletIndex]) {
       return 'hover:text-pink-500 cursor-pointer hover:underline';
+    }
+
+    if (type === 'signal' && inlet?.acceptsFloat) {
+      return 'hover:text-yellow-500 cursor-pointer hover:underline';
     }
 
     return match(type)
@@ -1009,6 +1016,7 @@
               class="top-0"
               {nodeId}
               isAudioParam={inlet.isAudioParam}
+              acceptsFloat={inlet.acceptsFloat}
               isHot={inlet.hot}
             />
           {/each}
@@ -1113,7 +1121,7 @@
                           {/if}
                         </Tooltip.Content>
                       </Tooltip.Root>
-                    {:else if !isUnmodifiableType(inlets[index]?.type) && !inlets[index]?.hideTextParam && param != null && param !== ''}
+                    {:else if (!isUnmodifiableType(inlets[index]?.type) || inlets[index]?.acceptsFloat) && !inlets[index]?.hideTextParam && param != null && param !== ''}
                       <Tooltip.Root>
                         <Tooltip.Trigger>
                           <span

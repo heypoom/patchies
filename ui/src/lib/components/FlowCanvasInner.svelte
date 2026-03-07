@@ -48,6 +48,7 @@
   import { Toaster } from '$lib/components/ui/sonner';
   import {
     isAudioParamInlet,
+    isAcceptsFloatInlet,
     isValidConnectionBetweenHandles
   } from '$lib/utils/connection-validation';
   import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
@@ -737,7 +738,8 @@
       targetNode?.type === 'object' ? (targetNode.data?.name as string) : undefined;
 
     return isValidConnectionBetweenHandles(connection.sourceHandle, connection.targetHandle, {
-      isTargetAudioParam: isAudioParamInlet(objectName, connection.targetHandle)
+      isTargetAudioParam: isAudioParamInlet(objectName, connection.targetHandle),
+      isTargetAcceptsFloat: isAcceptsFloatInlet(objectName, connection.targetHandle)
     });
   };
 

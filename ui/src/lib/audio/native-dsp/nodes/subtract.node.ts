@@ -1,4 +1,3 @@
-import { Type } from '@sinclair/typebox';
 import { createWorkletDspNode } from '../create-worklet-dsp-node';
 import workletUrl from '../processors/subtract.processor?worker&url';
 
@@ -14,18 +13,16 @@ export const SubtractNode = createWorkletDspNode({
 
   inlets: [
     { name: 'left', type: 'signal', description: 'Left signal input' },
-    { name: 'right', type: 'signal', description: 'Right signal input' },
-    {
-      name: 'value',
-      type: 'float',
-      hideInlet: true,
-      controlsSignalInlet: 1,
-      description: 'Constant to subtract',
-      messages: [{ schema: Type.Number(), description: 'Constant to subtract' }]
-    }
+    { name: 'right', type: 'signal', description: 'Right signal input', acceptsFloat: true }
   ],
 
-  outlets: [{ name: 'out', type: 'signal', description: 'Difference of left − right' }],
+  outlets: [
+    {
+      name: 'out',
+      type: 'signal',
+      description: 'Difference of left − right'
+    }
+  ],
 
   tags: ['audio', 'math', 'subtract', 'signal']
 });

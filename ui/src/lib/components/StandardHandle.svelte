@@ -22,6 +22,9 @@
     nodeId: string;
     isAudioParam?: boolean;
 
+    /** When true, this signal inlet also accepts float messages (Pure Data style) */
+    acceptsFloat?: boolean;
+
     /** Hot inlet indicator (Max/Pd style) - shows a ring around the handle */
     isHot?: boolean;
   }
@@ -36,6 +39,7 @@
     class: className = '',
     nodeId,
     isAudioParam = false,
+    acceptsFloat = false,
     isHot = false
   }: Props = $props();
 
@@ -98,7 +102,8 @@
       connectingFromHandleId: $connectingFromHandleId,
       currentHandleQualifiedId: qualifiedHandleId,
       currentHandlePort: port,
-      isAudioParam
+      isAudioParam,
+      acceptsFloat
     })
   );
 

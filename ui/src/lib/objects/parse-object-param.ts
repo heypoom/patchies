@@ -28,8 +28,13 @@ export const ALWAYS_VALID = [
   ANALYSIS_KEY
 ] as const satisfies ObjectDataType[];
 
-export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
-  match(inlet.type)
+export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) => {
+  // Signal inlets with acceptsFloat behave like float inlets for creation args
+  if (inlet.type === 'signal' && inlet.acceptsFloat) {
+    return strValue === '' ? 0 : parseFloat(strValue) || 0;
+  }
+
+  return match(inlet.type)
     .with(P.union(...UNMODIFIABLES), () => null)
     .with('int', () =>
       strValue === '' ? (inlet.defaultValue ?? 0) : limitToValidNumber(inlet, parseInt(strValue))
@@ -66,6 +71,7 @@ export const parseStringParamByType = (inlet: ObjectInlet, strValue: string) =>
       return strValue || inlet.defaultValue || '';
     })
     .otherwise(() => strValue || inlet.defaultValue);
+};
 
 export const isUnmodifiableType = (type?: ObjectDataType) =>
   type && UNMODIFIABLES.includes(type as (typeof UNMODIFIABLES)[number]);
@@ -88,6 +94,11 @@ export const stringifyParamByType = (
 
     return str;
   };
+
+  // acceptsFloat signal inlets display their value like a plain number
+  if (inlet.type === 'signal' && inlet.acceptsFloat) {
+    return applySignPadding(String(value));
+  }
 
   return match(inlet.type)
     .with(P.union(...UNMODIFIABLES), () => `$${index}`)
@@ -132,7 +143,9 @@ export const parseObjectParamFromString = (name: string, strValues: string[]) =>
   let inputInletIndex = 0;
 
   for (const inlet of metadata.inlets) {
-    if (isUnmodifiableType(inlet.type)) {
+    // acceptsFloat signal inlets consume a creation arg (like float inlets do)
+    const skipAsUnmodifiable = isUnmodifiableType(inlet.type) && !inlet.acceptsFloat;
+    if (skipAsUnmodifiable) {
       params.push(null);
       continue;
     }
