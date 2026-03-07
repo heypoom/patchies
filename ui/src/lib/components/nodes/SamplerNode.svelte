@@ -40,6 +40,8 @@
   const playbackRateTracker = tracker.track('playbackRate', () => node.data.playbackRate ?? 1);
   const detuneTracker = tracker.track('detune', () => node.data.detune ?? 0);
 
+  let contentContainer: HTMLDivElement | null = null;
+  let contentWidth = $state(10);
   let messageContext: MessageContext;
   let audioService = AudioService.getInstance();
   let v2Node: SamplerNodeV2 | null = null;
@@ -462,6 +464,8 @@
     if (node.data.vfsPath) {
       await vfsMedia.loadFromVfsPath(node.data.vfsPath);
     }
+
+    updateContentWidth();
   });
 
   onDestroy(() => {
@@ -482,6 +486,11 @@
     audioService.removeNodeById(node.id);
   });
 
+  function updateContentWidth() {
+    if (!contentContainer) return;
+    contentWidth = contentContainer.offsetWidth;
+  }
+
   const containerClass = $derived.by(() => {
     if (vfsMedia.isDragging) return 'border-blue-400 bg-blue-50/10';
     if (node.data.loop && node.selected) return 'border-orange-300 bg-zinc-800 shadow-glow-md';
@@ -493,7 +502,7 @@
 
 <div class="relative flex gap-x-3">
   <div class="group relative">
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2" bind:this={contentContainer}>
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
         <div></div>
 
@@ -627,26 +636,28 @@
   </div>
 
   {#if showSettings && hasRecording}
-    <SamplerSettings
-      {loopStart}
-      {loopEnd}
-      {recordingDuration}
-      {loopEnabled}
-      {playbackRate}
-      {detune}
-      onLoopStartChange={updateLoopStart}
-      onLoopEndChange={updateLoopEnd}
-      onPlaybackRateChange={updatePlaybackRate}
-      onDetuneChange={updateDetune}
-      onToggleLoop={toggleLoop}
-      onReset={resetSettings}
-      onClose={() => (showSettings = false)}
-      {tracker}
-      {loopStartTracker}
-      {loopEndTracker}
-      {playbackRateTracker}
-      {detuneTracker}
-    />
+    <div class="absolute" style="left: {contentWidth + 10}px">
+      <SamplerSettings
+        {loopStart}
+        {loopEnd}
+        {recordingDuration}
+        {loopEnabled}
+        {playbackRate}
+        {detune}
+        onLoopStartChange={updateLoopStart}
+        onLoopEndChange={updateLoopEnd}
+        onPlaybackRateChange={updatePlaybackRate}
+        onDetuneChange={updateDetune}
+        onToggleLoop={toggleLoop}
+        onReset={resetSettings}
+        onClose={() => (showSettings = false)}
+        {tracker}
+        {loopStartTracker}
+        {loopEndTracker}
+        {playbackRateTracker}
+        {detuneTracker}
+      />
+    </div>
   {/if}
 </div>
 
