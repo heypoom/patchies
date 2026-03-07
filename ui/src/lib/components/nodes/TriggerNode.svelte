@@ -13,11 +13,7 @@
     getTypedOutput,
     type MessageType
   } from '$lib/messages/message-types';
-  import {
-    TRIGGER_TYPE_SPECS,
-    getTriggerTypeSpec,
-    type TriggerTypeKey
-  } from '$lib/objects/schemas/trigger';
+  import { TRIGGER_TYPE_SPECS, getTriggerTypeSpec } from '$lib/objects/schemas/trigger';
 
   let {
     id: nodeId,

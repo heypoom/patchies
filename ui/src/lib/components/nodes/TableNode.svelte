@@ -11,6 +11,7 @@
   import { msg, sym } from '$lib/objects/schemas/helpers';
   import { schema } from '$lib/objects/schemas/types';
   import * as ContextMenu from '$lib/components/ui/context-menu';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import { Eye, EyeOff } from '@lucide/svelte/icons';
 
   let {
@@ -31,6 +32,10 @@
   let rafId: number | null = null;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
 
+  let isEditing = $state(false);
+  let editValue = $state('');
+  let inputElement = $state<HTMLInputElement | undefined>();
+
   const bufferName = $derived(data.bufferName || nodeId);
   const bufferSize = $derived(data.size || 100);
   const showVisual = $derived(data.showVisual ?? false);
@@ -40,6 +45,54 @@
       ? 'border-zinc-400 bg-zinc-800/80 shadow-glow-md'
       : 'border-zinc-700 bg-zinc-900/80 hover:shadow-glow-sm'
   );
+
+  function enterEditingMode() {
+    editValue = `${bufferName} ${bufferSize}`;
+    isEditing = true;
+    setTimeout(() => inputElement?.focus(), 10);
+  }
+
+  async function exitEditingMode(save: boolean) {
+    isEditing = false;
+    if (!save) return;
+
+    const parts = editValue.trim().split(/\s+/);
+    const newName = parts[0] || bufferName;
+    const newSize = parts[1] ? Math.max(1, Math.round(Number(parts[1]))) : bufferSize;
+    const validSize = !isNaN(newSize) && newSize > 0 ? newSize : bufferSize;
+
+    const nameChanged = newName !== bufferName;
+    const sizeChanged = validSize !== bufferSize;
+
+    if (!nameChanged && !sizeChanged) return;
+
+    if (nameChanged) {
+      // Copy data to new buffer name then delete old
+      const oldData = await bridge.readBufferAsync(bufferName);
+      bridge.createBuffer(newName, validSize);
+      if (oldData) bridge.writeBuffer(newName, oldData);
+      bridge.deleteBuffer(bufferName);
+    } else if (sizeChanged) {
+      bridge.resizeBuffer(bufferName, validSize);
+    }
+
+    updateNodeData(nodeId, { ...data, bufferName: newName, size: validSize });
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      exitEditingMode(true);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      exitEditingMode(false);
+    }
+  }
+
+  function handleBlur() {
+    if (!isEditing) return;
+    setTimeout(() => exitEditingMode(true), 150);
+  }
 
   // --- Message schemas (mirroring TableObject.ts) ---
   const TableSet = msg('set', { index: Type.Number(), value: Type.Number() });
@@ -233,8 +286,25 @@
           {nodeId}
         />
 
-        {#if showVisual}
-          <div class={['rounded-lg border', selected ? 'border-zinc-400' : 'border-zinc-700']}>
+        {#if isEditing}
+          <div class={['w-fit rounded-lg border', containerClass]}>
+            <input
+              bind:this={inputElement}
+              bind:value={editValue}
+              onkeydown={handleKeydown}
+              onblur={handleBlur}
+              placeholder="name size"
+              class="nodrag bg-transparent px-3 py-2 font-mono text-xs text-zinc-200 placeholder-zinc-500 outline-none"
+            />
+          </div>
+        {:else if showVisual}
+          <div
+            class={['rounded-lg border', selected ? 'border-zinc-400' : 'border-zinc-700']}
+            ondblclick={enterEditingMode}
+            role="button"
+            tabindex="0"
+            onkeydown={(e) => e.key === 'Enter' && enterEditingMode()}
+          >
             <div class="px-2 pt-1.5 pb-1 font-mono text-[10px] text-zinc-500">
               {bufferName}
               <span class="text-zinc-600">({bufferSize})</span>
@@ -243,10 +313,42 @@
             ></canvas>
           </div>
         {:else}
-          <div class={['w-fit cursor-default rounded-lg border px-3 py-2', containerClass]}>
+          <div
+            class={['w-fit cursor-pointer rounded-lg border px-3 pt-0.5 pb-1.5', containerClass]}
+            ondblclick={enterEditingMode}
+            role="button"
+            tabindex="0"
+            onkeydown={(e) => e.key === 'Enter' && enterEditingMode()}
+          >
             <span class="font-mono text-xs text-zinc-200">table</span>
-            <span class="ml-1.5 font-mono text-xs text-zinc-400">{bufferName}</span>
-            <span class="ml-1 font-mono text-xs text-zinc-600">{bufferSize}</span>
+
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <span
+                  class="ml-0.5 font-mono text-xs text-zinc-400 underline-offset-2 hover:text-blue-500 hover:underline"
+                >
+                  {bufferName}
+                </span>
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                <p class="font-semibold">Buffer name</p>
+                <p class="text-xs text-zinc-500">Reference with tabread~, tabwrite~, tabosc4~</p>
+              </Tooltip.Content>
+            </Tooltip.Root>
+
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <span
+                  class="ml-0.5 font-mono text-xs text-zinc-400 underline-offset-2 hover:text-yellow-500 hover:underline"
+                >
+                  {bufferSize}
+                </span>
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                <p class="font-semibold">Size</p>
+                <p class="text-xs text-zinc-500">{bufferSize} samples</p>
+              </Tooltip.Content>
+            </Tooltip.Root>
           </div>
         {/if}
 
