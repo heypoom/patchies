@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { SvelteMap } from 'svelte/reactivity';
   import {
     Play,
     Square,
@@ -316,6 +317,30 @@
     sampleTagsStore.addTag(result, tag);
     newTagInput = '';
   }
+
+  // Preload audio for visible samples
+  const MAX_PRELOAD = 50;
+
+  const preloadCache = new SvelteMap<string, HTMLAudioElement>();
+
+  $effect(() => {
+    for (const row of visibleRows) {
+      if (row.type !== 'sample') continue;
+
+      const { result } = row;
+      if (!isPlayable(result) || preloadCache.has(result.id)) continue;
+
+      if (preloadCache.size >= MAX_PRELOAD) {
+        const oldest = preloadCache.keys().next().value!;
+        preloadCache.get(oldest)!.src = '';
+        preloadCache.delete(oldest);
+      }
+
+      const audio = new Audio(result.url);
+      audio.preload = 'auto';
+      preloadCache.set(result.id, audio);
+    }
+  });
 
   // Mobile state
   let mobileSelectedSample = $state<SampleResult | null>(null);
