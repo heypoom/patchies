@@ -465,10 +465,17 @@
       await vfsMedia.loadFromVfsPath(node.data.vfsPath);
     }
 
-    updateContentWidth();
+    if (contentContainer) {
+      resizeObserver = new ResizeObserver(updateContentWidth);
+      resizeObserver.observe(contentContainer);
+      updateContentWidth();
+    }
   });
 
+  let resizeObserver: ResizeObserver | undefined;
+
   onDestroy(() => {
+    resizeObserver?.disconnect();
     if (recordingInterval) clearInterval(recordingInterval);
     if (playbackInterval) clearInterval(playbackInterval);
 
@@ -636,7 +643,7 @@
   </div>
 
   {#if showSettings && hasRecording}
-    <div class="absolute" style="left: {contentWidth + 10}px">
+    <div class="absolute" style="left: {contentWidth + 10}px; top: 0; width: {contentWidth}px">
       <SamplerSettings
         {loopStart}
         {loopEnd}
