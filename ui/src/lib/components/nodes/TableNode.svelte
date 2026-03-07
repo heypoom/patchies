@@ -45,7 +45,7 @@
   const bufferSize = $derived(data.size || 100);
   const showVisual = $derived(data.showVisual ?? false);
 
-  const containerClass = $derived(
+  const textualContainerClass = $derived(
     selected
       ? 'border-zinc-400 bg-zinc-800/80 shadow-glow-md'
       : 'border-zinc-700 bg-zinc-900/80 hover:shadow-glow-sm'
@@ -122,6 +122,7 @@
     match(message)
       .with(messages.bang, () => {
         const buf = bridge.readBuffer(bufferName);
+
         if (buf) {
           messageContext.send(new Float32Array(buf));
         } else {
@@ -152,17 +153,23 @@
         bridge.clearBuffer(bufferName);
       })
       .with(tableMessages.normalize, () => {
-        bridge.readBufferAsync(bufferName).then((buf) => {
-          if (!buf) return;
+        bridge.readBufferAsync(bufferName).then((buffer) => {
+          if (!buffer) return;
           let maxAbs = 0;
-          for (let i = 0; i < buf.length; i++) {
-            const abs = Math.abs(buf[i]);
+
+          for (let i = 0; i < buffer.length; i++) {
+            const abs = Math.abs(buffer[i]);
             if (abs > maxAbs) maxAbs = abs;
           }
+
           if (maxAbs > 0) {
             const scale = 1 / maxAbs;
-            const normalized = new Float32Array(buf.length);
-            for (let i = 0; i < buf.length; i++) normalized[i] = buf[i] * scale;
+            const normalized = new Float32Array(buffer.length);
+
+            for (let i = 0; i < buffer.length; i++) {
+              normalized[i] = buffer[i] * scale;
+            }
+
             bridge.writeBuffer(bufferName, normalized);
           }
         });
@@ -174,56 +181,76 @@
   const CANVAS_W = 200;
   const CANVAS_H = 60;
 
+  function setupCanvas() {
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = CANVAS_W * dpr;
+    canvas.height = CANVAS_H * dpr;
+    canvas.style.width = `${CANVAS_W}px`;
+    canvas.style.height = `${CANVAS_H}px`;
+    const ctx = canvas.getContext('2d');
+    if (ctx) ctx.scale(dpr, dpr);
+  }
+
   function drawWaveform(buf: Float32Array) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const mid = CANVAS_H / 2;
+    const w = CANVAS_W;
+    const h = CANVAS_H;
+    const mid = h / 2;
 
-    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-    ctx.fillStyle = '#18181b';
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#09090B';
+    ctx.fillRect(0, 0, w, h);
 
     // Zero line
-    ctx.strokeStyle = '#3f3f46';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 0.5;
     ctx.beginPath();
     ctx.moveTo(0, mid);
-    ctx.lineTo(CANVAS_W, mid);
+    ctx.lineTo(w, mid);
     ctx.stroke();
 
     if (buf.length === 0) return;
 
-    // Min/max envelope per pixel column
-    ctx.strokeStyle = '#f97316';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
+    // Build min/max envelope per pixel column
+    const maxEnv = new Float32Array(w);
+    const minEnv = new Float32Array(w);
 
-    for (let px = 0; px < CANVAS_W; px++) {
-      const start = Math.floor((px / CANVAS_W) * buf.length);
-
-      const end = Math.max(start + 1, Math.floor(((px + 1) / CANVAS_W) * buf.length));
-
-      let min = 0;
-      let max = 0;
-
+    for (let px = 0; px < w; px++) {
+      const start = Math.floor((px / w) * buf.length);
+      const end = Math.max(start + 1, Math.floor(((px + 1) / w) * buf.length));
+      let min = 0,
+        max = 0;
       for (let i = start; i < end; i++) {
         const v = buf[i];
         if (v < min) min = v;
         if (v > max) max = v;
       }
-
-      const yMax = mid - max * (mid - 2);
-      const yMin = mid - min * (mid - 2);
-
-      if (px === 0) ctx.moveTo(px + 0.5, yMax);
-
-      ctx.lineTo(px + 0.5, yMax);
-      ctx.lineTo(px + 0.5, yMin);
+      maxEnv[px] = mid - max * (mid - 2);
+      minEnv[px] = mid - min * (mid - 2);
     }
 
-    ctx.stroke();
+    // Draw as a single closed filled polygon: top envelope L→R, bottom envelope R→L
+    ctx.beginPath();
+    ctx.moveTo(0, maxEnv[0]);
+    for (let px = 1; px < w; px++) ctx.lineTo(px, maxEnv[px]);
+    for (let px = w - 1; px >= 0; px--) ctx.lineTo(px, minEnv[px]);
+    ctx.closePath();
+
+    // Vertical gradient: brighter in the middle where signal is densest
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, 'rgba(251,146,60,0.75)'); // orange-400 dimmer at top
+    grad.addColorStop(0.5, 'rgba(249,115,22,1.0)'); // orange-500 full at center
+    grad.addColorStop(1, 'rgba(251,146,60,0.75)'); // orange-400 dimmer at bottom
+    ctx.fillStyle = grad;
+
+    ctx.shadowColor = 'rgba(249,115,22,0.45)';
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.shadowBlur = 0;
   }
 
   function startVisualization() {
@@ -257,6 +284,10 @@
       pollTimer = null;
     }
   }
+
+  $effect(() => {
+    if (canvas) setupCanvas();
+  });
 
   $effect(() => {
     if (showVisual) {
@@ -298,7 +329,7 @@
         />
 
         {#if isEditing}
-          <div class={['w-fit rounded-lg border', containerClass]}>
+          <div class={['w-fit rounded-lg border', textualContainerClass]}>
             <input
               bind:this={inputElement}
               bind:value={editValue}
@@ -310,7 +341,10 @@
           </div>
         {:else if showVisual}
           <div
-            class={['rounded-lg border', selected ? 'border-zinc-400' : 'border-zinc-700']}
+            class={[
+              'rounded-lg border bg-zinc-950',
+              selected ? 'border-zinc-700' : 'border-zinc-800'
+            ]}
             ondblclick={enterEditingMode}
             role="button"
             tabindex="0"
@@ -325,7 +359,10 @@
           </div>
         {:else}
           <div
-            class={['w-fit cursor-pointer rounded-lg border px-3 pt-0.5 pb-1.5', containerClass]}
+            class={[
+              'w-fit cursor-pointer rounded-lg border px-3 pt-0.5 pb-1.5',
+              textualContainerClass
+            ]}
             ondblclick={enterEditingMode}
             role="button"
             tabindex="0"
