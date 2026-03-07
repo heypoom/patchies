@@ -5,7 +5,7 @@
  * and drag-drop logic for media nodes (image, audio, video).
  */
 
-import { VirtualFilesystem, isVFSPath, guessMimeType } from './index';
+import { VirtualFilesystem, isVFSPath, guessMimeType, VFS_FOLDERS } from './index';
 import { logger } from '$lib/utils/logger';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { FileRelinkedEvent } from '$lib/eventbus/events';
@@ -402,7 +402,11 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
         const { url } = JSON.parse(sampleUrlData) as { url: string };
 
         if (url) {
-          await loadFromUrl(url);
+          // Sample browser drops always go into user://Samples/
+          const vfsPath = await vfs.registerUrl(url, VFS_FOLDERS.SAMPLES);
+
+          options.updateNodeData({ vfsPath });
+          await loadFromVfsPath(vfsPath);
 
           return;
         }

@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
-import { VirtualFilesystem } from '$lib/vfs';
+import { VirtualFilesystem, VFS_FOLDERS } from '$lib/vfs';
 import { logger } from '$lib/utils/logger';
 
 /**
@@ -104,7 +104,7 @@ export class CanvasDragDropManager {
       return;
     }
 
-    // Handle sample URL drops - create soundfile~ node with _initialUrl
+    // Handle sample URL drops - create soundfile~ node with vfsPath under user://Samples
     if (sampleData && !isDropOnNode) {
       this.handleSampleDrop(sampleData, position);
       return;
@@ -203,9 +203,12 @@ export class CanvasDragDropManager {
 
   /**
    * Handle sample URL drops from the sample search sidebar
-   * Creates a soundfile~ node with _initialUrl set to the remote URL
+   * Pre-registers the URL under user://Samples/ and creates a soundfile~ node with vfsPath.
    */
-  private handleSampleDrop(sampleData: string, position: { x: number; y: number }): void {
+  private async handleSampleDrop(
+    sampleData: string,
+    position: { x: number; y: number }
+  ): Promise<void> {
     let parsed: unknown;
     try {
       parsed = JSON.parse(sampleData);
@@ -239,9 +242,12 @@ export class CanvasDragDropManager {
       return;
     }
 
+    const vfs = VirtualFilesystem.getInstance();
+    const vfsPath = await vfs.registerUrl(url, VFS_FOLDERS.SAMPLES);
+
     this.createNode('soundfile~', position, {
       ...getDefaultNodeData('soundfile~'),
-      _initialUrl: url,
+      vfsPath,
       fileName: name
     });
   }
@@ -258,7 +264,7 @@ export class CanvasDragDropManager {
     } else if (result.kind === 'sc-sample') {
       this.handleScSampleDrop(JSON.stringify({ name: result.name }), position);
     } else {
-      this.handleSampleDrop(JSON.stringify({ url: result.url, name: result.name }), position);
+      void this.handleSampleDrop(JSON.stringify({ url: result.url, name: result.name }), position);
     }
   }
 

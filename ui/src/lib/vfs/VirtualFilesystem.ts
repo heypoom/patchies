@@ -209,12 +209,19 @@ export class VirtualFilesystem {
 
   /**
    * Register a URL and return its generated VFS path.
+   * Optionally provide a targetFolder to place the file in a specific folder.
    */
-  async registerUrl(url: string): Promise<string> {
+  async registerUrl(url: string, targetFolder?: string): Promise<string> {
     const filename = getFilenameFromUrl(url);
     const mimeType = guessMimeType(filename);
     const existingPaths = new Set(this.entries.keys());
-    const path = generateUserPath(filename, mimeType, existingPaths);
+    const path = generateUserPath(filename, mimeType, existingPaths, targetFolder);
+
+    // Ensure the target folder entry exists in VFS so it appears in the tree
+    if (targetFolder && !this.entries.has(targetFolder)) {
+      const folderName = targetFolder.split('/').pop() ?? targetFolder;
+      this.entries.set(targetFolder, { provider: 'folder', filename: folderName });
+    }
 
     const entry: VFSEntry = {
       provider: 'url',

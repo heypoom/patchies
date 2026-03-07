@@ -80,6 +80,18 @@ export const VFS_PREFIXES = {
 } as const;
 
 /**
+ * Well-known VFS folder paths
+ */
+export const VFS_FOLDERS = {
+  SAMPLES: 'user://Samples'
+} as const;
+
+/**
+ * Default set of VFS namespace roots expanded in the file tree on first load
+ */
+export const VFS_DEFAULT_EXPANDED = [VFS_PREFIXES.USER, VFS_PREFIXES.OBJECT] as const;
+
+/**
  * Check if a path is a VFS path (has user:// or obj:// prefix)
  */
 export function isVFSPath(path: string): boolean {

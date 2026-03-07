@@ -26,7 +26,13 @@
   } from '@lucide/svelte/icons';
   import SearchBar from './SearchBar.svelte';
   import { VirtualFilesystem, getLocalProvider, guessMimeType } from '$lib/vfs';
-  import { parseVFSPath, isVFSFolder, isLocalFolder, type VFSEntry } from '$lib/vfs/types';
+  import {
+    parseVFSPath,
+    isVFSFolder,
+    isLocalFolder,
+    type VFSEntry,
+    VFS_DEFAULT_EXPANDED
+  } from '$lib/vfs/types';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Popover from '$lib/components/ui/popover';
@@ -56,7 +62,7 @@
   // Load expanded paths from localStorage, defaulting to user:// and obj://
   function loadExpandedPaths(): Set<string> {
     if (typeof window === 'undefined') {
-      return new Set(['user://', 'obj://']);
+      return new Set(VFS_DEFAULT_EXPANDED);
     }
 
     try {
@@ -69,7 +75,7 @@
       // ignore
     }
 
-    return new Set(['user://', 'obj://']);
+    return new Set(VFS_DEFAULT_EXPANDED);
   }
 
   let expandedPaths = new SvelteSet(loadExpandedPaths());

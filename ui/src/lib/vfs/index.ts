@@ -16,7 +16,9 @@ export {
   isVFSFolder,
   isLocalFolder,
   parseVFSPath,
-  VFS_PREFIXES
+  VFS_PREFIXES,
+  VFS_FOLDERS,
+  VFS_DEFAULT_EXPANDED
 } from './types';
 export {
   generateUserPath,
