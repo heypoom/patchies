@@ -199,8 +199,27 @@
   const handleMessage: MessageCallbackFn = (message) => {
     if (message instanceof Float32Array) {
       bridge.writeBuffer(bufferName, message);
+
       // Programmatic write — detach from VFS source
-      updateNodeData(nodeId, { ...data, size: message.length, vfsPath: undefined });
+      updateNodeData(nodeId, {
+        ...data,
+        size: message.length,
+        vfsPath: undefined
+      });
+
+      return;
+    }
+
+    if (Array.isArray(message) && message.every((v) => typeof v === 'number')) {
+      const buffer = new Float32Array(message);
+      bridge.writeBuffer(bufferName, buffer);
+
+      updateNodeData(nodeId, {
+        ...data,
+        size: buffer.length,
+        vfsPath: undefined
+      });
+
       return;
     }
 

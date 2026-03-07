@@ -55,6 +55,10 @@ export const tableSchema: ObjectSchema = {
         {
           schema: Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
           description: 'Write a Float32Array directly into the buffer'
+        },
+        {
+          schema: Type.Array(Type.Number()),
+          description: 'Write an array of floats into the buffer'
         }
       ]
     }
