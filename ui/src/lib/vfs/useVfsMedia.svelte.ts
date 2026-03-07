@@ -398,7 +398,7 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 
     if (sampleUrlData) {
       try {
-        const { url } = JSON.parse(sampleUrlData) as { url: string; name: string };
+        const { url } = JSON.parse(sampleUrlData) as { url: string };
 
         if (url) {
           await loadFromUrl(url);
