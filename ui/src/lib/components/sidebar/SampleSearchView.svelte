@@ -287,6 +287,12 @@
     toast.success('Copied to clipboard');
   }
 
+  async function copyAsUrl(result: SampleResult) {
+    await navigator.clipboard.writeText(result.url);
+
+    toast.success('Copied to clipboard');
+  }
+
   /** Whether this result has audio that can be previewed */
   const isPlayable = (result: SampleResult): boolean => result.kind !== 'synthdef';
 
@@ -539,6 +545,10 @@
                   {:else}
                     <ContextMenu.Item onclick={() => copyAsStrudelName(row.result)}>
                       Copy as Strudel name
+                    </ContextMenu.Item>
+
+                    <ContextMenu.Item onclick={() => copyAsUrl(row.result)}>
+                      Copy as URL
                     </ContextMenu.Item>
                   {/if}
                   <ContextMenu.Separator />
