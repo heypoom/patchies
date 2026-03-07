@@ -6,6 +6,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { BufferBridgeService } from '$lib/audio/buffer-bridge';
+  import { setupDprCanvas, drawWaveform } from '$lib/canvas/waveform-renderer';
   import {
     messages,
     TableSet,
@@ -181,94 +182,20 @@
   const CANVAS_W = 200;
   const CANVAS_H = 60;
 
-  function setupCanvas() {
-    if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = CANVAS_W * dpr;
-    canvas.height = CANVAS_H * dpr;
-    canvas.style.width = `${CANVAS_W}px`;
-    canvas.style.height = `${CANVAS_H}px`;
-    const ctx = canvas.getContext('2d');
-    if (ctx) ctx.scale(dpr, dpr);
-  }
-
-  function drawWaveform(buf: Float32Array) {
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const w = CANVAS_W;
-    const h = CANVAS_H;
-    const mid = h / 2;
-
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#09090B';
-    ctx.fillRect(0, 0, w, h);
-
-    // Zero line
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    ctx.moveTo(0, mid);
-    ctx.lineTo(w, mid);
-    ctx.stroke();
-
-    if (buf.length === 0) return;
-
-    // Build min/max envelope per pixel column
-    const maxEnv = new Float32Array(w);
-    const minEnv = new Float32Array(w);
-
-    for (let px = 0; px < w; px++) {
-      const start = Math.floor((px / w) * buf.length);
-      const end = Math.max(start + 1, Math.floor(((px + 1) / w) * buf.length));
-      let min = 0,
-        max = 0;
-      for (let i = start; i < end; i++) {
-        const v = buf[i];
-        if (v < min) min = v;
-        if (v > max) max = v;
-      }
-      maxEnv[px] = mid - max * (mid - 2);
-      minEnv[px] = mid - min * (mid - 2);
-    }
-
-    // Draw as a single closed filled polygon: top envelope L→R, bottom envelope R→L
-    ctx.beginPath();
-    ctx.moveTo(0, maxEnv[0]);
-    for (let px = 1; px < w; px++) ctx.lineTo(px, maxEnv[px]);
-    for (let px = w - 1; px >= 0; px--) ctx.lineTo(px, minEnv[px]);
-    ctx.closePath();
-
-    // Vertical gradient: brighter in the middle where signal is densest
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, 'rgba(251,146,60,0.75)'); // orange-400 dimmer at top
-    grad.addColorStop(0.5, 'rgba(249,115,22,1.0)'); // orange-500 full at center
-    grad.addColorStop(1, 'rgba(251,146,60,0.75)'); // orange-400 dimmer at bottom
-    ctx.fillStyle = grad;
-
-    ctx.shadowColor = 'rgba(249,115,22,0.45)';
-    ctx.shadowBlur = 10;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-  }
-
   function startVisualization() {
     if (bridge.isSharedMemory) {
       // SAB: live zero-copy reads via RAF
       function loop() {
         const buffer = bridge.readBuffer(bufferName);
-        if (buffer) drawWaveform(buffer);
-
+        if (canvas && buffer) drawWaveform(canvas, buffer);
         rafId = requestAnimationFrame(loop);
       }
-
       rafId = requestAnimationFrame(loop);
     } else {
       // non-SAB: async polling at ~10 fps
       pollTimer = setInterval(() => {
         bridge.readBufferAsync(bufferName).then((buf) => {
-          if (buf) drawWaveform(buf);
+          if (canvas && buf) drawWaveform(canvas, buf);
         });
       }, 100);
     }
@@ -286,7 +213,7 @@
   }
 
   $effect(() => {
-    if (canvas) setupCanvas();
+    if (canvas) setupDprCanvas(canvas, CANVAS_W, CANVAS_H);
   });
 
   $effect(() => {
@@ -354,8 +281,7 @@
               {bufferName}
               <span class="text-zinc-600">({bufferSize})</span>
             </div>
-            <canvas bind:this={canvas} width={CANVAS_W} height={CANVAS_H} class="block rounded-b-lg"
-            ></canvas>
+            <canvas bind:this={canvas} class="block rounded-b-lg"></canvas>
           </div>
         {:else}
           <div
