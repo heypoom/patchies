@@ -257,7 +257,7 @@
       <!-- Help button above node -->
       <div class="absolute -top-7 right-0 flex items-center">
         <button
-          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
           onclick={(e) => {
             e.preventDefault();
             e.stopPropagation();
