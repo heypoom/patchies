@@ -221,6 +221,7 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 
   function loadFromPath(urlOrPath: string): void {
     if (isVFSPath(urlOrPath)) {
+      options.updateNodeData({ vfsPath: urlOrPath });
       loadFromVfsPath(urlOrPath);
     } else {
       loadFromUrl(urlOrPath);
