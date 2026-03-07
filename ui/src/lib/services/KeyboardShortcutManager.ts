@@ -80,6 +80,7 @@ export interface KeyboardShortcutActions {
   isCommandPaletteOpen: () => boolean;
   isAiFeaturesVisible: () => boolean;
   isPatchEmpty: () => boolean;
+  isAiPromptOpen: () => boolean;
 
   // AI editing state
   setAiEditingNodeId: (nodeId: string | null) => void;
@@ -190,7 +191,7 @@ export class KeyboardShortcutManager {
     }
 
     // CMD+I: AI object insertion/editing
-    if (key === 'i' && isMod && !isTyping) {
+    if (key === 'i' && isMod && !isTyping && !this.actions.isAiPromptOpen()) {
       event.preventDefault();
 
       // When AI features are hidden, fallback to browse objects

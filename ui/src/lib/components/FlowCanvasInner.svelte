@@ -499,7 +499,8 @@
       isAiFeaturesVisible: () => $isAiFeaturesVisible,
       isPatchEmpty: () => nodes.length === 0 && edges.length === 0,
       setAiEditingNodeId: (nodeId) => (aiEditingNodeId = nodeId),
-      getSelectedNodeId: () => (selectedNodeIds.length === 1 ? selectedNodeIds[0] : null)
+      getSelectedNodeId: () => (selectedNodeIds.length === 1 ? selectedNodeIds[0] : null),
+      isAiPromptOpen: () => showAiPrompt
     });
 
     keyboardManager.attach();

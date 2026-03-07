@@ -2,7 +2,6 @@
   import {
     Loader,
     Sparkles,
-    Edit3,
     Network,
     Minus,
     Maximize2,
@@ -335,10 +334,21 @@
         handleClose();
       }
     } else if (event.key === 'i' && (event.metaKey || event.ctrlKey)) {
-      // CMD+I (or Ctrl+I on Windows/Linux) toggles between single and multi mode
-      // Only works in insert mode (not edit mode) and when not loading
+      // Always prevent default to avoid browser "Page Info" etc.
+      event.preventDefault();
+
+      // Toggle single/multi mode only in insert mode (not edit mode) and when not loading
       if (!isEditMode && !isLoading) {
-        event.preventDefault();
+        isMultiObjectMode = !isMultiObjectMode;
+      }
+    }
+  }
+
+  function handleDocumentKeydown(event: KeyboardEvent) {
+    if (event.key === 'i' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+
+      if (!isEditMode && !isLoading) {
         isMultiObjectMode = !isMultiObjectMode;
       }
     }
@@ -350,13 +360,18 @@
       const timeoutId = setTimeout(() => {
         document.addEventListener('click', handleClickOutside);
       }, 0);
+
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('keydown', handleDocumentKeydown);
+
       return () => {
         clearTimeout(timeoutId);
+
         document.removeEventListener('click', handleClickOutside);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('keydown', handleDocumentKeydown);
       };
     }
   });
