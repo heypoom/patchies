@@ -29,6 +29,25 @@
   // Cache the base waveform as an OffscreenCanvas for better performance
   let waveformCache: HTMLCanvasElement | null = null;
 
+  function setupCanvas() {
+    if (!canvasRef) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvasRef.width = width * dpr;
+    canvasRef.height = height * dpr;
+    canvasRef.style.width = `${width}px`;
+    canvasRef.style.height = `${height}px`;
+    // Invalidate cache — physical dimensions changed
+    waveformCache = null;
+    lastDrawnBuffer = null;
+  }
+
+  $effect(() => {
+    // Re-run when canvasRef, width, or height change
+    void width;
+    void height;
+    if (canvasRef) setupCanvas();
+  });
+
   // For real-time recording visualization
   let recordingHistory: number[] = [];
   const MAX_HISTORY_SAMPLES = 2048; // Keep last ~2 seconds at 1024 samples/sec
@@ -259,10 +278,4 @@
   });
 </script>
 
-<canvas
-  bind:this={canvasRef}
-  width={width * 2}
-  height={height * 2}
-  class="rounded {className}"
-  style="width: {width}px; height: {height}px;"
-></canvas>
+<canvas bind:this={canvasRef} class="rounded {className}"></canvas>
