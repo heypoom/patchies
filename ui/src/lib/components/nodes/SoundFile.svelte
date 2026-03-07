@@ -260,7 +260,7 @@
               <div class="flex gap-1">
                 <button
                   title="Play"
-                  class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                  class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
                   onclick={playFile}
                 >
                   <Play class="h-4 w-4 text-zinc-300" />
@@ -268,7 +268,7 @@
 
                 <button
                   title="Stop"
-                  class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                  class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
                   onclick={stopFile}
                 >
                   <Square class="h-4 w-4 text-zinc-300" />
