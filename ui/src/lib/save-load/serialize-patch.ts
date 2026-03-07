@@ -4,9 +4,16 @@ import { get } from 'svelte/store';
 import { CURRENT_PATCH_VERSION } from '$lib/migration';
 import type { VFSTree } from '$lib/vfs/types';
 import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
-import { currentPatchId } from '../../stores/ui.store';
+import { currentPatchId, isCablesVisible } from '../../stores/ui.store';
+import { transportStore } from '../../stores/transport.store';
 
 export const PATCH_SAVE_VERSION = String(CURRENT_PATCH_VERSION);
+
+export type PatchSettings = {
+  cablesVisible?: boolean;
+  bpm?: number;
+  timeSignature?: [number, number];
+};
 
 export type PatchSaveFormat = {
   name: string;
@@ -17,6 +24,8 @@ export type PatchSaveFormat = {
   files?: VFSTree;
   /** Unique ID for KV storage scoping. Added in v2. */
   patchId?: string;
+  /** Patch-level settings (view state, transport config). */
+  settings?: PatchSettings;
 };
 
 export function serializePatch({
@@ -31,6 +40,13 @@ export function serializePatch({
   const vfs = VirtualFilesystem.getInstance();
   const files = vfs.serialize();
   const patchId = get(currentPatchId);
+  const transport = get(transportStore);
+
+  const settings: PatchSettings = {
+    cablesVisible: get(isCablesVisible),
+    bpm: transport.bpm,
+    timeSignature: transport.timeSignature
+  };
 
   const patch: PatchSaveFormat = {
     name,
@@ -39,6 +55,7 @@ export function serializePatch({
     nodes,
     edges,
     patchId,
+    settings,
     // Only include files if there are any entries
     ...(Object.keys(files.user || {}).length > 0 || Object.keys(files.objects || {}).length > 0
       ? { files }

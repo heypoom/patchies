@@ -10,9 +10,12 @@ import {
   currentPatchName,
   currentPatchId,
   generateNewPatchId,
-  helpModeObject
+  helpModeObject,
+  isCablesVisible
 } from '../../stores/ui.store';
 import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
+import { transportStore } from '../../stores/transport.store';
+import { DEFAULT_BPM, DEFAULT_TIME_SIGNATURE } from '$lib/transport/constants';
 import { get } from 'svelte/store';
 import type { CanvasContext } from './CanvasContext';
 import { logger } from '$lib/utils/logger';
@@ -292,6 +295,25 @@ export class PatchManager {
       generateNewPatchId();
     }
 
+    // Restore patch settings
+    if (migrated.settings) {
+      const { cablesVisible, bpm, timeSignature } = migrated.settings;
+
+      if (cablesVisible !== undefined) {
+        isCablesVisible.set(cablesVisible);
+      }
+
+      if (bpm !== undefined) {
+        transportStore.setBpm(bpm);
+      }
+
+      if (timeSignature !== undefined) {
+        const [numerator, denominator] = timeSignature;
+
+        transportStore.setTimeSignature(numerator, denominator);
+      }
+    }
+
     // Immediately save migrated patch to autosave so reloads don't break
     // (skip for shared patches to avoid overwriting user's own autosave)
     if (!options?.skipAutosave) {
@@ -326,6 +348,12 @@ export class PatchManager {
     // Reset stores
     isBackgroundOutputCanvasEnabled.set(false);
     currentPatchName.set(null);
+
+    // Restore default settings
+    isCablesVisible.set(true);
+    transportStore.setBpm(DEFAULT_BPM);
+    transportStore.setTimeSignature(DEFAULT_TIME_SIGNATURE[0], DEFAULT_TIME_SIGNATURE[1]);
+
     generateNewPatchId();
     deleteSearchParam('id');
   }

@@ -309,13 +309,17 @@
     try {
       if (deleteTarget.isFolder) {
         removeSavedFolder(deleteTarget.path);
+
         toast.success(`Deleted folder "${getSaveBaseName(deleteTarget.path)}"`);
       } else {
         localStorage.removeItem(`patchies-patch-${deleteTarget.path}`);
+
         if ($currentPatchName === deleteTarget.path) {
           currentPatchName.set(null);
         }
+
         removeSavedPatch(deleteTarget.path);
+
         toast.success(`Deleted "${getSaveBaseName(deleteTarget.path)}"`);
       }
     } catch (error) {

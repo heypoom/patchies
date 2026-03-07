@@ -32,7 +32,8 @@
     currentPatchName,
     helpModeObject,
     selectedNodeInfo,
-    audioSourceConnections
+    audioSourceConnections,
+    isCablesVisible
   } from '../../stores/ui.store';
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
@@ -256,6 +257,23 @@
   function performAutosave() {
     patchManager.performAutosave(isReadOnlyMode);
   }
+
+  // Immediately autosave when patch settings change to avoid the 2500ms race window
+  let _patchSettingsInit = false;
+
+  $effect(() => {
+    // Read reactive values to register as dependencies
+    void $isCablesVisible;
+    void $transportStore.bpm;
+    void $transportStore.timeSignature;
+
+    if (!_patchSettingsInit) {
+      _patchSettingsInit = true;
+      return;
+    }
+
+    performAutosave();
+  });
 
   // Update message system when nodes or edges change
   $effect(() => {
