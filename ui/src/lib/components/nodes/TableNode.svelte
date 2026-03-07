@@ -14,7 +14,8 @@
     TableGet,
     TableResize,
     TableClear,
-    TableNormalize
+    TableNormalize,
+    TableLoad
   } from '$lib/objects/schemas';
   import { schema } from '$lib/objects/schemas/types';
   import * as ContextMenu from '$lib/components/ui/context-menu';
@@ -191,7 +192,8 @@
     get: schema(TableGet),
     resize: schema(TableResize),
     clear: schema(TableClear),
-    normalize: schema(TableNormalize)
+    normalize: schema(TableNormalize),
+    load: schema(TableLoad)
   };
 
   const handleMessage: MessageCallbackFn = (message) => {
@@ -251,6 +253,9 @@
             if (data.vfsPath) updateNodeData(nodeId, { ...data, vfsPath: undefined });
           }
         });
+      })
+      .with(tableMessages.load, ({ src }) => {
+        vfsMedia.loadFromPath(src);
       })
       .otherwise(() => {});
   };
