@@ -1,10 +1,10 @@
-export const sampleratePrompt = `## samplerate Object Instructions
+export const sampleratePrompt = `## samplerate~ Object Instructions
 
 Outputs the current audio sample rate in Hz when triggered with a bang.
 
 CRITICAL: This is a text object created via the "object" node type with data.expr.
 
-Usage: samplerate
+Usage: samplerate~
 
 HANDLE IDS:
 - Inlet 0: "in-0" (bang to trigger output)
@@ -15,7 +15,7 @@ Example:
 {
   "type": "object",
   "data": {
-    "expr": "samplerate"
+    "expr": "samplerate~"
   }
 }
 \`\`\`

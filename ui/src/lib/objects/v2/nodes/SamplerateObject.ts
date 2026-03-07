@@ -4,7 +4,7 @@ import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
 
 export class SamplerateObject implements TextObjectV2 {
-  static type = 'samplerate';
+  static type = 'samplerate~';
   static description = 'Outputs the current audio sample rate in Hz';
   static tags = ['audio', 'info'];
 

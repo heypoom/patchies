@@ -31,7 +31,7 @@ import { rubyPrompt } from './ruby';
 import { sendPrompt } from './send';
 import { sendVdoPrompt } from './send.vdo';
 import { samplerPrompt } from './sampler~';
-import { sampleratePrompt } from './samplerate';
+import { sampleratePrompt } from './samplerate~';
 import { sliderPrompt } from './slider';
 import { soundfilePrompt } from './soundfile~';
 import { strudelPrompt } from './strudel';
@@ -97,7 +97,7 @@ export const objectPrompts: Record<string, string> = {
   'send.vdo': sendVdoPrompt,
   'recv.vdo': recvVdoPrompt,
   'bytebeat~': bytebeatPrompt,
-  samplerate: sampleratePrompt,
+  'samplerate~': sampleratePrompt,
   sequencer: sequencerPrompt
 };
 
