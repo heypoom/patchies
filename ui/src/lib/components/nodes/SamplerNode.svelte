@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Circle, CloudDownload, Mic, Play, Settings, Square } from '@lucide/svelte/icons';
+  import { Circle, Mic, Play, Settings, Square } from '@lucide/svelte/icons';
   import { useSvelteFlow, type NodeProps } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import WaveformDisplay from '$lib/components/nodes/WaveformDisplay.svelte';
