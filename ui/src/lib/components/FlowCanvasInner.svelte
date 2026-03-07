@@ -509,6 +509,7 @@
     eventBus.addEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.addEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.addEventListener('insertPresetToCanvas', handleInsertPreset);
+    eventBus.addEventListener('insertSampleToCanvas', handleInsertSample);
     eventBus.addEventListener('requestSaveSelectedAsPreset', handleRequestSaveSelectedAsPreset);
     eventBus.addEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.addEventListener('quickAddCancelled', handleQuickAddCancelled);
@@ -538,6 +539,7 @@
     eventBus.removeEventListener('vfsPathRenamed', handleVfsPathRenamed);
     eventBus.removeEventListener('insertVfsFileToCanvas', handleInsertVfsFile);
     eventBus.removeEventListener('insertPresetToCanvas', handleInsertPreset);
+    eventBus.removeEventListener('insertSampleToCanvas', handleInsertSample);
     eventBus.removeEventListener('requestSaveSelectedAsPreset', handleRequestSaveSelectedAsPreset);
     eventBus.removeEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.removeEventListener('quickAddCancelled', handleQuickAddCancelled);
@@ -628,12 +630,14 @@
   function getViewportCenter(): { x: number; y: number } {
     const viewportCenterX = window.innerWidth / 2;
     const viewportCenterY = window.innerHeight / 2;
+
     return screenToFlowPosition({ x: viewportCenterX, y: viewportCenterY });
   }
 
   // Handle insert VFS file event from mobile toolbar
   async function handleInsertVfsFile(event: { type: 'insertVfsFileToCanvas'; vfsPath: string }) {
     const position = getViewportCenter();
+
     await getDragDropManager().insertVfsFile(event.vfsPath, position);
   }
 
@@ -644,7 +648,18 @@
     preset: { type: string; name: string; data: unknown };
   }) {
     const position = getViewportCenter();
+
     getDragDropManager().insertPreset(event.preset, position);
+  }
+
+  // Handle insert sample event from mobile toolbar
+  function handleInsertSample(event: {
+    type: 'insertSampleToCanvas';
+    result: { kind?: 'sample' | 'synthdef' | 'sc-sample'; url: string; name: string };
+  }) {
+    const position = getViewportCenter();
+
+    getDragDropManager().insertSample(event.result, position);
   }
 
   // Handle request to save selected node as preset (from sidebar, etc.)

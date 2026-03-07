@@ -247,6 +247,22 @@ export class CanvasDragDropManager {
   }
 
   /**
+   * Insert a sample at the specified position (public method for event-based insertion from mobile)
+   */
+  insertSample(
+    result: { kind?: 'sample' | 'synthdef' | 'sc-sample'; url: string; name: string },
+    position: { x: number; y: number }
+  ): void {
+    if (result.kind === 'synthdef') {
+      this.handleSynthdefDrop(JSON.stringify({ synthdef: result.url }), position);
+    } else if (result.kind === 'sc-sample') {
+      this.handleScSampleDrop(JSON.stringify({ name: result.name }), position);
+    } else {
+      this.handleSampleDrop(JSON.stringify({ url: result.url, name: result.name }), position);
+    }
+  }
+
+  /**
    * Insert a preset at the specified position (public method for event-based insertion)
    */
   insertPreset(

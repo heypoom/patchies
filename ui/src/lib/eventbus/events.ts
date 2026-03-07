@@ -18,6 +18,7 @@ export type PatchiesEvent =
   | VfsPathRenamedEvent
   | InsertVfsFileToCanvasEvent
   | InsertPresetToCanvasEvent
+  | InsertSampleToCanvasEvent
   | RequestSaveSelectedAsPresetEvent
   | WorkerSendMessageEvent
   | WorkerCallbackRegisteredEvent
@@ -163,6 +164,17 @@ export interface InsertVfsFileToCanvasEvent {
 
   /** The VFS path of the file to insert */
   vfsPath: string;
+}
+
+export interface InsertSampleToCanvasEvent {
+  type: 'insertSampleToCanvas';
+
+  /** The sample result to insert */
+  result: {
+    kind?: 'sample' | 'synthdef' | 'sc-sample';
+    url: string;
+    name: string;
+  };
 }
 
 export interface InsertPresetToCanvasEvent {

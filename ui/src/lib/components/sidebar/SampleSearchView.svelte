@@ -7,7 +7,10 @@
     SlidersHorizontal,
     Volume2,
     Headphones,
-    Tag
+    Tag,
+    Plus,
+    Copy,
+    Ellipsis
   } from '@lucide/svelte/icons';
   import SearchBar from './SearchBar.svelte';
   import * as Popover from '$lib/components/ui/popover/index.js';
@@ -17,6 +20,10 @@
   import { sampleSearchStore } from '$lib/sample-search/sample-search-store.svelte';
   import { sampleTagsStore, getTagColor } from '$lib/sample-search/sample-tags.store.svelte';
   import type { SampleResult } from '$lib/sample-search/types';
+  import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+
+  const eventBus = PatchiesEventBus.getInstance();
 
   const GROUP_INITIAL = 5;
   const ROW_H = 28; // px — all row types use the same height for simplicity
@@ -309,6 +316,35 @@
     sampleTagsStore.addTag(result, tag);
     newTagInput = '';
   }
+
+  // Mobile state
+  let mobileSelectedSample = $state<SampleResult | null>(null);
+  let mobileMoreOpen = $state(false);
+
+  function handleInsertSampleToCanvas() {
+    if (!mobileSelectedSample) return;
+    eventBus.dispatch({
+      type: 'insertSampleToCanvas',
+      result: {
+        kind: mobileSelectedSample.kind,
+        url: mobileSelectedSample.url,
+        name: mobileSelectedSample.name
+      }
+    });
+    mobileSelectedSample = null;
+    $isSidebarOpen = false;
+    toast.success('Added to canvas');
+  }
+
+  async function mobileCopy(result: SampleResult) {
+    if (result.kind === 'synthdef') {
+      await copySynthdefName(result);
+    } else if (result.kind === 'sc-sample') {
+      await copyScSampleName(result);
+    } else {
+      await copyAsStrudelName(result);
+    }
+  }
 </script>
 
 <div class="flex h-full flex-col">
@@ -345,7 +381,7 @@
   {/if}
 
   <!-- Results list -->
-  <div class="relative flex-1 overflow-hidden">
+  <div class="relative flex-1 overflow-hidden {$isMobile && mobileSelectedSample ? 'pb-14' : ''}">
     {#if !isTagMode && sampleSearchStore.isLoading}
       <div class="px-4 py-8 text-center text-xs text-zinc-500">Loading...</div>
     {:else if !isTagMode && sampleSearchStore.error}
@@ -445,7 +481,10 @@
                     style="height: {ROW_H}px"
                     draggable="true"
                     ondragstart={(e) => handleDragStart(e, row.result)}
-                    onclick={() => sampleSearchStore.selectSample(row.result)}
+                    onclick={() => {
+                      sampleSearchStore.selectSample(row.result);
+                      if ($isMobile) mobileSelectedSample = row.result;
+                    }}
                   >
                     {#if playable}
                       <Tooltip.Root>
@@ -513,6 +552,7 @@
                         </span>
                       {/if}
                     </ContextMenu.SubTrigger>
+
                     <ContextMenu.SubContent class="min-w-36 p-1">
                       <!-- New tag input -->
                       <div class="px-1 pb-1">
@@ -527,6 +567,7 @@
                           onclick={(e) => e.stopPropagation()}
                         />
                       </div>
+
                       {#if allTags.length > 0}
                         <ContextMenu.Separator />
 
@@ -539,6 +580,7 @@
                           >
                             <span class="flex w-full items-center gap-1.5">
                               <span class="h-2 w-2 shrink-0 rounded-full {color.dot}"></span>
+
                               {tag}
                             </span>
                           </ContextMenu.CheckboxItem>
@@ -575,9 +617,85 @@
     {/if}
   </div>
 
-  <!-- Footer: result count + filter -->
+  <!-- Mobile floating toolbar -->
+  {#if $isMobile && mobileSelectedSample}
+    {@const sample = mobileSelectedSample}
+    <div
+      class="fixed right-0 bottom-0 left-0 z-30 border-t border-zinc-800 bg-zinc-900/95 px-4 pt-2 backdrop-blur-sm"
+      style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px))"
+    >
+      <div class="flex items-center justify-center gap-2">
+        <span class="mr-2 max-w-32 truncate font-mono text-xs text-zinc-400">
+          {sample.name}
+        </span>
+
+        <button
+          class="flex cursor-pointer items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+          onclick={handleInsertSampleToCanvas}
+        >
+          <Plus class="h-3.5 w-3.5" />
+          <span>Insert</span>
+        </button>
+
+        {#if isPlayable(sample)}
+          <button
+            class="flex cursor-pointer items-center gap-1.5 rounded bg-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600 {sampleSearchStore.playingId ===
+            sample.id
+              ? 'text-blue-400'
+              : ''}"
+            onclick={() => sampleSearchStore.togglePreview(sample)}
+          >
+            {#if sampleSearchStore.playingId === sample.id}
+              <Square class="h-3.5 w-3.5" />
+              <span>Stop</span>
+            {:else}
+              <Play class="h-3.5 w-3.5" />
+              <span>Preview</span>
+            {/if}
+          </button>
+        {/if}
+
+        <Popover.Root bind:open={mobileMoreOpen}>
+          <Popover.Trigger
+            class="flex cursor-pointer items-center rounded bg-zinc-700 p-1.5 text-zinc-200 hover:bg-zinc-600"
+          >
+            <Ellipsis class="h-4 w-4" />
+          </Popover.Trigger>
+
+          <Popover.Content class="w-44 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
+            <button
+              class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+              onclick={async () => {
+                await mobileCopy(sample);
+                mobileMoreOpen = false;
+              }}
+            >
+              <Copy class="h-4 w-4 text-zinc-400" />
+              {sample.kind === 'synthdef'
+                ? 'Copy synthdef name'
+                : sample.kind === 'sc-sample'
+                  ? 'Copy sample name'
+                  : 'Copy Strudel name'}
+            </button>
+          </Popover.Content>
+        </Popover.Root>
+
+        <button
+          class="ml-auto cursor-pointer text-xs text-zinc-500 hover:text-zinc-300"
+          onclick={() => (mobileSelectedSample = null)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Footer: result count + filter (hidden on mobile when toolbar is visible) -->
   <div
-    class="flex items-center justify-between border-t border-zinc-800 px-3 py-1.5"
+    class="flex items-center justify-between border-t border-zinc-800 px-3 py-1.5 {$isMobile &&
+    mobileSelectedSample
+      ? 'hidden'
+      : ''}"
     style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px))"
   >
     <span class="text-[10px] text-zinc-600">
@@ -603,6 +721,7 @@
             </Tooltip.Root>
           {/snippet}
         </Popover.Trigger>
+
         <Popover.Content class="w-14 p-3" align="end" side="top">
           <div class="flex flex-col items-center gap-2">
             <span class="font-mono text-[9px] text-zinc-500">
