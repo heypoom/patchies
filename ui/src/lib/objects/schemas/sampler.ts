@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg, sym } from './helpers';
-import { Bang, Stop, messages } from './common';
+import { Bang, Stop, LoadBySrc, messages } from './common';
 
 // Sampler-specific message schemas
 const Play = sym('play');
@@ -32,7 +32,6 @@ const SetEnd = msg('setEnd', { value: Type.Number() });
 const SetPlaybackRate = msg('setPlaybackRate', { value: Type.Number() });
 const SetDetune = msg('setDetune', { value: Type.Number() });
 const Download = msg('download', { name: Type.Optional(Type.String()) });
-const Load = msg('load', { src: Type.String() });
 
 // Float32Array for direct buffer setting (from uiua node, etc.)
 const Float32ArraySamples = Type.Unsafe<Float32Array>({ type: 'Float32Array' });
@@ -55,7 +54,7 @@ export const samplerMessages = {
   setPlaybackRate: schema(SetPlaybackRate),
   setDetune: schema(SetDetune),
   download: schema(Download),
-  load: schema(Load),
+  load: schema(LoadBySrc),
   float32Array: schema(Float32ArraySamples)
 };
 
@@ -76,25 +75,70 @@ export const samplerSchema: ObjectSchema = {
       id: 'message',
       description: 'Control messages',
       messages: [
-        { schema: Bang, description: 'Play the recorded sample' },
-        { schema: Play, description: 'Play the recorded sample' },
-        { schema: Record, description: 'Start recording audio from connected sources' },
-        { schema: End, description: 'Stop recording' },
-        { schema: Stop, description: 'Stop playback' },
-        { schema: Loop, description: 'Toggle loop and start loop playback' },
-        { schema: LoopWithPoints, description: 'Set loop points (in seconds) and play' },
-        { schema: LoopOn, description: 'Enable loop mode' },
-        { schema: LoopOnWithPoints, description: 'Enable loop with specific points' },
-        { schema: LoopOff, description: 'Disable loop mode' },
-        { schema: SetStart, description: 'Set playback start position (seconds)' },
-        { schema: SetEnd, description: 'Set playback end position (seconds)' },
-        { schema: SetPlaybackRate, description: 'Set playback speed (1.0 = normal, 2.0 = double)' },
-        { schema: SetDetune, description: 'Set pitch shift in cents (1200 = one octave)' },
+        {
+          schema: Bang,
+          description: 'Play the recorded sample'
+        },
+        {
+          schema: Play,
+          description: 'Play the recorded sample'
+        },
+        {
+          schema: Record,
+          description: 'Start recording audio from connected sources'
+        },
+        {
+          schema: End,
+          description: 'Stop recording'
+        },
+        {
+          schema: Stop,
+          description: 'Stop playback'
+        },
+        {
+          schema: Loop,
+          description: 'Toggle loop and start loop playback'
+        },
+        {
+          schema: LoopWithPoints,
+          description: 'Set loop points (in seconds) and play'
+        },
+        {
+          schema: LoopOn,
+          description: 'Enable loop mode'
+        },
+        {
+          schema: LoopOnWithPoints,
+          description: 'Enable loop with specific points'
+        },
+        {
+          schema: LoopOff,
+          description: 'Disable loop mode'
+        },
+        {
+          schema: SetStart,
+          description: 'Set playback start position (seconds)'
+        },
+        {
+          schema: SetEnd,
+          description: 'Set playback end position (seconds)'
+        },
+        {
+          schema: SetPlaybackRate,
+          description: 'Set playback speed (1.0 = normal, 2.0 = double)'
+        },
+        {
+          schema: SetDetune,
+          description: 'Set pitch shift in cents (1200 = one octave)'
+        },
         {
           schema: Download,
           description: 'Download buffer as WAV file. Optional name field sets filename.'
         },
-        { schema: Load, description: 'Load audio from a VFS path or URL' },
+        {
+          schema: LoadBySrc,
+          description: 'Load audio from a VFS path or URL'
+        },
         {
           schema: Float32ArraySamples,
           description: 'Set buffer directly from Float32Array audio samples'

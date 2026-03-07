@@ -55,8 +55,7 @@
   const handleMessage: MessageCallbackFn = async (message) => {
     match(message)
       .with(soundfileMessages.string, (url) => vfsMedia.loadFromUrl(url))
-      .with(soundfileMessages.loadUrl, ({ url }) => vfsMedia.loadFromUrl(url))
-      .with(soundfileMessages.loadPath, ({ path }) => vfsMedia.loadFromPath(path))
+      .with(soundfileMessages.load, ({ src }) => vfsMedia.loadFromPath(src))
       .with(soundfileMessages.read, () => readAudioBuffer())
       .otherwise(() => audioService.send(node.id, 'message', message));
   };

@@ -25,6 +25,7 @@ export const SetMin = msg('setMin', { value: Type.Number() });
 export const SetMax = msg('setMax', { value: Type.Number() });
 export const SetDefault = msg('setDefault', { value: Type.Number() });
 export const SetValue = msg('setValue', { value: Type.Number() });
+export const LoadBySrc = msg('load', { src: Type.String() });
 
 /** All common schemas as an array, for building the common message type map. */
 export const COMMON_SCHEMAS = [

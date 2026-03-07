@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { msg, sym } from './helpers';
-import { Bang } from './common';
+import { Bang, LoadBySrc } from './common';
 
 // Table-specific message schemas
 export const TableSet = msg('set', { index: Type.Number(), value: Type.Number() });
@@ -10,7 +10,7 @@ export const TableGetResult = msg('get', { index: Type.Number(), value: Type.Num
 export const TableResize = msg('resize', { length: Type.Number() });
 export const TableClear = sym('clear');
 export const TableNormalize = sym('normalize');
-export const TableLoad = msg('load', { src: Type.String() });
+export { LoadBySrc as TableLoad } from './common';
 
 /**
  * Schema for the table object — named float array with waveform visualizer.
@@ -49,7 +49,7 @@ export const tableSchema: ObjectSchema = {
           description: 'Normalize table values to -1..1 range'
         },
         {
-          schema: TableLoad,
+          schema: LoadBySrc,
           description: 'Load audio from a VFS path or URL into the buffer'
         },
         {

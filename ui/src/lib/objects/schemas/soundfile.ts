@@ -2,19 +2,14 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg } from './helpers';
-import { Bang, Play, Pause, Stop, messages } from './common';
-
-// Soundfile-specific message schemas
-const LoadUrl = msg('load', { url: Type.String() });
-const LoadPath = msg('load', { path: Type.String() });
+import { Bang, Play, Pause, Stop, LoadBySrc, messages } from './common';
 const Read = msg('read', {});
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const soundfileMessages = {
   ...messages,
   string: schema(Type.String()),
-  loadUrl: schema(LoadUrl),
-  loadPath: schema(LoadPath),
+  load: schema(LoadBySrc),
   read: schema(Read)
 };
 
@@ -36,7 +31,7 @@ export const soundfileSchema: ObjectSchema = {
         { schema: Pause, description: 'Pause the playback' },
         { schema: Stop, description: 'Stop playback and reset position' },
         { schema: Read, description: 'Read audio buffer and send to output (for convolver~)' },
-        { schema: LoadUrl, description: 'Load audio file or stream by URL' }
+        { schema: LoadBySrc, description: 'Load audio from a VFS path or URL' }
       ]
     }
   ],
