@@ -353,7 +353,8 @@ export class CanvasDragDropManager {
       return;
     }
 
-    const nodeType = this.getNodeTypeFromMimeType(entry.mimeType);
+    const nodeType =
+      this.getNodeTypeFromMimeType(entry.mimeType) ?? this.getNodeTypeFromExtension(entry.filename);
 
     if (nodeType) {
       const customData = await this.getVfsFileNodeData(vfsPath, nodeType);

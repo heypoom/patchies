@@ -381,7 +381,11 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
       // Verify it's the correct file type (supports linked folder files too)
       const entry = vfs.getEntryOrLinkedFile(vfsPathData);
 
-      if (entry?.mimeType?.startsWith(options.acceptMimePrefix)) {
+      const entryMimeType = entry?.mimeType?.startsWith(options.acceptMimePrefix)
+        ? entry.mimeType
+        : (guessMimeType(entry?.filename ?? vfsPathData) ?? entry?.mimeType);
+
+      if (entryMimeType?.startsWith(options.acceptMimePrefix)) {
         options.updateNodeData({ vfsPath: vfsPathData });
         await loadFromVfsPath(vfsPathData);
         return;
@@ -452,8 +456,11 @@ export function useVfsMedia(options: UseVfsMediaOptions): UseVfsMediaReturn {
 
     if (!file) return;
 
-    // Check MIME type - use file.type if available, otherwise guess from extension
-    const mimeType = file.type || guessMimeType(file.name);
+    // Check MIME type - prefer extension-based guess when browser reports a generic type
+    // (e.g., browsers may report .ogg as "application/ogg" instead of "audio/ogg")
+    const mimeType = file.type?.startsWith(options.acceptMimePrefix)
+      ? file.type
+      : (guessMimeType(file.name) ?? file.type);
 
     if (!mimeType || !mimeType.startsWith(options.acceptMimePrefix)) {
       console.warn(`Only ${options.acceptMimePrefix}* files are supported, got: ${mimeType}`);
