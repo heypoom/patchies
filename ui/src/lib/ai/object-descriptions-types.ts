@@ -23,7 +23,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
   * Processing: gain~, pan~, delay~, compressor~, waveshaper~, convolver~
   * Filters: lowpass~, highpass~, bandpass~, allpass~, notch~, lowshelf~, highshelf~, peaking~
   * Synthesis: osc~ (oscillator), sig~ (signal)
-  * Control: mtof, loadbang, metro, adsr, send, recv, send~, recv~, samplerate~
+  * Control: mtof, loadbang, metro, adsr, send, recv, send~, recv~, samplerate~, clip
     * send: send messages to a named channel
     * recv: receive messages from a named channel
     * send~: send audio to a named channel (wireless audio routing)
@@ -61,6 +61,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - ruby: Ruby code with ruby.wasm
 - python: Python code with Pyodide
 - expr: Mathematical expression evaluator
+- clip: Clamp a number to a min/max range (clip min max)
 - wgpu.compute: WebGPU compute shaders (WGSL) for parallel data processing
 - asm: Virtual stack machine assembly
 - uxn: Uxn virtual machine (Uxntal)

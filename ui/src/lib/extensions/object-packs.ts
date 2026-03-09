@@ -36,7 +36,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Transforms',
     description: 'Process and filter messages',
     icon: 'ArrowRightLeft',
-    objects: ['filter', 'map', 'tap', 'scan', 'select', 'uniq', 'uniqby', 'unpack', 'expr']
+    objects: ['filter', 'map', 'tap', 'scan', 'select', 'uniq', 'uniqby', 'unpack', 'expr', 'clip']
   },
   {
     id: 'ui',
