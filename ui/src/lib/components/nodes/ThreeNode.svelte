@@ -286,7 +286,7 @@
       <StandardHandle
         port="inlet"
         type="message"
-        id={index + videoInletCount}
+        id={index}
         title={`Message Inlet ${index}`}
         total={messageInletCount + videoInletCount}
         index={index + videoInletCount}
@@ -316,7 +316,7 @@
       <StandardHandle
         port="outlet"
         type="message"
-        id={index + videoOutletCount}
+        id={index}
         title={`Message Outlet ${index}`}
         total={messageOutletCount + videoOutletCount}
         index={index + videoOutletCount}

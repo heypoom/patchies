@@ -131,7 +131,7 @@
     <StandardHandle
       port="outlet"
       type="message"
-      id="1"
+      id="0"
       title="Message output"
       total={2}
       index={1}
