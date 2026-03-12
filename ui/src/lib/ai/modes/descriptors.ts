@@ -190,5 +190,5 @@ export function getModeDescriptor(mode: string): AiModeDescriptor {
  */
 export function getAvailableModesForContext(ctx: AiModeContext): AiPromptMode[] {
   if (!ctx.selectedNode) return ['single', 'multi'];
-  return ['edit', 'replace', 'decompose', 'create-consumer', 'create-producer'];
+  return ['edit', 'replace', 'fix-error', 'decompose', 'create-consumer', 'create-producer'];
 }
