@@ -29,7 +29,8 @@ export async function streamChatMessage(
   messages: ChatMessage[],
   nodeContext: ChatNodeContext | null,
   onChunk: (text: string) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onThinking?: (thought: string) => void
 ): Promise<string> {
   const apiKey = localStorage.getItem('gemini-api-key');
 
@@ -77,7 +78,10 @@ export async function streamChatMessage(
   const response = await ai.models.generateContentStream({
     model: 'gemini-3-flash-preview',
     contents,
-    config: { systemInstruction }
+    config: {
+      systemInstruction,
+      thinkingConfig: { includeThoughts: true }
+    }
   });
 
   let fullText = '';
@@ -88,7 +92,9 @@ export async function streamChatMessage(
     }
 
     for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-      if (part.text) {
+      if (part.thought && part.text && onThinking) {
+        onThinking(part.text);
+      } else if (part.text) {
         fullText += part.text;
         onChunk(part.text);
       }

@@ -134,10 +134,12 @@
   /* Tables */
   .prose-markdown table,
   .prose-markdown-sm table {
+    display: block;
     width: 100%;
     font-size: var(--prose-base);
     border-collapse: collapse;
     margin: 1rem 0;
+    overflow-x: auto;
   }
 
   .prose-markdown th,

@@ -405,7 +405,7 @@
           <div
             class="mt-1 line-clamp-2 text-left font-mono text-[8px] leading-tight text-white/60 italic"
           >
-            {thinkingText}
+            <MarkdownContent markdown={thinkingText} />
           </div>
         {/if}
       </div>
@@ -518,9 +518,9 @@
           <div
             class="mt-3 flex max-h-48 flex-col gap-2 overflow-y-auto rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-300"
           >
-            {#each thinkingLog as thought, i}
+            {#each thinkingLog as thought, index (index)}
               <div
-                class="border-l-2 border-zinc-600 pl-2 {i === thinkingLog.length - 1
+                class="border-l-2 border-zinc-600 pl-2 {index === thinkingLog.length - 1
                   ? 'opacity-100'
                   : 'opacity-40'}"
               >

@@ -9,6 +9,7 @@
   let inputText = $state('');
   let isLoading = $state(false);
   let streamingText = $state('');
+  let thinkingText = $state('');
   let abortController: AbortController | null = $state(null);
   let messagesEl: HTMLDivElement | undefined = $state();
 
@@ -36,6 +37,7 @@
     inputText = '';
     isLoading = true;
     streamingText = '';
+    thinkingText = '';
     abortController = new AbortController();
 
     try {
@@ -45,17 +47,22 @@
         (chunk) => {
           streamingText += chunk;
         },
-        abortController.signal
+        abortController.signal,
+        (thought) => {
+          thinkingText += thought;
+        }
       );
 
       messages = [...nextMessages, { role: 'model', content: fullText }];
       streamingText = '';
+      thinkingText = '';
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       if (message !== 'Request cancelled') {
         toast.error(message);
       }
       streamingText = '';
+      thinkingText = '';
     } finally {
       isLoading = false;
       abortController = null;
@@ -135,6 +142,14 @@
               <Loader class="h-3 w-3 animate-spin" />
 
               <span>Thinking...</span>
+            </div>
+          {/if}
+
+          {#if thinkingText}
+            <div
+              class="mt-1.5 border-t border-zinc-800 pt-1.5 font-mono text-[10px] text-zinc-600 opacity-60"
+            >
+              <MarkdownContent markdown={thinkingText} />
             </div>
           {/if}
         </div>
