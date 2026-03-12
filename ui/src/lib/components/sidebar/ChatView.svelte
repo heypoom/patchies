@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { MessageSquare, Send, Trash2 } from '@lucide/svelte/icons';
+  import { MessageSquare, Send, Trash2, Zap } from '@lucide/svelte/icons';
+  import { match } from 'ts-pattern';
   import { toast } from 'svelte-sonner';
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import {
@@ -34,6 +35,7 @@
   let streamingText = $state('');
   let thinkingText = $state('');
   let pendingActionId = $state<string | null>(null);
+  let autoApprove = $state(false);
   let abortController: AbortController | null = $state(null);
   let messagesEl: HTMLDivElement | undefined = $state();
 
@@ -59,6 +61,19 @@
     const action = actions.get(id);
     if (!action) return;
     actions = new Map(actions).set(id, { ...action, state });
+  }
+
+  function applyAction(action: ChatAction) {
+    if (!aiCallbacks) return;
+    match(action.result)
+      .with({ kind: 'single' }, (r) => aiCallbacks!.onInsertObject(r.type, r.data))
+      .with({ kind: 'multi' }, (r) => aiCallbacks!.onInsertMultipleObjects(r.nodes, r.edges))
+      .with({ kind: 'edit' }, (r) => aiCallbacks!.onEditObject(r.nodeId, r.data))
+      .with({ kind: 'replace' }, (r) =>
+        aiCallbacks!.onReplaceObject(r.nodeId, r.newType, r.newData)
+      )
+      .exhaustive();
+    updateActionState(action.id, 'applied');
   }
 
   async function handleSubmit() {
@@ -93,7 +108,11 @@
         aiCallbacks
           ? (action) => {
               actions = new Map(actions).set(action.id, action);
-              pendingActionId = action.id;
+              if (autoApprove) {
+                applyAction(action);
+              } else {
+                pendingActionId = action.id;
+              }
             }
           : undefined
       );
@@ -180,19 +199,6 @@
         <div class="flex items-start gap-2">
           <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
           <div class="min-w-0 flex-1">
-            {#if message.thinking}
-              <details class="mb-2">
-                <summary
-                  class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
-                >
-                  Thinking
-                </summary>
-
-                <div class="mt-1 text-zinc-700 opacity-60">
-                  <MarkdownContent markdown={message.thinking} />
-                </div>
-              </details>
-            {/if}
             {#if message.content}
               <MarkdownContent markdown={message.content} />
             {/if}
@@ -221,7 +227,7 @@
           {/if}
 
           {#if thinkingText}
-            <details>
+            <details open>
               <summary
                 class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
               >
@@ -262,7 +268,19 @@
     <div class="mx-2.5 flex items-center justify-between pb-1.5">
       <span class="font-mono text-[10px] text-zinc-700">Shift+Enter for newline</span>
 
-      <div class="flex gap-1.5">
+      <div class="flex items-center gap-1.5">
+        {#if aiCallbacks}
+          <button
+            onclick={() => (autoApprove = !autoApprove)}
+            class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 font-mono text-[10px] transition-colors {autoApprove
+              ? 'bg-purple-900/50 text-purple-400'
+              : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
+            title={autoApprove ? 'Auto-approve on' : 'Auto-approve off'}
+          >
+            <Zap class="h-3 w-3" />
+            Auto
+          </button>
+        {/if}
         {#if messages.length > 0 && !isLoading}
           <button
             onclick={handleClear}
