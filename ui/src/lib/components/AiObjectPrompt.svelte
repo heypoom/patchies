@@ -1,89 +1,124 @@
 <script lang="ts">
-  import {
-    Loader,
-    Sparkles,
-    Network,
-    Minus,
-    Maximize2,
-    ChevronDown,
-    ChevronUp,
-    PenLine
-  } from '@lucide/svelte/icons';
-  import { toast } from 'svelte-sonner';
+  import { Loader, Minus, Maximize2, ChevronDown, ChevronUp } from '@lucide/svelte/icons';
+  import { match } from 'ts-pattern';
+  import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import { isMobile, isSidebarOpen } from '../../stores/ui.store';
-  import { aiPromptStore, type AiPromptMode } from '../../stores/ai-prompt.store';
-  import {
-    resolveObjectFromPrompt,
-    editObjectFromPrompt,
-    resolveMultipleObjectsFromPrompt
-  } from '$lib/ai/object-resolver';
+  import { aiPromptStore } from '../../stores/ai-prompt.store';
+  import { createAiPromptController } from '$lib/ai/ai-prompt-controller.svelte';
+  import { getModeDescriptor, getAvailableModesForContext } from '$lib/ai/modes/descriptors';
+  import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
-  import type { Node } from '@xyflow/svelte';
+  import { logger } from '$lib/utils/logger';
 
   let {
     open = $bindable(false),
     position,
-    editingNode = null,
+    mode: initialMode = 'single',
+    context: initialContext = {},
     onInsertObject,
     onInsertMultipleObjects,
-    onEditObject
+    onEditObject,
+    onReplaceObject
   }: {
     open?: boolean;
     position: { x: number; y: number };
-    editingNode?: Node | null;
+    mode?: AiPromptMode;
+    context?: AiModeContext;
     onInsertObject: (type: string, data: Record<string, unknown>) => void;
     onInsertMultipleObjects?: (nodes: AiObjectNode[], edges: SimplifiedEdge[]) => void;
     onEditObject?: (nodeId: string, data: Record<string, unknown>) => void;
+    onReplaceObject?: (nodeId: string, newType: string, newData: Record<string, unknown>) => void;
   } = $props();
 
+  // ── Controller ────────────────────────────────────────────────────────────
+  const ctrl = createAiPromptController({
+    onInsertObject,
+    onInsertMultipleObjects: onInsertMultipleObjects ?? (() => {}),
+    onEditObject: onEditObject ?? (() => {}),
+    onReplaceObject: onReplaceObject ?? (() => {})
+  });
+
+  // ── UI-only state ─────────────────────────────────────────────────────────
   let promptInput: HTMLTextAreaElement | undefined = $state();
-  let promptText = $state('');
-  let isLoading = $state(false);
-  let errorMessage = $state<string | null>(null);
-  let isMultiObjectMode = $state(false);
-  let resolvedObjectType = $state<string | null>(null);
-  let isGeneratingConfig = $state(false);
-  let abortController: AbortController | null = $state(null);
   let isDragging = $state(false);
   let dragOffset = $state({ x: 0, y: 0 });
   let dialogPosition = $state({ x: position.x, y: position.y });
   let isMinimized = $state(false);
-  let thinkingText = $state<string | null>(null);
-  let thinkingLog = $state<string[]>([]);
   let isPromptExpanded = $state(false);
+  let modeDropdownOpen = $state(false);
 
-  const isEditMode = $derived(editingNode !== null);
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const descriptor = $derived(ctrl.descriptor);
 
-  const title = $derived(
-    isEditMode
-      ? 'AI Object Edit'
-      : isMultiObjectMode
-        ? 'AI Multi-Object Insert'
-        : 'AI Object Insert'
+  const colorClasses = $derived(
+    match(descriptor.color)
+      .with('purple', () => ({
+        border: 'border-purple-500',
+        ring: 'ring-2 ring-purple-500/50',
+        badge: 'border-purple-500 bg-purple-900/90 ring-2 ring-purple-500/50',
+        button: 'bg-purple-600 hover:bg-purple-700'
+      }))
+      .with('blue', () => ({
+        border: 'border-blue-500',
+        ring: 'ring-2 ring-blue-500/50',
+        badge: 'border-blue-500 bg-blue-900/90 ring-2 ring-blue-500/50',
+        button: 'bg-blue-600 hover:bg-blue-700'
+      }))
+      .with('amber', () => ({
+        border: 'border-amber-500',
+        ring: 'ring-2 ring-amber-500/50',
+        badge: 'border-amber-500 bg-amber-900/90 ring-2 ring-amber-500/50',
+        button: 'bg-amber-600 hover:bg-amber-700'
+      }))
+      .with('green', () => ({
+        border: 'border-green-500',
+        ring: 'ring-2 ring-green-500/50',
+        badge: 'border-green-500 bg-green-900/90 ring-2 ring-green-500/50',
+        button: 'bg-green-600 hover:bg-green-700'
+      }))
+      .with('red', () => ({
+        border: 'border-red-500',
+        ring: 'ring-2 ring-red-500/50',
+        badge: 'border-red-500 bg-red-900/90 ring-2 ring-red-500/50',
+        button: 'bg-red-600 hover:bg-red-700'
+      }))
+      .exhaustive()
   );
 
-  const description = $derived(
-    isEditMode
-      ? `Editing: ${editingNode?.data?.name || editingNode?.data?.title || editingNode?.type || 'object'}`
-      : isMultiObjectMode
-        ? 'Describe connected objects to create'
-        : 'Describe the object you want to create'
+  const focusBorderClass = $derived(
+    match(descriptor.color)
+      .with('purple', () => 'focus:border-purple-500 focus:ring-1 focus:ring-purple-500')
+      .with('blue', () => 'focus:border-blue-500 focus:ring-1 focus:ring-blue-500')
+      .with('amber', () => 'focus:border-amber-500 focus:ring-1 focus:ring-amber-500')
+      .with('green', () => 'focus:border-green-500 focus:ring-1 focus:ring-green-500')
+      .with('red', () => 'focus:border-red-500 focus:ring-1 focus:ring-red-500')
+      .exhaustive()
   );
 
-  const buttonText = $derived(isEditMode ? 'Update' : 'Insert');
+  const availableModes = $derived(getAvailableModesForContext(ctrl.context));
 
-  const placeholderText = $derived(
-    isEditMode
-      ? 'e.g., "make it go faster"'
-      : isMultiObjectMode
-        ? 'e.g., "slider controlling oscillator frequency"'
-        : 'e.g., "a bouncing ball"'
+  const fixErrorMessages = $derived(
+    ctrl.mode === 'fix-error' && ctrl.context.selectedNode
+      ? logger
+          .getNodeLogs(ctrl.context.selectedNode.id)
+          .filter((e) => e.level === 'error')
+          .map((e) => e.message)
+      : []
   );
 
-  // Auto-focus input when opened and reset position
+  const submitLabel = $derived(
+    match(ctrl.mode)
+      .with('edit', () => 'Edit')
+      .with('replace', () => 'Replace')
+      .with('fix-error', () => 'Fix')
+      .otherwise(() => 'Insert')
+  );
+
+  // ── Sync ctrl with incoming props when opening ────────────────────────────
   $effect(() => {
     if (open) {
-      // On desktop: center screen (right offset = half of remaining space). On mobile: canvas click.
+      ctrl.open(initialMode, Object.keys(initialContext).length > 0 ? initialContext : undefined);
+
       dialogPosition = $isMobile
         ? { x: position.x, y: position.y }
         : {
@@ -91,234 +126,99 @@
             y: Math.max(16, window.innerHeight / 3)
           };
 
-      setTimeout(() => {
-        promptInput?.focus();
-      }, 0);
+      setTimeout(() => promptInput?.focus(), 0);
     }
   });
 
-  // Sync state with the global store for toolbar button styling
+  // ── Sync store for toolbar button styling ─────────────────────────────────
   $effect(() => {
-    const mode: AiPromptMode = isEditMode ? 'edit' : isMultiObjectMode ? 'multi' : 'single';
-
     if (open) {
-      aiPromptStore.open(mode);
+      aiPromptStore.open(ctrl.mode);
     } else {
       aiPromptStore.close();
     }
   });
 
   $effect(() => {
-    aiPromptStore.setLoading(isLoading);
+    aiPromptStore.setLoading(ctrl.isLoading);
   });
 
   $effect(() => {
-    if (open) {
-      const mode: AiPromptMode = isEditMode ? 'edit' : isMultiObjectMode ? 'multi' : 'single';
-
-      aiPromptStore.setMode(mode);
-    }
+    if (open) aiPromptStore.setMode(ctrl.mode);
   });
 
-  function handleMinimize() {
-    isMinimized = true;
-  }
-
-  function handleRestore() {
-    isMinimized = false;
-    // On desktop: snap to top-right when restoring the thinking view
-    if (!$isMobile) {
-      dialogPosition = { x: 16, y: 16 };
-    }
-    setTimeout(() => promptInput?.focus(), 0);
-  }
-
-  function handleClose() {
-    // Prevent closing while AI is generating
-    if (isLoading) return;
-
-    open = false;
-    promptText = '';
-    errorMessage = null;
-    isLoading = false;
-    resolvedObjectType = null;
-    isGeneratingConfig = false;
-    abortController = null;
-    isMinimized = false;
-    // Don't reset mode - keep user's preference
-  }
-
-  function handleCancel() {
-    if (abortController) {
-      abortController.abort();
-      abortController = null;
-    }
-    isLoading = false;
-    errorMessage = 'Request cancelled';
-  }
-
-  function handleClickOutside(event: MouseEvent) {
-    // Prevent closing while AI is generating or dragging
-    if (isLoading || isDragging) return;
-
-    const target = event.target as HTMLElement;
-    if (!target.closest('.ai-prompt-dialog')) {
-      handleClose();
-    }
-  }
-
+  // ── Drag handlers ─────────────────────────────────────────────────────────
   function handleHeaderMouseDown(event: MouseEvent) {
-    // Only start drag on left click and not on buttons
     if (event.button !== 0) return;
-
     const target = event.target as HTMLElement;
     if (target.closest('button')) return;
 
     isDragging = true;
-
     if ($isMobile) {
-      dragOffset = {
-        x: event.clientX - dialogPosition.x,
-        y: event.clientY - dialogPosition.y
-      };
+      dragOffset = { x: event.clientX - dialogPosition.x, y: event.clientY - dialogPosition.y };
     } else {
-      // Desktop: x tracks offset from right edge of viewport
       dragOffset = {
         x: window.innerWidth - event.clientX - dialogPosition.x,
         y: event.clientY - dialogPosition.y
       };
     }
-
     event.preventDefault();
   }
 
   function handleMouseMove(event: MouseEvent) {
     if (!isDragging) return;
-
-    if ($isMobile) {
-      dialogPosition = {
-        x: event.clientX - dragOffset.x,
-        y: event.clientY - dragOffset.y
-      };
-    } else {
-      // Desktop: keep right-based tracking
-      dialogPosition = {
-        x: window.innerWidth - event.clientX - dragOffset.x,
-        y: event.clientY - dragOffset.y
-      };
-    }
+    dialogPosition = $isMobile
+      ? { x: event.clientX - dragOffset.x, y: event.clientY - dragOffset.y }
+      : {
+          x: window.innerWidth - event.clientX - dragOffset.x,
+          y: event.clientY - dragOffset.y
+        };
   }
 
   function handleMouseUp() {
     isDragging = false;
   }
 
-  async function handleSubmit() {
-    if (!promptText.trim() || isLoading) return;
+  // ── Open/Close ────────────────────────────────────────────────────────────
+  function handleMinimize() {
+    isMinimized = true;
+  }
 
-    isLoading = true;
-    errorMessage = null;
-    resolvedObjectType = null;
-    isGeneratingConfig = false;
-    thinkingText = null;
-    thinkingLog = [];
-    isPromptExpanded = false;
-    abortController = new AbortController();
-    handleMinimize();
+  function handleRestore() {
+    isMinimized = false;
+    if (!$isMobile) dialogPosition = { x: 16, y: 16 };
+    setTimeout(() => promptInput?.focus(), 0);
+  }
 
-    try {
-      if (isMultiObjectMode && !isEditMode) {
-        // Multi-object mode: create multiple connected objects
-        const result = await resolveMultipleObjectsFromPrompt(
-          promptText,
-          (objectTypes) => {
-            // Deduplicate object types while preserving order
-            const uniqueTypes = Array.from(new Set(objectTypes));
-            resolvedObjectType = uniqueTypes.join(', ');
-            isGeneratingConfig = true;
-          },
-          abortController.signal,
-          (thought) => {
-            thinkingText = thought;
-            thinkingLog = [...thinkingLog, thought];
-          }
-        );
+  function handleClose() {
+    if (ctrl.isLoading) return;
+    open = false;
+    ctrl.reset();
+    isMinimized = false;
+  }
 
-        if (result && result.nodes.length > 0) {
-          if (onInsertMultipleObjects) {
-            onInsertMultipleObjects(result.nodes, result.edges);
-          }
-          toast.success(`Created ${result.nodes.length} objects`);
-          // Reset loading state before closing so handleClose() doesn't block
-          isLoading = false;
-          handleClose();
-        } else {
-          errorMessage = 'Could not resolve objects from prompt';
-          toast.error('Could not resolve objects from prompt');
-          isLoading = false;
-        }
-      } else {
-        // Single object mode: use two-stage routing pattern
-        let result;
+  function handleCancel() {
+    ctrl.cancel();
+  }
 
-        if (isEditMode && editingNode) {
-          // Edit mode: Use single-call editObjectFromPrompt (more efficient)
-          const nodeType = editingNode.type || 'unknown';
-          // Pass all node data - JSON.stringify will handle serialization,
-          // non-serializable objects become [object Object] which is fine
-          const existingData = editingNode.data || {};
-          result = await editObjectFromPrompt(
-            promptText,
-            nodeType,
-            existingData,
-            abortController.signal,
-            (thought) => {
-              thinkingText = thought;
-              thinkingLog = [...thinkingLog, thought];
-            }
-          );
-        } else {
-          // Insert mode: Use two-call resolveObjectFromPrompt (routing + generation)
-          // Pass callback to show object type after router completes
-          result = await resolveObjectFromPrompt(
-            promptText,
-            (objectType) => {
-              resolvedObjectType = objectType;
-              isGeneratingConfig = true;
-            },
-            abortController.signal,
-            (thought) => {
-              thinkingText = thought;
-              thinkingLog = [...thinkingLog, thought];
-            }
-          );
-        }
-
-        if (result) {
-          if (isEditMode && onEditObject) {
-            // In edit mode, only update the data
-            onEditObject(editingNode!.id, result.data);
-            toast.success('Object updated');
-          } else {
-            // In insert mode, create a new object
-            onInsertObject(result.type, result.data);
-            toast.success(`Created ${result.type}`);
-          }
-          // Reset loading state before closing so handleClose() doesn't block
-          isLoading = false;
-          handleClose();
-        } else {
-          errorMessage = 'Could not resolve object from prompt';
-          toast.error('Could not resolve object from prompt');
-          isLoading = false;
-        }
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error occurred';
-      errorMessage = message;
-      toast.error(message);
-      isLoading = false;
+  function handleClickOutside(event: MouseEvent) {
+    if (ctrl.isLoading || isDragging) return;
+    const target = event.target as HTMLElement;
+    if (!target.closest('.ai-prompt-dialog')) {
+      modeDropdownOpen = false;
+      handleClose();
+    } else if (modeDropdownOpen && !target.closest('.ai-mode-dropdown')) {
+      modeDropdownOpen = false;
     }
+  }
+
+  // ── Submit / Keyboard ─────────────────────────────────────────────────────
+  async function handleSubmit() {
+    isPromptExpanded = false;
+    handleMinimize();
+    const success = await ctrl.submit();
+    isMinimized = false;
+    if (success) handleClose();
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -327,19 +227,10 @@
       handleSubmit();
     } else if (event.key === 'Escape') {
       event.preventDefault();
-      if (isLoading) {
-        // Minimize while generating so user can work on other things
+      if (ctrl.isLoading) {
         handleMinimize();
       } else {
         handleClose();
-      }
-    } else if (event.key === 'i' && (event.metaKey || event.ctrlKey)) {
-      // Always prevent default to avoid browser "Page Info" etc.
-      event.preventDefault();
-
-      // Toggle single/multi mode only in insert mode (not edit mode) and when not loading
-      if (!isEditMode && !isLoading) {
-        isMultiObjectMode = !isMultiObjectMode;
       }
     }
   }
@@ -347,16 +238,18 @@
   function handleDocumentKeydown(event: KeyboardEvent) {
     if (event.key === 'i' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
-
-      if (!isEditMode && !isLoading) {
-        isMultiObjectMode = !isMultiObjectMode;
+      if (!ctrl.isLoading) {
+        const modes = availableModes;
+        const currentIdx = modes.indexOf(ctrl.mode);
+        const nextIdx = (currentIdx + 1) % modes.length;
+        ctrl.setMode(modes[nextIdx]);
+        modeDropdownOpen = false;
       }
     }
   }
 
   $effect(() => {
     if (open) {
-      // Defer adding click listener to avoid catching the click that opened the dialog
       const timeoutId = setTimeout(() => {
         document.addEventListener('click', handleClickOutside);
       }, 0);
@@ -367,7 +260,6 @@
 
       return () => {
         clearTimeout(timeoutId);
-
         document.removeEventListener('click', handleClickOutside);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
@@ -378,33 +270,32 @@
 </script>
 
 {#if open}
-  <!-- Minimized indicator (hidden when sidebar open on mobile) -->
-  {#if isMinimized && isLoading && !($isSidebarOpen && $isMobile)}
+  <!-- Minimized indicator -->
+  {#if isMinimized && ctrl.isLoading && !($isSidebarOpen && $isMobile)}
     <button
       onclick={handleRestore}
-      class="fixed top-4 right-4 z-50 flex max-w-72 cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {isEditMode
-        ? 'border-amber-500 bg-amber-900/90 ring-2 ring-amber-500/50'
-        : isMultiObjectMode
-          ? 'border-blue-500 bg-blue-900/90 ring-2 ring-blue-500/50'
-          : 'border-purple-500 bg-purple-900/90 ring-2 ring-purple-500/50'}"
+      class="fixed top-4 right-4 z-50 flex max-w-72 cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {colorClasses.badge}"
       title="Click to restore AI prompt"
     >
       <div class="min-w-0 flex-1 text-left">
-        <div class="text-xs font-medium text-white">
-          {#if isEditMode}
-            Editing...
-          {:else if isGeneratingConfig}
-            Cooking {resolvedObjectType}...
-          {:else}
-            Deciding...
-          {/if}
-        </div>
+        {#if !ctrl.thinkingText || ctrl.isGeneratingConfig}
+          <div class={['text-xs font-medium text-white', ctrl.thinkingText && 'mb-1']}>
+            {#if ctrl.isGeneratingConfig}
+              {descriptor.generatingLabel(ctrl.resolvedObjectType)}...
+            {:else}
+              {descriptor.loadingLabel}...
+            {/if}
+          </div>
+        {/if}
 
-        {#if thinkingText}
+        {#if ctrl.thinkingText}
           <div
-            class="mt-1 line-clamp-2 text-left font-mono text-[8px] leading-tight text-white/60 italic"
+            class="max-h-[120px] overflow-x-hidden overflow-y-scroll text-left text-[8px] text-zinc-400"
           >
-            {thinkingText}
+            <MarkdownContent
+              markdown={ctrl.thinkingText}
+              class="prose-ai-quick-preview font-mono"
+            />
           </div>
         {/if}
       </div>
@@ -416,18 +307,10 @@
   <div
     class="ai-prompt-dialog {$isMobile
       ? 'absolute'
-      : 'fixed'} z-50 w-96 rounded-lg border {isLoading
-      ? isEditMode
-        ? 'border-amber-500'
-        : isMultiObjectMode
-          ? 'border-blue-500'
-          : 'border-purple-500'
-      : 'border-zinc-600'} bg-zinc-900/95 shadow-2xl backdrop-blur-xl {isLoading
-      ? isEditMode
-        ? 'ring-2 ring-amber-500/50'
-        : isMultiObjectMode
-          ? 'ring-2 ring-blue-500/50'
-          : 'ring-2 ring-purple-500/50'
+      : 'fixed'} z-50 w-96 rounded-lg border {ctrl.isLoading
+      ? colorClasses.border
+      : 'border-zinc-600'} bg-zinc-900/95 shadow-2xl backdrop-blur-xl {ctrl.isLoading
+      ? colorClasses.ring
       : ''} {isDragging ? 'cursor-grabbing' : ''} {isMinimized ? 'hidden' : ''}"
     style={$isMobile
       ? `left: ${dialogPosition.x}px; top: ${dialogPosition.y}px;`
@@ -442,41 +325,53 @@
       role="button"
       tabindex="-1"
     >
-      {#if isEditMode}
-        <PenLine class="h-5 w-5 text-amber-400" />
-      {:else if isMultiObjectMode}
-        <Network class="h-5 w-5 text-blue-400" />
-      {:else}
-        <Sparkles class="h-5 w-5 text-purple-400" />
-      {/if}
+      <descriptor.icon class="h-5 w-5 text-{descriptor.color}-400" />
+
       <div class="flex-1">
-        <div class="font-mono text-sm font-medium text-zinc-100">{title}</div>
-        <div class="text-xs text-zinc-400">{description}</div>
+        <div class="font-mono text-sm font-medium text-zinc-100">{descriptor.label}</div>
+        <div class="text-xs text-zinc-400">{descriptor.description(ctrl.context)}</div>
       </div>
 
-      <!-- Mode Toggle (only show when not in edit mode, disabled while loading) -->
-      {#if !isEditMode}
-        <button
-          onclick={() => (isMultiObjectMode = !isMultiObjectMode)}
-          onkeydown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              isMultiObjectMode = !isMultiObjectMode;
-            }
-          }}
-          disabled={isLoading}
-          class="cursor-pointer rounded px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 {isMultiObjectMode
-            ? 'bg-blue-600 text-white'
-            : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}"
-          title="Toggle between single and multiple object mode"
-          aria-label="Toggle between single and multiple object mode"
-          aria-pressed={isMultiObjectMode}
-        >
-          {isMultiObjectMode ? 'Multi' : 'Single'}
-        </button>
+      <!-- Mode selector dropdown (when multiple modes are available) -->
+      {#if availableModes.length > 1}
+        <div class="ai-mode-dropdown relative">
+          <button
+            onclick={() => (modeDropdownOpen = !modeDropdownOpen)}
+            disabled={ctrl.isLoading}
+            class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-2 py-1 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {descriptor.shortLabel}
+            <ChevronDown class="h-3 w-3 opacity-60" />
+          </button>
+
+          {#if modeDropdownOpen}
+            <div
+              class="absolute top-full right-0 z-20 mt-1 w-52 rounded-lg border border-zinc-700 bg-zinc-800 py-1 shadow-xl"
+              onclick={(e) => e.stopPropagation()}
+            >
+              {#each availableModes as modeId (modeId)}
+                {@const d = getModeDescriptor(modeId)}
+
+                <button
+                  onclick={() => {
+                    ctrl.setMode(modeId);
+                    modeDropdownOpen = false;
+                  }}
+                  class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-700 {ctrl.mode ===
+                  modeId
+                    ? 'font-medium text-white'
+                    : 'text-zinc-400'}"
+                >
+                  <d.icon class="h-3 w-3 shrink-0" />
+                  <span class="flex-1">{d.shortLabel}</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
       {/if}
 
-      <!-- Minimize button -->
+      <!-- Minimize -->
       <button
         onclick={handleMinimize}
         class="cursor-pointer rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
@@ -489,7 +384,7 @@
 
     <!-- Input Area -->
     <div class="p-4">
-      {#if isLoading}
+      {#if ctrl.isLoading}
         <!-- Collapsible prompt during loading -->
         <button
           onclick={() => (isPromptExpanded = !isPromptExpanded)}
@@ -500,7 +395,6 @@
           {:else}
             <ChevronDown class="h-3 w-3" />
           {/if}
-
           <span class="flex-1 truncate font-mono">User Prompt</span>
         </button>
 
@@ -508,22 +402,22 @@
           <div
             class="mt-2 rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-sm text-zinc-300"
           >
-            {promptText}
+            {ctrl.promptText}
           </div>
         {/if}
 
-        <!-- Prominent thinking display - full log -->
-        {#if thinkingLog.length > 0}
+        <!-- Thinking log -->
+        {#if ctrl.thinkingLog.length > 0}
           <div
             class="mt-3 flex max-h-48 flex-col gap-2 overflow-y-auto rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-300"
           >
-            {#each thinkingLog as thought, i}
+            {#each ctrl.thinkingLog as thought, index (index)}
               <div
-                class="border-l-2 border-zinc-600 pl-2 {i === thinkingLog.length - 1
-                  ? 'text-zinc-200'
-                  : 'text-zinc-500'}"
+                class="border-l-2 border-zinc-600 pl-2 {index === ctrl.thinkingLog.length - 1
+                  ? 'opacity-100'
+                  : 'opacity-40'}"
               >
-                {thought}
+                <MarkdownContent markdown={thought} />
               </div>
             {/each}
           </div>
@@ -534,24 +428,38 @@
           </div>
         {/if}
       {:else}
-        <!-- Normal textarea when not loading -->
+        <!-- Textarea -->
         <textarea
           bind:this={promptInput}
-          bind:value={promptText}
+          bind:value={ctrl.promptText}
           onkeydown={handleKeydown}
-          placeholder={placeholderText}
-          class="nodrag w-full resize-y rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none {isEditMode
-            ? 'focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
-            : isMultiObjectMode
-              ? 'focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-              : 'focus:border-purple-500 focus:ring-1 focus:ring-purple-500'}"
+          placeholder={descriptor.placeholder(ctrl.context)}
+          class="nodrag w-full resize-y rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none {focusBorderClass}"
           rows="3"
         ></textarea>
+
+        <!-- fix-error: show error context being sent -->
+        {#if ctrl.mode === 'fix-error'}
+          <div class="mt-2 rounded border border-red-900/50 bg-red-950/30 px-3 py-2 text-xs">
+            {#if fixErrorMessages.length === 0}
+              <span class="text-zinc-500">No console errors found — AI will inspect the code.</span>
+            {:else}
+              <div class="mb-1 font-medium text-red-400">
+                {fixErrorMessages.length} error{fixErrorMessages.length === 1 ? '' : 's'} will be sent:
+              </div>
+              <ul class="space-y-0.5 font-mono text-red-300/80">
+                {#each fixErrorMessages as msg (msg)}
+                  <li class="truncate">{msg}</li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+        {/if}
       {/if}
 
-      {#if errorMessage}
+      {#if ctrl.errorMessage}
         <div class="mt-2 rounded bg-red-900/20 px-3 py-2 font-mono text-xs text-red-300">
-          {errorMessage}
+          {ctrl.errorMessage}
         </div>
       {/if}
     </div>
@@ -559,30 +467,25 @@
     <!-- Footer -->
     <div class="flex items-center justify-between border-t border-zinc-700 px-4 py-3">
       <div class="text-xs text-zinc-500">
-        {#if isLoading}
+        {#if ctrl.isLoading}
           <div class="flex items-center gap-2">
             <Loader class="h-3 w-3 animate-spin" />
-            {#if isGeneratingConfig}
-              <div class="mr-[2px] flex flex-col gap-1">
-                <span class="overflow-hidden text-zinc-400">
-                  Cooking <span class="text-zinc-300">{resolvedObjectType}</span>...
-                </span>
-              </div>
-            {:else if !isEditMode}
-              <span>Routing...</span>
+
+            {#if ctrl.isGeneratingConfig}
+              <span>{descriptor.generatingLabel(ctrl.resolvedObjectType)}...</span>
             {:else}
-              <span>Editing...</span>
+              <span>{descriptor.loadingLabel}...</span>
             {/if}
           </div>
-        {:else if isEditMode}
-          Enter to update • Esc to cancel
+        {:else if availableModes.length > 1}
+          Enter {submitLabel.toLowerCase()} • Ctrl+I mode • Esc cancel
         {:else}
-          Enter to insert • Ctrl+I to {isMultiObjectMode ? 'single' : 'multi'} • Esc to cancel
+          Enter {submitLabel.toLowerCase()} • Esc cancel
         {/if}
       </div>
 
       <div class="flex gap-2">
-        {#if isLoading}
+        {#if ctrl.isLoading}
           <button
             onclick={handleCancel}
             class="cursor-pointer rounded border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
@@ -592,14 +495,12 @@
         {:else}
           <button
             onclick={handleSubmit}
-            disabled={!promptText.trim() || isLoading}
-            class="cursor-pointer rounded {isEditMode
-              ? 'bg-amber-600 hover:bg-amber-700'
-              : isMultiObjectMode
-                ? 'bg-blue-600 hover:bg-blue-700'
-                : 'bg-purple-600 hover:bg-purple-700'} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={descriptor.promptOptional
+              ? ctrl.isLoading
+              : !ctrl.promptText.trim() || ctrl.isLoading}
+            class="cursor-pointer rounded {colorClasses.button} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {buttonText}
+            {submitLabel}
           </button>
         {/if}
       </div>

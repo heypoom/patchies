@@ -56,6 +56,11 @@
     margin-bottom: 1rem;
   }
 
+  .prose-ai-quick-preview.prose-markdown-sm p {
+    margin-bottom: 0 !important;
+    color: inherit !important;
+  }
+
   .prose-markdown code,
   .prose-markdown-sm code {
     font-family: ui-monospace, monospace;
@@ -77,6 +82,10 @@
 
   .prose-markdown pre {
     padding: 1rem;
+  }
+
+  .prose-markdown-sm pre {
+    padding: 0.625rem 0.75rem;
   }
 
   .prose-markdown pre code,
@@ -130,10 +139,12 @@
   /* Tables */
   .prose-markdown table,
   .prose-markdown-sm table {
+    display: block;
     width: 100%;
     font-size: var(--prose-base);
     border-collapse: collapse;
     margin: 1rem 0;
+    overflow-x: auto;
   }
 
   .prose-markdown th,
@@ -164,6 +175,15 @@
   }
 
   /* highlight.js syntax theme */
+  .prose-markdown .hljs,
+  .prose-markdown-sm .hljs {
+    background: transparent !important;
+  }
+
+  .prose-markdown-sm pre code.hljs {
+    padding: 0 !important;
+  }
+
   .prose-markdown .hljs-keyword,
   .prose-markdown .hljs-selector-tag,
   .prose-markdown .hljs-built_in,

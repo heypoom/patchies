@@ -33,7 +33,11 @@ export const isHelpMode = derived(helpModeObject, ($obj) => $obj !== null);
 
 // Selected node info - shared from FlowCanvas for context-sensitive help sidebar
 // Updated by FlowCanvasInner when selection changes
-export const selectedNodeInfo = writable<{ type: string; id: string } | null>(null);
+export const selectedNodeInfo = writable<{
+  type: string;
+  id: string;
+  data?: Record<string, unknown>;
+} | null>(null);
 
 // Initialize isAiFeaturesVisible from localStorage (defaults to true)
 const storedAiFeaturesVisible =
@@ -61,7 +65,15 @@ const storedSidebarOpen =
 export const isSidebarOpen = writable(storedSidebarOpen === 'true');
 
 // Sidebar view state - persisted to localStorage
-export type SidebarView = 'files' | 'presets' | 'packs' | 'saves' | 'help' | 'preview' | 'samples';
+export type SidebarView =
+  | 'files'
+  | 'presets'
+  | 'packs'
+  | 'saves'
+  | 'help'
+  | 'preview'
+  | 'samples'
+  | 'chat';
 
 const storedSidebarView =
   typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-sidebar-view') : null;
