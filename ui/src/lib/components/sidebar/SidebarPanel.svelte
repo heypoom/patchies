@@ -254,12 +254,12 @@
     </div>
 
     <!-- Content -->
-    {#if view === 'chat'}
-      <!-- Chat needs its own internal scroll, so we skip overflow-y-auto here -->
-      <div class="min-h-0 flex-1">
-        <ChatView {aiCallbacks} {getNodeById} />
-      </div>
-    {:else}
+    <!-- Chat is always mounted to preserve state across tab switches -->
+    <div class="min-h-0 flex-1 {view === 'chat' ? '' : 'hidden'}">
+      <ChatView {aiCallbacks} {getNodeById} />
+    </div>
+
+    {#if view !== 'chat'}
       <div class="flex-1 overflow-y-auto">
         {#if view === 'files'}
           <FileTreeView />
