@@ -102,7 +102,7 @@ export type AiPromptMode =
 - **Ctrl+I** cycles through available modes in order
 - Available modes:
   - No node selected → `[single, multi]`
-  - Node selected → `[edit, replace, decompose, create-consumer, create-producer]`
+  - Node selected → `[edit, replace, fix-error, decompose, create-consumer, create-producer]`
 
 ### AiModeDescriptor
 
@@ -118,6 +118,8 @@ export interface AiModeDescriptor {
   isMulti: boolean;
   requiresNode: boolean;
   promptOptional?: boolean;
+  loadingLabel: string;                              // e.g. "Deciding", "Editing", "Fixing"
+  generatingLabel: (resolvedType: string) => string; // e.g. "Cooking p5", "Replacing with p5"
   availableInChat?: boolean;    // for spec 94 chat tool integration
   chatToolDescription?: string;
   chatToolSchema?: object;
@@ -155,7 +157,7 @@ onReplaceObject?: (nodeId: string, newType: string, newData: Record<string, unkn
 - `multi` — Mode dropdown / Ctrl+I. **Done.**
 - `edit` — Mode dropdown (node selected) / context menu. Dropdown done; context menu TODO.
 - `replace` — Mode dropdown (node selected) / context menu. Dropdown done; context menu TODO.
-- `fix-error` — Error badge on node → "Fix with AI". **TODO.**
+- `fix-error` — Mode dropdown (node selected). **Done.** Error badge → "Fix with AI" shortcut: **TODO.**
 - `create-consumer` — Mode dropdown (node selected) / context menu. Dropdown done; context menu TODO.
 - `create-producer` — Mode dropdown (node selected) / context menu. Dropdown done; context menu TODO.
 - `decompose` — Mode dropdown (node selected) / context menu. Dropdown done; context menu TODO.
