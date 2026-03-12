@@ -134,11 +134,11 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
 
   'create-consumer': {
     id: 'create-consumer',
-    label: 'Insert Consumer',
+    label: 'Make Consumer',
     shortLabel: 'Consumer',
     description: () => `Object that uses its output`,
     placeholder: () => 'Optional: e.g., "visualize as a bar chart"',
-    loadingLabel: 'Creating consumer',
+    loadingLabel: 'Making consumer',
     generatingLabel: (t) => `Cooking ${t}`,
     color: 'green',
     icon: ArrowRight,
@@ -150,11 +150,11 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
 
   'create-producer': {
     id: 'create-producer',
-    label: 'Insert Producer',
+    label: 'Make Producer',
     shortLabel: 'Producer',
     description: () => `Object that produces its input`,
     placeholder: () => 'Optional: e.g., "send a sine wave"',
-    loadingLabel: 'Creating producer',
+    loadingLabel: 'Making producer',
     generatingLabel: (t) => `Cooking ${t}`,
     color: 'green',
     icon: ArrowLeft,
