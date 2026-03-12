@@ -64,7 +64,7 @@ Extend the AI object prompt system with new create and edit modes, and refactor 
 
 ### Files
 
-```
+```text
 src/lib/ai/modes/
   types.ts                  — AiPromptMode, AiModeDescriptor, AiModeContext, AiModeResult, ModeResolver
   descriptors.ts            — all 8 AiModeDescriptor objects + getAvailableModesForContext()

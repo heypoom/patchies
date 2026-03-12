@@ -59,7 +59,7 @@ export function buildCanvasToolDefinitions(
 
 | Tool        | Input                                                   |
 | ----------- | ------------------------------------------------------- |
-| `create`    | `{ prompt: string }`                                    |
+| `single`    | `{ prompt: string }`                                    |
 | `multi`     | `{ prompt: string }`                                    |
 | `edit`      | `{ nodeId: string, prompt: string }`                    |
 | `replace`   | `{ nodeId: string, prompt: string }`                    |
@@ -165,7 +165,7 @@ export interface AiModeDescriptor {
 }
 ```
 
-Modes that don't make sense in chat context (e.g. `create-from-sender` which is triggered by a specific right-click) set `availableInChat: false`.
+Modes that don't make sense in chat context (e.g. `create-consumer` and `create-producer` which are triggered by a specific right-click) set `availableInChat: false`.
 
 ---
 
