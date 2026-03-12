@@ -72,15 +72,13 @@
   // State for the expandable section
   let isExpanded = $state(false);
   // Tracks whether expandable views have been promoted to the top bar
-  let isSamplesPromoted = $state(view === 'samples');
-  let isChatPromoted = $state(view === 'chat');
+  let isSamplesPromoted = $derived(view === 'samples');
+  let isChatPromoted = $derived(view === 'chat');
 
   function handleExpandableItemClick(id: SidebarView) {
     if (id === 'preview') {
       previewTab.handleExpandableItemClick();
     } else {
-      if (id === 'samples') isSamplesPromoted = true;
-      if (id === 'chat') isChatPromoted = true;
       view = id;
     }
     isExpanded = false;
@@ -88,9 +86,6 @@
 
   function handleBaseViewClick(id: SidebarView) {
     previewTab.handleBaseViewClick(id);
-    // Demote expandable views when switching to a different base tab
-    if (id !== 'samples') isSamplesPromoted = false;
-    if (id !== 'chat') isChatPromoted = false;
   }
 
   let isDragging = $state(false);
