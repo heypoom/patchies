@@ -30,7 +30,7 @@ How to split: ${prompt || 'Break it into logical, focused parts'}`;
 
   const result = await resolveMultipleObjectsFromPrompt(
     enrichedPrompt,
-    (objectTypes) => onProgress?.(`Decomposing into ${objectTypes.join(', ')}...`),
+    (objectTypes) => onProgress?.(objectTypes.join(', ')),
     signal,
     onThinking
   );

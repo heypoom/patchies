@@ -24,7 +24,7 @@ export const replaceResolver: ModeResolver = async (
 
   const result = await resolveObjectFromPrompt(
     enrichedPrompt,
-    (objectType) => onProgress?.(`Replacing with ${objectType}...`),
+    (objectType) => onProgress?.(objectType),
     signal,
     onThinking
   );

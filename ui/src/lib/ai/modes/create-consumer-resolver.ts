@@ -41,7 +41,7 @@ export const createConsumerResolver: ModeResolver = async (
 
   const result = await resolveObjectFromPrompt(
     enrichedPrompt,
-    (objectType) => onProgress?.(`Creating ${objectType}...`),
+    (objectType) => onProgress?.(objectType),
     signal,
     onThinking
   );
