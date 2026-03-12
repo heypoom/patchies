@@ -205,6 +205,22 @@ export function getModeDescriptor(mode: string): AiModeDescriptor {
  * that another consumes, or receive input from another that produces it.
  */
 export function getAvailableModesForContext(ctx: AiModeContext): AiPromptMode[] {
-  if (!ctx.selectedNode) return ['single', 'multi'];
-  return ['edit', 'replace', 'fix-error', 'decompose', 'create-consumer', 'create-producer'];
+  if (!ctx.selectedNode) {
+    return ['single', 'multi'];
+  }
+
+  const modes: AiPromptMode[] = [
+    'edit',
+    'replace',
+    'decompose',
+    'create-consumer',
+    'create-producer'
+  ];
+
+  // insert 'fix-error' if there are console errors in the context (only shows when a node is selected since it requires a node)
+  if (ctx.consoleErrors && ctx.consoleErrors.length > 0) {
+    modes.splice(1, 0, 'fix-error');
+  }
+
+  return modes;
 }
