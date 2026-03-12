@@ -8,6 +8,7 @@
   import { getModeDescriptor, getAvailableModesForContext } from '$lib/ai/modes/descriptors';
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
+  import { logger } from '$lib/utils/logger';
 
   let {
     open = $bindable(false),
@@ -95,6 +96,15 @@
   );
 
   const availableModes = $derived(getAvailableModesForContext(ctrl.context));
+
+  const fixErrorMessages = $derived(
+    ctrl.mode === 'fix-error' && ctrl.context.selectedNode
+      ? logger
+          .getNodeLogs(ctrl.context.selectedNode.id)
+          .filter((e) => e.level === 'error')
+          .map((e) => e.message)
+      : []
+  );
 
   const submitLabel = $derived(
     match(ctrl.mode)
@@ -271,7 +281,7 @@
         {#if !ctrl.thinkingText || ctrl.isGeneratingConfig}
           <div class="text-xs font-medium text-white">
             {#if ctrl.isGeneratingConfig}
-              Cooking {ctrl.resolvedObjectType}...
+              Cooking {ctrl.resolvedObjectType}
             {:else}
               {descriptor.label}
             {/if}
@@ -279,7 +289,7 @@
         {/if}
 
         {#if ctrl.thinkingText}
-          <div class="mt-1 line-clamp-2 text-left text-[8px] leading-tight text-white/60 italic">
+          <div class="prose-white text-left text-[8px] text-zinc-100">
             <MarkdownContent markdown={ctrl.thinkingText} />
           </div>
         {/if}
@@ -422,6 +432,24 @@
           class="nodrag w-full resize-y rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-100 placeholder-zinc-500 outline-none {focusBorderClass}"
           rows="3"
         ></textarea>
+
+        <!-- fix-error: show error context being sent -->
+        {#if ctrl.mode === 'fix-error'}
+          <div class="mt-2 rounded border border-red-900/50 bg-red-950/30 px-3 py-2 text-xs">
+            {#if fixErrorMessages.length === 0}
+              <span class="text-zinc-500">No console errors found — AI will inspect the code.</span>
+            {:else}
+              <div class="mb-1 font-medium text-red-400">
+                {fixErrorMessages.length} error{fixErrorMessages.length === 1 ? '' : 's'} will be sent:
+              </div>
+              <ul class="space-y-0.5 font-mono text-red-300/80">
+                {#each fixErrorMessages as msg (msg)}
+                  <li class="truncate">{msg}</li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+        {/if}
       {/if}
 
       {#if ctrl.errorMessage}
