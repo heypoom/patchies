@@ -93,8 +93,8 @@ export async function streamChatMessage(
     }
 
     for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-      if (part.thought && part.text && onThinking) {
-        onThinking(part.text);
+      if (part.thought) {
+        if (part.text && onThinking) onThinking(part.text);
       } else if (part.text) {
         fullText += part.text;
         onChunk(part.text);
