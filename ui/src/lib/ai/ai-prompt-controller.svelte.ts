@@ -84,7 +84,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
     }
   }
 
-  async function runLegacyResolver(): Promise<AiModeResult> {
+  async function runLegacyResolver(signal: AbortSignal): Promise<AiModeResult> {
     if (mode === 'single') {
       const result = await resolveObjectFromPrompt(
         promptText,
@@ -92,7 +92,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
           resolvedObjectType = objectType;
           isGeneratingConfig = true;
         },
-        abortController!.signal,
+        signal,
         onThinking
       );
       if (!result) throw new Error('Could not resolve object from prompt');
@@ -106,7 +106,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
           resolvedObjectType = Array.from(new Set(objectTypes)).join(', ');
           isGeneratingConfig = true;
         },
-        abortController!.signal,
+        signal,
         onThinking
       );
       if (!result || result.nodes.length === 0)
@@ -121,7 +121,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
         promptText,
         selectedNode.type ?? 'unknown',
         (selectedNode.data as Record<string, unknown>) ?? {},
-        abortController!.signal,
+        signal,
         onThinking
       );
       if (!result) throw new Error('Could not edit object');
@@ -192,7 +192,8 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
 
       isLoading = true;
       resetLoadingState();
-      abortController = new AbortController();
+      const current = new AbortController();
+      abortController = current;
 
       try {
         let result: AiModeResult;
@@ -202,30 +203,25 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
           case 'single':
           case 'multi':
           case 'edit':
-            result = await runLegacyResolver();
+            result = await runLegacyResolver(current.signal);
             break;
           case 'replace':
             result = await replaceResolver(
               promptText,
               context,
-              abortController.signal,
+              current.signal,
               onThinking,
               onProgress
             );
             break;
           case 'fix-error':
-            result = await fixErrorResolver(
-              promptText,
-              context,
-              abortController.signal,
-              onThinking
-            );
+            result = await fixErrorResolver(promptText, context, current.signal, onThinking);
             break;
           case 'create-consumer':
             result = await createConsumerResolver(
               promptText,
               context,
-              abortController.signal,
+              current.signal,
               onThinking,
               onProgress
             );
@@ -234,7 +230,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
             result = await createProducerResolver(
               promptText,
               context,
-              abortController.signal,
+              current.signal,
               onThinking,
               onProgress
             );
@@ -243,7 +239,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
             result = await decomposeResolver(
               promptText,
               context,
-              abortController.signal,
+              current.signal,
               onThinking,
               onProgress
             );
@@ -262,16 +258,15 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
         }
         return false;
       } finally {
-        isLoading = false;
-        abortController = null;
+        if (abortController === current) {
+          isLoading = false;
+          abortController = null;
+        }
       }
     },
 
     cancel() {
       abortController?.abort();
-      abortController = null;
-      isLoading = false;
-      errorMessage = 'Request cancelled';
     },
 
     reset() {
