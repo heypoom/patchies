@@ -7,9 +7,14 @@ import { getCombinedMetadata } from './v2/get-metadata';
 import { objectSchemas } from './schemas';
 import { objectTypeToSlug } from '$lib/docs/object-slug';
 
-// Register only the languages we need for help docs
+import python from 'highlight.js/lib/languages/python';
+import glsl from 'highlight.js/lib/languages/glsl';
+
+// Register languages for help docs and AI chat responses
 hljs.registerLanguage('javascript', javascript);
 hljs.registerLanguage('js', javascript);
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('glsl', glsl);
 
 // Create and export a marked instance with syntax highlighting
 export const marked = new Marked(

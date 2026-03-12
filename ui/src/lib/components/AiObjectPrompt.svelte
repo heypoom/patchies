@@ -10,6 +10,7 @@
     PenLine
   } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
+  import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import { isMobile, isSidebarOpen } from '../../stores/ui.store';
   import { aiPromptStore, type AiPromptMode } from '../../stores/ai-prompt.store';
   import {
@@ -520,10 +521,10 @@
             {#each thinkingLog as thought, i}
               <div
                 class="border-l-2 border-zinc-600 pl-2 {i === thinkingLog.length - 1
-                  ? 'text-zinc-200'
-                  : 'text-zinc-500'}"
+                  ? 'opacity-100'
+                  : 'opacity-40'}"
               >
-                {thought}
+                <MarkdownContent markdown={thought} />
               </div>
             {/each}
           </div>

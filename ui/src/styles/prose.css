@@ -79,6 +79,10 @@
     padding: 1rem;
   }
 
+  .prose-markdown-sm pre {
+    padding: 0.625rem 0.75rem;
+  }
+
   .prose-markdown pre code,
   .prose-markdown-sm pre code {
     background: transparent;
