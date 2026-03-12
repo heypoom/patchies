@@ -14,8 +14,8 @@ import type { AiModeContext, AiModeResult, AiPromptMode } from './modes/types';
 import { getModeDescriptor } from './modes/descriptors';
 import { replaceResolver } from './modes/replace-resolver';
 import { fixErrorResolver } from './modes/fix-error-resolver';
-import { createFromSenderResolver } from './modes/create-from-sender-resolver';
-import { createFromConsumerResolver } from './modes/create-from-consumer-resolver';
+import { createConsumerResolver } from './modes/create-consumer-resolver';
+import { createProducerResolver } from './modes/create-producer-resolver';
 import { decomposeResolver } from './modes/decompose-resolver';
 import { resolveObjectFromPrompt } from './single-object-resolver';
 import { resolveMultipleObjectsFromPrompt } from './multi-object-resolver';
@@ -221,8 +221,8 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
               onThinking
             );
             break;
-          case 'create-from-sender':
-            result = await createFromSenderResolver(
+          case 'create-consumer':
+            result = await createConsumerResolver(
               promptText,
               context,
               abortController.signal,
@@ -230,8 +230,8 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
               onProgress
             );
             break;
-          case 'create-from-consumer':
-            result = await createFromConsumerResolver(
+          case 'create-producer':
+            result = await createProducerResolver(
               promptText,
               context,
               abortController.signal,

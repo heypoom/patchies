@@ -8,7 +8,7 @@ import {
   ArrowLeft,
   Scissors
 } from '@lucide/svelte/icons';
-import type { AiModeDescriptor, AiModeContext } from './types';
+import type { AiModeDescriptor, AiModeContext, AiPromptMode } from './types';
 
 function nodeName(ctx: AiModeContext): string {
   const d = ctx.selectedNode?.data as Record<string, unknown> | undefined;
@@ -18,8 +18,9 @@ function nodeName(ctx: AiModeContext): string {
 export const modeDescriptors: Record<string, AiModeDescriptor> = {
   single: {
     id: 'single',
-    label: 'AI Object Insert',
-    description: () => 'Describe the object you want to create',
+    label: 'Object Insert',
+    shortLabel: 'Single',
+    description: () => 'Describe one object to create',
     placeholder: () => 'e.g., "a bouncing ball"',
     color: 'purple',
     icon: Sparkles,
@@ -36,7 +37,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
 
   multi: {
     id: 'multi',
-    label: 'AI Multi-Object Insert',
+    label: 'Multi Insert',
+    shortLabel: 'Multi',
     description: () => 'Describe connected objects to create',
     placeholder: () => 'e.g., "slider controlling oscillator frequency"',
     color: 'blue',
@@ -54,7 +56,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
 
   edit: {
     id: 'edit',
-    label: 'AI Object Edit',
+    label: 'Object Edit',
+    shortLabel: 'Edit',
     description: (ctx) => `Editing: ${nodeName(ctx)}`,
     placeholder: () => 'e.g., "make it go faster"',
     color: 'amber',
@@ -75,7 +78,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
 
   replace: {
     id: 'replace',
-    label: 'AI Object Replace',
+    label: 'Object Replace',
+    shortLabel: 'Replace',
     description: (ctx) => `Replacing: ${nodeName(ctx)}`,
     placeholder: (ctx) => `e.g., "Replace this ${ctx.selectedNode?.type || 'object'} with..."`,
     color: 'amber',
@@ -96,7 +100,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
 
   'fix-error': {
     id: 'fix-error',
-    label: 'AI Fix Error',
+    label: 'Fix Error',
+    shortLabel: 'Fix',
     description: (ctx) => `Fixing: ${nodeName(ctx)}`,
     placeholder: () => 'Optional: additional instructions',
     color: 'red',
@@ -117,10 +122,11 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     }
   },
 
-  'create-from-sender': {
-    id: 'create-from-sender',
-    label: 'AI Create Receiver',
-    description: (ctx) => `Creating receiver for: ${nodeName(ctx)}`,
+  'create-consumer': {
+    id: 'create-consumer',
+    label: 'Insert Consumer',
+    shortLabel: 'Consumer',
+    description: (ctx) => `Create consumer for: ${nodeName(ctx)}`,
     placeholder: () => 'Optional: e.g., "visualize as a bar chart"',
     color: 'green',
     icon: ArrowRight,
@@ -130,10 +136,11 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     availableInChat: false
   },
 
-  'create-from-consumer': {
-    id: 'create-from-consumer',
-    label: 'AI Create Sender',
-    description: (ctx) => `Creating sender for: ${nodeName(ctx)}`,
+  'create-producer': {
+    id: 'create-producer',
+    label: 'Insert Producer',
+    shortLabel: 'Producer',
+    description: (ctx) => `Create producer for: ${nodeName(ctx)}`,
     placeholder: () => 'Optional: e.g., "send a sine wave"',
     color: 'green',
     icon: ArrowLeft,
@@ -145,7 +152,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
 
   decompose: {
     id: 'decompose',
-    label: 'AI Decompose',
+    label: 'Decompose',
+    shortLabel: 'Decompose',
     description: (ctx) => `Decomposing: ${nodeName(ctx)}`,
     placeholder: () => 'e.g., "separate drawing and data logic"',
     color: 'blue',
@@ -169,4 +177,18 @@ export function getModeDescriptor(mode: string): AiModeDescriptor {
   const descriptor = modeDescriptors[mode];
   if (!descriptor) throw new Error(`Unknown AI mode: ${mode}`);
   return descriptor;
+}
+
+/**
+ * Returns the selectable modes for the current context.
+ *
+ * - No node selected → [single, multi]
+ * - Node selected    → [edit, replace, decompose, create-consumer, create-producer]
+ *
+ * create-consumer/producer are valid for ANY node — any node can produce output
+ * that another consumes, or receive input from another that produces it.
+ */
+export function getAvailableModesForContext(ctx: AiModeContext): AiPromptMode[] {
+  if (!ctx.selectedNode) return ['single', 'multi'];
+  return ['edit', 'replace', 'decompose', 'create-consumer', 'create-producer'];
 }

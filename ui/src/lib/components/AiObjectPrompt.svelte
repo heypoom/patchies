@@ -1,10 +1,12 @@
 <script lang="ts">
   import { Loader, Minus, Maximize2, ChevronDown, ChevronUp } from '@lucide/svelte/icons';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import { match } from 'ts-pattern';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import { isMobile, isSidebarOpen } from '../../stores/ui.store';
   import { aiPromptStore } from '../../stores/ai-prompt.store';
   import { createAiPromptController } from '$lib/ai/ai-prompt-controller.svelte';
+  import { getModeDescriptor, getAvailableModesForContext } from '$lib/ai/modes/descriptors';
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
 
@@ -43,6 +45,7 @@
   let dialogPosition = $state({ x: position.x, y: position.y });
   let isMinimized = $state(false);
   let isPromptExpanded = $state(false);
+  let modeDropdownOpen = $state(false);
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const descriptor = $derived(ctrl.descriptor);
@@ -92,8 +95,7 @@
       .exhaustive()
   );
 
-  // Single/Multi toggle only shows for create modes
-  const showModeToggle = $derived(ctrl.mode === 'single' || ctrl.mode === 'multi');
+  const availableModes = $derived(getAvailableModesForContext(ctrl.context));
 
   const submitLabel = $derived(
     match(ctrl.mode)
@@ -191,7 +193,12 @@
   function handleClickOutside(event: MouseEvent) {
     if (ctrl.isLoading || isDragging) return;
     const target = event.target as HTMLElement;
-    if (!target.closest('.ai-prompt-dialog')) handleClose();
+    if (!target.closest('.ai-prompt-dialog')) {
+      modeDropdownOpen = false;
+      handleClose();
+    } else if (modeDropdownOpen && !target.closest('.ai-mode-dropdown')) {
+      modeDropdownOpen = false;
+    }
   }
 
   // ── Submit / Keyboard ─────────────────────────────────────────────────────
@@ -214,19 +221,18 @@
       } else {
         handleClose();
       }
-    } else if (event.key === 'i' && (event.metaKey || event.ctrlKey)) {
-      event.preventDefault();
-      if (showModeToggle && !ctrl.isLoading) {
-        ctrl.setMode(ctrl.mode === 'single' ? 'multi' : 'single');
-      }
     }
   }
 
   function handleDocumentKeydown(event: KeyboardEvent) {
     if (event.key === 'i' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
-      if (showModeToggle && !ctrl.isLoading) {
-        ctrl.setMode(ctrl.mode === 'single' ? 'multi' : 'single');
+      if (!ctrl.isLoading) {
+        const modes = availableModes;
+        const currentIdx = modes.indexOf(ctrl.mode);
+        const nextIdx = (currentIdx + 1) % modes.length;
+        ctrl.setMode(modes[nextIdx]);
+        modeDropdownOpen = false;
       }
     }
   }
@@ -310,20 +316,43 @@
         <div class="text-xs text-zinc-400">{descriptor.description(ctrl.context)}</div>
       </div>
 
-      <!-- Single/Multi toggle (only for create modes) -->
-      {#if showModeToggle}
-        <button
-          onclick={() => ctrl.setMode(ctrl.mode === 'single' ? 'multi' : 'single')}
-          disabled={ctrl.isLoading}
-          class="cursor-pointer rounded px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 {ctrl.mode ===
-          'multi'
-            ? 'bg-blue-600 text-white'
-            : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}"
-          title="Toggle between single and multiple object mode"
-          aria-pressed={ctrl.mode === 'multi'}
-        >
-          {ctrl.mode === 'multi' ? 'Multi' : 'Single'}
-        </button>
+      <!-- Mode selector dropdown (when multiple modes are available) -->
+      {#if availableModes.length > 1}
+        <div class="ai-mode-dropdown relative">
+          <button
+            onclick={() => (modeDropdownOpen = !modeDropdownOpen)}
+            disabled={ctrl.isLoading}
+            class="flex cursor-pointer items-center gap-1 rounded bg-zinc-700 px-2 py-1 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {descriptor.shortLabel}
+            <ChevronDown class="h-3 w-3 opacity-60" />
+          </button>
+
+          {#if modeDropdownOpen}
+            <div
+              class="absolute top-full right-0 z-20 mt-1 w-52 rounded-lg border border-zinc-700 bg-zinc-800 py-1 shadow-xl"
+              onclick={(e) => e.stopPropagation()}
+            >
+              {#each availableModes as modeId (modeId)}
+                {@const d = getModeDescriptor(modeId)}
+
+                <button
+                  onclick={() => {
+                    ctrl.setMode(modeId);
+                    modeDropdownOpen = false;
+                  }}
+                  class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-700 {ctrl.mode ===
+                  modeId
+                    ? 'font-medium text-white'
+                    : 'text-zinc-400'}"
+                >
+                  <d.icon class="h-3 w-3 shrink-0" />
+                  <span class="flex-1">{d.shortLabel}</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
       {/if}
 
       <!-- Minimize -->
@@ -413,10 +442,10 @@
               <span>{descriptor.label}...</span>
             {/if}
           </div>
-        {:else if showModeToggle}
-          Enter to insert • Ctrl+I to {ctrl.mode === 'multi' ? 'single' : 'multi'} • Esc to cancel
+        {:else if availableModes.length > 1}
+          Enter {submitLabel.toLowerCase()} • Ctrl+I mode • Esc cancel
         {:else}
-          Enter to {submitLabel.toLowerCase()} • Esc to cancel
+          Enter {submitLabel.toLowerCase()} • Esc cancel
         {/if}
       </div>
 

@@ -10,8 +10,8 @@ export type AiPromptMode =
   | 'edit' // Edit existing object data
   | 'replace' // Replace object type + data
   | 'fix-error' // Fix code error using console output
-  | 'create-from-sender' // Create consumer from sender node
-  | 'create-from-consumer' // Create sender from consumer node
+  | 'create-consumer' // Create a consumer for the selected producer node
+  | 'create-producer' // Create a producer for the selected consumer node
   | 'decompose'; // Split object into multiple
 
 export interface AiModeContext {
@@ -24,6 +24,8 @@ export interface AiModeContext {
 export interface AiModeDescriptor {
   id: AiPromptMode;
   label: string;
+  /** Short label for mode selector buttons */
+  shortLabel: string;
   description: (ctx: AiModeContext) => string;
   placeholder: (ctx: AiModeContext) => string;
   color: AiPromptColor;
@@ -32,7 +34,7 @@ export interface AiModeDescriptor {
   isMulti: boolean;
   /** Whether this mode requires a selected node */
   requiresNode: boolean;
-  /** Whether the prompt textarea is optional (e.g. fix-error, create-from-sender) */
+  /** Whether the prompt textarea is optional (e.g. fix-error, create-consumer) */
   promptOptional?: boolean;
   /** Whether this mode is available as a chat tool (spec 94) */
   availableInChat?: boolean;
