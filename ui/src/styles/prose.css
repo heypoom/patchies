@@ -170,6 +170,15 @@
   }
 
   /* highlight.js syntax theme */
+  .prose-markdown .hljs,
+  .prose-markdown-sm .hljs {
+    background: transparent !important;
+  }
+
+  .prose-markdown-sm pre code.hljs {
+    padding: 0 !important;
+  }
+
   .prose-markdown .hljs-keyword,
   .prose-markdown .hljs-selector-tag,
   .prose-markdown .hljs-built_in,

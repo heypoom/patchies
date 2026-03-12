@@ -4,6 +4,7 @@ import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from '../object-prompts/shar
 export interface ChatMessage {
   role: 'user' | 'model';
   content: string;
+  thinking?: string;
 }
 
 export interface ChatNodeContext {

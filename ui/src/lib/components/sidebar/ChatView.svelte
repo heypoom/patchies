@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Loader, MessageSquare, Send, Trash2 } from '@lucide/svelte/icons';
+  import { MessageSquare, Send, Trash2 } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import { streamChatMessage, type ChatMessage } from '$lib/ai/chat/resolver';
@@ -53,7 +53,10 @@
         }
       );
 
-      messages = [...nextMessages, { role: 'model', content: fullText }];
+      messages = [
+        ...nextMessages,
+        { role: 'model', content: fullText, thinking: thinkingText || undefined }
+      ];
       streamingText = '';
       thinkingText = '';
     } catch (error) {
@@ -112,45 +115,63 @@
     {/if}
 
     {#each messages as message, index (index)}
-      <div class="flex {message.role === 'user' ? 'justify-end' : 'justify-start'}">
-        {#if message.role === 'user'}
+      {#if message.role === 'user'}
+        <div class="flex justify-end">
           <div
             class="max-w-[85%] rounded-lg bg-zinc-800 px-3 py-2 text-xs leading-relaxed text-zinc-200"
           >
             <pre class="font-sans whitespace-pre-wrap">{message.content}</pre>
           </div>
-        {:else}
-          <div class="max-w-[85%] rounded-lg bg-zinc-900/60 px-3 py-2">
+        </div>
+      {:else}
+        <div class="flex items-start gap-2">
+          <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
+          <div class="min-w-0 flex-1">
+            {#if message.thinking}
+              <details class="mb-2">
+                <summary
+                  class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
+                >
+                  Thinking
+                </summary>
+
+                <div class="mt-1 text-zinc-700 opacity-60">
+                  <MarkdownContent markdown={message.thinking} />
+                </div>
+              </details>
+            {/if}
             <MarkdownContent markdown={message.content} />
           </div>
-        {/if}
-      </div>
+        </div>
+      {/if}
     {/each}
 
-    <!-- Streaming response (plain text while in-flight) -->
+    <!-- Streaming response (in-flight) -->
     {#if isLoading}
-      <div class="flex justify-start">
+      <div class="flex items-start gap-2">
         <div
-          class="max-w-[85%] rounded-lg bg-zinc-900/60 px-3 py-2 text-xs leading-relaxed text-zinc-200"
-        >
+          class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full {streamingText
+            ? 'bg-zinc-600'
+            : 'animate-pulse bg-zinc-700'}"
+        ></div>
+        <div class="min-w-0 flex-1">
           {#if streamingText}
-            <div class="font-sans whitespace-pre-wrap">
-              <MarkdownContent markdown={streamingText} />
-            </div>
+            <MarkdownContent markdown={streamingText} />
           {:else}
-            <div class="flex items-center gap-2 text-zinc-500">
-              <Loader class="h-3 w-3 animate-spin" />
-
-              <span>Thinking...</span>
-            </div>
+            <span class="text-xs text-zinc-500">Thinking...</span>
           {/if}
 
           {#if thinkingText}
-            <div
-              class="mt-1.5 border-t border-zinc-800 pt-1.5 font-mono text-[10px] text-zinc-600 opacity-60"
-            >
-              <MarkdownContent markdown={thinkingText} />
-            </div>
+            <details class="mt-2">
+              <summary
+                class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
+              >
+                Thinking
+              </summary>
+              <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
+                {thinkingText}
+              </div>
+            </details>
           {/if}
         </div>
       </div>
