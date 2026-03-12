@@ -211,16 +211,12 @@ export function getAvailableModesForContext(ctx: AiModeContext): AiPromptMode[] 
 
   const modes: AiPromptMode[] = [
     'edit',
+    'fix-error',
     'replace',
     'decompose',
     'create-consumer',
     'create-producer'
   ];
-
-  // insert 'fix-error' if there are console errors in the context (only shows when a node is selected since it requires a node)
-  if (ctx.consoleErrors && ctx.consoleErrors.length > 0) {
-    modes.splice(1, 0, 'fix-error');
-  }
 
   return modes;
 }
