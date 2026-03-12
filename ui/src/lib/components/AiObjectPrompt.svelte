@@ -281,9 +281,9 @@
         {#if !ctrl.thinkingText || ctrl.isGeneratingConfig}
           <div class={['text-xs font-medium text-white', ctrl.thinkingText && 'mb-1']}>
             {#if ctrl.isGeneratingConfig}
-              Cooking {ctrl.resolvedObjectType}
+              Cooking {ctrl.resolvedObjectType}...
             {:else}
-              {descriptor.label}
+              {descriptor.loadingLabel}...
             {/if}
           </div>
         {/if}
@@ -474,7 +474,7 @@
             {#if ctrl.isGeneratingConfig}
               <span>Cooking <span class="text-zinc-300">{ctrl.resolvedObjectType}</span>...</span>
             {:else}
-              <span>{descriptor.label}...</span>
+              <span>{descriptor.loadingLabel}...</span>
             {/if}
           </div>
         {:else if availableModes.length > 1}
