@@ -281,7 +281,7 @@
         {#if !ctrl.thinkingText || ctrl.isGeneratingConfig}
           <div class={['text-xs font-medium text-white', ctrl.thinkingText && 'mb-1']}>
             {#if ctrl.isGeneratingConfig}
-              Cooking {ctrl.resolvedObjectType}...
+              {descriptor.generatingLabel(ctrl.resolvedObjectType)}...
             {:else}
               {descriptor.loadingLabel}...
             {/if}
@@ -472,7 +472,7 @@
             <Loader class="h-3 w-3 animate-spin" />
 
             {#if ctrl.isGeneratingConfig}
-              <span>Cooking <span class="text-zinc-300">{ctrl.resolvedObjectType}</span>...</span>
+              <span>{descriptor.generatingLabel(ctrl.resolvedObjectType)}...</span>
             {:else}
               <span>{descriptor.loadingLabel}...</span>
             {/if}

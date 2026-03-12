@@ -47,6 +47,9 @@ export interface AiModeDescriptor {
   /** Present-tense verb shown in loading states, e.g. "Deciding", "Editing", "Fixing" */
   loadingLabel: string;
 
+  /** Label shown when generating object config; receives resolved type e.g. "p5" */
+  generatingLabel: (resolvedType: string) => string;
+
   /** Whether this mode is available as a chat tool (spec 94) */
   availableInChat?: boolean;
 
