@@ -99,7 +99,9 @@
 
   const submitLabel = $derived(
     match(ctrl.mode)
-      .with('edit', 'fix-error', 'replace', () => 'Update')
+      .with('edit', () => 'Edit')
+      .with('replace', () => 'Replace')
+      .with('fix-error', () => 'Fix')
       .otherwise(() => 'Insert')
   );
 
