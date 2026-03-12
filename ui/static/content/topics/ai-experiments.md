@@ -1,7 +1,7 @@
 # AI Experiments
 
 > **Security Warning**: API keys are stored in browser and can be stolen by malicious patches you open. Use a separate API key with strict budget limits. _Never load patches from strangers when an API key is set!_
-
+>
 > **Caution**: These features are experimental and may corrupt your patches. Try them on a new patch or backup your patches & objects.
 
 ## Hide AI Features
@@ -14,15 +14,25 @@ AI is 100% optional and _opt-in_ with Patchies. Dislike AI? Hit `Ctrl/Cmd + K` t
 
 > ✨ [Try this patch](/?id=rza2o6eoa7338rh) where AI generates a shader graph of starfield with hearts!
 
-Press `Ctrl/Cmd + I` to open the object insert/edit prompt. Describe what you want to create in natural language, and the AI will generate or edit the appropriate objects with code for you.
+Press `Ctrl/Cmd + I` to open the AI object prompt. Describe what you want in natural language and the AI will generate or modify the appropriate objects.
 
 ### Modes
 
-When the AI object insert prompt is open, press `Ctrl/Cmd + I` again to switch between modes:
+The prompt adapts based on context. Use the mode dropdown in the header or press `Ctrl/Cmd + I` again to cycle through available modes.
 
-- **Single Insert Mode** (no object selected): Create a single object at your cursor position
-- **Multi Insert Mode** (no object selected): Create multiple connected objects at your cursor position
-- **Edit Mode** (object selected): Modify the selected object's code based on your description
+**No object selected:**
+
+- **Single** — Create one object at your cursor position
+- **Multi** — Create multiple connected objects at once (e.g., "slider controlling oscillator frequency")
+
+**Object selected:**
+
+- **Edit** — Modify the selected object's code based on your description
+- **Replace** — Swap the selected object for a different type, preserving connected edges
+- **Fix** — Fix errors in the selected object; automatically reads console errors and sends them as context
+- **Decompose** — Split the selected object into multiple focused connected objects
+- **Consumer** — Create a new object that consumes what the selected object produces
+- **Producer** — Create a new object that produces what the selected object consumes
 
 ### Setup
 
@@ -32,6 +42,15 @@ When the AI object insert prompt is open, press `Ctrl/Cmd + I` again to switch b
 4. Use `Ctrl/Cmd + I` or the _sparkles_ button on the bottom right to generate
 
 This feature uses the `gemini-3-flash-preview` model to understand your prompt and generate the object configuration.
+
+## AI Chat
+
+Open the sidebar and switch to the **Chat** tab to talk to an AI assistant about your patch.
+
+- Ask questions about Patchies, get help debugging, or brainstorm ideas
+- When a node is selected, its type and data are automatically included as context so the AI understands what you're working on
+- Press `Enter` to send, `Shift+Enter` for a newline
+- Use the trash icon to clear the conversation history
 
 ## Patch to App
 
