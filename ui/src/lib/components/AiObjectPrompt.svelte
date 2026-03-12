@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Loader, Minus, Maximize2, ChevronDown, ChevronUp } from '@lucide/svelte/icons';
-  import * as Tooltip from '$lib/components/ui/tooltip';
   import { match } from 'ts-pattern';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import { isMobile, isSidebarOpen } from '../../stores/ui.store';
@@ -269,18 +268,18 @@
       title="Click to restore AI prompt"
     >
       <div class="min-w-0 flex-1 text-left">
-        <div class="text-xs font-medium text-white">
-          {#if ctrl.isGeneratingConfig}
-            Cooking {ctrl.resolvedObjectType}...
-          {:else}
-            {descriptor.label}...
-          {/if}
-        </div>
+        {#if !ctrl.thinkingText || ctrl.isGeneratingConfig}
+          <div class="text-xs font-medium text-white">
+            {#if ctrl.isGeneratingConfig}
+              Cooking {ctrl.resolvedObjectType}...
+            {:else}
+              {descriptor.label}
+            {/if}
+          </div>
+        {/if}
 
         {#if ctrl.thinkingText}
-          <div
-            class="mt-1 line-clamp-2 text-left font-mono text-[8px] leading-tight text-white/60 italic"
-          >
+          <div class="mt-1 line-clamp-2 text-left text-[8px] leading-tight text-white/60 italic">
             <MarkdownContent markdown={ctrl.thinkingText} />
           </div>
         {/if}
