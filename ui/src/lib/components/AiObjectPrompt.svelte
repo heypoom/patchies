@@ -279,7 +279,7 @@
     >
       <div class="min-w-0 flex-1 text-left">
         {#if !ctrl.thinkingText || ctrl.isGeneratingConfig}
-          <div class="text-xs font-medium text-white">
+          <div class={['text-xs font-medium text-white', ctrl.thinkingText && 'mb-1']}>
             {#if ctrl.isGeneratingConfig}
               Cooking {ctrl.resolvedObjectType}
             {:else}
@@ -289,8 +289,13 @@
         {/if}
 
         {#if ctrl.thinkingText}
-          <div class="prose-white text-left text-[8px] text-zinc-100">
-            <MarkdownContent markdown={ctrl.thinkingText} />
+          <div
+            class="max-h-[120px] overflow-x-hidden overflow-y-scroll text-left text-[8px] text-zinc-400"
+          >
+            <MarkdownContent
+              markdown={ctrl.thinkingText}
+              class="prose-ai-quick-preview font-mono"
+            />
           </div>
         {/if}
       </div>
@@ -465,6 +470,7 @@
         {#if ctrl.isLoading}
           <div class="flex items-center gap-2">
             <Loader class="h-3 w-3 animate-spin" />
+
             {#if ctrl.isGeneratingConfig}
               <span>Cooking <span class="text-zinc-300">{ctrl.resolvedObjectType}</span>...</span>
             {:else}

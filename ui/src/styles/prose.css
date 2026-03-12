@@ -56,6 +56,11 @@
     margin-bottom: 1rem;
   }
 
+  .prose-ai-quick-preview.prose-markdown-sm p {
+    margin-bottom: 0 !important;
+    color: inherit !important;
+  }
+
   .prose-markdown code,
   .prose-markdown-sm code {
     font-family: ui-monospace, monospace;
