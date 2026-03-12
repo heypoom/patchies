@@ -106,6 +106,35 @@ export class AiOperationsService {
   }
 
   /**
+   * Replace an existing node with a new type and data at the same position.
+   * Attempts to re-connect edges whose handle IDs still exist on the new node (best-effort).
+   */
+  replaceNode(nodeId: string, newType: string, newData: Record<string, unknown>): void {
+    const existingNode = this.ctx.nodes.find((n) => n.id === nodeId);
+    if (!existingNode) return;
+
+    // Capture position and connected edges before deletion
+    const position = existingNode.position;
+    const connectedEdges = this.ctx.edges.filter((e) => e.source === nodeId || e.target === nodeId);
+
+    // Delete old node (also removes its connected edges via command system)
+    this.nodeOps.deleteSelectedElements([nodeId], []);
+
+    // Insert new node at same position
+    const newNodeId = this.insertSingleObject(newType, newData, position);
+
+    // Re-add edges with updated source/target pointing to new node
+    const reconnectedEdges = connectedEdges.map((e) => ({
+      ...e,
+      id: `${e.id}-reconnected-${Date.now()}`,
+      source: e.source === nodeId ? newNodeId : e.source,
+      target: e.target === nodeId ? newNodeId : e.target
+    }));
+
+    this.ctx.edges = [...this.ctx.edges, ...reconnectedEdges];
+  }
+
+  /**
    * Check if Gemini API key exists in localStorage.
    */
   hasApiKey(): boolean {

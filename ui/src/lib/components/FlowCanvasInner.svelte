@@ -100,6 +100,7 @@
   import { AiOperationsService } from '$lib/services/AiOperationsService';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
   import { SvelteSet } from 'svelte/reactivity';
+  import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
 
   const AUTOSAVE_INTERVAL = 2500;
 
@@ -172,7 +173,8 @@
   // AI object prompt state
   let showAiPrompt = $state(false);
   let aiPromptPosition = $state.raw({ x: 0, y: 0 });
-  let aiEditingNodeId = $state<string | null>(null);
+  let aiPromptMode = $state<AiPromptMode>('single');
+  let aiPromptContext = $state<AiModeContext>({});
 
   // Check if Gemini API key is set (for showing AI button)
   let hasGeminiApiKey = $state(false);
@@ -389,9 +391,12 @@
     // Default behavior: trigger AI prompt
     // If a single node is selected, edit it; otherwise create new
     if (selectedNodeIds.length === 1) {
-      aiEditingNodeId = selectedNodeIds[0];
+      const node = nodes.find((n) => n.id === selectedNodeIds[0]);
+      aiPromptMode = 'edit';
+      aiPromptContext = node ? { selectedNode: node } : {};
     } else {
-      aiEditingNodeId = null;
+      aiPromptMode = 'single';
+      aiPromptContext = {};
     }
 
     triggerAiPrompt();
@@ -435,6 +440,14 @@
 
   function handleAiObjectEdit(nodeId: string, data: any) {
     aiOps.editNode(nodeId, data);
+  }
+
+  function handleAiObjectReplace(
+    nodeId: string,
+    newType: string,
+    newData: Record<string, unknown>
+  ) {
+    aiOps.replaceNode(nodeId, newType, newData);
   }
 
   onMount(() => {
@@ -506,7 +519,16 @@
       isCommandPaletteOpen: () => showCommandPalette,
       isAiFeaturesVisible: () => $isAiFeaturesVisible,
       isPatchEmpty: () => nodes.length === 0 && edges.length === 0,
-      setAiEditingNodeId: (nodeId) => (aiEditingNodeId = nodeId),
+      setAiEditingNodeId: (nodeId) => {
+        if (nodeId) {
+          const node = nodes.find((n) => n.id === nodeId);
+          aiPromptMode = 'edit';
+          aiPromptContext = node ? { selectedNode: node } : {};
+        } else {
+          aiPromptMode = 'single';
+          aiPromptContext = {};
+        }
+      },
       getSelectedNodeId: () => (selectedNodeIds.length === 1 ? selectedNodeIds[0] : null),
       isAiPromptOpen: () => showAiPrompt
     });
@@ -870,9 +892,12 @@
     // If a single node is selected, edit it,
     // otherwise create new ones
     if (selectedNodeIds.length === 1) {
-      aiEditingNodeId = selectedNodeIds[0];
+      const node = nodes.find((n) => n.id === selectedNodeIds[0]);
+      aiPromptMode = 'edit';
+      aiPromptContext = node ? { selectedNode: node } : {};
     } else {
-      aiEditingNodeId = null;
+      aiPromptMode = 'single';
+      aiPromptContext = {};
     }
 
     triggerAiPrompt();
@@ -1129,7 +1154,8 @@
             edges = newEdges;
           }}
           onShowAiPrompt={() => {
-            aiEditingNodeId = null;
+            aiPromptMode = 'single';
+            aiPromptContext = {};
             onAiInsertOrEdit();
           }}
           onShowGeminiKeyModal={() => {
@@ -1219,10 +1245,12 @@
     <AiObjectPrompt
       bind:open={showAiPrompt}
       position={aiPromptPosition}
-      editingNode={aiEditingNodeId ? nodes.find((n) => n.id === aiEditingNodeId) : null}
+      mode={aiPromptMode}
+      context={aiPromptContext}
       onInsertObject={handleAiObjectInsert}
       onInsertMultipleObjects={handleAiMultipleObjectsInsert}
       onEditObject={handleAiObjectEdit}
+      onReplaceObject={handleAiObjectReplace}
     />
 
     <!-- Toast Notifications -->

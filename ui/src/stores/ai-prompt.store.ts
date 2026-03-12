@@ -1,6 +1,7 @@
 import { writable, derived } from 'svelte/store';
+import type { AiPromptMode } from '$lib/ai/modes/types';
 
-export type AiPromptMode = 'single' | 'multi' | 'edit';
+export type { AiPromptMode };
 
 export type AiPromptState = {
   isOpen: boolean;
