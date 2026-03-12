@@ -392,7 +392,7 @@
     // If a single node is selected, edit it; otherwise create new
     if (selectedNodeIds.length === 1) {
       const node = nodes.find((n) => n.id === selectedNodeIds[0]);
-      aiPromptMode = 'edit';
+      aiPromptMode = node ? 'edit' : 'single';
       aiPromptContext = node ? { selectedNode: node } : {};
     } else {
       aiPromptMode = 'single';
@@ -893,7 +893,7 @@
     // otherwise create new ones
     if (selectedNodeIds.length === 1) {
       const node = nodes.find((n) => n.id === selectedNodeIds[0]);
-      aiPromptMode = 'edit';
+      aiPromptMode = node ? 'edit' : 'single';
       aiPromptContext = node ? { selectedNode: node } : {};
     } else {
       aiPromptMode = 'single';
