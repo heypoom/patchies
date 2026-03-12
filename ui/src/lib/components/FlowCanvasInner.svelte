@@ -252,7 +252,11 @@
           ? getObjectNameFromExpr(nodes[0].data.expr as string)
           : nodeType;
 
-      selectedNodeInfo.set({ type: resolvedType, id: nodes[0].id });
+      selectedNodeInfo.set({
+        type: resolvedType,
+        id: nodes[0].id,
+        data: (nodes[0].data as Record<string, unknown>) ?? undefined
+      });
     } else {
       selectedNodeInfo.set(null);
     }

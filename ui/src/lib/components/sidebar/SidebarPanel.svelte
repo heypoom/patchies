@@ -9,7 +9,8 @@
     AppWindow,
     ChevronDown,
     ChevronUp,
-    Music
+    Music,
+    MessageSquare
   } from '@lucide/svelte/icons';
 
   import FileTreeView from './FileTreeView.svelte';
@@ -19,6 +20,7 @@
   import HelpView from './HelpView.svelte';
   import AppPreviewView from './AppPreviewView.svelte';
   import SampleSearchView from './SampleSearchView.svelte';
+  import ChatView from './ChatView.svelte';
   import { usePreviewTab } from './usePreviewTab.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
@@ -53,9 +55,10 @@
     { id: 'help', icon: CircleQuestionMark, title: 'Help' }
   ];
 
-  // Expandable items (just Patch to App for now)
+  // Expandable items (shown under chevron, promoted to top bar when active)
   const expandableItems = [
     { id: 'samples', icon: Music, title: 'Samples' },
+    { id: 'chat', icon: MessageSquare, title: 'AI Chat' },
     { id: 'preview', icon: AppWindow, title: 'Patch to App' }
   ];
 
@@ -68,14 +71,16 @@
 
   // State for the expandable section
   let isExpanded = $state(false);
-  // Tracks whether 'samples' has been promoted to the top bar
+  // Tracks whether expandable views have been promoted to the top bar
   let isSamplesPromoted = $state(view === 'samples');
+  let isChatPromoted = $state(view === 'chat');
 
   function handleExpandableItemClick(id: SidebarView) {
     if (id === 'preview') {
       previewTab.handleExpandableItemClick();
     } else {
       if (id === 'samples') isSamplesPromoted = true;
+      if (id === 'chat') isChatPromoted = true;
       view = id;
     }
     isExpanded = false;
@@ -83,8 +88,9 @@
 
   function handleBaseViewClick(id: SidebarView) {
     previewTab.handleBaseViewClick(id);
-    // Demote samples when switching to a different base tab
+    // Demote expandable views when switching to a different base tab
     if (id !== 'samples') isSamplesPromoted = false;
+    if (id !== 'chat') isChatPromoted = false;
   }
 
   let isDragging = $state(false);
@@ -176,6 +182,23 @@
             </Tooltip.Root>
           {/if}
 
+          <!-- Promoted chat button (when active) -->
+          {#if isChatPromoted}
+            <Tooltip.Root delayDuration={300}>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1.5 transition-colors {view === 'chat'
+                    ? 'bg-zinc-700 text-zinc-200'
+                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+                  onclick={() => (view = 'chat')}
+                >
+                  <MessageSquare class="h-4 w-4" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">AI Chat</Tooltip.Content>
+            </Tooltip.Root>
+          {/if}
+
           <!-- Expand/collapse chevron -->
           <Tooltip.Root delayDuration={300}>
             <Tooltip.Trigger>
@@ -209,7 +232,7 @@
       {#if isExpanded}
         <div class="flex items-center gap-1 border-t border-zinc-800 px-2 py-1.5">
           {#each expandableItems as item}
-            {#if (!previewTab.isPromoted || item.id !== 'preview') && (!isSamplesPromoted || item.id !== 'samples')}
+            {#if (!previewTab.isPromoted || item.id !== 'preview') && (!isSamplesPromoted || item.id !== 'samples') && (!isChatPromoted || item.id !== 'chat')}
               <button
                 class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
                 onclick={() => handleExpandableItemClick(item.id as SidebarView)}
@@ -221,7 +244,7 @@
             {/if}
           {/each}
 
-          {#if previewTab.isPromoted && isSamplesPromoted}
+          {#if previewTab.isPromoted && isSamplesPromoted && isChatPromoted}
             <span class="text-xs text-zinc-600 italic">No more items</span>
           {/if}
         </div>
@@ -229,23 +252,30 @@
     </div>
 
     <!-- Content -->
-    <div class="flex-1 overflow-y-auto">
-      {#if view === 'files'}
-        <FileTreeView />
-      {:else if view === 'presets'}
-        <PresetTreeView />
-      {:else if view === 'packs'}
-        <ExtensionsView />
-      {:else if view === 'saves'}
-        <SavesTreeView {onSavePatch} />
-      {:else if view === 'help'}
-        <HelpView />
-      {:else if view === 'samples'}
-        <SampleSearchView />
-      {:else if view === 'preview'}
-        <AppPreviewView {onRequestApiKey} {onOpenPatchToApp} />
-      {/if}
-    </div>
+    {#if view === 'chat'}
+      <!-- Chat needs its own internal scroll, so we skip overflow-y-auto here -->
+      <div class="min-h-0 flex-1">
+        <ChatView />
+      </div>
+    {:else}
+      <div class="flex-1 overflow-y-auto">
+        {#if view === 'files'}
+          <FileTreeView />
+        {:else if view === 'presets'}
+          <PresetTreeView />
+        {:else if view === 'packs'}
+          <ExtensionsView />
+        {:else if view === 'saves'}
+          <SavesTreeView {onSavePatch} />
+        {:else if view === 'help'}
+          <HelpView />
+        {:else if view === 'samples'}
+          <SampleSearchView />
+        {:else if view === 'preview'}
+          <AppPreviewView {onRequestApiKey} {onOpenPatchToApp} />
+        {/if}
+      </div>
+    {/if}
 
     <!-- Resize handle (desktop only) -->
     <div
