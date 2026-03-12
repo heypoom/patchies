@@ -1,4 +1,4 @@
-# AI Experiments
+# AI Features
 
 > **Security Warning**: API keys are stored in browser and can be stolen by malicious patches you open. Use a separate API key with strict budget limits. _Never load patches from strangers when an API key is set!_
 >

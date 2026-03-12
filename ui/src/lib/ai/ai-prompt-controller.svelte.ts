@@ -12,14 +12,7 @@ import { toast } from 'svelte-sonner';
 import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
 import type { AiModeContext, AiModeResult, AiPromptMode } from './modes/types';
 import { getModeDescriptor } from './modes/descriptors';
-import { replaceResolver } from './modes/replace-resolver';
-import { fixErrorResolver } from './modes/fix-error-resolver';
-import { createConsumerResolver } from './modes/create-consumer-resolver';
-import { createProducerResolver } from './modes/create-producer-resolver';
-import { decomposeResolver } from './modes/decompose-resolver';
-import { resolveObjectFromPrompt } from './single-object-resolver';
-import { resolveMultipleObjectsFromPrompt } from './multi-object-resolver';
-import { editObjectFromPrompt } from './edit-object-resolver';
+import { runModeResolver } from './modes/run-resolver';
 
 export interface AiPromptCallbacks {
   onInsertObject: (type: string, data: Record<string, unknown>) => void;
@@ -84,57 +77,6 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
     }
   }
 
-  async function runLegacyResolver(signal: AbortSignal): Promise<AiModeResult> {
-    if (mode === 'single') {
-      const result = await resolveObjectFromPrompt(
-        promptText,
-        (objectType) => {
-          resolvedObjectType = objectType;
-          isGeneratingConfig = true;
-        },
-        signal,
-        onThinking
-      );
-      if (!result) throw new Error('Could not resolve object from prompt');
-      return { kind: 'single', type: result.type, data: result.data as Record<string, unknown> };
-    }
-
-    if (mode === 'multi') {
-      const result = await resolveMultipleObjectsFromPrompt(
-        promptText,
-        (objectTypes) => {
-          resolvedObjectType = Array.from(new Set(objectTypes)).join(', ');
-          isGeneratingConfig = true;
-        },
-        signal,
-        onThinking
-      );
-      if (!result || result.nodes.length === 0)
-        throw new Error('Could not resolve objects from prompt');
-      return { kind: 'multi', nodes: result.nodes, edges: result.edges };
-    }
-
-    if (mode === 'edit') {
-      const { selectedNode } = context;
-      if (!selectedNode) throw new Error('No node selected for edit');
-      const result = await editObjectFromPrompt(
-        promptText,
-        selectedNode.type ?? 'unknown',
-        (selectedNode.data as Record<string, unknown>) ?? {},
-        signal,
-        onThinking
-      );
-      if (!result) throw new Error('Could not edit object');
-      return {
-        kind: 'edit',
-        nodeId: selectedNode.id,
-        data: result.data as Record<string, unknown>
-      };
-    }
-
-    throw new Error(`Unhandled mode: ${mode}`);
-  }
-
   // ── Public API ───────────────────────────────────────────────────────────
   return {
     get mode() {
@@ -196,57 +138,14 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
       abortController = current;
 
       try {
-        let result: AiModeResult;
-
-        // Route to the appropriate resolver
-        switch (mode) {
-          case 'single':
-          case 'multi':
-          case 'edit':
-            result = await runLegacyResolver(current.signal);
-            break;
-          case 'replace':
-            result = await replaceResolver(
-              promptText,
-              context,
-              current.signal,
-              onThinking,
-              onProgress
-            );
-            break;
-          case 'fix-error':
-            result = await fixErrorResolver(promptText, context, current.signal, onThinking);
-            break;
-          case 'create-consumer':
-            result = await createConsumerResolver(
-              promptText,
-              context,
-              current.signal,
-              onThinking,
-              onProgress
-            );
-            break;
-          case 'create-producer':
-            result = await createProducerResolver(
-              promptText,
-              context,
-              current.signal,
-              onThinking,
-              onProgress
-            );
-            break;
-          case 'decompose':
-            result = await decomposeResolver(
-              promptText,
-              context,
-              current.signal,
-              onThinking,
-              onProgress
-            );
-            break;
-          default:
-            throw new Error(`Unknown mode: ${mode}`);
-        }
+        const result = await runModeResolver(
+          mode,
+          promptText,
+          context,
+          current.signal,
+          onThinking,
+          onProgress
+        );
 
         applyResult(result);
         return true; // signal success to component (so it can close)

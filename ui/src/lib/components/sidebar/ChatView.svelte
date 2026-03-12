@@ -2,25 +2,52 @@
   import { MessageSquare, Send, Trash2 } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import { selectedNodeInfo } from '../../../stores/ui.store';
-  import { streamChatMessage, type ChatMessage } from '$lib/ai/chat/resolver';
+  import {
+    streamChatMessage,
+    type ChatMessage,
+    type ChatAction,
+    type ChatNode
+  } from '$lib/ai/chat/resolver';
+  import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
+  import ActionCard from './ActionCard.svelte';
 
-  let messages = $state<ChatMessage[]>([]);
+  let {
+    aiCallbacks,
+    getNodeById
+  }: {
+    aiCallbacks?: AiPromptCallbacks;
+    getNodeById?: (nodeId: string) => ChatNode | undefined;
+  } = $props();
+
+  interface ThreadMessage {
+    role: 'user' | 'model';
+    content: string;
+    thinking?: string;
+    actionId?: string;
+  }
+
+  let messages = $state<ThreadMessage[]>([]);
+  let actions = $state<Map<string, ChatAction>>(new Map());
   let inputText = $state('');
   let isLoading = $state(false);
   let streamingText = $state('');
   let thinkingText = $state('');
+  let pendingActionId = $state<string | null>(null);
   let abortController: AbortController | null = $state(null);
   let messagesEl: HTMLDivElement | undefined = $state();
 
   const nodeContext = $derived(
     $selectedNodeInfo
-      ? { nodeType: $selectedNodeInfo.type, nodeData: $selectedNodeInfo.data }
+      ? {
+          nodeId: $selectedNodeInfo.id,
+          nodeType: $selectedNodeInfo.type,
+          nodeData: $selectedNodeInfo.data
+        }
       : null
   );
 
   $effect(() => {
-    // Re-run when messages or streamingText change, scroll after DOM update
     void messages;
     void streamingText;
     setTimeout(() => {
@@ -28,21 +55,32 @@
     }, 0);
   });
 
+  function updateActionState(id: string, state: 'applied' | 'dismissed') {
+    const action = actions.get(id);
+    if (!action) return;
+    actions = new Map(actions).set(id, { ...action, state });
+  }
+
   async function handleSubmit() {
     if (!inputText.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: inputText.trim() };
-    const nextMessages = [...messages, userMessage];
-    messages = nextMessages;
+    const userContent = inputText.trim();
+    const chatHistory: ChatMessage[] = [
+      ...messages.map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user', content: userContent }
+    ];
+
+    messages = [...messages, { role: 'user', content: userContent }];
     inputText = '';
     isLoading = true;
     streamingText = '';
     thinkingText = '';
+    pendingActionId = null;
     abortController = new AbortController();
 
     try {
       const fullText = await streamChatMessage(
-        nextMessages,
+        chatHistory,
         nodeContext,
         (chunk) => {
           streamingText += chunk;
@@ -50,15 +88,28 @@
         abortController.signal,
         (thought) => {
           thinkingText += thought;
-        }
+        },
+        getNodeById,
+        aiCallbacks
+          ? (action) => {
+              actions = new Map(actions).set(action.id, action);
+              pendingActionId = action.id;
+            }
+          : undefined
       );
 
       messages = [
-        ...nextMessages,
-        { role: 'model', content: fullText, thinking: thinkingText || undefined }
+        ...messages,
+        {
+          role: 'model',
+          content: fullText,
+          thinking: thinkingText || undefined,
+          actionId: pendingActionId ?? undefined
+        }
       ];
       streamingText = '';
       thinkingText = '';
+      pendingActionId = null;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       if (message !== 'Request cancelled') {
@@ -66,6 +117,7 @@
       }
       streamingText = '';
       thinkingText = '';
+      pendingActionId = null;
     } finally {
       isLoading = false;
       abortController = null;
@@ -79,6 +131,7 @@
 
   function handleClear() {
     messages = [];
+    actions = new Map();
     streamingText = '';
   }
 
@@ -140,7 +193,15 @@
                 </div>
               </details>
             {/if}
-            <MarkdownContent markdown={message.content} />
+            {#if message.content}
+              <MarkdownContent markdown={message.content} />
+            {/if}
+            {#if message.actionId}
+              {@const action = actions.get(message.actionId)}
+              {#if action && aiCallbacks}
+                <ActionCard {action} callbacks={aiCallbacks} onStateChange={updateActionState} />
+              {/if}
+            {/if}
           </div>
         </div>
       {/if}
@@ -157,21 +218,28 @@
         <div class="min-w-0 flex-1">
           {#if streamingText}
             <MarkdownContent markdown={streamingText} />
-          {:else}
-            <span class="text-xs text-zinc-500">Thinking...</span>
           {/if}
 
           {#if thinkingText}
-            <details class="mt-2">
+            <details>
               <summary
                 class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
               >
                 Thinking
               </summary>
+
               <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
-                {thinkingText}
+                <MarkdownContent markdown={thinkingText} />
               </div>
             </details>
+          {/if}
+
+          <!-- ActionCard visible while response is still streaming -->
+          {#if pendingActionId}
+            {@const action = actions.get(pendingActionId)}
+            {#if action && aiCallbacks}
+              <ActionCard {action} callbacks={aiCallbacks} onStateChange={updateActionState} />
+            {/if}
           {/if}
         </div>
       </div>
