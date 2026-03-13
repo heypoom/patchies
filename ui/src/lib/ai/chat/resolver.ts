@@ -109,70 +109,144 @@ export async function streamChatMessage(
     }
   }
 
-  const contents = messages.map((msg) => ({
+  const contents: { role: string; parts: Record<string, unknown>[] }[] = messages.map((msg) => ({
     role: msg.role,
     parts: [{ text: msg.content }]
   }));
 
-  const toolDeclarations = onAction ? buildCanvasToolDeclarations() : [];
-  const tools = toolDeclarations.length > 0 ? [{ functionDeclarations: toolDeclarations }] : [];
+  const GET_OBJECT_INSTRUCTIONS = 'get_object_instructions';
 
-  const response = await ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
-    contents,
-    config: {
-      systemInstruction,
-      thinkingConfig: { includeThoughts: true },
-      ...(tools.length > 0 ? { tools } : {})
+  const contextToolDeclaration = {
+    name: GET_OBJECT_INSTRUCTIONS,
+    description:
+      'Fetch detailed instructions and API reference for a specific Patchies object type. Call this before writing code for a type you need more details about.',
+    parameters: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          description: 'The object type (e.g. "p5", "glsl", "tone~", "strudel")'
+        }
+      },
+      required: ['type']
     }
-  });
+  };
+
+  const canvasDeclarations = onAction ? buildCanvasToolDeclarations() : [];
+  const tools = [{ functionDeclarations: [contextToolDeclaration, ...canvasDeclarations] }];
 
   let fullText = '';
 
-  for await (const chunk of response) {
-    if (signal?.aborted) {
-      throw new Error('Request cancelled');
-    }
+  // Multi-turn loop: runs until the model produces a pure text response (no function calls)
+  while (true) {
+    if (signal?.aborted) throw new Error('Request cancelled');
 
-    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-      if (part.thought) {
-        if (part.text && onThinking) onThinking(part.text);
-      } else if (part.functionCall && onAction) {
-        // Tool call — run the resolver eagerly, surface result as ActionCard
-        const toolName = part.functionCall.name ?? '';
-        const args = (part.functionCall.args ?? {}) as Record<string, unknown>;
-        const mode = toolNameToMode(toolName);
-        const context = buildContextFromArgs(mode, args, getNodeById);
+    const stream = await ai.models.generateContentStream({
+      model: 'gemini-3-flash-preview',
+      contents,
+      config: {
+        systemInstruction,
+        thinkingConfig: { includeThoughts: true },
+        tools
+      }
+    });
 
-        try {
-          const result = await runModeResolver(
-            mode,
-            (args.prompt as string) ?? '',
-            context,
-            signal ?? new AbortController().signal,
-            () => {},
-            () => {}
-          );
+    // Collect ALL parts (including thought parts) for contents — Gemini requires thought_signature
+    // to be preserved in the model turn when there are function calls (thinking mode).
+    const turnParts: Record<string, unknown>[] = [];
 
-          onAction({
-            id: crypto.randomUUID(),
-            mode,
-            descriptor: getModeDescriptor(mode),
-            result,
-            state: 'pending'
-          });
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : 'Tool call failed';
-          const errText = `\n\n_Canvas action failed (${toolName}): ${msg}_`;
+    for await (const chunk of stream) {
+      if (signal?.aborted) throw new Error('Request cancelled');
 
-          onChunk(errText);
-          fullText += errText;
+      for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+        if (part.thought) {
+          if (part.text && onThinking) {
+            onThinking(part.text);
+          }
+
+          turnParts.push(part as Record<string, unknown>);
+        } else if (part.functionCall) {
+          // Preserve the full part — thought_signature lives at the Part level, not inside functionCall
+          turnParts.push(part as Record<string, unknown>);
+        } else if (part.text) {
+          fullText += part.text;
+          onChunk(part.text);
+
+          turnParts.push({ text: part.text });
         }
-      } else if (part.text) {
-        fullText += part.text;
-        onChunk(part.text);
       }
     }
+
+    const functionCallParts = turnParts.filter((p) => 'functionCall' in p) as {
+      functionCall: { name?: string; args?: Record<string, unknown> };
+    }[];
+
+    if (functionCallParts.length === 0) break;
+
+    // Add model turn to contents (excluding thought parts — Gemini doesn't accept them back)
+    contents.push({ role: 'model', parts: turnParts });
+
+    const contextCalls = functionCallParts.filter(
+      (p) => p.functionCall.name === GET_OBJECT_INSTRUCTIONS
+    );
+
+    const canvasCalls = functionCallParts.filter(
+      (p) => p.functionCall.name !== GET_OBJECT_INSTRUCTIONS
+    );
+
+    // Canvas tool calls are terminal — resolve and surface as ActionCards
+    for (const { functionCall } of canvasCalls) {
+      if (!onAction) continue;
+
+      const toolName = functionCall.name ?? '';
+      const args = (functionCall.args ?? {}) as Record<string, unknown>;
+      const mode = toolNameToMode(toolName);
+      const context = buildContextFromArgs(mode, args, getNodeById);
+
+      try {
+        const result = await runModeResolver(
+          mode,
+          (args.prompt as string) ?? '',
+          context,
+          signal ?? new AbortController().signal,
+          () => {},
+          () => {}
+        );
+
+        onAction({
+          id: crypto.randomUUID(),
+          mode,
+          descriptor: getModeDescriptor(mode),
+          result,
+          state: 'pending'
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Tool call failed';
+        const errText = `\n\n_Canvas action failed (${toolName}): ${msg}_`;
+
+        onChunk(errText);
+        fullText += errText;
+      }
+    }
+
+    if (contextCalls.length === 0) break;
+
+    // Respond to context-fetching calls and loop for continuation
+    const functionResponses = contextCalls.map(({ functionCall }) => {
+      const type = (functionCall.args?.type as string) ?? '';
+
+      const instructions =
+        getObjectSpecificInstructions(type) || `No specific instructions found for "${type}".`;
+
+      return {
+        functionResponse: {
+          name: GET_OBJECT_INSTRUCTIONS,
+          response: { instructions }
+        }
+      };
+    });
+
+    contents.push({ role: 'user', parts: functionResponses });
   }
 
   return fullText;
