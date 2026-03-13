@@ -465,6 +465,15 @@
     <!-- Footer -->
     <div class="flex items-center justify-between border-t border-zinc-700 px-4 py-3">
       <div class="text-xs text-zinc-500">
+        {#if !ctrl.isLoading && ctrl.context.selectedNode}
+          {@const d = ctrl.context.selectedNode.data as Record<string, unknown>}
+          {@const name =
+            (d?.name as string) || (d?.title as string) || ctrl.context.selectedNode.type}
+          {#if name}
+            <div class="mb-0.5 text-xs text-zinc-400">Selected: "{name}"</div>
+          {/if}
+        {/if}
+
         {#if ctrl.isLoading}
           <div class="flex items-center gap-2">
             <Loader class="h-3 w-3 animate-spin" />
