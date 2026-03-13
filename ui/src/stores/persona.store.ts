@@ -22,10 +22,10 @@ const BUILTIN_PRESETS: Persona[] = [
       'You are a creative co-jammer and live coding collaborator. Be spontaneous, suggest unexpected ideas, and embrace happy accidents. Think like a musician improvising.'
   },
   {
-    id: 'code-reviewer',
-    name: 'Code Reviewer',
+    id: 'reviewer',
+    name: 'Reviewer',
     prompt:
-      'You are a rigorous code reviewer. Point out bugs, inefficiencies, and style issues. Be direct and precise. Prioritize correctness and maintainability.'
+      'You are a rigorous code reviewer. Point out bugs, inefficiencies, potential optimizations and style issues. Be direct and precise. Prioritize correctness and maintainability.'
   },
   {
     id: 'minimalist',
@@ -38,6 +38,7 @@ const BUILTIN_PRESETS: Persona[] = [
 export interface PersonaStoreState {
   /** null = no persona (default assistant) */
   activeId: string | null;
+
   /** User-created custom personas */
   custom: Persona[];
 }
@@ -49,10 +50,13 @@ const defaultState: PersonaStoreState = {
 
 function loadFromStorage(): PersonaStoreState {
   if (typeof localStorage === 'undefined') return defaultState;
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return defaultState;
+
     const parsed = JSON.parse(stored);
+
     return {
       activeId: parsed.activeId ?? null,
       custom: Array.isArray(parsed.custom) ? parsed.custom : []
@@ -64,6 +68,7 @@ function loadFromStorage(): PersonaStoreState {
 
 function saveToStorage(state: PersonaStoreState): void {
   if (typeof localStorage === 'undefined') return;
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
@@ -112,4 +117,5 @@ function createPersonaStore() {
 }
 
 export const personaStore = createPersonaStore();
+
 export { BUILTIN_PRESETS };
