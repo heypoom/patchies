@@ -10,7 +10,8 @@
     ChevronDown,
     ChevronUp,
     Music,
-    MessageSquare
+    MessageSquare,
+    Activity
   } from '@lucide/svelte/icons';
 
   import FileTreeView from './FileTreeView.svelte';
@@ -21,6 +22,7 @@
   import AppPreviewView from './AppPreviewView.svelte';
   import SampleSearchView from './SampleSearchView.svelte';
   import ChatSessionsPanel from './ChatSessionsPanel.svelte';
+  import ProfilerView from './ProfilerView.svelte';
   import { usePreviewTab } from './usePreviewTab.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
@@ -68,7 +70,8 @@
   const expandableItems = [
     { id: 'samples', icon: Music, title: 'Samples' },
     { id: 'chat', icon: MessageSquare, title: 'AI Chat' },
-    { id: 'preview', icon: AppWindow, title: 'Patch to App' }
+    { id: 'preview', icon: AppWindow, title: 'Patch to App' },
+    { id: 'profiler', icon: Activity, title: 'Profiler' }
   ];
 
   // Preview tab promotion logic
@@ -83,6 +86,7 @@
   // Tracks whether expandable views have been promoted to the top bar
   let isSamplesPromoted = $derived(view === 'samples');
   let isChatPromoted = $derived(view === 'chat');
+  let isProfilerPromoted = $derived(view === 'profiler');
 
   function handleExpandableItemClick(id: SidebarView) {
     if (id === 'preview') {
@@ -203,6 +207,23 @@
             </Tooltip.Root>
           {/if}
 
+          <!-- Promoted profiler button (when active) -->
+          {#if isProfilerPromoted}
+            <Tooltip.Root delayDuration={300}>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1.5 transition-colors {view === 'profiler'
+                    ? 'bg-zinc-700 text-zinc-200'
+                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+                  onclick={() => (view = 'profiler')}
+                >
+                  <Activity class="h-4 w-4" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">Profiler</Tooltip.Content>
+            </Tooltip.Root>
+          {/if}
+
           <!-- Expand/collapse chevron -->
           <Tooltip.Root delayDuration={300}>
             <Tooltip.Trigger>
@@ -236,7 +257,7 @@
       {#if isExpanded}
         <div class="flex items-center gap-1 border-t border-zinc-800 px-2 py-1.5">
           {#each expandableItems as item}
-            {#if (!previewTab.isPromoted || item.id !== 'preview') && (!isSamplesPromoted || item.id !== 'samples') && (!isChatPromoted || item.id !== 'chat')}
+            {#if (!previewTab.isPromoted || item.id !== 'preview') && (!isSamplesPromoted || item.id !== 'samples') && (!isChatPromoted || item.id !== 'chat') && (!isProfilerPromoted || item.id !== 'profiler')}
               <button
                 class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
                 onclick={() => handleExpandableItemClick(item.id as SidebarView)}
@@ -248,7 +269,7 @@
             {/if}
           {/each}
 
-          {#if previewTab.isPromoted && isSamplesPromoted && isChatPromoted}
+          {#if previewTab.isPromoted && isSamplesPromoted && isChatPromoted && isProfilerPromoted}
             <span class="text-xs text-zinc-600 italic">No more items</span>
           {/if}
         </div>
@@ -261,7 +282,12 @@
       <ChatSessionsPanel {aiCallbacks} {getNodeById} {getAllNodes} />
     </div>
 
-    {#if view !== 'chat'}
+    <!-- Profiler is always mounted to preserve recording state across tab switches -->
+    <div class="min-h-0 flex-1 {view === 'profiler' ? '' : 'hidden'}">
+      <ProfilerView />
+    </div>
+
+    {#if view !== 'chat' && view !== 'profiler'}
       <div class="flex-1 overflow-y-auto">
         {#if view === 'files'}
           <FileTreeView />
