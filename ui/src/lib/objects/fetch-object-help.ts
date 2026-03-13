@@ -1,5 +1,6 @@
 import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
+import markedKatex from 'marked-katex-extension';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
 import { HELP_PATCHES_AVAILABLE } from './help-patches-manifest';
@@ -16,7 +17,7 @@ hljs.registerLanguage('js', javascript);
 hljs.registerLanguage('python', python);
 hljs.registerLanguage('glsl', glsl);
 
-// Create and export a marked instance with syntax highlighting
+// Create and export a marked instance with syntax highlighting and KaTeX math support
 export const marked = new Marked(
   markedHighlight({
     emptyLangClass: 'hljs',
@@ -28,7 +29,8 @@ export const marked = new Marked(
 
       return hljs.highlightAuto(code).value;
     }
-  })
+  }),
+  markedKatex({ throwOnError: false, nonStandard: true })
 );
 
 /**
