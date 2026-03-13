@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, X } from '@lucide/svelte/icons';
+  import { Check, ChevronRight, X } from '@lucide/svelte/icons';
   import { match } from 'ts-pattern';
   import { diffLines } from 'diff';
   import type { ChatAction, ChatNode } from '$lib/ai/chat/resolver';
@@ -139,7 +139,12 @@
     ? 'opacity-50'
     : ''}"
 >
-  <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2">
+  <summary
+    class="flex cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden"
+  >
+    <ChevronRight
+      class="h-3 w-3 shrink-0 text-current/50 transition-transform [[open]_&]:rotate-90"
+    />
     <action.descriptor.icon class="h-3 w-3 shrink-0" />
     <span class="flex-1 font-medium">{summary}</span>
 
