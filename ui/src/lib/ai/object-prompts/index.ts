@@ -48,6 +48,7 @@ import { threePrompt } from './three';
 import { threeDomPrompt } from './three.dom';
 import { wgpuPrompt } from './wgpu';
 import { workerPrompt } from './worker';
+import { scopePrompt } from './scope~';
 import { sequencerPrompt } from './sequencer';
 
 /**
@@ -98,7 +99,8 @@ export const objectPrompts: Record<string, string> = {
   'recv.vdo': recvVdoPrompt,
   'bytebeat~': bytebeatPrompt,
   'samplerate~': sampleratePrompt,
-  sequencer: sequencerPrompt
+  sequencer: sequencerPrompt,
+  'scope~': scopePrompt
 };
 
 /**
