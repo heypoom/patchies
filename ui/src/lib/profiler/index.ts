@@ -9,7 +9,6 @@ export type {
   RenderFrameStats,
   ProfilerCategory
 } from './types';
-export { HOT_THRESHOLD_MS } from './types';
 
 /**
  * Extract the node type from a nodeId of the form `${type}-${counter}`.

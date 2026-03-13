@@ -1,23 +1,30 @@
 import type { TimingStats } from './types';
 
-const CAPACITY = 64;
+/** Default capacity — overridden by ProfilerCoordinator based on settings. */
+export const DEFAULT_CAPACITY = 1200;
 
 /**
  * Per-node ring buffer of timing samples.
  * Uses pre-allocated Float64Array — zero allocation in the record() hot path.
  */
 export class ProfilerCollector {
-  private readonly samples = new Float64Array(CAPACITY);
+  private samples: Float64Array;
+  private capacity: number;
   private head = 0;
   private count = 0;
   private messagesSinceFlush = 0;
   private lastFlushTime = performance.now();
 
+  constructor(capacity: number = DEFAULT_CAPACITY) {
+    this.capacity = capacity;
+    this.samples = new Float64Array(capacity);
+  }
+
   record(durationMs: number): void {
     this.samples[this.head] = durationMs;
-    this.head = (this.head + 1) % CAPACITY;
+    this.head = (this.head + 1) % this.capacity;
 
-    if (this.count < CAPACITY) this.count++;
+    if (this.count < this.capacity) this.count++;
 
     this.messagesSinceFlush++;
   }
@@ -39,7 +46,7 @@ export class ProfilerCollector {
     let max = 0;
 
     for (let i = 0; i < this.count; i++) {
-      const idx = (this.head - this.count + i + CAPACITY) % CAPACITY;
+      const idx = (this.head - this.count + i + this.capacity) % this.capacity;
       const v = this.samples[idx];
 
       sorted[i] = v;
@@ -50,7 +57,7 @@ export class ProfilerCollector {
 
     sorted.sort();
 
-    const last = this.samples[(this.head - 1 + CAPACITY) % CAPACITY];
+    const last = this.samples[(this.head - 1 + this.capacity) % this.capacity];
     const p95 = sorted[Math.floor(this.count * 0.95)];
 
     return { avg: sum / this.count, max, p95, last, callsPerSecond };

@@ -1,5 +1,4 @@
-import { ProfilerCollector } from './ProfilerCollector';
-import { HOT_THRESHOLD_MS } from './types';
+import { ProfilerCollector, DEFAULT_CAPACITY } from './ProfilerCollector';
 import type {
   NodeProfileEntry,
   ProfilerCategory,
@@ -8,8 +7,22 @@ import type {
   TimingStats
 } from './types';
 
-const HISTORY_CAPACITY = 120; // 120 × 500ms = 60 seconds
-const FLUSH_INTERVAL_MS = 500;
+const HISTORY_CAPACITY = 120; // ring buffer entries (adjusts with flush interval)
+
+export interface ProfilerConfig {
+  /** Ring buffer capacity per collector (samples). Larger = spikes stay in max longer. */
+  sampleCapacity: number;
+  /** How often stats are flushed and the UI is updated (ms). */
+  flushIntervalMs: number;
+  /** Average ms above which a node is flagged as hot. */
+  hotThresholdMs: number;
+}
+
+export const DEFAULT_CONFIG: ProfilerConfig = {
+  sampleCapacity: DEFAULT_CAPACITY,
+  flushIntervalMs: 500,
+  hotThresholdMs: 2
+};
 
 interface NodeCollectors {
   type: string;
@@ -26,7 +39,7 @@ interface NodeCollectors {
 
 /**
  * Coordinates per-node timing data on the main thread.
- * Aggregates samples every 500ms and maintains a 60-second history ring buffer.
+ * Aggregates samples periodically and maintains a history ring buffer.
  */
 export class ProfilerCoordinator {
   private static instance: ProfilerCoordinator | null = null;
@@ -46,12 +59,47 @@ export class ProfilerCoordinator {
   // Enable-change listeners (used to broadcast to workers)
   private enableListeners: ((enabled: boolean) => void)[] = [];
 
+  // Current configuration
+  private config: ProfilerConfig = { ...DEFAULT_CONFIG };
+
   static getInstance(): ProfilerCoordinator {
     if (!ProfilerCoordinator.instance) {
       ProfilerCoordinator.instance = new ProfilerCoordinator();
     }
 
     return ProfilerCoordinator.instance;
+  }
+
+  /** Get current hot threshold */
+  get hotThresholdMs(): number {
+    return this.config.hotThresholdMs;
+  }
+
+  /** Update profiler configuration. Restarts flush interval if running. */
+  setConfig(partial: Partial<ProfilerConfig>): void {
+    const prev = { ...this.config };
+    Object.assign(this.config, partial);
+
+    // If capacity changed, recreate all collectors
+    if (partial.sampleCapacity && partial.sampleCapacity !== prev.sampleCapacity) {
+      for (const entry of this.nodes.values()) {
+        const newCollectors: Partial<Record<ProfilerCategory, ProfilerCollector>> = {};
+
+        for (const cat of Object.keys(entry.collectors) as ProfilerCategory[]) {
+          newCollectors[cat] = new ProfilerCollector(this.config.sampleCapacity);
+        }
+
+        entry.collectors = newCollectors;
+      }
+    }
+
+    // If flush interval changed and we're running, restart the interval
+    if (partial.flushIntervalMs && partial.flushIntervalMs !== prev.flushIntervalMs) {
+      if (this.intervalId !== null) {
+        clearInterval(this.intervalId);
+        this.intervalId = setInterval(() => this.flush(), this.config.flushIntervalMs);
+      }
+    }
   }
 
   /**
@@ -116,7 +164,7 @@ export class ProfilerCoordinator {
 
     if (this.intervalId !== null) return;
 
-    this.intervalId = setInterval(() => this.flush(), FLUSH_INTERVAL_MS);
+    this.intervalId = setInterval(() => this.flush(), this.config.flushIntervalMs);
   }
 
   /** Stop flushing and clear all collected data. */
@@ -161,7 +209,7 @@ export class ProfilerCoordinator {
     }
 
     if (!entry.collectors[category]) {
-      entry.collectors[category] = new ProfilerCollector();
+      entry.collectors[category] = new ProfilerCollector(this.config.sampleCapacity);
     }
 
     return entry.collectors[category]!;
@@ -170,6 +218,7 @@ export class ProfilerCoordinator {
   private flush(): void {
     const now = performance.now();
     const entries: NodeProfileEntry[] = [];
+    const hotThreshold = this.config.hotThresholdMs;
 
     for (const [nodeId, entry] of this.nodes) {
       const { collectors, type, workerStats } = entry;
@@ -205,7 +254,7 @@ export class ProfilerCoordinator {
       // isHot if any non-init category exceeds threshold
       const isHot = hasActivity
         ? (Object.entries(timings) as [ProfilerCategory, TimingStats][]).some(
-            ([cat, t]) => cat !== 'init' && t.avg > HOT_THRESHOLD_MS
+            ([cat, t]) => cat !== 'init' && t.avg > hotThreshold
           )
         : false;
 

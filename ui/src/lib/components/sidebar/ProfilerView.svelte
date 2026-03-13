@@ -1,15 +1,26 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import { Activity, ChevronDown, ChevronRight, ChevronUp, Crosshair } from '@lucide/svelte/icons';
+  import {
+    Activity,
+    ChevronDown,
+    ChevronRight,
+    ChevronUp,
+    Crosshair,
+    Settings
+  } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import {
     profilerEnabled,
     profilerSnapshot,
-    profilerHistory,
-    HOT_THRESHOLD_MS
+    profilerHistory
   } from '../../../stores/profiler.store';
   import { requestFocusNodeId, nodeLabelsStore } from '../../../stores/ui.store';
-  import { profilerSettings } from '../../../stores/profiler-settings.store';
+  import {
+    profilerSettings,
+    SAMPLE_WINDOW_OPTIONS,
+    FLUSH_INTERVAL_OPTIONS,
+    HOT_THRESHOLD_OPTIONS
+  } from '../../../stores/profiler-settings.store';
   import type { ProfilerCategory, ProfilerSnapshot, TimingStats } from '$lib/profiler/types';
   import { SvelteSet } from 'svelte/reactivity';
 
@@ -234,6 +245,9 @@
 
   // ─── Toggles ────────────────────────────────────────────────────────────────
   let showDevStats = $state(false);
+  let showSettings = $state(false);
+
+  let hotThreshold = $derived($profilerSettings.hotThresholdMs);
 </script>
 
 <div class="flex h-full flex-col">
@@ -285,7 +299,7 @@
         {@const primaryVal = primaryTiming ? getStatValue(primaryTiming) : 0}
         {@const isTimeStat = displayStat !== 'calls/s'}
 
-        {@const isSevere = isTimeStat && primaryVal > HOT_THRESHOLD_MS * 5}
+        {@const isSevere = isTimeStat && primaryVal > hotThreshold * 5}
         {@const isHot = isTimeStat && entry.isHot}
         {@const barPct = Math.min(100, (primaryVal / maxStat) * 100)}
 
@@ -351,8 +365,8 @@
             {@const t = entry.timings[cat]}
             {#if t}
               {@const val = getStatValue(t)}
-              {@const catSevere = isTimeStat && val > HOT_THRESHOLD_MS * 5}
-              {@const catHot = isTimeStat && val > HOT_THRESHOLD_MS}
+              {@const catSevere = isTimeStat && val > hotThreshold * 5}
+              {@const catHot = isTimeStat && val > hotThreshold}
               <span
                 class="font-mono text-[10px] tabular-nums {catSevere
                   ? 'text-red-300'
@@ -371,7 +385,7 @@
           {@const history = $profilerHistory}
           {@const cats = nodeCats(entry.nodeId, history)}
           {@const maxMs = historyMax(entry.nodeId, history)}
-          {@const hotY = maxMs > HOT_THRESHOLD_MS ? valY(HOT_THRESHOLD_MS, maxMs) : null}
+          {@const hotY = maxMs > hotThreshold ? valY(hotThreshold, maxMs) : null}
           {@const histSpanSecs = ((history.length - 1) * 0.5).toFixed(0)}
 
           <div class="border-b border-zinc-800/50 bg-zinc-900/40 px-3 pt-1.5 pb-2">
@@ -469,8 +483,8 @@
                   </span>
 
                   {#if t}
-                    {@const catSevere = t.avg > HOT_THRESHOLD_MS * 5}
-                    {@const catHot = t.avg > HOT_THRESHOLD_MS}
+                    {@const catSevere = t.avg > hotThreshold * 5}
+                    {@const catHot = t.avg > hotThreshold}
                     {@const color = catSevere
                       ? 'text-red-300'
                       : catHot
@@ -529,6 +543,19 @@
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
+                class="cursor-pointer rounded p-0.5 transition-colors {showSettings
+                  ? 'text-zinc-300 hover:text-zinc-100'
+                  : 'text-zinc-600 hover:text-zinc-400'}"
+                onclick={() => (showSettings = !showSettings)}
+              >
+                <Settings class="h-3 w-3" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Profiler settings</Tooltip.Content>
+          </Tooltip.Root>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
                 class="cursor-pointer rounded p-0.5 text-zinc-600 transition-colors hover:text-zinc-400"
                 onclick={() => (showDevStats = !showDevStats)}
               >
@@ -541,6 +568,65 @@
           </Tooltip.Root>
         </div>
       </div>
+
+      <!-- Settings panel -->
+      {#if showSettings}
+        <div class="mt-1.5 space-y-2 border-t border-zinc-800/60 pt-1.5">
+          <!-- Sample window -->
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-500">Sample window</span>
+            <div class="flex gap-0.5">
+              {#each SAMPLE_WINDOW_OPTIONS as opt (opt)}
+                <button
+                  class="cursor-pointer rounded px-1.5 py-0.5 font-mono tabular-nums transition-colors {$profilerSettings.sampleWindowSec ===
+                  opt
+                    ? 'bg-zinc-700 text-zinc-200'
+                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+                  onclick={() => profilerSettings.setSampleWindow(opt)}
+                >
+                  {opt}s
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <!-- Update rate -->
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-500">Update rate</span>
+            <div class="flex gap-0.5">
+              {#each FLUSH_INTERVAL_OPTIONS as opt (opt)}
+                <button
+                  class="cursor-pointer rounded px-1.5 py-0.5 font-mono tabular-nums transition-colors {$profilerSettings.flushIntervalMs ===
+                  opt
+                    ? 'bg-zinc-700 text-zinc-200'
+                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+                  onclick={() => profilerSettings.setFlushInterval(opt)}
+                >
+                  {opt}ms
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <!-- Hot threshold -->
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-500">Hot threshold</span>
+            <div class="flex gap-0.5">
+              {#each HOT_THRESHOLD_OPTIONS as opt (opt)}
+                <button
+                  class="cursor-pointer rounded px-1.5 py-0.5 font-mono tabular-nums transition-colors {$profilerSettings.hotThresholdMs ===
+                  opt
+                    ? 'bg-zinc-700 text-zinc-200'
+                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+                  onclick={() => profilerSettings.setHotThreshold(opt)}
+                >
+                  {opt}ms
+                </button>
+              {/each}
+            </div>
+          </div>
+        </div>
+      {/if}
 
       {#if showDevStats}
         {@const rf = $profilerSnapshot?.renderFrame}

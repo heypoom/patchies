@@ -1,8 +1,6 @@
 import { writable } from 'svelte/store';
-import { profiler, ProfilerCoordinator, HOT_THRESHOLD_MS } from '$lib/profiler';
+import { profiler, ProfilerCoordinator } from '$lib/profiler';
 import type { ProfilerSnapshot } from '$lib/profiler';
-
-export { HOT_THRESHOLD_MS };
 
 export const profilerEnabled = writable(false);
 export const profilerSnapshot = writable<ProfilerSnapshot | null>(null);

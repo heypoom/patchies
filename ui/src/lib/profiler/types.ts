@@ -43,5 +43,3 @@ export interface ProfilerSnapshot {
   entries: NodeProfileEntry[];
   renderFrame?: RenderFrameStats;
 }
-
-export const HOT_THRESHOLD_MS = 2;
