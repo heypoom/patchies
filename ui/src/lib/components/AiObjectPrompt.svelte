@@ -365,7 +365,7 @@
                     : 'text-zinc-400'}"
                 >
                   <d.icon class="h-3 w-3 shrink-0" />
-                  <span class="flex-1">{d.shortLabel}</span>
+                  <span class="flex-1">{d.label}</span>
                 </button>
               {/each}
             </div>

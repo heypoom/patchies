@@ -61,9 +61,9 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
 
   edit: {
     id: 'edit',
-    label: 'Object Edit',
+    label: 'Edit',
     shortLabel: 'Edit',
-    description: (ctx) => `Editing: ${nodeName(ctx)}`,
+    description: (ctx) => nodeName(ctx),
     placeholder: () => 'e.g., "make it go faster"',
     loadingLabel: 'Editing',
     generatingLabel: () => 'Editing',
@@ -85,9 +85,9 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
 
   replace: {
     id: 'replace',
-    label: 'Object Replace',
-    shortLabel: 'Replace',
-    description: (ctx) => `Replacing: ${nodeName(ctx)}`,
+    label: 'Turn Into',
+    shortLabel: 'Into',
+    description: () => 'Turn object into something else',
     placeholder: (ctx) => `e.g., "Replace this ${ctx.selectedNode?.type || 'object'} with..."`,
     loadingLabel: 'Replacing',
     generatingLabel: (t) => `Replacing with ${t}`,
@@ -111,7 +111,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     id: 'fix-error',
     label: 'Fix Error',
     shortLabel: 'Fix',
-    description: (ctx) => `Fixing: ${nodeName(ctx)}`,
+    description: (ctx) => nodeName(ctx),
     placeholder: () => 'Optional: additional instructions',
     loadingLabel: 'Fixing',
     generatingLabel: () => 'Fixing',
@@ -167,9 +167,9 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
 
   decompose: {
     id: 'decompose',
-    label: 'Decompose',
-    shortLabel: 'Decompose',
-    description: (ctx) => `Decomposing: ${nodeName(ctx)}`,
+    label: 'Split',
+    shortLabel: 'Split',
+    description: () => 'Decompose into multiple objects',
     placeholder: () => 'e.g., "separate drawing and data logic"',
     loadingLabel: 'Decomposing',
     generatingLabel: (t) => `Cooking ${t}`,
@@ -193,7 +193,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     id: 'fork',
     label: 'Fork',
     shortLabel: 'Fork',
-    description: (ctx) => `Forking: ${nodeName(ctx)}`,
+    description: () => 'Make a new object based on this one',
     placeholder: () => 'e.g., "as a canvas node" or "draw spirals instead"',
     loadingLabel: 'Forking',
     generatingLabel: (t) => `Forking ${t}`,
