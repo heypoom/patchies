@@ -4,6 +4,8 @@
  * Handles direct broadcast of messages to all receivers on a channel.
  */
 
+import { profiler } from '$lib/profiler';
+
 export type MessageChannelCallback = (message: unknown, sourceNodeId: string) => void;
 
 interface MessageChannelData {
@@ -49,13 +51,18 @@ export class MessageChannelRegistry {
     const channelData = this.channels.get(channel);
     if (!channelData) return;
 
-    for (const [, callback] of channelData.receivers) {
-      try {
-        callback(message, sourceNodeId);
-      } catch (error) {
-        console.error(`MessageChannelRegistry: Error broadcasting to channel "${channel}":`, error);
+    profiler.measureBroadcast(sourceNodeId, () => {
+      for (const [, callback] of channelData.receivers) {
+        try {
+          callback(message, sourceNodeId);
+        } catch (error) {
+          console.error(
+            `MessageChannelRegistry: Error broadcasting to channel "${channel}":`,
+            error
+          );
+        }
       }
-    }
+    });
   }
 
   /**

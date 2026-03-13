@@ -12,9 +12,11 @@ const HISTORY_CAPACITY = 120; // 120 × 500ms = 60 seconds
 const FLUSH_INTERVAL_MS = 500;
 
 interface NodeCollectors {
+  type: string;
+
   /** Collector per timing category — created on demand */
   collectors: Partial<Record<ProfilerCategory, ProfilerCollector>>;
-  type: string;
+
   /** Latest worker-side TimingStats per category, consumed on each flush */
   workerStats: Partial<Record<ProfilerCategory, TimingStats>>;
 }
@@ -45,6 +47,7 @@ export class ProfilerCoordinator {
     if (!ProfilerCoordinator.instance) {
       ProfilerCoordinator.instance = new ProfilerCoordinator();
     }
+
     return ProfilerCoordinator.instance;
   }
 
@@ -67,10 +70,12 @@ export class ProfilerCoordinator {
     stats: TimingStats
   ): void {
     let entry = this.nodes.get(nodeId);
+
     if (!entry) {
       entry = { collectors: {}, type, workerStats: {} };
       this.nodes.set(nodeId, entry);
     }
+
     entry.workerStats[category] = stats;
   }
 
@@ -88,6 +93,7 @@ export class ProfilerCoordinator {
    * Returns an unsubscribe function — call it to deregister the listener on teardown. */
   onEnableChange(listener: (enabled: boolean) => void): () => void {
     this.enableListeners.push(listener);
+
     return () => {
       const idx = this.enableListeners.indexOf(listener);
       if (idx > -1) this.enableListeners.splice(idx, 1);
@@ -104,7 +110,9 @@ export class ProfilerCoordinator {
   /** Start flushing and delivering snapshots. */
   start(onSnapshot: (snapshot: ProfilerSnapshot) => void): void {
     this.onSnapshot = onSnapshot;
+
     if (this.intervalId !== null) return;
+
     this.intervalId = setInterval(() => this.flush(), FLUSH_INTERVAL_MS);
   }
 
@@ -114,6 +122,7 @@ export class ProfilerCoordinator {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+
     this.nodes.clear();
     this.latestRenderFrame = null;
     this.history.fill(null);
@@ -126,11 +135,13 @@ export class ProfilerCoordinator {
   getHistory(count: number): ProfilerSnapshot[] {
     const result: ProfilerSnapshot[] = [];
     const n = Math.min(count, this.historyCount);
+
     for (let i = 0; i < n; i++) {
       const idx = (this.historyHead - n + i + HISTORY_CAPACITY) % HISTORY_CAPACITY;
       const snap = this.history[idx];
       if (snap) result.push(snap);
     }
+
     return result;
   }
 
@@ -140,13 +151,16 @@ export class ProfilerCoordinator {
     category: ProfilerCategory
   ): ProfilerCollector {
     let entry = this.nodes.get(nodeId);
+
     if (!entry) {
       entry = { collectors: {}, type, workerStats: {} };
       this.nodes.set(nodeId, entry);
     }
+
     if (!entry.collectors[category]) {
       entry.collectors[category] = new ProfilerCollector();
     }
+
     return entry.collectors[category]!;
   }
 
@@ -164,7 +178,9 @@ export class ProfilerCoordinator {
         ProfilerCollector
       ][]) {
         if (!collector) continue;
+
         const stats = collector.flush(now);
+
         if (stats.avg > 0 || stats.callsPerSecond > 0) {
           timings[cat] = stats;
           hasActivity = true;
@@ -174,11 +190,13 @@ export class ProfilerCoordinator {
       // Merge worker-side stats (preserves min/max/callsPerSecond from the worker)
       for (const [cat, stats] of Object.entries(workerStats) as [ProfilerCategory, TimingStats][]) {
         if (!stats) continue;
+
         if (stats.avg > 0 || stats.callsPerSecond > 0) {
           timings[cat] = stats;
           hasActivity = true;
         }
       }
+
       entry.workerStats = {};
 
       if (!hasActivity) continue;
@@ -189,23 +207,29 @@ export class ProfilerCoordinator {
       entries.push({ nodeId, nodeType: type, timings, isHot });
     }
 
-    // Sort by message avg → draw avg → highest other category avg
+    // Sort by message avg → broadcast avg → draw avg → highest other category avg
     entries.sort((a, b) => {
       const aAvg =
         a.timings.message?.avg ??
+        a.timings.broadcast?.avg ??
         a.timings.draw?.avg ??
         Math.max(...Object.values(a.timings).map((t) => t?.avg ?? 0));
+
       const bAvg =
         b.timings.message?.avg ??
+        b.timings.broadcast?.avg ??
         b.timings.draw?.avg ??
         Math.max(...Object.values(b.timings).map((t) => t?.avg ?? 0));
+
       return bAvg - aAvg;
     });
 
     const snapshot: ProfilerSnapshot = {
       timestamp: now,
       entries,
-      ...(this.latestRenderFrame && { renderFrame: this.latestRenderFrame })
+      ...(this.latestRenderFrame && {
+        renderFrame: this.latestRenderFrame
+      })
     };
 
     // Push to history ring buffer

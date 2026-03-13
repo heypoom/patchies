@@ -162,13 +162,9 @@ export class ObjectService {
       }
     }
 
-    if (profiler.enabled) {
-      const t0 = performance.now();
+    profiler.measureMessage(object.nodeId, type, () => {
       object.onMessage?.(data, { ...meta, inletName });
-      profiler.record(object.nodeId, type, 'message', performance.now() - t0);
-    } else {
-      object.onMessage?.(data, { ...meta, inletName });
-    }
+    });
   }
 
   /**

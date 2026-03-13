@@ -29,6 +29,17 @@ export function typeFromNodeId(nodeId: string): string {
 export const profiler = {
   enabled: false,
 
+  /**
+   * Accumulates broadcast callback time during a synchronous onMessage call.
+   * ObjectService resets this before calling onMessage, then subtracts it from
+   * the node's 'message' timing so send nodes don't double-count recv work.
+   */
+  _broadcastTime: 0,
+
+  resetBroadcastTime(): void {
+    this._broadcastTime = 0;
+  },
+
   record(nodeId: string, type: string, category: ProfilerCategory, durationMs: number): void {
     ProfilerCoordinator.getInstance().record(nodeId, type, category, durationMs);
   },
@@ -50,6 +61,50 @@ export const profiler = {
       typeFromNodeId(nodeId),
       category,
       performance.now() - t0
+    );
+  },
+
+  /**
+   * Measure a broadcast callback: records under 'broadcast' for sourceNodeId,
+   * and accumulates elapsed time so callers (e.g. ObjectService) can subtract
+   * it from the sender's 'message' timing to avoid double-counting.
+   */
+  measureBroadcast(sourceNodeId: string, fn: () => void): void {
+    if (!this.enabled) {
+      fn();
+      return;
+    }
+    const t0 = performance.now();
+    fn();
+    const elapsed = performance.now() - t0;
+    ProfilerCoordinator.getInstance().record(
+      sourceNodeId,
+      typeFromNodeId(sourceNodeId),
+      'broadcast',
+      elapsed
+    );
+    this._broadcastTime += elapsed;
+  },
+
+  /**
+   * Measure a node's message handler, automatically subtracting any broadcast
+   * callback time that was accumulated during the call (via measureBroadcast).
+   * This prevents send nodes from double-counting recv work.
+   */
+  measureMessage(nodeId: string, type: string, fn: () => void): void {
+    if (!this.enabled) {
+      fn();
+      return;
+    }
+    this._broadcastTime = 0;
+    const t0 = performance.now();
+    fn();
+    const elapsed = performance.now() - t0;
+    ProfilerCoordinator.getInstance().record(
+      nodeId,
+      type,
+      'message',
+      Math.max(0, elapsed - this._broadcastTime)
     );
   },
 
