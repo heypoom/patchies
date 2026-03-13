@@ -14,6 +14,7 @@ import { currentPatchId } from '../../stores/ui.store';
 import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
+import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { PatchiesEventBus } from '../eventbus/PatchiesEventBus';
 import type {
   RequestWorkerVideoFramesEvent,
@@ -65,6 +66,10 @@ export class GLSystem {
 
   /** Interval ID for transport time sync to worker */
   private transportSyncInterval: ReturnType<typeof setInterval> | null = null;
+
+  /** Tracks channel subscriptions made on behalf of render worker nodes */
+  private renderWorkerChannelSubscriptions = new Map<string, Set<string>>();
+  private channelRegistry = MessageChannelRegistry.getInstance();
 
   public outputSize = DEFAULT_OUTPUT_SIZE;
 
@@ -284,6 +289,36 @@ export class GLSystem {
           nodeId: data.nodeId,
           error: data.error
         });
+      })
+      .with({ type: 'subscribeChannel' }, (data) => {
+        const { nodeId, channel } = data;
+
+        if (!this.renderWorkerChannelSubscriptions.has(nodeId)) {
+          this.renderWorkerChannelSubscriptions.set(nodeId, new Set());
+        }
+
+        this.renderWorkerChannelSubscriptions.get(nodeId)!.add(channel);
+
+        this.channelRegistry.subscribe(channel, nodeId, (msgData, sourceNodeId) => {
+          this.renderWorker.postMessage({
+            type: 'channelMessage',
+            nodeId,
+            channel,
+            data: msgData,
+            sourceNodeId
+          });
+        });
+      })
+      .with({ type: 'unsubscribeChannel' }, (data) => {
+        const { nodeId, channel } = data;
+
+        this.channelRegistry.unsubscribe(channel, nodeId);
+
+        const subs = this.renderWorkerChannelSubscriptions.get(nodeId);
+
+        if (subs) {
+          subs.delete(channel);
+        }
       })
       .with({ type: 'clockCommand' }, (data) => {
         // Handle clock control commands from worker

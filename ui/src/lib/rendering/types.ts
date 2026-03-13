@@ -183,7 +183,9 @@ export type RenderWorkerMessage =
         | { action: 'setBpm'; value: number }
         | { action: 'setTimeSignature'; numerator: number; denominator: number }
         | { action: 'seek'; value: number };
-    };
+    }
+  | { type: 'subscribeChannel'; nodeId: string; channel: string }
+  | { type: 'unsubscribeChannel'; nodeId: string; channel: string };
 
 export type PreviewState = Record<string, boolean>;
 

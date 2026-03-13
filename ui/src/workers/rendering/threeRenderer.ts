@@ -1,7 +1,7 @@
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
-import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
+import type { Message } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
@@ -9,6 +9,7 @@ import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { getFramebuffer } from './utils';
 import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
 import { THREE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+import { WorkerRendererMessageContext } from './WorkerRendererMessageContext';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -30,7 +31,7 @@ export class ThreeRenderer {
 
   public framebuffer: regl.Framebuffer2D | null = null;
 
-  public onMessageCallbacks: MessageCallbackFn[] = [];
+  private msgContext!: WorkerRendererMessageContext;
 
   private sampleRate: number = 44000;
   private animationId: number | null = null;
@@ -62,6 +63,7 @@ export class ThreeRenderer {
     this.config = config;
     this.framebuffer = framebuffer;
     this.renderer = renderer;
+    this.msgContext = new WorkerRendererMessageContext(config.nodeId);
   }
 
   static async create(
@@ -182,7 +184,7 @@ export class ThreeRenderer {
     this.isFFTEnabled = false;
     this.fftDataCache.clear();
     this.fftRequestCache.clear();
-    this.onMessageCallbacks = [];
+    this.msgContext.reset();
 
     // Reset interaction and video output state
     this.setInteraction('interact', true);
@@ -235,9 +237,7 @@ export class ThreeRenderer {
         getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
 
         // Message passing
-        onMessage: (callback: MessageCallbackFn) => {
-          this.onMessageCallbacks.push(callback);
-        },
+        onMessage: this.msgContext.createOnMessageFunction(),
 
         send: this.sendMessage.bind(this),
 
@@ -485,9 +485,11 @@ export class ThreeRenderer {
   }
 
   handleMessage(message: Message) {
-    for (const callback of this.onMessageCallbacks) {
-      callback(message.data, message);
-    }
+    this.msgContext.handleEdgeMessage(message.data, message);
+  }
+
+  handleChannelMessage(channel: string, data: unknown, sourceNodeId: string) {
+    this.msgContext.handleChannelMessage(channel, data, sourceNodeId);
   }
 
   /**

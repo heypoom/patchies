@@ -1300,9 +1300,7 @@ export class FBORenderer {
         const hydraRenderer = this.hydraByNode.get(nodeId);
         if (!hydraRenderer) return;
 
-        for (const callback of hydraRenderer.onMessageCallbacks) {
-          callback(data, message);
-        }
+        hydraRenderer.handleMessage(message);
       })
       .with('canvas', () => {
         const canvasRenderer = this.canvasByNode.get(nodeId);
@@ -1331,6 +1329,28 @@ export class FBORenderer {
         threeRenderer.handleMessage(message);
       })
       .with(P.union('glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo'), () => {})
+      .exhaustive();
+  }
+
+  /** Route a channel message to the renderer for a given node. */
+  sendChannelMessageToNode(nodeId: string, channel: string, data: unknown, sourceNodeId: string) {
+    const node = this.renderGraph?.nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+
+    match(node.type)
+      .with('hydra', () => {
+        this.hydraByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
+      })
+      .with('canvas', () => {
+        this.canvasByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
+      })
+      .with('textmode', () => {
+        this.textmodeByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
+      })
+      .with('three', () => {
+        this.threeByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
+      })
+      .with(P.union('swgl', 'glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo'), () => {})
       .exhaustive();
   }
 

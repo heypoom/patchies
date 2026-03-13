@@ -1,6 +1,7 @@
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
-import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
+import type { Message } from '$lib/messages/MessageSystem';
+import { WorkerRendererMessageContext } from './WorkerRendererMessageContext';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
@@ -31,7 +32,7 @@ export class CanvasRenderer {
   public ctx: OffscreenCanvasRenderingContext2D | null = null;
   public canvasTexture: regl.Texture2D | null = null;
 
-  public onMessageCallbacks: MessageCallbackFn[] = [];
+  private msgContext!: WorkerRendererMessageContext;
 
   private timestamp = performance.now();
   private sampleRate: number = 44000;
@@ -52,6 +53,7 @@ export class CanvasRenderer {
     this.config = config;
     this.framebuffer = framebuffer;
     this.renderer = renderer;
+    this.msgContext = new WorkerRendererMessageContext(config.nodeId);
   }
 
   static async create(
@@ -136,7 +138,7 @@ export class CanvasRenderer {
     this.isFFTEnabled = false;
     this.fftDataCache.clear();
     this.fftRequestCache.clear();
-    this.onMessageCallbacks = [];
+    this.msgContext.reset();
 
     // Reset interaction and video output state
     this.setInteraction('interact', true);
@@ -197,9 +199,7 @@ export class CanvasRenderer {
         // Worker-specific send override (JSRunner defaults use worker-local MessageSystem which has no edges)
         send: this.sendMessage.bind(this),
 
-        onMessage: (callback: MessageCallbackFn) => {
-          this.onMessageCallbacks.push(callback);
-        },
+        onMessage: this.msgContext.createOnMessageFunction(),
 
         // Interaction control methods
         noDrag: () => this.setInteraction('drag', false),
@@ -346,9 +346,11 @@ export class CanvasRenderer {
   }
 
   handleMessage(message: Message) {
-    for (const callback of this.onMessageCallbacks) {
-      callback(message.data, message);
-    }
+    this.msgContext.handleEdgeMessage(message.data, message);
+  }
+
+  handleChannelMessage(channel: string, data: unknown, sourceNodeId: string) {
+    this.msgContext.handleChannelMessage(channel, data, sourceNodeId);
   }
 
   /** Resume animation loop after unpausing */
