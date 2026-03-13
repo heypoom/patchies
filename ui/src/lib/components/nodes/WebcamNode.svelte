@@ -19,6 +19,7 @@
   } from '../../../stores/video.store';
   import { WebCodecsCapture, VideoProfiler, type VideoStats } from '$lib/video';
   import { useNodeDataTracker } from '$lib/history';
+  import { profiler as nodeProfiler } from '$lib/profiler';
 
   // Type definitions for requestVideoFrameCallback (not yet in all TypeScript libs)
   interface VideoFrameCallbackMetadata {
@@ -67,6 +68,9 @@
   let errorMessage = $state<string | null>(null);
   let showSettings = $state(false);
 
+  // Track which pipeline is currently in use (set on capture start)
+  let currentPipeline = $state<'webcodecs' | 'fallback'>('fallback');
+
   // Local form state for device selection
   let deviceId = $state(data.deviceId ?? '');
   let bitmapFrameId: number | undefined;
@@ -76,11 +80,8 @@
   // WebCodecs support - use when available and enabled
   let webCodecsCapture: WebCodecsCapture | null = null;
 
-  // Track which pipeline is currently in use (set on capture start)
-  let currentPipeline = $state<'webcodecs' | 'fallback'>('fallback');
-
   // Video profiling
-  let profiler: VideoProfiler | null = null;
+  let videoProfiler: VideoProfiler | null = null;
   let videoStats = $state<VideoStats | null>(null);
   let statsIntervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -123,8 +124,8 @@
       const actualFrameRate = settings.frameRate ?? 30;
 
       // Reset profiler
-      profiler?.reset();
-      profiler?.setMetadata({
+      videoProfiler?.reset();
+      videoProfiler?.setMetadata({
         width: actualWidth,
         height: actualHeight,
         frameRate: actualFrameRate
@@ -133,21 +134,23 @@
       if ($webCodecsWebcamEnabled) {
         // Use WebCodecs path for better performance
         currentPipeline = 'webcodecs';
-        profiler?.setPipeline('webcodecs');
+        videoProfiler?.setPipeline('webcodecs');
 
         webCodecsCapture = new WebCodecsCapture({
           nodeId,
           onFrame: (bitmap) => {
-            // Track frame for profiling (use performance.now as timestamp)
-            profiler?.recordFrame(performance.now() * 1000);
+            nodeProfiler.measure(nodeId, 'draw', () => {
+              // Track frame for profiling (use performance.now as timestamp)
+              videoProfiler?.recordFrame(performance.now() * 1000);
 
-            if (glSystem.hasOutgoingVideoConnections(nodeId)) {
-              // Transfer bitmap to render worker (ownership transferred, worker will close it)
-              glSystem.setBitmap(nodeId, bitmap);
-            } else {
-              // No connections - close bitmap immediately to prevent memory leak
-              bitmap.close();
-            }
+              if (glSystem.hasOutgoingVideoConnections(nodeId)) {
+                // Transfer bitmap to render worker (ownership transferred, worker will close it)
+                glSystem.setBitmap(nodeId, bitmap);
+              } else {
+                // No connections - close bitmap immediately to prevent memory leak
+                bitmap.close();
+              }
+            });
           },
           onError: (err) => {
             errorMessage = err.message;
@@ -168,7 +171,7 @@
       } else {
         // Fallback to HTMLVideoElement path (Firefox or disabled)
         currentPipeline = 'fallback';
-        profiler?.setPipeline('fallback');
+        videoProfiler?.setPipeline('fallback');
 
         if (videoElement) {
           videoElement.srcObject = stream;
@@ -290,21 +293,23 @@
   ) {
     if (!videoElement || !isCapturing) return;
 
-    // Track frames for profiling using mediaTime
-    if (!isPaused) {
-      profiler?.recordFrame(metadata.mediaTime * 1_000_000, metadata.mediaTime);
+    nodeProfiler.measure(nodeId, 'draw', () => {
+      // Track frames for profiling using mediaTime
+      if (!isPaused) {
+        videoProfiler?.recordFrame(metadata.mediaTime * 1_000_000, metadata.mediaTime);
 
-      // Calculate actual frame rate from metadata (presentedFrames / mediaTime)
-      if (metadata.mediaTime > 0.5 && metadata.presentedFrames > 10) {
-        const calculatedFps = Math.round(metadata.presentedFrames / metadata.mediaTime);
-        profiler?.setMetadata({ frameRate: calculatedFps });
+        // Calculate actual frame rate from metadata (presentedFrames / mediaTime)
+        if (metadata.mediaTime > 0.5 && metadata.presentedFrames > 10) {
+          const calculatedFps = Math.round(metadata.presentedFrames / metadata.mediaTime);
+          videoProfiler?.setMetadata({ frameRate: calculatedFps });
+        }
       }
-    }
 
-    // Only upload to GL when there are connections and not paused
-    if (!isPaused && glSystem.hasOutgoingVideoConnections(nodeId)) {
-      glSystem.setBitmapSource(nodeId, videoElement);
-    }
+      // Only upload to GL when there are connections and not paused
+      if (!isPaused && glSystem.hasOutgoingVideoConnections(nodeId)) {
+        glSystem.setBitmapSource(nodeId, videoElement!);
+      }
+    });
 
     // Schedule next frame callback
     if (isCapturing) {
@@ -319,15 +324,22 @@
    * Less efficient as it runs at display refresh rate rather than video frame rate.
    */
   async function uploadBitmapRAF() {
-    // Track frames for profiling even without connections (to measure capture rate)
-    if (videoElement && isCapturing && !isPaused) {
-      profiler?.recordFrame(performance.now() * 1000);
-    }
+    nodeProfiler.measure(nodeId, 'draw', () => {
+      // Track frames for profiling even without connections (to measure capture rate)
+      if (videoElement && isCapturing && !isPaused) {
+        videoProfiler?.recordFrame(performance.now() * 1000);
+      }
 
-    // Only upload to GL when there are connections
-    if (videoElement && isCapturing && !isPaused && glSystem.hasOutgoingVideoConnections(nodeId)) {
-      glSystem.setBitmapSource(nodeId, videoElement);
-    }
+      // Only upload to GL when there are connections
+      if (
+        videoElement &&
+        isCapturing &&
+        !isPaused &&
+        glSystem.hasOutgoingVideoConnections(nodeId)
+      ) {
+        glSystem.setBitmapSource(nodeId, videoElement);
+      }
+    });
 
     if (isCapturing) {
       bitmapFrameId = requestAnimationFrame(uploadBitmapRAF);
@@ -346,12 +358,12 @@
     glSystem.upsertNode(nodeId, 'img', {});
 
     // Initialize profiler
-    profiler = new VideoProfiler(nodeId);
+    videoProfiler = new VideoProfiler(nodeId);
 
     // Update stats periodically when visible
     statsIntervalId = setInterval(() => {
-      if ($showVideoStats && profiler) {
-        videoStats = profiler.getStats();
+      if ($showVideoStats && videoProfiler) {
+        videoStats = videoProfiler.getStats();
       }
     }, 200);
   });

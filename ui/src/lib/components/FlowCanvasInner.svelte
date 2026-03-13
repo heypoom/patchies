@@ -36,7 +36,8 @@
     audioSourceConnections,
     isCablesVisible,
     connectingFromAcceptsFloat,
-    connectingFromIsAudioParam
+    connectingFromIsAudioParam,
+    requestFocusNodeId
   } from '../../stores/ui.store';
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
@@ -55,6 +56,7 @@
     isValidConnectionBetweenHandles
   } from '$lib/utils/connection-validation';
   import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
+  import { useFocusNode, useNodeLabels } from '$lib/canvas/use-focus-node.svelte';
   import GeminiApiKeyDialog from './dialogs/GeminiApiKeyDialog.svelte';
   import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
   import SavePatchModal from './dialogs/SavePatchModal.svelte';
@@ -278,6 +280,15 @@
       selectedNodeInfo.set(null);
     }
   });
+
+  useFocusNode(
+    () => $requestFocusNodeId,
+    () => nodes,
+    (n) => (nodes = n),
+    fitView
+  );
+
+  useNodeLabels(() => nodes);
 
   function performAutosave() {
     patchManager.performAutosave(isReadOnlyMode);

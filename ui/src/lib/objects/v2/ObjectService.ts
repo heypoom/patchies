@@ -4,6 +4,7 @@ import { logger } from '$lib/utils/logger';
 import { validateMessageToObject } from '$lib/objects/validate-object-message';
 import { registerTextObjects } from './nodes';
 import { MessageContext } from '$lib/messages/MessageContext';
+import { profiler } from '$lib/profiler';
 
 import type { TextObjectV2, MessageMeta } from './interfaces/text-objects';
 import { getObjectType } from '../get-type';
@@ -93,6 +94,7 @@ export class ObjectService {
     // Clean up ObjectContext
     object.context.destroy();
 
+    profiler.unregister(object.nodeId);
     this.objectsById.delete(object.nodeId);
   }
 
@@ -160,7 +162,9 @@ export class ObjectService {
       }
     }
 
-    object.onMessage?.(data, { ...meta, inletName });
+    profiler.measureMessage(object.nodeId, type, () => {
+      object.onMessage?.(data, { ...meta, inletName });
+    });
   }
 
   /**

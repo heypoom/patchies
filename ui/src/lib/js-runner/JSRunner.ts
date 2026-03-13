@@ -1,6 +1,7 @@
 import { getLibName, getModuleNameByNode, isSnippetModule } from './js-module-utils';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { createLLMFunction } from '$lib/ai/google';
+import { profiler, typeFromNodeId } from '$lib/profiler';
 import { debounce } from 'lodash';
 import { createGetVfsUrl, revokeObjectUrls } from '$lib/vfs';
 import { handleCodeError } from './handleCodeError';
@@ -491,6 +492,19 @@ export class JSRunner {
 		`;
 
     const userFunction = new Function(...functionParams, codeWithWrapper);
+
+    if (profiler.enabled && !options.skipMessageContext) {
+      const t0 = performance.now();
+      const result = userFunction(...functionArgs) as Promise<unknown> | unknown;
+      const record = () =>
+        profiler.record(nodeId, typeFromNodeId(nodeId), 'init', performance.now() - t0);
+      if (result instanceof Promise) {
+        result.then(record, record);
+      } else {
+        record();
+      }
+      return result;
+    }
 
     return userFunction(...functionArgs);
   }

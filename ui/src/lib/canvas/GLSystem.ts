@@ -28,6 +28,7 @@ import {
 import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
 import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
+import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 import { Transport, type TransportState } from '$lib/transport';
 
@@ -93,6 +94,12 @@ export class GLSystem {
     this.renderWorker = new RenderWorker();
     this.renderWorker.addEventListener('message', this.handleRenderWorkerMessage.bind(this));
     this.audioAnalysis.onFFTDataReady = this.sendFFTDataToWorker.bind(this);
+
+    // Sync profiler enable/disable state with render worker
+    this.renderWorker.postMessage({ type: 'profilerEnable', enabled: profiler.enabled });
+    profiler.onEnableChange((enabled) => {
+      this.renderWorker.postMessage({ type: 'profilerEnable', enabled });
+    });
 
     // Send initial patchId and subscribe to changes
     this.renderWorker.postMessage({ type: 'setPatchId', patchId: get(currentPatchId) });
@@ -335,7 +342,23 @@ export class GLSystem {
           )
           .with({ action: 'seek' }, ({ value }) => Transport.seek(value))
           .exhaustive();
-      });
+      })
+      .with({ type: 'drawStats' }, (data) => {
+        if (profiler.enabled) {
+          ProfilerCoordinator.getInstance().recordWorkerStats(
+            data.nodeId,
+            typeFromNodeId(data.nodeId),
+            data.category,
+            data.stats
+          );
+        }
+      })
+      .with({ type: 'renderFrameStats' }, (data) => {
+        if (profiler.enabled) {
+          ProfilerCoordinator.getInstance().recordRenderFrameStats(data.stats);
+        }
+      })
+      .otherwise(() => {});
   };
 
   /**

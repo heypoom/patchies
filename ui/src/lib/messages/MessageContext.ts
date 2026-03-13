@@ -3,6 +3,7 @@ import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { logger } from '$lib/utils/logger';
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
 import { MessageChannelRegistry } from './MessageChannelRegistry';
+import { profiler } from '$lib/profiler';
 
 export type SendMessageOptions = {
   /**
@@ -132,18 +133,19 @@ export class MessageContext {
       }
     };
 
-    for (const cb of this.messageCallbacks) {
-      try {
-        const result = cb(data, meta) as unknown;
+    profiler.measure(this.nodeId, 'message', () => {
+      for (const callback of this.messageCallbacks) {
+        try {
+          const result = callback(data, meta) as unknown;
 
-        // Handle async callbacks that return a promise
-        if (result instanceof Promise) {
-          result.catch(handleError);
+          if (result instanceof Promise) {
+            result.catch(handleError);
+          }
+        } catch (error) {
+          handleError(error);
         }
-      } catch (error) {
-        handleError(error);
       }
-    }
+    });
   };
 
   send(data: unknown, options: SendMessageOptions = {}) {
@@ -190,18 +192,20 @@ export class MessageContext {
         }
       };
 
-      try {
-        // Construct meta object compatible with MessageCallbackFn
-        const meta = { source: sourceNodeId, channel };
-        const result = callback(message, meta) as unknown;
+      profiler.measure(this.nodeId, 'message', () => {
+        try {
+          // Construct meta object compatible with MessageCallbackFn
+          const meta = { source: sourceNodeId, channel };
+          const result = callback(message, meta) as unknown;
 
-        // Handle async callbacks that return a promise
-        if (result instanceof Promise) {
-          result.catch(handleError);
+          // Handle async callbacks that return a promise
+          if (result instanceof Promise) {
+            result.catch(handleError);
+          }
+        } catch (error) {
+          handleError(error);
         }
-      } catch (error) {
-        handleError(error);
-      }
+      });
     };
 
     this.channelRegistry.subscribe(channel, this.nodeId, wrappedCallback);
@@ -222,7 +226,12 @@ export class MessageContext {
   // Create the interval function for this node
   createSetIntervalFunction() {
     return (callback: () => void, ms: number) => {
-      const intervalId = this.messageSystem.createInterval(callback, ms);
+      const nodeId = this.nodeId;
+
+      const intervalId = this.messageSystem.createInterval(
+        () => profiler.measure(nodeId, 'interval', callback),
+        ms
+      );
 
       this.intervals.push(intervalId);
       this.onIntervalCallbackRegistered();
@@ -252,7 +261,10 @@ export class MessageContext {
   // Create the requestAnimationFrame function for this node
   createRequestAnimationFrameFunction() {
     return (callback: () => void) => {
-      const animationFrameId = this.messageSystem.createAnimationFrame(callback);
+      const nodeId = this.nodeId;
+      const animationFrameId = this.messageSystem.createAnimationFrame(() =>
+        profiler.measure(nodeId, 'raf', callback)
+      );
 
       this.animationFrames.push(animationFrameId);
       this.onAnimationFrameCallbackRegistered();

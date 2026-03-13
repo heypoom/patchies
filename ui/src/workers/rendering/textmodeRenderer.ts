@@ -197,8 +197,8 @@ export class TextmodeRenderer {
         height: height,
 
         requestAnimationFrame: (callback: FrameRequestCallback) => {
-          this.animationId = requestAnimationFrame(() => {
-            callback(performance.now());
+          this.animationId = requestAnimationFrame((ts) => {
+            this.renderer.drawProfiler.measure(this.config.nodeId, 'draw', () => callback(ts));
           });
 
           return this.animationId;

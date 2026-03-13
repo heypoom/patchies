@@ -39,6 +39,12 @@ export const selectedNodeInfo = writable<{
   data?: Record<string, unknown>;
 } | null>(null);
 
+/** Set to a nodeId to request the canvas to select + pan to that node. Cleared after handled. */
+export const requestFocusNodeId = writable<string | null>(null);
+
+/** Maps nodeId → display label (title/name/expr fallback) for sidebar components. */
+export const nodeLabelsStore = writable<Record<string, string>>({});
+
 // Initialize isAiFeaturesVisible from localStorage (defaults to true)
 const storedAiFeaturesVisible =
   typeof localStorage !== 'undefined' ? localStorage.getItem('ai-features-visible') : null;
@@ -73,7 +79,8 @@ export type SidebarView =
   | 'help'
   | 'preview'
   | 'samples'
-  | 'chat';
+  | 'chat'
+  | 'profiler';
 
 const storedSidebarView =
   typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-sidebar-view') : null;

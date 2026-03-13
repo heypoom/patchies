@@ -4,6 +4,8 @@ import { MessageSystem, type MessageCallbackFn, type Message } from '$lib/messag
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { match } from 'ts-pattern';
 import { JSRunner } from './JSRunner';
+import { profiler, ProfilerCoordinator } from '$lib/profiler';
+import type { ProfilerCategory, TimingStats } from '$lib/profiler';
 import {
   AudioAnalysisSystem,
   type AudioAnalysisFormat,
@@ -46,6 +48,8 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'updateWorkerConnections'; connections: RenderConnection[] }
   // Named channel messages
   | { type: 'channelMessage'; channel: string; data: unknown; sourceNodeId: string }
+  // Profiler control
+  | { type: 'profilerEnable'; enabled: boolean }
 );
 
 // Message types sent from worker to main thread
@@ -55,7 +59,9 @@ export type WorkerResponse = { nodeId: string } & (
       type: 'executionComplete';
       success: boolean;
       error?: string;
+      initDurationMs?: number;
     }
+  | { type: 'profilerStats'; category: ProfilerCategory; stats: TimingStats }
   | {
       type: 'consoleOutput';
       level: 'log' | 'warn' | 'error' | 'debug' | 'info';
@@ -122,6 +128,7 @@ export class WorkerNodeSystem {
   // Global video frame loop (single loop for all worker nodes)
   private globalVideoLoopId: number | null = null;
   private lastGlobalFrameTime = 0;
+  private unsubscribeProfilerEnable: (() => void) | null = null;
 
   constructor() {
     // Subscribe to FFT data updates - forward to all workers that have FFT enabled
@@ -129,6 +136,17 @@ export class WorkerNodeSystem {
 
     // Subscribe to patchId changes and forward to all workers for KV storage scoping
     this.setupPatchIdForwarding();
+
+    // Broadcast profiler enable/disable changes to all active workers
+    this.unsubscribeProfilerEnable = profiler.onEnableChange((enabled) => {
+      for (const [nodeId, instance] of this.workers) {
+        instance.worker.postMessage({
+          type: 'profilerEnable',
+          nodeId,
+          enabled
+        } satisfies WorkerMessage);
+      }
+    });
   }
 
   private setupFFTForwarding() {
@@ -279,6 +297,21 @@ export class WorkerNodeSystem {
       })
       .with({ type: 'unsubscribeChannel' }, (event) => {
         this.handleUnsubscribeChannel(nodeId, event.channel);
+      })
+      .with({ type: 'executionComplete' }, (event) => {
+        if (profiler.enabled && event.initDurationMs != null) {
+          ProfilerCoordinator.getInstance().record(nodeId, 'worker', 'init', event.initDurationMs);
+        }
+      })
+      .with({ type: 'profilerStats' }, (event) => {
+        if (profiler.enabled) {
+          ProfilerCoordinator.getInstance().recordWorkerStats(
+            nodeId,
+            'worker',
+            event.category,
+            event.stats
+          );
+        }
       })
       .otherwise(() => {});
   }
@@ -655,6 +688,13 @@ export class WorkerNodeSystem {
       type: 'setPatchId',
       nodeId,
       patchId: get(currentPatchId)
+    } satisfies WorkerMessage);
+
+    // Send initial profiler state
+    worker.postMessage({
+      type: 'profilerEnable',
+      nodeId,
+      enabled: profiler.enabled
     } satisfies WorkerMessage);
 
     // Set up message handler

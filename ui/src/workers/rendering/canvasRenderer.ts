@@ -173,8 +173,8 @@ export class CanvasRenderer {
             return -1;
           }
 
-          this.animationId = requestAnimationFrame(() => {
-            callback(performance.now());
+          this.animationId = requestAnimationFrame((ts) => {
+            this.renderer.drawProfiler.measure(this.config.nodeId, 'draw', () => callback(ts));
 
             this.drawCanvasToTexture();
           });

@@ -15,9 +15,15 @@ import {
 } from '../shared/directChannelHandler';
 import { PatchStorageService } from '$lib/storage/PatchStorageService';
 import { createKVStore } from '$lib/storage/KVStore';
+import { WorkerProfiler } from '../shared/WorkerProfiler';
 
 // Module storage (synced from main thread)
 const modules = new Map<string, string>();
+
+// Profiler
+const workerProfiler = new WorkerProfiler((nodeId, category, stats) => {
+  self.postMessage({ type: 'profilerStats', nodeId, category, stats });
+});
 
 // Timer and callback tracking per node
 interface NodeState {
@@ -78,9 +84,11 @@ function createNodeState(nodeId: string): NodeState {
   state.directChannel = createDirectChannelHandler({
     nodeId,
     onIncomingMessage: (data, meta) => {
-      for (const cb of state.messageCallbacks) {
-        cb(data, meta);
-      }
+      workerProfiler.measure(nodeId, 'message', () => {
+        for (const callback of state.messageCallbacks) {
+          invokeCallbackSafely(nodeId, () => callback(data, meta));
+        }
+      });
     },
     onError: (error) => {
       // Use handleCodeError for line number extraction if code is available
@@ -188,12 +196,16 @@ function createWorkerContext(nodeId: string) {
     postResponse({ type: 'callbackRegistered', nodeId, callbackType: 'message' });
   };
 
-  const setIntervalFn = (callback: () => void, ms: number): number => {
-    const id = self.setInterval(callback, ms);
+  const createRawInterval = (wrappedCallback: () => void, ms: number): number => {
+    const id = self.setInterval(wrappedCallback, ms);
     state.intervals.push(id);
     postResponse({ type: 'callbackRegistered', nodeId, callbackType: 'interval' });
+
     return id;
   };
+
+  const setIntervalFn = (callback: () => void, ms: number): number =>
+    createRawInterval(() => workerProfiler.measure(nodeId, 'interval', callback), ms);
 
   const setTimeoutFn = (callback: () => void, ms: number): number => {
     const id = self.setTimeout(() => {
@@ -240,10 +252,8 @@ function createWorkerContext(nodeId: string) {
 
   // requestAnimationFrame - not available in workers, but we can use setInterval as fallback
   const requestAnimationFrame = (callback: () => void): number => {
-    // Use ~60fps interval as approximation
-    return setIntervalFn(() => {
-      callback();
-    }, 16);
+    // Use ~60fps interval as approximation, profiled separately as 'raf'
+    return createRawInterval(() => workerProfiler.measure(nodeId, 'raf', callback), 16);
   };
 
   // FFT function - proxied through main thread (same pattern as hydraRenderer.ts)
@@ -379,9 +389,9 @@ function cleanupNode(nodeId: string) {
   if (!state) return;
 
   // Run cleanup callbacks
-  for (const cb of state.cleanupCallbacks) {
+  for (const callback of state.cleanupCallbacks) {
     try {
-      cb();
+      callback();
     } catch {
       // Ignore cleanup errors
     }
@@ -495,8 +505,15 @@ async function executeCode(nodeId: string, processedCode: string) {
 
   try {
     const userFunction = new Function(...functionParams, codeWithWrapper);
-    await userFunction(...functionArgs);
-    postResponse({ type: 'executionComplete', nodeId, success: true });
+    if (workerProfiler.isEnabled) {
+      const t0 = performance.now();
+      await userFunction(...functionArgs);
+      const initDurationMs = performance.now() - t0;
+      postResponse({ type: 'executionComplete', nodeId, success: true, initDurationMs });
+    } else {
+      await userFunction(...functionArgs);
+      postResponse({ type: 'executionComplete', nodeId, success: true });
+    }
   } catch (error) {
     handleCodeError(nodeId, processedCode, error);
     const message = error instanceof Error ? error.message : String(error);
@@ -698,10 +715,13 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     })
     .with({ type: 'incomingMessage' }, ({ data, meta }) => {
       const state = nodeStates.get(nodeId);
+
       if (state?.messageCallbacks.length) {
-        for (const cb of state.messageCallbacks) {
-          invokeCallbackSafely(nodeId, () => cb(data, meta));
-        }
+        workerProfiler.measure(nodeId, 'message', () => {
+          for (const callback of state.messageCallbacks) {
+            invokeCallbackSafely(nodeId, () => callback(data, meta));
+          }
+        });
       }
     })
     .with({ type: 'channelMessage' }, (msg) => {
@@ -710,11 +730,15 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
         data: unknown;
         sourceNodeId: string;
       };
+
       const state = nodeStates.get(nodeId);
       const callback = state?.channelCallbacks.get(channel);
+
       if (callback) {
         const meta = { source: sourceNodeId, channel };
-        invokeCallbackSafely(nodeId, () => callback(data, meta));
+        workerProfiler.measure(nodeId, 'message', () =>
+          invokeCallbackSafely(nodeId, () => callback(data, meta))
+        );
       }
     })
     .with({ type: 'updateModule' }, ({ moduleName, code }) => {
@@ -729,7 +753,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     })
     .with({ type: 'destroy' }, () => {
       const state = nodeStates.get(nodeId);
+
       cleanupNode(nodeId);
+
       state?.directChannel.cleanup();
       nodeStates.delete(nodeId);
     })
@@ -770,17 +796,23 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     })
     .with({ type: 'setWorkerPort' }, (data) => {
       const state = getNodeState(nodeId);
+
       const { targetNodeId, sourceNodeId } = data as {
         targetNodeId?: string;
         sourceNodeId?: string;
       };
+
       state.directChannel.handleSetWorkerPort(event.ports[0], targetNodeId, sourceNodeId);
     })
     .with({ type: 'updateWorkerConnections' }, (data) => {
       const state = getNodeState(nodeId);
+
       state.directChannel.handleUpdateWorkerConnections(
         (data as { connections: RenderConnection[] }).connections
       );
+    })
+    .with({ type: 'profilerEnable' }, ({ enabled }) => {
+      workerProfiler.setEnabled(enabled);
     })
     .otherwise(() => {});
 };

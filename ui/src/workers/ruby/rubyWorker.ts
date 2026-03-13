@@ -11,6 +11,8 @@ import {
   type DirectChannelHandler,
   type RenderConnection
 } from '../shared/directChannelHandler';
+import { WorkerProfiler } from '../shared/WorkerProfiler';
+import type { ProfilerCategory, TimingStats } from '$lib/profiler/types';
 
 // Message types sent from main thread to worker
 export type RubyWorkerMessage = { nodeId: string } & (
@@ -22,6 +24,7 @@ export type RubyWorkerMessage = { nodeId: string } & (
   | { type: 'updateRenderConnections'; connections: RenderConnection[] }
   | { type: 'setWorkerPort'; targetNodeId?: string; sourceNodeId?: string }
   | { type: 'updateWorkerConnections'; connections: RenderConnection[] }
+  | { type: 'profilerEnable'; enabled: boolean }
 );
 
 // Message types sent from worker to main thread
@@ -29,13 +32,14 @@ export type RubyWorkerResponse = { nodeId: string } & (
   | { type: 'ready' }
   | { type: 'vmInitializing' }
   | { type: 'vmReady' }
-  | { type: 'executionComplete'; success: boolean; error?: string }
+  | { type: 'executionComplete'; success: boolean; error?: string; initDurationMs?: number }
   | { type: 'consoleOutput'; level: 'log' | 'warn' | 'error' | 'debug' | 'info'; args: unknown[] }
   | { type: 'sendMessage'; data: unknown; options?: { to?: number; excludeTargets?: string[] } }
   | { type: 'setPortCount'; inletCount: number; outletCount: number }
   | { type: 'setTitle'; title: string }
   | { type: 'callbackRegistered'; callbackType: 'message' }
   | { type: 'flash' }
+  | { type: 'profilerStats'; category: ProfilerCategory; stats: TimingStats }
 );
 
 // Ruby VM type (from @ruby/wasm-wasi)
@@ -51,6 +55,16 @@ interface RubyValue {
 // Global Ruby VM instance (cached across executions)
 let rubyVM: RubyVM | null = null;
 let vmInitPromise: Promise<void> | null = null;
+
+// Profiler
+const workerProfiler = new WorkerProfiler((nodeId, category, stats) => {
+  self.postMessage({
+    type: 'profilerStats',
+    nodeId,
+    category,
+    stats
+  } satisfies RubyWorkerResponse);
+});
 
 // State per node
 interface NodeState {
@@ -70,12 +84,15 @@ function createNodeState(nodeId: string): NodeState {
   state.directChannel = createDirectChannelHandler({
     nodeId,
     onIncomingMessage: (data, meta) => {
-      for (const cb of state.messageCallbacks) {
-        cb(data, meta);
-      }
+      workerProfiler.measure(nodeId, 'message', () => {
+        for (const callback of state.messageCallbacks) {
+          callback(data, meta);
+        }
+      });
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : String(error);
+
       postResponse({
         type: 'consoleOutput',
         nodeId,
@@ -110,6 +127,7 @@ function invokeCallbackSafely(
 ): void {
   const handleError = (error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
+
     postResponse({
       type: 'consoleOutput',
       nodeId,
@@ -153,6 +171,7 @@ async function initRubyVM(nodeId: string): Promise<void> {
       const response = await fetch(
         'https://cdn.jsdelivr.net/npm/@ruby/4.0-wasm-wasi@2.8.1/dist/ruby+stdlib.wasm'
       );
+
       const module = await WebAssembly.compileStreaming(response);
       const { vm } = await DefaultRubyVM(module);
 
@@ -160,6 +179,7 @@ async function initRubyVM(nodeId: string): Promise<void> {
       postResponse({ type: 'vmReady', nodeId });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+
       postResponse({
         type: 'consoleOutput',
         nodeId,
@@ -239,13 +259,14 @@ function cleanupNode(nodeId: string) {
   if (!state) return;
 
   // Run cleanup callbacks
-  for (const cb of state.cleanupCallbacks) {
+  for (const callback of state.cleanupCallbacks) {
     try {
-      cb();
+      callback();
     } catch {
       // Ignore cleanup errors
     }
   }
+
   state.cleanupCallbacks = [];
 
   // Clear message callbacks
@@ -390,14 +411,18 @@ end
 ${code}
 `;
 
+    const t0 = performance.now();
     const result = await rubyVM.evalAsync(wrappedCode);
+    const initDurationMs = workerProfiler.isEnabled ? performance.now() - t0 : undefined;
 
     // Log result if it's not nil/undefined
     if (result !== undefined && result !== null) {
       try {
         const jsResult = result.toJS?.() ?? result.toString();
+
         if (jsResult !== null && jsResult !== undefined && jsResult !== 'nil') {
           const strResult = String(jsResult);
+
           // Don't log nil or undefined results
           if (strResult !== 'nil' && strResult !== 'undefined') {
             ctx.console.log(jsResult);
@@ -408,7 +433,7 @@ ${code}
       }
     }
 
-    postResponse({ type: 'executionComplete', nodeId, success: true });
+    postResponse({ type: 'executionComplete', nodeId, success: true, initDurationMs });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     ctx.console.error(`Ruby error: ${message}`);
@@ -427,10 +452,13 @@ self.onmessage = async (event: MessageEvent<RubyWorkerMessage>) => {
     })
     .with({ type: 'incomingMessage' }, ({ data, meta }) => {
       const state = nodeStates.get(nodeId);
+
       if (state?.messageCallbacks.length) {
-        for (const cb of state.messageCallbacks) {
-          invokeCallbackSafely(nodeId, () => cb(data, meta));
-        }
+        workerProfiler.measure(nodeId, 'message', () => {
+          for (const callback of state.messageCallbacks) {
+            invokeCallbackSafely(nodeId, () => callback(data, meta));
+          }
+        });
       }
     })
     .with({ type: 'cleanup' }, () => {
@@ -439,6 +467,7 @@ self.onmessage = async (event: MessageEvent<RubyWorkerMessage>) => {
     .with({ type: 'destroy' }, () => {
       const state = nodeStates.get(nodeId);
       cleanupNode(nodeId);
+
       state?.directChannel.cleanup();
       nodeStates.delete(nodeId);
     })
@@ -457,6 +486,9 @@ self.onmessage = async (event: MessageEvent<RubyWorkerMessage>) => {
     .with({ type: 'updateWorkerConnections' }, ({ connections }) => {
       const state = getNodeState(nodeId);
       state.directChannel.handleUpdateWorkerConnections(connections);
+    })
+    .with({ type: 'profilerEnable' }, ({ enabled }) => {
+      workerProfiler.setEnabled(enabled);
     })
     .otherwise(() => {});
 };
