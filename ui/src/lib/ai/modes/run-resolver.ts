@@ -3,6 +3,7 @@
  * chat/resolver.ts (tool calls) so resolver logic is never duplicated.
  */
 
+import { match } from 'ts-pattern';
 import { resolveObjectFromPrompt } from '../single-object-resolver';
 import { resolveMultipleObjectsFromPrompt } from '../multi-object-resolver';
 import { editObjectFromPrompt } from '../edit-object-resolver';
@@ -21,8 +22,8 @@ export async function runModeResolver(
   onThinking: (thought: string) => void,
   onProgress?: (status: string) => void
 ): Promise<AiModeResult> {
-  switch (mode) {
-    case 'single': {
+  return match(mode)
+    .with('single', async () => {
       const result = await resolveObjectFromPrompt(
         prompt,
         (objectType) => onProgress?.(objectType),
@@ -34,10 +35,13 @@ export async function runModeResolver(
         throw new Error('Could not resolve object from prompt');
       }
 
-      return { kind: 'single', type: result.type, data: result.data as Record<string, unknown> };
-    }
-
-    case 'multi': {
+      return {
+        kind: 'single' as const,
+        type: result.type,
+        data: result.data as Record<string, unknown>
+      };
+    })
+    .with('multi', async () => {
       const result = await resolveMultipleObjectsFromPrompt(
         prompt,
         (objectTypes) => onProgress?.(Array.from(new Set(objectTypes)).join(', ')),
@@ -49,10 +53,9 @@ export async function runModeResolver(
         throw new Error('Could not resolve objects from prompt');
       }
 
-      return { kind: 'multi', nodes: result.nodes, edges: result.edges };
-    }
-
-    case 'edit': {
+      return { kind: 'multi' as const, nodes: result.nodes, edges: result.edges };
+    })
+    .with('edit', async () => {
       const { selectedNode } = context;
 
       if (!selectedNode) throw new Error('No node selected for edit');
@@ -70,28 +73,21 @@ export async function runModeResolver(
       }
 
       return {
-        kind: 'edit',
+        kind: 'edit' as const,
         nodeId: selectedNode.id,
         data: result.data as Record<string, unknown>
       };
-    }
-
-    case 'replace':
-      return replaceResolver(prompt, context, signal, onThinking, onProgress);
-
-    case 'fix-error':
-      return fixErrorResolver(prompt, context, signal, onThinking);
-
-    case 'create-consumer':
-      return createConsumerResolver(prompt, context, signal, onThinking, onProgress);
-
-    case 'create-producer':
-      return createProducerResolver(prompt, context, signal, onThinking, onProgress);
-
-    case 'decompose':
-      return decomposeResolver(prompt, context, signal, onThinking, onProgress);
-
-    default:
+    })
+    .with('replace', () => replaceResolver(prompt, context, signal, onThinking, onProgress))
+    .with('fix-error', () => fixErrorResolver(prompt, context, signal, onThinking))
+    .with('create-consumer', () =>
+      createConsumerResolver(prompt, context, signal, onThinking, onProgress)
+    )
+    .with('create-producer', () =>
+      createProducerResolver(prompt, context, signal, onThinking, onProgress)
+    )
+    .with('decompose', () => decomposeResolver(prompt, context, signal, onThinking, onProgress))
+    .otherwise(() => {
       throw new Error(`Unknown mode: ${mode}`);
-  }
+    });
 }
