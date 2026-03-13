@@ -237,12 +237,10 @@
 
     {#each messages as message, index (index)}
       {#if message.role === 'user'}
-        <div class="flex justify-end">
-          <div
-            class="max-w-[85%] rounded-lg bg-zinc-800 px-3 py-2 text-xs leading-relaxed text-zinc-200"
-          >
-            <pre class="font-sans whitespace-pre-wrap">{message.content}</pre>
-          </div>
+        <div
+          class="max-w-[90%] rounded border border-zinc-700 bg-zinc-800/60 px-3 py-2 text-xs leading-relaxed text-zinc-200"
+        >
+          <pre class="font-sans whitespace-pre-wrap">{message.content}</pre>
         </div>
       {:else}
         <div class="flex items-start gap-2">
