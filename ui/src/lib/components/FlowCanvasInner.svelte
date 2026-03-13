@@ -177,6 +177,7 @@
     mode: AiPromptMode;
     context: AiModeContext;
     open: boolean;
+    minimized: boolean;
   }
 
   let aiPromptInstances = $state<AiPromptInstance[]>([]);
@@ -432,7 +433,8 @@
         position: { x: Math.max(0, centerX), y: Math.max(0, centerY) },
         mode: pendingAiPromptMode,
         context: pendingAiPromptContext,
-        open: true
+        open: true,
+        minimized: false
       }
     ];
   }
@@ -1283,9 +1285,14 @@
     />
 
     <!-- AI Object Prompt Dialogs — multiple concurrent instances supported -->
-    {#each aiPromptInstances as instance (instance.id)}
+    {#each aiPromptInstances as instance, i (instance.id)}
+      {@const minimizedIndex = aiPromptInstances
+        .slice(0, i)
+        .filter((x) => x.minimized && x.open).length}
       <AiObjectPrompt
         bind:open={instance.open}
+        bind:isMinimized={instance.minimized}
+        {minimizedIndex}
         position={instance.position}
         mode={instance.mode}
         context={instance.context}

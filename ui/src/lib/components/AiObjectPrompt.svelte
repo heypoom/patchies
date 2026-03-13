@@ -12,6 +12,8 @@
 
   let {
     open = $bindable(false),
+    isMinimized = $bindable(false),
+    minimizedIndex = 0,
     position,
     mode: initialMode = 'insert',
     context: initialContext = {},
@@ -21,6 +23,8 @@
     onReplaceObject
   }: {
     open?: boolean;
+    isMinimized?: boolean;
+    minimizedIndex?: number;
     position: { x: number; y: number };
     mode?: AiPromptMode;
     context?: AiModeContext;
@@ -43,7 +47,6 @@
   let isDragging = $state(false);
   let dragOffset = $state({ x: 0, y: 0 });
   let dialogPosition = $state({ x: position.x, y: position.y });
-  let isMinimized = $state(false);
   let isPromptExpanded = $state(false);
   let modeDropdownOpen = $state(false);
 
@@ -274,7 +277,8 @@
   {#if isMinimized && ctrl.isLoading && !($isSidebarOpen && $isMobile)}
     <button
       onclick={handleRestore}
-      class="fixed top-4 right-4 z-50 flex max-w-72 cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {colorClasses.badge}"
+      class="fixed z-50 flex max-w-72 cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {colorClasses.badge}"
+      style="top: {16 + minimizedIndex * 72}px; right: 16px;"
       title="Click to restore AI prompt"
     >
       <div class="min-w-0 flex-1 text-left">
