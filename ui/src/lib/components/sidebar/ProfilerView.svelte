@@ -9,23 +9,13 @@
     HOT_THRESHOLD_MS
   } from '../../../stores/profiler.store';
   import { requestFocusNodeId, nodeLabelsStore } from '../../../stores/ui.store';
-  import { profilerSettings } from '../../../stores/profiler-settings.store';
+  import { profilerSettings, type DisplayStat } from '../../../stores/profiler-settings.store';
   import type { ProfilerCategory, ProfilerSnapshot, TimingStats } from '$lib/profiler/types';
   import { SvelteSet } from 'svelte/reactivity';
 
-  // ─── Display stat selector ─────────────────────────────────────────────────
+  // ─── Display stat helpers ──────────────────────────────────────────────────
 
-  type DisplayStat = 'avg' | 'max' | 'p95' | 'last' | 'calls/s';
-
-  const DISPLAY_STATS: DisplayStat[] = ['avg', 'max', 'p95', 'last', 'calls/s'];
-
-  let displayStat = $state<DisplayStat>('avg');
-
-  function nextDisplayStat() {
-    const index = DISPLAY_STATS.indexOf(displayStat);
-
-    displayStat = DISPLAY_STATS[(index + 1) % DISPLAY_STATS.length];
-  }
+  let displayStat = $derived($profilerSettings.displayStat);
 
   const getStatValue = (t: TimingStats): number =>
     match(displayStat)
@@ -460,7 +450,7 @@
           <Tooltip.Trigger>
             <button
               class="cursor-pointer rounded px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 tabular-nums transition-colors hover:bg-zinc-800 hover:text-zinc-300"
-              onclick={nextDisplayStat}
+              onclick={() => profilerSettings.nextDisplayStat()}
             >
               {displayStat}
             </button>
