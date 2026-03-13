@@ -940,6 +940,16 @@
       return;
     }
 
+    // Toggle: if any idle (non-loading) prompts are open, close them
+    const idleOpenInstances = aiPromptInstances.filter((i) => i.open && !i.isLoading);
+    if (idleOpenInstances.length > 0) {
+      for (const instance of idleOpenInstances) {
+        instance.open = false;
+      }
+
+      return;
+    }
+
     // If a single node is selected, edit it,
     // otherwise create new ones
     if (selectedNodeIds.length === 1) {

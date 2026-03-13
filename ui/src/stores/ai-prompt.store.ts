@@ -37,7 +37,7 @@ export const aiPromptMode = derived(aiPromptStore, ($store) => $store.mode);
 
 // Combined state for button styling
 export const aiButtonState = derived(aiPromptStore, ($store) => ({
-  isActive: $store.isOpen || $store.isLoading,
+  isActive: $store.isOpen && !$store.isLoading,
   isLoading: $store.isLoading,
   mode: $store.mode
 }));

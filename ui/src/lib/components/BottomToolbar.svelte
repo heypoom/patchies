@@ -10,7 +10,6 @@
     PanelLeftOpen,
     PanelLeftClose,
     Link,
-    Loader,
     Save,
     Sparkles,
     Trash2,
@@ -27,6 +26,7 @@
     currentPatchName
   } from '../../stores/ui.store';
   import { aiButtonState } from '../../stores/ai-prompt.store';
+  import { getModeDescriptor } from '$lib/ai/modes/descriptors';
   import { createAndCopyShareLink } from '$lib/save-load/share';
   import { TransportPanel } from './transport';
   import { transportStore } from '../../stores/transport.store';
@@ -126,25 +126,21 @@
     'cursor-pointer rounded bg-blue-600/70 p-2 hover:bg-blue-800/70 flex items-center justify-center';
   const iconClass = 'h-4 w-4 text-zinc-300';
 
-  // AI button classes based on mode
+  // AI button classes based on mode color from descriptor
   const aiButtonClass = $derived(() => {
     if (!$aiButtonState.isActive) return buttonClass;
 
-    return match($aiButtonState.mode)
-      .with(
-        'edit',
-        () =>
-          'cursor-pointer rounded bg-amber-600/70 p-2 hover:bg-amber-700/70 flex items-center justify-center'
-      )
-      .with(
-        'multi',
-        () =>
-          'cursor-pointer rounded bg-blue-600/70 p-2 hover:bg-blue-700/70 flex items-center justify-center'
-      )
-      .otherwise(
-        () =>
-          'cursor-pointer rounded bg-purple-600/70 p-2 hover:bg-purple-700/70 flex items-center justify-center'
-      );
+    const color = getModeDescriptor($aiButtonState.mode).color;
+
+    const bg = match(color)
+      .with('purple', () => 'bg-purple-600/70 hover:bg-purple-700/70')
+      .with('blue', () => 'bg-blue-600/70 hover:bg-blue-700/70')
+      .with('amber', () => 'bg-amber-600/70 hover:bg-amber-700/70')
+      .with('green', () => 'bg-green-600/70 hover:bg-green-700/70')
+      .with('red', () => 'bg-red-600/70 hover:bg-red-700/70')
+      .exhaustive();
+
+    return `cursor-pointer rounded ${bg} p-2 flex items-center justify-center`;
   });
 
   // Menu item for overflow/drawer menus
@@ -182,6 +178,7 @@
               <Trash2 class="h-4 w-4 text-red-400" />
             </button>
           </Tooltip.Trigger>
+
           <Tooltip.Content>Delete (Del)</Tooltip.Content>
         </Tooltip.Root>
       {/if}
@@ -209,6 +206,7 @@
               <Copy class={iconClass} />
             </button>
           </Tooltip.Trigger>
+
           <Tooltip.Content>Copy</Tooltip.Content>
         </Tooltip.Root>
       {/if}
@@ -220,6 +218,7 @@
               <ClipboardPaste class={iconClass} />
             </button>
           </Tooltip.Trigger>
+
           <Tooltip.Content>Paste</Tooltip.Content>
         </Tooltip.Root>
       {/if}
@@ -228,11 +227,7 @@
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button class={aiButtonClass()} onclick={onAiInsertOrEdit}>
-              {#if $aiButtonState.isLoading}
-                <Loader class="{iconClass} animate-spin cursor-not-allowed" />
-              {:else}
-                <Sparkles class={iconClass} />
-              {/if}
+              <Sparkles class={iconClass} />
             </button>
           </Tooltip.Trigger>
           <Tooltip.Content>AI Create/Edit ({isMac ? '⌘I' : 'Ctrl + I'})</Tooltip.Content>
