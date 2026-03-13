@@ -30,8 +30,7 @@ if (typeof window !== 'undefined') {
       });
     } else {
       ProfilerCoordinator.getInstance().stop();
-      profilerSnapshot.set(null);
-      profilerHistory.set([]);
+      // Keep snapshot and history frozen so the user can inspect results
     }
   });
 }

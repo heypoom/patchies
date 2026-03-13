@@ -203,7 +203,7 @@
     </button>
   </div>
 
-  {#if !$profilerEnabled}
+  {#if !$profilerEnabled && !$profilerSnapshot}
     <div class="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
       <Activity class="h-8 w-8 text-zinc-700" />
       <p class="text-xs text-zinc-500">Press Start to begin profiling object processing times.</p>
