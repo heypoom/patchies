@@ -6,11 +6,13 @@ export interface TimingStats {
   callsPerSecond: number;
 }
 
+export type ProfilerCategory = 'init' | 'message' | 'draw' | 'interval' | 'raf';
+
 export interface NodeProfileEntry {
   nodeId: string;
   nodeType: string;
-  processingTime: TimingStats;
-  initTime?: TimingStats;
+  /** Timing per category — only categories with recorded data are present */
+  timings: Partial<Record<ProfilerCategory, TimingStats>>;
   isHot: boolean;
 }
 

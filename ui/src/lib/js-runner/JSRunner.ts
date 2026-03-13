@@ -497,7 +497,7 @@ export class JSRunner {
       const t0 = performance.now();
       const result = userFunction(...functionArgs) as Promise<unknown> | unknown;
       const record = () =>
-        profiler.recordInit(nodeId, typeFromNodeId(nodeId), performance.now() - t0);
+        profiler.record(nodeId, typeFromNodeId(nodeId), 'init', performance.now() - t0);
       if (result instanceof Promise) {
         result.then(record, record);
       } else {

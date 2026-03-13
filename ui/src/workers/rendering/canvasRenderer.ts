@@ -174,7 +174,7 @@ export class CanvasRenderer {
           }
 
           this.animationId = requestAnimationFrame((ts) => {
-            this.renderer.drawProfiler.measure(this.config.nodeId, () => callback(ts));
+            this.renderer.drawProfiler.measure(this.config.nodeId, 'draw', () => callback(ts));
 
             this.drawCanvasToTexture();
           });

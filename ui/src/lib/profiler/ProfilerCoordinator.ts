@@ -1,13 +1,19 @@
 import { ProfilerCollector } from './ProfilerCollector';
 import { HOT_THRESHOLD_MS } from './types';
-import type { NodeProfileEntry, ProfilerSnapshot, RenderFrameStats, TimingStats } from './types';
+import type {
+  NodeProfileEntry,
+  ProfilerCategory,
+  ProfilerSnapshot,
+  RenderFrameStats,
+  TimingStats
+} from './types';
 
 const HISTORY_CAPACITY = 120; // 120 × 500ms = 60 seconds
 const FLUSH_INTERVAL_MS = 500;
 
 interface NodeCollectors {
-  message: ProfilerCollector;
-  init: ProfilerCollector;
+  /** Collector per timing category — created on demand */
+  collectors: Partial<Record<ProfilerCategory, ProfilerCollector>>;
   type: string;
 }
 
@@ -18,7 +24,7 @@ interface NodeCollectors {
 export class ProfilerCoordinator {
   private static instance: ProfilerCoordinator | null = null;
 
-  private collectors = new Map<string, NodeCollectors>();
+  private nodes = new Map<string, NodeCollectors>();
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private onSnapshot: ((snapshot: ProfilerSnapshot) => void) | null = null;
 
@@ -41,41 +47,25 @@ export class ProfilerCoordinator {
   }
 
   /**
-   * Record a message-processing timing sample for a node.
-   * Called from ObjectService / MessageContext — only when profiler.enabled is true.
+   * Record a timing sample for a node under the given category.
    */
-  record(nodeId: string, type: string, durationMs: number): void {
-    this.getOrCreate(nodeId, type).message.record(durationMs);
+  record(nodeId: string, type: string, category: ProfilerCategory, durationMs: number): void {
+    this.getCollector(nodeId, type, category).record(durationMs);
   }
 
   /**
-   * Record an init (code execution) timing sample for a node.
-   * Called from JSRunner after executeJavaScript — only when profiler.enabled is true.
-   */
-  recordInit(nodeId: string, type: string, durationMs: number): void {
-    this.getOrCreate(nodeId, type).init.record(durationMs);
-  }
-
-  /**
-   * Merge worker-side stats into the coordinator.
-   * Called when a worker sends profilerStats or executionComplete with initDurationMs.
+   * Merge a worker-side timing stat into the coordinator.
+   * The worker has already done its own ring-buffer aggregation, so we inject
+   * the avg as a single sample.
    */
   recordWorkerStats(
     nodeId: string,
     type: string,
-    messageStats: TimingStats | null,
-    initDurationMs: number | null
+    category: ProfilerCategory,
+    stats: TimingStats
   ): void {
-    const entry = this.getOrCreate(nodeId, type);
-    if (messageStats !== null) {
-      // Inject the aggregated stats directly by recording the avg as a single sample
-      // (worker has already done its own ring-buffer aggregation)
-      if (messageStats.avg > 0) {
-        entry.message.record(messageStats.avg);
-      }
-    }
-    if (initDurationMs !== null && initDurationMs > 0) {
-      entry.init.record(initDurationMs);
+    if (stats.avg > 0) {
+      this.getCollector(nodeId, type, category).record(stats.avg);
     }
   }
 
@@ -86,7 +76,7 @@ export class ProfilerCoordinator {
 
   /** Remove a node's collectors when the node is deleted. */
   unregister(nodeId: string): void {
-    this.collectors.delete(nodeId);
+    this.nodes.delete(nodeId);
   }
 
   /** Register a listener that fires when the enabled state changes (used to notify workers). */
@@ -114,7 +104,7 @@ export class ProfilerCoordinator {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
-    this.collectors.clear();
+    this.nodes.clear();
     this.latestRenderFrame = null;
     this.history.fill(null);
     this.historyHead = 0;
@@ -134,39 +124,62 @@ export class ProfilerCoordinator {
     return result;
   }
 
-  private getOrCreate(nodeId: string, type: string): NodeCollectors {
-    let entry = this.collectors.get(nodeId);
+  private getCollector(
+    nodeId: string,
+    type: string,
+    category: ProfilerCategory
+  ): ProfilerCollector {
+    let entry = this.nodes.get(nodeId);
     if (!entry) {
-      entry = { message: new ProfilerCollector(), init: new ProfilerCollector(), type };
-      this.collectors.set(nodeId, entry);
+      entry = { collectors: {}, type };
+      this.nodes.set(nodeId, entry);
     }
-    return entry;
+    if (!entry.collectors[category]) {
+      entry.collectors[category] = new ProfilerCollector();
+    }
+    return entry.collectors[category]!;
   }
 
   private flush(): void {
     const now = performance.now();
     const entries: NodeProfileEntry[] = [];
 
-    for (const [nodeId, { message, init, type }] of this.collectors) {
-      const msgStats = message.flush(now);
-      const initStats = init.flush(now);
+    for (const [nodeId, { collectors, type }] of this.nodes) {
+      const timings: Partial<Record<ProfilerCategory, TimingStats>> = {};
+      let hasActivity = false;
 
-      const hasActivity = msgStats.callsPerSecond > 0 || msgStats.avg > 0 || initStats.avg > 0;
+      for (const [cat, collector] of Object.entries(collectors) as [
+        ProfilerCategory,
+        ProfilerCollector
+      ][]) {
+        if (!collector) continue;
+        const stats = collector.flush(now);
+        if (stats.avg > 0 || stats.callsPerSecond > 0) {
+          timings[cat] = stats;
+          hasActivity = true;
+        }
+      }
+
       if (!hasActivity) continue;
 
-      const hasInitData = initStats.avg > 0 || initStats.max > 0;
+      // isHot if any category exceeds threshold
+      const isHot = Object.values(timings).some((t) => t && t.avg > HOT_THRESHOLD_MS);
 
-      entries.push({
-        nodeId,
-        nodeType: type,
-        processingTime: msgStats,
-        ...(hasInitData && { initTime: initStats }),
-        isHot: msgStats.avg > HOT_THRESHOLD_MS
-      });
+      entries.push({ nodeId, nodeType: type, timings, isHot });
     }
 
-    // Sort by avg descending
-    entries.sort((a, b) => b.processingTime.avg - a.processingTime.avg);
+    // Sort by message avg → draw avg → highest other category avg
+    entries.sort((a, b) => {
+      const aAvg =
+        a.timings.message?.avg ??
+        a.timings.draw?.avg ??
+        Math.max(...Object.values(a.timings).map((t) => t?.avg ?? 0));
+      const bAvg =
+        b.timings.message?.avg ??
+        b.timings.draw?.avg ??
+        Math.max(...Object.values(b.timings).map((t) => t?.avg ?? 0));
+      return bAvg - aAvg;
+    });
 
     const snapshot: ProfilerSnapshot = {
       timestamp: now,

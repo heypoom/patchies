@@ -12,7 +12,7 @@ import {
   type RenderConnection
 } from '../shared/directChannelHandler';
 import { WorkerProfiler } from '../shared/WorkerProfiler';
-import type { TimingStats } from '$lib/profiler/types';
+import type { ProfilerCategory, TimingStats } from '$lib/profiler/types';
 
 // Message types sent from main thread to worker
 export type RubyWorkerMessage = { nodeId: string } & (
@@ -39,7 +39,7 @@ export type RubyWorkerResponse = { nodeId: string } & (
   | { type: 'setTitle'; title: string }
   | { type: 'callbackRegistered'; callbackType: 'message' }
   | { type: 'flash' }
-  | { type: 'profilerStats'; messageStats: TimingStats; initDurationMs: null }
+  | { type: 'profilerStats'; category: ProfilerCategory; stats: TimingStats }
 );
 
 // Ruby VM type (from @ruby/wasm-wasi)
@@ -57,12 +57,12 @@ let rubyVM: RubyVM | null = null;
 let vmInitPromise: Promise<void> | null = null;
 
 // Profiler
-const workerProfiler = new WorkerProfiler((nodeId, stats) => {
+const workerProfiler = new WorkerProfiler((nodeId, category, stats) => {
   self.postMessage({
     type: 'profilerStats',
     nodeId,
-    messageStats: stats,
-    initDurationMs: null
+    category,
+    stats
   } satisfies RubyWorkerResponse);
 });
 
@@ -452,7 +452,7 @@ self.onmessage = async (event: MessageEvent<RubyWorkerMessage>) => {
       const state = nodeStates.get(nodeId);
 
       if (state?.messageCallbacks.length) {
-        workerProfiler.measure(nodeId, () => {
+        workerProfiler.measure(nodeId, 'message', () => {
           for (const callback of state.messageCallbacks) {
             invokeCallbackSafely(nodeId, () => callback(data, meta));
           }

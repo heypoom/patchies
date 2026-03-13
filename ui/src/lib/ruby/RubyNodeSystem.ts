@@ -255,13 +255,13 @@ export class RubyNodeSystem {
       })
       .with({ type: 'executionComplete' }, ({ initDurationMs }) => {
         if (profiler.enabled && initDurationMs != null) {
-          ProfilerCoordinator.getInstance().recordInit(nodeId, 'ruby', initDurationMs);
+          ProfilerCoordinator.getInstance().record(nodeId, 'ruby', 'init', initDurationMs);
         }
         // Promise resolution handled by executeCode
       })
-      .with({ type: 'profilerStats' }, ({ messageStats }) => {
+      .with({ type: 'profilerStats' }, ({ category, stats }) => {
         if (profiler.enabled) {
-          ProfilerCoordinator.getInstance().recordWorkerStats(nodeId, 'ruby', messageStats, null);
+          ProfilerCoordinator.getInstance().recordWorkerStats(nodeId, 'ruby', category, stats);
         }
       })
       .otherwise(() => {});

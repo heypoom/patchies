@@ -21,8 +21,8 @@ import { WorkerProfiler } from '../shared/WorkerProfiler';
 const modules = new Map<string, string>();
 
 // Profiler
-const workerProfiler = new WorkerProfiler((nodeId, stats) => {
-  self.postMessage({ type: 'profilerStats', nodeId, messageStats: stats, initDurationMs: null });
+const workerProfiler = new WorkerProfiler((nodeId, category, stats) => {
+  self.postMessage({ type: 'profilerStats', nodeId, category, stats });
 });
 
 // Timer and callback tracking per node
@@ -194,12 +194,16 @@ function createWorkerContext(nodeId: string) {
     postResponse({ type: 'callbackRegistered', nodeId, callbackType: 'message' });
   };
 
-  const setIntervalFn = (callback: () => void, ms: number): number => {
-    const id = self.setInterval(callback, ms);
+  const createRawInterval = (wrappedCallback: () => void, ms: number): number => {
+    const id = self.setInterval(wrappedCallback, ms);
     state.intervals.push(id);
     postResponse({ type: 'callbackRegistered', nodeId, callbackType: 'interval' });
+
     return id;
   };
+
+  const setIntervalFn = (callback: () => void, ms: number): number =>
+    createRawInterval(() => workerProfiler.measure(nodeId, 'interval', callback), ms);
 
   const setTimeoutFn = (callback: () => void, ms: number): number => {
     const id = self.setTimeout(() => {
@@ -246,10 +250,8 @@ function createWorkerContext(nodeId: string) {
 
   // requestAnimationFrame - not available in workers, but we can use setInterval as fallback
   const requestAnimationFrame = (callback: () => void): number => {
-    // Use ~60fps interval as approximation
-    return setIntervalFn(() => {
-      callback();
-    }, 16);
+    // Use ~60fps interval as approximation, profiled separately as 'raf'
+    return createRawInterval(() => workerProfiler.measure(nodeId, 'raf', callback), 16);
   };
 
   // FFT function - proxied through main thread (same pattern as hydraRenderer.ts)
@@ -713,7 +715,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       const state = nodeStates.get(nodeId);
 
       if (state?.messageCallbacks.length) {
-        workerProfiler.measure(nodeId, () => {
+        workerProfiler.measure(nodeId, 'message', () => {
           for (const callback of state.messageCallbacks) {
             invokeCallbackSafely(nodeId, () => callback(data, meta));
           }
@@ -747,7 +749,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     })
     .with({ type: 'destroy' }, () => {
       const state = nodeStates.get(nodeId);
+
       cleanupNode(nodeId);
+
       state?.directChannel.cleanup();
       nodeStates.delete(nodeId);
     })
@@ -788,14 +792,17 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     })
     .with({ type: 'setWorkerPort' }, (data) => {
       const state = getNodeState(nodeId);
+
       const { targetNodeId, sourceNodeId } = data as {
         targetNodeId?: string;
         sourceNodeId?: string;
       };
+
       state.directChannel.handleSetWorkerPort(event.ports[0], targetNodeId, sourceNodeId);
     })
     .with({ type: 'updateWorkerConnections' }, (data) => {
       const state = getNodeState(nodeId);
+
       state.directChannel.handleUpdateWorkerConnections(
         (data as { connections: RenderConnection[] }).connections
       );

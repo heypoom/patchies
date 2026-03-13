@@ -5,7 +5,7 @@ import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { match } from 'ts-pattern';
 import { JSRunner } from './JSRunner';
 import { profiler, ProfilerCoordinator } from '$lib/profiler';
-import type { TimingStats } from '$lib/profiler';
+import type { ProfilerCategory, TimingStats } from '$lib/profiler';
 import {
   AudioAnalysisSystem,
   type AudioAnalysisFormat,
@@ -61,11 +61,7 @@ export type WorkerResponse = { nodeId: string } & (
       error?: string;
       initDurationMs?: number;
     }
-  | {
-      type: 'profilerStats';
-      messageStats: TimingStats;
-      initDurationMs: number | null;
-    }
+  | { type: 'profilerStats'; category: ProfilerCategory; stats: TimingStats }
   | {
       type: 'consoleOutput';
       level: 'log' | 'warn' | 'error' | 'debug' | 'info';
@@ -303,7 +299,7 @@ export class WorkerNodeSystem {
       })
       .with({ type: 'executionComplete' }, (event) => {
         if (profiler.enabled && event.initDurationMs != null) {
-          ProfilerCoordinator.getInstance().recordInit(nodeId, 'worker', event.initDurationMs);
+          ProfilerCoordinator.getInstance().record(nodeId, 'worker', 'init', event.initDurationMs);
         }
       })
       .with({ type: 'profilerStats' }, (event) => {
@@ -311,8 +307,8 @@ export class WorkerNodeSystem {
           ProfilerCoordinator.getInstance().recordWorkerStats(
             nodeId,
             'worker',
-            event.messageStats,
-            event.initDurationMs
+            event.category,
+            event.stats
           );
         }
       })

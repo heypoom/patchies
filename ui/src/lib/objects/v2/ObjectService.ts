@@ -165,7 +165,7 @@ export class ObjectService {
     if (profiler.enabled) {
       const t0 = performance.now();
       object.onMessage?.(data, { ...meta, inletName });
-      profiler.record(object.nodeId, type, performance.now() - t0);
+      profiler.record(object.nodeId, type, 'message', performance.now() - t0);
     } else {
       object.onMessage?.(data, { ...meta, inletName });
     }

@@ -1,7 +1,14 @@
 import { ProfilerCoordinator } from './ProfilerCoordinator';
+import type { ProfilerCategory } from './types';
 
 export { ProfilerCoordinator } from './ProfilerCoordinator';
-export type { TimingStats, NodeProfileEntry, ProfilerSnapshot, RenderFrameStats } from './types';
+export type {
+  TimingStats,
+  NodeProfileEntry,
+  ProfilerSnapshot,
+  RenderFrameStats,
+  ProfilerCategory
+} from './types';
 export { HOT_THRESHOLD_MS } from './types';
 
 /**
@@ -22,20 +29,16 @@ export function typeFromNodeId(nodeId: string): string {
 export const profiler = {
   enabled: false,
 
-  record(nodeId: string, type: string, durationMs: number): void {
-    ProfilerCoordinator.getInstance().record(nodeId, type, durationMs);
-  },
-
-  recordInit(nodeId: string, type: string, durationMs: number): void {
-    ProfilerCoordinator.getInstance().recordInit(nodeId, type, durationMs);
+  record(nodeId: string, type: string, category: ProfilerCategory, durationMs: number): void {
+    ProfilerCoordinator.getInstance().record(nodeId, type, category, durationMs);
   },
 
   /**
-   * Measure a synchronous callback and record its duration.
+   * Measure a synchronous callback and record its duration under the given category.
    * The node type is derived from the nodeId (format: `${type}-${counter}`).
    * When `profiler.enabled` is false, the callback is called directly with no overhead.
    */
-  measure(nodeId: string, fn: () => void): void {
+  measure(nodeId: string, category: ProfilerCategory, fn: () => void): void {
     if (!this.enabled) {
       fn();
       return;
@@ -45,6 +48,7 @@ export const profiler = {
     ProfilerCoordinator.getInstance().record(
       nodeId,
       typeFromNodeId(nodeId),
+      category,
       performance.now() - t0
     );
   },

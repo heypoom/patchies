@@ -133,7 +133,7 @@ export class MessageContext {
       }
     };
 
-    profiler.measure(this.nodeId, () => {
+    profiler.measure(this.nodeId, 'message', () => {
       for (const cb of this.messageCallbacks) {
         try {
           const result = cb(data, meta) as unknown;
@@ -223,7 +223,12 @@ export class MessageContext {
   // Create the interval function for this node
   createSetIntervalFunction() {
     return (callback: () => void, ms: number) => {
-      const intervalId = this.messageSystem.createInterval(callback, ms);
+      const nodeId = this.nodeId;
+
+      const intervalId = this.messageSystem.createInterval(
+        () => profiler.measure(nodeId, 'interval', callback),
+        ms
+      );
 
       this.intervals.push(intervalId);
       this.onIntervalCallbackRegistered();
@@ -253,7 +258,10 @@ export class MessageContext {
   // Create the requestAnimationFrame function for this node
   createRequestAnimationFrameFunction() {
     return (callback: () => void) => {
-      const animationFrameId = this.messageSystem.createAnimationFrame(callback);
+      const nodeId = this.nodeId;
+      const animationFrameId = this.messageSystem.createAnimationFrame(() =>
+        profiler.measure(nodeId, 'raf', callback)
+      );
 
       this.animationFrames.push(animationFrameId);
       this.onAnimationFrameCallbackRegistered();

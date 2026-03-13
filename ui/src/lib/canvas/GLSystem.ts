@@ -348,8 +348,8 @@ export class GLSystem {
           ProfilerCoordinator.getInstance().recordWorkerStats(
             data.nodeId,
             typeFromNodeId(data.nodeId),
-            data.messageStats,
-            null
+            data.category,
+            data.stats
           );
         }
       })

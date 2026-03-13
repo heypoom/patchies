@@ -3,12 +3,14 @@
   import {
     profilerEnabled,
     profilerSnapshot,
+    profilerHistory,
     HOT_THRESHOLD_MS
   } from '../../../stores/profiler.store';
+  import type { ProfilerCategory, ProfilerSnapshot } from '$lib/profiler/types';
 
-  // Format milliseconds for display
   function fmt(ms: number): string {
     if (ms < 0.01) return '<0.01ms';
+    if (ms >= 100) return ms.toFixed(0) + 'ms';
     return ms.toFixed(2) + 'ms';
   }
 
@@ -16,17 +18,116 @@
     return fps.toFixed(1) + ' fps';
   }
 
-  // Max avg across all entries — used to size the bar chart
+  // ─── Category metadata ───────────────────────────────────────────────────────
+
+  const ORDERED_CATEGORIES: ProfilerCategory[] = ['init', 'message', 'draw', 'interval', 'raf'];
+
+  const CATEGORY_LABEL: Record<ProfilerCategory, string> = {
+    init: 'init',
+    message: 'msg',
+    draw: 'draw',
+    interval: 'int',
+    raf: 'raf'
+  };
+
+  const CATEGORY_COLOR: Record<ProfilerCategory, string> = {
+    init: '#a1a1aa', // zinc-400   – one-time cost
+    message: '#60a5fa', // blue-400   – recv/onMessage
+    draw: '#fb923c', // orange-400 – render/draw
+    interval: '#34d399', // emerald-400– setInterval
+    raf: '#a78bfa' // violet-400 – requestAnimationFrame
+  };
+
+  // ─── Derived state ───────────────────────────────────────────────────────────
+
+  /** Categories present in the current snapshot (drives column headers) */
+  let activeCategories = $derived(
+    $profilerSnapshot
+      ? ORDERED_CATEGORIES.filter((cat) =>
+          $profilerSnapshot!.entries.some((e) => e.timings[cat] != null)
+        )
+      : []
+  );
+
+  /** Max message/draw avg — sizes the bar chart */
   let maxAvg = $derived(
     $profilerSnapshot
-      ? Math.max(...$profilerSnapshot.entries.map((e) => e.processingTime.avg), 0.01)
+      ? Math.max(
+          ...$profilerSnapshot.entries.map(
+            (e) => e.timings.message?.avg ?? e.timings.draw?.avg ?? 0
+          ),
+          0.01
+        )
       : 0.01
   );
 
-  // Whether any entry has init time data (js/worker nodes)
-  let hasInitData = $derived($profilerSnapshot?.entries.some((e) => e.initTime != null) ?? false);
+  // ─── Expand/collapse state ───────────────────────────────────────────────────
 
-  // Dev stats toggle (render frame stats)
+  let selectedNodeId = $state<string | null>(null);
+
+  // ─── Chart helpers ───────────────────────────────────────────────────────────
+
+  const CW = 240; // viewBox width
+  const CH = 52; // viewBox height
+  const CP = 3; // padding
+
+  /** Categories that appear for a node across the entire history */
+  function nodeCats(nodeId: string, history: ProfilerSnapshot[]): ProfilerCategory[] {
+    const seen = new Set<ProfilerCategory>();
+    for (const snap of history) {
+      const entry = snap.entries.find((e) => e.nodeId === nodeId);
+      if (!entry) continue;
+      for (const cat of ORDERED_CATEGORIES) {
+        if (entry.timings[cat]) seen.add(cat);
+      }
+    }
+    return ORDERED_CATEGORIES.filter((c) => seen.has(c));
+  }
+
+  /** Max avg across all categories for a node in the history */
+  function historyMax(nodeId: string, history: ProfilerSnapshot[]): number {
+    let max = 0.01;
+    for (const snap of history) {
+      const entry = snap.entries.find((e) => e.nodeId === nodeId);
+      if (!entry) continue;
+      for (const t of Object.values(entry.timings)) {
+        if (t && t.avg > max) max = t.avg;
+      }
+    }
+    return max;
+  }
+
+  /** Y coordinate for a value given a shared max */
+  function valY(v: number, maxVal: number): number {
+    return CH - CP - (v / maxVal) * (CH - CP * 2);
+  }
+
+  /** SVG path string for a category's avg over the history window */
+  function buildPath(
+    nodeId: string,
+    category: ProfilerCategory,
+    history: ProfilerSnapshot[],
+    maxVal: number
+  ): string {
+    const n = history.length;
+    if (n === 0) return '';
+    let path = '';
+    let penDown = false;
+    for (let i = 0; i < n; i++) {
+      const v = history[i].entries.find((e) => e.nodeId === nodeId)?.timings[category]?.avg ?? null;
+      if (v === null) {
+        penDown = false;
+        continue;
+      }
+      const x = n > 1 ? (i / (n - 1)) * (CW - CP * 2) + CP : CW / 2;
+      const y = valY(v, maxVal);
+      path += penDown ? `L${x.toFixed(1)} ${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
+      penDown = true;
+    }
+    return path;
+  }
+
+  // ─── Dev stats toggle ────────────────────────────────────────────────────────
   let showDevStats = $state(false);
 </script>
 
@@ -51,52 +152,60 @@
   </div>
 
   {#if !$profilerEnabled}
-    <!-- Idle state -->
     <div class="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
       <Activity class="h-8 w-8 text-zinc-700" />
       <p class="text-xs text-zinc-500">Press Start to begin profiling object processing times.</p>
     </div>
   {:else if !$profilerSnapshot || $profilerSnapshot.entries.length === 0}
-    <!-- Enabled but no data yet -->
     <div class="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
       <p class="text-xs text-zinc-500">Waiting for messages…</p>
       <p class="text-xs text-zinc-600">Send a message to a text object (metro, kv, etc.)</p>
     </div>
   {:else}
-    <!-- Node list -->
     <div class="min-h-0 flex-1 overflow-y-auto">
       <!-- Column headers -->
       <div
-        class="sticky top-0 border-b border-zinc-800 bg-zinc-950 px-3 py-1 text-[10px] font-medium tracking-wide text-zinc-600 uppercase
-          {hasInitData
-          ? 'grid grid-cols-[1fr_auto_auto_auto]'
-          : 'grid grid-cols-[1fr_auto_auto]'} gap-x-2"
+        class="sticky top-0 grid gap-x-2 border-b border-zinc-800 bg-zinc-950 px-3 py-1 text-[10px] font-medium tracking-wide text-zinc-600 uppercase"
+        style:grid-template-columns="1fr {activeCategories.map(() => 'auto').join(' ')}"
       >
         <span>Object</span>
-        {#if hasInitData}<span class="text-right">init</span>{/if}
-        <span class="text-right">avg</span>
-        <span class="text-right">max</span>
+        {#each activeCategories as cat}
+          <span class="text-right" style:color={CATEGORY_COLOR[cat]}>{CATEGORY_LABEL[cat]}</span>
+        {/each}
       </div>
 
       {#each $profilerSnapshot.entries as entry (entry.nodeId)}
-        {@const avg = entry.processingTime.avg}
-        {@const max = entry.processingTime.max}
-        {@const isSevere = avg > HOT_THRESHOLD_MS * 5}
+        {@const msgAvg = entry.timings.message?.avg ?? entry.timings.draw?.avg ?? 0}
+        {@const isSevere = msgAvg > HOT_THRESHOLD_MS * 5}
         {@const isHot = entry.isHot}
-        {@const barPct = Math.min(100, (avg / maxAvg) * 100)}
+        {@const barPct = Math.min(100, (msgAvg / maxAvg) * 100)}
+        {@const isSelected = selectedNodeId === entry.nodeId}
 
+        <!-- Node row -->
         <div
-          class="group items-center gap-x-2 px-3 py-1.5 text-xs
-            {hasInitData ? 'grid grid-cols-[1fr_auto_auto_auto]' : 'grid grid-cols-[1fr_auto_auto]'}
+          class="group grid cursor-pointer items-center gap-x-2 px-3 py-1.5 text-xs
             {isSevere
             ? 'bg-red-950/30 hover:bg-red-950/50'
             : isHot
               ? 'bg-amber-950/30 hover:bg-amber-950/50'
-              : 'hover:bg-zinc-800/50'}"
+              : isSelected
+                ? 'bg-zinc-800/60'
+                : 'hover:bg-zinc-800/50'}"
+          style:grid-template-columns="1fr {activeCategories.map(() => 'auto').join(' ')}"
+          onclick={() => (selectedNodeId = isSelected ? null : entry.nodeId)}
+          role="button"
+          tabindex="0"
+          onkeydown={(e) =>
+            e.key === 'Enter' && (selectedNodeId = isSelected ? null : entry.nodeId)}
         >
-          <!-- Object info + bar -->
+          <!-- Object name + bar -->
           <div class="min-w-0">
-            <div class="flex items-center gap-1.5 truncate">
+            <div class="flex items-center gap-1 truncate">
+              <ChevronRight
+                class="h-2.5 w-2.5 shrink-0 text-zinc-700 transition-transform group-hover:text-zinc-500 {isSelected
+                  ? 'rotate-90 text-zinc-500'
+                  : ''}"
+              />
               {#if isHot}
                 <span class="shrink-0 {isSevere ? 'text-red-400' : 'text-amber-400'}">⚠</span>
               {/if}
@@ -109,7 +218,7 @@
               >
               <span class="shrink-0 truncate text-zinc-600">{entry.nodeId}</span>
             </div>
-            <!-- Bar -->
+            <!-- Progress bar -->
             <div class="mt-0.5 h-0.5 w-full overflow-hidden rounded-full bg-zinc-800">
               <div
                 class="h-full rounded-full transition-all duration-300 {isSevere
@@ -122,32 +231,129 @@
             </div>
           </div>
 
-          <!-- Init time (js/worker only) -->
-          {#if hasInitData}
-            <span class="text-zinc-600 tabular-nums"
-              >{entry.initTime ? fmt(entry.initTime.avg) : '—'}</span
-            >
-          {/if}
-
-          <!-- Avg -->
-          <span
-            class="tabular-nums {isSevere
-              ? 'text-red-300'
-              : isHot
-                ? 'text-amber-300'
-                : 'text-zinc-400'}">{fmt(avg)}</span
-          >
-
-          <!-- Max -->
-          <span class="text-zinc-600 tabular-nums">{fmt(max)}</span>
+          <!-- Per-category timing columns -->
+          {#each activeCategories as cat}
+            {@const t = entry.timings[cat]}
+            {#if t}
+              {@const catSevere = t.avg > HOT_THRESHOLD_MS * 5}
+              {@const catHot = t.avg > HOT_THRESHOLD_MS}
+              <span
+                class="tabular-nums {catSevere
+                  ? 'text-red-300'
+                  : catHot
+                    ? 'text-amber-300'
+                    : 'text-zinc-400'}">{fmt(t.avg)}</span
+              >
+            {:else}
+              <span class="text-zinc-800 tabular-nums">—</span>
+            {/if}
+          {/each}
         </div>
+
+        <!-- Expanded sparkline chart -->
+        {#if isSelected}
+          {@const history = $profilerHistory}
+          {@const cats = nodeCats(entry.nodeId, history)}
+          {@const maxMs = historyMax(entry.nodeId, history)}
+          {@const hotY = maxMs > HOT_THRESHOLD_MS ? valY(HOT_THRESHOLD_MS, maxMs) : null}
+          {@const histSpanSecs = ((history.length - 1) * 0.5).toFixed(0)}
+
+          <div class="border-b border-zinc-800/50 bg-zinc-900/40 px-3 pt-1.5 pb-2">
+            {#if history.length >= 2}
+              <!-- SVG sparkline -->
+              <svg
+                viewBox="0 0 {CW} {CH}"
+                width="100%"
+                height={CH}
+                preserveAspectRatio="none"
+                class="block overflow-visible"
+              >
+                <!-- HOT threshold reference line -->
+                {#if hotY !== null}
+                  <line
+                    x1={CP}
+                    y1={hotY}
+                    x2={CW - CP}
+                    y2={hotY}
+                    stroke="#92400e"
+                    stroke-width="0.75"
+                    stroke-dasharray="4,3"
+                  />
+                {/if}
+
+                <!-- Category paths -->
+                {#each cats as cat}
+                  {@const d = buildPath(entry.nodeId, cat, history, maxMs)}
+                  {#if d}
+                    <path
+                      {d}
+                      stroke={CATEGORY_COLOR[cat]}
+                      stroke-width="1.5"
+                      fill="none"
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                    />
+                  {/if}
+                {/each}
+
+                <!-- Latest-value dots -->
+                {#each cats as cat}
+                  {@const lastEntry = history
+                    .at(-1)
+                    ?.entries.find((e) => e.nodeId === entry.nodeId)}
+                  {@const v = lastEntry?.timings[cat]?.avg}
+                  {#if v != null}
+                    <circle cx={CW - CP} cy={valY(v, maxMs)} r="2.5" fill={CATEGORY_COLOR[cat]} />
+                  {/if}
+                {/each}
+              </svg>
+
+              <!-- Axis hints -->
+              <div
+                class="mt-0.5 flex items-center justify-between font-mono text-[8px] text-zinc-700"
+              >
+                <span>{fmt(maxMs)}</span>
+                <span>{histSpanSecs}s</span>
+              </div>
+            {:else}
+              <p class="py-2 text-center text-[10px] text-zinc-700">Gathering data…</p>
+            {/if}
+
+            <!-- Legend -->
+            <div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+              {#each cats as cat}
+                {@const t = entry.timings[cat]}
+                <span class="flex items-center gap-1 text-[10px]">
+                  <span
+                    class="inline-block h-0.5 w-3 rounded-full"
+                    style:background-color={CATEGORY_COLOR[cat]}
+                  ></span>
+                  <span class="text-zinc-600">{CATEGORY_LABEL[cat]}</span>
+                  {#if t}
+                    {@const catSevere = t.avg > HOT_THRESHOLD_MS * 5}
+                    {@const catHot = t.avg > HOT_THRESHOLD_MS}
+                    <span
+                      class="tabular-nums {catSevere
+                        ? 'text-red-300'
+                        : catHot
+                          ? 'text-amber-300'
+                          : 'text-zinc-400'}">{fmt(t.avg)}</span
+                    >
+                  {:else}
+                    <span class="text-zinc-700">—</span>
+                  {/if}
+                </span>
+              {/each}
+            </div>
+          </div>
+        {/if}
       {/each}
     </div>
 
     <!-- Footer: threshold note + dev stats toggle -->
     <div class="border-t border-zinc-800 px-3 py-1.5 text-[10px] text-zinc-600">
       <div class="flex items-center justify-between">
-        <span>⚠ hot = avg &gt; {HOT_THRESHOLD_MS}ms · init = code execution time (js/worker)</span>
+        <span>⚠ hot &gt; {HOT_THRESHOLD_MS}ms · msg=recv · int=setInterval · raf=rAF</span>
         <button
           class="cursor-pointer text-zinc-600 transition-colors hover:text-zinc-400"
           onclick={() => (showDevStats = !showDevStats)}

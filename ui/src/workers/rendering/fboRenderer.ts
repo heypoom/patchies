@@ -106,8 +106,8 @@ export class FBORenderer {
   public profiler = new RenderingProfiler();
 
   /** Per-node draw-loop profiler — times each node's render function each frame */
-  public drawProfiler = new WorkerProfiler((nodeId, stats) => {
-    self.postMessage({ type: 'drawStats', nodeId, messageStats: stats });
+  public drawProfiler = new WorkerProfiler((nodeId, category, stats) => {
+    self.postMessage({ type: 'drawStats', nodeId, category, stats });
   });
 
   /** Interval that flushes frame stats (fps, p50, p95, drops) every 500ms */
@@ -1027,7 +1027,7 @@ export class FBORenderer {
     const transportTime = this.transportTime?.seconds ?? this.lastTime;
 
     fboNode.framebuffer.use(() => {
-      this.drawProfiler.measure(node.id, () => {
+      this.drawProfiler.measure(node.id, 'draw', () => {
         fboNode.render({
           prevTransportTime: this.prevTransportTime,
           iFrame: this.frameCount,
