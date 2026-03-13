@@ -170,11 +170,20 @@
   let commandPalettePosition = $state.raw({ x: 0, y: 0 });
   let flowContainer: HTMLDivElement;
 
-  // AI object prompt state
-  let showAiPrompt = $state(false);
-  let aiPromptPosition = $state.raw({ x: 0, y: 0 });
-  let aiPromptMode = $state<AiPromptMode>('insert');
-  let aiPromptContext = $state<AiModeContext>({});
+  // AI object prompt state — supports multiple concurrent instances
+  interface AiPromptInstance {
+    id: string;
+    position: { x: number; y: number };
+    mode: AiPromptMode;
+    context: AiModeContext;
+    open: boolean;
+  }
+
+  let aiPromptInstances = $state<AiPromptInstance[]>([]);
+
+  // Pending config set by setAiEditingNodeId before triggerAiPrompt is called
+  let pendingAiPromptMode = $state<AiPromptMode>('insert');
+  let pendingAiPromptContext = $state<AiModeContext>({});
 
   // Check if Gemini API key is set (for showing AI button)
   let hasGeminiApiKey = $state(false);
@@ -392,11 +401,11 @@
     // If a single node is selected, edit it; otherwise create new
     if (selectedNodeIds.length === 1) {
       const node = nodes.find((n) => n.id === selectedNodeIds[0]);
-      aiPromptMode = node ? 'edit' : 'insert';
-      aiPromptContext = node ? { selectedNode: node } : {};
+      pendingAiPromptMode = node ? 'edit' : 'insert';
+      pendingAiPromptContext = node ? { selectedNode: node } : {};
     } else {
-      aiPromptMode = 'insert';
-      aiPromptContext = {};
+      pendingAiPromptMode = 'insert';
+      pendingAiPromptContext = {};
     }
 
     triggerAiPrompt();
@@ -411,11 +420,21 @@
     const dialogWidth = 384; // w-96
     const currentSidebarWidth = $isSidebarOpen && !$isMobile ? $sidebarWidth : 0;
     const availableWidth = window.innerWidth - currentSidebarWidth;
-    const centerX = (availableWidth - dialogWidth) / 2;
-    const centerY = window.innerHeight / 2 - 150;
+    const openCount = aiPromptInstances.filter((i) => i.open).length;
+    const stagger = openCount * 24;
+    const centerX = (availableWidth - dialogWidth) / 2 + stagger;
+    const centerY = window.innerHeight / 2 - 150 + stagger;
 
-    aiPromptPosition = { x: Math.max(0, centerX), y: Math.max(0, centerY) };
-    showAiPrompt = true;
+    aiPromptInstances = [
+      ...aiPromptInstances.filter((i) => i.open), // drop any previously closed instances
+      {
+        id: crypto.randomUUID(),
+        position: { x: Math.max(0, centerX), y: Math.max(0, centerY) },
+        mode: pendingAiPromptMode,
+        context: pendingAiPromptContext,
+        open: true
+      }
+    ];
   }
 
   function handleAiObjectInsert(type: string, data: any) {
@@ -454,6 +473,14 @@
     const node = getNode(nodeId);
     if (!node) return undefined;
     return { id: node.id, type: node.type, data: node.data as Record<string, unknown> };
+  }
+
+  function getAllNodes() {
+    return nodes.map((n) => ({
+      id: n.id,
+      type: n.type,
+      name: (n.data as Record<string, unknown>)?.name as string | undefined
+    }));
   }
 
   const aiCallbacks = {
@@ -535,15 +562,15 @@
       setAiEditingNodeId: (nodeId) => {
         if (nodeId) {
           const node = nodes.find((n) => n.id === nodeId);
-          aiPromptMode = 'edit';
-          aiPromptContext = node ? { selectedNode: node } : {};
+          pendingAiPromptMode = 'edit';
+          pendingAiPromptContext = node ? { selectedNode: node } : {};
         } else {
-          aiPromptMode = 'insert';
-          aiPromptContext = {};
+          pendingAiPromptMode = 'insert';
+          pendingAiPromptContext = {};
         }
       },
       getSelectedNodeId: () => (selectedNodeIds.length === 1 ? selectedNodeIds[0] : null),
-      isAiPromptOpen: () => showAiPrompt
+      isAiPromptOpen: () => aiPromptInstances.some((i) => i.open)
     });
 
     keyboardManager.attach();
@@ -906,11 +933,11 @@
     // otherwise create new ones
     if (selectedNodeIds.length === 1) {
       const node = nodes.find((n) => n.id === selectedNodeIds[0]);
-      aiPromptMode = node ? 'edit' : 'insert';
-      aiPromptContext = node ? { selectedNode: node } : {};
+      pendingAiPromptMode = node ? 'edit' : 'insert';
+      pendingAiPromptContext = node ? { selectedNode: node } : {};
     } else {
-      aiPromptMode = 'insert';
-      aiPromptContext = {};
+      pendingAiPromptMode = 'insert';
+      pendingAiPromptContext = {};
     }
 
     triggerAiPrompt();
@@ -927,6 +954,7 @@
     onOpenPatchToApp={() => (showPatchToPromptDialog = true)}
     {aiCallbacks}
     {getNodeById}
+    {getAllNodes}
   />
 
   <!-- Main content area -->
@@ -1169,8 +1197,6 @@
             edges = newEdges;
           }}
           onShowAiPrompt={() => {
-            aiPromptMode = 'insert';
-            aiPromptContext = {};
             onAiInsertOrEdit();
           }}
           onShowGeminiKeyModal={() => {
@@ -1256,17 +1282,19 @@
       onSelectObject={handleObjectBrowserSelect}
     />
 
-    <!-- AI Object Prompt Dialog -->
-    <AiObjectPrompt
-      bind:open={showAiPrompt}
-      position={aiPromptPosition}
-      mode={aiPromptMode}
-      context={aiPromptContext}
-      onInsertObject={handleAiObjectInsert}
-      onInsertMultipleObjects={handleAiMultipleObjectsInsert}
-      onEditObject={handleAiObjectEdit}
-      onReplaceObject={handleAiObjectReplace}
-    />
+    <!-- AI Object Prompt Dialogs — multiple concurrent instances supported -->
+    {#each aiPromptInstances as instance (instance.id)}
+      <AiObjectPrompt
+        bind:open={instance.open}
+        position={instance.position}
+        mode={instance.mode}
+        context={instance.context}
+        onInsertObject={handleAiObjectInsert}
+        onInsertMultipleObjects={handleAiMultipleObjectsInsert}
+        onEditObject={handleAiObjectEdit}
+        onReplaceObject={handleAiObjectReplace}
+      />
+    {/each}
 
     <!-- Toast Notifications -->
     <Toaster position="top-center" />

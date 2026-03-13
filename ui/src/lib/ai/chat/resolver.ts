@@ -35,6 +35,13 @@ export interface ChatNode {
   data: Record<string, unknown>;
 }
 
+/** Lightweight node summary for graph-level context */
+export interface ChatNodeSummary {
+  id: string;
+  type?: string;
+  name?: string;
+}
+
 const SYSTEM_PROMPT = `You are a helpful AI assistant embedded in Patchies, a visual node-based programming environment for audio-visual creative coding. Users connect nodes (P5.js, Hydra, Strudel, GLSL, JavaScript, audio DSP objects) to build real-time audio-visual patches.
 
 Help with:
@@ -55,7 +62,8 @@ ${OBJECT_TYPE_LIST}`;
  * Streams a chat message response. Calls onChunk for each text chunk and
  * onAction when a canvas tool call has been resolved (ready to apply/dismiss).
  *
- * @param getNodeById - Looks up a node by ID for tool context (required for edit/replace/fix modes)
+ * @param getNodeById  - Looks up a node by ID for tool context (required for edit/replace/fix modes)
+ * @param getAllNodes  - Returns all nodes in the graph (used for the get_graph_nodes context tool)
  * @param onAction    - Fired when a tool resolver completes with a pending ChatAction
  */
 export async function streamChatMessage(
@@ -65,7 +73,8 @@ export async function streamChatMessage(
   signal?: AbortSignal,
   onThinking?: (thought: string) => void,
   getNodeById?: (nodeId: string) => ChatNode | undefined,
-  onAction?: (action: ChatAction) => void
+  onAction?: (action: ChatAction) => void,
+  getAllNodes?: () => ChatNodeSummary[]
 ): Promise<string> {
   const apiKey = localStorage.getItem('gemini-api-key');
 
@@ -115,25 +124,48 @@ export async function streamChatMessage(
   }));
 
   const GET_OBJECT_INSTRUCTIONS = 'get_object_instructions';
+  const GET_GRAPH_NODES = 'get_graph_nodes';
+  const GET_NODE_DATA = 'get_node_data';
 
-  const contextToolDeclaration = {
-    name: GET_OBJECT_INSTRUCTIONS,
-    description:
-      'Fetch detailed instructions and API reference for a specific Patchies object type. Call this before writing code for a type you need more details about.',
-    parametersJsonSchema: {
-      type: 'object',
-      properties: {
-        type: {
-          type: 'string',
-          description: 'The object type (e.g. "p5", "glsl", "tone~", "strudel")'
-        }
-      },
-      required: ['type']
+  const CONTEXT_TOOL_NAMES = new Set([GET_OBJECT_INSTRUCTIONS, GET_GRAPH_NODES, GET_NODE_DATA]);
+
+  const contextToolDeclarations = [
+    {
+      name: GET_OBJECT_INSTRUCTIONS,
+      description:
+        'Fetch detailed instructions and API reference for a specific Patchies object type. Call this before writing code for a type you need more details about.',
+      parametersJsonSchema: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            description: 'The object type (e.g. "p5", "glsl", "tone~", "strudel")'
+          }
+        },
+        required: ['type']
+      }
+    },
+    {
+      name: GET_GRAPH_NODES,
+      description:
+        'List all nodes currently on the canvas with their id, type, and name. Use this to discover what nodes exist before referencing them in canvas actions.',
+      parametersJsonSchema: { type: 'object', properties: {} }
+    },
+    {
+      name: GET_NODE_DATA,
+      description: 'Fetch the full data of a specific node by its ID.',
+      parametersJsonSchema: {
+        type: 'object',
+        properties: {
+          nodeId: { type: 'string', description: 'The node ID to fetch data for' }
+        },
+        required: ['nodeId']
+      }
     }
-  };
+  ];
 
   const canvasDeclarations = onAction ? buildCanvasToolDeclarations(nodeContext) : [];
-  const tools = [{ functionDeclarations: [contextToolDeclaration, ...canvasDeclarations] }];
+  const tools = [{ functionDeclarations: [...contextToolDeclarations, ...canvasDeclarations] }];
 
   let fullText = '';
 
@@ -186,12 +218,12 @@ export async function streamChatMessage(
     // Add model turn to contents (excluding thought parts — Gemini doesn't accept them back)
     contents.push({ role: 'model', parts: turnParts });
 
-    const contextCalls = functionCallParts.filter(
-      (p) => p.functionCall.name === GET_OBJECT_INSTRUCTIONS
+    const contextCalls = functionCallParts.filter((p) =>
+      CONTEXT_TOOL_NAMES.has(p.functionCall.name ?? '')
     );
 
     const canvasCalls = functionCallParts.filter(
-      (p) => p.functionCall.name !== GET_OBJECT_INSTRUCTIONS
+      (p) => !CONTEXT_TOOL_NAMES.has(p.functionCall.name ?? '')
     );
 
     // Canvas tool calls are terminal — resolve and surface as ActionCards
@@ -233,11 +265,35 @@ export async function streamChatMessage(
 
     // Respond to context-fetching calls and loop for continuation
     const functionResponses = contextCalls.map(({ functionCall }) => {
-      const type = (functionCall.args?.type as string) ?? '';
+      const name = functionCall.name ?? '';
 
+      if (name === GET_GRAPH_NODES) {
+        const nodes = getAllNodes?.() ?? [];
+        return {
+          functionResponse: {
+            name: GET_GRAPH_NODES,
+            response: { nodes }
+          }
+        };
+      }
+
+      if (name === GET_NODE_DATA) {
+        const nodeId = (functionCall.args?.nodeId as string) ?? '';
+        const node = getNodeById?.(nodeId);
+        return {
+          functionResponse: {
+            name: GET_NODE_DATA,
+            response: node
+              ? { id: node.id, type: node.type, data: node.data }
+              : { error: `Node "${nodeId}" not found` }
+          }
+        };
+      }
+
+      // GET_OBJECT_INSTRUCTIONS
+      const type = (functionCall.args?.type as string) ?? '';
       const instructions =
         getObjectSpecificInstructions(type) || `No specific instructions found for "${type}".`;
-
       return {
         functionResponse: {
           name: GET_OBJECT_INSTRUCTIONS,

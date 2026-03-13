@@ -191,7 +191,7 @@ export class KeyboardShortcutManager {
     }
 
     // CMD+I: AI object insertion/editing
-    if (key === 'i' && isMod && !isTyping && !this.actions.isAiPromptOpen()) {
+    if (key === 'i' && isMod && !isTyping) {
       event.preventDefault();
 
       // When AI features are hidden, fallback to browse objects

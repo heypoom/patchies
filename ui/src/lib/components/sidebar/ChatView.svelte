@@ -9,7 +9,8 @@
     generateChatTitle,
     type ChatMessage,
     type ChatAction,
-    type ChatNode
+    type ChatNode,
+    type ChatNodeSummary
   } from '$lib/ai/chat/resolver';
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
@@ -19,10 +20,12 @@
   let {
     aiCallbacks,
     getNodeById,
+    getAllNodes,
     onRename
   }: {
     aiCallbacks?: AiPromptCallbacks;
     getNodeById?: (nodeId: string) => ChatNode | undefined;
+    getAllNodes?: () => ChatNodeSummary[];
     onRename?: (name: string) => void;
   } = $props();
 
@@ -157,7 +160,8 @@
                 applyAction(action);
               }
             }
-          : undefined
+          : undefined,
+        getAllNodes
       );
 
       const completedActions: ThreadActionRef[] = pendingActions.map((id) => {

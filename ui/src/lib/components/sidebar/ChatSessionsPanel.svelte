@@ -4,14 +4,16 @@
   import { chatSessionsStore } from '../../../stores/chat-sessions.store';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
-  import type { ChatNode } from '$lib/ai/chat/resolver';
+  import type { ChatNode, ChatNodeSummary } from '$lib/ai/chat/resolver';
 
   let {
     aiCallbacks,
-    getNodeById
+    getNodeById,
+    getAllNodes
   }: {
     aiCallbacks?: AiPromptCallbacks;
     getNodeById?: (nodeId: string) => ChatNode | undefined;
+    getAllNodes?: () => ChatNodeSummary[];
   } = $props();
 
   let renamingId = $state<string | null>(null);
@@ -124,6 +126,7 @@
       <ChatView
         {aiCallbacks}
         {getNodeById}
+        {getAllNodes}
         onRename={(name) => chatSessionsStore.renameSession(session.id, name)}
       />
     </div>

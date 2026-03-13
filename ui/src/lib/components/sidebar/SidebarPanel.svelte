@@ -33,7 +33,7 @@
   import { hasAppPreview } from '../../../stores/app-preview.store';
 
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
-  import type { ChatNode } from '$lib/ai/chat/resolver';
+  import type { ChatNode, ChatNodeSummary } from '$lib/ai/chat/resolver';
 
   let {
     open = $bindable(false),
@@ -42,7 +42,8 @@
     onRequestApiKey,
     onOpenPatchToApp,
     aiCallbacks,
-    getNodeById
+    getNodeById,
+    getAllNodes
   }: {
     open: boolean;
     view?: SidebarView;
@@ -51,6 +52,7 @@
     onOpenPatchToApp?: () => void;
     aiCallbacks?: AiPromptCallbacks;
     getNodeById?: (nodeId: string) => ChatNode | undefined;
+    getAllNodes?: () => ChatNodeSummary[];
   } = $props();
 
   // Base views always shown
@@ -256,7 +258,7 @@
     <!-- Content -->
     <!-- Chat sessions panel is always mounted to preserve state across tab switches -->
     <div class="min-h-0 flex-1 {view === 'chat' ? '' : 'hidden'}">
-      <ChatSessionsPanel {aiCallbacks} {getNodeById} />
+      <ChatSessionsPanel {aiCallbacks} {getNodeById} {getAllNodes} />
     </div>
 
     {#if view !== 'chat'}
