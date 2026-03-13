@@ -73,7 +73,7 @@
         <div class="flex w-full items-center gap-2">
           <descriptor.icon class="h-3.5 w-3.5 shrink-0 {iconClass}" />
 
-          <div class="min-w-0 flex-1 truncate text-left font-mono text-xs">
+          <div class="min-w-0 flex-1 truncate text-left font-mono text-xs text-zinc-500">
             <span class="text-zinc-200">{descriptor.loadingLabel}</span>
             {#if nodeName}
               <span class="text-zinc-600"> · </span>
