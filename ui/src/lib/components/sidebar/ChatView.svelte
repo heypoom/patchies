@@ -1,6 +1,7 @@
 <script lang="ts">
   import { MessageSquare, Send, Trash2, Zap } from '@lucide/svelte/icons';
   import { match } from 'ts-pattern';
+  import { logger } from '$lib/utils/logger';
   import { toast } from 'svelte-sonner';
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import {
@@ -12,6 +13,7 @@
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import ActionCard from './ActionCard.svelte';
+  import { SvelteMap } from 'svelte/reactivity';
 
   let {
     aiCallbacks,
@@ -28,8 +30,9 @@
     actionId?: string;
   }
 
+  const actions = new SvelteMap<string, ChatAction>();
+
   let messages = $state<ThreadMessage[]>([]);
-  let actions = $state<Map<string, ChatAction>>(new Map());
   let inputText = $state('');
   let isLoading = $state(false);
   let streamingText = $state('');
@@ -39,32 +42,43 @@
   let abortController: AbortController | null = $state(null);
   let messagesEl: HTMLDivElement | undefined = $state();
 
-  const nodeContext = $derived(
-    $selectedNodeInfo
-      ? {
-          nodeId: $selectedNodeInfo.id,
-          nodeType: $selectedNodeInfo.type,
-          nodeData: $selectedNodeInfo.data
-        }
-      : null
-  );
+  const nodeContext = $derived.by(() => {
+    if (!$selectedNodeInfo) return null;
+
+    const errors = logger
+      .getNodeLogs($selectedNodeInfo.id)
+      .filter((e) => e.level === 'error')
+      .map((e) => e.message);
+
+    return {
+      nodeId: $selectedNodeInfo.id,
+      nodeType: $selectedNodeInfo.type,
+      nodeData: $selectedNodeInfo.data,
+      consoleErrors: errors.length > 0 ? errors : undefined
+    };
+  });
 
   $effect(() => {
     void messages;
     void streamingText;
+
     setTimeout(() => {
-      if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+      if (messagesEl) {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
     }, 0);
   });
 
   function updateActionState(id: string, state: 'applied' | 'dismissed') {
     const action = actions.get(id);
     if (!action) return;
-    actions = new Map(actions).set(id, { ...action, state });
+
+    actions.set(id, { ...action, state });
   }
 
   function applyAction(action: ChatAction) {
     if (!aiCallbacks) return;
+
     match(action.result)
       .with({ kind: 'single' }, (r) => aiCallbacks!.onInsertObject(r.type, r.data))
       .with({ kind: 'multi' }, (r) => aiCallbacks!.onInsertMultipleObjects(r.nodes, r.edges))
@@ -73,6 +87,7 @@
         aiCallbacks!.onReplaceObject(r.nodeId, r.newType, r.newData)
       )
       .exhaustive();
+
     updateActionState(action.id, 'applied');
   }
 
@@ -80,6 +95,7 @@
     if (!inputText.trim() || isLoading) return;
 
     const userContent = inputText.trim();
+
     const chatHistory: ChatMessage[] = [
       ...messages.map((m) => ({ role: m.role, content: m.content })),
       { role: 'user', content: userContent }
@@ -107,7 +123,8 @@
         getNodeById,
         aiCallbacks
           ? (action) => {
-              actions = new Map(actions).set(action.id, action);
+              actions.set(action.id, action);
+
               if (autoApprove) {
                 applyAction(action);
               } else {
@@ -126,14 +143,17 @@
           actionId: pendingActionId ?? undefined
         }
       ];
+
       streamingText = '';
       thinkingText = '';
       pendingActionId = null;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
+
       if (message !== 'Request cancelled') {
         toast.error(message);
       }
+
       streamingText = '';
       thinkingText = '';
       pendingActionId = null;
@@ -150,7 +170,7 @@
 
   function handleClear() {
     messages = [];
-    actions = new Map();
+    actions.clear();
     streamingText = '';
   }
 
@@ -202,8 +222,10 @@
             {#if message.content}
               <MarkdownContent markdown={message.content} />
             {/if}
+
             {#if message.actionId}
               {@const action = actions.get(message.actionId)}
+
               {#if action && aiCallbacks}
                 <ActionCard {action} callbacks={aiCallbacks} onStateChange={updateActionState} />
               {/if}
@@ -221,6 +243,7 @@
             ? 'bg-zinc-600'
             : 'animate-pulse bg-zinc-700'}"
         ></div>
+
         <div class="min-w-0 flex-1">
           {#if streamingText}
             <MarkdownContent markdown={streamingText} />
@@ -243,6 +266,7 @@
           <!-- ActionCard visible while response is still streaming -->
           {#if pendingActionId}
             {@const action = actions.get(pendingActionId)}
+
             {#if action && aiCallbacks}
               <ActionCard {action} callbacks={aiCallbacks} onStateChange={updateActionState} />
             {/if}
@@ -281,6 +305,7 @@
             Auto
           </button>
         {/if}
+
         {#if messages.length > 0 && !isLoading}
           <button
             onclick={handleClear}

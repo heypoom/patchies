@@ -29,7 +29,11 @@ export async function runModeResolver(
         signal,
         onThinking
       );
-      if (!result) throw new Error('Could not resolve object from prompt');
+
+      if (!result) {
+        throw new Error('Could not resolve object from prompt');
+      }
+
       return { kind: 'single', type: result.type, data: result.data as Record<string, unknown> };
     }
 
@@ -40,14 +44,19 @@ export async function runModeResolver(
         signal,
         onThinking
       );
-      if (!result || result.nodes.length === 0)
+
+      if (!result || result.nodes.length === 0) {
         throw new Error('Could not resolve objects from prompt');
+      }
+
       return { kind: 'multi', nodes: result.nodes, edges: result.edges };
     }
 
     case 'edit': {
       const { selectedNode } = context;
+
       if (!selectedNode) throw new Error('No node selected for edit');
+
       const result = await editObjectFromPrompt(
         prompt,
         selectedNode.type ?? 'unknown',
@@ -55,7 +64,11 @@ export async function runModeResolver(
         signal,
         onThinking
       );
-      if (!result) throw new Error('Could not edit object');
+
+      if (!result) {
+        throw new Error('Could not edit object');
+      }
+
       return {
         kind: 'edit',
         nodeId: selectedNode.id,

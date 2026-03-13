@@ -15,6 +15,7 @@ export interface ChatNodeContext {
   nodeId: string;
   nodeType: string;
   nodeData?: Record<string, unknown>;
+  consoleErrors?: string[];
 }
 
 /** A resolved tool call ready for the user to apply or dismiss */
@@ -86,6 +87,10 @@ export async function streamChatMessage(
       } catch {
         // ignore if data isn't serializable
       }
+    }
+
+    if (nodeContext.consoleErrors && nodeContext.consoleErrors.length > 0) {
+      systemInstruction += `\n\nThe selected node currently has the following console errors:\n${nodeContext.consoleErrors.map((e) => `- ${e}`).join('\n')}`;
     }
 
     if (JS_ENABLED_OBJECTS.has(nodeContext.nodeType)) {
