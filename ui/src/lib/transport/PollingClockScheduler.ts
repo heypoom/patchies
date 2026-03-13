@@ -37,7 +37,7 @@ export class PollingClockScheduler implements ClockScheduler {
           try {
             callback(clock.time);
           } catch (e) {
-            console.error('[ClockScheduler] onBeat callback error:', e);
+            console.error('[clock] onBeat callback error:', e);
           }
         }
       }

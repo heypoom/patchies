@@ -45,7 +45,8 @@ export class LookaheadClockScheduler implements ClockScheduler {
   constructor(
     private getState: () => ClockState,
     private lookAheadMs = 25,
-    private scheduleAheadS = 0.1
+    private scheduleAheadS = 0.1,
+    private nodeLog: { error(...args: unknown[]): void } = console
   ) {}
 
   /** Start the internal scheduling loop. */
@@ -152,7 +153,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
             item.callback(clock.time);
             this.recordFired(id, clock.time);
           } catch (e) {
-            console.error('[ClockScheduler] onBeat callback error:', e);
+            this.nodeLog.error('[clock] onBeat callback error:', e);
           }
         }
       }
@@ -178,7 +179,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
               item.callback(nextBeatTime);
               this.recordFired(id, nextBeatTime);
             } catch (e) {
-              console.error('[ClockScheduler] onBeat audio callback error:', e);
+              this.nodeLog.error('[clock] onBeat audio callback error:', e);
             }
             item.lastFiredBeatTime = nextBeatTime;
           }
@@ -206,7 +207,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
           item.callback(item.time);
           this.recordFired(id, item.time);
         } catch (e) {
-          console.error('[ClockScheduler] schedule callback error:', e);
+          this.nodeLog.error('[clock] schedule callback error:', e);
         }
 
         item.fired = true;
@@ -237,7 +238,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
             item.callback(fireTime);
             this.recordFired(id, fireTime);
           } catch (e) {
-            console.error('[ClockScheduler] every callback error:', e);
+            this.nodeLog.error('[clock] every callback error:', e);
           }
           item.lastFired = fireTime;
         }
@@ -248,7 +249,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
             item.callback(clock.time);
             this.recordFired(id, clock.time);
           } catch (e) {
-            console.error('[ClockScheduler] every callback error:', e);
+            this.nodeLog.error('[clock] every callback error:', e);
           }
           item.lastFired = clock.time;
         }
