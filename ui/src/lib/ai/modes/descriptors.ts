@@ -17,8 +17,8 @@ function nodeName(ctx: AiModeContext): string {
 }
 
 export const modeDescriptors: Record<string, AiModeDescriptor> = {
-  single: {
-    id: 'single',
+  insert: {
+    id: 'insert',
     label: 'Object Insert',
     shortLabel: 'Single',
     description: () => 'Describe one object to create',
@@ -63,7 +63,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     id: 'edit',
     label: 'Edit',
     shortLabel: 'Edit',
-    description: (ctx) => nodeName(ctx),
+    description: () => 'Make changes to object',
     placeholder: () => 'e.g., "make it go faster"',
     loadingLabel: 'Editing',
     generatingLabel: () => 'Editing',
@@ -83,8 +83,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     }
   },
 
-  replace: {
-    id: 'replace',
+  'turn-into': {
+    id: 'turn-into',
     label: 'Turn Into',
     shortLabel: 'Into',
     description: () => 'Turn object into something else',
@@ -111,7 +111,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     id: 'fix-error',
     label: 'Fix Error',
     shortLabel: 'Fix',
-    description: (ctx) => nodeName(ctx),
+    description: () => 'Fix a code or console error',
     placeholder: () => 'Optional: additional instructions',
     loadingLabel: 'Fixing',
     generatingLabel: () => 'Fixing',
@@ -133,8 +133,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     }
   },
 
-  'create-consumer': {
-    id: 'create-consumer',
+  'make-consumer': {
+    id: 'make-consumer',
     label: 'Make Consumer',
     shortLabel: 'Consumer',
     description: () => `Object that uses its output`,
@@ -149,8 +149,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     availableInChat: false
   },
 
-  'create-producer': {
-    id: 'create-producer',
+  'make-producer': {
+    id: 'make-producer',
     label: 'Make Producer',
     shortLabel: 'Producer',
     description: () => `Object that produces its input`,
@@ -165,8 +165,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     availableInChat: false
   },
 
-  decompose: {
-    id: 'decompose',
+  split: {
+    id: 'split',
     label: 'Split',
     shortLabel: 'Split',
     description: () => 'Decompose into multiple objects',
@@ -236,17 +236,17 @@ export function getModeDescriptor(mode: string): AiModeDescriptor {
  */
 export function getAvailableModesForContext(ctx: AiModeContext): AiPromptMode[] {
   if (!ctx.selectedNode) {
-    return ['single', 'multi'];
+    return ['insert', 'multi'];
   }
 
   const modes: AiPromptMode[] = [
     'edit',
     'fork',
     'fix-error',
-    'replace',
-    'decompose',
-    'create-consumer',
-    'create-producer'
+    'turn-into',
+    'split',
+    'make-consumer',
+    'make-producer'
   ];
 
   return modes;

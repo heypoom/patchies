@@ -23,7 +23,7 @@ export interface AiPromptCallbacks {
 
 export function createAiPromptController(callbacks: AiPromptCallbacks) {
   // ── State ────────────────────────────────────────────────────────────────
-  let mode = $state<AiPromptMode>('single');
+  let mode = $state<AiPromptMode>('insert');
   let context = $state<AiModeContext>({});
   let promptText = $state('');
   let isLoading = $state(false);

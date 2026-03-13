@@ -24,7 +24,7 @@ export async function runModeResolver(
   onProgress?: (status: string) => void
 ): Promise<AiModeResult> {
   return match(mode)
-    .with('single', async () => {
+    .with('insert', async () => {
       const result = await resolveObjectFromPrompt(
         prompt,
         (objectType) => onProgress?.(objectType),
@@ -79,15 +79,15 @@ export async function runModeResolver(
         data: result.data as Record<string, unknown>
       };
     })
-    .with('replace', () => replaceResolver(prompt, context, signal, onThinking, onProgress))
+    .with('turn-into', () => replaceResolver(prompt, context, signal, onThinking, onProgress))
     .with('fix-error', () => fixErrorResolver(prompt, context, signal, onThinking))
-    .with('create-consumer', () =>
+    .with('make-consumer', () =>
       createConsumerResolver(prompt, context, signal, onThinking, onProgress)
     )
-    .with('create-producer', () =>
+    .with('make-producer', () =>
       createProducerResolver(prompt, context, signal, onThinking, onProgress)
     )
-    .with('decompose', () => decomposeResolver(prompt, context, signal, onThinking, onProgress))
+    .with('split', () => decomposeResolver(prompt, context, signal, onThinking, onProgress))
     .with('fork', () => forkResolver(prompt, context, signal, onThinking, onProgress))
     .otherwise(() => {
       throw new Error(`Unknown mode: ${mode}`);

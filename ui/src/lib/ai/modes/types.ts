@@ -5,14 +5,14 @@ import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
 export type AiPromptColor = 'purple' | 'blue' | 'amber' | 'green' | 'red';
 
 export type AiPromptMode =
-  | 'single' // Create one object
+  | 'insert' // Create one object
   | 'multi' // Create multiple connected objects
   | 'edit' // Edit existing object data
-  | 'replace' // Replace object type + data
+  | 'turn-into' // Replace object type + data
   | 'fix-error' // Fix code error using console output
-  | 'create-consumer' // Create a consumer for the selected producer node
-  | 'create-producer' // Create a producer for the selected consumer node
-  | 'decompose' // Split object into multiple
+  | 'make-consumer' // Create a consumer for the selected producer node
+  | 'make-producer' // Create a producer for the selected consumer node
+  | 'split' // Split object into multiple
   | 'fork'; // Create a new object derived from an existing one
 
 export interface AiModeContext {

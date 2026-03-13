@@ -173,7 +173,7 @@
   // AI object prompt state
   let showAiPrompt = $state(false);
   let aiPromptPosition = $state.raw({ x: 0, y: 0 });
-  let aiPromptMode = $state<AiPromptMode>('single');
+  let aiPromptMode = $state<AiPromptMode>('insert');
   let aiPromptContext = $state<AiModeContext>({});
 
   // Check if Gemini API key is set (for showing AI button)
@@ -392,10 +392,10 @@
     // If a single node is selected, edit it; otherwise create new
     if (selectedNodeIds.length === 1) {
       const node = nodes.find((n) => n.id === selectedNodeIds[0]);
-      aiPromptMode = node ? 'edit' : 'single';
+      aiPromptMode = node ? 'edit' : 'insert';
       aiPromptContext = node ? { selectedNode: node } : {};
     } else {
-      aiPromptMode = 'single';
+      aiPromptMode = 'insert';
       aiPromptContext = {};
     }
 
@@ -538,7 +538,7 @@
           aiPromptMode = 'edit';
           aiPromptContext = node ? { selectedNode: node } : {};
         } else {
-          aiPromptMode = 'single';
+          aiPromptMode = 'insert';
           aiPromptContext = {};
         }
       },
@@ -906,10 +906,10 @@
     // otherwise create new ones
     if (selectedNodeIds.length === 1) {
       const node = nodes.find((n) => n.id === selectedNodeIds[0]);
-      aiPromptMode = node ? 'edit' : 'single';
+      aiPromptMode = node ? 'edit' : 'insert';
       aiPromptContext = node ? { selectedNode: node } : {};
     } else {
-      aiPromptMode = 'single';
+      aiPromptMode = 'insert';
       aiPromptContext = {};
     }
 
@@ -1169,7 +1169,7 @@
             edges = newEdges;
           }}
           onShowAiPrompt={() => {
-            aiPromptMode = 'single';
+            aiPromptMode = 'insert';
             aiPromptContext = {};
             onAiInsertOrEdit();
           }}

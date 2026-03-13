@@ -254,11 +254,11 @@ export async function streamChatMessage(
 
 const NODE_SCOPED_MODES = new Set<AiPromptMode>([
   'edit',
-  'replace',
+  'turn-into',
   'fix-error',
-  'create-consumer',
-  'create-producer',
-  'decompose',
+  'make-consumer',
+  'make-producer',
+  'split',
   'fork'
 ]);
 

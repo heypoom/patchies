@@ -13,7 +13,7 @@
   let {
     open = $bindable(false),
     position,
-    mode: initialMode = 'single',
+    mode: initialMode = 'insert',
     context: initialContext = {},
     onInsertObject,
     onInsertMultipleObjects,
@@ -109,7 +109,7 @@
   const submitLabel = $derived(
     match(ctrl.mode)
       .with('edit', () => 'Edit')
-      .with('replace', () => 'Replace')
+      .with('turn-into', () => 'Replace')
       .with('fix-error', () => 'Fix')
       .otherwise(() => 'Insert')
   );
@@ -441,20 +441,16 @@
         ></textarea>
 
         <!-- fix-error: show error context being sent -->
-        {#if ctrl.mode === 'fix-error'}
+        {#if ctrl.mode === 'fix-error' && fixErrorMessages.length > 0}
           <div class="mt-2 rounded border border-red-900/50 bg-red-950/30 px-3 py-2 text-xs">
-            {#if fixErrorMessages.length === 0}
-              <span class="text-zinc-500">No console errors found — AI will inspect the code.</span>
-            {:else}
-              <div class="mb-1 font-medium text-red-400">
-                {fixErrorMessages.length} error{fixErrorMessages.length === 1 ? '' : 's'} will be sent:
-              </div>
-              <ul class="space-y-0.5 font-mono text-red-300/80">
-                {#each fixErrorMessages as msg, index (index)}
-                  <li class="truncate">{msg}</li>
-                {/each}
-              </ul>
-            {/if}
+            <div class="mb-1 font-medium text-red-400">
+              {fixErrorMessages.length} error{fixErrorMessages.length === 1 ? '' : 's'} will be sent:
+            </div>
+            <ul class="space-y-0.5 font-mono text-red-300/80">
+              {#each fixErrorMessages as msg, index (index)}
+                <li class="truncate">{msg}</li>
+              {/each}
+            </ul>
           </div>
         {/if}
       {/if}
