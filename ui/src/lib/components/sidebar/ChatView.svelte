@@ -4,6 +4,7 @@
   import { match } from 'ts-pattern';
   import { logger } from '$lib/utils/logger';
   import { toast } from 'svelte-sonner';
+  import { onMount } from 'svelte';
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import {
     streamChatMessage,
@@ -18,42 +19,41 @@
   import ActionCard from './ActionCard.svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import { personaStore, BUILTIN_PRESETS, type Persona } from '../../../stores/persona.store';
+  import {
+    loadChatMessages,
+    saveChatMessages,
+    deleteChatMessages
+  } from '../../../stores/chat-history.store';
+  import type { ThreadMessage, StagedImage, ThreadActionRef } from '$lib/ai/chat/types';
 
   let {
+    sessionId,
     aiCallbacks,
     getNodeById,
     getAllNodes,
     onRename
   }: {
+    sessionId: string;
     aiCallbacks?: AiPromptCallbacks;
     getNodeById?: (nodeId: string) => ChatNode | undefined;
     getAllNodes?: () => ChatNodeSummary[];
     onRename?: (name: string) => void;
   } = $props();
 
-  interface ThreadActionRef {
-    id: string;
-    type: string;
-    summary?: string;
-  }
-
-  interface StagedImage {
-    mimeType: string;
-    data: string;
-    previewUrl: string;
-  }
-
-  interface ThreadMessage {
-    role: 'user' | 'model';
-    content: string;
-    thinking?: string;
-    actions?: ThreadActionRef[];
-    images?: StagedImage[];
-  }
-
   const actions = new SvelteMap<string, ChatAction>();
 
   let messages = $state<ThreadMessage[]>([]);
+
+  onMount(async () => {
+    messages = await loadChatMessages(sessionId);
+  });
+
+  $effect(() => {
+    if (messages.length > 0) {
+      void saveChatMessages(sessionId, messages);
+    }
+  });
+
   let inputText = $state('');
   let isLoading = $state(false);
   let streamingText = $state('');
@@ -244,6 +244,8 @@
     messages = [];
     actions.clear();
     streamingText = '';
+
+    deleteChatMessages(sessionId);
   }
 
   function handleKeydown(event: KeyboardEvent) {

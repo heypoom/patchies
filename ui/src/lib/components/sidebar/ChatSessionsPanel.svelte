@@ -124,6 +124,7 @@
   {#each $chatSessionsStore.sessions as session (session.id)}
     <div class="min-h-0 flex-1 {$chatSessionsStore.activeId === session.id ? '' : 'hidden'}">
       <ChatView
+        sessionId={session.id}
         {aiCallbacks}
         {getNodeById}
         {getAllNodes}
