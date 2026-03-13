@@ -137,6 +137,7 @@ export class MessageContext {
       for (const callback of this.messageCallbacks) {
         try {
           const result = callback(data, meta) as unknown;
+
           if (result instanceof Promise) {
             result.catch(handleError);
           }
