@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { match } from 'ts-pattern';
   import { Activity, ChevronDown, ChevronRight, ChevronUp } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import {
@@ -8,7 +9,39 @@
     HOT_THRESHOLD_MS
   } from '../../../stores/profiler.store';
   import { requestFocusNodeId, nodeLabelsStore } from '../../../stores/ui.store';
-  import type { ProfilerCategory, ProfilerSnapshot } from '$lib/profiler/types';
+  import type { ProfilerCategory, ProfilerSnapshot, TimingStats } from '$lib/profiler/types';
+  import { SvelteSet } from 'svelte/reactivity';
+
+  // ─── Display stat selector ─────────────────────────────────────────────────
+
+  type DisplayStat = 'avg' | 'max' | 'p95' | 'last' | 'calls/s';
+
+  const DISPLAY_STATS: DisplayStat[] = ['avg', 'max', 'p95', 'last', 'calls/s'];
+
+  let displayStat = $state<DisplayStat>('avg');
+
+  function nextDisplayStat() {
+    const index = DISPLAY_STATS.indexOf(displayStat);
+
+    displayStat = DISPLAY_STATS[(index + 1) % DISPLAY_STATS.length];
+  }
+
+  const getStatValue = (t: TimingStats): number =>
+    match(displayStat)
+      .with('avg', () => t.avg)
+      .with('max', () => t.max)
+      .with('p95', () => t.p95)
+      .with('last', () => t.last)
+      .with('calls/s', () => t.callsPerSecond)
+      .exhaustive();
+
+  function fmtStat(t: TimingStats): string {
+    if (displayStat === 'calls/s') {
+      return t.callsPerSecond.toFixed(1);
+    }
+
+    return fmt(getStatValue(t));
+  }
 
   function fmt(ms: number): string {
     if (ms < 0.01) return '<0.01ms';
@@ -53,13 +86,14 @@
       : []
   );
 
-  /** Max message/draw avg — sizes the bar chart */
-  let maxAvg = $derived(
+  /** Max displayed stat across message/draw — sizes the bar chart */
+  let maxStat = $derived(
     $profilerSnapshot
       ? Math.max(
-          ...$profilerSnapshot.entries.map(
-            (e) => e.timings.message?.avg ?? e.timings.draw?.avg ?? 0
-          ),
+          ...$profilerSnapshot.entries.map((e) => {
+            const t = e.timings.message ?? e.timings.draw;
+            return t ? getStatValue(t) : 0;
+          }),
           0.01
         )
       : 0.01
@@ -86,27 +120,35 @@
 
   /** Categories that appear for a node across the entire history */
   function nodeCats(nodeId: string, history: ProfilerSnapshot[]): ProfilerCategory[] {
-    const seen = new Set<ProfilerCategory>();
+    const seen = new SvelteSet<ProfilerCategory>();
+
     for (const snap of history) {
       const entry = snap.entries.find((e) => e.nodeId === nodeId);
       if (!entry) continue;
+
       for (const cat of ORDERED_CATEGORIES) {
         if (entry.timings[cat]) seen.add(cat);
       }
     }
+
     return ORDERED_CATEGORIES.filter((c) => seen.has(c));
   }
 
   /** Max avg across all categories for a node in the history */
   function historyMax(nodeId: string, history: ProfilerSnapshot[]): number {
     let max = 0.01;
+
     for (const snap of history) {
       const entry = snap.entries.find((e) => e.nodeId === nodeId);
       if (!entry) continue;
+
       for (const t of Object.values(entry.timings)) {
-        if (t && t.avg > max) max = t.avg;
+        if (t && t.avg > max) {
+          max = t.avg;
+        }
       }
     }
+
     return max;
   }
 
@@ -124,19 +166,24 @@
   ): string {
     const n = history.length;
     if (n === 0) return '';
+
     let path = '';
     let penDown = false;
+
     for (let i = 0; i < n; i++) {
       const v = history[i].entries.find((e) => e.nodeId === nodeId)?.timings[category]?.avg ?? null;
       if (v === null) {
         penDown = false;
         continue;
       }
+
       const x = n > 1 ? (i / (n - 1)) * (CW - CP * 2) + CP : CW / 2;
       const y = valY(v, maxVal);
+
       path += penDown ? `L${x.toFixed(1)} ${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
       penDown = true;
     }
+
     return path;
   }
 
@@ -189,11 +236,13 @@
       </div>
 
       {#each $profilerSnapshot.entries as entry (entry.nodeId)}
-        {@const msgAvg = entry.timings.message?.avg ?? entry.timings.draw?.avg ?? 0}
+        {@const primaryTiming = entry.timings.message ?? entry.timings.draw}
+        {@const primaryVal = primaryTiming ? getStatValue(primaryTiming) : 0}
+        {@const isTimeStat = displayStat !== 'calls/s'}
 
-        {@const isSevere = msgAvg > HOT_THRESHOLD_MS * 5}
-        {@const isHot = entry.isHot}
-        {@const barPct = Math.min(100, (msgAvg / maxAvg) * 100)}
+        {@const isSevere = isTimeStat && primaryVal > HOT_THRESHOLD_MS * 5}
+        {@const isHot = isTimeStat && entry.isHot}
+        {@const barPct = Math.min(100, (primaryVal / maxStat) * 100)}
 
         {@const isSelected = selectedNodeId === entry.nodeId}
         {@const nodeLabel = $nodeLabelsStore[entry.nodeId] ?? entry.nodeType}
@@ -256,14 +305,15 @@
           {#each activeCategories as cat (cat)}
             {@const t = entry.timings[cat]}
             {#if t}
-              {@const catSevere = t.avg > HOT_THRESHOLD_MS * 5}
-              {@const catHot = t.avg > HOT_THRESHOLD_MS}
+              {@const val = getStatValue(t)}
+              {@const catSevere = isTimeStat && val > HOT_THRESHOLD_MS * 5}
+              {@const catHot = isTimeStat && val > HOT_THRESHOLD_MS}
               <span
                 class="font-mono text-[10px] tabular-nums {catSevere
                   ? 'text-red-300'
                   : catHot
                     ? 'text-amber-300'
-                    : 'text-zinc-400'}">{fmt(t.avg)}</span
+                    : 'text-zinc-400'}">{fmtStat(t)}</span
               >
             {:else}
               <span class="text-zinc-800 tabular-nums">—</span>
@@ -404,7 +454,17 @@
     <!-- Footer: threshold note + dev stats toggle -->
     <div class="border-t border-zinc-800 px-3 py-1.5 text-[10px] text-zinc-600">
       <div class="flex items-center justify-between">
-        <div></div>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="cursor-pointer rounded px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 tabular-nums transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+              onclick={nextDisplayStat}
+            >
+              {displayStat}
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Cycle display stat</Tooltip.Content>
+        </Tooltip.Root>
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button
