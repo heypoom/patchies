@@ -65,11 +65,12 @@ export const profiler = {
   },
 
   /**
-   * Measure a broadcast callback: records under 'broadcast' for sourceNodeId,
-   * and accumulates elapsed time so callers (e.g. ObjectService) can subtract
-   * it from the sender's 'message' timing to avoid double-counting.
+   * Measure a wireless broadcast callback for a specific receiver node.
+   * Records under 'broadcast' for the receiver's nodeId, and accumulates
+   * elapsed time so callers (e.g. ObjectService) can subtract it from
+   * the sender's 'message' timing to avoid double-counting.
    */
-  measureBroadcast(sourceNodeId: string, fn: () => void): void {
+  measureBroadcast(receiverNodeId: string, fn: () => void): void {
     if (!this.enabled) {
       fn();
       return;
@@ -78,8 +79,8 @@ export const profiler = {
     fn();
     const elapsed = performance.now() - t0;
     ProfilerCoordinator.getInstance().record(
-      sourceNodeId,
-      typeFromNodeId(sourceNodeId),
+      receiverNodeId,
+      typeFromNodeId(receiverNodeId),
       'broadcast',
       elapsed
     );
