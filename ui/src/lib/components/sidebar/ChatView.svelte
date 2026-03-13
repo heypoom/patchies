@@ -230,7 +230,12 @@
               {@const action = actions.get(message.actionId)}
 
               {#if action && aiCallbacks}
-                <ActionCard {action} callbacks={aiCallbacks} onStateChange={updateActionState} />
+                <ActionCard
+                  {action}
+                  callbacks={aiCallbacks}
+                  onStateChange={updateActionState}
+                  {getNodeById}
+                />
               {/if}
             {/if}
           </div>
@@ -271,7 +276,12 @@
             {@const action = actions.get(pendingActionId)}
 
             {#if action && aiCallbacks}
-              <ActionCard {action} callbacks={aiCallbacks} onStateChange={updateActionState} />
+              <ActionCard
+                {action}
+                callbacks={aiCallbacks}
+                onStateChange={updateActionState}
+                {getNodeById}
+              />
             {/if}
           {/if}
         </div>

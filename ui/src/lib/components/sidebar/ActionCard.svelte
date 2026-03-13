@@ -1,19 +1,21 @@
 <script lang="ts">
   import { Check, X } from '@lucide/svelte/icons';
   import { match } from 'ts-pattern';
-  import type { ChatAction } from '$lib/ai/chat/resolver';
+  import { diffLines } from 'diff';
+  import type { ChatAction, ChatNode } from '$lib/ai/chat/resolver';
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import type { AiModeResult } from '$lib/ai/modes/types';
-  import MarkdownContent from '$lib/components/MarkdownContent.svelte';
 
   let {
     action,
     callbacks,
-    onStateChange
+    onStateChange,
+    getNodeById
   }: {
     action: ChatAction;
     callbacks: AiPromptCallbacks;
     onStateChange: (id: string, state: 'applied' | 'dismissed') => void;
+    getNodeById?: (nodeId: string) => ChatNode | undefined;
   } = $props();
 
   const colorClass = $derived(
@@ -35,37 +37,81 @@
       .exhaustive()
   );
 
-  interface CodePreview {
-    field: string;
-    code: string;
-  }
+  type DiffLine = { type: 'added' | 'removed' | 'context'; text: string };
 
-  function extractCodePreviews(data: Record<string, unknown>): CodePreview[] {
-    const previews: CodePreview[] = [];
+  function extractCode(data: Record<string, unknown>): string | null {
     for (const field of ['code', 'expr']) {
       const val = data[field];
-      if (typeof val === 'string' && val.trim()) {
-        previews.push({ field, code: val });
-      }
+      if (typeof val === 'string' && val.trim()) return val;
     }
-    return previews;
+    return null;
   }
 
-  const previews = $derived(
-    match(action.result)
-      .with({ kind: 'single' }, (r) => extractCodePreviews(r.data))
-      .with({ kind: 'edit' }, (r) => extractCodePreviews(r.data))
-      .with({ kind: 'replace' }, (r) => extractCodePreviews(r.newData))
-      .with({ kind: 'multi' }, (r) => {
-        const all: CodePreview[] = [];
-        for (const node of r.nodes) {
-          all.push(...extractCodePreviews(node.data as Record<string, unknown>));
-          if (all.length >= 1) break; // show first match only for multi
+  function computeDiff(oldCode: string, newCode: string): DiffLine[] {
+    const hunks = diffLines(oldCode, newCode);
+    const lines: DiffLine[] = [];
+    for (const hunk of hunks) {
+      const type = hunk.added ? 'added' : hunk.removed ? 'removed' : 'context';
+      // Each hunk may contain multiple lines
+      const hunkLines = (hunk.value ?? '').split('\n');
+      // Remove trailing empty string from split
+      if (hunkLines.at(-1) === '') hunkLines.pop();
+      for (const text of hunkLines) {
+        lines.push({ type, text });
+      }
+    }
+    return lines;
+  }
+
+  interface Preview {
+    kind: 'diff';
+    lines: DiffLine[];
+    hasChanges: boolean;
+  }
+
+  const preview = $derived.by((): Preview | null => {
+    const result = action.result;
+
+    if (result.kind === 'edit' || result.kind === 'replace') {
+      const nodeId = result.nodeId;
+      const newData = result.kind === 'edit' ? result.data : result.newData;
+      const newCode = extractCode(newData);
+      if (!newCode) return null;
+
+      const oldNode = getNodeById?.(nodeId);
+      const oldCode = oldNode ? extractCode(oldNode.data) : null;
+
+      if (oldCode) {
+        const lines = computeDiff(oldCode, newCode);
+        const hasChanges = lines.some((l) => l.type !== 'context');
+        return { kind: 'diff', lines, hasChanges };
+      }
+
+      // No old code to diff against — show full new code as all-added lines
+      const lines: DiffLine[] = newCode.split('\n').map((text) => ({ type: 'added', text }));
+      return { kind: 'diff', lines, hasChanges: true };
+    }
+
+    if (result.kind === 'single') {
+      const newCode = extractCode(result.data);
+      if (!newCode) return null;
+      const lines: DiffLine[] = newCode.split('\n').map((text) => ({ type: 'added', text }));
+      return { kind: 'diff', lines, hasChanges: true };
+    }
+
+    if (result.kind === 'multi') {
+      for (const node of result.nodes) {
+        const newCode = extractCode(node.data as Record<string, unknown>);
+        if (newCode) {
+          const lines: DiffLine[] = newCode.split('\n').map((text) => ({ type: 'added', text }));
+          return { kind: 'diff', lines, hasChanges: true };
         }
-        return all;
-      })
-      .exhaustive()
-  );
+      }
+      return null;
+    }
+
+    return null;
+  });
 
   function getMultiNodeList(result: AiModeResult): string | null {
     if (result.kind !== 'multi') return null;
@@ -127,21 +173,23 @@
   </summary>
 
   <!-- Preview pane -->
-  <div class="">
-    {#if previews.length > 0}
-      {#each previews as preview, index (index)}
-        <MarkdownContent
-          markdown={'```javascript\n' + preview.code + '\n```'}
-          class="prose-code-expanded"
-        />
-      {/each}
+  <div class="border-t border-current/20">
+    {#if preview}
+      <pre
+        class="overflow-x-auto p-2 font-mono text-[10px] leading-relaxed">{#each preview.lines as line, i (i)}{#if line.type === 'added'}<span
+              class="block bg-green-950/60 text-green-300">+{line.text}</span
+            >{:else if line.type === 'removed'}<span class="block bg-red-950/60 text-red-400"
+              >-{line.text}</span
+            >{:else}<span class="block text-zinc-500"> {line.text}</span>{/if}{/each}</pre>
     {:else}
       {@const nodeList = getMultiNodeList(action.result)}
-      {#if nodeList}
-        <p class="font-mono text-[10px] text-zinc-500">{nodeList}</p>
-      {:else}
-        <p class="font-mono text-[10px] text-zinc-500">No preview available</p>
-      {/if}
+      <div class="px-3 py-2">
+        {#if nodeList}
+          <p class="font-mono text-[10px] text-zinc-500">{nodeList}</p>
+        {:else}
+          <p class="font-mono text-[10px] text-zinc-500">No preview available</p>
+        {/if}
+      </div>
     {/if}
   </div>
 </details>
