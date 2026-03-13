@@ -8,3 +8,4 @@ export { AddEdgeCommand } from './add-edge.command';
 export { AddEdgesCommand } from './add-edges.command';
 export { DeleteEdgesCommand } from './delete-edges.command';
 export { BatchCommand } from './batch-command';
+export { ReplaceNodeDataCommand } from './replace-node-data.command';
