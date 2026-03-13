@@ -464,30 +464,25 @@
 
     <!-- Footer -->
     <div class="flex items-center justify-between border-t border-zinc-700 px-4 py-3">
-      <div class="text-xs text-zinc-500">
-        {#if !ctrl.isLoading && ctrl.context.selectedNode}
-          {@const d = ctrl.context.selectedNode.data as Record<string, unknown>}
-          {@const name =
-            (d?.name as string) || (d?.title as string) || ctrl.context.selectedNode.type}
-          {#if name}
-            <div class="mb-0.5 text-xs text-zinc-400">Selected: "{name}"</div>
-          {/if}
-        {/if}
-
+      <div class="flex items-center gap-1.5 text-xs text-zinc-600">
         {#if ctrl.isLoading}
-          <div class="flex items-center gap-2">
-            <Loader class="h-3 w-3 animate-spin" />
-
-            {#if ctrl.isGeneratingConfig}
-              <span>{descriptor.generatingLabel(ctrl.resolvedObjectType ?? '')}...</span>
-            {:else}
-              <span>{descriptor.loadingLabel}...</span>
-            {/if}
-          </div>
-        {:else if availableModes.length > 1}
-          Enter {submitLabel.toLowerCase()} • Ctrl+I mode • Esc cancel
+          <Loader class="h-3 w-3 animate-spin" />
+          <span>
+            {ctrl.isGeneratingConfig
+              ? `${descriptor.generatingLabel(ctrl.resolvedObjectType ?? '')}...`
+              : `${descriptor.loadingLabel}...`}
+          </span>
         {:else}
-          Enter {submitLabel.toLowerCase()} • Esc cancel
+          {#if ctrl.context.selectedNode}
+            {@const d = ctrl.context.selectedNode.data as Record<string, unknown>}
+            {@const name =
+              (d?.name as string) || (d?.title as string) || ctrl.context.selectedNode.type}
+            {#if name}
+              <span class="font-mono text-zinc-400">{name}</span>
+              <span class="text-zinc-700">·</span>
+            {/if}
+          {/if}
+          <span>{availableModes.length > 1 ? 'Ctrl+I mode · Esc exit' : 'Esc exit'}</span>
         {/if}
       </div>
 
@@ -506,6 +501,7 @@
               ? ctrl.isLoading
               : !ctrl.promptText.trim() || ctrl.isLoading}
             class="cursor-pointer rounded {colorClasses.button} px-4 py-1.5 text-xs font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            title={`Enter to ${submitLabel.toLowerCase()}`}
           >
             {submitLabel}
           </button>
