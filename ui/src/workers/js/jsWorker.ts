@@ -84,9 +84,11 @@ function createNodeState(nodeId: string): NodeState {
   state.directChannel = createDirectChannelHandler({
     nodeId,
     onIncomingMessage: (data, meta) => {
-      for (const callback of state.messageCallbacks) {
-        callback(data, meta);
-      }
+      workerProfiler.measure(nodeId, 'message', () => {
+        for (const callback of state.messageCallbacks) {
+          invokeCallbackSafely(nodeId, () => callback(data, meta));
+        }
+      });
     },
     onError: (error) => {
       // Use handleCodeError for line number extraction if code is available
@@ -734,7 +736,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
 
       if (callback) {
         const meta = { source: sourceNodeId, channel };
-        invokeCallbackSafely(nodeId, () => callback(data, meta));
+        workerProfiler.measure(nodeId, 'message', () =>
+          invokeCallbackSafely(nodeId, () => callback(data, meta))
+        );
       }
     })
     .with({ type: 'updateModule' }, ({ moduleName, code }) => {

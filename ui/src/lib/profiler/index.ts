@@ -57,7 +57,7 @@ export const profiler = {
     ProfilerCoordinator.getInstance().unregister(nodeId);
   },
 
-  onEnableChange(listener: (enabled: boolean) => void): void {
-    ProfilerCoordinator.getInstance().onEnableChange(listener);
+  onEnableChange(listener: (enabled: boolean) => void): () => void {
+    return ProfilerCoordinator.getInstance().onEnableChange(listener);
   }
 };

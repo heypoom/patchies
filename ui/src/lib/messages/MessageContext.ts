@@ -191,18 +191,20 @@ export class MessageContext {
         }
       };
 
-      try {
-        // Construct meta object compatible with MessageCallbackFn
-        const meta = { source: sourceNodeId, channel };
-        const result = callback(message, meta) as unknown;
+      profiler.measure(this.nodeId, 'message', () => {
+        try {
+          // Construct meta object compatible with MessageCallbackFn
+          const meta = { source: sourceNodeId, channel };
+          const result = callback(message, meta) as unknown;
 
-        // Handle async callbacks that return a promise
-        if (result instanceof Promise) {
-          result.catch(handleError);
+          // Handle async callbacks that return a promise
+          if (result instanceof Promise) {
+            result.catch(handleError);
+          }
+        } catch (error) {
+          handleError(error);
         }
-      } catch (error) {
-        handleError(error);
-      }
+      });
     };
 
     this.channelRegistry.subscribe(channel, this.nodeId, wrappedCallback);

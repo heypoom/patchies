@@ -128,6 +128,7 @@ export class WorkerNodeSystem {
   // Global video frame loop (single loop for all worker nodes)
   private globalVideoLoopId: number | null = null;
   private lastGlobalFrameTime = 0;
+  private unsubscribeProfilerEnable: (() => void) | null = null;
 
   constructor() {
     // Subscribe to FFT data updates - forward to all workers that have FFT enabled
@@ -137,7 +138,7 @@ export class WorkerNodeSystem {
     this.setupPatchIdForwarding();
 
     // Broadcast profiler enable/disable changes to all active workers
-    profiler.onEnableChange((enabled) => {
+    this.unsubscribeProfilerEnable = profiler.onEnableChange((enabled) => {
       for (const [nodeId, instance] of this.workers) {
         instance.worker.postMessage({
           type: 'profilerEnable',

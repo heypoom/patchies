@@ -15,6 +15,8 @@ interface NodeCollectors {
   /** Collector per timing category — created on demand */
   collectors: Partial<Record<ProfilerCategory, ProfilerCollector>>;
   type: string;
+  /** Latest worker-side TimingStats per category, consumed on each flush */
+  workerStats: Partial<Record<ProfilerCategory, TimingStats>>;
 }
 
 /**
@@ -55,8 +57,8 @@ export class ProfilerCoordinator {
 
   /**
    * Merge a worker-side timing stat into the coordinator.
-   * The worker has already done its own ring-buffer aggregation, so we inject
-   * the avg as a single sample.
+   * The full TimingStats (min/avg/max/callsPerSecond) is stored and emitted
+   * directly in the next flush rather than being re-sampled through a collector.
    */
   recordWorkerStats(
     nodeId: string,
@@ -64,9 +66,12 @@ export class ProfilerCoordinator {
     category: ProfilerCategory,
     stats: TimingStats
   ): void {
-    if (stats.avg > 0) {
-      this.getCollector(nodeId, type, category).record(stats.avg);
+    let entry = this.nodes.get(nodeId);
+    if (!entry) {
+      entry = { collectors: {}, type, workerStats: {} };
+      this.nodes.set(nodeId, entry);
     }
+    entry.workerStats[category] = stats;
   }
 
   /** Store the latest render frame stats received from the render worker. */
@@ -79,9 +84,14 @@ export class ProfilerCoordinator {
     this.nodes.delete(nodeId);
   }
 
-  /** Register a listener that fires when the enabled state changes (used to notify workers). */
-  onEnableChange(listener: (enabled: boolean) => void): void {
+  /** Register a listener that fires when the enabled state changes (used to notify workers).
+   * Returns an unsubscribe function — call it to deregister the listener on teardown. */
+  onEnableChange(listener: (enabled: boolean) => void): () => void {
     this.enableListeners.push(listener);
+    return () => {
+      const idx = this.enableListeners.indexOf(listener);
+      if (idx > -1) this.enableListeners.splice(idx, 1);
+    };
   }
 
   /** Notify all enable-change listeners. Called from profiler.store.ts. */
@@ -131,7 +141,7 @@ export class ProfilerCoordinator {
   ): ProfilerCollector {
     let entry = this.nodes.get(nodeId);
     if (!entry) {
-      entry = { collectors: {}, type };
+      entry = { collectors: {}, type, workerStats: {} };
       this.nodes.set(nodeId, entry);
     }
     if (!entry.collectors[category]) {
@@ -144,7 +154,8 @@ export class ProfilerCoordinator {
     const now = performance.now();
     const entries: NodeProfileEntry[] = [];
 
-    for (const [nodeId, { collectors, type }] of this.nodes) {
+    for (const [nodeId, entry] of this.nodes) {
+      const { collectors, type, workerStats } = entry;
       const timings: Partial<Record<ProfilerCategory, TimingStats>> = {};
       let hasActivity = false;
 
@@ -159,6 +170,16 @@ export class ProfilerCoordinator {
           hasActivity = true;
         }
       }
+
+      // Merge worker-side stats (preserves min/max/callsPerSecond from the worker)
+      for (const [cat, stats] of Object.entries(workerStats) as [ProfilerCategory, TimingStats][]) {
+        if (!stats) continue;
+        if (stats.avg > 0 || stats.callsPerSecond > 0) {
+          timings[cat] = stats;
+          hasActivity = true;
+        }
+      }
+      entry.workerStats = {};
 
       if (!hasActivity) continue;
 

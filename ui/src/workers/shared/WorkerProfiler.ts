@@ -57,39 +57,62 @@ export class WorkerProfiler {
     }
 
     const t0 = performance.now();
-    fn();
-
     const key = `${nodeId}|${category}`;
-    let collector = this.collectors.get(key);
-    if (!collector) {
-      collector = new ProfilerCollector();
-      this.collectors.set(key, collector);
+
+    const getCollector = (): ProfilerCollector => {
+      let collector = this.collectors.get(key);
+      if (!collector) {
+        collector = new ProfilerCollector();
+        this.collectors.set(key, collector);
+      }
+      return collector;
+    };
+
+    try {
+      const result = fn() as unknown;
+      if (result instanceof Promise) {
+        result.finally(() => {
+          getCollector().record(performance.now() - t0);
+        });
+      } else {
+        getCollector().record(performance.now() - t0);
+      }
+    } catch (error) {
+      getCollector().record(performance.now() - t0);
+      throw error;
     }
-    collector.record(performance.now() - t0);
+  }
+
+  private flushSync(): void {
+    const now = performance.now();
+
+    for (const [key, collector] of this.collectors) {
+      const stats = collector.flush(now);
+      if (stats.avg === 0 && stats.callsPerSecond === 0) continue;
+
+      const sep = key.lastIndexOf('|');
+      const nodeId = key.slice(0, sep);
+      const category = key.slice(sep + 1) as ProfilerCategory;
+      this.onFlush(nodeId, category, stats);
+    }
   }
 
   private startFlush(): void {
     if (this.flushInterval !== null) return;
 
-    this.flushInterval = setInterval(() => {
-      const now = performance.now();
-
-      for (const [key, collector] of this.collectors) {
-        const stats = collector.flush(now);
-        if (stats.avg === 0 && stats.callsPerSecond === 0) continue;
-
-        const sep = key.lastIndexOf('|');
-        const nodeId = key.slice(0, sep);
-        const category = key.slice(sep + 1) as ProfilerCategory;
-        this.onFlush(nodeId, category, stats);
-      }
-    }, FLUSH_INTERVAL_MS);
+    this.flushInterval = setInterval(() => this.flushSync(), FLUSH_INTERVAL_MS);
   }
 
   private stopFlush(): void {
     if (this.flushInterval !== null) {
       clearInterval(this.flushInterval);
       this.flushInterval = null;
+    }
+
+    try {
+      this.flushSync();
+    } catch {
+      // Ignore errors during final flush
     }
 
     this.collectors.clear();
