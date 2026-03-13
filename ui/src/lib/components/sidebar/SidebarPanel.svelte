@@ -255,7 +255,7 @@
 
       <!-- Expanded section -->
       {#if isExpanded}
-        <div class="flex items-center gap-1 border-t border-zinc-800 px-2 py-1.5">
+        <div class="flex flex-wrap items-center gap-1 border-t border-zinc-800 px-2 py-1.5">
           {#each expandableItems as item}
             {#if (!previewTab.isPromoted || item.id !== 'preview') && (!isSamplesPromoted || item.id !== 'samples') && (!isChatPromoted || item.id !== 'chat') && (!isProfilerPromoted || item.id !== 'profiler')}
               <button
