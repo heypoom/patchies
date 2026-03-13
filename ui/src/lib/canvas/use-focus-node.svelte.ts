@@ -1,4 +1,4 @@
-import { tick } from 'svelte';
+import { tick, untrack } from 'svelte';
 import type { Node, FitViewOptions } from '@xyflow/svelte';
 import { requestFocusNodeId, nodeLabelsStore } from '../../stores/ui.store';
 
@@ -16,7 +16,9 @@ export function useFocusNode(
     const nodeId = getFocusId();
     if (!nodeId) return;
 
-    setNodes(getNodes().map((n) => ({ ...n, selected: n.id === nodeId })));
+    untrack(() => {
+      setNodes(getNodes().map((n) => ({ ...n, selected: n.id === nodeId })));
+    });
 
     tick().then(() => {
       fitView({
@@ -25,9 +27,9 @@ export function useFocusNode(
         padding: 0.3,
         maxZoom: 1.5
       });
-    });
 
-    requestFocusNodeId.set(null);
+      requestFocusNodeId.set(null);
+    });
   });
 }
 
