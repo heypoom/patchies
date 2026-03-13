@@ -13,6 +13,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - mic~: Audio input from microphone
 - out~: Audio output to speakers/headphones
 - meter~: Visual audio level meter
+- scope~: Oscilloscope display for audio signals
 - soundfile~: Load and play audio files
 - sampler~: Sample playback with triggering
 - split~: Split multi-channel audio into separate mono channels.
@@ -20,14 +21,18 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 
 ## Audio Objects (Created via "object" node type)
 - object: Meta-object for creating text-based audio objects:
-  * Processing: gain~, pan~, delay~, compressor~, waveshaper~, convolver~
-  * Filters: lowpass~, highpass~, bandpass~, allpass~, notch~, lowshelf~, highshelf~, peaking~
-  * Synthesis: osc~ (oscillator), sig~ (signal)
-  * Control: mtof, loadbang, metro, adsr, send, recv, send~, recv~, samplerate~, clip
-    * send: send messages to a named channel
-    * recv: receive messages from a named channel
-    * send~: send audio to a named channel (wireless audio routing)
-    * recv~: receive audio from a named channel (wireless audio routing)
+  * Processing: gain~, pan~, delay~, compressor~, waveshaper~, convolver~, expr~, fexpr~
+  * Filters: lowpass~, highpass~, bandpass~, allpass~, notch~, lowshelf~, highshelf~, peaking~, biquad~, vcf~, comb~
+  * Synthesis: osc~ (oscillator), sig~ (signal), noise~, pink~, phasor~, pulse~
+  * Envelopes & Control: adsr~, line~, vline~, env~, snapshot~, latch~, samphold~, slop~, threshold~
+  * Math (audio-rate): +~, -~, *~, /~, >~, <~, abs~, cos~, exp~, log~, sqrt~, rsqrt~, pow~, min~, max~, wrap~, clip~
+  * Conversion: mtof~ (MIDI to frequency), ftom~ (frequency to MIDI)
+  * Table: tabosc4~, tabread~, tabread4~, tabwrite~
+  * Delay lines: delwrite~ (write to named delay), delread~ (read from named delay), delread4~ (interpolating read)
+  * Timing: beat~ (fire on beat subdivisions), bang~ (convert signal bang to message bang)
+  * Routing: send (send messages to a named channel), recv (receive messages from a named channel), send~, recv~ (wireless audio routing)
+  * Utility: bang, float, metro, loadbang, samplerate~, mtof (message-rate)
+  * Analysis: fft~ (FFT spectrum analyzer)
   * IMPORTANT: Use type "object" with data.expr (e.g., { "type": "object", "data": { "expr": "gain~ 0.5" } })
 
 ## Visual & Creative Coding Objects
@@ -94,6 +99,8 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 ## Media Input
 - webcam: Webcam video input
 - screen: Screen capture
+- vdo.ninja.pull: Receive audio from a VDO.Ninja stream (WebRTC)
+- vdo.ninja.push: Send audio to a VDO.Ninja stream (WebRTC)
 
 ## Video Routing
 - send.vdo: Send video frames to a named channel (wireless video routing)
