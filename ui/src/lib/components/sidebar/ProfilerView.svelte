@@ -1,11 +1,13 @@
 <script lang="ts">
   import { Activity, ChevronDown, ChevronRight } from '@lucide/svelte/icons';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import {
     profilerEnabled,
     profilerSnapshot,
     profilerHistory,
     HOT_THRESHOLD_MS
   } from '../../../stores/profiler.store';
+  import { requestFocusNodeId, nodeLabelsStore } from '../../../stores/ui.store';
   import type { ProfilerCategory, ProfilerSnapshot } from '$lib/profiler/types';
 
   function fmt(ms: number): string {
@@ -64,6 +66,13 @@
   // ─── Expand/collapse state ───────────────────────────────────────────────────
 
   let selectedNodeId = $state<string | null>(null);
+
+  function toggleNode(nodeId: string) {
+    const isSelected = selectedNodeId === nodeId;
+    selectedNodeId = isSelected ? null : nodeId;
+
+    if (!isSelected) requestFocusNodeId.set(nodeId);
+  }
 
   // ─── Chart helpers ───────────────────────────────────────────────────────────
 
@@ -169,7 +178,8 @@
         style:grid-template-columns="1fr {activeCategories.map(() => 'auto').join(' ')}"
       >
         <span>Object</span>
-        {#each activeCategories as cat}
+
+        {#each activeCategories as cat (cat)}
           <span class="text-right" style:color={CATEGORY_COLOR[cat]}>{CATEGORY_LABEL[cat]}</span>
         {/each}
       </div>
@@ -180,6 +190,7 @@
         {@const isHot = entry.isHot}
         {@const barPct = Math.min(100, (msgAvg / maxAvg) * 100)}
         {@const isSelected = selectedNodeId === entry.nodeId}
+        {@const nodeLabel = $nodeLabelsStore[entry.nodeId] ?? entry.nodeType}
 
         <!-- Node row -->
         <div
@@ -192,11 +203,10 @@
                 ? 'bg-zinc-800/60'
                 : 'hover:bg-zinc-800/50'}"
           style:grid-template-columns="1fr {activeCategories.map(() => 'auto').join(' ')}"
-          onclick={() => (selectedNodeId = isSelected ? null : entry.nodeId)}
+          onclick={() => toggleNode(entry.nodeId)}
           role="button"
           tabindex="0"
-          onkeydown={(e) =>
-            e.key === 'Enter' && (selectedNodeId = isSelected ? null : entry.nodeId)}
+          onkeydown={(e) => e.key === 'Enter' && toggleNode(entry.nodeId)}
         >
           <!-- Object name + bar -->
           <div class="min-w-0">
@@ -206,18 +216,23 @@
                   ? 'rotate-90 text-zinc-500'
                   : ''}"
               />
+
               {#if isHot}
                 <span class="shrink-0 {isSevere ? 'text-red-400' : 'text-amber-400'}">⚠</span>
               {/if}
+
               <span
                 class="truncate font-mono {isSevere
                   ? 'text-red-300'
                   : isHot
                     ? 'text-amber-300'
-                    : 'text-zinc-300'}">{entry.nodeType}</span
+                    : 'text-zinc-300'}">{nodeLabel}</span
               >
-              <span class="shrink-0 truncate text-zinc-600">{entry.nodeId}</span>
+              <span class="ml-0.5 shrink-0 truncate font-mono text-[10px] text-zinc-600"
+                >{entry.nodeId}</span
+              >
             </div>
+
             <!-- Progress bar -->
             <div class="mt-0.5 h-0.5 w-full overflow-hidden rounded-full bg-zinc-800">
               <div
@@ -282,8 +297,9 @@
                 {/if}
 
                 <!-- Category paths -->
-                {#each cats as cat}
+                {#each cats as cat (cat)}
                   {@const d = buildPath(entry.nodeId, cat, history, maxMs)}
+
                   {#if d}
                     <path
                       {d}
@@ -297,11 +313,13 @@
                 {/each}
 
                 <!-- Latest-value dots -->
-                {#each cats as cat}
+                {#each cats as cat (cat)}
                   {@const lastEntry = history
                     .at(-1)
                     ?.entries.find((e) => e.nodeId === entry.nodeId)}
+
                   {@const v = lastEntry?.timings[cat]?.avg}
+
                   {#if v != null}
                     <circle cx={CW - CP} cy={valY(v, maxMs)} r="2.5" fill={CATEGORY_COLOR[cat]} />
                   {/if}
@@ -321,8 +339,9 @@
 
             <!-- Legend -->
             <div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
-              {#each cats as cat}
+              {#each cats as cat (cat)}
                 {@const t = entry.timings[cat]}
+
                 <span class="flex items-center gap-1 text-[10px]">
                   <span
                     class="inline-block h-0.5 w-3 rounded-full"
@@ -354,15 +373,19 @@
     <div class="border-t border-zinc-800 px-3 py-1.5 text-[10px] text-zinc-600">
       <div class="flex items-center justify-between">
         <span>⚠ hot &gt; {HOT_THRESHOLD_MS}ms · msg=recv · int=setInterval · raf=rAF</span>
-        <button
-          class="cursor-pointer text-zinc-600 transition-colors hover:text-zinc-400"
-          onclick={() => (showDevStats = !showDevStats)}
-          title="Toggle renderer stats"
-        >
-          {#if showDevStats}<ChevronDown class="h-3 w-3" />{:else}<ChevronRight
-              class="h-3 w-3"
-            />{/if}
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="cursor-pointer text-zinc-600 transition-colors hover:text-zinc-400"
+              onclick={() => (showDevStats = !showDevStats)}
+            >
+              {#if showDevStats}<ChevronDown class="h-3 w-3" />{:else}<ChevronRight
+                  class="h-3 w-3"
+                />{/if}
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Toggle renderer stats</Tooltip.Content>
+        </Tooltip.Root>
       </div>
 
       {#if showDevStats}

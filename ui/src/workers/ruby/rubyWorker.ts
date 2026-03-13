@@ -84,9 +84,11 @@ function createNodeState(nodeId: string): NodeState {
   state.directChannel = createDirectChannelHandler({
     nodeId,
     onIncomingMessage: (data, meta) => {
-      for (const callback of state.messageCallbacks) {
-        callback(data, meta);
-      }
+      workerProfiler.measure(nodeId, 'message', () => {
+        for (const callback of state.messageCallbacks) {
+          callback(data, meta);
+        }
+      });
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : String(error);
