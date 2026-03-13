@@ -132,7 +132,7 @@ export async function streamChatMessage(
     }
   };
 
-  const canvasDeclarations = onAction ? buildCanvasToolDeclarations() : [];
+  const canvasDeclarations = onAction ? buildCanvasToolDeclarations(nodeContext) : [];
   const tools = [{ functionDeclarations: [contextToolDeclaration, ...canvasDeclarations] }];
 
   let fullText = '';
@@ -201,7 +201,7 @@ export async function streamChatMessage(
       const toolName = functionCall.name ?? '';
       const args = (functionCall.args ?? {}) as Record<string, unknown>;
       const mode = toolNameToMode(toolName);
-      const context = buildContextFromArgs(mode, args, getNodeById);
+      const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
 
       try {
         const result = await runModeResolver(
@@ -265,7 +265,8 @@ const NODE_SCOPED_MODES = new Set<AiPromptMode>([
 function buildContextFromArgs(
   mode: AiPromptMode,
   args: Record<string, unknown>,
-  getNodeById?: (nodeId: string) => ChatNode | undefined
+  getNodeById?: (nodeId: string) => ChatNode | undefined,
+  nodeContext?: ChatNodeContext | null
 ): AiModeContext {
   const context: AiModeContext = {};
 
@@ -278,7 +279,9 @@ function buildContextFromArgs(
 
     if (!nodeId) throw new Error(`Mode "${mode}" requires a nodeId`);
 
-    const node = getNodeById?.(nodeId);
+    // Fall back to the selected node context when the model hallucinates an ID
+    const node =
+      getNodeById?.(nodeId) ?? (nodeContext ? getNodeById?.(nodeContext.nodeId) : undefined);
 
     if (!node) throw new Error(`Node "${nodeId}" not found`);
 

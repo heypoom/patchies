@@ -4,6 +4,15 @@ import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
 
 export type AiPromptColor = 'purple' | 'blue' | 'amber' | 'green' | 'red';
 
+export interface ChatToolSchema {
+  type: string;
+  properties?: Record<
+    string,
+    { type: string; description?: string; enum?: string[]; items?: unknown }
+  >;
+  required?: string[];
+}
+
 export type AiPromptMode =
   | 'insert' // Create one object
   | 'multi' // Create multiple connected objects
@@ -51,14 +60,14 @@ export interface AiModeDescriptor {
   /** Label shown when generating object config; receives resolved type e.g. "p5" */
   generatingLabel: (resolvedType: string) => string;
 
-  /** Whether this mode is available as a chat tool (spec 94) */
+  /** Whether this mode is available as a chat tool */
   availableInChat?: boolean;
 
-  /** One-line description for the LLM tool definition (spec 94) */
+  /** One-line description for the LLM tool definition */
   chatToolDescription?: string;
 
-  /** JSON Schema for the tool's input parameters (spec 94) */
-  chatToolSchema?: object;
+  /** JSON Schema for the tool's input parameters */
+  chatToolSchema?: ChatToolSchema;
 }
 
 export type AiModeResult =
