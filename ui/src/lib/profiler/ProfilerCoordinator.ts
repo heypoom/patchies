@@ -249,7 +249,8 @@ export class ProfilerCoordinator {
         }
       }
 
-      entry.workerStats = {};
+      // Keep workerStats until the worker sends fresh data (don't clear —
+      // the worker may flush less frequently than the coordinator)
 
       // isHot if any non-init category exceeds threshold
       const isHot = hasActivity

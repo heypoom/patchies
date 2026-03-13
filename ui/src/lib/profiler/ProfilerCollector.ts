@@ -6,6 +6,10 @@ export const DEFAULT_CAPACITY = 1200;
 /**
  * Per-node ring buffer of timing samples.
  * Uses pre-allocated Float64Array — zero allocation in the record() hot path.
+ *
+ * Stats are split by purpose:
+ * - `avg`, `last`: computed over samples since last flush (responsive to update rate)
+ * - `max`, `p95`: computed over the full buffer (keeps spikes visible for the sample window)
  */
 export class ProfilerCollector {
   private samples: Float64Array;
@@ -32,6 +36,7 @@ export class ProfilerCollector {
   flush(now: number): TimingStats {
     const elapsed = (now - this.lastFlushTime) / 1000;
     const callsPerSecond = elapsed > 0 ? this.messagesSinceFlush / elapsed : 0;
+    const recentCount = this.messagesSinceFlush;
 
     this.messagesSinceFlush = 0;
     this.lastFlushTime = now;
@@ -40,9 +45,8 @@ export class ProfilerCollector {
       return { avg: 0, max: 0, p95: 0, last: 0, callsPerSecond: 0 };
     }
 
-    // Build a sorted copy for percentile (allocating here is fine — flush runs every 500ms)
+    // max and p95: scan the full ring buffer (long window for spike visibility)
     const sorted = new Float64Array(this.count);
-    let sum = 0;
     let max = 0;
 
     for (let i = 0; i < this.count; i++) {
@@ -50,17 +54,30 @@ export class ProfilerCollector {
       const v = this.samples[idx];
 
       sorted[i] = v;
-      sum += v;
 
       if (v > max) max = v;
     }
 
     sorted.sort();
 
-    const last = this.samples[(this.head - 1 + this.capacity) % this.capacity];
     const p95 = sorted[Math.floor(this.count * 0.95)];
+    const last = this.samples[(this.head - 1 + this.capacity) % this.capacity];
 
-    return { avg: sum / this.count, max, p95, last, callsPerSecond };
+    // avg: only over samples since last flush (responsive to update rate)
+    let avg = 0;
+
+    if (recentCount > 0) {
+      let recentSum = 0;
+
+      for (let i = 0; i < recentCount; i++) {
+        const idx = (this.head - recentCount + i + this.capacity) % this.capacity;
+        recentSum += this.samples[idx];
+      }
+
+      avg = recentSum / recentCount;
+    }
+
+    return { avg, max, p95, last, callsPerSecond };
   }
 
   reset(): void {
