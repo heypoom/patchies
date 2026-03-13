@@ -690,7 +690,7 @@ export class FBORenderer {
       userRenderFunc: null,
       swglTarget,
       gl,
-      onMessage: () => {},
+      onMessageCallbacks: [],
       nodeId: node.id
     };
 
@@ -706,7 +706,7 @@ export class FBORenderer {
         glsl: wrappedGlsl,
 
         onMessage: (callback: MessageCallbackFn) => {
-          swglContext.onMessage = callback;
+          swglContext.onMessageCallbacks.push(callback);
         },
 
         send: (data: unknown, options: SendMessageOptions) => {
@@ -1173,6 +1173,7 @@ export class FBORenderer {
 
   async setPreviewSize(width: number, height: number) {
     this.pixelReadbackService.setPreviewSize(width, height);
+
     await this.buildFBOs(this.renderGraph!);
   }
 
@@ -1299,7 +1300,9 @@ export class FBORenderer {
         const hydraRenderer = this.hydraByNode.get(nodeId);
         if (!hydraRenderer) return;
 
-        hydraRenderer.onMessage(data, message);
+        for (const callback of hydraRenderer.onMessageCallbacks) {
+          callback(data, message);
+        }
       })
       .with('canvas', () => {
         const canvasRenderer = this.canvasByNode.get(nodeId);
@@ -1311,13 +1314,15 @@ export class FBORenderer {
         const swglContext = this.swglByNode.get(nodeId);
         if (!swglContext) return;
 
-        swglContext.onMessage(data, message);
+        for (const callback of swglContext.onMessageCallbacks) {
+          callback(data, message);
+        }
       })
       .with('textmode', () => {
         const textmodeRenderer = this.textmodeByNode.get(nodeId);
         if (!textmodeRenderer) return;
 
-        textmodeRenderer.onMessage(data, message);
+        textmodeRenderer.handleMessage(message);
       })
       .with('three', () => {
         const threeRenderer = this.threeByNode.get(nodeId);

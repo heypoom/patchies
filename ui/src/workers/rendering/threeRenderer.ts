@@ -30,7 +30,7 @@ export class ThreeRenderer {
 
   public framebuffer: regl.Framebuffer2D | null = null;
 
-  public onMessage: MessageCallbackFn = () => {};
+  public onMessageCallbacks: MessageCallbackFn[] = [];
 
   private sampleRate: number = 44000;
   private animationId: number | null = null;
@@ -182,6 +182,7 @@ export class ThreeRenderer {
     this.isFFTEnabled = false;
     this.fftDataCache.clear();
     this.fftRequestCache.clear();
+    this.onMessageCallbacks = [];
 
     // Reset interaction and video output state
     this.setInteraction('interact', true);
@@ -235,7 +236,7 @@ export class ThreeRenderer {
 
         // Message passing
         onMessage: (callback: MessageCallbackFn) => {
-          this.onMessage = callback;
+          this.onMessageCallbacks.push(callback);
         },
 
         send: this.sendMessage.bind(this),
@@ -484,7 +485,9 @@ export class ThreeRenderer {
   }
 
   handleMessage(message: Message) {
-    this.onMessage?.(message.data, message);
+    for (const callback of this.onMessageCallbacks) {
+      callback(message.data, message);
+    }
   }
 
   /**

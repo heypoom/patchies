@@ -31,7 +31,7 @@ export class CanvasRenderer {
   public ctx: OffscreenCanvasRenderingContext2D | null = null;
   public canvasTexture: regl.Texture2D | null = null;
 
-  public onMessage: MessageCallbackFn = () => {};
+  public onMessageCallbacks: MessageCallbackFn[] = [];
 
   private timestamp = performance.now();
   private sampleRate: number = 44000;
@@ -136,6 +136,7 @@ export class CanvasRenderer {
     this.isFFTEnabled = false;
     this.fftDataCache.clear();
     this.fftRequestCache.clear();
+    this.onMessageCallbacks = [];
 
     // Reset interaction and video output state
     this.setInteraction('interact', true);
@@ -197,7 +198,7 @@ export class CanvasRenderer {
         send: this.sendMessage.bind(this),
 
         onMessage: (callback: MessageCallbackFn) => {
-          this.onMessage = callback;
+          this.onMessageCallbacks.push(callback);
         },
 
         // Interaction control methods
@@ -345,7 +346,9 @@ export class CanvasRenderer {
   }
 
   handleMessage(message: Message) {
-    this.onMessage?.(message.data, message);
+    for (const callback of this.onMessageCallbacks) {
+      callback(message.data, message);
+    }
   }
 
   /** Resume animation loop after unpausing */

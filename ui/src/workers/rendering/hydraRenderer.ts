@@ -33,7 +33,7 @@ export class HydraRenderer {
   public hydra: Hydra | null = null;
   public framebuffer: regl.Framebuffer2D | null = null;
 
-  public onMessage: MessageCallbackFn = () => {};
+  public onMessageCallbacks: MessageCallbackFn[] = [];
 
   private timestamp = performance.now();
 
@@ -181,6 +181,7 @@ export class HydraRenderer {
     this.isFFTEnabled = false;
     this.fftDataCache.clear();
     this.fftRequestCache.clear();
+    this.onMessageCallbacks = [];
 
     // Reset mouse scope to local (default)
     this.mouseScope = 'local';
@@ -242,7 +243,7 @@ export class HydraRenderer {
         fft: this.createFFTFunction(),
         getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
         onMessage: (callback: MessageCallbackFn) => {
-          this.onMessage = callback;
+          this.onMessageCallbacks.push(callback);
         },
 
         // Mouse object with getters for real-time values (Hydra-style)

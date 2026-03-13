@@ -9,6 +9,6 @@ export type SwissGLContext = {
   userRenderFunc: ((params: { t: number }) => void) | null;
   swglTarget: { bindTarget: (gl: WebGL2RenderingContext) => number[] };
   gl: WebGL2RenderingContext;
-  onMessage: MessageCallbackFn;
+  onMessageCallbacks: MessageCallbackFn[];
   nodeId: string;
 };
