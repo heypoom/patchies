@@ -135,7 +135,9 @@
 </script>
 
 <details
-  class="my-1 rounded border {colorClass} text-xs {action.state !== 'pending' ? 'opacity-50' : ''}"
+  class="my-1 rounded border ring-0 {colorClass} text-xs {action.state !== 'pending'
+    ? 'opacity-50'
+    : ''}"
 >
   <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2">
     <action.descriptor.icon class="h-3 w-3 shrink-0" />
@@ -148,6 +150,8 @@
     {:else if action.state === 'dismissed'}
       <span class="text-zinc-500">Dismissed</span>
     {:else}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="flex gap-1" onclick={(e) => e.preventDefault()}>
         <button
           onclick={(e) => {
