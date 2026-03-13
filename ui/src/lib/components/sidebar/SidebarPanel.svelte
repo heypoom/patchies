@@ -256,7 +256,7 @@
       <!-- Expanded section -->
       {#if isExpanded}
         <div class="flex flex-wrap items-center gap-1 border-t border-zinc-800 px-2 py-1.5">
-          {#each expandableItems as item}
+          {#each expandableItems as item (item.id)}
             {#if (!previewTab.isPromoted || item.id !== 'preview') && (!isSamplesPromoted || item.id !== 'samples') && (!isChatPromoted || item.id !== 'chat') && (!isProfilerPromoted || item.id !== 'profiler')}
               <button
                 class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
