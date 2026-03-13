@@ -9,7 +9,7 @@
     HOT_THRESHOLD_MS
   } from '../../../stores/profiler.store';
   import { requestFocusNodeId, nodeLabelsStore } from '../../../stores/ui.store';
-  import { profilerSettings, type DisplayStat } from '../../../stores/profiler-settings.store';
+  import { profilerSettings } from '../../../stores/profiler-settings.store';
   import type { ProfilerCategory, ProfilerSnapshot, TimingStats } from '$lib/profiler/types';
   import { SvelteSet } from 'svelte/reactivity';
 
@@ -548,7 +548,8 @@
         {@const rMaxMs = renderHistoryMax(history, RENDER_METRICS)}
         {@const rHistSpan = ((history.length - 1) * 0.5).toFixed(0)}
         <div class="mt-1.5 border-t border-zinc-800/60 pt-1.5">
-          <div class="mb-1 font-medium tracking-wide text-zinc-500 uppercase">Renderer</div>
+          <div class="mb-1 font-mono font-light tracking-wide text-zinc-500">renderer</div>
+
           {#if rf}
             <!-- Renderer sparkline chart -->
             {#if history.length >= 2}
@@ -592,14 +593,16 @@
             {/if}
 
             <!-- Legend + stats -->
-            <div class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+            <div class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 font-mono">
               {#each RENDER_METRICS as metric (metric.key)}
                 <span class="flex items-center gap-1 text-[10px]">
                   <span
                     class="inline-block h-0.5 w-3 rounded-full"
                     style:background-color={metric.color}
                   ></span>
+
                   <span class="text-zinc-600">{metric.label}</span>
+
                   <span class="text-zinc-400 tabular-nums">
                     {metric.key === 'fps' ? fmtFps(metric.get(rf)) : fmt(metric.get(rf))}
                   </span>
@@ -607,10 +610,35 @@
               {/each}
             </div>
 
+            <!-- Per-operation breakdown -->
+            {#if rf.blitAvgMs !== null || rf.transferAvgMs !== null || rf.previewAvgMs !== null || rf.videoAvgMs !== null}
+              <div class="mt-0.5 font-mono">
+                <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] tabular-nums">
+                  {#if rf.blitAvgMs !== null}
+                    <span class="text-zinc-600">blit→canvas</span>
+                    <span class="text-zinc-400">{fmt(rf.blitAvgMs)}</span>
+                  {/if}
+                  {#if rf.transferAvgMs !== null}
+                    <span class="text-zinc-600">transfer bitmap</span>
+                    <span class="text-zinc-400">{fmt(rf.transferAvgMs)}</span>
+                  {/if}
+                  {#if rf.previewAvgMs !== null}
+                    <span class="text-zinc-600">previews</span>
+                    <span class="text-zinc-400">{fmt(rf.previewAvgMs)}</span>
+                  {/if}
+                  {#if rf.videoAvgMs !== null}
+                    <span class="text-zinc-600">video harvest</span>
+                    <span class="text-zinc-400">{fmt(rf.videoAvgMs)}</span>
+                  {/if}
+                </div>
+              </div>
+            {/if}
+
             <!-- Extra stats -->
-            <div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] tabular-nums">
+            <div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 font-mono text-[10px] tabular-nums">
               <span class="text-zinc-600">drops@60</span>
               <span class={rf.drops60 > 0 ? 'text-amber-400' : 'text-zinc-400'}>{rf.drops60}</span>
+
               {#if rf.gpuReadAvgMs !== null}
                 <span class="text-zinc-600">gpu read</span>
                 <span class="text-zinc-400">{fmt(rf.gpuReadAvgMs)}</span>

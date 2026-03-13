@@ -21,6 +21,7 @@ import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
 import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { SwissGL } from '$lib/rendering/swissgl';
+import type { RenderOp } from '$lib/profiler/types';
 import type {
   AudioAnalysisType,
   AudioAnalysisPayloadWithType,
@@ -948,7 +949,9 @@ export class FBORenderer {
       const outputFBONode = this.fboNodes.get(effectiveOutputNodeId);
 
       if (outputFBONode) {
+        const t0 = performance.now();
         this.renderNodeToMainOutput(outputFBONode);
+        this.profiler.recordOp('blit', performance.now() - t0);
       }
     }
 
@@ -1093,6 +1096,11 @@ export class FBORenderer {
   /** Record frame time (call this at end of each frame) */
   public recordFrameTime() {
     this.profiler.recordFrameTime();
+  }
+
+  /** Record a per-operation timing sample for the render profiler */
+  public recordOp(op: RenderOp, elapsed: number) {
+    this.profiler.recordOp(op, elapsed);
   }
 
   private renderNodeToMainOutput(node: FBONode): void {

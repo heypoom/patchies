@@ -24,9 +24,19 @@ export interface RenderFrameStats {
   p50Ms: number;
   p95Ms: number;
   p99Ms: number;
+
+  // Frame drops below 60fps threshold
   drops60: number;
+
+  // Per-operation breakdown (average ms per frame, null if no samples)
   gpuReadAvgMs: number | null;
+  blitAvgMs: number | null;
+  transferAvgMs: number | null;
+  previewAvgMs: number | null;
+  videoAvgMs: number | null;
 }
+
+export type RenderOp = 'blit' | 'transfer' | 'preview' | 'video';
 
 export interface ProfilerSnapshot {
   timestamp: number;

@@ -1,4 +1,4 @@
-import type { RenderFrameStats } from '$lib/profiler/types';
+import type { RenderFrameStats, RenderOp } from '$lib/profiler/types';
 
 /**
  * Profiler for rendering performance metrics.
@@ -15,6 +15,14 @@ export class RenderingProfiler {
   // GPU readback profiling (getBufferSubData for PBO async reads)
   private gpuReadTimings: number[] = [];
 
+  // Per-operation breakdown timings
+  private opTimings: Record<RenderOp, number[]> = {
+    blit: [],
+    transfer: [],
+    preview: [],
+    video: []
+  };
+
   get isEnabled(): boolean {
     return this._isEnabled;
   }
@@ -22,21 +30,32 @@ export class RenderingProfiler {
   /** Enable/disable frame profiling */
   setEnabled(enabled: boolean) {
     this._isEnabled = enabled;
+
     if (enabled && !this.frameTimings) {
       this.frameTimings = new Float64Array(this.FRAME_TIMING_BUFFER_SIZE);
     }
+
     if (enabled) {
       this.lastFrameTime = performance.now();
       this.frameTimingIndex = 0;
       this.frameTimingCount = 0;
       this.gpuReadTimings = [];
+      this.opTimings = { blit: [], transfer: [], preview: [], video: [] };
     }
   }
 
   /** Record a GPU readback timing (getBufferSubData) */
   recordReglRead(elapsed: number) {
     if (!this._isEnabled) return;
+
     this.gpuReadTimings.push(elapsed);
+  }
+
+  /** Record a per-operation timing sample */
+  recordOp(op: RenderOp, elapsed: number) {
+    if (!this._isEnabled) return;
+
+    this.opTimings[op].push(elapsed);
   }
 
   /** Record frame time (call at end of each frame) */
@@ -76,10 +95,24 @@ export class RenderingProfiler {
       gpuReadAvgMs = readSum / this.gpuReadTimings.length;
     }
 
+    // Per-operation averages
+    const opAvg = (op: RenderOp): number | null => {
+      const arr = this.opTimings[op];
+      if (arr.length === 0) return null;
+
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    };
+
+    const blitAvgMs = opAvg('blit');
+    const transferAvgMs = opAvg('transfer');
+    const previewAvgMs = opAvg('preview');
+    const videoAvgMs = opAvg('video');
+
     // Reset
     this.frameTimingIndex = 0;
     this.frameTimingCount = 0;
     this.gpuReadTimings = [];
+    this.opTimings = { blit: [], transfer: [], preview: [], video: [] };
 
     return {
       fps: 1000 / avg,
@@ -88,7 +121,11 @@ export class RenderingProfiler {
       p95Ms: p95,
       p99Ms: p99,
       drops60,
-      gpuReadAvgMs
+      gpuReadAvgMs,
+      blitAvgMs,
+      transferAvgMs,
+      previewAvgMs,
+      videoAvgMs
     };
   }
 }

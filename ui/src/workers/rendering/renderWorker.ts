@@ -135,7 +135,9 @@ function handleStartAnimation() {
     }
 
     if (fboRenderer.isOutputEnabled) {
+      const t0 = performance.now();
       const outputBitmap = fboRenderer.getOutputBitmap();
+      fboRenderer.recordOp('transfer', performance.now() - t0);
 
       if (outputBitmap) {
         self.postMessage({ type: 'animationFrame', outputBitmap }, { transfer: [outputBitmap] });
@@ -143,7 +145,9 @@ function handleStartAnimation() {
     }
 
     if (fboRenderer.shouldProcessPreviews) {
+      const t1 = performance.now();
       const previewBitmaps = fboRenderer.renderPreviewBitmaps();
+      fboRenderer.recordOp('preview', performance.now() - t1);
 
       for (const [nodeId, bitmap] of previewBitmaps) {
         self.postMessage({ type: 'previewFrame', nodeId, bitmap }, { transfer: [bitmap] });
@@ -152,7 +156,9 @@ function handleStartAnimation() {
 
     // Harvest any completed async video frame captures
     if (fboRenderer.hasPendingVideoFrames()) {
+      const t2 = performance.now();
       const completedBatches = fboRenderer.harvestVideoFrames();
+      fboRenderer.recordOp('video', performance.now() - t2);
 
       if (completedBatches.length > 0) {
         // Collect all bitmaps for transfer
