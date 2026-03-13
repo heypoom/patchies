@@ -54,7 +54,7 @@ let vmInitPromise: Promise<void> | null = null;
 
 // State per node
 interface NodeState {
-  messageCallback: ((data: unknown, meta: Omit<Message, 'data'>) => void) | null;
+  messageCallbacks: ((data: unknown, meta: Omit<Message, 'data'>) => void)[];
   cleanupCallbacks: (() => void)[];
   directChannel: DirectChannelHandler;
 }
@@ -63,15 +63,15 @@ const nodeStates = new Map<string, NodeState>();
 
 function createNodeState(nodeId: string): NodeState {
   const state: Omit<NodeState, 'directChannel'> & { directChannel?: DirectChannelHandler } = {
-    messageCallback: null,
+    messageCallbacks: [],
     cleanupCallbacks: []
   };
 
   state.directChannel = createDirectChannelHandler({
     nodeId,
     onIncomingMessage: (data, meta) => {
-      if (state.messageCallback) {
-        state.messageCallback(data, meta);
+      for (const cb of state.messageCallbacks) {
+        cb(data, meta);
       }
     },
     onError: (error) => {
@@ -203,7 +203,7 @@ function createWorkerContext(nodeId: string) {
   };
 
   const onMessage = (callback: (data: unknown, meta: Omit<Message, 'data'>) => void) => {
-    state.messageCallback = callback;
+    state.messageCallbacks.push(callback);
     postResponse({ type: 'callbackRegistered', nodeId, callbackType: 'message' });
   };
 
@@ -248,8 +248,8 @@ function cleanupNode(nodeId: string) {
   }
   state.cleanupCallbacks = [];
 
-  // Clear message callback
-  state.messageCallback = null;
+  // Clear message callbacks
+  state.messageCallbacks = [];
 }
 
 /**
@@ -427,8 +427,10 @@ self.onmessage = async (event: MessageEvent<RubyWorkerMessage>) => {
     })
     .with({ type: 'incomingMessage' }, ({ data, meta }) => {
       const state = nodeStates.get(nodeId);
-      if (state?.messageCallback) {
-        invokeCallbackSafely(nodeId, () => state.messageCallback!(data, meta));
+      if (state?.messageCallbacks.length) {
+        for (const cb of state.messageCallbacks) {
+          invokeCallbackSafely(nodeId, () => cb(data, meta));
+        }
       }
     })
     .with({ type: 'cleanup' }, () => {

@@ -102,7 +102,7 @@
 
   function clearMessageHandler() {
     const messageContext = jsRunner.getMessageContext(nodeId);
-    messageContext.messageCallback = null;
+    messageContext.messageCallbacks = [];
     isMessageCallbackActive = false;
   }
 

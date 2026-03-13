@@ -79,7 +79,7 @@ export class MessageContext {
   public messageSystem: MessageSystem;
   public nodeId: string;
 
-  public messageCallback: MessageCallbackFn | null = null;
+  public messageCallbacks: MessageCallbackFn[] = [];
   private intervals: number[] = [];
   private timeouts: number[] = [];
   private animationFrames: number[] = [];
@@ -132,15 +132,17 @@ export class MessageContext {
       }
     };
 
-    try {
-      const result = this.messageCallback?.(data, meta) as unknown;
+    for (const cb of this.messageCallbacks) {
+      try {
+        const result = cb(data, meta) as unknown;
 
-      // Handle async callbacks that return a promise
-      if (result instanceof Promise) {
-        result.catch(handleError);
+        // Handle async callbacks that return a promise
+        if (result instanceof Promise) {
+          result.catch(handleError);
+        }
+      } catch (error) {
+        handleError(error);
       }
-    } catch (error) {
-      handleError(error);
     }
   };
 
@@ -167,7 +169,7 @@ export class MessageContext {
         this.subscribeToChannel(options.from, callback);
       } else {
         // Edge-based receiving - update the callback
-        this.messageCallback = callback;
+        this.messageCallbacks.push(callback);
       }
       // Always notify that a callback was registered (for border color indicator)
       this.onMessageCallbackRegistered();
@@ -393,8 +395,8 @@ export class MessageContext {
     // Unregister the node
     this.messageSystem.unregisterNode(this.nodeId);
 
-    // Clear callback
-    this.messageCallback = null;
+    // Clear callbacks
+    this.messageCallbacks = [];
   }
 
   private preloadAudioAnalysisSystem() {

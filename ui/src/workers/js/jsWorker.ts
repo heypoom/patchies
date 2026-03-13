@@ -24,7 +24,7 @@ interface NodeState {
   intervals: number[];
   timeouts: number[];
   cleanupCallbacks: (() => void)[];
-  messageCallback: ((data: unknown, meta: Omit<Message, 'data'>) => void) | null;
+  messageCallbacks: ((data: unknown, meta: Omit<Message, 'data'>) => void)[];
 
   /** Named channel callbacks for recv(callback, { channel }) */
   channelCallbacks: Map<string, (data: unknown, meta: Omit<Message, 'data'>) => void>;
@@ -61,7 +61,7 @@ function createNodeState(nodeId: string): NodeState {
     intervals: [],
     timeouts: [],
     cleanupCallbacks: [],
-    messageCallback: null,
+    messageCallbacks: [],
     channelCallbacks: new Map(),
     pendingDelays: new Map(),
     delayIdCounter: 0,
@@ -78,8 +78,8 @@ function createNodeState(nodeId: string): NodeState {
   state.directChannel = createDirectChannelHandler({
     nodeId,
     onIncomingMessage: (data, meta) => {
-      if (state.messageCallback) {
-        state.messageCallback(data, meta);
+      for (const cb of state.messageCallbacks) {
+        cb(data, meta);
       }
     },
     onError: (error) => {
@@ -182,7 +182,7 @@ function createWorkerContext(nodeId: string) {
       postResponse({ type: 'subscribeChannel', nodeId, channel: options.from });
     } else {
       // Edge-based receiving
-      state.messageCallback = callback;
+      state.messageCallbacks.push(callback);
     }
     // Always notify that a callback was registered (for border color indicator)
     postResponse({ type: 'callbackRegistered', nodeId, callbackType: 'message' });
@@ -407,8 +407,8 @@ function cleanupNode(nodeId: string) {
   }
   state.pendingDelays.clear();
 
-  // Clear message callback
-  state.messageCallback = null;
+  // Clear message callbacks
+  state.messageCallbacks = [];
 
   // Clear channel subscriptions - notify main thread to unsubscribe
   for (const channel of state.channelCallbacks.keys()) {
@@ -698,8 +698,10 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     })
     .with({ type: 'incomingMessage' }, ({ data, meta }) => {
       const state = nodeStates.get(nodeId);
-      if (state?.messageCallback) {
-        invokeCallbackSafely(nodeId, () => state.messageCallback!(data, meta));
+      if (state?.messageCallbacks.length) {
+        for (const cb of state.messageCallbacks) {
+          invokeCallbackSafely(nodeId, () => cb(data, meta));
+        }
       }
     })
     .with({ type: 'channelMessage' }, (msg) => {

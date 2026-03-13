@@ -116,7 +116,7 @@
   function stopLongRunningTasks() {
     const messageContext = jsRunner.getMessageContext(nodeId);
     messageContext.clearTimers();
-    messageContext.messageCallback = null;
+    messageContext.messageCallbacks = [];
   }
 
   async function runCode() {

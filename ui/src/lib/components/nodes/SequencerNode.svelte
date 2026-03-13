@@ -264,7 +264,7 @@
 
   onMount(() => {
     messageContext = new MessageContext(nodeId);
-    messageContext.messageCallback = handleInletMessage;
+    messageContext.messageCallbacks = [handleInletMessage];
 
     schedulerHandle = new SequencerScheduler(
       nodeId,
