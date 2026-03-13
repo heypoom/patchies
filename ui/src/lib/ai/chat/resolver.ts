@@ -1,4 +1,5 @@
 import { getObjectSpecificInstructions } from '../object-descriptions';
+import { OBJECT_TYPE_LIST } from '../object-descriptions-types';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from '../object-prompts/shared-jsrunner';
 import { buildCanvasToolDeclarations, toolNameToMode } from './canvas-tools';
 import { runModeResolver } from '../modes/run-resolver';
@@ -44,7 +45,11 @@ Help with:
 
 When you can perform a canvas action (create, edit, replace, fix errors, etc.) on the user's behalf, use the available tools. Only use tools when the user clearly wants a mutation — don't use them for explanations or questions.
 
-Keep answers concise and practical. Format code for the relevant node type.`;
+Keep answers concise and practical. Format code for the relevant node type.
+
+## Available Object Types
+
+${OBJECT_TYPE_LIST}`;
 
 /**
  * Streams a chat message response. Calls onChunk for each text chunk and
