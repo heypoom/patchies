@@ -1307,13 +1307,16 @@
     {/each}
 
     <!-- Activity tray: shows running AI prompts at top-right -->
-    <AiActivityTray
-      instances={aiPromptInstances}
-      onToggle={(id) => {
-        const instance = aiPromptInstances.find((i) => i.id === id);
-        if (instance) instance.minimized = !instance.minimized;
-      }}
-    />
+    {#if !($isMobile && $isSidebarOpen)}
+      <AiActivityTray
+        instances={aiPromptInstances}
+        onToggle={(id) => {
+          const instance = aiPromptInstances.find((i) => i.id === id);
+
+          if (instance) instance.minimized = !instance.minimized;
+        }}
+      />
+    {/if}
 
     <!-- Toast Notifications -->
     <Toaster position="top-center" />
