@@ -16,7 +16,7 @@
     isLoading = $bindable(false),
     thinkingText = $bindable(''),
     position,
-    mode: initialMode = 'insert',
+    mode: initialMode = $bindable<AiPromptMode>('insert'),
     context: initialContext = {},
     onInsertObject,
     onInsertMultipleObjects,
@@ -188,6 +188,7 @@
   $effect(() => {
     isLoading = ctrl.isLoading;
     thinkingText = ctrl.thinkingText ?? '';
+    initialMode = ctrl.mode;
   });
 
   // Detect external restore (tray sets isMinimized=false) → reset position + focus

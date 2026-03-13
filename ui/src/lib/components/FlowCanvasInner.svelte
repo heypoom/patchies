@@ -1297,7 +1297,7 @@
         bind:isLoading={instance.isLoading}
         bind:thinkingText={instance.thinkingText}
         position={instance.position}
-        mode={instance.mode}
+        bind:mode={instance.mode}
         context={instance.context}
         onInsertObject={handleAiObjectInsert}
         onInsertMultipleObjects={handleAiMultipleObjectsInsert}
