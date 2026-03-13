@@ -217,7 +217,10 @@
         </div>
       {:else}
         <div class="flex items-start gap-2">
-          <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
+          {#if !message.actionId}
+            <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
+          {/if}
+
           <div class="min-w-0 flex-1">
             {#if message.content}
               <MarkdownContent markdown={message.content} />
