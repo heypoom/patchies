@@ -134,9 +134,9 @@ export class MessageContext {
     };
 
     profiler.measure(this.nodeId, 'message', () => {
-      for (const cb of this.messageCallbacks) {
+      for (const callback of this.messageCallbacks) {
         try {
-          const result = cb(data, meta) as unknown;
+          const result = callback(data, meta) as unknown;
           if (result instanceof Promise) {
             result.catch(handleError);
           }

@@ -327,8 +327,8 @@ export class BufferBridgeService {
   }
 
   private notifyChange(name: string, event: BufferChangeEvent): void {
-    for (const cb of this.changeListeners) {
-      cb(name, event);
+    for (const callback of this.changeListeners) {
+      callback(name, event);
     }
   }
 }

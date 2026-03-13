@@ -389,9 +389,9 @@ function cleanupNode(nodeId: string) {
   if (!state) return;
 
   // Run cleanup callbacks
-  for (const cb of state.cleanupCallbacks) {
+  for (const callback of state.cleanupCallbacks) {
     try {
-      cb();
+      callback();
     } catch {
       // Ignore cleanup errors
     }
