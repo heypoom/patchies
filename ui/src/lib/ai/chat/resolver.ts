@@ -252,28 +252,41 @@ export async function streamChatMessage(
   return fullText;
 }
 
+const NODE_SCOPED_MODES = new Set<AiPromptMode>([
+  'edit',
+  'replace',
+  'fix-error',
+  'create-consumer',
+  'create-producer',
+  'decompose'
+]);
+
 function buildContextFromArgs(
   mode: AiPromptMode,
   args: Record<string, unknown>,
   getNodeById?: (nodeId: string) => ChatNode | undefined
 ): AiModeContext {
-  const nodeId = args.nodeId as string | undefined;
-  if (!nodeId) return {};
+  const context: AiModeContext = {};
 
-  const node = getNodeById?.(nodeId);
-  if (!node) return {};
+  if (Array.isArray(args.errors)) {
+    context.consoleErrors = args.errors as string[];
+  }
 
-  const context: AiModeContext = {
-    selectedNode: {
+  if (NODE_SCOPED_MODES.has(mode)) {
+    const nodeId = args.nodeId as string | undefined;
+
+    if (!nodeId) throw new Error(`Mode "${mode}" requires a nodeId`);
+
+    const node = getNodeById?.(nodeId);
+
+    if (!node) throw new Error(`Node "${nodeId}" not found`);
+
+    context.selectedNode = {
       id: node.id,
       type: node.type,
       data: node.data,
       position: { x: 0, y: 0 }
-    }
-  };
-
-  if (mode === 'fix-error' && Array.isArray(args.errors)) {
-    context.consoleErrors = args.errors as string[];
+    };
   }
 
   return context;
