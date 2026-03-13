@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, ChevronRight, X } from '@lucide/svelte/icons';
+  import { Check, ChevronLeft, ChevronRight, X } from '@lucide/svelte/icons';
   import { match } from 'ts-pattern';
   import { diffLines } from 'diff';
   import type { ChatAction, ChatNode } from '$lib/ai/chat/resolver';
@@ -39,6 +39,13 @@
 
   type DiffLine = { type: 'added' | 'removed' | 'context'; text: string };
 
+  interface Preview {
+    kind: 'diff';
+    label: string;
+    lines: DiffLine[];
+    hasChanges: boolean;
+  }
+
   function extractCode(data: Record<string, unknown>): string | null {
     for (const field of ['code', 'expr']) {
       const val = data[field];
@@ -52,9 +59,7 @@
     const lines: DiffLine[] = [];
     for (const hunk of hunks) {
       const type = hunk.added ? 'added' : hunk.removed ? 'removed' : 'context';
-      // Each hunk may contain multiple lines
       const hunkLines = (hunk.value ?? '').split('\n');
-      // Remove trailing empty string from split
       if (hunkLines.at(-1) === '') hunkLines.pop();
       for (const text of hunkLines) {
         lines.push({ type, text });
@@ -63,55 +68,72 @@
     return lines;
   }
 
-  interface Preview {
-    kind: 'diff';
-    lines: DiffLine[];
-    hasChanges: boolean;
-  }
-
-  const preview = $derived.by((): Preview | null => {
+  // All previewable pages (one per node with code, or a single page for edit/replace/single)
+  const pages = $derived.by((): Preview[] => {
     const result = action.result;
 
     if (result.kind === 'edit' || result.kind === 'replace') {
-      const nodeId = result.nodeId;
       const newData = result.kind === 'edit' ? result.data : result.newData;
       const newCode = extractCode(newData);
-      if (!newCode) return null;
+      if (!newCode) return [];
 
-      const oldNode = getNodeById?.(nodeId);
+      const oldNode = getNodeById?.(result.nodeId);
       const oldCode = oldNode ? extractCode(oldNode.data) : null;
 
       if (oldCode) {
         const lines = computeDiff(oldCode, newCode);
-        const hasChanges = lines.some((l) => l.type !== 'context');
-        return { kind: 'diff', lines, hasChanges };
+        return [
+          {
+            kind: 'diff',
+            label: result.kind === 'replace' ? result.newType : 'edit',
+            lines,
+            hasChanges: lines.some((l) => l.type !== 'context')
+          }
+        ];
       }
-
-      // No old code to diff against — show full new code as all-added lines
-      const lines: DiffLine[] = newCode.split('\n').map((text) => ({ type: 'added', text }));
-      return { kind: 'diff', lines, hasChanges: true };
+      return [
+        {
+          kind: 'diff',
+          label: result.kind === 'replace' ? result.newType : 'edit',
+          lines: newCode.split('\n').map((text) => ({ type: 'added', text })),
+          hasChanges: true
+        }
+      ];
     }
 
     if (result.kind === 'single') {
       const newCode = extractCode(result.data);
-      if (!newCode) return null;
-      const lines: DiffLine[] = newCode.split('\n').map((text) => ({ type: 'added', text }));
-      return { kind: 'diff', lines, hasChanges: true };
+      if (!newCode) return [];
+      return [
+        {
+          kind: 'diff',
+          label: result.type,
+          lines: newCode.split('\n').map((text) => ({ type: 'added', text })),
+          hasChanges: true
+        }
+      ];
     }
 
     if (result.kind === 'multi') {
-      for (const node of result.nodes) {
-        const newCode = extractCode(node.data as Record<string, unknown>);
-        if (newCode) {
-          const lines: DiffLine[] = newCode.split('\n').map((text) => ({ type: 'added', text }));
-          return { kind: 'diff', lines, hasChanges: true };
-        }
-      }
-      return null;
+      return result.nodes
+        .filter((n) => extractCode(n.data as Record<string, unknown>))
+        .map((n) => {
+          const code = extractCode(n.data as Record<string, unknown>)!;
+          return {
+            kind: 'diff' as const,
+            label: n.type ?? 'node',
+            lines: code.split('\n').map((text) => ({ type: 'added' as const, text })),
+            hasChanges: true
+          };
+        });
     }
 
-    return null;
+    return [];
   });
+
+  let pageIndex = $state(0);
+
+  const currentPage = $derived(pages[pageIndex] ?? null);
 
   function getMultiNodeList(result: AiModeResult): string | null {
     if (result.kind !== 'multi') return null;
@@ -183,9 +205,37 @@
 
   <!-- Preview pane -->
   <div class="border-t border-current/20">
-    {#if preview}
+    {#if currentPage}
+      <!-- Pagination bar (only for multi-page) -->
+      {#if pages.length > 1}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="flex items-center gap-1 border-b border-current/20 px-2 py-1"
+          onclick={(e) => e.stopPropagation()}
+        >
+          <button
+            onclick={() => (pageIndex = Math.max(0, pageIndex - 1))}
+            disabled={pageIndex === 0}
+            class="cursor-pointer rounded p-0.5 text-current/50 transition-colors hover:bg-current/10 hover:text-current disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <ChevronLeft class="h-3 w-3" />
+          </button>
+          <span class="flex-1 text-center font-mono text-[10px] text-current/60">
+            {currentPage.label} ({pageIndex + 1}/{pages.length})
+          </span>
+          <button
+            onclick={() => (pageIndex = Math.min(pages.length - 1, pageIndex + 1))}
+            disabled={pageIndex === pages.length - 1}
+            class="cursor-pointer rounded p-0.5 text-current/50 transition-colors hover:bg-current/10 hover:text-current disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <ChevronRight class="h-3 w-3" />
+          </button>
+        </div>
+      {/if}
+
       <pre
-        class="overflow-x-auto p-2 font-mono text-[10px] leading-relaxed">{#each preview.lines as line, i (i)}{#if line.type === 'added'}<span
+        class="overflow-x-auto p-2 font-mono text-[10px] leading-relaxed">{#each currentPage.lines as line, i (i)}{#if line.type === 'added'}<span
               class="block bg-green-950/60 text-green-300">+{line.text}</span
             >{:else if line.type === 'removed'}<span class="block bg-red-950/60 text-red-400"
               >-{line.text}</span

@@ -141,10 +141,10 @@
           ? (action) => {
               actions.set(action.id, action);
 
+              pendingActions = [...pendingActions, action.id];
+
               if (autoApprove) {
                 applyAction(action);
-              } else {
-                pendingActions = [...pendingActions, action.id];
               }
             }
           : undefined
@@ -244,27 +244,45 @@
         </div>
       {:else}
         <div class="flex items-start gap-2">
-          {#if !message.actions?.length}
+          {#if !message.actions?.length || message.thinking || message.content}
             <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
           {/if}
 
           <div class="min-w-0 flex-1">
+            {#if message.thinking}
+              <details>
+                <summary
+                  class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
+                >
+                  Thinking
+                </summary>
+
+                <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
+                  <MarkdownContent markdown={message.thinking} />
+                </div>
+              </details>
+            {/if}
+
             {#if message.content}
               <MarkdownContent markdown={message.content} />
             {/if}
 
-            {#each message.actions ?? [] as ref (ref.id)}
-              {@const action = actions.get(ref.id)}
+            <div
+              class={message.actions?.length && (message.thinking || message.content) ? 'mt-2' : ''}
+            >
+              {#each message.actions ?? [] as ref (ref.id)}
+                {@const action = actions.get(ref.id)}
 
-              {#if action && aiCallbacks}
-                <ActionCard
-                  {action}
-                  callbacks={aiCallbacks}
-                  onStateChange={updateActionState}
-                  {getNodeById}
-                />
-              {/if}
-            {/each}
+                {#if action && aiCallbacks}
+                  <ActionCard
+                    {action}
+                    callbacks={aiCallbacks}
+                    onStateChange={updateActionState}
+                    {getNodeById}
+                  />
+                {/if}
+              {/each}
+            </div>
           </div>
         </div>
       {/if}
