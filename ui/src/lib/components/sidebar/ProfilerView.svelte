@@ -615,17 +615,20 @@
               <div class="mt-0.5 font-mono">
                 <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] tabular-nums">
                   {#if rf.blitAvgMs !== null}
-                    <span class="text-zinc-600">blit→canvas</span>
+                    <span class="text-zinc-600">blit</span>
                     <span class="text-zinc-400">{fmt(rf.blitAvgMs)}</span>
                   {/if}
+
                   {#if rf.transferAvgMs !== null}
                     <span class="text-zinc-600">transfer bitmap</span>
                     <span class="text-zinc-400">{fmt(rf.transferAvgMs)}</span>
                   {/if}
+
                   {#if rf.previewAvgMs !== null}
                     <span class="text-zinc-600">previews</span>
                     <span class="text-zinc-400">{fmt(rf.previewAvgMs)}</span>
                   {/if}
+
                   {#if rf.videoAvgMs !== null}
                     <span class="text-zinc-600">video harvest</span>
                     <span class="text-zinc-400">{fmt(rf.videoAvgMs)}</span>
