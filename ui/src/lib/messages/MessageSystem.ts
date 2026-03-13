@@ -1,6 +1,7 @@
 import type { Edge } from '@xyflow/svelte';
 import type { SendMessageOptions } from './MessageContext';
 import { logger } from '$lib/utils/logger';
+import { profiler } from '$lib/profiler';
 
 export interface Message<T = unknown> {
   data: T;
@@ -189,12 +190,14 @@ export class MessageSystem {
           continue;
         }
 
-        targetQueue.sendMessage({
-          ...message,
-          inlet,
-          inletKey,
-          outlet,
-          outletKey
+        profiler.measureBroadcast(() => {
+          targetQueue.sendMessage({
+            ...message,
+            inlet,
+            inletKey,
+            outlet,
+            outletKey
+          });
         });
       }
     }
