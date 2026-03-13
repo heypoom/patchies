@@ -121,7 +121,11 @@
   <!-- Chat views — all always-mounted to preserve state -->
   {#each $chatSessionsStore.sessions as session (session.id)}
     <div class="min-h-0 flex-1 {$chatSessionsStore.activeId === session.id ? '' : 'hidden'}">
-      <ChatView {aiCallbacks} {getNodeById} />
+      <ChatView
+        {aiCallbacks}
+        {getNodeById}
+        onRename={(name) => chatSessionsStore.renameSession(session.id, name)}
+      />
     </div>
   {/each}
 </div>

@@ -6,6 +6,7 @@
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import {
     streamChatMessage,
+    generateChatTitle,
     type ChatMessage,
     type ChatAction,
     type ChatNode
@@ -17,10 +18,12 @@
 
   let {
     aiCallbacks,
-    getNodeById
+    getNodeById,
+    onRename
   }: {
     aiCallbacks?: AiPromptCallbacks;
     getNodeById?: (nodeId: string) => ChatNode | undefined;
+    onRename?: (name: string) => void;
   } = $props();
 
   interface ThreadActionRef {
@@ -117,9 +120,16 @@
       { role: 'user', content: userContent }
     ];
 
+    const isFirstMessage = messages.length === 0;
     messages = [...messages, { role: 'user', content: userContent }];
     inputText = '';
     isLoading = true;
+
+    if (isFirstMessage && onRename) {
+      generateChatTitle(userContent).then((title) => {
+        if (title) onRename(title);
+      });
+    }
     streamingText = '';
     thinkingText = '';
     pendingActions = [];

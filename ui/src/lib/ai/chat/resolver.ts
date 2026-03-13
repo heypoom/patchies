@@ -295,3 +295,33 @@ function buildContextFromArgs(
 
   return context;
 }
+
+/**
+ * Generates a short descriptive title for a chat session based on the first user message.
+ * Returns null if the API key is missing or the call fails.
+ */
+export async function generateChatTitle(userMessage: string): Promise<string | null> {
+  const apiKey = localStorage.getItem('gemini-api-key');
+  if (!apiKey) return null;
+
+  try {
+    const { GoogleGenAI } = await import('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [
+        {
+          text: `Generate a very short title (2-5 words) for a chat conversation that starts with this message. Reply with only the title, no quotes, no punctuation at the end:\n\n${userMessage}`
+        }
+      ]
+    });
+
+    const title = response.text?.trim();
+
+    return title || null;
+  } catch (err) {
+    console.error('[generateChatTitle] failed:', err);
+    return null;
+  }
+}
