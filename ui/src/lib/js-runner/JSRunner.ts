@@ -362,11 +362,6 @@ export class JSRunner {
       ? JSRunner.noopMessageContext
       : this.setupRunnerMessageContext(nodeId);
 
-    // Mark the MessageContext for profiling (enables timing in messageCallbackHandler)
-    if (!skipMessageContext) {
-      this.getMessageContext(nodeId).profilerNodeType = 'js';
-    }
-
     // Clear stale logs from last run, so only errors from the current run are visible
     if (!skipMessageContext) {
       logger.clearNodeLogs(nodeId);
@@ -501,7 +496,8 @@ export class JSRunner {
     if (profiler.enabled && !options.skipMessageContext) {
       const t0 = performance.now();
       const result = userFunction(...functionArgs) as Promise<unknown> | unknown;
-      const record = () => profiler.recordInit(nodeId, 'js', performance.now() - t0);
+      const record = () =>
+        profiler.recordInit(nodeId, typeFromNodeId(nodeId), performance.now() - t0);
       if (result instanceof Promise) {
         result.then(record, record);
       } else {

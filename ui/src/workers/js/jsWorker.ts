@@ -15,68 +15,15 @@ import {
 } from '../shared/directChannelHandler';
 import { PatchStorageService } from '$lib/storage/PatchStorageService';
 import { createKVStore } from '$lib/storage/KVStore';
-import { ProfilerCollector } from '$lib/profiler/ProfilerCollector';
-import type { TimingStats } from '$lib/profiler/types';
+import { WorkerProfiler } from '../shared/WorkerProfiler';
 
 // Module storage (synced from main thread)
 const modules = new Map<string, string>();
 
-// Profiler state
-let profilerEnabled = false;
-const profilerMessageCollectors = new Map<string, ProfilerCollector>();
-
-// Flush profiler stats to main thread every 500ms
-let profilerFlushInterval: ReturnType<typeof setInterval> | null = null;
-
-function startProfilerFlush() {
-  if (profilerFlushInterval !== null) return;
-  profilerFlushInterval = setInterval(() => {
-    const now = performance.now();
-    for (const [nodeId, collector] of profilerMessageCollectors) {
-      const stats = collector.flush(now);
-      if (stats.avg === 0 && stats.callsPerSecond === 0) continue;
-      const response: {
-        type: 'profilerStats';
-        nodeId: string;
-        messageStats: TimingStats;
-        initDurationMs: null;
-      } = {
-        type: 'profilerStats',
-        nodeId,
-        messageStats: stats,
-        initDurationMs: null
-      };
-      self.postMessage(response);
-    }
-  }, 500);
-}
-
-function stopProfilerFlush() {
-  if (profilerFlushInterval !== null) {
-    clearInterval(profilerFlushInterval);
-    profilerFlushInterval = null;
-  }
-  profilerMessageCollectors.clear();
-}
-
-/**
- * Measure a synchronous callback and record its duration in the per-node ring buffer.
- * When profiling is disabled, the callback is called directly with no overhead.
- */
-function measureMessage(nodeId: string, fn: () => void): void {
-  if (!profilerEnabled) {
-    fn();
-    return;
-  }
-  const t0 = performance.now();
-  fn();
-  let collector = profilerMessageCollectors.get(nodeId);
-  if (!collector) {
-    collector = new ProfilerCollector();
-    profilerMessageCollectors.set(nodeId, collector);
-  }
-  collector.record(performance.now() - t0);
-}
+// Profiler
+const workerProfiler = new WorkerProfiler((nodeId, stats) => {
+  self.postMessage({ type: 'profilerStats', nodeId, messageStats: stats, initDurationMs: null });
+});
 
 // Timer and callback tracking per node
 interface NodeState {
@@ -554,7 +501,7 @@ async function executeCode(nodeId: string, processedCode: string) {
 
   try {
     const userFunction = new Function(...functionParams, codeWithWrapper);
-    if (profilerEnabled) {
+    if (workerProfiler.isEnabled) {
       const t0 = performance.now();
       await userFunction(...functionArgs);
       const initDurationMs = performance.now() - t0;
@@ -766,7 +713,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       const state = nodeStates.get(nodeId);
 
       if (state?.messageCallbacks.length) {
-        measureMessage(nodeId, () => {
+        workerProfiler.measure(nodeId, () => {
           for (const callback of state.messageCallbacks) {
             invokeCallbackSafely(nodeId, () => callback(data, meta));
           }
@@ -854,12 +801,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       );
     })
     .with({ type: 'profilerEnable' }, ({ enabled }) => {
-      profilerEnabled = enabled;
-      if (enabled) {
-        startProfilerFlush();
-      } else {
-        stopProfilerFlush();
-      }
+      workerProfiler.setEnabled(enabled);
     })
     .otherwise(() => {});
 };

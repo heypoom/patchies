@@ -16,13 +16,16 @@ export class ProfilerCollector {
   record(durationMs: number): void {
     this.samples[this.head] = durationMs;
     this.head = (this.head + 1) % CAPACITY;
+
     if (this.count < CAPACITY) this.count++;
+
     this.messagesSinceFlush++;
   }
 
   flush(now: number): TimingStats {
     const elapsed = (now - this.lastFlushTime) / 1000;
     const callsPerSecond = elapsed > 0 ? this.messagesSinceFlush / elapsed : 0;
+
     this.messagesSinceFlush = 0;
     this.lastFlushTime = now;
 
@@ -38,8 +41,10 @@ export class ProfilerCollector {
     for (let i = 0; i < this.count; i++) {
       const idx = (this.head - this.count + i + CAPACITY) % CAPACITY;
       const v = this.samples[idx];
+
       sorted[i] = v;
       sum += v;
+
       if (v > max) max = v;
     }
 

@@ -2,6 +2,7 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
 import { MessageSystem, type MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { match } from 'ts-pattern';
+import { profiler, ProfilerCoordinator } from '$lib/profiler';
 import type { RubyWorkerMessage, RubyWorkerResponse } from '../../workers/ruby/rubyWorker';
 import RubyWorker from '../../workers/ruby/rubyWorker?worker';
 
@@ -27,6 +28,18 @@ export class RubyNodeSystem {
       RubyNodeSystem.instance = new RubyNodeSystem();
     }
     return RubyNodeSystem.instance;
+  }
+
+  constructor() {
+    profiler.onEnableChange((enabled) => {
+      for (const [nodeId, instance] of this.workers) {
+        instance.worker.postMessage({
+          type: 'profilerEnable',
+          nodeId,
+          enabled
+        } satisfies RubyWorkerMessage);
+      }
+    });
   }
 
   /**
@@ -66,6 +79,13 @@ export class RubyNodeSystem {
     };
 
     this.workers.set(nodeId, instance);
+
+    // Send initial profiler state
+    worker.postMessage({
+      type: 'profilerEnable',
+      nodeId,
+      enabled: profiler.enabled
+    } satisfies RubyWorkerMessage);
 
     // Register with DirectChannelService for direct render/worker messaging
     DirectChannelService.getInstance().registerWorker(nodeId, worker);
@@ -233,8 +253,16 @@ export class RubyNodeSystem {
       .with({ type: 'flash' }, () => {
         this.eventBus.dispatch({ type: 'workerFlash', nodeId });
       })
-      .with({ type: 'executionComplete' }, () => {
-        // Handled by executeCode promise
+      .with({ type: 'executionComplete' }, ({ initDurationMs }) => {
+        if (profiler.enabled && initDurationMs != null) {
+          ProfilerCoordinator.getInstance().recordInit(nodeId, 'ruby', initDurationMs);
+        }
+        // Promise resolution handled by executeCode
+      })
+      .with({ type: 'profilerStats' }, ({ messageStats }) => {
+        if (profiler.enabled) {
+          ProfilerCoordinator.getInstance().recordWorkerStats(nodeId, 'ruby', messageStats, null);
+        }
       })
       .otherwise(() => {});
   }
