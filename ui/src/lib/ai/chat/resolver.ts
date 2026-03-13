@@ -5,6 +5,10 @@ import { buildCanvasToolDeclarations, toolNameToMode } from './canvas-tools';
 import { runModeResolver } from '../modes/run-resolver';
 import { getModeDescriptor } from '../modes/descriptors';
 import type { AiModeContext, AiPromptMode, AiModeDescriptor, AiModeResult } from '../modes/types';
+import { topicMetas } from '$lib/docs/topic-index';
+import { objectSchemas } from '$lib/objects/schemas';
+import { fetchTopicHelp } from '$lib/docs/fetch-topic-help';
+import { fetchObjectHelp } from '$lib/objects/fetch-object-help';
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -126,8 +130,16 @@ export async function streamChatMessage(
   const GET_OBJECT_INSTRUCTIONS = 'get_object_instructions';
   const GET_GRAPH_NODES = 'get_graph_nodes';
   const GET_NODE_DATA = 'get_node_data';
+  const SEARCH_DOCS = 'search_docs';
+  const GET_DOC_CONTENT = 'get_doc_content';
 
-  const CONTEXT_TOOL_NAMES = new Set([GET_OBJECT_INSTRUCTIONS, GET_GRAPH_NODES, GET_NODE_DATA]);
+  const CONTEXT_TOOL_NAMES = new Set([
+    GET_OBJECT_INSTRUCTIONS,
+    GET_GRAPH_NODES,
+    GET_NODE_DATA,
+    SEARCH_DOCS,
+    GET_DOC_CONTENT
+  ]);
 
   const contextToolDeclarations = [
     {
@@ -160,6 +172,42 @@ export async function streamChatMessage(
           nodeId: { type: 'string', description: 'The node ID to fetch data for' }
         },
         required: ['nodeId']
+      }
+    },
+    {
+      name: SEARCH_DOCS,
+      description:
+        'Search available documentation by keyword. Returns matching topic guides and object reference pages with metadata. Call this to discover relevant docs before fetching content.',
+      parametersJsonSchema: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'Search query (matches title, slug, category, description, tags)'
+          }
+        },
+        required: ['query']
+      }
+    },
+    {
+      name: GET_DOC_CONTENT,
+      description:
+        'Fetch the full markdown content of a documentation page. Use search_docs first to find the correct slug.',
+      parametersJsonSchema: {
+        type: 'object',
+        properties: {
+          kind: {
+            type: 'string',
+            enum: ['topic', 'object'],
+            description: '"topic" for guide pages, "object" for object reference pages'
+          },
+          slug: {
+            type: 'string',
+            description:
+              'For topics: the topic slug (e.g. "adding-objects"). For objects: the object type (e.g. "p5", "gain~")'
+          }
+        },
+        required: ['kind', 'slug']
       }
     }
   ];
@@ -264,43 +312,111 @@ export async function streamChatMessage(
     if (contextCalls.length === 0) break;
 
     // Respond to context-fetching calls and loop for continuation
-    const functionResponses = contextCalls.map(({ functionCall }) => {
-      const name = functionCall.name ?? '';
+    const functionResponses = await Promise.all(
+      contextCalls.map(async ({ functionCall }) => {
+        const name = functionCall.name ?? '';
 
-      if (name === GET_GRAPH_NODES) {
-        const nodes = getAllNodes?.() ?? [];
-        return {
-          functionResponse: {
-            name: GET_GRAPH_NODES,
-            response: { nodes }
-          }
-        };
-      }
-
-      if (name === GET_NODE_DATA) {
-        const nodeId = (functionCall.args?.nodeId as string) ?? '';
-        const node = getNodeById?.(nodeId);
-        return {
-          functionResponse: {
-            name: GET_NODE_DATA,
-            response: node
-              ? { id: node.id, type: node.type, data: node.data }
-              : { error: `Node "${nodeId}" not found` }
-          }
-        };
-      }
-
-      // GET_OBJECT_INSTRUCTIONS
-      const type = (functionCall.args?.type as string) ?? '';
-      const instructions =
-        getObjectSpecificInstructions(type) || `No specific instructions found for "${type}".`;
-      return {
-        functionResponse: {
-          name: GET_OBJECT_INSTRUCTIONS,
-          response: { instructions }
+        if (name === GET_GRAPH_NODES) {
+          const nodes = getAllNodes?.() ?? [];
+          return {
+            functionResponse: {
+              name: GET_GRAPH_NODES,
+              response: { nodes }
+            }
+          };
         }
-      };
-    });
+
+        if (name === GET_NODE_DATA) {
+          const nodeId = (functionCall.args?.nodeId as string) ?? '';
+          const node = getNodeById?.(nodeId);
+          return {
+            functionResponse: {
+              name: GET_NODE_DATA,
+              response: node
+                ? { id: node.id, type: node.type, data: node.data }
+                : { error: `Node "${nodeId}" not found` }
+            }
+          };
+        }
+
+        if (name === SEARCH_DOCS) {
+          const query = ((functionCall.args?.query as string) ?? '').toLowerCase().trim();
+          const matchingTopics = topicMetas
+            .filter(
+              (t) =>
+                t.slug.includes(query) ||
+                t.title.toLowerCase().includes(query) ||
+                t.category.toLowerCase().includes(query)
+            )
+            .map((t) => ({ kind: 'topic', slug: t.slug, title: t.title, category: t.category }));
+
+          const matchingObjects = Object.values(objectSchemas)
+            .filter(
+              (s) =>
+                s.type.toLowerCase().includes(query) ||
+                s.description.toLowerCase().includes(query) ||
+                s.category.toLowerCase().includes(query) ||
+                s.tags?.some((tag) => tag.toLowerCase().includes(query))
+            )
+            .map((s) => ({
+              kind: 'object',
+              slug: s.type,
+              title: s.type,
+              category: s.category,
+              description: s.description
+            }));
+
+          return {
+            functionResponse: {
+              name: SEARCH_DOCS,
+              response: {
+                results: [...matchingTopics, ...matchingObjects],
+                total: matchingTopics.length + matchingObjects.length
+              }
+            }
+          };
+        }
+
+        if (name === GET_DOC_CONTENT) {
+          const kind = (functionCall.args?.kind as string) ?? '';
+          const slug = (functionCall.args?.slug as string) ?? '';
+
+          if (kind === 'topic') {
+            const content = await fetchTopicHelp(slug);
+            return {
+              functionResponse: {
+                name: GET_DOC_CONTENT,
+                response: content.markdown
+                  ? { kind: 'topic', slug, markdown: content.markdown }
+                  : { error: `No documentation found for topic "${slug}"` }
+              }
+            };
+          }
+
+          // kind === 'object'
+          const content = await fetchObjectHelp(slug);
+          return {
+            functionResponse: {
+              name: GET_DOC_CONTENT,
+              response: content.markdown
+                ? { kind: 'object', slug, markdown: content.markdown }
+                : { error: `No documentation found for object "${slug}"` }
+            }
+          };
+        }
+
+        // GET_OBJECT_INSTRUCTIONS
+        const type = (functionCall.args?.type as string) ?? '';
+        const instructions =
+          getObjectSpecificInstructions(type) || `No specific instructions found for "${type}".`;
+        return {
+          functionResponse: {
+            name: GET_OBJECT_INSTRUCTIONS,
+            response: { instructions }
+          }
+        };
+      })
+    );
 
     contents.push({ role: 'user', parts: functionResponses });
   }
