@@ -6,7 +6,7 @@ export interface TimingStats {
   callsPerSecond: number;
 }
 
-export type ProfilerCategory = 'init' | 'message' | 'broadcast' | 'draw' | 'interval' | 'raf';
+export type ProfilerCategory = 'init' | 'message' | 'draw' | 'interval' | 'raf';
 
 export interface NodeProfileEntry {
   nodeId: string;

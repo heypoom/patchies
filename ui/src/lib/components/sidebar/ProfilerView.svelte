@@ -24,19 +24,11 @@
 
   // ─── Category metadata ───────────────────────────────────────────────────────
 
-  const ORDERED_CATEGORIES: ProfilerCategory[] = [
-    'init',
-    'message',
-    'broadcast',
-    'draw',
-    'interval',
-    'raf'
-  ];
+  const ORDERED_CATEGORIES: ProfilerCategory[] = ['init', 'message', 'draw', 'interval', 'raf'];
 
   const CATEGORY_LABEL: Record<ProfilerCategory, string> = {
     init: 'init',
     message: 'msg',
-    broadcast: 'bcast',
     draw: 'draw',
     interval: 'int',
     raf: 'raf'
@@ -45,7 +37,6 @@
   const CATEGORY_COLOR: Record<ProfilerCategory, string> = {
     init: '#a1a1aa', // zinc-400   – one-time cost
     message: '#60a5fa', // blue-400   – recv/onMessage
-    broadcast: '#f472b6', // pink-400   – wireless send/recv broadcast
     draw: '#fb923c', // orange-400 – render/draw
     interval: '#34d399', // emerald-400– setInterval
     raf: '#a78bfa' // violet-400 – requestAnimationFrame
@@ -67,7 +58,7 @@
     $profilerSnapshot
       ? Math.max(
           ...$profilerSnapshot.entries.map(
-            (e) => e.timings.message?.avg ?? e.timings.broadcast?.avg ?? e.timings.draw?.avg ?? 0
+            (e) => e.timings.message?.avg ?? e.timings.draw?.avg ?? 0
           ),
           0.01
         )
@@ -198,11 +189,7 @@
       </div>
 
       {#each $profilerSnapshot.entries as entry (entry.nodeId)}
-        {@const msgAvg =
-          entry.timings.message?.avg ??
-          entry.timings.broadcast?.avg ??
-          entry.timings.draw?.avg ??
-          0}
+        {@const msgAvg = entry.timings.message?.avg ?? entry.timings.draw?.avg ?? 0}
 
         {@const isSevere = msgAvg > HOT_THRESHOLD_MS * 5}
         {@const isHot = entry.isHot}
@@ -392,9 +379,7 @@
     <!-- Footer: threshold note + dev stats toggle -->
     <div class="border-t border-zinc-800 px-3 py-1.5 text-[10px] text-zinc-600">
       <div class="flex items-center justify-between">
-        <span
-          >⚠ hot &gt; {HOT_THRESHOLD_MS}ms · msg=recv · bcast=wireless · int=setInterval · raf=rAF</span
-        >
+        <span>⚠ hot &gt; {HOT_THRESHOLD_MS}ms · msg=recv · int=setInterval · raf=rAF</span>
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button

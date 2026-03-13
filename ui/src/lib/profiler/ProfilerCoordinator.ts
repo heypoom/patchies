@@ -207,17 +207,15 @@ export class ProfilerCoordinator {
       entries.push({ nodeId, nodeType: type, timings, isHot });
     }
 
-    // Sort by message avg → broadcast avg → draw avg → highest other category avg
+    // Sort by message avg → draw avg → highest other category avg
     entries.sort((a, b) => {
       const aAvg =
         a.timings.message?.avg ??
-        a.timings.broadcast?.avg ??
         a.timings.draw?.avg ??
         Math.max(...Object.values(a.timings).map((t) => t?.avg ?? 0));
 
       const bAvg =
         b.timings.message?.avg ??
-        b.timings.broadcast?.avg ??
         b.timings.draw?.avg ??
         Math.max(...Object.values(b.timings).map((t) => t?.avg ?? 0));
 

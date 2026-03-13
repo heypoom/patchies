@@ -65,26 +65,19 @@ export const profiler = {
   },
 
   /**
-   * Measure a wireless broadcast callback for a specific receiver node.
-   * Records under 'broadcast' for the receiver's nodeId, and accumulates
-   * elapsed time so callers (e.g. ObjectService) can subtract it from
-   * the sender's 'message' timing to avoid double-counting.
+   * Accumulate wall-clock time spent in a broadcast callback.
+   * Does NOT record a separate profiler category — downstream nodes already
+   * show up under 'message' via measureMessage. The accumulated time is only
+   * used to subtract from the sender's 'message' timing.
    */
-  measureBroadcast(receiverNodeId: string, fn: () => void): void {
+  measureBroadcast(fn: () => void): void {
     if (!this.enabled) {
       fn();
       return;
     }
     const t0 = performance.now();
     fn();
-    const elapsed = performance.now() - t0;
-    ProfilerCoordinator.getInstance().record(
-      receiverNodeId,
-      typeFromNodeId(receiverNodeId),
-      'broadcast',
-      elapsed
-    );
-    this._broadcastTime += elapsed;
+    this._broadcastTime += performance.now() - t0;
   },
 
   /**

@@ -51,15 +51,18 @@ export class MessageChannelRegistry {
     const channelData = this.channels.get(channel);
     if (!channelData) return;
 
-    for (const [receiverNodeId, callback] of channelData.receivers) {
-      try {
-        profiler.measureBroadcast(receiverNodeId, () => {
+    profiler.measureBroadcast(() => {
+      for (const [, callback] of channelData.receivers) {
+        try {
           callback(message, sourceNodeId);
-        });
-      } catch (error) {
-        console.error(`MessageChannelRegistry: Error broadcasting to channel "${channel}":`, error);
+        } catch (error) {
+          console.error(
+            `MessageChannelRegistry: Error broadcasting to channel "${channel}":`,
+            error
+          );
+        }
       }
-    }
+    });
   }
 
   /**
