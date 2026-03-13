@@ -70,12 +70,13 @@ function createNodeState(nodeId: string): NodeState {
   state.directChannel = createDirectChannelHandler({
     nodeId,
     onIncomingMessage: (data, meta) => {
-      for (const cb of state.messageCallbacks) {
-        cb(data, meta);
+      for (const callback of state.messageCallbacks) {
+        callback(data, meta);
       }
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : String(error);
+
       postResponse({
         type: 'consoleOutput',
         nodeId,
@@ -427,9 +428,10 @@ self.onmessage = async (event: MessageEvent<RubyWorkerMessage>) => {
     })
     .with({ type: 'incomingMessage' }, ({ data, meta }) => {
       const state = nodeStates.get(nodeId);
+
       if (state?.messageCallbacks.length) {
-        for (const cb of state.messageCallbacks) {
-          invokeCallbackSafely(nodeId, () => cb(data, meta));
+        for (const callback of state.messageCallbacks) {
+          invokeCallbackSafely(nodeId, () => callback(data, meta));
         }
       }
     })

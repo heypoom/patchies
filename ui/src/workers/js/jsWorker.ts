@@ -137,8 +137,8 @@ function createNodeState(nodeId: string): NodeState {
   state.directChannel = createDirectChannelHandler({
     nodeId,
     onIncomingMessage: (data, meta) => {
-      for (const cb of state.messageCallbacks) {
-        cb(data, meta);
+      for (const callback of state.messageCallbacks) {
+        callback(data, meta);
       }
     },
     onError: (error) => {
@@ -764,10 +764,11 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     })
     .with({ type: 'incomingMessage' }, ({ data, meta }) => {
       const state = nodeStates.get(nodeId);
+
       if (state?.messageCallbacks.length) {
         measureMessage(nodeId, () => {
-          for (const cb of state.messageCallbacks) {
-            invokeCallbackSafely(nodeId, () => cb(data, meta));
+          for (const callback of state.messageCallbacks) {
+            invokeCallbackSafely(nodeId, () => callback(data, meta));
           }
         });
       }
@@ -778,8 +779,10 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
         data: unknown;
         sourceNodeId: string;
       };
+
       const state = nodeStates.get(nodeId);
       const callback = state?.channelCallbacks.get(channel);
+
       if (callback) {
         const meta = { source: sourceNodeId, channel };
         invokeCallbackSafely(nodeId, () => callback(data, meta));

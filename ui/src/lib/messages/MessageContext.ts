@@ -102,12 +102,6 @@ export class MessageContext {
   /** Error handler for user code errors (set by JSRunner) */
   public onCallbackError: ((error: unknown) => void) | null = null;
 
-  /**
-   * When set, message callback timing is recorded under this node type.
-   * Set by JSRunner for 'js' nodes. Null = no profiling (zero overhead).
-   */
-  public profilerNodeType: string | null = null;
-
   // Cache for lazy-loaded AudioAnalysisSystem (only loaded in browser, not workers)
   private static audioAnalysisSystemPromise: Promise<
     typeof import('$lib/audio/AudioAnalysisSystem')
@@ -139,7 +133,7 @@ export class MessageContext {
       }
     };
 
-    profiler.measure(this.nodeId, this.profilerNodeType, () => {
+    profiler.measure(this.nodeId, () => {
       for (const cb of this.messageCallbacks) {
         try {
           const result = cb(data, meta) as unknown;

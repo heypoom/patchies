@@ -5,6 +5,15 @@ export type { TimingStats, NodeProfileEntry, ProfilerSnapshot } from './types';
 export { HOT_THRESHOLD_MS } from './types';
 
 /**
+ * Extract the node type from a nodeId of the form `${type}-${counter}`.
+ * Uses lastIndexOf to handle types that contain hyphens (e.g. "post-it-3" → "post-it").
+ */
+export function typeFromNodeId(nodeId: string): string {
+  const sep = nodeId.lastIndexOf('-');
+  return sep > 0 ? nodeId.slice(0, sep) : nodeId;
+}
+
+/**
  * Lightweight profiler handle.
  *
  * `profiler.enabled` is a plain boolean — checked in hot paths with zero overhead when false.
@@ -23,17 +32,21 @@ export const profiler = {
 
   /**
    * Measure a synchronous callback and record its duration.
-   * When `type` is null or `profiler.enabled` is false, the callback is called directly
-   * with no timing overhead.
+   * The node type is derived from the nodeId (format: `${type}-${counter}`).
+   * When `profiler.enabled` is false, the callback is called directly with no overhead.
    */
-  measure(nodeId: string, type: string | null, fn: () => void): void {
-    if (!this.enabled || !type) {
+  measure(nodeId: string, fn: () => void): void {
+    if (!this.enabled) {
       fn();
       return;
     }
     const t0 = performance.now();
     fn();
-    ProfilerCoordinator.getInstance().record(nodeId, type, performance.now() - t0);
+    ProfilerCoordinator.getInstance().record(
+      nodeId,
+      typeFromNodeId(nodeId),
+      performance.now() - t0
+    );
   },
 
   unregister(nodeId: string): void {

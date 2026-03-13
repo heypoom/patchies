@@ -1,7 +1,7 @@
 import { getLibName, getModuleNameByNode, isSnippetModule } from './js-module-utils';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { createLLMFunction } from '$lib/ai/google';
-import { profiler } from '$lib/profiler';
+import { profiler, typeFromNodeId } from '$lib/profiler';
 import { debounce } from 'lodash';
 import { createGetVfsUrl, revokeObjectUrls } from '$lib/vfs';
 import { handleCodeError } from './handleCodeError';
