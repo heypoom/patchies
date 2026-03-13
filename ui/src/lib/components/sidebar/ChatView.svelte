@@ -23,11 +23,17 @@
     getNodeById?: (nodeId: string) => ChatNode | undefined;
   } = $props();
 
+  interface ThreadActionRef {
+    id: string;
+    type: string;
+    summary?: string;
+  }
+
   interface ThreadMessage {
     role: 'user' | 'model';
     content: string;
     thinking?: string;
-    actionId?: string;
+    actions?: ThreadActionRef[];
   }
 
   const actions = new SvelteMap<string, ChatAction>();
@@ -37,7 +43,7 @@
   let isLoading = $state(false);
   let streamingText = $state('');
   let thinkingText = $state('');
-  let pendingActionId = $state<string | null>(null);
+  let pendingActions = $state<string[]>([]);
   let autoApprove = $state(false);
   let abortController: AbortController | null = $state(null);
   let messagesEl: HTMLDivElement | undefined = $state();
@@ -97,7 +103,17 @@
     const userContent = inputText.trim();
 
     const chatHistory: ChatMessage[] = [
-      ...messages.map((m) => ({ role: m.role, content: m.content })),
+      ...messages.map((m) => {
+        let content = m.content;
+
+        if (m.actions && m.actions.length > 0) {
+          const actionSummary = m.actions.map((a) => `[Action: ${a.summary ?? a.type}]`).join(' ');
+
+          content = content ? `${content}\n${actionSummary}` : actionSummary;
+        }
+
+        return { role: m.role, content };
+      }),
       { role: 'user', content: userContent }
     ];
 
@@ -106,7 +122,7 @@
     isLoading = true;
     streamingText = '';
     thinkingText = '';
-    pendingActionId = null;
+    pendingActions = [];
     abortController = new AbortController();
 
     try {
@@ -128,11 +144,20 @@
               if (autoApprove) {
                 applyAction(action);
               } else {
-                pendingActionId = action.id;
+                pendingActions = [...pendingActions, action.id];
               }
             }
           : undefined
       );
+
+      const completedActions: ThreadActionRef[] = pendingActions.map((id) => {
+        const action = actions.get(id);
+        return {
+          id,
+          type: action?.mode ?? 'unknown',
+          summary: action ? `${action.descriptor.label}: ${action.result.kind}` : undefined
+        };
+      });
 
       messages = [
         ...messages,
@@ -140,13 +165,13 @@
           role: 'model',
           content: fullText,
           thinking: thinkingText || undefined,
-          actionId: pendingActionId ?? undefined
+          actions: completedActions.length > 0 ? completedActions : undefined
         }
       ];
 
       streamingText = '';
       thinkingText = '';
-      pendingActionId = null;
+      pendingActions = [];
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
 
@@ -156,7 +181,7 @@
 
       streamingText = '';
       thinkingText = '';
-      pendingActionId = null;
+      pendingActions = [];
     } finally {
       isLoading = false;
       abortController = null;
@@ -221,7 +246,7 @@
         </div>
       {:else}
         <div class="flex items-start gap-2">
-          {#if !message.actionId}
+          {#if !message.actions?.length}
             <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
           {/if}
 
@@ -230,8 +255,8 @@
               <MarkdownContent markdown={message.content} />
             {/if}
 
-            {#if message.actionId}
-              {@const action = actions.get(message.actionId)}
+            {#each message.actions ?? [] as ref (ref.id)}
+              {@const action = actions.get(ref.id)}
 
               {#if action && aiCallbacks}
                 <ActionCard
@@ -241,7 +266,7 @@
                   {getNodeById}
                 />
               {/if}
-            {/if}
+            {/each}
           </div>
         </div>
       {/if}
@@ -275,9 +300,9 @@
             </details>
           {/if}
 
-          <!-- ActionCard visible while response is still streaming -->
-          {#if pendingActionId}
-            {@const action = actions.get(pendingActionId)}
+          <!-- ActionCards visible while response is still streaming -->
+          {#each pendingActions as actionId (actionId)}
+            {@const action = actions.get(actionId)}
 
             {#if action && aiCallbacks}
               <ActionCard
@@ -287,7 +312,7 @@
                 {getNodeById}
               />
             {/if}
-          {/if}
+          {/each}
         </div>
       </div>
     {/if}
