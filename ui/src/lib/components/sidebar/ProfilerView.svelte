@@ -1,6 +1,6 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import { Activity, ChevronDown, ChevronRight, ChevronUp } from '@lucide/svelte/icons';
+  import { Activity, ChevronDown, ChevronRight, ChevronUp, Crosshair } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import {
     profilerEnabled,
@@ -9,6 +9,7 @@
     HOT_THRESHOLD_MS
   } from '../../../stores/profiler.store';
   import { requestFocusNodeId, nodeLabelsStore } from '../../../stores/ui.store';
+  import { profilerSettings } from '../../../stores/profiler-settings.store';
   import type { ProfilerCategory, ProfilerSnapshot, TimingStats } from '$lib/profiler/types';
   import { SvelteSet } from 'svelte/reactivity';
 
@@ -108,7 +109,7 @@
     const isSelected = selectedNodeId === nodeId;
     selectedNodeId = isSelected ? null : nodeId;
 
-    if (!isSelected) requestFocusNodeId.set(nodeId);
+    if (!isSelected && $profilerSettings.focusOnSelect) requestFocusNodeId.set(nodeId);
   }
 
   // ─── Chart helpers ───────────────────────────────────────────────────────────
@@ -188,7 +189,7 @@
     return path;
   }
 
-  // ─── Dev stats toggle ────────────────────────────────────────────────────────
+  // ─── Toggles ────────────────────────────────────────────────────────────────
   let showDevStats = $state(false);
 </script>
 
@@ -466,19 +467,36 @@
           </Tooltip.Trigger>
           <Tooltip.Content>Cycle display stat</Tooltip.Content>
         </Tooltip.Root>
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            <button
-              class="cursor-pointer text-zinc-600 transition-colors hover:text-zinc-400"
-              onclick={() => (showDevStats = !showDevStats)}
+        <div class="flex items-center gap-1">
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-0.5 transition-colors {$profilerSettings.focusOnSelect
+                  ? 'text-zinc-300 hover:text-zinc-100'
+                  : 'text-zinc-700 hover:text-zinc-500'}"
+                onclick={() => profilerSettings.toggleFocusOnSelect()}
+              >
+                <Crosshair class="h-3 w-3" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content
+              >{$profilerSettings.focusOnSelect ? 'Disable' : 'Enable'} focus on select</Tooltip.Content
             >
-              {#if showDevStats}<ChevronDown class="h-3 w-3" />{:else}<ChevronUp
-                  class="h-3 w-3"
-                />{/if}
-            </button>
-          </Tooltip.Trigger>
-          <Tooltip.Content>Toggle renderer stats</Tooltip.Content>
-        </Tooltip.Root>
+          </Tooltip.Root>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer text-zinc-600 transition-colors hover:text-zinc-400"
+                onclick={() => (showDevStats = !showDevStats)}
+              >
+                {#if showDevStats}<ChevronDown class="h-3 w-3" />{:else}<ChevronUp
+                    class="h-3 w-3"
+                  />{/if}
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Toggle renderer stats</Tooltip.Content>
+          </Tooltip.Root>
+        </div>
       </div>
 
       {#if showDevStats}
