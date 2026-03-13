@@ -89,15 +89,27 @@ export const profiler = {
       fn();
       return;
     }
+
+    // Save outer broadcast accumulator so nested measureMessage calls
+    // (A → B → C chains) each get their own scope
+    const savedBroadcastTime = this._broadcastTime;
     this._broadcastTime = 0;
+
     const t0 = performance.now();
     fn();
+
     const elapsed = performance.now() - t0;
+    const broadcastTime = this._broadcastTime;
+
+    // Restore outer scope — the outer measureBroadcast will account for
+    // this entire subtree's wall-clock time via its own += accumulation
+    this._broadcastTime = savedBroadcastTime;
+
     ProfilerCoordinator.getInstance().record(
       nodeId,
       type,
       'message',
-      Math.max(0, elapsed - this._broadcastTime)
+      Math.max(0, elapsed - broadcastTime)
     );
   },
 
