@@ -33,7 +33,13 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
   * Routing: send (send messages to a named channel), recv (receive messages from a named channel), send~, recv~ (wireless audio routing)
   * Utility: bang, float, metro, loadbang, samplerate~, mtof (message-rate)
   * Analysis: fft~ (FFT spectrum analyzer)
-  * IMPORTANT: Use type "object" with data.expr (e.g., { "type": "object", "data": { "expr": "gain~ 0.5" } })
+  * IMPORTANT: Use type "object" with data containing THREE fields: expr (full string), name (first word only), params (array of values matching arguments)
+  * data format: { "expr": "name arg1 arg2", "name": "name", "params": [arg1, arg2] }
+  * Examples:
+  *   no args:   { "expr": "out~",        "name": "out~",       "params": [] }
+  *   one arg:   { "expr": "gain~ 0.5",   "name": "gain~",      "params": [0.5] }
+  *   two args:  { "expr": "delay~ 500",  "name": "delay~",     "params": [500] }
+  *   string:    { "expr": "osc~ sine",   "name": "osc~",       "params": ["sine"] }
 
 ## Visual & Creative Coding Objects
 - vue: write custom user interface and component using Vue.js
