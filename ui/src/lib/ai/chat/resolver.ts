@@ -79,7 +79,8 @@ export async function streamChatMessage(
   onThinking?: (thought: string) => void,
   getNodeById?: (nodeId: string) => ChatNode | undefined,
   onAction?: (action: ChatAction) => void,
-  getAllNodes?: () => ChatNodeSummary[]
+  getAllNodes?: () => ChatNodeSummary[],
+  persona?: string
 ): Promise<string> {
   const apiKey = localStorage.getItem('gemini-api-key');
 
@@ -94,7 +95,7 @@ export async function streamChatMessage(
   const { GoogleGenAI } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey });
 
-  let systemInstruction = SYSTEM_PROMPT;
+  let systemInstruction = persona ? `${persona}\n\n${SYSTEM_PROMPT}` : SYSTEM_PROMPT;
 
   if (nodeContext) {
     systemInstruction += `\n\nThe user currently has a "${nodeContext.nodeType}" node selected (ID: "${nodeContext.nodeId}"). When performing canvas actions on this node, use nodeId "${nodeContext.nodeId}".`;

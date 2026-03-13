@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MessageSquare, Send, Trash2, X, Zap } from '@lucide/svelte/icons';
+  import { BotMessageSquare, MessageSquare, Send, Trash2, X, Zap } from '@lucide/svelte/icons';
   import { compressImageFile } from '$lib/ai/google';
   import { match } from 'ts-pattern';
   import { logger } from '$lib/utils/logger';
@@ -17,6 +17,7 @@
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import ActionCard from './ActionCard.svelte';
   import { SvelteMap } from 'svelte/reactivity';
+  import { personaStore, BUILTIN_PRESETS, type Persona } from '../../../stores/persona.store';
 
   let {
     aiCallbacks,
@@ -62,6 +63,15 @@
   let abortController: AbortController | null = $state(null);
   let messagesEl: HTMLDivElement | undefined = $state();
   let stagedImages = $state<StagedImage[]>([]);
+  let personaPanelOpen = $state(false);
+  let addingCustom = $state(false);
+  let newPersonaName = $state('');
+  let newPersonaPrompt = $state('');
+
+  const allPersonas = $derived([...BUILTIN_PRESETS, ...$personaStore.custom]);
+  const activePersona = $derived(
+    allPersonas.find((p: Persona) => p.id === $personaStore.activeId) ?? null
+  );
 
   const nodeContext = $derived.by(() => {
     if (!$selectedNodeInfo) return null;
@@ -183,7 +193,8 @@
               }
             }
           : undefined,
-        getAllNodes
+        getAllNodes,
+        activePersona?.prompt || undefined
       );
 
       const completedActions: ThreadActionRef[] = pendingActions.map((id) => {
@@ -411,6 +422,103 @@
     {/if}
   </div>
 
+  <!-- Persona panel -->
+  {#if personaPanelOpen}
+    <div class="border-t border-zinc-800 bg-zinc-900/60 p-2.5">
+      <!-- Preset + custom persona chips -->
+      <div class="mb-2 flex flex-wrap gap-1">
+        <button
+          onclick={() => personaStore.setActive(null)}
+          class="cursor-pointer rounded px-2 py-0.5 font-mono text-[10px] transition-colors {$personaStore.activeId ===
+          null
+            ? 'bg-zinc-600 text-zinc-100'
+            : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+        >
+          Default
+        </button>
+        {#each allPersonas as p (p.id)}
+          <div class="flex items-center gap-0.5">
+            <button
+              onclick={() => personaStore.setActive(p.id)}
+              class="cursor-pointer rounded px-2 py-0.5 font-mono text-[10px] transition-colors {$personaStore.activeId ===
+              p.id
+                ? 'bg-purple-700/60 text-purple-200'
+                : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+            >
+              {p.name}
+            </button>
+            {#if !BUILTIN_PRESETS.some((b) => b.id === p.id)}
+              <button
+                onclick={() => personaStore.removeCustom(p.id)}
+                class="cursor-pointer text-zinc-700 hover:text-zinc-400"
+              >
+                <X class="h-2.5 w-2.5" />
+              </button>
+            {/if}
+          </div>
+        {/each}
+      </div>
+
+      <!-- Active persona prompt preview -->
+      {#if activePersona}
+        <p class="mb-2 font-mono text-[10px] leading-relaxed text-zinc-600">
+          {activePersona.prompt}
+        </p>
+      {/if}
+
+      <!-- Add custom persona form -->
+      {#if addingCustom}
+        <div class="flex flex-col gap-1">
+          <input
+            bind:value={newPersonaName}
+            placeholder="Persona name"
+            class="nodrag rounded-sm border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-500"
+          />
+          <textarea
+            bind:value={newPersonaPrompt}
+            placeholder="System prompt..."
+            rows="3"
+            class="nodrag resize-none rounded-sm border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-500"
+          ></textarea>
+          <div class="flex justify-end gap-1">
+            <button
+              onclick={() => {
+                addingCustom = false;
+                newPersonaName = '';
+                newPersonaPrompt = '';
+              }}
+              class="cursor-pointer rounded px-2 py-0.5 font-mono text-[10px] text-zinc-500 hover:text-zinc-300"
+            >
+              Cancel
+            </button>
+            <button
+              onclick={() => {
+                if (newPersonaName.trim() && newPersonaPrompt.trim()) {
+                  const p = personaStore.addCustom(newPersonaName.trim(), newPersonaPrompt.trim());
+                  personaStore.setActive(p.id);
+                  addingCustom = false;
+                  newPersonaName = '';
+                  newPersonaPrompt = '';
+                }
+              }}
+              disabled={!newPersonaName.trim() || !newPersonaPrompt.trim()}
+              class="cursor-pointer rounded bg-purple-700/60 px-2 py-0.5 font-mono text-[10px] text-purple-200 hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      {:else}
+        <button
+          onclick={() => (addingCustom = true)}
+          class="cursor-pointer font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
+        >
+          + Add custom
+        </button>
+      {/if}
+    </div>
+  {/if}
+
   <!-- Input area -->
   <div>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -442,7 +550,7 @@
         bind:value={inputText}
         onkeydown={handleKeydown}
         onpaste={handlePaste}
-        placeholder="Ask anything... (or drop/paste images)"
+        placeholder="Ask anything or drop/paste images. Shift+Enter for new line."
         disabled={isLoading}
         rows="3"
         class="nodrag flex w-full resize-none rounded-sm border-1 border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 placeholder-zinc-600 outline-none focus-within:border-zinc-500 disabled:opacity-50"
@@ -450,7 +558,17 @@
     </div>
 
     <div class="mx-2.5 flex items-center justify-between pb-1.5">
-      <span class="font-mono text-[10px] text-zinc-700">Shift+Enter for newline</span>
+      <button
+        onclick={() => (personaPanelOpen = !personaPanelOpen)}
+        class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 font-mono text-[10px] transition-colors {personaPanelOpen ||
+        activePersona
+          ? 'bg-purple-900/50 text-purple-400'
+          : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
+        title={activePersona ? `Persona: ${activePersona.name}` : 'Set persona'}
+      >
+        <BotMessageSquare class="h-3 w-3" />
+        {activePersona ? activePersona.name : 'Persona'}
+      </button>
 
       <div class="flex items-center gap-1.5">
         {#if aiCallbacks}
@@ -486,7 +604,7 @@
         {:else}
           <button
             onclick={handleSubmit}
-            disabled={!inputText.trim() || isLoading}
+            disabled={(!inputText.trim() && stagedImages.length === 0) || isLoading}
             class="cursor-pointer rounded bg-zinc-700 p-1.5 text-zinc-300 transition-colors hover:bg-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             <Send class="h-3.5 w-3.5" />
