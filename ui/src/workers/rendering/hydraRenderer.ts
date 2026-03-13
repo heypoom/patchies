@@ -3,8 +3,9 @@ import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
-import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import { WorkerRendererMessageContext } from './WorkerRendererMessageContext';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
+import type { Message } from '$lib/messages/MessageSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
@@ -33,7 +34,7 @@ export class HydraRenderer {
   public hydra: Hydra | null = null;
   public framebuffer: regl.Framebuffer2D | null = null;
 
-  public onMessageCallbacks: MessageCallbackFn[] = [];
+  private msgContext!: WorkerRendererMessageContext;
 
   private timestamp = performance.now();
 
@@ -60,6 +61,7 @@ export class HydraRenderer {
     this.config = config;
     this.framebuffer = framebuffer;
     this.renderer = renderer;
+    this.msgContext = new WorkerRendererMessageContext(config.nodeId);
   }
 
   static async create(
@@ -181,7 +183,7 @@ export class HydraRenderer {
     this.isFFTEnabled = false;
     this.fftDataCache.clear();
     this.fftRequestCache.clear();
-    this.onMessageCallbacks = [];
+    this.msgContext.reset();
 
     // Reset mouse scope to local (default)
     this.mouseScope = 'local';
@@ -242,9 +244,7 @@ export class HydraRenderer {
         send: this.sendMessage.bind(this),
         fft: this.createFFTFunction(),
         getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
-        onMessage: (callback: MessageCallbackFn) => {
-          this.onMessageCallbacks.push(callback);
-        },
+        onMessage: this.msgContext.createOnMessageFunction(),
 
         // Mouse object with getters for real-time values (Hydra-style)
         mouse: this.createMouseObject(),
@@ -306,6 +306,14 @@ export class HydraRenderer {
 
     // Prevent double-destroy
     this.hydra = null;
+  }
+
+  handleMessage(message: Message) {
+    this.msgContext.handleEdgeMessage(message.data, message);
+  }
+
+  handleChannelMessage(channel: string, data: unknown, sourceNodeId: string) {
+    this.msgContext.handleChannelMessage(channel, data, sourceNodeId);
   }
 
   sendMessage(data: unknown, options: SendMessageOptions) {
