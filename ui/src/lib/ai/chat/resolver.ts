@@ -14,6 +14,7 @@ export interface ChatMessage {
   role: 'user' | 'model';
   content: string;
   thinking?: string;
+  images?: Array<{ mimeType: string; data: string }>;
 }
 
 export interface ChatNodeContext {
@@ -124,7 +125,12 @@ export async function streamChatMessage(
 
   const contents: { role: string; parts: Record<string, unknown>[] }[] = messages.map((msg) => ({
     role: msg.role,
-    parts: [{ text: msg.content }]
+    parts: [
+      ...(msg.images ?? []).map((img) => ({
+        inlineData: { mimeType: img.mimeType, data: img.data }
+      })),
+      { text: msg.content }
+    ]
   }));
 
   const GET_OBJECT_INSTRUCTIONS = 'get_object_instructions';

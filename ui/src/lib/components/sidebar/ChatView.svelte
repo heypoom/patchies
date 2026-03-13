@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { MessageSquare, Send, Trash2, Zap } from '@lucide/svelte/icons';
+  import { MessageSquare, Send, Trash2, X, Zap } from '@lucide/svelte/icons';
+  import { compressImageFile } from '$lib/ai/google';
   import { match } from 'ts-pattern';
   import { logger } from '$lib/utils/logger';
   import { toast } from 'svelte-sonner';
@@ -35,11 +36,18 @@
     summary?: string;
   }
 
+  interface StagedImage {
+    mimeType: string;
+    data: string;
+    previewUrl: string;
+  }
+
   interface ThreadMessage {
     role: 'user' | 'model';
     content: string;
     thinking?: string;
     actions?: ThreadActionRef[];
+    images?: StagedImage[];
   }
 
   const actions = new SvelteMap<string, ChatAction>();
@@ -53,6 +61,7 @@
   let autoApprove = $state(false);
   let abortController: AbortController | null = $state(null);
   let messagesEl: HTMLDivElement | undefined = $state();
+  let stagedImages = $state<StagedImage[]>([]);
 
   const nodeContext = $derived.by(() => {
     if (!$selectedNodeInfo) return null;
@@ -104,9 +113,11 @@
   }
 
   async function handleSubmit() {
-    if (!inputText.trim() || isLoading) return;
+    if ((!inputText.trim() && stagedImages.length === 0) || isLoading) return;
 
     const userContent = inputText.trim();
+    const imagesToSend = [...stagedImages];
+    stagedImages = [];
 
     const chatHistory: ChatMessage[] = [
       ...messages.map((m) => {
@@ -118,17 +129,28 @@
           content = content ? `${content}\n${actionSummary}` : actionSummary;
         }
 
-        return { role: m.role, content };
+        return { role: m.role, content, images: m.images };
       }),
-      { role: 'user', content: userContent }
+      {
+        role: 'user',
+        content: userContent,
+        images: imagesToSend.length > 0 ? imagesToSend : undefined
+      }
     ];
 
     const isFirstMessage = messages.length === 0;
-    messages = [...messages, { role: 'user', content: userContent }];
+    messages = [
+      ...messages,
+      {
+        role: 'user',
+        content: userContent,
+        images: imagesToSend.length > 0 ? imagesToSend : undefined
+      }
+    ];
     inputText = '';
     isLoading = true;
 
-    if (isFirstMessage && onRename) {
+    if (isFirstMessage && onRename && userContent) {
       generateChatTitle(userContent).then((title) => {
         if (title) onRename(title);
       });
@@ -219,6 +241,34 @@
       handleSubmit();
     }
   }
+
+  async function stageFiles(files: FileList | File[]) {
+    const imageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    for (const file of imageFiles) {
+      const compressed = await compressImageFile(file);
+      stagedImages = [
+        ...stagedImages,
+        { ...compressed, previewUrl: `data:${compressed.mimeType};base64,${compressed.data}` }
+      ];
+    }
+  }
+
+  function handleDrop(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer?.files) stageFiles(event.dataTransfer.files);
+  }
+
+  function handleDragOver(event: DragEvent) {
+    event.preventDefault();
+  }
+
+  function handlePaste(event: ClipboardEvent) {
+    const files = Array.from(event.clipboardData?.items ?? [])
+      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((f): f is File => f !== null);
+    if (files.length > 0) stageFiles(files);
+  }
 </script>
 
 <div class="flex h-full flex-col">
@@ -254,7 +304,20 @@
         <div
           class="max-w-[90%] rounded border border-zinc-700 bg-zinc-800/60 px-3 py-2 text-xs leading-relaxed text-zinc-200"
         >
-          <pre class="font-sans whitespace-pre-wrap">{message.content}</pre>
+          {#if message.images?.length}
+            <div class="mb-1.5 flex flex-wrap gap-1">
+              {#each message.images as img, i (i)}
+                <img
+                  src={img.previewUrl}
+                  alt="Attached image {i + 1}"
+                  class="h-14 w-14 rounded border border-zinc-700 object-cover"
+                />
+              {/each}
+            </div>
+          {/if}
+          {#if message.content}
+            <pre class="font-sans whitespace-pre-wrap">{message.content}</pre>
+          {/if}
         </div>
       {:else}
         <div class="flex items-start gap-2">
@@ -312,10 +375,6 @@
         ></div>
 
         <div class="min-w-0 flex-1">
-          {#if streamingText}
-            <MarkdownContent markdown={streamingText} />
-          {/if}
-
           {#if thinkingText}
             <details open>
               <summary
@@ -328,6 +387,10 @@
                 <MarkdownContent markdown={thinkingText} />
               </div>
             </details>
+          {/if}
+
+          {#if streamingText}
+            <MarkdownContent markdown={streamingText} />
           {/if}
 
           <!-- ActionCards visible while response is still streaming -->
@@ -350,11 +413,36 @@
 
   <!-- Input area -->
   <div>
-    <div class="m-2.5">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="m-2.5" ondrop={handleDrop} ondragover={handleDragOver}>
+      {#if stagedImages.length > 0}
+        <div class="mb-1.5 flex flex-wrap gap-1.5">
+          {#each stagedImages as img, imageIndex (imageIndex)}
+            <div class="relative">
+              <img
+                src={img.previewUrl}
+                alt="Staged image {imageIndex + 1}"
+                class="h-16 w-16 rounded border border-zinc-700 object-cover"
+              />
+
+              <button
+                onclick={() => {
+                  stagedImages = stagedImages.filter((_, i) => i !== imageIndex);
+                }}
+                class="absolute -top-1 -right-1 flex h-4 w-4 cursor-pointer items-center justify-center rounded-full bg-zinc-900 text-zinc-400 hover:text-white"
+              >
+                <X class="h-2.5 w-2.5" />
+              </button>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
       <textarea
         bind:value={inputText}
         onkeydown={handleKeydown}
-        placeholder="Ask anything..."
+        onpaste={handlePaste}
+        placeholder="Ask anything... (or drop/paste images)"
         disabled={isLoading}
         rows="3"
         class="nodrag flex w-full resize-none rounded-sm border-1 border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 placeholder-zinc-600 outline-none focus-within:border-zinc-500 disabled:opacity-50"

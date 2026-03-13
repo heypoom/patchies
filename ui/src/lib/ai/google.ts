@@ -148,6 +148,26 @@ export function bitmapToBase64Image({
   return canvas.toDataURL(format, quality).replace(`data:${format};base64,`, '');
 }
 
+export async function compressImageFile(
+  file: File | Blob,
+  { maxSize = 1024, quality = 0.75 }: { maxSize?: number; quality?: number } = {}
+): Promise<{ mimeType: string; data: string }> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+  const width = Math.round(bitmap.width * scale);
+  const height = Math.round(bitmap.height * scale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+
+  const mimeType = 'image/jpeg';
+  const data = canvas.toDataURL(mimeType, quality).replace(`data:${mimeType};base64,`, '');
+  return { mimeType, data };
+}
+
 export async function capturePreviewFrame(
   nodeId: string,
   { timeout = 10000, customSize }: { timeout?: number; customSize?: [number, number] } = {}
