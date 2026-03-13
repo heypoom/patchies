@@ -43,9 +43,9 @@ The prompt adapts based on context. Use the mode dropdown in the header or press
 
 This feature uses the `gemini-3-flash-preview` model to understand your prompt and generate the object configuration.
 
-## AI Chat
+## Copilot
 
-Open the sidebar and switch to the **Chat** tab to talk to an AI assistant about your patch.
+Open the sidebar and switch to the **Copilot** tab to talk to an AI assistant about your patch.
 
 - Ask questions about Patchies, get help debugging, or brainstorm ideas
 - When a node is selected, its type and data are automatically included as context so the AI understands what you're working on

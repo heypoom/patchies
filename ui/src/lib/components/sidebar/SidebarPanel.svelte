@@ -30,7 +30,8 @@
     sidebarWidth,
     type SidebarView,
     SIDEBAR_MIN_WIDTH,
-    SIDEBAR_MAX_WIDTH
+    SIDEBAR_MAX_WIDTH,
+    isAiFeaturesVisible
   } from '../../../stores/ui.store';
   import { hasAppPreview } from '../../../stores/app-preview.store';
 
@@ -67,12 +68,18 @@
   ];
 
   // Expandable items (shown under chevron, promoted to top bar when active)
-  const expandableItems = [
+  const allExpandableItems = [
     { id: 'samples', icon: Music, title: 'Samples' },
-    { id: 'chat', icon: MessageSquare, title: 'AI Chat' },
-    { id: 'preview', icon: AppWindow, title: 'Patch to App' },
+    { id: 'chat', icon: MessageSquare, title: 'Copilot', aiOnly: true },
+    { id: 'preview', icon: AppWindow, title: 'Patch to App', aiOnly: true },
     { id: 'profiler', icon: Activity, title: 'Profiler' }
   ];
+
+  const AI_VIEWS: SidebarView[] = ['chat', 'preview'];
+
+  let expandableItems = $derived(
+    $isAiFeaturesVisible ? allExpandableItems : allExpandableItems.filter((item) => !item.aiOnly)
+  );
 
   // Preview tab promotion logic
   const previewTab = usePreviewTab({
@@ -85,8 +92,15 @@
   let isExpanded = $state(false);
   // Tracks whether expandable views have been promoted to the top bar
   let isSamplesPromoted = $derived(view === 'samples');
-  let isChatPromoted = $derived(view === 'chat');
+  let isChatPromoted = $derived(view === 'chat' && $isAiFeaturesVisible);
   let isProfilerPromoted = $derived(view === 'profiler');
+
+  // Redirect away from AI views when AI features are hidden
+  $effect(() => {
+    if (!$isAiFeaturesVisible && AI_VIEWS.includes(view)) {
+      view = 'files';
+    }
+  });
 
   function handleExpandableItemClick(id: SidebarView) {
     if (id === 'preview') {
@@ -155,7 +169,7 @@
           {/each}
 
           <!-- Promoted preview button (when active) -->
-          {#if previewTab.isPromoted}
+          {#if previewTab.isPromoted && $isAiFeaturesVisible}
             <Tooltip.Root delayDuration={300}>
               <Tooltip.Trigger>
                 <button
@@ -203,7 +217,7 @@
                   <MessageSquare class="h-4 w-4" />
                 </button>
               </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">AI Chat</Tooltip.Content>
+              <Tooltip.Content side="bottom">Copilot</Tooltip.Content>
             </Tooltip.Root>
           {/if}
 
@@ -269,7 +283,7 @@
             {/if}
           {/each}
 
-          {#if previewTab.isPromoted && isSamplesPromoted && isChatPromoted && isProfilerPromoted}
+          {#if expandableItems.every((item) => (item.id === 'preview' && previewTab.isPromoted) || (item.id === 'samples' && isSamplesPromoted) || (item.id === 'chat' && isChatPromoted) || (item.id === 'profiler' && isProfilerPromoted))}
             <span class="text-xs text-zinc-600 italic">No more items</span>
           {/if}
         </div>
