@@ -17,6 +17,7 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+  import { profiler } from '$lib/profiler';
 
   let {
     id: nodeId,
@@ -403,8 +404,10 @@
             }
 
             animationFrameId = requestAnimationFrame((time) => {
-              callback(time);
-              sendBitmap();
+              profiler.measure(nodeId, 'draw', () => {
+                callback(time);
+                sendBitmap();
+              });
             });
             return animationFrameId;
           },

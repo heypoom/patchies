@@ -5,6 +5,7 @@ import { JSRunner } from '$lib/js-runner/JSRunner';
 import { deleteAfterComment } from '$lib/js-runner/js-module-utils';
 import type { Viewport } from '@xyflow/svelte';
 import { revokeObjectUrls } from '$lib/vfs';
+import { profiler } from '$lib/profiler';
 
 interface P5SketchConfig {
   code: string;
@@ -141,19 +142,23 @@ export class P5Manager {
           }
         };
 
+        const nodeId = this.nodeId;
+
         p.draw = function () {
-          try {
-            userCode?.draw?.call(p);
-            sendBitmap();
-          } catch (error) {
-            if (error instanceof Error) {
-              p.background(220, 100, 100);
-              p.fill(255);
-              onRuntimeError?.(error);
+          profiler.measure(nodeId, 'draw', () => {
+            try {
+              userCode?.draw?.call(p);
+              sendBitmap();
+            } catch (error) {
+              if (error instanceof Error) {
+                p.background(220, 100, 100);
+                p.fill(255);
+                onRuntimeError?.(error);
+              }
+              // Stop the loop to prevent error spam
+              p.noLoop();
             }
-            // Stop the loop to prevent error spam
-            p.noLoop();
-          }
+          });
         };
 
         // @ts-expect-error -- compatibility layer for P5.js version 1

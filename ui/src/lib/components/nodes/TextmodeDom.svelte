@@ -18,6 +18,7 @@
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import type { Textmodifier } from 'textmode.js';
+  import { profiler } from '$lib/profiler';
 
   let {
     id: nodeId,
@@ -217,12 +218,14 @@
 
         tm.draw = (callback: () => void) => {
           originalDraw(() => {
-            try {
-              callback();
-            } catch (error) {
-              handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
-              tm?.noLoop();
-            }
+            profiler.measure(nodeId, 'draw', () => {
+              try {
+                callback();
+              } catch (error) {
+                handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
+                tm?.noLoop();
+              }
+            });
           });
         };
       }

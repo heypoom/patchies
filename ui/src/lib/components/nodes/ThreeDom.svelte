@@ -18,6 +18,7 @@
   import type { WebGLRenderer } from 'three';
   import { JSRunner } from '$lib/js-runner/JSRunner';
   import { THREE_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+  import { profiler } from '$lib/profiler';
 
   let {
     id: nodeId,
@@ -368,13 +369,15 @@
       // Start animation loop if user defined a draw() function
       if (typeof userDraw === 'function') {
         renderer!.setAnimationLoop((time: number) => {
-          try {
-            userDraw(time);
-            sendBitmap();
-          } catch (error) {
-            handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET);
-            renderer?.setAnimationLoop(null);
-          }
+          profiler.measure(nodeId, 'draw', () => {
+            try {
+              userDraw(time);
+              sendBitmap();
+            } catch (error) {
+              handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET);
+              renderer?.setAnimationLoop(null);
+            }
+          });
         });
       }
     } catch (error) {
