@@ -450,9 +450,9 @@
 
     <!-- Footer -->
     <div class="flex items-center justify-between border-t border-zinc-700 px-4 py-3">
-      <div class="flex items-center gap-1.5 text-xs text-zinc-600">
+      <div class="flex min-w-0 items-center gap-1.5 text-xs text-zinc-600">
         {#if ctrl.isLoading}
-          <Loader class="h-3 w-3 animate-spin" />
+          <Loader class="h-3 w-3 shrink-0 animate-spin" />
           <span>
             {ctrl.isGeneratingConfig
               ? `${descriptor.generatingLabel(ctrl.resolvedObjectType ?? '')}...`
@@ -464,11 +464,13 @@
             {@const name =
               (d?.name as string) || (d?.title as string) || ctrl.context.selectedNode.type}
             {#if name}
-              <span class="font-mono text-zinc-400">{name}</span>
-              <span class="text-zinc-700">·</span>
+              <span class="max-w-32 truncate font-mono text-zinc-400">{name}</span>
+              <span class="shrink-0 text-zinc-700">·</span>
             {/if}
           {/if}
-          <span>{availableModes.length > 1 ? 'Ctrl+I mode · Esc exit' : 'Esc exit'}</span>
+          <span class="shrink-0"
+            >{availableModes.length > 1 ? 'Ctrl+I mode · Esc exit' : 'Esc exit'}</span
+          >
         {/if}
       </div>
 
