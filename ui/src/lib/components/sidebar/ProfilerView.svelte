@@ -179,6 +179,59 @@
     return path;
   }
 
+  // ─── Renderer chart helpers ─────────────────────────────────────────────────
+
+  type RenderMetric = {
+    key: string;
+    label: string;
+    color: string;
+    get: (rf: import('$lib/profiler/types').RenderFrameStats) => number;
+  };
+
+  const RENDER_METRICS: RenderMetric[] = [
+    { key: 'fps', label: 'fps', color: '#34d399', get: (rf) => rf.fps },
+    { key: 'avg', label: 'avg', color: '#60a5fa', get: (rf) => rf.avgMs },
+    { key: 'p50', label: 'p50', color: '#a78bfa', get: (rf) => rf.p50Ms },
+    { key: 'p95', label: 'p95', color: '#fb923c', get: (rf) => rf.p95Ms },
+    { key: 'p99', label: 'p99', color: '#f87171', get: (rf) => rf.p99Ms }
+  ];
+
+  function buildRenderPath(
+    metric: RenderMetric,
+    history: ProfilerSnapshot[],
+    maxVal: number
+  ): string {
+    const n = history.length;
+    if (n === 0) return '';
+    let path = '';
+    let penDown = false;
+    for (let i = 0; i < n; i++) {
+      const rf = history[i].renderFrame;
+      if (!rf) {
+        penDown = false;
+        continue;
+      }
+      const v = metric.get(rf);
+      const x = n > 1 ? (i / (n - 1)) * (CW - CP * 2) + CP : CW / 2;
+      const y = valY(v, maxVal);
+      path += penDown ? `L${x.toFixed(1)} ${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
+      penDown = true;
+    }
+    return path;
+  }
+
+  function renderHistoryMax(history: ProfilerSnapshot[], metrics: RenderMetric[]): number {
+    let max = 0.01;
+    for (const snap of history) {
+      if (!snap.renderFrame) continue;
+      for (const m of metrics) {
+        const v = m.get(snap.renderFrame);
+        if (v > max) max = v;
+      }
+    }
+    return max;
+  }
+
   // ─── Toggles ────────────────────────────────────────────────────────────────
   let showDevStats = $state(false);
 </script>
@@ -491,20 +544,71 @@
 
       {#if showDevStats}
         {@const rf = $profilerSnapshot?.renderFrame}
+        {@const history = $profilerHistory}
+        {@const rMaxMs = renderHistoryMax(history, RENDER_METRICS)}
+        {@const rHistSpan = ((history.length - 1) * 0.5).toFixed(0)}
         <div class="mt-1.5 border-t border-zinc-800/60 pt-1.5">
           <div class="mb-1 font-medium tracking-wide text-zinc-500 uppercase">Renderer</div>
           {#if rf}
-            <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 tabular-nums">
-              <span class="text-zinc-600">fps</span>
-              <span class="text-zinc-400">{fmtFps(rf.fps)}</span>
-              <span class="text-zinc-600">avg</span>
-              <span class="text-zinc-400">{fmt(rf.avgMs)}</span>
-              <span class="text-zinc-600">p50</span>
-              <span class="text-zinc-400">{fmt(rf.p50Ms)}</span>
-              <span class="text-zinc-600">p95</span>
-              <span class="text-zinc-400">{fmt(rf.p95Ms)}</span>
-              <span class="text-zinc-600">p99</span>
-              <span class="text-zinc-400">{fmt(rf.p99Ms)}</span>
+            <!-- Renderer sparkline chart -->
+            {#if history.length >= 2}
+              <svg
+                viewBox="0 0 {CW} {CH}"
+                width="100%"
+                height={CH}
+                preserveAspectRatio="none"
+                class="block overflow-visible"
+              >
+                {#each RENDER_METRICS as metric (metric.key)}
+                  {@const d = buildRenderPath(metric, history, rMaxMs)}
+                  {#if d}
+                    <path
+                      {d}
+                      stroke={metric.color}
+                      stroke-width="1.5"
+                      fill="none"
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                    />
+                  {/if}
+                {/each}
+
+                <!-- Latest-value dots -->
+                {#each RENDER_METRICS as metric (metric.key)}
+                  {@const lastRf = history.at(-1)?.renderFrame}
+                  {#if lastRf}
+                    {@const v = metric.get(lastRf)}
+                    <circle cx={CW - CP} cy={valY(v, rMaxMs)} r="2.5" fill={metric.color} />
+                  {/if}
+                {/each}
+              </svg>
+
+              <div
+                class="mt-0.5 flex items-center justify-between font-mono text-[8px] text-zinc-700"
+              >
+                <span>{fmt(rMaxMs)}</span>
+                <span>{rHistSpan}s</span>
+              </div>
+            {/if}
+
+            <!-- Legend + stats -->
+            <div class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+              {#each RENDER_METRICS as metric (metric.key)}
+                <span class="flex items-center gap-1 text-[10px]">
+                  <span
+                    class="inline-block h-0.5 w-3 rounded-full"
+                    style:background-color={metric.color}
+                  ></span>
+                  <span class="text-zinc-600">{metric.label}</span>
+                  <span class="text-zinc-400 tabular-nums">
+                    {metric.key === 'fps' ? fmtFps(metric.get(rf)) : fmt(metric.get(rf))}
+                  </span>
+                </span>
+              {/each}
+            </div>
+
+            <!-- Extra stats -->
+            <div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] tabular-nums">
               <span class="text-zinc-600">drops@60</span>
               <span class={rf.drops60 > 0 ? 'text-amber-400' : 'text-zinc-400'}>{rf.drops60}</span>
               {#if rf.gpuReadAvgMs !== null}
