@@ -2,6 +2,14 @@ import type { Node, Edge, Viewport } from '@xyflow/svelte';
 import type { CanvasContext } from './CanvasContext';
 import type { NodeOperationsService } from './NodeOperationsService';
 import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
+import {
+  AddNodeCommand,
+  AddNodesCommand,
+  AddEdgesCommand,
+  DeleteNodesCommand,
+  BatchCommand,
+  ReplaceNodeDataCommand
+} from '$lib/history/commands';
 
 export interface MultiObjectInsertParams {
   objectNodes: AiObjectNode[];
@@ -67,6 +75,17 @@ export class AiOperationsService {
     // Wait one more tick
     await onNodesAdded();
 
+    // Record as a single undoable batch (mutations already applied above)
+    this.ctx.historyManager.record(
+      new BatchCommand(
+        [
+          new AddNodesCommand(result.newNodes, this.ctx.canvasAccessors),
+          new AddEdgesCommand(result.newEdges, this.ctx.canvasAccessors)
+        ],
+        `AI insert ${result.newNodes.length} objects`
+      )
+    );
+
     return { newNodes: result.newNodes, newEdges: result.newEdges };
   }
 
@@ -82,48 +101,68 @@ export class AiOperationsService {
       'initialized' // Internal initialization state
     ]);
 
-    this.ctx.nodes = this.ctx.nodes.map((node) => {
-      if (node.id !== nodeId) return node;
+    const existingNode = this.ctx.nodes.find((n) => n.id === nodeId);
+    if (!existingNode) return;
 
-      // Start with existing data
-      const updatedData = { ...node.data };
+    const oldData = { ...existingNode.data };
 
-      // Merge all fields from AI response except preserved ones
-      // Also skip any fields starting with __ (internal convention)
-      for (const [key, value] of Object.entries(data)) {
-        if (!preservedFields.has(key) && !key.startsWith('__')) {
-          updatedData[key] = value;
-        }
+    // Start with existing data
+    const updatedData = { ...existingNode.data };
+
+    // Merge all fields from AI response except preserved ones
+    // Also skip any fields starting with __ (internal convention)
+    for (const [key, value] of Object.entries(data)) {
+      if (!preservedFields.has(key) && !key.startsWith('__')) {
+        updatedData[key] = value;
       }
+    }
 
-      // Add execution trigger if code was updated
-      if (data.code !== undefined && data.code !== node.data.code) {
-        updatedData.executeCode = Date.now();
-      }
+    // Add execution trigger if code was updated
+    if (data.code !== undefined && data.code !== existingNode.data.code) {
+      updatedData.executeCode = Date.now();
+    }
 
-      return { ...node, data: updatedData };
-    });
+    this.ctx.nodes = this.ctx.nodes.map((node) =>
+      node.id === nodeId ? { ...node, data: updatedData } : node
+    );
+
+    this.ctx.historyManager.record(
+      new ReplaceNodeDataCommand(nodeId, oldData, updatedData, this.ctx.canvasAccessors)
+    );
   }
 
   /**
    * Replace an existing node with a new type and data at the same position.
    * Attempts to re-connect edges whose handle IDs still exist on the new node (best-effort).
+   * Recorded as a single atomic undo/redo entry.
    */
   replaceNode(nodeId: string, newType: string, newData: Record<string, unknown>): void {
     const existingNode = this.ctx.nodes.find((n) => n.id === nodeId);
     if (!existingNode) return;
 
-    // Capture position and connected edges before deletion
     const position = existingNode.position;
+
+    // Capture connected edges BEFORE deletion
     const connectedEdges = this.ctx.edges.filter((e) => e.source === nodeId || e.target === nodeId);
 
-    // Delete old node (also removes its connected edges via command system)
-    this.nodeOps.deleteSelectedElements([nodeId], []);
+    // Build delete command — also captures connected edges internally for undo
+    const deleteCmd = new DeleteNodesCommand([existingNode], this.ctx.canvasAccessors);
 
-    // Insert new node at same position
-    const newNodeId = this.insertSingleObject(newType, newData, position);
+    // Build new node
+    const newNodeId = this.ctx.nextNodeId(newType);
+    const newNode: Node = {
+      id: newNodeId,
+      type: newType,
+      position,
+      data: newData
+    };
+    const addNodeCmd = new AddNodeCommand(newNode, this.ctx.canvasAccessors);
 
-    // Re-add edges with updated source/target pointing to new node
+    // Execute delete + create (mutations applied directly, not recorded separately)
+    deleteCmd.execute();
+    addNodeCmd.execute();
+
+    // Re-add reconnected edges pointing to the new node
     const reconnectedEdges = connectedEdges.map((e) => ({
       ...e,
       id: `${e.id}-reconnected-${Date.now()}`,
@@ -131,7 +170,15 @@ export class AiOperationsService {
       target: e.target === nodeId ? newNodeId : e.target
     }));
 
-    this.ctx.edges = [...this.ctx.edges, ...reconnectedEdges];
+    const addEdgesCmd = new AddEdgesCommand(reconnectedEdges, this.ctx.canvasAccessors);
+    if (reconnectedEdges.length > 0) {
+      addEdgesCmd.execute();
+    }
+
+    // Record as one atomic batch
+    this.ctx.historyManager.record(
+      new BatchCommand([deleteCmd, addNodeCmd, addEdgesCmd], `Replace with ${newType}`)
+    );
   }
 
   /**
