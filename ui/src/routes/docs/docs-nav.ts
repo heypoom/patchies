@@ -27,7 +27,7 @@ export const topicOrder: Record<string, string[]> = {
   Other: [
     'sharing-links',
     'offline-usage',
-    'ai-experiments',
+    'ai-features',
     'rendering-pipeline',
     'supporting-open-source'
   ]

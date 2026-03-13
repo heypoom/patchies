@@ -345,6 +345,8 @@
           </button>
 
           {#if modeDropdownOpen}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
               class="absolute top-full right-0 z-20 mt-1 w-52 rounded-lg border border-zinc-700 bg-zinc-800 py-1 shadow-xl"
               onclick={(e) => e.stopPropagation()}
@@ -448,7 +450,7 @@
                 {fixErrorMessages.length} error{fixErrorMessages.length === 1 ? '' : 's'} will be sent:
               </div>
               <ul class="space-y-0.5 font-mono text-red-300/80">
-                {#each fixErrorMessages as msg (msg)}
+                {#each fixErrorMessages as msg, index (index)}
                   <li class="truncate">{msg}</li>
                 {/each}
               </ul>
@@ -472,7 +474,7 @@
             <Loader class="h-3 w-3 animate-spin" />
 
             {#if ctrl.isGeneratingConfig}
-              <span>{descriptor.generatingLabel(ctrl.resolvedObjectType)}...</span>
+              <span>{descriptor.generatingLabel(ctrl.resolvedObjectType ?? '')}...</span>
             {:else}
               <span>{descriptor.loadingLabel}...</span>
             {/if}

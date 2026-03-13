@@ -1,48 +1,133 @@
 <script lang="ts">
-  import { MessageSquare, Send, Trash2 } from '@lucide/svelte/icons';
+  import { MessageSquare, Send, Trash2, Zap } from '@lucide/svelte/icons';
+  import { match } from 'ts-pattern';
+  import { logger } from '$lib/utils/logger';
   import { toast } from 'svelte-sonner';
   import { selectedNodeInfo } from '../../../stores/ui.store';
-  import { streamChatMessage, type ChatMessage } from '$lib/ai/chat/resolver';
+  import {
+    streamChatMessage,
+    type ChatMessage,
+    type ChatAction,
+    type ChatNode
+  } from '$lib/ai/chat/resolver';
+  import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
+  import ActionCard from './ActionCard.svelte';
+  import { SvelteMap } from 'svelte/reactivity';
 
-  let messages = $state<ChatMessage[]>([]);
+  let {
+    aiCallbacks,
+    getNodeById
+  }: {
+    aiCallbacks?: AiPromptCallbacks;
+    getNodeById?: (nodeId: string) => ChatNode | undefined;
+  } = $props();
+
+  interface ThreadActionRef {
+    id: string;
+    type: string;
+    summary?: string;
+  }
+
+  interface ThreadMessage {
+    role: 'user' | 'model';
+    content: string;
+    thinking?: string;
+    actions?: ThreadActionRef[];
+  }
+
+  const actions = new SvelteMap<string, ChatAction>();
+
+  let messages = $state<ThreadMessage[]>([]);
   let inputText = $state('');
   let isLoading = $state(false);
   let streamingText = $state('');
   let thinkingText = $state('');
+  let pendingActions = $state<string[]>([]);
+  let autoApprove = $state(false);
   let abortController: AbortController | null = $state(null);
   let messagesEl: HTMLDivElement | undefined = $state();
 
-  const nodeContext = $derived(
-    $selectedNodeInfo
-      ? { nodeType: $selectedNodeInfo.type, nodeData: $selectedNodeInfo.data }
-      : null
-  );
+  const nodeContext = $derived.by(() => {
+    if (!$selectedNodeInfo) return null;
+
+    const errors = logger
+      .getNodeLogs($selectedNodeInfo.id)
+      .filter((e) => e.level === 'error')
+      .map((e) => e.message);
+
+    return {
+      nodeId: $selectedNodeInfo.id,
+      nodeType: $selectedNodeInfo.type,
+      nodeData: $selectedNodeInfo.data,
+      consoleErrors: errors.length > 0 ? errors : undefined
+    };
+  });
 
   $effect(() => {
-    // Re-run when messages or streamingText change, scroll after DOM update
     void messages;
     void streamingText;
+
     setTimeout(() => {
-      if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+      if (messagesEl) {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
     }, 0);
   });
+
+  function updateActionState(id: string, state: 'applied' | 'dismissed') {
+    const action = actions.get(id);
+    if (!action) return;
+
+    actions.set(id, { ...action, state });
+  }
+
+  function applyAction(action: ChatAction) {
+    if (!aiCallbacks) return;
+
+    match(action.result)
+      .with({ kind: 'single' }, (r) => aiCallbacks!.onInsertObject(r.type, r.data))
+      .with({ kind: 'multi' }, (r) => aiCallbacks!.onInsertMultipleObjects(r.nodes, r.edges))
+      .with({ kind: 'edit' }, (r) => aiCallbacks!.onEditObject(r.nodeId, r.data))
+      .with({ kind: 'replace' }, (r) =>
+        aiCallbacks!.onReplaceObject(r.nodeId, r.newType, r.newData)
+      )
+      .exhaustive();
+
+    updateActionState(action.id, 'applied');
+  }
 
   async function handleSubmit() {
     if (!inputText.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: inputText.trim() };
-    const nextMessages = [...messages, userMessage];
-    messages = nextMessages;
+    const userContent = inputText.trim();
+
+    const chatHistory: ChatMessage[] = [
+      ...messages.map((m) => {
+        let content = m.content;
+
+        if (m.actions && m.actions.length > 0) {
+          const actionSummary = m.actions.map((a) => `[Action: ${a.summary ?? a.type}]`).join(' ');
+
+          content = content ? `${content}\n${actionSummary}` : actionSummary;
+        }
+
+        return { role: m.role, content };
+      }),
+      { role: 'user', content: userContent }
+    ];
+
+    messages = [...messages, { role: 'user', content: userContent }];
     inputText = '';
     isLoading = true;
     streamingText = '';
     thinkingText = '';
+    pendingActions = [];
     abortController = new AbortController();
 
     try {
       const fullText = await streamChatMessage(
-        nextMessages,
+        chatHistory,
         nodeContext,
         (chunk) => {
           streamingText += chunk;
@@ -50,22 +135,53 @@
         abortController.signal,
         (thought) => {
           thinkingText += thought;
-        }
+        },
+        getNodeById,
+        aiCallbacks
+          ? (action) => {
+              actions.set(action.id, action);
+
+              if (autoApprove) {
+                applyAction(action);
+              } else {
+                pendingActions = [...pendingActions, action.id];
+              }
+            }
+          : undefined
       );
 
+      const completedActions: ThreadActionRef[] = pendingActions.map((id) => {
+        const action = actions.get(id);
+        return {
+          id,
+          type: action?.mode ?? 'unknown',
+          summary: action ? `${action.descriptor.label}: ${action.result.kind}` : undefined
+        };
+      });
+
       messages = [
-        ...nextMessages,
-        { role: 'model', content: fullText, thinking: thinkingText || undefined }
+        ...messages,
+        {
+          role: 'model',
+          content: fullText,
+          thinking: thinkingText || undefined,
+          actions: completedActions.length > 0 ? completedActions : undefined
+        }
       ];
+
       streamingText = '';
       thinkingText = '';
+      pendingActions = [];
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
+
       if (message !== 'Request cancelled') {
         toast.error(message);
       }
+
       streamingText = '';
       thinkingText = '';
+      pendingActions = [];
     } finally {
       isLoading = false;
       abortController = null;
@@ -79,6 +195,7 @@
 
   function handleClear() {
     messages = [];
+    actions.clear();
     streamingText = '';
   }
 
@@ -97,7 +214,11 @@
       <MessageSquare class="h-3 w-3 shrink-0 text-purple-400" />
 
       <span class="min-w-0 truncate font-mono text-xs text-zinc-400">
-        Context: <span class="text-zinc-200">{nodeContext.nodeType}</span>
+        Context: <span class="text-zinc-200"
+          >{(nodeContext.nodeData?.name as string) ||
+            (nodeContext.nodeData?.title as string) ||
+            nodeContext.nodeType}</span
+        >
       </span>
     </div>
   {/if}
@@ -116,31 +237,34 @@
 
     {#each messages as message, index (index)}
       {#if message.role === 'user'}
-        <div class="flex justify-end">
-          <div
-            class="max-w-[85%] rounded-lg bg-zinc-800 px-3 py-2 text-xs leading-relaxed text-zinc-200"
-          >
-            <pre class="font-sans whitespace-pre-wrap">{message.content}</pre>
-          </div>
+        <div
+          class="max-w-[90%] rounded border border-zinc-700 bg-zinc-800/60 px-3 py-2 text-xs leading-relaxed text-zinc-200"
+        >
+          <pre class="font-sans whitespace-pre-wrap">{message.content}</pre>
         </div>
       {:else}
         <div class="flex items-start gap-2">
-          <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
-          <div class="min-w-0 flex-1">
-            {#if message.thinking}
-              <details class="mb-2">
-                <summary
-                  class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
-                >
-                  Thinking
-                </summary>
+          {#if !message.actions?.length}
+            <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
+          {/if}
 
-                <div class="mt-1 text-zinc-700 opacity-60">
-                  <MarkdownContent markdown={message.thinking} />
-                </div>
-              </details>
+          <div class="min-w-0 flex-1">
+            {#if message.content}
+              <MarkdownContent markdown={message.content} />
             {/if}
-            <MarkdownContent markdown={message.content} />
+
+            {#each message.actions ?? [] as ref (ref.id)}
+              {@const action = actions.get(ref.id)}
+
+              {#if action && aiCallbacks}
+                <ActionCard
+                  {action}
+                  callbacks={aiCallbacks}
+                  onStateChange={updateActionState}
+                  {getNodeById}
+                />
+              {/if}
+            {/each}
           </div>
         </div>
       {/if}
@@ -154,25 +278,39 @@
             ? 'bg-zinc-600'
             : 'animate-pulse bg-zinc-700'}"
         ></div>
+
         <div class="min-w-0 flex-1">
           {#if streamingText}
             <MarkdownContent markdown={streamingText} />
-          {:else}
-            <span class="text-xs text-zinc-500">Thinking...</span>
           {/if}
 
           {#if thinkingText}
-            <details class="mt-2">
+            <details open>
               <summary
                 class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
               >
                 Thinking
               </summary>
+
               <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
-                {thinkingText}
+                <MarkdownContent markdown={thinkingText} />
               </div>
             </details>
           {/if}
+
+          <!-- ActionCards visible while response is still streaming -->
+          {#each pendingActions as actionId (actionId)}
+            {@const action = actions.get(actionId)}
+
+            {#if action && aiCallbacks}
+              <ActionCard
+                {action}
+                callbacks={aiCallbacks}
+                onStateChange={updateActionState}
+                {getNodeById}
+              />
+            {/if}
+          {/each}
         </div>
       </div>
     {/if}
@@ -194,7 +332,20 @@
     <div class="mx-2.5 flex items-center justify-between pb-1.5">
       <span class="font-mono text-[10px] text-zinc-700">Shift+Enter for newline</span>
 
-      <div class="flex gap-1.5">
+      <div class="flex items-center gap-1.5">
+        {#if aiCallbacks}
+          <button
+            onclick={() => (autoApprove = !autoApprove)}
+            class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 font-mono text-[10px] transition-colors {autoApprove
+              ? 'bg-purple-900/50 text-purple-400'
+              : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
+            title={autoApprove ? 'Auto-approve on' : 'Auto-approve off'}
+          >
+            <Zap class="h-3 w-3" />
+            Auto
+          </button>
+        {/if}
+
         {#if messages.length > 0 && !isLoading}
           <button
             onclick={handleClear}

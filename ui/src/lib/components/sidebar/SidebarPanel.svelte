@@ -32,18 +32,25 @@
   } from '../../../stores/ui.store';
   import { hasAppPreview } from '../../../stores/app-preview.store';
 
+  import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
+  import type { ChatNode } from '$lib/ai/chat/resolver';
+
   let {
     open = $bindable(false),
     view = $bindable<SidebarView>('files'),
     onSavePatch,
     onRequestApiKey,
-    onOpenPatchToApp
+    onOpenPatchToApp,
+    aiCallbacks,
+    getNodeById
   }: {
     open: boolean;
     view?: SidebarView;
     onSavePatch?: () => void;
     onRequestApiKey?: (onKeyReady: () => void) => void;
     onOpenPatchToApp?: () => void;
+    aiCallbacks?: AiPromptCallbacks;
+    getNodeById?: (nodeId: string) => ChatNode | undefined;
   } = $props();
 
   // Base views always shown
@@ -247,12 +254,12 @@
     </div>
 
     <!-- Content -->
-    {#if view === 'chat'}
-      <!-- Chat needs its own internal scroll, so we skip overflow-y-auto here -->
-      <div class="min-h-0 flex-1">
-        <ChatView />
-      </div>
-    {:else}
+    <!-- Chat is always mounted to preserve state across tab switches -->
+    <div class="min-h-0 flex-1 {view === 'chat' ? '' : 'hidden'}">
+      <ChatView {aiCallbacks} {getNodeById} />
+    </div>
+
+    {#if view !== 'chat'}
       <div class="flex-1 overflow-y-auto">
         {#if view === 'files'}
           <FileTreeView />

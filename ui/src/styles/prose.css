@@ -61,6 +61,12 @@
     color: inherit !important;
   }
 
+  .prose-code-expanded.prose-markdown-sm pre {
+    border-radius: 0 0 0.25rem 0.25rem !important;
+    margin: 0;
+    border: none;
+  }
+
   .prose-markdown code,
   .prose-markdown-sm code {
     font-family: ui-monospace, monospace;

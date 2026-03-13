@@ -4,6 +4,7 @@ import { createLLMFunction } from '$lib/ai/google';
 import { debounce } from 'lodash';
 import { createGetVfsUrl, revokeObjectUrls } from '$lib/vfs';
 import { handleCodeError } from './handleCodeError';
+import { logger } from '$lib/utils/logger';
 import { createKVStore } from '$lib/storage';
 import { Transport } from '$lib/transport';
 import { LookaheadClockScheduler } from '$lib/transport/ClockScheduler';
@@ -352,6 +353,11 @@ export class JSRunner {
     const messageSystemContext = skipMessageContext
       ? JSRunner.noopMessageContext
       : this.setupRunnerMessageContext(nodeId);
+
+    // Clear stale logs from last run, so only errors from the current run are visible
+    if (!skipMessageContext) {
+      logger.clearNodeLogs(nodeId);
+    }
 
     // Set up error handler for recv() callbacks
     if (!skipMessageContext) {

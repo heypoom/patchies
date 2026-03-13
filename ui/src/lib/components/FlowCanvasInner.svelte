@@ -450,6 +450,19 @@
     aiOps.replaceNode(nodeId, newType, newData);
   }
 
+  function getNodeById(nodeId: string) {
+    const node = getNode(nodeId);
+    if (!node) return undefined;
+    return { id: node.id, type: node.type, data: node.data as Record<string, unknown> };
+  }
+
+  const aiCallbacks = {
+    onInsertObject: handleAiObjectInsert,
+    onInsertMultipleObjects: handleAiMultipleObjectsInsert,
+    onEditObject: handleAiObjectEdit,
+    onReplaceObject: handleAiObjectReplace
+  };
+
   onMount(() => {
     flowContainer?.focus();
 
@@ -912,6 +925,8 @@
     onSavePatch={() => (showSavePatchModal = true)}
     onRequestApiKey={handlePatchToPromptRequestApiKey}
     onOpenPatchToApp={() => (showPatchToPromptDialog = true)}
+    {aiCallbacks}
+    {getNodeById}
   />
 
   <!-- Main content area -->
