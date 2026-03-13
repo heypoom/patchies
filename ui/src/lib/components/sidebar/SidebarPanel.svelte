@@ -20,7 +20,7 @@
   import HelpView from './HelpView.svelte';
   import AppPreviewView from './AppPreviewView.svelte';
   import SampleSearchView from './SampleSearchView.svelte';
-  import ChatView from './ChatView.svelte';
+  import ChatSessionsPanel from './ChatSessionsPanel.svelte';
   import { usePreviewTab } from './usePreviewTab.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
@@ -254,9 +254,9 @@
     </div>
 
     <!-- Content -->
-    <!-- Chat is always mounted to preserve state across tab switches -->
+    <!-- Chat sessions panel is always mounted to preserve state across tab switches -->
     <div class="min-h-0 flex-1 {view === 'chat' ? '' : 'hidden'}">
-      <ChatView {aiCallbacks} {getNodeById} />
+      <ChatSessionsPanel {aiCallbacks} {getNodeById} />
     </div>
 
     {#if view !== 'chat'}
