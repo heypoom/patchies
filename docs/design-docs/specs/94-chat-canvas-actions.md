@@ -1,5 +1,7 @@
 # 94. Chat Canvas Actions
 
+> **Status: IMPLEMENTED** ✓
+
 ## Overview
 
 Extend ChatView with the ability to perform canvas mutations (create, edit, replace, decompose, etc.) via tool calls, while sharing all resolver logic with `AiObjectPrompt`. The floating `AiObjectPrompt` dialog is unchanged — it remains the fast "quick edit" path. ChatView becomes the conversational path to the same underlying operations.
