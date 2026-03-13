@@ -189,7 +189,11 @@
       <MessageSquare class="h-3 w-3 shrink-0 text-purple-400" />
 
       <span class="min-w-0 truncate font-mono text-xs text-zinc-400">
-        Context: <span class="text-zinc-200">{nodeContext.nodeType}</span>
+        Context: <span class="text-zinc-200"
+          >{(nodeContext.nodeData?.name as string) ||
+            (nodeContext.nodeData?.title as string) ||
+            nodeContext.nodeType}</span
+        >
       </span>
     </div>
   {/if}
