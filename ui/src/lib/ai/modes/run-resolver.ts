@@ -12,6 +12,7 @@ import { fixErrorResolver } from './fix-error-resolver';
 import { createConsumerResolver } from './create-consumer-resolver';
 import { createProducerResolver } from './create-producer-resolver';
 import { decomposeResolver } from './decompose-resolver';
+import { forkResolver } from './fork-resolver';
 import type { AiModeContext, AiModeResult, AiPromptMode } from './types';
 
 export async function runModeResolver(
@@ -87,6 +88,7 @@ export async function runModeResolver(
       createProducerResolver(prompt, context, signal, onThinking, onProgress)
     )
     .with('decompose', () => decomposeResolver(prompt, context, signal, onThinking, onProgress))
+    .with('fork', () => forkResolver(prompt, context, signal, onThinking, onProgress))
     .otherwise(() => {
       throw new Error(`Unknown mode: ${mode}`);
     });

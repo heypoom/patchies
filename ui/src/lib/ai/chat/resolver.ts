@@ -258,7 +258,8 @@ const NODE_SCOPED_MODES = new Set<AiPromptMode>([
   'fix-error',
   'create-consumer',
   'create-producer',
-  'decompose'
+  'decompose',
+  'fork'
 ]);
 
 function buildContextFromArgs(

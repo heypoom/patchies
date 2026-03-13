@@ -12,7 +12,8 @@ export type AiPromptMode =
   | 'fix-error' // Fix code error using console output
   | 'create-consumer' // Create a consumer for the selected producer node
   | 'create-producer' // Create a producer for the selected consumer node
-  | 'decompose'; // Split object into multiple
+  | 'decompose' // Split object into multiple
+  | 'fork'; // Create a new object derived from an existing one
 
 export interface AiModeContext {
   /** The node being edited/replaced/decomposed */

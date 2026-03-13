@@ -6,7 +6,8 @@ import {
   Wrench,
   ArrowRight,
   ArrowLeft,
-  Scissors
+  Scissors,
+  GitFork
 } from '@lucide/svelte/icons';
 import type { AiModeDescriptor, AiModeContext, AiPromptMode } from './types';
 
@@ -186,6 +187,35 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
       },
       required: ['nodeId', 'prompt']
     }
+  },
+
+  fork: {
+    id: 'fork',
+    label: 'Fork',
+    shortLabel: 'Fork',
+    description: (ctx) => `Forking: ${nodeName(ctx)}`,
+    placeholder: () => 'e.g., "as a canvas node" or "draw spirals instead"',
+    loadingLabel: 'Forking',
+    generatingLabel: (t) => `Forking ${t}`,
+    color: 'purple',
+    icon: GitFork,
+    isMulti: false,
+    requiresNode: true,
+    availableInChat: true,
+    chatToolDescription:
+      'Create a new standalone object derived from an existing one — can stay the same type or become a different type based on the prompt',
+    chatToolSchema: {
+      type: 'object',
+      properties: {
+        nodeId: { type: 'string', description: 'ID of the source node to fork from' },
+        prompt: {
+          type: 'string',
+          description:
+            'What to change or what type to fork into (e.g. "as a canvas node", "draw triangles instead")'
+        }
+      },
+      required: ['nodeId', 'prompt']
+    }
   }
 } satisfies Record<string, AiModeDescriptor>;
 
@@ -211,6 +241,7 @@ export function getAvailableModesForContext(ctx: AiModeContext): AiPromptMode[] 
 
   const modes: AiPromptMode[] = [
     'edit',
+    'fork',
     'fix-error',
     'replace',
     'decompose',
