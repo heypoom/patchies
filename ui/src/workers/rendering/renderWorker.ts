@@ -61,6 +61,7 @@ self.onmessage = (event) => {
     .with('setFFTData', () => handleSetFFTData(data))
     .with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code))
     .with('enableProfiling', () => fboRenderer.setProfilingEnabled(data.enabled))
+    .with('profilerEnable', () => fboRenderer.drawProfiler.setEnabled(data.enabled))
     .with('flushFrameStats', () => {
       const stats = fboRenderer.flushFrameStats();
 

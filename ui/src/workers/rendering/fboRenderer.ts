@@ -29,6 +29,7 @@ import type {
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
+import { WorkerProfiler } from '../shared/WorkerProfiler.js';
 import { VideoTextureManager } from './VideoTextureManager.js';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
@@ -103,6 +104,11 @@ export class FBORenderer {
 
   /** Profiler for frame timing and regl.read() metrics */
   public profiler = new RenderingProfiler();
+
+  /** Per-node draw-loop profiler — times each node's render function each frame */
+  public drawProfiler = new WorkerProfiler((nodeId, stats) => {
+    self.postMessage({ type: 'drawStats', nodeId, messageStats: stats });
+  });
   private startTime: number = Date.now();
   private frameCancellable: regl.Cancellable | null = null;
   public jsRunner = JSRunner.getInstance();
@@ -1017,15 +1023,17 @@ export class FBORenderer {
     const transportTime = this.transportTime?.seconds ?? this.lastTime;
 
     fboNode.framebuffer.use(() => {
-      fboNode.render({
-        prevTransportTime: this.prevTransportTime,
-        iFrame: this.frameCount,
-        mouseX: mouseData[0],
-        mouseY: mouseData[1],
-        mouseZ: mouseData[2],
-        mouseW: mouseData[3],
-        userParams: userUniformParams as UserParam[],
-        transportTime
+      this.drawProfiler.measure(node.id, () => {
+        fboNode.render({
+          prevTransportTime: this.prevTransportTime,
+          iFrame: this.frameCount,
+          mouseX: mouseData[0],
+          mouseY: mouseData[1],
+          mouseZ: mouseData[2],
+          mouseW: mouseData[3],
+          userParams: userUniformParams as UserParam[],
+          transportTime
+        });
       });
     });
   }
@@ -1059,6 +1067,7 @@ export class FBORenderer {
   /** Enable/disable frame profiling */
   public setProfilingEnabled(enabled: boolean) {
     this.profiler.setEnabled(enabled);
+    this.drawProfiler.setEnabled(enabled);
   }
 
   /** Record frame time (call this at end of each frame) */
