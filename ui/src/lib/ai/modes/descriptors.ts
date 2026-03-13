@@ -88,7 +88,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     label: 'Turn Into',
     shortLabel: 'Into',
     description: () => 'Turn object into something else',
-    placeholder: (ctx) => `e.g., "Replace this ${ctx.selectedNode?.type || 'object'} with..."`,
+    placeholder: (ctx) => `Replace this ${ctx.selectedNode?.type || 'object'} with...`,
     loadingLabel: 'Replacing',
     generatingLabel: (t) => `Replacing with ${t}`,
     color: 'amber',
