@@ -6,7 +6,9 @@
     ChevronRight,
     ChevronUp,
     Crosshair,
-    Settings
+    Play,
+    Settings,
+    Square
   } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import {
@@ -260,14 +262,23 @@
         <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
       {/if}
     </div>
-    <button
-      class="cursor-pointer rounded px-2 py-0.5 text-xs transition-colors {$profilerEnabled
-        ? 'bg-zinc-700 text-zinc-200 hover:bg-zinc-600'
-        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'}"
-      onclick={() => profilerEnabled.update((v) => !v)}
-    >
-      {$profilerEnabled ? 'Stop' : 'Start'}
-    </button>
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <button
+          class="cursor-pointer rounded p-1 transition-colors {$profilerEnabled
+            ? 'text-red-400 hover:bg-zinc-700 hover:text-red-300'
+            : 'text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'}"
+          onclick={() => profilerEnabled.update((v) => !v)}
+        >
+          {#if $profilerEnabled}
+            <Square class="h-3 w-3" />
+          {:else}
+            <Play class="h-3 w-3" />
+          {/if}
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>{$profilerEnabled ? 'Stop' : 'Start'} profiling</Tooltip.Content>
+    </Tooltip.Root>
   </div>
 
   {#if !$profilerEnabled && !$profilerSnapshot}
