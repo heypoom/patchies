@@ -1,6 +1,6 @@
 # 95. Performance Profiler
 
-**Status**: Brainstorm / Draft
+**Status**: Draft
 **Inspiration**: TouchDesigner cook-time profiler
 
 ---
@@ -48,7 +48,8 @@ A per-object performance profiler that measures execution time and memory across
 
 - `process()` execution time per processor (128-sample block, ~344 calls/sec)
 - Inlet message handling time (`handleMessage()`)
-- **Sampling strategy**: Measure every Nth block (e.g., N=10) to keep overhead negligible. At 344 Hz, measuring every 10th = 34 measurements/sec per processor. At `performance.now()` cost of ~0.5µs, overhead ≈ 17µs/sec per processor — acceptable.
+
+**Sampling strategy**: Measure every Nth block (default N=16) to keep overhead negligible. At 344 Hz, measuring every 16th = ~21 measurements/sec per processor. At `performance.now()` cost of ~0.5µs, overhead ≈ 10µs/sec per processor — well below audible impact. N is a compile-time constant, not runtime-configurable, to avoid a branch in the hot path.
 
 **Where to instrument**: `defineDSP()` wraps the processor class — add sampling wrapper around `process()`.
 
@@ -95,7 +96,7 @@ A per-object performance profiler that measures execution time and memory across
 ## Execution Environments
 
 | Environment | Thread Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | Main thread | Browser main | ObjectService, MessageSystem, JSRunner (non-worker), AudioService |
 | Render worker | Dedicated Worker | FBORenderer, P5/Hydra/GLSL renderers, render-clock callbacks |
 | Audio worklet | AudioWorkletGlobalScope | All `defineDSP` processors, AudioWorkletNode message handling |
@@ -107,7 +108,7 @@ A per-object performance profiler that measures execution time and memory across
 ## Data Model
 
 ```typescript
-// Rolling stats computed over a sliding window (e.g., last 300 frames or 2s)
+// Rolling stats computed over a 2-second sliding window of samples
 interface TimingStats {
   avg: number;   // milliseconds
   max: number;
@@ -133,7 +134,7 @@ interface NodeProfileData {
   textureBytes?: number;          // Render worker, estimated from FBO size
 
   // Flags
-  isHot: boolean;   // exceeds configurable threshold (e.g., >2ms avg)
+  isHot: boolean;   // exceeds user-configured threshold (default: avg > 2ms)
   isSampled: boolean; // true if using sampled measurement (e.g., DSP)
 }
 
@@ -145,6 +146,7 @@ interface ThreadProfileData {
   nodes: NodeProfileData[];
 }
 
+// A single aggregated snapshot — produced every 500ms from batched samples
 interface ProfilerSnapshot {
   timestamp: number;
   threads: ThreadProfileData[];
@@ -152,8 +154,25 @@ interface ProfilerSnapshot {
   bottleneckNodeId: string | null;  // node with highest avg processingTime
 }
 
+// 60-second history: ring buffer of snapshots at 500ms intervals = 120 entries max
+// Stored in ProfilerCoordinator, not in the Svelte store (avoid reactive overhead)
+// UI reads a slice on demand (e.g., for a sparkline or scrubbing)
+interface ProfilerHistory {
+  snapshots: ProfilerSnapshot[];  // ring buffer, max 120 entries
+  push(snapshot: ProfilerSnapshot): void;
+  getRange(fromMs: number, toMs: number): ProfilerSnapshot[];
+  getLatest(): ProfilerSnapshot | null;
+}
+
 type ThreadId = 'main' | 'render' | 'audio-worklet' | `worker-${string}`;
 ```
+
+### History Ring Buffer
+
+- 120 snapshots × 500ms = 60 seconds of history
+- Each snapshot is a full `ProfilerSnapshot`. At ~50 nodes, a snapshot is roughly 50 × ~100 bytes = ~5 KB. 120 snapshots ≈ **600 KB** peak — acceptable.
+- Snapshots are plain objects (no `$state` wrappers) stored in `ProfilerCoordinator`. The Svelte store only holds the latest snapshot for live display.
+- History is cleared when profiling is disabled or the patch is reloaded.
 
 ---
 
@@ -202,107 +221,102 @@ The profiler is **off by default** — zero overhead when disabled. Enabled stat
 
 ### Profiler Panel
 
-A dockable panel (alongside the existing AI chat, node inspector, etc.) with three views:
+A dockable panel (same pattern as AI chat, object browser, etc.) focused on a single **Overview** view.
 
-#### View 1: Overview (default)
+#### Overview Panel
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ PROFILER              [Overview] [Timeline] [Memory]  [■ Active] │
-├────────────────────────────────────────────────────────────────── │
-│ Frame Budget (60fps = 16.7ms)                                     │
-│ ████████████████████░░░░░░░░░░░░░  12.4ms / 16.7ms  74%          │
+│ PROFILER                              [Memory ▼]  [● Recording]  │
+├──────────────────────────────────────────────────────────────────┤
+│ Frame Budget  ████████████████████░░░░░░░   12.4ms / 16.7ms  74% │
 │                                                                   │
-│ THREADS                      AVG     MAX    P95   MSGS/S         │
-│ ● Main Thread               3.2ms   8.1ms  5.4ms   240          │
-│ ● Render Worker             6.8ms  12.3ms  9.1ms    —           │
-│ ◆ Audio Worklet (sampled)   0.4ms   0.9ms  0.6ms    —           │
-│ □ Worker: my-worker         2.1ms   5.2ms  3.8ms    18          │
-├────────────────────────────────────────────────────────────────── │
-│ [Sort: avg ▼]  [Filter: all ▼]  [Threshold: 0.5ms]               │
+│ THREADS                     AVG     MAX     P95    MSGS/S        │
+│ ● Main Thread               3.2ms   8.1ms   5.4ms   240         │
+│ ● Render Worker             6.8ms  12.3ms   9.1ms    —          │
+│ ◆ Audio Worklet ~           0.4ms   0.9ms   0.6ms    —          │
+│ □ Worker: my-worker         2.1ms   5.2ms   3.8ms    18         │
+├──────────────────────────────────────────────────────────────────┤
+│ [Sort: avg ▼]  [Thread: all ▼]  [⚠ Hot only]  [Threshold: 2ms ▼]│
 │                                                                   │
-│ NAME             TYPE     THREAD     AVG    MAX    BAR            │
-│ ▲ hydra-23       hydra    render    4.2ms  8.1ms  ████████░░     │
-│   glsl-45        glsl     render    2.6ms  4.2ms  █████░░░░░     │
-│   metro-12       metro    main      1.1ms  2.3ms  ██░░░░░░░░     │
-│   my-worker      worker   worker    0.8ms  1.4ms  █░░░░░░░░░     │
-│   add~-03        add~     audio     0.1ms  0.2ms  ░░░░░░░░░░     │
+│ NAME              TYPE    THREAD    AVG    MAX    SPARKLINE       │
+│ ⚠ hydra-23        hydra   render   4.2ms  8.1ms  ╱╲_╱╲╱╲_╱      │
+│ ⚠ glsl-45         glsl    render   2.6ms  4.2ms  _╱╲__╱╲__      │
+│   metro-12        metro   main     0.8ms  2.3ms  ___╱____       │
+│   my-worker       worker  worker   0.6ms  1.4ms  ___╱╲___       │
+│   add~-03 ~       add~    audio    0.1ms  0.2ms  ___________     │
 │   …                                                               │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-- **Sort** by: avg time, max time, p95, messages/sec, node type
-- **Filter** by thread, node type, or "hot only" (above threshold)
-- **Threshold** slider: hides nodes below N ms (reduces noise)
-- Click a row → select node in the patch editor + show detail popover
-- Color-coded thread indicators: render=orange, main=white, audio=blue, worker=green
+**Thread summary row** (top section):
 
-#### View 2: Node Overlay (in-patch)
+- One row per active thread
+- Clicking a thread row filters the node list to that thread
+- `~` suffix indicates sampled measurement
 
-When the profiler is active, each node in the canvas gets a small badge:
+**Node list** (bottom section):
+
+- Default sort: avg time descending
+- **`⚠ Hot` indicator**: shown when `avg > threshold`. The `⚠ Hot only` toggle hides everything below threshold — the fastest way to see problem nodes
+- **Threshold picker**: 0.5 / 1 / 2 / 5ms presets (default 2ms)
+- **Sparkline**: shows avg time over the last 60 seconds (sampled from history ring buffer, drawn as a tiny 60px canvas). Gives instant visual of "is this node consistently slow, or was it a spike?"
+- **Sort** by: avg, max, p95, messages/sec
+- **Thread filter** dropdown: All / Main / Render / Audio / Workers
+- Click a row → **selects the node in the patch** + opens detail popover
+
+**Color coding**:
+
+- Thread dot color: render=amber, main=zinc-200, audio=blue, worker=emerald
+- Hot rows: amber background tint (`bg-amber-950/30`) + `⚠` icon
+- Severely hot rows (avg > 5× threshold): red background tint (`bg-red-950/30`)
+
+#### Node Detail Popover
+
+Clicking a row opens a popover anchored to the row:
+
+```text
+┌─────────────────────────────────────┐
+│ hydra-23              [hydra]        │
+│ render worker                    ⚠  │
+├─────────────────────────────────────┤
+│ Processing Time                     │
+│  avg   4.2ms  ██████████████        │
+│  p95   7.1ms  ████████████████      │
+│  max   8.1ms  ██████████████████    │
+│  last  3.9ms                        │
+│                                     │
+│  60s history ╱╲_╱╲╱╲╱╲__╱╲___╱╲   │
+├─────────────────────────────────────┤
+│ Texture         1920×1080  8.3 MB   │
+│ FBO Reads       12/sec              │
+│ Messages In     —                   │
+│ Messages Out    —                   │
+├─────────────────────────────────────┤
+│           [Jump to node →]          │
+└─────────────────────────────────────┘
+```
+
+- The 60s history sparkline in the popover is larger (full width, ~80px tall) for easier reading
+- "Jump to node" selects + scrolls the patch canvas to the node
+
+#### Node Overlay (in-patch)
+
+When the profiler is recording, each node gets a small indicator in its bottom bar:
 
 ```
 ┌─────────────────────┐
 │  hydra              │
-│  ═══════════════    │  ← code editor
+│  ═══════════════    │
 │                     │
-│  ▶ ○               │
+│  ▶ ○        4.2ms ⚠ │  ← profiler badge in node footer
 └─────────────────────┘
-  [4.2ms ████]         ← profiler badge below node
-
 ```
 
-Badge color:
-- Green: `avg < 1ms`
-- Yellow: `1ms ≤ avg < 5ms`
-- Red: `avg ≥ 5ms`
-- Gray: not yet measured / no data
-
-Clicking the badge opens a detail popover.
-
-#### View 3: Timeline (advanced)
-
-A flame-chart style view showing activity across threads over the last ~2 seconds:
-
-```
-ms  0    4    8   12   16   20   24   28   32
-    │    │    │    │    │    │    │    │    │
-Main│▓▓▒░░░▓▓░░░░░▓░░░░░░░░░░░░░░░░░░░░░░░ │
-Rndr│░░░░░▓▓▓▓▓▓▓▓░░░░░▓▓▓▓▓▓▓▓░░░░░░░░░ │
-Wkr │░░░░░░░░░░░░░▓▓▓▓░░░░░░░░░░▓▓▓▓▓░░░ │
-    └────────────────────────────────────┘
-         ↑ click to zoom into a frame
-```
-
-- Shows per-thread activity bars
-- Hover to see which node was active at that moment
-- Zoom into a single frame to see within-frame breakdown
-- Useful for identifying blocking patterns (e.g., message chain causing frame stutter)
-
-#### Node Detail Popover
-
-Clicking a node in the list or its badge opens:
-
-```
-┌────────────────────────────────┐
-│ hydra-23  [hydra]  render      │
-├────────────────────────────────┤
-│ Processing Time                │
-│  avg   4.2ms  ████████████     │
-│  p95   7.1ms  █████████████    │
-│  max   8.1ms  ████████████████ │
-│  last  3.9ms                   │
-├────────────────────────────────┤
-│ Render Time     4.2ms avg      │
-│ Texture         1920×1080 8MB  │
-│ FBO Reads       12/sec         │
-├────────────────────────────────┤
-│ Messages In     0/sec          │
-│ Messages Out    0/sec          │
-├────────────────────────────────┤
-│ [Jump to node →]               │
-└────────────────────────────────┘
-```
+- Shows avg time only (to keep it compact)
+- `⚠` icon if hot, no icon otherwise
+- Color: zinc-400 (normal) / amber-400 (hot) / red-400 (severely hot)
+- Clicking the badge opens the same detail popover as the panel list
 
 ---
 
@@ -397,7 +411,7 @@ Texture Memory
 ### Measurement Overhead Budget
 
 | Thread | Target overhead |
-|---|---|
+| --- | --- |
 | Main thread | < 0.1ms/frame total |
 | Render worker | < 0.2ms/frame total |
 | Audio worklet | < 0.01ms/block (sampled every 10th block) |
@@ -423,19 +437,26 @@ Workers and the render worker only know `nodeId`. The main `ProfilerCoordinator`
 
 ---
 
+## Settled Decisions
+
+| Decision | Resolution |
+| --- | --- |
+| Measurement approach | Sampling everywhere — low overhead is the priority |
+| DSP sample rate | Every 16th block (compile-time constant) |
+| History | 60-second ring buffer (120 snapshots × 500ms), ~600 KB peak |
+| "Hot" alerting | Visual highlighting in the panel + node overlay badge; configurable threshold (default 2ms avg) |
+| Timeline / flame chart | Deferred — not in initial scope |
+| Profiler-off overhead | Strict zero — single boolean guard, no store subscriptions in hot paths |
+
 ## Open Questions
 
-1. **Should the profiler record history?** E.g., last 60 seconds of per-node stats, so you can scrub back to see what happened during a stutter. Would require a write-once circular buffer with some memory cost (~few MB).
+1. **Export / share profiler data?** JSON export of a snapshot for bug reports. Low effort, high utility.
 
-2. **Export / share profiler data?** JSON export of a snapshot for bug reports. Low effort, high utility.
+2. **`expr~` / `fexpr~` profiling?** These are AudioWorklet processors running user-supplied math expressions. Same sampling approach as native-dsp applies.
 
-3. **Alert system?** Configurable alerts when a node exceeds a threshold (e.g., red flash + notification). Useful for catching runaway `setInterval` callbacks.
+3. **Canvas/P5 GPU timing?** `EXT_disjoint_timer_query_webgl2` allows GPU-side timing but is stripped in most browsers for fingerprinting. We likely rely on CPU-side `performance.now()` around WebGL calls — which measures CPU wait, not actual GPU time.
 
-4. **`expr~` / `fexpr~` profiling?** These are AudioWorklet processors running user-supplied math expressions. The expression is JIT-compiled — it would be useful to see their `process()` overhead. Same approach as native-dsp.
-
-5. **Canvas/P5 GPU timing?** `EXT_disjoint_timer_query_webgl2` allows GPU-side timing but is stripped in most browsers for fingerprinting concerns. We likely have to rely on CPU-side `performance.now()` around the WebGL calls.
-
-6. **Python/Ruby worker profiling?** These run in Pyodide/WASM workers. Can measure the outer `postMessage` round-trip but not internal execution time without changes to the worker bridge.
+4. **Python/Ruby worker profiling?** These run in Pyodide/WASM workers. Can measure outer `postMessage` round-trip latency but not internal execution without changes to the worker bridge.
 
 ---
 
