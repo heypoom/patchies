@@ -12,7 +12,9 @@
 
   function fmt(ms: number): string {
     if (ms < 0.01) return '<0.01ms';
+
     if (ms >= 100) return ms.toFixed(0) + 'ms';
+
     return ms.toFixed(2) + 'ms';
   }
 
@@ -88,6 +90,8 @@
   const CW = 240; // viewBox width
   const CH = 52; // viewBox height
   const CP = 3; // padding
+
+  const COL_W = '2.8rem';
 
   /** Categories that appear for a node across the entire history */
   function nodeCats(nodeId: string, history: ProfilerSnapshot[]): ProfilerCategory[] {
@@ -184,7 +188,7 @@
       <!-- Column headers -->
       <div
         class="sticky top-0 grid gap-x-2 border-b border-zinc-800 bg-zinc-950 px-3 py-1 text-[10px] font-medium tracking-wide text-zinc-600 uppercase"
-        style:grid-template-columns="1fr {activeCategories.map(() => 'auto').join(' ')}"
+        style:grid-template-columns="1fr {activeCategories.map(() => COL_W).join(' ')}"
       >
         <span>Object</span>
 
@@ -199,9 +203,11 @@
           entry.timings.broadcast?.avg ??
           entry.timings.draw?.avg ??
           0}
+
         {@const isSevere = msgAvg > HOT_THRESHOLD_MS * 5}
         {@const isHot = entry.isHot}
         {@const barPct = Math.min(100, (msgAvg / maxAvg) * 100)}
+
         {@const isSelected = selectedNodeId === entry.nodeId}
         {@const nodeLabel = $nodeLabelsStore[entry.nodeId] ?? entry.nodeType}
 
@@ -215,7 +221,7 @@
               : isSelected
                 ? 'bg-zinc-800/60'
                 : 'hover:bg-zinc-800/50'}"
-          style:grid-template-columns="1fr {activeCategories.map(() => 'auto').join(' ')}"
+          style:grid-template-columns="1fr {activeCategories.map(() => COL_W).join(' ')}"
           onclick={() => toggleNode(entry.nodeId)}
           role="button"
           tabindex="0"
@@ -260,13 +266,13 @@
           </div>
 
           <!-- Per-category timing columns -->
-          {#each activeCategories as cat}
+          {#each activeCategories as cat (cat)}
             {@const t = entry.timings[cat]}
             {#if t}
               {@const catSevere = t.avg > HOT_THRESHOLD_MS * 5}
               {@const catHot = t.avg > HOT_THRESHOLD_MS}
               <span
-                class="tabular-nums {catSevere
+                class="font-mono text-[10px] tabular-nums {catSevere
                   ? 'text-red-300'
                   : catHot
                     ? 'text-amber-300'
@@ -361,6 +367,7 @@
                     style:background-color={CATEGORY_COLOR[cat]}
                   ></span>
                   <span class="text-zinc-600">{CATEGORY_LABEL[cat]}</span>
+
                   {#if t}
                     {@const catSevere = t.avg > HOT_THRESHOLD_MS * 5}
                     {@const catHot = t.avg > HOT_THRESHOLD_MS}
