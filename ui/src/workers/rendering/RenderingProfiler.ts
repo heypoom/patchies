@@ -58,6 +58,18 @@ export class RenderingProfiler {
     this.opTimings[op].push(elapsed);
   }
 
+  /** Measure a function's execution time and record it under the given op. */
+  measureOp<T>(op: RenderOp, fn: () => T): T {
+    if (!this._isEnabled) return fn();
+
+    const t0 = performance.now();
+    const result = fn();
+
+    this.opTimings[op].push(performance.now() - t0);
+
+    return result;
+  }
+
   /** Record frame time (call at end of each frame) */
   recordFrameTime() {
     if (!this._isEnabled || !this.frameTimings) return;

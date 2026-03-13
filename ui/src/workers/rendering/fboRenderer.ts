@@ -21,7 +21,6 @@ import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
 import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
 import { SwissGL } from '$lib/rendering/swissgl';
-import type { RenderOp } from '$lib/profiler/types';
 import type {
   AudioAnalysisType,
   AudioAnalysisPayloadWithType,
@@ -34,6 +33,7 @@ import { WorkerProfiler } from '../shared/WorkerProfiler.js';
 import { VideoTextureManager } from './VideoTextureManager.js';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
+import type { RenderOp } from '$lib/profiler/types';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -949,9 +949,7 @@ export class FBORenderer {
       const outputFBONode = this.fboNodes.get(effectiveOutputNodeId);
 
       if (outputFBONode) {
-        const t0 = performance.now();
-        this.renderNodeToMainOutput(outputFBONode);
-        this.profiler.recordOp('blit', performance.now() - t0);
+        this.profiler.measureOp('blit', () => this.renderNodeToMainOutput(outputFBONode));
       }
     }
 
@@ -1098,9 +1096,9 @@ export class FBORenderer {
     this.profiler.recordFrameTime();
   }
 
-  /** Record a per-operation timing sample for the render profiler */
-  public recordOp(op: RenderOp, elapsed: number) {
-    this.profiler.recordOp(op, elapsed);
+  /** Measure a function's execution time under the given render op. */
+  public measureOp<T>(op: RenderOp, fn: () => T): T {
+    return this.profiler.measureOp(op, fn);
   }
 
   private renderNodeToMainOutput(node: FBONode): void {
