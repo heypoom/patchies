@@ -58,6 +58,7 @@
   // ─── Category metadata ───────────────────────────────────────────────────────
 
   const ORDERED_CATEGORIES: ProfilerCategory[] = ['init', 'message', 'draw', 'interval', 'raf'];
+  const MAIN_VIEW_CATEGORIES: ProfilerCategory[] = ['message', 'draw', 'interval', 'raf'];
 
   const CATEGORY_LABEL: Record<ProfilerCategory, string> = {
     init: 'init',
@@ -77,10 +78,10 @@
 
   // ─── Derived state ───────────────────────────────────────────────────────────
 
-  /** Categories present in the current snapshot (drives column headers) */
+  /** Categories present in the current snapshot (drives main view column headers — excludes init) */
   let activeCategories = $derived(
     $profilerSnapshot
-      ? ORDERED_CATEGORIES.filter((cat) =>
+      ? MAIN_VIEW_CATEGORIES.filter((cat) =>
           $profilerSnapshot!.entries.some((e) => e.timings[cat] != null)
         )
       : []

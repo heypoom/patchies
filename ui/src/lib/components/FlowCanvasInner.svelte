@@ -43,6 +43,7 @@
   import { edgeTypes } from '$lib/components/edges/edge-types';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { AudioService } from '$lib/audio/v2/AudioService';
+  import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
   import { hasSomeAudioNode } from '../../stores/canvas.store';
@@ -321,6 +322,7 @@
     for (const nodeId of deletedNodes) {
       messageSystem.unregisterNode(nodeId);
       audioService.removeNodeById(nodeId);
+      ProfilerCoordinator.getInstance().unregister(nodeId);
     }
   });
 

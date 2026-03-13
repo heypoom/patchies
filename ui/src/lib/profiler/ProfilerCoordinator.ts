@@ -201,8 +201,10 @@ export class ProfilerCoordinator {
 
       if (!hasActivity) continue;
 
-      // isHot if any category exceeds threshold
-      const isHot = Object.values(timings).some((t) => t && t.avg > HOT_THRESHOLD_MS);
+      // isHot if any non-init category exceeds threshold
+      const isHot = (Object.entries(timings) as [ProfilerCategory, TimingStats][]).some(
+        ([cat, t]) => cat !== 'init' && t.avg > HOT_THRESHOLD_MS
+      );
 
       entries.push({ nodeId, nodeType: type, timings, isHot });
     }
