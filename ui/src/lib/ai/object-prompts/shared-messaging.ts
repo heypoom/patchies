@@ -10,4 +10,9 @@ export const messagingInstructions = `
   * meta.inlet: inlet index (0, 1, 2, ...)
   * Example: recv((data, meta) => { if (meta.inlet === 0) freq.value = data; })
 - setPortCount(inlets, outlets) - Configure number of message ports
+
+**Control Messages Format:**
+- Bang is {type: 'bang'}
+- Control messages MUST have a 'type' field (e.g. {type: 'bang'}, {type: 'play'})
+- Common control messages: bang (most common), clear, reset, start, stop, pause, play, run, toggle
 `.trim();
