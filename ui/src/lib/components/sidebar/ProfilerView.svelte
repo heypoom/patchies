@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Activity, ChevronDown, ChevronRight } from '@lucide/svelte/icons';
+  import { Activity, ChevronDown, ChevronRight, ChevronUp } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import {
     profilerEnabled,
@@ -379,14 +379,14 @@
     <!-- Footer: threshold note + dev stats toggle -->
     <div class="border-t border-zinc-800 px-3 py-1.5 text-[10px] text-zinc-600">
       <div class="flex items-center justify-between">
-        <span>⚠ hot &gt; {HOT_THRESHOLD_MS}ms · msg=recv · int=setInterval · raf=rAF</span>
+        <div></div>
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button
               class="cursor-pointer text-zinc-600 transition-colors hover:text-zinc-400"
               onclick={() => (showDevStats = !showDevStats)}
             >
-              {#if showDevStats}<ChevronDown class="h-3 w-3" />{:else}<ChevronRight
+              {#if showDevStats}<ChevronDown class="h-3 w-3" />{:else}<ChevronUp
                   class="h-3 w-3"
                 />{/if}
             </button>
