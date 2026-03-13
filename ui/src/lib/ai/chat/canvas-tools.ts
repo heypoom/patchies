@@ -43,6 +43,6 @@ export const buildCanvasToolDeclarations = (nodeContext?: ChatNodeContext | null
       return {
         name: modeToToolName(d.id),
         description: d.chatToolDescription!,
-        parameters
+        parametersJsonSchema: parameters
       };
     });

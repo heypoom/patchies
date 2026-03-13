@@ -120,7 +120,7 @@ export async function streamChatMessage(
     name: GET_OBJECT_INSTRUCTIONS,
     description:
       'Fetch detailed instructions and API reference for a specific Patchies object type. Call this before writing code for a type you need more details about.',
-    parameters: {
+    parametersJsonSchema: {
       type: 'object',
       properties: {
         type: {
