@@ -60,13 +60,7 @@ self.onmessage = (event) => {
     .with('updateThree', () => handleUpdateThree(data.nodeId))
     .with('setFFTData', () => handleSetFFTData(data))
     .with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code))
-    .with('enableProfiling', () => fboRenderer.setProfilingEnabled(data.enabled))
-    .with('profilerEnable', () => fboRenderer.drawProfiler.setEnabled(data.enabled))
-    .with('flushFrameStats', () => {
-      const stats = fboRenderer.flushFrameStats();
-
-      self.postMessage({ type: 'frameStats', stats });
-    })
+    .with('profilerEnable', () => fboRenderer.setProfilingEnabled(data.enabled))
     .with('setMaxPreviewsPerFrame', () => {
       console.log('setMax::hasOutputNode', fboRenderer.isOutputEnabled);
 

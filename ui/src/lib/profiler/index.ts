@@ -1,7 +1,7 @@
 import { ProfilerCoordinator } from './ProfilerCoordinator';
 
 export { ProfilerCoordinator } from './ProfilerCoordinator';
-export type { TimingStats, NodeProfileEntry, ProfilerSnapshot } from './types';
+export type { TimingStats, NodeProfileEntry, ProfilerSnapshot, RenderFrameStats } from './types';
 export { HOT_THRESHOLD_MS } from './types';
 
 /**

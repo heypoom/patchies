@@ -1,4 +1,5 @@
 import type regl from 'regl';
+import type { RenderFrameStats, TimingStats } from '$lib/profiler/types';
 import type { GLUniformDef } from '../../types/uniform-config';
 
 export type RenderNode = {
@@ -141,7 +142,8 @@ export type RenderWorkerMessage =
   | { type: 'fftEnabled'; nodeId: string; enabled: boolean }
   | { type: 'registerFFTRequest'; nodeId: string; analysisType: string; format: string }
   | { type: 'previewToggled'; nodeId: string; enabled: boolean }
-  | { type: 'frameStats'; stats: unknown }
+  | { type: 'drawStats'; nodeId: string; messageStats: TimingStats }
+  | { type: 'renderFrameStats'; stats: RenderFrameStats }
   | { type: 'error'; message: string }
   | { type: 'resolveVfsUrl'; requestId: string; nodeId: string; path: string }
   | {

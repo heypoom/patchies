@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Activity } from '@lucide/svelte/icons';
+  import { Activity, ChevronDown, ChevronRight } from '@lucide/svelte/icons';
   import {
     profilerEnabled,
     profilerSnapshot,
@@ -12,6 +12,10 @@
     return ms.toFixed(2) + 'ms';
   }
 
+  function fmtFps(fps: number): string {
+    return fps.toFixed(1) + ' fps';
+  }
+
   // Max avg across all entries — used to size the bar chart
   let maxAvg = $derived(
     $profilerSnapshot
@@ -21,6 +25,9 @@
 
   // Whether any entry has init time data (js/worker nodes)
   let hasInitData = $derived($profilerSnapshot?.entries.some((e) => e.initTime != null) ?? false);
+
+  // Dev stats toggle (render frame stats)
+  let showDevStats = $state(false);
 </script>
 
 <div class="flex h-full flex-col">
@@ -137,9 +144,49 @@
       {/each}
     </div>
 
-    <!-- Footer: threshold note -->
+    <!-- Footer: threshold note + dev stats toggle -->
     <div class="border-t border-zinc-800 px-3 py-1.5 text-[10px] text-zinc-600">
-      ⚠ hot = avg &gt; {HOT_THRESHOLD_MS}ms · init = code execution time (js/worker)
+      <div class="flex items-center justify-between">
+        <span>⚠ hot = avg &gt; {HOT_THRESHOLD_MS}ms · init = code execution time (js/worker)</span>
+        <button
+          class="cursor-pointer text-zinc-600 transition-colors hover:text-zinc-400"
+          onclick={() => (showDevStats = !showDevStats)}
+          title="Toggle renderer stats"
+        >
+          {#if showDevStats}<ChevronDown class="h-3 w-3" />{:else}<ChevronRight
+              class="h-3 w-3"
+            />{/if}
+        </button>
+      </div>
+
+      {#if showDevStats}
+        {@const rf = $profilerSnapshot?.renderFrame}
+        <div class="mt-1.5 border-t border-zinc-800/60 pt-1.5">
+          <div class="mb-1 font-medium tracking-wide text-zinc-500 uppercase">Renderer</div>
+          {#if rf}
+            <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 tabular-nums">
+              <span class="text-zinc-600">fps</span>
+              <span class="text-zinc-400">{fmtFps(rf.fps)}</span>
+              <span class="text-zinc-600">avg</span>
+              <span class="text-zinc-400">{fmt(rf.avgMs)}</span>
+              <span class="text-zinc-600">p50</span>
+              <span class="text-zinc-400">{fmt(rf.p50Ms)}</span>
+              <span class="text-zinc-600">p95</span>
+              <span class="text-zinc-400">{fmt(rf.p95Ms)}</span>
+              <span class="text-zinc-600">p99</span>
+              <span class="text-zinc-400">{fmt(rf.p99Ms)}</span>
+              <span class="text-zinc-600">drops@60</span>
+              <span class={rf.drops60 > 0 ? 'text-amber-400' : 'text-zinc-400'}>{rf.drops60}</span>
+              {#if rf.gpuReadAvgMs !== null}
+                <span class="text-zinc-600">gpu read</span>
+                <span class="text-zinc-400">{fmt(rf.gpuReadAvgMs)}</span>
+              {/if}
+            </div>
+          {:else}
+            <span class="text-zinc-700">no render data yet</span>
+          {/if}
+        </div>
+      {/if}
     </div>
   {/if}
 </div>

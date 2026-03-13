@@ -109,6 +109,10 @@ export class FBORenderer {
   public drawProfiler = new WorkerProfiler((nodeId, stats) => {
     self.postMessage({ type: 'drawStats', nodeId, messageStats: stats });
   });
+
+  /** Interval that flushes frame stats (fps, p50, p95, drops) every 500ms */
+  private frameStatsInterval: ReturnType<typeof setInterval> | null = null;
+
   private startTime: number = Date.now();
   private frameCancellable: regl.Cancellable | null = null;
   public jsRunner = JSRunner.getInstance();
@@ -1064,20 +1068,31 @@ export class FBORenderer {
     this.previewRenderer.setVisibleNodes(nodeIds);
   }
 
-  /** Enable/disable frame profiling */
+  /** Enable/disable all profiling (per-node draw timing + frame stats). */
   public setProfilingEnabled(enabled: boolean) {
     this.profiler.setEnabled(enabled);
     this.drawProfiler.setEnabled(enabled);
+
+    if (enabled) {
+      if (this.frameStatsInterval === null) {
+        this.frameStatsInterval = setInterval(() => {
+          const stats = this.profiler.flushStats();
+          if (stats) {
+            self.postMessage({ type: 'renderFrameStats', stats });
+          }
+        }, 500);
+      }
+    } else {
+      if (this.frameStatsInterval !== null) {
+        clearInterval(this.frameStatsInterval);
+        this.frameStatsInterval = null;
+      }
+    }
   }
 
   /** Record frame time (call this at end of each frame) */
   public recordFrameTime() {
     this.profiler.recordFrameTime();
-  }
-
-  /** Get frame timing stats and clear buffer */
-  public flushFrameStats() {
-    return this.profiler.flushStats();
   }
 
   private renderNodeToMainOutput(node: FBONode): void {

@@ -1,6 +1,6 @@
 import { ProfilerCollector } from './ProfilerCollector';
 import { HOT_THRESHOLD_MS } from './types';
-import type { NodeProfileEntry, ProfilerSnapshot, TimingStats } from './types';
+import type { NodeProfileEntry, ProfilerSnapshot, RenderFrameStats, TimingStats } from './types';
 
 const HISTORY_CAPACITY = 120; // 120 × 500ms = 60 seconds
 const FLUSH_INTERVAL_MS = 500;
@@ -26,6 +26,9 @@ export class ProfilerCoordinator {
   private history: (ProfilerSnapshot | null)[] = new Array(HISTORY_CAPACITY).fill(null);
   private historyHead = 0;
   private historyCount = 0;
+
+  // Latest render frame stats from the render worker
+  private latestRenderFrame: RenderFrameStats | null = null;
 
   // Enable-change listeners (used to broadcast to workers)
   private enableListeners: ((enabled: boolean) => void)[] = [];
@@ -76,6 +79,11 @@ export class ProfilerCoordinator {
     }
   }
 
+  /** Store the latest render frame stats received from the render worker. */
+  recordRenderFrameStats(stats: RenderFrameStats): void {
+    this.latestRenderFrame = stats;
+  }
+
   /** Remove a node's collectors when the node is deleted. */
   unregister(nodeId: string): void {
     this.collectors.delete(nodeId);
@@ -107,6 +115,7 @@ export class ProfilerCoordinator {
       this.intervalId = null;
     }
     this.collectors.clear();
+    this.latestRenderFrame = null;
     this.history.fill(null);
     this.historyHead = 0;
     this.historyCount = 0;
@@ -159,7 +168,11 @@ export class ProfilerCoordinator {
     // Sort by avg descending
     entries.sort((a, b) => b.processingTime.avg - a.processingTime.avg);
 
-    const snapshot: ProfilerSnapshot = { timestamp: now, entries };
+    const snapshot: ProfilerSnapshot = {
+      timestamp: now,
+      entries,
+      ...(this.latestRenderFrame && { renderFrame: this.latestRenderFrame })
+    };
 
     // Push to history ring buffer
     this.history[this.historyHead] = snapshot;

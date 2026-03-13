@@ -353,6 +353,11 @@ export class GLSystem {
           );
         }
       })
+      .with({ type: 'renderFrameStats' }, (data) => {
+        if (profiler.enabled) {
+          ProfilerCoordinator.getInstance().recordRenderFrameStats(data.stats);
+        }
+      })
       .otherwise(() => {});
   };
 
