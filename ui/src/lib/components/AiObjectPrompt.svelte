@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Loader, Minus, Maximize2, ChevronDown, ChevronUp } from '@lucide/svelte/icons';
+  import { Loader, Minus, ChevronDown, ChevronUp } from '@lucide/svelte/icons';
   import { match } from 'ts-pattern';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
-  import { isMobile, isSidebarOpen } from '../../stores/ui.store';
+  import { isMobile, isSidebarOpen, sidebarWidth } from '../../stores/ui.store';
   import { aiPromptStore } from '../../stores/ai-prompt.store';
   import { createAiPromptController } from '$lib/ai/ai-prompt-controller.svelte';
   import { getModeDescriptor, getAvailableModesForContext } from '$lib/ai/modes/descriptors';
@@ -13,7 +13,8 @@
   let {
     open = $bindable(false),
     isMinimized = $bindable(false),
-    minimizedIndex = 0,
+    isLoading = $bindable(false),
+    thinkingText = $bindable(''),
     position,
     mode: initialMode = 'insert',
     context: initialContext = {},
@@ -24,7 +25,8 @@
   }: {
     open?: boolean;
     isMinimized?: boolean;
-    minimizedIndex?: number;
+    isLoading?: boolean;
+    thinkingText?: string;
     position: { x: number; y: number };
     mode?: AiPromptMode;
     context?: AiModeContext;
@@ -125,7 +127,7 @@
       dialogPosition = $isMobile
         ? { x: position.x, y: position.y }
         : {
-            x: Math.max(16, (window.innerWidth - 384) / 2),
+            x: Math.max(16, (window.innerWidth - ($isSidebarOpen ? $sidebarWidth : 0) - 384) / 2),
             y: Math.max(16, window.innerHeight / 3)
           };
 
@@ -182,15 +184,30 @@
     isDragging = false;
   }
 
+  // ── Sync bindable props with controller state ─────────────────────────────
+  $effect(() => {
+    isLoading = ctrl.isLoading;
+    thinkingText = ctrl.thinkingText ?? '';
+  });
+
+  // Detect external restore (tray sets isMinimized=false) → reset position + focus
+  let prevIsMinimized = isMinimized;
+  $effect(() => {
+    const current = isMinimized;
+    if (prevIsMinimized && !current) {
+      if (!$isMobile)
+        dialogPosition = {
+          x: Math.max(16, (window.innerWidth - ($isSidebarOpen ? $sidebarWidth : 0) - 384) / 2),
+          y: Math.max(16, window.innerHeight / 3)
+        };
+      setTimeout(() => promptInput?.focus(), 0);
+    }
+    prevIsMinimized = current;
+  });
+
   // ── Open/Close ────────────────────────────────────────────────────────────
   function handleMinimize() {
     isMinimized = true;
-  }
-
-  function handleRestore() {
-    isMinimized = false;
-    if (!$isMobile) dialogPosition = { x: 16, y: 16 };
-    setTimeout(() => promptInput?.focus(), 0);
   }
 
   function handleClose() {
@@ -273,39 +290,6 @@
 </script>
 
 {#if open}
-  <!-- Minimized indicator -->
-  {#if isMinimized && ctrl.isLoading && !($isSidebarOpen && $isMobile)}
-    <button
-      onclick={handleRestore}
-      class="fixed z-50 flex max-w-72 cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 shadow-lg transition-all hover:scale-105 {colorClasses.badge}"
-      style="top: {16 + minimizedIndex * 72}px; right: 16px;"
-      title="Click to restore AI prompt"
-    >
-      <div class="min-w-0 flex-1 text-left">
-        {#if ctrl.thinkingText}
-          <div
-            class="max-h-[120px] overflow-x-hidden overflow-y-scroll text-left text-[8px] text-zinc-400"
-          >
-            <MarkdownContent
-              markdown={ctrl.thinkingText}
-              class="prose-ai-quick-preview font-mono"
-            />
-          </div>
-        {:else}
-          <div class={['text-xs font-medium text-white', ctrl.thinkingText && 'mb-1']}>
-            {#if ctrl.isGeneratingConfig && ctrl.resolvedObjectType}
-              {descriptor.generatingLabel(ctrl.resolvedObjectType)}...
-            {:else}
-              {descriptor.loadingLabel}...
-            {/if}
-          </div>
-        {/if}
-      </div>
-
-      <Maximize2 class="mt-0.5 h-3 w-3 shrink-0 text-white/70" />
-    </button>
-  {/if}
-
   <div
     class="ai-prompt-dialog {$isMobile
       ? 'absolute'

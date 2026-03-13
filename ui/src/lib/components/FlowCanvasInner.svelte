@@ -15,6 +15,7 @@
   import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
   import BottomToolbar from './BottomToolbar.svelte';
   import AiObjectPrompt from './AiObjectPrompt.svelte';
+  import AiActivityTray from './AiActivityTray.svelte';
   import { MessageSystem } from '$lib/messages/MessageSystem';
   import BackgroundOutputCanvas from './BackgroundOutputCanvas.svelte';
   import {
@@ -178,6 +179,8 @@
     context: AiModeContext;
     open: boolean;
     minimized: boolean;
+    isLoading: boolean;
+    thinkingText: string;
   }
 
   let aiPromptInstances = $state<AiPromptInstance[]>([]);
@@ -434,7 +437,9 @@
         mode: pendingAiPromptMode,
         context: pendingAiPromptContext,
         open: true,
-        minimized: false
+        minimized: false,
+        isLoading: false,
+        thinkingText: ''
       }
     ];
   }
@@ -1285,14 +1290,12 @@
     />
 
     <!-- AI Object Prompt Dialogs — multiple concurrent instances supported -->
-    {#each aiPromptInstances as instance, i (instance.id)}
-      {@const minimizedIndex = aiPromptInstances
-        .slice(0, i)
-        .filter((x) => x.minimized && x.open).length}
+    {#each aiPromptInstances as instance (instance.id)}
       <AiObjectPrompt
         bind:open={instance.open}
         bind:isMinimized={instance.minimized}
-        {minimizedIndex}
+        bind:isLoading={instance.isLoading}
+        bind:thinkingText={instance.thinkingText}
         position={instance.position}
         mode={instance.mode}
         context={instance.context}
@@ -1302,6 +1305,15 @@
         onReplaceObject={handleAiObjectReplace}
       />
     {/each}
+
+    <!-- Activity tray: shows running AI prompts at top-right -->
+    <AiActivityTray
+      instances={aiPromptInstances}
+      onToggle={(id) => {
+        const instance = aiPromptInstances.find((i) => i.id === id);
+        if (instance) instance.minimized = !instance.minimized;
+      }}
+    />
 
     <!-- Toast Notifications -->
     <Toaster position="top-center" />
