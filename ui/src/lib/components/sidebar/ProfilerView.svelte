@@ -343,32 +343,57 @@
               <p class="py-2 text-center text-[10px] text-zinc-700">Gathering data…</p>
             {/if}
 
-            <!-- Legend -->
-            <div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+            <!-- Detailed timing stats table -->
+            <div class="mt-1.5">
+              <!-- Table header -->
+              <div
+                class="grid gap-x-2 border-b border-zinc-800/60 pb-0.5 text-[9px] font-medium tracking-wide text-zinc-600 uppercase"
+                style:grid-template-columns="3rem repeat(5, 1fr)"
+              >
+                <span></span>
+                <span class="text-right">avg</span>
+                <span class="text-right">max</span>
+                <span class="text-right">p95</span>
+                <span class="text-right">last</span>
+                <span class="text-right">calls/s</span>
+              </div>
+
+              <!-- Per-category rows -->
               {#each cats as cat (cat)}
                 {@const t = entry.timings[cat]}
-
-                <span class="flex items-center gap-1 text-[10px]">
-                  <span
-                    class="inline-block h-0.5 w-3 rounded-full"
-                    style:background-color={CATEGORY_COLOR[cat]}
-                  ></span>
-                  <span class="text-zinc-600">{CATEGORY_LABEL[cat]}</span>
+                <div
+                  class="grid gap-x-2 py-0.5 font-mono text-[10px] tabular-nums"
+                  style:grid-template-columns="3rem repeat(5, 1fr)"
+                >
+                  <span class="flex items-center gap-1">
+                    <span
+                      class="inline-block h-0.5 w-2 rounded-full"
+                      style:background-color={CATEGORY_COLOR[cat]}
+                    ></span>
+                    <span class="text-zinc-600">{CATEGORY_LABEL[cat]}</span>
+                  </span>
 
                   {#if t}
                     {@const catSevere = t.avg > HOT_THRESHOLD_MS * 5}
                     {@const catHot = t.avg > HOT_THRESHOLD_MS}
-                    <span
-                      class="tabular-nums {catSevere
-                        ? 'text-red-300'
-                        : catHot
-                          ? 'text-amber-300'
-                          : 'text-zinc-400'}">{fmt(t.avg)}</span
-                    >
+                    {@const color = catSevere
+                      ? 'text-red-300'
+                      : catHot
+                        ? 'text-amber-300'
+                        : 'text-zinc-400'}
+                    <span class="text-right {color}">{fmt(t.avg)}</span>
+                    <span class="text-right {color}">{fmt(t.max)}</span>
+                    <span class="text-right {color}">{fmt(t.p95)}</span>
+                    <span class="text-right text-zinc-500">{fmt(t.last)}</span>
+                    <span class="text-right text-zinc-500">{t.callsPerSecond.toFixed(1)}</span>
                   {:else}
-                    <span class="text-zinc-700">—</span>
+                    <span class="text-right text-zinc-800">—</span>
+                    <span class="text-right text-zinc-800">—</span>
+                    <span class="text-right text-zinc-800">—</span>
+                    <span class="text-right text-zinc-800">—</span>
+                    <span class="text-right text-zinc-800">—</span>
                   {/if}
-                </span>
+                </div>
               {/each}
             </div>
           </div>

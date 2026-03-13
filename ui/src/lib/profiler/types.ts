@@ -11,8 +11,10 @@ export type ProfilerCategory = 'init' | 'message' | 'draw' | 'interval' | 'raf';
 export interface NodeProfileEntry {
   nodeId: string;
   nodeType: string;
+
   /** Timing per category — only categories with recorded data are present */
   timings: Partial<Record<ProfilerCategory, TimingStats>>;
+
   isHot: boolean;
 }
 
