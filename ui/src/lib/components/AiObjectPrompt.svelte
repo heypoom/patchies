@@ -15,6 +15,8 @@
     isMinimized = $bindable(false),
     isLoading = $bindable(false),
     thinkingText = $bindable(''),
+    isGeneratingConfig = $bindable(false),
+    resolvedObjectType = $bindable<string | null>(null),
     position,
     mode: initialMode = $bindable<AiPromptMode>('insert'),
     context: initialContext = {},
@@ -27,6 +29,8 @@
     isMinimized?: boolean;
     isLoading?: boolean;
     thinkingText?: string;
+    isGeneratingConfig?: boolean;
+    resolvedObjectType?: string | null;
     position: { x: number; y: number };
     mode?: AiPromptMode;
     context?: AiModeContext;
@@ -188,6 +192,8 @@
   $effect(() => {
     isLoading = ctrl.isLoading;
     thinkingText = ctrl.thinkingText ?? '';
+    isGeneratingConfig = ctrl.isGeneratingConfig;
+    resolvedObjectType = ctrl.resolvedObjectType;
     initialMode = ctrl.mode;
   });
 

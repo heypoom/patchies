@@ -181,6 +181,8 @@
     minimized: boolean;
     isLoading: boolean;
     thinkingText: string;
+    isGeneratingConfig: boolean;
+    resolvedObjectType: string | null;
   }
 
   let aiPromptInstances = $state<AiPromptInstance[]>([]);
@@ -439,7 +441,9 @@
         open: true,
         minimized: false,
         isLoading: false,
-        thinkingText: ''
+        thinkingText: '',
+        isGeneratingConfig: false,
+        resolvedObjectType: null
       }
     ];
   }
@@ -1296,6 +1300,8 @@
         bind:isMinimized={instance.minimized}
         bind:isLoading={instance.isLoading}
         bind:thinkingText={instance.thinkingText}
+        bind:isGeneratingConfig={instance.isGeneratingConfig}
+        bind:resolvedObjectType={instance.resolvedObjectType}
         position={instance.position}
         bind:mode={instance.mode}
         context={instance.context}
