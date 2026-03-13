@@ -19,6 +19,9 @@ interface NodeCollectors {
 
   /** Latest worker-side TimingStats per category, consumed on each flush */
   workerStats: Partial<Record<ProfilerCategory, TimingStats>>;
+
+  /** Smoothed sort key (EMA) — prevents sort order from jumping between flushes */
+  sortKey: number;
 }
 
 /**
@@ -72,7 +75,7 @@ export class ProfilerCoordinator {
     let entry = this.nodes.get(nodeId);
 
     if (!entry) {
-      entry = { collectors: {}, type, workerStats: {} };
+      entry = { collectors: {}, type, workerStats: {}, sortKey: 0 };
       this.nodes.set(nodeId, entry);
     }
 
@@ -153,7 +156,7 @@ export class ProfilerCoordinator {
     let entry = this.nodes.get(nodeId);
 
     if (!entry) {
-      entry = { collectors: {}, type, workerStats: {} };
+      entry = { collectors: {}, type, workerStats: {}, sortKey: 0 };
       this.nodes.set(nodeId, entry);
     }
 
@@ -199,29 +202,29 @@ export class ProfilerCoordinator {
 
       entry.workerStats = {};
 
-      if (!hasActivity) continue;
-
       // isHot if any non-init category exceeds threshold
-      const isHot = (Object.entries(timings) as [ProfilerCategory, TimingStats][]).some(
-        ([cat, t]) => cat !== 'init' && t.avg > HOT_THRESHOLD_MS
-      );
+      const isHot = hasActivity
+        ? (Object.entries(timings) as [ProfilerCategory, TimingStats][]).some(
+            ([cat, t]) => cat !== 'init' && t.avg > HOT_THRESHOLD_MS
+          )
+        : false;
 
+      // Update smoothed sort key (EMA with α=0.3 for stability)
+      const instantKey =
+        timings.message?.avg ??
+        timings.draw?.avg ??
+        Math.max(...Object.values(timings).map((t) => t?.avg ?? 0), 0);
+      entry.sortKey = entry.sortKey === 0 ? instantKey : entry.sortKey * 0.7 + instantKey * 0.3;
+
+      // Always emit registered nodes for stable UI (empty timings = idle)
       entries.push({ nodeId, nodeType: type, timings, isHot });
     }
 
-    // Sort by message avg → draw avg → highest other category avg
+    // Sort by smoothed sort key for stable ordering
     entries.sort((a, b) => {
-      const aAvg =
-        a.timings.message?.avg ??
-        a.timings.draw?.avg ??
-        Math.max(...Object.values(a.timings).map((t) => t?.avg ?? 0));
-
-      const bAvg =
-        b.timings.message?.avg ??
-        b.timings.draw?.avg ??
-        Math.max(...Object.values(b.timings).map((t) => t?.avg ?? 0));
-
-      return bAvg - aAvg;
+      const aKey = this.nodes.get(a.nodeId)?.sortKey ?? 0;
+      const bKey = this.nodes.get(b.nodeId)?.sortKey ?? 0;
+      return bKey - aKey;
     });
 
     const snapshot: ProfilerSnapshot = {
