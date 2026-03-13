@@ -529,7 +529,7 @@
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
-                class="cursor-pointer text-zinc-600 transition-colors hover:text-zinc-400"
+                class="cursor-pointer rounded p-0.5 text-zinc-600 transition-colors hover:text-zinc-400"
                 onclick={() => (showDevStats = !showDevStats)}
               >
                 {#if showDevStats}<ChevronDown class="h-3 w-3" />{:else}<ChevronUp
