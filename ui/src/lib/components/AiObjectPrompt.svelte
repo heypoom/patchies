@@ -278,16 +278,6 @@
       title="Click to restore AI prompt"
     >
       <div class="min-w-0 flex-1 text-left">
-        {#if !ctrl.thinkingText || ctrl.isGeneratingConfig}
-          <div class={['text-xs font-medium text-white', ctrl.thinkingText && 'mb-1']}>
-            {#if ctrl.isGeneratingConfig}
-              {descriptor.generatingLabel(ctrl.resolvedObjectType)}...
-            {:else}
-              {descriptor.loadingLabel}...
-            {/if}
-          </div>
-        {/if}
-
         {#if ctrl.thinkingText}
           <div
             class="max-h-[120px] overflow-x-hidden overflow-y-scroll text-left text-[8px] text-zinc-400"
@@ -296,6 +286,14 @@
               markdown={ctrl.thinkingText}
               class="prose-ai-quick-preview font-mono"
             />
+          </div>
+        {:else}
+          <div class={['text-xs font-medium text-white', ctrl.thinkingText && 'mb-1']}>
+            {#if ctrl.isGeneratingConfig && ctrl.resolvedObjectType}
+              {descriptor.generatingLabel(ctrl.resolvedObjectType)}...
+            {:else}
+              {descriptor.loadingLabel}...
+            {/if}
           </div>
         {/if}
       </div>
