@@ -111,7 +111,7 @@ export type RenderWorkerMessage =
       type: 'sendMessageFromNode';
       fromNodeId: string;
       data: unknown;
-      options?: { outlet?: number };
+      options?: { outlet?: number; to?: number | string };
     }
   | {
       type: 'setPortCount';
