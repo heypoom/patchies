@@ -10,6 +10,7 @@ export interface NodeProfileEntry {
   nodeId: string;
   nodeType: string;
   processingTime: TimingStats;
+  initTime?: TimingStats;
   isHot: boolean;
 }
 

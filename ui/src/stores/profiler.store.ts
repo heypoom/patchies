@@ -13,6 +13,8 @@ if (typeof window !== 'undefined') {
   profilerEnabled.subscribe((enabled) => {
     profiler.enabled = enabled;
 
+    ProfilerCoordinator.getInstance().notifyEnableChange(enabled);
+
     if (enabled) {
       ProfilerCoordinator.getInstance().start((snapshot) => {
         profilerSnapshot.set(snapshot);

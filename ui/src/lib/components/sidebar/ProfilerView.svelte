@@ -18,6 +18,9 @@
       ? Math.max(...$profilerSnapshot.entries.map((e) => e.processingTime.avg), 0.01)
       : 0.01
   );
+
+  // Whether any entry has init time data (js/worker nodes)
+  let hasInitData = $derived($profilerSnapshot?.entries.some((e) => e.initTime != null) ?? false);
 </script>
 
 <div class="flex h-full flex-col">
@@ -57,9 +60,13 @@
     <div class="min-h-0 flex-1 overflow-y-auto">
       <!-- Column headers -->
       <div
-        class="sticky top-0 grid grid-cols-[1fr_auto_auto] gap-x-2 border-b border-zinc-800 bg-zinc-950 px-3 py-1 text-[10px] font-medium tracking-wide text-zinc-600 uppercase"
+        class="sticky top-0 border-b border-zinc-800 bg-zinc-950 px-3 py-1 text-[10px] font-medium tracking-wide text-zinc-600 uppercase
+          {hasInitData
+          ? 'grid grid-cols-[1fr_auto_auto_auto]'
+          : 'grid grid-cols-[1fr_auto_auto]'} gap-x-2"
       >
         <span>Object</span>
+        {#if hasInitData}<span class="text-right">init</span>{/if}
         <span class="text-right">avg</span>
         <span class="text-right">max</span>
       </div>
@@ -72,7 +79,8 @@
         {@const barPct = Math.min(100, (avg / maxAvg) * 100)}
 
         <div
-          class="group grid grid-cols-[1fr_auto_auto] items-center gap-x-2 px-3 py-1.5 text-xs
+          class="group items-center gap-x-2 px-3 py-1.5 text-xs
+            {hasInitData ? 'grid grid-cols-[1fr_auto_auto_auto]' : 'grid grid-cols-[1fr_auto_auto]'}
             {isSevere
             ? 'bg-red-950/30 hover:bg-red-950/50'
             : isHot
@@ -107,6 +115,13 @@
             </div>
           </div>
 
+          <!-- Init time (js/worker only) -->
+          {#if hasInitData}
+            <span class="text-zinc-600 tabular-nums"
+              >{entry.initTime ? fmt(entry.initTime.avg) : '—'}</span
+            >
+          {/if}
+
           <!-- Avg -->
           <span
             class="tabular-nums {isSevere
@@ -124,7 +139,7 @@
 
     <!-- Footer: threshold note -->
     <div class="border-t border-zinc-800 px-3 py-1.5 text-[10px] text-zinc-600">
-      ⚠ hot = avg &gt; {HOT_THRESHOLD_MS}ms · main thread text objects only
+      ⚠ hot = avg &gt; {HOT_THRESHOLD_MS}ms · init = code execution time (js/worker)
     </div>
   {/if}
 </div>

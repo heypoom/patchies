@@ -1,9 +1,15 @@
 import { ProfilerCollector } from './ProfilerCollector';
 import { HOT_THRESHOLD_MS } from './types';
-import type { NodeProfileEntry, ProfilerSnapshot } from './types';
+import type { NodeProfileEntry, ProfilerSnapshot, TimingStats } from './types';
 
 const HISTORY_CAPACITY = 120; // 120 × 500ms = 60 seconds
 const FLUSH_INTERVAL_MS = 500;
+
+interface NodeCollectors {
+  message: ProfilerCollector;
+  init: ProfilerCollector;
+  type: string;
+}
 
 /**
  * Coordinates per-node timing data on the main thread.
@@ -12,7 +18,7 @@ const FLUSH_INTERVAL_MS = 500;
 export class ProfilerCoordinator {
   private static instance: ProfilerCoordinator | null = null;
 
-  private collectors = new Map<string, { collector: ProfilerCollector; type: string }>();
+  private collectors = new Map<string, NodeCollectors>();
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private onSnapshot: ((snapshot: ProfilerSnapshot) => void) | null = null;
 
@@ -20,6 +26,9 @@ export class ProfilerCoordinator {
   private history: (ProfilerSnapshot | null)[] = new Array(HISTORY_CAPACITY).fill(null);
   private historyHead = 0;
   private historyCount = 0;
+
+  // Enable-change listeners (used to broadcast to workers)
+  private enableListeners: ((enabled: boolean) => void)[] = [];
 
   static getInstance(): ProfilerCoordinator {
     if (!ProfilerCoordinator.instance) {
@@ -29,21 +38,59 @@ export class ProfilerCoordinator {
   }
 
   /**
-   * Record a timing sample for a node.
-   * Called from ObjectService — only when profiler.enabled is true.
+   * Record a message-processing timing sample for a node.
+   * Called from ObjectService / MessageContext — only when profiler.enabled is true.
    */
   record(nodeId: string, type: string, durationMs: number): void {
-    let entry = this.collectors.get(nodeId);
-    if (!entry) {
-      entry = { collector: new ProfilerCollector(), type };
-      this.collectors.set(nodeId, entry);
-    }
-    entry.collector.record(durationMs);
+    this.getOrCreate(nodeId, type).message.record(durationMs);
   }
 
-  /** Remove a node's collector when the node is deleted. */
+  /**
+   * Record an init (code execution) timing sample for a node.
+   * Called from JSRunner after executeJavaScript — only when profiler.enabled is true.
+   */
+  recordInit(nodeId: string, type: string, durationMs: number): void {
+    this.getOrCreate(nodeId, type).init.record(durationMs);
+  }
+
+  /**
+   * Merge worker-side stats into the coordinator.
+   * Called when a worker sends profilerStats or executionComplete with initDurationMs.
+   */
+  recordWorkerStats(
+    nodeId: string,
+    type: string,
+    messageStats: TimingStats | null,
+    initDurationMs: number | null
+  ): void {
+    const entry = this.getOrCreate(nodeId, type);
+    if (messageStats !== null) {
+      // Inject the aggregated stats directly by recording the avg as a single sample
+      // (worker has already done its own ring-buffer aggregation)
+      if (messageStats.avg > 0) {
+        entry.message.record(messageStats.avg);
+      }
+    }
+    if (initDurationMs !== null && initDurationMs > 0) {
+      entry.init.record(initDurationMs);
+    }
+  }
+
+  /** Remove a node's collectors when the node is deleted. */
   unregister(nodeId: string): void {
     this.collectors.delete(nodeId);
+  }
+
+  /** Register a listener that fires when the enabled state changes (used to notify workers). */
+  onEnableChange(listener: (enabled: boolean) => void): void {
+    this.enableListeners.push(listener);
+  }
+
+  /** Notify all enable-change listeners. Called from profiler.store.ts. */
+  notifyEnableChange(enabled: boolean): void {
+    for (const listener of this.enableListeners) {
+      listener(enabled);
+    }
   }
 
   /** Start flushing and delivering snapshots. */
@@ -78,18 +125,34 @@ export class ProfilerCoordinator {
     return result;
   }
 
+  private getOrCreate(nodeId: string, type: string): NodeCollectors {
+    let entry = this.collectors.get(nodeId);
+    if (!entry) {
+      entry = { message: new ProfilerCollector(), init: new ProfilerCollector(), type };
+      this.collectors.set(nodeId, entry);
+    }
+    return entry;
+  }
+
   private flush(): void {
     const now = performance.now();
     const entries: NodeProfileEntry[] = [];
 
-    for (const [nodeId, { collector, type }] of this.collectors) {
-      const stats = collector.flush(now);
-      if (stats.callsPerSecond === 0 && stats.avg === 0) continue; // skip idle nodes
+    for (const [nodeId, { message, init, type }] of this.collectors) {
+      const msgStats = message.flush(now);
+      const initStats = init.flush(now);
+
+      const hasActivity = msgStats.callsPerSecond > 0 || msgStats.avg > 0 || initStats.avg > 0;
+      if (!hasActivity) continue;
+
+      const hasInitData = initStats.avg > 0 || initStats.max > 0;
+
       entries.push({
         nodeId,
         nodeType: type,
-        processingTime: stats,
-        isHot: stats.avg > HOT_THRESHOLD_MS
+        processingTime: msgStats,
+        ...(hasInitData && { initTime: initStats }),
+        isHot: msgStats.avg > HOT_THRESHOLD_MS
       });
     }
 

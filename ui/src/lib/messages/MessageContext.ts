@@ -3,6 +3,7 @@ import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { logger } from '$lib/utils/logger';
 import { MessageQueue, MessageSystem, type MessageCallbackFn } from './MessageSystem';
 import { MessageChannelRegistry } from './MessageChannelRegistry';
+import { profiler } from '$lib/profiler';
 
 export type SendMessageOptions = {
   /**
@@ -101,6 +102,12 @@ export class MessageContext {
   /** Error handler for user code errors (set by JSRunner) */
   public onCallbackError: ((error: unknown) => void) | null = null;
 
+  /**
+   * When set, message callback timing is recorded under this node type.
+   * Set by JSRunner for 'js' nodes. Null = no profiling (zero overhead).
+   */
+  public profilerNodeType: string | null = null;
+
   // Cache for lazy-loaded AudioAnalysisSystem (only loaded in browser, not workers)
   private static audioAnalysisSystemPromise: Promise<
     typeof import('$lib/audio/AudioAnalysisSystem')
@@ -132,18 +139,18 @@ export class MessageContext {
       }
     };
 
-    for (const cb of this.messageCallbacks) {
-      try {
-        const result = cb(data, meta) as unknown;
-
-        // Handle async callbacks that return a promise
-        if (result instanceof Promise) {
-          result.catch(handleError);
+    profiler.measure(this.nodeId, this.profilerNodeType, () => {
+      for (const cb of this.messageCallbacks) {
+        try {
+          const result = cb(data, meta) as unknown;
+          if (result instanceof Promise) {
+            result.catch(handleError);
+          }
+        } catch (error) {
+          handleError(error);
         }
-      } catch (error) {
-        handleError(error);
       }
-    }
+    });
   };
 
   send(data: unknown, options: SendMessageOptions = {}) {
