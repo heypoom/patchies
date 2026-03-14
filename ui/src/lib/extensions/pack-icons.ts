@@ -22,7 +22,8 @@ import {
   Route,
   Calculator,
   FileHeadphone,
-  Grid3x3
+  Grid3x3,
+  Usb
 } from '@lucide/svelte/icons';
 import { match } from 'ts-pattern';
 
