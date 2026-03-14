@@ -40,14 +40,13 @@ const COLOR_MAP: Record<number, string> = {
 export function parseAnsi(text: string): AnsiSpan[] {
   if (!text) return [];
 
-  // eslint-disable-next-line no-control-regex
-  const parts = text.split(/(\x1B\[[0-9;]*m)/g);
+  const parts = text.split(/(\u001B\[[0-9;]*m)/g);
   const spans: AnsiSpan[] = [];
 
   let currentStyle: AnsiSpan['style'] = {};
 
   for (const part of parts) {
-    if (part.startsWith('\x1B[')) {
+    if (part.startsWith('\u001B[')) {
       const codes = part.substring(2, part.length - 1).split(';');
       for (const code of codes) {
         const n = parseInt(code) || 0;

@@ -82,7 +82,8 @@
               const newPortId = (e.target as HTMLSelectElement).value;
               updateNodeData(nodeId, { portId: newPortId });
               tracker.commit('portId', oldPortId, newPortId);
-              if (newPortId) onConnect(newPortId);
+              const selected = $serialPorts.find((p) => p.portId === newPortId);
+              if (newPortId && selected?.connected) onConnect(newPortId);
             }}
           >
             <option value="">Select port...</option>

@@ -168,8 +168,8 @@
           handleToggleConnection();
         })
         .with(serialMessages.disconnect, () => handleDisconnect())
-        .with(serialMessages.baud, ({ rate }) => {
-          updateNodeData(nodeId, { baudRate: rate });
+        .with(serialMessages.baud, ({ value }) => {
+          updateNodeData(nodeId, { baudRate: value });
         })
         .with(P.string, async (text) => {
           if (!portId || !isConnected) {
@@ -226,6 +226,7 @@
 
       <div class="flex items-center gap-1">
         <button
+          aria-label="Open settings"
           class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
           onclick={() => (showSettings = !showSettings)}
         >
@@ -240,7 +241,10 @@
       <div
         class={[
           'flex h-full flex-col overflow-hidden rounded-xl border bg-[#09090b] shadow-2xl',
-          isConnected ? 'border-emerald-500/50' : selected ? 'border-zinc-400' : 'border-zinc-700'
+          match({ isConnected, selected })
+            .with({ isConnected: true }, () => 'border-emerald-500/50')
+            .with({ selected: true }, () => 'border-zinc-400')
+            .otherwise(() => 'border-zinc-700')
         ]}
       >
         <!-- Header -->
@@ -265,6 +269,7 @@
 
           <div class="flex items-center gap-1">
             <button
+              aria-label="Clear terminal"
               class="cursor-pointer rounded-md p-1 text-zinc-500 hover:bg-zinc-800"
               onclick={clearHistory}
             >
@@ -272,6 +277,7 @@
             </button>
 
             <button
+              aria-label={isConnected ? 'Disconnect' : 'Connect'}
               class={[
                 'cursor-pointer rounded-md p-1 transition-colors',
                 isConnected

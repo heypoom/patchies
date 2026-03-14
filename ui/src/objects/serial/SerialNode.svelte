@@ -99,8 +99,8 @@
           if (!portId) showSettings = true;
         })
         .with(serialMessages.disconnect, () => handleDisconnect())
-        .with(serialMessages.baud, ({ rate }) => {
-          updateNodeData(nodeId, { baudRate: rate });
+        .with(serialMessages.baud, ({ value }) => {
+          updateNodeData(nodeId, { baudRate: value });
         })
         .with(P.string, async (text) => {
           if (!portId || !isConnected) {

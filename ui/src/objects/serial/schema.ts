@@ -7,7 +7,7 @@ import { Bang } from '$lib/objects/schemas';
 // Inlet commands
 export const SerialConnect = sym('connect');
 export const SerialDisconnect = sym('disconnect');
-export const SerialBaud = msg('setBaud', { rate: Type.Number() });
+export const SerialBaud = msg('setBaud', { value: Type.Number() });
 
 // Outlet messages
 export const SerialData = msg('data', { line: Type.String() });
