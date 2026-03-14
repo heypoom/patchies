@@ -127,6 +127,7 @@
   async function handleDisconnect() {
     if (portId) {
       await serialSystem.closePort(portId);
+
       updateNodeData(nodeId, { portId: '' });
       log('Session Terminated', 'system');
     }
@@ -139,8 +140,10 @@
     const text = currentInput;
     try {
       await serialSystem.write(portId, text, lineEnding);
+
       log(text, 'tx');
       commandHistory.push(text);
+
       historyIndex = -1;
       savedInput = '';
       currentInput = '';
@@ -149,7 +152,37 @@
     }
   }
 
+  /** Map of Ctrl+key → [control code byte, display label] */
+  const CONTROL_CODES: Record<string, [number, string]> = {
+    c: [0x03, 'C'], // ETX — interrupt
+    d: [0x04, 'D'], // EOT
+    z: [0x1a, 'Z'], // SUB — suspend
+    l: [0x0c, 'L'], // FF — form feed / clear
+    '\\': [0x1c, '\\'] // FS — quit
+  };
+
   function handleInputKeydown(e: KeyboardEvent) {
+    // Intercept Ctrl+<key> to send control codes over serial.
+    // stopPropagation prevents xyflow from treating Ctrl+C as copy, etc.
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+      const entry = CONTROL_CODES[e.key.toLowerCase()];
+
+      if (entry && portId && isConnected) {
+        const [code, label] = entry;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        serialSystem.writeRaw(portId, new Uint8Array([code])).then(
+          () => log(`^${label}`, 'tx'),
+          (err) =>
+            log('Send Failed: ' + (err instanceof Error ? err.message : String(err)), 'error')
+        );
+
+        return;
+      }
+    }
+
     if (e.key === 'Enter') {
       handleSend();
       return;
