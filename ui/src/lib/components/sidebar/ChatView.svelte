@@ -444,8 +444,9 @@
             ? 'bg-zinc-600 text-zinc-100'
             : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
         >
-          Default
+          None
         </button>
+
         {#each allPersonas as p (p.id)}
           <div class="flex items-center gap-0.5">
             <button
@@ -471,25 +472,27 @@
 
       <!-- Active persona prompt preview -->
       {#if activePersona}
-        <p class="mb-2 line-clamp-3 font-mono text-[10px] leading-relaxed text-zinc-600">
+        <p class="mx-2 mb-1 line-clamp-3 font-mono text-[10px] leading-relaxed text-zinc-600">
           {activePersona.prompt}
         </p>
       {/if}
 
       <!-- Add custom persona form -->
       {#if addingCustom}
-        <div class="flex flex-col gap-1">
+        <div class="mx-2 mt-3 flex flex-col gap-2.5">
           <input
             bind:value={newPersonaName}
             placeholder="Persona name"
             class="nodrag rounded-sm border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-500"
           />
+
           <textarea
             bind:value={newPersonaPrompt}
             placeholder="System prompt..."
             rows="3"
             class="nodrag resize-none rounded-sm border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-500"
           ></textarea>
+
           <div class="flex justify-end gap-1">
             <button
               onclick={() => {
@@ -521,7 +524,7 @@
       {:else}
         <button
           onclick={() => (addingCustom = true)}
-          class="cursor-pointer font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
+          class="mx-2 cursor-pointer font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
         >
           + Add custom
         </button>
