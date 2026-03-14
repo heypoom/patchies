@@ -59,6 +59,11 @@
   let terminalRef = $state<HTMLDivElement | null>(null);
   let inputRef = $state<HTMLInputElement | null>(null);
 
+  // Command history for arrow-up/down recall
+  let commandHistory: string[] = [];
+  let historyIndex = $state(-1);
+  let savedInput = '';
+
   const portId = $derived(data.portId || '');
   const baudRate = $derived(data.baudRate || 9600);
   const lineEnding = $derived(data.lineEnding ?? '\r\n');
@@ -135,9 +140,45 @@
     try {
       await serialSystem.write(portId, text, lineEnding);
       log(text, 'tx');
+      commandHistory.push(text);
+      historyIndex = -1;
+      savedInput = '';
       currentInput = '';
     } catch (err) {
       log('Send Failed: ' + (err instanceof Error ? err.message : String(err)), 'error');
+    }
+  }
+
+  function handleInputKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      handleSend();
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (commandHistory.length === 0) return;
+      if (historyIndex === -1) {
+        savedInput = currentInput;
+        historyIndex = commandHistory.length - 1;
+      } else if (historyIndex > 0) {
+        historyIndex--;
+      }
+      currentInput = commandHistory[historyIndex];
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIndex === -1) return;
+      if (historyIndex < commandHistory.length - 1) {
+        historyIndex++;
+        currentInput = commandHistory[historyIndex];
+      } else {
+        historyIndex = -1;
+        currentInput = savedInput;
+      }
+      return;
     }
   }
 
@@ -341,9 +382,7 @@
             <input
               bind:this={inputRef}
               bind:value={currentInput}
-              onkeydown={(e) => {
-                if (e.key === 'Enter') handleSend();
-              }}
+              onkeydown={handleInputKeydown}
               placeholder="Enter command..."
               disabled={!isConnected}
               class="w-full border-none bg-transparent font-mono text-xs text-zinc-100 placeholder-zinc-700 outline-none"
