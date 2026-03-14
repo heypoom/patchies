@@ -17,7 +17,7 @@ export interface PadsNodeData {
 /** MIDI note for pad 1 (GM: Bass Drum 1) */
 export const BASE_NOTE = 36;
 
-/** Short GM drum names keyed by MIDI note number */
+/** GM drum names keyed by MIDI note number */
 export const GM_DRUM_NAMES: Record<number, string> = {
   36: 'Kick',
   37: 'Side Stick',
@@ -35,6 +35,26 @@ export const GM_DRUM_NAMES: Record<number, string> = {
   49: 'Crash',
   50: 'High Tom',
   51: 'Ride'
+};
+
+/** Abbreviated GM drum names for compact display */
+export const GM_DRUM_SHORT: Record<number, string> = {
+  36: 'KCK',
+  37: 'STK',
+  38: 'SNR',
+  39: 'CLP',
+  40: 'ESN',
+  41: 'LFT',
+  42: 'CHH',
+  43: 'HFT',
+  44: 'PHH',
+  45: 'LTM',
+  46: 'OHH',
+  47: 'LMT',
+  48: 'HMT',
+  49: 'CRS',
+  50: 'HTM',
+  51: 'RDE'
 };
 
 export const DEFAULT_PADS_NODE_DATA: PadsNodeData = {

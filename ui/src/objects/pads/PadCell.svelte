@@ -124,7 +124,7 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
   class={[
     'relative flex h-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded p-1 transition-colors select-none',
@@ -152,7 +152,7 @@
       {label}
     </span>
   {:else if showGmLabels}
-    <span class="w-full truncate text-center font-mono text-[9px] leading-tight text-zinc-500">
+    <span class="w-full truncate text-center font-mono text-[9px] leading-tight text-zinc-600">
       {gmName}
     </span>
   {/if}

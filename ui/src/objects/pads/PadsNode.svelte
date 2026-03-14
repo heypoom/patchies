@@ -15,6 +15,7 @@
   import {
     BASE_NOTE,
     GM_DRUM_NAMES,
+    GM_DRUM_SHORT,
     DEFAULT_PADS_NODE_DATA,
     PADS_MIN_WIDTH,
     PADS_MIN_HEIGHT,
@@ -42,6 +43,7 @@
   const showGmLabels = $derived(node.data.showGmLabels ?? true);
   const width = $derived(node.width ?? 280);
   const height = $derived(node.height ?? 300);
+  const compact = $derived(width < 300);
 
   // Flat pad indices in MPC order (pad 1 = bottom-left): top row = highest pads
   const orderedPads = $derived.by(() => {
@@ -193,8 +195,18 @@
       type="message"
       title="MIDI input (noteOn/noteOff)"
       nodeId={node.id}
+      total={1}
+      index={0}
     />
-    <StandardHandle port="outlet" type="audio" title="Audio output" nodeId={node.id} />
+
+    <StandardHandle
+      port="outlet"
+      type="audio"
+      title="Audio output"
+      nodeId={node.id}
+      total={1}
+      index={0}
+    />
 
     <!-- Content box — overflow-hidden stays here, handles are outside it -->
     <div class="absolute inset-0 overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900">
@@ -208,7 +220,9 @@
           <PadCell
             {padIndex}
             padConfig={pads[padIndex] ?? {}}
-            gmName={GM_DRUM_NAMES[BASE_NOTE + padIndex] ?? `Pad ${padIndex + 1}`}
+            gmName={compact
+              ? (GM_DRUM_SHORT[BASE_NOTE + padIndex] ?? `P${padIndex + 1}`)
+              : (GM_DRUM_NAMES[BASE_NOTE + padIndex] ?? `Pad ${padIndex + 1}`)}
             isActive={activeFlash.has(padIndex)}
             {showGmLabels}
             onAssign={assignSample}
