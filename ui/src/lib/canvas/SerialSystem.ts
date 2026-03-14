@@ -15,6 +15,7 @@ interface SerialPortEntry {
   lineBuffer: string;
   subscribers: Map<string, SerialSubscriber>;
   abortController: AbortController | null;
+  readLoopPromise: Promise<void> | null;
 }
 
 let nextPortId = 1;
@@ -22,6 +23,7 @@ let nextPortId = 1;
 export class SerialSystem {
   private static instance: SerialSystem;
   private ports: Map<string, SerialPortEntry> = new Map();
+  private pendingCloses: Map<SerialPort, Promise<void>> = new Map();
 
   static getInstance(): SerialSystem {
     if (!SerialSystem.instance) {
@@ -51,6 +53,13 @@ export class SerialSystem {
       return existing.portId;
     }
 
+    // Wait for any pending close on this port before re-opening
+    const pendingClose = this.pendingCloses.get(port);
+    if (pendingClose) {
+      await pendingClose;
+      this.pendingCloses.delete(port);
+    }
+
     await port.open({ baudRate });
 
     const portId = `serial-${nextPortId++}`;
@@ -64,11 +73,12 @@ export class SerialSystem {
       label,
       lineBuffer: '',
       subscribers: new Map(),
-      abortController: null
+      abortController: null,
+      readLoopPromise: null
     };
 
     this.ports.set(portId, entry);
-    this.startReadLoop(entry);
+    entry.readLoopPromise = this.startReadLoop(entry);
     this.syncStore();
 
     console.log(`[serial] port opened: ${portId} @ ${baudRate} baud`);
@@ -141,9 +151,36 @@ export class SerialSystem {
     const entry = this.ports.get(portId);
     if (!entry) return;
 
-    // Abort the read loop
+    const port = entry.port;
+
+    // Mark disconnected and remove from map immediately so UI updates
+    entry.connected = false;
+    this.ports.delete(portId);
+    this.syncStore();
+
+    // Perform async cleanup and track the promise so requestPort can await it
+    const closePromise = this.performClose(entry);
+    this.pendingCloses.set(port, closePromise);
+
+    try {
+      await closePromise;
+    } finally {
+      this.pendingCloses.delete(port);
+    }
+
+    console.log(`[serial] port closed: ${portId}`);
+  }
+
+  private async performClose(entry: SerialPortEntry): Promise<void> {
+    // Abort the read loop — this signals pipeTo to stop and release the stream lock
     entry.abortController?.abort();
     entry.abortController = null;
+
+    // Wait for the read loop to fully unwind so streams are unlocked
+    if (entry.readLoopPromise) {
+      await entry.readLoopPromise.catch(() => {});
+      entry.readLoopPromise = null;
+    }
 
     // Flush remaining line buffer
     if (entry.lineBuffer) {
@@ -158,12 +195,6 @@ export class SerialSystem {
     } catch (e) {
       console.warn('[serial] error closing port:', e);
     }
-
-    entry.connected = false;
-    this.ports.delete(portId);
-    this.syncStore();
-
-    console.log(`[serial] port closed: ${portId}`);
   }
 
   /** Get info for a specific port */
@@ -210,19 +241,14 @@ export class SerialSystem {
     const abortController = new AbortController();
     entry.abortController = abortController;
 
+    const textDecoder = new TextDecoderStream();
+    const readablePromise = entry.port.readable.pipeTo(textDecoder.writable, {
+      signal: abortController.signal
+    });
+
+    const reader = textDecoder.readable.getReader();
+
     try {
-      const textDecoder = new TextDecoderStream();
-      const readablePromise = entry.port.readable.pipeTo(textDecoder.writable, {
-        signal: abortController.signal
-      });
-
-      const reader = textDecoder.readable.getReader();
-
-      // Don't await readablePromise here — it resolves when the stream closes
-      readablePromise.catch(() => {
-        // Expected when aborted
-      });
-
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -250,6 +276,9 @@ export class SerialSystem {
         entry.connected = false;
         this.syncStore();
       }
+    } finally {
+      reader.releaseLock();
+      await readablePromise.catch(() => {});
     }
   }
 

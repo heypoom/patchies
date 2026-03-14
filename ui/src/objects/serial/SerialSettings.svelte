@@ -30,7 +30,7 @@
   const tracker = useNodeDataTracker(nodeId);
   const serialSystem = SerialSystem.getInstance();
 
-  const isConnected = $derived(portId ? serialSystem.isConnected(portId) : false);
+  const isConnected = $derived($serialPorts.some((p) => p.portId === portId && p.connected));
 
   async function handleRequestPort() {
     try {

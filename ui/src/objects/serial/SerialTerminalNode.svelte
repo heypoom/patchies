@@ -21,6 +21,7 @@
     type SerialTerminalNodeData
   } from './constants';
   import SerialSettings from './SerialSettings.svelte';
+  import { serialPorts } from '../../stores/serial.store';
 
   type LineType = 'rx' | 'tx' | 'error' | 'system';
 
@@ -62,7 +63,7 @@
   const baudRate = $derived(data.baudRate || 9600);
   const lineEnding = $derived(data.lineEnding ?? '\r\n');
   const maxScrollback = $derived(data.maxScrollback || 500);
-  const isConnected = $derived(portId ? serialSystem.isConnected(portId) : false);
+  const isConnected = $derived($serialPorts.some((p) => p.portId === portId && p.connected));
 
   function log(text: string, type: LineType = 'rx') {
     history.push({ text, type });

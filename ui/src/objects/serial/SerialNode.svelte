@@ -12,6 +12,7 @@
   import { serialMessages } from './schema';
   import type { SerialNodeData } from './constants';
   import SerialSettings from './SerialSettings.svelte';
+  import { serialPorts } from '../../stores/serial.store';
 
   let {
     id: nodeId,
@@ -35,10 +36,10 @@
   const portId = $derived(data.portId || '');
   const baudRate = $derived(data.baudRate || 9600);
   const lineEnding = $derived(data.lineEnding ?? '\r\n');
-  const isConnected = $derived(portId ? serialSystem.isConnected(portId) : false);
 
-  const portInfo = $derived(portId ? serialSystem.getPortInfo(portId) : undefined);
-  const portLabel = $derived(portInfo?.label ?? 'No port');
+  const portStoreEntry = $derived($serialPorts.find((p) => p.portId === portId));
+  const isConnected = $derived(portStoreEntry?.connected ?? false);
+  const portLabel = $derived(portStoreEntry?.label ?? 'No port');
 
   const borderColor = $derived.by(() => {
     if (errorMessage) return 'border-red-500';
