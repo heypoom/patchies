@@ -7,7 +7,7 @@
   import { SerialSystem } from '$lib/canvas/SerialSystem';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { MessageSystem } from '$lib/messages/MessageSystem';
-  import { match } from 'ts-pattern';
+  import { match, P } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
   import { serialMessages } from './schema';
   import { parseAnsi } from './ansi';
@@ -175,7 +175,10 @@
         .with(serialMessages.disconnect, () => {
           handleDisconnect();
         })
-        .with(serialMessages.send, async ({ data: text }) => {
+        .with(serialMessages.baud, ({ rate }) => {
+          updateNodeData(nodeId, { baudRate: rate });
+        })
+        .with(P.string, async (text) => {
           if (!portId || !isConnected) {
             log('Not connected', 'error');
             return;
@@ -183,17 +186,7 @@
           await serialSystem.write(portId, text, lineEnding);
           log(text, 'tx');
         })
-        .with(serialMessages.baud, ({ rate }) => {
-          updateNodeData(nodeId, { baudRate: rate });
-        })
-        .otherwise(() => {
-          // Forward unknown messages as string data
-          if (portId && isConnected) {
-            const text = typeof message === 'string' ? message : JSON.stringify(message);
-            serialSystem.write(portId, text, lineEnding);
-            log(text, 'tx');
-          }
-        });
+        .otherwise(() => {});
     } catch (err) {
       errorMessage = err instanceof Error ? err.message : String(err);
     }
@@ -301,7 +294,7 @@
         <!-- Terminal Output -->
         <div
           bind:this={terminalRef}
-          class="flex-1 overflow-y-auto p-4 font-mono text-[12px] leading-relaxed selection:bg-emerald-500/30 selection:text-emerald-200"
+          class="nodrag nowheel nopan flex-1 overflow-y-auto p-4 font-mono text-[12px] leading-relaxed selection:bg-emerald-500/30 selection:text-emerald-200"
         >
           {#each history as line, i (i)}
             <div class={['mb-0.5 flex items-start', getLineClass(line.type)]}>
@@ -340,6 +333,7 @@
             <span class="mr-2 font-mono text-[10px] font-bold text-emerald-500/50 select-none"
               >$</span
             >
+
             <input
               bind:this={inputRef}
               bind:value={currentInput}
@@ -350,10 +344,6 @@
               disabled={!isConnected}
               class="w-full border-none bg-transparent font-mono text-xs text-zinc-100 placeholder-zinc-700 outline-none"
             />
-            <kbd
-              class="hidden rounded border border-zinc-700 bg-zinc-800 px-1 py-0.5 font-sans text-[8px] text-zinc-600 sm:inline-block"
-              >ENTER</kbd
-            >
           </div>
         </div>
       </div>

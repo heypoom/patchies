@@ -7,7 +7,7 @@
   import { SerialSystem } from '$lib/canvas/SerialSystem';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { MessageSystem } from '$lib/messages/MessageSystem';
-  import { match } from 'ts-pattern';
+  import { match, P } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
   import { serialMessages } from './schema';
   import type { SerialNodeData } from './constants';
@@ -107,23 +107,17 @@
         .with(serialMessages.disconnect, async () => {
           await handleDisconnect();
         })
-        .with(serialMessages.send, async ({ data: text }) => {
+        .with(serialMessages.baud, ({ rate }) => {
+          updateNodeData(nodeId, { baudRate: rate });
+        })
+        .with(P.string, async (text) => {
           if (!portId || !isConnected) {
             errorMessage = 'Not connected';
             return;
           }
           await serialSystem.write(portId, text, lineEnding);
         })
-        .with(serialMessages.baud, ({ rate }) => {
-          updateNodeData(nodeId, { baudRate: rate });
-        })
-        .otherwise(() => {
-          // Forward unknown messages as string data
-          if (portId && isConnected) {
-            const text = typeof message === 'string' ? message : JSON.stringify(message);
-            serialSystem.write(portId, text, lineEnding);
-          }
-        });
+        .otherwise(() => {});
     } catch (err) {
       errorMessage = err instanceof Error ? err.message : String(err);
     }

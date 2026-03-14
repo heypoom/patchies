@@ -1,5 +1,6 @@
 export interface AnsiSpan {
   text: string;
+
   style: {
     color?: string;
     fontWeight?: string;
@@ -18,6 +19,7 @@ const COLOR_MAP: Record<number, string> = {
   35: '#c084fc', // magenta → purple-400
   36: '#22d3ee', // cyan → cyan-400
   37: '#f4f4f5', // white → zinc-100
+
   // Bright colors
   90: '#71717a', // bright black → zinc-500
   91: '#f43f5e', // bright red → rose-500
@@ -36,8 +38,10 @@ const COLOR_MAP: Record<number, string> = {
 export function parseAnsi(text: string): AnsiSpan[] {
   if (!text) return [];
 
+  // eslint-disable-next-line no-control-regex
   const parts = text.split(/(\x1B\[[0-9;]*m)/g);
   const spans: AnsiSpan[] = [];
+
   let currentStyle: AnsiSpan['style'] = {};
 
   for (const part of parts) {

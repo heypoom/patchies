@@ -167,6 +167,7 @@ import { noteSchema } from './note';
 import { meterSchema } from './meter';
 import { sequencerSchema } from './sequencer';
 import { curveSchema } from '$objects/curve/schema';
+import { serialSchema, serialTermSchema } from '$objects/serial/schema';
 
 /**
  * Registry of all object schemas.
@@ -261,7 +262,9 @@ export const objectSchemas: ObjectSchemaRegistry = {
   note: noteSchema,
   'meter~': meterSchema,
   sequencer: sequencerSchema,
-  curve: curveSchema
+  curve: curveSchema,
+  serial: serialSchema,
+  'serial.term': serialTermSchema
 };
 
 /**
