@@ -16,6 +16,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - scope~: Oscilloscope display for audio signals
 - soundfile~: Load and play audio files
 - sampler~: Sample playback with triggering
+- pads~: 16-pad drum sampler triggered by MIDI noteOn/noteOff (GM drum map, note 36 = pad 1)
 - split~: Split multi-channel audio into separate mono channels.
 - merge~: Merge multiple mono channels into a single multi-channel audio.
 
