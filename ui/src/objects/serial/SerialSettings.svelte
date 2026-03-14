@@ -55,7 +55,11 @@
 
 <div class="relative">
   <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-    <button onclick={() => (show = false)} class="cursor-pointer rounded p-1 hover:bg-zinc-700">
+    <button
+      aria-label="Close serial settings"
+      onclick={() => (show = false)}
+      class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+    >
       <X class="h-4 w-4 text-zinc-300" />
     </button>
   </div>
@@ -64,11 +68,13 @@
     <div class="space-y-4">
       <!-- Port -->
       <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Serial Port</label>
+        <label for="serial-port-{nodeId}" class="mb-2 block text-xs font-medium text-zinc-300"
+          >Serial Port</label
+        >
 
         {#if $serialPorts.length > 0}
           <select
+            id="serial-port-{nodeId}"
             class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
             value={portId}
             onchange={(e) => {
@@ -101,10 +107,12 @@
 
       <!-- Baud Rate -->
       <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Baud Rate</label>
+        <label for="serial-baud-{nodeId}" class="mb-2 block text-xs font-medium text-zinc-300"
+          >Baud Rate</label
+        >
 
         <select
+          id="serial-baud-{nodeId}"
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
           value={baudRate}
           onchange={(e) => {
@@ -122,10 +130,13 @@
 
       <!-- Line Ending -->
       <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Line Ending</label>
+        <label
+          for="serial-line-ending-{nodeId}"
+          class="mb-2 block text-xs font-medium text-zinc-300">Line Ending</label
+        >
 
         <select
+          id="serial-line-ending-{nodeId}"
           class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
           value={lineEnding}
           onchange={(e) => {

@@ -8,17 +8,6 @@ The headless `serial` node sends and receives line-based data without a built-in
 2. Click **Request New Port** to open the browser's serial port picker
 3. Select your device and configure baud rate
 
-## Usage
-
-Connect the outlet to downstream nodes to process incoming serial lines. Each received line is sent as `{type: 'data', line: '...'}`.
-
-Send data to the port by connecting a message to the inlet:
-
-- `"hello"` — send a plain string to the port
-- `connect` — open the port picker
-- `disconnect` — close the port
-- `{type: 'baud', rate: 115200}` — change baud rate
-
 ## Shared Ports
 
 Multiple `serial` and `serial.term` nodes can share the same port — connection state is synced across all nodes using that port.

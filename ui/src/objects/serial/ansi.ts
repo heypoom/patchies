@@ -1,3 +1,5 @@
+import { match } from 'ts-pattern';
+
 export interface AnsiSpan {
   text: string;
 
@@ -49,15 +51,21 @@ export function parseAnsi(text: string): AnsiSpan[] {
       const codes = part.substring(2, part.length - 1).split(';');
       for (const code of codes) {
         const n = parseInt(code) || 0;
-        if (n === 0) {
-          currentStyle = {};
-        } else if (n === 1) {
-          currentStyle = { ...currentStyle, fontWeight: 'bold' };
-        } else if (n === 4) {
-          currentStyle = { ...currentStyle, textDecoration: 'underline' };
-        } else if (COLOR_MAP[n]) {
-          currentStyle = { ...currentStyle, color: COLOR_MAP[n] };
-        }
+        match(n)
+          .with(0, () => {
+            currentStyle = {};
+          })
+          .with(1, () => {
+            currentStyle = { ...currentStyle, fontWeight: 'bold' };
+          })
+          .with(4, () => {
+            currentStyle = { ...currentStyle, textDecoration: 'underline' };
+          })
+          .otherwise(() => {
+            if (COLOR_MAP[n]) {
+              currentStyle = { ...currentStyle, color: COLOR_MAP[n] };
+            }
+          });
       }
     } else if (part) {
       spans.push({ text: part, style: { ...currentStyle } });

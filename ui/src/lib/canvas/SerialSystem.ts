@@ -4,6 +4,7 @@ export interface SerialSubscriber {
   nodeId: string;
   onLine: (line: string) => void;
   onRawData?: (chunk: string) => void;
+  onStatusChange?: (status: 'disconnected' | 'error', error?: Error) => void;
 }
 
 interface SerialPortEntry {
@@ -16,6 +17,7 @@ interface SerialPortEntry {
   subscribers: Map<string, SerialSubscriber>;
   abortController: AbortController | null;
   readLoopPromise: Promise<void> | null;
+  writeChain: Promise<void>;
 }
 
 let nextPortId = 1;
@@ -45,12 +47,20 @@ export class SerialSystem {
     const baudRate = options?.baudRate ?? 9600;
     const port = await navigator.serial.requestPort();
 
-    // If this physical port is already managed, return the existing portId
+    // If this physical port is already managed, reuse if still connected with matching baud
     const existing = this.findEntryByPort(port);
 
     if (existing) {
-      console.log(`[serial] reusing existing port: ${existing.portId}`);
-      return existing.portId;
+      if (existing.connected && existing.baudRate === baudRate) {
+        console.log(`[serial] reusing existing port: ${existing.portId}`);
+        return existing.portId;
+      }
+
+      // Stale or baud mismatch — close old entry and fall through to re-open
+      console.log(
+        `[serial] closing stale port ${existing.portId} (connected=${existing.connected}, baud=${existing.baudRate}→${baudRate})`
+      );
+      await this.closePort(existing.portId);
     }
 
     // Wait for any pending close on this port before re-opening
@@ -74,7 +84,8 @@ export class SerialSystem {
       lineBuffer: '',
       subscribers: new Map(),
       abortController: null,
-      readLoopPromise: null
+      readLoopPromise: null,
+      writeChain: Promise.resolve()
     };
 
     this.ports.set(portId, entry);
@@ -115,6 +126,14 @@ export class SerialSystem {
     this.syncStore();
   }
 
+  /** Enqueue a write operation on the per-port write chain to prevent stream lock races */
+  private enqueueWrite(entry: SerialPortEntry, fn: () => Promise<void>): Promise<void> {
+    const promise = entry.writeChain.then(fn);
+    // Don't let a failed write block subsequent writes
+    entry.writeChain = promise.catch(() => {});
+    return promise;
+  }
+
   /** Write string data to a port (appends line ending) */
   async write(portId: string, data: string, lineEnding: string = '\r\n'): Promise<void> {
     const entry = this.ports.get(portId);
@@ -123,12 +142,14 @@ export class SerialSystem {
     }
 
     const encoder = new TextEncoder();
-    const writer = entry.port.writable.getWriter();
-    try {
-      await writer.write(encoder.encode(data + lineEnding));
-    } finally {
-      writer.releaseLock();
-    }
+    await this.enqueueWrite(entry, async () => {
+      const writer = entry.port.writable!.getWriter();
+      try {
+        await writer.write(encoder.encode(data + lineEnding));
+      } finally {
+        writer.releaseLock();
+      }
+    });
   }
 
   /** Write raw bytes to a port */
@@ -138,12 +159,14 @@ export class SerialSystem {
       throw new Error('Port not connected or not writable');
     }
 
-    const writer = entry.port.writable.getWriter();
-    try {
-      await writer.write(data);
-    } finally {
-      writer.releaseLock();
-    }
+    await this.enqueueWrite(entry, async () => {
+      const writer = entry.port.writable!.getWriter();
+      try {
+        await writer.write(data);
+      } finally {
+        writer.releaseLock();
+      }
+    });
   }
 
   /** Disconnect and close a port */
@@ -152,6 +175,9 @@ export class SerialSystem {
     if (!entry) return;
 
     const port = entry.port;
+
+    // Notify all subscribers before removing from map
+    this.notifySubscribers(entry, 'disconnected');
 
     // Mark disconnected and remove from map immediately so UI updates
     entry.connected = false;
@@ -261,7 +287,7 @@ export class SerialSystem {
 
         // Line buffering
         entry.lineBuffer += value;
-        const lines = entry.lineBuffer.split(/\r?\n/);
+        const lines = entry.lineBuffer.split(/\r\n|\n|\r/);
         entry.lineBuffer = lines.pop() ?? '';
 
         for (const line of lines) {
@@ -273,6 +299,8 @@ export class SerialSystem {
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         console.error('[serial] read loop error:', err);
+        const error = err instanceof Error ? err : new Error(String(err));
+        this.notifySubscribers(entry, 'error', error);
         entry.connected = false;
         this.syncStore();
       }
@@ -282,10 +310,22 @@ export class SerialSystem {
     }
   }
 
+  private notifySubscribers(
+    entry: SerialPortEntry,
+    status: 'disconnected' | 'error',
+    error?: Error
+  ): void {
+    for (const sub of entry.subscribers.values()) {
+      sub.onStatusChange?.(status, error);
+    }
+  }
+
   private syncStore(): void {
     updateSerialPorts(this.getPortInfoList());
   }
 }
 
-// @ts-expect-error -- expose SerialSystem globally for debugging
-window.SerialSystem = SerialSystem.getInstance();
+if (typeof window !== 'undefined') {
+  // @ts-expect-error -- expose SerialSystem globally for debugging
+  window.SerialSystem = SerialSystem.getInstance();
+}

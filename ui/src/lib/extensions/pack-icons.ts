@@ -56,5 +56,6 @@ export function getPackIcon(iconName: string) {
     .with('Calculator', () => Calculator)
     .with('FileHeadphone', () => FileHeadphone)
     .with('Grid3x3', () => Grid3x3)
+    .with('Usb', () => Usb)
     .otherwise(() => Package);
 }

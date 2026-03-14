@@ -12,7 +12,7 @@ export type AiPromptState = {
 const initialState: AiPromptState = {
   isOpen: false,
   isLoading: false,
-  mode: 'single'
+  mode: 'insert'
 };
 
 function createAiPromptStore() {

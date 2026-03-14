@@ -158,18 +158,16 @@
     }
   }
 
-  const handleMessage: MessageCallbackFn = (message) => {
+  const handleMessage: MessageCallbackFn = async (message) => {
     try {
-      match(message)
+      await match(message)
         .with(messages.bang, () => {
-          if (!portId) handleToggleConnection();
+          if (!portId) return handleToggleConnection();
         })
         .with(serialMessages.connect, () => {
-          if (!portId) handleToggleConnection();
+          if (!portId) return handleToggleConnection();
         })
-        .with(serialMessages.disconnect, () => {
-          handleDisconnect();
-        })
+        .with(serialMessages.disconnect, () => handleDisconnect())
         .with(serialMessages.baud, ({ rate }) => {
           updateNodeData(nodeId, { baudRate: rate });
         })
@@ -184,6 +182,7 @@
         .otherwise(() => {});
     } catch (err) {
       errorMessage = err instanceof Error ? err.message : String(err);
+      throw err;
     }
   };
 
