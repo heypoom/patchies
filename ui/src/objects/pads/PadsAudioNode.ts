@@ -41,7 +41,7 @@ export class PadsAudioNode implements AudioNodeV2 {
   padCount: PadCount = 16;
 
   /** Called by the audio node when a pad is triggered — component uses this for flash animation */
-  onTrigger?: (padIndex: number) => void;
+  onTrigger?: (padIndex: number, velocity: number) => void;
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
@@ -90,7 +90,7 @@ export class PadsAudioNode implements AudioNodeV2 {
     const buffer = this.buffers[padIndex];
     if (!buffer) return;
 
-    this.onTrigger?.(padIndex);
+    this.onTrigger?.(padIndex, velocity);
 
     if (!this.voices.has(padIndex)) {
       this.voices.set(padIndex, []);

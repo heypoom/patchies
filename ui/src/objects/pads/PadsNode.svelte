@@ -26,13 +26,13 @@
 
   let node: NodeProps & { data: PadsNodeData } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, updateNode } = useSvelteFlow();
   const audioService = AudioService.getInstance();
 
   let v2Node: PadsAudioNodeType | null = null;
   let messageContext: MessageContext;
   let showSettings = $state(false);
-  let activeFlash = $state<Set<number>>(new Set());
+  let activeFlash = $state<Map<number, number>>(new Map());
   let containerEl: HTMLDivElement | null = null;
 
   // Derived from node data with fallbacks
@@ -65,10 +65,12 @@
     }
   });
 
-  function flashPad(padIndex: number) {
-    activeFlash = new Set([...activeFlash, padIndex]);
+  function flashPad(padIndex: number, velocity: number) {
+    activeFlash = new Map([...activeFlash, [padIndex, velocity]]);
     setTimeout(() => {
-      activeFlash = new Set([...activeFlash].filter((i) => i !== padIndex));
+      const next = new Map(activeFlash);
+      next.delete(padIndex);
+      activeFlash = next;
     }, 150);
   }
 
@@ -119,6 +121,9 @@
 
   function updatePadCount(value: PadCount) {
     updateNodeData(node.id, { ...node.data, padCount: value });
+    const rows = value / 4;
+    const targetHeight = Math.round(width * (rows / 4));
+    updateNode(node.id, { height: targetHeight });
   }
 
   function updateMaxVoices(value: number) {
@@ -223,7 +228,7 @@
             gmName={compact
               ? (GM_DRUM_SHORT[BASE_NOTE + padIndex] ?? `P${padIndex + 1}`)
               : (GM_DRUM_NAMES[BASE_NOTE + padIndex] ?? `Pad ${padIndex + 1}`)}
-            isActive={activeFlash.has(padIndex)}
+            velocity={activeFlash.get(padIndex) ?? 0}
             {showGmLabels}
             onAssign={assignSample}
             onClear={clearPad}

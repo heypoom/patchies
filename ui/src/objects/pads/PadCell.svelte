@@ -6,15 +6,20 @@
     padIndex: number;
     padConfig: PadConfig;
     gmName: string;
-    isActive: boolean;
+    /** 0 = inactive, 1–127 = velocity of current hit */
+    velocity: number;
     showGmLabels: boolean;
     onAssign: (padIndex: number, vfsPath: string) => void;
     onClear: (padIndex: number) => void;
     onTrigger: (padIndex: number) => void;
   };
 
-  let { padIndex, padConfig, gmName, isActive, showGmLabels, onAssign, onClear, onTrigger }: Props =
+  let { padIndex, padConfig, gmName, velocity, showGmLabels, onAssign, onClear, onTrigger }: Props =
     $props();
+
+  const isActive = $derived(velocity > 0);
+  /** Normalized 0–1 intensity from velocity */
+  const intensity = $derived(velocity / 127);
 
   let isDragging = $state(false);
 
@@ -130,13 +135,16 @@
     'relative flex h-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded p-1 transition-colors select-none',
     'border',
     isActive
-      ? 'border-orange-400 bg-orange-500/40 shadow-[inset_0_0_8px_rgba(251,146,60,0.3)]'
+      ? 'border-orange-400'
       : isDragging
         ? 'border-blue-400 bg-blue-500/20'
         : padConfig.vfsPath
           ? 'border-zinc-500 bg-zinc-700 hover:border-zinc-400 hover:bg-zinc-600'
           : 'border-zinc-600 bg-zinc-800 hover:border-zinc-500 hover:bg-zinc-700'
   ]}
+  style={isActive
+    ? `background: rgba(249,115,22,${0.15 + intensity * 0.45}); box-shadow: inset 0 0 ${4 + intensity * 12}px rgba(251,146,60,${0.1 + intensity * 0.4})`
+    : ''}
   onclick={handleClick}
   ondragover={handleDragOver}
   ondragleave={handleDragLeave}
