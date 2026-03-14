@@ -121,7 +121,16 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Networking',
     description: 'External communication and I/O',
     icon: 'Wifi',
-    objects: ['netsend', 'netrecv', 'mqtt', 'sse', 'vdo.ninja.push', 'vdo.ninja.pull']
+    objects: [
+      'netsend',
+      'netrecv',
+      'mqtt',
+      'sse',
+      'vdo.ninja.push',
+      'vdo.ninja.pull',
+      'serial',
+      'serial.term'
+    ]
   },
   {
     id: 'audio-routing',

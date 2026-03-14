@@ -42,6 +42,7 @@
     "@types/p5": "^1.7.7",
     "@types/stats.js": "^0.17.4",
     "@types/three": "^0.182.0",
+    "@types/w3c-web-serial": "^1.0.8",
     "@vite-pwa/sveltekit": "^1.1.0",
     "@vitest/browser": "^3.2.3",
     "bits-ui": "^2.14.4",

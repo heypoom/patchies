@@ -32,6 +32,7 @@ import { DEFAULT_TRACKS } from '$lib/nodes/sequencer-constants';
 import { CURVE_DEFAULT_OBJECT_DATA } from '$objects/curve/constants';
 import { DEFAULT_PADS_NODE_DATA } from '$objects/pads/constants';
 import { TABLE_DEFAULT_NODE_DATA } from '$objects/table/constants';
+import { DEFAULT_SERIAL_DATA, DEFAULT_SERIAL_TERMINAL_DATA } from '$objects/serial/constants';
 
 // TODO: make this type-safe!
 export type NodeData = {
@@ -282,5 +283,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     }))
     .with('curve', () => CURVE_DEFAULT_OBJECT_DATA)
     .with('pads~', () => DEFAULT_PADS_NODE_DATA)
+    .with('serial', () => DEFAULT_SERIAL_DATA)
+    .with('serial.term', () => DEFAULT_SERIAL_TERMINAL_DATA)
     .otherwise(() => ({}));
 }

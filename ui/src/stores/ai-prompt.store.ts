@@ -12,7 +12,7 @@ export type AiPromptState = {
 const initialState: AiPromptState = {
   isOpen: false,
   isLoading: false,
-  mode: 'single'
+  mode: 'insert'
 };
 
 function createAiPromptStore() {
@@ -20,7 +20,7 @@ function createAiPromptStore() {
 
   return {
     subscribe,
-    open: (mode: AiPromptMode = 'single') => update((state) => ({ ...state, isOpen: true, mode })),
+    open: (mode: AiPromptMode = 'insert') => update((state) => ({ ...state, isOpen: true, mode })),
     close: () => update((state) => ({ ...state, isOpen: false, isLoading: false })),
     setLoading: (isLoading: boolean) => update((state) => ({ ...state, isLoading })),
     setMode: (mode: AiPromptMode) => update((state) => ({ ...state, mode })),

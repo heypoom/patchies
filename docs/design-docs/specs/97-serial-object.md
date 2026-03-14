@@ -7,7 +7,7 @@ A WebSerial integration for Patchies, enabling bidirectional communication with 
 **Node types:**
 
 - **`serial`** — headless serial controller (compact, like `midi.in` / `midi.out`). Connect/disconnect, configure baud rate, send/receive messages through the Patchies message system.
-- **`serial.terminal`** — full serial terminal with ANSI color parsing, scrollback buffer, and inline command input. Same port-sharing capability.
+- **`serial.term`** — full serial terminal with ANSI color parsing, scrollback buffer, and inline command input. Same port-sharing capability.
 
 ## Architecture
 
@@ -38,8 +38,8 @@ A WebSerial integration for Patchies, enabling bidirectional communication with 
               ┌────────┴────────┐
               ▼                 ▼
      ┌──────────────┐  ┌────────────────────┐
-     │   serial      │  │  serial.terminal    │
-     │  (headless)   │  │  (terminal UI)      │
+     │   serial     │  │  serial.term       │
+     │  (headless)  │  │  (terminal UI)     │
      └──────────────┘  └────────────────────┘
 ```
 
@@ -234,7 +234,7 @@ Received serial lines are sent as messages:
 }
 ```
 
-## Node: `serial.terminal` (Terminal UI)
+## Node: `serial.term` (Terminal UI)
 
 Larger resizable node with embedded terminal. UI inspired by the Vue reference implementation but built in Svelte.
 
@@ -318,7 +318,7 @@ import { schema } from '$lib/objects/schemas/types';
 export const SerialConnect = sym('connect');
 export const SerialDisconnect = sym('disconnect');
 export const SerialSend = msg('send', { data: Type.String() });
-export const SerialBaud = msg('baud', { rate: Type.Number() });
+export const SerialBaud = msg('setBaud', { rate: Type.Number() });
 
 // Outlet messages
 export const SerialData = msg('data', { line: Type.String() });
@@ -364,16 +364,16 @@ ui/src/stores/serial.store.ts        # Reactive store
 
 1. **Node types** (`src/lib/nodes/node-types.ts`):
    - `'serial': SerialNode`
-   - `'serial.terminal': SerialTerminalNode`
+   - `'serial.term': SerialTerminalNode`
 
 2. **Default data** (`src/lib/nodes/defaultNodeData.ts`):
    - `.with('serial', () => DEFAULT_SERIAL_DATA)`
-   - `.with('serial.terminal', () => DEFAULT_SERIAL_TERMINAL_DATA)`
+   - `.with('serial.term', () => DEFAULT_SERIAL_TERMINAL_DATA)`
 
 3. **Object packs** (`src/lib/extensions/object-packs.ts`):
    - Add to `networking` pack or create new `serial` pack:
      ```typescript
-     { id: 'serial', name: 'Serial', description: 'WebSerial device communication', icon: 'Usb', objects: ['serial', 'serial.terminal'] }
+     { id: 'serial', name: 'Serial', description: 'WebSerial device communication', icon: 'Usb', objects: ['serial', 'serial.term'] }
      ```
 
 4. **Pack icons** (`src/lib/extensions/pack-icons.ts`):
@@ -383,13 +383,13 @@ ui/src/stores/serial.store.ts        # Reactive store
    ```
    ## Serial
    - serial: WebSerial port controller (connect, send, receive)
-   - serial.terminal: Serial terminal with ANSI color display
+   - serial.term: Serial terminal with ANSI color display
    ```
 
 6. **AI prompt** (`src/lib/ai/object-prompts/index.ts`):
-   - Register `serial` and `serial.terminal` prompts
+   - Register `serial` and `serial.term` prompts
 
-7. **Object docs** (`static/content/objects/serial.md`, `serial.terminal.md`)
+7. **Object docs** (`static/content/objects/serial.md`, `serial.term.md`)
 
 8. **Undo/redo**: `useNodeDataTracker` for port, baud rate, line ending changes
 
