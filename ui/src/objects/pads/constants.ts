@@ -12,6 +12,7 @@ export interface PadsNodeData {
   maxVoices: number;
   noteOffMode: NoteOffMode;
   showGmLabels: boolean;
+  showWaveform: boolean;
 }
 
 /** MIDI note for pad 1 (GM: Bass Drum 1) */
@@ -62,7 +63,8 @@ export const DEFAULT_PADS_NODE_DATA: PadsNodeData = {
   pads: Array.from({ length: 16 }, () => ({})),
   maxVoices: 4,
   noteOffMode: 'ignore',
-  showGmLabels: true
+  showGmLabels: true,
+  showWaveform: true
 };
 
 export const PADS_MIN_WIDTH = 240;

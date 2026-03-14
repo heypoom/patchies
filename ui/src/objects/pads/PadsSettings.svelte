@@ -10,10 +10,12 @@
     maxVoices: number;
     noteOffMode: NoteOffMode;
     showGmLabels: boolean;
+    showWaveform: boolean;
     onPadCountChange: (value: PadCount) => void;
     onMaxVoicesChange: (value: number) => void;
     onNoteOffModeChange: (value: NoteOffMode) => void;
     onShowGmLabelsChange: (value: boolean) => void;
+    onShowWaveformChange: (value: boolean) => void;
     onClose: () => void;
   };
 
@@ -23,10 +25,12 @@
     maxVoices,
     noteOffMode,
     showGmLabels,
+    showWaveform,
     onPadCountChange,
     onMaxVoicesChange,
     onNoteOffModeChange,
     onShowGmLabelsChange,
+    onShowWaveformChange,
     onClose
   }: Props = $props();
 
@@ -108,8 +112,8 @@
         </div>
       </div>
 
-      <!-- GM Labels -->
-      <div class="border-t border-zinc-700 pt-3">
+      <!-- Display -->
+      <div class="space-y-2 border-t border-zinc-700 pt-3">
         <label class="flex cursor-pointer items-center justify-between">
           <span class="text-xs font-medium text-zinc-300">Show GM Labels</span>
           <input
@@ -117,9 +121,21 @@
             checked={showGmLabels}
             onchange={() => {
               const old = showGmLabels;
-
               onShowGmLabelsChange(!showGmLabels);
               tracker.commit('showGmLabels', old, !old);
+            }}
+            class="h-3 w-3 cursor-pointer"
+          />
+        </label>
+        <label class="flex cursor-pointer items-center justify-between">
+          <span class="text-xs font-medium text-zinc-300">Show Waveform</span>
+          <input
+            type="checkbox"
+            checked={showWaveform}
+            onchange={() => {
+              const old = showWaveform;
+              onShowWaveformChange(!showWaveform);
+              tracker.commit('showWaveform', old, !old);
             }}
             class="h-3 w-3 cursor-pointer"
           />

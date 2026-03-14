@@ -33,6 +33,7 @@
   let messageContext: MessageContext;
   let showSettings = $state(false);
   let activeFlash = $state<Map<number, number>>(new Map());
+  let padBuffers = $state<(AudioBuffer | null)[]>(Array(16).fill(null));
   let containerEl: HTMLDivElement | null = null;
 
   // Derived from node data with fallbacks
@@ -41,6 +42,7 @@
   const maxVoices = $derived(node.data.maxVoices ?? 4);
   const noteOffMode = $derived(node.data.noteOffMode ?? 'ignore');
   const showGmLabels = $derived(node.data.showGmLabels ?? true);
+  const showWaveform = $derived(node.data.showWaveform ?? true);
   const width = $derived(node.width ?? 280);
   const height = $derived(node.height ?? 300);
   const compact = $derived(width < 300);
@@ -86,6 +88,7 @@
     newPads[padIndex] = {};
     updateNodeData(node.id, { ...node.data, pads: newPads });
     v2Node?.clearBuffer(padIndex);
+    padBuffers[padIndex] = null;
   }
 
   async function loadPadBuffer(padIndex: number, vfsPath: string) {
@@ -106,6 +109,7 @@
 
       const buffer = await audioService.getAudioContext().decodeAudioData(arrayBuffer);
       v2Node?.setBuffer(padIndex, buffer);
+      padBuffers[padIndex] = buffer;
     } catch (err) {
       console.error(`[pads~] pad ${padIndex} failed to load:`, err);
     }
@@ -136,6 +140,10 @@
 
   function updateShowGmLabels(value: boolean) {
     updateNodeData(node.id, { ...node.data, showGmLabels: value });
+  }
+
+  function updateShowWaveform(value: boolean) {
+    updateNodeData(node.id, { ...node.data, showWaveform: value });
   }
 
   function triggerPad(padIndex: number) {
@@ -229,6 +237,7 @@
               ? (GM_DRUM_SHORT[BASE_NOTE + padIndex] ?? `P${padIndex + 1}`)
               : (GM_DRUM_NAMES[BASE_NOTE + padIndex] ?? `Pad ${padIndex + 1}`)}
             velocity={activeFlash.get(padIndex) ?? 0}
+            audioBuffer={showWaveform ? padBuffers[padIndex] : null}
             {showGmLabels}
             onAssign={assignSample}
             onClear={clearPad}
@@ -249,10 +258,12 @@
       {maxVoices}
       {noteOffMode}
       {showGmLabels}
+      {showWaveform}
       onPadCountChange={updatePadCount}
       onMaxVoicesChange={updateMaxVoices}
       onNoteOffModeChange={updateNoteOffMode}
       onShowGmLabelsChange={updateShowGmLabels}
+      onShowWaveformChange={updateShowWaveform}
       onClose={() => (showSettings = false)}
     />
   </div>

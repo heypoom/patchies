@@ -1,5 +1,6 @@
 <script lang="ts">
   import { VirtualFilesystem, guessMimeType, VFS_FOLDERS } from '$lib/vfs';
+  import { setupDprCanvas } from '$lib/canvas/waveform-renderer';
   import type { PadConfig } from './constants';
 
   type Props = {
@@ -8,20 +9,32 @@
     gmName: string;
     /** 0 = inactive, 1–127 = velocity of current hit */
     velocity: number;
+    audioBuffer?: AudioBuffer | null;
     showGmLabels: boolean;
     onAssign: (padIndex: number, vfsPath: string) => void;
     onClear: (padIndex: number) => void;
     onTrigger: (padIndex: number) => void;
   };
 
-  let { padIndex, padConfig, gmName, velocity, showGmLabels, onAssign, onClear, onTrigger }: Props =
-    $props();
+  let {
+    padIndex,
+    padConfig,
+    gmName,
+    velocity,
+    audioBuffer,
+    showGmLabels,
+    onAssign,
+    onClear,
+    onTrigger
+  }: Props = $props();
 
   const isActive = $derived(velocity > 0);
   /** Normalized 0–1 intensity from velocity */
   const intensity = $derived(velocity / 127);
 
   let isDragging = $state(false);
+  let canvasEl = $state<HTMLCanvasElement>();
+  let padEl = $state<HTMLDivElement>();
 
   const label = $derived(
     padConfig.label ??
@@ -31,6 +44,65 @@
         ?.replace(/\.[^.]+$/, '') ??
       null
   );
+
+  function drawPadWaveform(canvas: HTMLCanvasElement, data: Float32Array) {
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !data.length) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const mid = h / 2;
+    const margin = 2;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const maxEnv = new Float32Array(w);
+    const minEnv = new Float32Array(w);
+
+    for (let px = 0; px < w; px++) {
+      const start = Math.floor((px / w) * data.length);
+      const end = Math.max(start + 1, Math.floor(((px + 1) / w) * data.length));
+      let min = 0,
+        max = 0;
+      for (let i = start; i < end; i++) {
+        const v = data[i];
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+      maxEnv[px] = mid - max * (mid - margin);
+      minEnv[px] = mid - min * (mid - margin);
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(0, maxEnv[0]);
+    for (let px = 1; px < w; px++) ctx.lineTo(px, maxEnv[px]);
+    for (let px = w - 1; px >= 0; px--) ctx.lineTo(px, minEnv[px]);
+    ctx.closePath();
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, 'rgba(74,222,128,0.6)');
+    grad.addColorStop(0.5, 'rgba(34,197,94,0.85)');
+    grad.addColorStop(1, 'rgba(74,222,128,0.6)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+
+  // Draw waveform when buffer or canvas element changes
+  $effect(() => {
+    if (!canvasEl || !padEl) return;
+    const w = padEl.clientWidth - 8;
+    const h = padEl.clientHeight - 8;
+    if (w <= 0 || h <= 0) return;
+
+    setupDprCanvas(canvasEl, w, h);
+
+    if (audioBuffer) {
+      drawPadWaveform(canvasEl, audioBuffer.getChannelData(0));
+    } else {
+      const ctx = canvasEl.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    }
+  });
 
   function handleDragOver(event: DragEvent) {
     event.preventDefault();
@@ -131,6 +203,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
+  bind:this={padEl}
   class={[
     'relative flex h-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded p-1 transition-colors select-none',
     'border',
@@ -153,12 +226,8 @@
   role="button"
   tabindex="-1"
 >
-  {#if label}
-    <span
-      class="w-full truncate text-center font-mono text-[10px] leading-tight font-medium text-zinc-100"
-    >
-      {label}
-    </span>
+  {#if audioBuffer}
+    <canvas bind:this={canvasEl} class="absolute inset-1 rounded"></canvas>
   {:else if showGmLabels}
     <span class="w-full truncate text-center font-mono text-[9px] leading-tight text-zinc-600">
       {gmName}
