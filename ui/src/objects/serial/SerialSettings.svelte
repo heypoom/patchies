@@ -11,6 +11,7 @@
     portId,
     baudRate,
     lineEnding,
+    resizable,
     show = $bindable(false),
     errorMessage = null,
     onConnect,
@@ -20,6 +21,7 @@
     portId: string;
     baudRate: number;
     lineEnding: string;
+    resizable?: boolean;
     show: boolean;
     errorMessage?: string | null;
     onConnect: (portId: string) => void;
@@ -138,6 +140,23 @@
           {/each}
         </select>
       </div>
+
+      <!-- Resizable -->
+      {#if resizable !== undefined}
+        <label class="flex cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            checked={resizable}
+            onchange={() => {
+              const old = resizable;
+              updateNodeData(nodeId, { resizable: !resizable });
+              tracker.commit('resizable', old, !resizable);
+            }}
+            class="cursor-pointer accent-emerald-500"
+          />
+          <span class="text-xs text-zinc-300">Resizable</span>
+        </label>
+      {/if}
 
       <!-- Disconnect button -->
       {#if isConnected && portId}

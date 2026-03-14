@@ -63,6 +63,7 @@
   const baudRate = $derived(data.baudRate || 9600);
   const lineEnding = $derived(data.lineEnding ?? '\r\n');
   const maxScrollback = $derived(data.maxScrollback || 500);
+  const resizable = $derived(data.resizable ?? true);
   const isConnected = $derived($serialPorts.some((p) => p.portId === portId && p.connected));
 
   function log(text: string, type: LineType = 'rx') {
@@ -207,14 +208,16 @@
 </script>
 
 <div class="relative">
-  <NodeResizer
-    class="z-1"
-    isVisible={selected}
-    minWidth={SERIAL_TERM_MIN_WIDTH}
-    minHeight={SERIAL_TERM_MIN_HEIGHT}
-    maxWidth={SERIAL_TERM_MAX_WIDTH}
-    maxHeight={SERIAL_TERM_MAX_HEIGHT}
-  />
+  {#if resizable}
+    <NodeResizer
+      class="z-1"
+      isVisible={selected}
+      minWidth={SERIAL_TERM_MIN_WIDTH}
+      minHeight={SERIAL_TERM_MIN_HEIGHT}
+      maxWidth={SERIAL_TERM_MAX_WIDTH}
+      maxHeight={SERIAL_TERM_MAX_HEIGHT}
+    />
+  {/if}
 
   <div class="group relative" style="width: {displayWidth}px; height: {displayHeight}px;">
     <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -322,9 +325,9 @@
         </div>
 
         <!-- Input Bar -->
-        <div class="nodrag flex items-center gap-2 border-t border-zinc-800 bg-zinc-900/30 p-3">
+        <div class="nodrag flex items-center border-t border-zinc-800">
           <div
-            class="flex flex-1 items-center rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 shadow-inner transition-colors focus-within:border-emerald-500/50"
+            class="flex flex-1 items-center px-3 py-2 transition-colors focus-within:bg-zinc-900/50"
           >
             <span class="mr-2 font-mono text-[10px] font-bold text-emerald-500/50 select-none"
               >$</span
@@ -355,6 +358,7 @@
         {portId}
         {baudRate}
         {lineEnding}
+        {resizable}
         bind:show={showSettings}
         {errorMessage}
         onConnect={handleConnect}

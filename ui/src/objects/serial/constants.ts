@@ -7,6 +7,7 @@ export interface SerialNodeData {
 
 export interface SerialTerminalNodeData extends SerialNodeData {
   maxScrollback: number;
+  resizable: boolean;
 }
 
 export const BAUD_RATES = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200] as const;
@@ -37,5 +38,6 @@ export const DEFAULT_SERIAL_TERMINAL_DATA: SerialTerminalNodeData = {
   baudRate: 9600,
   lineEnding: '\r\n',
   autoConnect: false,
-  maxScrollback: 500
+  maxScrollback: 500,
+  resizable: true
 };
