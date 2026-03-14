@@ -118,10 +118,11 @@
 
   // Reactively subscribe/unsubscribe when portId or connection state changes
   $effect(() => {
-    if (portId && isConnected) {
-      subscribeToPort(portId);
+    const subscribedPort = portId;
+    if (subscribedPort && isConnected) {
+      subscribeToPort(subscribedPort);
 
-      return () => unsubscribeFromPort(portId);
+      return () => unsubscribeFromPort(subscribedPort);
     }
   });
 
