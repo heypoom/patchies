@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Settings, Trash2, Usb } from '@lucide/svelte/icons';
+  import { Settings, Trash2, Usb, Unplug } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy, tick } from 'svelte';
@@ -272,7 +272,7 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1">
             <button
               class="cursor-pointer rounded-md p-1 text-zinc-500 hover:bg-zinc-800"
               onclick={clearHistory}
@@ -282,14 +282,18 @@
 
             <button
               class={[
-                'cursor-pointer rounded-md px-3 py-1 text-[10px] font-bold tracking-wider uppercase transition-all duration-200',
+                'cursor-pointer rounded-md p-1 transition-colors',
                 isConnected
-                  ? 'border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20'
-                  : 'bg-zinc-100 text-zinc-950 shadow-lg shadow-white/5 hover:bg-white'
+                  ? 'text-rose-400 hover:bg-rose-500/20'
+                  : 'text-zinc-500 hover:bg-zinc-800'
               ]}
               onclick={handleToggleConnection}
             >
-              {isConnected ? 'Disconnect' : 'Connect'}
+              {#if isConnected}
+                <Unplug class="h-3.5 w-3.5" />
+              {:else}
+                <Usb class="h-3.5 w-3.5" />
+              {/if}
             </button>
           </div>
         </div>
