@@ -2,11 +2,12 @@ import { Type } from '@sinclair/typebox';
 import { msg, sym } from '$lib/objects/schemas/helpers';
 import { schema } from '$lib/objects/schemas/types';
 import type { ObjectSchema } from '$lib/objects/schemas/types';
+import { Bang } from '$lib/objects/schemas';
 
 // Inlet commands
 export const SerialConnect = sym('connect');
 export const SerialDisconnect = sym('disconnect');
-export const SerialBaud = msg('baud', { rate: Type.Number() });
+export const SerialBaud = msg('setBaud', { rate: Type.Number() });
 
 // Outlet messages
 export const SerialData = msg('data', { line: Type.String() });
@@ -44,6 +45,7 @@ export const serialSchema: ObjectSchema = {
       id: 'message',
       description: 'Control and data messages',
       messages: [
+        { schema: Bang, description: 'Open port picker and connect' },
         { schema: Type.String(), description: 'Send a string to the port' },
         { schema: SerialConnect, description: 'Open port picker and connect' },
         { schema: SerialDisconnect, description: 'Disconnect from the port' },
@@ -78,6 +80,7 @@ export const serialTermSchema: ObjectSchema = {
       id: 'message',
       description: 'Control and data messages',
       messages: [
+        { schema: Bang, description: 'Open port picker and connect' },
         { schema: Type.String(), description: 'Send a string to the port' },
         { schema: SerialConnect, description: 'Open port picker and connect' },
         { schema: SerialDisconnect, description: 'Disconnect from the port' },

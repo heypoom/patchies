@@ -318,7 +318,7 @@ import { schema } from '$lib/objects/schemas/types';
 export const SerialConnect = sym('connect');
 export const SerialDisconnect = sym('disconnect');
 export const SerialSend = msg('send', { data: Type.String() });
-export const SerialBaud = msg('baud', { rate: Type.Number() });
+export const SerialBaud = msg('setBaud', { rate: Type.Number() });
 
 // Outlet messages
 export const SerialData = msg('data', { line: Type.String() });

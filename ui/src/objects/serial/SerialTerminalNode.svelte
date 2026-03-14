@@ -162,10 +162,10 @@
     try {
       await match(message)
         .with(messages.bang, () => {
-          if (!portId) return handleToggleConnection();
+          handleToggleConnection();
         })
         .with(serialMessages.connect, () => {
-          if (!portId) return handleToggleConnection();
+          handleToggleConnection();
         })
         .with(serialMessages.disconnect, () => handleDisconnect())
         .with(serialMessages.baud, ({ rate }) => {

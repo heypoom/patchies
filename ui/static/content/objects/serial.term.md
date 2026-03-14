@@ -15,19 +15,6 @@ Use `serial.term` when you want to see raw serial output and type commands direc
 - **Line-based I/O** — configurable line endings (CR+LF, LF, CR, or none)
 - **Resizable** — drag the node edges to resize the terminal
 
-## Inlet Messages
-
-Send messages to the inlet to control the terminal programmatically:
-
-- `"hello"` — send a plain string to the port
-- `connect` — open the port picker
-- `disconnect` — close the port
-- `{type: 'baud', rate: 115200}` — change baud rate
-
-## Outlet
-
-Each received line is output as `{type: 'data', line: '...'}`.
-
 ## See Also
 
 - [serial](/docs/objects/serial) — headless serial node for data pipelines
