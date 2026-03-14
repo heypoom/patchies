@@ -312,7 +312,7 @@
           ]}
           style={data.styles?.container}
         >
-          <div class="nodrag">
+          <div class="nodrag nowheel max-h-[600px] max-w-[800px] overflow-auto">
             <StrudelEditor
               {code}
               fontFamily={data.fontFamily}
