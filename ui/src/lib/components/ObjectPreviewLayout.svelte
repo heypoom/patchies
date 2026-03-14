@@ -166,6 +166,18 @@
                   </button>
                 </Popover.Trigger>
                 <Popover.Content class="flex w-auto flex-col p-1" align="end" sideOffset={4}>
+                  {#if onrun}
+                    <Popover.Close class="contents">
+                      <button
+                        class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
+                        onclick={handleRun}
+                      >
+                        <Play class="h-4 w-4 text-zinc-300" />
+                        <span>Run</span>
+                      </button>
+                    </Popover.Close>
+                  {/if}
+
                   {#if showBgOutputOption && nodeId !== undefined}
                     <Popover.Close class="contents">
                       <button
@@ -257,6 +269,15 @@
     </ContextMenu.Trigger>
 
     <ContextMenu.Content>
+      {#if onrun}
+        <ContextMenu.Item onclick={handleRun}>
+          <Play class="mr-2 h-4 w-4" />
+          Run
+        </ContextMenu.Item>
+
+        <ContextMenu.Separator />
+      {/if}
+
       {#if showBgOutputOption && nodeId !== undefined}
         <ContextMenu.Item onclick={handleBgOutputToggle}>
           {#if isOutputOverride}
