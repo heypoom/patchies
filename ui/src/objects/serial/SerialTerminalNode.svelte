@@ -273,14 +273,6 @@
           </div>
 
           <div class="flex items-center gap-2">
-            {#if isConnected}
-              <div
-                class="rounded border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 font-mono text-[9px] text-zinc-400"
-              >
-                {baudRate} BAUD
-              </div>
-            {/if}
-
             <button
               class="cursor-pointer rounded-md p-1 text-zinc-500 hover:bg-zinc-800"
               onclick={clearHistory}
