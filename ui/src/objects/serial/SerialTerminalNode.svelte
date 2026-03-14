@@ -114,17 +114,12 @@
   }
 
   async function handleConnect(newPortId: string) {
-    if (portId && portId !== newPortId) {
-      unsubscribeFromPort(portId);
-    }
-    subscribeToPort(newPortId);
     errorMessage = null;
     log('Serial Connection Established', 'system');
   }
 
   async function handleDisconnect() {
     if (portId) {
-      unsubscribeFromPort(portId);
       await serialSystem.closePort(portId);
       updateNodeData(nodeId, { portId: '' });
       log('Session Terminated', 'system');
@@ -152,7 +147,6 @@
       try {
         const newPortId = await serialSystem.requestPort({ baudRate });
         updateNodeData(nodeId, { portId: newPortId });
-        subscribeToPort(newPortId);
         errorMessage = null;
         log('Serial Connection Established', 'system');
       } catch (err) {
@@ -192,21 +186,23 @@
     }
   };
 
+  // Reactively subscribe/unsubscribe when portId or connection state changes
+  $effect(() => {
+    if (portId && isConnected) {
+      subscribeToPort(portId);
+
+      return () => unsubscribeFromPort(portId);
+    }
+  });
+
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
-
-    if (portId && serialSystem.isConnected(portId)) {
-      subscribeToPort(portId);
-    }
   });
 
   onDestroy(() => {
     messageContext.queue.removeCallback(handleMessage);
     messageContext.destroy();
-    if (portId) {
-      unsubscribeFromPort(portId);
-    }
   });
 </script>
 

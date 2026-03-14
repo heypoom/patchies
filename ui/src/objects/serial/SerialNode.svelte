@@ -68,11 +68,6 @@
   }
 
   async function handleConnect(newPortId: string) {
-    // Unsubscribe from old port if different
-    if (portId && portId !== newPortId) {
-      unsubscribeFromPort(portId);
-    }
-    subscribeToPort(newPortId);
     errorMessage = null;
 
     messageSystem.sendMessage(nodeId, {
@@ -84,7 +79,6 @@
 
   async function handleDisconnect() {
     if (portId) {
-      unsubscribeFromPort(portId);
       await serialSystem.closePort(portId);
       updateNodeData(nodeId, { portId: '' });
 
@@ -123,22 +117,23 @@
     }
   };
 
+  // Reactively subscribe/unsubscribe when portId or connection state changes
+  $effect(() => {
+    if (portId && isConnected) {
+      subscribeToPort(portId);
+
+      return () => unsubscribeFromPort(portId);
+    }
+  });
+
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
-
-    // Re-subscribe if we already have a connected port
-    if (portId && serialSystem.isConnected(portId)) {
-      subscribeToPort(portId);
-    }
   });
 
   onDestroy(() => {
     messageContext.queue.removeCallback(handleMessage);
     messageContext.destroy();
-    if (portId) {
-      unsubscribeFromPort(portId);
-    }
   });
 </script>
 

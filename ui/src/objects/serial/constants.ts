@@ -27,8 +27,8 @@ export const DEFAULT_SERIAL_DATA: SerialNodeData = {
 
 export const SERIAL_TERM_MIN_WIDTH = 320;
 export const SERIAL_TERM_MIN_HEIGHT = 200;
-export const SERIAL_TERM_MAX_WIDTH = 800;
-export const SERIAL_TERM_MAX_HEIGHT = 600;
+export const SERIAL_TERM_MAX_WIDTH = 1000;
+export const SERIAL_TERM_MAX_HEIGHT = 1000;
 export const SERIAL_TERM_DEFAULT_WIDTH = 400;
 export const SERIAL_TERM_DEFAULT_HEIGHT = 320;
 
