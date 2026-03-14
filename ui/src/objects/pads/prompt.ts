@@ -15,6 +15,7 @@ TYPICAL PATCH: midi.in → pads~ → out~
 
 LOAD MESSAGE (to assign a sample via message):
 - { type: "load", pad: 0, src: "user://Samples/kick.wav" }
+- pad is zero-based (0–15 for 16 pads, 0–7 for 8 pads)
 
 DATA FORMAT:
 {
