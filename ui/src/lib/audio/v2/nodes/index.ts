@@ -84,6 +84,7 @@ import { DelwriteNode } from '$lib/audio/native-dsp/nodes/delwrite.node';
 import { DelreadNode } from '$lib/audio/native-dsp/nodes/delread.node';
 import { Delread4Node } from '$lib/audio/native-dsp/nodes/delread4.node';
 import { BytebeatNode } from './BytebeatNode';
+import { PadsAudioNode } from '$objects/pads/PadsAudioNode';
 
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
@@ -171,7 +172,8 @@ export const AUDIO_NODES = [
   DelwriteNode,
   DelreadNode,
   Delread4Node,
-  BytebeatNode
+  BytebeatNode,
+  PadsAudioNode
 ] as const satisfies AudioNodeClass[];
 
 /**

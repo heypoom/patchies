@@ -225,6 +225,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     description: 'Samples, tables and delay lines',
     icon: 'FileHeadphone',
     objects: [
+      'pads~',
       'sampler~',
       'table',
       'tabwrite~',

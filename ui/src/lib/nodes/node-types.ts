@@ -87,6 +87,7 @@ import UiuaNode from '$lib/components/nodes/UiuaNode.svelte';
 import BytebeatNode from '$lib/components/nodes/BytebeatNode.svelte';
 import SequencerNode from '$lib/components/nodes/SequencerNode.svelte';
 import CurveNode from '$objects/curve/CurveNode.svelte';
+import PadsNode from '$objects/pads/PadsNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -178,7 +179,8 @@ export const nodeTypes: Record<string, any> = {
   uiua: UiuaNode,
   'bytebeat~': BytebeatNode,
   sequencer: SequencerNode,
-  curve: CurveNode
+  curve: CurveNode,
+  'pads~': PadsNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];
