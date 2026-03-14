@@ -40,6 +40,7 @@
 
   const deviceId = $derived(data.deviceId || '');
   const channel = $derived(data.channel || 0);
+  const deviceName = $derived($midiInputDevices.find((d) => d.id === deviceId)?.name || 'Unknown');
 
   const events: EventType[] = $derived(
     data.events || ['noteOn', 'noteOff', 'controlChange', 'programChange', 'pitchBend']
@@ -197,7 +198,7 @@
             <svelte:component this={statusIcon} class="h-4 w-4" />
 
             <div class="mt-1 max-w-[100px] truncate text-[10px] text-zinc-500">
-              {midiSystem.getInputById(deviceId)?.name || 'Unknown'}
+              {deviceName}
             </div>
           </button>
         {/if}
