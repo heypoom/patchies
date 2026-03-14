@@ -135,7 +135,7 @@
     'relative flex h-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded p-1 transition-colors select-none',
     'border',
     isActive
-      ? 'border-orange-400'
+      ? 'border-green-400'
       : isDragging
         ? 'border-blue-400 bg-blue-500/20'
         : padConfig.vfsPath
@@ -143,7 +143,7 @@
           : 'border-zinc-600 bg-zinc-800 hover:border-zinc-500 hover:bg-zinc-700'
   ]}
   style={isActive
-    ? `background: rgba(249,115,22,${0.15 + intensity * 0.45}); box-shadow: inset 0 0 ${4 + intensity * 12}px rgba(251,146,60,${0.1 + intensity * 0.4})`
+    ? `background: rgba(34,197,94,${0.15 + intensity * 0.45}); box-shadow: inset 0 0 ${4 + intensity * 12}px rgba(74,222,128,${0.1 + intensity * 0.4})`
     : ''}
   onclick={handleClick}
   ondragover={handleDragOver}
