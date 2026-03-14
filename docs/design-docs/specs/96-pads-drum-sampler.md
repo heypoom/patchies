@@ -192,7 +192,7 @@ class PadsAudioNode implements AudioNodeV2 {
 
 - Uses `NodeResizer` for user-resizable node
 - Minimum size: ~240×200 (8-pad), ~240×320 (16-pad)
-- Pad grid: 4 columns × 4 rows (16-pad) or 4 columns × 2 rows (8-pad)
+- Pad grid: 4 columns × 4 rows (16-pad) or 4 columns × 2 rows (8-pad), MPC convention: pad 1 at bottom-left, counting right then up
 - Each pad cell: `PadCell.svelte`
 - Gear icon → settings panel (same pattern as `SamplerNode.svelte`)
 
@@ -200,7 +200,7 @@ class PadsAudioNode implements AudioNodeV2 {
 
 Each cell:
 
-- Shows sample label (filename without extension, or empty state hint)
+- Shows sample label (filename without extension); when empty, shows GM drum name as a muted hint (e.g. "Kick", "Snare", "Hi-Hat")
 - Highlights briefly (flash animation) when triggered via MIDI noteOn
 - Is a drag-drop target accepting:
   - `application/x-vfs-path` — from VFS file browser
@@ -275,10 +275,3 @@ The following per-pad settings are planned for future iterations but are out of 
 - Drive / saturation
 - Loop on/off
 - Volume ADSR envelope
-
----
-
-## Open Questions
-
-- **GM label display**: Should pads show GM drum names (e.g., "Kick", "Snare") when no sample is loaded, as a hint? Or just empty?
-- **Pad numbering**: MPC numbers pads bottom-left to top-right (pad 1 = bottom-left). Should we follow this convention or go top-left to bottom-right?
