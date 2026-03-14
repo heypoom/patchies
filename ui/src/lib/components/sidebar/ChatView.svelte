@@ -471,7 +471,7 @@
 
       <!-- Active persona prompt preview -->
       {#if activePersona}
-        <p class="mb-2 font-mono text-[10px] leading-relaxed text-zinc-600">
+        <p class="mb-2 line-clamp-3 font-mono text-[10px] leading-relaxed text-zinc-600">
           {activePersona.prompt}
         </p>
       {/if}
