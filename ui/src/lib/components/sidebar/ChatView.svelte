@@ -1,5 +1,13 @@
 <script lang="ts">
-  import { BotMessageSquare, MessageSquare, Send, Trash2, X, Zap } from '@lucide/svelte/icons';
+  import {
+    BotMessageSquare,
+    MessageSquare,
+    Send,
+    Square,
+    Trash2,
+    X,
+    Zap
+  } from '@lucide/svelte/icons';
   import { compressImageFile } from '$lib/ai/google';
   import { match } from 'ts-pattern';
   import { logger } from '$lib/utils/logger';
@@ -284,7 +292,7 @@
   }
 </script>
 
-<div class="flex h-full flex-col">
+<div class="flex h-full min-h-0 flex-col overflow-hidden">
   <!-- Node context banner -->
   {#if nodeContext}
     <div class="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900/60 px-3 py-1.5">
@@ -599,9 +607,10 @@
         {#if isLoading}
           <button
             onclick={handleCancel}
-            class="cursor-pointer rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-200"
+            class="cursor-pointer rounded p-1.5 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400"
+            title="Cancel"
           >
-            Cancel
+            <Square class="h-3 w-3 fill-current" />
           </button>
         {:else}
           <button

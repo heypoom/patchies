@@ -242,27 +242,40 @@ export async function streamChatMessage(
     // to be preserved in the model turn when there are function calls (thinking mode).
     const turnParts: Record<string, unknown>[] = [];
 
-    for await (const chunk of stream) {
-      if (signal?.aborted) throw new Error('Request cancelled');
+    // Race the stream against the abort signal so cancel takes effect immediately,
+    // even if the stream is waiting for the next chunk from the server.
+    const abortPromise = signal
+      ? new Promise<never>((_, reject) => {
+          if (signal.aborted) reject(new Error('Request cancelled'));
+          signal.addEventListener('abort', () => reject(new Error('Request cancelled')), {
+            once: true
+          });
+        })
+      : null;
 
-      for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-        if (part.thought) {
-          if (part.text && onThinking) {
-            onThinking(part.text);
+    const consumeStream = async () => {
+      for await (const chunk of stream) {
+        for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
+          if (part.thought) {
+            if (part.text && onThinking) {
+              onThinking(part.text);
+            }
+
+            turnParts.push(part as Record<string, unknown>);
+          } else if (part.functionCall) {
+            // Preserve the full part — thought_signature lives at the Part level, not inside functionCall
+            turnParts.push(part as Record<string, unknown>);
+          } else if (part.text) {
+            fullText += part.text;
+            onChunk(part.text);
+
+            turnParts.push({ text: part.text });
           }
-
-          turnParts.push(part as Record<string, unknown>);
-        } else if (part.functionCall) {
-          // Preserve the full part — thought_signature lives at the Part level, not inside functionCall
-          turnParts.push(part as Record<string, unknown>);
-        } else if (part.text) {
-          fullText += part.text;
-          onChunk(part.text);
-
-          turnParts.push({ text: part.text });
         }
       }
-    }
+    };
+
+    await (abortPromise ? Promise.race([consumeStream(), abortPromise]) : consumeStream());
 
     const functionCallParts = turnParts.filter((p) => 'functionCall' in p) as {
       functionCall: { name?: string; args?: Record<string, unknown> };
