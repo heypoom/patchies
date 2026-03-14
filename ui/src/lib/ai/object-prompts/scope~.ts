@@ -10,6 +10,7 @@ Configuration:
 - fps: refresh rate cap in Hz (default: 0 = uncapped)
 - plotType: "line" (default) | "point" | "bezier"
 - decay: trail persistence 0.01–1, where 1 = no trail (default: 1)
+- unipolar: boolean — maps signal range to 0–1 instead of -1–1 (default: false). Useful for envelope followers, RMS levels, or any non-negative signal.
 
 HANDLE IDS (Auto-generated):
 - Audio inlet 0: "audio-in-0" (X axis in xy mode, signal input in waveform mode)

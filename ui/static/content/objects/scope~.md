@@ -39,6 +39,11 @@ Switch modes from the settings panel (gear icon).
 
 ### Advanced
 
+- **Unipolar** (off / on): When enabled, maps the display range
+  to 0–1 instead of the default -1–1. Useful for visualizing
+  signals that are always positive, such as envelope followers,
+  RMS levels, or rectified signals. The reference line moves
+  from center to bottom.
 - **Plot** (line / point / bezier): Drawing style. Line connects
   samples with straight segments (default). Point draws a dot
   at each sample position. Bezier draws smooth curves through

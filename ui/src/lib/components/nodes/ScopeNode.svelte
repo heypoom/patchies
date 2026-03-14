@@ -25,6 +25,7 @@
       fps?: number;
       plotType?: PlotType;
       decay?: number;
+      unipolar?: boolean;
     };
     selected: boolean;
     width?: number;
@@ -54,6 +55,7 @@
   let fps = $state(node.data.fps ?? 0);
   let plotType = $state<PlotType>(node.data.plotType ?? 'line');
   let decay = $state(node.data.decay ?? 1);
+  let unipolar = $state(node.data.unipolar ?? false);
 
   const DEFAULT_WIDTH = 200;
   const DEFAULT_HEIGHT = 120;
@@ -124,7 +126,13 @@
   }
 
   function sampleToY(sample: number, h: number): number {
+    if (unipolar) {
+      const normalized = Math.max(0, Math.min(1, sample * yScale));
+      return (1 - normalized) * h;
+    }
+
     const normalized = Math.max(-1, Math.min(1, sample * yScale));
+
     return ((1 - normalized) / 2) * h;
   }
 
@@ -146,12 +154,13 @@
 
     clearCanvas(w, h);
 
-    // Center reference line
+    // Reference line (center for bipolar, bottom for unipolar)
     ctx.strokeStyle = '#27272a';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(0, h / 2);
-    ctx.lineTo(w, h / 2);
+    const refY = unipolar ? h - 0.5 : h / 2;
+    ctx.moveTo(0, refY);
+    ctx.lineTo(w, refY);
     ctx.stroke();
 
     const samplesToShow = Math.max(1, Math.floor(buffer.length / xScale));
@@ -323,6 +332,13 @@
     tracker.commit('plotType', oldValue, value);
   }
 
+  function handleUnipolarChange(value: boolean) {
+    const oldValue = unipolar;
+    unipolar = value;
+    updateNodeData(node.id, { unipolar: value });
+    tracker.commit('unipolar', oldValue, value);
+  }
+
   const decayTracker = tracker.track('decay', () => node.data.decay ?? 1);
 
   function handleDecayChange(value: number) {
@@ -337,13 +353,15 @@
     fps = 0;
     plotType = 'line';
     decay = 1;
+    unipolar = false;
     updateNodeData(node.id, {
       bufferSize: 512,
       xScale: 1,
       yScale: 1,
       fps: 0,
       plotType: 'line',
-      decay: 1
+      decay: 1,
+      unipolar: false
     });
     scopeNode?.setBufferSize(512);
     scopeNode?.setFps(0);
@@ -560,6 +578,27 @@
                     </button>
                   {/each}
                 </div>
+              </div>
+
+              <!-- Unipolar -->
+              <div>
+                <label class="flex cursor-pointer items-center justify-between">
+                  <span class="text-xs font-medium text-zinc-300">Unipolar</span>
+                  <button
+                    class={[
+                      'h-5 w-9 cursor-pointer rounded-full transition-colors',
+                      unipolar ? 'bg-green-600' : 'bg-zinc-700'
+                    ]}
+                    onclick={() => handleUnipolarChange(!unipolar)}
+                  >
+                    <div
+                      class={[
+                        'h-4 w-4 rounded-full bg-white transition-transform',
+                        unipolar ? 'translate-x-4.5' : 'translate-x-0.5'
+                      ]}
+                    ></div>
+                  </button>
+                </label>
               </div>
 
               <!-- Decay -->
