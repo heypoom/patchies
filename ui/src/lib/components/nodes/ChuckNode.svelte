@@ -186,7 +186,7 @@
 {#snippet chuckOutlets()}
   <TypedHandle
     port="outlet"
-    spec={{ handleType: 'audio' }}
+    spec={chuckSchema.outlets[0].handle!}
     title="Audio Output"
     total={2}
     index={0}
@@ -238,14 +238,18 @@
           </Tooltip.Root>
 
           <!-- Remove button -->
-          <button
-            onclick={removeChuckCode}
-            class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-            title="Remove (Cmd+Backspace)"
-            disabled={shreds.length === 0}
-          >
-            <Delete class="h-4 w-4" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={removeChuckCode}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={shreds.length === 0}
+              >
+                <Delete class="h-4 w-4" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Remove (Cmd+Backspace)</Tooltip.Content>
+          </Tooltip.Root>
         </div>
 
         <Tooltip.Root>

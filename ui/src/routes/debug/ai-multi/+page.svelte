@@ -534,9 +534,15 @@
 
           <div class="rounded border {result ? statusBg(result.status) : 'border-zinc-800'}">
             <!-- Row -->
-            <button
+            <div
+              role="button"
+              tabindex="0"
               class="flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left text-sm hover:bg-zinc-800/50"
               onclick={() => (expandedCaseId = isExpanded ? null : evalCase.id)}
+              onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ')
+                  expandedCaseId = isExpanded ? null : evalCase.id;
+              }}
             >
               <!-- Status indicator -->
               <span
@@ -582,7 +588,7 @@
                   run
                 </button>
               {/if}
-            </button>
+            </div>
 
             <!-- Expanded detail -->
             {#if isExpanded && result}

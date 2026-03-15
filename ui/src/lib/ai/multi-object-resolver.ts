@@ -381,7 +381,7 @@ IMPORTANT RULES:
 8. Calculate spacing based on signal flow depth: sources at y=0, first processing stage y=180, next y=360, outputs y=540+
 9. Each edge in the "edges" array connects nodes by their index in the nodes array
 10. Edges use "source" (node index), "target" (node index), and optionally "sourceHandle" and "targetHandle"
-11. CRITICAL: Use the exact handle IDs from the HANDLE ID REFERENCE below. These are auto-generated from schemas and MUST match exactly.
+11. ${handleDocs ? 'CRITICAL: Use the exact handle IDs from the HANDLE ID REFERENCE below. These are auto-generated from schemas and MUST match exactly.' : 'Use standard handle ID patterns: audio-in-{N}/audio-out-{N} for signal ports, message-in-{N}/message-out-{N} for message ports.'}
 12. For GLSL uniform inlets, omit targetHandle — the framework auto-fills it.
 13. out~ has ONE audio inlet "audio-in-0". Multiple sources connect to the SAME inlet (Web Audio auto-mixes). Do NOT create separate out~ nodes per source.
 14. Focus on creating FUNCTIONAL, CONNECTED systems

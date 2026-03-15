@@ -23,7 +23,7 @@ export const glslSchema: ObjectSchema = {
       template: 'video-in-{index}-{name}-{type}',
       handleType: 'video',
       description:
-        'Uniform-based inlets: index-uniformName-uniformType (e.g. 0-iChannel0-sampler2D)'
+        'Uniform-based inlets: video-in-index-uniformName-uniformType (e.g. video-in-0-iChannel0-sampler2D)'
     }
   }
 };

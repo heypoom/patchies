@@ -352,7 +352,7 @@
         <TypedHandle
           port="inlet"
           spec={{ handleType: 'message', handleId: 1 }}
-          title="listen, stop, bang, setLanguage"
+          title="listen, stop, bang, toggle, setLanguage, setPrompt"
           total={2}
           index={1}
           class="top-0"

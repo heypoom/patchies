@@ -140,7 +140,6 @@
       title="Image input (Optional)"
       total={2}
       index={0}
-      class=""
       {nodeId}
     />
 
@@ -207,7 +206,6 @@
       title="Video output"
       total={2}
       index={0}
-      class=""
       {nodeId}
     />
 

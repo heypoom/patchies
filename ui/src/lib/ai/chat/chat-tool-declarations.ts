@@ -140,7 +140,7 @@ export const contextToolDeclarations = [
 export const connectEdgesDeclaration = {
   name: CONNECT_EDGES,
   description:
-    'Connect existing nodes on the canvas by creating edges between them. Use get_graph_nodes first to discover node IDs and node types. Then call get_object_instructions for each node type to get the exact handle IDs — handle IDs vary per node type and MUST match exactly.',
+    'Connect existing nodes on the canvas by creating edges between them. Use get_graph_nodes first to discover node IDs, node types, and existing edge handles. Handle IDs vary per node type — check existing edges from get_graph_nodes for examples, or call get_object_instructions for API details.',
   parametersJsonSchema: {
     type: 'object',
     properties: {

@@ -362,11 +362,14 @@ export function validateHandle(
   handle: string,
   direction: 'in' | 'out'
 ): string | null {
-  // For "object" type nodes, handles are always {audio|message}-{in|out}-{N}
+  // For "object" type nodes, handles are always {audio|message|analysis}-{in|out}-{N}
   if (nodeType === 'object') {
-    const pattern = direction === 'in' ? /^(audio|message)-in-\d+$/ : /^(audio|message)-out-\d+$/;
+    const pattern =
+      direction === 'in'
+        ? /^(audio|message|analysis)-in-\d+$/
+        : /^(audio|message|analysis)-out-\d+$/;
     if (pattern.test(handle)) return null;
-    return `object nodes use "${direction === 'in' ? 'audio|message' : 'audio|message'}-${direction}-N" pattern, got "${handle}"`;
+    return `object nodes use "{audio|message|analysis}-${direction}-N" pattern, got "${handle}"`;
   }
 
   const spec = NODE_HANDLE_SPECS[nodeType];
