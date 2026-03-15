@@ -185,7 +185,7 @@ Control where values are stored using the `persistence` field property:
 | `'none'` | In-memory only — resets on page reload |
 
 ```javascript
-await settings.define([
+settings.define([
   // Saved with patch — shared when you export or share the link
   { key: 'speed', type: 'slider', label: 'Speed', min: 0, max: 10, default: 1 },
 
@@ -235,6 +235,7 @@ await settings.define([
 ]);
 
 let { count, color, speed } = settings.getAll();
+
 settings.onChange((_, __, all) => { ({ count, color, speed } = all); });
 
 function draw(ts) {

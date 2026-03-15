@@ -29,12 +29,12 @@ Use `kv.store("name")` to create a named store that's shared across all nodes us
 
 ```javascript
 // In node A
-const settings = kv.store("settings");
-await settings.set("volume", 0.8);
+const prefs = kv.store("prefs");
+await prefs.set("volume", 0.8);
 
 // In node B - same data!
-const settings = kv.store("settings");
-const volume = await settings.get("volume"); // 0.8
+const prefs = kv.store("prefs");
+const volume = await prefs.get("volume"); // 0.8
 ```
 
 This is useful for:
@@ -75,12 +75,12 @@ const blob = await kv.get("image");
 Named stores are shared between JavaScript and the visual [kv object](/docs/objects/kv):
 
 ```javascript
-// In a `js` node - access data from [kv settings]
-const settings = kv.store("settings");
-const volume = await settings.get("volume");
+// In a `js` node - access data from [kv prefs]
+const prefs = kv.store("prefs");
+const volume = await prefs.get("volume");
 
-// Changes are visible to `[kv settings]` nodes immediately
-await settings.set("theme", "dark");
+// Changes are visible to `[kv prefs]` nodes immediately
+await prefs.set("theme", "dark");
 ```
 
 This works both ways - data set via `[kv mystore]` is accessible via `kv.store("mystore")` in JavaScript, and vice versa.

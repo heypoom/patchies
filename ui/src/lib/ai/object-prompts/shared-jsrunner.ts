@@ -67,8 +67,9 @@ export const jsRunnerInstructions = `
 - await kv.store(namespace).set/get/delete - namespaced store
 - For full kv docs call get_doc_content({ kind: 'topic', slug: 'data-storage' })
 
-**User-defined Settings Panel:**
+**User-defined Settings:**
 - await settings.define([...schema]) - expose a settings panel on the node (gear icon appears)
+  - on hydra, don't await - just settings.define is enough
 - settings.get(key) - read current value (sync, after define resolves)
 - settings.getAll() - all values as object
 - settings.onChange((key, value, all) => {}) - react to user changes in real time
