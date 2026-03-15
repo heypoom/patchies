@@ -8,6 +8,7 @@
 
 import { objectSchemas } from '$lib/objects/schemas';
 import { deriveHandleId } from '$lib/utils/handle-id';
+
 import type {
   ObjectSchema,
   InletSchema,
@@ -23,13 +24,16 @@ function portHandleDoc(
   direction: 'inlet' | 'outlet'
 ): string | null {
   if (!port.handle) return null;
+
   const id = deriveHandleId({
     port: direction,
     type: port.handle.handleType,
     id: port.handle.handleId
   });
-  const desc = port.description ? ` (${port.description})` : '';
-  return `  ${direction === 'inlet' ? 'inlet' : 'outlet'}: "${id}"${desc}`;
+
+  const description = port.description ? ` (${port.description})` : '';
+
+  return `  ${direction === 'inlet' ? 'inlet' : 'outlet'}: "${id}"${description}`;
 }
 
 /**
@@ -37,6 +41,7 @@ function portHandleDoc(
  */
 function patternDoc(pattern: HandlePattern, direction: 'inlet' | 'outlet'): string {
   const desc = pattern.description ? ` — ${pattern.description}` : '';
+
   return `  ${direction} pattern: "${pattern.template}"${desc}`;
 }
 
@@ -60,11 +65,13 @@ export function generateHandleDocForType(schema: ObjectSchema): string | null {
   if (schema.handlePatterns?.inlet) {
     lines.push(patternDoc(schema.handlePatterns.inlet, 'inlet'));
   }
+
   if (schema.handlePatterns?.outlet) {
     lines.push(patternDoc(schema.handlePatterns.outlet, 'outlet'));
   }
 
   if (lines.length === 0) return null;
+
   return `${schema.type}:\n${lines.join('\n')}`;
 }
 
