@@ -72,6 +72,15 @@ export class GLSystem {
   private renderWorkerChannelSubscriptions = new Map<string, Set<string>>();
   private channelRegistry = MessageChannelRegistry.getInstance();
 
+  /** Settings callbacks for render worker nodes (canvas, hydra) */
+  private settingsCallbacks = new Map<
+    string,
+    {
+      onDefine: (requestId: string, schema: unknown[], nodeId: string) => void;
+      onClear: (nodeId: string) => void;
+    }
+  >();
+
   public outputSize = DEFAULT_OUTPUT_SIZE;
 
   public previewSize: [width: number, height: number] = [
@@ -358,6 +367,14 @@ export class GLSystem {
           ProfilerCoordinator.getInstance().recordRenderFrameStats(data.stats);
         }
       })
+      .with({ type: 'settingsDefine' }, (data) => {
+        const callbacks = this.settingsCallbacks.get(data.nodeId);
+        callbacks?.onDefine(data.requestId, data.schema as unknown[], data.nodeId);
+      })
+      .with({ type: 'settingsClear' }, (data) => {
+        const callbacks = this.settingsCallbacks.get(data.nodeId);
+        callbacks?.onClear(data.nodeId);
+      })
       .otherwise(() => {});
   };
 
@@ -385,6 +402,28 @@ export class GLSystem {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.send('vfsUrlResolved', { requestId, nodeId, error: errorMessage });
     }
+  }
+
+  registerSettingsCallbacks(
+    nodeId: string,
+    callbacks: {
+      onDefine: (requestId: string, schema: unknown[], nodeId: string) => void;
+      onClear: (nodeId: string) => void;
+    }
+  ) {
+    this.settingsCallbacks.set(nodeId, callbacks);
+  }
+
+  unregisterSettingsCallbacks(nodeId: string) {
+    this.settingsCallbacks.delete(nodeId);
+  }
+
+  sendSettingsValues(nodeId: string, requestId: string, values: Record<string, unknown>) {
+    this.renderWorker.postMessage({ type: 'settingsValuesInit', nodeId, requestId, values });
+  }
+
+  sendSettingsValueChanged(nodeId: string, key: string, value: unknown) {
+    this.renderWorker.postMessage({ type: 'settingsValueChanged', nodeId, key, value });
   }
 
   start() {

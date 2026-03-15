@@ -16,6 +16,7 @@ import {
 import { PatchStorageService } from '$lib/storage/PatchStorageService';
 import { createKVStore } from '$lib/storage/KVStore';
 import { WorkerProfiler } from '../shared/WorkerProfiler';
+import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
 // Module storage (synced from main thread)
 const modules = new Map<string, string>();
@@ -56,6 +57,9 @@ interface NodeState {
   // Direct channel handler (render + worker-to-worker)
   directChannel: DirectChannelHandler;
 
+  // Settings proxy (created fresh each run, tracks cached values + onChange callbacks)
+  settingsProxy: WorkerSettingsProxy | null;
+
   // Store the executed code for error reporting with line numbers
   code: string | null;
 }
@@ -77,6 +81,7 @@ function createNodeState(nodeId: string): NodeState {
     videoFrameCallback: null,
     pendingVideoFrameResolvers: new Map(),
     videoFrameRequestIdCounter: 0,
+    settingsProxy: null,
     code: null
   };
 
@@ -361,6 +366,10 @@ function createWorkerContext(nodeId: string) {
   // Create KV store for this node
   const kv = createKVStore(nodeId);
 
+  // Settings API — proxied through main thread for persistence + UI
+  const settingsProxy = createWorkerSettingsProxy(nodeId, (msg) => self.postMessage(msg));
+  state.settingsProxy = settingsProxy;
+
   return {
     console: customConsole,
     send,
@@ -380,7 +389,8 @@ function createWorkerContext(nodeId: string) {
     setVideoCount,
     onVideoFrame,
     getVideoFrames,
-    kv
+    kv,
+    settings: settingsProxy.settings
   };
 }
 
@@ -437,6 +447,9 @@ function cleanupNode(nodeId: string) {
     reject(new Error('video frames request cancelled: node cleaned up'));
   }
   state.pendingVideoFrameResolvers.clear();
+
+  // Clear settings onChange callbacks
+  state.settingsProxy?._clearCallbacks();
 }
 
 async function executeCode(nodeId: string, processedCode: string) {
@@ -478,7 +491,8 @@ async function executeCode(nodeId: string, processedCode: string) {
     'setVideoCount',
     'onVideoFrame',
     'getVideoFrames',
-    'kv'
+    'kv',
+    'settings'
   ];
 
   const functionArgs = [
@@ -500,7 +514,8 @@ async function executeCode(nodeId: string, processedCode: string) {
     ctx.setVideoCount,
     ctx.onVideoFrame,
     ctx.getVideoFrames,
-    ctx.kv
+    ctx.kv,
+    ctx.settings
   ];
 
   try {
@@ -813,6 +828,14 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     })
     .with({ type: 'profilerEnable' }, ({ enabled }) => {
       workerProfiler.setEnabled(enabled);
+    })
+    .with({ type: 'settingsValuesInit' }, ({ requestId, values }) => {
+      const state = nodeStates.get(nodeId);
+      state?.settingsProxy?._receiveValuesInit(requestId, values as Record<string, unknown>);
+    })
+    .with({ type: 'settingsValueChanged' }, ({ key, value }) => {
+      const state = nodeStates.get(nodeId);
+      state?.settingsProxy?._receiveValueChanged(key as string, value);
     })
     .otherwise(() => {});
 };

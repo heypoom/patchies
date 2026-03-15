@@ -11,6 +11,9 @@
   } from '$lib/eventbus/events';
   import { match } from 'ts-pattern';
   import CodeBlockBase from './CodeBlockBase.svelte';
+  import { SettingsManager } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
+  import type { SettingsSchema } from '$lib/settings';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -30,6 +33,8 @@
       executeCode?: number;
       consoleHeight?: number;
       consoleWidth?: number;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
     };
     selected: boolean;
   } = $props();
@@ -40,6 +45,13 @@
 
   const workerSystem = WorkerNodeSystem.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
+
+  // Settings manager — persists across code re-runs
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+    createKVStore(nodeId)
+  );
 
   let isRunning = $state(false);
   let isMessageCallbackActive = $state(false);
@@ -105,6 +117,17 @@
     // Create the worker for this node
     await workerSystem.create(nodeId);
 
+    // Register settings callbacks — bridging worker settings.define() to main-thread SettingsManager
+    workerSystem.registerSettingsCallbacks(nodeId, {
+      onDefine: async (requestId, schema) => {
+        await settingsManager.define(schema as SettingsSchema);
+        workerSystem.sendSettingsValues(nodeId, requestId, settingsManager.getAll());
+      },
+      onClear: () => {
+        settingsManager.clear();
+      }
+    });
+
     // Listen for EventBus events from the worker
     eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
     eventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
@@ -126,7 +149,7 @@
     eventBus.removeEventListener('workerCallbackRegistered', handleCallbackRegistered);
     eventBus.removeEventListener('workerFlash', handleFlash);
 
-    // Destroy the worker
+    // Destroy the worker (also unregisters settings callbacks internally)
     workerSystem.destroy(nodeId);
   });
 
@@ -168,4 +191,11 @@
   editorPlaceholder="Write your JavaScript code here..."
   nodeType="worker"
   videoInletCount={data.videoInletCount ?? 0}
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => {
+    settingsManager.setValue(key, value);
+    workerSystem.sendSettingsValueChanged(nodeId, key, value);
+  }}
+  onSettingsRevertAll={() => settingsManager.revertAll()}
 />

@@ -8,6 +8,7 @@ import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
+import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -33,6 +34,7 @@ export class CanvasRenderer {
   public canvasTexture: regl.Texture2D | null = null;
 
   private msgContext!: WorkerRendererMessageContext;
+  private settingsProxy: WorkerSettingsProxy | null = null;
 
   private timestamp = performance.now();
   private sampleRate: number = 44000;
@@ -140,6 +142,14 @@ export class CanvasRenderer {
     this.fftRequestCache.clear();
     this.msgContext.reset();
 
+    // Clear settings onChange callbacks from previous run
+    this.settingsProxy?._clearCallbacks();
+
+    // Create fresh proxy (preserves cachedValues so get() works after redefine)
+    this.settingsProxy = createWorkerSettingsProxy(this.config.nodeId, (msg) =>
+      self.postMessage(msg)
+    );
+
     // Reset interaction and video output state
     this.setInteraction('interact', true);
     this.setVideoOutputEnabled(true);
@@ -209,7 +219,10 @@ export class CanvasRenderer {
         noOutput: () => this.setVideoOutputEnabled(false),
 
         // Worker-compatible clock (overrides JSRunner's main-thread Transport-based clock)
-        clock: this.renderer.createWorkerClock()
+        clock: this.renderer.createWorkerClock(),
+
+        // Settings API — proxied through main thread
+        settings: this.settingsProxy!.settings
       };
 
       const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {
@@ -300,6 +313,14 @@ export class CanvasRenderer {
       data: array,
       timestamp: performance.now()
     });
+  }
+
+  receiveSettingsValues(requestId: string, values: Record<string, unknown>) {
+    this.settingsProxy?._receiveValuesInit(requestId, values);
+  }
+
+  receiveSettingsValueChanged(key: string, value: unknown) {
+    this.settingsProxy?._receiveValueChanged(key, value);
   }
 
   setPortCount(inletCount = 1, outletCount = 0) {

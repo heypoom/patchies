@@ -21,7 +21,7 @@ A data-driven settings system that lets nodes declare a settings schema and rend
 | Change notification      | `get()` + `onChange(cb)`                       | `get()` for reading on run. `onChange()` for reactive updates.                                |
 | onChange trigger         | On-commit (debounced)                          | Fires on blur for text, pointerup for slider, click for toggle/select. Not every keystroke.   |
 | Revert                   | Single "Revert All" button                     | Resets all fields to defaults. Shown only when schema has defaults and current values differ. |
-| Worker support           | Main-thread only (v1)                          | Worker/render-worker support deferred. Requires postMessage plumbing.                         |
+| Worker support           | Main-thread only (v1)                          | ✅ v2: `worker`, `canvas`, `hydra` supported via `workerSettingsProxy.ts`.                    |
 | Field types (v1)         | number, string, boolean, select, color, slider | Covers most use cases. Extensible later.                                                      |
 
 ## Settings Schema
@@ -472,7 +472,7 @@ User re-runs code
 
 ## Future Extensions
 
-- **Worker/render-worker support**: Add postMessage plumbing for `settings` API in WorkerNode and render worker nodes.
+- ~~**Worker/render-worker support**: Add postMessage plumbing for `settings` API in WorkerNode and render worker nodes.~~ ✅ Implemented: `worker`, `canvas`, and `hydra` nodes now support the settings API via `workerSettingsProxy.ts` shared utility + postMessage bridging through `WorkerNodeSystem`/`GLSystem`.
 - **Field groups/sections**: `group` field type with collapsible sections using the ScopeNode Collapsible pattern (see "Collapsible Sections" above).
 - **Conditional visibility**: Show/hide fields based on other field values (e.g., show "steps" only when mode is "euclidean").
 - **Custom field types**: File picker (VFS), code snippet, MIDI mapping, etc.

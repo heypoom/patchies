@@ -50,6 +50,9 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'channelMessage'; channel: string; data: unknown; sourceNodeId: string }
   // Profiler control
   | { type: 'profilerEnable'; enabled: boolean }
+  // Settings API responses (main → worker)
+  | { type: 'settingsValuesInit'; requestId: string; values: Record<string, unknown> }
+  | { type: 'settingsValueChanged'; key: string; value: unknown }
 );
 
 // Message types sent from worker to main thread
@@ -87,11 +90,19 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'sendToChannel'; channel: string; data: unknown }
   | { type: 'subscribeChannel'; channel: string }
   | { type: 'unsubscribeChannel'; channel: string }
+  // Settings API requests (worker → main)
+  | { type: 'settingsDefine'; requestId: string; schema: unknown[] }
+  | { type: 'settingsClear' }
 );
 
 interface WorkerInstance {
   worker: Worker;
   messageCallback: MessageCallbackFn;
+}
+
+export interface WorkerSettingsCallbacks {
+  onDefine: (requestId: string, schema: unknown[]) => void;
+  onClear: () => void;
 }
 
 interface WorkerVideoState {
@@ -115,6 +126,7 @@ export class WorkerNodeSystem {
   private jsRunner = JSRunner.getInstance();
   private audioAnalysis = AudioAnalysisSystem.getInstance();
   private workers = new Map<string, WorkerInstance>();
+  private settingsCallbacks = new Map<string, WorkerSettingsCallbacks>();
 
   /** Track channel subscriptions per worker for cleanup */
   private workerChannelSubscriptions = new Map<string, Set<string>>();
@@ -288,7 +300,18 @@ export class WorkerNodeSystem {
       .with({ type: 'requestVideoFrames' }, (event) => {
         this.handleRequestVideoFrames(nodeId, event.resolution);
       })
-      // Named channel APIs
+      // User-Defined Settings API
+      .with({ type: 'settingsDefine' }, (event) => {
+        const callback = this.settingsCallbacks.get(nodeId);
+
+        callback?.onDefine(event.requestId, event.schema);
+      })
+      .with({ type: 'settingsClear' }, () => {
+        const callback = this.settingsCallbacks.get(nodeId);
+
+        callback?.onClear();
+      })
+      // Named Channels API
       .with({ type: 'sendToChannel' }, (event) => {
         this.channelRegistry.broadcast(event.channel, event.data, nodeId);
       })
@@ -298,6 +321,7 @@ export class WorkerNodeSystem {
       .with({ type: 'unsubscribeChannel' }, (event) => {
         this.handleUnsubscribeChannel(nodeId, event.channel);
       })
+      // Profiler API
       .with({ type: 'executionComplete' }, (event) => {
         if (profiler.enabled && event.initDurationMs != null) {
           ProfilerCoordinator.getInstance().record(nodeId, 'worker', 'init', event.initDurationMs);
@@ -672,6 +696,7 @@ export class WorkerNodeSystem {
 
     for (let i = 0; i < videoState.inletCount; i++) {
       const edge = edges.find((e) => e.target === nodeId && e.targetHandle === `video-in-${i}`);
+
       sourceNodeIds[i] = edge?.source ?? null;
     }
 
@@ -810,6 +835,37 @@ export class WorkerNodeSystem {
 
     // Unregister from DirectChannelService
     DirectChannelService.getInstance().unregisterWorker(nodeId);
+
+    // Clean up settings callbacks
+    this.settingsCallbacks.delete(nodeId);
+  }
+
+  registerSettingsCallbacks(nodeId: string, callbacks: WorkerSettingsCallbacks): void {
+    this.settingsCallbacks.set(nodeId, callbacks);
+  }
+
+  sendSettingsValues(nodeId: string, requestId: string, values: Record<string, unknown>): void {
+    const instance = this.workers.get(nodeId);
+    if (!instance) return;
+
+    instance.worker.postMessage({
+      type: 'settingsValuesInit',
+      nodeId,
+      requestId,
+      values
+    } satisfies WorkerMessage);
+  }
+
+  sendSettingsValueChanged(nodeId: string, key: string, value: unknown): void {
+    const instance = this.workers.get(nodeId);
+    if (!instance) return;
+
+    instance.worker.postMessage({
+      type: 'settingsValueChanged',
+      nodeId,
+      key,
+      value
+    } satisfies WorkerMessage);
   }
 
   has(nodeId: string): boolean {

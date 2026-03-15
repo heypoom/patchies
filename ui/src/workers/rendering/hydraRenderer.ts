@@ -11,6 +11,7 @@ import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { HYDRA_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
+import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -35,6 +36,7 @@ export class HydraRenderer {
   public framebuffer: regl.Framebuffer2D | null = null;
 
   private msgContext!: WorkerRendererMessageContext;
+  private settingsProxy: WorkerSettingsProxy | null = null;
 
   private timestamp = performance.now();
 
@@ -185,6 +187,14 @@ export class HydraRenderer {
     this.fftRequestCache.clear();
     this.msgContext.reset();
 
+    // Clear settings onChange callbacks from previous run
+    this.settingsProxy?._clearCallbacks();
+
+    // Create fresh proxy (preserves cachedValues so get() works after redefine)
+    this.settingsProxy = createWorkerSettingsProxy(this.config.nodeId, (msg) =>
+      self.postMessage(msg)
+    );
+
     // Reset mouse scope to local (default)
     this.mouseScope = 'local';
 
@@ -257,7 +267,10 @@ export class HydraRenderer {
         height: this.renderer.outputSize[1],
 
         // Worker-compatible clock object (overrides JSRunner's main-thread Transport-based clock)
-        clock: this.renderer.createWorkerClock()
+        clock: this.renderer.createWorkerClock(),
+
+        // Settings API — proxied through main thread
+        settings: this.settingsProxy!.settings
       };
 
       // Use JSRunner's executeJavaScript method with full module support
@@ -380,6 +393,14 @@ export class HydraRenderer {
       data: array,
       timestamp: performance.now()
     });
+  }
+
+  receiveSettingsValues(requestId: string, values: Record<string, unknown>) {
+    this.settingsProxy?._receiveValuesInit(requestId, values);
+  }
+
+  receiveSettingsValueChanged(key: string, value: unknown) {
+    this.settingsProxy?._receiveValueChanged(key, value);
   }
 
   setPortCount(inletCount = 1, outletCount = 0) {
