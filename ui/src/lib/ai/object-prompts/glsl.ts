@@ -14,18 +14,6 @@ CRITICAL RULES:
 - Any other sampler2D name gets frequency spectrum
 - Example: uniform sampler2D fftData; (frequency) or uniform sampler2D waveTexture; (waveform)
 
-HANDLE IDS (Auto-generated - VERY DYNAMIC):
-- Output outlet: "video-out-out" (type="video" + id="out" → pattern: type-direction-id)
-- Uniform inlets depend on your shader code and are auto-generated:
-  * "video-in-{index}-{uniformName}-sampler2D" for texture inputs
-  * "message-in-{index}-{uniformName}-float" for float inputs
-  * "message-in-{index}-{uniformName}-vec3" for vec3 inputs
-  * DO NOT try to connect to specific uniform handle IDs in edges
-  * Instead, use GLSL uniform names and let the framework match them
-- Examples of uniform declarations that create handles:
-  * "uniform float iMix" → creates handle for iMix parameter
-  * "uniform sampler2D iChannel0" → creates handle for video input
-
 Built-in uniforms (Shadertoy-compatible):
 - iResolution: vec3 (viewport resolution, z is pixel aspect ratio)
 - iTime: float (shader playback time in seconds)

@@ -9,10 +9,6 @@ Configuration:
 - isFloat: true for floating point, false for integers
 - isVertical: true for vertical orientation
 
-HANDLE IDS (Auto-generated):
-- Message outlet: "message-out" (sends current slider value)
-- Message inlet: "message-in" (receives external value to set slider)
-
 Example - Float Slider 0 to 1:
 \`\`\`json
 {

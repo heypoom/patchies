@@ -117,10 +117,4 @@ Example - Hard Sync (slave synced to master):
 }
 \`\`\`
 
-HANDLE IDS (Auto-generated):
-- Audio inlet: "audio-in" (single)
-- Audio outlet: "audio-out" (single)
-- Message inlets: "message-in-0", "message-in-1", ... (for $1, $2, $3, etc.)
-- LIMITATION: Single audio I/O, multiple message inlets
-
 WARNING: Always use compressor~ after expr~ to prevent dangerous audio spikes!`;

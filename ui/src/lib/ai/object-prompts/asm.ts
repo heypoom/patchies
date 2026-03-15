@@ -8,12 +8,6 @@ CRITICAL RULES:
 3. Labels end with colon: \`label_name:\`
 4. Use \\n for newlines in JSON code strings
 
-HANDLE IDS:
-- Inlets: "in-0", "in-1", etc. (configurable count, default 1)
-- Outlets: "message-out-0", "message-out-1", "message-out-2" (configurable count, default 3)
-- Send numbers/arrays to inlet, receive via \`recv\` instruction
-- Output via \`send <port> <count>\` instruction
-
 INSTRUCTIONS (all lowercase):
 
 Stack: push <n>, pop, dup, swap, over, rotate, nip, tuck, pick <n>

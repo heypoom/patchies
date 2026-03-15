@@ -11,10 +11,6 @@ Messages:
 - Receives: any message (triggers flash and outputs bang)
 - Outputs: {type: 'bang'}
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (any message triggers flash and outputs bang)
-- Message outlet: "message-out" (sends {type: "bang"} when clicked or triggered)
-
 Example - Simple Button:
 \`\`\`json
 {

@@ -12,10 +12,6 @@ Messages:
 - Receives: bang (toggles state)
 - Outputs: boolean (true/false)
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (boolean or bang to toggle)
-- Message outlet: "message-out" (sends boolean true/false)
-
 Example - Toggle Switch:
 \`\`\`json
 {

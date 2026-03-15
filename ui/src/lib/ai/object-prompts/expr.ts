@@ -22,12 +22,6 @@ Multi-line support:
 - Define variables: a = $1 * 2; b = $2 + 3; a + b
 - Define functions: add(a, b) = a + b; add($1, $2)
 
-HANDLE IDS (Auto-generated):
-- Message inlets: "message-in-0", "message-in-1", ... (multiple indexed)
-- Message outlet: "message-out" (single)
-- Each $N variable creates indexed inlet: "message-in-0" for $1, "message-in-1" for $2
-- LIMITATION: Single outlet only, multiple inputs
-
 Example - Simple Addition:
 \`\`\`json
 {

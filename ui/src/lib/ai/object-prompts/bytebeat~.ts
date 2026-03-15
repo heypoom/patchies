@@ -17,10 +17,6 @@ Data Structure:
 - sampleRate: number (8000, 11025, 22050, 32000, 44100, 48000)
 - autoEval: boolean (default true, evaluates expression as you type; false requires Shift+Enter)
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (single)
-- Audio outlet: "audio-out" (single)
-
 Example - Classic Bytebeat:
 \`\`\`json
 {

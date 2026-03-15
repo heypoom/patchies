@@ -20,10 +20,6 @@ Message Format Rules:
 - {x: 1, y: 2} → {x: 1, y: 2} (object)
 - [1, 2, 3] → [1, 2, 3] (array)
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (bang or any message triggers output)
-- Message outlet: "message-out" (sends the configured message)
-
 Example - Bang Message:
 \`\`\`json
 {

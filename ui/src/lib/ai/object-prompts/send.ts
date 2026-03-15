@@ -6,11 +6,6 @@ CRITICAL: This is a text object created via the "object" node type with data.exp
 
 Usage: send <channel>
 
-HANDLE IDS:
-- Inlet 0: "in-0" (message to broadcast to channel)
-- Inlet 1: "in-1" (channel name, optional - can also be set in expr)
-- No outlets (send is a sink)
-
 Example - Send to channel "foo":
 \`\`\`json
 {

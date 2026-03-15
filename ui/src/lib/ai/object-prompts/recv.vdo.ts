@@ -9,10 +9,6 @@ Usage: Creates a node that receives video frames from a named channel.
 ATTRIBUTES:
 - channel: The channel name to receive from (default: "foo")
 
-HANDLE IDS:
-- Inlet 0: "message-in-0" (channel name, optional - can also be set via data.channel)
-- Outlet 0: "video-out-0" (outputs received video frames)
-
 Example - Receive video from channel "main":
 \`\`\`json
 {

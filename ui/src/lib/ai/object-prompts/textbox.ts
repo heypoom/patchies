@@ -12,11 +12,6 @@ Messages:
 - Receives: string (sets text content)
 - Outputs: string (current text)
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (receives text to set content)
-- Message outlet: "message-out" (sends current text on bang)
-- LIMITATION: Single I/O ports
-
 Example - Text Input:
 \`\`\`json
 {

@@ -9,11 +9,6 @@ Usage: Creates a node that broadcasts video frames to a named channel.
 ATTRIBUTES:
 - channel: The channel name to broadcast to (default: "foo")
 
-HANDLE IDS:
-- Inlet 0: "video-in-0" (video input to broadcast)
-- Inlet 1: "message-in-1" (channel name, optional - can also be set via data.channel)
-- No outlets (send.vdo is a video sink)
-
 Example - Send video to channel "main":
 \`\`\`json
 {

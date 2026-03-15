@@ -94,6 +94,4 @@ function render({ t }) {
   });
   glsl({ tag: 'trail', FP: 'Src(I)' });
 }
-\`\`\`
-
-HANDLE IDS: inlet "message-in-0", outlet "video-out-0"`;
+\`\`\``;

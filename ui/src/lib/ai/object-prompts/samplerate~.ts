@@ -6,10 +6,6 @@ CRITICAL: This is a text object created via the "object" node type with data.exp
 
 Usage: samplerate~
 
-HANDLE IDS:
-- Inlet 0: "in-0" (bang to trigger output)
-- Outlet 0: "out-0" (sample rate as float, e.g. 48000)
-
 Example:
 \`\`\`json
 {
