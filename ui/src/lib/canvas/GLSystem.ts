@@ -458,6 +458,9 @@ export class GLSystem {
   setOverrideOutputNode(nodeId: string | null) {
     this.overrideOutputNodeId = nodeId;
 
+    // Clear connection cache so bitmap transfers are re-evaluated
+    this.outgoingConnectionsCache.clear();
+
     this.send('setOverrideOutputNode', { nodeId });
     this.syncOutputEnabled();
   }
@@ -675,7 +678,8 @@ export class GLSystem {
       (edge) => edge.source === nodeId && /(video-out|video-in|sampler2D)/.test(edge.id)
     );
 
-    const isOutputNode = this.renderGraph?.outputNodeId === nodeId;
+    const isOutputNode =
+      this.renderGraph?.outputNodeId === nodeId || this.overrideOutputNodeId === nodeId;
 
     const hasConnections = hasOutgoingVideoEdges || isOutputNode;
 
