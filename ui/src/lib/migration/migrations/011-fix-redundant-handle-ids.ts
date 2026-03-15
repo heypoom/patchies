@@ -7,6 +7,7 @@ import type { Migration } from '../types';
  * 1. Redundant handleId (audio-out-audio-out → audio-out): sampler~, expr~, fexpr~, ai.music
  * 2. Dropped handleId (message-in-0 → message-in): asm.mem, uxn
  * 3. Corrected handleId for csound~ (audio-in → audio-in-0, message-in-0 → message-in-1, audio-out → audio-out-0)
+ * 4. Remove stale edges with analysis-out-1 from fft~ nodes (fft~ only has 1 outlet at index 0)
  */
 export const migration011: Migration = {
   version: 11,
@@ -45,32 +46,50 @@ export const migration011: Migration = {
       }
     };
 
-    // Build lookup sets for source (outlet) and target (inlet) nodes
+    // Build lookup: nodeId → object type name (handles both custom node types and generic "object" nodes)
     const nodeTypes = new Map(patch.nodes.map((node) => [node.id, node.type]));
 
-    const migratedEdges = patch.edges.map((edge) => {
-      let newEdge = edge;
+    // Identify fft~ nodes (generic "object" type with expr="fft~")
+    const fftNodeIds = new Set(
+      patch.nodes
+        .filter(
+          (node) =>
+            node.type === 'object' && (node.data as Record<string, unknown>)?.expr === 'fft~'
+        )
+        .map((node) => node.id)
+    );
 
-      // Check source (outlet) handle
-      const sourceType = nodeTypes.get(edge.source);
-      if (sourceType && handleRewrites[sourceType] && edge.sourceHandle) {
-        const newHandle = handleRewrites[sourceType][edge.sourceHandle];
-        if (newHandle) {
-          newEdge = { ...newEdge, sourceHandle: newHandle };
+    const migratedEdges = patch.edges
+      .filter((edge) => {
+        // Remove stale edges: fft~ only has 1 outlet (analysis-out-0)
+        if (fftNodeIds.has(edge.source) && edge.sourceHandle === 'analysis-out-1') {
+          return false;
         }
-      }
+        return true;
+      })
+      .map((edge) => {
+        let newEdge = edge;
 
-      // Check target (inlet) handle
-      const targetType = nodeTypes.get(edge.target);
-      if (targetType && handleRewrites[targetType] && edge.targetHandle) {
-        const newHandle = handleRewrites[targetType][edge.targetHandle];
-        if (newHandle) {
-          newEdge = { ...newEdge, targetHandle: newHandle };
+        // Check source (outlet) handle
+        const sourceType = nodeTypes.get(edge.source);
+        if (sourceType && handleRewrites[sourceType] && edge.sourceHandle) {
+          const newHandle = handleRewrites[sourceType][edge.sourceHandle];
+          if (newHandle) {
+            newEdge = { ...newEdge, sourceHandle: newHandle };
+          }
         }
-      }
 
-      return newEdge;
-    });
+        // Check target (inlet) handle
+        const targetType = nodeTypes.get(edge.target);
+        if (targetType && handleRewrites[targetType] && edge.targetHandle) {
+          const newHandle = handleRewrites[targetType][edge.targetHandle];
+          if (newHandle) {
+            newEdge = { ...newEdge, targetHandle: newHandle };
+          }
+        }
+
+        return newEdge;
+      });
 
     return { ...patch, edges: migratedEdges };
   }
