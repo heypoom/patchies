@@ -4,7 +4,31 @@
   import type { AiObjectNode, SimplifiedEdge, MultiObjectResult } from '$lib/ai/types';
   import type { MultiObjectInsertResult } from '$lib/ai/handle-multi-object-insert';
   import { validateHandle, NODE_HANDLE_SPECS } from '$lib/ai/debug/handle-specs';
+  import {
+    EVAL_CASES,
+    loadResults,
+    saveResults,
+    clearResults,
+    type EvalCase,
+    type EvalResult,
+    type EvalEdgeResult,
+    type EvalStatus
+  } from '$lib/ai/debug/eval-cases';
+  import { onMount } from 'svelte';
 
+  // === View mode ===
+  type ViewMode = 'eval' | 'single';
+  let viewMode = $state<ViewMode>('eval');
+
+  // === Eval runner state ===
+  let evalResults = $state<EvalResult[]>([]);
+  let evalRunning = $state(false);
+  let evalProgress = $state({ current: 0, total: 0, currentPrompt: '' });
+  let evalAbortController = $state<AbortController | null>(null);
+  let expandedCaseId = $state<string | null>(null);
+  let filterCategory = $state<string>('all');
+
+  // === Single prompt state (manual testing) ===
   let prompt = $state('slider controlling oscillator frequency');
   let loading = $state(false);
   let error = $state<string | null>(null);
@@ -12,10 +36,174 @@
   let routerObjectTypes = $state<string[]>([]);
   let rawResult = $state<MultiObjectResult | null>(null);
   let insertResult = $state<MultiObjectInsertResult | null>(null);
-  let abortController = $state<AbortController | null>(null);
+  let singleAbortController = $state<AbortController | null>(null);
   let selectedEdgeIndex = $state<number | null>(null);
   let elapsedMs = $state<number | null>(null);
 
+  onMount(() => {
+    evalResults = loadResults();
+  });
+
+  // === Eval runner ===
+  const categories = $derived(['all', ...new Set(EVAL_CASES.map((c) => c.category))]);
+
+  const filteredCases = $derived(
+    filterCategory === 'all' ? EVAL_CASES : EVAL_CASES.filter((c) => c.category === filterCategory)
+  );
+
+  const evalSummary = $derived(() => {
+    const pass = evalResults.filter((r) => r.status === 'pass').length;
+    const fail = evalResults.filter((r) => r.status === 'fail').length;
+    const err = evalResults.filter((r) => r.status === 'error').length;
+    const total = evalResults.length;
+    return { pass, fail, err, total };
+  });
+
+  function getResultForCase(caseId: string): EvalResult | undefined {
+    // Return most recent result for this case
+    return evalResults.findLast((r) => r.caseId === caseId);
+  }
+
+  async function runEval(cases: EvalCase[]) {
+    evalRunning = true;
+    const controller = new AbortController();
+    evalAbortController = controller;
+    evalProgress = { current: 0, total: cases.length, currentPrompt: '' };
+
+    for (let i = 0; i < cases.length; i++) {
+      if (controller.signal.aborted) break;
+
+      const evalCase = cases[i];
+      evalProgress = { current: i + 1, total: cases.length, currentPrompt: evalCase.prompt };
+
+      const result = await runSingleEval(evalCase, controller.signal);
+      evalResults = [...evalResults.filter((r) => r.caseId !== evalCase.id), result];
+      saveResults(evalResults);
+    }
+
+    evalRunning = false;
+    evalAbortController = null;
+  }
+
+  async function runSingleEval(evalCase: EvalCase, signal: AbortSignal): Promise<EvalResult> {
+    const start = performance.now();
+
+    try {
+      const result = await resolveMultipleObjectsFromPrompt(
+        evalCase.prompt,
+        () => {},
+        signal,
+        () => {}
+      );
+
+      const elapsed = Math.round(performance.now() - start);
+
+      if (!result) {
+        return {
+          caseId: evalCase.id,
+          status: 'error',
+          timestamp: Date.now(),
+          elapsedMs: elapsed,
+          nodeTypes: [],
+          edges: [],
+          errorCount: 0,
+          warnCount: 0,
+          errorMessage: 'AI returned null'
+        };
+      }
+
+      // Validate each edge
+      const edgeResults: EvalEdgeResult[] = result.edges.map((edge) => {
+        const sourceNode = result.nodes[edge.source];
+        const targetNode = result.nodes[edge.target];
+
+        const sourceError =
+          edge.sourceHandle && sourceNode
+            ? validateHandle(sourceNode.type, edge.sourceHandle, 'out')
+            : !edge.sourceHandle
+              ? 'missing sourceHandle'
+              : `source index ${edge.source} out of bounds`;
+
+        const targetError =
+          edge.targetHandle && targetNode
+            ? validateHandle(targetNode.type, edge.targetHandle, 'in')
+            : null; // missing targetHandle is OK (GLSL auto-fill etc)
+
+        return {
+          sourceType: sourceNode?.type ?? '?',
+          targetType: targetNode?.type ?? '?',
+          sourceHandle: edge.sourceHandle,
+          targetHandle: edge.targetHandle,
+          sourceError,
+          targetError
+        };
+      });
+
+      const errorCount = edgeResults.filter((e) => e.sourceError || e.targetError).length;
+
+      return {
+        caseId: evalCase.id,
+        status: errorCount > 0 ? 'fail' : 'pass',
+        timestamp: Date.now(),
+        elapsedMs: elapsed,
+        nodeTypes: result.nodes.map((n) => n.type),
+        edges: edgeResults,
+        errorCount,
+        warnCount: 0
+      };
+    } catch (e) {
+      return {
+        caseId: evalCase.id,
+        status: 'error',
+        timestamp: Date.now(),
+        elapsedMs: Math.round(performance.now() - start),
+        nodeTypes: [],
+        edges: [],
+        errorCount: 0,
+        warnCount: 0,
+        errorMessage: e instanceof Error ? e.message : String(e)
+      };
+    }
+  }
+
+  function cancelEval() {
+    evalAbortController?.abort();
+  }
+
+  function handleClearResults() {
+    clearResults();
+    evalResults = [];
+  }
+
+  function statusColor(status: EvalStatus): string {
+    switch (status) {
+      case 'pass':
+        return 'text-emerald-400';
+      case 'fail':
+        return 'text-red-400';
+      case 'error':
+        return 'text-yellow-400';
+      case 'running':
+        return 'text-blue-400';
+      default:
+        return 'text-zinc-500';
+    }
+  }
+
+  function statusBg(status: EvalStatus): string {
+    switch (status) {
+      case 'pass':
+        return 'border-emerald-800';
+      case 'fail':
+        return 'border-red-800 bg-red-900/10';
+      case 'error':
+        return 'border-yellow-800 bg-yellow-900/10';
+      default:
+        return 'border-zinc-700';
+    }
+  }
+
+  // === Single prompt runner ===
   async function runGeneration() {
     error = null;
     thinkingLog = [];
@@ -27,7 +215,7 @@
     loading = true;
 
     const controller = new AbortController();
-    abortController = controller;
+    singleAbortController = controller;
     const start = performance.now();
 
     try {
@@ -46,7 +234,6 @@
 
       if (result) {
         rawResult = result;
-        // Run through insertion logic to see final nodes/edges
         const inserted = await handleMultiObjectInsert({
           objectNodes: result.nodes,
           simplifiedEdges: result.edges,
@@ -63,14 +250,15 @@
       error = e instanceof Error ? e.message : String(e);
     } finally {
       loading = false;
-      abortController = null;
+      singleAbortController = null;
     }
   }
 
-  function cancel() {
-    abortController?.abort();
+  function cancelSingle() {
+    singleAbortController?.abort();
   }
 
+  // === Shared validation helpers ===
   function getHandleValidationIssues(
     edges: SimplifiedEdge[],
     nodes: AiObjectNode[]
@@ -80,7 +268,6 @@
     for (let i = 0; i < edges.length; i++) {
       const edge = edges[i];
 
-      // Check index bounds
       if (edge.source < 0 || edge.source >= nodes.length) {
         issues.push({
           edgeIndex: i,
@@ -101,7 +288,6 @@
       const sourceNode = nodes[edge.source];
       const targetNode = nodes[edge.target];
 
-      // Validate sourceHandle against node spec
       if (edge.sourceHandle) {
         const srcErr = validateHandle(sourceNode.type, edge.sourceHandle, 'out');
         if (srcErr) {
@@ -111,24 +297,19 @@
         issues.push({ edgeIndex: i, issue: 'missing sourceHandle', severity: 'error' });
       }
 
-      // Validate targetHandle against node spec
       if (edge.targetHandle) {
         const tgtErr = validateHandle(targetNode.type, edge.targetHandle, 'in');
         if (tgtErr) {
           issues.push({ edgeIndex: i, issue: `targetHandle: ${tgtErr}`, severity: 'error' });
         }
-      } else {
-        // GLSL nodes auto-fill targetHandle in handleMultiObjectInsert, so just warn
-        if (targetNode.type === 'glsl') {
-          issues.push({
-            edgeIndex: i,
-            issue: 'missing targetHandle (will be auto-filled for GLSL)',
-            severity: 'warn'
-          });
-        }
+      } else if (targetNode.type === 'glsl') {
+        issues.push({
+          edgeIndex: i,
+          issue: 'missing targetHandle (will be auto-filled for GLSL)',
+          severity: 'warn'
+        });
       }
 
-      // Self-connection
       if (edge.source === edge.target) {
         issues.push({
           edgeIndex: i,
@@ -137,7 +318,6 @@
         });
       }
 
-      // Type mismatch between handles
       if (edge.sourceHandle && edge.targetHandle) {
         const srcType = extractHandleType(edge.sourceHandle);
         const tgtType = extractHandleType(edge.targetHandle);
@@ -171,7 +351,7 @@
     const spec = NODE_HANDLE_SPECS[nodeType];
     if (!spec) return null;
 
-    const fmt = (p: typeof spec.inlets) => {
+    const fmt = (p: (typeof spec)['inlets']) => {
       switch (p.kind) {
         case 'fixed':
           return p.handles.length > 0 ? p.handles.join(', ') : '(none)';
@@ -200,298 +380,501 @@
 
 <div class="debug-page min-h-screen bg-zinc-950 p-6 font-mono text-zinc-200">
   <div class="mx-auto max-w-6xl space-y-6">
-    <header>
-      <h1 class="text-2xl font-bold text-zinc-100">Multi-Object AI Debug</h1>
-      <p class="mt-1 text-sm text-zinc-500">
-        Test multi-object generation and inspect handle IDs / edge connections
-      </p>
+    <header class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-zinc-100">Multi-Object AI Debug</h1>
+        <p class="mt-1 text-sm text-zinc-500">
+          Test handle ID correctness for multi-object generation
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <button
+          class="cursor-pointer rounded px-3 py-1.5 text-xs {viewMode === 'eval'
+            ? 'bg-blue-600 text-white'
+            : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'}"
+          onclick={() => (viewMode = 'eval')}
+        >
+          Eval Suite
+        </button>
+        <button
+          class="cursor-pointer rounded px-3 py-1.5 text-xs {viewMode === 'single'
+            ? 'bg-blue-600 text-white'
+            : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'}"
+          onclick={() => (viewMode = 'single')}
+        >
+          Single Prompt
+        </button>
+      </div>
     </header>
 
-    <!-- Prompt Input -->
-    <div class="flex items-end gap-3">
-      <div class="flex-1">
-        <label for="prompt" class="mb-1 block text-xs text-zinc-500">Prompt</label>
-        <input
-          id="prompt"
-          type="text"
-          class="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-blue-500 focus:outline-none"
-          bind:value={prompt}
-          onkeydown={(e) => {
-            if (e.key === 'Enter' && !loading) runGeneration();
-          }}
-          disabled={loading}
-        />
-      </div>
-      {#if loading}
-        <button
-          class="cursor-pointer rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
-          onclick={cancel}
-        >
-          Cancel
-        </button>
-      {:else}
-        <button
-          class="cursor-pointer rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
-          onclick={runGeneration}
-        >
-          Generate
-        </button>
-      {/if}
-    </div>
+    {#if viewMode === 'eval'}
+      <!-- ==================== EVAL SUITE ==================== -->
 
-    <!-- Status -->
-    {#if loading}
-      <div class="animate-pulse text-sm text-blue-400">
-        {routerObjectTypes.length > 0
-          ? `Generating: ${routerObjectTypes.join(', ')}`
-          : 'Planning...'}
-      </div>
-    {/if}
+      <!-- Controls -->
+      <div class="flex flex-wrap items-center gap-3">
+        {#if evalRunning}
+          <button
+            class="cursor-pointer rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+            onclick={cancelEval}
+          >
+            Cancel
+          </button>
+          <div class="text-sm text-blue-400">
+            Running {evalProgress.current}/{evalProgress.total}: {evalProgress.currentPrompt}
+          </div>
+        {:else}
+          <button
+            class="cursor-pointer rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+            onclick={() => runEval(filteredCases)}
+          >
+            Run {filterCategory === 'all' ? 'All' : filterCategory} ({filteredCases.length})
+          </button>
+          <button
+            class="cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-600"
+            onclick={handleClearResults}
+          >
+            Clear Results
+          </button>
+        {/if}
 
-    {#if error}
-      <div class="rounded border border-red-700 bg-red-900/30 p-3 text-sm text-red-300">
-        {error}
-      </div>
-    {/if}
-
-    {#if elapsedMs !== null}
-      <div class="text-xs text-zinc-600">Completed in {elapsedMs}ms</div>
-    {/if}
-
-    <!-- Thinking Log -->
-    {#if thinkingLog.length > 0}
-      <details class="group">
-        <summary class="cursor-pointer text-xs text-zinc-500 hover:text-zinc-300">
-          AI Thinking ({thinkingLog.length} entries)
-        </summary>
-        <div
-          class="mt-2 max-h-60 overflow-y-auto rounded border border-zinc-800 bg-zinc-900/50 p-3 text-xs whitespace-pre-wrap text-zinc-400"
-        >
-          {thinkingLog.join('\n\n---\n\n')}
-        </div>
-      </details>
-    {/if}
-
-    {#if rawResult}
-      {@const issues = getHandleValidationIssues(rawResult.edges, rawResult.nodes)}
-
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <!-- Left Column: Nodes -->
-        <div class="space-y-4">
-          <h2 class="text-lg font-semibold text-zinc-300">Nodes ({rawResult.nodes.length})</h2>
-
-          {#each rawResult.nodes as node, i (i)}
-            <div class="space-y-2 rounded border border-zinc-700 bg-zinc-900 p-3">
-              <div class="flex items-center gap-2">
-                <span class="rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300">#{i}</span>
-                <span class="font-semibold text-zinc-100">{node.type}</span>
-                {#if node.position}
-                  <span class="text-xs text-zinc-600">({node.position.x}, {node.position.y})</span>
-                {/if}
-              </div>
-
-              <!-- Expected handles -->
-              {#if getExpectedHandles(node.type)}
-                {@const expected = getExpectedHandles(node.type)}
-                {#if expected}
-                  <div class="text-xs text-zinc-600">
-                    <span class="text-zinc-500">Expected:</span>
-                    in=[{expected.inlets}] out=[{expected.outlets}]
-                  </div>
-                {/if}
-              {:else}
-                <div class="text-xs text-yellow-600">Unknown node type (no handle spec)</div>
-              {/if}
-
-              <!-- Node Data -->
-              <details>
-                <summary class="cursor-pointer text-xs text-zinc-500 hover:text-zinc-300"
-                  >Node Data</summary
-                >
-                <pre
-                  class="mt-1 overflow-x-auto rounded bg-zinc-950 p-2 text-xs text-zinc-400">{JSON.stringify(
-                    node.data,
-                    null,
-                    2
-                  )}</pre>
-              </details>
-
-              <!-- Connected edges for this node -->
-              {#if rawResult.edges.filter((e) => e.source === i).length > 0}
-                <div class="text-xs">
-                  <span class="text-zinc-500">Outlets used:</span>
-
-                  {#each rawResult.edges.filter((e) => e.source === i) as edge, i (i)}
-                    <span
-                      class="ml-1 rounded px-1.5 py-0.5 {handleIsValid(
-                        node.type,
-                        edge.sourceHandle ?? '',
-                        'out'
-                      )
-                        ? 'bg-emerald-900/50 text-emerald-300'
-                        : 'bg-red-900/50 text-red-300'}"
-                    >
-                      {edge.sourceHandle ?? '(none)'}
-                    </span>
-                  {/each}
-                </div>
-              {/if}
-
-              {#if rawResult.edges.filter((e) => e.target === i).length > 0}
-                <div class="text-xs">
-                  <span class="text-zinc-500">Inlets used:</span>
-
-                  {#each rawResult.edges.filter((e) => e.target === i) as edge, i (i)}
-                    <span
-                      class="ml-1 rounded px-1.5 py-0.5 {handleIsValid(
-                        node.type,
-                        edge.targetHandle ?? '',
-                        'in'
-                      )
-                        ? 'bg-blue-900/50 text-blue-300'
-                        : 'bg-red-900/50 text-red-300'}"
-                    >
-                      {edge.targetHandle ?? '(none)'}
-                    </span>
-                  {/each}
-                </div>
-              {/if}
-            </div>
-          {/each}
-        </div>
-
-        <!-- Right Column: Edges -->
-        <div class="space-y-4">
-          <h2 class="text-lg font-semibold text-zinc-300">
-            Edges ({rawResult.edges.length})
-            {#if issues.length > 0}
-              <span class="ml-2 text-sm text-red-400"
-                >{issues.length} issue{issues.length !== 1 ? 's' : ''}</span
-              >
-            {:else}
-              <span class="ml-2 text-sm text-emerald-400">all valid</span>
-            {/if}
-          </h2>
-
-          <!-- Issues Summary -->
-          {#if issues.length > 0}
-            <div class="space-y-1 rounded border border-red-800 bg-red-900/20 p-3">
-              <div class="text-xs font-semibold text-red-300">Validation Issues</div>
-
-              {#each issues as issue, i (i)}
-                <div
-                  class="text-xs {issue.severity === 'error' ? 'text-red-400' : 'text-yellow-400'}"
-                >
-                  <span class="font-semibold">{issue.severity === 'error' ? 'ERR' : 'WARN'}</span>
-                  Edge #{issue.edgeIndex}: {issue.issue}
-                </div>
-              {/each}
-            </div>
-          {/if}
-
-          <!-- Edge List -->
-          {#each rawResult.edges as edge, i (i)}
-            {@const hasIssue = edgeHasIssue(i, issues)}
+        <!-- Category filter -->
+        <div class="ml-auto flex gap-1">
+          {#each categories as cat}
             <button
-              class="w-full cursor-pointer space-y-1 rounded border bg-zinc-900 p-3 text-left transition-colors {hasIssue
-                ? 'border-red-700 bg-red-900/10'
-                : 'border-zinc-700'} {selectedEdgeIndex === i ? 'ring-2 ring-blue-500' : ''}"
-              onclick={() => {
-                selectedEdgeIndex = selectedEdgeIndex === i ? null : i;
-              }}
+              class="cursor-pointer rounded px-2 py-1 text-xs {filterCategory === cat
+                ? 'bg-zinc-600 text-zinc-100'
+                : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'}"
+              onclick={() => (filterCategory = cat)}
             >
-              <div class="flex items-center gap-2 text-sm">
-                <span class="rounded bg-zinc-700 px-1.5 py-0.5 text-xs">E{i}</span>
-                <span class="text-zinc-400">
-                  <span class="text-zinc-100">#{edge.source}</span>
-                  <span class="text-zinc-600"> ({rawResult.nodes[edge.source]?.type})</span>
-                  <span class="mx-1">&rarr;</span>
-                  <span class="text-zinc-100">#{edge.target}</span>
-                  <span class="text-zinc-600"> ({rawResult.nodes[edge.target]?.type})</span>
-                </span>
-              </div>
-
-              <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <span class="text-zinc-500">sourceHandle: </span>
-                  <code
-                    class="rounded px-1 py-0.5 {edge.sourceHandle
-                      ? handleIsValid(rawResult.nodes[edge.source]?.type, edge.sourceHandle, 'out')
-                        ? 'bg-emerald-900/40 text-emerald-300'
-                        : 'bg-red-900/40 text-red-300'
-                      : 'bg-yellow-900/40 text-yellow-300'}"
-                  >
-                    {edge.sourceHandle ?? 'undefined'}
-                  </code>
-                </div>
-                <div>
-                  <span class="text-zinc-500">targetHandle: </span>
-                  <code
-                    class="rounded px-1 py-0.5 {edge.targetHandle
-                      ? handleIsValid(rawResult.nodes[edge.target]?.type, edge.targetHandle, 'in')
-                        ? 'bg-blue-900/40 text-blue-300'
-                        : 'bg-red-900/40 text-red-300'
-                      : 'bg-yellow-900/40 text-yellow-300'}"
-                  >
-                    {edge.targetHandle ?? 'undefined'}
-                  </code>
-                </div>
-              </div>
+              {cat}
             </button>
           {/each}
-
-          <!-- After Insertion (handleMultiObjectInsert result) -->
-          {#if insertResult}
-            <h2 class="mt-6 border-t border-zinc-800 pt-4 text-lg font-semibold text-zinc-300">
-              After Insertion
-            </h2>
-            <p class="text-xs text-zinc-500">
-              Result of handleMultiObjectInsert() — final node IDs and edge connections
-            </p>
-
-            <div class="space-y-2">
-              <div class="text-xs text-zinc-400">
-                <span class="text-zinc-500">Nodes:</span>
-
-                {#each insertResult.newNodes as node, i (i)}
-                  <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5">{node.id}</span>
-                {/each}
-              </div>
-
-              {#each insertResult.newEdges as edge, i (i)}
-                <div class="space-y-1 rounded border border-zinc-800 bg-zinc-900 p-2 text-xs">
-                  <div class="text-zinc-300">
-                    {edge.id}: {edge.source} &rarr; {edge.target}
-                  </div>
-                  <div class="grid grid-cols-2 gap-2">
-                    <div>
-                      <span class="text-zinc-500">src: </span>
-                      <code class="text-emerald-300">{edge.sourceHandle ?? 'undefined'}</code>
-                    </div>
-                    <div>
-                      <span class="text-zinc-500">tgt: </span>
-                      <code class="text-blue-300">{edge.targetHandle ?? 'undefined'}</code>
-                    </div>
-                  </div>
-                </div>
-              {/each}
-            </div>
-          {/if}
         </div>
       </div>
 
-      <!-- Raw JSON -->
-      <details class="mt-6">
-        <summary class="cursor-pointer text-xs text-zinc-500 hover:text-zinc-300"
-          >Raw JSON Output</summary
-        >
-        <pre
-          class="mt-2 max-h-96 overflow-x-auto overflow-y-auto rounded border border-zinc-800 bg-zinc-900 p-4 text-xs text-zinc-400">{JSON.stringify(
-            rawResult,
-            null,
-            2
-          )}</pre>
-      </details>
+      <!-- Summary bar -->
+      {#if evalResults.length > 0}
+        {@const s = evalSummary()}
+        <div class="flex gap-4 text-sm">
+          <span class="text-zinc-500">{s.total} tested</span>
+          <span class="text-emerald-400">{s.pass} pass</span>
+          <span class="text-red-400">{s.fail} fail</span>
+          {#if s.err > 0}
+            <span class="text-yellow-400">{s.err} error</span>
+          {/if}
+          <span class="text-zinc-600">
+            {s.total > 0 ? Math.round((s.pass / s.total) * 100) : 0}% pass rate
+          </span>
+        </div>
+      {/if}
+
+      <!-- Results table -->
+      <div class="space-y-1">
+        {#each filteredCases as evalCase (evalCase.id)}
+          {@const result = getResultForCase(evalCase.id)}
+          {@const isExpanded = expandedCaseId === evalCase.id}
+
+          <div class="rounded border {result ? statusBg(result.status) : 'border-zinc-800'}">
+            <!-- Row -->
+            <button
+              class="flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left text-sm hover:bg-zinc-800/50"
+              onclick={() => (expandedCaseId = isExpanded ? null : evalCase.id)}
+            >
+              <!-- Status indicator -->
+              <span
+                class="w-12 text-xs font-semibold {result
+                  ? statusColor(result.status)
+                  : 'text-zinc-600'}"
+              >
+                {result ? result.status.toUpperCase() : '—'}
+              </span>
+
+              <!-- Case info -->
+              <span class="min-w-0 flex-1 truncate text-zinc-300">{evalCase.prompt}</span>
+
+              <!-- Category badge -->
+              <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-500">
+                {evalCase.category}
+              </span>
+
+              <!-- Edge stats -->
+              {#if result && result.status !== 'error'}
+                <span class="text-xs text-zinc-500">
+                  {result.edges.length} edge{result.edges.length !== 1 ? 's' : ''}
+                </span>
+                {#if result.errorCount > 0}
+                  <span class="text-xs text-red-400">{result.errorCount} bad</span>
+                {/if}
+              {/if}
+
+              <!-- Timing -->
+              {#if result}
+                <span class="w-16 text-right text-xs text-zinc-600">{result.elapsedMs}ms</span>
+              {/if}
+
+              <!-- Re-run single -->
+              {#if !evalRunning}
+                <button
+                  class="cursor-pointer rounded px-1.5 py-0.5 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    runEval([evalCase]);
+                  }}
+                >
+                  run
+                </button>
+              {/if}
+            </button>
+
+            <!-- Expanded detail -->
+            {#if isExpanded && result}
+              <div class="border-t border-zinc-800 px-3 py-3 text-xs">
+                {#if result.errorMessage}
+                  <div class="mb-2 text-yellow-400">Error: {result.errorMessage}</div>
+                {/if}
+
+                {#if result.nodeTypes.length > 0}
+                  <div class="mb-2 text-zinc-400">
+                    <span class="text-zinc-500">Nodes:</span>
+                    {#each result.nodeTypes as t, i}
+                      <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5">{t}</span>
+                    {/each}
+                  </div>
+                {/if}
+
+                {#if result.edges.length > 0}
+                  <div class="space-y-1">
+                    {#each result.edges as edge, i}
+                      {@const hasError = !!(edge.sourceError || edge.targetError)}
+                      <div
+                        class="flex items-start gap-2 rounded p-1.5 {hasError
+                          ? 'bg-red-900/20'
+                          : 'bg-zinc-900/50'}"
+                      >
+                        <span class="text-zinc-500">E{i}</span>
+                        <span class="text-zinc-300">{edge.sourceType}</span>
+                        <span class="text-zinc-600">&rarr;</span>
+                        <span class="text-zinc-300">{edge.targetType}</span>
+
+                        <code
+                          class="rounded px-1 py-0.5 {edge.sourceError
+                            ? 'bg-red-900/40 text-red-300'
+                            : 'bg-emerald-900/40 text-emerald-300'}"
+                        >
+                          {edge.sourceHandle ?? '(none)'}
+                        </code>
+                        <span class="text-zinc-600">&rarr;</span>
+                        <code
+                          class="rounded px-1 py-0.5 {edge.targetError
+                            ? 'bg-red-900/40 text-red-300'
+                            : 'bg-blue-900/40 text-blue-300'}"
+                        >
+                          {edge.targetHandle ?? '(none)'}
+                        </code>
+                      </div>
+                      {#if edge.sourceError}
+                        <div class="ml-6 text-red-400">src: {edge.sourceError}</div>
+                      {/if}
+                      {#if edge.targetError}
+                        <div class="ml-6 text-red-400">tgt: {edge.targetError}</div>
+                      {/if}
+                    {/each}
+                  </div>
+                {/if}
+
+                <div class="mt-2 text-zinc-600">
+                  {new Date(result.timestamp).toLocaleString()}
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <!-- ==================== SINGLE PROMPT ==================== -->
+
+      <!-- Prompt Input -->
+      <div class="flex items-end gap-3">
+        <div class="flex-1">
+          <label for="prompt" class="mb-1 block text-xs text-zinc-500">Prompt</label>
+          <input
+            id="prompt"
+            type="text"
+            class="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-blue-500 focus:outline-none"
+            bind:value={prompt}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' && !loading) runGeneration();
+            }}
+            disabled={loading}
+          />
+        </div>
+        {#if loading}
+          <button
+            class="cursor-pointer rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+            onclick={cancelSingle}
+          >
+            Cancel
+          </button>
+        {:else}
+          <button
+            class="cursor-pointer rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+            onclick={runGeneration}
+          >
+            Generate
+          </button>
+        {/if}
+      </div>
+
+      {#if loading}
+        <div class="animate-pulse text-sm text-blue-400">
+          {routerObjectTypes.length > 0
+            ? `Generating: ${routerObjectTypes.join(', ')}`
+            : 'Planning...'}
+        </div>
+      {/if}
+
+      {#if error}
+        <div class="rounded border border-red-700 bg-red-900/30 p-3 text-sm text-red-300">
+          {error}
+        </div>
+      {/if}
+
+      {#if elapsedMs !== null}
+        <div class="text-xs text-zinc-600">Completed in {elapsedMs}ms</div>
+      {/if}
+
+      {#if thinkingLog.length > 0}
+        <details class="group">
+          <summary class="cursor-pointer text-xs text-zinc-500 hover:text-zinc-300">
+            AI Thinking ({thinkingLog.length} entries)
+          </summary>
+          <div
+            class="mt-2 max-h-60 overflow-y-auto rounded border border-zinc-800 bg-zinc-900/50 p-3 text-xs whitespace-pre-wrap text-zinc-400"
+          >
+            {thinkingLog.join('\n\n---\n\n')}
+          </div>
+        </details>
+      {/if}
+
+      {#if rawResult}
+        {@const issues = getHandleValidationIssues(rawResult.edges, rawResult.nodes)}
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <!-- Left Column: Nodes -->
+          <div class="space-y-4">
+            <h2 class="text-lg font-semibold text-zinc-300">
+              Nodes ({rawResult.nodes.length})
+            </h2>
+
+            {#each rawResult.nodes as node, i (i)}
+              <div class="space-y-2 rounded border border-zinc-700 bg-zinc-900 p-3">
+                <div class="flex items-center gap-2">
+                  <span class="rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300">#{i}</span>
+                  <span class="font-semibold text-zinc-100">{node.type}</span>
+                  {#if node.position}
+                    <span class="text-xs text-zinc-600">({node.position.x}, {node.position.y})</span
+                    >
+                  {/if}
+                </div>
+
+                {#if getExpectedHandles(node.type)}
+                  {@const expected = getExpectedHandles(node.type)}
+                  {#if expected}
+                    <div class="text-xs text-zinc-600">
+                      <span class="text-zinc-500">Expected:</span>
+                      in=[{expected.inlets}] out=[{expected.outlets}]
+                    </div>
+                  {/if}
+                {:else}
+                  <div class="text-xs text-yellow-600">Unknown node type (no handle spec)</div>
+                {/if}
+
+                <details>
+                  <summary class="cursor-pointer text-xs text-zinc-500 hover:text-zinc-300"
+                    >Node Data</summary
+                  >
+                  <pre
+                    class="mt-1 overflow-x-auto rounded bg-zinc-950 p-2 text-xs text-zinc-400">{JSON.stringify(
+                      node.data,
+                      null,
+                      2
+                    )}</pre>
+                </details>
+
+                {#if rawResult.edges.filter((e) => e.source === i).length > 0}
+                  <div class="text-xs">
+                    <span class="text-zinc-500">Outlets used:</span>
+                    {#each rawResult.edges.filter((e) => e.source === i) as edge}
+                      <span
+                        class="ml-1 rounded px-1.5 py-0.5 {handleIsValid(
+                          node.type,
+                          edge.sourceHandle ?? '',
+                          'out'
+                        )
+                          ? 'bg-emerald-900/50 text-emerald-300'
+                          : 'bg-red-900/50 text-red-300'}"
+                      >
+                        {edge.sourceHandle ?? '(none)'}
+                      </span>
+                    {/each}
+                  </div>
+                {/if}
+
+                {#if rawResult.edges.filter((e) => e.target === i).length > 0}
+                  <div class="text-xs">
+                    <span class="text-zinc-500">Inlets used:</span>
+                    {#each rawResult.edges.filter((e) => e.target === i) as edge}
+                      <span
+                        class="ml-1 rounded px-1.5 py-0.5 {handleIsValid(
+                          node.type,
+                          edge.targetHandle ?? '',
+                          'in'
+                        )
+                          ? 'bg-blue-900/50 text-blue-300'
+                          : 'bg-red-900/50 text-red-300'}"
+                      >
+                        {edge.targetHandle ?? '(none)'}
+                      </span>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+            {/each}
+          </div>
+
+          <!-- Right Column: Edges -->
+          <div class="space-y-4">
+            <h2 class="text-lg font-semibold text-zinc-300">
+              Edges ({rawResult.edges.length})
+              {#if issues.length > 0}
+                <span class="ml-2 text-sm text-red-400"
+                  >{issues.length} issue{issues.length !== 1 ? 's' : ''}</span
+                >
+              {:else}
+                <span class="ml-2 text-sm text-emerald-400">all valid</span>
+              {/if}
+            </h2>
+
+            {#if issues.length > 0}
+              <div class="space-y-1 rounded border border-red-800 bg-red-900/20 p-3">
+                <div class="text-xs font-semibold text-red-300">Validation Issues</div>
+                {#each issues as issue}
+                  <div
+                    class="text-xs {issue.severity === 'error'
+                      ? 'text-red-400'
+                      : 'text-yellow-400'}"
+                  >
+                    <span class="font-semibold">{issue.severity === 'error' ? 'ERR' : 'WARN'}</span>
+                    Edge #{issue.edgeIndex}: {issue.issue}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+
+            {#each rawResult.edges as edge, i (i)}
+              {@const hasIssue = edgeHasIssue(i, issues)}
+              <button
+                class="w-full cursor-pointer space-y-1 rounded border bg-zinc-900 p-3 text-left transition-colors {hasIssue
+                  ? 'border-red-700 bg-red-900/10'
+                  : 'border-zinc-700'} {selectedEdgeIndex === i ? 'ring-2 ring-blue-500' : ''}"
+                onclick={() => {
+                  selectedEdgeIndex = selectedEdgeIndex === i ? null : i;
+                }}
+              >
+                <div class="flex items-center gap-2 text-sm">
+                  <span class="rounded bg-zinc-700 px-1.5 py-0.5 text-xs">E{i}</span>
+                  <span class="text-zinc-400">
+                    <span class="text-zinc-100">#{edge.source}</span>
+                    <span class="text-zinc-600"> ({rawResult.nodes[edge.source]?.type})</span>
+                    <span class="mx-1">&rarr;</span>
+                    <span class="text-zinc-100">#{edge.target}</span>
+                    <span class="text-zinc-600"> ({rawResult.nodes[edge.target]?.type})</span>
+                  </span>
+                </div>
+
+                <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span class="text-zinc-500">sourceHandle: </span>
+                    <code
+                      class="rounded px-1 py-0.5 {edge.sourceHandle
+                        ? handleIsValid(
+                            rawResult.nodes[edge.source]?.type,
+                            edge.sourceHandle,
+                            'out'
+                          )
+                          ? 'bg-emerald-900/40 text-emerald-300'
+                          : 'bg-red-900/40 text-red-300'
+                        : 'bg-yellow-900/40 text-yellow-300'}"
+                    >
+                      {edge.sourceHandle ?? 'undefined'}
+                    </code>
+                  </div>
+                  <div>
+                    <span class="text-zinc-500">targetHandle: </span>
+                    <code
+                      class="rounded px-1 py-0.5 {edge.targetHandle
+                        ? handleIsValid(rawResult.nodes[edge.target]?.type, edge.targetHandle, 'in')
+                          ? 'bg-blue-900/40 text-blue-300'
+                          : 'bg-red-900/40 text-red-300'
+                        : 'bg-yellow-900/40 text-yellow-300'}"
+                    >
+                      {edge.targetHandle ?? 'undefined'}
+                    </code>
+                  </div>
+                </div>
+              </button>
+            {/each}
+
+            {#if insertResult}
+              <h2 class="mt-6 border-t border-zinc-800 pt-4 text-lg font-semibold text-zinc-300">
+                After Insertion
+              </h2>
+              <p class="text-xs text-zinc-500">
+                Result of handleMultiObjectInsert() — final node IDs and edge connections
+              </p>
+
+              <div class="space-y-2">
+                <div class="text-xs text-zinc-400">
+                  <span class="text-zinc-500">Nodes:</span>
+                  {#each insertResult.newNodes as node}
+                    <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5">{node.id}</span>
+                  {/each}
+                </div>
+
+                {#each insertResult.newEdges as edge}
+                  <div class="space-y-1 rounded border border-zinc-800 bg-zinc-900 p-2 text-xs">
+                    <div class="text-zinc-300">
+                      {edge.id}: {edge.source} &rarr; {edge.target}
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <span class="text-zinc-500">src: </span>
+                        <code class="text-emerald-300">{edge.sourceHandle ?? 'undefined'}</code>
+                      </div>
+                      <div>
+                        <span class="text-zinc-500">tgt: </span>
+                        <code class="text-blue-300">{edge.targetHandle ?? 'undefined'}</code>
+                      </div>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <details class="mt-6">
+          <summary class="cursor-pointer text-xs text-zinc-500 hover:text-zinc-300"
+            >Raw JSON Output</summary
+          >
+          <pre
+            class="mt-2 max-h-96 overflow-x-auto overflow-y-auto rounded border border-zinc-800 bg-zinc-900 p-4 text-xs text-zinc-400">{JSON.stringify(
+              rawResult,
+              null,
+              2
+            )}</pre>
+        </details>
+      {/if}
     {/if}
   </div>
 </div>
