@@ -570,7 +570,10 @@
       ></textarea>
     </div>
 
-    <div class="mx-2.5 flex items-center justify-between pb-1.5">
+    <div
+      class="mx-2.5 flex items-center justify-between"
+      style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px))"
+    >
       <button
         onclick={() => (personaPanelOpen = !personaPanelOpen)}
         class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 font-mono text-[10px] transition-colors {personaPanelOpen ||

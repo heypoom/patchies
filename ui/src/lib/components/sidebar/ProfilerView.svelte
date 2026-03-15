@@ -522,7 +522,10 @@
     </div>
 
     <!-- Footer: threshold note + dev stats toggle -->
-    <div class="border-t border-zinc-800 px-3 py-1.5 text-[10px] text-zinc-600">
+    <div
+      class="border-t border-zinc-800 px-3 pt-1.5 text-[10px] text-zinc-600"
+      style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px))"
+    >
       <div class="flex items-center justify-between">
         <Tooltip.Root>
           <Tooltip.Trigger>
