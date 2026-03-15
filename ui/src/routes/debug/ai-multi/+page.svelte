@@ -60,6 +60,13 @@
     return { pass, fail, err, total };
   });
 
+  const failedCases = $derived(
+    filteredCases.filter((c) => {
+      const r = getResultForCase(c.id);
+      return r && (r.status === 'fail' || r.status === 'error');
+    })
+  );
+
   function getResultForCase(caseId: string): EvalResult | undefined {
     // Return most recent result for this case
     return evalResults.findLast((r) => r.caseId === caseId);
@@ -470,6 +477,14 @@
           >
             Clear Results
           </button>
+          {#if failedCases.length > 0}
+            <button
+              class="cursor-pointer rounded bg-red-800 px-3 py-2 text-sm text-red-200 hover:bg-red-700"
+              onclick={() => runEval(failedCases)}
+            >
+              Re-run Failed ({failedCases.length})
+            </button>
+          {/if}
           {#if evalResults.length > 0}
             <button
               class="cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-600"
