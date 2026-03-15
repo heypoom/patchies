@@ -1,3 +1,5 @@
+import { match } from 'ts-pattern';
+
 /**
  * Handle specifications for all node types, derived from StandardHandle usage
  * in each node's Svelte component. Used by the debug page to validate
@@ -410,36 +412,35 @@ function matchHandleToSpec(
   spec: HandlePattern,
   direction: 'in' | 'out'
 ): string | null {
-  switch (spec.kind) {
-    case 'fixed':
-      if (spec.handles.includes(handle)) return null;
-      if (spec.handles.length === 0)
+  return match(spec)
+    .with({ kind: 'fixed' }, (s) => {
+      if (s.handles.includes(handle)) return null;
+      if (s.handles.length === 0)
         return `no ${direction === 'in' ? 'inlets' : 'outlets'} on this node`;
-      return `expected one of [${spec.handles.join(', ')}], got "${handle}"`;
-
-    case 'indexed': {
+      return `expected one of [${s.handles.join(', ')}], got "${handle}"`;
+    })
+    .with({ kind: 'indexed' }, (s) => {
       // Check if handle starts with the prefix and ends with a number
-      if (handle.startsWith(spec.prefix) && /^\d+$/.test(handle.slice(spec.prefix.length))) {
+      if (handle.startsWith(s.prefix) && /^\d+$/.test(handle.slice(s.prefix.length))) {
         return null;
       }
       // For multi-prefix (e.g., 'audio-in-|message-in-')
-      const prefixes = spec.prefix.split('|');
+      const prefixes = s.prefix.split('|');
       for (const prefix of prefixes) {
         if (handle.startsWith(prefix) && /^\d+$/.test(handle.slice(prefix.length))) {
           return null;
         }
       }
-      return `expected "${spec.prefix}{N}" pattern, got "${handle}"`;
-    }
-
-    case 'dynamic': {
+      return `expected "${s.prefix}{N}" pattern, got "${handle}"`;
+    })
+    .with({ kind: 'dynamic' }, (s) => {
       // Dynamic patterns are more permissive — check if handle matches any known pattern
-      for (const pattern of spec.patterns) {
+      for (const pattern of s.patterns) {
         if (matchDynamicPattern(handle, pattern)) return null;
       }
-      return `doesn't match any expected pattern [${spec.patterns.join(', ')}], got "${handle}". ${spec.note}`;
-    }
-  }
+      return `doesn't match any expected pattern [${s.patterns.join(', ')}], got "${handle}". ${s.note}`;
+    })
+    .exhaustive();
 }
 
 function matchDynamicPattern(handle: string, pattern: string): boolean {

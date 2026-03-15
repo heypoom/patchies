@@ -11,6 +11,7 @@
   import { useNodeDataTracker } from '$lib/history';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {
@@ -114,32 +115,40 @@
           node.selected && 'opacity-100'
         ]}
       >
-        <button
-          onclick={() => {
-            const oldLocked = node.data.locked ?? false;
-            updateNodeData(node.id, { ...node.data, locked: !oldLocked });
-            tracker.commit('locked', oldLocked, !oldLocked);
-          }}
-          class={[
-            'h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 hover:bg-zinc-700',
-            'text-zinc-300'
-          ]}
-          title={node.data.locked ? 'Unlock' : 'Lock'}
-        >
-          {#if node.data.locked}
-            <Lock class="h-4 w-4" />
-          {:else}
-            <LockOpen class="h-4 w-4" />
-          {/if}
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => {
+                const oldLocked = node.data.locked ?? false;
+                updateNodeData(node.id, { ...node.data, locked: !oldLocked });
+                tracker.commit('locked', oldLocked, !oldLocked);
+              }}
+              class={[
+                'h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 hover:bg-zinc-700',
+                'text-zinc-300'
+              ]}
+            >
+              {#if node.data.locked}
+                <Lock class="h-4 w-4" />
+              {:else}
+                <LockOpen class="h-4 w-4" />
+              {/if}
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>{node.data.locked ? 'Unlock' : 'Lock'}</Tooltip.Content>
+        </Tooltip.Root>
 
-        <button
-          onclick={sendText}
-          class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
-          title="Send (or Shift + Enter)"
-        >
-          <Play class="h-4 w-4" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={sendText}
+              class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
+            >
+              <Play class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Send (or Shift + Enter)</Tooltip.Content>
+        </Tooltip.Root>
       </div>
     </div>
 

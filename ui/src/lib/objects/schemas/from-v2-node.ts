@@ -73,7 +73,7 @@ function deriveHandleSpecFromPort(
     return { handleType: 'audio', handleId: originalIndex };
   }
   if (port.type === ANALYSIS_KEY) {
-    return { handleType: 'analysis' as 'analysis', handleId: originalIndex };
+    return { handleType: 'analysis', handleId: originalIndex };
   }
   return { handleType: 'message', handleId: originalIndex };
 }

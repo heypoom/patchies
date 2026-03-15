@@ -15,6 +15,7 @@
     type EvalStatus
   } from '$lib/ai/debug/eval-cases';
   import { onMount } from 'svelte';
+  import { match } from 'ts-pattern';
 
   // === View mode ===
   type ViewMode = 'eval' | 'single';
@@ -51,7 +52,7 @@
     filterCategory === 'all' ? EVAL_CASES : EVAL_CASES.filter((c) => c.category === filterCategory)
   );
 
-  const evalSummary = $derived(() => {
+  const evalSummary = $derived.by(() => {
     const pass = evalResults.filter((r) => r.status === 'pass').length;
     const fail = evalResults.filter((r) => r.status === 'fail').length;
     const err = evalResults.filter((r) => r.status === 'error').length;
@@ -176,31 +177,20 @@
   }
 
   function statusColor(status: EvalStatus): string {
-    switch (status) {
-      case 'pass':
-        return 'text-emerald-400';
-      case 'fail':
-        return 'text-red-400';
-      case 'error':
-        return 'text-yellow-400';
-      case 'running':
-        return 'text-blue-400';
-      default:
-        return 'text-zinc-500';
-    }
+    return match(status)
+      .with('pass', () => 'text-emerald-400')
+      .with('fail', () => 'text-red-400')
+      .with('error', () => 'text-yellow-400')
+      .with('running', () => 'text-blue-400')
+      .otherwise(() => 'text-zinc-500');
   }
 
   function statusBg(status: EvalStatus): string {
-    switch (status) {
-      case 'pass':
-        return 'border-emerald-800';
-      case 'fail':
-        return 'border-red-800 bg-red-900/10';
-      case 'error':
-        return 'border-yellow-800 bg-yellow-900/10';
-      default:
-        return 'border-zinc-700';
-    }
+    return match(status)
+      .with('pass', () => 'border-emerald-800')
+      .with('fail', () => 'border-red-800 bg-red-900/10')
+      .with('error', () => 'border-yellow-800 bg-yellow-900/10')
+      .otherwise(() => 'border-zinc-700');
   }
 
   // === Single prompt runner ===
@@ -351,23 +341,19 @@
     const spec = NODE_HANDLE_SPECS[nodeType];
     if (!spec) return null;
 
-    const fmt = (p: (typeof spec)['inlets']) => {
-      switch (p.kind) {
-        case 'fixed':
-          return p.handles.length > 0 ? p.handles.join(', ') : '(none)';
-        case 'indexed':
-          return `${p.prefix}{N}`;
-        case 'dynamic':
-          return p.patterns.join(' | ');
-      }
-    };
+    const fmt = (p: (typeof spec)['inlets']) =>
+      match(p)
+        .with({ kind: 'fixed' }, (s) => (s.handles.length > 0 ? s.handles.join(', ') : '(none)'))
+        .with({ kind: 'indexed' }, (s) => `${s.prefix}{N}`)
+        .with({ kind: 'dynamic' }, (s) => s.patterns.join(' | '))
+        .exhaustive();
 
     return { inlets: fmt(spec.inlets), outlets: fmt(spec.outlets) };
   }
 
   function extractHandleType(handle: string): string | null {
-    const match = handle.match(/^(audio|video|message|analysis)-/);
-    return match ? match[1] : null;
+    const m = handle.match(/^(audio|video|message|analysis)-/);
+    return m ? m[1] : null;
   }
 
   function edgeHasIssue(
@@ -454,7 +440,7 @@
 
       <!-- Summary bar -->
       {#if evalResults.length > 0}
-        {@const s = evalSummary()}
+        {@const s = evalSummary}
         <div class="flex gap-4 text-sm">
           <span class="text-zinc-500">{s.total} tested</span>
           <span class="text-emerald-400">{s.pass} pass</span>

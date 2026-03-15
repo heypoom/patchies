@@ -14,6 +14,7 @@
   import type { ChuckShred, ChuckNode } from '$lib/audio/v2/nodes/ChuckNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import ChuckSettings from '$lib/components/settings/ChuckSettings.svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let contentContainer: HTMLDivElement | null = null;
   let contentWidth = $state(100);
@@ -209,24 +210,32 @@
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
         <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
           <!-- Replace button -->
-          <button
-            onclick={handleReplace}
-            class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-            title="Replace (Cmd+Enter)"
-            disabled={isReplaceDisabled}
-          >
-            <Replace class="h-4 w-4" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={handleReplace}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isReplaceDisabled}
+              >
+                <Replace class="h-4 w-4" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Replace (Cmd+Enter)</Tooltip.Content>
+          </Tooltip.Root>
 
           <!-- Add shred button -->
-          <button
-            onclick={handleAddShred}
-            class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-            title="Add Shred (Cmd+\)"
-            disabled={!data.expr.trim()}
-          >
-            <CirclePlus class="h-4 w-4" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={handleAddShred}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!data.expr.trim()}
+              >
+                <CirclePlus class="h-4 w-4" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Add Shred (Cmd+\)</Tooltip.Content>
+          </Tooltip.Root>
 
           <!-- Remove button -->
           <button
@@ -239,13 +248,17 @@
           </button>
         </div>
 
-        <button
-          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-          onclick={() => (showSettings = !showSettings)}
-          title="Settings"
-        >
-          <Settings class="h-4 w-4 text-zinc-300" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              onclick={() => (showSettings = !showSettings)}
+            >
+              <Settings class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Settings</Tooltip.Content>
+        </Tooltip.Root>
       </div>
 
       <div class="chuck-node-container relative">

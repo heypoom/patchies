@@ -75,6 +75,7 @@ deriveHandleId({
 ```
 
 Examples:
+
 | Schema handle spec | Derived handle ID |
 |---|---|
 | `{ handleType: 'message' }` | `message-in` |
@@ -196,7 +197,7 @@ function generateHandleDoc(schema: ObjectSchema): string {
 ```
 
 This produces output like:
-```
+```text
 slider:
   inlet: "message-in" (Control messages)
   outlet: "message-out" (Slider output)

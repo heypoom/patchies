@@ -351,13 +351,16 @@ function buildMultiObjectGeneratorPrompt(objectTypes: string[], structure: strin
     ? `## Common JSRunner Runtime Functions (applies to: ${objectTypes.filter((t) => JS_ENABLED_OBJECTS.has(t)).join(', ')})\n\n${jsRunnerInstructions}\n\n---\n\n`
     : '';
 
+  // Deduplicate object types to avoid repeated prompt blocks
+  const uniqueObjectTypes = [...new Set(objectTypes)];
+
   // Get object-specific instructions for each type
-  const objectInstructions = objectTypes
+  const objectInstructions = uniqueObjectTypes
     .map((type) => getObjectSpecificInstructions(type))
     .join('\n\n---\n\n');
 
   // Generate handle ID reference from schemas for the requested object types
-  const handleDocs = generateHandleDocs(objectTypes);
+  const handleDocs = generateHandleDocs(uniqueObjectTypes);
 
   return `You are an AI assistant that generates multiple connected object configurations in Patchies, a visual patching environment for creative coding.
 
@@ -400,8 +403,8 @@ RESPONSE FORMAT:
     {
       "source": 0,
       "target": 1,
-      "sourceHandle": "message-out",
-      "targetHandle": "message-in"
+      "sourceHandle": "<see HANDLE ID REFERENCE>",
+      "targetHandle": "<see HANDLE ID REFERENCE>"
     }
   ]
 }

@@ -9,6 +9,7 @@
     Terminal
   } from '@lucide/svelte/icons';
   import * as Popover from '../../ui/popover';
+  import * as Tooltip from '../../ui/tooltip';
   import TypedHandle from '../../TypedHandle.svelte';
   import { uxnSchema } from '$lib/objects/schemas/uxn';
 
@@ -142,22 +143,26 @@
   />
 
   <!-- Match CodeBlockBase button styling -->
-  <button
-    class={[
-      'nodrag flex w-full cursor-pointer justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
-      borderColor,
-      selected ? 'shadow-glow-md bg-zinc-800' : 'hover:shadow-glow-sm bg-zinc-900'
-    ]}
-    style="min-width: {minContainerWidth}px"
-    onclick={onTogglePause}
-    title={isPaused ? 'Resume' : 'Pause'}
-  >
-    {#if isPaused}
-      <Play size="16px" />
-    {:else}
-      <Pause size="16px" />
-    {/if}
-  </button>
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      <button
+        class={[
+          'nodrag flex w-full cursor-pointer justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
+          borderColor,
+          selected ? 'shadow-glow-md bg-zinc-800' : 'hover:shadow-glow-sm bg-zinc-900'
+        ]}
+        style="min-width: {minContainerWidth}px"
+        onclick={onTogglePause}
+      >
+        {#if isPaused}
+          <Play size="16px" />
+        {:else}
+          <Pause size="16px" />
+        {/if}
+      </button>
+    </Tooltip.Trigger>
+    <Tooltip.Content>{isPaused ? 'Resume' : 'Pause'}</Tooltip.Content>
+  </Tooltip.Root>
 
   <TypedHandle
     port="outlet"

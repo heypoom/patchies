@@ -17,7 +17,7 @@ export const glslSchema: ObjectSchema = {
     }
   ],
   tags: ['shader', 'visual', 'graphics', 'opengl', 'gpu', 'shadertoy'],
-  hasDynamicOutlets: true,
+  hasDynamicOutlets: false,
   handlePatterns: {
     inlet: {
       template: 'video-in-{index}-{name}-{type}',

@@ -276,8 +276,7 @@
               {/if}
 
               <button
-                title="Change URL"
-                class="absolute -top-2 -right-2 rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                class="absolute -top-2 -right-2 cursor-pointer rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
                 onclick={toggleUrlInput}
               >
                 <SquarePen class="h-3 w-3 text-zinc-300" />
@@ -315,15 +314,13 @@
                 onkeydown={handleUrlInputKeydown}
               />
               <button
-                title="Load URL"
-                class="rounded bg-zinc-700 p-1 hover:bg-zinc-600"
+                class="cursor-pointer rounded bg-zinc-700 p-1 hover:bg-zinc-600"
                 onclick={handleUrlSubmit}
               >
                 <Check class="h-4 w-4 text-zinc-300" />
               </button>
               <button
-                title="Cancel"
-                class="rounded bg-zinc-700 p-1 hover:bg-zinc-600"
+                class="cursor-pointer rounded bg-zinc-700 p-1 hover:bg-zinc-600"
                 onclick={() => {
                   showUrlInput = false;
                   tempUrl = '';

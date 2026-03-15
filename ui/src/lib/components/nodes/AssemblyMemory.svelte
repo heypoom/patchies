@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Binary, FileText, Hash, Settings, Trash, X } from '@lucide/svelte/icons';
+  import * as Tooltip from '../ui/tooltip';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -190,39 +191,55 @@
     <!-- Floating header -->
     <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
       <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
-        <button
-          onclick={toggleFormat}
-          class="rounded p-1 hover:bg-zinc-700"
-          title="Toggle format (hex/decimal)"
-        >
-          <svelte:component this={format === 'hex' ? Hash : Binary} class="h-4 w-4" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button onclick={toggleFormat} class="cursor-pointer rounded p-1 hover:bg-zinc-700">
+              <svelte:component this={format === 'hex' ? Hash : Binary} class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Toggle format (hex/decimal)</Tooltip.Content>
+        </Tooltip.Root>
 
-        <button
-          onclick={() => (isBatch = !isBatch)}
-          class={['rounded p-1 hover:bg-zinc-700', isBatch && 'text-green-400']}
-          title="Toggle batch edit mode"
-        >
-          <FileText class="h-4 w-4" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => (isBatch = !isBatch)}
+              class={['cursor-pointer rounded p-1 hover:bg-zinc-700', isBatch && 'text-green-400']}
+            >
+              <FileText class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Toggle batch edit mode</Tooltip.Content>
+        </Tooltip.Root>
       </div>
 
       <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
-        <button
-          onclick={() => updateNodeData(nodeId, { ...data, values: [] })}
-          class={['rounded p-1 text-red-400 hover:bg-zinc-700']}
-          title="Clear memory (!)"
-        >
-          <Trash class="h-4 w-4" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => updateNodeData(nodeId, { ...data, values: [] })}
+              class={['cursor-pointer rounded p-1 text-red-400 hover:bg-zinc-700']}
+            >
+              <Trash class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Clear memory (!)</Tooltip.Content>
+        </Tooltip.Root>
 
-        <button
-          onclick={() => (showSettings = !showSettings)}
-          class={['rounded p-1 hover:bg-zinc-700', showSettings && 'text-blue-400']}
-          title="Settings"
-        >
-          <Settings class="h-4 w-4" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => (showSettings = !showSettings)}
+              class={[
+                'cursor-pointer rounded p-1 hover:bg-zinc-700',
+                showSettings && 'text-blue-400'
+              ]}
+            >
+              <Settings class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Settings</Tooltip.Content>
+        </Tooltip.Root>
       </div>
     </div>
 
@@ -311,7 +328,10 @@
   {#if showSettings}
     <div class="relative">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
+        <button
+          onclick={() => (showSettings = false)}
+          class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+        >
           <X class="h-4 w-4 text-zinc-300" />
         </button>
       </div>

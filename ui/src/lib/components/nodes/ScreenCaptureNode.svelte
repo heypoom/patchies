@@ -143,7 +143,7 @@
           {#if isCapturing}
             <button
               title="Stop screen capture"
-              class="rounded p-1 opacity-100 transition-opacity hover:bg-zinc-700"
+              class="cursor-pointer rounded p-1 opacity-100 transition-opacity hover:bg-zinc-700"
               onclick={stopCapture}
             >
               <Square class="h-4 w-4 text-red-500" />
@@ -151,7 +151,7 @@
           {:else}
             <button
               title="Start screen capture"
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
               onclick={startCapture}
             >
               <Monitor class="h-4 w-4 text-zinc-300" />

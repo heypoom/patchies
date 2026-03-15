@@ -11,6 +11,7 @@
   import { match, P } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
   import { useNodeDataTracker } from '$lib/history';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   type EventType = 'noteOn' | 'noteOff' | 'controlChange' | 'programChange' | 'pitchBend';
 
@@ -158,13 +159,17 @@
           <div class="font-mono text-xs font-medium text-zinc-400">midi.in</div>
         </div>
 
-        <button
-          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-          onclick={() => (showSettings = !showSettings)}
-          title="Settings"
-        >
-          <Settings class="h-4 w-4 text-zinc-300" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              onclick={() => (showSettings = !showSettings)}
+            >
+              <Settings class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Settings</Tooltip.Content>
+        </Tooltip.Root>
       </div>
 
       <div class="relative">
@@ -173,12 +178,11 @@
         {#if !deviceId}
           <button
             class={[
-              'flex w-full flex-col items-center justify-center rounded-md border bg-zinc-900 px-3 py-2 text-zinc-300 hover:bg-zinc-800',
+              'flex w-full cursor-pointer flex-col items-center justify-center rounded-md border bg-zinc-900 px-3 py-2 text-zinc-300 hover:bg-zinc-800',
               'border-amber-500',
               selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
             ]}
             onclick={() => (showSettings = true)}
-            title="Select MIDI device"
           >
             <Settings class="mb-1 h-4 w-4" />
 
@@ -189,12 +193,11 @@
         {:else}
           <button
             class={[
-              'flex w-full flex-col items-center justify-center rounded-md border bg-zinc-900 p-3 pb-2 text-zinc-300 hover:bg-zinc-800',
+              'flex w-full cursor-pointer flex-col items-center justify-center rounded-md border bg-zinc-900 p-3 pb-2 text-zinc-300 hover:bg-zinc-800',
               borderColor,
               selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
             ]}
             onclick={toggleListening}
-            title={isListening ? 'Stop listening' : 'Start listening'}
           >
             <svelte:component this={statusIcon} class="h-4 w-4" />
 
@@ -218,7 +221,10 @@
   {#if showSettings}
     <div class="relative">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
+        <button
+          onclick={() => (showSettings = false)}
+          class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+        >
           <X class="h-4 w-4 text-zinc-300" />
         </button>
       </div>

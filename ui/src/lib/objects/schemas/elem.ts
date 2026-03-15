@@ -12,7 +12,8 @@ export const elemSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input (inputNode)'
+      description: 'Audio input (inputNode)',
+      handle: { handleType: 'audio', handleId: '0' }
     },
     {
       id: 'message',

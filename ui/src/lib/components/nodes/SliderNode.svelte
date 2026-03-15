@@ -231,17 +231,21 @@
         >
           <div></div>
 
-          <button
-            class={[
-              'z-4 cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-              node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-              node.data.vertical && 'absolute top-[30px] right-[30px]'
-            ]}
-            onclick={() => (showSettings = !showSettings)}
-            title="Settings"
-          >
-            <Settings class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class={[
+                  'z-4 cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+                  node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+                  node.data.vertical && 'absolute top-[30px] right-[30px]'
+                ]}
+                onclick={() => (showSettings = !showSettings)}
+              >
+                <Settings class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Settings</Tooltip.Content>
+          </Tooltip.Root>
         </div>
       {/if}
 
