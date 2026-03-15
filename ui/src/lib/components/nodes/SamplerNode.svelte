@@ -555,7 +555,7 @@
         <!-- Audio Input Handle -->
         <TypedHandle
           port="inlet"
-          spec={{ handleType: 'audio', handleId: 'audio-in' }}
+          spec={{ handleType: 'audio' }}
           total={2}
           index={0}
           title="Audio input"
@@ -565,7 +565,7 @@
         <!-- Message Input Handle -->
         <TypedHandle
           port="inlet"
-          spec={{ handleType: 'message', handleId: 'message-in' }}
+          spec={{ handleType: 'message' }}
           total={2}
           index={1}
           title="Message input"
@@ -630,7 +630,7 @@
         <!-- Audio Output Handle -->
         <TypedHandle
           port="outlet"
-          spec={{ handleType: 'audio', handleId: 'audio-out' }}
+          spec={{ handleType: 'audio' }}
           total={1}
           index={0}
           title="Audio output"

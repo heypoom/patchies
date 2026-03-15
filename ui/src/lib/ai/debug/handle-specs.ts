@@ -93,7 +93,7 @@ export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
     outlets: { kind: 'fixed', handles: ['audio-out-0'] }
   },
   'sampler~': {
-    inlets: { kind: 'fixed', handles: ['audio-in-audio-in', 'message-in-message-in'] },
+    inlets: { kind: 'fixed', handles: ['audio-in', 'message-in'] },
     outlets: { kind: 'fixed', handles: ['audio-out'] }
   },
 
