@@ -26,11 +26,10 @@ The prompt adapts based on context. Use the mode dropdown in the header or press
 **Object selected:**
 
 - **Edit** — Modify the selected object's code based on your description
-- **Replace** — Swap the selected object for a different type, preserving connected edges
+- **Turn Into** — Replace the selected object with a different type, preserving connected edges
 - **Fix** — Fix errors in the selected object; automatically reads console errors and sends them as context
-- **Decompose** — Split the selected object into multiple focused connected objects
-- **Consumer** — Create a new object that consumes what the selected object produces
-- **Producer** — Create a new object that produces what the selected object consumes
+- **Split** — Split the selected object into multiple focused connected objects
+- **Fork** — Create a new object derived from the selected one (e.g., "as a canvas node", "draw triangles instead")
 
 ### Setup
 
@@ -43,12 +42,35 @@ This feature uses the `gemini-3-flash-preview` model to understand your prompt a
 
 ## Copilot
 
-Open the sidebar and switch to the **Copilot** tab to talk to an AI assistant about your patch.
+Open the sidebar and switch to the **Copilot** tab to chat with an AI assistant about your patch.
 
 - Ask questions about Patchies, get help debugging, or brainstorm ideas
 - When a node is selected, its type and data are automatically included as context so the AI understands what you're working on
 - Press `Enter` to send, `Shift+Enter` for a newline
 - Use the trash icon to clear the conversation history
+
+### Canvas Tools
+
+The copilot can act on your canvas directly when you ask it to. It will present proposed changes as action cards that you can **apply** or **dismiss** before anything is modified.
+
+- **Insert** — Create new objects on the canvas
+- **Edit** — Modify an existing object's code or settings
+- **Turn Into** — Replace an object with a different type
+- **Fix** — Fix errors using console output
+- **Split** — Break an object into multiple connected objects
+- **Fork** — Derive a new object from an existing one
+- **Connect** — Wire objects together with edges
+- **Disconnect** — Remove edges between objects
+
+### Context Tools
+
+The copilot automatically uses these behind the scenes to understand your patch before acting:
+
+- **Get Graph Nodes** — Lists all nodes and edges on the canvas so it knows what exists and how things are connected
+- **Get Node Data** — Fetches the full data of a specific node (code, settings, connected edges)
+- **Get Object Instructions** — Looks up the API reference for a specific object type (e.g., handle IDs, inlet/outlet specs)
+- **Search Docs** — Searches topic guides and object reference pages by keyword
+- **Get Doc Content** — Fetches the full content of a documentation page
 
 ## Patch to App
 
