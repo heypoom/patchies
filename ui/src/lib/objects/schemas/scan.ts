@@ -13,11 +13,13 @@ export const scanSchema: ObjectSchema = {
     {
       id: 'input',
       description: 'Input value ($2) - triggers accumulation',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'New input value, becomes $2 in expression' }]
     },
     {
       id: 'reset',
       description: 'Reset/set accumulator',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Reset to initial value' },
         { schema: Type.Any(), description: 'Set accumulator directly' }
@@ -28,6 +30,7 @@ export const scanSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Accumulated result',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Current accumulator value' }]
     }
   ],

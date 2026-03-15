@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Code, Loader, RefreshCw, Settings, Terminal, X } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { onMount, onDestroy } from 'svelte';
@@ -365,10 +365,9 @@
       <div class="relative">
         <!-- Inlet handles -->
         <div>
-          <StandardHandle
+          <TypedHandle
             port="inlet"
-            type="message"
-            id="bang"
+            spec={{ handleType: 'message', handleId: 'bang' }}
             title="bang (dispatch)"
             index={0}
             total={totalInlets}
@@ -376,10 +375,9 @@
             {nodeId}
           />
           {#each uniformBindings as uniform, i}
-            <StandardHandle
+            <TypedHandle
               port="inlet"
-              type="message"
-              id={`uniform-${uniform.binding}`}
+              spec={{ handleType: 'message', handleId: `uniform-${uniform.binding}` }}
               title={`${uniform.name} (${uniform.structName})`}
               index={i + 1}
               total={totalInlets}
@@ -388,10 +386,9 @@
             />
           {/each}
           {#each inputBindings as binding, i}
-            <StandardHandle
+            <TypedHandle
               port="inlet"
-              type="message"
-              id={`in-${binding.binding}`}
+              spec={{ handleType: 'message', handleId: `in-${binding.binding}` }}
               title={`${binding.name} (${binding.type})`}
               index={i + 1 + uniformBindings.length}
               total={totalInlets}
@@ -441,10 +438,9 @@
         <!-- Outlet handles -->
         <div>
           {#each outputBindings as binding, i}
-            <StandardHandle
+            <TypedHandle
               port="outlet"
-              type="message"
-              id={`out-${binding.binding}`}
+              spec={{ handleType: 'message', handleId: `out-${binding.binding}` }}
               title={`${binding.name} (${binding.type})`}
               index={i}
               total={totalOutlets}

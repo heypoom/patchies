@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { Terminal } from '@lucide/svelte/icons';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -157,20 +157,18 @@
 </script>
 
 {#snippet handles()}
-  <StandardHandle
+  <TypedHandle
     port="inlet"
-    type="message"
-    id={0}
+    spec={{ handleType: 'message', handleId: 0 }}
     title="Input ($2)"
     total={2}
     index={0}
     class="top-0"
     {nodeId}
   />
-  <StandardHandle
+  <TypedHandle
     port="inlet"
-    type="message"
-    id={1}
+    spec={{ handleType: 'message', handleId: 1 }}
     title="Reset/Set accumulator"
     total={2}
     index={1}
@@ -180,7 +178,14 @@
 {/snippet}
 
 {#snippet outlets()}
-  <StandardHandle port="outlet" type="message" title="Accumulator" total={1} index={0} {nodeId} />
+  <TypedHandle
+    port="outlet"
+    spec={{ handleType: 'message' }}
+    title="Accumulator"
+    total={1}
+    index={0}
+    {nodeId}
+  />
 {/snippet}
 
 <div class="group relative flex flex-col gap-2">

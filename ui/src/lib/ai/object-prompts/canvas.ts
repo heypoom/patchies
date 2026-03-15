@@ -22,10 +22,6 @@ ${messagingInstructions}
 
 ${fftInstructions}
 
-**Handle IDs:**
-- Video outlet: "video-out"
-- Message ports: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
-
 Example - Animated circle:
 \`\`\`json
 {

@@ -25,18 +25,26 @@ export const aiTxtSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Text prompts',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Type.String(), description: 'Text prompt - sets prompt and generates' },
         { schema: Generate, description: 'Set prompt and generate text' },
         { schema: Set, description: 'Set prompt without generating' },
         { schema: Bang, description: 'Generate text with current prompt' }
       ]
+    },
+    {
+      id: 'video',
+      type: 'signal',
+      description: 'Image/video input for vision prompts',
+      handle: { handleType: 'video', handleId: '0' }
     }
   ],
   outlets: [
     {
       id: 'message',
       description: 'Generated text',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.String(), description: 'Generated text response' }]
     }
   ],

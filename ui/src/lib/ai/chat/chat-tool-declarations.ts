@@ -140,7 +140,7 @@ export const contextToolDeclarations = [
 export const connectEdgesDeclaration = {
   name: CONNECT_EDGES,
   description:
-    'Connect existing nodes on the canvas by creating edges between them. Use get_graph_nodes first to discover node IDs. Handle IDs follow the pattern: type-direction (e.g. "message-out", "audio-in", "video-out") or direction-index (e.g. "in-0", "out-1") for indexed ports.',
+    'Connect existing nodes on the canvas by creating edges between them. Use get_graph_nodes first to discover node IDs, node types, and existing edge handles. Handle IDs vary per node type — check existing edges from get_graph_nodes for examples, or call get_object_instructions for API details.',
   parametersJsonSchema: {
     type: 'object',
     properties: {
@@ -154,11 +154,12 @@ export const connectEdgesDeclaration = {
             sourceHandle: {
               type: 'string',
               description:
-                'Source handle ID (e.g. "message-out", "audio-out", "video-out", "out-0")'
+                'Source outlet handle ID — get exact IDs from get_object_instructions for the source node type'
             },
             targetHandle: {
               type: 'string',
-              description: 'Target handle ID (e.g. "message-in", "audio-in", "video-in", "in-0")'
+              description:
+                'Target inlet handle ID — get exact IDs from get_object_instructions for the target node type'
             }
           },
           required: ['source', 'target']

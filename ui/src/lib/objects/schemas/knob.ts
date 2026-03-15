@@ -14,6 +14,7 @@ export const knobSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Output the current knob value' },
         { schema: Reset, description: 'Reset the knob value back to its default' },
@@ -29,6 +30,7 @@ export const knobSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Knob output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Number(), description: 'Current knob value' }]
     }
   ],

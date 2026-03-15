@@ -23,6 +23,7 @@ export const tableSchema: ObjectSchema = {
     {
       id: 'command',
       description: 'Table commands',
+      handle: { handleType: 'message' },
       messages: [
         {
           schema: Bang,
@@ -67,6 +68,7 @@ export const tableSchema: ObjectSchema = {
     {
       id: 'result',
       description: 'Table data output',
+      handle: { handleType: 'message' },
       messages: [
         {
           schema: Type.Unsafe<Float32Array>({ type: 'Float32Array' }),

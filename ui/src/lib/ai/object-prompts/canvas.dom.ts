@@ -18,10 +18,6 @@ ${messagingInstructions}
 
 ${fftInstructions}
 
-**Handle IDs:**
-- Video outlet: "video-out" (hidden with noOutput())
-- Message inlet/outlet: "message-in", "message-out"
-
 Example - XY pad:
 \`\`\`json
 {

@@ -10,14 +10,6 @@ CRITICAL RULES:
 Messages:
 - string: set markdown content
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (receives markdown string)
-- LIMITATION: Display only, no outlets
-
-HANDLE IDS (Auto-generated):
-- LIMITATION: Display only, no inlets or outlets
-- Configure via node data only
-
 Example - Documentation:
 \`\`\`json
 {

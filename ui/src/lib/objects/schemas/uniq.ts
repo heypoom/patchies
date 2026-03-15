@@ -13,11 +13,13 @@ export const uniqSchema: ObjectSchema = {
     {
       id: 'input',
       description: 'Input value ($2) - compared to previous',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Current value, becomes $2 in comparator' }]
     },
     {
       id: 'reset',
       description: 'Reset state',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Forget last value' },
         { schema: Type.Any(), description: 'Set last value directly' }
@@ -28,6 +30,7 @@ export const uniqSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Unique values',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Values that differ from previous' }]
     }
   ],

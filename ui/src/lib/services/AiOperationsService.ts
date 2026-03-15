@@ -1,4 +1,5 @@
 import type { Node, Edge, Viewport } from '@xyflow/svelte';
+import { toast } from 'svelte-sonner';
 import type { CanvasContext } from './CanvasContext';
 import type { NodeOperationsService } from './NodeOperationsService';
 import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
@@ -47,7 +48,7 @@ export class AiOperationsService {
     basePosition: { x: number; y: number },
     viewport: Viewport,
     onNodesAdded: () => Promise<void>
-  ): Promise<{ newNodes: Node[]; newEdges: Edge[] }> {
+  ): Promise<{ newNodes: Node[]; newEdges: Edge[]; invalidEdgeCount: number }> {
     const { handleMultiObjectInsert } = await import('$lib/ai/handle-multi-object-insert');
 
     const result = await handleMultiObjectInsert({
@@ -86,7 +87,19 @@ export class AiOperationsService {
       )
     );
 
-    return { newNodes: result.newNodes, newEdges: result.newEdges };
+    if (result.invalidEdges.length > 0) {
+      const n = result.invalidEdges.length;
+      toast.warning(
+        `${n} edge${n === 1 ? '' : 's'} had invalid handles and ${n === 1 ? 'was' : 'were'} skipped`,
+        { description: 'You may need to connect some edges manually.' }
+      );
+    }
+
+    return {
+      newNodes: result.newNodes,
+      newEdges: result.newEdges,
+      invalidEdgeCount: result.invalidEdges.length
+    };
   }
 
   /**

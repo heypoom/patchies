@@ -22,6 +22,7 @@ export const netrecvSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [{ schema: SetChannel, description: 'Set the channel name' }]
     }
   ],
@@ -29,6 +30,7 @@ export const netrecvSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Received messages',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Message received from peers in the room' }]
     }
   ],

@@ -15,11 +15,6 @@ Available:
 - Multiple concurrent shreds
 - Real-time synthesis
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (single)
-- Audio outlet: "audio-out" (single)
-- LIMITATION: Single audio outlet only
-
 Example - Sine Wave:
 \`\`\`json
 {

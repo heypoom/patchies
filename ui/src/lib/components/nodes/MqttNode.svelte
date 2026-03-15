@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Settings, X, Radio, Plus, Trash2, Dice5, Info } from '@lucide/svelte/icons';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -347,10 +347,9 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
-          id={0}
+          spec={{ handleType: 'message', handleId: 0 }}
           title="connect, disconnect, subscribe, unsubscribe, publish"
           total={1}
           index={0}
@@ -371,10 +370,9 @@
           </div>
         </button>
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
-          id={0}
+          spec={{ handleType: 'message', handleId: 0 }}
           title="output"
           total={1}
           index={0}

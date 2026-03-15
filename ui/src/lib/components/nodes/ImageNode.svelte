@@ -2,7 +2,7 @@
   import { Image as ImageIcon, Upload } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -169,9 +169,9 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={{ handleType: 'message' }}
           total={1}
           index={0}
           class={handleCommonClass}
@@ -231,10 +231,9 @@
           {/if}
         </div>
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="video"
-          id="0"
+          spec={{ handleType: 'video', handleId: '0' }}
           title="Video output"
           total={1}
           index={0}

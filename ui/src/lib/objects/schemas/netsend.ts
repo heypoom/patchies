@@ -22,6 +22,7 @@ export const netsendSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Messages to send',
+      handle: { handleType: 'message' },
       messages: [
         { schema: SetChannel, description: 'Set the channel name' },
         { schema: Type.Any(), description: 'Message to broadcast to all peers in the room' }

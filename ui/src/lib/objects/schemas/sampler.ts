@@ -69,11 +69,13 @@ export const samplerSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input for recording'
+      description: 'Audio input for recording',
+      handle: { handleType: 'audio' }
     },
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         {
           schema: Bang,
@@ -146,7 +148,13 @@ export const samplerSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [],
-  tags: ['audio', 'sampler', 'recording', 'loop', 'pitch'],
-  hasDynamicOutlets: true
+  outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output',
+      handle: { handleType: 'audio' }
+    }
+  ],
+  tags: ['audio', 'sampler', 'recording', 'loop', 'pitch']
 };

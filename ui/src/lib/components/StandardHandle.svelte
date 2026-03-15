@@ -3,6 +3,7 @@
   import { getPortPosition } from '$lib/utils/node-utils';
   import { match, P } from 'ts-pattern';
   import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
+  import { deriveHandleId } from '$lib/utils/handle-id';
   import {
     isConnectionMode,
     isConnecting,
@@ -46,15 +47,7 @@
   }: Props = $props();
 
   // Construct the handle ID based on the specification
-  const handleId = $derived.by(() => {
-    const portDir = port === 'inlet' ? 'in' : 'out';
-
-    return match({ type, id })
-      .with({ type: P.string, id: P.not(P.nullish) }, ({ type, id }) => `${type}-${portDir}-${id}`)
-      .with({ type: P.string, id: P.nullish }, ({ type }) => `${type}-${portDir}`)
-      .with({ type: P.nullish, id: P.not(P.nullish) }, ({ id }) => `${portDir}-${id}`)
-      .otherwise(() => port);
-  });
+  const handleId = $derived(deriveHandleId({ port, type, id }));
 
   // Determine handle type and position using ts-pattern
   const handleType = match(port)

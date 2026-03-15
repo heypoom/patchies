@@ -78,11 +78,13 @@ export const chuckSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input for processing'
+      description: 'Audio input for processing',
+      handle: { handleType: 'audio', handleId: 0 }
     },
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message', handleId: 1 },
       messages: [
         { schema: Type.String(), description: 'Add string expression as new shred' },
         { schema: Bang, description: 'Replace most recent shred with current expression' },
@@ -114,8 +116,15 @@ export const chuckSchema: ObjectSchema = {
   ],
   outlets: [
     {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output',
+      handle: { handleType: 'audio' }
+    },
+    {
       id: 'message',
       description: 'Console output and event responses',
+      handle: { handleType: 'message', handleId: 0 },
       messages: [
         { schema: Type.String(), description: 'Console output from <<< print statements' },
         {

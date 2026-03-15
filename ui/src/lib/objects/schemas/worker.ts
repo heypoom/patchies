@@ -30,5 +30,9 @@ export const workerSchema: ObjectSchema = {
     }
   ],
   tags: ['programming', 'javascript', 'worker', 'threading', 'async'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}', description: 'Message inlets (0-indexed)' },
+    outlet: { template: 'out-{index}', description: 'Message outlets (0-indexed)' }
+  }
 };

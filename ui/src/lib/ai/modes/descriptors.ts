@@ -24,11 +24,6 @@ export function getActionColorClass(color: AiPromptColor): string {
     .exhaustive();
 }
 
-function nodeName(ctx: AiModeContext): string {
-  const d = ctx.selectedNode?.data as Record<string, unknown> | undefined;
-  return (d?.name as string) || (d?.title as string) || ctx.selectedNode?.type || 'object';
-}
-
 export const modeDescriptors: Record<string, AiModeDescriptor> = {
   insert: {
     id: 'insert',

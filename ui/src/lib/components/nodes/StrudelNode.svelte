@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Ellipsis, Link, Play, Square, Terminal } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { onMount, onDestroy } from 'svelte';
   import StrudelEditor from '$lib/components/StrudelEditor.svelte';
@@ -302,7 +302,13 @@
       </div>
 
       <div class="relative">
-        <StandardHandle port="inlet" type="message" id={nodeId} total={1} index={0} {nodeId} />
+        <TypedHandle
+          port="inlet"
+          spec={{ handleType: 'message', handleId: nodeId }}
+          total={1}
+          index={0}
+          {nodeId}
+        />
 
         <div
           bind:this={editorContainer}
@@ -334,7 +340,7 @@
           </div>
         </div>
 
-        <StandardHandle port="outlet" type="audio" total={1} index={0} {nodeId} />
+        <TypedHandle port="outlet" spec={{ handleType: 'audio' }} total={1} index={0} {nodeId} />
       </div>
     </div>
   </div>

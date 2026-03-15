@@ -1,6 +1,6 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -119,10 +119,12 @@
 
   <!-- Audio signal inputs (s1, s2, etc. - 1-indexed to match $1, $2) -->
   {#each Array.from({ length: signalInletCount }) as _, index}
-    <StandardHandle
+    <TypedHandle
       port="inlet"
-      type="audio"
-      id={signalInletCount === 1 && index === 0 ? undefined : index}
+      spec={{
+        handleType: 'audio',
+        handleId: signalInletCount === 1 && index === 0 ? undefined : index
+      }}
       title={signalInletCount > 1 ? `s${index + 1}` : 'Audio Input'}
       total={totalInlets}
       {index}
@@ -134,10 +136,9 @@
   <!-- Control inlets for $1-$9 variables (only show if there are $ variables) -->
   {#if controlInletCount > 0}
     {#each Array.from({ length: controlInletCount }) as _, index}
-      <StandardHandle
+      <TypedHandle
         port="inlet"
-        type="message"
-        id={index}
+        spec={{ handleType: 'message', handleId: index }}
         title={`$${index + 1}`}
         total={totalInlets}
         index={signalInletCount + index}
@@ -150,10 +151,9 @@
 
 {#snippet audioOutlets()}
   <!-- Audio output -->
-  <StandardHandle
+  <TypedHandle
     port="outlet"
-    type="audio"
-    id="audio-out"
+    spec={{ handleType: 'audio' }}
     title="Audio Output"
     total={1}
     index={0}

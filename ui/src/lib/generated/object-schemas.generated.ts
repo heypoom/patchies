@@ -14,10 +14,27 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Subtract right signal from left signal',
     inlets: [
-      { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' }
+      {
+        id: 'left',
+        type: 'signal',
+        description: 'Left signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'right',
+        type: 'signal',
+        description: 'Right signal input',
+        handle: { handleType: 'audio', handleId: 1 }
+      }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Difference of left − right' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Difference of left − right',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'subtract', 'signal']
   },
 
@@ -26,10 +43,27 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Multiply two audio signals',
     inlets: [
-      { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' }
+      {
+        id: 'left',
+        type: 'signal',
+        description: 'Left signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'right',
+        type: 'signal',
+        description: 'Right signal input',
+        handle: { handleType: 'audio', handleId: 1 }
+      }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Product of left × right' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Product of left × right',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'multiply', 'ring modulation', 'signal']
   },
 
@@ -38,10 +72,27 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Divide left signal by right signal',
     inlets: [
-      { id: 'left', type: 'signal', description: 'Left signal input (dividend)' },
-      { id: 'right', type: 'signal', description: 'Right signal input (divisor)' }
+      {
+        id: 'left',
+        type: 'signal',
+        description: 'Left signal input (dividend)',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'right',
+        type: 'signal',
+        description: 'Right signal input (divisor)',
+        handle: { handleType: 'audio', handleId: 1 }
+      }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Quotient of left ÷ right' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Quotient of left ÷ right',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'divide', 'signal']
   },
 
@@ -50,10 +101,27 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Add two audio signals',
     inlets: [
-      { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' }
+      {
+        id: 'left',
+        type: 'signal',
+        description: 'Left signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'right',
+        type: 'signal',
+        description: 'Right signal input',
+        handle: { handleType: 'audio', handleId: 1 }
+      }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Sum of left + right' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Sum of left + right',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'add', 'sum', 'signal']
   },
 
@@ -62,10 +130,27 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Output 1 if left < right, else 0',
     inlets: [
-      { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' }
+      {
+        id: 'left',
+        type: 'signal',
+        description: 'Left signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'right',
+        type: 'signal',
+        description: 'Right signal input',
+        handle: { handleType: 'audio', handleId: 1 }
+      }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: '1 if left < right, else 0' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: '1 if left < right, else 0',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'compare', 'less', 'gate', 'signal']
   },
 
@@ -74,10 +159,27 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Output 1 if left > right, else 0',
     inlets: [
-      { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' }
+      {
+        id: 'left',
+        type: 'signal',
+        description: 'Left signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'right',
+        type: 'signal',
+        description: 'Right signal input',
+        handle: { handleType: 'audio', handleId: 1 }
+      }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: '1 if left > right, else 0' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: '1 if left > right, else 0',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'compare', 'greater', 'gate', 'signal']
   },
 
@@ -85,8 +187,22 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'abs~',
     category: 'audio',
     description: 'Absolute value of signal',
-    inlets: [{ id: 'signal', type: 'signal', description: 'Audio input' }],
-    outlets: [{ id: 'out', type: 'signal', description: 'Absolute value output' }],
+    inlets: [
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Absolute value output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'absolute', 'rectify', 'signal']
   },
 
@@ -108,37 +224,43 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Union([Type.Literal(0), Type.Literal(false)]),
             description: 'Trigger release'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'peak',
         type: 'float',
         description: 'Peak value',
-        messages: [{ schema: Type.Number(), description: 'Peak level (default: 1)' }]
+        messages: [{ schema: Type.Number(), description: 'Peak level (default: 1)' }],
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'attack',
         type: 'float',
         description: 'Attack time in ms',
-        messages: [{ schema: Type.Number(), description: 'Attack time in ms (default: 100)' }]
+        messages: [{ schema: Type.Number(), description: 'Attack time in ms (default: 100)' }],
+        handle: { handleType: 'message', handleId: 2 }
       },
       {
         id: 'decay',
         type: 'float',
         description: 'Decay time in ms',
-        messages: [{ schema: Type.Number(), description: 'Decay time in ms (default: 200)' }]
+        messages: [{ schema: Type.Number(), description: 'Decay time in ms (default: 200)' }],
+        handle: { handleType: 'message', handleId: 3 }
       },
       {
         id: 'sustain',
         type: 'float',
         description: 'Sustain value',
-        messages: [{ schema: Type.Number(), description: 'Sustain level (default: 0.5)' }]
+        messages: [{ schema: Type.Number(), description: 'Sustain level (default: 0.5)' }],
+        handle: { handleType: 'message', handleId: 4 }
       },
       {
         id: 'release',
         type: 'float',
         description: 'Release time in ms',
-        messages: [{ schema: Type.Number(), description: 'Release time in ms (default: 300)' }]
+        messages: [{ schema: Type.Number(), description: 'Release time in ms (default: 300)' }],
+        handle: { handleType: 'message', handleId: 5 }
       }
     ],
     outlets: [
@@ -146,7 +268,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'out',
         type: 'message',
         description: 'ADSR envelope message',
-        messages: [{ schema: Type.Any(), description: 'Scheduled parameter messages' }]
+        messages: [{ schema: Type.Any(), description: 'Scheduled parameter messages' }],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
     tags: ['adsr']
@@ -164,34 +287,46 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         messages: [
           { schema: Type.Number(), description: 'Gate: 1 = on (attack), 0 = off (release)' },
           { schema: Type.Object({ type: Type.Literal('bang') }), description: 'Trigger attack' }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'attack',
         type: 'float',
         description: 'Attack time in ms',
-        messages: [{ schema: Type.Number(), description: 'Attack time in milliseconds' }]
+        messages: [{ schema: Type.Number(), description: 'Attack time in milliseconds' }],
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'decay',
         type: 'float',
         description: 'Decay time in ms',
-        messages: [{ schema: Type.Number(), description: 'Decay time in milliseconds' }]
+        messages: [{ schema: Type.Number(), description: 'Decay time in milliseconds' }],
+        handle: { handleType: 'message', handleId: 2 }
       },
       {
         id: 'sustain',
         type: 'float',
         description: 'Sustain level (0-1)',
-        messages: [{ schema: Type.Number(), description: 'Sustain level (0-1)' }]
+        messages: [{ schema: Type.Number(), description: 'Sustain level (0-1)' }],
+        handle: { handleType: 'message', handleId: 3 }
       },
       {
         id: 'release',
         type: 'float',
         description: 'Release time in ms',
-        messages: [{ schema: Type.Number(), description: 'Release time in milliseconds' }]
+        messages: [{ schema: Type.Number(), description: 'Release time in milliseconds' }],
+        handle: { handleType: 'message', handleId: 4 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Envelope signal (0-1)' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Envelope signal (0-1)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'envelope', 'adsr', 'gate', 'signal']
   },
 
@@ -200,7 +335,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Transcribe speech to text using Gemini AI',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio input to transcribe' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio input to transcribe',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'message',
         type: 'message',
@@ -224,10 +364,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({ type: Type.Literal('setPrompt'), value: Type.String() }),
             description: 'Set transcription context hint'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'msg', type: 'message', description: 'Transcribed text output' }],
+    outlets: [
+      {
+        id: 'msg',
+        type: 'message',
+        description: 'Transcribed text output',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'ai.stt']
   },
 
@@ -236,7 +384,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'All-pass filter passes all frequencies but shifts their phase',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Signal to filter' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Signal to filter',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'frequency',
         type: 'float',
@@ -247,7 +400,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Center frequency in Hz'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'Q',
@@ -256,10 +410,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         messages: [
           { schema: Type.Number({ minimum: 0.0001, maximum: 1000 }), description: 'Quality factor' }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Filtered signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'allpass']
   },
 
@@ -269,7 +431,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     description:
       'Band-pass filter allows frequencies within a range around center frequency to pass through',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Signal to filter' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Signal to filter',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'frequency',
         type: 'float',
@@ -280,7 +447,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Center frequency in Hz'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'Q',
@@ -292,10 +460,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Quality factor (bandwidth)'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Filtered signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'bandpass']
   },
 
@@ -304,7 +480,14 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Emit bang on audio onset',
     inlets: [{ id: 'signal', type: 'signal', description: 'Audio input to monitor' }],
-    outlets: [{ id: 'bang', type: 'bang', description: 'Bang on audio onset' }],
+    outlets: [
+      {
+        id: 'bang',
+        type: 'bang',
+        description: 'Bang on audio onset',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'bang', 'trigger', 'onset', 'signal']
   },
 
@@ -314,7 +497,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     description: 'Outputs the current beat on each beat change',
     inlets: [],
     outlets: [
-      { id: 'out', type: 'int', description: 'Current beat in measure (0 to beatsPerBar-1)' }
+      {
+        id: 'out',
+        type: 'int',
+        description: 'Current beat in measure (0 to beatsPerBar-1)',
+        handle: { handleType: 'message', handleId: 0 }
+      }
     ],
     tags: ['timing', 'transport', 'control']
   },
@@ -329,10 +517,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         type: 'float',
         description: 'Beat frequency multiplier (0.25 = per bar, 1 = per beat, 2 = 8ths)',
         messages: [{ schema: Type.Number(), description: 'Beat frequency multiplier' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Beat phase ramp (0 to 1)' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Beat phase ramp (0 to 1)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'oscillator', 'beat', 'transport', 'clock', 'signal']
   },
 
@@ -341,44 +537,61 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: '2nd order filter with direct coefficient control',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Audio input to filter' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input to filter',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'ff1',
         type: 'float',
         description: 'Feedforward coefficient 1 (b0)',
         messages: [{ schema: Type.Number(), description: 'Feedforward coef 1 (current sample)' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'ff2',
         type: 'float',
         description: 'Feedforward coefficient 2 (b1)',
         messages: [{ schema: Type.Number(), description: 'Feedforward coef 2 (x[n-1])' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       },
       {
         id: 'ff3',
         type: 'float',
         description: 'Feedforward coefficient 3 (b2)',
         messages: [{ schema: Type.Number(), description: 'Feedforward coef 3 (x[n-2])' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 3 }
       },
       {
         id: 'fb1',
         type: 'float',
         description: 'Feedback coefficient 1 (a1)',
         messages: [{ schema: Type.Number(), description: 'Feedback coef 1 (y[n-1])' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 4 }
       },
       {
         id: 'fb2',
         type: 'float',
         description: 'Feedback coefficient 2 (a2)',
         messages: [{ schema: Type.Number(), description: 'Feedback coef 2 (y[n-2])' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 5 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Filtered signal output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'filter', 'biquad', 'iir', 'coefficients', 'custom']
   },
 
@@ -432,10 +645,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({ type: Type.Literal('setSampleRate'), value: Type.Number() }),
             description: 'Set sample rate'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'generator', 'synthesis', 'algorithmic', 'bytebeat']
   },
 
@@ -444,17 +665,33 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'ChucK strongly-timed concurrent audio programming',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio input (accessible via adc in ChucK code)' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio input (accessible via adc in ChucK code)',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'msg',
         type: 'message',
         description: 'Control input (code, bang, stop)',
-        messages: [{ schema: Type.Any(), description: 'Control input (code, bang, stop)' }]
+        messages: [{ schema: Type.Any(), description: 'Control input (code, bang, stop)' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
     outlets: [
-      { id: 'out', type: 'signal', description: 'Audio output' },
-      { id: 'msg', type: 'message', description: 'Message output (print)' }
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'msg',
+        type: 'message',
+        description: 'Message output (print)',
+        handle: { handleType: 'message', handleId: 1 }
+      }
     ],
     tags: ['processors', 'audio', 'chuck']
   },
@@ -468,22 +705,32 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'value',
         type: 'message',
         description: 'Value to clip',
-        messages: [{ schema: Type.Number(), description: 'Clip this number to the min/max range' }]
+        messages: [{ schema: Type.Number(), description: 'Clip this number to the min/max range' }],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'min',
         type: 'float',
         description: 'Minimum value (lower bound)',
-        messages: [{ schema: Type.Number(), description: 'Minimum value (lower bound)' }]
+        messages: [{ schema: Type.Number(), description: 'Minimum value (lower bound)' }],
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'max',
         type: 'float',
         description: 'Maximum value (upper bound)',
-        messages: [{ schema: Type.Number(), description: 'Maximum value (upper bound)' }]
+        messages: [{ schema: Type.Number(), description: 'Maximum value (upper bound)' }],
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'float', description: 'Clipped value output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'float',
+        description: 'Clipped value output',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['math', 'clamp', 'limit', 'range', 'control']
   },
 
@@ -492,23 +739,37 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Clamp signal to a range',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Audio input' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'min',
         type: 'float',
         description: 'Minimum value',
         messages: [{ schema: Type.Number(), description: 'Minimum clamp value' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'max',
         type: 'float',
         description: 'Maximum value',
         messages: [{ schema: Type.Number(), description: 'Maximum clamp value' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Clamped signal output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Clamped signal output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'clip', 'clamp', 'limit', 'signal']
   },
 
@@ -517,23 +778,37 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Comb filter',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Audio input' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'delay',
         type: 'float',
         description: 'Delay time in ms',
         messages: [{ schema: Type.Number(), description: 'Delay time in milliseconds' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'feedback',
         type: 'float',
         description: 'Feedback amount (-0.999 to 0.999)',
         messages: [{ schema: Type.Number(), description: 'Feedback coefficient' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Filtered signal output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'filter', 'comb', 'delay', 'karplus-strong', 'flanger']
   },
 
@@ -542,7 +817,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Dynamic range compressor for audio signals',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Signal to compress' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Signal to compress',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'threshold',
         type: 'float',
@@ -553,7 +833,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'The decibel value above which compression starts'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'knee',
@@ -565,7 +846,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Decibel range above threshold for smooth transition'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       },
       {
         id: 'ratio',
@@ -577,7 +859,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Amount of dB change in input for 1 dB change in output'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 3 }
       },
       {
         id: 'attack',
@@ -589,7 +872,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Time in seconds to reduce gain by 10dB'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 4 }
       },
       {
         id: 'release',
@@ -601,10 +885,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Time in seconds to increase gain by 10dB'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 5 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Compressed signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Compressed signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'compressor']
   },
 
@@ -613,18 +905,26 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'ConvolverNode for reverb and acoustic modeling using impulse responses',
     inlets: [
-      { id: 'in', type: 'signal', description: '' },
-      { id: 'buffer', type: 'signal', description: 'receives an AudioBuffer for impulse response' },
+      { id: 'in', type: 'signal', description: '', handle: { handleType: 'audio', handleId: 0 } },
+      {
+        id: 'buffer',
+        type: 'signal',
+        description: 'receives an AudioBuffer for impulse response',
+        handle: { handleType: 'audio', handleId: 1 }
+      },
       {
         id: 'normalize',
         type: 'bool',
         description: 'Whether to normalize the impulse response',
         messages: [
           { schema: Type.Boolean(), description: 'Whether to normalize the impulse response' }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: '' }],
+    outlets: [
+      { id: 'out', type: 'signal', description: '', handle: { handleType: 'audio', handleId: 0 } }
+    ],
     tags: ['processors', 'audio', 'convolver']
   },
 
@@ -632,8 +932,22 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'cos~',
     category: 'audio',
     description: 'Cosine waveshaper (phasor to cosine)',
-    inlets: [{ id: 'phase', type: 'signal', description: 'Phase input (0-1 for full cycle)' }],
-    outlets: [{ id: 'out', type: 'signal', description: 'cos(2π × input)' }],
+    inlets: [
+      {
+        id: 'phase',
+        type: 'signal',
+        description: 'Phase input (0-1 for full cycle)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'cos(2π × input)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'cosine', 'waveshaper', 'oscillator', 'phase']
   },
 
@@ -642,15 +956,28 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Csound synthesis and audio processing',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio signal input' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'msg',
         type: 'message',
         description: 'Control messages',
-        messages: [{ schema: Type.Any(), description: 'Control messages' }]
+        messages: [{ schema: Type.Any(), description: 'Control messages' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'csound']
   },
 
@@ -663,16 +990,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'message',
         type: 'message',
         description: 'Message to debounce',
-        messages: [{ schema: Type.Any(), description: 'Message to debounce' }]
+        messages: [{ schema: Type.Any(), description: 'Message to debounce' }],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'time',
         type: 'int',
         description: 'Debounce time in ms',
-        messages: [{ schema: Type.Integer(), description: 'Debounce time in ms' }]
+        messages: [{ schema: Type.Integer(), description: 'Debounce time in ms' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'message', description: '' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'message',
+        description: '',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['debounce']
   },
 
@@ -685,16 +1021,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'message',
         type: 'message',
         description: 'Message to pass through',
-        messages: [{ schema: Type.Any(), description: 'Message to pass through' }]
+        messages: [{ schema: Type.Any(), description: 'Message to pass through' }],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'delay',
         type: 'int',
         description: 'How long to delay for in ms',
-        messages: [{ schema: Type.Integer(), description: 'How long to delay for in ms' }]
+        messages: [{ schema: Type.Integer(), description: 'How long to delay for in ms' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'message', description: '' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'message',
+        description: '',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['delay']
   },
 
@@ -703,7 +1048,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Creates a time-based delay effect on audio',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio signal input' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'time',
         type: 'float',
@@ -711,10 +1061,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         messages: [
           { schema: Type.Number(), description: 'Delay time in milliseconds (max 1000ms)' }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Delayed audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Delayed audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'delay']
   },
 
@@ -733,10 +1091,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'delay',
         type: 'float',
         description: 'Delay time in ms',
-        messages: [{ schema: Type.Number(), description: 'Delay time in milliseconds' }]
+        messages: [{ schema: Type.Number(), description: 'Delay time in milliseconds' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Delayed signal output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Delayed signal output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'delay', 'buffer', 'read', 'effect']
   },
 
@@ -745,7 +1111,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Read from delay line with 4-point interpolation for variable delays',
     inlets: [
-      { id: 'delay', type: 'signal', description: 'Delay time in ms' },
+      {
+        id: 'delay',
+        type: 'signal',
+        description: 'Delay time in ms',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'name',
         type: 'string',
@@ -753,7 +1124,14 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         messages: [{ schema: Type.String(), description: 'Set delay line name' }]
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Delayed signal output (interpolated)' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Delayed signal output (interpolated)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'delay', 'buffer', 'read', 'interpolation', 'chorus', 'flanger', 'effect']
   },
 
@@ -762,7 +1140,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Write to a named delay line',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Audio input to write to delay line' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input to write to delay line',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'control',
         type: 'message',
@@ -772,7 +1155,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({ type: Type.Literal('clear') }),
             description: 'Clear the delay line (fill with zeros)'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'name',
@@ -796,15 +1180,28 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'User-programmable DSP processor with dynamic inlets/outlets',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio signal input' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'code',
         type: 'string',
         description: 'JavaScript code for audio processing',
-        messages: [{ schema: Type.String(), description: 'JavaScript code for audio processing' }]
+        messages: [{ schema: Type.String(), description: 'JavaScript code for audio processing' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Processed audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Processed audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'dsp']
   },
 
@@ -813,15 +1210,28 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Elementary Audio DSP synthesis and processing node',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio signal input' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'code',
         type: 'string',
         description: 'Elementary Audio code to execute',
-        messages: [{ schema: Type.String(), description: 'Elementary Audio code to execute' }]
+        messages: [{ schema: Type.String(), description: 'Elementary Audio code to execute' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'elem']
   },
 
@@ -830,15 +1240,28 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'RMS envelope follower',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Audio input to analyze' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input to analyze',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'window',
         type: 'float',
         description: 'Analysis window size in samples',
-        messages: [{ schema: Type.Number(), description: 'Window size in samples' }]
+        messages: [{ schema: Type.Number(), description: 'Window size in samples' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'rms', type: 'message', description: 'RMS amplitude value' }],
+    outlets: [
+      {
+        id: 'rms',
+        type: 'message',
+        description: 'RMS amplitude value',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'envelope', 'follower', 'rms', 'analysis']
   },
 
@@ -846,8 +1269,22 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'exp~',
     category: 'audio',
     description: 'Exponential function (e^x)',
-    inlets: [{ id: 'signal', type: 'signal', description: 'Exponent value' }],
-    outlets: [{ id: 'out', type: 'signal', description: 'e^x output' }],
+    inlets: [
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Exponent value',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'e^x output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'exp', 'exponential', 'signal']
   },
 
@@ -859,7 +1296,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       {
         id: 's',
         type: 'signal',
-        description: 'Audio signal input (use s1-s9 in expression for multiple inputs)'
+        description: 'Audio signal input (use s1-s9 in expression for multiple inputs)',
+        handle: { handleType: 'audio', handleId: 0 }
       },
       {
         id: 'expression',
@@ -872,10 +1310,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description:
               'Mathematical expression (s1-s9=signal inputs, s=alias for s1, i=index, t=time, $1-$9=control values)'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Expression result as audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Expression result as audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'expr']
   },
 
@@ -890,16 +1336,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Set value and output (or bang to output current)',
         messages: [
           { schema: Type.Any(), description: 'Set value and output (or bang to output current)' }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'cold',
         type: 'float',
         description: 'Set value without output',
-        messages: [{ schema: Type.Number(), description: 'Set value without output' }]
+        messages: [{ schema: Type.Number(), description: 'Set value without output' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'float', description: 'Float output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'float',
+        description: 'Float output',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['float']
   },
 
@@ -907,8 +1362,22 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'fexpr~',
     category: 'audio',
     description: 'Filter expression evaluator with sample history access for FIR/IIR filters',
-    inlets: [{ id: 'x1', type: 'signal', description: 'Audio signal input' }],
-    outlets: [{ id: 'out', type: 'signal', description: 'Expression result as audio output' }],
+    inlets: [
+      {
+        id: 'x1',
+        type: 'signal',
+        description: 'Audio signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Expression result as audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'fexpr']
   },
 
@@ -917,7 +1386,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Analyzes audio signals and provides frequency and amplitude data',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio signal to analyze' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal to analyze',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'fftSize',
         type: 'int',
@@ -927,14 +1401,16 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Integer(),
             description: 'Size of the FFT bin. Must be a power of 2, from 32 to 32768.'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
     outlets: [
       {
         id: 'analysis',
         type: 'analysis',
-        description: 'Marker to indicate where to get the FFT data from.'
+        description: 'Marker to indicate where to get the FFT data from.',
+        handle: { handleType: 'analysis', handleId: 0 }
       }
     ],
     tags: ['processors', 'audio', 'fft']
@@ -951,16 +1427,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Set value and output (or bang to output current)',
         messages: [
           { schema: Type.Any(), description: 'Set value and output (or bang to output current)' }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'cold',
         type: 'float',
         description: 'Set value without output',
-        messages: [{ schema: Type.Number(), description: 'Set value without output' }]
+        messages: [{ schema: Type.Number(), description: 'Set value without output' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'float', description: 'Float output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'float',
+        description: 'Float output',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['float']
   },
 
@@ -968,8 +1453,22 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'ftom~',
     category: 'audio',
     description: 'Frequency to MIDI note conversion',
-    inlets: [{ id: 'freq', type: 'signal', description: 'Frequency in Hz' }],
-    outlets: [{ id: 'note', type: 'signal', description: 'MIDI note number (fractional)' }],
+    inlets: [
+      {
+        id: 'freq',
+        type: 'signal',
+        description: 'Frequency in Hz',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
+    outlets: [
+      {
+        id: 'note',
+        type: 'signal',
+        description: 'MIDI note number (fractional)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'midi', 'frequency', 'conversion', 'pitch']
   },
 
@@ -978,7 +1477,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Amplify or attenuate audio signals',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio input' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'gain',
         type: 'float',
@@ -989,10 +1493,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Gain value (1 = unity, >1 = amplify, <1 = attenuate)'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'gain', 'volume', 'amplifier']
   },
 
@@ -1001,7 +1513,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'High-pass filter allows frequencies above cutoff to pass through',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Signal to filter' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Signal to filter',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'frequency',
         type: 'float',
@@ -1012,7 +1529,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Cutoff frequency in Hz'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'Q',
@@ -1024,10 +1542,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Quality factor (resonance)'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Filtered signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'highpass']
   },
 
@@ -1036,7 +1562,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'High shelf filter boosts or cuts frequencies above the cutoff frequency',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Signal to filter' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Signal to filter',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'frequency',
         type: 'float',
@@ -1047,7 +1578,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Cutoff frequency in Hz'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'gain',
@@ -1056,10 +1588,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         messages: [
           { schema: Type.Number({ minimum: -40, maximum: 40 }), description: 'Gain in dB' }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Filtered signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'highshelf']
   },
 
@@ -1074,16 +1614,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Set value and output (or bang to output current)',
         messages: [
           { schema: Type.Any(), description: 'Set value and output (or bang to output current)' }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'cold',
         type: 'int',
         description: 'Set value without output',
-        messages: [{ schema: Type.Integer(), description: 'Set value without output' }]
+        messages: [{ schema: Type.Integer(), description: 'Set value without output' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'int', description: 'Integer output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'int',
+        description: 'Integer output',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['int']
   },
 
@@ -1098,16 +1647,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Set value and output (or bang to output current)',
         messages: [
           { schema: Type.Any(), description: 'Set value and output (or bang to output current)' }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'cold',
         type: 'int',
         description: 'Set value without output',
-        messages: [{ schema: Type.Integer(), description: 'Set value without output' }]
+        messages: [{ schema: Type.Integer(), description: 'Set value without output' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'int', description: 'Integer output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'int',
+        description: 'Integer output',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['int']
   },
 
@@ -1147,7 +1705,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({ type: Type.Literal('setStore'), value: Type.String() }),
             description: 'Set store name'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'store',
@@ -1221,7 +1780,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({ type: Type.Literal('error'), message: Type.String() }),
             description: 'Error message'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
     tags: ['kv']
@@ -1232,7 +1792,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Sample-and-hold on bang',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Input signal to sample' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Input signal to sample',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'trigger',
         type: 'bang',
@@ -1242,10 +1807,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({ type: Type.Literal('bang') }),
             description: 'Sample the current input value'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Held signal value' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Held signal value',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'sample', 'hold', 'latch', 'trigger']
   },
 
@@ -1265,16 +1838,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Ramp to [target, time_ms]'
           },
           { schema: Type.Object({ type: Type.Literal('stop') }), description: 'Stop current ramp' }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'time',
         type: 'float',
         description: 'Ramp time in ms (used by next target)',
-        messages: [{ schema: Type.Number(), description: 'Ramp duration in milliseconds' }]
+        messages: [{ schema: Type.Number(), description: 'Ramp duration in milliseconds' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Ramped signal output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Ramped signal output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'ramp', 'envelope', 'signal', 'line']
   },
 
@@ -1283,7 +1865,14 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'control',
     description: 'Sends a bang signal when the object is created',
     inlets: [],
-    outlets: [{ id: 'out', type: 'bang', description: 'Bang signal sent on load' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'bang',
+        description: 'Bang signal sent on load',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['loadbang']
   },
 
@@ -1291,8 +1880,22 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'log~',
     category: 'audio',
     description: 'Natural logarithm of signal',
-    inlets: [{ id: 'signal', type: 'signal', description: 'Audio input (positive values)' }],
-    outlets: [{ id: 'out', type: 'signal', description: 'Natural log output' }],
+    inlets: [
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input (positive values)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Natural log output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'log', 'logarithm', 'signal']
   },
 
@@ -1301,7 +1904,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Low-pass filter allows frequencies below cutoff to pass through',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Signal to filter' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Signal to filter',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'frequency',
         type: 'float',
@@ -1312,7 +1920,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Cutoff frequency in Hz'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'Q',
@@ -1324,10 +1933,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Quality factor (resonance)'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Filtered signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'lowpass']
   },
 
@@ -1336,7 +1953,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Low shelf filter boosts or cuts frequencies below the cutoff frequency',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Signal to filter' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Signal to filter',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'frequency',
         type: 'float',
@@ -1347,7 +1969,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Cutoff frequency in Hz'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'gain',
@@ -1356,10 +1979,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         messages: [
           { schema: Type.Number({ minimum: -40, maximum: 40 }), description: 'Gain in dB' }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Filtered signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'lowshelf']
   },
 
@@ -1368,10 +1999,27 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Per-sample maximum of two signals',
     inlets: [
-      { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' }
+      {
+        id: 'left',
+        type: 'signal',
+        description: 'Left signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'right',
+        type: 'signal',
+        description: 'Right signal input',
+        handle: { handleType: 'audio', handleId: 1 }
+      }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Maximum of left and right' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Maximum of left and right',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'maximum', 'signal']
   },
 
@@ -1380,7 +2028,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Merges multiple mono channels into a single multichannel signal',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Channel inputs (dynamic based on channel count)' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Channel inputs (dynamic based on channel count)',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'channels',
         type: 'int',
@@ -1390,10 +2043,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Integer({ minimum: 1, maximum: 32 }),
             description: 'Number of channels to merge (1-32)'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Multichannel audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Multichannel audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'merge']
   },
 
@@ -1411,16 +2072,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Any(),
             description: 'Control messages: "start", "stop", or bang to toggle'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'interval',
         type: 'int',
         description: 'Interval in milliseconds',
-        messages: [{ schema: Type.Integer(), description: 'Interval in milliseconds' }]
+        messages: [{ schema: Type.Integer(), description: 'Interval in milliseconds' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'bang', description: 'Bang signal sent at regular intervals' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'bang',
+        description: 'Bang signal sent at regular intervals',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['metro']
   },
 
@@ -1438,10 +2108,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({ type: Type.Literal('bang') }),
             description: 'Restart microphone input'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Microphone audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Microphone audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['sources', 'audio', 'mic']
   },
 
@@ -1450,10 +2128,27 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Per-sample minimum of two signals',
     inlets: [
-      { id: 'left', type: 'signal', description: 'Left signal input' },
-      { id: 'right', type: 'signal', description: 'Right signal input' }
+      {
+        id: 'left',
+        type: 'signal',
+        description: 'Left signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'right',
+        type: 'signal',
+        description: 'Right signal input',
+        handle: { handleType: 'audio', handleId: 1 }
+      }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Minimum of left and right' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Minimum of left and right',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'minimum', 'signal']
   },
 
@@ -1471,10 +2166,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Number({ minimum: 0, maximum: 127 }),
             description: 'MIDI note value (0-127)'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'frequency', type: 'float', description: 'Frequency output in Hz' }],
+    outlets: [
+      {
+        id: 'frequency',
+        type: 'float',
+        description: 'Frequency output in Hz',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['control', 'midi', 'frequency', 'conversion']
   },
 
@@ -1482,8 +2185,22 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'mtof~',
     category: 'audio',
     description: 'MIDI note to frequency conversion',
-    inlets: [{ id: 'note', type: 'signal', description: 'MIDI note number (0-127)' }],
-    outlets: [{ id: 'freq', type: 'signal', description: 'Frequency in Hz' }],
+    inlets: [
+      {
+        id: 'note',
+        type: 'signal',
+        description: 'MIDI note number (0-127)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
+    outlets: [
+      {
+        id: 'freq',
+        type: 'signal',
+        description: 'Frequency in Hz',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'midi', 'frequency', 'conversion', 'pitch']
   },
 
@@ -1492,7 +2209,14 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'White noise generator',
     inlets: [],
-    outlets: [{ id: 'out', type: 'signal', description: 'White noise output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'White noise output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'noise', 'random', 'signal']
   },
 
@@ -1501,23 +2225,37 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Notch filter attenuates frequencies around the center frequency',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio input' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'frequency',
         type: 'float',
         description: 'Center frequency',
         messages: [{ schema: Type.Number(), description: 'Center frequency in Hz' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'Q',
         type: 'float',
         description: 'Width of the notch',
         messages: [{ schema: Type.Number(), description: 'Q value' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Filtered audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Filtered audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'filter', 'notch', 'eq']
   },
 
@@ -1531,23 +2269,33 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         type: 'float',
         description: 'Oscillator frequency in hertz',
         messages: [{ schema: Type.Number(), description: 'Oscillator frequency in hertz' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'type',
         type: 'string',
         description: 'Type of oscillator',
-        messages: [{ schema: Type.String(), description: 'Type of oscillator' }]
+        messages: [{ schema: Type.String(), description: 'Type of oscillator' }],
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'detune',
         type: 'float',
         description: 'Detune amount in cents',
         messages: [{ schema: Type.Number(), description: 'Detune amount in cents' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Oscillator output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Oscillator output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['sources', 'audio', 'osc']
   },
 
@@ -1555,7 +2303,14 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'out~',
     category: 'audio',
     description: 'Audio output to speakers',
-    inlets: [{ id: 'in', type: 'signal', description: 'Audio signal to output' }],
+    inlets: [
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal to output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     outlets: [],
     tags: ['destinations', 'audio', 'out']
   },
@@ -1577,11 +2332,17 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description:
               'MIDI noteOn/noteOff messages to trigger pads, or {type:"load", pad:N, src:"..."} to assign a sample'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
     outlets: [
-      { id: 'out', type: 'signal', description: 'Stereo audio mix of all active pad voices' }
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Stereo audio mix of all active pad voices',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
     ],
     tags: ['processors', 'audio', 'pads']
   },
@@ -1591,7 +2352,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Controls stereo panning (-1 left to 1 right)',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio signal input' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'pan',
         type: 'float',
@@ -1599,10 +2365,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         messages: [
           { schema: Type.Number(), description: 'Pan value (-1 = left, 0 = center, 1 = right)' }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Panned audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Panned audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'pan']
   },
 
@@ -1611,7 +2385,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Peaking filter allows peak EQ adjustments at a specific frequency',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Signal to filter' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Signal to filter',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'frequency',
         type: 'float',
@@ -1622,7 +2401,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Center frequency in Hz'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'Q',
@@ -1634,7 +2414,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Quality factor (width of peak)'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       },
       {
         id: 'gain',
@@ -1643,10 +2424,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         messages: [
           { schema: Type.Number({ minimum: -40, maximum: 40 }), description: 'Gain in dB' }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 3 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Filtered signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Filtered signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'peaking']
   },
 
@@ -1660,16 +2449,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         type: 'float',
         description: 'Frequency in Hz',
         messages: [{ schema: Type.Number(), description: 'Frequency in Hz' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'phase',
         type: 'float',
         description: 'Phase set (0 to 1)',
-        messages: [{ schema: Type.Number(), description: 'Phase set value (0 to 1)' }]
+        messages: [{ schema: Type.Number(), description: 'Phase set value (0 to 1)' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Ramp output (0 to 1)' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Ramp output (0 to 1)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'oscillator', 'ramp', 'phasor', 'signal']
   },
 
@@ -1678,7 +2476,14 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Pink noise generator (-3dB/octave)',
     inlets: [],
-    outlets: [{ id: 'out', type: 'signal', description: 'Pink noise signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Pink noise signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'noise', 'pink', 'generator', 'source']
   },
 
@@ -1687,16 +2492,29 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Raise signal to a power',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Audio input' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'exponent',
         type: 'float',
         description: 'Exponent',
         messages: [{ schema: Type.Number(), description: 'Exponent value' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Signal raised to power' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Signal raised to power',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'power', 'exponent', 'signal']
   },
 
@@ -1710,7 +2528,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         type: 'float',
         description: 'Frequency in Hz',
         messages: [{ schema: Type.Number(), description: 'Frequency in Hz' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'width',
@@ -1722,16 +2541,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Pulse width (0 = silent, 0.5 = square, 1 = silent)'
           }
         ],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'phase',
         type: 'float',
         description: 'Phase set (0 to 1)',
-        messages: [{ schema: Type.Number(), description: 'Phase set value (0 to 1)' }]
+        messages: [{ schema: Type.Number(), description: 'Phase set value (0 to 1)' }],
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Pulse wave signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Pulse wave signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'oscillator', 'pulse', 'square', 'pwm', 'generator', 'source']
   },
 
@@ -1744,10 +2572,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'channel',
         type: 'string',
         description: 'Channel name to receive from',
-        messages: [{ schema: Type.String(), description: 'Channel name' }]
+        messages: [{ schema: Type.String(), description: 'Channel name' }],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'message', description: 'Messages received from the channel' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'message',
+        description: 'Messages received from the channel',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['control', 'routing', 'channel', 'wireless']
   },
 
@@ -1760,10 +2596,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'channel',
         type: 'string',
         description: 'Channel name',
-        messages: [{ schema: Type.String(), description: 'Channel name' }]
+        messages: [{ schema: Type.String(), description: 'Channel name' }],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'routing', 'channel', 'wireless']
   },
 
@@ -1776,10 +2620,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'channel',
         type: 'string',
         description: 'Channel name to receive from',
-        messages: [{ schema: Type.String(), description: 'Channel name' }]
+        messages: [{ schema: Type.String(), description: 'Channel name' }],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'message', description: 'Messages received from the channel' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'message',
+        description: 'Messages received from the channel',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['control', 'routing', 'channel', 'wireless']
   },
 
@@ -1792,10 +2644,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'channel',
         type: 'string',
         description: 'Channel name',
-        messages: [{ schema: Type.String(), description: 'Channel name' }]
+        messages: [{ schema: Type.String(), description: 'Channel name' }],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'routing', 'channel', 'wireless']
   },
 
@@ -1803,8 +2663,22 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'rsqrt~',
     category: 'audio',
     description: 'Reciprocal square root (1/√x)',
-    inlets: [{ id: 'signal', type: 'signal', description: 'Audio input (positive values)' }],
-    outlets: [{ id: 'out', type: 'signal', description: '1/√x output' }],
+    inlets: [
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input (positive values)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: '1/√x output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'rsqrt', 'reciprocal', 'sqrt', 'signal']
   },
 
@@ -1817,13 +2691,15 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'message',
         type: 'message',
         description: 'Message to broadcast to channel',
-        messages: [{ schema: Type.Any(), description: 'Any message to send' }]
+        messages: [{ schema: Type.Any(), description: 'Any message to send' }],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'channel',
         type: 'string',
         description: 'Channel name to send to',
-        messages: [{ schema: Type.String(), description: 'Channel name' }]
+        messages: [{ schema: Type.String(), description: 'Channel name' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
     outlets: [],
@@ -1835,12 +2711,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Send audio to a named channel',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio input to broadcast' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio input to broadcast',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'channel',
         type: 'string',
         description: 'Channel name',
-        messages: [{ schema: Type.String(), description: 'Channel name' }]
+        messages: [{ schema: Type.String(), description: 'Channel name' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
     outlets: [],
@@ -1852,8 +2734,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Sample and hold unit',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Input signal to be sampled' },
-      { id: 'control', type: 'signal', description: 'Control signal (samples when decreasing)' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Input signal to be sampled',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'control',
+        type: 'signal',
+        description: 'Control signal (samples when decreasing)',
+        handle: { handleType: 'audio', handleId: 1 }
+      },
       {
         id: 'message',
         type: 'message',
@@ -1871,10 +2763,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({ type: Type.Literal('reset') }),
             description: 'Force next sample (reset to infinity)'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Sampled and held signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Sampled and held signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'sample', 'hold', 'control', 'signal']
   },
 
@@ -1895,10 +2795,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description:
               'Control messages: record, play, stop, loop, loopOff, setStart, setEnd, playbackRate, detune. Also accepts Float32Array directly to set buffer.'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Audio output from sampler playback' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output from sampler playback',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'sampler']
   },
 
@@ -1916,10 +2824,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({ type: Type.Literal('bang') }),
             description: 'Bang to output current sample rate'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'float', description: 'Sample rate in Hz' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'float',
+        description: 'Sample rate in Hz',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'info']
   },
 
@@ -1928,8 +2844,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Oscilloscope waveform display',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio signal (or X axis in XY mode)' },
-      { id: 'y', type: 'signal', description: 'Y axis signal (XY mode only)' }
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal (or X axis in XY mode)',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'y',
+        type: 'signal',
+        description: 'Y axis signal (XY mode only)',
+        handle: { handleType: 'audio', handleId: 1 }
+      }
     ],
     outlets: [],
     tags: ['processors', 'audio', 'scope']
@@ -1944,18 +2870,30 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'input',
         type: 'message',
         description: 'Value to test against arguments',
-        messages: [{ schema: Type.Any(), description: 'Value to test against arguments' }]
+        messages: [{ schema: Type.Any(), description: 'Value to test against arguments' }],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'set',
         type: 'message',
         description: 'Set match value (single argument mode)',
-        messages: [{ schema: Type.Any(), description: 'Set match value (single argument mode)' }]
+        messages: [{ schema: Type.Any(), description: 'Set match value (single argument mode)' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
     outlets: [
-      { id: '0', type: 'bang', description: 'Bang on match' },
-      { id: 'nomatch', type: 'message', description: 'Pass through on no match' }
+      {
+        id: '0',
+        type: 'bang',
+        description: 'Bang on match',
+        handle: { handleType: 'message', handleId: 0 }
+      },
+      {
+        id: 'nomatch',
+        type: 'message',
+        description: 'Pass through on no match',
+        handle: { handleType: 'message', handleId: 1 }
+      }
     ],
     tags: ['select']
   },
@@ -1969,18 +2907,30 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'input',
         type: 'message',
         description: 'Value to test against arguments',
-        messages: [{ schema: Type.Any(), description: 'Value to test against arguments' }]
+        messages: [{ schema: Type.Any(), description: 'Value to test against arguments' }],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'set',
         type: 'message',
         description: 'Set match value (single argument mode)',
-        messages: [{ schema: Type.Any(), description: 'Set match value (single argument mode)' }]
+        messages: [{ schema: Type.Any(), description: 'Set match value (single argument mode)' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
     outlets: [
-      { id: '0', type: 'bang', description: 'Bang on match' },
-      { id: 'nomatch', type: 'message', description: 'Pass through on no match' }
+      {
+        id: '0',
+        type: 'bang',
+        description: 'Bang on match',
+        handle: { handleType: 'message', handleId: 0 }
+      },
+      {
+        id: 'nomatch',
+        type: 'message',
+        description: 'Pass through on no match',
+        handle: { handleType: 'message', handleId: 1 }
+      }
     ],
     tags: ['select']
   },
@@ -1994,13 +2944,15 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'message',
         type: 'message',
         description: 'Message to broadcast to channel',
-        messages: [{ schema: Type.Any(), description: 'Any message to send' }]
+        messages: [{ schema: Type.Any(), description: 'Any message to send' }],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'channel',
         type: 'string',
         description: 'Channel name to send to',
-        messages: [{ schema: Type.String(), description: 'Channel name' }]
+        messages: [{ schema: Type.String(), description: 'Channel name' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
     outlets: [],
@@ -2012,12 +2964,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Send audio to a named channel',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio input to broadcast' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio input to broadcast',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'channel',
         type: 'string',
         description: 'Channel name',
-        messages: [{ schema: Type.String(), description: 'Channel name' }]
+        messages: [{ schema: Type.String(), description: 'Channel name' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
     outlets: [],
@@ -2034,10 +2992,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         type: 'float',
         description: 'Constant signal value',
         messages: [{ schema: Type.Number(), description: 'Constant signal value' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Constant signal output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Constant signal output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['sources', 'audio', 'sig']
   },
 
@@ -2046,16 +3012,29 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Slew-limiting low-pass filter for smooth transitions',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Audio input' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'limit',
         type: 'float',
         description: 'Slew rate limit (units per second)',
         messages: [{ schema: Type.Number(), description: 'Slew rate limit (units/second)' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Slew-limited output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Slew-limited output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'filter', 'slew', 'smooth', 'portamento', 'glide', 'limiter']
   },
 
@@ -2064,7 +3043,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Sample a signal value on bang',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Signal to sample' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Signal to sample',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'bang',
         type: 'bang',
@@ -2074,10 +3058,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({ type: Type.Literal('bang') }),
             description: 'Sample the current value'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'value', type: 'message', description: 'Sampled signal value' }],
+    outlets: [
+      {
+        id: 'value',
+        type: 'message',
+        description: 'Sampled signal value',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'sample', 'snapshot', 'signal', 'message']
   },
 
@@ -2086,15 +3078,28 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Supersonic is SuperCollider engine for the web',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio signal input' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'code',
         type: 'string',
         description: 'SuperSonic code to execute',
-        messages: [{ schema: Type.String(), description: 'SuperSonic code to execute' }]
+        messages: [{ schema: Type.String(), description: 'SuperSonic code to execute' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'sonic']
   },
 
@@ -2112,10 +3117,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Any(),
             description: 'Control messages: "play", "pause", "stop", or bang to restart'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Audio output from loaded file' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output from loaded file',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['sources', 'audio', 'soundfile']
   },
 
@@ -2128,7 +3141,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'data',
         type: 'message',
         description: 'Data input',
-        messages: [{ schema: Type.Any(), description: 'Data to pass through when allowed' }]
+        messages: [{ schema: Type.Any(), description: 'Data to pass through when allowed' }],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'control',
@@ -2140,10 +3154,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({ type: Type.Literal('bang') }),
             description: 'Bang toggles gate state'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'message', description: 'Output when spigot is open' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'message',
+        description: 'Output when spigot is open',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['control', 'gate', 'switch', 'filter']
   },
 
@@ -2152,7 +3174,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Splits a multichannel signal into separate mono channels',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Multichannel audio input' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Multichannel audio input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'channels',
         type: 'int',
@@ -2162,14 +3189,16 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Integer({ minimum: 1, maximum: 32 }),
             description: 'Number of channels to split (1-32)'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
     outlets: [
       {
         id: 'out',
         type: 'signal',
-        description: 'Individual channel outputs (dynamic based on channel count)'
+        description: 'Individual channel outputs (dynamic based on channel count)',
+        handle: { handleType: 'audio', handleId: 0 }
       }
     ],
     tags: ['processors', 'audio', 'split']
@@ -2179,8 +3208,22 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'sqrt~',
     category: 'audio',
     description: 'Square root of signal',
-    inlets: [{ id: 'signal', type: 'signal', description: 'Audio input (non-negative values)' }],
-    outlets: [{ id: 'out', type: 'signal', description: 'Square root output' }],
+    inlets: [
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input (non-negative values)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Square root output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'sqrt', 'root', 'signal']
   },
 
@@ -2194,16 +3237,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         type: 'float',
         description: 'Frequency in Hz',
         messages: [{ schema: Type.Number(), description: 'Frequency in Hz' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'table',
         type: 'string',
         description: 'Table/buffer name',
-        messages: [{ schema: Type.String(), description: 'Set table name' }]
+        messages: [{ schema: Type.String(), description: 'Set table name' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Wavetable oscillator output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Wavetable oscillator output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'oscillator', 'wavetable', 'table', 'synthesis']
   },
 
@@ -2212,15 +3264,28 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Read from a named buffer using an index signal',
     inlets: [
-      { id: 'index', type: 'signal', description: 'Index signal (0 to buffer length)' },
+      {
+        id: 'index',
+        type: 'signal',
+        description: 'Index signal (0 to buffer length)',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'name',
         type: 'string',
         description: 'Buffer name',
-        messages: [{ schema: Type.String(), description: 'Set buffer name' }]
+        messages: [{ schema: Type.String(), description: 'Set buffer name' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Signal read from buffer' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Signal read from buffer',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'buffer', 'table', 'read', 'playback']
   },
 
@@ -2232,16 +3297,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       {
         id: 'index',
         type: 'signal',
-        description: 'Index signal (0 to buffer length, fractional for interpolation)'
+        description: 'Index signal (0 to buffer length, fractional for interpolation)',
+        handle: { handleType: 'audio', handleId: 0 }
       },
       {
         id: 'name',
         type: 'string',
         description: 'Buffer name',
-        messages: [{ schema: Type.String(), description: 'Set buffer name' }]
+        messages: [{ schema: Type.String(), description: 'Set buffer name' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Interpolated signal read from buffer' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Interpolated signal read from buffer',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'buffer', 'table', 'read', 'interpolation', 'playback']
   },
 
@@ -2250,7 +3324,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Write audio signal into a named buffer',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Audio signal to write into the buffer' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio signal to write into the buffer',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'control',
         type: 'string',
@@ -2263,7 +3342,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
           },
           { schema: Type.Object({ type: Type.Literal('stop') }), description: 'Stop writing' },
           { schema: Type.Object({ type: Type.Literal('start') }), description: 'Resume writing' }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
     outlets: [],
@@ -2275,7 +3355,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Trigger bangs from audio signal level',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Signal to analyze' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Signal to analyze',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'message',
         type: 'message',
@@ -2286,12 +3371,23 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Set [triggerThreshold, triggerDebounce, restThreshold, restDebounce] (ms)'
           },
           { schema: Type.Number(), description: 'Nonzero sets state to high, zero sets to low' }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
     outlets: [
-      { id: 'trigger', type: 'bang', description: 'Bang when signal reaches trigger threshold' },
-      { id: 'rest', type: 'bang', description: 'Bang when signal drops below rest threshold' }
+      {
+        id: 'trigger',
+        type: 'bang',
+        description: 'Bang when signal reaches trigger threshold',
+        handle: { handleType: 'message', handleId: 0 }
+      },
+      {
+        id: 'rest',
+        type: 'bang',
+        description: 'Bang when signal drops below rest threshold',
+        handle: { handleType: 'message', handleId: 1 }
+      }
     ],
     tags: ['audio', 'trigger', 'threshold', 'signal', 'detect', 'onset']
   },
@@ -2305,16 +3401,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'message',
         type: 'message',
         description: 'Message to throttle',
-        messages: [{ schema: Type.Any(), description: 'Message to throttle' }]
+        messages: [{ schema: Type.Any(), description: 'Message to throttle' }],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'time',
         type: 'int',
         description: 'Throttle time in ms',
-        messages: [{ schema: Type.Integer(), description: 'Throttle time in ms' }]
+        messages: [{ schema: Type.Integer(), description: 'Throttle time in ms' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'message', description: '' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'message',
+        description: '',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['throttle']
   },
 
@@ -2323,15 +3428,28 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Tone.js synthesis and audio processing node',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio signal input' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal input',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'code',
         type: 'string',
         description: 'Tone.js code to execute',
-        messages: [{ schema: Type.String(), description: 'Tone.js code to execute' }]
+        messages: [{ schema: Type.String(), description: 'Tone.js code to execute' }],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Audio output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'tone']
   },
 
@@ -2344,7 +3462,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'message',
         type: 'message',
         description: 'Message to filter',
-        messages: [{ schema: Type.Any(), description: 'Message to filter' }]
+        messages: [{ schema: Type.Any(), description: 'Message to filter' }],
+        handle: { handleType: 'message', handleId: 0 }
       },
       {
         id: 'key',
@@ -2355,10 +3474,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.String(),
             description: 'Property path to compare (e.g., "id" or "user.name")'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       }
     ],
-    outlets: [{ id: 'out', type: 'message', description: 'Unique messages' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'message',
+        description: 'Unique messages',
+        handle: { handleType: 'message', handleId: 0 }
+      }
+    ],
     tags: ['uniqby']
   },
 
@@ -2371,12 +3498,23 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'input',
         type: 'message',
         description: 'Array to unpack',
-        messages: [{ schema: Type.Any(), description: 'Array to unpack' }]
+        messages: [{ schema: Type.Any(), description: 'Array to unpack' }],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
     outlets: [
-      { id: 'n', type: 'message', description: 'Nth element' },
-      { id: 'remaining', type: 'message', description: 'Remaining elements beyond count' }
+      {
+        id: 'n',
+        type: 'message',
+        description: 'Nth element',
+        handle: { handleType: 'message', handleId: 0 }
+      },
+      {
+        id: 'remaining',
+        type: 'message',
+        description: 'Remaining elements beyond count',
+        handle: { handleType: 'message', handleId: 1 }
+      }
     ],
     tags: ['unpack']
   },
@@ -2386,19 +3524,40 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Voltage-controlled resonant filter with signal-rate frequency modulation',
     inlets: [
-      { id: 'signal', type: 'signal', description: 'Audio input to filter' },
-      { id: 'frequency', type: 'signal', description: 'Center frequency in Hz' },
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input to filter',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'frequency',
+        type: 'signal',
+        description: 'Center frequency in Hz',
+        handle: { handleType: 'audio', handleId: 1 }
+      },
       {
         id: 'q',
         type: 'float',
         description: 'Filter resonance (Q factor)',
         messages: [{ schema: Type.Number(), description: 'Q factor (higher = more resonance)' }],
-        isAudioParam: true
+        isAudioParam: true,
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
     outlets: [
-      { id: 'bandpass', type: 'signal', description: 'Bandpass filtered output (real)' },
-      { id: 'lowpass', type: 'signal', description: 'Lowpass filtered output (imaginary)' }
+      {
+        id: 'bandpass',
+        type: 'signal',
+        description: 'Bandpass filtered output (real)',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
+      {
+        id: 'lowpass',
+        type: 'signal',
+        description: 'Lowpass filtered output (imaginary)',
+        handle: { handleType: 'audio', handleId: 1 }
+      }
     ],
     tags: ['audio', 'filter', 'vcf', 'bandpass', 'lowpass', 'resonant', 'modulation', 'synth']
   },
@@ -2408,7 +3567,14 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'Receives audio from VDO.Ninja WebRTC streams',
     inlets: [],
-    outlets: [{ id: 'out', type: 'signal', description: 'Audio output from remote stream' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Audio output from remote stream',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['sources', 'vdo.ninja.pull']
   },
 
@@ -2416,7 +3582,14 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'vdo.ninja.push',
     category: 'audio',
     description: 'Streams audio to VDO.Ninja WebRTC',
-    inlets: [{ id: 'in', type: 'signal', description: 'Audio signal to stream' }],
+    inlets: [
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal to stream',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     outlets: [],
     tags: ['processors', 'vdo.ninja.push']
   },
@@ -2440,10 +3613,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Tuple([Type.Number(), Type.Number(), Type.Number()]),
             description: 'Ramp to [target, time_ms, delay_ms]'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Ramped signal output' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Ramped signal output',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'ramp', 'envelope', 'signal', 'vline', 'schedule']
   },
 
@@ -2452,7 +3633,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     category: 'audio',
     description: 'WaveShaperNode for distortion and waveshaping effects',
     inlets: [
-      { id: 'in', type: 'signal', description: 'Audio signal to process' },
+      {
+        id: 'in',
+        type: 'signal',
+        description: 'Audio signal to process',
+        handle: { handleType: 'audio', handleId: 0 }
+      },
       {
         id: 'curve',
         type: 'float[]',
@@ -2462,7 +3648,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Array(Type.Number()),
             description: 'Array of numbers or Float32Array to set as waveshaper curve'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'oversample',
@@ -2470,10 +3657,18 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         description: 'Oversample setting: "none", "2x", or "4x"',
         messages: [
           { schema: Type.String(), description: 'Oversample setting: "none", "2x", or "4x"' }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
-    outlets: [{ id: 'out', type: 'signal', description: 'Waveshaped signal' }],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Waveshaped signal',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['processors', 'audio', 'waveshaper']
   },
 
@@ -2491,11 +3686,17 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Any(),
             description: 'MIDI event (noteOn, noteOff, controlChange, programChange, pitchBend)'
           }
-        ]
+        ],
+        handle: { handleType: 'message', handleId: 0 }
       }
     ],
     outlets: [
-      { id: 'out', type: 'message', description: 'WebMidiLink formatted message (midi,XX,XX,XX)' }
+      {
+        id: 'out',
+        type: 'message',
+        description: 'WebMidiLink formatted message (midi,XX,XX,XX)',
+        handle: { handleType: 'message', handleId: 0 }
+      }
     ],
     tags: ['webmidilink']
   },
@@ -2504,8 +3705,22 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     type: 'wrap~',
     category: 'audio',
     description: 'Wrap signal to [0, 1) range',
-    inlets: [{ id: 'signal', type: 'signal', description: 'Audio input' }],
-    outlets: [{ id: 'out', type: 'signal', description: 'Wrapped signal (0 to 1)' }],
+    inlets: [
+      {
+        id: 'signal',
+        type: 'signal',
+        description: 'Audio input',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
+    outlets: [
+      {
+        id: 'out',
+        type: 'signal',
+        description: 'Wrapped signal (0 to 1)',
+        handle: { handleType: 'audio', handleId: 0 }
+      }
+    ],
     tags: ['audio', 'math', 'wrap', 'phase', 'signal']
   }
 };

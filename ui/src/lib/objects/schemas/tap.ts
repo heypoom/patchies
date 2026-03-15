@@ -12,6 +12,7 @@ export const tapSchema: ObjectSchema = {
     {
       id: 'hot',
       description: 'Hot inlet ($1) - triggers expression and passes through',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Type.Any(), description: 'Value triggers side effect, passes through unchanged' }
       ]
@@ -21,6 +22,7 @@ export const tapSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Pass-through output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Original input message (unchanged)' }]
     }
   ],

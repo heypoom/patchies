@@ -25,6 +25,7 @@ export const orcaSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Set, description: 'Set the grid content' },
         { schema: Bang, description: 'Toggle play/pause' },
@@ -38,6 +39,7 @@ export const orcaSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'MIDI messages output',
+      handle: { handleType: 'message' },
       messages: [
         {
           schema: Type.Object({

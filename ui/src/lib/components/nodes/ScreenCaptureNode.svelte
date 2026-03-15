@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Monitor, Square } from '@lucide/svelte/icons';
   import { onMount, onDestroy } from 'svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { screenSchema } from '$lib/objects/schemas/screen';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -142,7 +143,7 @@
           {#if isCapturing}
             <button
               title="Stop screen capture"
-              class="rounded p-1 opacity-100 transition-opacity hover:bg-zinc-700"
+              class="cursor-pointer rounded p-1 opacity-100 transition-opacity hover:bg-zinc-700"
               onclick={stopCapture}
             >
               <Square class="h-4 w-4 text-red-500" />
@@ -150,7 +151,7 @@
           {:else}
             <button
               title="Start screen capture"
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
               onclick={startCapture}
             >
               <Monitor class="h-4 w-4 text-zinc-300" />
@@ -160,9 +161,9 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={screenSchema.inlets[0].handle!}
           total={1}
           index={0}
           class={handleCommonClass}
@@ -192,10 +193,9 @@
           {/if}
         </div>
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="video"
-          id="0"
+          spec={screenSchema.outlets[0].handle!}
           title="Video output"
           total={1}
           index={0}

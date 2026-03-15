@@ -13,7 +13,8 @@
   import { match, P } from 'ts-pattern';
   import { orcaMessages } from '$lib/objects/schemas';
 
-  import StandardHandle from '../StandardHandle.svelte';
+  import TypedHandle from '../TypedHandle.svelte';
+  import { orcaSchema } from '$lib/objects/schemas/orca';
   import { DEFAULT_ORCA_HEIGHT, DEFAULT_ORCA_WIDTH } from '$lib/orca/constants';
   import { useNodeDataTracker } from '$lib/history';
   import { transportStore } from '../../../stores/transport.store';
@@ -613,9 +614,9 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={orcaSchema.inlets[0].handle!}
           title="Control Input"
           total={1}
           index={0}
@@ -639,9 +640,9 @@
             ].join(' ')}
           ></canvas>
         </div>
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
+          spec={orcaSchema.outlets[0].handle!}
           title="MIDI Output"
           total={1}
           index={0}

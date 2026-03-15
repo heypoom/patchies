@@ -10,7 +10,8 @@
   } from '@lucide/svelte/icons';
   import * as Popover from '../../ui/popover';
   import * as Tooltip from '../../ui/tooltip';
-  import StandardHandle from '../../StandardHandle.svelte';
+  import TypedHandle from '../../TypedHandle.svelte';
+  import { uxnSchema } from '$lib/objects/schemas/uxn';
 
   let {
     nodeId,
@@ -47,22 +48,26 @@
   </div>
 
   <div class="flex gap-1">
-    <button
-      title={isPaused ? 'Resume' : 'Pause'}
-      class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-      onclick={onTogglePause}
-    >
-      {#if isPaused}
-        <Play class="h-4 w-4 text-zinc-300" />
-      {:else}
-        <Pause class="h-4 w-4 text-zinc-300" />
-      {/if}
-    </button>
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <button
+          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          onclick={onTogglePause}
+        >
+          {#if isPaused}
+            <Play class="h-4 w-4 text-zinc-300" />
+          {:else}
+            <Pause class="h-4 w-4 text-zinc-300" />
+          {/if}
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>{isPaused ? 'Resume' : 'Pause'}</Tooltip.Content>
+    </Tooltip.Root>
 
     <Tooltip.Root>
       <Tooltip.Trigger>
         <button
-          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
           onclick={() => {
             onToggleEditor();
             onMeasureContainerWidth();
@@ -134,10 +139,9 @@
 </div>
 
 <div class="relative">
-  <StandardHandle
+  <TypedHandle
     port="inlet"
-    type="message"
-    id={0}
+    spec={uxnSchema.inlets[0].handle!}
     title="ROM input"
     total={1}
     index={0}
@@ -158,20 +162,18 @@
     ></canvas>
   </div>
 
-  <StandardHandle
+  <TypedHandle
     port="outlet"
-    type="video"
-    id={0}
+    spec={{ handleType: 'video', handleId: '0' }}
     title="Video output"
     total={2}
     index={0}
     {nodeId}
   />
 
-  <StandardHandle
+  <TypedHandle
     port="outlet"
-    type="message"
-    id={0}
+    spec={uxnSchema.outlets[0].handle!}
     title="Console output"
     total={2}
     index={1}

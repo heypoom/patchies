@@ -30,6 +30,7 @@ export const asmMemSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages and memory operations',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Output all memory values' },
         { schema: Reset, description: 'Clear all memory values' },
@@ -45,6 +46,7 @@ export const asmMemSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Memory output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Array(Type.Number()), description: 'All memory values on bang' }]
     }
   ],

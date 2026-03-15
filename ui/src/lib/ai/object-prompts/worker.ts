@@ -22,9 +22,6 @@ ${messagingInstructions}
 - Complex calculations, simulations, or algorithms
 - Background data transformations
 
-**Handle IDs (Auto-generated):**
-- setPortCount(n, m) creates: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
-
 Example:
 \`\`\`json
 {

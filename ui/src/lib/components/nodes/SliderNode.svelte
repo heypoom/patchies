@@ -7,7 +7,8 @@
     useStore,
     useEdges
   } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { sliderSchema } from '$lib/objects/schemas/slider';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -230,17 +231,21 @@
         >
           <div></div>
 
-          <button
-            class={[
-              'z-4 cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-              node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-              node.data.vertical && 'absolute top-[30px] right-[30px]'
-            ]}
-            onclick={() => (showSettings = !showSettings)}
-            title="Settings"
-          >
-            <Settings class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class={[
+                  'z-4 cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+                  node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+                  node.data.vertical && 'absolute top-[30px] right-[30px]'
+                ]}
+                onclick={() => (showSettings = !showSettings)}
+              >
+                <Settings class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Settings</Tooltip.Content>
+          </Tooltip.Root>
         </div>
       {/if}
 
@@ -259,9 +264,9 @@
 
       <div class="nodrag relative">
         {#if showInlet}
-          <StandardHandle
+          <TypedHandle
             port="inlet"
-            type="message"
+            spec={sliderSchema.inlets[0].handle!}
             total={1}
             index={0}
             class={`!-top-2 ${handleInletClass}`}
@@ -311,9 +316,9 @@
           {/if}
         </div>
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
+          spec={sliderSchema.outlets[0].handle!}
           total={1}
           index={0}
           nodeId={node.id}

@@ -22,11 +22,13 @@ export const convolverSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input'
+      description: 'Audio input',
+      handle: { handleType: 'audio', handleId: 0 }
     },
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message', handleId: 1 },
       messages: [
         { schema: Bang, description: 'Reload impulse response' },
         { schema: Type.Any(), description: 'AudioBuffer impulse response data' }
@@ -37,7 +39,8 @@ export const convolverSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio output with reverb applied'
+      description: 'Audio output with reverb applied',
+      handle: { handleType: 'audio', handleId: 0 }
     }
   ],
   tags: ['audio', 'reverb', 'convolution', 'effects', 'impulse']

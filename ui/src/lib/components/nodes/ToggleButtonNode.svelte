@@ -1,5 +1,6 @@
 <script lang="ts">
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { toggleSchema } from '$lib/objects/schemas/toggle';
   import { onMount } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import { useSvelteFlow } from '@xyflow/svelte';
@@ -86,9 +87,9 @@
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={toggleSchema.inlets[0].handle!}
           total={1}
           index={0}
           class={handleClass}
@@ -97,9 +98,9 @@
 
         <button onclick={toggleValue} class={buttonClass} aria-label="toggle button"> </button>
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
+          spec={toggleSchema.outlets[0].handle!}
           total={1}
           index={0}
           class={`absolute !bottom-1.5 ${handleClass}`}

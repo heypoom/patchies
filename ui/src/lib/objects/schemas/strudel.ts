@@ -31,6 +31,7 @@ export const strudelSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Evaluate code and start playback' },
         { schema: Run, description: 'Evaluate code and start playback' },
@@ -46,7 +47,8 @@ export const strudelSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio output'
+      description: 'Audio output',
+      handle: { handleType: 'audio' }
     }
   ],
   tags: ['audio', 'livecoding', 'tidalcycles', 'pattern', 'music'],

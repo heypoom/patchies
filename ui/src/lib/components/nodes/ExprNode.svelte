@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -130,10 +130,9 @@
 {#snippet exprHandles()}
   <!-- Dynamic inlets based on expression -->
   {#each Array.from({ length: inletCount }) as _, index}
-    <StandardHandle
+    <TypedHandle
       port="inlet"
-      type="message"
-      id={index}
+      spec={{ handleType: 'message', handleId: index }}
       title={index === 0 ? `$${index + 1} (hot)` : `$${index + 1} (cold)`}
       total={inletCount}
       {index}
@@ -146,7 +145,14 @@
 
 {#snippet exprOutlets()}
   <!-- Single outlet -->
-  <StandardHandle port="outlet" type="message" title="Result" total={1} index={0} {nodeId} />
+  <TypedHandle
+    port="outlet"
+    spec={{ handleType: 'message' }}
+    title="Result"
+    total={1}
+    index={0}
+    {nodeId}
+  />
 {/snippet}
 
 <div class="group relative flex flex-col gap-2">

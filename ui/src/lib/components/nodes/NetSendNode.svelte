@@ -1,6 +1,7 @@
 <script lang="ts">
   import { useSvelteFlow } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { netsendSchema } from '$lib/objects/schemas/netsend';
   import ObjectCommonLayout from './ObjectCommonLayout.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -90,6 +91,6 @@
   onChannelChange={handleChannelChange}
 >
   {#snippet inlets()}
-    <StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
+    <TypedHandle port="inlet" spec={netsendSchema.inlets[0].handle!} total={1} index={0} {nodeId} />
   {/snippet}
 </ObjectCommonLayout>

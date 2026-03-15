@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Settings, X, Volume2 } from '@lucide/svelte/icons';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
@@ -104,10 +104,9 @@
       {/if}
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="audio"
-          id={0}
+          spec={{ handleType: 'audio', handleId: 0 }}
           title="Audio input"
           total={1}
           index={0}

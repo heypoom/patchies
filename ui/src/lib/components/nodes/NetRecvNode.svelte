@@ -1,7 +1,8 @@
 <script lang="ts">
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { netrecvSchema } from '$lib/objects/schemas/netrecv';
   import ObjectCommonLayout from './ObjectCommonLayout.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -104,10 +105,16 @@
   onChannelChange={handleChannelChange}
 >
   {#snippet inlets()}
-    <StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
+    <TypedHandle port="inlet" spec={netrecvSchema.inlets[0].handle!} total={1} index={0} {nodeId} />
   {/snippet}
 
   {#snippet outlets()}
-    <StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
+    <TypedHandle
+      port="outlet"
+      spec={netrecvSchema.outlets[0].handle!}
+      total={1}
+      index={0}
+      {nodeId}
+    />
   {/snippet}
 </ObjectCommonLayout>

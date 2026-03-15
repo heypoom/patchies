@@ -16,11 +16,7 @@ Low-level DSP audio processing. MUST implement process(inputs, outputs) function
 - counter, sampleRate, currentFrame, currentTime
 - $1-$9: dynamic numeric inlets
 
-**Handle IDs:**
-- Audio: "audio-in-0"..."audio-in-n", "audio-out-0"..."audio-out-m"
-- Message: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
-
-Example - White noise:
+Example - White noise (1 audio output → handle is "audio-out", not "audio-out-0"):
 \`\`\`json
 {
   "type": "dsp~",

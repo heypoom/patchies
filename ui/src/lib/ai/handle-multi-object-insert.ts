@@ -2,6 +2,7 @@ import type { Node, Edge } from '@xyflow/svelte';
 import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
 import type { AiObjectNode, SimplifiedEdge } from './types';
+import { validateEdgeHandles } from './validate-edge-handles';
 
 const DEFAULT_NODE_SPACING = 320; // Horizontal spacing between nodes
 
@@ -17,6 +18,7 @@ export type MultiObjectInsertInput = {
 export type MultiObjectInsertResult = {
   newNodes: Node[];
   newEdges: Edge[];
+  invalidEdges: { edge: Edge; reason: string }[];
   nextNodeIdCounter: number;
   nextEdgeIdCounter: number;
 };
@@ -166,9 +168,23 @@ export async function handleMultiObjectInsert(
       };
     });
 
+  // Validate edge handle IDs against known specs — filter out bad edges
+  const nodeTypeMap = new Map(newNodes.map((n) => [n.id, n.type ?? '']));
+  const { valid: validEdges, invalid: invalidEdges } = validateEdgeHandles(newEdges, (id) =>
+    nodeTypeMap.get(id)
+  );
+
+  if (invalidEdges.length > 0) {
+    console.warn(
+      `[AI multi-object] Filtered ${invalidEdges.length} invalid edge(s):`,
+      invalidEdges.map((e) => e.reason)
+    );
+  }
+
   return {
     newNodes,
-    newEdges,
+    newEdges: validEdges,
+    invalidEdges,
     nextNodeIdCounter: currentNodeIdCounter,
     nextEdgeIdCounter: currentEdgeIdCounter
   };

@@ -23,8 +23,15 @@ export const aiImgSchema: ObjectSchema = {
   description: 'Generate images from text prompts using AI (Gemini)',
   inlets: [
     {
+      id: 'video',
+      type: 'signal',
+      description: 'Image input (optional, for image editing)',
+      handle: { handleType: 'video', handleId: '0' }
+    },
+    {
       id: 'message',
       description: 'Image prompts',
+      handle: { handleType: 'message', handleId: '1' },
       messages: [
         { schema: Type.String(), description: 'Text prompt - sets prompt and generates' },
         { schema: Generate, description: 'Set prompt and generate image' },
@@ -33,7 +40,19 @@ export const aiImgSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [],
-  tags: ['ai', 'image', 'generation', 'gemini', 'visual'],
-  hasDynamicOutlets: true
+  outlets: [
+    {
+      id: 'video',
+      type: 'signal',
+      description: 'Generated image output',
+      handle: { handleType: 'video', handleId: '0' }
+    },
+    {
+      id: 'message',
+      description: 'Generation complete notification',
+      handle: { handleType: 'message', handleId: '1' },
+      messages: [{ schema: Bang, description: 'Sent when image generation completes' }]
+    }
+  ],
+  tags: ['ai', 'image', 'generation', 'gemini', 'visual']
 };

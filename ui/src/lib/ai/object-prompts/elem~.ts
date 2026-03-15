@@ -26,10 +26,6 @@ ${patcherLibraryInstructions}
 
 See Elementary docs: https://www.elementary.audio
 
-**Handle IDs:**
-- Audio outlet: "audio-out"
-- Message ports: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
-
 Example - Sine oscillator:
 \`\`\`json
 {

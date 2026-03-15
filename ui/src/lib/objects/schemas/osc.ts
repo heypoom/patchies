@@ -12,17 +12,20 @@ export const oscSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input for FM modulation'
+      description: 'Audio input for FM modulation',
+      handle: { handleType: 'audio', handleId: 0 }
     },
     {
       id: 'frequency',
       description: 'Frequency control',
+      handle: { handleType: 'message', handleId: 1 },
       messages: [{ schema: Type.Number(), description: 'Frequency in Hz' }],
       isAudioParam: true
     },
     {
       id: 'type',
       description: 'Waveform type',
+      handle: { handleType: 'message', handleId: 2 },
       messages: [
         {
           schema: Type.Union([
@@ -47,7 +50,8 @@ export const oscSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio output'
+      description: 'Audio output',
+      handle: { handleType: 'audio', handleId: 0 }
     }
   ],
   tags: ['audio', 'oscillator', 'synthesis', 'waveform']

@@ -3,7 +3,7 @@
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
@@ -269,10 +269,9 @@
 >
   {#snippet topHandle()}
     {#each Array.from({ length: videoInletCount }) as _, index (index)}
-      <StandardHandle
+      <TypedHandle
         port="inlet"
-        type="video"
-        id={index.toString()}
+        spec={{ handleType: 'video', handleId: index.toString() }}
         title={`Video Inlet ${index}`}
         total={messageInletCount + videoInletCount}
         {index}
@@ -281,10 +280,9 @@
     {/each}
 
     {#each Array.from({ length: messageInletCount }) as _, index (index)}
-      <StandardHandle
+      <TypedHandle
         port="inlet"
-        type="message"
-        id={index}
+        spec={{ handleType: 'message', handleId: index }}
         title={`Message Inlet ${index}`}
         total={messageInletCount + videoInletCount}
         index={index + videoInletCount}
@@ -295,10 +293,9 @@
 
   {#snippet bottomHandle()}
     {#each Array.from({ length: videoOutletCount }) as _, index (index)}
-      <StandardHandle
+      <TypedHandle
         port="outlet"
-        type="video"
-        id={index.toString()}
+        spec={{ handleType: 'video', handleId: index.toString() }}
         title={`Video Outlet ${index}`}
         total={messageOutletCount + videoOutletCount}
         {index}
@@ -307,10 +304,9 @@
     {/each}
 
     {#each Array.from({ length: messageOutletCount }) as _, index (index)}
-      <StandardHandle
+      <TypedHandle
         port="outlet"
-        type="message"
-        id={index}
+        spec={{ handleType: 'message', handleId: index }}
         title={`Outlet ${index}`}
         total={messageOutletCount + videoOutletCount}
         index={index + videoOutletCount}

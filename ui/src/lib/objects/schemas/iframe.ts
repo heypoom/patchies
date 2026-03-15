@@ -22,6 +22,7 @@ export const iframeSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control and communication messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: LoadUrl, description: 'Load webpage from URL' },
         { schema: Type.Unknown(), description: 'Other messages forwarded via postMessage' }
@@ -32,6 +33,7 @@ export const iframeSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'postMessage events received from iframe',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Type.Unknown(), description: 'Messages received from iframe via postMessage' }
       ]

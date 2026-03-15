@@ -3,7 +3,7 @@
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -265,9 +265,9 @@
 >
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index}
-      <StandardHandle
+      <TypedHandle
         port="inlet"
-        id={index}
+        spec={{ handleId: index }}
         title={`Inlet ${index}`}
         total={inletCount}
         {index}
@@ -279,10 +279,9 @@
 
   {#snippet bottomHandle()}
     {#if videoOutputEnabled}
-      <StandardHandle
+      <TypedHandle
         port="outlet"
-        type="video"
-        id={0}
+        spec={{ handleType: 'video', handleId: 0 }}
         title="Video output"
         total={outletCount + 1}
         index={outletCount}
@@ -292,9 +291,9 @@
     {/if}
 
     {#each Array.from({ length: outletCount }) as _, index}
-      <StandardHandle
+      <TypedHandle
         port="outlet"
-        id={index}
+        spec={{ handleId: index }}
         title={`Outlet ${index}`}
         total={videoOutputEnabled ? outletCount + 1 : outletCount}
         {index}

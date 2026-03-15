@@ -21,19 +21,6 @@ AVAILABLE OBJECT TYPES:
 **Utilities:** convolver~, fft~
 **Control:** mtof, loadbang, metro, delay (control rate), adsr
 
-HANDLE IDS (Auto-generated - INDEXED BY INLET/OUTLET TYPE):
-- Pattern: "{type}-{direction}-{index}"
-- Audio inlet: "audio-in-0", "audio-in-1", ... (indexed by inlet count)
-- Message inlet: "message-in-0", "message-in-1", ... (indexed by inlet count)
-- Audio outlet: "audio-out-0", "audio-out-1", ... (indexed by outlet count)
-- Message outlet: "message-out-0", "message-out-1", ... (indexed by outlet count)
-- Example: gain~ has inlets [message], outlets [audio]
-  * Message inlet: "message-in-0"
-  * Audio outlet: "audio-out-0"
-- Example: osc~ has inlets [message (frequency)], outlets [audio]
-  * Message inlet: "message-in-0"
-  * Audio outlet: "audio-out-0"
-
 CRITICAL RULES:
 1. Audio objects (~) operate at audio rate, control objects at message rate
 2. Connect by type: audio ports to audio ports, message ports to message ports

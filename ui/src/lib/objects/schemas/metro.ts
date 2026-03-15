@@ -13,6 +13,7 @@ export const metroSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Start the metronome' },
         { schema: Stop, description: 'Stop the metronome' },
@@ -24,6 +25,7 @@ export const metroSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Metronome ticks',
+      handle: { handleType: 'message' },
       messages: [{ schema: Bang, description: 'Sent on each tick' }]
     }
   ],

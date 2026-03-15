@@ -42,6 +42,7 @@ export const ttsSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message', handleId: 0 },
       messages: [
         { schema: Type.String(), description: 'Speak the text' },
         { schema: SetVoice, description: 'Set the voice by name' },
@@ -58,6 +59,7 @@ export const ttsSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Speech events',
+      handle: { handleType: 'message', handleId: 0 },
       messages: [
         { schema: Start, description: 'Speech started' },
         { schema: End, description: 'Speech finished' },

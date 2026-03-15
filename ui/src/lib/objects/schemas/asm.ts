@@ -44,6 +44,7 @@ export const asmSchema: ObjectSchema = {
       id: 'message',
       type: 'message',
       description: 'Control messages and input data',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Step machine by configured instructions per step' },
         { schema: SetCode, description: 'Set assembly code and reload program' },
@@ -68,6 +69,7 @@ export const asmSchema: ObjectSchema = {
       id: 'output',
       type: 'message',
       description: 'Program output and side effects',
+      handle: { handleType: 'message' },
       messages: [
         {
           schema: Type.Number(),
@@ -88,5 +90,9 @@ export const asmSchema: ObjectSchema = {
       ]
     }
   ],
-  tags: ['programming', 'assembly', 'stack', 'virtual-machine']
+  tags: ['programming', 'assembly', 'stack', 'virtual-machine'],
+  handlePatterns: {
+    inlet: { template: 'in-{index}' },
+    outlet: { template: 'out-{index}' }
+  }
 };

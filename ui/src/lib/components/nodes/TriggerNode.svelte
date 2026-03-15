@@ -3,6 +3,8 @@
   import { onMount, onDestroy } from 'svelte';
   import { match } from 'ts-pattern';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { triggerSchema } from '$lib/objects/schemas/trigger';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import * as Tooltip from '$lib/components/ui/tooltip';
@@ -271,9 +273,9 @@
 
       <div class="relative">
         <!-- Single inlet -->
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={triggerSchema.inlets[0].handle!}
           title="Input - any message triggers outputs"
           total={1}
           index={0}

@@ -17,12 +17,6 @@ DATA FLOW:
 - Send TypedArrays (Float32Array, Uint32Array, etc.) to input handles
 - Outputs are sent as TypedArrays on outlet handles
 
-HANDLE IDS (Auto-generated from WGSL bindings):
-- Input inlets: "message-in-in-{bindingNumber}" (e.g., "message-in-in-0" for @binding(0))
-- Uniform inlets: "message-in-uniform-{bindingNumber}" (e.g., "message-in-uniform-0")
-- Bang inlet: "message-in-bang"
-- Output outlets: "message-out-out-{bindingNumber}" (e.g., "message-out-out-1" for @binding(1))
-
 WGSL TYPE MAPPING (for storage buffers):
 - array<f32> → Float32Array
 - array<u32> → Uint32Array

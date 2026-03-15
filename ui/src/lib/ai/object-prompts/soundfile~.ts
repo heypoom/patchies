@@ -7,11 +7,6 @@ CRITICAL RULES:
 2. Connect to out~ to hear audio
 3. Supports audio chaining as source
 
-HANDLE IDS (Auto-generated - CRITICAL):
-- Message inlet: "message-in" (no explicit id, type + direction only)
-- Audio outlet: "audio-out-0" (id="0", generates type + direction + id)
-- LIMITATION: Single audio outlet only - cannot split to multiple receivers
-
 Messages:
 - string or {type: 'load', url: '...'}: load audio file
 - bang: restart playback

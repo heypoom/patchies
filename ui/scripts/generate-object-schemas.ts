@@ -68,6 +68,21 @@ function emitPort(port: InletSchema | OutletSchema): string {
     parts.push('isAudioParam: true');
   }
 
+  // Include handle spec if present
+  if (port.handle) {
+    const handleParts: string[] = [];
+
+    if (port.handle.handleType)
+      handleParts.push(`handleType: ${emitString(port.handle.handleType)}`);
+    if (port.handle.handleId !== undefined) {
+      handleParts.push(
+        `handleId: ${typeof port.handle.handleId === 'number' ? port.handle.handleId : emitString(port.handle.handleId)}`
+      );
+    }
+
+    parts.push(`handle: { ${handleParts.join(', ')} }`);
+  }
+
   return `{ ${parts.join(', ')} }`;
 }
 
@@ -95,12 +110,36 @@ function emitObjectSchema(schema: ObjectSchema): string {
 
   // Tags
   if (schema.tags && schema.tags.length > 0) {
-    lines.push(`    tags: [${schema.tags.map(emitString).join(', ')}]`);
+    lines.push(`    tags: [${schema.tags.map(emitString).join(', ')}],`);
   }
 
   // hasDynamicOutlets
   if (schema.hasDynamicOutlets) {
-    lines.push('    hasDynamicOutlets: true');
+    lines.push('    hasDynamicOutlets: true,');
+  }
+
+  // handlePatterns
+  if (schema.handlePatterns) {
+    const patternParts: string[] = [];
+
+    for (const direction of ['inlet', 'outlet'] as const) {
+      const pattern = schema.handlePatterns[direction];
+      if (!pattern) continue;
+
+      const fields: string[] = [`template: ${emitString(pattern.template)}`];
+
+      if (pattern.handleType) {
+        fields.push(`handleType: ${emitString(pattern.handleType)}`);
+      }
+
+      if (pattern.description) {
+        fields.push(`description: ${emitString(pattern.description)}`);
+      }
+
+      patternParts.push(`${direction}: { ${fields.join(', ')} }`);
+    }
+
+    lines.push(`    handlePatterns: { ${patternParts.join(', ')} }`);
   }
 
   return `  {\n${lines.join('\n')}\n  }`;

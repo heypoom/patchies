@@ -2,7 +2,8 @@
   import { CirclePlus, Delete, Replace, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { chuckSchema } from '$lib/objects/schemas/chuck';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -13,6 +14,7 @@
   import type { ChuckShred, ChuckNode } from '$lib/audio/v2/nodes/ChuckNode';
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import ChuckSettings from '$lib/components/settings/ChuckSettings.svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let contentContainer: HTMLDivElement | null = null;
   let contentWidth = $state(100);
@@ -161,10 +163,9 @@
 
 {#snippet chuckHandles()}
   <!-- Audio input (accessible via adc in ChucK code) -->
-  <StandardHandle
+  <TypedHandle
     port="inlet"
-    type="audio"
-    id={0}
+    spec={chuckSchema.inlets[0].handle!}
     title="Audio Input (accessible via adc in ChucK code)"
     total={2}
     index={0}
@@ -172,10 +173,9 @@
   />
 
   <!-- Control inlet for messages and code -->
-  <StandardHandle
+  <TypedHandle
     port="inlet"
-    type="message"
-    id={1}
+    spec={chuckSchema.inlets[1].handle!}
     title="Control Input (code, bang, stop)"
     total={2}
     index={1}
@@ -184,15 +184,21 @@
 {/snippet}
 
 {#snippet chuckOutlets()}
-  <StandardHandle port="outlet" type="audio" title="Audio Output" total={2} index={0} {nodeId} />
-
-  <StandardHandle
+  <TypedHandle
     port="outlet"
-    type="message"
+    spec={chuckSchema.outlets[0].handle!}
+    title="Audio Output"
+    total={2}
+    index={0}
+    {nodeId}
+  />
+
+  <TypedHandle
+    port="outlet"
+    spec={chuckSchema.outlets[1].handle!}
     title="Message Output"
     total={2}
     index={1}
-    id={0}
     {nodeId}
   />
 {/snippet}
@@ -204,43 +210,59 @@
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
         <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
           <!-- Replace button -->
-          <button
-            onclick={handleReplace}
-            class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-            title="Replace (Cmd+Enter)"
-            disabled={isReplaceDisabled}
-          >
-            <Replace class="h-4 w-4" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={handleReplace}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isReplaceDisabled}
+              >
+                <Replace class="h-4 w-4" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Replace (Cmd+Enter)</Tooltip.Content>
+          </Tooltip.Root>
 
           <!-- Add shred button -->
-          <button
-            onclick={handleAddShred}
-            class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-            title="Add Shred (Cmd+\)"
-            disabled={!data.expr.trim()}
-          >
-            <CirclePlus class="h-4 w-4" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={handleAddShred}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!data.expr.trim()}
+              >
+                <CirclePlus class="h-4 w-4" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Add Shred (Cmd+\)</Tooltip.Content>
+          </Tooltip.Root>
 
           <!-- Remove button -->
-          <button
-            onclick={removeChuckCode}
-            class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-            title="Remove (Cmd+Backspace)"
-            disabled={shreds.length === 0}
-          >
-            <Delete class="h-4 w-4" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={removeChuckCode}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={shreds.length === 0}
+              >
+                <Delete class="h-4 w-4" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Remove (Cmd+Backspace)</Tooltip.Content>
+          </Tooltip.Root>
         </div>
 
-        <button
-          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-          onclick={() => (showSettings = !showSettings)}
-          title="Settings"
-        >
-          <Settings class="h-4 w-4 text-zinc-300" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              onclick={() => (showSettings = !showSettings)}
+            >
+              <Settings class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Settings</Tooltip.Content>
+        </Tooltip.Root>
       </div>
 
       <div class="chuck-node-container relative">

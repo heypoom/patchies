@@ -30,11 +30,18 @@ export const midiInSchema: ObjectSchema = {
   type: 'midi.in',
   category: 'network',
   description: 'Receive MIDI messages from connected devices',
-  inlets: [],
+  inlets: [
+    {
+      id: 'message',
+      description: 'Control messages',
+      handle: { handleType: 'message' }
+    }
+  ],
   outlets: [
     {
       id: 'message',
       description: 'MIDI messages from connected devices',
+      handle: { handleType: 'message' },
       messages: [
         { schema: NoteOn, description: 'MIDI note on message' },
         { schema: NoteOff, description: 'MIDI note off message' },

@@ -100,13 +100,15 @@ export const triggerSchema: ObjectSchema = {
   inlets: [
     {
       id: 'message',
-      description: 'Any message triggers all outputs in right-to-left order'
+      description: 'Any message triggers all outputs in right-to-left order',
+      handle: { handleType: 'message' }
     }
   ],
   outlets: [
     {
       id: 'dynamic',
-      description: 'Outlets are created based on type specifiers (e.g., "trigger b b n")'
+      description: 'Outlets are created based on type specifiers (e.g., "trigger b b n")',
+      handle: { handleType: 'message' }
     }
   ],
   tags: ['flow', 'routing', 'bang', 'sequence'],

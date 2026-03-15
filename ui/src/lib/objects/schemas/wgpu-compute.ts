@@ -25,6 +25,7 @@ export const wgpuComputeSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control and input data',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Trigger computation' },
         { schema: Run, description: 'Compile the shader' },
@@ -37,9 +38,14 @@ export const wgpuComputeSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Computation results',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Typed array output data' }]
     }
   ],
   tags: ['programming', 'gpu', 'webgpu', 'compute', 'parallel'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}' },
+    outlet: { template: 'out-{index}' }
+  }
 };

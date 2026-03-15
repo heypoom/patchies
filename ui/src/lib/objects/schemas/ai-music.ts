@@ -46,6 +46,7 @@ export const aiMusicSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Music prompts and controls',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Type.String(), description: 'Text prompt or JSON5 weighted prompts' },
         { schema: Bang, description: 'Toggle play/pause' },
@@ -70,7 +71,8 @@ export const aiMusicSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio output'
+      description: 'Audio output',
+      handle: { handleType: 'audio' }
     }
   ],
   tags: ['ai', 'music', 'generation', 'audio', 'lyria'],

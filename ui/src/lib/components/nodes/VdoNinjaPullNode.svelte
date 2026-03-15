@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Settings, X, Video, Info, ExternalLink } from '@lucide/svelte/icons';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy, untrack } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -428,10 +428,9 @@
 
       <div class="relative">
         <!-- Message Inlet -->
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
-          id="0"
+          spec={{ handleType: 'message', handleId: '0' }}
           title="connect, view, disconnect, send"
           total={1}
           index={0}
@@ -452,10 +451,9 @@
         </button>
 
         <!-- Message Outlet -->
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
-          id="0"
+          spec={{ handleType: 'message', handleId: '0' }}
           title="data from peers"
           total={dataOnly ? 1 : 3}
           index={0}
@@ -465,10 +463,9 @@
 
         {#if !dataOnly}
           <!-- Video Outlet -->
-          <StandardHandle
+          <TypedHandle
             port="outlet"
-            type="video"
-            id="0"
+            spec={{ handleType: 'video', handleId: '0' }}
             title="video stream"
             total={3}
             index={1}
@@ -476,10 +473,9 @@
           />
 
           <!-- Audio Outlet -->
-          <StandardHandle
+          <TypedHandle
             port="outlet"
-            type="audio"
-            id="0"
+            spec={{ handleType: 'audio', handleId: '0' }}
             title="audio stream"
             total={3}
             index={2}

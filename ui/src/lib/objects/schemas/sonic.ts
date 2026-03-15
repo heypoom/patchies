@@ -12,7 +12,8 @@ export const sonicSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input (inputNode)'
+      description: 'Audio input (inputNode)',
+      handle: { handleType: 'audio' }
     },
     {
       id: 'message',
@@ -22,11 +23,21 @@ export const sonicSchema: ObjectSchema = {
   ],
   outlets: [
     {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output (outputNode)',
+      handle: { handleType: 'audio' }
+    },
+    {
       id: 'message',
       description: 'Output from send() calls',
       messages: [{ schema: Type.Any(), description: 'Data sent via send() function' }]
     }
   ],
   tags: ['audio', 'synthesis', 'supercollider', 'scsynth', 'supersonic'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}' },
+    outlet: { template: 'out-{index}' }
+  }
 };

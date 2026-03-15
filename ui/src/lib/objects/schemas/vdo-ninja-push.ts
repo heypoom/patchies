@@ -43,11 +43,13 @@ export const vdoNinjaPushSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input to stream'
+      description: 'Audio input to stream',
+      handle: { handleType: 'audio', handleId: 0 }
     },
     {
       id: 'message',
       description: 'Control messages and data to send',
+      handle: { handleType: 'message', handleId: 1 },
       messages: [
         { schema: ConnectSimple, description: 'Connect using configured room/streamId' },
         { schema: Connect, description: 'Connect to a room with specified values' },
@@ -60,6 +62,7 @@ export const vdoNinjaPushSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Connection events and received data',
+      handle: { handleType: 'message', handleId: 0 },
       messages: [
         { schema: Connected, description: 'Successfully connected' },
         { schema: Disconnected, description: 'Disconnected from room' },

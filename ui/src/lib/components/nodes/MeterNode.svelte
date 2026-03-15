@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -176,9 +176,9 @@
 
 <div class="group relative">
   <div class="relative">
-    <StandardHandle
+    <TypedHandle
       port="inlet"
-      type="audio"
+      spec={{ handleType: 'audio' }}
       total={1}
       index={0}
       title="Audio input"
@@ -195,9 +195,9 @@
       style="width: {CANVAS_WIDTH}px; height: {CANVAS_HEIGHT}px;"
     ></canvas>
 
-    <StandardHandle
+    <TypedHandle
       port="outlet"
-      type="message"
+      spec={{ handleType: 'message' }}
       total={1}
       index={0}
       title="Level output"

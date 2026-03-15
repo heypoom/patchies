@@ -34,6 +34,7 @@ export const midiOutSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'MIDI messages to send',
+      handle: { handleType: 'message' },
       messages: [
         { schema: NoteOn, description: 'Send MIDI note on' },
         { schema: NoteOff, description: 'Send MIDI note off' },

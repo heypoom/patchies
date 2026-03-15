@@ -31,6 +31,7 @@ export const uxnSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Type.String(), description: 'URL to load ROM, or Uxntal code to assemble' },
         { schema: Bang, description: 'Re-assemble code or reload ROM' },
@@ -46,9 +47,14 @@ export const uxnSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Console output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.String(), description: 'String messages from console device' }]
     }
   ],
   tags: ['programming', 'uxn', 'uxntal', 'assembly', 'virtual-machine'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}' },
+    outlet: { template: 'out-{index}' }
+  }
 };

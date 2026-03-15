@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Code, Play, Terminal, X } from '@lucide/svelte/icons';
   import { useUpdateNodeInternals } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy, type Snippet } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -134,9 +134,9 @@
         <!-- Total inlets = 1 audio inlet + message inlets -->
         <div>
           <!-- Audio input (always present) -->
-          <StandardHandle
+          <TypedHandle
             port="inlet"
-            type="audio"
+            spec={{ handleType: 'audio' }}
             title="Audio Input"
             total={1 + messageInletCount}
             index={0}
@@ -147,10 +147,9 @@
           <!-- Message inlets (only show if messageInletCount > 0) -->
           {#if messageInletCount > 0}
             {#each Array.from({ length: messageInletCount }) as _, index (index)}
-              <StandardHandle
+              <TypedHandle
                 port="inlet"
-                type="message"
-                id={index}
+                spec={{ handleType: 'message', handleId: index }}
                 title={`Message Inlet ${index + 1}`}
                 total={1 + messageInletCount}
                 index={1 + index}
@@ -178,9 +177,9 @@
 
         <div>
           <!-- Audio output (always present) -->
-          <StandardHandle
+          <TypedHandle
             port="outlet"
-            type="audio"
+            spec={{ handleType: 'audio' }}
             title="Audio Output"
             total={1 + messageOutletCount}
             index={0}
@@ -191,10 +190,9 @@
           <!-- Message outlets (only show if messageOutletCount > 0) -->
           {#if messageOutletCount > 0}
             {#each Array.from({ length: messageOutletCount }) as _, index (index)}
-              <StandardHandle
+              <TypedHandle
                 port="outlet"
-                type="message"
-                id={index}
+                spec={{ handleType: 'message', handleId: index }}
                 title={`Message Outlet ${index + 1}`}
                 total={1 + messageOutletCount}
                 index={1 + index}

@@ -24,12 +24,6 @@ Messages:
 - {type: 'load', url: string}: load ROM from URL
 - Outputs: console strings
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in-0" (receives ROM data or Uxntal code)
-- Video outlet: "video-out-0" (indexed, canvas output)
-- Message outlet: "message-out-0" (console output)
-- LIMITATION: Specialized I/O for ROM loading
-
 Example - Hello World:
 \`\`\`json
 {

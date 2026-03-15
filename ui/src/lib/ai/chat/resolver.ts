@@ -8,6 +8,8 @@ import { topicMetas } from '$lib/docs/topic-index';
 import { objectSchemas } from '$lib/objects/schemas';
 import { fetchTopicHelp } from '$lib/docs/fetch-topic-help';
 import { fetchObjectHelp } from '$lib/objects/fetch-object-help';
+import { validateEdgeHandles } from '../validate-edge-handles';
+import { generateHandleDocs } from '../generate-handle-docs';
 import {
   SYSTEM_PROMPT,
   CONTEXT_TOOL_NAMES,
@@ -251,7 +253,7 @@ export async function streamChatMessage(
             }
           }
 
-          const edges = edgeSpecs.map((spec, i) => ({
+          const allEdges = edgeSpecs.map((spec, i) => ({
             id: `ai-edge-${crypto.randomUUID().slice(0, 8)}-${i}`,
             source: spec.source,
             target: spec.target,
@@ -259,11 +261,28 @@ export async function streamChatMessage(
             targetHandle: spec.targetHandle ?? null
           }));
 
+          // Validate handle IDs against known specs
+          const { valid: edges, invalid: invalidEdges } = validateEdgeHandles(
+            allEdges,
+            (id) => getNodeById?.(id)?.type ?? undefined
+          );
+
+          if (invalidEdges.length > 0) {
+            console.warn(
+              `[AI connect_edges] Filtered ${invalidEdges.length} invalid edge(s):`,
+              invalidEdges.map((e) => e.reason)
+            );
+          }
+
           onAction({
             id: crypto.randomUUID(),
             mode: 'connect-edges' as AiPromptMode,
             descriptor: getModeDescriptor('connect-edges'),
-            result: { kind: 'connect-edges', edges },
+            result: {
+              kind: 'connect-edges',
+              edges,
+              invalidEdges: invalidEdges.length > 0 ? invalidEdges : undefined
+            },
             state: 'pending'
           });
           continue;
@@ -413,10 +432,14 @@ export async function streamChatMessage(
         const type = (functionCall.args?.type as string) ?? '';
         const instructions =
           getObjectSpecificInstructions(type) || `No specific instructions found for "${type}".`;
+        const handleDocs = generateHandleDocs([type]);
         return {
           functionResponse: {
             name: GET_OBJECT_INSTRUCTIONS,
-            response: { instructions }
+            response: {
+              instructions,
+              ...(handleDocs ? { handleReference: handleDocs } : {})
+            }
           }
         };
       })

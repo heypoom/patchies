@@ -27,10 +27,6 @@ ${messagingInstructions}
 
 ${fftInstructions}
 
-**Handle IDs:**
-- Video outlet: "video-out-0"
-- Message inlet/outlet: "in-0"..."in-n", "out-0"..."out-m"
-
 **Render Pattern:**
 Define a \`draw(time)\` function that will be called via setAnimationLoop:
 \`\`\`js

@@ -13,6 +13,7 @@ export const buttonSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Flash button and output bang' }]
     }
   ],
@@ -20,6 +21,7 @@ export const buttonSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Button output',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Sent when button is clicked or receives any message' }
       ]

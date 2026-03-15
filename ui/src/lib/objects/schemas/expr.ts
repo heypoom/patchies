@@ -12,6 +12,7 @@ export const exprSchema: ObjectSchema = {
     {
       id: 'hot',
       description: 'Hot inlet ($1) - triggers evaluation when message arrives',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Value stored as $1, triggers evaluation' }]
     }
   ],
@@ -19,6 +20,7 @@ export const exprSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Expression result',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Result of the expression evaluation' }]
     }
   ],

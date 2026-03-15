@@ -2,7 +2,7 @@
   import { Settings, X } from '@lucide/svelte/icons';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
@@ -204,9 +204,9 @@
     <div class="flex flex-col gap-2">
       <div class="relative">
         <!-- Inlet -->
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={{ handleType: 'message' }}
           total={1}
           index={0}
           title="Control messages"
@@ -260,9 +260,9 @@
         </div>
 
         <!-- Outlet -->
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
+          spec={{ handleType: 'message' }}
           total={1}
           index={0}
           title="Current value"

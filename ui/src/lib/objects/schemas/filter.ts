@@ -12,6 +12,7 @@ export const filterSchema: ObjectSchema = {
     {
       id: 'hot',
       description: 'Hot inlet ($1) - triggers evaluation',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Type.Any(), description: 'Value stored as $1, triggers filter evaluation' }
       ]
@@ -21,11 +22,13 @@ export const filterSchema: ObjectSchema = {
     {
       id: 'matched',
       description: 'Messages that match the filter condition',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Original message when condition is truthy' }]
     },
     {
       id: 'unmatched',
       description: 'Messages that do not match the filter condition',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Original message when condition is falsy' }]
     }
   ],

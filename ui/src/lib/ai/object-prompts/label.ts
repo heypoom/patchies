@@ -14,9 +14,6 @@ Text Display:
 - Monospace font rendering
 - Preserves whitespace and newlines
 
-HANDLE IDS:
-- None - label has no inlets or outlets
-
 Example - Simple Label:
 \`\`\`json
 {

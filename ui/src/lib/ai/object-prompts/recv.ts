@@ -6,10 +6,6 @@ CRITICAL: This is a text object created via the "object" node type with data.exp
 
 Usage: recv <channel>
 
-HANDLE IDS:
-- Inlet 0: "in-0" (channel name, optional - can also be set in expr)
-- Outlet 0: "out-0" (outputs received messages)
-
 Example - Receive from channel "foo":
 \`\`\`json
 {

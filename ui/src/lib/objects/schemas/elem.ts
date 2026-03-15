@@ -12,7 +12,8 @@ export const elemSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input (inputNode)'
+      description: 'Audio input (inputNode)',
+      handle: { handleType: 'audio' }
     },
     {
       id: 'message',
@@ -22,11 +23,29 @@ export const elemSchema: ObjectSchema = {
   ],
   outlets: [
     {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output (outputNode)',
+      handle: { handleType: 'audio' }
+    },
+    {
       id: 'message',
       description: 'Output from send() calls',
       messages: [{ schema: Type.Any(), description: 'Data sent via send() function' }]
     }
   ],
   tags: ['audio', 'synthesis', 'elementary', 'dsp', 'declarative'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: {
+      template: 'message-in-{index}',
+      handleType: 'message',
+      description: 'Message inlets (0-indexed)'
+    },
+    outlet: {
+      template: 'message-out-{index}',
+      handleType: 'message',
+      description: 'Message outlets (0-indexed)'
+    }
+  }
 };

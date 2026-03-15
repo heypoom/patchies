@@ -17,11 +17,6 @@ Available Functions:
 - flash: flash the node visually
 - puts(*args), p(*args), warn(*args): console output
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (single by default)
-- Message outlet: "message-out" (single by default)
-- Use set_port_count to add more inlets/outlets
-
 Example - Double incoming numbers:
 \`\`\`json
 {

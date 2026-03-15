@@ -12,13 +12,15 @@ export const meterSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio signal to measure'
+      description: 'Audio signal to measure',
+      handle: { handleType: 'audio' }
     }
   ],
   outlets: [
     {
       id: 'level',
       description: 'Current RMS level (0-1)',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Number(), description: 'RMS amplitude level' }]
     }
   ],

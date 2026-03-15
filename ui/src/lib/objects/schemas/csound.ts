@@ -39,11 +39,13 @@ export const csoundSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input'
+      description: 'Audio input',
+      handle: { handleType: 'audio', handleId: 0 }
     },
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message', handleId: 1 },
       messages: [
         { schema: Bang, description: 'Resume or re-eval Csound code' },
         { schema: Play, description: 'Resume playback' },
@@ -66,9 +68,14 @@ export const csoundSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio output'
+      description: 'Audio output',
+      handle: { handleType: 'audio', handleId: 0 }
     }
   ],
   tags: ['audio', 'csound', 'synthesis', 'programming', 'dsp'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}' },
+    outlet: { template: 'out-{index}' }
+  }
 };

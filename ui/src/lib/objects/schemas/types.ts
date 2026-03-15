@@ -12,6 +12,31 @@
 import { type TSchema, type Static } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
 import { P } from 'ts-pattern';
+import type { HandleType } from '$lib/utils/handle-id';
+
+/**
+ * Declarative handle spec for an inlet or outlet.
+ * Combined with port direction to derive the xyflow handle ID via `deriveHandleId()`.
+ */
+export interface HandleSpec {
+  /** Handle type for coloring and ID derivation (video=orange, audio=blue, message=gray) */
+  handleType?: HandleType;
+  /** Explicit ID segment (combined with handleType + portDir to produce final handle ID) */
+  handleId?: string | number;
+}
+
+/**
+ * Template pattern for dynamic handles (runtime-determined port count).
+ * Used for AI context generation — tells the AI what handle ID shape to expect.
+ */
+export interface HandlePattern {
+  /** Template string with `{index}` placeholder, e.g. 'in-{index}', 'video-in-{index}-{name}-{type}' */
+  template: string;
+  /** Handle type for coloring */
+  handleType?: HandleType;
+  /** Human-readable description of what varies */
+  description?: string;
+}
 
 /**
  * A message schema with TypeBox type and description.
@@ -45,6 +70,9 @@ export interface InletSchema {
 
   /** Whether this inlet is a modulatable audio parameter (can accept signal connections) */
   isAudioParam?: boolean;
+
+  /** Declarative handle spec for deriving the xyflow handle ID */
+  handle?: HandleSpec;
 }
 
 /**
@@ -62,6 +90,9 @@ export interface OutletSchema {
 
   /** Message types this outlet emits */
   messages?: MessageSchema[];
+
+  /** Declarative handle spec for deriving the xyflow handle ID */
+  handle?: HandleSpec;
 }
 
 /**
@@ -96,6 +127,12 @@ export interface ObjectSchema {
 
   /** Whether this object has dynamic outlets (like trigger) */
   hasDynamicOutlets?: boolean;
+
+  /** Dynamic handle patterns for AI context (when inlets/outlets are runtime-determined) */
+  handlePatterns?: {
+    inlet?: HandlePattern;
+    outlet?: HandlePattern;
+  };
 }
 
 /**

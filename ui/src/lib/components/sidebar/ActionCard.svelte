@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Check, ChevronLeft, ChevronRight, X } from '@lucide/svelte/icons';
   import { match } from 'ts-pattern';
+  import { toast } from 'svelte-sonner';
   import { diffLines } from 'diff';
   import type { ChatAction, ChatNode } from '$lib/ai/chat/resolver';
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
@@ -154,7 +155,16 @@
       .with({ kind: 'multi' }, (r) => callbacks.onInsertMultipleObjects(r.nodes, r.edges))
       .with({ kind: 'edit' }, (r) => callbacks.onEditObject(r.nodeId, r.data))
       .with({ kind: 'replace' }, (r) => callbacks.onReplaceObject(r.nodeId, r.newType, r.newData))
-      .with({ kind: 'connect-edges' }, (r) => callbacks.onConnectEdges(r.edges))
+      .with({ kind: 'connect-edges' }, (r) => {
+        callbacks.onConnectEdges(r.edges);
+        if (r.invalidEdges && r.invalidEdges.length > 0) {
+          const n = r.invalidEdges.length;
+          toast.warning(
+            `${n} edge${n === 1 ? '' : 's'} had invalid handles and ${n === 1 ? 'was' : 'were'} skipped`,
+            { description: 'You may need to connect some edges manually.' }
+          );
+        }
+      })
       .exhaustive();
 
     onStateChange(action.id, 'applied');

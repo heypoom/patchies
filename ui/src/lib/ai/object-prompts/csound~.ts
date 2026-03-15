@@ -17,12 +17,6 @@ Messages:
 - {type: 'readScore', value: 'i1 0 1'}: send score
 - {type: 'eval', code: '...'}: evaluate code
 
-HANDLE IDS (Auto-generated):
-- Audio inlet: "audio-in-0" (indexed)
-- Message inlet: "message-in-1" (indexed)
-- Audio outlet: "audio-out-0" (single)
-- LIMITATION: Multiple inlets but single audio outlet
-
 Example - Simple Sine:
 \`\`\`json
 {

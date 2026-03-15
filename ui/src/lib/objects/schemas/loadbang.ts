@@ -13,6 +13,7 @@ export const loadbangSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Bang on load',
+      handle: { handleType: 'message' },
       messages: [{ schema: Bang, description: 'Sent when patch loads' }]
     }
   ],

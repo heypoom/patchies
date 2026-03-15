@@ -2,9 +2,6 @@ export const bgOutPrompt = `## bg.out Object Instructions
 
 Background output node - the final video output that displays on the background canvas.
 
-HANDLE IDS (CRITICAL FOR CONNECTIONS):
-- Video inlet: "video-in-0" (accepts video stream from any visual node)
-
 IMPORTANT:
 - bg.out has NO configuration data (empty data object: {})
 - It only receives video input and displays it on the background

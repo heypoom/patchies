@@ -76,7 +76,7 @@ export type AiModeResult =
   | { kind: 'multi'; nodes: AiObjectNode[]; edges: SimplifiedEdge[] }
   | { kind: 'edit'; nodeId: string; data: Record<string, unknown> }
   | { kind: 'replace'; nodeId: string; newType: string; newData: Record<string, unknown> }
-  | { kind: 'connect-edges'; edges: Edge[] };
+  | { kind: 'connect-edges'; edges: Edge[]; invalidEdges?: { reason: string }[] };
 
 export type ModeResolver = (
   prompt: string,

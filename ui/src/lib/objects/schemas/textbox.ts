@@ -13,6 +13,7 @@ export const textboxSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Output the current text' },
         { schema: Type.String(), description: 'Set the text content' }
@@ -23,6 +24,7 @@ export const textboxSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Text output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.String(), description: 'Current text content' }]
     }
   ],

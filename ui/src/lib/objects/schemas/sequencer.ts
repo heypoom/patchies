@@ -103,6 +103,7 @@ export const sequencerSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control inlet',
+      handle: { handleType: 'message' },
       messages: [
         // Mute
         { schema: Mute, description: 'Silence all output' },
@@ -168,5 +169,11 @@ export const sequencerSchema: ObjectSchema = {
       ]
     }
   ],
-  tags: ['sequencer', 'step', 'rhythm', 'transport', 'trigger', 'control', 'beat', 'drum']
+  tags: ['sequencer', 'step', 'rhythm', 'transport', 'trigger', 'control', 'beat', 'drum'],
+  handlePatterns: {
+    outlet: {
+      template: 'out-{index}',
+      description: 'Per-track outlet (out-0, out-1, ..., out-7). No type prefix.'
+    }
+  }
 };

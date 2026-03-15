@@ -25,13 +25,6 @@ Node data shape:
 }
 \`\`\`
 
-HANDLE IDS (auto-generated from track index):
-- Outlet 0: "out-0" (track 0 / KICK)
-- Outlet 1: "out-1" (track 1 / SNARE)
-- Outlet 2: "out-2" (track 2 / CHH)
-- Outlet 3: "out-3" (track 3 / OHH)
-- etc.
-
 STEP PATTERNS:
 - Classic kick (4-on-the-floor, 16 steps): [true,false,false,false, true,false,false,false, true,false,false,false, true,false,false,false]
 - Snare on 2+4: [false,false,false,false, true,false,false,false, false,false,false,false, true,false,false,false]

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Settings, X, Rss } from '@lucide/svelte/icons';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { sseSchema } from '$lib/objects/schemas/sse';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -148,9 +149,9 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={sseSchema.inlets[0].handle!}
           title="connect, disconnect"
           total={1}
           index={0}
@@ -158,9 +159,9 @@
           {nodeId}
         />
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
+          spec={sseSchema.outlets[0].handle!}
           title="SSE messages"
           total={1}
           index={0}

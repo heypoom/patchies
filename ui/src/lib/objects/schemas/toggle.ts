@@ -13,6 +13,7 @@ export const toggleSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [{ schema: Bang, description: 'Flip the toggle state' }]
     }
   ],
@@ -20,6 +21,7 @@ export const toggleSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Toggle output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Boolean(), description: 'Current state' }]
     }
   ],

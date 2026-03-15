@@ -3,7 +3,8 @@
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { swglSchema } from '$lib/objects/schemas/swgl';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas/common';
@@ -106,10 +107,9 @@
   bind:previewCanvas
 >
   {#snippet topHandle()}
-    <StandardHandle
+    <TypedHandle
       port="inlet"
-      type="message"
-      id="0"
+      spec={swglSchema.inlets[0].handle!}
       title="Message input"
       total={1}
       index={0}
@@ -118,20 +118,18 @@
   {/snippet}
 
   {#snippet bottomHandle()}
-    <StandardHandle
+    <TypedHandle
       port="outlet"
-      type="video"
-      id="0"
+      spec={swglSchema.outlets[0].handle!}
       title="Video output"
       total={2}
       index={0}
       {nodeId}
     />
 
-    <StandardHandle
+    <TypedHandle
       port="outlet"
-      type="message"
-      id="0"
+      spec={swglSchema.outlets[1].handle!}
       title="Message output"
       total={2}
       index={1}

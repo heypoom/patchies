@@ -13,6 +13,7 @@ export const delaySchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Input messages',
+      handle: { handleType: 'message' },
       messages: [
         {
           schema: Bang,
@@ -31,6 +32,7 @@ export const delaySchema: ObjectSchema = {
     {
       id: 'time',
       description: 'Delay time',
+      handle: { handleType: 'message' },
       messages: [
         {
           schema: Type.Number(),
@@ -43,6 +45,7 @@ export const delaySchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Delayed output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Message after delay' }]
     }
   ],

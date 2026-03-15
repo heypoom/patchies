@@ -14,11 +14,6 @@ Available:
 - recv(callback): receive messages from inlets
 - setPortCount(inlets, outlets): set message ports
 
-HANDLE IDS (Auto-generated):
-- Message inlet: "message-in" (single)
-- Message outlet: "message-out" (single)
-- LIMITATION: Single inlet/outlet only
-
 Example - Simple Calculation:
 \`\`\`json
 {
