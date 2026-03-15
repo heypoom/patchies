@@ -1,4 +1,6 @@
 import { match } from 'ts-pattern';
+import { objectSchemas } from '$lib/objects/schemas';
+import { deriveHandleId } from '$lib/utils/handle-id';
 
 /**
  * Handle specifications for all node types, derived from StandardHandle usage
@@ -24,61 +26,152 @@ export interface NodeHandleSpec {
 }
 
 /**
- * Static handle specs for all node types that the AI can generate.
- * For dynamic nodes, we specify the pattern format so validation
- * can check if a handle matches.
+ * Derive a fixed handle spec from an ObjectSchema.
+ * Returns null if the schema has no handle fields or has handlePatterns (dynamic).
  */
-export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
-  // === Basic Control & UI ===
-  slider: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-  button: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-  toggle: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-  knob: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-  msg: {
-    inlets: { kind: 'indexed', prefix: 'message-in-', note: '0-8 based on $N placeholders' },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-  textbox: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-  keyboard: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
+function deriveSpecFromSchema(type: string): NodeHandleSpec | null {
+  const schema = objectSchemas[type];
+  if (!schema) return null;
+
+  // Skip schemas with handlePatterns — those need manual dynamic specs
+  if (schema.handlePatterns) return null;
+
+  const inletHandles: string[] = [];
+  for (const inlet of schema.inlets) {
+    if (!inlet.handle) return null; // Missing handle field = can't auto-derive
+    inletHandles.push(
+      deriveHandleId({ port: 'inlet', type: inlet.handle.handleType, id: inlet.handle.handleId })
+    );
+  }
+
+  const outletHandles: string[] = [];
+  for (const outlet of schema.outlets) {
+    if (!outlet.handle) return null;
+    outletHandles.push(
+      deriveHandleId({
+        port: 'outlet',
+        type: outlet.handle.handleType,
+        id: outlet.handle.handleId
+      })
+    );
+  }
+
+  return {
+    inlets: { kind: 'fixed', handles: inletHandles },
+    outlets: { kind: 'fixed', handles: outletHandles }
+  };
+}
+
+/**
+ * Node types whose fixed handles can be auto-derived from their ObjectSchema.
+ * If deriveSpecFromSchema returns a valid spec, it's used. Otherwise falls back
+ * to the manual override below.
+ */
+const SCHEMA_DERIVABLE_TYPES = [
+  // Basic Control & UI
+  'slider',
+  'button',
+  'toggle',
+  'knob',
+  'textbox',
+  'keyboard',
+  // Audio I/O
+  'out~',
+  'meter~',
+  'sampler~',
+  // Audio & Music
+  'chuck~',
+  'csound~',
+  'bytebeat~',
+  'strudel',
+  'orca',
+  // Visual
+  'swgl',
+  'bg.out',
+  'iframe',
+  // AI
+  'ai.stt',
+  'stt',
+  'ai.speech',
+  'ai.music',
+  // Media
+  'screen',
+  // Video Routing
+  'send.vdo',
+  'recv.vdo',
+  // Network
+  'midi.out',
+  'netsend',
+  'netrecv'
+];
+
+/**
+ * Build schema-derived specs for types that can be auto-derived.
+ */
+function buildSchemaDerivedSpecs(): Record<string, NodeHandleSpec> {
+  const specs: Record<string, NodeHandleSpec> = {};
+  for (const type of SCHEMA_DERIVABLE_TYPES) {
+    const spec = deriveSpecFromSchema(type);
+    if (spec) {
+      specs[type] = spec;
+    }
+  }
+  return specs;
+}
+
+/**
+ * Manual overrides for node types that can't be auto-derived from schemas.
+ * Reasons: no schema, incomplete schema, dynamic ports, or schema mismatch with component.
+ */
+const MANUAL_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
+  // No schema exists
   label: {
     inlets: { kind: 'fixed', handles: [] },
     outlets: { kind: 'fixed', handles: [] }
   },
-  sequencer: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'indexed', prefix: 'out-', note: 'one per track (no type prefix)' }
-  },
 
-  // === Audio I/O (Dedicated node types) ===
+  // Schema incomplete (missing inlets/outlets or handle fields)
   'mic~': {
     inlets: { kind: 'fixed', handles: ['in-0'] },
     outlets: { kind: 'fixed', handles: ['audio-out-0'] }
   },
-  'out~': {
-    inlets: { kind: 'fixed', handles: ['audio-in-0'] },
-    outlets: { kind: 'fixed', handles: [] }
+  'soundfile~': {
+    inlets: { kind: 'fixed', handles: ['message-in'] },
+    outlets: { kind: 'fixed', handles: ['audio-out-0'] }
   },
-  'meter~': {
-    inlets: { kind: 'fixed', handles: ['audio-in'] },
+  markdown: {
+    inlets: { kind: 'fixed', handles: ['message-in'] },
     outlets: { kind: 'fixed', handles: ['message-out'] }
+  },
+  'ai.text': {
+    inlets: { kind: 'fixed', handles: ['message-in', 'video-in-0'] },
+    outlets: { kind: 'fixed', handles: ['message-out'] }
+  },
+  'ai.image': {
+    inlets: { kind: 'fixed', handles: ['video-in-0', 'message-in-1'] },
+    outlets: { kind: 'fixed', handles: ['video-out-0', 'message-out-1'] }
+  },
+  tts: {
+    inlets: { kind: 'fixed', handles: ['message-in-0'] },
+    outlets: { kind: 'fixed', handles: ['message-out-0'] }
+  },
+  webcam: {
+    inlets: { kind: 'fixed', handles: ['message-in'] },
+    outlets: { kind: 'fixed', handles: ['video-out-0'] }
+  },
+  'midi.in': {
+    inlets: { kind: 'fixed', handles: ['message-in'] },
+    outlets: { kind: 'fixed', handles: ['message-out'] }
+  },
+
+  // Dynamic/indexed ports — can't be derived from fixed schema
+  msg: {
+    inlets: { kind: 'indexed', prefix: 'message-in-', note: '0-8 based on $N placeholders' },
+    outlets: { kind: 'fixed', handles: ['message-out'] }
+  },
+  sequencer: {
+    inlets: { kind: 'fixed', handles: ['message-in'] },
+    outlets: { kind: 'indexed', prefix: 'out-', note: 'one per track (no type prefix)' }
   },
   'scope~': {
     inlets: {
@@ -88,16 +181,6 @@ export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
     },
     outlets: { kind: 'fixed', handles: [] }
   },
-  'soundfile~': {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['audio-out-0'] }
-  },
-  'sampler~': {
-    inlets: { kind: 'fixed', handles: ['audio-in', 'message-in'] },
-    outlets: { kind: 'fixed', handles: ['audio-out'] }
-  },
-
-  // === Visual & Creative Coding ===
   p5: {
     inlets: {
       kind: 'indexed',
@@ -186,20 +269,10 @@ export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
     inlets: { kind: 'indexed', prefix: 'in-', note: 'no type prefix' },
     outlets: { kind: 'indexed', prefix: 'out-', note: 'no type prefix' }
   },
-  swgl: {
-    inlets: { kind: 'fixed', handles: ['message-in-0'] },
-    outlets: { kind: 'fixed', handles: ['video-out-0', 'message-out-0'] }
-  },
-  'bg.out': {
-    inlets: { kind: 'fixed', handles: ['video-in-0'] },
-    outlets: { kind: 'fixed', handles: [] }
-  },
   vue: {
     inlets: { kind: 'indexed', prefix: 'in-', note: 'no type prefix' },
     outlets: { kind: 'indexed', prefix: 'out-', note: 'no type prefix' }
   },
-
-  // === Audio & Music ===
   'tone~': {
     inlets: {
       kind: 'dynamic',
@@ -248,26 +321,6 @@ export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
       note: 'audio-out (fixed), then message-out-{N}'
     }
   },
-  'chuck~': {
-    inlets: { kind: 'fixed', handles: ['audio-in-0', 'message-in-1'] },
-    outlets: { kind: 'fixed', handles: ['audio-out', 'message-out-0'] }
-  },
-  'csound~': {
-    inlets: { kind: 'fixed', handles: ['audio-in-0', 'message-in-1'] },
-    outlets: { kind: 'fixed', handles: ['audio-out-0'] }
-  },
-  'bytebeat~': {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['audio-out'] }
-  },
-  strudel: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['audio-out'] }
-  },
-  orca: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
   'expr~': {
     inlets: {
       kind: 'dynamic',
@@ -276,90 +329,20 @@ export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
     },
     outlets: { kind: 'fixed', handles: ['audio-out'] }
   },
-
-  // === Programming & Control ===
   expr: {
     inlets: { kind: 'indexed', prefix: 'message-in-', note: '0-8 based on $N in expression' },
     outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-
-  // === Documentation & Content ===
-  markdown: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-  iframe: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-
-  // === AI Objects ===
-  'ai.text': {
-    inlets: { kind: 'fixed', handles: ['message-in', 'video-in-0'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-  'ai.image': {
-    inlets: { kind: 'fixed', handles: ['video-in-0', 'message-in-1'] },
-    outlets: { kind: 'fixed', handles: ['video-out-0', 'message-out-1'] }
-  },
-  'ai.stt': {
-    inlets: { kind: 'fixed', handles: ['audio-in-0', 'message-in-1'] },
-    outlets: { kind: 'fixed', handles: ['message-out-0'] }
-  },
-  stt: {
-    inlets: { kind: 'fixed', handles: ['message-in-0'] },
-    outlets: { kind: 'fixed', handles: ['message-out-0'] }
-  },
-  tts: {
-    inlets: { kind: 'fixed', handles: ['message-in-0'] },
-    outlets: { kind: 'fixed', handles: ['message-out-0'] }
-  },
-  'ai.speech': {
-    inlets: { kind: 'fixed', handles: ['message-in-0'] },
-    outlets: { kind: 'fixed', handles: ['audio-out-0'] }
-  },
-  'ai.music': {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['audio-out'] }
-  },
-
-  // === Media Input ===
-  webcam: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['video-out-0'] }
-  },
-  screen: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['video-out-0'] }
-  },
-
-  // === Video Routing ===
-  'send.vdo': {
-    inlets: { kind: 'fixed', handles: ['video-in-0', 'message-in-1'] },
-    outlets: { kind: 'fixed', handles: [] }
-  },
-  'recv.vdo': {
-    inlets: { kind: 'fixed', handles: ['message-in-0'] },
-    outlets: { kind: 'fixed', handles: ['video-out-0'] }
-  },
-
-  // === Network ===
-  'midi.in': {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-  'midi.out': {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: [] }
-  },
-  netsend: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: [] }
-  },
-  netrecv: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
   }
+};
+
+/**
+ * Static handle specs for all node types that the AI can generate.
+ * Schema-derivable types are auto-generated from ObjectSchemas.
+ * Manual overrides are used for dynamic/indexed nodes and schema mismatches.
+ */
+export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
+  ...buildSchemaDerivedSpecs(),
+  ...MANUAL_HANDLE_SPECS
 };
 
 /**
