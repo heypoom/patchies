@@ -249,19 +249,6 @@
         </div>
       {/if}
 
-      <!-- Drag handle for moving the node (hidden when locked or interactivity is disabled) -->
-      {#if !isLocked}
-        <div
-          class={[
-            'absolute left-1/2 -translate-x-1/2 cursor-move rounded px-1 py-1 transition-opacity hover:bg-zinc-700/50 pointer-coarse:px-2 pointer-coarse:py-2',
-            node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-            node.data.vertical ? '-top-11 -left-3' : '-top-11'
-          ]}
-        >
-          <GripHorizontal class="h-4 w-4 text-zinc-500 pointer-coarse:h-5 pointer-coarse:w-5" />
-        </div>
-      {/if}
-
       <div class="relative">
         {#if showInlet}
           <TypedHandle
@@ -275,38 +262,42 @@
         {/if}
 
         <div
-          class="flex w-full flex-col items-center justify-center gap-1 py-1"
+          class="flex w-full flex-col items-center justify-center"
           style={node.data.vertical || isResizable ? '' : `width: ${sliderWidth}px;`}
         >
-          <div
-            class={[
-              'pb-2 font-mono text-sm transition-opacity',
-              node.selected ? 'text-zinc-100 opacity-100' : 'text-zinc-300',
-              node.data.vertical ? 'absolute -top-[40px] opacity-0 group-hover:opacity-100' : ''
-            ]}
-          >
-            {displayValue}
+          <div class="w-full text-center">
+            <div
+              class={[
+                'cursor-move font-mono text-sm transition-opacity',
+                node.selected ? 'text-zinc-100 opacity-100' : 'text-zinc-300',
+                node.data.vertical ? 'absolute -top-[40px] opacity-0 group-hover:opacity-100' : ''
+              ]}
+            >
+              {displayValue}
+            </div>
           </div>
 
-          <input
-            bind:this={sliderElement}
-            type="range"
-            {min}
-            {max}
-            step={isFloat ? 0.01 : 1}
-            value={currentValue}
-            oninput={handleSliderChange}
-            onpointerdown={valueTracker.onFocus}
-            onpointerup={valueTracker.onBlur}
-            style="background: linear-gradient(to right, #3b82f6 0%, #3b82f6 {((currentValue -
-              min) /
-              (max - min)) *
-              100}%, #3f3f46 {((currentValue - min) / (max - min)) * 100}%, #3f3f46 100%); {node
-              .data.vertical
-              ? `writing-mode: vertical-lr; direction: rtl; height: ${sliderHeight}px;`
-              : ''};"
-            class={['nodrag', sliderClass]}
-          />
+          <div class="nodrag flex cursor-default pt-3 pb-2">
+            <input
+              bind:this={sliderElement}
+              type="range"
+              {min}
+              {max}
+              step={isFloat ? 0.01 : 1}
+              value={currentValue}
+              oninput={handleSliderChange}
+              onpointerdown={valueTracker.onFocus}
+              onpointerup={valueTracker.onBlur}
+              style="background: linear-gradient(to right, #3b82f6 0%, #3b82f6 {((currentValue -
+                min) /
+                (max - min)) *
+                100}%, #3f3f46 {((currentValue - min) / (max - min)) * 100}%, #3f3f46 100%); {node
+                .data.vertical
+                ? `writing-mode: vertical-lr; direction: rtl; height: ${sliderHeight}px;`
+                : ''};"
+              class={[sliderClass, 'cursor-pointer']}
+            />
+          </div>
 
           {#if !node.data.vertical}
             <div class="flex w-full justify-between font-mono text-[10px] text-zinc-500">
@@ -391,6 +382,7 @@
             />
             <span class="text-xs text-zinc-300">Integer</span>
           </label>
+
           <label class="flex items-center">
             <input
               type="radio"
