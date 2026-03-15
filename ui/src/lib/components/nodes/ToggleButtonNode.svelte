@@ -71,7 +71,7 @@
 
   const buttonClass = $derived.by(() => {
     const baseClass =
-      'h-10 w-10 cursor-pointer rounded-full border font-mono text-xs font-medium transition-colors';
+      'h-10 w-10 cursor-pointer rounded-lg border font-mono text-xs font-medium transition-colors';
 
     const glowClass = selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm';
 
