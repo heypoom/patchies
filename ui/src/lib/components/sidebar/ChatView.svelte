@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     BotMessageSquare,
+    ImagePlus,
     MessageSquare,
     Send,
     Settings,
@@ -79,6 +80,7 @@
   let abortController: AbortController | null = $state(null);
   let messagesEl: HTMLDivElement | undefined = $state();
   let stagedImages = $state<StagedImage[]>([]);
+  let fileInputEl: HTMLInputElement | undefined = $state();
   let personaPanelOpen = $state(false);
   let settingsPanelOpen = $state(false);
   let addingCustom = $state(false);
@@ -668,6 +670,28 @@
             <Trash2 class="h-3.5 w-3.5" />
           </button>
         {/if}
+
+        <input
+          bind:this={fileInputEl}
+          type="file"
+          accept="image/*"
+          multiple
+          class="hidden"
+          onchange={(e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (files) stageFiles(files);
+            if (fileInputEl) fileInputEl.value = '';
+          }}
+        />
+
+        <button
+          onclick={() => fileInputEl?.click()}
+          disabled={isLoading}
+          class="cursor-pointer rounded p-1.5 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-30"
+          title="Attach images"
+        >
+          <ImagePlus class="h-3.5 w-3.5" />
+        </button>
 
         {#if isLoading}
           <button
