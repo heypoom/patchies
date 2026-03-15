@@ -34,6 +34,7 @@ import { VideoTextureManager } from './VideoTextureManager.js';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 import type { RenderOp } from '$lib/profiler/types';
+import { createWorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -681,6 +682,7 @@ export class FBORenderer {
     if (this.swglByNode.has(node.id)) {
       const existingSwgl = this.swglByNode.get(node.id);
       existingSwgl?.glsl.reset();
+      existingSwgl?.settingsProxy?._clearCallbacks();
     }
 
     const gl = this.regl._gl as WebGL2RenderingContext;
@@ -696,13 +698,16 @@ export class FBORenderer {
     };
 
     // Create SwissGL context with message passing support
+    const settingsProxy = createWorkerSettingsProxy(node.id, (msg) => self.postMessage(msg));
+
     const swglContext: SwissGLContext = {
       glsl,
       userRenderFunc: null,
       swglTarget,
       gl,
       onMessageCallbacks: [],
-      nodeId: node.id
+      nodeId: node.id,
+      settingsProxy
     };
 
     // Parse user's render function from code
@@ -729,7 +734,8 @@ export class FBORenderer {
           });
         },
 
-        clock: this.createWorkerClock()
+        clock: this.createWorkerClock(),
+        settings: settingsProxy.settings
       };
 
       const funcBody = `
@@ -1390,6 +1396,7 @@ export class FBORenderer {
       this.hydraByNode.get(nodeId)?.settingsProxy ??
       this.textmodeByNode.get(nodeId)?.settingsProxy ??
       this.threeByNode.get(nodeId)?.settingsProxy ??
+      this.swglByNode.get(nodeId)?.settingsProxy ??
       null
     );
   }

@@ -6,7 +6,7 @@ The `settings` API lets user code expose a configurable settings panel directly 
 
 ## Supported Objects
 
-`settings` is available in: [js](/docs/objects/js), [worker](/docs/objects/worker), [p5](/docs/objects/p5), [canvas](/docs/objects/canvas), [canvas.dom](/docs/objects/canvas.dom), [textmode](/docs/objects/textmode), [textmode.dom](/docs/objects/textmode.dom), [three](/docs/objects/three), [three.dom](/docs/objects/three.dom), [hydra](/docs/objects/hydra), [dom](/docs/objects/dom), and [vue](/docs/objects/vue).
+`settings` is available in: [js](/docs/objects/js), [worker](/docs/objects/worker), [p5](/docs/objects/p5), [canvas](/docs/objects/canvas), [canvas.dom](/docs/objects/canvas.dom), [textmode](/docs/objects/textmode), [textmode.dom](/docs/objects/textmode.dom), [three](/docs/objects/three), [three.dom](/docs/objects/three.dom), [hydra](/docs/objects/hydra), [swgl](/docs/objects/swgl), [dom](/docs/objects/dom), and [vue](/docs/objects/vue).
 
 ## Basic Usage
 

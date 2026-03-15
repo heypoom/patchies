@@ -10,14 +10,28 @@
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
+  import { SettingsManager } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
+  import type { SettingsSchema } from '$lib/settings';
 
   let {
     id: nodeId,
     data,
     selected
-  }: { id: string; type: string; data: { code: string }; selected: boolean } = $props();
+  }: {
+    id: string;
+    type: string;
+    data: { code: string; settingsSchema?: SettingsSchema; settings?: Record<string, unknown> };
+    selected: boolean;
+  } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+    createKVStore(nodeId)
+  );
 
   let glSystem: GLSystem;
   let messageContext: MessageContext;
@@ -63,6 +77,18 @@
     }
 
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
+
+    glSystem.registerSettingsCallbacks(nodeId, {
+      onDefine: async (requestId, schema) => {
+        await settingsManager.define(schema as SettingsSchema);
+
+        glSystem.sendSettingsValues(nodeId, requestId, settingsManager.getAll());
+      },
+      onClear: () => {
+        settingsManager.clear();
+      }
+    });
+
     glSystem.upsertNode(nodeId, 'swgl', { code });
 
     setTimeout(() => {
@@ -71,6 +97,7 @@
   });
 
   onDestroy(() => {
+    glSystem.unregisterSettingsCallbacks(nodeId);
     messageContext.destroy();
     glSystem.removeNode(nodeId);
     glSystem.removePreviewContext(nodeId, previewBitmapContext);
@@ -105,6 +132,13 @@
   {editorReady}
   hasError={errorMessage !== null}
   bind:previewCanvas
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => {
+    settingsManager.setValue(key, value);
+    glSystem.sendSettingsValueChanged(nodeId, key, value);
+  }}
+  onSettingsRevertAll={() => settingsManager.revertAll()}
 >
   {#snippet topHandle()}
     <TypedHandle

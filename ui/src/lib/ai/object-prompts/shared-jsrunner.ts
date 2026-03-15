@@ -69,7 +69,7 @@ export const jsRunnerInstructions = `
 
 **User-defined Settings:**
 - await settings.define([...schema]) - expose a settings panel on the node (gear icon appears)
-  - on hydra, don't await - just settings.define is enough
+  - on hydra/swgl, don't await - just settings.define is enough
 - settings.get(key) - read current value (sync, after define resolves)
 - settings.getAll() - all values as object
 - settings.onChange((key, value, all) => {}) - react to user changes in real time
