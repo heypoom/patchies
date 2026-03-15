@@ -89,7 +89,7 @@ const SCHEMA_DERIVABLE_TYPES = [
 
   // Audio & Music
   'chuck~',
-  'csound~',
+  // csound~ has handlePatterns — use manual spec
   'bytebeat~',
   'strudel',
   'orca',
@@ -105,6 +105,7 @@ const SCHEMA_DERIVABLE_TYPES = [
   'ai.stt',
   'ai.txt',
   'ai.img',
+  'ai.tts',
   'stt',
   'tts',
   'ai.music',
@@ -149,6 +150,12 @@ const MANUAL_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
   label: {
     inlets: { kind: 'fixed', handles: [] },
     outlets: { kind: 'fixed', handles: [] }
+  },
+
+  // Schema has handlePatterns — fixed handles derived manually from component
+  'csound~': {
+    inlets: { kind: 'fixed', handles: ['audio-in-0', 'message-in-1'] },
+    outlets: { kind: 'fixed', handles: ['audio-out-0'] }
   },
 
   // Dynamic/indexed ports — can't be derived from fixed schema

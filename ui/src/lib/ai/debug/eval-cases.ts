@@ -231,27 +231,27 @@ export const EVAL_CASES: EvalCase[] = [
   // === AI nodes ===
   {
     id: 'ai-text-prompt',
-    prompt: 'slider connected to ai.text, ai.text output to label',
+    prompt: 'slider connected to ai.txt, ai.txt output to msg',
     category: 'mixed',
-    expectedTypes: ['slider', 'ai.text', 'label']
+    expectedTypes: ['slider', 'ai.txt', 'msg']
   },
   {
     id: 'ai-stt-pipeline',
-    prompt: 'mic~ audio into ai.stt, ai.stt text output to label',
+    prompt: 'mic~ audio into ai.stt, ai.stt text output to msg',
     category: 'mixed',
-    expectedTypes: ['mic~', 'ai.stt', 'label']
+    expectedTypes: ['mic~', 'ai.stt', 'msg']
   },
   {
     id: 'ai-speech-to-out',
-    prompt: 'button triggering ai.speech, ai.speech audio to out~',
+    prompt: 'button triggering ai.tts, ai.tts audio to out~',
     category: 'mixed',
-    expectedTypes: ['button', 'ai.speech', 'out~']
+    expectedTypes: ['button', 'ai.tts', 'out~']
   },
   {
     id: 'ai-image-video',
-    prompt: 'webcam into ai.image, ai.image video output to bg.out',
+    prompt: 'webcam into ai.img, ai.img video output to bg.out',
     category: 'video',
-    expectedTypes: ['webcam', 'ai.image', 'bg.out']
+    expectedTypes: ['webcam', 'ai.img', 'bg.out']
   },
 
   // === Dynamic audio nodes ===
@@ -328,10 +328,10 @@ export const EVAL_CASES: EvalCase[] = [
     expectedTypes: ['knob', 'js']
   },
   {
-    id: 'msg-textbox-to-label',
-    prompt: 'textbox connected to a label',
+    id: 'msg-textbox-to-msg',
+    prompt: 'textbox connected to a msg node',
     category: 'message',
-    expectedTypes: ['textbox', 'label']
+    expectedTypes: ['textbox', 'msg']
   },
   {
     id: 'audio-soundfile-to-out',
@@ -364,16 +364,16 @@ export const EVAL_CASES: EvalCase[] = [
     expectedTypes: ['three.dom', 'bg.out']
   },
   {
-    id: 'msg-dom-to-label',
-    prompt: 'dom node output connected to label',
+    id: 'msg-dom-to-msg',
+    prompt: 'dom node output connected to msg',
     category: 'message',
-    expectedTypes: ['dom', 'label']
+    expectedTypes: ['dom', 'msg']
   },
   {
-    id: 'msg-vue-to-label',
-    prompt: 'vue node output connected to label',
+    id: 'msg-vue-to-msg',
+    prompt: 'vue node output connected to msg',
     category: 'message',
-    expectedTypes: ['vue', 'label']
+    expectedTypes: ['vue', 'msg']
   },
   {
     id: 'audio-expr-tilde-to-out',
@@ -401,9 +401,9 @@ export const EVAL_CASES: EvalCase[] = [
   },
   {
     id: 'msg-stt-standalone',
-    prompt: 'stt (speech to text) output to label',
+    prompt: 'msg triggering stt (speech to text), stt output to another msg',
     category: 'message',
-    expectedTypes: ['stt', 'label']
+    expectedTypes: ['msg', 'stt', 'msg']
   },
   {
     id: 'msg-tts-standalone',
@@ -436,10 +436,10 @@ export const EVAL_CASES: EvalCase[] = [
     expectedTypes: ['js', 'netsend']
   },
   {
-    id: 'msg-netrecv-to-label',
-    prompt: 'netrecv receiving network data to label',
+    id: 'msg-netrecv-to-msg',
+    prompt: 'netrecv receiving network data to msg',
     category: 'message',
-    expectedTypes: ['netrecv', 'label']
+    expectedTypes: ['netrecv', 'msg']
   }
 ];
 
