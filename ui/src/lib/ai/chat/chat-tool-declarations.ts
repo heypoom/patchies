@@ -82,12 +82,13 @@ export const contextToolDeclarations = [
   {
     name: GET_GRAPH_NODES,
     description:
-      'List all nodes currently on the canvas with their id, type, and name. Use this to discover what nodes exist before referencing them in canvas actions.',
+      'List all nodes AND edges currently on the canvas. Returns { nodes: [{id, type, name}], edges: [{id, source, target, sourceHandle, targetHandle}] }. Use this to discover what exists and what is already connected before creating or connecting anything.',
     parametersJsonSchema: { type: 'object', properties: {} }
   },
   {
     name: GET_NODE_DATA,
-    description: 'Fetch the full data of a specific node by its ID.',
+    description:
+      'Fetch the full data of a specific node by its ID. Also returns connectedEdges showing all edges going in/out of this node, so you can see what it is already connected to.',
     parametersJsonSchema: {
       type: 'object',
       properties: {

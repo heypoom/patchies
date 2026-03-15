@@ -58,6 +58,21 @@ export interface ChatNodeSummary {
   name?: string;
 }
 
+/** Lightweight edge summary for graph-level context */
+export interface ChatEdgeSummary {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+}
+
+/** Combined graph summary (nodes + edges) */
+export interface ChatGraphSummary {
+  nodes: ChatNodeSummary[];
+  edges: ChatEdgeSummary[];
+}
+
 /**
  * Streams a chat message response. Calls onChunk for each text chunk and
  * onAction when a canvas tool call has been resolved (ready to apply/dismiss).
@@ -74,7 +89,7 @@ export async function streamChatMessage(
   onThinking?: (thought: string) => void,
   getNodeById?: (nodeId: string) => ChatNode | undefined,
   onAction?: (action: ChatAction) => void,
-  getAllNodes?: () => ChatNodeSummary[],
+  getGraphSummary?: () => ChatGraphSummary,
   persona?: string
 ): Promise<string> {
   const apiKey = localStorage.getItem('gemini-api-key');
@@ -290,11 +305,11 @@ export async function streamChatMessage(
         const name = functionCall.name ?? '';
 
         if (name === GET_GRAPH_NODES) {
-          const nodes = getAllNodes?.() ?? [];
+          const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
           return {
             functionResponse: {
               name: GET_GRAPH_NODES,
-              response: { nodes }
+              response: graph
             }
           };
         }
@@ -302,12 +317,28 @@ export async function streamChatMessage(
         if (name === GET_NODE_DATA) {
           const nodeId = (functionCall.args?.nodeId as string) ?? '';
           const node = getNodeById?.(nodeId);
+          if (!node) {
+            return {
+              functionResponse: {
+                name: GET_NODE_DATA,
+                response: { error: `Node "${nodeId}" not found` }
+              }
+            };
+          }
+          // Include connected edges so AI knows what's already wired
+          const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
+          const connectedEdges = graph.edges.filter(
+            (e) => e.source === nodeId || e.target === nodeId
+          );
           return {
             functionResponse: {
               name: GET_NODE_DATA,
-              response: node
-                ? { id: node.id, type: node.type, data: node.data }
-                : { error: `Node "${nodeId}" not found` }
+              response: {
+                id: node.id,
+                type: node.type,
+                data: node.data,
+                connectedEdges
+              }
             }
           };
         }

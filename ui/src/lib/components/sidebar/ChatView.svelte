@@ -21,7 +21,7 @@
     type ChatMessage,
     type ChatAction,
     type ChatNode,
-    type ChatNodeSummary
+    type ChatGraphSummary
   } from '$lib/ai/chat/resolver';
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
@@ -42,13 +42,13 @@
     sessionId,
     aiCallbacks,
     getNodeById,
-    getAllNodes,
+    getGraphSummary,
     onRename
   }: {
     sessionId: string;
     aiCallbacks?: AiPromptCallbacks;
     getNodeById?: (nodeId: string) => ChatNode | undefined;
-    getAllNodes?: () => ChatNodeSummary[];
+    getGraphSummary?: () => ChatGraphSummary;
     onRename?: (name: string) => void;
   } = $props();
 
@@ -226,7 +226,7 @@
               }
             }
           : undefined,
-        getAllNodes,
+        getGraphSummary,
         activePersona?.prompt || undefined
       );
 

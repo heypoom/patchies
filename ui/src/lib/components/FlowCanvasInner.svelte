@@ -503,12 +503,21 @@
     return { id: node.id, type: node.type, data: node.data as Record<string, unknown> };
   }
 
-  function getAllNodes() {
-    return nodes.map((n) => ({
-      id: n.id,
-      type: n.type,
-      name: (n.data as Record<string, unknown>)?.name as string | undefined
-    }));
+  function getGraphSummary() {
+    return {
+      nodes: nodes.map((n) => ({
+        id: n.id,
+        type: n.type,
+        name: (n.data as Record<string, unknown>)?.name as string | undefined
+      })),
+      edges: edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle,
+        targetHandle: e.targetHandle
+      }))
+    };
   }
 
   const aiCallbacks = {
@@ -993,7 +1002,7 @@
     onOpenPatchToApp={() => (showPatchToPromptDialog = true)}
     {aiCallbacks}
     {getNodeById}
-    {getAllNodes}
+    {getGraphSummary}
   />
 
   <!-- Main content area -->
