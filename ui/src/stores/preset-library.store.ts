@@ -91,10 +91,10 @@ function saveToStorage(libraries: PresetLibrary[]): void {
 function initializeLibraries(): PresetLibrary[] {
   const stored = loadFromStorage() ?? [];
 
-  // Ensure user library exists
-  const hasUser = stored.some((lib) => lib.id === USER_LIBRARY_ID);
+  // Only create default user library if there are no writable libraries at all
+  const hasWritableLibrary = stored.some((lib) => !lib.readonly);
 
-  if (!hasUser) {
+  if (!hasWritableLibrary) {
     stored.unshift(createUserLibrary());
   }
 
@@ -138,8 +138,8 @@ function createPresetLibraryStore() {
      * Remove a library (cannot remove built-in or user libraries)
      */
     removeLibrary(libraryId: string): boolean {
-      if (libraryId === BUILTIN_LIBRARY_ID || libraryId === USER_LIBRARY_ID) {
-        console.warn('Cannot remove built-in or user library');
+      if (libraryId === BUILTIN_LIBRARY_ID) {
+        console.warn('Cannot remove built-in library');
         return false;
       }
 

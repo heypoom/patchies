@@ -16,10 +16,27 @@
     node: Node | null;
   } = $props();
 
+  // Remember last selected library across saves (persisted to localStorage)
+  const LAST_LIBRARY_KEY = 'patchies:last-preset-library';
+
+  function loadLastLibraryId(): string | null {
+    if (typeof localStorage === 'undefined') return null;
+
+    return localStorage.getItem(LAST_LIBRARY_KEY);
+  }
+
+  function saveLastLibraryId(id: string): void {
+    if (typeof localStorage === 'undefined') return;
+
+    localStorage.setItem(LAST_LIBRARY_KEY, id);
+  }
+
+  let lastSelectedLibraryId = $state<string | null>(loadLastLibraryId());
+
   // Form state
   let presetName = $state('');
   let presetDescription = $state('');
-  let selectedLibraryId = $state('user');
+  let selectedLibraryId = $state('');
   let selectedFolderPath = $state<PresetPath>([]);
   let showFolderPicker = $state(false);
 
@@ -37,12 +54,23 @@
   // Show warning when name will be auto-incremented
   let willAutoIncrement = $derived(presetName.trim() && actualSaveName !== presetName.trim());
 
+  // Resolve the best default library: last used if still valid, otherwise first editable
+  function getDefaultLibraryId(): string {
+    const libraries = $editableLibraries;
+
+    if (lastSelectedLibraryId && libraries.some((lib) => lib.id === lastSelectedLibraryId)) {
+      return lastSelectedLibraryId;
+    }
+
+    return libraries[0]?.id ?? '';
+  }
+
   // Reset form when dialog opens with a new node
   $effect(() => {
     if (open && node) {
       presetName = '';
       presetDescription = '';
-      selectedLibraryId = 'user';
+      selectedLibraryId = getDefaultLibraryId();
       selectedFolderPath = [];
     }
   });
@@ -57,6 +85,7 @@
       for (const [name, entry] of Object.entries(folder)) {
         if (!isPreset(entry)) {
           const fullPath = [...parentPath, name];
+
           children.push({
             id: fullPath.join('/'),
             name,
@@ -95,6 +124,7 @@
 
     // Check if first part is a library ID
     const library = $editableLibraries.find((lib) => lib.id === parts[0]);
+
     if (library) {
       selectedLibraryId = parts[0];
       selectedFolderPath = parts.slice(1);
@@ -119,6 +149,9 @@
     const success = presetLibraryStore.addPreset(selectedLibraryId, selectedFolderPath, preset);
 
     if (success) {
+      lastSelectedLibraryId = selectedLibraryId;
+      saveLastLibraryId(selectedLibraryId);
+
       toast.success(`Saved preset "${preset.name}"`);
       open = false;
     } else {
@@ -129,6 +162,7 @@
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
+
       handleSave();
     }
   }

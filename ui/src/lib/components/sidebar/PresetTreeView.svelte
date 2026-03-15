@@ -121,6 +121,10 @@
   let renamingPath = $state<string | null>(null);
   let renameInputValue = $state('');
 
+  // Library renaming state
+  let renamingLibraryId = $state<string | null>(null);
+  let renameLibraryValue = $state('');
+
   // New folder creation state
   let creatingFolderIn = $state<string | null>(null);
   let newFolderName = $state('');
@@ -423,6 +427,24 @@
   // Check if a path is the current drop target
   function isDropTarget(pathStr: string): boolean {
     return dropTargetPath === pathStr;
+  }
+
+  // Library rename handlers
+  function startLibraryRename(libraryId: string, currentName: string) {
+    renamingLibraryId = libraryId;
+    renameLibraryValue = currentName;
+  }
+
+  function handleLibraryRenameKeydown(event: KeyboardEvent, libraryId: string) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (renameLibraryValue.trim()) {
+        presetLibraryStore.renameLibrary(libraryId, renameLibraryValue.trim());
+      }
+      renamingLibraryId = null;
+    } else if (event.key === 'Escape') {
+      renamingLibraryId = null;
+    }
   }
 
   // Rename handlers
@@ -771,9 +793,27 @@
           <Library
             class="h-3.5 w-3.5 shrink-0 {library.readonly ? 'text-zinc-500' : 'text-blue-400'}"
           />
-          <span class="truncate font-mono font-medium text-zinc-200">
-            {library.name}
-          </span>
+          {#if renamingLibraryId === library.id}
+            <!-- svelte-ignore a11y_autofocus -->
+            <input
+              type="text"
+              class="flex-1 truncate rounded bg-transparent px-1 font-mono text-xs font-medium text-zinc-200 ring-1 ring-blue-500 outline-none"
+              bind:value={renameLibraryValue}
+              onkeydown={(e) => handleLibraryRenameKeydown(e, library.id)}
+              onblur={() => {
+                if (renameLibraryValue.trim()) {
+                  presetLibraryStore.renameLibrary(library.id, renameLibraryValue.trim());
+                }
+                renamingLibraryId = null;
+              }}
+              onclick={(e) => e.stopPropagation()}
+              autofocus
+            />
+          {:else}
+            <span class="truncate font-mono font-medium text-zinc-200">
+              {library.name}
+            </span>
+          {/if}
           {#if library.readonly}
             <Lock class="ml-1 h-3 w-3 text-zinc-600" />
           {/if}
@@ -833,8 +873,12 @@
         Export
       </ContextMenu.Item>
 
-      {#if !library.readonly && library.id !== 'user'}
+      {#if !library.readonly}
         <ContextMenu.Separator />
+        <ContextMenu.Item onclick={() => startLibraryRename(library.id, library.name)}>
+          <Pencil class="mr-2 h-4 w-4" />
+          Rename
+        </ContextMenu.Item>
         <ContextMenu.Item
           class="text-red-400 focus:text-red-400"
           onclick={() => presetLibraryStore.removeLibrary(library.id)}
