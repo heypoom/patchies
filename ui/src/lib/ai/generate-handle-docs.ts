@@ -93,8 +93,8 @@ export function generateHandleDocs(types: string[]): string {
   // Always include "object" type guidance since it's the meta-type for audio objects
   if (types.includes('object') || types.some((t) => t.endsWith('~'))) {
     docs.push(
-      `object (audio objects like osc~, gain~, delay~, etc.):\n` +
-        `  Audio objects use the "object" node type with data: { expr, name, params }\n` +
+      `object (ONLY for nodes with type: "object", e.g. osc~, gain~, delay~, out~):\n` +
+        `  These nodes use indexed handles. Do NOT use this pattern for non-"object" node types like strudel, expr~, sampler~, etc.\n` +
         `  signal inlets → "audio-in-{index}" (e.g. audio-in-0, audio-in-1)\n` +
         `  message inlets → "message-in-{index}" (e.g. message-in-0, message-in-1)\n` +
         `  signal outlets → "audio-out-{index}" (e.g. audio-out-0)\n` +
@@ -107,7 +107,9 @@ export function generateHandleDocs(types: string[]): string {
 
   return (
     `HANDLE ID REFERENCE (auto-generated from schemas):\n` +
-    `Handle IDs are derived from node schemas. Use these exact IDs for sourceHandle/targetHandle in edges.\n\n` +
+    `Handle IDs are derived from node schemas. Use these exact IDs for sourceHandle/targetHandle in edges.\n` +
+    `IMPORTANT: If a specific node type has handle IDs listed below, ALWAYS use those exact IDs. ` +
+    `The generic "object" pattern (audio-in-{index}, audio-out-{index}) ONLY applies to nodes with type: "object".\n\n` +
     docs.join('\n\n')
   );
 }

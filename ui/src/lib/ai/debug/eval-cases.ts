@@ -346,10 +346,10 @@ export const EVAL_CASES: EvalCase[] = [
     expectedTypes: ['object', 'scope~']
   },
   {
-    id: 'msg-worker-to-label',
-    prompt: 'worker node output connected to label',
+    id: 'msg-worker-to-msg',
+    prompt: 'worker node output connected to a msg node',
     category: 'message',
-    expectedTypes: ['worker', 'label']
+    expectedTypes: ['worker', 'msg']
   },
   {
     id: 'video-three-to-bgout',

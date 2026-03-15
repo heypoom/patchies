@@ -22,7 +22,14 @@ export const exprAudioSchema: ObjectSchema = {
       messages: [{ schema: Type.Number(), description: 'Value for dynamic inlet variable' }]
     }
   ],
-  outlets: [],
+  outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output',
+      handle: { handleType: 'audio' }
+    }
+  ],
   tags: ['audio', 'expression', 'dsp', 'math', 'synthesis'],
   hasDynamicOutlets: true
 };

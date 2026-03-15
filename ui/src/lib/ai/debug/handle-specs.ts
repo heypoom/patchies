@@ -59,7 +59,7 @@ export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
     outlets: { kind: 'fixed', handles: ['message-out'] }
   },
   label: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
+    inlets: { kind: 'fixed', handles: [] },
     outlets: { kind: 'fixed', handles: [] }
   },
   sequencer: {
