@@ -10,10 +10,10 @@ interface ChatSessionsState {
   sessions: ChatSession[];
   activeId: string;
   counter: number;
-  drafts?: Record<string, string>;
 }
 
 const STORAGE_KEY = 'patchies:chat-sessions';
+const DRAFTS_KEY = 'patchies:chat-drafts';
 
 const defaultSession: ChatSession = { id: 'chat-1', name: 'Chat 1' };
 
@@ -35,6 +35,52 @@ function saveToStorage(state: ChatSessionsState): void {
     // ignore
   }
 }
+
+// --- Drafts: stored outside the reactive store to avoid update loops ---
+
+function loadDrafts(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(DRAFTS_KEY);
+    if (raw) return JSON.parse(raw) as Record<string, string>;
+  } catch {
+    // ignore
+  }
+  return {};
+}
+
+function persistDrafts(d: Record<string, string>): void {
+  try {
+    if (Object.keys(d).length > 0) {
+      localStorage.setItem(DRAFTS_KEY, JSON.stringify(d));
+    } else {
+      localStorage.removeItem(DRAFTS_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+const _drafts = loadDrafts();
+
+export function getDraft(sessionId: string): string {
+  return _drafts[sessionId] ?? '';
+}
+
+export function setDraft(sessionId: string, text: string): void {
+  if (text) {
+    _drafts[sessionId] = text;
+  } else {
+    delete _drafts[sessionId];
+  }
+  persistDrafts(_drafts);
+}
+
+function removeDraft(sessionId: string): void {
+  delete _drafts[sessionId];
+  persistDrafts(_drafts);
+}
+
+// --- Store ---
 
 function createChatSessionsStore() {
   const { subscribe, update } = writable<ChatSessionsState>(loadFromStorage());
@@ -64,6 +110,7 @@ function createChatSessionsStore() {
 
     removeSession(id: string) {
       deleteChatMessages(id);
+      removeDraft(id);
 
       update((s) => {
         if (s.sessions.length <= 1) return s;
@@ -72,10 +119,7 @@ function createChatSessionsStore() {
         const sessions = s.sessions.filter((sess) => sess.id !== id);
         const activeId = s.activeId === id ? sessions[Math.max(0, idx - 1)].id : s.activeId;
 
-        const drafts = { ...s.drafts };
-        delete drafts[id];
-
-        return { ...s, sessions, activeId, drafts };
+        return { ...s, sessions, activeId };
       });
     },
 
@@ -87,30 +131,6 @@ function createChatSessionsStore() {
         ...s,
         sessions: s.sessions.map((sess) => (sess.id === id ? { ...sess, name: trimmed } : sess))
       }));
-    },
-
-    getDraft(sessionId: string): string {
-      let draft = '';
-
-      subscribe((s) => {
-        draft = s.drafts?.[sessionId] ?? '';
-      })();
-
-      return draft;
-    },
-
-    setDraft(sessionId: string, text: string) {
-      update((s) => {
-        const drafts = { ...s.drafts };
-
-        if (text) {
-          drafts[sessionId] = text;
-        } else {
-          delete drafts[sessionId];
-        }
-
-        return { ...s, drafts };
-      });
     }
   };
 }

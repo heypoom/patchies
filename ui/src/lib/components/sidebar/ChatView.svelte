@@ -32,7 +32,7 @@
     saveChatMessages,
     deleteChatMessages
   } from '../../../stores/chat-history.store';
-  import { chatSessionsStore } from '../../../stores/chat-sessions.store';
+  import { getDraft, setDraft } from '../../../stores/chat-sessions.store';
   import type { ThreadMessage, StagedImage, ThreadActionRef } from '$lib/ai/chat/types';
 
   let {
@@ -52,7 +52,7 @@
   const actions = new SvelteMap<string, ChatAction>();
 
   let messages = $state<ThreadMessage[]>([]);
-  let inputText = $state(chatSessionsStore.getDraft(sessionId));
+  let inputText = $state(getDraft(sessionId));
 
   onMount(async () => {
     messages = await loadChatMessages(sessionId);
@@ -64,9 +64,9 @@
     }
   });
 
-  // Persist draft input text per session
+  // Persist draft input text per session (non-reactive to avoid update loops)
   $effect(() => {
-    chatSessionsStore.setDraft(sessionId, inputText);
+    setDraft(sessionId, inputText);
   });
 
   let isLoading = $state(false);
