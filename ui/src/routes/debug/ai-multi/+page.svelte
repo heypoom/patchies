@@ -176,6 +176,55 @@
     evalResults = [];
   }
 
+  let copyButtonText = $state('Copy Results');
+
+  function copyResultsToClipboard() {
+    const lines: string[] = [];
+    const s = evalSummary;
+    lines.push(
+      `## Eval Results: ${s.pass}/${s.total} pass (${s.total > 0 ? Math.round((s.pass / s.total) * 100) : 0}%)`
+    );
+    lines.push(`Pass: ${s.pass} | Fail: ${s.fail} | Error: ${s.err}`);
+    lines.push('');
+
+    for (const evalCase of filteredCases) {
+      const result = getResultForCase(evalCase.id);
+      if (!result) {
+        lines.push(`- [ ] **${evalCase.id}** — not run`);
+        continue;
+      }
+
+      const icon = match(result.status)
+        .with('pass', () => '- [x]')
+        .with('fail', () => '- [ ] FAIL')
+        .with('error', () => '- [ ] ERR')
+        .otherwise(() => '- [ ]');
+
+      lines.push(`${icon} **${evalCase.id}** (${result.elapsedMs}ms) — ${evalCase.prompt}`);
+
+      if (result.status === 'error' && result.errorMessage) {
+        lines.push(`  - Error: ${result.errorMessage}`);
+      }
+
+      if (result.status === 'fail') {
+        lines.push(`  - Nodes: ${result.nodeTypes.join(', ')}`);
+        for (const edge of result.edges) {
+          if (edge.sourceError || edge.targetError) {
+            lines.push(
+              `  - ${edge.sourceType} → ${edge.targetType}: src=${edge.sourceHandle ?? '(none)'} tgt=${edge.targetHandle ?? '(none)'}`
+            );
+            if (edge.sourceError) lines.push(`    - src: ${edge.sourceError}`);
+            if (edge.targetError) lines.push(`    - tgt: ${edge.targetError}`);
+          }
+        }
+      }
+    }
+
+    navigator.clipboard.writeText(lines.join('\n'));
+    copyButtonText = 'Copied!';
+    setTimeout(() => (copyButtonText = 'Copy Results'), 1500);
+  }
+
   function statusColor(status: EvalStatus): string {
     return match(status)
       .with('pass', () => 'text-emerald-400')
@@ -421,6 +470,14 @@
           >
             Clear Results
           </button>
+          {#if evalResults.length > 0}
+            <button
+              class="cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-600"
+              onclick={copyResultsToClipboard}
+            >
+              {copyButtonText}
+            </button>
+          {/if}
         {/if}
 
         <!-- Category filter -->
