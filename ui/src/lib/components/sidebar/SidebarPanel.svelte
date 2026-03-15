@@ -146,13 +146,13 @@
 
 {#if open}
   <div
-    class="relative flex h-full w-full shrink-0 flex-col border-r border-zinc-700 bg-zinc-950"
+    class="relative flex h-dvh w-full shrink-0 flex-col overflow-hidden border-r border-zinc-700 bg-zinc-950 sm:h-full"
     style:--sidebar-width="{$sidebarWidth}px"
     class:sm:w-[var(--sidebar-width)]={true}
     data-sidebar
   >
     <!-- Header with view switcher -->
-    <div class="flex flex-col border-b border-zinc-700">
+    <div class="pt-safe flex flex-col border-b border-zinc-700">
       <div class="flex items-center justify-between px-2 py-1.5">
         <!-- View switcher icons -->
         <div class="flex items-center gap-0.5">
@@ -302,7 +302,7 @@
     </div>
 
     {#if view !== 'chat' && view !== 'profiler'}
-      <div class="flex-1 overflow-y-auto">
+      <div class="min-h-0 flex-1 overflow-y-auto">
         {#if view === 'files'}
           <FileTreeView />
         {:else if view === 'presets'}

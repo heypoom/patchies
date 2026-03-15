@@ -978,7 +978,7 @@
   }
 </script>
 
-<div class="flow-container flex h-screen w-full">
+<div class="flow-container flex h-dvh w-full">
   <!-- Sidebar (Files / Presets) -->
   <SidebarPanel
     bind:open={$isSidebarOpen}
@@ -995,7 +995,7 @@
   <div class="relative flex flex-1 flex-col">
     <!-- URL Loading Indicator -->
     {#if isLoadingFromUrl && !($isMobile && $isSidebarOpen)}
-      <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+      <div class="top-safe-4 absolute left-1/2 z-50 -translate-x-1/2 transform">
         <div
           class="flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2 text-sm text-zinc-200"
         >
@@ -1010,7 +1010,7 @@
 
     <!-- URL Loading Error -->
     {#if urlLoadError && !($isMobile && $isSidebarOpen)}
-      <div class="absolute top-4 left-1/2 z-50 -translate-x-1/2 transform">
+      <div class="top-safe-4 absolute left-1/2 z-50 -translate-x-1/2 transform">
         <div
           class="flex items-center gap-2 rounded-lg border border-red-600 bg-red-900 px-4 py-2 text-sm text-red-200"
         >
@@ -1029,7 +1029,9 @@
 
     <!-- Help Mode / Read-Only Mode Banner -->
     {#if showReadOnlyBanner}
-      <div class="absolute top-4 right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2">
+      <div
+        class="top-safe-4 absolute right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2"
+      >
         <div
           class="flex items-center justify-between gap-3 rounded-lg border border-blue-600 bg-blue-900/90 px-4 py-1.5 text-sm text-blue-100 sm:min-w-[360px]"
         >
@@ -1071,8 +1073,8 @@
       <div
         class="absolute right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 {$helpModeObject ||
         isReadOnlyMode
-          ? 'top-16'
-          : 'top-4'}"
+          ? 'top-safe-16'
+          : 'top-safe-4'}"
       >
         <div
           class="flex items-center gap-2 rounded-lg border border-blue-600 bg-blue-900/80 px-4 py-1.5 text-sm text-blue-200 backdrop-blur-sm sm:min-w-[360px]"
@@ -1085,7 +1087,9 @@
 
     <!-- Connection Mode Indicator -->
     {#if $isConnectionMode && !($isMobile && $isSidebarOpen)}
-      <div class="absolute top-4 right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2">
+      <div
+        class="top-safe-4 absolute right-4 left-4 z-50 sm:right-auto sm:left-1/2 sm:-translate-x-1/2"
+      >
         <div
           class={`flex items-center justify-between gap-3 rounded-lg border px-4 py-1.5 text-sm backdrop-blur-sm sm:min-w-[360px] ${
             $isConnecting

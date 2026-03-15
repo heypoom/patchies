@@ -49,7 +49,7 @@
 
     <!-- Modal container -->
     <div
-      class="relative z-10 h-screen w-full overflow-hidden bg-zinc-950 sm:mx-4 sm:h-[85vh] sm:max-w-3xl sm:rounded-lg sm:border sm:border-zinc-700 sm:shadow-2xl md:mx-8 lg:mx-12"
+      class="pt-safe relative z-10 flex h-dvh w-full flex-col overflow-hidden bg-zinc-950 sm:mx-4 sm:h-[85vh] sm:max-w-3xl sm:rounded-lg sm:border sm:border-zinc-700 sm:shadow-2xl md:mx-8 lg:mx-12"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
@@ -90,7 +90,7 @@
       </div>
 
       <!-- Tab content -->
-      <div class="tab-content flex overflow-y-auto p-4 sm:p-6">
+      <div class="pb-safe flex min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
         {#if activeTab === 'about'}
           <AboutTab setTab={(tab) => (activeTab = tab)} />
         {:else if activeTab === 'demos'}
@@ -122,16 +122,5 @@
 
   :global(.overflow-y-auto::-webkit-scrollbar-thumb:hover) {
     background: rgb(82 82 91); /* zinc-600 */
-  }
-
-  /* Tab content max-height */
-  :global(.tab-content) {
-    max-height: calc(100vh - 80px);
-  }
-
-  @media (min-width: 640px) {
-    :global(.tab-content) {
-      max-height: calc(85vh - 80px);
-    }
   }
 </style>
