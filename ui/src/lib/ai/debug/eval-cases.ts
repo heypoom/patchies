@@ -315,7 +315,7 @@ export const EVAL_CASES: EvalCase[] = [
   },
   {
     id: 'chain-strudel-sampler-out',
-    prompt: 'strudel to sampler~ audio output to out~',
+    prompt: 'strudel audio into sampler~ audio input for live recording, sampler~ audio to out~',
     category: 'mixed',
     expectedTypes: ['strudel', 'sampler~', 'out~']
   },
