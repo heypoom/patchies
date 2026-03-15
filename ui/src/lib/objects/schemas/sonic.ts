@@ -13,20 +13,24 @@ export const sonicSchema: ObjectSchema = {
       id: 'audio',
       type: 'signal',
       description: 'Audio input (inputNode)',
-      handle: { handleType: 'audio', handleId: 0 }
+      handle: { handleType: 'audio' }
     },
     {
       id: 'message',
       description: 'Control messages via recv()',
-      handle: { handleType: 'message', handleId: 1 },
       messages: [{ schema: Type.Any(), description: 'Data received via recv() callback' }]
     }
   ],
   outlets: [
     {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output (outputNode)',
+      handle: { handleType: 'audio' }
+    },
+    {
       id: 'message',
       description: 'Output from send() calls',
-      handle: { handleType: 'message', handleId: 0 },
       messages: [{ schema: Type.Any(), description: 'Data sent via send() function' }]
     }
   ],

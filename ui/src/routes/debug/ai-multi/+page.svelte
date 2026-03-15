@@ -24,10 +24,11 @@
   // === Eval runner state ===
   let evalResults = $state<EvalResult[]>([]);
   let evalRunning = $state(false);
-  let evalProgress = $state({ current: 0, total: 0, currentPrompt: '' });
+  let evalProgress = $state({ completed: 0, total: 0, running: [] as string[] });
   let evalAbortController = $state<AbortController | null>(null);
   let expandedCaseId = $state<string | null>(null);
   let filterCategory = $state<string>('all');
+  let maxConcurrency = $state(3);
 
   // === Single prompt state (manual testing) ===
   let prompt = $state('slider controlling oscillator frequency');
@@ -76,18 +77,33 @@
     evalRunning = true;
     const controller = new AbortController();
     evalAbortController = controller;
-    evalProgress = { current: 0, total: cases.length, currentPrompt: '' };
+    evalProgress = { completed: 0, total: cases.length, running: [] };
 
-    for (let i = 0; i < cases.length; i++) {
-      if (controller.signal.aborted) break;
+    const queue = [...cases];
+    let completed = 0;
 
-      const evalCase = cases[i];
-      evalProgress = { current: i + 1, total: cases.length, currentPrompt: evalCase.prompt };
+    async function worker() {
+      while (queue.length > 0 && !controller.signal.aborted) {
+        const evalCase = queue.shift()!;
+        evalProgress = {
+          ...evalProgress,
+          running: [...evalProgress.running, evalCase.id]
+        };
 
-      const result = await runSingleEval(evalCase, controller.signal);
-      evalResults = [...evalResults.filter((r) => r.caseId !== evalCase.id), result];
-      saveResults(evalResults);
+        const result = await runSingleEval(evalCase, controller.signal);
+        completed++;
+        evalResults = [...evalResults.filter((r) => r.caseId !== evalCase.id), result];
+        saveResults(evalResults);
+        evalProgress = {
+          completed,
+          total: cases.length,
+          running: evalProgress.running.filter((id) => id !== evalCase.id)
+        };
+      }
     }
+
+    const workers = Array.from({ length: Math.min(maxConcurrency, cases.length) }, () => worker());
+    await Promise.all(workers);
 
     evalRunning = false;
     evalAbortController = null;
@@ -462,7 +478,7 @@
             Cancel
           </button>
           <div class="text-sm text-blue-400">
-            Running {evalProgress.current}/{evalProgress.total}: {evalProgress.currentPrompt}
+            {evalProgress.completed}/{evalProgress.total} done ({evalProgress.running.length} in flight)
           </div>
         {:else}
           <button
@@ -495,6 +511,22 @@
           {/if}
         {/if}
 
+        <!-- Concurrency control -->
+        <div class="flex items-center gap-1.5 text-xs text-zinc-500">
+          <span>concurrency:</span>
+          {#each [1, 3, 5, 8] as n}
+            <button
+              class="cursor-pointer rounded px-1.5 py-0.5 {maxConcurrency === n
+                ? 'bg-zinc-600 text-zinc-100'
+                : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'}"
+              onclick={() => (maxConcurrency = n)}
+              disabled={evalRunning}
+            >
+              {n}
+            </button>
+          {/each}
+        </div>
+
         <!-- Category filter -->
         <div class="ml-auto flex gap-1">
           {#each categories as cat}
@@ -509,6 +541,29 @@
           {/each}
         </div>
       </div>
+
+      <!-- Progress bar -->
+      {#if evalRunning}
+        {@const pct =
+          evalProgress.total > 0 ? (evalProgress.completed / evalProgress.total) * 100 : 0}
+        <div class="space-y-1">
+          <div class="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+            <div
+              class="h-full rounded-full bg-blue-500 transition-all duration-300"
+              style="width: {pct}%"
+            ></div>
+          </div>
+          {#if evalProgress.running.length > 0}
+            <div class="flex flex-wrap gap-1 text-xs text-zinc-500">
+              {#each evalProgress.running as id}
+                <span class="animate-pulse rounded bg-zinc-800 px-1.5 py-0.5 text-blue-400"
+                  >{id}</span
+                >
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
 
       <!-- Summary bar -->
       {#if evalResults.length > 0}
@@ -546,11 +601,17 @@
             >
               <!-- Status indicator -->
               <span
-                class="w-12 text-xs font-semibold {result
-                  ? statusColor(result.status)
-                  : 'text-zinc-600'}"
+                class="w-12 text-xs font-semibold {evalProgress.running.includes(evalCase.id)
+                  ? 'animate-pulse text-blue-400'
+                  : result
+                    ? statusColor(result.status)
+                    : 'text-zinc-600'}"
               >
-                {result ? result.status.toUpperCase() : '—'}
+                {evalProgress.running.includes(evalCase.id)
+                  ? 'RUN'
+                  : result
+                    ? result.status.toUpperCase()
+                    : '—'}
               </span>
 
               <!-- Case info -->

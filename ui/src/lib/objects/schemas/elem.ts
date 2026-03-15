@@ -13,7 +13,7 @@ export const elemSchema: ObjectSchema = {
       id: 'audio',
       type: 'signal',
       description: 'Audio input (inputNode)',
-      handle: { handleType: 'audio', handleId: '0' }
+      handle: { handleType: 'audio' }
     },
     {
       id: 'message',
@@ -22,6 +22,12 @@ export const elemSchema: ObjectSchema = {
     }
   ],
   outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output (outputNode)',
+      handle: { handleType: 'audio' }
+    },
     {
       id: 'message',
       description: 'Output from send() calls',

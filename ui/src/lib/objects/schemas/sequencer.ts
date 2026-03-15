@@ -152,7 +152,6 @@ export const sequencerSchema: ObjectSchema = {
       id: 'track',
       description:
         'Per-track trigger outlet (one outlet per track, numbered 0–7). Fires on each active step.',
-      handle: { handleType: 'message' },
       messages: [
         {
           schema: Bang,
@@ -170,5 +169,11 @@ export const sequencerSchema: ObjectSchema = {
       ]
     }
   ],
-  tags: ['sequencer', 'step', 'rhythm', 'transport', 'trigger', 'control', 'beat', 'drum']
+  tags: ['sequencer', 'step', 'rhythm', 'transport', 'trigger', 'control', 'beat', 'drum'],
+  handlePatterns: {
+    outlet: {
+      template: 'out-{index}',
+      description: 'Per-track outlet (out-0, out-1, ..., out-7). No type prefix.'
+    }
+  }
 };

@@ -12,7 +12,8 @@ export const toneSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input (inputNode)'
+      description: 'Audio input (inputNode)',
+      handle: { handleType: 'audio' }
     },
     {
       id: 'message',
@@ -21,6 +22,12 @@ export const toneSchema: ObjectSchema = {
     }
   ],
   outlets: [
+    {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output (outputNode)',
+      handle: { handleType: 'audio' }
+    },
     {
       id: 'message',
       description: 'Output from send() calls',
