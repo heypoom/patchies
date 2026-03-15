@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import ObjectPreviewLayout from './ObjectPreviewLayout.svelte';
+  import type { SettingsSchema } from '$lib/settings';
 
   let {
     title,
@@ -30,7 +31,12 @@
 
     codeEditor,
     console: consoleSnippet,
-    editorReady
+    editorReady,
+
+    settingsSchema = undefined,
+    settingsValues = {},
+    onSettingsValueChange = undefined,
+    onSettingsRevertAll = undefined
   }: {
     title: string;
     nodeId?: string;
@@ -60,6 +66,11 @@
     codeEditor: Snippet;
     console?: Snippet;
     editorReady?: boolean;
+
+    settingsSchema?: SettingsSchema;
+    settingsValues?: Record<string, unknown>;
+    onSettingsValueChange?: (key: string, value: unknown) => void;
+    onSettingsRevertAll?: () => void;
   } = $props();
 
   // Build the interaction class string based on individual flags
@@ -91,6 +102,10 @@
   {codeEditor}
   {editorReady}
   console={consoleSnippet}
+  {settingsSchema}
+  {settingsValues}
+  {onSettingsValueChange}
+  {onSettingsRevertAll}
 >
   {#snippet preview()}
     <canvas

@@ -10,6 +10,7 @@
     Pin,
     PinOff,
     Play,
+    Settings,
     X,
     Terminal
   } from '@lucide/svelte/icons';
@@ -18,6 +19,8 @@
   import * as Popover from './ui/popover';
   import * as ContextMenu from './ui/context-menu';
   import { useSvelteFlow } from '@xyflow/svelte';
+  import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
+  import type { SettingsSchema } from '$lib/settings';
   import { transportStore } from '../../stores/transport.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
@@ -46,7 +49,12 @@
     previewWidth,
     codeEditor,
     console: consoleSnippet,
-    editorReady
+    editorReady,
+
+    settingsSchema = undefined,
+    settingsValues = {},
+    onSettingsValueChange = undefined,
+    onSettingsRevertAll = undefined
   }: {
     title: string;
     nodeId?: string;
@@ -68,11 +76,17 @@
     editorReady?: boolean;
 
     previewWidth?: number;
+
+    settingsSchema?: SettingsSchema;
+    settingsValues?: Record<string, unknown>;
+    onSettingsValueChange?: (key: string, value: unknown) => void;
+    onSettingsRevertAll?: () => void;
   } = $props();
 
   const editorGap = 10;
 
   let showEditor = $state(false);
+  let showSettings = $state(false);
   let previewContainerWidth = $state(0);
 
   function measureContainerWidth() {
@@ -178,6 +192,21 @@
                     </Popover.Close>
                   {/if}
 
+                  {#if settingsSchema && settingsSchema.length > 0}
+                    <Popover.Close class="contents">
+                      <button
+                        class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
+                        onclick={() => {
+                          showSettings = !showSettings;
+                          if (showSettings) showEditor = false;
+                        }}
+                      >
+                        <Settings class="h-4 w-4 text-zinc-300" />
+                        <span>Settings</span>
+                      </button>
+                    </Popover.Close>
+                  {/if}
+
                   {#if showBgOutputOption && nodeId !== undefined}
                     <Popover.Close class="contents">
                       <button
@@ -248,6 +277,7 @@
                     class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
                     onclick={() => {
                       showEditor = !showEditor;
+                      if (showEditor) showSettings = false;
                       measureContainerWidth();
                     }}
                   >
@@ -315,12 +345,37 @@
       {#if showPauseButton || onPreviewToggle}
         <ContextMenu.Separator />
       {/if}
+      {#if settingsSchema && settingsSchema.length > 0}
+        <ContextMenu.Item
+          onclick={() => {
+            showSettings = !showSettings;
+            if (showSettings) showEditor = false;
+          }}
+        >
+          <Settings class="mr-2 h-4 w-4" />
+          Settings
+        </ContextMenu.Item>
+        <ContextMenu.Separator />
+      {/if}
       <ContextMenu.Item onclick={handleOpenHelp}>
         <CircleHelp class="mr-2 h-4 w-4" />
         Help
       </ContextMenu.Item>
     </ContextMenu.Content>
   </ContextMenu.Root>
+
+  {#if showSettings && settingsSchema && settingsSchema.length > 0}
+    <div class="absolute top-0" style="left: {editorLeftPos}px;">
+      <ObjectSettings
+        nodeId={nodeId ?? ''}
+        schema={settingsSchema}
+        values={settingsValues}
+        onValueChange={(key, value) => onSettingsValueChange?.(key, value)}
+        onRevertAll={() => onSettingsRevertAll?.()}
+        onClose={() => (showSettings = false)}
+      />
+    </div>
+  {/if}
 
   {#if showEditor}
     <div class="absolute" style="left: {editorLeftPos}px;">
