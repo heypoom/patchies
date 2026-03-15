@@ -42,7 +42,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     isMulti: false,
     requiresNode: false,
     availableInChat: true,
-    chatToolDescription: 'Create a new object on the canvas from a natural language description',
+    chatToolDescription:
+      'Create a single new object on the canvas. Preferred over multi when only one object is needed, even for complex objects.',
     chatToolSchema: {
       type: 'object',
       properties: { prompt: { type: 'string', description: 'What to create' } },
@@ -63,7 +64,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     isMulti: true,
     requiresNode: false,
     availableInChat: true,
-    chatToolDescription: 'Create multiple connected objects on the canvas',
+    chatToolDescription:
+      'Create multiple connected objects on the canvas. Only use when the task fundamentally requires more than one node wired together. Do NOT use for single objects.',
     chatToolSchema: {
       type: 'object',
       properties: { prompt: { type: 'string', description: 'What to create' } },
@@ -84,7 +86,8 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     isMulti: false,
     requiresNode: true,
     availableInChat: true,
-    chatToolDescription: 'Edit an existing object on the canvas',
+    chatToolDescription:
+      'Edit an existing object on the canvas. Always prefer this over creating a new object when the node already exists.',
     chatToolSchema: {
       type: 'object',
       properties: {
