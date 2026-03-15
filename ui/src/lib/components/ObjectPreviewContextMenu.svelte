@@ -58,6 +58,13 @@
     <ContextMenu.Separator />
   {/if}
 
+  {#if settingsSchema && settingsSchema.length > 0}
+    <ContextMenu.Item onclick={onSettingsToggle}>
+      <Settings class="mr-2 h-4 w-4" />
+      {showSettings ? 'Hide settings' : 'Show settings'}
+    </ContextMenu.Item>
+  {/if}
+
   {#if showBgOutputOption && nodeId !== undefined}
     <ContextMenu.Item onclick={onBgOutputToggle}>
       {#if isOutputOverride}
@@ -68,7 +75,6 @@
         Output to background
       {/if}
     </ContextMenu.Item>
-    <ContextMenu.Separator />
   {/if}
 
   {#if showPauseButton}
@@ -95,17 +101,7 @@
     </ContextMenu.Item>
   {/if}
 
-  {#if showPauseButton || onPreviewToggle}
-    <ContextMenu.Separator />
-  {/if}
-
-  {#if settingsSchema && settingsSchema.length > 0}
-    <ContextMenu.Item onclick={onSettingsToggle}>
-      <Settings class="mr-2 h-4 w-4" />
-      {showSettings ? 'Hide settings' : 'Show settings'}
-    </ContextMenu.Item>
-    <ContextMenu.Separator />
-  {/if}
+  <ContextMenu.Separator />
 
   <ContextMenu.Item onclick={onOpenHelp}>
     <CircleHelp class="mr-2 h-4 w-4" />
