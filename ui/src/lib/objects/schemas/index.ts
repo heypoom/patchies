@@ -81,6 +81,7 @@ export * from './recv-vdo';
 export * from './note';
 export * from './meter';
 export * from './sequencer';
+export * from './bytebeat';
 export * from './from-v2-node';
 
 import type { ObjectSchemaRegistry } from './types';
@@ -166,6 +167,7 @@ import { recvVdoSchema } from './recv-vdo';
 import { noteSchema } from './note';
 import { meterSchema } from './meter';
 import { sequencerSchema } from './sequencer';
+import { bytebeatSchema } from './bytebeat';
 import { curveSchema } from '$objects/curve/schema';
 import { serialSchema, serialTermSchema } from '$objects/serial/schema';
 
@@ -262,6 +264,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   note: noteSchema,
   'meter~': meterSchema,
   sequencer: sequencerSchema,
+  'bytebeat~': bytebeatSchema,
   curve: curveSchema,
   serial: serialSchema,
   'serial.term': serialTermSchema
