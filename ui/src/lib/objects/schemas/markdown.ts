@@ -24,6 +24,13 @@ export const markdownSchema: ObjectSchema = {
       messages: [{ schema: Type.String(), description: 'Markdown text to render' }]
     }
   ],
-  outlets: [],
+  outlets: [
+    {
+      id: 'message',
+      description: 'Current markdown content',
+      handle: { handleType: 'message' },
+      messages: [{ schema: Type.String(), description: 'Current markdown content' }]
+    }
+  ],
   tags: ['documentation', 'markdown', 'text', 'display']
 };

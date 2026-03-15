@@ -44,10 +44,12 @@ export const webcamSchema: ObjectSchema = {
       ]
     }
   ],
-  outlets: [],
-  tags: ['camera', 'capture', 'live', 'texture', 'visual'],
-  hasDynamicOutlets: true,
-  handlePatterns: {
-    outlet: { template: 'video-out-{index}', handleType: 'video', description: 'Video output' }
-  }
+  outlets: [
+    {
+      id: 'video',
+      description: 'Video output',
+      handle: { handleType: 'video', handleId: '0' }
+    }
+  ],
+  tags: ['camera', 'capture', 'live', 'texture', 'visual']
 };

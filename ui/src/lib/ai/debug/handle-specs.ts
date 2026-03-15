@@ -76,8 +76,10 @@ const SCHEMA_DERIVABLE_TYPES = [
   'textbox',
   'keyboard',
   // Audio I/O
+  'mic~',
   'out~',
   'meter~',
+  'soundfile~',
   'sampler~',
   // Audio & Music
   'chuck~',
@@ -89,10 +91,14 @@ const SCHEMA_DERIVABLE_TYPES = [
   'swgl',
   'bg.out',
   'iframe',
+  'webcam',
+  'markdown',
   // AI
   'ai.stt',
+  'ai.txt',
+  'ai.img',
   'stt',
-  'ai.speech',
+  'tts',
   'ai.music',
   // Media
   'screen',
@@ -100,6 +106,7 @@ const SCHEMA_DERIVABLE_TYPES = [
   'send.vdo',
   'recv.vdo',
   // Network
+  'midi.in',
   'midi.out',
   'netsend',
   'netrecv'
@@ -128,40 +135,6 @@ const MANUAL_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
   label: {
     inlets: { kind: 'fixed', handles: [] },
     outlets: { kind: 'fixed', handles: [] }
-  },
-
-  // Schema incomplete (missing inlets/outlets or handle fields)
-  'mic~': {
-    inlets: { kind: 'fixed', handles: ['in-0'] },
-    outlets: { kind: 'fixed', handles: ['audio-out-0'] }
-  },
-  'soundfile~': {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['audio-out-0'] }
-  },
-  markdown: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-  'ai.text': {
-    inlets: { kind: 'fixed', handles: ['message-in', 'video-in-0'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
-  },
-  'ai.image': {
-    inlets: { kind: 'fixed', handles: ['video-in-0', 'message-in-1'] },
-    outlets: { kind: 'fixed', handles: ['video-out-0', 'message-out-1'] }
-  },
-  tts: {
-    inlets: { kind: 'fixed', handles: ['message-in-0'] },
-    outlets: { kind: 'fixed', handles: ['message-out-0'] }
-  },
-  webcam: {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['video-out-0'] }
-  },
-  'midi.in': {
-    inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['message-out'] }
   },
 
   // Dynamic/indexed ports — can't be derived from fixed schema

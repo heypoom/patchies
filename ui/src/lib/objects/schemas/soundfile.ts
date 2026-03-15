@@ -24,7 +24,7 @@ export const soundfileSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
-      handle: { handleType: 'message', handleId: 0 },
+      handle: { handleType: 'message' },
       messages: [
         { schema: Type.String(), description: 'Load audio file or stream by URL' },
         { schema: Bang, description: 'Play from start of sample' },

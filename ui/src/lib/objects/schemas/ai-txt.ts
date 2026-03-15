@@ -32,6 +32,12 @@ export const aiTxtSchema: ObjectSchema = {
         { schema: Set, description: 'Set prompt without generating' },
         { schema: Bang, description: 'Generate text with current prompt' }
       ]
+    },
+    {
+      id: 'video',
+      type: 'signal',
+      description: 'Image/video input for vision prompts',
+      handle: { handleType: 'video', handleId: '0' }
     }
   ],
   outlets: [
