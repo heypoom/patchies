@@ -12,16 +12,19 @@ export const waveshaperSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input'
+      description: 'Audio input',
+      handle: { handleType: 'audio', handleId: 0 }
     },
     {
       id: 'curve',
       description: 'Distortion curve',
+      handle: { handleType: 'message', handleId: 1 },
       messages: [{ schema: Type.Any(), description: 'Float32Array distortion curve' }]
     },
     {
       id: 'oversample',
       description: 'Oversampling mode',
+      handle: { handleType: 'message', handleId: 2 },
       messages: [
         {
           schema: Type.Union([Type.Literal('none'), Type.Literal('2x'), Type.Literal('4x')]),
@@ -34,7 +37,8 @@ export const waveshaperSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio output'
+      description: 'Audio output',
+      handle: { handleType: 'audio', handleId: 0 }
     }
   ],
   tags: ['audio', 'distortion', 'waveshaper', 'effects']

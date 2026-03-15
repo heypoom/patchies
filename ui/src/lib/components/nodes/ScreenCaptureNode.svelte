@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Monitor, Square } from '@lucide/svelte/icons';
   import { onMount, onDestroy } from 'svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { screenSchema } from '$lib/objects/schemas/screen';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -160,9 +161,9 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={screenSchema.inlets[0].handle!}
           total={1}
           index={0}
           class={handleCommonClass}
@@ -192,10 +193,9 @@
           {/if}
         </div>
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="video"
-          id="0"
+          spec={screenSchema.outlets[0].handle!}
           title="Video output"
           total={1}
           index={0}

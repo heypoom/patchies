@@ -9,7 +9,8 @@
     Terminal
   } from '@lucide/svelte/icons';
   import * as Popover from '../../ui/popover';
-  import StandardHandle from '../../StandardHandle.svelte';
+  import TypedHandle from '../../TypedHandle.svelte';
+  import { uxnSchema } from '$lib/objects/schemas/uxn';
 
   let {
     nodeId,
@@ -131,10 +132,9 @@
 </div>
 
 <div class="relative">
-  <StandardHandle
+  <TypedHandle
     port="inlet"
-    type="message"
-    id={0}
+    spec={uxnSchema.inlets[0].handle!}
     title="ROM input"
     total={1}
     index={0}
@@ -159,10 +159,9 @@
     {/if}
   </button>
 
-  <StandardHandle
+  <TypedHandle
     port="outlet"
-    type="message"
-    id={0}
+    spec={uxnSchema.outlets[0].handle!}
     title="Console output"
     total={1}
     index={0}

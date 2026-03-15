@@ -12,11 +12,13 @@ export const exprAudioSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input (s, samples, input variables)'
+      description: 'Audio input (s, samples, input variables)',
+      handle: { handleType: 'audio', handleId: 0 }
     },
     {
       id: 'message',
       description: 'Control values for $1-$9 variables',
+      handle: { handleType: 'message', handleId: 1 },
       messages: [{ schema: Type.Number(), description: 'Value for dynamic inlet variable' }]
     }
   ],

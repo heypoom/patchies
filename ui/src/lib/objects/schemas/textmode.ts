@@ -10,7 +10,11 @@ export const textmodeSchema: ObjectSchema = {
   inlets: [],
   outlets: [],
   tags: ['ascii', 'text', 'retro', 'characters', 'webgl'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}' },
+    outlet: { template: 'out-{index}' }
+  }
 };
 
 /**
@@ -23,5 +27,9 @@ export const textmodeDomSchema: ObjectSchema = {
   inlets: [],
   outlets: [],
   tags: ['ascii', 'text', 'retro', 'characters', 'webgl', 'interactive'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}' },
+    outlet: { template: 'out-{index}' }
+  }
 };

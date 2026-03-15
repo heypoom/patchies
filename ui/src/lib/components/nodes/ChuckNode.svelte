@@ -2,7 +2,8 @@
   import { CirclePlus, Delete, Replace, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { chuckSchema } from '$lib/objects/schemas/chuck';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -161,10 +162,9 @@
 
 {#snippet chuckHandles()}
   <!-- Audio input (accessible via adc in ChucK code) -->
-  <StandardHandle
+  <TypedHandle
     port="inlet"
-    type="audio"
-    id={0}
+    spec={chuckSchema.inlets[0].handle!}
     title="Audio Input (accessible via adc in ChucK code)"
     total={2}
     index={0}
@@ -172,10 +172,9 @@
   />
 
   <!-- Control inlet for messages and code -->
-  <StandardHandle
+  <TypedHandle
     port="inlet"
-    type="message"
-    id={1}
+    spec={chuckSchema.inlets[1].handle!}
     title="Control Input (code, bang, stop)"
     total={2}
     index={1}
@@ -184,15 +183,21 @@
 {/snippet}
 
 {#snippet chuckOutlets()}
-  <StandardHandle port="outlet" type="audio" title="Audio Output" total={2} index={0} {nodeId} />
-
-  <StandardHandle
+  <TypedHandle
     port="outlet"
-    type="message"
+    spec={{ handleType: 'audio' }}
+    title="Audio Output"
+    total={2}
+    index={0}
+    {nodeId}
+  />
+
+  <TypedHandle
+    port="outlet"
+    spec={chuckSchema.outlets[0].handle!}
     title="Message Output"
     total={2}
     index={1}
-    id={0}
     {nodeId}
   />
 {/snippet}

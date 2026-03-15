@@ -2,7 +2,8 @@
   import { Pause, Play, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { csoundSchema } from '$lib/objects/schemas/csound';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { AudioService } from '$lib/audio/v2/AudioService';
@@ -145,13 +146,19 @@
 </script>
 
 {#snippet csoundInlets()}
-  <StandardHandle port="inlet" type="audio" title="Audio Input" total={2} index={0} {nodeId} />
-
-  <StandardHandle
+  <TypedHandle
     port="inlet"
-    type="message"
+    spec={csoundSchema.inlets[0].handle!}
+    title="Audio Input"
+    total={2}
+    index={0}
+    {nodeId}
+  />
+
+  <TypedHandle
+    port="inlet"
+    spec={csoundSchema.inlets[1].handle!}
     title="Message Input"
-    id={0}
     total={2}
     index={1}
     {nodeId}
@@ -159,7 +166,14 @@
 {/snippet}
 
 {#snippet csoundOutlets()}
-  <StandardHandle port="outlet" type="audio" title="Audio Output" total={1} index={0} {nodeId} />
+  <TypedHandle
+    port="outlet"
+    spec={csoundSchema.outlets[0].handle!}
+    title="Audio Output"
+    total={1}
+    index={0}
+    {nodeId}
+  />
 {/snippet}
 
 <div class="relative flex gap-x-3">

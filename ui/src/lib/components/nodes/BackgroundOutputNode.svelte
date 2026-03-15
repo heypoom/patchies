@@ -2,7 +2,8 @@
   import { ScreenShare } from '@lucide/svelte/icons';
   import { Position } from '@xyflow/svelte';
 
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { bgOutSchema } from '$lib/objects/schemas/bg-out';
   import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { onDestroy, onMount } from 'svelte';
@@ -36,10 +37,9 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="video"
-          id="0"
+          spec={bgOutSchema.inlets[0].handle!}
           title="Video output"
           total={1}
           index={0}

@@ -12,13 +12,25 @@ export const swglSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message', handleId: '0' },
       messages: [
         { schema: SetCode, description: 'Set the code in the editor' },
         { schema: Run, description: 'Evaluate code and update visuals' }
       ]
     }
   ],
-  outlets: [],
-  tags: ['shader', 'webgl', 'graphics', 'gpu', '3d', 'mesh'],
-  hasDynamicOutlets: true
+  outlets: [
+    {
+      id: 'video',
+      type: 'video',
+      description: 'Video output',
+      handle: { handleType: 'video', handleId: '0' }
+    },
+    {
+      id: 'message',
+      description: 'Message output',
+      handle: { handleType: 'message', handleId: '0' }
+    }
+  ],
+  tags: ['shader', 'webgl', 'graphics', 'gpu', '3d', 'mesh']
 };

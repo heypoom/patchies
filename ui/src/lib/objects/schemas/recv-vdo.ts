@@ -10,13 +10,15 @@ export const recvVdoSchema: ObjectSchema = {
   inlets: [
     {
       id: 'channel',
-      description: 'Channel name (string)'
+      description: 'Channel name (string)',
+      handle: { handleType: 'message', handleId: 0 }
     }
   ],
   outlets: [
     {
       id: 'video',
-      description: 'Video output received from the channel'
+      description: 'Video output received from the channel',
+      handle: { handleType: 'video', handleId: 0 }
     }
   ],
   tags: ['visual', 'routing', 'channel', 'wireless', 'video']

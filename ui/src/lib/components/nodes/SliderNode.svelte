@@ -7,7 +7,8 @@
     useStore,
     useEdges
   } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { sliderSchema } from '$lib/objects/schemas/slider';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -259,9 +260,9 @@
 
       <div class="nodrag relative">
         {#if showInlet}
-          <StandardHandle
+          <TypedHandle
             port="inlet"
-            type="message"
+            spec={sliderSchema.inlets[0].handle!}
             total={1}
             index={0}
             class={`!-top-2 ${handleInletClass}`}
@@ -311,9 +312,9 @@
           {/if}
         </div>
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
+          spec={sliderSchema.outlets[0].handle!}
           total={1}
           index={0}
           nodeId={node.id}

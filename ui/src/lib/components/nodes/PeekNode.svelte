@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Code, ChevronUp } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { peekSchema } from '$lib/objects/schemas/peek';
   import CodeEditor from '../CodeEditor.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -88,7 +89,14 @@
 </script>
 
 <div class="group relative">
-  <StandardHandle port="inlet" type="message" title="Input" total={1} index={0} {nodeId} />
+  <TypedHandle
+    port="inlet"
+    spec={peekSchema.inlets[0].handle!}
+    title="Input"
+    total={1}
+    index={0}
+    {nodeId}
+  />
 
   <!-- Floating code button -->
   <button

@@ -12,6 +12,7 @@ export const mapSchema: ObjectSchema = {
     {
       id: 'hot',
       description: 'Hot inlet ($1) - triggers evaluation',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Value stored as $1, triggers transformation' }]
     }
   ],
@@ -19,6 +20,7 @@ export const mapSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Transformed output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Result of the JavaScript expression' }]
     }
   ],

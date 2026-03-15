@@ -35,6 +35,7 @@ export const midiInSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'MIDI messages from connected devices',
+      handle: { handleType: 'message' },
       messages: [
         { schema: NoteOn, description: 'MIDI note on message' },
         { schema: NoteOff, description: 'MIDI note off message' },

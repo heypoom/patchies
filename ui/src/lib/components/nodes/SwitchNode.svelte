@@ -1,5 +1,6 @@
 <script lang="ts">
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { switchSchema } from '$lib/objects/schemas/switch';
   import { Switch } from '$lib/components/ui/switch';
   import { onMount } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -48,7 +49,14 @@
         ]}
       />
 
-      <StandardHandle port="outlet" type="message" total={1} index={0} class="!top-6" {nodeId} />
+      <TypedHandle
+        port="outlet"
+        spec={switchSchema.outlets[0].handle!}
+        total={1}
+        index={0}
+        class="!top-6"
+        {nodeId}
+      />
     </div>
   </div>
 </div>

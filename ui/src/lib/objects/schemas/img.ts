@@ -24,6 +24,7 @@ export const imgSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: LoadUrl, description: 'Load image from URL' },
         { schema: LoadPath, description: 'Load image from file path' },

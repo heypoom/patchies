@@ -5,7 +5,8 @@
   // @ts-expect-error -- no typedef
   import OverType from 'overtype';
 
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { markdownSchema } from '$lib/objects/schemas/markdown';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -121,9 +122,9 @@
   {/if}
 
   <div class="group">
-    <StandardHandle
+    <TypedHandle
       port="inlet"
-      type="message"
+      spec={markdownSchema.inlets[0].handle!}
       total={1}
       index={0}
       class={handleInletClass}
@@ -138,9 +139,9 @@
       onfocusout={markdownTracker.onBlur}
     ></div>
 
-    <StandardHandle
+    <TypedHandle
       port="outlet"
-      type="message"
+      spec={{ handleType: 'message' }}
       total={1}
       index={0}
       class={handleOutletClass}

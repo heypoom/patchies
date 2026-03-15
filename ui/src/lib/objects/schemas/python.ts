@@ -12,6 +12,7 @@ export const pythonSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Data input',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Data received in Python' }]
     }
   ],
@@ -19,9 +20,14 @@ export const pythonSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Data sent from Python' }]
     }
   ],
   tags: ['programming', 'python', 'pyodide', 'scripting', 'data'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}' },
+    outlet: { template: 'out-{index}' }
+  }
 };

@@ -13,6 +13,7 @@ export const rubySchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages and data input',
+      handle: { handleType: 'message' },
       messages: [
         { schema: SetCode, description: 'Update the code' },
         { schema: Run, description: 'Execute the code' },
@@ -25,9 +26,14 @@ export const rubySchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Output from emit calls',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Data sent via emit method' }]
     }
   ],
   tags: ['programming', 'ruby', 'wasm', 'scripting'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}' },
+    outlet: { template: 'out-{index}' }
+  }
 };

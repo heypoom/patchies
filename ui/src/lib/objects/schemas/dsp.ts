@@ -28,5 +28,17 @@ export const dspSchema: ObjectSchema = {
     }
   ],
   tags: ['audio', 'dsp', 'javascript', 'worklet', 'processing'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: {
+      template: 'audio-in-{index}',
+      handleType: 'audio',
+      description: 'Audio inlets, message inlets use message-in-{index}'
+    },
+    outlet: {
+      template: 'audio-out-{index}',
+      handleType: 'audio',
+      description: 'Audio outlets, message outlets use message-out-{index}'
+    }
+  }
 };

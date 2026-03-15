@@ -29,6 +29,7 @@ export const sttSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Listen, description: 'Start listening' },
         { schema: Stop, description: 'Stop listening' },
@@ -42,6 +43,7 @@ export const sttSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Transcribed text output',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Type.String(), description: 'Transcribed text string' },
         { schema: Interim, description: 'Interim (partial) transcription result' }

@@ -69,11 +69,13 @@ export const samplerSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input for recording'
+      description: 'Audio input for recording',
+      handle: { handleType: 'audio', handleId: 0 }
     },
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message', handleId: 1 },
       messages: [
         {
           schema: Bang,

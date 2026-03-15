@@ -2,7 +2,8 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { tableSchema } from '$lib/objects/schemas/table';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { BufferBridgeService } from '$lib/audio/buffer-bridge';
@@ -365,9 +366,9 @@
   <ContextMenu.Trigger>
     <div class="relative flex gap-x-3">
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={tableSchema.inlets[0].handle!}
           title="Commands (bang, set, get, resize, clear, normalize, Float32Array)"
           total={1}
           index={0}
@@ -495,9 +496,9 @@
           </div>
         {/if}
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
+          spec={tableSchema.outlets[0].handle!}
           title="Float32Array output (on bang) or get result"
           total={1}
           index={0}

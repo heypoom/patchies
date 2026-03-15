@@ -48,6 +48,7 @@ export const mqttSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Connect, description: 'Connect to a broker' },
         { schema: Disconnect, description: 'Disconnect from the broker' },
@@ -61,6 +62,7 @@ export const mqttSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Connection events and received messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Connected, description: 'Successfully connected' },
         { schema: Disconnected, description: 'Disconnected from broker' },

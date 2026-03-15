@@ -20,6 +20,7 @@ export const markdownSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Markdown content',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.String(), description: 'Markdown text to render' }]
     }
   ],

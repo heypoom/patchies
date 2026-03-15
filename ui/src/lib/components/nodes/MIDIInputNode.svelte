@@ -1,7 +1,8 @@
 <script lang="ts">
   import { AlertCircle, Music, Settings, VolumeX, X } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { midiInSchema } from '$lib/objects/schemas/midi-in';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import { MIDISystem, type MIDIInputConfig } from '$lib/canvas/MIDISystem';
@@ -167,7 +168,7 @@
       </div>
 
       <div class="relative">
-        <StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
+        <TypedHandle port="inlet" spec={{ handleType: 'message' }} total={1} index={0} {nodeId} />
 
         {#if !deviceId}
           <button
@@ -203,7 +204,13 @@
           </button>
         {/if}
 
-        <StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
+        <TypedHandle
+          port="outlet"
+          spec={midiInSchema.outlets[0].handle!}
+          total={1}
+          index={0}
+          {nodeId}
+        />
       </div>
     </div>
   </div>

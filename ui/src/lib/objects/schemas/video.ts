@@ -37,6 +37,7 @@ export const videoSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Restart video from beginning' },
         { schema: Play, description: 'Start/resume playback' },
@@ -52,7 +53,8 @@ export const videoSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio track output'
+      description: 'Audio track output',
+      handle: { handleType: 'audio' }
     }
   ],
   tags: ['video', 'movie', 'texture', 'visual', 'audio'],

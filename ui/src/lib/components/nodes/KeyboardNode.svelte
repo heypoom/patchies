@@ -1,7 +1,8 @@
 <script lang="ts">
   import { AlertCircle, Keyboard, KeyboardOff, Settings, X } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { keyboardSchema } from '$lib/objects/schemas/keyboard';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -243,9 +244,9 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={keyboardSchema.inlets[0].handle!}
           total={1}
           index={0}
           class={handleClass}
@@ -275,7 +276,13 @@
           {/if}
         </button>
 
-        <StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
+        <TypedHandle
+          port="outlet"
+          spec={keyboardSchema.outlets[0].handle!}
+          total={1}
+          index={0}
+          {nodeId}
+        />
       </div>
     </div>
   </div>

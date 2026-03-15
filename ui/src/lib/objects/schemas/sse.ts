@@ -24,6 +24,7 @@ export const sseSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Connect, description: 'Connect to SSE endpoint' },
         { schema: Disconnect, description: 'Disconnect from endpoint' }
@@ -34,6 +35,7 @@ export const sseSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Received events',
+      handle: { handleType: 'message' },
       messages: [
         {
           schema: Type.Any(),

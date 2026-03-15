@@ -12,6 +12,7 @@ export const peekSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Value to display',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Any(), description: 'Value displayed in the object' }]
     }
   ],

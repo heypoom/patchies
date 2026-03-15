@@ -25,6 +25,7 @@ export const aiImgSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Image prompts',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Type.String(), description: 'Text prompt - sets prompt and generates' },
         { schema: Generate, description: 'Set prompt and generate image' },

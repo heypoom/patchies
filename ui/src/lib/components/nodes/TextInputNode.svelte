@@ -1,7 +1,8 @@
 <script lang="ts">
   import { GripHorizontal, Lock, LockOpen, Play } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { textboxSchema } from '$lib/objects/schemas/textbox';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -144,9 +145,9 @@
 
     <div class="relative">
       {#if showInlet}
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={textboxSchema.inlets[0].handle!}
           total={1}
           index={0}
           class={handleInletClass}
@@ -181,9 +182,9 @@
       ></textarea>
 
       {#if showOutlet}
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
+          spec={textboxSchema.outlets[0].handle!}
           total={1}
           index={0}
           class={handleOutletClass}

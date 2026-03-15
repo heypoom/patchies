@@ -4,8 +4,10 @@
 
   interface Props {
     port: 'inlet' | 'outlet';
+
     /** Handle spec from the schema — replaces manual type/id props */
     spec: HandleSpec;
+
     total: number;
     index: number;
     title?: string;

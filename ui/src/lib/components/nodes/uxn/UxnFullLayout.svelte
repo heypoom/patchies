@@ -10,7 +10,8 @@
   } from '@lucide/svelte/icons';
   import * as Popover from '../../ui/popover';
   import * as Tooltip from '../../ui/tooltip';
-  import StandardHandle from '../../StandardHandle.svelte';
+  import TypedHandle from '../../TypedHandle.svelte';
+  import { uxnSchema } from '$lib/objects/schemas/uxn';
 
   let {
     nodeId,
@@ -134,10 +135,9 @@
 </div>
 
 <div class="relative">
-  <StandardHandle
+  <TypedHandle
     port="inlet"
-    type="message"
-    id={0}
+    spec={uxnSchema.inlets[0].handle!}
     title="ROM input"
     total={1}
     index={0}
@@ -158,20 +158,18 @@
     ></canvas>
   </div>
 
-  <StandardHandle
+  <TypedHandle
     port="outlet"
-    type="video"
-    id={0}
+    spec={{ handleType: 'video', handleId: 0 }}
     title="Video output"
     total={2}
     index={0}
     {nodeId}
   />
 
-  <StandardHandle
+  <TypedHandle
     port="outlet"
-    type="message"
-    id={0}
+    spec={uxnSchema.outlets[0].handle!}
     title="Console output"
     total={2}
     index={1}

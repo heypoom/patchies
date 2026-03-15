@@ -9,6 +9,8 @@
   import { useNodeDataTracker } from '$lib/history';
   import { sequencerMessages } from '$lib/objects/schemas';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { sequencerSchema } from '$lib/objects/schemas/sequencer';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SequencerSettings from '$lib/components/settings/SequencerSettings.svelte';
   import { Settings, VolumeX, X } from '@lucide/svelte/icons';
@@ -498,7 +500,14 @@
     </div>
 
     <!-- Control inlet: always present, smart-hidden when not connected -->
-    <StandardHandle port="inlet" type="message" title="Control" total={1} index={0} {nodeId} />
+    <TypedHandle
+      port="inlet"
+      spec={sequencerSchema.inlets[0].handle!}
+      title="Control"
+      total={1}
+      index={0}
+      {nodeId}
+    />
 
     <!-- Dynamic outlets: one per track -->
     {#each tracks as track, trackIdx (trackIdx)}

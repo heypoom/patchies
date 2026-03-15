@@ -28,5 +28,17 @@ export const toneSchema: ObjectSchema = {
     }
   ],
   tags: ['audio', 'synthesis', 'tonejs', 'effects', 'music'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: {
+      template: 'message-in-{index}',
+      handleType: 'message',
+      description: 'Message inlets (0-indexed)'
+    },
+    outlet: {
+      template: 'message-out-{index}',
+      handleType: 'message',
+      description: 'Message outlets (0-indexed)'
+    }
+  }
 };

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { GripHorizontal, Lock, LockOpen, Settings, X } from '@lucide/svelte/icons';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { knobSchema } from '$lib/objects/schemas/knob';
   import KnobSettings from '$lib/components/settings/KnobSettings.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -272,9 +273,9 @@
 
       <div class="relative">
         {#if inletVisible}
-          <StandardHandle
+          <TypedHandle
             port="inlet"
-            type="message"
+            spec={knobSchema.inlets[0].handle!}
             total={1}
             index={0}
             class={`!-top-2 ${handleInletClass}`}
@@ -333,9 +334,9 @@
         </div>
 
         {#if outletVisible}
-          <StandardHandle
+          <TypedHandle
             port="outlet"
-            type="message"
+            spec={knobSchema.outlets[0].handle!}
             total={1}
             index={0}
             nodeId={node.id}

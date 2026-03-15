@@ -28,11 +28,13 @@ export const aiSttSchema: ObjectSchema = {
     {
       id: 'audio',
       type: 'signal',
-      description: 'Audio input to transcribe (connect mic~ or any audio source)'
+      description: 'Audio input to transcribe (connect mic~ or any audio source)',
+      handle: { handleType: 'audio' }
     },
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Listen, description: 'Start recording' },
         { schema: Stop, description: 'Stop recording and transcribe' },
@@ -46,6 +48,7 @@ export const aiSttSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Transcribed text output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.String(), description: 'Transcribed text string' }]
     }
   ],

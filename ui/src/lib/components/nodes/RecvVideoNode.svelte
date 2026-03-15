@@ -1,6 +1,7 @@
 <script lang="ts">
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import ObjectCommonLayout from './ObjectCommonLayout.svelte';
+  import { recvVdoSchema } from '$lib/objects/schemas/recv-vdo';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { onDestroy, onMount } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
@@ -55,10 +56,9 @@
   onChannelChange={handleChannelChange}
 >
   {#snippet inlets()}
-    <StandardHandle
+    <TypedHandle
       port="inlet"
-      type="message"
-      id={0}
+      spec={recvVdoSchema.inlets[0].handle!}
       title="Channel name"
       total={1}
       index={0}
@@ -68,10 +68,9 @@
   {/snippet}
 
   {#snippet outlets()}
-    <StandardHandle
+    <TypedHandle
       port="outlet"
-      type="video"
-      id={0}
+      spec={recvVdoSchema.outlets[0].handle!}
       title="Video output"
       total={1}
       index={0}

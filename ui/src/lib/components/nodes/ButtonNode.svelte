@@ -1,5 +1,6 @@
 <script lang="ts">
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { buttonSchema } from '$lib/objects/schemas/button';
   import { onMount } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import { shouldShowHandles } from '../../../stores/ui.store';
@@ -50,9 +51,9 @@
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={buttonSchema.inlets[0].handle!}
           total={1}
           index={0}
           class={handleClass}
@@ -70,9 +71,9 @@
         >
         </button>
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
+          spec={buttonSchema.outlets[0].handle!}
           total={1}
           index={0}
           class={`absolute !bottom-1.5 ${handleClass}`}

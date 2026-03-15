@@ -1,7 +1,8 @@
 <script lang="ts">
   import { CircleAlert, Settings, Volume2, VolumeX, X } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import { midiOutSchema } from '$lib/objects/schemas/midi-out';
   import { onMount, onDestroy } from 'svelte';
   import { match, P } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
@@ -207,7 +208,13 @@
       </div>
 
       <div class="relative">
-        <StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
+        <TypedHandle
+          port="inlet"
+          spec={midiOutSchema.inlets[0].handle!}
+          total={1}
+          index={0}
+          {nodeId}
+        />
 
         {#if !deviceId}
           <button

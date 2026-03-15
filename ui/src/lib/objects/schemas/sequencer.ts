@@ -103,6 +103,7 @@ export const sequencerSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control inlet',
+      handle: { handleType: 'message' },
       messages: [
         // Mute
         { schema: Mute, description: 'Silence all output' },
@@ -151,6 +152,7 @@ export const sequencerSchema: ObjectSchema = {
       id: 'track',
       description:
         'Per-track trigger outlet (one outlet per track, numbered 0–7). Fires on each active step.',
+      handle: { handleType: 'message' },
       messages: [
         {
           schema: Bang,

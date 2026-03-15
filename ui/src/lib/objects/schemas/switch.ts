@@ -13,6 +13,7 @@ export const switchSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Switch output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Boolean(), description: 'Current state' }]
     }
   ],

@@ -6,7 +6,7 @@
   let butterchurnPresets;
   let presets: Record<string, unknown> = $state({});
 
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import ButterchurnPresetSelect from '../ButterchurnPresetSelect.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
@@ -112,10 +112,9 @@
   {selected}
 >
   {#snippet topHandle()}
-    <StandardHandle
+    <TypedHandle
       port="inlet"
-      type="audio"
-      id="0"
+      spec={{ handleType: 'audio', handleId: '0' }}
       title="Audio input"
       total={1}
       index={0}
@@ -124,10 +123,9 @@
   {/snippet}
 
   {#snippet bottomHandle()}
-    <StandardHandle
+    <TypedHandle
       port="outlet"
-      type="video"
-      id="0"
+      spec={{ handleType: 'video', handleId: '0' }}
       title="Video output"
       total={1}
       index={0}
