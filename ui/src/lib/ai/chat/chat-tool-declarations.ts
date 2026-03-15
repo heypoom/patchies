@@ -28,6 +28,7 @@ When the user asks you to act on the canvas, always prefer the **simplest** tool
 
 1. **edit** — If a node already exists and the user wants changes, ALWAYS use edit. Never recreate an object that already exists.
 2. **connect_edges** — If the nodes the user wants connected already exist on the canvas, just connect them with edges. Do NOT recreate objects that are already there.
+2b. **disconnect_edges** — If the user wants to remove a connection between nodes, use this. Call get_graph_nodes first to find edge IDs or source/target pairs.
 3. **insert + connect_edges** — If the user needs a new object that should connect to existing objects, use **insert** to create ONLY the missing object, then use **connect_edges** to wire it to the existing node(s). Do NOT use multi when some objects already exist.
 4. **insert** (single create) — If the user needs ONE new standalone object, use insert. Do NOT use multi just because a description is detailed.
 5. **multi** (multi create) — ONLY use this when the user explicitly asks for multiple connected objects AND none of them exist on the canvas yet.
@@ -52,6 +53,7 @@ export const GET_NODE_DATA = 'get_node_data';
 export const SEARCH_DOCS = 'search_docs';
 export const GET_DOC_CONTENT = 'get_doc_content';
 export const CONNECT_EDGES = 'connect_edges';
+export const DISCONNECT_EDGES = 'disconnect_edges';
 
 export const CONTEXT_TOOL_NAMES = new Set([
   GET_OBJECT_INSTRUCTIONS,
@@ -165,6 +167,52 @@ export const connectEdgesDeclaration = {
           required: ['source', 'target']
         },
         description: 'Edges to create between existing nodes'
+      }
+    },
+    required: ['edges']
+  }
+};
+
+// ── Disconnect edges declaration ──────────────────────────────────────────────
+
+export const disconnectEdgesDeclaration = {
+  name: DISCONNECT_EDGES,
+  description:
+    'Remove existing edges (connections) between nodes on the canvas. Use get_graph_nodes first to discover edge IDs. You can disconnect by edge ID, or by specifying source/target node pairs.',
+  parametersJsonSchema: {
+    type: 'object',
+    properties: {
+      edges: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            edgeId: {
+              type: 'string',
+              description: 'The edge ID to remove (from get_graph_nodes)'
+            },
+            source: {
+              type: 'string',
+              description:
+                'Source node ID — used with target to find edges when edgeId is not known'
+            },
+            target: {
+              type: 'string',
+              description:
+                'Target node ID — used with source to find edges when edgeId is not known'
+            },
+            sourceHandle: {
+              type: 'string',
+              description: 'Optional: narrow by source handle when using source/target pair'
+            },
+            targetHandle: {
+              type: 'string',
+              description: 'Optional: narrow by target handle when using source/target pair'
+            }
+          }
+        },
+        description:
+          'Edges to remove. Provide edgeId for exact removal, or source+target to match by endpoints.'
       }
     },
     required: ['edges']

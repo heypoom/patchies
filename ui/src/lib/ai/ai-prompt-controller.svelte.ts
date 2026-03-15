@@ -21,6 +21,7 @@ export interface AiPromptCallbacks {
   onEditObject: (nodeId: string, data: Record<string, unknown>) => void;
   onReplaceObject: (nodeId: string, newType: string, newData: Record<string, unknown>) => void;
   onConnectEdges: (edges: Edge[]) => void;
+  onDisconnectEdges: (edgeIds: string[]) => void;
 }
 
 export function createAiPromptController(callbacks: AiPromptCallbacks) {
@@ -87,6 +88,15 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
           toast.warning(
             `${result.invalidEdges.length} edge${result.invalidEdges.length === 1 ? '' : 's'} had invalid handles and ${result.invalidEdges.length === 1 ? 'was' : 'were'} skipped`,
             { description: 'You may need to connect some edges manually.' }
+          );
+        }
+        break;
+      case 'disconnect-edges':
+        callbacks.onDisconnectEdges(result.edgeIds);
+
+        if (result.edgeIds.length > 0) {
+          toast.success(
+            `Disconnected ${result.edgeIds.length} edge${result.edgeIds.length === 1 ? '' : 's'}`
           );
         }
         break;

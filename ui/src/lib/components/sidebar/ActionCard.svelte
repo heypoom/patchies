@@ -32,6 +32,10 @@
         { kind: 'connect-edges' },
         (r) => `Connect ${r.edges.length} edge${r.edges.length === 1 ? '' : 's'}`
       )
+      .with(
+        { kind: 'disconnect-edges' },
+        (r) => `Disconnect ${r.edgeIds.length} edge${r.edgeIds.length === 1 ? '' : 's'}`
+      )
       .exhaustive()
   );
 
@@ -47,22 +51,28 @@
   function extractCode(data: Record<string, unknown>): string | null {
     for (const field of ['code', 'expr']) {
       const val = data[field];
+
       if (typeof val === 'string' && val.trim()) return val;
     }
+
     return null;
   }
 
   function computeDiff(oldCode: string, newCode: string): DiffLine[] {
     const hunks = diffLines(oldCode, newCode);
     const lines: DiffLine[] = [];
+
     for (const hunk of hunks) {
       const type = hunk.added ? 'added' : hunk.removed ? 'removed' : 'context';
       const hunkLines = (hunk.value ?? '').split('\n');
+
       if (hunkLines.at(-1) === '') hunkLines.pop();
+
       for (const text of hunkLines) {
         lines.push({ type, text });
       }
     }
+
     return lines;
   }
 
@@ -73,6 +83,7 @@
     if (result.kind === 'edit' || result.kind === 'replace') {
       const newData = result.kind === 'edit' ? result.data : result.newData;
       const newCode = extractCode(newData);
+
       if (!newCode) return [];
 
       const oldNode = getNodeById?.(result.nodeId);
@@ -80,6 +91,7 @@
 
       if (oldCode) {
         const lines = computeDiff(oldCode, newCode);
+
         return [
           {
             kind: 'diff',
@@ -89,6 +101,7 @@
           }
         ];
       }
+
       return [
         {
           kind: 'diff',
@@ -102,6 +115,7 @@
     if (result.kind === 'single') {
       const newCode = extractCode(result.data);
       if (!newCode) return [];
+
       return [
         {
           kind: 'diff',
@@ -117,6 +131,7 @@
         .filter((n) => extractCode(n.data as Record<string, unknown>))
         .map((n) => {
           const code = extractCode(n.data as Record<string, unknown>)!;
+
           return {
             kind: 'diff' as const,
             label: n.type ?? 'node',
@@ -137,15 +152,22 @@
     if (result.kind === 'multi') {
       return result.nodes.map((n) => n.type).join(', ');
     }
+
     if (result.kind === 'connect-edges') {
       return result.edges
         .map((e) => {
-          const src = e.sourceHandle ? `${e.source}:${e.sourceHandle}` : e.source;
-          const tgt = e.targetHandle ? `${e.target}:${e.targetHandle}` : e.target;
-          return `${src} \u2192 ${tgt}`;
+          const source = e.sourceHandle ? `${e.source}:${e.sourceHandle}` : e.source;
+          const target = e.targetHandle ? `${e.target}:${e.targetHandle}` : e.target;
+
+          return `${source} \u2192 ${target}`;
         })
         .join('\n');
     }
+
+    if (result.kind === 'disconnect-edges') {
+      return result.edgeIds.join('\n');
+    }
+
     return null;
   }
 
@@ -157,13 +179,18 @@
       .with({ kind: 'replace' }, (r) => callbacks.onReplaceObject(r.nodeId, r.newType, r.newData))
       .with({ kind: 'connect-edges' }, (r) => {
         callbacks.onConnectEdges(r.edges);
+
         if (r.invalidEdges && r.invalidEdges.length > 0) {
           const n = r.invalidEdges.length;
+
           toast.warning(
             `${n} edge${n === 1 ? '' : 's'} had invalid handles and ${n === 1 ? 'was' : 'were'} skipped`,
             { description: 'You may need to connect some edges manually.' }
           );
         }
+      })
+      .with({ kind: 'disconnect-edges' }, (r) => {
+        callbacks.onDisconnectEdges(r.edgeIds);
       })
       .exhaustive();
 
@@ -209,6 +236,7 @@
         >
           <X class="h-3 w-3" />
         </button>
+
         <button
           onclick={(e) => {
             e.preventDefault();
@@ -240,9 +268,11 @@
           >
             <ChevronLeft class="h-3 w-3" />
           </button>
+
           <span class="flex-1 text-center font-mono text-[10px] text-current/60">
             {currentPage.label} ({pageIndex + 1}/{pages.length})
           </span>
+
           <button
             onclick={() => (pageIndex = Math.min(pages.length - 1, pageIndex + 1))}
             disabled={pageIndex === pages.length - 1}
@@ -261,6 +291,7 @@
             >{:else}<span class="block text-zinc-500"> {line.text}</span>{/if}{/each}</pre>
     {:else}
       {@const previewText = getPreviewText(action.result)}
+
       <div class="px-3 py-2">
         {#if previewText}
           <pre class="font-mono text-[10px] whitespace-pre-wrap text-zinc-500">{previewText}</pre>

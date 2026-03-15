@@ -23,7 +23,8 @@ export type AiPromptMode =
   | 'make-producer' // Create a producer for the selected consumer node
   | 'split' // Split object into multiple
   | 'fork' // Create a new object derived from an existing one
-  | 'connect-edges'; // Connect existing nodes with edges
+  | 'connect-edges' // Connect existing nodes with edges
+  | 'disconnect-edges'; // Remove edges between nodes
 
 export interface AiModeContext {
   /** The node being edited/replaced/decomposed */
@@ -76,7 +77,8 @@ export type AiModeResult =
   | { kind: 'multi'; nodes: AiObjectNode[]; edges: SimplifiedEdge[] }
   | { kind: 'edit'; nodeId: string; data: Record<string, unknown> }
   | { kind: 'replace'; nodeId: string; newType: string; newData: Record<string, unknown> }
-  | { kind: 'connect-edges'; edges: Edge[]; invalidEdges?: { reason: string }[] };
+  | { kind: 'connect-edges'; edges: Edge[]; invalidEdges?: { reason: string }[] }
+  | { kind: 'disconnect-edges'; edgeIds: string[] };
 
 export type ModeResolver = (
   prompt: string,

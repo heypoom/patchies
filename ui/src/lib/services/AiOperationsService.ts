@@ -7,6 +7,7 @@ import {
   AddNodeCommand,
   AddNodesCommand,
   AddEdgesCommand,
+  DeleteEdgesCommand,
   DeleteNodesCommand,
   BatchCommand,
   ReplaceNodeDataCommand
@@ -204,6 +205,22 @@ export class AiOperationsService {
     this.ctx.edges = [...this.ctx.edges, ...edges];
 
     this.ctx.historyManager.record(new AddEdgesCommand(edges, this.ctx.canvasAccessors));
+  }
+
+  /**
+   * Disconnect edges by removing them from the canvas.
+   * Recorded as a single undoable entry.
+   */
+  disconnectEdges(edgeIds: string[]): void {
+    if (edgeIds.length === 0) return;
+
+    const idSet = new Set(edgeIds);
+    const edgesToRemove = this.ctx.edges.filter((e) => idSet.has(e.id));
+    if (edgesToRemove.length === 0) return;
+
+    this.ctx.edges = this.ctx.edges.filter((e) => !idSet.has(e.id));
+
+    this.ctx.historyManager.record(new DeleteEdgesCommand(edgesToRemove, this.ctx.canvasAccessors));
   }
 
   /**

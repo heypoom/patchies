@@ -8,19 +8,21 @@ import { topicMetas } from '$lib/docs/topic-index';
 import { objectSchemas } from '$lib/objects/schemas';
 import { fetchTopicHelp } from '$lib/docs/fetch-topic-help';
 import { fetchObjectHelp } from '$lib/objects/fetch-object-help';
-import { validateEdgeHandles } from '../validate-edge-handles';
 import { generateHandleDocs } from '../generate-handle-docs';
+import { resolveConnectEdges, resolveDisconnectEdges } from './edge-tool-handlers';
 import {
   SYSTEM_PROMPT,
   CONTEXT_TOOL_NAMES,
   CONNECT_EDGES,
+  DISCONNECT_EDGES,
   GET_OBJECT_INSTRUCTIONS,
   GET_GRAPH_NODES,
   GET_NODE_DATA,
   SEARCH_DOCS,
   GET_DOC_CONTENT,
   contextToolDeclarations,
-  connectEdgesDeclaration
+  connectEdgesDeclaration,
+  disconnectEdgesDeclaration
 } from './chat-tool-declarations';
 
 export interface ChatMessage {
@@ -147,7 +149,9 @@ export async function streamChatMessage(
   }));
 
   const canvasDeclarations = onAction ? buildCanvasToolDeclarations(nodeContext) : [];
-  const allCanvasDeclarations = onAction ? [...canvasDeclarations, connectEdgesDeclaration] : [];
+  const allCanvasDeclarations = onAction
+    ? [...canvasDeclarations, connectEdgesDeclaration, disconnectEdgesDeclaration]
+    : [];
   const tools = [{ functionDeclarations: [...contextToolDeclarations, ...allCanvasDeclarations] }];
 
   let fullText = '';
@@ -230,61 +234,16 @@ export async function streamChatMessage(
       const args = (functionCall.args ?? {}) as Record<string, unknown>;
 
       try {
-        // connect_edges is handled directly — no mode resolver needed
+        // Edge tools are handled directly — no mode resolver needed
         if (toolName === CONNECT_EDGES) {
-          const edgeSpecs = args.edges as Array<{
-            source: string;
-            target: string;
-            sourceHandle?: string;
-            targetHandle?: string;
-          }>;
+          onAction(resolveConnectEdges(args, { getNodeById, getGraphSummary }));
 
-          if (!Array.isArray(edgeSpecs) || edgeSpecs.length === 0) {
-            throw new Error('connect_edges requires a non-empty edges array');
-          }
+          continue;
+        }
 
-          // Validate that referenced nodes exist
-          for (const spec of edgeSpecs) {
-            if (!getNodeById?.(spec.source)) {
-              throw new Error(`Source node "${spec.source}" not found`);
-            }
-            if (!getNodeById?.(spec.target)) {
-              throw new Error(`Target node "${spec.target}" not found`);
-            }
-          }
+        if (toolName === DISCONNECT_EDGES) {
+          onAction(resolveDisconnectEdges(args, { getNodeById, getGraphSummary }));
 
-          const allEdges = edgeSpecs.map((spec, i) => ({
-            id: `ai-edge-${crypto.randomUUID().slice(0, 8)}-${i}`,
-            source: spec.source,
-            target: spec.target,
-            sourceHandle: spec.sourceHandle ?? null,
-            targetHandle: spec.targetHandle ?? null
-          }));
-
-          // Validate handle IDs against known specs
-          const { valid: edges, invalid: invalidEdges } = validateEdgeHandles(
-            allEdges,
-            (id) => getNodeById?.(id)?.type ?? undefined
-          );
-
-          if (invalidEdges.length > 0) {
-            console.warn(
-              `[AI connect_edges] Filtered ${invalidEdges.length} invalid edge(s):`,
-              invalidEdges.map((e) => e.reason)
-            );
-          }
-
-          onAction({
-            id: crypto.randomUUID(),
-            mode: 'connect-edges' as AiPromptMode,
-            descriptor: getModeDescriptor('connect-edges'),
-            result: {
-              kind: 'connect-edges',
-              edges,
-              invalidEdges: invalidEdges.length > 0 ? invalidEdges : undefined
-            },
-            state: 'pending'
-          });
           continue;
         }
 

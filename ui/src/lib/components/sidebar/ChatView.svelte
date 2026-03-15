@@ -154,6 +154,9 @@
           );
         }
       })
+      .with({ kind: 'disconnect-edges' }, (r) => {
+        aiCallbacks!.onDisconnectEdges(r.edgeIds);
+      })
       .exhaustive();
 
     updateActionState(action.id, 'applied');
@@ -251,6 +254,10 @@
               .with(
                 { kind: 'connect-edges' },
                 (r) => `Connected ${r.edges.length} edge${r.edges.length === 1 ? '' : 's'}`
+              )
+              .with(
+                { kind: 'disconnect-edges' },
+                (r) => `Disconnected ${r.edgeIds.length} edge${r.edgeIds.length === 1 ? '' : 's'}`
               )
               .exhaustive()
           : undefined;

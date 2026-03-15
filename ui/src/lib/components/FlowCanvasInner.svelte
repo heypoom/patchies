@@ -497,6 +497,10 @@
     aiOps.connectEdges(edges);
   }
 
+  function handleAiDisconnectEdges(edgeIds: string[]) {
+    aiOps.disconnectEdges(edgeIds);
+  }
+
   function getNodeById(nodeId: string) {
     const node = getNode(nodeId);
     if (!node) return undefined;
@@ -525,7 +529,8 @@
     onInsertMultipleObjects: handleAiMultipleObjectsInsert,
     onEditObject: handleAiObjectEdit,
     onReplaceObject: handleAiObjectReplace,
-    onConnectEdges: handleAiConnectEdges
+    onConnectEdges: handleAiConnectEdges,
+    onDisconnectEdges: handleAiDisconnectEdges
   };
 
   onMount(() => {

@@ -8,7 +8,8 @@ import {
   ArrowLeft,
   Scissors,
   GitFork,
-  Cable
+  Cable,
+  Unplug
 } from '@lucide/svelte/icons';
 import { match } from 'ts-pattern';
 import type { AiModeDescriptor, AiModeContext, AiPromptMode, AiPromptColor } from './types';
@@ -239,6 +240,21 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     generatingLabel: () => 'Connecting',
     color: 'green',
     icon: Cable,
+    isMulti: false,
+    requiresNode: false,
+    availableInChat: false // handled as a special tool, not via mode descriptors
+  },
+
+  'disconnect-edges': {
+    id: 'disconnect-edges',
+    label: 'Disconnect Edges',
+    shortLabel: 'Disconnect',
+    description: () => 'Remove edges between objects',
+    placeholder: () => 'e.g., "disconnect the oscillator from the filter"',
+    loadingLabel: 'Disconnecting',
+    generatingLabel: () => 'Disconnecting',
+    color: 'red',
+    icon: Unplug,
     isMulti: false,
     requiresNode: false,
     availableInChat: false // handled as a special tool, not via mode descriptors
