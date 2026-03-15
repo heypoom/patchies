@@ -3,6 +3,7 @@
   import { handleMultiObjectInsert } from '$lib/ai/handle-multi-object-insert';
   import type { AiObjectNode, SimplifiedEdge, MultiObjectResult } from '$lib/ai/types';
   import type { MultiObjectInsertResult } from '$lib/ai/handle-multi-object-insert';
+  import { validateHandle, NODE_HANDLE_SPECS } from '$lib/ai/debug/handle-specs';
 
   let prompt = $state('slider controlling oscillator frequency');
   let loading = $state(false);
@@ -73,8 +74,8 @@
   function getHandleValidationIssues(
     edges: SimplifiedEdge[],
     nodes: AiObjectNode[]
-  ): { edgeIndex: number; issue: string }[] {
-    const issues: { edgeIndex: number; issue: string }[] = [];
+  ): { edgeIndex: number; issue: string; severity: 'error' | 'warn' }[] {
+    const issues: { edgeIndex: number; issue: string; severity: 'error' | 'warn' }[] = [];
 
     for (let i = 0; i < edges.length; i++) {
       const edge = edges[i];
@@ -83,34 +84,57 @@
       if (edge.source < 0 || edge.source >= nodes.length) {
         issues.push({
           edgeIndex: i,
-          issue: `source index ${edge.source} out of bounds (max: ${nodes.length - 1})`
+          issue: `source index ${edge.source} out of bounds (max: ${nodes.length - 1})`,
+          severity: 'error'
         });
+        continue;
       }
       if (edge.target < 0 || edge.target >= nodes.length) {
         issues.push({
           edgeIndex: i,
-          issue: `target index ${edge.target} out of bounds (max: ${nodes.length - 1})`
+          issue: `target index ${edge.target} out of bounds (max: ${nodes.length - 1})`,
+          severity: 'error'
         });
+        continue;
       }
 
-      // Check handle ID patterns
+      const sourceNode = nodes[edge.source];
+      const targetNode = nodes[edge.target];
+
+      // Validate sourceHandle against node spec
       if (edge.sourceHandle) {
-        if (!isValidHandleId(edge.sourceHandle, 'out')) {
-          issues.push({ edgeIndex: i, issue: `suspicious sourceHandle: "${edge.sourceHandle}"` });
+        const srcErr = validateHandle(sourceNode.type, edge.sourceHandle, 'out');
+        if (srcErr) {
+          issues.push({ edgeIndex: i, issue: `sourceHandle: ${srcErr}`, severity: 'error' });
         }
       } else {
-        issues.push({ edgeIndex: i, issue: 'missing sourceHandle' });
+        issues.push({ edgeIndex: i, issue: 'missing sourceHandle', severity: 'error' });
       }
 
+      // Validate targetHandle against node spec
       if (edge.targetHandle) {
-        if (!isValidHandleId(edge.targetHandle, 'in')) {
-          issues.push({ edgeIndex: i, issue: `suspicious targetHandle: "${edge.targetHandle}"` });
+        const tgtErr = validateHandle(targetNode.type, edge.targetHandle, 'in');
+        if (tgtErr) {
+          issues.push({ edgeIndex: i, issue: `targetHandle: ${tgtErr}`, severity: 'error' });
+        }
+      } else {
+        // GLSL nodes auto-fill targetHandle in handleMultiObjectInsert, so just warn
+        if (targetNode.type === 'glsl') {
+          issues.push({
+            edgeIndex: i,
+            issue: 'missing targetHandle (will be auto-filled for GLSL)',
+            severity: 'warn'
+          });
         }
       }
 
       // Self-connection
       if (edge.source === edge.target) {
-        issues.push({ edgeIndex: i, issue: 'self-connection (source === target)' });
+        issues.push({
+          edgeIndex: i,
+          issue: 'self-connection (source === target)',
+          severity: 'error'
+        });
       }
 
       // Type mismatch between handles
@@ -126,7 +150,8 @@
         ) {
           issues.push({
             edgeIndex: i,
-            issue: `type mismatch: source=${srcType}, target=${tgtType}`
+            issue: `type mismatch: source=${srcType}, target=${tgtType}`,
+            severity: 'error'
           });
         }
       }
@@ -135,33 +160,29 @@
     return issues;
   }
 
-  function isValidHandleId(handle: string, expectedDir: 'in' | 'out'): boolean {
-    // Valid patterns:
-    // type-dir-id:  audio-in-0, message-out-1, video-in-0-uTex-sampler2D
-    // type-dir:     message-in, audio-out, video-out
-    // dir-id:       in-0, out-1
-    // dir:          inlet, outlet (rare)
-    const validPatterns = [
-      /^(audio|video|message|analysis)-(in|out)(-.+)?$/,
-      /^(in|out)(-.+)?$/,
-      /^(inlet|outlet)$/
-    ];
+  function handleIsValid(nodeType: string, handle: string, direction: 'in' | 'out'): boolean {
+    return validateHandle(nodeType, handle, direction) === null;
+  }
 
-    const matchesPattern = validPatterns.some((p) => p.test(handle));
-    if (!matchesPattern) return false;
-
-    // Check direction consistency
-    if (
-      handle.includes(`-${expectedDir}`) ||
-      handle === expectedDir ||
-      handle === (expectedDir === 'in' ? 'inlet' : 'outlet')
-    ) {
-      return true;
+  function getExpectedHandles(nodeType: string): { inlets: string; outlets: string } | null {
+    if (nodeType === 'object') {
+      return { inlets: '{audio|message}-in-{N}', outlets: '{audio|message}-out-{N}' };
     }
-    // For bare in-0/out-0 pattern
-    if (handle.startsWith(expectedDir)) return true;
+    const spec = NODE_HANDLE_SPECS[nodeType];
+    if (!spec) return null;
 
-    return false;
+    const fmt = (p: typeof spec.inlets) => {
+      switch (p.kind) {
+        case 'fixed':
+          return p.handles.length > 0 ? p.handles.join(', ') : '(none)';
+        case 'indexed':
+          return `${p.prefix}{N}`;
+        case 'dynamic':
+          return p.patterns.join(' | ');
+      }
+    };
+
+    return { inlets: fmt(spec.inlets), outlets: fmt(spec.outlets) };
   }
 
   function extractHandleType(handle: string): string | null {
@@ -171,9 +192,9 @@
 
   function edgeHasIssue(
     edgeIndex: number,
-    issues: { edgeIndex: number; issue: string }[]
+    issues: { edgeIndex: number; issue: string; severity: 'error' | 'warn' }[]
   ): boolean {
-    return issues.some((i) => i.edgeIndex === edgeIndex);
+    return issues.some((i) => i.edgeIndex === edgeIndex && i.severity === 'error');
   }
 </script>
 
@@ -259,7 +280,7 @@
         <div class="space-y-4">
           <h2 class="text-lg font-semibold text-zinc-300">Nodes ({rawResult.nodes.length})</h2>
 
-          {#each rawResult.nodes as node, i}
+          {#each rawResult.nodes as node, i (i)}
             <div class="space-y-2 rounded border border-zinc-700 bg-zinc-900 p-3">
               <div class="flex items-center gap-2">
                 <span class="rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300">#{i}</span>
@@ -268,6 +289,19 @@
                   <span class="text-xs text-zinc-600">({node.position.x}, {node.position.y})</span>
                 {/if}
               </div>
+
+              <!-- Expected handles -->
+              {#if getExpectedHandles(node.type)}
+                {@const expected = getExpectedHandles(node.type)}
+                {#if expected}
+                  <div class="text-xs text-zinc-600">
+                    <span class="text-zinc-500">Expected:</span>
+                    in=[{expected.inlets}] out=[{expected.outlets}]
+                  </div>
+                {/if}
+              {:else}
+                <div class="text-xs text-yellow-600">Unknown node type (no handle spec)</div>
+              {/if}
 
               <!-- Node Data -->
               <details>
@@ -286,9 +320,11 @@
               {#if rawResult.edges.filter((e) => e.source === i).length > 0}
                 <div class="text-xs">
                   <span class="text-zinc-500">Outlets used:</span>
-                  {#each rawResult.edges.filter((e) => e.source === i) as edge}
+
+                  {#each rawResult.edges.filter((e) => e.source === i) as edge, i (i)}
                     <span
-                      class="ml-1 rounded px-1.5 py-0.5 {isValidHandleId(
+                      class="ml-1 rounded px-1.5 py-0.5 {handleIsValid(
+                        node.type,
                         edge.sourceHandle ?? '',
                         'out'
                       )
@@ -304,9 +340,11 @@
               {#if rawResult.edges.filter((e) => e.target === i).length > 0}
                 <div class="text-xs">
                   <span class="text-zinc-500">Inlets used:</span>
-                  {#each rawResult.edges.filter((e) => e.target === i) as edge}
+
+                  {#each rawResult.edges.filter((e) => e.target === i) as edge, i (i)}
                     <span
-                      class="ml-1 rounded px-1.5 py-0.5 {isValidHandleId(
+                      class="ml-1 rounded px-1.5 py-0.5 {handleIsValid(
+                        node.type,
                         edge.targetHandle ?? '',
                         'in'
                       )
@@ -339,8 +377,12 @@
           {#if issues.length > 0}
             <div class="space-y-1 rounded border border-red-800 bg-red-900/20 p-3">
               <div class="text-xs font-semibold text-red-300">Validation Issues</div>
-              {#each issues as issue}
-                <div class="text-xs text-red-400">
+
+              {#each issues as issue, i (i)}
+                <div
+                  class="text-xs {issue.severity === 'error' ? 'text-red-400' : 'text-yellow-400'}"
+                >
+                  <span class="font-semibold">{issue.severity === 'error' ? 'ERR' : 'WARN'}</span>
                   Edge #{issue.edgeIndex}: {issue.issue}
                 </div>
               {/each}
@@ -348,7 +390,7 @@
           {/if}
 
           <!-- Edge List -->
-          {#each rawResult.edges as edge, i}
+          {#each rawResult.edges as edge, i (i)}
             {@const hasIssue = edgeHasIssue(i, issues)}
             <button
               class="w-full cursor-pointer space-y-1 rounded border bg-zinc-900 p-3 text-left transition-colors {hasIssue
@@ -374,7 +416,7 @@
                   <span class="text-zinc-500">sourceHandle: </span>
                   <code
                     class="rounded px-1 py-0.5 {edge.sourceHandle
-                      ? isValidHandleId(edge.sourceHandle, 'out')
+                      ? handleIsValid(rawResult.nodes[edge.source]?.type, edge.sourceHandle, 'out')
                         ? 'bg-emerald-900/40 text-emerald-300'
                         : 'bg-red-900/40 text-red-300'
                       : 'bg-yellow-900/40 text-yellow-300'}"
@@ -386,7 +428,7 @@
                   <span class="text-zinc-500">targetHandle: </span>
                   <code
                     class="rounded px-1 py-0.5 {edge.targetHandle
-                      ? isValidHandleId(edge.targetHandle, 'in')
+                      ? handleIsValid(rawResult.nodes[edge.target]?.type, edge.targetHandle, 'in')
                         ? 'bg-blue-900/40 text-blue-300'
                         : 'bg-red-900/40 text-red-300'
                       : 'bg-yellow-900/40 text-yellow-300'}"
@@ -410,12 +452,13 @@
             <div class="space-y-2">
               <div class="text-xs text-zinc-400">
                 <span class="text-zinc-500">Nodes:</span>
-                {#each insertResult.newNodes as node}
+
+                {#each insertResult.newNodes as node, i (i)}
                   <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5">{node.id}</span>
                 {/each}
               </div>
 
-              {#each insertResult.newEdges as edge, i}
+              {#each insertResult.newEdges as edge, i (i)}
                 <div class="space-y-1 rounded border border-zinc-800 bg-zinc-900 p-2 text-xs">
                   <div class="text-zinc-300">
                     {edge.id}: {edge.source} &rarr; {edge.target}
