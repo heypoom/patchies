@@ -262,7 +262,7 @@
         </div>
       {/if}
 
-      <div class="nodrag relative">
+      <div class="relative">
         {#if showInlet}
           <TypedHandle
             port="inlet"
@@ -305,7 +305,7 @@
               .data.vertical
               ? `writing-mode: vertical-lr; direction: rtl; height: ${sliderHeight}px;`
               : ''};"
-            class={sliderClass}
+            class={['nodrag', sliderClass]}
           />
 
           {#if !node.data.vertical}
