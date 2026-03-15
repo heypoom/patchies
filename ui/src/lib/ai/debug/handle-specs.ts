@@ -37,16 +37,20 @@ function deriveSpecFromSchema(type: string): NodeHandleSpec | null {
   if (schema.handlePatterns) return null;
 
   const inletHandles: string[] = [];
+
   for (const inlet of schema.inlets) {
     if (!inlet.handle) return null; // Missing handle field = can't auto-derive
+
     inletHandles.push(
       deriveHandleId({ port: 'inlet', type: inlet.handle.handleType, id: inlet.handle.handleId })
     );
   }
 
   const outletHandles: string[] = [];
+
   for (const outlet of schema.outlets) {
     if (!outlet.handle) return null;
+
     outletHandles.push(
       deriveHandleId({
         port: 'outlet',
@@ -75,24 +79,28 @@ const SCHEMA_DERIVABLE_TYPES = [
   'knob',
   'textbox',
   'keyboard',
+
   // Audio I/O
   'mic~',
   'out~',
   'meter~',
   'soundfile~',
   'sampler~',
+
   // Audio & Music
   'chuck~',
   'csound~',
   'bytebeat~',
   'strudel',
   'orca',
+
   // Visual
   'swgl',
   'bg.out',
   'iframe',
   'webcam',
   'markdown',
+
   // AI
   'ai.stt',
   'ai.txt',
@@ -100,11 +108,14 @@ const SCHEMA_DERIVABLE_TYPES = [
   'stt',
   'tts',
   'ai.music',
+
   // Media
   'screen',
+
   // Video Routing
   'send.vdo',
   'recv.vdo',
+
   // Network
   'midi.in',
   'midi.out',
@@ -117,12 +128,15 @@ const SCHEMA_DERIVABLE_TYPES = [
  */
 function buildSchemaDerivedSpecs(): Record<string, NodeHandleSpec> {
   const specs: Record<string, NodeHandleSpec> = {};
+
   for (const type of SCHEMA_DERIVABLE_TYPES) {
     const spec = deriveSpecFromSchema(type);
+
     if (spec) {
       specs[type] = spec;
     }
   }
+
   return specs;
 }
 
