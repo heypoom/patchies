@@ -10,6 +10,7 @@ interface ChatSessionsState {
   sessions: ChatSession[];
   activeId: string;
   counter: number;
+  drafts?: Record<string, string>;
 }
 
 const STORAGE_KEY = 'patchies:chat-sessions';
@@ -71,7 +72,10 @@ function createChatSessionsStore() {
         const sessions = s.sessions.filter((sess) => sess.id !== id);
         const activeId = s.activeId === id ? sessions[Math.max(0, idx - 1)].id : s.activeId;
 
-        return { ...s, sessions, activeId };
+        const drafts = { ...s.drafts };
+        delete drafts[id];
+
+        return { ...s, sessions, activeId, drafts };
       });
     },
 
@@ -83,6 +87,30 @@ function createChatSessionsStore() {
         ...s,
         sessions: s.sessions.map((sess) => (sess.id === id ? { ...sess, name: trimmed } : sess))
       }));
+    },
+
+    getDraft(sessionId: string): string {
+      let draft = '';
+
+      subscribe((s) => {
+        draft = s.drafts?.[sessionId] ?? '';
+      })();
+
+      return draft;
+    },
+
+    setDraft(sessionId: string, text: string) {
+      update((s) => {
+        const drafts = { ...s.drafts };
+
+        if (text) {
+          drafts[sessionId] = text;
+        } else {
+          delete drafts[sessionId];
+        }
+
+        return { ...s, drafts };
+      });
     }
   };
 }
