@@ -6,8 +6,7 @@
     Settings,
     Square,
     Trash2,
-    X,
-    Zap
+    X
   } from '@lucide/svelte/icons';
   import { compressImageFile } from '$lib/ai/google';
   import { match } from 'ts-pattern';
@@ -569,7 +568,18 @@
 
   <!-- Settings panel -->
   {#if settingsPanelOpen}
-    <div class="border-t border-zinc-800 bg-zinc-900/60 px-3 py-2">
+    <div class="flex flex-col gap-1.5 border-t border-zinc-800 bg-zinc-900/60 px-3 py-2">
+      {#if aiCallbacks}
+        <label class="flex cursor-pointer items-center gap-2 font-mono text-[10px] text-zinc-400">
+          <input
+            type="checkbox"
+            bind:checked={autoApprove}
+            class="cursor-pointer accent-purple-500"
+          />
+          Auto-approve actions
+        </label>
+      {/if}
+
       <label class="flex cursor-pointer items-center gap-2 font-mono text-[10px] text-zinc-400">
         <input
           type="checkbox"
@@ -649,19 +659,6 @@
       </div>
 
       <div class="flex items-center gap-1.5">
-        {#if aiCallbacks}
-          <button
-            onclick={() => (autoApprove = !autoApprove)}
-            class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 font-mono text-[10px] transition-colors {autoApprove
-              ? 'bg-purple-900/50 text-purple-400'
-              : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
-            title={autoApprove ? 'Auto-approve on' : 'Auto-approve off'}
-          >
-            <Zap class="h-3 w-3" />
-            Auto
-          </button>
-        {/if}
-
         {#if messages.length > 0 && !isLoading}
           <button
             onclick={handleClear}
