@@ -318,6 +318,128 @@ export const EVAL_CASES: EvalCase[] = [
     prompt: 'strudel to sampler~ audio output to out~',
     category: 'mixed',
     expectedTypes: ['strudel', 'sampler~', 'out~']
+  },
+
+  // === Uncovered node types ===
+  {
+    id: 'msg-knob-to-js',
+    prompt: 'knob connected to js node',
+    category: 'message',
+    expectedTypes: ['knob', 'js']
+  },
+  {
+    id: 'msg-textbox-to-label',
+    prompt: 'textbox connected to a label',
+    category: 'message',
+    expectedTypes: ['textbox', 'label']
+  },
+  {
+    id: 'audio-soundfile-to-out',
+    prompt: 'soundfile~ playing audio to out~',
+    category: 'audio',
+    expectedTypes: ['soundfile~', 'out~']
+  },
+  {
+    id: 'audio-scope-visualizer',
+    prompt: 'osc~ connected to out~ and also to scope~ for visualization',
+    category: 'audio',
+    expectedTypes: ['object', 'scope~']
+  },
+  {
+    id: 'msg-worker-to-label',
+    prompt: 'worker node output connected to label',
+    category: 'message',
+    expectedTypes: ['worker', 'label']
+  },
+  {
+    id: 'video-three-to-bgout',
+    prompt: 'three.js scene with video output to bg.out',
+    category: 'video',
+    expectedTypes: ['three', 'bg.out']
+  },
+  {
+    id: 'video-three-dom-to-bgout',
+    prompt: 'three.dom node with video output to bg.out',
+    category: 'video',
+    expectedTypes: ['three.dom', 'bg.out']
+  },
+  {
+    id: 'msg-dom-to-label',
+    prompt: 'dom node output connected to label',
+    category: 'message',
+    expectedTypes: ['dom', 'label']
+  },
+  {
+    id: 'msg-vue-to-label',
+    prompt: 'vue node output connected to label',
+    category: 'message',
+    expectedTypes: ['vue', 'label']
+  },
+  {
+    id: 'audio-expr-tilde-to-out',
+    prompt: 'expr~ audio expression node connected to out~',
+    category: 'audio',
+    expectedTypes: ['expr~', 'out~']
+  },
+  {
+    id: 'msg-markdown-display',
+    prompt: 'js node output to markdown node for display',
+    category: 'message',
+    expectedTypes: ['js', 'markdown']
+  },
+  {
+    id: 'msg-iframe-control',
+    prompt: 'button connected to iframe node',
+    category: 'message',
+    expectedTypes: ['button', 'iframe']
+  },
+  {
+    id: 'ai-music-to-out',
+    prompt: 'button triggering ai.music, ai.music audio to out~',
+    category: 'mixed',
+    expectedTypes: ['button', 'ai.music', 'out~']
+  },
+  {
+    id: 'msg-stt-standalone',
+    prompt: 'stt (speech to text) output to label',
+    category: 'message',
+    expectedTypes: ['stt', 'label']
+  },
+  {
+    id: 'msg-tts-standalone',
+    prompt: 'button triggering tts (text to speech)',
+    category: 'message',
+    expectedTypes: ['button', 'tts']
+  },
+  {
+    id: 'video-screen-to-glsl',
+    prompt: 'screen capture feeding into glsl shader',
+    category: 'video',
+    expectedTypes: ['screen', 'glsl']
+  },
+  {
+    id: 'msg-midi-in-to-js',
+    prompt: 'midi.in receiving MIDI data connected to js node',
+    category: 'message',
+    expectedTypes: ['midi.in', 'js']
+  },
+  {
+    id: 'msg-js-to-midi-out',
+    prompt: 'js node sending MIDI messages to midi.out',
+    category: 'message',
+    expectedTypes: ['js', 'midi.out']
+  },
+  {
+    id: 'msg-js-to-netsend',
+    prompt: 'js node connected to netsend for network output',
+    category: 'message',
+    expectedTypes: ['js', 'netsend']
+  },
+  {
+    id: 'msg-netrecv-to-label',
+    prompt: 'netrecv receiving network data to label',
+    category: 'message',
+    expectedTypes: ['netrecv', 'label']
   }
 ];
 
