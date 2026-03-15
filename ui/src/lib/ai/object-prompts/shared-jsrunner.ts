@@ -74,6 +74,7 @@ export const jsRunnerInstructions = `
 - settings.onChange((key, value, all) => {}) - react to user changes in real time
 - Each field: { key, label, type, default?, persistence?: 'node'|'kv'|'none', ...type-specific }
 - Schema field types: slider, number, boolean, string, select, color
+- slider: requires min, max. Add step for float precision (e.g. step: 0.01 for 2 decimal places; omitting step defaults to integer steps)
 - For full settings docs call get_doc_content({ kind: 'topic', slug: 'object-settings' })
 `.trim();
 
