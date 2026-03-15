@@ -17,10 +17,6 @@ Strudel live music coding based on TidalCycles.
 
 ${messagingInstructions}
 
-**Handle IDs:**
-- Audio outlet: "audio-out"
-- Message ports: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
-
 Example - Drum pattern:
 \`\`\`json
 {

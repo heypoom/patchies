@@ -26,10 +26,6 @@ ${fftInstructions}
 
 ${patcherLibraryInstructions}
 
-**Handle IDs:**
-- Video outlet: "video-out"
-- Message ports via setPortCount: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
-
 Example:
 \`\`\`json
 {

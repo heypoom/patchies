@@ -22,10 +22,6 @@ ${patcherLibraryInstructions}
 - See SuperSonic docs: https://github.com/samaaron/supersonic
 - See scsynth OSC ref: http://doc.sccode.org/Reference/Server-Command-Reference.html
 
-**Handle IDs:**
-- Audio outlet: "audio-out"
-- Message ports: "message-in-0"..."message-in-n", "message-out-0"..."message-out-m"
-
 Example:
 \`\`\`json
 {

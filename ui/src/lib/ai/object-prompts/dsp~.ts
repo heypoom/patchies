@@ -16,11 +16,6 @@ Low-level DSP audio processing. MUST implement process(inputs, outputs) function
 - counter, sampleRate, currentFrame, currentTime
 - $1-$9: dynamic numeric inlets
 
-**Handle IDs:**
-- IMPORTANT: When there is exactly 1 audio inlet, the handle is "audio-in" (NO index). When there are multiple, use "audio-in-0", "audio-in-1", etc. Same rule for audio outlets: 1 outlet → "audio-out", multiple → "audio-out-0", "audio-out-1".
-- Message handles always have an index: "message-in-0", "message-out-0", etc.
-- $1-$9 control inlets use message handles: "message-in-0" for $1, "message-in-1" for $2, etc.
-
 Example - White noise (1 audio output → handle is "audio-out", not "audio-out-0"):
 \`\`\`json
 {
