@@ -443,15 +443,20 @@ function matchHandleToSpec(
 }
 
 function matchDynamicPattern(handle: string, pattern: string): boolean {
-  // Replace {N}, {index}, {uniformName}, {uniformType} etc with regex
-  const regexStr = pattern
-    .replace(/\{[^}]+\}/g, '[\\w.-]+')
-    .replace(/[.*+?^${}()|[\]\\]/g, (m) => (m === '[' || m === ']' ? m : `\\${m}`));
+  // Split pattern into literal parts and placeholders, escape literals first,
+  // then join with regex groups for placeholders
+  const parts = pattern.split(/\{[^}]+\}/);
+  const escapedParts = parts.map((p) => escapeRegex(p));
+  const regexStr = escapedParts.join('[\\w.-]+');
+
+  // If pattern had no placeholders, check the whole thing matches literally
+  if (parts.length === 1) return handle === pattern;
 
   try {
     return new RegExp(`^${regexStr}$`).test(handle);
   } catch {
-    // Fallback: exact match
     return handle === pattern;
   }
 }
+
+const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
