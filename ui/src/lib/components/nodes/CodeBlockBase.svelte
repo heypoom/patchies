@@ -251,7 +251,11 @@
           {#if settingsSchema && settingsSchema.length > 0}
             <button
               class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-              onclick={() => (showSettings = !showSettings)}
+              onclick={() => {
+                showSettings = !showSettings;
+
+                if (showSettings) showEditor = false;
+              }}
               title="Settings"
             >
               <Settings class="h-4 w-4 text-zinc-300" />
@@ -260,7 +264,11 @@
 
           <button
             class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-            onclick={toggleEditor}
+            onclick={() => {
+              toggleEditor();
+
+              if (showEditor) showSettings = false;
+            }}
             title="Edit code"
           >
             <Code class="h-4 w-4 text-zinc-300" />
