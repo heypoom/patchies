@@ -9,6 +9,7 @@ import { objectSchemas } from '$lib/objects/schemas';
 import { fetchTopicHelp } from '$lib/docs/fetch-topic-help';
 import { fetchObjectHelp } from '$lib/objects/fetch-object-help';
 import { validateEdgeHandles } from '../validate-edge-handles';
+import { generateHandleDocs } from '../generate-handle-docs';
 import {
   SYSTEM_PROMPT,
   CONTEXT_TOOL_NAMES,
@@ -431,10 +432,14 @@ export async function streamChatMessage(
         const type = (functionCall.args?.type as string) ?? '';
         const instructions =
           getObjectSpecificInstructions(type) || `No specific instructions found for "${type}".`;
+        const handleDocs = generateHandleDocs([type]);
         return {
           functionResponse: {
             name: GET_OBJECT_INSTRUCTIONS,
-            response: { instructions }
+            response: {
+              instructions,
+              ...(handleDocs ? { handleReference: handleDocs } : {})
+            }
           }
         };
       })
