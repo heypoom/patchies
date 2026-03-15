@@ -686,7 +686,10 @@
           title={activePersona ? `Persona: ${activePersona.name}` : 'Set persona'}
         >
           <BotMessageSquare class="h-3 w-3" />
-          {activePersona ? activePersona.name : 'Persona'}
+
+          {#if activePersona}
+            {activePersona.name}
+          {/if}
         </button>
 
         <button
