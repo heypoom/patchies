@@ -105,7 +105,9 @@
             // secondary output screen
             document.querySelector('canvas#output') ||
             // documentation (/docs/)
-            document.querySelector('.patchies-docs');
+            document.querySelector('.patchies-docs') ||
+            // debug pages (/debug/)
+            document.querySelector('.debug-page');
 
           if (flowContainer) {
             // Patcher UI is mounted, hide loader after brief delay

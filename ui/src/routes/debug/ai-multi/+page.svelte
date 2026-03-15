@@ -177,7 +177,7 @@
   }
 </script>
 
-<div class="min-h-screen bg-zinc-950 p-6 font-mono text-zinc-200">
+<div class="debug-page min-h-screen bg-zinc-950 p-6 font-mono text-zinc-200">
   <div class="mx-auto max-w-6xl space-y-6">
     <header>
       <h1 class="text-2xl font-bold text-zinc-100">Multi-Object AI Debug</h1>
