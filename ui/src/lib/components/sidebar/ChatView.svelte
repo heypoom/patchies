@@ -7,8 +7,10 @@
     Settings,
     Square,
     Trash2,
-    X
+    X,
+    Zap
   } from '@lucide/svelte/icons';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import { compressImageFile } from '$lib/ai/google';
   import { match } from 'ts-pattern';
   import { logger } from '$lib/utils/logger';
@@ -594,17 +596,6 @@
   <!-- Settings panel -->
   {#if settingsPanelOpen}
     <div class="flex flex-col gap-1.5 border-t border-zinc-800 bg-zinc-900/60 px-3 py-2">
-      {#if aiCallbacks}
-        <label class="flex cursor-pointer items-center gap-2 font-mono text-[10px] text-zinc-400">
-          <input
-            type="checkbox"
-            bind:checked={autoApprove}
-            class="cursor-pointer accent-purple-500"
-          />
-          Auto-approve actions
-        </label>
-      {/if}
-
       <label class="flex cursor-pointer items-center gap-2 font-mono text-[10px] text-zinc-400">
         <input
           type="checkbox"
@@ -689,7 +680,7 @@
           onclick={() => (personaPanelOpen = !personaPanelOpen)}
           class="flex h-6 cursor-pointer items-center gap-1 rounded px-1.5 font-mono text-[10px] transition-colors {personaPanelOpen ||
           activePersona
-            ? 'bg-purple-900/50 text-purple-400'
+            ? 'bg-purple-900/50 text-purple-400 hover:bg-purple-900/80'
             : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
           title={activePersona ? `Persona: ${activePersona.name}` : 'Set persona'}
         >
@@ -699,6 +690,22 @@
             {activePersona.name}
           {/if}
         </button>
+
+        {#if aiCallbacks}
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={() => (autoApprove = !autoApprove)}
+                class="flex h-6 cursor-pointer items-center rounded px-1.5 transition-colors {autoApprove
+                  ? 'bg-yellow-900/50 text-yellow-400 hover:bg-yellow-900/80'
+                  : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
+              >
+                <Zap class="h-3 w-3" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Auto-approve actions</Tooltip.Content>
+          </Tooltip.Root>
+        {/if}
 
         <button
           onclick={() => (settingsPanelOpen = !settingsPanelOpen)}
