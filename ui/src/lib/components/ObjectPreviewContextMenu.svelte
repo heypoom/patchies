@@ -1,0 +1,114 @@
+<script lang="ts">
+  import {
+    CircleHelp,
+    Eye,
+    EyeOff,
+    Monitor,
+    MonitorOff,
+    Pin,
+    PinOff,
+    Play,
+    Settings
+  } from '@lucide/svelte/icons';
+  import * as ContextMenu from './ui/context-menu';
+  import type { SettingsSchema } from '$lib/settings';
+
+  let {
+    onrun,
+    showBgOutputOption,
+    nodeId,
+    isOutputOverride,
+    showPauseButton,
+    canPin,
+    paused,
+    onPreviewToggle,
+    previewVisible,
+    settingsSchema,
+    showSettings,
+    onSettingsToggle,
+    onBgOutputToggle,
+    onPlaybackToggle,
+    onOpenHelp
+  }: {
+    onrun?: () => void;
+    showBgOutputOption: boolean;
+    nodeId?: string;
+    isOutputOverride: boolean;
+    showPauseButton: boolean;
+    canPin: boolean;
+    paused: boolean;
+    onPreviewToggle?: () => void;
+    previewVisible: boolean;
+    settingsSchema?: SettingsSchema;
+    showSettings: boolean;
+    onSettingsToggle: () => void;
+    onBgOutputToggle: () => void;
+    onPlaybackToggle: () => void;
+    onOpenHelp: () => void;
+  } = $props();
+</script>
+
+<ContextMenu.Content>
+  {#if onrun}
+    <ContextMenu.Item onclick={onrun}>
+      <Play class="mr-2 h-4 w-4" />
+      Run
+    </ContextMenu.Item>
+
+    <ContextMenu.Separator />
+  {/if}
+
+  {#if showBgOutputOption && nodeId !== undefined}
+    <ContextMenu.Item onclick={onBgOutputToggle}>
+      {#if isOutputOverride}
+        <MonitorOff class="mr-2 h-4 w-4 text-orange-400" />
+        Remove background output
+      {:else}
+        <Monitor class="mr-2 h-4 w-4" />
+        Output to background
+      {/if}
+    </ContextMenu.Item>
+    <ContextMenu.Separator />
+  {/if}
+
+  {#if showPauseButton}
+    <ContextMenu.Item onclick={onPlaybackToggle} disabled={!canPin && !paused}>
+      {#if paused}
+        <PinOff class="mr-2 h-4 w-4 text-red-400" />
+        Unfreeze frame
+      {:else}
+        <Pin class="mr-2 h-4 w-4" />
+        Freeze frame
+      {/if}
+    </ContextMenu.Item>
+  {/if}
+
+  {#if onPreviewToggle}
+    <ContextMenu.Item onclick={onPreviewToggle}>
+      {#if previewVisible}
+        <EyeOff class="mr-2 h-4 w-4" />
+        Hide preview
+      {:else}
+        <Eye class="mr-2 h-4 w-4" />
+        Show preview
+      {/if}
+    </ContextMenu.Item>
+  {/if}
+
+  {#if showPauseButton || onPreviewToggle}
+    <ContextMenu.Separator />
+  {/if}
+
+  {#if settingsSchema && settingsSchema.length > 0}
+    <ContextMenu.Item onclick={onSettingsToggle}>
+      <Settings class="mr-2 h-4 w-4" />
+      {showSettings ? 'Hide settings' : 'Show settings'}
+    </ContextMenu.Item>
+    <ContextMenu.Separator />
+  {/if}
+
+  <ContextMenu.Item onclick={onOpenHelp}>
+    <CircleHelp class="mr-2 h-4 w-4" />
+    Help
+  </ContextMenu.Item>
+</ContextMenu.Content>

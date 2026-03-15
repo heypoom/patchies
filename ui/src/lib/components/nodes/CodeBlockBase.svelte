@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { Code, Loader, Package, Pause, Play, Settings, Terminal, X } from '@lucide/svelte/icons';
-  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { Code, Loader, Package, Pause, Play, Terminal, X } from '@lucide/svelte/icons';
+  import CodeBlockOverflowMenu from './CodeBlockOverflowMenu.svelte';
+  import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -19,26 +20,35 @@
     id: nodeId,
     data,
     selected,
+
     // Execution handlers
     onExecute,
     onCleanup: onCleanupHandler,
     onCodeChange,
+
     // State from parent
     isRunning,
     isMessageCallbackActive,
     isTimerCallbackActive,
+
     // Library support (js only)
     supportsLibraries = false,
+
     // Custom label
     nodeLabel = 'js',
+
     // Language for code editor
     language = 'javascript',
+
     // Placeholder text for code editor
     editorPlaceholder = 'Write your code here...',
+
     // Node type for completions
     nodeType = 'js',
+
     // Video inlet count (optional, for worker nodes)
     videoInletCount = 0,
+
     // Settings panel (optional, for JSRunner-enabled nodes)
     settingsSchema = undefined,
     settingsValues = {},
@@ -50,7 +60,6 @@
       title?: string;
       code: string;
       showConsole?: boolean;
-      runOnMount?: boolean;
       inletCount?: number;
       outletCount?: number;
       libraryName?: string | null;
@@ -78,7 +87,6 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
-  const updateNodeInternals = useUpdateNodeInternals();
 
   let isLongRunningTaskActive = $derived(isMessageCallbackActive || isTimerCallbackActive);
   let inletCount = $derived(data.inletCount ?? 1);
@@ -211,6 +219,19 @@
     }
   }
 
+  function handleConsoleToggle() {
+    updateNodeData(nodeId, { showConsole: !data.showConsole });
+    setTimeout(() => updateContentWidth(), 10);
+  }
+
+  function handleSettingsToggle() {
+    showSettings = !showSettings;
+
+    if (showSettings) {
+      showEditor = false;
+    }
+  }
+
   let minContainerWidth = $derived.by(() => {
     const baseWidth = 70;
     let inletWidth = 15;
@@ -236,37 +257,29 @@
           class="flex items-center transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-hover/header:opacity-100"
         >
           {#if !(supportsLibraries && data.libraryName)}
-            <button
-              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-              onclick={() => {
-                updateNodeData(nodeId, { showConsole: !data.showConsole });
-                setTimeout(() => updateContentWidth(), 10);
-              }}
-              title="Console"
-            >
-              <Terminal class="h-4 w-4 text-zinc-300" />
-            </button>
-          {/if}
-
-          {#if settingsSchema && settingsSchema.length > 0}
-            <button
-              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-              onclick={() => {
-                showSettings = !showSettings;
-
-                if (showSettings) showEditor = false;
-              }}
-              title="Settings"
-            >
-              <Settings class="h-4 w-4 text-zinc-300" />
-            </button>
+            {#if settingsSchema && settingsSchema.length > 0}
+              <CodeBlockOverflowMenu
+                showConsole={data.showConsole ?? false}
+                {showSettings}
+                {settingsSchema}
+                onConsoleToggle={handleConsoleToggle}
+                onSettingsToggle={handleSettingsToggle}
+              />
+            {:else}
+              <button
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                onclick={handleConsoleToggle}
+                title="Console"
+              >
+                <Terminal class="h-4 w-4 text-zinc-300" />
+              </button>
+            {/if}
           {/if}
 
           <button
             class="cursor-pointer rounded p-1 hover:bg-zinc-700"
             onclick={() => {
               toggleEditor();
-
               if (showEditor) showSettings = false;
             }}
             title="Edit code"

@@ -1,23 +1,10 @@
 <script lang="ts">
-  import {
-    CircleHelp,
-    Code,
-    Ellipsis,
-    Eye,
-    EyeOff,
-    Monitor,
-    MonitorOff,
-    Pin,
-    PinOff,
-    Play,
-    Settings,
-    X,
-    Terminal
-  } from '@lucide/svelte/icons';
+  import { Code, Play, Terminal, X } from '@lucide/svelte/icons';
   import { onMount, type Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';
-  import * as Popover from './ui/popover';
   import * as ContextMenu from './ui/context-menu';
+  import ObjectPreviewOverflowMenu from './ObjectPreviewOverflowMenu.svelte';
+  import ObjectPreviewContextMenu from './ObjectPreviewContextMenu.svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
@@ -40,7 +27,6 @@
     paused = false,
     previewVisible = true,
     showPauseButton = false,
-    showConsoleButton = false,
     showBgOutputOption = false,
 
     topHandle,
@@ -65,7 +51,6 @@
     paused?: boolean;
     previewVisible?: boolean;
     showPauseButton?: boolean;
-    showConsoleButton?: boolean;
     showBgOutputOption?: boolean;
 
     topHandle?: Snippet;
@@ -171,105 +156,26 @@
             </div>
 
             <div class="flex gap-1">
-              <Popover.Root>
-                <Popover.Trigger>
-                  <button
-                    class="cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700 sm:opacity-0 sm:group-hover:opacity-100"
-                  >
-                    <Ellipsis class="h-4 w-4 text-zinc-300" />
-                  </button>
-                </Popover.Trigger>
-                <Popover.Content class="flex w-auto flex-col p-1" align="end" sideOffset={4}>
-                  {#if onrun}
-                    <Popover.Close class="contents">
-                      <button
-                        class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-                        onclick={handleRun}
-                      >
-                        <Play class="h-4 w-4 text-zinc-300" />
-                        <span>Run</span>
-                      </button>
-                    </Popover.Close>
-                  {/if}
-
-                  {#if settingsSchema && settingsSchema.length > 0}
-                    <Popover.Close class="contents">
-                      <button
-                        class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-                        onclick={() => {
-                          showSettings = !showSettings;
-                          if (showSettings) showEditor = false;
-                        }}
-                      >
-                        <Settings class="h-4 w-4 text-zinc-300" />
-                        <span>Settings</span>
-                      </button>
-                    </Popover.Close>
-                  {/if}
-
-                  {#if showBgOutputOption && nodeId !== undefined}
-                    <Popover.Close class="contents">
-                      <button
-                        class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-                        onclick={handleBgOutputToggle}
-                      >
-                        {#if isOutputOverride}
-                          <MonitorOff class="h-4 w-4 text-orange-400" />
-                          <span>Remove background output</span>
-                        {:else}
-                          <Monitor class="h-4 w-4 text-zinc-300" />
-                          <span>Output to background</span>
-                        {/if}
-                      </button>
-                    </Popover.Close>
-                  {/if}
-
-                  {#if showPauseButton}
-                    <Popover.Close class="contents">
-                      <button
-                        class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-                        onclick={handlePlaybackToggle}
-                        disabled={!canPin && !paused}
-                      >
-                        {#if paused}
-                          <PinOff class="h-4 w-4 text-red-400" />
-                          <span>Unfreeze frame</span>
-                        {:else}
-                          <Pin class="h-4 w-4 text-zinc-300" />
-                          <span>Freeze frame</span>
-                        {/if}
-                      </button>
-                    </Popover.Close>
-                  {/if}
-
-                  {#if onPreviewToggle}
-                    <Popover.Close class="contents">
-                      <button
-                        class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-                        onclick={handlePreviewToggle}
-                      >
-                        {#if previewVisible}
-                          <EyeOff class="h-4 w-4 text-zinc-300" />
-                          <span>Hide preview</span>
-                        {:else}
-                          <Eye class="h-4 w-4 text-zinc-300" />
-                          <span>Show preview</span>
-                        {/if}
-                      </button>
-                    </Popover.Close>
-                  {/if}
-
-                  <Popover.Close class="contents">
-                    <button
-                      class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-                      onclick={handleOpenHelp}
-                    >
-                      <CircleHelp class="h-4 w-4 text-zinc-300" />
-                      <span>Help</span>
-                    </button>
-                  </Popover.Close>
-                </Popover.Content>
-              </Popover.Root>
+              <ObjectPreviewOverflowMenu
+                onrun={onrun ? handleRun : undefined}
+                {settingsSchema}
+                {showSettings}
+                {showBgOutputOption}
+                {nodeId}
+                {isOutputOverride}
+                {showPauseButton}
+                {paused}
+                {canPin}
+                onPreviewToggle={onPreviewToggle ? handlePreviewToggle : undefined}
+                {previewVisible}
+                onSettingsToggle={() => {
+                  showSettings = !showSettings;
+                  if (showSettings) showEditor = false;
+                }}
+                onBgOutputToggle={handleBgOutputToggle}
+                onPlaybackToggle={handlePlaybackToggle}
+                onOpenHelp={handleOpenHelp}
+              />
 
               <Tooltip.Root>
                 <Tooltip.Trigger>
@@ -298,70 +204,26 @@
       </div>
     </ContextMenu.Trigger>
 
-    <ContextMenu.Content>
-      {#if onrun}
-        <ContextMenu.Item onclick={handleRun}>
-          <Play class="mr-2 h-4 w-4" />
-          Run
-        </ContextMenu.Item>
-
-        <ContextMenu.Separator />
-      {/if}
-
-      {#if showBgOutputOption && nodeId !== undefined}
-        <ContextMenu.Item onclick={handleBgOutputToggle}>
-          {#if isOutputOverride}
-            <MonitorOff class="mr-2 h-4 w-4 text-orange-400" />
-            Remove background output
-          {:else}
-            <Monitor class="mr-2 h-4 w-4" />
-            Output to background
-          {/if}
-        </ContextMenu.Item>
-        <ContextMenu.Separator />
-      {/if}
-      {#if showPauseButton}
-        <ContextMenu.Item onclick={handlePlaybackToggle} disabled={!canPin && !paused}>
-          {#if paused}
-            <PinOff class="mr-2 h-4 w-4 text-red-400" />
-            Unfreeze frame
-          {:else}
-            <Pin class="mr-2 h-4 w-4" />
-            Freeze frame
-          {/if}
-        </ContextMenu.Item>
-      {/if}
-      {#if onPreviewToggle}
-        <ContextMenu.Item onclick={handlePreviewToggle}>
-          {#if previewVisible}
-            <EyeOff class="mr-2 h-4 w-4" />
-            Hide preview
-          {:else}
-            <Eye class="mr-2 h-4 w-4" />
-            Show preview
-          {/if}
-        </ContextMenu.Item>
-      {/if}
-      {#if showPauseButton || onPreviewToggle}
-        <ContextMenu.Separator />
-      {/if}
-      {#if settingsSchema && settingsSchema.length > 0}
-        <ContextMenu.Item
-          onclick={() => {
-            showSettings = !showSettings;
-            if (showSettings) showEditor = false;
-          }}
-        >
-          <Settings class="mr-2 h-4 w-4" />
-          Settings
-        </ContextMenu.Item>
-        <ContextMenu.Separator />
-      {/if}
-      <ContextMenu.Item onclick={handleOpenHelp}>
-        <CircleHelp class="mr-2 h-4 w-4" />
-        Help
-      </ContextMenu.Item>
-    </ContextMenu.Content>
+    <ObjectPreviewContextMenu
+      onrun={onrun ? handleRun : undefined}
+      {showBgOutputOption}
+      {nodeId}
+      {isOutputOverride}
+      {showPauseButton}
+      {canPin}
+      {paused}
+      onPreviewToggle={onPreviewToggle ? handlePreviewToggle : undefined}
+      {previewVisible}
+      {settingsSchema}
+      {showSettings}
+      onSettingsToggle={() => {
+        showSettings = !showSettings;
+        if (showSettings) showEditor = false;
+      }}
+      onBgOutputToggle={handleBgOutputToggle}
+      onPlaybackToggle={handlePlaybackToggle}
+      onOpenHelp={handleOpenHelp}
+    />
   </ContextMenu.Root>
 
   {#if showSettings && settingsSchema && settingsSchema.length > 0}

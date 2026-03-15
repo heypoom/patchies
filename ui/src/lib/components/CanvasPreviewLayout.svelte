@@ -15,7 +15,6 @@
     paused = false,
     previewVisible = true,
     showPauseButton = false,
-    showConsoleButton = false,
     previewCanvas = $bindable<HTMLCanvasElement>(),
     nodrag = false,
     nopan = false,
@@ -49,7 +48,6 @@
     paused?: boolean;
     previewVisible?: boolean;
     showPauseButton?: boolean;
-    showConsoleButton?: boolean;
     previewCanvas?: HTMLCanvasElement;
     nodrag?: boolean;
     nopan?: boolean;
@@ -95,7 +93,6 @@
   {paused}
   {previewVisible}
   {showPauseButton}
-  {showConsoleButton}
   showBgOutputOption
   {topHandle}
   {bottomHandle}
