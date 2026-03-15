@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code, Loader, Package, Pause, Play, Terminal, X } from '@lucide/svelte/icons';
+  import { Code, Loader, Package, Pause, Play, Settings, Terminal, X } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
@@ -8,6 +8,8 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import type { SupportedLanguage } from '$lib/codemirror/types';
+  import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
+  import type { SettingsSchema } from '$lib/settings';
 
   let contentContainer: HTMLDivElement | null = null;
   let consoleRef: VirtualConsole | null = $state(null);
@@ -36,7 +38,12 @@
     // Node type for completions
     nodeType = 'js',
     // Video inlet count (optional, for worker nodes)
-    videoInletCount = 0
+    videoInletCount = 0,
+    // Settings panel (optional, for JSRunner-enabled nodes)
+    settingsSchema = undefined,
+    settingsValues = {},
+    onSettingsValueChange = undefined,
+    onSettingsRevertAll = undefined
   }: {
     id: string;
     data: {
@@ -64,6 +71,10 @@
     editorPlaceholder?: string;
     nodeType?: string;
     videoInletCount?: number;
+    settingsSchema?: SettingsSchema;
+    settingsValues?: Record<string, unknown>;
+    onSettingsValueChange?: (key: string, value: unknown) => void;
+    onSettingsRevertAll?: () => void;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
@@ -74,6 +85,7 @@
   let outletCount = $derived(data.outletCount ?? 1);
 
   let showEditor = $state(false);
+  let showSettings = $state(false);
   let contentWidth = $state(100);
   let isFlashing = $state(false);
 
@@ -225,7 +237,7 @@
         >
           {#if !(supportsLibraries && data.libraryName)}
             <button
-              class="rounded p-1 hover:bg-zinc-700"
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
               onclick={() => {
                 updateNodeData(nodeId, { showConsole: !data.showConsole });
                 setTimeout(() => updateContentWidth(), 10);
@@ -236,7 +248,21 @@
             </button>
           {/if}
 
-          <button class="rounded p-1 hover:bg-zinc-700" onclick={toggleEditor} title="Edit code">
+          {#if settingsSchema && settingsSchema.length > 0}
+            <button
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              onclick={() => (showSettings = !showSettings)}
+              title="Settings"
+            >
+              <Settings class="h-4 w-4 text-zinc-300" />
+            </button>
+          {/if}
+
+          <button
+            class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+            onclick={toggleEditor}
+            title="Edit code"
+          >
             <Code class="h-4 w-4 text-zinc-300" />
           </button>
         </div>
@@ -350,7 +376,10 @@
   {#if showEditor}
     <div class="absolute" style="left: {contentWidth + 10}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
+        <button
+          onclick={() => (showEditor = false)}
+          class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+        >
           <X class="h-4 w-4 text-zinc-300" />
         </button>
       </div>
@@ -373,6 +402,19 @@
           {nodeId}
         />
       </div>
+    </div>
+  {/if}
+
+  {#if showSettings && settingsSchema && settingsSchema.length > 0}
+    <div class="absolute top-0" style="left: {contentWidth + 10}px">
+      <ObjectSettings
+        {nodeId}
+        schema={settingsSchema}
+        values={settingsValues}
+        onValueChange={(key, value) => onSettingsValueChange?.(key, value)}
+        onRevertAll={() => onSettingsRevertAll?.()}
+        onClose={() => (showSettings = false)}
+      />
     </div>
   {/if}
 </div>
