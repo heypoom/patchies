@@ -90,7 +90,9 @@
       </div>
 
       <!-- Tab content -->
-      <div class="pb-safe flex min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+      <div
+        class="flex min-h-0 flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+      >
         {#if activeTab === 'about'}
           <AboutTab setTab={(tab) => (activeTab = tab)} />
         {:else if activeTab === 'demos'}
