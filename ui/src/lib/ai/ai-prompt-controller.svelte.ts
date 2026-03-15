@@ -78,9 +78,17 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
         break;
       case 'connect-edges':
         callbacks.onConnectEdges(result.edges);
-        toast.success(
-          `Connected ${result.edges.length} edge${result.edges.length === 1 ? '' : 's'}`
-        );
+        if (result.edges.length > 0) {
+          toast.success(
+            `Connected ${result.edges.length} edge${result.edges.length === 1 ? '' : 's'}`
+          );
+        }
+        if (result.invalidEdges && result.invalidEdges.length > 0) {
+          toast.warning(
+            `${result.invalidEdges.length} edge${result.invalidEdges.length === 1 ? '' : 's'} had invalid handles and ${result.invalidEdges.length === 1 ? 'was' : 'were'} skipped`,
+            { description: 'You may need to connect some edges manually.' }
+          );
+        }
         break;
     }
   }

@@ -144,7 +144,16 @@
       .with({ kind: 'replace' }, (r) =>
         aiCallbacks!.onReplaceObject(r.nodeId, r.newType, r.newData)
       )
-      .with({ kind: 'connect-edges' }, (r) => aiCallbacks!.onConnectEdges(r.edges))
+      .with({ kind: 'connect-edges' }, (r) => {
+        aiCallbacks!.onConnectEdges(r.edges);
+        if (r.invalidEdges && r.invalidEdges.length > 0) {
+          const n = r.invalidEdges.length;
+          toast.warning(
+            `${n} edge${n === 1 ? '' : 's'} had invalid handles and ${n === 1 ? 'was' : 'were'} skipped`,
+            { description: 'You may need to connect some edges manually.' }
+          );
+        }
+      })
       .exhaustive();
 
     updateActionState(action.id, 'applied');
