@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
-import { msg } from './helpers';
+import { msg, sym } from './helpers';
 import { Bang, Run, messages, SetCode } from './common';
 
 // Strudel-specific message schemas
@@ -10,6 +10,8 @@ const SetFontFamily = msg('setFontFamily', { value: Type.String() });
 const SetStyles = msg('setStyles', {
   value: Type.Object({ container: Type.Optional(Type.String()) })
 });
+const Mute = sym('mute');
+const Unmute = sym('unmute');
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const strudelMessages = {
@@ -17,7 +19,9 @@ export const strudelMessages = {
   string: schema(Type.String()),
   setFontSize: schema(SetFontSize),
   setFontFamily: schema(SetFontFamily),
-  setStyles: schema(SetStyles)
+  setStyles: schema(SetStyles),
+  mute: schema(Mute),
+  unmute: schema(Unmute)
 };
 
 /**
@@ -39,7 +43,9 @@ export const strudelSchema: ObjectSchema = {
         { schema: SetCode, description: 'Set the code in the editor' },
         { schema: SetFontSize, description: 'Set editor font size' },
         { schema: SetFontFamily, description: 'Set editor font family' },
-        { schema: SetStyles, description: 'Set custom styles for editor container' }
+        { schema: SetStyles, description: 'Set custom styles for editor container' },
+        { schema: Mute, description: 'Silence audio output' },
+        { schema: Unmute, description: 'Restore audio output after mute' }
       ]
     }
   ],

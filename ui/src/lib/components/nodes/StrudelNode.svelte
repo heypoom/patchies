@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Ellipsis, Link, Play, Square, Terminal } from '@lucide/svelte/icons';
+  import { Ellipsis, Link, Play, Square, Terminal, VolumeX } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -13,6 +13,7 @@
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import { useNodeDataTracker } from '$lib/history';
   import { StrudelTransportSync } from '$lib/strudel/StrudelTransportSync';
+  import { AudioService } from '$lib/audio/v2/AudioService';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as Popover from '$lib/components/ui/popover';
 
@@ -28,6 +29,7 @@
       fontSize?: number;
       showConsole?: boolean;
       syncTransport?: boolean;
+      muted?: boolean;
       styles?: Record<string, any>;
     };
   } = $props();
@@ -76,7 +78,9 @@
           strudelEditor?.editor?.setFontSize(value);
           updateNodeData(nodeId, { fontSize: value });
         })
-        .with(strudelMessages.stop, stop);
+        .with(strudelMessages.stop, stop)
+        .with(strudelMessages.mute, () => setMuted(true))
+        .with(strudelMessages.unmute, () => setMuted(false));
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
 
@@ -204,6 +208,7 @@
 
   const consoleLeftPos = $derived(editorContainerWidth + consoleGap);
   const syncTransport = $derived(data.syncTransport ?? false);
+  const muted = $derived(data.muted ?? false);
   const tracker = useNodeDataTracker(nodeId);
 
   function setSyncTransport(value: boolean) {
@@ -211,6 +216,22 @@
     updateNodeData(nodeId, { syncTransport: value });
     tracker.commit('syncTransport', oldValue, value);
   }
+
+  function setMuted(value: boolean) {
+    const oldValue = muted;
+    updateNodeData(nodeId, { muted: value });
+    tracker.commit('muted', oldValue, value);
+  }
+
+  // Apply mute to the gain node
+  $effect(() => {
+    const audioService = AudioService.getInstance();
+    const gainNode = audioService.getNodeById(nodeId);
+
+    if (gainNode?.audioNode && 'gain' in gainNode.audioNode) {
+      (gainNode.audioNode as GainNode).gain.value = muted ? 0 : 1;
+    }
+  });
 
   // Transport sync (CPS, phase, play/pause/stop)
   let transportSync: StrudelTransportSync | null = null;
@@ -299,6 +320,20 @@
                 <Link class={['h-4 w-4', syncTransport && 'text-blue-400']} />
                 {syncTransport ? 'Unsync Transport' : 'Sync to Transport'}
               </button>
+
+              <button
+                class={[
+                  'flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-zinc-700',
+                  muted ? 'text-red-400' : 'text-zinc-300'
+                ]}
+                onclick={() => {
+                  setMuted(!muted);
+                  menuOpen = false;
+                }}
+              >
+                <VolumeX class="h-4 w-4" />
+                {muted ? 'Unmute' : 'Mute'}
+              </button>
             </Popover.Content>
           </Popover.Root>
         </div>
@@ -316,8 +351,9 @@
         <div
           bind:this={editorContainer}
           class={[
-            'nodrag nopan flex w-full items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 p-1',
-            hasError ? 'border-red-500' : 'border-transparent'
+            'nodrag nopan flex w-full items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 p-1 transition-opacity',
+            hasError ? 'border-red-500' : 'border-transparent',
+            muted ? 'opacity-40' : 'opacity-100'
           ]}
           style={data.styles?.container}
         >
