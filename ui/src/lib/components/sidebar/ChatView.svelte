@@ -3,6 +3,7 @@
     BotMessageSquare,
     MessageSquare,
     Send,
+    Settings,
     Square,
     Trash2,
     X,
@@ -34,6 +35,7 @@
     deleteChatMessages
   } from '../../../stores/chat-history.store';
   import { getDraft, setDraft } from '../../../stores/chat-sessions.store';
+  import { chatSettingsStore } from '../../../stores/chat-settings.store';
   import type { ThreadMessage, StagedImage, ThreadActionRef } from '$lib/ai/chat/types';
 
   let {
@@ -79,6 +81,7 @@
   let messagesEl: HTMLDivElement | undefined = $state();
   let stagedImages = $state<StagedImage[]>([]);
   let personaPanelOpen = $state(false);
+  let settingsPanelOpen = $state(false);
   let addingCustom = $state(false);
   let newPersonaName = $state('');
   let newPersonaPrompt = $state('');
@@ -429,7 +432,7 @@
 
         <div class="min-w-0 flex-1">
           {#if thinkingText}
-            <details open>
+            <details open={$chatSettingsStore.expandThinking}>
               <summary
                 class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
               >
@@ -564,6 +567,21 @@
     </div>
   {/if}
 
+  <!-- Settings panel -->
+  {#if settingsPanelOpen}
+    <div class="border-t border-zinc-800 bg-zinc-900/60 px-3 py-2">
+      <label class="flex cursor-pointer items-center gap-2 font-mono text-[10px] text-zinc-400">
+        <input
+          type="checkbox"
+          checked={$chatSettingsStore.expandThinking}
+          onchange={() => chatSettingsStore.toggleExpandThinking()}
+          class="cursor-pointer accent-purple-500"
+        />
+        Auto-expand thinking
+      </label>
+    </div>
+  {/if}
+
   <!-- Input area -->
   <div>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -606,17 +624,29 @@
       class="mx-2.5 flex items-center justify-between"
       style="padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px))"
     >
-      <button
-        onclick={() => (personaPanelOpen = !personaPanelOpen)}
-        class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 font-mono text-[10px] transition-colors {personaPanelOpen ||
-        activePersona
-          ? 'bg-purple-900/50 text-purple-400'
-          : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
-        title={activePersona ? `Persona: ${activePersona.name}` : 'Set persona'}
-      >
-        <BotMessageSquare class="h-3 w-3" />
-        {activePersona ? activePersona.name : 'Persona'}
-      </button>
+      <div class="flex items-center gap-1">
+        <button
+          onclick={() => (personaPanelOpen = !personaPanelOpen)}
+          class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 font-mono text-[10px] transition-colors {personaPanelOpen ||
+          activePersona
+            ? 'bg-purple-900/50 text-purple-400'
+            : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
+          title={activePersona ? `Persona: ${activePersona.name}` : 'Set persona'}
+        >
+          <BotMessageSquare class="h-3 w-3" />
+          {activePersona ? activePersona.name : 'Persona'}
+        </button>
+
+        <button
+          onclick={() => (settingsPanelOpen = !settingsPanelOpen)}
+          class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 font-mono text-[10px] transition-colors {settingsPanelOpen
+            ? 'bg-zinc-700 text-zinc-300'
+            : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
+          title="Chat settings"
+        >
+          <Settings class="h-3 w-3" />
+        </button>
+      </div>
 
       <div class="flex items-center gap-1.5">
         {#if aiCallbacks}
