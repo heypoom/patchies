@@ -1366,7 +1366,7 @@
     {/if}
 
     <!-- Toast Notifications -->
-    <Toaster position="top-center" />
+    <Toaster position="top-center" offset={{ top: 'env(safe-area-inset-top, 32px)' }} />
 
     <!-- Gemini API Key Missing Dialog -->
     <GeminiApiKeyDialog
