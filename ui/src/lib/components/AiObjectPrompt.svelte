@@ -45,7 +45,8 @@
     onInsertObject,
     onInsertMultipleObjects: onInsertMultipleObjects ?? (() => {}),
     onEditObject: onEditObject ?? (() => {}),
-    onReplaceObject: onReplaceObject ?? (() => {})
+    onReplaceObject: onReplaceObject ?? (() => {}),
+    onConnectEdges: () => {}
   });
 
   // ── UI-only state ─────────────────────────────────────────────────────────

@@ -182,6 +182,18 @@ export class AiOperationsService {
   }
 
   /**
+   * Connect existing nodes by adding edges.
+   * Recorded as a single undoable entry.
+   */
+  connectEdges(edges: Edge[]): void {
+    if (edges.length === 0) return;
+
+    this.ctx.edges = [...this.ctx.edges, ...edges];
+
+    this.ctx.historyManager.record(new AddEdgesCommand(edges, this.ctx.canvasAccessors));
+  }
+
+  /**
    * Check if Gemini API key exists in localStorage.
    */
   hasApiKey(): boolean {

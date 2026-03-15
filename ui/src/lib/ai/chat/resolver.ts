@@ -1,5 +1,4 @@
 import { getObjectSpecificInstructions } from '../object-descriptions';
-import { OBJECT_TYPE_LIST } from '../object-descriptions-types';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from '../object-prompts/shared-jsrunner';
 import { buildCanvasToolDeclarations, toolNameToMode } from './canvas-tools';
 import { runModeResolver } from '../modes/run-resolver';
@@ -9,6 +8,18 @@ import { topicMetas } from '$lib/docs/topic-index';
 import { objectSchemas } from '$lib/objects/schemas';
 import { fetchTopicHelp } from '$lib/docs/fetch-topic-help';
 import { fetchObjectHelp } from '$lib/objects/fetch-object-help';
+import {
+  SYSTEM_PROMPT,
+  CONTEXT_TOOL_NAMES,
+  CONNECT_EDGES,
+  GET_OBJECT_INSTRUCTIONS,
+  GET_GRAPH_NODES,
+  GET_NODE_DATA,
+  SEARCH_DOCS,
+  GET_DOC_CONTENT,
+  contextToolDeclarations,
+  connectEdgesDeclaration
+} from './chat-tool-declarations';
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -46,39 +57,6 @@ export interface ChatNodeSummary {
   type?: string;
   name?: string;
 }
-
-const SYSTEM_PROMPT = `You are a helpful AI assistant embedded in Patchies, a visual node-based programming environment for audio-visual creative coding. Users connect nodes (P5.js, Hydra, Strudel, GLSL, JavaScript, audio DSP objects) to build real-time audio-visual patches.
-
-Help with:
-- Writing and debugging code for node types (P5.js, Hydra, GLSL shaders, JavaScript, audio DSP, etc.)
-- Node connections, signal routing, and patch architecture
-- Audio DSP concepts (oscillators, filters, envelopes, effects)
-- Creative coding techniques and algorithms
-
-You have canvas tools to create, edit, replace, or fix nodes on the user's behalf.
-However, NEVER use these tools unless the user has explicitly asked you to create, modify, or fix something.
-If the user is just asking a question, exploring ideas, or having a conversation, respond with text only.
-Do not proactively create objects or visualizations.
-You can suggest simulation or visualization ideas in your text response, but wait until user has consented to it.
-
-## Tool Selection Priority
-
-When the user asks you to act on the canvas, always prefer the **simplest** tool that accomplishes the task:
-
-1. **edit** — If a node already exists and the user wants changes, ALWAYS use edit. Never recreate an object that already exists.
-2. **insert** (single create) — If the user needs ONE new object, use insert. Do NOT use multi just because a description is detailed.
-3. **multi** (multi create) — ONLY use this when the user explicitly asks for multiple connected objects, or the task fundamentally requires more than one node working together.
-
-Common mistakes to avoid:
-- Do NOT use multi to create a single object. Even complex objects (e.g. "a synthesizer with LFO modulation") should use insert if it's one node.
-- Do NOT recreate objects that already exist on the canvas. Use edit or fix_error instead.
-- When the user says "make X" or "create X" (singular), default to insert unless they clearly need multiple nodes.
-
-Keep answers concise and practical. Format code for the relevant node type.
-
-## Available Object Types
-
-${OBJECT_TYPE_LIST}`;
 
 /**
  * Streams a chat message response. Calls onChunk for each text chunk and
@@ -151,93 +129,9 @@ export async function streamChatMessage(
     ]
   }));
 
-  const GET_OBJECT_INSTRUCTIONS = 'get_object_instructions';
-  const GET_GRAPH_NODES = 'get_graph_nodes';
-  const GET_NODE_DATA = 'get_node_data';
-  const SEARCH_DOCS = 'search_docs';
-  const GET_DOC_CONTENT = 'get_doc_content';
-
-  const CONTEXT_TOOL_NAMES = new Set([
-    GET_OBJECT_INSTRUCTIONS,
-    GET_GRAPH_NODES,
-    GET_NODE_DATA,
-    SEARCH_DOCS,
-    GET_DOC_CONTENT
-  ]);
-
-  const contextToolDeclarations = [
-    {
-      name: GET_OBJECT_INSTRUCTIONS,
-      description:
-        'Fetch detailed instructions and API reference for a specific Patchies object type. Call this before writing code for a type you need more details about.',
-      parametersJsonSchema: {
-        type: 'object',
-        properties: {
-          type: {
-            type: 'string',
-            description: 'The object type (e.g. "p5", "glsl", "tone~", "strudel")'
-          }
-        },
-        required: ['type']
-      }
-    },
-    {
-      name: GET_GRAPH_NODES,
-      description:
-        'List all nodes currently on the canvas with their id, type, and name. Use this to discover what nodes exist before referencing them in canvas actions.',
-      parametersJsonSchema: { type: 'object', properties: {} }
-    },
-    {
-      name: GET_NODE_DATA,
-      description: 'Fetch the full data of a specific node by its ID.',
-      parametersJsonSchema: {
-        type: 'object',
-        properties: {
-          nodeId: { type: 'string', description: 'The node ID to fetch data for' }
-        },
-        required: ['nodeId']
-      }
-    },
-    {
-      name: SEARCH_DOCS,
-      description:
-        'Search available documentation by keyword. Returns matching topic guides and object reference pages with metadata. Call this to discover relevant docs before fetching content.',
-      parametersJsonSchema: {
-        type: 'object',
-        properties: {
-          query: {
-            type: 'string',
-            description: 'Search query (matches title, slug, category, description, tags)'
-          }
-        },
-        required: ['query']
-      }
-    },
-    {
-      name: GET_DOC_CONTENT,
-      description:
-        'Fetch the full markdown content of a documentation page. Use search_docs first to find the correct slug.',
-      parametersJsonSchema: {
-        type: 'object',
-        properties: {
-          kind: {
-            type: 'string',
-            enum: ['topic', 'object'],
-            description: '"topic" for guide pages, "object" for object reference pages'
-          },
-          slug: {
-            type: 'string',
-            description:
-              'For topics: the topic slug (e.g. "adding-objects"). For objects: the object type (e.g. "p5", "gain~")'
-          }
-        },
-        required: ['kind', 'slug']
-      }
-    }
-  ];
-
   const canvasDeclarations = onAction ? buildCanvasToolDeclarations(nodeContext) : [];
-  const tools = [{ functionDeclarations: [...contextToolDeclarations, ...canvasDeclarations] }];
+  const allCanvasDeclarations = onAction ? [...canvasDeclarations, connectEdgesDeclaration] : [];
+  const tools = [{ functionDeclarations: [...contextToolDeclarations, ...allCanvasDeclarations] }];
 
   let fullText = '';
 
@@ -317,10 +211,52 @@ export async function streamChatMessage(
 
       const toolName = functionCall.name ?? '';
       const args = (functionCall.args ?? {}) as Record<string, unknown>;
-      const mode = toolNameToMode(toolName);
-      const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
 
       try {
+        // connect_edges is handled directly — no mode resolver needed
+        if (toolName === CONNECT_EDGES) {
+          const edgeSpecs = args.edges as Array<{
+            source: string;
+            target: string;
+            sourceHandle?: string;
+            targetHandle?: string;
+          }>;
+
+          if (!Array.isArray(edgeSpecs) || edgeSpecs.length === 0) {
+            throw new Error('connect_edges requires a non-empty edges array');
+          }
+
+          // Validate that referenced nodes exist
+          for (const spec of edgeSpecs) {
+            if (!getNodeById?.(spec.source)) {
+              throw new Error(`Source node "${spec.source}" not found`);
+            }
+            if (!getNodeById?.(spec.target)) {
+              throw new Error(`Target node "${spec.target}" not found`);
+            }
+          }
+
+          const edges = edgeSpecs.map((spec, i) => ({
+            id: `ai-edge-${crypto.randomUUID().slice(0, 8)}-${i}`,
+            source: spec.source,
+            target: spec.target,
+            sourceHandle: spec.sourceHandle ?? null,
+            targetHandle: spec.targetHandle ?? null
+          }));
+
+          onAction({
+            id: crypto.randomUUID(),
+            mode: 'connect-edges' as AiPromptMode,
+            descriptor: getModeDescriptor('connect-edges'),
+            result: { kind: 'connect-edges', edges },
+            state: 'pending'
+          });
+          continue;
+        }
+
+        const mode = toolNameToMode(toolName);
+        const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
+
         const result = await runModeResolver(
           mode,
           (args.prompt as string) ?? '',

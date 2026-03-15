@@ -27,6 +27,10 @@
       .with({ kind: 'multi' }, (r) => `Create ${r.nodes.length} objects`)
       .with({ kind: 'edit' }, () => `Edit object`)
       .with({ kind: 'replace' }, (r) => `Replace with ${r.newType}`)
+      .with(
+        { kind: 'connect-edges' },
+        (r) => `Connect ${r.edges.length} edge${r.edges.length === 1 ? '' : 's'}`
+      )
       .exhaustive()
   );
 
@@ -128,9 +132,20 @@
 
   const currentPage = $derived(pages[pageIndex] ?? null);
 
-  function getMultiNodeList(result: AiModeResult): string | null {
-    if (result.kind !== 'multi') return null;
-    return result.nodes.map((n) => n.type).join(', ');
+  function getPreviewText(result: AiModeResult): string | null {
+    if (result.kind === 'multi') {
+      return result.nodes.map((n) => n.type).join(', ');
+    }
+    if (result.kind === 'connect-edges') {
+      return result.edges
+        .map((e) => {
+          const src = e.sourceHandle ? `${e.source}:${e.sourceHandle}` : e.source;
+          const tgt = e.targetHandle ? `${e.target}:${e.targetHandle}` : e.target;
+          return `${src} \u2192 ${tgt}`;
+        })
+        .join('\n');
+    }
+    return null;
   }
 
   function apply() {
@@ -139,6 +154,7 @@
       .with({ kind: 'multi' }, (r) => callbacks.onInsertMultipleObjects(r.nodes, r.edges))
       .with({ kind: 'edit' }, (r) => callbacks.onEditObject(r.nodeId, r.data))
       .with({ kind: 'replace' }, (r) => callbacks.onReplaceObject(r.nodeId, r.newType, r.newData))
+      .with({ kind: 'connect-edges' }, (r) => callbacks.onConnectEdges(r.edges))
       .exhaustive();
 
     onStateChange(action.id, 'applied');
@@ -234,10 +250,10 @@
               >-{line.text}</span
             >{:else}<span class="block text-zinc-500"> {line.text}</span>{/if}{/each}</pre>
     {:else}
-      {@const nodeList = getMultiNodeList(action.result)}
+      {@const previewText = getPreviewText(action.result)}
       <div class="px-3 py-2">
-        {#if nodeList}
-          <p class="font-mono text-[10px] text-zinc-500">{nodeList}</p>
+        {#if previewText}
+          <pre class="font-mono text-[10px] whitespace-pre-wrap text-zinc-500">{previewText}</pre>
         {:else}
           <p class="font-mono text-[10px] text-zinc-500">No preview available</p>
         {/if}

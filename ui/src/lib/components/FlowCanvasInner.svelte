@@ -493,6 +493,10 @@
     aiOps.replaceNode(nodeId, newType, newData);
   }
 
+  function handleAiConnectEdges(edges: import('@xyflow/svelte').Edge[]) {
+    aiOps.connectEdges(edges);
+  }
+
   function getNodeById(nodeId: string) {
     const node = getNode(nodeId);
     if (!node) return undefined;
@@ -511,7 +515,8 @@
     onInsertObject: handleAiObjectInsert,
     onInsertMultipleObjects: handleAiMultipleObjectsInsert,
     onEditObject: handleAiObjectEdit,
-    onReplaceObject: handleAiObjectReplace
+    onReplaceObject: handleAiObjectReplace,
+    onConnectEdges: handleAiConnectEdges
   };
 
   onMount(() => {

@@ -7,7 +7,8 @@ import {
   ArrowRight,
   ArrowLeft,
   Scissors,
-  GitFork
+  GitFork,
+  Cable
 } from '@lucide/svelte/icons';
 import { match } from 'ts-pattern';
 import type { AiModeDescriptor, AiModeContext, AiPromptMode, AiPromptColor } from './types';
@@ -231,6 +232,21 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
       },
       required: ['nodeId', 'prompt']
     }
+  },
+
+  'connect-edges': {
+    id: 'connect-edges',
+    label: 'Connect Edges',
+    shortLabel: 'Connect',
+    description: () => 'Connect existing objects with edges',
+    placeholder: () => 'e.g., "connect the oscillator to the filter"',
+    loadingLabel: 'Connecting',
+    generatingLabel: () => 'Connecting',
+    color: 'green',
+    icon: Cable,
+    isMulti: false,
+    requiresNode: false,
+    availableInChat: false // handled as a special tool, not via mode descriptors
   }
 } satisfies Record<string, AiModeDescriptor>;
 

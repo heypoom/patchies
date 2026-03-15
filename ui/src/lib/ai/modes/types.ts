@@ -1,5 +1,5 @@
 import type { Component } from 'svelte';
-import type { Node } from '@xyflow/svelte';
+import type { Edge, Node } from '@xyflow/svelte';
 import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
 
 export type AiPromptColor = 'purple' | 'blue' | 'amber' | 'green' | 'red';
@@ -22,7 +22,8 @@ export type AiPromptMode =
   | 'make-consumer' // Create a consumer for the selected producer node
   | 'make-producer' // Create a producer for the selected consumer node
   | 'split' // Split object into multiple
-  | 'fork'; // Create a new object derived from an existing one
+  | 'fork' // Create a new object derived from an existing one
+  | 'connect-edges'; // Connect existing nodes with edges
 
 export interface AiModeContext {
   /** The node being edited/replaced/decomposed */
@@ -74,7 +75,8 @@ export type AiModeResult =
   | { kind: 'single'; type: string; data: Record<string, unknown> }
   | { kind: 'multi'; nodes: AiObjectNode[]; edges: SimplifiedEdge[] }
   | { kind: 'edit'; nodeId: string; data: Record<string, unknown> }
-  | { kind: 'replace'; nodeId: string; newType: string; newData: Record<string, unknown> };
+  | { kind: 'replace'; nodeId: string; newType: string; newData: Record<string, unknown> }
+  | { kind: 'connect-edges'; edges: Edge[] };
 
 export type ModeResolver = (
   prompt: string,

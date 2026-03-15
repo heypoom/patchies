@@ -144,6 +144,7 @@
       .with({ kind: 'replace' }, (r) =>
         aiCallbacks!.onReplaceObject(r.nodeId, r.newType, r.newData)
       )
+      .with({ kind: 'connect-edges' }, (r) => aiCallbacks!.onConnectEdges(r.edges))
       .exhaustive();
 
     updateActionState(action.id, 'applied');
@@ -238,6 +239,10 @@
               .with({ kind: 'multi' }, (r) => `Created ${r.nodes.length} objects`)
               .with({ kind: 'edit' }, () => `Edited object`)
               .with({ kind: 'replace' }, (r) => `Replaced with ${r.newType}`)
+              .with(
+                { kind: 'connect-edges' },
+                (r) => `Connected ${r.edges.length} edge${r.edges.length === 1 ? '' : 's'}`
+              )
               .exhaustive()
           : undefined;
 

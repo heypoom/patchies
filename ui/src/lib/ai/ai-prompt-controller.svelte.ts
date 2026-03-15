@@ -9,6 +9,7 @@
  */
 
 import { toast } from 'svelte-sonner';
+import type { Edge } from '@xyflow/svelte';
 import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
 import type { AiModeContext, AiModeResult, AiPromptMode } from './modes/types';
 import { getModeDescriptor } from './modes/descriptors';
@@ -19,6 +20,7 @@ export interface AiPromptCallbacks {
   onInsertMultipleObjects: (nodes: AiObjectNode[], edges: SimplifiedEdge[]) => void;
   onEditObject: (nodeId: string, data: Record<string, unknown>) => void;
   onReplaceObject: (nodeId: string, newType: string, newData: Record<string, unknown>) => void;
+  onConnectEdges: (edges: Edge[]) => void;
 }
 
 export function createAiPromptController(callbacks: AiPromptCallbacks) {
@@ -73,6 +75,12 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
       case 'replace':
         callbacks.onReplaceObject(result.nodeId, result.newType, result.newData);
         toast.success(`Replaced with ${result.newType}`);
+        break;
+      case 'connect-edges':
+        callbacks.onConnectEdges(result.edges);
+        toast.success(
+          `Connected ${result.edges.length} edge${result.edges.length === 1 ? '' : 's'}`
+        );
         break;
     }
   }
