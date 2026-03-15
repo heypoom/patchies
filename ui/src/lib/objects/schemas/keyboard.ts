@@ -13,6 +13,7 @@ export const keyboardSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Toggle listening on/off' },
         { schema: Start, description: 'Start listening for keyboard input' },
@@ -26,6 +27,7 @@ export const keyboardSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Keyboard output',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Sent when filtered key is pressed (filtered mode)' },
         { schema: Type.String(), description: 'Key name (all keys mode)' },

@@ -20,7 +20,19 @@ export const threeSchema: ObjectSchema = {
   ],
   outlets: [],
   tags: ['3d', 'webgl', 'graphics', 'animation', 'scene'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: {
+      template: 'video-in-{index}',
+      handleType: 'video',
+      description: 'Video inlets (0-indexed), message inlets use message-in-{index}'
+    },
+    outlet: {
+      template: 'video-out-{index}',
+      handleType: 'video',
+      description: 'Video outlets (0-indexed), message outlets use message-out-{index}'
+    }
+  }
 };
 
 /**
@@ -42,5 +54,13 @@ export const threeDomSchema: ObjectSchema = {
   ],
   outlets: [],
   tags: ['3d', 'webgl', 'graphics', 'animation', 'scene', 'interactive'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}', description: 'Message inlets (0-indexed)' },
+    outlet: {
+      template: 'video-out-{index}',
+      handleType: 'video',
+      description: 'Video output at index 0, message outlets use out-{index}'
+    }
+  }
 };

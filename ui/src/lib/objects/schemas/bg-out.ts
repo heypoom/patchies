@@ -10,7 +10,8 @@ export const bgOutSchema: ObjectSchema = {
   inlets: [
     {
       id: 'video',
-      description: 'Video input to display as background'
+      description: 'Video input to display as background',
+      handle: { handleType: 'video', handleId: '0' }
     }
   ],
   outlets: [],

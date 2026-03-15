@@ -12,6 +12,7 @@ export const screenSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         {
           schema: Bang,
@@ -24,7 +25,8 @@ export const screenSchema: ObjectSchema = {
     {
       id: 'out',
       type: 'video',
-      description: 'Captured screen video'
+      description: 'Captured screen video',
+      handle: { handleType: 'video', handleId: '0' }
     }
   ],
   tags: ['screen', 'capture', 'recording', 'desktop', 'texture', 'visual']

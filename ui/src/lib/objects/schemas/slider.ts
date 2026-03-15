@@ -14,6 +14,7 @@ export const sliderSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Output the current slider value' },
         { schema: Reset, description: 'Reset the slider value back to its default' },
@@ -29,6 +30,7 @@ export const sliderSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Slider output',
+      handle: { handleType: 'message' },
       messages: [{ schema: Type.Number(), description: 'Current slider value' }]
     }
   ],

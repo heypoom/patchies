@@ -20,5 +20,17 @@ export const hydraSchema: ObjectSchema = {
   ],
   outlets: [],
   tags: ['video', 'synthesizer', 'livecoding', 'visual', 'shader', 'generative'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: {
+      template: 'video-in-{index}',
+      handleType: 'video',
+      description: 'Video inlets (0-indexed), message inlets use message-in-{index}'
+    },
+    outlet: {
+      template: 'video-out-{index}',
+      handleType: 'video',
+      description: 'Video outlets (0-indexed), message outlets use message-out-{index}'
+    }
+  }
 };

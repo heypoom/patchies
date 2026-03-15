@@ -24,6 +24,7 @@ export const msgSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control and placeholder values',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Output the stored message' },
         { schema: SetValue, description: 'Set message without triggering output' },
@@ -35,6 +36,7 @@ export const msgSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Message output',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Type.Any(), description: 'The stored message with placeholders replaced' }
       ]

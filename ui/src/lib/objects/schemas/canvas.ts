@@ -20,7 +20,15 @@ export const canvasSchema: ObjectSchema = {
   ],
   outlets: [],
   tags: ['graphics', 'drawing', 'animation', 'html5', '2d', 'offscreen'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}', description: 'Message inlets (0-indexed)' },
+    outlet: {
+      template: 'video-out-{index}',
+      handleType: 'video',
+      description: 'Video output at index 0, message outlets use out-{index}'
+    }
+  }
 };
 
 /**
@@ -42,5 +50,13 @@ export const canvasDomSchema: ObjectSchema = {
   ],
   outlets: [],
   tags: ['graphics', 'drawing', 'animation', 'html5', '2d', 'interactive', 'mouse', 'keyboard'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    inlet: { template: 'in-{index}', description: 'Message inlets (0-indexed)' },
+    outlet: {
+      template: 'video-out-{index}',
+      handleType: 'video',
+      description: 'Video output at index 0, message outlets use out-{index}'
+    }
+  }
 };

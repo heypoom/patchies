@@ -27,6 +27,7 @@ export const webcamSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
+      handle: { handleType: 'message' },
       messages: [
         {
           schema: Bang,
@@ -45,5 +46,8 @@ export const webcamSchema: ObjectSchema = {
   ],
   outlets: [],
   tags: ['camera', 'capture', 'live', 'texture', 'visual'],
-  hasDynamicOutlets: true
+  hasDynamicOutlets: true,
+  handlePatterns: {
+    outlet: { template: 'video-out-{index}', handleType: 'video', description: 'Video output' }
+  }
 };

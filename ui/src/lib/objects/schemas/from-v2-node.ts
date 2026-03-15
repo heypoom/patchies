@@ -7,8 +7,9 @@
 
 import { Type } from '@sinclair/typebox';
 import type { ObjectInlet, ObjectOutlet } from '../v2/object-metadata';
-import type { ObjectSchema, InletSchema, OutletSchema, MessageSchema } from './types';
+import type { ObjectSchema, InletSchema, OutletSchema, MessageSchema, HandleSpec } from './types';
 import { sym } from './helpers';
+import { ANALYSIS_KEY } from '$lib/audio/v2/constants/fft';
 
 /**
  * Convert ObjectDataType to a TypeBox schema.
@@ -61,9 +62,26 @@ function dataTypeToSchema(type: string | undefined, inlet: ObjectInlet): Message
 }
 
 /**
+ * Derive HandleSpec from inlet/outlet metadata.
+ * Mirrors ObjectNode.svelte's getPortType() + index-based id pattern.
+ */
+function deriveHandleSpecFromPort(
+  port: ObjectInlet | ObjectOutlet,
+  originalIndex: number
+): HandleSpec {
+  if (port.type === 'signal') {
+    return { handleType: 'audio', handleId: originalIndex };
+  }
+  if (port.type === ANALYSIS_KEY) {
+    return { handleType: 'analysis' as 'analysis', handleId: originalIndex };
+  }
+  return { handleType: 'message', handleId: originalIndex };
+}
+
+/**
  * Convert an ObjectInlet to an InletSchema.
  */
-function inletToSchema(inlet: ObjectInlet): InletSchema {
+function inletToSchema(inlet: ObjectInlet, index: number): InletSchema {
   const id = inlet.name ?? 'in';
   const description = inlet.description ?? '';
 
@@ -80,17 +98,21 @@ function inletToSchema(inlet: ObjectInlet): InletSchema {
     }
   }
 
-  return { id, type: inlet.type, description, messages, isAudioParam: inlet.isAudioParam };
+  // Skip handle spec for hidden inlets (they don't render handles)
+  const handle = inlet.hideInlet ? undefined : deriveHandleSpecFromPort(inlet, index);
+
+  return { id, type: inlet.type, description, messages, isAudioParam: inlet.isAudioParam, handle };
 }
 
 /**
  * Convert an ObjectOutlet to an OutletSchema.
  */
-function outletToSchema(outlet: ObjectOutlet): OutletSchema {
+function outletToSchema(outlet: ObjectOutlet, index: number): OutletSchema {
   const id = outlet.name ?? 'out';
   const description = outlet.description ?? '';
+  const handle = deriveHandleSpecFromPort(outlet, index);
 
-  return { id, type: outlet.type, description, messages: outlet.messages };
+  return { id, type: outlet.type, description, messages: outlet.messages, handle };
 }
 
 /**
@@ -116,8 +138,8 @@ interface V2NodeClass {
  * ```
  */
 export function schemaFromNode(NodeClass: V2NodeClass, category: string): ObjectSchema {
-  const inlets = (NodeClass.inlets ?? []).map(inletToSchema);
-  const outlets = (NodeClass.outlets ?? []).map(outletToSchema);
+  const inlets = (NodeClass.inlets ?? []).map((inlet, i) => inletToSchema(inlet, i));
+  const outlets = (NodeClass.outlets ?? []).map((outlet, i) => outletToSchema(outlet, i));
 
   // Generate tags from type name and group if not provided
   const tags = NodeClass.tags ?? generateTags(NodeClass);
