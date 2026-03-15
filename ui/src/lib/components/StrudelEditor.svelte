@@ -205,6 +205,19 @@
     });
   });
 
+  // Sync external code changes (e.g. from AI tool calls) to the editor
+  $effect(() => {
+    // Read code first so Svelte always tracks it as a dependency
+    const currentCode = code;
+    if (!editor) return;
+
+    const currentEditorCode = editor.editor?.state.doc.toString();
+
+    if (currentCode !== currentEditorCode) {
+      editor.setCode(currentCode);
+    }
+  });
+
   onDestroy(() => {
     editor?.stop();
   });

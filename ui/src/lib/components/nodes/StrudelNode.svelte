@@ -79,6 +79,7 @@
         .with(strudelMessages.stop, stop);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
+
       customConsole.error(errorMsg);
       hasError = true;
     }
@@ -136,6 +137,7 @@
     transportSync = null;
 
     stop();
+
     document.removeEventListener('strudel.log', handleStrudelLog);
 
     if (messageContext) {
@@ -171,6 +173,7 @@
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         customConsole.error(errorMsg);
+
         hasError = true;
         isPlaying = false;
       }
