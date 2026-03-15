@@ -216,7 +216,7 @@
   );
 </script>
 
-<div class="relative">
+<div class={['relative', isLocked && 'nodrag']}>
   {#if isResizable && !isLocked}
     <NodeResizer
       isVisible={node.selected}
@@ -275,7 +275,8 @@
           <div class="w-full text-center">
             <div
               class={[
-                'cursor-move font-mono text-sm transition-opacity',
+                'font-mono text-sm transition-opacity',
+                isLocked ? 'cursor-default' : 'cursor-move',
                 node.selected ? 'text-zinc-100 opacity-100' : 'text-zinc-300',
                 node.data.vertical ? 'absolute -top-[40px] opacity-0 group-hover:opacity-100' : ''
               ]}
