@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Settings, X, Video, Info, Dice5, ExternalLink } from '@lucide/svelte/icons';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { onMount, onDestroy, untrack } from 'svelte';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
@@ -543,10 +543,9 @@
 
       <div class="relative">
         <!-- Message Inlet -->
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
-          id="0"
+          spec={{ handleType: 'message', handleId: '0' }}
           title="send data to peers"
           total={dataOnly ? 1 : 3}
           index={0}
@@ -556,10 +555,9 @@
 
         {#if !dataOnly}
           <!-- Video Inlet -->
-          <StandardHandle
+          <TypedHandle
             port="inlet"
-            type="video"
-            id="0"
+            spec={{ handleType: 'video', handleId: '0' }}
             title="video to stream"
             total={3}
             index={1}
@@ -567,10 +565,9 @@
           />
 
           <!-- Audio Inlet -->
-          <StandardHandle
+          <TypedHandle
             port="inlet"
-            type="audio"
-            id="0"
+            spec={{ handleType: 'audio', handleId: '0' }}
             title="audio to stream"
             total={3}
             index={2}
@@ -592,10 +589,9 @@
         </button>
 
         <!-- Message Outlet -->
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
-          id="0"
+          spec={{ handleType: 'message', handleId: '0' }}
           title="received data from peers"
           total={1}
           index={0}

@@ -4,7 +4,7 @@
   import { P5Manager } from '$lib/p5/P5Manager';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
   import { shouldShowHandles } from '../../../stores/ui.store';
@@ -277,9 +277,9 @@
 >
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index (index)}
-      <StandardHandle
+      <TypedHandle
         port="inlet"
-        id={index}
+        spec={{ handleId: index }}
         title={`Inlet ${index}`}
         total={inletCount}
         {index}
@@ -318,10 +318,9 @@
 
   {#snippet bottomHandle()}
     {#if videoOutputEnabled}
-      <StandardHandle
+      <TypedHandle
         port="outlet"
-        type="video"
-        id="0"
+        spec={{ handleType: 'video', handleId: '0' }}
         title="Video output"
         total={outletCount + 1}
         index={0}
@@ -331,9 +330,9 @@
     {/if}
 
     {#each Array.from({ length: outletCount }) as _, index (index)}
-      <StandardHandle
+      <TypedHandle
         port="outlet"
-        id={index}
+        spec={{ handleId: index }}
         title={`Outlet ${index}`}
         total={videoOutputEnabled ? outletCount + 1 : outletCount}
         index={videoOutputEnabled ? index + 1 : index}

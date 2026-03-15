@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ChevronUp, Edit, SquarePen } from '@lucide/svelte/icons';
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -325,10 +325,9 @@
       <div class="relative">
         <!-- Inlets: message-in-0 (hot), message-in-1, message-in-2, etc. (cold) -->
         {#each Array.from({ length: Math.max(1, placeholderCount) }) as _, index}
-          <StandardHandle
+          <TypedHandle
             port="inlet"
-            type="message"
-            id={index}
+            spec={{ handleType: 'message', handleId: index }}
             title={placeholderCount > 0
               ? index === 0
                 ? `$${index + 1} (hot)`
@@ -384,7 +383,7 @@
           {/if}
         </div>
 
-        <StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
+        <TypedHandle port="outlet" spec={{ handleType: 'message' }} total={1} index={0} {nodeId} />
       </div>
     </div>
   </div>

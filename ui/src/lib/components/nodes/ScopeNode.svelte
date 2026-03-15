@@ -3,7 +3,7 @@
   import { RotateCcw, Settings, X } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow, useUpdateNodeInternals, useEdges } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { ScopeAudioNode } from '$lib/audio/v2/nodes/ScopeAudioNode';
   import { useNodeDataTracker } from '$lib/history';
@@ -416,10 +416,9 @@
     </div>
 
     <div class="relative">
-      <StandardHandle
+      <TypedHandle
         port="inlet"
-        type="audio"
-        id="0"
+        spec={{ handleType: 'audio', handleId: '0' }}
         total={inletCount}
         index={0}
         title={mode === 'xy' ? 'X axis' : 'Audio input'}
@@ -428,10 +427,9 @@
       />
 
       {#if mode === 'xy'}
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="audio"
-          id="1"
+          spec={{ handleType: 'audio', handleId: '1' }}
           total={inletCount}
           index={1}
           title="Y axis"

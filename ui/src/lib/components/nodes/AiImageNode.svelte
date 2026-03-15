@@ -3,7 +3,7 @@
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { generateImageWithGemini } from '$lib/ai/google';
   import { EditorView } from 'codemirror';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -134,10 +134,9 @@
 
 <ObjectPreviewLayout title="ai.img" objectType="ai.img" onrun={generateImage} {editorReady}>
   {#snippet topHandle()}
-    <StandardHandle
+    <TypedHandle
       port="inlet"
-      type="video"
-      id="0"
+      spec={{ handleType: 'video', handleId: '0' }}
       title="Image input (Optional)"
       total={2}
       index={0}
@@ -145,10 +144,9 @@
       {nodeId}
     />
 
-    <StandardHandle
+    <TypedHandle
       port="inlet"
-      type="message"
-      id="1"
+      spec={{ handleType: 'message', handleId: '1' }}
       title="Message input"
       total={2}
       index={1}
@@ -203,10 +201,9 @@
   {/snippet}
 
   {#snippet bottomHandle()}
-    <StandardHandle
+    <TypedHandle
       port="outlet"
-      type="video"
-      id="0"
+      spec={{ handleType: 'video', handleId: '0' }}
       title="Video output"
       total={2}
       index={0}
@@ -214,10 +211,9 @@
       {nodeId}
     />
 
-    <StandardHandle
+    <TypedHandle
       port="outlet"
-      type="message"
-      id="1"
+      spec={{ handleType: 'message', handleId: '1' }}
       title="Message output"
       total={2}
       index={1}

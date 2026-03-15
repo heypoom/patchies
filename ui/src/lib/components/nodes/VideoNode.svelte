@@ -2,7 +2,7 @@
   import { Loader, OctagonX, Pause, Play, SkipBack, Upload, Video } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -730,9 +730,9 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
+          spec={{ handleType: 'message' }}
           class={handleCommonClass}
           total={1}
           index={0}
@@ -855,10 +855,9 @@
           {/if}
         </div>
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="video"
-          id="0"
+          spec={{ handleType: 'video', handleId: '0' }}
           title="Video output"
           total={2}
           index={0}
@@ -866,9 +865,9 @@
           {nodeId}
         />
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="audio"
+          spec={{ handleType: 'audio' }}
           title="Audio output"
           total={2}
           index={1}

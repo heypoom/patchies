@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Circle, Mic, Play, Settings, Square } from '@lucide/svelte/icons';
   import { useSvelteFlow, type NodeProps } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import WaveformDisplay from '$lib/components/nodes/WaveformDisplay.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -553,10 +553,9 @@
 
       <div class="relative">
         <!-- Audio Input Handle -->
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="audio"
-          id="audio-in"
+          spec={{ handleType: 'audio', handleId: 'audio-in' }}
           total={2}
           index={0}
           title="Audio input"
@@ -564,10 +563,9 @@
         />
 
         <!-- Message Input Handle -->
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
-          id="message-in"
+          spec={{ handleType: 'message', handleId: 'message-in' }}
           total={2}
           index={1}
           title="Message input"
@@ -630,10 +628,9 @@
         {/if}
 
         <!-- Audio Output Handle -->
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="audio"
-          id="audio-out"
+          spec={{ handleType: 'audio', handleId: 'audio-out' }}
           total={1}
           index={0}
           title="Audio output"

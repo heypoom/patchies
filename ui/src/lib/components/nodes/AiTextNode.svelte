@@ -3,7 +3,7 @@
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { createLLMFunction } from '$lib/ai/google';
   import { EditorView } from 'codemirror';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -103,11 +103,10 @@
 
 <ObjectPreviewLayout title="ai.txt" objectType="ai.txt" onrun={generateText} {editorReady}>
   {#snippet topHandle()}
-    <StandardHandle port="inlet" type="message" total={2} index={0} {nodeId} />
-    <StandardHandle
+    <TypedHandle port="inlet" spec={{ handleType: 'message' }} total={2} index={0} {nodeId} />
+    <TypedHandle
       port="inlet"
-      type="video"
-      id="0"
+      spec={{ handleType: 'video', handleId: '0' }}
       title="Video input (optional)"
       total={2}
       index={1}
@@ -159,7 +158,7 @@
   {/snippet}
 
   {#snippet bottomHandle()}
-    <StandardHandle port="outlet" type="message" total={1} index={0} {nodeId} />
+    <TypedHandle port="outlet" spec={{ handleType: 'message' }} total={1} index={0} {nodeId} />
   {/snippet}
 
   {#snippet codeEditor()}

@@ -2,7 +2,7 @@
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -212,9 +212,9 @@
 >
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index}
-      <StandardHandle
+      <TypedHandle
         port="inlet"
-        id={index}
+        spec={{ handleId: index }}
         title={`Inlet ${index}`}
         total={inletCount}
         {index}
@@ -247,9 +247,9 @@
 
   {#snippet bottomHandle()}
     {#each Array.from({ length: outletCount }) as _, index}
-      <StandardHandle
+      <TypedHandle
         port="outlet"
-        id={index}
+        spec={{ handleId: index }}
         title={`Outlet ${index}`}
         total={outletCount}
         {index}

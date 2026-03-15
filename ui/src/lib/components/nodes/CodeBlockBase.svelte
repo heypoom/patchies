@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Code, Loader, Package, Pause, Play, Terminal, X } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -245,10 +245,9 @@
       <div class="relative">
         <div>
           {#each Array.from({ length: videoInletCount }) as _, index (index)}
-            <StandardHandle
+            <TypedHandle
               port="inlet"
-              type="video"
-              id={index}
+              spec={{ handleType: 'video', handleId: index }}
               title={`Video Input ${index}`}
               total={videoInletCount + inletCount}
               {index}
@@ -258,9 +257,9 @@
           {/each}
 
           {#each Array.from({ length: inletCount }) as _, index (index)}
-            <StandardHandle
+            <TypedHandle
               port="inlet"
-              id={index + videoInletCount}
+              spec={{ handleId: index + videoInletCount }}
               title={`Inlet ${index}`}
               total={videoInletCount + inletCount}
               index={index + videoInletCount}
@@ -333,9 +332,9 @@
 
         <div>
           {#each Array.from({ length: outletCount }) as _, index (index)}
-            <StandardHandle
+            <TypedHandle
               port="outlet"
-              id={index}
+              spec={{ handleId: index }}
               title={`Outlet ${index}`}
               total={outletCount}
               {index}

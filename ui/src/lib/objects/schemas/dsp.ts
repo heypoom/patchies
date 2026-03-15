@@ -33,12 +33,14 @@ export const dspSchema: ObjectSchema = {
     inlet: {
       template: 'audio-in-{index}',
       handleType: 'audio',
-      description: 'Audio inlets, message inlets use message-in-{index}'
+      description:
+        'Audio inlets (if only 1 audio inlet, handle is "audio-in" with NO index). Message inlets use message-in-{index}'
     },
     outlet: {
       template: 'audio-out-{index}',
       handleType: 'audio',
-      description: 'Audio outlets, message outlets use message-out-{index}'
+      description:
+        'Audio outlets (if only 1 audio outlet, handle is "audio-out" with NO index). Message outlets use message-out-{index}'
     }
   }
 };

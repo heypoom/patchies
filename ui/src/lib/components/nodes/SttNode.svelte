@@ -2,7 +2,7 @@
   import { Mic, Settings, Circle, Square } from '@lucide/svelte/icons';
   import SttSettings from '$lib/components/settings/SttSettings.svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -205,10 +205,9 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
-          id={0}
+          spec={{ handleType: 'message', handleId: 0 }}
           title="listen, stop, bang, setLang"
           total={1}
           index={0}
@@ -234,10 +233,9 @@
           <div class="mt-1 max-w-28 text-center text-[8px] text-red-400">{errorMessage}</div>
         {/if}
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="message"
-          id={0}
+          spec={{ handleType: 'message', handleId: 0 }}
           title="transcribed text"
           total={1}
           index={0}

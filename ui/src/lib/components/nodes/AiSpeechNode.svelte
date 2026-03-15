@@ -9,7 +9,7 @@
     RotateCcw
   } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy, tick } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -367,10 +367,9 @@
       </div>
 
       <div class="relative">
-        <StandardHandle
+        <TypedHandle
           port="inlet"
-          type="message"
-          id={0}
+          spec={{ handleType: 'message', handleId: 0 }}
           title="text, setVoice, setRate, setPitch, stop"
           total={1}
           index={0}
@@ -391,10 +390,9 @@
           </div>
         </button>
 
-        <StandardHandle
+        <TypedHandle
           port="outlet"
-          type="audio"
-          id={0}
+          spec={{ handleType: 'audio', handleId: 0 }}
           title="audio output"
           total={1}
           index={0}

@@ -2,7 +2,7 @@
   import { Play, Pause, Square, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -223,9 +223,9 @@
 </script>
 
 {#snippet bytebeatHandles()}
-  <StandardHandle
+  <TypedHandle
     port="inlet"
-    type="message"
+    spec={{ handleType: 'message' }}
     title="Control messages (play, pause, stop, bang, setType, setSyntax, setSampleRate)"
     {nodeId}
     total={1}
@@ -234,7 +234,14 @@
 {/snippet}
 
 {#snippet bytebeatOutlets()}
-  <StandardHandle port="outlet" type="audio" title="Audio output" {nodeId} total={1} index={0} />
+  <TypedHandle
+    port="outlet"
+    spec={{ handleType: 'audio' }}
+    title="Audio output"
+    {nodeId}
+    total={1}
+    index={0}
+  />
 {/snippet}
 
 <div class="relative flex gap-x-3">

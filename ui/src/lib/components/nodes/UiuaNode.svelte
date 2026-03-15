@@ -6,7 +6,7 @@
   import UiuaSettings from '$lib/components/settings/UiuaSettings.svelte';
   import UiuaPreview from '$lib/components/settings/UiuaPreview.svelte';
   import UiuaGlyphPalette from '$lib/components/settings/UiuaGlyphPalette.svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -497,10 +497,9 @@
 
 {#snippet exprHandles()}
   {#each Array.from({ length: inletCount }) as _, index}
-    <StandardHandle
+    <TypedHandle
       port="inlet"
-      type="message"
-      id={index}
+      spec={{ handleType: 'message', handleId: index }}
       title={index === 0 ? `$${index + 1} (hot)` : `$${index + 1} (cold)`}
       total={inletCount}
       {index}
@@ -516,9 +515,9 @@
   {@const videoIndex = messageOutletEnabled ? 1 : 0}
 
   {#if messageOutletEnabled}
-    <StandardHandle
+    <TypedHandle
       port="outlet"
-      type="message"
+      spec={{ handleType: 'message' }}
       title="Text/arrays/audio samples"
       total={outletCount}
       index={messageIndex}
@@ -526,9 +525,9 @@
     />
   {/if}
   {#if data.enableVideoOutlet}
-    <StandardHandle
+    <TypedHandle
       port="outlet"
-      type="video"
+      spec={{ handleType: 'video' }}
       title="Video (ImageData)"
       total={outletCount}
       index={videoIndex}

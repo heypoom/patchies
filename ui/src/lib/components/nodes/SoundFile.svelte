@@ -2,7 +2,7 @@
   import { Mic, Play, Square, Table, Upload, Volume2 } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { MessageSystem } from '$lib/messages/MessageSystem';
@@ -277,7 +277,13 @@
           </div>
 
           <div class="relative">
-            <StandardHandle port="inlet" type="message" total={1} index={0} nodeId={node.id} />
+            <TypedHandle
+              port="inlet"
+              spec={{ handleType: 'message' }}
+              total={1}
+              index={0}
+              nodeId={node.id}
+            />
 
             {#if vfsMedia.needsFolderRelink || vfsMedia.needsReselect}
               <VfsRelinkOverlay
@@ -336,10 +342,9 @@
               </div>
             {/if}
 
-            <StandardHandle
+            <TypedHandle
               port="outlet"
-              type="audio"
-              id="0"
+              spec={{ handleType: 'audio', handleId: '0' }}
               title="Audio output"
               total={1}
               index={0}

@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { Terminal } from '@lucide/svelte/icons';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -185,10 +185,9 @@
 
 {#snippet handles()}
   {#each Array.from({ length: inletCount }) as _, index}
-    <StandardHandle
+    <TypedHandle
       port="inlet"
-      type="message"
-      id={index}
+      spec={{ handleType: 'message', handleId: index }}
       title={index === 0 ? `$${index + 1} (hot)` : `$${index + 1} (cold)`}
       total={inletCount}
       {index}
@@ -201,10 +200,9 @@
 
 {#snippet outlets()}
   {#each outletTitles as title, index}
-    <StandardHandle
+    <TypedHandle
       port="outlet"
-      type="message"
-      id={index}
+      spec={{ handleType: 'message', handleId: index }}
       {title}
       total={outletTitles.length}
       {index}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Settings, X } from '@lucide/svelte/icons';
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -139,10 +139,9 @@
           <!-- Channel inputs for merger -->
           <div>
             {#each Array.from({ length: channels }) as _, index}
-              <StandardHandle
+              <TypedHandle
                 port="inlet"
-                type="audio"
-                id={index}
+                spec={{ handleType: 'audio', handleId: index }}
                 title={`Channel ${index + 1} Input`}
                 total={channels}
                 {index}
@@ -154,9 +153,9 @@
         {:else}
           <!-- Single multichannel input for splitter -->
           <div>
-            <StandardHandle
+            <TypedHandle
               port="inlet"
-              type="audio"
+              spec={{ handleType: 'audio' }}
               title="Multichannel Input"
               total={1}
               index={0}
@@ -180,9 +179,9 @@
         {#if audioType === 'merge~'}
           <!-- Single multichannel output for merger -->
           <div>
-            <StandardHandle
+            <TypedHandle
               port="outlet"
-              type="audio"
+              spec={{ handleType: 'audio' }}
               title="Multichannel Output"
               total={1}
               index={0}
@@ -194,10 +193,9 @@
           <!-- Channel outputs for splitter -->
           <div>
             {#each Array.from({ length: channels }) as _, index}
-              <StandardHandle
+              <TypedHandle
                 port="outlet"
-                type="audio"
-                id={index}
+                spec={{ handleType: 'audio', handleId: index }}
                 title={`Channel ${index + 1} Output`}
                 total={channels}
                 {index}

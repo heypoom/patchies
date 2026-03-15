@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Loader2, Pause, Play, X } from '@lucide/svelte/icons';
-  import StandardHandle from '$lib/components/StandardHandle.svelte';
+  import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { LiveMusicManager, type Prompt } from '$lib/music/LiveMusicManager';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -195,7 +195,7 @@
     </div>
 
     <div class="relative">
-      <StandardHandle port="inlet" type="message" total={1} index={0} {nodeId} />
+      <TypedHandle port="inlet" spec={{ handleType: 'message' }} total={1} index={0} {nodeId} />
 
       <div class="w-80 rounded-lg border border-zinc-600 bg-zinc-900 p-4">
         <!-- Add Prompt Section -->
@@ -270,10 +270,9 @@
         </div>
       </div>
 
-      <StandardHandle
+      <TypedHandle
         port="outlet"
-        type="audio"
-        id="audio-out"
+        spec={{ handleType: 'audio', handleId: 'audio-out' }}
         title="Audio Outlet"
         total={1}
         index={0}
