@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { GripHorizontal, Lock, LockOpen, RotateCcw, Settings, X } from '@lucide/svelte/icons';
+  import { Lock, LockOpen, Settings, X } from '@lucide/svelte/icons';
   import {
     NodeResizer,
     useSvelteFlow,
@@ -18,6 +18,7 @@
   import { useNodeDataTracker } from '$lib/history';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import SliderSettings from '$lib/components/settings/SliderSettings.svelte';
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {
@@ -63,8 +64,10 @@
   const sliderWidth = $derived(node.width ?? 130);
   const sliderHeight = $derived(node.height ?? 140);
   const isResizable = $derived(node.data.resizable ?? false);
+
   // Combined lock state: internal lock OR global interactivity disabled
   const isLocked = $derived((node.data.locked ?? false) || !store.nodesDraggable);
+
   // Settings panel position: use node width for horizontal, fixed for vertical
   const settingsLeftOffset = $derived(node.data.vertical ? 40 : sliderWidth + 10);
 
@@ -77,6 +80,7 @@
     match(message)
       .with(P.number, (value) => {
         const newValue = Math.min(Math.max(value, min), max);
+
         updateNodeData(node.id, { ...node.data, value: newValue });
         messageContext.send(newValue);
 
@@ -93,10 +97,12 @@
       })
       .with(messages.setMin, ({ value }) => {
         const clampedValue = Math.min(Math.max(currentValue, value), max);
+
         updateNodeData(node.id, { ...node.data, min: value, value: clampedValue });
       })
       .with(messages.setMax, ({ value }) => {
         const clampedValue = Math.min(Math.max(currentValue, min), value);
+
         updateNodeData(node.id, { ...node.data, max: value, value: clampedValue });
       })
       .with(messages.setDefault, ({ value }) => {
@@ -105,6 +111,7 @@
       .with(messages.setValue, ({ value }) => {
         const newValue = isFloat ? Math.round(value * 100) / 100 : Math.round(value);
         const clamped = Math.min(Math.max(newValue, min), max);
+
         updateNodeData(node.id, { ...node.data, value: clamped });
 
         if (sliderElement) sliderElement.value = clamped.toString();
@@ -179,8 +186,8 @@
 
   // Update node internals when size changes
   $effect(() => {
-    sliderWidth;
-    sliderHeight;
+    void sliderWidth;
+    void sliderHeight;
 
     setTimeout(() => {
       updateNodeInternals();
@@ -327,6 +334,7 @@
             <button
               onclick={() => {
                 const oldLocked = node.data.locked ?? false;
+
                 updateConfig({ locked: !oldLocked });
                 tracker.commit('locked', oldLocked, !oldLocked);
               }}
@@ -342,10 +350,12 @@
               {/if}
             </button>
           </Tooltip.Trigger>
+
           <Tooltip.Content>
             <p class="text-xs">Prevent moving and hide inlet</p>
           </Tooltip.Content>
         </Tooltip.Root>
+
         <button
           onclick={() => (showSettings = false)}
           class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
@@ -354,165 +364,24 @@
         </button>
       </div>
 
-      {@render setting()}
+      <SliderSettings
+        nodeId={node.id}
+        data={node.data}
+        {tracker}
+        onUpdate={updateConfig}
+        onReset={() => {
+          updateNodeData(node.id, { ...node.data, value: defaultValue });
+
+          if (sliderElement) {
+            sliderElement.value = defaultValue.toString();
+          }
+
+          messageContext.send(defaultValue);
+        }}
+      />
     </div>
   {/if}
 </div>
-
-{#snippet setting()}
-  <div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
-    <div class="space-y-4">
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Mode</label>
-
-        <div class="flex gap-2">
-          <label class="flex items-center">
-            <input
-              type="radio"
-              name="mode"
-              value="int"
-              checked={!isFloat}
-              onchange={() => {
-                const oldValue = isFloat;
-                updateConfig({ isFloat: false });
-                tracker.commit('isFloat', oldValue, false);
-              }}
-              class="mr-2 h-3 w-3"
-            />
-            <span class="text-xs text-zinc-300">Integer</span>
-          </label>
-
-          <label class="flex items-center">
-            <input
-              type="radio"
-              name="mode"
-              value="float"
-              checked={isFloat}
-              onchange={() => {
-                const oldValue = isFloat;
-                updateConfig({ isFloat: true });
-                tracker.commit('isFloat', oldValue, true);
-              }}
-              class="mr-2 h-3 w-3"
-            />
-            <span class="text-xs text-zinc-300">Float</span>
-          </label>
-        </div>
-      </div>
-
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Minimum</label>
-
-        <input
-          type="number"
-          step={isFloat ? 0.01 : 1}
-          value={min}
-          onchange={(e) => {
-            const oldMin = min;
-            const newMin = parseFloat((e.target as HTMLInputElement).value);
-            updateConfig({ min: newMin });
-            tracker.commit('min', oldMin, newMin);
-          }}
-          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-        />
-      </div>
-
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Maximum</label>
-
-        <input
-          type="number"
-          step={isFloat ? 0.01 : 1}
-          value={max}
-          onchange={(e) => {
-            const oldMax = max;
-            const newMax = parseFloat((e.target as HTMLInputElement).value);
-            updateConfig({ max: newMax });
-            tracker.commit('max', oldMax, newMax);
-          }}
-          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-        />
-      </div>
-
-      <div>
-        <!-- svelte-ignore a11y_label_has_associated_control -->
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Default Value</label>
-
-        <input
-          type="number"
-          step={isFloat ? 0.01 : 1}
-          value={defaultValue}
-          {min}
-          {max}
-          onchange={(e) => {
-            const oldDefault = defaultValue;
-            const newDefault = parseFloat((e.target as HTMLInputElement).value);
-            updateConfig({ defaultValue: newDefault });
-            tracker.commit('defaultValue', oldDefault, newDefault);
-          }}
-          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-        />
-      </div>
-
-      <div class="flex gap-x-4">
-        <div class="flex gap-x-2">
-          <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label class="mb-2 block text-xs font-medium text-zinc-300">Vertical</label>
-
-          <input
-            type="checkbox"
-            checked={node.data.vertical}
-            onchange={(e) => {
-              const oldVertical = node.data.vertical ?? false;
-              const newVertical = e.currentTarget.checked;
-              updateConfig({ vertical: newVertical });
-              tracker.commit('vertical', oldVertical, newVertical);
-            }}
-            class="h-4 w-4 cursor-pointer"
-          />
-        </div>
-
-        <div class="flex gap-x-2">
-          <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label class="mb-2 block text-xs font-medium text-zinc-300">Resize</label>
-
-          <input
-            type="checkbox"
-            checked={isResizable}
-            onchange={(e) => {
-              const oldResizable = isResizable;
-              const newResizable = e.currentTarget.checked;
-              updateConfig({ resizable: newResizable });
-              tracker.commit('resizable', oldResizable, newResizable);
-            }}
-            class="h-4 w-4 cursor-pointer"
-          />
-        </div>
-      </div>
-
-      <div class="pt-2">
-        <button
-          onclick={() => {
-            updateNodeData(node.id, { ...node.data, value: defaultValue });
-
-            if (sliderElement) {
-              sliderElement.value = defaultValue.toString();
-            }
-
-            messageContext.send(defaultValue);
-          }}
-          class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded bg-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-600"
-        >
-          <RotateCcw class="h-3 w-3" />
-          Reset to Default
-        </button>
-      </div>
-    </div>
-  </div>
-{/snippet}
 
 <style>
   @media (pointer: coarse) {
