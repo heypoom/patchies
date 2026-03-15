@@ -60,6 +60,21 @@ export const jsRunnerInstructions = `
   - Pass { audio: true } for audio-precise timing
 - clock.cancel(id), clock.cancelAll() - Cancel scheduled callbacks
 - clock.setTimelineStyle({ color?, visible? }) - Customize this node's appearance in the timeline (color: CSS color string, visible: false to hide)
+- For full clock docs call get_doc_content({ kind: 'topic', slug: 'clock-api' })
+
+**Persistent Storage (kv):**
+- await kv.set(key, value), await kv.get(key), await kv.delete(key) - simple key-value storage
+- await kv.store(namespace).set/get/delete - namespaced store
+- For full kv docs call get_doc_content({ kind: 'topic', slug: 'data-storage' })
+
+**User-defined Settings Panel:**
+- await settings.define([...schema]) - expose a settings panel on the node (gear icon appears)
+- settings.get(key) - read current value (sync, after define resolves)
+- settings.getAll() - all values as object
+- settings.onChange((key, value, all) => {}) - react to user changes in real time
+- Each field: { key, label, type, default?, persistence?: 'node'|'kv'|'none', ...type-specific }
+- Schema field types: slider, number, boolean, string, select, color
+- For full settings docs call get_doc_content({ kind: 'topic', slug: 'object-settings' })
 `.trim();
 
 /**
