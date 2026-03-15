@@ -19,6 +19,7 @@
   let renamingId = $state<string | null>(null);
   let renameValue = $state('');
   let renameInputEl: HTMLInputElement | undefined = $state();
+  let confirmingCloseId = $state<string | null>(null);
 
   function startRename(id: string, currentName: string) {
     renamingId = id;
@@ -82,12 +83,12 @@
                   : ''}"
                 onclick={(e) => {
                   e.stopPropagation();
-                  chatSessionsStore.removeSession(session.id);
+                  confirmingCloseId = session.id;
                 }}
                 onkeydown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.stopPropagation();
-                    chatSessionsStore.removeSession(session.id);
+                    confirmingCloseId = session.id;
                   }
                 }}
               >
@@ -103,8 +104,11 @@
           </ContextMenu.Item>
           {#if $chatSessionsStore.sessions.length > 1}
             <ContextMenu.Separator />
-            <ContextMenu.Item onclick={() => chatSessionsStore.removeSession(session.id)}>
-              Close
+            <ContextMenu.Item
+              variant="destructive"
+              onclick={() => chatSessionsStore.removeSession(session.id)}
+            >
+              Delete
             </ContextMenu.Item>
           {/if}
         </ContextMenu.Content>
@@ -119,6 +123,34 @@
       <Plus class="h-3.5 w-3.5" />
     </button>
   </div>
+
+  {#if confirmingCloseId}
+    {@const sessionName =
+      $chatSessionsStore.sessions.find((s) => s.id === confirmingCloseId)?.name ?? 'this chat'}
+    <div
+      class="flex shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-900/80 px-3 py-2"
+    >
+      <span class="font-mono text-xs text-zinc-400">Delete chat?</span>
+      <div class="flex items-center gap-2">
+        <button
+          onclick={() => (confirmingCloseId = null)}
+          class="cursor-pointer rounded px-3 py-1 font-mono text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+        >
+          Cancel
+        </button>
+        <button
+          onclick={() => {
+            const id = confirmingCloseId!;
+            confirmingCloseId = null;
+            chatSessionsStore.removeSession(id);
+          }}
+          class="cursor-pointer rounded bg-red-900/60 px-3 py-1 font-mono text-xs text-red-300 transition-colors hover:bg-red-800/60"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  {/if}
 
   <!-- Chat views — all always-mounted to preserve state -->
   {#each $chatSessionsStore.sessions as session (session.id)}

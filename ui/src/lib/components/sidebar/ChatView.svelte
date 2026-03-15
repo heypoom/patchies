@@ -595,6 +595,31 @@
     </div>
   {/if}
 
+  {#if confirmingClear}
+    <div
+      class="flex shrink-0 items-center justify-between border-t border-zinc-800 bg-zinc-900/80 px-3 py-2"
+    >
+      <span class="font-mono text-xs text-zinc-400">Clear chat?</span>
+      <div class="flex items-center gap-2">
+        <button
+          onclick={() => (confirmingClear = false)}
+          class="cursor-pointer rounded px-3 py-1 font-mono text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+        >
+          Cancel
+        </button>
+        <button
+          onclick={() => {
+            confirmingClear = false;
+            handleClear();
+          }}
+          class="cursor-pointer rounded bg-red-900/60 px-3 py-1 font-mono text-xs text-red-300 transition-colors hover:bg-red-800/60"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+  {/if}
+
   <!-- Input area -->
   <div>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -640,7 +665,7 @@
       <div class="flex items-center gap-1">
         <button
           onclick={() => (personaPanelOpen = !personaPanelOpen)}
-          class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 font-mono text-[10px] transition-colors {personaPanelOpen ||
+          class="flex h-6 cursor-pointer items-center gap-1 rounded px-1.5 font-mono text-[10px] transition-colors {personaPanelOpen ||
           activePersona
             ? 'bg-purple-900/50 text-purple-400'
             : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
@@ -652,7 +677,7 @@
 
         <button
           onclick={() => (settingsPanelOpen = !settingsPanelOpen)}
-          class="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 font-mono text-[10px] transition-colors {settingsPanelOpen
+          class="flex h-6 cursor-pointer items-center rounded px-1.5 transition-colors {settingsPanelOpen
             ? 'bg-zinc-700 text-zinc-300'
             : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
           title="Chat settings"
@@ -661,40 +686,15 @@
         </button>
 
         {#if messages.length > 0 && !isLoading}
-          <div class="relative">
-            <button
-              onclick={() => (confirmingClear = !confirmingClear)}
-              class="cursor-pointer rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400"
-              title="Clear conversation"
-            >
-              <Trash2 class="h-3 w-3" />
-            </button>
-
-            {#if confirmingClear}
-              <div
-                class="absolute bottom-full left-0 mb-1 flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 shadow-lg"
-              >
-                <span class="font-mono text-[10px] whitespace-nowrap text-zinc-400"
-                  >Clear chat?</span
-                >
-                <button
-                  onclick={() => {
-                    confirmingClear = false;
-                    handleClear();
-                  }}
-                  class="cursor-pointer rounded bg-red-900/60 px-2 py-0.5 font-mono text-[10px] text-red-300 transition-colors hover:bg-red-800/60"
-                >
-                  Clear
-                </button>
-                <button
-                  onclick={() => (confirmingClear = false)}
-                  class="cursor-pointer font-mono text-[10px] text-zinc-600 transition-colors hover:text-zinc-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            {/if}
-          </div>
+          <button
+            onclick={() => (confirmingClear = !confirmingClear)}
+            class="flex h-6 cursor-pointer items-center rounded px-1.5 transition-colors {confirmingClear
+              ? 'bg-red-900/50 text-red-400'
+              : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
+            title="Clear conversation"
+          >
+            <Trash2 class="h-3 w-3" />
+          </button>
         {/if}
       </div>
 
