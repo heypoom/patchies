@@ -260,13 +260,13 @@
       {#if !isLocked}
         <div
           class={[
-            'absolute left-1/2 -translate-x-1/2 cursor-move rounded px-1 py-1 transition-opacity hover:bg-zinc-700/50',
+            'absolute left-1/2 -translate-x-1/2 cursor-move rounded px-1 py-1 transition-opacity hover:bg-zinc-700/50 pointer-coarse:px-2 pointer-coarse:py-2',
             node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-            node.data.showInlet === false ? '-top-7' : '-top-9'
+            node.data.showInlet === false ? '-top-9' : '-top-11'
           ]}
           title="Drag to move"
         >
-          <GripHorizontal class="h-4 w-4 text-zinc-500" />
+          <GripHorizontal class="h-4 w-4 text-zinc-500 pointer-coarse:h-5 pointer-coarse:w-5" />
         </div>
       {/if}
 

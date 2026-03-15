@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Lock, LockOpen, RotateCcw, Settings, X } from '@lucide/svelte/icons';
+  import { GripHorizontal, Lock, LockOpen, RotateCcw, Settings, X } from '@lucide/svelte/icons';
   import {
     NodeResizer,
     useSvelteFlow,
@@ -192,7 +192,7 @@
     }
 
     return [
-      'h-1 w-full cursor-pointer appearance-none rounded-lg [&::-moz-range-progress]:h-1 [&::-moz-range-progress]:rounded-lg [&::-moz-range-progress]:bg-blue-500 [&::-moz-range-thumb:hover]:bg-zinc-100 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-zinc-300 [&::-moz-range-track]:h-1 [&::-moz-range-track]:rounded-lg [&::-moz-range-track]:border-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-zinc-300 [&::-webkit-slider-track]:h-1 [&::-webkit-slider-track]:rounded-lg'
+      'slider-input h-1 w-full cursor-pointer appearance-none rounded-lg [&::-moz-range-progress]:h-1 [&::-moz-range-progress]:rounded-lg [&::-moz-range-progress]:bg-blue-500 [&::-moz-range-thumb:hover]:bg-zinc-100 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-zinc-300 [&::-moz-range-track]:h-1 [&::-moz-range-track]:rounded-lg [&::-moz-range-track]:border-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-zinc-300 [&::-webkit-slider-track]:h-1 [&::-webkit-slider-track]:rounded-lg'
     ];
   });
 
@@ -232,7 +232,8 @@
 
           <button
             class={[
-              'z-4 cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0',
+              'z-4 cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+              node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
               node.data.vertical && 'absolute top-[30px] right-[30px]'
             ]}
             onclick={() => (showSettings = !showSettings)}
@@ -243,7 +244,20 @@
         </div>
       {/if}
 
-      <div class={['relative', isLocked && 'nodrag']}>
+      <!-- Drag handle for moving the node (hidden when locked or interactivity is disabled) -->
+      {#if !isLocked}
+        <div
+          class={[
+            'absolute left-1/2 -translate-x-1/2 cursor-move rounded px-1 py-1 transition-opacity hover:bg-zinc-700/50 pointer-coarse:px-2 pointer-coarse:py-2',
+            node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+            node.data.vertical ? '-top-11 -left-3' : '-top-11'
+          ]}
+        >
+          <GripHorizontal class="h-4 w-4 text-zinc-500 pointer-coarse:h-5 pointer-coarse:w-5" />
+        </div>
+      {/if}
+
+      <div class="nodrag relative">
         {#if showInlet}
           <StandardHandle
             port="inlet"
@@ -286,7 +300,7 @@
               .data.vertical
               ? `writing-mode: vertical-lr; direction: rtl; height: ${sliderHeight}px;`
               : ''};"
-            class={['nodrag', sliderClass]}
+            class={sliderClass}
           />
 
           {#if !node.data.vertical}
@@ -502,3 +516,17 @@
     </div>
   </div>
 {/snippet}
+
+<style>
+  @media (pointer: coarse) {
+    :global(.slider-input)::-webkit-slider-thumb {
+      height: 1.1rem !important;
+      width: 1.1rem !important;
+    }
+
+    :global(.slider-input)::-moz-range-thumb {
+      height: 1.1rem !important;
+      width: 1.1rem !important;
+    }
+  }
+</style>

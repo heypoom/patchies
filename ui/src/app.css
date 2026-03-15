@@ -14,6 +14,7 @@
 @import './styles/prose.css';
 
 @custom-variant dark (&:is(.dark *));
+@variant pointer-coarse (@media (pointer: coarse));
 
 :root {
   --radius: 0.625rem;
