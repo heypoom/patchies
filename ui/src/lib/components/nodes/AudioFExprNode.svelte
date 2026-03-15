@@ -153,7 +153,7 @@
   <!-- Audio output -->
   <TypedHandle
     port="outlet"
-    spec={{ handleType: 'audio', handleId: 'audio-out' }}
+    spec={{ handleType: 'audio' }}
     title="Audio Output"
     total={1}
     index={0}

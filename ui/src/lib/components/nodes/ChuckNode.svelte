@@ -195,7 +195,7 @@
 
   <TypedHandle
     port="outlet"
-    spec={chuckSchema.outlets[0].handle!}
+    spec={chuckSchema.outlets[1].handle!}
     title="Message Output"
     total={2}
     index={1}

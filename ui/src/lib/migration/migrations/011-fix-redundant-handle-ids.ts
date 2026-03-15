@@ -1,19 +1,16 @@
 import type { Migration } from '../types';
 
 /**
- * Migration 011: Fix redundant handle IDs on sampler~, expr~, and ai.music
+ * Migration 011: Fix handle IDs changed during StandardHandle → TypedHandle migration
  *
- * These nodes had handleId values that duplicated the handleType, producing
- * double-prefixed IDs like `audio-out-audio-out` instead of `audio-out`.
- *
- * Affected edges:
- * - sampler~: audio-in-audio-in → audio-in, message-in-message-in → message-in, audio-out-audio-out → audio-out
- * - expr~: audio-out-audio-out → audio-out
- * - ai.music: audio-out-audio-out → audio-out
+ * Several categories of fixes:
+ * 1. Redundant handleId (audio-out-audio-out → audio-out): sampler~, expr~, fexpr~, ai.music
+ * 2. Dropped handleId (message-in-0 → message-in): asm.mem, uxn
+ * 3. Corrected handleId for csound~ (audio-in → audio-in-0, message-in-0 → message-in-1, audio-out → audio-out-0)
  */
 export const migration011: Migration = {
   version: 11,
-  name: 'fix-redundant-handle-ids',
+  name: 'fix-handle-ids',
 
   migrate(patch) {
     if (!patch.edges || !patch.nodes) return patch;
@@ -27,8 +24,24 @@ export const migration011: Migration = {
       'expr~': {
         'audio-out-audio-out': 'audio-out'
       },
+      'fexpr~': {
+        'audio-out-audio-out': 'audio-out'
+      },
       'ai.music': {
         'audio-out-audio-out': 'audio-out'
+      },
+      'asm.mem': {
+        'message-in-0': 'message-in',
+        'message-out-0': 'message-out'
+      },
+      uxn: {
+        'message-in-0': 'message-in',
+        'message-out-0': 'message-out'
+      },
+      'csound~': {
+        'audio-in': 'audio-in-0',
+        'message-in-0': 'message-in-1',
+        'audio-out': 'audio-out-0'
       }
     };
 
