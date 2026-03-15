@@ -4,7 +4,7 @@
 
 ## Hide AI Features
 
-AI is 100% optional and _opt-in_ with Patchies. Dislike AI? Hit `Ctrl/Cmd + K` then `Toggle AI Features`. This _permanently_ turns all AI-based nodes and AI generation features off.
+AI is 100% optional and _opt-in_ with Patchies. Dislike AI? Hit `Ctrl/Cmd + K` then `Toggle AI Features`. This _permanently_ turns all AI-based objects and AI generation features off.
 
 ## Create and Edit Objects with AI
 
@@ -29,7 +29,7 @@ The prompt adapts based on context. Use the mode dropdown in the header or press
 - **Turn Into** — Replace the selected object with a different type, preserving connected edges
 - **Fix** — Fix errors in the selected object; automatically reads console errors and sends them as context
 - **Split** — Split the selected object into multiple focused connected objects
-- **Fork** — Create a new object derived from the selected one (e.g., "as a canvas node", "draw triangles instead")
+- **Fork** — Create a new object derived from the selected one (e.g., "as a canvas object", "draw triangles instead")
 
 ### Setup
 
@@ -45,7 +45,7 @@ This feature uses the `gemini-3-flash-preview` model to understand your prompt a
 Open the sidebar and switch to the **Copilot** tab to chat with an AI assistant about your patch.
 
 - Ask questions about Patchies, get help debugging, or brainstorm ideas
-- When a node is selected, its type and data are automatically included as context so the AI understands what you're working on
+- When a object is selected, its type and data are automatically included as context so the AI understands what you're working on
 - Press `Enter` to send, `Shift+Enter` for a newline
 - Use the trash icon to clear the conversation history
 
@@ -66,17 +66,18 @@ The copilot can act on your canvas directly when you ask it to. It will present 
 
 The copilot automatically uses these behind the scenes to understand your patch before acting:
 
-- **Get Graph Nodes** — Lists all nodes and edges on the canvas so it knows what exists and how things are connected
-- **Get Node Data** — Fetches the full data of a specific node (code, settings, connected edges)
+- **Get Graph Objects** — Lists all objects and edges on the canvas so it knows what exists and how things are connected
+- **Get Object Data** — Fetches the full data of a specific object (code, settings, connected edges)
 - **Get Object Instructions** — Looks up the API reference for a specific object type (e.g., handle IDs, inlet/outlet specs)
 - **Search Docs** — Searches topic guides and object reference pages by keyword
+- **Get Object Errors** — Fetches recent error and warning logs for any object, useful for diagnosing issues across the patch
 - **Get Doc Content** — Fetches the full content of a documentation page
 
 ## Patch to App
 
 ![Patch to App dialog](/content/images/patch-to-app.webp)
 
-Convert your patch into a standalone HTML application. This feature analyzes your patch's nodes, connections, and code to generate a self-contained app.
+Convert your patch into a standalone HTML application. This feature analyzes your patch's objects, connections, and code to generate a self-contained app.
 
 ### How to Use
 

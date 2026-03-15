@@ -50,6 +50,7 @@ ${OBJECT_TYPE_LIST}`;
 export const GET_OBJECT_INSTRUCTIONS = 'get_object_instructions';
 export const GET_GRAPH_NODES = 'get_graph_nodes';
 export const GET_NODE_DATA = 'get_node_data';
+export const GET_NODE_ERRORS = 'get_node_errors';
 export const SEARCH_DOCS = 'search_docs';
 export const GET_DOC_CONTENT = 'get_doc_content';
 export const CONNECT_EDGES = 'connect_edges';
@@ -59,6 +60,7 @@ export const CONTEXT_TOOL_NAMES = new Set([
   GET_OBJECT_INSTRUCTIONS,
   GET_GRAPH_NODES,
   GET_NODE_DATA,
+  GET_NODE_ERRORS,
   SEARCH_DOCS,
   GET_DOC_CONTENT
 ]);
@@ -95,6 +97,22 @@ export const contextToolDeclarations = [
       type: 'object',
       properties: {
         nodeId: { type: 'string', description: 'The node ID to fetch data for' }
+      },
+      required: ['nodeId']
+    }
+  },
+  {
+    name: GET_NODE_ERRORS,
+    description:
+      'Fetch recent error and warning logs for a specific node by its ID. Returns the last N log entries (default 10). Use this to diagnose issues with nodes that are not currently selected.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        nodeId: { type: 'string', description: 'The node ID to fetch errors for' },
+        count: {
+          type: 'number',
+          description: 'Number of recent error/warning entries to return (default 10, max 50)'
+        }
       },
       required: ['nodeId']
     }

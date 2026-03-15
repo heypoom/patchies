@@ -1,4 +1,5 @@
 import { getObjectSpecificInstructions } from '../object-descriptions';
+import { logger } from '$lib/utils/logger';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from '../object-prompts/shared-jsrunner';
 import { buildCanvasToolDeclarations, toolNameToMode } from './canvas-tools';
 import { runModeResolver } from '../modes/run-resolver';
@@ -18,6 +19,7 @@ import {
   GET_OBJECT_INSTRUCTIONS,
   GET_GRAPH_NODES,
   GET_NODE_DATA,
+  GET_NODE_ERRORS,
   SEARCH_DOCS,
   GET_DOC_CONTENT,
   contextToolDeclarations,
@@ -149,9 +151,11 @@ export async function streamChatMessage(
   }));
 
   const canvasDeclarations = onAction ? buildCanvasToolDeclarations(nodeContext) : [];
+
   const allCanvasDeclarations = onAction
     ? [...canvasDeclarations, connectEdgesDeclaration, disconnectEdgesDeclaration]
     : [];
+
   const tools = [{ functionDeclarations: [...contextToolDeclarations, ...allCanvasDeclarations] }];
 
   let fullText = '';
@@ -284,6 +288,7 @@ export async function streamChatMessage(
 
         if (name === GET_GRAPH_NODES) {
           const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
+
           return {
             functionResponse: {
               name: GET_GRAPH_NODES,
@@ -295,6 +300,7 @@ export async function streamChatMessage(
         if (name === GET_NODE_DATA) {
           const nodeId = (functionCall.args?.nodeId as string) ?? '';
           const node = getNodeById?.(nodeId);
+
           if (!node) {
             return {
               functionResponse: {
@@ -303,11 +309,13 @@ export async function streamChatMessage(
               }
             };
           }
+
           // Include connected edges so AI knows what's already wired
           const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
           const connectedEdges = graph.edges.filter(
             (e) => e.source === nodeId || e.target === nodeId
           );
+
           return {
             functionResponse: {
               name: GET_NODE_DATA,
@@ -321,8 +329,31 @@ export async function streamChatMessage(
           };
         }
 
+        if (name === GET_NODE_ERRORS) {
+          const nodeId = (functionCall.args?.nodeId as string) ?? '';
+          const count = Math.min(Math.max((functionCall.args?.count as number) ?? 10, 1), 50);
+
+          const logs = logger
+            .getNodeLogs(nodeId)
+            .filter((e) => e.level === 'error' || e.level === 'warn')
+            .slice(-count)
+            .map((e) => ({
+              level: e.level,
+              message: e.message,
+              timestamp: e.timestamp.toISOString()
+            }));
+
+          return {
+            functionResponse: {
+              name: GET_NODE_ERRORS,
+              response: { nodeId, errors: logs, total: logs.length }
+            }
+          };
+        }
+
         if (name === SEARCH_DOCS) {
           const query = ((functionCall.args?.query as string) ?? '').toLowerCase().trim();
+
           const matchingTopics = topicMetas
             .filter(
               (t) =>
@@ -365,6 +396,7 @@ export async function streamChatMessage(
 
           if (kind === 'topic') {
             const content = await fetchTopicHelp(slug);
+
             return {
               functionResponse: {
                 name: GET_DOC_CONTENT,
@@ -377,6 +409,7 @@ export async function streamChatMessage(
 
           // kind === 'object'
           const content = await fetchObjectHelp(slug);
+
           return {
             functionResponse: {
               name: GET_DOC_CONTENT,
@@ -391,7 +424,9 @@ export async function streamChatMessage(
         const type = (functionCall.args?.type as string) ?? '';
         const instructions =
           getObjectSpecificInstructions(type) || `No specific instructions found for "${type}".`;
+
         const handleDocs = generateHandleDocs([type]);
+
         return {
           functionResponse: {
             name: GET_OBJECT_INSTRUCTIONS,

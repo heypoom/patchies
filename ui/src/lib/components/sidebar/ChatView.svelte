@@ -99,7 +99,8 @@
     const errors = logger
       .getNodeLogs($selectedNodeInfo.id)
       .filter((e) => e.level === 'error')
-      .map((e) => e.message);
+      .map((e) => e.message)
+      .slice(-5);
 
     return {
       nodeId: $selectedNodeInfo.id,
