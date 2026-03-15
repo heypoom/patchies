@@ -125,8 +125,6 @@
   </div>
 
   {#if confirmingCloseId}
-    {@const sessionName =
-      $chatSessionsStore.sessions.find((s) => s.id === confirmingCloseId)?.name ?? 'this chat'}
     <div
       class="flex shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-900/80 px-3 py-2"
     >
