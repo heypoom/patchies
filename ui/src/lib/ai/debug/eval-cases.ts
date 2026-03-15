@@ -9,8 +9,10 @@
 export interface EvalCase {
   id: string;
   prompt: string;
+
   /** Which handle pattern category this tests */
   category: 'message' | 'audio' | 'video' | 'mixed' | 'dynamic';
+
   /** Expected node types (order doesn't matter, just presence) */
   expectedTypes: string[];
 }
@@ -440,6 +442,22 @@ export const EVAL_CASES: EvalCase[] = [
     prompt: 'netrecv receiving network data to msg',
     category: 'message',
     expectedTypes: ['netrecv', 'msg']
+  },
+
+  // === Analysis connections (fft~ uses analysis-out-0, NOT message-out-0) ===
+  {
+    id: 'analysis-fft-to-hydra',
+    prompt:
+      'strudel to out~, also strudel to fft~, fft~ analysis to hydra for audio-reactive visuals, hydra to bg.out',
+    category: 'mixed',
+    expectedTypes: ['strudel', 'out~', 'object', 'hydra', 'bg.out']
+  },
+  {
+    id: 'analysis-fft-to-glsl',
+    prompt:
+      'osc~ to out~, also osc~ to fft~, fft~ feeding into glsl shader for visualization, glsl to bg.out',
+    category: 'mixed',
+    expectedTypes: ['object', 'glsl', 'bg.out']
   }
 ];
 
@@ -459,14 +477,19 @@ export interface EvalResult {
   status: EvalStatus;
   timestamp: number;
   elapsedMs: number;
+
   /** Generated node types */
   nodeTypes: string[];
+
   /** Per-edge validation */
   edges: EvalEdgeResult[];
+
   /** Total error count */
   errorCount: number;
+
   /** Total warning count */
   warnCount: number;
+
   /** AI error message if generation failed */
   errorMessage?: string;
 }

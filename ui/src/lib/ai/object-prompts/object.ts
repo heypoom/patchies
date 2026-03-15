@@ -67,6 +67,11 @@ EXAMPLE - Oscillator (one message inlet, one audio outlet):
 \`\`\`
 Connections: message-in-0 receives frequency, audio-out-0 outputs oscillator signal
 
+CRITICAL: fft~ (FFT Analysis):
+- fft~ has ONE audio inlet "audio-in-0" and ONE analysis outlet "analysis-out-0"
+- The outlet type is "analysis", NOT "message" or "audio" — use sourceHandle: "analysis-out-0"
+- Connect analysis-out-0 to hydra/glsl message inlets for audio-reactive visuals
+
 CRITICAL: out~ (Audio Output - Speaker Output):
 - out~ is a DEDICATED node type (NOT created via "object")
 - Use directly: { "type": "out~", "data": { "deviceId": "" } }

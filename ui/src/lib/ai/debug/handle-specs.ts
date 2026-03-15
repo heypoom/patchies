@@ -343,20 +343,20 @@ export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
  * For "object" node type, handle IDs depend on the audio object's schema.
  * All object-type handles follow the pattern:
  *   inlet: audio-in-{N} (signal) or message-in-{N} (float/string/message/bang)
- *   outlet: audio-out-{N} (signal) or message-out-{N} (message/bang/float)
+ *   outlet: audio-out-{N} (signal), message-out-{N} (message/bang/float), or analysis-out-{N} (fft~)
  *
  * The index N is the position in the inlet/outlet array (0-based).
  */
 export const OBJECT_NODE_HANDLE_PATTERN = {
   inlets: {
     kind: 'indexed' as const,
-    prefix: 'audio-in-|message-in-',
-    note: 'signal→audio, others→message, indexed by position'
+    prefix: 'audio-in-|message-in-|analysis-in-',
+    note: 'signal→audio, analysis→analysis, others→message, indexed by position'
   },
   outlets: {
     kind: 'indexed' as const,
-    prefix: 'audio-out-|message-out-',
-    note: 'signal→audio, others→message, indexed by position'
+    prefix: 'audio-out-|message-out-|analysis-out-',
+    note: 'signal→audio, analysis→analysis, others→message, indexed by position'
   }
 };
 
