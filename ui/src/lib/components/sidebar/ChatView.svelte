@@ -83,6 +83,7 @@
   let fileInputEl: HTMLInputElement | undefined = $state();
   let personaPanelOpen = $state(false);
   let settingsPanelOpen = $state(false);
+  let confirmingClear = $state(false);
   let addingCustom = $state(false);
   let newPersonaName = $state('');
   let newPersonaPrompt = $state('');
@@ -658,19 +659,46 @@
         >
           <Settings class="h-3 w-3" />
         </button>
+
+        {#if messages.length > 0 && !isLoading}
+          <div class="relative">
+            <button
+              onclick={() => (confirmingClear = !confirmingClear)}
+              class="cursor-pointer rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400"
+              title="Clear conversation"
+            >
+              <Trash2 class="h-3 w-3" />
+            </button>
+
+            {#if confirmingClear}
+              <div
+                class="absolute bottom-full left-0 mb-1 flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 shadow-lg"
+              >
+                <span class="font-mono text-[10px] whitespace-nowrap text-zinc-400"
+                  >Clear chat?</span
+                >
+                <button
+                  onclick={() => {
+                    confirmingClear = false;
+                    handleClear();
+                  }}
+                  class="cursor-pointer rounded bg-red-900/60 px-2 py-0.5 font-mono text-[10px] text-red-300 transition-colors hover:bg-red-800/60"
+                >
+                  Clear
+                </button>
+                <button
+                  onclick={() => (confirmingClear = false)}
+                  class="cursor-pointer font-mono text-[10px] text-zinc-600 transition-colors hover:text-zinc-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            {/if}
+          </div>
+        {/if}
       </div>
 
       <div class="flex items-center gap-1.5">
-        {#if messages.length > 0 && !isLoading}
-          <button
-            onclick={handleClear}
-            class="cursor-pointer rounded p-1.5 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400"
-            title="Clear conversation"
-          >
-            <Trash2 class="h-3.5 w-3.5" />
-          </button>
-        {/if}
-
         <input
           bind:this={fileInputEl}
           type="file"
