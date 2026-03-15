@@ -36,7 +36,7 @@ export class HydraRenderer {
   public framebuffer: regl.Framebuffer2D | null = null;
 
   private msgContext!: WorkerRendererMessageContext;
-  private settingsProxy: WorkerSettingsProxy | null = null;
+  public settingsProxy: WorkerSettingsProxy | null = null;
 
   private timestamp = performance.now();
 
@@ -393,14 +393,6 @@ export class HydraRenderer {
       data: array,
       timestamp: performance.now()
     });
-  }
-
-  receiveSettingsValues(requestId: string, values: Record<string, unknown>) {
-    this.settingsProxy?._receiveValuesInit(requestId, values);
-  }
-
-  receiveSettingsValueChanged(key: string, value: unknown) {
-    this.settingsProxy?._receiveValueChanged(key, value);
   }
 
   setPortCount(inletCount = 1, outletCount = 0) {

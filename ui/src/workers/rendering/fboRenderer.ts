@@ -1384,14 +1384,22 @@ export class FBORenderer {
       .exhaustive();
   }
 
+  private getSettingsProxy(nodeId: string) {
+    return (
+      this.canvasByNode.get(nodeId)?.settingsProxy ??
+      this.hydraByNode.get(nodeId)?.settingsProxy ??
+      this.textmodeByNode.get(nodeId)?.settingsProxy ??
+      this.threeByNode.get(nodeId)?.settingsProxy ??
+      null
+    );
+  }
+
   receiveSettingsValues(nodeId: string, requestId: string, values: Record<string, unknown>) {
-    this.canvasByNode.get(nodeId)?.receiveSettingsValues(requestId, values);
-    this.hydraByNode.get(nodeId)?.receiveSettingsValues(requestId, values);
+    this.getSettingsProxy(nodeId)?._receiveValuesInit(requestId, values);
   }
 
   receiveSettingsValueChanged(nodeId: string, key: string, value: unknown) {
-    this.canvasByNode.get(nodeId)?.receiveSettingsValueChanged(key, value);
-    this.hydraByNode.get(nodeId)?.receiveSettingsValueChanged(key, value);
+    this.getSettingsProxy(nodeId)?._receiveValueChanged(key, value);
   }
 
   getFboNodeById(nodeId: string): FBONode | undefined {
