@@ -33,7 +33,6 @@ function getDb(): Promise<IDBPDatabase<ChatHistoryDB>> {
 export async function loadChatMessages(sessionId: string): Promise<PersistedMessage[]> {
   try {
     const db = await getDb();
-
     return (await db.get(STORE, sessionId)) ?? [];
   } catch {
     return [];
@@ -46,10 +45,9 @@ export async function saveChatMessages(
 ): Promise<void> {
   try {
     const db = await getDb();
-
     // Strip images and unwrap Svelte proxies before persisting
     const persisted: PersistedMessage[] = messages.map(({ images: _images, ...rest }) => rest);
-    await db.put(STORE, JSON.parse(JSON.stringify(persisted)), sessionId);
+    await db.put(STORE, $state.snapshot(persisted), sessionId);
   } catch (err) {
     console.error('[chat-history] save failed:', err);
   }
@@ -58,7 +56,6 @@ export async function saveChatMessages(
 export async function deleteChatMessages(sessionId: string): Promise<void> {
   try {
     const db = await getDb();
-
     await db.delete(STORE, sessionId);
   } catch {
     // Ignore delete errors

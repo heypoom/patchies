@@ -25,6 +25,7 @@
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import ActionCard from './ActionCard.svelte';
+  import PersistedActionCard from './PersistedActionCard.svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import { personaStore, BUILTIN_PRESETS, type Persona } from '../../../stores/persona.store';
   import {
@@ -119,6 +120,13 @@
     if (!action) return;
 
     actions.set(id, { ...action, state });
+
+    // Persist state to ThreadActionRef in messages so it survives reload
+    messages = messages.map((m) => {
+      if (!m.actions) return m;
+      const updated = m.actions.map((ref) => (ref.id === id ? { ...ref, state } : ref));
+      return { ...m, actions: updated };
+    });
   }
 
   function applyAction(action: ChatAction) {
@@ -148,7 +156,9 @@
         let content = m.content;
 
         if (m.actions && m.actions.length > 0) {
-          const actionSummary = m.actions.map((a) => `[Action: ${a.summary ?? a.type}]`).join(' ');
+          const actionSummary = m.actions
+            .map((a) => `[Action ${a.state ?? 'applied'}: ${a.summary ?? a.type}]`)
+            .join(' ');
 
           content = content ? `${content}\n${actionSummary}` : actionSummary;
         }
@@ -216,10 +226,21 @@
 
       const completedActions: ThreadActionRef[] = pendingActions.map((id) => {
         const action = actions.get(id);
+
+        const summary = action
+          ? match(action.result)
+              .with({ kind: 'single' }, (r) => `Created ${r.type}`)
+              .with({ kind: 'multi' }, (r) => `Created ${r.nodes.length} objects`)
+              .with({ kind: 'edit' }, () => `Edited object`)
+              .with({ kind: 'replace' }, (r) => `Replaced with ${r.newType}`)
+              .exhaustive()
+          : undefined;
+
         return {
           id,
           type: action?.mode ?? 'unknown',
-          summary: action ? `${action.descriptor.label}: ${action.result.kind}` : undefined
+          summary,
+          state: action?.state === 'dismissed' ? 'dismissed' : 'applied'
         };
       });
 
@@ -387,6 +408,8 @@
                     onStateChange={updateActionState}
                     {getNodeById}
                   />
+                {:else if ref.summary || ref.type}
+                  <PersistedActionCard {ref} />
                 {/if}
               {/each}
             </div>

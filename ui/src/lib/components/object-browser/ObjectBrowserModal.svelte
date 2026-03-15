@@ -317,15 +317,13 @@
 
     <!-- Modal container -->
     <div
-      class="relative z-10 flex h-screen w-full flex-col overflow-hidden bg-zinc-950 sm:mx-4 sm:h-[85vh] sm:max-w-4xl sm:rounded-lg sm:border sm:border-zinc-700 sm:shadow-2xl md:mx-8 lg:mx-12"
+      class="pt-safe pb-safe relative z-10 flex h-screen w-full flex-col overflow-hidden bg-zinc-950 sm:mx-4 sm:h-[85vh] sm:max-w-4xl sm:rounded-lg sm:border sm:border-zinc-700 sm:shadow-2xl md:mx-8 lg:mx-12"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
     >
       <!-- Header with close button -->
-      <div
-        class="flex items-center justify-between border-b border-zinc-800 px-4 pt-10 pb-3 sm:px-6 sm:pt-4"
-      >
+      <div class="flex items-center justify-between border-b border-zinc-800 px-4 py-3 sm:px-6">
         <h2 id="modal-title" class="text-lg font-medium text-zinc-200">Browse Objects</h2>
         <button
           onclick={handleClose}

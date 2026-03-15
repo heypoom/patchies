@@ -9,7 +9,19 @@ import {
   Scissors,
   GitFork
 } from '@lucide/svelte/icons';
-import type { AiModeDescriptor, AiModeContext, AiPromptMode } from './types';
+import { match } from 'ts-pattern';
+import type { AiModeDescriptor, AiModeContext, AiPromptMode, AiPromptColor } from './types';
+
+/** Shared color → Tailwind class mapping for action cards */
+export function getActionColorClass(color: AiPromptColor): string {
+  return match(color)
+    .with('purple', () => 'border-purple-500/40 bg-purple-950/30 text-purple-400')
+    .with('blue', () => 'border-blue-500/40 bg-blue-950/30 text-blue-400')
+    .with('amber', () => 'border-amber-500/40 bg-amber-950/30 text-amber-400')
+    .with('green', () => 'border-green-500/40 bg-green-950/30 text-green-400')
+    .with('red', () => 'border-red-500/40 bg-red-950/30 text-red-400')
+    .exhaustive();
+}
 
 function nodeName(ctx: AiModeContext): string {
   const d = ctx.selectedNode?.data as Record<string, unknown> | undefined;

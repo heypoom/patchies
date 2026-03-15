@@ -5,6 +5,7 @@
   import type { ChatAction, ChatNode } from '$lib/ai/chat/resolver';
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import type { AiModeResult } from '$lib/ai/modes/types';
+  import { getActionColorClass } from '$lib/ai/modes/descriptors';
 
   let {
     action,
@@ -18,15 +19,7 @@
     getNodeById?: (nodeId: string) => ChatNode | undefined;
   } = $props();
 
-  const colorClass = $derived(
-    match(action.descriptor.color)
-      .with('purple', () => 'border-purple-500/40 bg-purple-950/30 text-purple-400')
-      .with('blue', () => 'border-blue-500/40 bg-blue-950/30 text-blue-400')
-      .with('amber', () => 'border-amber-500/40 bg-amber-950/30 text-amber-400')
-      .with('green', () => 'border-green-500/40 bg-green-950/30 text-green-400')
-      .with('red', () => 'border-red-500/40 bg-red-950/30 text-red-400')
-      .exhaustive()
-  );
+  const colorClass = $derived(getActionColorClass(action.descriptor.color));
 
   const summary = $derived(
     match(action.result)

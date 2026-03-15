@@ -2,6 +2,7 @@ export interface ThreadActionRef {
   id: string;
   type: string;
   summary?: string;
+  state?: 'applied' | 'dismissed';
 }
 
 export interface StagedImage {
