@@ -71,6 +71,7 @@ function emitPort(port: InletSchema | OutletSchema): string {
   // Include handle spec if present
   if (port.handle) {
     const handleParts: string[] = [];
+
     if (port.handle.handleType)
       handleParts.push(`handleType: ${emitString(port.handle.handleType)}`);
     if (port.handle.handleId !== undefined) {
@@ -78,6 +79,7 @@ function emitPort(port: InletSchema | OutletSchema): string {
         `handleId: ${typeof port.handle.handleId === 'number' ? port.handle.handleId : emitString(port.handle.handleId)}`
       );
     }
+
     parts.push(`handle: { ${handleParts.join(', ')} }`);
   }
 
@@ -119,14 +121,24 @@ function emitObjectSchema(schema: ObjectSchema): string {
   // handlePatterns
   if (schema.handlePatterns) {
     const patternParts: string[] = [];
-    for (const dir of ['inlet', 'outlet'] as const) {
-      const p = schema.handlePatterns[dir];
-      if (!p) continue;
-      const fields: string[] = [`template: ${emitString(p.template)}`];
-      if (p.handleType) fields.push(`handleType: ${emitString(p.handleType)}`);
-      if (p.description) fields.push(`description: ${emitString(p.description)}`);
-      patternParts.push(`${dir}: { ${fields.join(', ')} }`);
+
+    for (const direction of ['inlet', 'outlet'] as const) {
+      const pattern = schema.handlePatterns[direction];
+      if (!pattern) continue;
+
+      const fields: string[] = [`template: ${emitString(pattern.template)}`];
+
+      if (pattern.handleType) {
+        fields.push(`handleType: ${emitString(pattern.handleType)}`);
+      }
+
+      if (pattern.description) {
+        fields.push(`description: ${emitString(pattern.description)}`);
+      }
+
+      patternParts.push(`${direction}: { ${fields.join(', ')} }`);
     }
+
     lines.push(`    handlePatterns: { ${patternParts.join(', ')} }`);
   }
 

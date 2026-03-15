@@ -166,6 +166,128 @@ export const EVAL_CASES: EvalCase[] = [
     expectedTypes: ['js', 'msg']
   },
 
+  // === Tricky handle patterns ===
+  {
+    id: 'tricky-sampler-handles',
+    prompt: 'mic~ recording into sampler~, sampler~ to out~',
+    category: 'audio',
+    expectedTypes: ['mic~', 'sampler~', 'out~']
+  },
+  {
+    id: 'tricky-chuck-mixed',
+    prompt: 'slider sending to chuck~ message inlet, chuck~ audio to out~',
+    category: 'mixed',
+    expectedTypes: ['slider', 'chuck~', 'out~']
+  },
+  {
+    id: 'tricky-csound-mixed',
+    prompt: 'button triggering csound~, csound~ audio to out~',
+    category: 'mixed',
+    expectedTypes: ['button', 'csound~', 'out~']
+  },
+  {
+    id: 'tricky-meter-no-index',
+    prompt: 'osc~ through gain~ to out~, also gain~ to meter~',
+    category: 'audio',
+    expectedTypes: ['object', 'meter~']
+  },
+  {
+    id: 'tricky-out-fanin',
+    prompt: 'two osc~ both connected to the same out~',
+    category: 'audio',
+    expectedTypes: ['object']
+  },
+  {
+    id: 'tricky-msg-indexed-inlets',
+    prompt: 'two sliders connected to a msg node that uses $1 and $2',
+    category: 'message',
+    expectedTypes: ['slider', 'msg']
+  },
+  {
+    id: 'tricky-expr-indexed-inlets',
+    prompt: 'two sliders feeding into expr node with $f1 + $f2',
+    category: 'message',
+    expectedTypes: ['slider', 'expr']
+  },
+  {
+    id: 'tricky-sequencer-outlets',
+    prompt: 'sequencer with 3 tracks sending to 3 separate msg nodes',
+    category: 'dynamic',
+    expectedTypes: ['sequencer', 'msg']
+  },
+  {
+    id: 'tricky-swgl-mixed-outlets',
+    prompt: 'swgl node with video output to bg.out',
+    category: 'video',
+    expectedTypes: ['swgl', 'bg.out']
+  },
+  {
+    id: 'tricky-p5-dual-outlets',
+    prompt: 'p5 node with video output to glsl and message output to a msg node',
+    category: 'video',
+    expectedTypes: ['p5', 'glsl', 'msg']
+  },
+
+  // === AI nodes ===
+  {
+    id: 'ai-text-prompt',
+    prompt: 'slider connected to ai.text, ai.text output to label',
+    category: 'mixed',
+    expectedTypes: ['slider', 'ai.text', 'label']
+  },
+  {
+    id: 'ai-stt-pipeline',
+    prompt: 'mic~ audio into ai.stt, ai.stt text output to label',
+    category: 'mixed',
+    expectedTypes: ['mic~', 'ai.stt', 'label']
+  },
+  {
+    id: 'ai-speech-to-out',
+    prompt: 'button triggering ai.speech, ai.speech audio to out~',
+    category: 'mixed',
+    expectedTypes: ['button', 'ai.speech', 'out~']
+  },
+  {
+    id: 'ai-image-video',
+    prompt: 'webcam into ai.image, ai.image video output to bg.out',
+    category: 'video',
+    expectedTypes: ['webcam', 'ai.image', 'bg.out']
+  },
+
+  // === Dynamic audio nodes ===
+  {
+    id: 'dynamic-elem-to-out',
+    prompt: 'elem~ synthesis node connected to out~',
+    category: 'dynamic',
+    expectedTypes: ['elem~', 'out~']
+  },
+  {
+    id: 'dynamic-sonic-to-out',
+    prompt: 'sonic~ node connected to out~',
+    category: 'dynamic',
+    expectedTypes: ['sonic~', 'out~']
+  },
+  {
+    id: 'dynamic-dsp-with-message',
+    prompt: 'slider sending control to dsp~ message inlet, dsp~ audio to out~',
+    category: 'dynamic',
+    expectedTypes: ['slider', 'dsp~', 'out~']
+  },
+  {
+    id: 'dynamic-canvas-dom',
+    prompt: 'canvas.dom with video output to bg.out',
+    category: 'video',
+    expectedTypes: ['canvas.dom', 'bg.out']
+  },
+
+  // === Video routing ===
+  {
+    id: 'video-send-recv',
+    prompt: 'p5 video into send.vdo, recv.vdo output to bg.out',
+    category: 'video',
+    expectedTypes: ['p5', 'send.vdo', 'recv.vdo', 'bg.out']
+  },
+
   // === Three-node chains ===
   {
     id: 'chain-p5-glsl-hydra',
@@ -178,6 +300,24 @@ export const EVAL_CASES: EvalCase[] = [
     prompt: 'slider controlling tone~ frequency, tone~ to out~',
     category: 'mixed',
     expectedTypes: ['slider', 'tone~', 'out~']
+  },
+  {
+    id: 'chain-webcam-glsl-bgout',
+    prompt: 'webcam through glsl shader to bg.out',
+    category: 'video',
+    expectedTypes: ['webcam', 'glsl', 'bg.out']
+  },
+  {
+    id: 'chain-mic-chuck-out',
+    prompt: 'mic~ into chuck~ audio processing, chuck~ to out~',
+    category: 'audio',
+    expectedTypes: ['mic~', 'chuck~', 'out~']
+  },
+  {
+    id: 'chain-strudel-sampler-out',
+    prompt: 'strudel to sampler~ audio output to out~',
+    category: 'mixed',
+    expectedTypes: ['strudel', 'sampler~', 'out~']
   }
 ];
 
