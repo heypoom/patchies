@@ -14,7 +14,13 @@ export const topicOrder: Record<string, string[]> = {
   'Getting Started': ['demos', 'adding-objects', 'modifying-objects', 'shortcuts'],
   Connections: ['connecting-objects', 'message-passing', 'hot-cold-inlets', 'network-p2p'],
   'Audio & Video': ['audio-chaining', 'video-chaining', 'connection-rules'],
-  Scripting: ['javascript-runner', 'canvas-interaction', 'virtual-filesystem', 'data-storage'],
+  Scripting: [
+    'javascript-runner',
+    'canvas-interaction',
+    'virtual-filesystem',
+    'data-storage',
+    'object-settings'
+  ],
   'Timing & Sync': ['audio-reactivity', 'transport-control', 'clock-api', 'parameter-automation'],
   Sidebar: [
     'manage-files',

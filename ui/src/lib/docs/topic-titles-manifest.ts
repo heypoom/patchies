@@ -26,6 +26,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'message-passing': 'Message Passing',
   'modifying-objects': 'Modifying Objects',
   'network-p2p': 'P2P Messaging',
+  'object-settings': 'Object Settings',
   'offline-usage': 'Offline Usage',
   'parameter-automation': 'Parameter Automation',
   'rendering-pipeline': 'Rendering Pipeline',
