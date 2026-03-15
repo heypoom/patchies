@@ -37,7 +37,7 @@ export const aiTtsSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
-      handle: { handleType: 'message' },
+      handle: { handleType: 'message', handleId: 0 },
       messages: [
         { schema: Type.String(), description: 'Generate and play speech for the text' },
         { schema: Speak, description: 'Generate and play speech (explicit format)' },
@@ -57,7 +57,7 @@ export const aiTtsSchema: ObjectSchema = {
       id: 'audio',
       type: 'signal',
       description: 'Audio output',
-      handle: { handleType: 'audio' }
+      handle: { handleType: 'audio', handleId: 0 }
     }
   ],
   tags: ['ai', 'tts', 'speech', 'voice', 'audio', 'google'],

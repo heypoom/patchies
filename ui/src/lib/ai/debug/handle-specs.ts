@@ -94,7 +94,7 @@ export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
   },
   'sampler~': {
     inlets: { kind: 'fixed', handles: ['audio-in-audio-in', 'message-in-message-in'] },
-    outlets: { kind: 'fixed', handles: ['audio-out-audio-out'] }
+    outlets: { kind: 'fixed', handles: ['audio-out'] }
   },
 
   // === Visual & Creative Coding ===
@@ -253,8 +253,8 @@ export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
     outlets: { kind: 'fixed', handles: ['audio-out', 'message-out-0'] }
   },
   'csound~': {
-    inlets: { kind: 'fixed', handles: ['audio-in', 'message-in-0'] },
-    outlets: { kind: 'fixed', handles: ['audio-out'] }
+    inlets: { kind: 'fixed', handles: ['audio-in-0', 'message-in-1'] },
+    outlets: { kind: 'fixed', handles: ['audio-out-0'] }
   },
   'bytebeat~': {
     inlets: { kind: 'fixed', handles: ['message-in'] },
@@ -274,7 +274,7 @@ export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
       patterns: ['audio-in', 'audio-in-{N}', 'message-in-{N}'],
       note: 'signal inlets then control inlets'
     },
-    outlets: { kind: 'fixed', handles: ['audio-out-audio-out'] }
+    outlets: { kind: 'fixed', handles: ['audio-out'] }
   },
 
   // === Programming & Control ===
@@ -320,7 +320,7 @@ export const NODE_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
   },
   'ai.music': {
     inlets: { kind: 'fixed', handles: ['message-in'] },
-    outlets: { kind: 'fixed', handles: ['audio-out-audio-out'] }
+    outlets: { kind: 'fixed', handles: ['audio-out'] }
   },
 
   // === Media Input ===

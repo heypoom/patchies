@@ -116,6 +116,12 @@ export const chuckSchema: ObjectSchema = {
   ],
   outlets: [
     {
+      id: 'audio',
+      type: 'signal',
+      description: 'Audio output',
+      handle: { handleType: 'audio' }
+    },
+    {
       id: 'message',
       description: 'Console output and event responses',
       handle: { handleType: 'message', handleId: 0 },

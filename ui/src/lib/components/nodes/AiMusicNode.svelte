@@ -272,7 +272,7 @@
 
       <TypedHandle
         port="outlet"
-        spec={{ handleType: 'audio', handleId: 'audio-out' }}
+        spec={{ handleType: 'audio' }}
         title="Audio Outlet"
         total={1}
         index={0}
