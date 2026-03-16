@@ -210,6 +210,7 @@
     glSystem.registerSettingsCallbacks(nodeId, {
       onDefine: async (requestId, schema) => {
         await settingsManager.define(schema as SettingsSchema);
+
         glSystem.sendSettingsValues(nodeId, requestId, settingsManager.getAll());
       },
       onClear: () => {

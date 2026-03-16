@@ -121,6 +121,7 @@
     workerSystem.registerSettingsCallbacks(nodeId, {
       onDefine: async (requestId, schema) => {
         await settingsManager.define(schema as SettingsSchema);
+
         workerSystem.sendSettingsValues(nodeId, requestId, settingsManager.getAll());
       },
       onClear: () => {
