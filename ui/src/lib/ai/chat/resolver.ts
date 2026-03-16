@@ -279,7 +279,13 @@ export async function streamChatMessage(
       }
     }
 
-    if (contextCalls.length === 0) break;
+    // Build acknowledgement responses for canvas calls so the model can produce a brief summary
+    const canvasResponses = canvasCalls.map(({ functionCall }) => ({
+      functionResponse: {
+        name: functionCall.name ?? '',
+        response: { status: 'queued', message: 'Action has been queued for user review.' }
+      }
+    }));
 
     // Respond to context-fetching calls and loop for continuation
     const functionResponses = await Promise.all(
@@ -439,7 +445,7 @@ export async function streamChatMessage(
       })
     );
 
-    contents.push({ role: 'user', parts: functionResponses });
+    contents.push({ role: 'user', parts: [...canvasResponses, ...functionResponses] });
   }
 
   return fullText;
