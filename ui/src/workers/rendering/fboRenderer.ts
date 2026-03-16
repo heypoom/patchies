@@ -678,11 +678,14 @@ export class FBORenderer {
 
     const [width, height] = this.outputSize;
 
+    // Reuse existing settingsProxy if available to preserve requestIdCounter
+    // and avoid request ID collisions on rapid re-runs
+    const existingProxy = this.swglByNode.get(node.id)?.settingsProxy ?? null;
+
     // Delete existing SwissGL renderer if it exists
     if (this.swglByNode.has(node.id)) {
       const existingSwgl = this.swglByNode.get(node.id);
       existingSwgl?.glsl.reset();
-      existingSwgl?.settingsProxy?._clearCallbacks();
     }
 
     const gl = this.regl._gl as WebGL2RenderingContext;
@@ -697,8 +700,14 @@ export class FBORenderer {
       }
     };
 
-    // Create SwissGL context with message passing support
-    const settingsProxy = createWorkerSettingsProxy(node.id, (msg) => self.postMessage(msg));
+    // Reset settings proxy for re-run — reuse instance to preserve requestIdCounter
+    let settingsProxy: ReturnType<typeof createWorkerSettingsProxy>;
+    if (existingProxy) {
+      existingProxy._reset();
+      settingsProxy = existingProxy;
+    } else {
+      settingsProxy = createWorkerSettingsProxy(node.id, (msg) => self.postMessage(msg));
+    }
 
     const swglContext: SwissGLContext = {
       glsl,

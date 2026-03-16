@@ -14,6 +14,12 @@ export interface WorkerSettingsProxy {
   /** Clear onChange callbacks — call before each code re-run. */
   _clearCallbacks(): void;
 
+  /**
+   * Reset state for a re-run: clears callbacks, pendingDefines, and cachedValues,
+   * but preserves requestIdCounter to prevent request ID collisions across re-runs.
+   */
+  _reset(): void;
+
   /** Called when main thread sends back resolved values after define(). */
   _receiveValuesInit(requestId: string, values: Record<string, unknown>): void;
 
@@ -73,6 +79,12 @@ export function createWorkerSettingsProxy(
 
     _clearCallbacks() {
       onChangeCallbacks = [];
+    },
+
+    _reset() {
+      onChangeCallbacks = [];
+      pendingDefines.clear();
+      cachedValues = {};
     },
 
     _receiveValuesInit(requestId: string, values: Record<string, unknown>) {

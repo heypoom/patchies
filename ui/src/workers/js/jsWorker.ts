@@ -366,9 +366,13 @@ function createWorkerContext(nodeId: string) {
   // Create KV store for this node
   const kv = createKVStore(nodeId);
 
-  // Settings API — proxied through main thread for persistence + UI
-  const settingsProxy = createWorkerSettingsProxy(nodeId, (msg) => self.postMessage(msg));
-  state.settingsProxy = settingsProxy;
+  // Settings API — reuse existing proxy to preserve requestIdCounter across re-runs
+  // (avoids request ID collisions when code is re-run rapidly)
+  if (!state.settingsProxy) {
+    state.settingsProxy = createWorkerSettingsProxy(nodeId, (msg) => self.postMessage(msg));
+  }
+  // _reset() is called in resetNodeForRerun before executeCode, so no need to reset here
+  const settingsProxy = state.settingsProxy;
 
   return {
     console: customConsole,
@@ -448,8 +452,8 @@ function cleanupNode(nodeId: string) {
   }
   state.pendingVideoFrameResolvers.clear();
 
-  // Clear settings onChange callbacks
-  state.settingsProxy?._clearCallbacks();
+  // Reset settings proxy — clears callbacks/pending/cache but preserves requestIdCounter
+  state.settingsProxy?._reset();
 }
 
 async function executeCode(nodeId: string, processedCode: string) {

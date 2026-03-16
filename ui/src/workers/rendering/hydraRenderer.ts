@@ -187,13 +187,15 @@ export class HydraRenderer {
     this.fftRequestCache.clear();
     this.msgContext.reset();
 
-    // Clear settings onChange callbacks from previous run
-    this.settingsProxy?._clearCallbacks();
-
-    // Create fresh proxy (preserves cachedValues so get() works after redefine)
-    this.settingsProxy = createWorkerSettingsProxy(this.config.nodeId, (msg) =>
-      self.postMessage(msg)
-    );
+    // Reset settings proxy for re-run — reuse instance to preserve requestIdCounter
+    // and avoid request ID collisions on rapid re-runs
+    if (!this.settingsProxy) {
+      this.settingsProxy = createWorkerSettingsProxy(this.config.nodeId, (msg) =>
+        self.postMessage(msg)
+      );
+    } else {
+      this.settingsProxy._reset();
+    }
 
     // Reset mouse scope to local (default)
     this.mouseScope = 'local';
