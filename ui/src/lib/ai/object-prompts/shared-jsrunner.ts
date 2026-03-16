@@ -74,7 +74,8 @@ export const jsRunnerInstructions = `
 - settings.getAll() - all values as object
 - settings.set(key, value) - programmatically update a setting from code (persists + fires onChange)
   - useful for updating sliders/toggles from recv() messages or clock callbacks
-- settings.onChange((key, value, all) => {}) - react to value changes (from UI or settings.set).
+- settings.onChange((key, value, all) => {}) - react to value changes (from UI or settings.set)
+- settings.clear() - reset all settings to defaults and clear persisted values
 - Each field: { key, label, type, default?, persistence?: 'node'|'kv'|'none', ...type-specific }
 - Schema field types: slider, number, boolean, string, select, color
 - slider: requires min, max. Add step for float precision (e.g. step: 0.01 for 2 decimal places; omitting step defaults to integer steps)

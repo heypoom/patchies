@@ -57,7 +57,7 @@ export type SettingsField =
 export type SettingsSchema = SettingsField[];
 
 export interface SettingsAPI {
-  define(schema: SettingsField[]): Promise<void>;
+  define(schema: SettingsSchema): Promise<void>;
   get(key: string): unknown;
   getAll(): Record<string, unknown>;
   set(key: string, value: unknown): void;

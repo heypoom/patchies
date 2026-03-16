@@ -99,7 +99,7 @@ Two new keys are added to node data:
 
 Fields with `persistence: 'none'` are NOT stored in `settings` — they exist only in runtime memory (a Map held by the settings manager). On reload, values are lost.
 
-Fields with `persistence: 'kv'` are stored in the node's KV store under the key `settings: {key}`. They are NOT in `settings` either, so they don't get exported with the patch.
+Fields with `persistence: 'kv'` are stored in the node's KV store under the key `settings:${key}`. They are NOT in `settings` either, so they don't get exported with the patch.
 
 Fields with `persistence: 'node'` (the default) are stored in `settings` and exported with the patch.
 
