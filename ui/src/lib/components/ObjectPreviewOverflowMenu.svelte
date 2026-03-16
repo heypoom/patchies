@@ -13,6 +13,7 @@
   } from '@lucide/svelte/icons';
   import * as Popover from './ui/popover';
   import type { SettingsSchema } from '$lib/settings';
+  import Separator from './ui/separator/separator.svelte';
 
   let {
     onrun,
@@ -66,9 +67,12 @@
           onclick={onrun}
         >
           <Play class="h-4 w-4 text-zinc-300" />
+
           <span>Run</span>
         </button>
       </Popover.Close>
+
+      <Separator />
     {/if}
 
     {#if settingsSchema && settingsSchema.length > 0}
@@ -78,6 +82,7 @@
           onclick={onSettingsToggle}
         >
           <Settings class="h-4 w-4 text-zinc-300" />
+
           <span>{showSettings ? 'Hide settings' : 'Show settings'}</span>
         </button>
       </Popover.Close>
@@ -91,9 +96,11 @@
         >
           {#if isOutputOverride}
             <MonitorOff class="h-4 w-4 text-orange-400" />
+
             <span>Remove background output</span>
           {:else}
             <Monitor class="h-4 w-4 text-zinc-300" />
+
             <span>Output to background</span>
           {/if}
         </button>
@@ -109,9 +116,11 @@
         >
           {#if paused}
             <PinOff class="h-4 w-4 text-red-400" />
+
             <span>Unfreeze frame</span>
           {:else}
             <Pin class="h-4 w-4 text-zinc-300" />
+
             <span>Freeze frame</span>
           {/if}
         </button>
@@ -126,14 +135,18 @@
         >
           {#if previewVisible}
             <EyeOff class="h-4 w-4 text-zinc-300" />
+
             <span>Hide preview</span>
           {:else}
             <Eye class="h-4 w-4 text-zinc-300" />
+
             <span>Show preview</span>
           {/if}
         </button>
       </Popover.Close>
     {/if}
+
+    <Separator />
 
     <Popover.Close class="contents">
       <button
@@ -141,6 +154,7 @@
         onclick={onOpenHelp}
       >
         <CircleHelp class="h-4 w-4 text-zinc-300" />
+
         <span>Help</span>
       </button>
     </Popover.Close>
