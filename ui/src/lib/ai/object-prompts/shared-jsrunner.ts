@@ -68,6 +68,9 @@ export const jsRunnerInstructions = `
 - For full kv docs call get_doc_content({ kind: 'topic', slug: 'data-storage' })
 
 **User-defined Settings:**
+- only add a few settings by default where it makes sense.
+  - tell the user in the response what settings they have and how to show it i.e. in the overflow menu > "Show settings"
+  - do NOT add too much settings, 1 - 3 is enough. users can always ask to add more in a follow-up.
 - await settings.define([...schema]) - expose a settings panel on the node (gear icon appears)
   - on hydra/swgl, don't await - just settings.define is enough
 - settings.get(key) - read current value (sync, after define resolves)
