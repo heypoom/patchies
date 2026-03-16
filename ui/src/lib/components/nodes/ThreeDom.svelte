@@ -19,6 +19,9 @@
   import { JSRunner } from '$lib/js-runner/JSRunner';
   import { THREE_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import { profiler } from '$lib/profiler';
+  import { SettingsManager, createSettingsAPI } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
+  import type { SettingsSchema } from '$lib/settings';
 
   let {
     id: nodeId,
@@ -34,6 +37,8 @@
       hidePorts?: boolean;
       executeCode?: number;
       showConsole?: boolean;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
     };
     selected?: boolean;
   } = $props();
@@ -70,6 +75,12 @@
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+    createKVStore(nodeId)
+  );
 
   const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
 
@@ -287,6 +298,8 @@
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
+    settingsManager.clearCallbacks();
+
     // Reset interaction state and video output state
     dragEnabled = true;
     panEnabled = true;
@@ -332,6 +345,7 @@
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         extraContext: {
+          settings: createSettingsAPI(settingsManager),
           canvas,
           THREE,
           renderer,
@@ -442,6 +456,10 @@
   {selected}
   {editorReady}
   hasError={lineErrors !== undefined}
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
+  onSettingsRevertAll={() => settingsManager.revertAll()}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index}
