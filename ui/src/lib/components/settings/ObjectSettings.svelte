@@ -48,8 +48,11 @@
     }
   }
 
-  // For slider/string/number: track focus→blur for undo
+  // For slider/string/number: track focus→blur for undo (node-persistence only)
   function makeTracker(field: SettingsField) {
+    if ((field.persistence ?? 'node') !== 'node') {
+      return { onFocus: () => {}, onBlur: () => {} };
+    }
     return tracker.track(`settings.${field.key}`, () => getCurrentValue(field));
   }
 </script>
@@ -137,8 +140,12 @@
             class="nodrag w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-500"
             onfocus={numTracker.onFocus}
             onblur={numTracker.onBlur}
-            oninput={(e) =>
-              onValueChange(field.key, parseFloat((e.target as HTMLInputElement).value))}
+            oninput={(e) => {
+              const raw = (e.target as HTMLInputElement).value;
+              if (raw === '' || raw === '-') return;
+              const parsed = parseFloat(raw);
+              if (Number.isFinite(parsed)) onValueChange(field.key, parsed);
+            }}
           />
         </div>
       {:else if field.type === 'string'}
