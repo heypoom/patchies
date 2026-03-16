@@ -77,7 +77,7 @@
               <span
                 role="button"
                 tabindex="0"
-                class="cursor-pointer rounded text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100 hover:text-zinc-300 {$chatSessionsStore.activeId ===
+                class="cursor-pointer rounded text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100 hover:text-zinc-300 max-sm:opacity-100 {$chatSessionsStore.activeId ===
                 session.id
                   ? 'opacity-100'
                   : ''}"
