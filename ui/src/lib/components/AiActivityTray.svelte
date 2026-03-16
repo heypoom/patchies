@@ -54,7 +54,10 @@
 </script>
 
 {#if activeInstances.length > 0}
-  <div class="fixed top-4 right-4 z-50 flex flex-col items-end gap-3">
+  <div
+    class="fixed right-4 z-50 flex flex-col items-end gap-3"
+    style="top: calc(env(safe-area-inset-top, 0px) + 1rem)"
+  >
     {#each activeInstances as instance (instance.id)}
       {@const descriptor = getModeDescriptor(instance.mode)}
       {@const borderClass = getBorderClass(descriptor.color)}
