@@ -127,6 +127,7 @@
     messageContext.runCleanupCallbacks();
     clearTimers();
     clearMessageHandler();
+    settingsManager.clearCallbacks();
   }
 
   async function executeCode() {
