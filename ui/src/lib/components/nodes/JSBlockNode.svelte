@@ -92,6 +92,9 @@
     messageContext.onAnimationFrameCallbackRegistered = () => {
       isTimerCallbackActive = true;
     };
+    settingsManager.onChangeCallbackRegistered = () => {
+      isTimerCallbackActive = true;
+    };
     messageContext.queue.addCallback(handleMessage);
 
     // libraries should be run on mount to register themselves
@@ -161,7 +164,10 @@
         setPortCount,
         setRunOnMount,
         setTitle,
-        extraContext: { flash, settings: settingsAPI }
+        extraContext: { flash, settings: settingsAPI },
+        onSchedulerCallbackRegistered: () => {
+          isTimerCallbackActive = true;
+        }
       });
     } catch (error) {
       handleCodeError(error, code, nodeId, customConsole);

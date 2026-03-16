@@ -1,10 +1,12 @@
-import type { SettingsField, SettingsSchema } from './types';
+import type { SettingsSchema } from './types';
 import type { KVStore } from '$lib/storage/KVStore';
 
 type ChangeCallback = (key: string, value: unknown, allValues: Record<string, unknown>) => void;
 
 /**
- * Manages settings values for a node across all persistence levels:
+ * Manages user-defined settings values for a node across
+ * all persistence levels:
+ *
  * - 'node': stored in node.data.settings (exported with patch)
  * - 'kv': stored in IndexedDB via KVStore (local only, not exported)
  * - 'none': in-memory only (lost on reload)
@@ -78,8 +80,12 @@ export class SettingsManager {
     return Object.fromEntries(this.schema.map((field) => [field.key, this.get(field.key)]));
   }
 
+  /** Called when onChange() is registered — used to show active indicator */
+  onChangeCallbackRegistered?: () => void;
+
   onChange(callback: ChangeCallback): void {
     this.changeCallbacks.push(callback);
+    this.onChangeCallbackRegistered?.();
   }
 
   setValue(key: string, value: unknown): void {
