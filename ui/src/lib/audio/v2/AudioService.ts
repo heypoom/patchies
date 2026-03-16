@@ -15,6 +15,7 @@ import { getObjectType } from '$lib/objects/get-type';
 import { hasSomeAudioNode } from '../../../stores/canvas.store';
 import { BufferBridgeService } from '$lib/audio/buffer-bridge';
 import { Transport } from '$lib/transport';
+import type { SettingsManager } from '$lib/settings';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -47,12 +48,27 @@ export class AudioService {
   /** Whether DSP was intentionally suspended by the user (mute/volume=0) */
   private _dspSuspendedByUser = false;
 
+  /** Settings managers registered by Svelte components for main-thread audio nodes. */
+  private settingsManagers: Map<string, SettingsManager> = new Map();
+
   getAudioContext(): AudioContext {
     if (!this.audioContext) {
       this.audioContext = new AudioContext({ latencyHint: 'interactive' });
     }
 
     return this.audioContext;
+  }
+
+  registerSettingsManager(nodeId: string, manager: SettingsManager): void {
+    this.settingsManagers.set(nodeId, manager);
+  }
+
+  unregisterSettingsManager(nodeId: string): void {
+    this.settingsManagers.delete(nodeId);
+  }
+
+  getSettingsManager(nodeId: string): SettingsManager | undefined {
+    return this.settingsManagers.get(nodeId);
   }
 
   /** Create the output gain node and connect it to the destination. */

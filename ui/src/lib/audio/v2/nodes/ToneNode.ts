@@ -7,6 +7,8 @@ import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { TONE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { extractToneVarNames, injectAutoDispose } from './tone-auto-dispose';
+import { AudioService } from '../AudioService';
+import { createSettingsAPI } from '$lib/settings/create-settings-api';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
 
@@ -185,10 +187,14 @@ export class ToneNode implements AudioNodeV2 {
       const toneVarNames = extractToneVarNames(processedCode);
       const toneInstances: { dispose(): void }[] = [];
 
+      const settingsManager = AudioService.getInstance().getSettingsManager(this.nodeId);
+      settingsManager?.clearCallbacks();
+
       const extraContext: Record<string, unknown> = {
         Tone,
         outputNode: this.audioNode,
-        inputNode: this.inputNode
+        inputNode: this.inputNode,
+        ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
       };
 
       if (toneVarNames.length > 0) {
