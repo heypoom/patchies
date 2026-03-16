@@ -246,7 +246,6 @@ const patchiesAPICompletions: Completion[] = [
     info: 'Flash the node border to indicate activity',
     apply: 'flash()'
   },
-
   // Storage
   {
     label: 'kv',
@@ -263,6 +262,15 @@ const patchiesAPICompletions: Completion[] = [
     detail: 'SettingsAPI',
     info: 'Dynamic settings API. Call settings.define([...]) to expose a configurable settings panel for this node.',
     apply: 'settings'
+  },
+
+  // Clock API
+  {
+    label: 'clock',
+    type: 'variable',
+    detail: 'ClockAPI',
+    info: 'Beat-synced timing and scheduling. Properties: time, ticks, beat, phase, bpm, bar. Methods: play(), pause(), stop(), setBpm(), onBeat(), every(), schedule(), subdiv(), subdivPhase()',
+    apply: 'clock'
   }
 ];
 
@@ -408,6 +416,20 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   ],
   flash: ['js', 'worker'],
   settings: [
+    'js',
+    'worker',
+    'p5',
+    'hydra',
+    'canvas',
+    'canvas.dom',
+    'textmode',
+    'textmode.dom',
+    'three',
+    'three.dom',
+    'dom',
+    'vue'
+  ],
+  clock: [
     'js',
     'worker',
     'p5',
