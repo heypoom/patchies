@@ -60,6 +60,7 @@ export interface SettingsAPI {
   define(schema: SettingsField[]): Promise<void>;
   get(key: string): unknown;
   getAll(): Record<string, unknown>;
+  set(key: string, value: unknown): void;
   onChange(
     callback: (key: string, value: unknown, allValues: Record<string, unknown>) => void
   ): void;

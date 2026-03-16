@@ -19,6 +19,10 @@ export function createSettingsAPI(manager: SettingsManager): SettingsAPI {
       return manager.getAll();
     },
 
+    set(key: string, value: unknown): void {
+      manager.setValue(key, value);
+    },
+
     onChange(
       callback: (key: string, value: unknown, allValues: Record<string, unknown>) => void
     ): void {

@@ -53,7 +53,7 @@ export const jsRunnerInstructions = `
 - clock.subdivPhase(n) - progress within current subdivision (0.0 to 1.0)
 - clock.play(), clock.pause(), clock.stop() - transport control
 - clock.setBpm(bpm), clock.setTimeSignature(num, denom), clock.seek(seconds)
-- clock.onBeat(beat, cb, opts?) - fire on beat (number, array, or '*' for all). cb receives (time). Pass { audio: true } for lookahead scheduling
+- clock.onBeat(beat, cb, opts?) - fire on beat (number, array, or '*' for all). cb receives (time). Pass { audio: true } for lookahead scheduling.
 - clock.schedule(time, cb, opts?) - One-shot at seconds or 'bar:beat:sixteenth' notation. Pass { audio: true } for audio-precise timing
 - clock.every(interval, cb, opts?) - Repeating at 'bar:beat:sixteenth' interval
   - e.g. '1:0:0' = every bar, '0:1:0' = every beat
@@ -72,7 +72,9 @@ export const jsRunnerInstructions = `
   - on hydra/swgl, don't await - just settings.define is enough
 - settings.get(key) - read current value (sync, after define resolves)
 - settings.getAll() - all values as object
-- settings.onChange((key, value, all) => {}) - react to user changes in real time
+- settings.set(key, value) - programmatically update a setting from code (persists + fires onChange)
+  - useful for updating sliders/toggles from recv() messages or clock callbacks
+- settings.onChange((key, value, all) => {}) - react to value changes (from UI or settings.set).
 - Each field: { key, label, type, default?, persistence?: 'node'|'kv'|'none', ...type-specific }
 - Schema field types: slider, number, boolean, string, select, color
 - slider: requires min, max. Add step for float precision (e.g. step: 0.01 for 2 decimal places; omitting step defaults to integer steps)

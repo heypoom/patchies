@@ -56,9 +56,26 @@ Returns all current values as a plain object.
 const { speed, color, mode } = settings.getAll();
 ```
 
+### `settings.set(key, value)`
+
+Programmatically updates a setting value from code. The new value is persisted using the field's `persistence` setting and fires any registered `onChange` callbacks — so the panel updates in real time.
+
+```javascript
+settings.set('gain', 0.8);
+settings.set('mode', 'loop');
+```
+
+Useful for updating settings from received messages or internal computations:
+
+```javascript
+recv((msg) => {
+  settings.set('gain', msg.value);
+});
+```
+
 ### `settings.onChange(callback)`
 
-Registers a callback that fires whenever the user changes a value in the panel.
+Registers a callback that fires whenever a value changes — either from user interaction in the panel or from a `settings.set()` call.
 
 ```javascript
 settings.onChange((key, value, allValues) => {
@@ -67,7 +84,7 @@ settings.onChange((key, value, allValues) => {
 });
 ```
 
-Callbacks registered with `onChange` are automatically cleared when code is re-run, so re-registering each run is intentional.
+Registering `onChange` marks the node as active (green border). Callbacks are automatically cleared when code is re-run, so re-registering each run is intentional.
 
 ### `settings.clear()`
 
@@ -290,6 +307,28 @@ settings.onChange((key, value) => {
 setInterval(() => {
   if (enabled) send(Date.now());
 }, 100);
+```
+
+### JS — update settings from incoming messages
+
+```javascript
+await settings.define([
+  { key: 'gain', type: 'slider', label: 'Gain', min: 0, max: 1, step: 0.01, default: 0.5 },
+  { key: 'mode', type: 'select', label: 'Mode', default: 'sine',
+    options: [{ label: 'Sine', value: 'sine' }, { label: 'Square', value: 'square' }]
+  }
+]);
+
+// Settings panel can be controlled from messages
+recv((msg) => {
+  if (msg.gain !== undefined) settings.set('gain', msg.gain);
+  if (msg.mode !== undefined) settings.set('mode', msg.mode);
+});
+
+// Or from the clock
+clock.every('4:0:0', () => {
+  settings.set('gain', Math.random());
+});
 ```
 
 ## Notes
