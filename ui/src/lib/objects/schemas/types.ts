@@ -21,6 +21,7 @@ import type { HandleType } from '$lib/utils/handle-id';
 export interface HandleSpec {
   /** Handle type for coloring and ID derivation (video=orange, audio=blue, message=gray) */
   handleType?: HandleType;
+
   /** Explicit ID segment (combined with handleType + portDir to produce final handle ID) */
   handleId?: string | number;
 }
@@ -32,8 +33,10 @@ export interface HandleSpec {
 export interface HandlePattern {
   /** Template string with `{index}` placeholder, e.g. 'in-{index}', 'video-in-{index}-{name}-{type}' */
   template: string;
+
   /** Handle type for coloring */
   handleType?: HandleType;
+
   /** Human-readable description of what varies */
   description?: string;
 }

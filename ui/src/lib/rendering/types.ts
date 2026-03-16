@@ -85,7 +85,15 @@ export type WorkerMessage =
         targetNodeId: string;
         sourceNodeIds: (string | null)[];
       }>;
-    };
+    }
+  // Settings API responses (main → render worker)
+  | {
+      type: 'settingsValuesInit';
+      nodeId: string;
+      requestId: string;
+      values: Record<string, unknown>;
+    }
+  | { type: 'settingsValueChanged'; nodeId: string; key: string; value: unknown };
 
 export type MouseScope = 'local' | 'global';
 
@@ -187,7 +195,9 @@ export type RenderWorkerMessage =
         | { action: 'seek'; value: number };
     }
   | { type: 'subscribeChannel'; nodeId: string; channel: string }
-  | { type: 'unsubscribeChannel'; nodeId: string; channel: string };
+  | { type: 'unsubscribeChannel'; nodeId: string; channel: string }
+  | { type: 'settingsDefine'; nodeId: string; requestId: string; schema: unknown[] }
+  | { type: 'settingsClear'; nodeId: string };
 
 export type PreviewState = Record<string, boolean>;
 

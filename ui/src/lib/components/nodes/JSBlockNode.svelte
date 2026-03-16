@@ -8,6 +8,9 @@
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import CodeBlockBase from './CodeBlockBase.svelte';
+  import { SettingsManager, createSettingsAPI } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
+  import type { SettingsSchema } from '$lib/settings';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -27,6 +30,8 @@
       executeCode?: number;
       consoleHeight?: number;
       consoleWidth?: number;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
     };
     selected: boolean;
   } = $props();
@@ -39,6 +44,14 @@
   let isRunning = $state(false);
   let isMessageCallbackActive = $state(false);
   let isTimerCallbackActive = $state(false);
+
+  // Settings manager — persists across code re-runs
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+    createKVStore(nodeId)
+  );
+  const settingsAPI = createSettingsAPI(settingsManager);
 
   const code = $derived(data.code || '');
 
@@ -79,6 +92,9 @@
     messageContext.onAnimationFrameCallbackRegistered = () => {
       isTimerCallbackActive = true;
     };
+    settingsManager.onChangeCallbackRegistered = () => {
+      isTimerCallbackActive = true;
+    };
     messageContext.queue.addCallback(handleMessage);
 
     // libraries should be run on mount to register themselves
@@ -111,12 +127,16 @@
     messageContext.runCleanupCallbacks();
     clearTimers();
     clearMessageHandler();
+    settingsManager.clearCallbacks();
   }
 
   async function executeCode() {
     isRunning = true;
     isMessageCallbackActive = false;
     isTimerCallbackActive = false;
+
+    // Clear onChange callbacks — they'll be re-registered by user code
+    settingsManager.clearCallbacks();
 
     const setPortCount = (inletCount = 1, outletCount = 1) => {
       updateNodeData(nodeId, { inletCount, outletCount });
@@ -145,7 +165,10 @@
         setPortCount,
         setRunOnMount,
         setTitle,
-        extraContext: { flash }
+        extraContext: { flash, settings: settingsAPI },
+        onSchedulerCallbackRegistered: () => {
+          isTimerCallbackActive = true;
+        }
       });
     } catch (error) {
       handleCodeError(error, code, nodeId, customConsole);
@@ -177,4 +200,8 @@
   language="javascript"
   editorPlaceholder="Write your JavaScript code here..."
   nodeType="js"
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
+  onSettingsRevertAll={() => settingsManager.revertAll()}
 />

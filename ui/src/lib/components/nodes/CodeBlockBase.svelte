@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Code, Loader, Package, Pause, Play, Terminal, X } from '@lucide/svelte/icons';
-  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import CodeBlockOverflowMenu from './CodeBlockOverflowMenu.svelte';
+  import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -8,6 +9,9 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import type { SupportedLanguage } from '$lib/codemirror/types';
+  import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
+  import type { SettingsSchema } from '$lib/settings';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let contentContainer: HTMLDivElement | null = null;
   let consoleRef: VirtualConsole | null = $state(null);
@@ -17,33 +21,46 @@
     id: nodeId,
     data,
     selected,
+
     // Execution handlers
     onExecute,
     onCleanup: onCleanupHandler,
     onCodeChange,
+
     // State from parent
     isRunning,
     isMessageCallbackActive,
     isTimerCallbackActive,
+
     // Library support (js only)
     supportsLibraries = false,
+
     // Custom label
     nodeLabel = 'js',
+
     // Language for code editor
     language = 'javascript',
+
     // Placeholder text for code editor
     editorPlaceholder = 'Write your code here...',
+
     // Node type for completions
     nodeType = 'js',
+
     // Video inlet count (optional, for worker nodes)
-    videoInletCount = 0
+    videoInletCount = 0,
+
+    // Settings panel (optional, for JSRunner-enabled nodes)
+    settingsSchema = undefined,
+    settingsValues = {},
+    onSettingsValueChange = undefined,
+    onSettingsRevertAll = undefined
   }: {
     id: string;
     data: {
       title?: string;
       code: string;
       showConsole?: boolean;
-      runOnMount?: boolean;
       inletCount?: number;
       outletCount?: number;
       libraryName?: string | null;
@@ -64,16 +81,20 @@
     editorPlaceholder?: string;
     nodeType?: string;
     videoInletCount?: number;
+    settingsSchema?: SettingsSchema;
+    settingsValues?: Record<string, unknown>;
+    onSettingsValueChange?: (key: string, value: unknown) => void;
+    onSettingsRevertAll?: () => void;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
-  const updateNodeInternals = useUpdateNodeInternals();
 
   let isLongRunningTaskActive = $derived(isMessageCallbackActive || isTimerCallbackActive);
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 1);
 
   let showEditor = $state(false);
+  let showSettings = $state(false);
   let contentWidth = $state(100);
   let isFlashing = $state(false);
 
@@ -199,6 +220,19 @@
     }
   }
 
+  function handleConsoleToggle() {
+    updateNodeData(nodeId, { showConsole: !data.showConsole });
+    setTimeout(() => updateContentWidth(), 10);
+  }
+
+  function handleSettingsToggle() {
+    showSettings = !showSettings;
+
+    if (showSettings) {
+      showEditor = false;
+    }
+  }
+
   let minContainerWidth = $derived.by(() => {
     const baseWidth = 70;
     let inletWidth = 15;
@@ -224,21 +258,45 @@
           class="flex items-center transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-hover/header:opacity-100"
         >
           {#if !(supportsLibraries && data.libraryName)}
-            <button
-              class="rounded p-1 hover:bg-zinc-700"
-              onclick={() => {
-                updateNodeData(nodeId, { showConsole: !data.showConsole });
-                setTimeout(() => updateContentWidth(), 10);
-              }}
-              title="Console"
-            >
-              <Terminal class="h-4 w-4 text-zinc-300" />
-            </button>
+            {#if settingsSchema && settingsSchema.length > 0}
+              <CodeBlockOverflowMenu
+                showConsole={data.showConsole ?? false}
+                {showSettings}
+                {settingsSchema}
+                onConsoleToggle={handleConsoleToggle}
+                onSettingsToggle={handleSettingsToggle}
+              />
+            {:else}
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <button
+                    class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                    onclick={handleConsoleToggle}
+                    aria-label="Console"
+                  >
+                    <Terminal class="h-4 w-4 text-zinc-300" />
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>Console</Tooltip.Content>
+              </Tooltip.Root>
+            {/if}
           {/if}
 
-          <button class="rounded p-1 hover:bg-zinc-700" onclick={toggleEditor} title="Edit code">
-            <Code class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                onclick={() => {
+                  toggleEditor();
+                  if (showEditor) showSettings = false;
+                }}
+                aria-label="Edit code"
+              >
+                <Code class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Edit code</Tooltip.Content>
+          </Tooltip.Root>
         </div>
       </div>
 
@@ -350,7 +408,10 @@
   {#if showEditor}
     <div class="absolute" style="left: {contentWidth + 10}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
+        <button
+          onclick={() => (showEditor = false)}
+          class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+        >
           <X class="h-4 w-4 text-zinc-300" />
         </button>
       </div>
@@ -373,6 +434,19 @@
           {nodeId}
         />
       </div>
+    </div>
+  {/if}
+
+  {#if showSettings && settingsSchema && settingsSchema.length > 0}
+    <div class="absolute top-0" style="left: {contentWidth + 10}px">
+      <ObjectSettings
+        {nodeId}
+        schema={settingsSchema}
+        values={settingsValues}
+        onValueChange={(key, value) => onSettingsValueChange?.(key, value)}
+        onRevertAll={() => onSettingsRevertAll?.()}
+        onClose={() => (showSettings = false)}
+      />
     </div>
   {/if}
 </div>

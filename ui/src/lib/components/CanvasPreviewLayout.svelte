@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import ObjectPreviewLayout from './ObjectPreviewLayout.svelte';
+  import type { SettingsSchema } from '$lib/settings';
 
   let {
     title,
@@ -14,7 +15,6 @@
     paused = false,
     previewVisible = true,
     showPauseButton = false,
-    showConsoleButton = false,
     previewCanvas = $bindable<HTMLCanvasElement>(),
     nodrag = false,
     nopan = false,
@@ -30,7 +30,12 @@
 
     codeEditor,
     console: consoleSnippet,
-    editorReady
+    editorReady,
+
+    settingsSchema = undefined,
+    settingsValues = {},
+    onSettingsValueChange = undefined,
+    onSettingsRevertAll = undefined
   }: {
     title: string;
     nodeId?: string;
@@ -43,7 +48,6 @@
     paused?: boolean;
     previewVisible?: boolean;
     showPauseButton?: boolean;
-    showConsoleButton?: boolean;
     previewCanvas?: HTMLCanvasElement;
     nodrag?: boolean;
     nopan?: boolean;
@@ -60,6 +64,11 @@
     codeEditor: Snippet;
     console?: Snippet;
     editorReady?: boolean;
+
+    settingsSchema?: SettingsSchema;
+    settingsValues?: Record<string, unknown>;
+    onSettingsValueChange?: (key: string, value: unknown) => void;
+    onSettingsRevertAll?: () => void;
   } = $props();
 
   // Build the interaction class string based on individual flags
@@ -84,13 +93,16 @@
   {paused}
   {previewVisible}
   {showPauseButton}
-  {showConsoleButton}
   showBgOutputOption
   {topHandle}
   {bottomHandle}
   {codeEditor}
   {editorReady}
   console={consoleSnippet}
+  {settingsSchema}
+  {settingsValues}
+  {onSettingsValueChange}
+  {onSettingsRevertAll}
 >
   {#snippet preview()}
     <canvas

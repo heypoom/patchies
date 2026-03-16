@@ -10,6 +10,7 @@ import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { setupWorkerDOMMocks } from './workerDOMMocks';
 import type { Textmodifier } from 'textmode.js';
 import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
+import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
 type AudioAnalysisType = 'wave' | 'freq';
 type AudioAnalysisFormat = 'int' | 'float';
@@ -34,6 +35,7 @@ export class TextmodeRenderer {
   public canvasTexture: regl.Texture2D | null = null;
 
   private msgContext!: WorkerRendererMessageContext;
+  public settingsProxy: WorkerSettingsProxy | null = null;
 
   private timestamp = performance.now();
   private sampleRate: number = 44000;
@@ -145,6 +147,16 @@ export class TextmodeRenderer {
     this.fftRequestCache.clear();
     this.msgContext.reset();
 
+    // Reset settings proxy for re-run — reuse instance to preserve requestIdCounter
+    // and avoid request ID collisions on rapid re-runs
+    if (!this.settingsProxy) {
+      this.settingsProxy = createWorkerSettingsProxy(this.config.nodeId, (msg) =>
+        self.postMessage(msg)
+      );
+    } else {
+      this.settingsProxy._reset();
+    }
+
     // Reset interaction and video output state
     this.setInteraction('interact', true);
     this.setVideoOutputEnabled(true);
@@ -244,7 +256,10 @@ export class TextmodeRenderer {
         },
 
         // Worker-compatible clock (overrides JSRunner's main-thread Transport-based clock)
-        clock: this.renderer.createWorkerClock()
+        clock: this.renderer.createWorkerClock(),
+
+        // Settings API — proxied through main thread
+        settings: this.settingsProxy!.settings
       };
 
       const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {

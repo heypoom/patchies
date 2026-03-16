@@ -34,6 +34,7 @@ import { VideoTextureManager } from './VideoTextureManager.js';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 import type { RenderOp } from '$lib/profiler/types';
+import { createWorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -677,6 +678,10 @@ export class FBORenderer {
 
     const [width, height] = this.outputSize;
 
+    // Reuse existing settingsProxy if available to preserve requestIdCounter
+    // and avoid request ID collisions on rapid re-runs
+    const existingProxy = this.swglByNode.get(node.id)?.settingsProxy ?? null;
+
     // Delete existing SwissGL renderer if it exists
     if (this.swglByNode.has(node.id)) {
       const existingSwgl = this.swglByNode.get(node.id);
@@ -695,14 +700,23 @@ export class FBORenderer {
       }
     };
 
-    // Create SwissGL context with message passing support
+    // Reset settings proxy for re-run — reuse instance to preserve requestIdCounter
+    let settingsProxy: ReturnType<typeof createWorkerSettingsProxy>;
+    if (existingProxy) {
+      existingProxy._reset();
+      settingsProxy = existingProxy;
+    } else {
+      settingsProxy = createWorkerSettingsProxy(node.id, (msg) => self.postMessage(msg));
+    }
+
     const swglContext: SwissGLContext = {
       glsl,
       userRenderFunc: null,
       swglTarget,
       gl,
       onMessageCallbacks: [],
-      nodeId: node.id
+      nodeId: node.id,
+      settingsProxy
     };
 
     // Parse user's render function from code
@@ -729,7 +743,8 @@ export class FBORenderer {
           });
         },
 
-        clock: this.createWorkerClock()
+        clock: this.createWorkerClock(),
+        settings: settingsProxy.settings
       };
 
       const funcBody = `
@@ -1382,6 +1397,25 @@ export class FBORenderer {
       })
       .with(P.union('swgl', 'glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo'), () => {})
       .exhaustive();
+  }
+
+  private getSettingsProxy(nodeId: string) {
+    return (
+      this.canvasByNode.get(nodeId)?.settingsProxy ??
+      this.hydraByNode.get(nodeId)?.settingsProxy ??
+      this.textmodeByNode.get(nodeId)?.settingsProxy ??
+      this.threeByNode.get(nodeId)?.settingsProxy ??
+      this.swglByNode.get(nodeId)?.settingsProxy ??
+      null
+    );
+  }
+
+  receiveSettingsValues(nodeId: string, requestId: string, values: Record<string, unknown>) {
+    this.getSettingsProxy(nodeId)?._receiveValuesInit(requestId, values);
+  }
+
+  receiveSettingsValueChanged(nodeId: string, key: string, value: unknown) {
+    this.getSettingsProxy(nodeId)?._receiveValueChanged(key, value);
   }
 
   getFboNodeById(nodeId: string): FBONode | undefined {

@@ -98,6 +98,12 @@ self.onmessage = (event) => {
     })
     .with('channelMessage', () => {
       fboRenderer.sendChannelMessageToNode(data.nodeId, data.channel, data.data, data.sourceNodeId);
+    })
+    .with('settingsValuesInit', () => {
+      fboRenderer.receiveSettingsValues(data.nodeId, data.requestId, data.values);
+    })
+    .with('settingsValueChanged', () => {
+      fboRenderer.receiveSettingsValueChanged(data.nodeId, data.key, data.value);
     });
 };
 

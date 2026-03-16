@@ -26,6 +26,9 @@ export interface JSRunnerOptions {
 
   /** Skip MessageContext setup - use when caller manages their own MessageContext */
   skipMessageContext?: boolean;
+
+  /** Called when clock.onBeat() or clock.every() is registered — used to show active indicator */
+  onSchedulerCallbackRegistered?: () => void;
 }
 
 const SET_JS_LIBRARY_CODE_DEBOUNCE = 500;
@@ -355,7 +358,8 @@ export class JSRunner {
       setTitle = () => {},
       setHidePorts = () => {},
       extraContext = {},
-      skipMessageContext = false
+      skipMessageContext = false,
+      onSchedulerCallbackRegistered
     } = options;
 
     const messageSystemContext = skipMessageContext
@@ -451,9 +455,15 @@ export class JSRunner {
         Transport.setTimeSignature(numerator, denominator),
       seek: (time: number) => Transport.seek(time),
       // Scheduling methods
-      onBeat: scheduler.onBeat.bind(scheduler),
+      onBeat: (...args: Parameters<typeof scheduler.onBeat>) => {
+        onSchedulerCallbackRegistered?.();
+        return scheduler.onBeat(...args);
+      },
       schedule: scheduler.schedule.bind(scheduler),
-      every: scheduler.every.bind(scheduler),
+      every: (...args: Parameters<typeof scheduler.every>) => {
+        onSchedulerCallbackRegistered?.();
+        return scheduler.every(...args);
+      },
       cancel: scheduler.cancel.bind(scheduler),
       cancelAll: scheduler.cancelAll.bind(scheduler),
       setTimelineStyle: scheduler.setTimelineStyle.bind(scheduler)

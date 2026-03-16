@@ -53,13 +53,33 @@ export const jsRunnerInstructions = `
 - clock.subdivPhase(n) - progress within current subdivision (0.0 to 1.0)
 - clock.play(), clock.pause(), clock.stop() - transport control
 - clock.setBpm(bpm), clock.setTimeSignature(num, denom), clock.seek(seconds)
-- clock.onBeat(beat, cb, opts?) - fire on beat (number, array, or '*' for all). cb receives (time). Pass { audio: true } for lookahead scheduling
+- clock.onBeat(beat, cb, opts?) - fire on beat (number, array, or '*' for all). cb receives (time). Pass { audio: true } for lookahead scheduling.
 - clock.schedule(time, cb, opts?) - One-shot at seconds or 'bar:beat:sixteenth' notation. Pass { audio: true } for audio-precise timing
 - clock.every(interval, cb, opts?) - Repeating at 'bar:beat:sixteenth' interval
   - e.g. '1:0:0' = every bar, '0:1:0' = every beat
   - Pass { audio: true } for audio-precise timing
 - clock.cancel(id), clock.cancelAll() - Cancel scheduled callbacks
 - clock.setTimelineStyle({ color?, visible? }) - Customize this node's appearance in the timeline (color: CSS color string, visible: false to hide)
+- For full clock docs call get_doc_content({ kind: 'topic', slug: 'clock-api' })
+
+**Persistent Storage (kv):**
+- await kv.set(key, value), await kv.get(key), await kv.delete(key) - simple key-value storage
+- await kv.store(namespace).set/get/delete - namespaced store
+- For full kv docs call get_doc_content({ kind: 'topic', slug: 'data-storage' })
+
+**User-defined Settings:**
+- await settings.define([...schema]) - expose a settings panel on the node (gear icon appears)
+  - on hydra/swgl, don't await - just settings.define is enough
+- settings.get(key) - read current value (sync, after define resolves)
+- settings.getAll() - all values as object
+- settings.set(key, value) - programmatically update a setting from code (persists + fires onChange)
+  - useful for updating sliders/toggles from recv() messages or clock callbacks
+- settings.onChange((key, value, all) => {}) - react to value changes (from UI or settings.set)
+- settings.clear() - reset all settings to defaults and clear persisted values
+- Each field: { key, label, type, default?, persistence?: 'node'|'kv'|'none', ...type-specific }
+- Schema field types: slider, number, boolean, string, select, color
+- slider: requires min, max. Add step for float precision (e.g. step: 0.01 for 2 decimal places; omitting step defaults to integer steps)
+- For full settings docs call get_doc_content({ kind: 'topic', slug: 'object-settings' })
 `.trim();
 
 /**

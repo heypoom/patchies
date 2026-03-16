@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code, Play, Terminal, X } from '@lucide/svelte/icons';
+  import { Code, Play, Settings, Terminal, X } from '@lucide/svelte/icons';
   import { useUpdateNodeInternals } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy, type Snippet } from 'svelte';
@@ -7,6 +7,8 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
+  import type { SettingsSchema } from '$lib/settings';
 
   let {
     nodeId,
@@ -21,7 +23,11 @@
     console: consoleSnippet,
     showConsole = false,
     onToggleConsole,
-    lineErrors
+    lineErrors,
+    settingsSchema = undefined,
+    settingsValues = {},
+    onSettingsValueChange = undefined,
+    onSettingsRevertAll = undefined
   }: {
     nodeId: string;
     nodeName: string;
@@ -41,10 +47,15 @@
     showConsole?: boolean;
     onToggleConsole?: () => void;
     lineErrors?: Record<number, string[]>;
+    settingsSchema?: SettingsSchema;
+    settingsValues?: Record<string, unknown>;
+    onSettingsValueChange?: (key: string, value: unknown) => void;
+    onSettingsRevertAll?: () => void;
   } = $props();
 
   let contentContainer: HTMLDivElement | null = null;
   let showEditor = $state(false);
+  let showSettings = $state(false);
   let contentWidth = $state(10);
   let messageContext: MessageContext;
 
@@ -98,6 +109,12 @@
 
   function toggleEditor() {
     showEditor = !showEditor;
+    if (showEditor) showSettings = false;
+  }
+
+  function toggleSettings() {
+    showSettings = !showSettings;
+    if (showSettings) showEditor = false;
   }
 
   let minContainerWidth = $derived.by(() => {
@@ -113,11 +130,25 @@
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
         <div></div>
 
-        <div>
+        <div class="flex items-center">
           {@render actionButtons?.()}
 
+          {#if settingsSchema && settingsSchema.length > 0}
+            <button
+              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              onclick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleSettings();
+              }}
+              title="Settings"
+            >
+              <Settings class="h-4 w-4 text-zinc-300" />
+            </button>
+          {/if}
+
           <button
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+            class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
             onclick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -253,6 +284,19 @@
           {@render consoleSnippet()}
         </div>
       {/if}
+    </div>
+  {/if}
+
+  {#if showSettings && settingsSchema && settingsSchema.length > 0}
+    <div class="absolute top-0" style="left: {contentWidth + 10}px">
+      <ObjectSettings
+        {nodeId}
+        schema={settingsSchema}
+        values={settingsValues}
+        onValueChange={(key, value) => onSettingsValueChange?.(key, value)}
+        onRevertAll={() => onSettingsRevertAll?.()}
+        onClose={() => (showSettings = false)}
+      />
     </div>
   {/if}
 </div>

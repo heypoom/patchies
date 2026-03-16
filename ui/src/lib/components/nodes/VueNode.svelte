@@ -16,6 +16,9 @@
   import { JSRunner } from '$lib/js-runner/JSRunner';
   import { createIsolatedContainer } from '$lib/utils/tailwindBrowser';
   import { VUE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+  import { SettingsManager, createSettingsAPI } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
+  import type { SettingsSchema } from '$lib/settings';
 
   let {
     id: nodeId,
@@ -33,9 +36,17 @@
       showConsole?: boolean;
       width?: number;
       height?: number;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
     };
     selected?: boolean;
   } = $props();
+
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+    createKVStore(nodeId)
+  );
 
   let consoleRef: VirtualConsole | null = $state(null);
 
@@ -150,6 +161,8 @@
     // Unmount previous Vue app
     unmountVueApp();
 
+    settingsManager.clearCallbacks();
+
     try {
       // Create isolated shadow DOM container with Tailwind (enabled by default)
       const container = createIsolatedContainer(rootContainer);
@@ -182,6 +195,7 @@
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         extraContext: {
+          settings: createSettingsAPI(settingsManager),
           root: vueRoot,
           width: containerWidth,
           height: containerHeight,
@@ -261,6 +275,10 @@
   {nodeId}
   onrun={runCode}
   {editorReady}
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
+  onSettingsRevertAll={() => settingsManager.revertAll()}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index}

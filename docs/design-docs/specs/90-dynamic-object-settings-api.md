@@ -21,7 +21,7 @@ A data-driven settings system that lets nodes declare a settings schema and rend
 | Change notification      | `get()` + `onChange(cb)`                       | `get()` for reading on run. `onChange()` for reactive updates.                                |
 | onChange trigger         | On-commit (debounced)                          | Fires on blur for text, pointerup for slider, click for toggle/select. Not every keystroke.   |
 | Revert                   | Single "Revert All" button                     | Resets all fields to defaults. Shown only when schema has defaults and current values differ. |
-| Worker support           | Main-thread only (v1)                          | Worker/render-worker support deferred. Requires postMessage plumbing.                         |
+| Worker support           | Main-thread only (v1)                          | ✅ v2: `worker`, `canvas`, `hydra` supported via `workerSettingsProxy.ts`.                    |
 | Field types (v1)         | number, string, boolean, select, color, slider | Covers most use cases. Extensible later.                                                      |
 
 ## Settings Schema
@@ -94,14 +94,14 @@ Two new keys are added to node data:
 
 ```typescript
 // node.data.settingsSchema — the schema definition (SettingsSchema)
-// node.data.settingsValues — the user's current values ({ [key: string]: unknown })
+// node.data.settings — the user's current values ({ [key: string]: unknown })
 ```
 
-Fields with `persistence: 'none'` are NOT stored in `settingsValues` — they exist only in runtime memory (a Map held by the settings manager). On reload, values are lost.
+Fields with `persistence: 'none'` are NOT stored in `settings` — they exist only in runtime memory (a Map held by the settings manager). On reload, values are lost.
 
-Fields with `persistence: 'kv'` are stored in the node's KV store under the key `__settings:{key}`. They are NOT in `settingsValues` either, so they don't get exported with the patch.
+Fields with `persistence: 'kv'` are stored in the node's KV store under the key `settings:${key}`. They are NOT in `settings` either, so they don't get exported with the patch.
 
-Fields with `persistence: 'node'` (the default) are stored in `settingsValues` and exported with the patch.
+Fields with `persistence: 'node'` (the default) are stored in `settings` and exported with the patch.
 
 ## JSRunner API
 
@@ -200,7 +200,7 @@ interface SettingsAPI {
 
 ### Behavior Details
 
-- **`define(schema)`**: Stores schema in `node.data.settingsSchema`. If `settingsValues` already has persisted values from a previous run, they are preserved (schema change doesn't wipe values). New fields get their defaults. Removed fields' values are kept in storage but ignored (no data loss on schema change). Calling `define` also makes the settings gear icon visible.
+- **`define(schema)`**: Stores schema in `node.data.settingsSchema`. If `settings` already has persisted values from a previous run, they are preserved (schema change doesn't wipe values). New fields get their defaults. Removed fields' values are kept in storage but ignored (no data loss on schema change). Calling `define` also makes the settings gear icon visible.
 
 - **`get(key)`**: Resolution order: (1) user-set value from the appropriate store, (2) `default` from schema, (3) `undefined`. Synchronous for `node` and `none` persistence. For `kv` persistence, `get` returns the cached value (loaded at define time). KV values are loaded asynchronously when `define()` is called, and the cache is populated before user code continues (since `define` triggers an async load internally, but JSRunner's async wrapper handles this).
 
@@ -382,7 +382,7 @@ This is not in v1 scope but informs future `group` field type design.
 
 ### Undo/Redo
 
-Settings changes go through `useNodeDataTracker`. The `onValueChange` callback updates `node.data.settingsValues` via `updateNodeData`, and the component uses `tracker.commit()` for discrete fields and `tracker.track()` for continuous fields (slider, number, string).
+Settings changes go through `useNodeDataTracker`. The `onValueChange` callback updates `node.data.settings` via `updateNodeData`, and the component uses `tracker.commit()` for discrete fields and `tracker.track()` for continuous fields (slider, number, string).
 
 For `kv` and `none` fields, undo/redo is NOT supported (these are outside node data).
 
@@ -418,7 +418,7 @@ For `kv` and `none` fields, undo/redo is NOT supported (these are outside node d
 ```typescript
 // No defaults needed — these are dynamically set by user code
 // settingsSchema: undefined
-// settingsValues: undefined
+// settings: undefined
 ```
 
 When `settings.define()` is called, node data is updated:
@@ -426,7 +426,7 @@ When `settings.define()` is called, node data is updated:
 ```typescript
 updateNodeData(nodeId, {
   settingsSchema: schema,
-  settingsValues: existingValues ?? buildDefaults(schema),
+  settings: { ...buildDefaults(schema), ...existingValues },
 })
 ```
 
@@ -466,13 +466,13 @@ User re-runs code
 
 - **KV persistence async loading**: When `define()` is called with `kv` fields, values must be loaded from IndexedDB. Since JSRunner wraps code in an async function, `define()` can be async internally. The settings API caches loaded KV values so subsequent `get()` calls are synchronous.
 
-- **Node duplication**: When a node is duplicated, `settingsSchema` and `settingsValues` are copied (they're in node data). `none` values are lost. KV values are NOT copied (they're scoped to node ID).
+- **Node duplication**: When a node is duplicated, `settingsSchema` and `settings` are copied (they're in node data). `none` values are lost. KV values are NOT copied (they're scoped to node ID).
 
 - **Node deletion**: Cleanup removes onChange callbacks (via `onCleanup`). KV settings values persist in IndexedDB until explicit cleanup (same as existing KV behavior).
 
 ## Future Extensions
 
-- **Worker/render-worker support**: Add postMessage plumbing for `settings` API in WorkerNode and render worker nodes.
+- ~~**Worker/render-worker support**: Add postMessage plumbing for `settings` API in WorkerNode and render worker nodes.~~ ✅ Implemented: `worker`, `canvas`, and `hydra` nodes now support the settings API via `workerSettingsProxy.ts` shared utility + postMessage bridging through `WorkerNodeSystem`/`GLSystem`.
 - **Field groups/sections**: `group` field type with collapsible sections using the ScopeNode Collapsible pattern (see "Collapsible Sections" above).
 - **Conditional visibility**: Show/hide fields based on other field values (e.g., show "steps" only when mode is "euclidean").
 - **Custom field types**: File picker (VFS), code snippet, MIDI mapping, etc.

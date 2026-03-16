@@ -9,6 +9,7 @@ import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { getFramebuffer } from './utils';
 import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
 import { THREE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { WorkerRendererMessageContext } from './WorkerRendererMessageContext';
 
 type AudioAnalysisType = 'wave' | 'freq';
@@ -32,6 +33,7 @@ export class ThreeRenderer {
   public framebuffer: regl.Framebuffer2D | null = null;
 
   private msgContext!: WorkerRendererMessageContext;
+  public settingsProxy: WorkerSettingsProxy | null = null;
 
   private sampleRate: number = 44000;
   private animationId: number | null = null;
@@ -186,6 +188,16 @@ export class ThreeRenderer {
     this.fftRequestCache.clear();
     this.msgContext.reset();
 
+    // Reset settings proxy for re-run — reuse instance to preserve requestIdCounter
+    // and avoid request ID collisions on rapid re-runs
+    if (!this.settingsProxy) {
+      this.settingsProxy = createWorkerSettingsProxy(this.config.nodeId, (msg) =>
+        self.postMessage(msg)
+      );
+    } else {
+      this.settingsProxy._reset();
+    }
+
     // Reset interaction and video output state
     this.setInteraction('interact', true);
     this.setVideoOutputEnabled(true);
@@ -270,7 +282,10 @@ export class ThreeRenderer {
         requestAnimationFrame: () => {},
 
         // Worker-compatible clock (overrides JSRunner's main-thread Transport-based clock)
-        clock: this.renderer.createWorkerClock()
+        clock: this.renderer.createWorkerClock(),
+
+        // Settings API — proxied through main thread
+        settings: this.settingsProxy!.settings
       };
 
       // Execute using JSRunner with Three.js-specific extra context

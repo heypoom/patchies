@@ -22,6 +22,9 @@
   import { logger } from '$lib/utils/logger';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { SettingsManager } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
+  import type { SettingsSchema } from '$lib/settings';
 
   let {
     id: nodeId,
@@ -37,6 +40,8 @@
       hidePorts?: boolean;
       executeCode?: number;
       showConsole?: boolean;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
     };
     selected?: boolean;
   } = $props();
@@ -58,6 +63,14 @@
   }
 
   let glSystem = GLSystem.getInstance();
+
+  // Settings manager — persists across code re-runs
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+    createKVStore(nodeId)
+  );
+
   let audioAnalysisSystem: AudioAnalysisSystem;
   let messageContext: MessageContext;
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
@@ -115,14 +128,16 @@
 
   function handleInteractionUpdate(e: NodeInteractionUpdateEvent) {
     if (e.nodeId !== nodeId) return;
-    if (e.mode === 'drag') dragEnabled = e.enabled;
-    else if (e.mode === 'pan') panEnabled = e.enabled;
-    else if (e.mode === 'wheel') wheelEnabled = e.enabled;
-    else if (e.mode === 'interact') {
-      dragEnabled = e.enabled;
-      panEnabled = e.enabled;
-      wheelEnabled = e.enabled;
-    }
+    match(e.mode)
+      .with('drag', () => (dragEnabled = e.enabled))
+      .with('pan', () => (panEnabled = e.enabled))
+      .with('wheel', () => (wheelEnabled = e.enabled))
+      .with('interact', () => {
+        dragEnabled = e.enabled;
+        panEnabled = e.enabled;
+        wheelEnabled = e.enabled;
+      })
+      .otherwise(() => {});
   }
 
   function handleVideoOutputEnabledUpdate(e: NodeVideoOutputEnabledUpdateEvent) {
@@ -175,6 +190,23 @@
 
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 
+    // Register settings callbacks — bridging worker settings.define() to main-thread SettingsManager
+    glSystem.registerSettingsCallbacks(nodeId, {
+      onDefine: (requestId, schema) => {
+        settingsManager
+          .define(schema as SettingsSchema)
+          .then(() => {
+            glSystem.sendSettingsValues(nodeId, requestId, settingsManager.getAll());
+          })
+          .catch((err) => {
+            logger.error(`[textmode] settings define error:`, err);
+          });
+      },
+      onClear: () => {
+        settingsManager.clear();
+      }
+    });
+
     glSystem.upsertNode(nodeId, 'textmode', { code: data.code });
 
     setTimeout(() => {
@@ -198,6 +230,7 @@
 
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 
+    glSystem?.unregisterSettingsCallbacks(nodeId);
     audioAnalysisSystem?.disableFFT(nodeId);
     glSystem?.removeNode(nodeId);
     messageContext?.destroy();
@@ -248,6 +281,13 @@
   {selected}
   {editorReady}
   hasError={lineErrors !== undefined}
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => {
+    settingsManager.setValue(key, value);
+    glSystem.sendSettingsValueChanged(nodeId, key, value);
+  }}
+  onSettingsRevertAll={() => settingsManager.revertAll()}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index}

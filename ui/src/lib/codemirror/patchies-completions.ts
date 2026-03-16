@@ -254,6 +254,15 @@ const patchiesAPICompletions: Completion[] = [
     detail: 'KVStore',
     info: 'Persistent key-value storage. Methods: store(name), get(key), set(key, value), delete(key), keys(), clear(), has(key)',
     apply: 'kv'
+  },
+
+  // Settings API
+  {
+    label: 'settings',
+    type: 'variable',
+    detail: 'SettingsAPI',
+    info: 'Dynamic settings API. Call settings.define([...]) to expose a configurable settings panel for this node.',
+    apply: 'settings'
   }
 ];
 
@@ -397,7 +406,21 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'sonic~',
     'elem~'
   ],
-  flash: ['js', 'worker']
+  flash: ['js', 'worker'],
+  settings: [
+    'js',
+    'worker',
+    'p5',
+    'hydra',
+    'canvas',
+    'canvas.dom',
+    'textmode',
+    'textmode.dom',
+    'three',
+    'three.dom',
+    'dom',
+    'vue'
+  ]
 };
 
 export interface PatchiesContext {

@@ -19,6 +19,9 @@
   } from '$lib/eventbus/events';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { SettingsManager } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
+  import type { SettingsSchema } from '$lib/settings';
 
   let {
     id: nodeId,
@@ -34,6 +37,8 @@
       videoOutletCount?: number;
       executeCode?: number;
       showConsole?: boolean;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
     };
   } = $props();
 
@@ -42,6 +47,14 @@
 
   let eventBus = PatchiesEventBus.getInstance();
   let glSystem: GLSystem;
+
+  // Settings manager — persists across code re-runs
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+    createKVStore(nodeId)
+  );
+
   let audioAnalysisSystem: AudioAnalysisSystem;
   let messageContext: MessageContext;
   let mouseHandler: CanvasMouseHandler | null = null;
@@ -162,6 +175,19 @@
     }
 
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
+
+    // Register settings callbacks — bridging worker settings.define() to main-thread SettingsManager
+    glSystem.registerSettingsCallbacks(nodeId, {
+      onDefine: async (requestId, schema) => {
+        await settingsManager.define(schema as SettingsSchema);
+
+        glSystem.sendSettingsValues(nodeId, requestId, settingsManager.getAll());
+      },
+      onClear: () => {
+        settingsManager.clear();
+      }
+    });
+
     glSystem.upsertNode(nodeId, 'hydra', { code });
 
     setTimeout(() => {
@@ -171,6 +197,7 @@
 
   onDestroy(() => {
     messageContext.destroy();
+    glSystem.unregisterSettingsCallbacks(nodeId);
     glSystem.removeNode(nodeId);
     glSystem.removePreviewContext(nodeId, previewBitmapContext);
     mouseHandler?.detach();
@@ -266,6 +293,20 @@
   {editorReady}
   bind:previewCanvas
   hasError={errorLines !== undefined && errorLines.length > 0}
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => {
+    settingsManager.setValue(key, value);
+
+    glSystem.sendSettingsValueChanged(nodeId, key, value);
+  }}
+  onSettingsRevertAll={() => {
+    settingsManager.revertAll();
+
+    for (const [key, value] of Object.entries(settingsManager.getAll())) {
+      glSystem.sendSettingsValueChanged(nodeId, key, value);
+    }
+  }}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: videoInletCount }) as _, index (index)}

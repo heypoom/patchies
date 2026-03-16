@@ -15,6 +15,9 @@
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { parseCanvasDimensions } from '$lib/p5/component-helpers';
   import { P5_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+  import { SettingsManager, createSettingsAPI } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
+  import type { SettingsSchema } from '$lib/settings';
 
   let consoleRef: VirtualConsole | null = $state(null);
 
@@ -33,6 +36,8 @@
       executeCode?: number;
       paused?: boolean;
       showConsole?: boolean;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
     };
     selected: boolean;
   } = $props();
@@ -40,6 +45,14 @@
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const viewport = useViewport();
+
+  // Settings manager — persists across code re-runs
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+    createKVStore(nodeId)
+  );
+  const settingsAPI = createSettingsAPI(settingsManager);
 
   let containerElement: HTMLDivElement;
   let measureElement: HTMLDivElement;
@@ -195,6 +208,7 @@
 
     if (p5Manager && messageContext) {
       try {
+        settingsManager.clearCallbacks();
         await p5Manager.updateCode({
           code,
           messageContext: {
@@ -225,6 +239,7 @@
           setHidePorts: (hide: boolean) => {
             updateNodeData(nodeId, { hidePorts: hide });
           },
+          settings: settingsAPI,
           pauseOnMount: onMount && !!data.paused,
           customConsole,
           onRuntimeError: handleRuntimeError
@@ -274,6 +289,10 @@
   paused={data.paused}
   onPlaybackToggle={togglePlayback}
   {editorReady}
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
+  onSettingsRevertAll={() => settingsManager.revertAll()}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index (index)}

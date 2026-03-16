@@ -6,12 +6,15 @@ import { deleteAfterComment } from '$lib/js-runner/js-module-utils';
 import type { Viewport } from '@xyflow/svelte';
 import { revokeObjectUrls } from '$lib/vfs';
 import { profiler } from '$lib/profiler';
+import type { SettingsAPI } from '$lib/settings';
 
 interface P5SketchConfig {
   code: string;
   messageContext?: UserFnRunContext;
 
   setHidePorts?: (hide: boolean) => void;
+
+  settings?: SettingsAPI;
 
   /**
    * The P5CanvasNode component is being mounted and the playing state is PAUSED,
@@ -317,7 +320,8 @@ export class P5Manager {
         noWheel: config.messageContext?.noWheel,
         noInteract: config.messageContext?.noInteract,
         noOutput: config.messageContext?.noOutput,
-        setHidePorts: config.setHidePorts
+        setHidePorts: config.setHidePorts,
+        settings: config.settings
       }
     });
   }

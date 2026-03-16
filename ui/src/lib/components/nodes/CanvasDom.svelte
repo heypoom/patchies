@@ -18,6 +18,9 @@
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import { profiler } from '$lib/profiler';
+  import { SettingsManager, createSettingsAPI } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
+  import type { SettingsSchema } from '$lib/settings';
 
   let {
     id: nodeId,
@@ -34,6 +37,8 @@
       executeCode?: number;
       showConsole?: boolean;
       paused?: boolean;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
     };
     selected?: boolean;
   } = $props();
@@ -71,6 +76,12 @@
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+    createKVStore(nodeId)
+  );
 
   const [defaultOutputWidth, defaultOutputHeight] = DEFAULT_OUTPUT_SIZE;
 
@@ -337,6 +348,7 @@
 
     // Clear keyboard callbacks when code is re-run
     keyboardCallbacks = {};
+    settingsManager.clearCallbacks();
 
     // Clear any previous animation frame
     if (animationFrameId !== null) {
@@ -359,6 +371,7 @@
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
         setHidePorts: (hidePorts: boolean) => updateNodeData(nodeId, { hidePorts }),
         extraContext: {
+          settings: createSettingsAPI(settingsManager),
           canvas,
           ctx,
           get width() {
@@ -489,9 +502,13 @@
   {selected}
   {editorReady}
   hasError={lineErrors !== undefined}
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
+  onSettingsRevertAll={() => settingsManager.revertAll()}
 >
   {#snippet topHandle()}
-    {#each Array.from({ length: inletCount }) as _, index}
+    {#each Array.from({ length: inletCount }) as _, index (index)}
       <TypedHandle
         port="inlet"
         spec={{ handleId: index }}
@@ -517,7 +534,7 @@
       />
     {/if}
 
-    {#each Array.from({ length: outletCount }) as _, index}
+    {#each Array.from({ length: outletCount }) as _, index (index)}
       <TypedHandle
         port="outlet"
         spec={{ handleId: index }}

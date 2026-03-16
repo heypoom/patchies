@@ -1,6 +1,7 @@
 import type { SwissGL } from '$lib/rendering/swissgl';
 import type { RenderNode } from '$lib/rendering/types';
 import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+import type { WorkerSettingsProxy } from '../../workers/shared/workerSettingsProxy';
 
 export const isExternalTextureNode = (nodeType: RenderNode['type']) => nodeType === 'img';
 
@@ -11,4 +12,5 @@ export type SwissGLContext = {
   gl: WebGL2RenderingContext;
   onMessageCallbacks: MessageCallbackFn[];
   nodeId: string;
+  settingsProxy: WorkerSettingsProxy | null;
 };

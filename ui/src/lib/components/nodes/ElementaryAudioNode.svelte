@@ -10,6 +10,9 @@
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import { SettingsManager } from '$lib/settings';
+  import { createKVStore } from '$lib/storage';
+  import type { SettingsSchema } from '$lib/settings';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -25,6 +28,8 @@
       title?: string;
       executeCode?: number;
       showConsole?: boolean;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
     };
     selected: boolean;
   } = $props();
@@ -34,6 +39,13 @@
   const updateNodeInternals = useUpdateNodeInternals();
 
   let audioService = AudioService.getInstance();
+
+  const settingsManager = new SettingsManager(
+    () => data.settings ?? {},
+    (settings, schema) => updateNodeData(nodeId, { settings, settingsSchema: schema }),
+    createKVStore(nodeId)
+  );
+
   let eventBus = PatchiesEventBus.getInstance();
   let previousExecuteCode = $state<number | undefined>(undefined);
   let consoleRef: VirtualConsole | null = $state(null);
@@ -52,6 +64,7 @@
   $effect(() => {
     if (data.executeCode && data.executeCode !== previousExecuteCode) {
       previousExecuteCode = data.executeCode;
+
       runElementary();
     }
   });
@@ -108,12 +121,16 @@
   }
 
   onMount(() => {
+    audioService.registerSettingsManager(nodeId, settingsManager);
     audioService.createNode(nodeId, 'elem~', [null, data.code]);
+
     handleCodeChange(data.code);
+
     eventBus.addEventListener('consoleOutput', handleConsoleOutput);
   });
 
   onDestroy(() => {
+    audioService.unregisterSettingsManager(nodeId);
     audioService.removeNodeById(nodeId);
 
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
@@ -132,6 +149,10 @@
   showConsole={data.showConsole}
   onToggleConsole={handleToggleConsole}
   {lineErrors}
+  settingsSchema={data.settingsSchema}
+  settingsValues={data.settings ?? {}}
+  onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
+  onSettingsRevertAll={() => settingsManager.revertAll()}
 >
   {#snippet console()}
     <VirtualConsole
