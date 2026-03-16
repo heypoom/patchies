@@ -8,6 +8,8 @@ import { MessageContext } from '$lib/messages/MessageContext';
 import { JSRunner } from '$lib/js-runner/JSRunner';
 import type WebRenderer from '@elemaudio/web-renderer';
 import { ELEM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+import { AudioService } from '../AudioService';
+import { createSettingsAPI } from '$lib/settings/create-settings-api';
 
 type RecvCallback = (message: unknown, meta: unknown) => void;
 type OnSetPortCount = (inletCount: number, outletCount: number) => void;
@@ -164,6 +166,9 @@ export class ElementaryNode implements AudioNodeV2 {
       this.messageOutletCount = 0;
       this.recvCallback = null;
 
+      const settingsManager = AudioService.getInstance().getSettingsManager(this.nodeId);
+      settingsManager?.clearCallbacks();
+
       // Create recv function for receiving messages
       const recv = (callback: (message: unknown, meta: unknown) => void) => {
         this.recvCallback = callback;
@@ -198,7 +203,8 @@ export class ElementaryNode implements AudioNodeV2 {
           inputNode: this.inputNode,
           outputNode: this.audioNode,
           recv,
-          send
+          send,
+          ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
         }
       });
     } catch (error) {
