@@ -2,7 +2,9 @@
   import {
     BotMessageSquare,
     ImagePlus,
+    LoaderCircle,
     MessageSquare,
+    Mic,
     Send,
     Settings,
     Square,
@@ -12,10 +14,11 @@
   } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { compressImageFile } from '$lib/ai/google';
+  import { selectMimeType, arrayBufferToBase64, transcribeAudio } from '$lib/ai/stt';
   import { match } from 'ts-pattern';
   import { logger } from '$lib/utils/logger';
   import { toast } from 'svelte-sonner';
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import {
     streamChatMessage,
@@ -63,6 +66,11 @@
     messages = await loadChatMessages(sessionId);
   });
 
+  onDestroy(() => {
+    if (isVoiceRecording) stopVoiceRecording();
+    voiceAbortController?.abort();
+  });
+
   $effect(() => {
     if (messages.length > 0) {
       saveChatMessages(sessionId, messages);
@@ -82,6 +90,13 @@
   let abortController: AbortController | null = $state(null);
   let messagesEl: HTMLDivElement | undefined = $state();
   let stagedImages = $state<StagedImage[]>([]);
+  let isVoiceRecording = $state(false);
+  let isTranscribing = $state(false);
+  let voiceMediaRecorder: MediaRecorder | null = null;
+  let voiceMediaStream: MediaStream | null = null;
+  let voiceChunks: Blob[] = [];
+  let voiceMimeType = '';
+  let voiceAbortController: AbortController | null = null;
   let fileInputEl: HTMLInputElement | undefined = $state();
   let personaPanelOpen = $state(false);
   let settingsPanelOpen = $state(false);
@@ -340,6 +355,64 @@
 
   function handleDragOver(event: DragEvent) {
     event.preventDefault();
+  }
+
+  async function startVoiceRecording() {
+    try {
+      voiceMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      toast.error('Microphone access denied');
+      return;
+    }
+
+    voiceMimeType = selectMimeType();
+    voiceChunks = [];
+    voiceMediaRecorder = new MediaRecorder(
+      voiceMediaStream,
+      voiceMimeType ? { mimeType: voiceMimeType } : {}
+    );
+    voiceMediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) voiceChunks.push(e.data);
+    };
+    voiceMediaRecorder.onstop = handleVoiceStop;
+    voiceMediaRecorder.start(100);
+    isVoiceRecording = true;
+  }
+
+  function stopVoiceRecording() {
+    voiceMediaRecorder?.stop();
+    voiceMediaStream?.getTracks().forEach((t) => t.stop());
+    voiceMediaStream = null;
+    isVoiceRecording = false;
+  }
+
+  async function handleVoiceStop() {
+    const mimeType = voiceMimeType || 'audio/webm';
+    const blob = new Blob(voiceChunks, { type: mimeType });
+    voiceChunks = [];
+
+    if (blob.size < 1000) {
+      toast.error('Recording too short');
+      return;
+    }
+
+    isTranscribing = true;
+    voiceAbortController = new AbortController();
+
+    try {
+      const base64 = arrayBufferToBase64(await blob.arrayBuffer());
+      const text = await transcribeAudio(base64, mimeType.split(';')[0], {
+        signal: voiceAbortController.signal
+      });
+      if (text) inputText = inputText ? inputText + ' ' + text : text;
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
+        toast.error(error instanceof Error ? error.message : 'Transcription failed');
+      }
+    } finally {
+      isTranscribing = false;
+      voiceAbortController = null;
+    }
   }
 
   function handlePaste(event: ClipboardEvent) {
@@ -664,8 +737,12 @@
         bind:value={inputText}
         onkeydown={handleKeydown}
         onpaste={handlePaste}
-        placeholder="Ask anything or drop/paste images. Shift+Enter for new line."
-        disabled={isLoading}
+        placeholder={isVoiceRecording
+          ? 'Listening...'
+          : isTranscribing
+            ? 'Transcribing...'
+            : 'Ask anything or drop/paste images. Shift+Enter for new line.'}
+        disabled={isLoading || isVoiceRecording || isTranscribing}
         rows="3"
         class="nodrag flex w-full resize-none rounded-sm border-1 border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 placeholder-zinc-600 outline-none focus-within:border-zinc-500 disabled:opacity-50"
       ></textarea>
@@ -743,6 +820,25 @@
             if (fileInputEl) fileInputEl.value = '';
           }}
         />
+
+        <button
+          onclick={() => (isVoiceRecording ? stopVoiceRecording() : startVoiceRecording())}
+          disabled={isLoading || isTranscribing}
+          class="cursor-pointer rounded p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-30 {isVoiceRecording
+            ? 'animate-pulse text-red-400 hover:bg-zinc-800'
+            : isTranscribing
+              ? 'text-blue-400'
+              : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
+          title={isVoiceRecording ? 'Stop recording' : 'Voice input'}
+        >
+          {#if isTranscribing}
+            <LoaderCircle class="h-3.5 w-3.5 animate-spin" />
+          {:else if isVoiceRecording}
+            <Square class="h-3 w-3 fill-current" />
+          {:else}
+            <Mic class="h-3.5 w-3.5" />
+          {/if}
+        </button>
 
         <button
           onclick={() => fileInputEl?.click()}
