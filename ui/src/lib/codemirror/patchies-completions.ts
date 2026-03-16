@@ -251,7 +251,7 @@ const patchiesAPICompletions: Completion[] = [
     label: 'kv',
     type: 'variable',
     detail: 'KVStore',
-    info: 'Persistent key-value storage. Methods: store(name), get(key), set(key, value), delete(key), keys(), clear(), has(key)',
+    info: 'Persistent key-value storage. Type kv. to see available methods.',
     apply: 'kv'
   },
 
@@ -269,7 +269,7 @@ const patchiesAPICompletions: Completion[] = [
     label: 'clock',
     type: 'variable',
     detail: 'ClockAPI',
-    info: 'Beat-synced timing and scheduling. Properties: time, ticks, beat, phase, bpm, bar. Methods: play(), pause(), stop(), setBpm(), onBeat(), every(), schedule(), subdiv(), subdivPhase()',
+    info: 'Beat-synced timing and scheduling. Type clock. to see available properties and methods.',
     apply: 'clock'
   }
 ];
@@ -445,6 +445,269 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   ]
 };
 
+/**
+ * Member completions for global objects (shown after `obj.`)
+ */
+const memberCompletions: Record<string, Completion[]> = {
+  kv: [
+    {
+      label: 'get',
+      type: 'method',
+      detail: '(key: string) => Promise<any>',
+      info: 'Get value by key. Returns undefined if not found.',
+      apply: "get('')"
+    },
+    {
+      label: 'set',
+      type: 'method',
+      detail: '(key: string, value: any) => Promise<void>',
+      info: 'Set value at key.',
+      apply: "set('', )"
+    },
+    {
+      label: 'has',
+      type: 'method',
+      detail: '(key: string) => Promise<boolean>',
+      info: 'Check if key exists.',
+      apply: "has('')"
+    },
+    {
+      label: 'delete',
+      type: 'method',
+      detail: '(key: string) => Promise<boolean>',
+      info: 'Delete key. Returns true if it existed.',
+      apply: "delete('')"
+    },
+    {
+      label: 'keys',
+      type: 'method',
+      detail: '() => Promise<string[]>',
+      info: 'Get all keys in the store.',
+      apply: 'keys()'
+    },
+    {
+      label: 'clear',
+      type: 'method',
+      detail: '() => Promise<void>',
+      info: 'Delete all keys in the store.',
+      apply: 'clear()'
+    },
+    {
+      label: 'store',
+      type: 'method',
+      detail: '(name: string) => KVStore',
+      info: 'Get a named store shared across all nodes using the same name.',
+      apply: "store('')"
+    }
+  ],
+
+  clock: [
+    // Properties
+    {
+      label: 'time',
+      type: 'property',
+      detail: 'number',
+      info: 'Current time in seconds.',
+      apply: 'time'
+    },
+    {
+      label: 'ticks',
+      type: 'property',
+      detail: 'number',
+      info: 'Current time in ticks (192 PPQ).',
+      apply: 'ticks'
+    },
+    {
+      label: 'beat',
+      type: 'property',
+      detail: 'number',
+      info: 'Current beat in measure (0 to beatsPerBar-1).',
+      apply: 'beat'
+    },
+    {
+      label: 'phase',
+      type: 'property',
+      detail: 'number',
+      info: 'Position within current beat (0.0 to 1.0).',
+      apply: 'phase'
+    },
+    {
+      label: 'bpm',
+      type: 'property',
+      detail: 'number',
+      info: 'Current tempo in BPM.',
+      apply: 'bpm'
+    },
+    {
+      label: 'bar',
+      type: 'property',
+      detail: 'number',
+      info: 'Current bar (0-indexed).',
+      apply: 'bar'
+    },
+    {
+      label: 'beatsPerBar',
+      type: 'property',
+      detail: 'number',
+      info: 'Beats per bar (default: 4).',
+      apply: 'beatsPerBar'
+    },
+    {
+      label: 'timeSignature',
+      type: 'property',
+      detail: '[number, number]',
+      info: 'Time signature as [numerator, denominator]. E.g. [6, 8] is 6/8.',
+      apply: 'timeSignature'
+    },
+    // Transport control
+    {
+      label: 'play',
+      type: 'method',
+      detail: '() => void',
+      info: 'Start transport.',
+      apply: 'play()'
+    },
+    {
+      label: 'pause',
+      type: 'method',
+      detail: '() => void',
+      info: 'Pause transport.',
+      apply: 'pause()'
+    },
+    {
+      label: 'stop',
+      type: 'method',
+      detail: '() => void',
+      info: 'Stop and reset to 0.',
+      apply: 'stop()'
+    },
+    {
+      label: 'setBpm',
+      type: 'method',
+      detail: '(bpm: number) => void',
+      info: 'Set tempo in BPM.',
+      apply: 'setBpm(120)'
+    },
+    {
+      label: 'setTimeSignature',
+      type: 'method',
+      detail: '(numerator: number, denominator: number) => void',
+      info: 'Set time signature. E.g. setTimeSignature(6, 8) for 6/8.',
+      apply: 'setTimeSignature(4, 4)'
+    },
+    {
+      label: 'seek',
+      type: 'method',
+      detail: '(seconds: number) => void',
+      info: 'Seek to time in seconds.',
+      apply: 'seek(0)'
+    },
+    // Scheduling
+    {
+      label: 'onBeat',
+      type: 'method',
+      detail: "(beat: number | number[] | '*', callback, options?) => id",
+      info: "Subscribe to beat changes. beat can be index, array of indices, or '*' for every beat.",
+      apply: 'onBeat(0, () => {\n  \n})'
+    },
+    {
+      label: 'every',
+      type: 'method',
+      detail: "('bar:beat:sixteenth', callback, options?) => id",
+      info: "Schedule a repeating callback at a musical interval. E.g. '1:0:0' = every bar, '0:1:0' = every beat.",
+      apply: "every('0:1:0', () => {\n  \n})"
+    },
+    {
+      label: 'schedule',
+      type: 'method',
+      detail: '(time: number | string, callback, options?) => id',
+      info: "Schedule a one-shot callback. Accepts seconds or 'bar:beat:sixteenth' notation (zero-indexed).",
+      apply: "schedule('4:0:0', () => {\n  \n})"
+    },
+    {
+      label: 'cancel',
+      type: 'method',
+      detail: '(id) => void',
+      info: 'Cancel a specific scheduled callback by its ID.',
+      apply: 'cancel()'
+    },
+    {
+      label: 'cancelAll',
+      type: 'method',
+      detail: '() => void',
+      info: 'Cancel all scheduled callbacks.',
+      apply: 'cancelAll()'
+    },
+    // Subdivisions
+    {
+      label: 'subdiv',
+      type: 'method',
+      detail: '(n: number) => number',
+      info: 'Current subdivision index (0 to n-1) within the beat. Each node can use its own subdivision.',
+      apply: 'subdiv(4)'
+    },
+    {
+      label: 'subdivPhase',
+      type: 'method',
+      detail: '(n: number) => number',
+      info: 'Progress within current subdivision (0.0 to 1.0).',
+      apply: 'subdivPhase(4)'
+    },
+    {
+      label: 'setTimelineStyle',
+      type: 'method',
+      detail: '(options: { color?: string, visible?: boolean }) => void',
+      info: 'Customize how this node appears in the Timeline Viewer.',
+      apply: "setTimelineStyle({ color: '#ff6b6b' })"
+    }
+  ],
+
+  settings: [
+    {
+      label: 'define',
+      type: 'method',
+      detail: '(schema: FieldDef[]) => Promise<void>',
+      info: 'Define the settings schema and open the settings panel. Always await this before calling get().',
+      apply: 'define([\n  \n])'
+    },
+    {
+      label: 'get',
+      type: 'method',
+      detail: '(key: string) => any',
+      info: 'Get current value for a field. Synchronous after define() has resolved.',
+      apply: "get('')"
+    },
+    {
+      label: 'getAll',
+      type: 'method',
+      detail: '() => Record<string, any>',
+      info: 'Get all current values as a plain object.',
+      apply: 'getAll()'
+    },
+    {
+      label: 'set',
+      type: 'method',
+      detail: '(key: string, value: any) => void',
+      info: 'Programmatically update a setting value. Fires onChange callbacks and persists the value.',
+      apply: "set('', )"
+    },
+    {
+      label: 'onChange',
+      type: 'method',
+      detail: '(callback: (key, value, allValues) => void) => void',
+      info: 'Register a callback that fires whenever any value changes from user interaction or settings.set().',
+      apply: 'onChange((key, value, all) => {\n  \n})'
+    },
+    {
+      label: 'clear',
+      type: 'method',
+      detail: '() => void',
+      info: 'Reset all settings to defaults and clear persisted values.',
+      apply: 'clear()'
+    }
+  ]
+};
+
 export interface PatchiesContext {
   nodeType?: string;
 }
@@ -491,6 +754,26 @@ function createPatchiesCompletionSource(patchiesContext?: PatchiesContext) {
     // Skip completions for non-JS nodes (expressions are pure, messages are JSON5)
     if (patchiesContext?.nodeType === 'expr') return null;
     if (patchiesContext?.nodeType === 'msg') return null;
+
+    // Check for member completions (kv., clock., settings.)
+    const memberMatch = context.matchBefore(/\w+\.\w*/);
+
+    if (memberMatch) {
+      const dotIdx = memberMatch.text.indexOf('.');
+      const obj = memberMatch.text.slice(0, dotIdx);
+      const methods = memberCompletions[obj];
+
+      if (methods) {
+        const partial = memberMatch.text.slice(dotIdx + 1).toLowerCase();
+
+        return {
+          from: memberMatch.from + dotIdx + 1,
+          options: partial
+            ? methods.filter((m) => m.label.toLowerCase().startsWith(partial))
+            : methods
+        };
+      }
+    }
 
     const word = context.matchBefore(/\w*/);
     if (!word) return null;
