@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useSvelteFlow, useUpdateNodeInternals, useViewport } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
