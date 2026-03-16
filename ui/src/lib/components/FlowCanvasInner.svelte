@@ -1371,7 +1371,12 @@
     {/if}
 
     <!-- Toast Notifications -->
-    <Toaster position="top-center" offset={{ top: 'env(safe-area-inset-top, 32px)' }} />
+    {#if !$isSidebarOpen}
+      <Toaster
+        position="top-center"
+        offset={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
+      />
+    {/if}
 
     <!-- Gemini API Key Missing Dialog -->
     <GeminiApiKeyDialog
