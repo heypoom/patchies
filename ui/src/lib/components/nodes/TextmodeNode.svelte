@@ -128,14 +128,16 @@
 
   function handleInteractionUpdate(e: NodeInteractionUpdateEvent) {
     if (e.nodeId !== nodeId) return;
-    if (e.mode === 'drag') dragEnabled = e.enabled;
-    else if (e.mode === 'pan') panEnabled = e.enabled;
-    else if (e.mode === 'wheel') wheelEnabled = e.enabled;
-    else if (e.mode === 'interact') {
-      dragEnabled = e.enabled;
-      panEnabled = e.enabled;
-      wheelEnabled = e.enabled;
-    }
+    match(e.mode)
+      .with('drag', () => (dragEnabled = e.enabled))
+      .with('pan', () => (panEnabled = e.enabled))
+      .with('wheel', () => (wheelEnabled = e.enabled))
+      .with('interact', () => {
+        dragEnabled = e.enabled;
+        panEnabled = e.enabled;
+        wheelEnabled = e.enabled;
+      })
+      .otherwise(() => {});
   }
 
   function handleVideoOutputEnabledUpdate(e: NodeVideoOutputEnabledUpdateEvent) {

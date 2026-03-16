@@ -246,7 +246,7 @@
           {#if onrun}
             <Tooltip.Root>
               <Tooltip.Trigger>
-                <button onclick={handleRun} class="rounded p-1 hover:bg-zinc-700">
+                <button onclick={handleRun} class="cursor-pointer rounded p-1 hover:bg-zinc-700">
                   <Play class="h-4 w-4 text-zinc-300" />
                 </button>
               </Tooltip.Trigger>
@@ -259,7 +259,10 @@
           {#if consoleSnippet}
             <Tooltip.Root>
               <Tooltip.Trigger>
-                <button class="rounded p-1 hover:bg-zinc-700" onclick={handleConsoleToggle}>
+                <button
+                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                  onclick={handleConsoleToggle}
+                >
                   <Terminal class="h-4 w-4 text-zinc-300" />
                 </button>
               </Tooltip.Trigger>
@@ -269,7 +272,10 @@
 
           <Tooltip.Root>
             <Tooltip.Trigger>
-              <button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
+              <button
+                onclick={() => (showEditor = false)}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              >
                 <X class="h-4 w-4 text-zinc-300" />
               </button>
             </Tooltip.Trigger>

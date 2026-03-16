@@ -11,6 +11,7 @@
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let contentContainer: HTMLDivElement | null = null;
   let consoleRef: VirtualConsole | null = $state(null);
@@ -266,26 +267,36 @@
                 onSettingsToggle={handleSettingsToggle}
               />
             {:else}
-              <button
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                onclick={handleConsoleToggle}
-                title="Console"
-              >
-                <Terminal class="h-4 w-4 text-zinc-300" />
-              </button>
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <button
+                    class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                    onclick={handleConsoleToggle}
+                    aria-label="Console"
+                  >
+                    <Terminal class="h-4 w-4 text-zinc-300" />
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>Console</Tooltip.Content>
+              </Tooltip.Root>
             {/if}
           {/if}
 
-          <button
-            class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-            onclick={() => {
-              toggleEditor();
-              if (showEditor) showSettings = false;
-            }}
-            title="Edit code"
-          >
-            <Code class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                onclick={() => {
+                  toggleEditor();
+                  if (showEditor) showSettings = false;
+                }}
+                aria-label="Edit code"
+              >
+                <Code class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Edit code</Tooltip.Content>
+          </Tooltip.Root>
         </div>
       </div>
 

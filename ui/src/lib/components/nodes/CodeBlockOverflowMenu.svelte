@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Ellipsis, Settings, Terminal } from '@lucide/svelte/icons';
   import * as Popover from '$lib/components/ui/popover';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import type { SettingsSchema } from '$lib/settings';
 
   let {
@@ -19,11 +20,16 @@
 </script>
 
 <Popover.Root>
-  <Popover.Trigger>
-    <button class="cursor-pointer rounded p-1 hover:bg-zinc-700" title="More">
-      <Ellipsis class="h-4 w-4 text-zinc-300" />
-    </button>
-  </Popover.Trigger>
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      <Popover.Trigger>
+        <button class="cursor-pointer rounded p-1 hover:bg-zinc-700" aria-label="More options">
+          <Ellipsis class="h-4 w-4 text-zinc-300" />
+        </button>
+      </Popover.Trigger>
+    </Tooltip.Trigger>
+    <Tooltip.Content>More</Tooltip.Content>
+  </Tooltip.Root>
 
   <Popover.Content class="flex w-auto flex-col p-1" align="end" sideOffset={4}>
     {#if settingsSchema.length > 0}
