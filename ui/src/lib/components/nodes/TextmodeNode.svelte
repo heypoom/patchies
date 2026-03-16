@@ -192,10 +192,15 @@
 
     // Register settings callbacks — bridging worker settings.define() to main-thread SettingsManager
     glSystem.registerSettingsCallbacks(nodeId, {
-      onDefine: async (requestId, schema) => {
-        await settingsManager.define(schema as SettingsSchema);
-
-        glSystem.sendSettingsValues(nodeId, requestId, settingsManager.getAll());
+      onDefine: (requestId, schema) => {
+        settingsManager
+          .define(schema as SettingsSchema)
+          .then(() => {
+            glSystem.sendSettingsValues(nodeId, requestId, settingsManager.getAll());
+          })
+          .catch((err) => {
+            logger.error(`[textmode] settings define error:`, err);
+          });
       },
       onClear: () => {
         settingsManager.clear();

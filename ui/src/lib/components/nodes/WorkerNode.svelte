@@ -198,5 +198,11 @@
     settingsManager.setValue(key, value);
     workerSystem.sendSettingsValueChanged(nodeId, key, value);
   }}
-  onSettingsRevertAll={() => settingsManager.revertAll()}
+  onSettingsRevertAll={() => {
+    settingsManager.revertAll();
+
+    for (const [key, value] of Object.entries(settingsManager.getAll())) {
+      workerSystem.sendSettingsValueChanged(nodeId, key, value);
+    }
+  }}
 />

@@ -299,7 +299,13 @@
     settingsManager.setValue(key, value);
     glSystem.sendSettingsValueChanged(nodeId, key, value);
   }}
-  onSettingsRevertAll={() => settingsManager.revertAll()}
+  onSettingsRevertAll={() => {
+    settingsManager.revertAll();
+
+    for (const [key, value] of Object.entries(settingsManager.getAll())) {
+      glSystem.sendSettingsValueChanged(nodeId, key, value);
+    }
+  }}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: videoInletCount }) as _, index (index)}

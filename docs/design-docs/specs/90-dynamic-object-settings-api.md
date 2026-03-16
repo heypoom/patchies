@@ -426,7 +426,7 @@ When `settings.define()` is called, node data is updated:
 ```typescript
 updateNodeData(nodeId, {
   settingsSchema: schema,
-  settings: existingValues ?? buildDefaults(schema),
+  settings: { ...buildDefaults(schema), ...existingValues },
 })
 ```
 

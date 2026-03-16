@@ -226,10 +226,10 @@
     />
   </ContextMenu.Root>
 
-  {#if showSettings && settingsSchema && settingsSchema.length > 0}
+  {#if showSettings && settingsSchema && settingsSchema.length > 0 && nodeId}
     <div class="absolute top-0" style="left: {editorLeftPos}px;">
       <ObjectSettings
-        nodeId={nodeId ?? ''}
+        {nodeId}
         schema={settingsSchema}
         values={settingsValues}
         onValueChange={(key, value) => onSettingsValueChange?.(key, value)}

@@ -83,6 +83,9 @@ export function createWorkerSettingsProxy(
 
     _reset() {
       onChangeCallbacks = [];
+      for (const resolve of pendingDefines.values()) {
+        resolve(cachedValues);
+      }
       pendingDefines.clear();
       cachedValues = {};
     },
