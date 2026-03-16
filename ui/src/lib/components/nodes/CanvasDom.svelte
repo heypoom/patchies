@@ -508,7 +508,7 @@
   onSettingsRevertAll={() => settingsManager.revertAll()}
 >
   {#snippet topHandle()}
-    {#each Array.from({ length: inletCount }) as _, index}
+    {#each Array.from({ length: inletCount }) as _, index (index)}
       <TypedHandle
         port="inlet"
         spec={{ handleId: index }}
@@ -534,7 +534,7 @@
       />
     {/if}
 
-    {#each Array.from({ length: outletCount }) as _, index}
+    {#each Array.from({ length: outletCount }) as _, index (index)}
       <TypedHandle
         port="outlet"
         spec={{ handleId: index }}
