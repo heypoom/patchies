@@ -299,14 +299,21 @@ await settings.define([
 
 let interval = settings.get('interval');
 let enabled = settings.get('enabled');
+let timerId = null;
+
+function startTimer() {
+  if (timerId !== null) clearInterval(timerId);
+  timerId = setInterval(() => {
+    if (enabled) send(Date.now());
+  }, interval);
+}
+
 settings.onChange((key, value) => {
-  if (key === 'interval') interval = value;
+  if (key === 'interval') { interval = value; startTimer(); }
   if (key === 'enabled') enabled = value;
 });
 
-setInterval(() => {
-  if (enabled) send(Date.now());
-}, 100);
+startTimer();
 ```
 
 ### JS — update settings from incoming messages
