@@ -9,7 +9,10 @@
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
-  import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
+  import {
+    shaderCodeToUniformDefs,
+    uniformDefsToSettingsSchema
+  } from '$lib/canvas/shader-code-to-uniform-def';
   import type { GLUniformDef } from '../../../types/uniform-config';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -49,7 +52,10 @@
 
   let isPaused = $state(false);
   let editorReady = $state(false);
-  let consoleRef: any = $state(null);
+  let uniformValues = $state<Record<string, number | boolean>>({});
+  const uniformsSchema = $derived(uniformDefsToSettingsSchema(data.glUniformDefs ?? []));
+
+  let consoleRef = $state<{ clearConsole: () => void } | null>(null);
   let lineErrors: Record<number, string[]> | undefined = $state(undefined);
 
   const code = $derived(data.code || '');
@@ -74,6 +80,7 @@
   $effect(() => {
     if (data.executeCode && data.executeCode !== previousExecuteCode) {
       previousExecuteCode = data.executeCode;
+
       updateShader();
     }
   });
@@ -82,7 +89,12 @@
     try {
       if (meta.inletKey?.startsWith('message-in-')) {
         const [, uniformName] = meta.inletKey.split('-').slice(2);
+
         glSystem.setUniformData(nodeId, uniformName, message as UserUniformValue);
+
+        if (typeof message === 'number' || typeof message === 'boolean') {
+          uniformValues = { ...uniformValues, [uniformName]: message };
+        }
 
         return;
       }
@@ -147,6 +159,12 @@
 
     // inform XYFlow that the handle has changed
     updateNodeInternals();
+  }
+
+  function handleUniformValueChange(key: string, value: unknown) {
+    uniformValues = { ...uniformValues, [key]: value as number | boolean };
+
+    glSystem.setUniformData(nodeId, key, value as UserUniformValue);
   }
 
   function togglePause() {
@@ -234,9 +252,12 @@
   {selected}
   {editorReady}
   hasError={errorLines !== undefined && errorLines.length > 0}
+  settingsSchema={uniformsSchema}
+  settingsValues={uniformValues}
+  onSettingsValueChange={handleUniformValueChange}
 >
   {#snippet topHandle()}
-    {#each data.glUniformDefs as def, defIndex}
+    {#each data.glUniformDefs as def, defIndex (defIndex)}
       <StandardHandle
         port="inlet"
         type={def.type === 'sampler2D' ? 'video' : 'message'}

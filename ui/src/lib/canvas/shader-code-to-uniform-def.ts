@@ -1,15 +1,45 @@
+import { match } from 'ts-pattern';
 import type { GLUniformDef } from '../../types/uniform-config';
+import type { SettingsField } from '$lib/settings/types';
 
 export function shaderCodeToUniformDefs(code: string): GLUniformDef[] {
   const uniformRegex = /uniform\s+(\w+)\s+(\w+);/g;
   const uniformDefs: GLUniformDef[] = [];
-  let match;
 
-  while ((match = uniformRegex.exec(code)) !== null) {
-    const type = match[1] as GLUniformDef['type'];
-    const name = match[2];
+  let result;
+
+  while ((result = uniformRegex.exec(code)) !== null) {
+    const type = result[1] as GLUniformDef['type'];
+    const name = result[2];
     uniformDefs.push({ name, type });
   }
 
   return uniformDefs;
 }
+
+export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField[] =>
+  defs.flatMap((def) =>
+    match<string, SettingsField[]>(def.type)
+      .with('float', () => [
+        {
+          key: def.name,
+          label: def.name,
+          type: 'number' as const,
+          step: 0.01,
+          persistence: 'none' as const
+        }
+      ])
+      .with('int', () => [
+        {
+          key: def.name,
+          label: def.name,
+          type: 'number' as const,
+          step: 1,
+          persistence: 'none' as const
+        }
+      ])
+      .with('bool', () => [
+        { key: def.name, label: def.name, type: 'boolean' as const, persistence: 'none' as const }
+      ])
+      .otherwise(() => [])
+  );
