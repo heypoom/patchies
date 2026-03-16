@@ -109,6 +109,12 @@
 
   function toggleEditor() {
     showEditor = !showEditor;
+    if (showEditor) showSettings = false;
+  }
+
+  function toggleSettings() {
+    showSettings = !showSettings;
+    if (showSettings) showEditor = false;
   }
 
   let minContainerWidth = $derived.by(() => {
@@ -133,8 +139,7 @@
               onclick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                showSettings = !showSettings;
-                if (showSettings) showEditor = false;
+                toggleSettings();
               }}
               title="Settings"
             >
@@ -148,7 +153,6 @@
               e.preventDefault();
               e.stopPropagation();
               toggleEditor();
-              if (showEditor) showSettings = false;
             }}
             title="Edit code"
           >
