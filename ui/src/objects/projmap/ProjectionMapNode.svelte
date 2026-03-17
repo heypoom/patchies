@@ -141,12 +141,20 @@
     tracker.commit('surfaces', old, updated);
   }
 
+  const DRAG_RENDER_INTERVAL = 1000 / 15; // ~15fps during drag
+  let lastDragRenderTime = 0;
+
   function movePoint(surfaceId: string, index: number, p: ProjMapPoint) {
     const updated = surfaces.map((s) =>
       s.id === surfaceId ? { ...s, points: s.points.map((pt, i) => (i === index ? p : pt)) } : s
     );
+    updateNodeData(node.id, { surfaces: updated });
 
-    applyUpdate(updated);
+    const now = performance.now();
+    if (now - lastDragRenderTime >= DRAG_RENDER_INTERVAL) {
+      lastDragRenderTime = now;
+      glSystem.updateProjectionMap(node.id, updated);
+    }
   }
 
   function deleteHoveredPoint() {
@@ -167,25 +175,9 @@
     }
   }
 
-  let _pendingRaf: number | null = null;
-  let _pendingSurfaces: ProjMapSurface[] | null = null;
-
   function applyUpdate(updated: ProjMapSurface[]) {
     updateNodeData(node.id, { surfaces: updated });
-
-    // Coalesce renderer updates to one per animation frame
-    _pendingSurfaces = updated;
-
-    if (_pendingRaf === null) {
-      _pendingRaf = requestAnimationFrame(() => {
-        _pendingRaf = null;
-
-        if (_pendingSurfaces) {
-          glSystem.updateProjectionMap(node.id, _pendingSurfaces);
-          _pendingSurfaces = null;
-        }
-      });
-    }
+    glSystem.updateProjectionMap(node.id, updated);
   }
 
   // ── Pointer interaction ───────────────────────────────────────────────────
@@ -265,6 +257,8 @@
     if (draggingPointIndex !== -1 && surfacesBeforeDrag.length > 0) {
       tracker.commit('surfaces', surfacesBeforeDrag, surfaces);
       surfacesBeforeDrag = [];
+      // Flush final positions to renderer now that drag is complete
+      glSystem.updateProjectionMap(node.id, surfaces);
     }
 
     draggingPointIndex = -1;
@@ -331,13 +325,10 @@
   onDestroy(() => {
     glSystem?.removeNode(node.id);
     window.removeEventListener('keydown', onKeydown, { capture: true });
-
-    if (_pendingRaf !== null) {
-      cancelAnimationFrame(_pendingRaf);
-    }
   });
 
   $effect(() => {
+    if (draggingPointIndex !== -1) return;
     glSystem.upsertNode(node.id, 'projmap', { surfaces });
   });
 </script>
