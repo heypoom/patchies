@@ -70,6 +70,7 @@
   let surfaces = $derived<ProjMapSurface[]>(
     node.data.surfaces ?? DEFAULT_PROJMAP_NODE_DATA.surfaces
   );
+
   let activeSurfaceId = $state<string | null>(null);
 
   type EditMode = 'add' | 'move';
@@ -77,6 +78,7 @@
 
   let draggingPointIndex = $state(-1);
   let surfacesBeforeDrag: ProjMapSurface[] = [];
+
   // move-mode drag state
   let dragStartX = 0;
   let dragStartY = 0;
@@ -114,9 +116,12 @@
   function removeInvalidEdges(validCount: number) {
     const invalid = getEdges().filter((edge) => {
       if (edge.target !== node.id) return false;
+
       const match = edge.targetHandle?.match(/^video-in-(\d+)$/);
+
       return match ? parseInt(match[1]) >= validCount : false;
     });
+
     if (invalid.length > 0) deleteElements({ edges: invalid });
   }
 
@@ -159,10 +164,12 @@
 
     const updated = surfaces.map((s) => {
       if (s.id !== surfaceId) return s;
+
       const points =
         insertAt !== undefined
           ? [...s.points.slice(0, insertAt), p, ...s.points.slice(insertAt)]
           : [...s.points, p];
+
       return { ...s, points };
     });
 
@@ -177,11 +184,14 @@
     const updated = surfaces.map((s) =>
       s.id === surfaceId ? { ...s, points: s.points.map((pt, i) => (i === index ? p : pt)) } : s
     );
+
     updateNodeData(node.id, { surfaces: updated });
 
     const now = performance.now();
+
     if (now - lastDragRenderTime >= DRAG_RENDER_INTERVAL) {
       lastDragRenderTime = now;
+
       glSystem.updateProjectionMap(node.id, updated);
     }
   }
@@ -206,12 +216,14 @@
 
   function applyUpdate(updated: ProjMapSurface[]) {
     updateNodeData(node.id, { surfaces: updated });
+
     glSystem.updateProjectionMap(node.id, updated);
   }
 
   function moveSurface(surfaceId: string, dx: number, dy: number, basePoints: ProjMapPoint[]) {
     const updated = surfaces.map((s) => {
       if (s.id !== surfaceId) return s;
+
       return {
         ...s,
         points: basePoints.map((p) =>
@@ -219,11 +231,14 @@
         )
       };
     });
+
     updateNodeData(node.id, { surfaces: updated });
 
     const now = performance.now();
+
     if (now - lastDragRenderTime >= DRAG_RENDER_INTERVAL) {
       lastDragRenderTime = now;
+
       glSystem.updateProjectionMap(node.id, updated);
     }
   }
@@ -268,9 +283,11 @@
 
     hoverSurfaceId = hit?.surfaceId ?? null;
     hoverPointIndex = hit?.index ?? -1;
+
     hoverInactiveSurface =
       !hit &&
       surfaces.some((s) => s.id !== activeSurfaceId && pointInPolygon(x, y, s.points, w, h));
+
     hoverActiveSurface =
       editMode === 'move' && !!(activeSurface && pointInPolygon(x, y, activeSurface.points, w, h));
 
@@ -291,12 +308,16 @@
       // In move mode: click any surface (active or not) to select + start dragging it
       const target = surfaces.find((s) => pointInPolygon(x, y, s.points, w, h)) ?? null;
       if (!target) return;
+
       activeSurfaceId = target.id;
+
       dragStartX = x;
       dragStartY = y;
       dragStartPoints = target.points.map((p) => ({ ...p }));
+
       surfacesBeforeDrag = surfaces;
       isDraggingSurface = true;
+
       el.setPointerCapture(e.pointerId);
       return;
     }
@@ -308,22 +329,29 @@
       activeSurfaceId = hit.surfaceId;
       draggingPointIndex = hit.index;
       surfacesBeforeDrag = surfaces;
+
       el.setPointerCapture(e.pointerId);
     } else {
       const hitSurface = surfaces.find(
         (s) => s.id !== activeSurfaceId && pointInPolygon(x, y, s.points, w, h)
       );
+
       if (hitSurface) {
         activeSurfaceId = hitSurface.id;
         return;
       }
+
       if (!activeSurfaceId) return;
+
       const insertAt = activeSurface
         ? findInsertionIndex(x, y, activeSurface.points, w, h)
         : undefined;
+
       addPoint(activeSurfaceId, toNorm(x, y, w, h), insertAt);
+
       draggingPointIndex = insertAt ?? activeSurface?.points.length ?? 0;
       surfacesBeforeDrag = surfaces;
+
       el.setPointerCapture(e.pointerId);
     }
   }
@@ -334,14 +362,17 @@
     if (isDraggingSurface) {
       isDraggingSurface = false;
       tracker.commit('surfaces', surfacesBeforeDrag, surfaces);
+
       surfacesBeforeDrag = [];
       glSystem.updateProjectionMap(node.id, surfaces);
+
       return;
     }
 
     if (draggingPointIndex !== -1 && surfacesBeforeDrag.length > 0) {
       tracker.commit('surfaces', surfacesBeforeDrag, surfaces);
       surfacesBeforeDrag = [];
+
       glSystem.updateProjectionMap(node.id, surfaces);
     }
 
@@ -410,6 +441,7 @@
 
   $effect(() => {
     if (draggingPointIndex !== -1) return;
+
     glSystem.upsertNode(node.id, 'projmap', { surfaces });
   });
 </script>

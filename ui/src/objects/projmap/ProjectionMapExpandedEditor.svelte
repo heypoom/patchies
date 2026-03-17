@@ -76,7 +76,7 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_interactive_supports_focus -->
 <div
   use:portal
   class="fixed inset-0 z-[9999] flex flex-col bg-zinc-950"
@@ -163,9 +163,8 @@
       height={outputHeight}
       class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-50"
       style="max-width: 100%; max-height: 100%; object-fit: contain;"
-    />
+    ></canvas>
 
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <svg
       bind:this={svg}
       class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
