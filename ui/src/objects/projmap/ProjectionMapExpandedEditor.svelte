@@ -78,6 +78,7 @@
   $effect(() => {
     function onKeydown(e: KeyboardEvent) {
       if (e.key === 'Escape') onclose();
+      if (e.key === 'm') ontogglemode();
     }
 
     window.addEventListener('keydown', onKeydown);
@@ -145,8 +146,9 @@
           {/if}
         </button>
       </Tooltip.Trigger>
+
       <Tooltip.Content
-        >{editMode === 'add' ? 'Switch to move mode' : 'Switch to add mode'}</Tooltip.Content
+        >{editMode === 'add' ? 'Switch to move mode' : 'Switch to add mode'} (M)</Tooltip.Content
       >
     </Tooltip.Root>
 
