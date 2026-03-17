@@ -35,6 +35,7 @@
   import ActionCard from './ActionCard.svelte';
   import PersistedActionCard from './PersistedActionCard.svelte';
   import ChatStagedMedia from './ChatStagedMedia.svelte';
+  import { getYouTubeLabel } from './youtube-utils';
   import { SvelteMap } from 'svelte/reactivity';
   import { personaStore, BUILTIN_PRESETS, type Persona } from '../../../stores/persona.store';
   import {
@@ -428,6 +429,22 @@
               {/each}
             </div>
           {/if}
+
+          {#if message.youtubeUrls?.length}
+            <div class="mb-1.5 flex flex-col gap-1">
+              {#each message.youtubeUrls as url, i (i)}
+                <div
+                  class="flex items-center gap-1.5 rounded border border-zinc-700 bg-transparent px-2 py-1"
+                >
+                  <Youtube class="h-3 w-3 shrink-0 text-red-400" />
+                  <span class="truncate font-mono text-[10px] text-zinc-400"
+                    >YouTube: {getYouTubeLabel(url)}</span
+                  >
+                </div>
+              {/each}
+            </div>
+          {/if}
+
           {#if message.content}
             <pre class="font-sans whitespace-pre-wrap">{message.content}</pre>
           {/if}

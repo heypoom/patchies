@@ -2,6 +2,7 @@
   import { X, Youtube } from '@lucide/svelte/icons';
   import { toast } from 'svelte-sonner';
   import type { StagedImage } from '$lib/ai/chat/types';
+  import { getYouTubeLabel } from './youtube-utils';
 
   let {
     stagedImages = $bindable([]),
@@ -14,20 +15,6 @@
   } = $props();
 
   const YOUTUBE_REGEX = /^https?:\/\/(www\.)?(youtube\.com\/watch\?|youtu\.be\/)/;
-
-  function getYouTubeLabel(url: string): string {
-    try {
-      const u = new URL(url);
-
-      const id = u.hostname.includes('youtu.be')
-        ? u.pathname.slice(1)
-        : (u.searchParams.get('v') ?? url);
-
-      return id;
-    } catch {
-      return url;
-    }
-  }
 
   let youtubeUrlInput = $state('');
 
