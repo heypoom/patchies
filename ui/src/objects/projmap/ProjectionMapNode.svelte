@@ -12,7 +12,9 @@
     Trash2,
     Monitor,
     MonitorOff,
-    CircleQuestionMark
+    CircleQuestionMark,
+    MousePointer2,
+    Pen
   } from '@lucide/svelte/icons';
   import ProjectionMapExpandedEditor from './ProjectionMapExpandedEditor.svelte';
   import { overrideOutputNodeId } from '../../stores/renderer.store';
@@ -70,12 +72,34 @@
   );
   let activeSurfaceId = $state<string | null>(null);
 
+  type EditMode = 'add' | 'move';
+  let editMode = $state<EditMode>('add');
+
   let draggingPointIndex = $state(-1);
   let surfacesBeforeDrag: ProjMapSurface[] = [];
+  // move-mode drag state
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragStartPoints: ProjMapPoint[] = [];
+  let isDraggingSurface = $state(false);
+
   let hoverPointIndex = $state(-1);
   let hoverSurfaceId = $state<string | null>(null);
   let hoverInactiveSurface = $state(false);
+  let hoverActiveSurface = $state(false);
   let isMouseOverEditor = $state(false);
+
+  let svgCursor = $derived(
+    isDraggingSurface
+      ? 'grabbing'
+      : editMode === 'move'
+        ? hoverActiveSurface || hoverInactiveSurface
+          ? 'pointer'
+          : 'default'
+        : hoverPointIndex !== -1 || hoverInactiveSurface
+          ? 'pointer'
+          : 'crosshair'
+  );
 
   let expanded = $state(false);
 
@@ -182,8 +206,26 @@
 
   function applyUpdate(updated: ProjMapSurface[]) {
     updateNodeData(node.id, { surfaces: updated });
-
     glSystem.updateProjectionMap(node.id, updated);
+  }
+
+  function moveSurface(surfaceId: string, dx: number, dy: number, basePoints: ProjMapPoint[]) {
+    const updated = surfaces.map((s) => {
+      if (s.id !== surfaceId) return s;
+      return {
+        ...s,
+        points: basePoints.map((p) =>
+          toNorm(p.x * displayWidth + dx, p.y * displayHeight + dy, displayWidth, displayHeight)
+        )
+      };
+    });
+    updateNodeData(node.id, { surfaces: updated });
+
+    const now = performance.now();
+    if (now - lastDragRenderTime >= DRAG_RENDER_INTERVAL) {
+      lastDragRenderTime = now;
+      glSystem.updateProjectionMap(node.id, updated);
+    }
   }
 
   // ── Pointer interaction ───────────────────────────────────────────────────
@@ -222,17 +264,20 @@
   function onPointerMove(e: PointerEvent, el: SVGSVGElement) {
     const { x, y } = getSVGPoint(e, el);
     const { w, h } = getEditorSize(el);
-    const hit = findPointAt(x, y, el);
+    const hit = editMode === 'add' ? findPointAt(x, y, el) : null;
 
     hoverSurfaceId = hit?.surfaceId ?? null;
     hoverPointIndex = hit?.index ?? -1;
-
     hoverInactiveSurface =
       !hit &&
       surfaces.some((s) => s.id !== activeSurfaceId && pointInPolygon(x, y, s.points, w, h));
+    hoverActiveSurface =
+      editMode === 'move' && !!(activeSurface && pointInPolygon(x, y, activeSurface.points, w, h));
 
-    if (draggingPointIndex !== -1 && activeSurfaceId) {
+    if (editMode === 'add' && draggingPointIndex !== -1 && activeSurfaceId) {
       movePoint(activeSurfaceId, draggingPointIndex, toNorm(x, y, w, h));
+    } else if (editMode === 'move' && isDraggingSurface && activeSurfaceId) {
+      moveSurface(activeSurfaceId, x - dragStartX, y - dragStartY, dragStartPoints);
     }
   }
 
@@ -242,37 +287,43 @@
     const { x, y } = getSVGPoint(e, el);
     const { w, h } = getEditorSize(el);
 
+    if (editMode === 'move') {
+      // In move mode: click any surface (active or not) to select + start dragging it
+      const target = surfaces.find((s) => pointInPolygon(x, y, s.points, w, h)) ?? null;
+      if (!target) return;
+      activeSurfaceId = target.id;
+      dragStartX = x;
+      dragStartY = y;
+      dragStartPoints = target.points.map((p) => ({ ...p }));
+      surfacesBeforeDrag = surfaces;
+      isDraggingSurface = true;
+      el.setPointerCapture(e.pointerId);
+      return;
+    }
+
+    // add mode
     const hit = findPointAt(x, y, el);
 
     if (hit) {
       activeSurfaceId = hit.surfaceId;
-
       draggingPointIndex = hit.index;
       surfacesBeforeDrag = surfaces;
-
       el.setPointerCapture(e.pointerId);
     } else {
-      // If click lands inside an inactive surface, switch to it instead of adding a point
       const hitSurface = surfaces.find(
-        (surface) => surface.id !== activeSurfaceId && pointInPolygon(x, y, surface.points, w, h)
+        (s) => s.id !== activeSurfaceId && pointInPolygon(x, y, s.points, w, h)
       );
-
       if (hitSurface) {
         activeSurfaceId = hitSurface.id;
         return;
       }
-
       if (!activeSurfaceId) return;
-
       const insertAt = activeSurface
         ? findInsertionIndex(x, y, activeSurface.points, w, h)
         : undefined;
-
       addPoint(activeSurfaceId, toNorm(x, y, w, h), insertAt);
-
       draggingPointIndex = insertAt ?? activeSurface?.points.length ?? 0;
       surfacesBeforeDrag = surfaces;
-
       el.setPointerCapture(e.pointerId);
     }
   }
@@ -280,10 +331,17 @@
   function onPointerup(e: PointerEvent, el: SVGSVGElement) {
     el.releasePointerCapture(e.pointerId);
 
+    if (isDraggingSurface) {
+      isDraggingSurface = false;
+      tracker.commit('surfaces', surfacesBeforeDrag, surfaces);
+      surfacesBeforeDrag = [];
+      glSystem.updateProjectionMap(node.id, surfaces);
+      return;
+    }
+
     if (draggingPointIndex !== -1 && surfacesBeforeDrag.length > 0) {
       tracker.commit('surfaces', surfacesBeforeDrag, surfaces);
       surfacesBeforeDrag = [];
-      // Flush final positions to renderer now that drag is complete
       glSystem.updateProjectionMap(node.id, surfaces);
     }
 
@@ -300,7 +358,9 @@
     // prevents xyflow from deleting the node while the user is editing points.
     e.stopImmediatePropagation();
 
-    if (hoverSurfaceId !== null && hoverPointIndex !== -1) {
+    if (editMode === 'move' && (hoverActiveSurface || isDraggingSurface) && activeSurfaceId) {
+      deleteSurface(activeSurfaceId);
+    } else if (hoverSurfaceId !== null && hoverPointIndex !== -1) {
       deleteHoveredPoint();
     }
   }
@@ -458,6 +518,31 @@
 
         <Tooltip.Content>Expand editor (1:1)</Tooltip.Content>
       </Tooltip.Root>
+
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            class={[
+              'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+              node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            ]}
+            onclick={(e) => {
+              e.stopPropagation();
+              editMode = editMode === 'add' ? 'move' : 'add';
+            }}
+          >
+            {#if editMode === 'add'}
+              <Pen class="h-4 w-4 text-zinc-300" />
+            {:else}
+              <MousePointer2 class="h-4 w-4 text-blue-400" />
+            {/if}
+          </button>
+        </Tooltip.Trigger>
+
+        <Tooltip.Content
+          >{editMode === 'add' ? 'Switch to move mode' : 'Switch to add mode'}</Tooltip.Content
+        >
+      </Tooltip.Root>
     </div>
 
     <!-- Canvas + SVG overlay -->
@@ -488,9 +573,7 @@
           <svg
             bind:this={editorSvg}
             class="nodrag nopan absolute inset-0 h-full w-full rounded"
-            style="cursor: {hoverPointIndex !== -1 || hoverInactiveSurface
-              ? 'pointer'
-              : 'crosshair'};"
+            style="cursor: {svgCursor};"
             onpointerenter={() => (isMouseOverEditor = true)}
             onpointerleave={() => (isMouseOverEditor = false)}
             onpointermove={(e) => editorSvg && onPointerMove(e, editorSvg)}
@@ -593,6 +676,16 @@
 
           Expand editor
         </ContextMenu.Item>
+
+        <ContextMenu.Item onclick={() => (editMode = editMode === 'add' ? 'move' : 'add')}>
+          {#if editMode === 'add'}
+            <Pen class="mr-2 h-4 w-4" />
+            Switch to move mode
+          {:else}
+            <MousePointer2 class="mr-2 h-4 w-4 text-blue-400" />
+            Switch to add mode
+          {/if}
+        </ContextMenu.Item>
         <ContextMenu.Separator />
 
         <ContextMenu.Item onclick={openHelp}>
@@ -614,11 +707,15 @@
     {hoverPointIndex}
     {hoverSurfaceId}
     {hoverInactiveSurface}
+    {hoverActiveSurface}
     {draggingPointIndex}
+    {editMode}
+    {isDraggingSurface}
     onclose={() => (expanded = false)}
     onsurfaceselect={(id) => (activeSurfaceId = id)}
     onaddsurface={addSurface}
     ondeletesurface={deleteSurface}
+    ontogglemode={() => (editMode = editMode === 'add' ? 'move' : 'add')}
     onpointerenter={() => (isMouseOverEditor = true)}
     onpointerleave={() => (isMouseOverEditor = false)}
     onpointermove={onPointerMove}

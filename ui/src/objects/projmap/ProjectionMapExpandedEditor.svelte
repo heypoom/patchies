@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { Plus, Trash2, Shrink } from '@lucide/svelte/icons';
+  import { Plus, Trash2, Shrink, Pen, MousePointer2 } from '@lucide/svelte/icons';
   import type { ProjMapSurface } from './types';
   import { surfaceColor, polyPoints, toDisplay } from './utils';
 
@@ -12,11 +12,15 @@
     hoverPointIndex,
     hoverSurfaceId,
     hoverInactiveSurface,
+    hoverActiveSurface,
     draggingPointIndex,
+    editMode,
+    isDraggingSurface,
     onclose,
     onsurfaceselect,
     onaddsurface,
     ondeletesurface,
+    ontogglemode,
     onpointerenter,
     onpointerleave,
     onpointermove,
@@ -30,11 +34,15 @@
     hoverPointIndex: number;
     hoverSurfaceId: string | null;
     hoverInactiveSurface: boolean;
+    hoverActiveSurface: boolean;
     draggingPointIndex: number;
+    editMode: 'add' | 'move';
+    isDraggingSurface: boolean;
     onclose: () => void;
     onsurfaceselect: (id: string) => void;
     onaddsurface: () => void;
     ondeletesurface: (id: string) => void;
+    ontogglemode: () => void;
     onpointerenter: () => void;
     onpointerleave: () => void;
     onpointermove: (e: PointerEvent, svg: SVGSVGElement) => void;
@@ -45,6 +53,18 @@
   let svg = $state<SVGSVGElement | null>(null);
 
   let activeSurface = $derived(surfaces.find((s) => s.id === activeSurfaceId) ?? null);
+
+  let svgCursor = $derived(
+    isDraggingSurface
+      ? 'grabbing'
+      : editMode === 'move'
+        ? hoverActiveSurface || hoverInactiveSurface
+          ? 'pointer'
+          : 'default'
+        : hoverPointIndex !== -1 || hoverInactiveSurface
+          ? 'pointer'
+          : 'crosshair'
+  );
 
   function portal(el: HTMLElement) {
     document.body.appendChild(el);
@@ -109,6 +129,21 @@
 
     <Tooltip.Root>
       <Tooltip.Trigger>
+        <button class="cursor-pointer rounded p-1.5 hover:bg-zinc-800" onclick={ontogglemode}>
+          {#if editMode === 'add'}
+            <Pen class="h-4 w-4 text-zinc-400" />
+          {:else}
+            <MousePointer2 class="h-4 w-4 text-blue-400" />
+          {/if}
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content
+        >{editMode === 'add' ? 'Switch to move mode' : 'Switch to add mode'}</Tooltip.Content
+      >
+    </Tooltip.Root>
+
+    <Tooltip.Root>
+      <Tooltip.Trigger>
         <button
           class="cursor-pointer rounded p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
           onclick={onclose}
@@ -134,9 +169,7 @@
     <svg
       bind:this={svg}
       class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-      style="cursor: {hoverPointIndex !== -1 || hoverInactiveSurface
-        ? 'pointer'
-        : 'crosshair'}; width: min(100vw, {outputWidth}px); height: min(calc(100vh - 48px), {outputHeight}px);"
+      style="cursor: {svgCursor}; width: min(100vw, {outputWidth}px); height: min(calc(100vh - 48px), {outputHeight}px);"
       viewBox="0 0 {outputWidth} {outputHeight}"
       preserveAspectRatio="xMidYMid meet"
       {onpointerenter}
