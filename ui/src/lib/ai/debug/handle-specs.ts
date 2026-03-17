@@ -207,6 +207,14 @@ const MANUAL_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
     },
     outlets: { kind: 'fixed', handles: ['video-out-out'] }
   },
+  projmap: {
+    inlets: {
+      kind: 'indexed',
+      prefix: 'video-in-',
+      note: 'one video inlet per surface (0-indexed), count matches surfaces array length'
+    },
+    outlets: { kind: 'fixed', handles: ['video-out-0'] }
+  },
   js: {
     inlets: {
       kind: 'indexed',
