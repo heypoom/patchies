@@ -20,7 +20,14 @@
   import { helpViewStore } from '../../stores/help-view.store';
   import type { ProjMapSurface, ProjMapPoint } from './types';
   import { PROJMAP_VIDEO_INLET_COUNT, DEFAULT_PROJMAP_NODE_DATA } from './constants';
-  import { surfaceColor, toDisplay, toNorm, polyPoints, findInsertionIndex } from './utils';
+  import {
+    surfaceColor,
+    toDisplay,
+    toNorm,
+    polyPoints,
+    findInsertionIndex,
+    pointInPolygon
+  } from './utils';
 
   let node: {
     id: string;
@@ -217,6 +224,7 @@
 
     const { x, y } = getSVGPoint(e, el);
     const { w, h } = getEditorSize(el);
+
     const hit = findPointAt(x, y, el);
 
     if (hit) {
@@ -226,10 +234,23 @@
       surfacesBeforeDrag = surfaces;
 
       el.setPointerCapture(e.pointerId);
-    } else if (activeSurfaceId) {
+    } else {
+      // If click lands inside an inactive surface, switch to it instead of adding a point
+      const hitSurface = surfaces.find(
+        (surface) => surface.id !== activeSurfaceId && pointInPolygon(x, y, surface.points, w, h)
+      );
+
+      if (hitSurface) {
+        activeSurfaceId = hitSurface.id;
+        return;
+      }
+
+      if (!activeSurfaceId) return;
+
       const insertAt = activeSurface
         ? findInsertionIndex(x, y, activeSurface.points, w, h)
         : undefined;
+
       addPoint(activeSurfaceId, toNorm(x, y, w, h), insertAt);
 
       draggingPointIndex = insertAt ?? activeSurface?.points.length ?? 0;

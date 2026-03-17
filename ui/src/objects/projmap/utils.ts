@@ -34,6 +34,30 @@ export function distToSegment(
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
 
+export function pointInPolygon(
+  x: number,
+  y: number,
+  points: ProjMapPoint[],
+  w: number,
+  h: number
+): boolean {
+  const n = points.length;
+  if (n < 3) return false;
+
+  let inside = false;
+
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const pi = toDisplay(points[i], w, h);
+    const pj = toDisplay(points[j], w, h);
+
+    if (pi.y > y !== pj.y > y && x < ((pj.x - pi.x) * (y - pi.y)) / (pj.y - pi.y) + pi.x) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
+}
+
 export function findInsertionIndex(
   x: number,
   y: number,
