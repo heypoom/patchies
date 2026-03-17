@@ -8,13 +8,13 @@
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import {
     Expand,
-    Shrink,
     Plus,
     Trash2,
     Monitor,
     MonitorOff,
-    CircleHelp
+    CircleQuestionMark
   } from '@lucide/svelte/icons';
+  import ProjectionMapExpandedEditor from './ProjectionMapExpandedEditor.svelte';
   import { overrideOutputNodeId } from '../../stores/renderer.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
@@ -30,7 +30,6 @@
     data: { surfaces?: ProjMapSurface[] };
     selected: boolean;
     width?: number;
-    height?: number;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
@@ -74,19 +73,7 @@
 
   let expanded = $state(false);
 
-  // ── Portal action — teleports a node to document.body so position:fixed ──
-  // ── works correctly even inside xyflow's CSS-transformed node container ──
-  function portal(el: HTMLElement) {
-    document.body.appendChild(el);
-    return {
-      destroy() {
-        el.remove();
-      }
-    };
-  }
-
   let editorSvg = $state<SVGSVGElement | null>(null);
-  let expandSvg = $state<SVGSVGElement | null>(null);
 
   // ── Derived helpers ───────────────────────────────────────────────────────
 
@@ -113,28 +100,43 @@
 
   function addSurface() {
     const old = surfaces;
+
     const id = crypto.randomUUID();
     const updated: ProjMapSurface[] = [...surfaces, { id, points: [] }];
+
     applyUpdate(updated);
     tracker.commit('surfaces', old, updated);
+
     activeSurfaceId = id;
   }
 
   function deleteSurface(id: string) {
     const old = surfaces;
-    const updated = surfaces.filter((s) => s.id !== id);
+
+    let updated: ProjMapSurface[];
+
+    if (surfaces.length <= 1) {
+      // Wipe points but keep the surface
+      updated = surfaces.map((s) => (s.id === id ? { ...s, points: [] } : s));
+    } else {
+      updated = surfaces.filter((s) => s.id !== id);
+
+      if (activeSurfaceId === id) {
+        activeSurfaceId = updated[updated.length - 1].id;
+      }
+    }
+
     applyUpdate(updated);
     tracker.commit('surfaces', old, updated);
-    if (activeSurfaceId === id) {
-      activeSurfaceId = updated.length > 0 ? updated[updated.length - 1].id : null;
-    }
   }
 
   function addPoint(surfaceId: string, p: ProjMapPoint) {
     const old = surfaces;
+
     const updated = surfaces.map((s) =>
       s.id === surfaceId ? { ...s, points: [...s.points, p] } : s
     );
+
     applyUpdate(updated);
     tracker.commit('surfaces', old, updated);
   }
@@ -143,27 +145,47 @@
     const updated = surfaces.map((s) =>
       s.id === surfaceId ? { ...s, points: s.points.map((pt, i) => (i === index ? p : pt)) } : s
     );
+
     applyUpdate(updated);
   }
 
   function deleteHoveredPoint() {
     if (hoverSurfaceId !== null && hoverPointIndex !== -1) {
       const old = surfaces;
+
       const updated = surfaces.map((s) =>
         s.id === hoverSurfaceId
           ? { ...s, points: s.points.filter((_, i) => i !== hoverPointIndex) }
           : s
       );
+
       applyUpdate(updated);
       tracker.commit('surfaces', old, updated);
+
       hoverSurfaceId = null;
       hoverPointIndex = -1;
     }
   }
 
+  let _pendingRaf: number | null = null;
+  let _pendingSurfaces: ProjMapSurface[] | null = null;
+
   function applyUpdate(updated: ProjMapSurface[]) {
     updateNodeData(node.id, { surfaces: updated });
-    glSystem.updateProjectionMap(node.id, updated);
+
+    // Coalesce renderer updates to one per animation frame
+    _pendingSurfaces = updated;
+
+    if (_pendingRaf === null) {
+      _pendingRaf = requestAnimationFrame(() => {
+        _pendingRaf = null;
+
+        if (_pendingSurfaces) {
+          glSystem.updateProjectionMap(node.id, _pendingSurfaces);
+          _pendingSurfaces = null;
+        }
+      });
+    }
   }
 
   // ── Pointer interaction ───────────────────────────────────────────────────
@@ -173,24 +195,29 @@
 
   function getSVGPoint(e: PointerEvent, el: SVGSVGElement) {
     const rect = el.getBoundingClientRect();
+
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
   function getEditorSize(el: SVGSVGElement) {
     const rect = el.getBoundingClientRect();
+
     return { w: rect.width, h: rect.height };
   }
 
   function findPointAt(x: number, y: number, el: SVGSVGElement) {
     const { w, h } = getEditorSize(el);
+
     for (const surface of surfaces) {
       for (let i = 0; i < surface.points.length; i++) {
         const dp = toDisplay(surface.points[i], w, h);
+
         if (Math.hypot(x - dp.x, y - dp.y) < POINT_HIT) {
           return { surfaceId: surface.id, index: i };
         }
       }
     }
+
     return null;
   }
 
@@ -198,6 +225,7 @@
     const { x, y } = getSVGPoint(e, el);
     const { w, h } = getEditorSize(el);
     const hit = findPointAt(x, y, el);
+
     hoverSurfaceId = hit?.surfaceId ?? null;
     hoverPointIndex = hit?.index ?? -1;
 
@@ -208,30 +236,37 @@
 
   function onPointerdown(e: PointerEvent, el: SVGSVGElement) {
     if (e.button !== 0) return;
+
     const { x, y } = getSVGPoint(e, el);
     const { w, h } = getEditorSize(el);
     const hit = findPointAt(x, y, el);
 
     if (hit) {
       activeSurfaceId = hit.surfaceId;
+
       draggingPointIndex = hit.index;
       surfacesBeforeDrag = surfaces;
+
       el.setPointerCapture(e.pointerId);
     } else if (activeSurfaceId) {
       addPoint(activeSurfaceId, toNorm(x, y, w, h));
+
       // New point is last — index is current length before add (will be length after)
       draggingPointIndex = activeSurface?.points.length ?? 0;
       surfacesBeforeDrag = surfaces;
+
       el.setPointerCapture(e.pointerId);
     }
   }
 
   function onPointerup(e: PointerEvent, el: SVGSVGElement) {
     el.releasePointerCapture(e.pointerId);
+
     if (draggingPointIndex !== -1 && surfacesBeforeDrag.length > 0) {
       tracker.commit('surfaces', surfacesBeforeDrag, surfaces);
       surfacesBeforeDrag = [];
     }
+
     draggingPointIndex = -1;
   }
 
@@ -240,9 +275,11 @@
   function onKeydown(e: KeyboardEvent) {
     if (e.key !== 'Delete' && e.key !== 'Backspace') return;
     if (!isMouseOverEditor) return;
+
     // Always stop propagation when mouse is inside the editor —
     // prevents xyflow from deleting the node while the user is editing points.
     e.stopImmediatePropagation();
+
     if (hoverSurfaceId !== null && hoverPointIndex !== -1) {
       deleteHoveredPoint();
     }
@@ -255,6 +292,7 @@
   function toggleBgOutput() {
     const next = isOutputOverride ? null : node.id;
     overrideOutputNodeId.set(next);
+
     glSystem.setOverrideOutputNode(next);
   }
 
@@ -266,9 +304,8 @@
 
   // ── SVG helpers ───────────────────────────────────────────────────────────
 
-  function polyPoints(surface: ProjMapSurface, w: number, h: number): string {
-    return surface.points.map((p) => `${p.x * w},${p.y * h}`).join(' ');
-  }
+  const polyPoints = (surface: ProjMapSurface, w: number, h: number): string =>
+    surface.points.map((p) => `${p.x * w},${p.y * h}`).join(' ');
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -276,8 +313,10 @@
     if (previewCanvas) {
       previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
     }
+
     glSystem.previewCanvasContexts[node.id] = previewBitmapContext;
     glSystem.upsertNode(node.id, 'projmap', { surfaces });
+
     setTimeout(() => glSystem.setPreviewEnabled(node.id, true), 50);
 
     if (surfaces.length === 0) {
@@ -292,6 +331,10 @@
   onDestroy(() => {
     glSystem?.removeNode(node.id);
     window.removeEventListener('keydown', onKeydown, { capture: true });
+
+    if (_pendingRaf !== null) {
+      cancelAnimationFrame(_pendingRaf);
+    }
   });
 
   $effect(() => {
@@ -310,7 +353,7 @@
 
   <div class="group relative">
     <!-- Hover bridge so group-hover stays active between title and body -->
-    <div class="absolute inset-x-0 -top-7 h-7" />
+    <div class="absolute inset-x-0 -top-7 h-7"></div>
 
     <!-- Title -->
     <div
@@ -360,6 +403,7 @@
             <Plus class="h-4 w-4 text-zinc-300" />
           </button>
         </Tooltip.Trigger>
+
         <Tooltip.Content>Add surface</Tooltip.Content>
       </Tooltip.Root>
 
@@ -379,6 +423,7 @@
               <Trash2 class="h-4 w-4 text-zinc-400 hover:text-red-400" />
             </button>
           </Tooltip.Trigger>
+
           <Tooltip.Content>Delete surface</Tooltip.Content>
         </Tooltip.Root>
       {/if}
@@ -398,6 +443,7 @@
             <Expand class="h-4 w-4 text-zinc-300" />
           </button>
         </Tooltip.Trigger>
+
         <Tooltip.Content>Expand editor (1:1)</Tooltip.Content>
       </Tooltip.Root>
     </div>
@@ -424,13 +470,13 @@
             width={outputWidth}
             height={outputHeight}
             class="absolute inset-0 h-full w-full rounded"
-          />
+          ></canvas>
 
           <!-- SVG editor overlay -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
           <svg
             bind:this={editorSvg}
-            class="nodrag nopan absolute inset-0 h-full w-full cursor-crosshair rounded"
+            class="nodrag nopan absolute inset-0 h-full w-full rounded"
+            style="cursor: {hoverPointIndex !== -1 ? 'pointer' : 'crosshair'};"
             onpointerenter={() => (isMouseOverEditor = true)}
             onpointerleave={() => (isMouseOverEditor = false)}
             onpointermove={(e) => editorSvg && onPointermove(e, editorSvg)}
@@ -440,13 +486,13 @@
             {#each surfaces as surface, si (surface.id)}
               {@const color = surfaceColor(si)}
               {@const isActive = surface.id === activeSurfaceId}
-              {@const alpha = isActive ? 1 : 0.3}
+              {@const alpha = isActive ? 1 : 0.35}
 
               {#if surface.points.length >= 3}
                 <polygon
                   points={polyPoints(surface, displayWidth, displayHeight)}
                   fill={color}
-                  fill-opacity={0.12 * (isActive ? 2 : 1)}
+                  fill-opacity={isActive ? 0.18 : 0.07}
                   stroke={color}
                   stroke-width="1.5"
                   stroke-opacity={alpha}
@@ -467,35 +513,37 @@
                 {@const dp = toDisplay(pt, displayWidth, displayHeight)}
                 {@const isHover = hoverSurfaceId === surface.id && hoverPointIndex === pi}
                 {@const isDrag = activeSurfaceId === surface.id && draggingPointIndex === pi}
+
                 <circle
                   cx={dp.x}
                   cy={dp.y}
-                  r={isDrag ? POINT_RADIUS + 2 : POINT_RADIUS}
+                  r={isDrag ? 9 : isHover ? 8 : 6}
                   fill={isDrag ? '#facc15' : isHover ? '#ffffff' : color}
                   fill-opacity={alpha}
                   stroke="rgba(0,0,0,0.5)"
-                  stroke-width="1"
+                  stroke-width="1.5"
                 />
+
                 <text
-                  x={dp.x}
-                  y={dp.y}
-                  text-anchor="middle"
-                  dominant-baseline="middle"
-                  fill="rgba(0,0,0,0.7)"
-                  font-size="8"
+                  x={dp.x + 9}
+                  y={dp.y + 3}
+                  fill={color}
+                  fill-opacity={alpha}
+                  font-size="9"
+                  font-family="monospace"
                   style="pointer-events: none; user-select: none;">{pi + 1}</text
                 >
               {/each}
             {/each}
 
-            {#if surfaces.length === 0 || (activeSurface && activeSurface.points.length === 0)}
+            {#if activeSurface?.points.length === 0}
               <text
                 x={displayWidth / 2}
                 y={displayHeight / 2}
                 text-anchor="middle"
                 dominant-baseline="middle"
                 fill="#52525b"
-                font-size="12"
+                font-size="11"
                 font-family="sans-serif">Click to add points</text
               >
             {/if}
@@ -517,15 +565,25 @@
         <ContextMenu.Item onclick={toggleBgOutput}>
           {#if isOutputOverride}
             <MonitorOff class="mr-2 h-4 w-4 text-orange-400" />
+
             Remove background output
           {:else}
             <Monitor class="mr-2 h-4 w-4" />
+
             Output to background
           {/if}
         </ContextMenu.Item>
+
+        <ContextMenu.Item onclick={() => (expanded = true)}>
+          <Expand class="mr-2 h-4 w-4" />
+
+          Expand editor
+        </ContextMenu.Item>
         <ContextMenu.Separator />
+
         <ContextMenu.Item onclick={openHelp}>
-          <CircleHelp class="mr-2 h-4 w-4" />
+          <CircleQuestionMark class="mr-2 h-4 w-4" />
+
           Help
         </ContextMenu.Item>
       </ContextMenu.Content>
@@ -533,177 +591,25 @@
   </div>
 </div>
 
-<!-- ── Expand overlay (fixed, outside node boundary) ─────────────────────── -->
 {#if expanded}
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div
-    use:portal
-    class="fixed inset-0 z-[9999] flex flex-col bg-zinc-950"
-    role="dialog"
-    aria-label="Projection Map Editor"
-    onkeydown={(e) => e.key === 'Escape' && (expanded = false)}
-  >
-    <!-- Toolbar -->
-    <div class="flex shrink-0 items-center gap-2 border-b border-zinc-800 px-4 py-2">
-      <span class="font-mono text-sm text-zinc-400">projmap</span>
-
-      <div class="flex flex-1 gap-1 overflow-x-auto">
-        {#each surfaces as surface, si (surface.id)}
-          <button
-            class="cursor-pointer rounded px-2 py-1 font-mono text-sm transition-colors"
-            style="color: {surfaceColor(si)}; background: {activeSurfaceId === surface.id
-              ? 'rgba(255,255,255,0.1)'
-              : 'transparent'};"
-            onclick={() => (activeSurfaceId = surface.id)}
-          >
-            surface {si + 1}
-          </button>
-        {/each}
-      </div>
-
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          <button
-            class="cursor-pointer rounded p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
-            onclick={() => activeSurfaceId && deleteSurface(activeSurfaceId)}
-            disabled={!activeSurfaceId}
-          >
-            <Trash2 class="h-4 w-4" />
-          </button>
-        </Tooltip.Trigger>
-        <Tooltip.Content>Delete surface</Tooltip.Content>
-      </Tooltip.Root>
-
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          <button
-            class="cursor-pointer rounded p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
-            onclick={addSurface}
-          >
-            <Plus class="h-4 w-4" />
-          </button>
-        </Tooltip.Trigger>
-        <Tooltip.Content>Add surface</Tooltip.Content>
-      </Tooltip.Root>
-
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          <button
-            class="cursor-pointer rounded p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
-            onclick={() => (expanded = false)}
-          >
-            <Shrink class="h-4 w-4" />
-          </button>
-        </Tooltip.Trigger>
-        <Tooltip.Content>Close (Escape)</Tooltip.Content>
-      </Tooltip.Root>
-    </div>
-
-    <!-- Editor area: render preview + 1:1 SVG editor -->
-    <div class="relative flex-1 overflow-hidden">
-      <!-- Preview bitmap as background reference -->
-      <canvas
-        width={outputWidth}
-        height={outputHeight}
-        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-50"
-        style="max-width: 100%; max-height: 100%; object-fit: contain;"
-      />
-
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <svg
-        bind:this={expandSvg}
-        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-crosshair"
-        style="width: min(100vw, {outputWidth}px); height: min(calc(100vh - 48px), {outputHeight}px);"
-        viewBox="0 0 {outputWidth} {outputHeight}"
-        preserveAspectRatio="xMidYMid meet"
-        onpointerenter={() => (isMouseOverEditor = true)}
-        onpointerleave={() => (isMouseOverEditor = false)}
-        onpointermove={(e) => expandSvg && onPointermove(e, expandSvg)}
-        onpointerdown={(e) => expandSvg && onPointerdown(e, expandSvg)}
-        onpointerup={(e) => expandSvg && onPointerup(e, expandSvg)}
-      >
-        <!-- Grid -->
-        {#each Array.from({ length: 10 }) as _, i (i)}
-          <line
-            x1={(i / 10) * outputWidth}
-            y1="0"
-            x2={(i / 10) * outputWidth}
-            y2={outputHeight}
-            stroke="#27272a"
-            stroke-width="1"
-          />
-          <line
-            x1="0"
-            y1={(i / 10) * outputHeight}
-            x2={outputWidth}
-            y2={(i / 10) * outputHeight}
-            stroke="#27272a"
-            stroke-width="1"
-          />
-        {/each}
-
-        {#each surfaces as surface, si (surface.id)}
-          {@const color = surfaceColor(si)}
-          {@const isActive = surface.id === activeSurfaceId}
-          {@const alpha = isActive ? 1 : 0.35}
-
-          {#if surface.points.length >= 3}
-            <polygon
-              points={polyPoints(surface, outputWidth, outputHeight)}
-              fill={color}
-              fill-opacity={isActive ? 0.18 : 0.07}
-              stroke={color}
-              stroke-width="2"
-              stroke-opacity={alpha}
-            />
-          {:else if surface.points.length === 2}
-            <line
-              x1={surface.points[0].x * outputWidth}
-              y1={surface.points[0].y * outputHeight}
-              x2={surface.points[1].x * outputWidth}
-              y2={surface.points[1].y * outputHeight}
-              stroke={color}
-              stroke-width="2"
-              stroke-opacity={alpha}
-            />
-          {/if}
-
-          {#each surface.points as pt, pi (pi)}
-            {@const dp = toDisplay(pt, outputWidth, outputHeight)}
-            {@const isHover = hoverSurfaceId === surface.id && hoverPointIndex === pi}
-            {@const isDrag = activeSurfaceId === surface.id && draggingPointIndex === pi}
-            <circle
-              cx={dp.x}
-              cy={dp.y}
-              r={isDrag ? 11 : isHover ? 10 : 8}
-              fill={isDrag ? '#facc15' : isHover ? '#ffffff' : color}
-              fill-opacity={alpha}
-              stroke="rgba(0,0,0,0.5)"
-              stroke-width="1.5"
-            />
-            <text
-              x={dp.x + 13}
-              y={dp.y + 4}
-              fill={color}
-              fill-opacity={alpha}
-              font-size="11"
-              font-family="monospace">{pi}</text
-            >
-          {/each}
-        {/each}
-
-        {#if activeSurface?.points.length === 0}
-          <text
-            x={outputWidth / 2}
-            y={outputHeight / 2}
-            text-anchor="middle"
-            dominant-baseline="middle"
-            fill="#52525b"
-            font-size="18"
-            font-family="sans-serif">Click to add points — Delete / Backspace to remove</text
-          >
-        {/if}
-      </svg>
-    </div>
-  </div>
+  <ProjectionMapExpandedEditor
+    {surfaces}
+    {activeSurfaceId}
+    {outputWidth}
+    {outputHeight}
+    {hoverPointIndex}
+    {hoverSurfaceId}
+    {draggingPointIndex}
+    {surfaceColor}
+    {polyPoints}
+    onclose={() => (expanded = false)}
+    onsurfaceselect={(id) => (activeSurfaceId = id)}
+    onaddsurface={addSurface}
+    ondeletesurface={deleteSurface}
+    onpointerenter={() => (isMouseOverEditor = true)}
+    onpointerleave={() => (isMouseOverEditor = false)}
+    onpointermove={onPointermove}
+    onpointerdown={onPointerdown}
+    onpointerup={onPointerup}
+  />
 {/if}
