@@ -6,19 +6,10 @@
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as ContextMenu from '$lib/components/ui/context-menu';
-  import * as Popover from '$lib/components/ui/popover';
-  import {
-    Expand,
-    Plus,
-    Trash2,
-    EllipsisVertical,
-    Monitor,
-    MonitorOff,
-    CircleQuestionMark,
-    MousePointer2,
-    Pen
-  } from '@lucide/svelte/icons';
+  import ProjectionMapOverflowMenu from './ProjectionMapOverflowMenu.svelte';
+  import { MousePointer2, Pen } from '@lucide/svelte/icons';
   import ProjectionMapExpandedEditor from './ProjectionMapExpandedEditor.svelte';
+  import ProjectionMapContextMenu from './ProjectionMapContextMenu.svelte';
   import { overrideOutputNodeId } from '../../stores/renderer.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
@@ -107,7 +98,6 @@
   );
 
   let expanded = $state(false);
-  let menuOpen = $state(false);
 
   let editorSvg = $state<SVGSVGElement | null>(null);
 
@@ -521,58 +511,13 @@
         >
       </Tooltip.Root>
 
-      <!-- Overflow menu -->
-      <Popover.Root bind:open={menuOpen}>
-        <Popover.Trigger>
-          <button
-            class={[
-              'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-              !menuOpen && (node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')
-            ]}
-          >
-            <EllipsisVertical class="h-4 w-4 text-zinc-400" />
-          </button>
-        </Popover.Trigger>
-        <Popover.Content
-          class="w-44 p-1"
-          align="end"
-          sideOffset={6}
-          onCloseAutoFocus={(e) => e.preventDefault()}
-        >
-          <button
-            class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700"
-            onclick={() => {
-              expanded = true;
-              menuOpen = false;
-            }}
-          >
-            <Expand class="h-4 w-4 text-zinc-400" />
-            Expand editor
-          </button>
-          <div class="my-1 border-t border-zinc-700"></div>
-          <button
-            class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700"
-            onclick={() => {
-              addSurface();
-              menuOpen = false;
-            }}
-          >
-            <Plus class="h-4 w-4 text-zinc-400" />
-            Add surface
-          </button>
-          <button
-            class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
-            onclick={() => {
-              if (activeSurfaceId) deleteSurface(activeSurfaceId);
-              menuOpen = false;
-            }}
-            disabled={!activeSurfaceId}
-          >
-            <Trash2 class="h-4 w-4 text-zinc-400" />
-            Delete surface
-          </button>
-        </Popover.Content>
-      </Popover.Root>
+      <ProjectionMapOverflowMenu
+        selected={node.selected}
+        {activeSurfaceId}
+        onexpand={() => (expanded = true)}
+        onaddsurface={addSurface}
+        ondeletesurface={() => activeSurfaceId && deleteSurface(activeSurfaceId)}
+      />
     </div>
 
     <!-- Canvas + SVG overlay -->
@@ -612,9 +557,12 @@
             onpointerup={(e) => editorSvg && onPointerup(e, editorSvg)}
             oncontextmenu={(e) => {
               if (!editorSvg) return;
+
               const rect = editorSvg.getBoundingClientRect();
+
               const x = e.clientX - rect.left;
               const y = e.clientY - rect.top;
+
               contextMenuSurfaceId =
                 surfaces.find((s) => pointInPolygon(x, y, s.points, rect.width, rect.height))?.id ??
                 null;
@@ -698,62 +646,19 @@
         </div>
       </ContextMenu.Trigger>
 
-      <ContextMenu.Content>
-        <ContextMenu.Item onclick={toggleBgOutput}>
-          {#if isOutputOverride}
-            <MonitorOff class="mr-2 h-4 w-4 text-orange-400" />
-
-            Remove background output
-          {:else}
-            <Monitor class="mr-2 h-4 w-4" />
-
-            Output to background
-          {/if}
-        </ContextMenu.Item>
-
-        <ContextMenu.Item onclick={() => (expanded = true)}>
-          <Expand class="mr-2 h-4 w-4" />
-          Expand editor
-        </ContextMenu.Item>
-
-        <ContextMenu.Separator />
-
-        <ContextMenu.Item onclick={addSurface}>
-          <Plus class="mr-2 h-4 w-4" />
-          Add surface
-        </ContextMenu.Item>
-
-        <ContextMenu.Item
-          onclick={() =>
-            (contextMenuSurfaceId ?? activeSurfaceId) &&
-            deleteSurface((contextMenuSurfaceId ?? activeSurfaceId)!)}
-          disabled={!contextMenuSurfaceId && !activeSurfaceId}
-        >
-          <Trash2 class="mr-2 h-4 w-4" />
-          Delete {contextMenuSurfaceId && contextMenuSurfaceId !== activeSurfaceId
-            ? `surface ${surfaces.findIndex((s) => s.id === contextMenuSurfaceId) + 1}`
-            : 'surface'}
-        </ContextMenu.Item>
-
-        <ContextMenu.Separator />
-
-        <ContextMenu.Item onclick={() => (editMode = editMode === 'add' ? 'move' : 'add')}>
-          {#if editMode === 'add'}
-            <Pen class="mr-2 h-4 w-4" />
-            Switch to move mode
-          {:else}
-            <MousePointer2 class="mr-2 h-4 w-4 text-blue-400" />
-            Switch to add mode
-          {/if}
-        </ContextMenu.Item>
-        <ContextMenu.Separator />
-
-        <ContextMenu.Item onclick={openHelp}>
-          <CircleQuestionMark class="mr-2 h-4 w-4" />
-
-          Help
-        </ContextMenu.Item>
-      </ContextMenu.Content>
+      <ProjectionMapContextMenu
+        {surfaces}
+        {activeSurfaceId}
+        {contextMenuSurfaceId}
+        {editMode}
+        {isOutputOverride}
+        onexpand={() => (expanded = true)}
+        onaddsurface={addSurface}
+        ondeletesurface={deleteSurface}
+        ontogglemode={() => (editMode = editMode === 'add' ? 'move' : 'add')}
+        ontoggleoutput={toggleBgOutput}
+        onopenhelp={openHelp}
+      />
     </ContextMenu.Root>
   </div>
 </div>
