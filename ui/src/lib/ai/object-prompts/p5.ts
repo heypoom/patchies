@@ -19,6 +19,8 @@ ${esmInstructions}
 
 **P5-specific gotchas:**
 - P5 has its own draw() loop - prefer that over requestAnimationFrame
+- Do NOT make setup() asynchronous.
+  - If you need to define settings, use settings.define WITHOUT await.
 
 ${messagingInstructions}
 

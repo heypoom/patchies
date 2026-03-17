@@ -72,7 +72,7 @@ export const jsRunnerInstructions = `
   - tell the user in the response what settings they have and how to show it i.e. in the overflow menu > "Show settings"
   - do NOT add too much settings, 1 - 3 is enough. users can always ask to add more in a follow-up.
 - await settings.define([...schema]) - expose a settings panel on the node (gear icon appears)
-  - on hydra/swgl, don't await - just settings.define is enough
+  - on hydra/swgl/p5, don't await - just settings.define is enough
 - settings.get(key) - read current value (sync, after define resolves)
 - settings.getAll() - all values as object
 - settings.set(key, value) - programmatically update a setting from code (persists + fires onChange)
