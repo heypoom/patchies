@@ -52,43 +52,6 @@
 </script>
 
 <ContextMenu.Content>
-  <ContextMenu.Item onclick={ontoggleoutput}>
-    {#if isOutputOverride}
-      <MonitorOff class="mr-2 h-4 w-4 text-orange-400" />
-
-      Remove background output
-    {:else}
-      <Monitor class="mr-2 h-4 w-4" />
-
-      Output to background
-    {/if}
-  </ContextMenu.Item>
-
-  <ContextMenu.Item onclick={onexpand}>
-    <Expand class="mr-2 h-4 w-4" />
-
-    Expand editor
-  </ContextMenu.Item>
-
-  <ContextMenu.Separator />
-
-  <ContextMenu.Item onclick={onaddsurface}>
-    <Plus class="mr-2 h-4 w-4" />
-
-    Add surface
-  </ContextMenu.Item>
-
-  <ContextMenu.Item
-    onclick={() => deleteTargetId && ondeletesurface(deleteTargetId)}
-    disabled={!deleteTargetId}
-  >
-    <Trash2 class="mr-2 h-4 w-4" />
-
-    {deleteLabel}
-  </ContextMenu.Item>
-
-  <ContextMenu.Separator />
-
   <ContextMenu.Item onclick={ontogglemode}>
     {#if editMode === 'add'}
       <Pen class="mr-2 h-4 w-4" />
@@ -97,6 +60,38 @@
       <MousePointer2 class="mr-2 h-4 w-4 text-blue-400" />
       Switch to add mode
     {/if}
+  </ContextMenu.Item>
+
+  <ContextMenu.Separator />
+
+  <ContextMenu.Item onclick={onexpand}>
+    <Expand class="mr-2 h-4 w-4" />
+    Expand editor
+  </ContextMenu.Item>
+
+  <ContextMenu.Item onclick={ontoggleoutput}>
+    {#if isOutputOverride}
+      <MonitorOff class="mr-2 h-4 w-4 text-orange-400" />
+      Remove background output
+    {:else}
+      <Monitor class="mr-2 h-4 w-4" />
+      Output to background
+    {/if}
+  </ContextMenu.Item>
+
+  <ContextMenu.Separator />
+
+  <ContextMenu.Item onclick={onaddsurface}>
+    <Plus class="mr-2 h-4 w-4" />
+    Add surface
+  </ContextMenu.Item>
+
+  <ContextMenu.Item
+    onclick={() => deleteTargetId && ondeletesurface(deleteTargetId)}
+    disabled={!deleteTargetId}
+  >
+    <Trash2 class="mr-2 h-4 w-4" />
+    {deleteLabel}
   </ContextMenu.Item>
 
   <ContextMenu.Separator />
