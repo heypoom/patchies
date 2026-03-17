@@ -58,6 +58,7 @@ self.onmessage = (event) => {
     .with('updateCanvas', () => handleUpdateCanvas(data.nodeId))
     .with('updateTextmode', () => handleUpdateTextmode(data.nodeId))
     .with('updateThree', () => handleUpdateThree(data.nodeId))
+    .with('updateProjectionMap', () => fboRenderer.updateProjectionMap(data.nodeId, data.surfaces))
     .with('setFFTData', () => handleSetFFTData(data))
     .with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code))
     .with('profilerEnable', () => fboRenderer.setProfilingEnabled(data.enabled))

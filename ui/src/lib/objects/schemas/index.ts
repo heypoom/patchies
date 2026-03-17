@@ -82,6 +82,7 @@ export * from './note';
 export * from './meter';
 export * from './sequencer';
 export * from './bytebeat';
+export * from './projmap';
 export * from './from-v2-node';
 
 import type { ObjectSchemaRegistry } from './types';
@@ -168,6 +169,7 @@ import { noteSchema } from './note';
 import { meterSchema } from './meter';
 import { sequencerSchema } from './sequencer';
 import { bytebeatSchema } from './bytebeat';
+import { projmapSchema } from './projmap';
 import { curveSchema } from '$objects/curve/schema';
 import { serialSchema, serialTermSchema } from '$objects/serial/schema';
 
@@ -265,6 +267,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'meter~': meterSchema,
   sequencer: sequencerSchema,
   'bytebeat~': bytebeatSchema,
+  projmap: projmapSchema,
   curve: curveSchema,
   serial: serialSchema,
   'serial.term': serialTermSchema

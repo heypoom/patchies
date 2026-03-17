@@ -17,6 +17,7 @@ import { HydraRenderer } from './hydraRenderer';
 import { CanvasRenderer } from './canvasRenderer';
 import { TextmodeRenderer } from './textmodeRenderer';
 import { ThreeRenderer } from './threeRenderer';
+import { ProjectionMapRenderer } from '$objects/projmap/ProjectionMapRenderer';
 import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
 import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -78,6 +79,7 @@ export class FBORenderer {
   public canvasByNode = new Map<string, CanvasRenderer | null>();
   public textmodeByNode = new Map<string, TextmodeRenderer | null>();
   public threeByNode = new Map<string, ThreeRenderer | null>();
+  public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
   public swglByNode = new Map<string, SwissGLContext>();
 
   /** Old Hydra renderers pending cleanup (deferred to avoid visual glitch) */
@@ -317,6 +319,7 @@ export class FBORenderer {
         .with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
         .with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
         .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
+        .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
         .with({ type: 'img' }, () => this.createEmptyRenderer())
         .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
         .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
@@ -586,6 +589,37 @@ export class FBORenderer {
         this.threeByNode.delete(node.id);
       }
     };
+  }
+
+  async createProjMapRenderer(
+    node: RenderNode,
+    framebuffer: regl.Framebuffer2D
+  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
+    if (node.type !== 'projmap') return null;
+
+    if (this.projmapByNode.has(node.id)) {
+      this.projmapByNode.get(node.id)?.destroy();
+    }
+
+    const projmapRenderer = await ProjectionMapRenderer.create(
+      { nodeId: node.id, surfaces: node.data.surfaces ?? [] },
+      framebuffer,
+      this
+    );
+
+    this.projmapByNode.set(node.id, projmapRenderer);
+
+    return {
+      render: projmapRenderer.renderFrame.bind(projmapRenderer),
+      cleanup: () => {
+        projmapRenderer.destroy();
+        this.projmapByNode.delete(node.id);
+      }
+    };
+  }
+
+  updateProjectionMap(nodeId: string, surfaces: import('$objects/projmap/types').ProjMapSurface[]) {
+    this.projmapByNode.get(nodeId)?.updateSurfaces(surfaces);
   }
 
   /**
@@ -1022,9 +1056,9 @@ export class FBORenderer {
       }
     }
 
-    // Convert texture map to array for Hydra and Three
+    // Convert texture map to array for Hydra, Three, and ProjMap
     // Preserves gaps for unused video inlets.
-    if (node.type === 'hydra' || node.type === 'three') {
+    if (node.type === 'hydra' || node.type === 'three' || node.type === 'projmap') {
       const maxInletIndex = Math.max(-1, ...inputTextureMap.keys());
       const textureArray: (regl.Texture2D | undefined)[] = [];
 
@@ -1235,6 +1269,11 @@ export class FBORenderer {
 
     // Update pixel readback service's output size reference
     this.pixelReadbackService.setOutputSize(this.outputSize);
+
+    // Update projection map render targets to match the new output size
+    for (const projmap of this.projmapByNode.values()) {
+      projmap?.resizeOutput(width, height);
+    }
   }
 
   /**
@@ -1373,7 +1412,7 @@ export class FBORenderer {
 
         threeRenderer.handleMessage(message);
       })
-      .with(P.union('glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo'), () => {})
+      .with(P.union('glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'), () => {})
       .exhaustive();
   }
 
@@ -1395,7 +1434,7 @@ export class FBORenderer {
       .with('three', () => {
         this.threeByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
       })
-      .with(P.union('swgl', 'glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo'), () => {})
+      .with(P.union('swgl', 'glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'), () => {})
       .exhaustive();
   }
 

@@ -32,6 +32,7 @@ import { sendPrompt } from './send';
 import { sendVdoPrompt } from './send.vdo';
 import { samplerPrompt } from './sampler~';
 import { padsPrompt } from '$objects/pads/prompt';
+import { projmapPrompt } from '$objects/projmap/prompt';
 import { sampleratePrompt } from './samplerate~';
 import { sliderPrompt } from './slider';
 import { soundfilePrompt } from './soundfile~';
@@ -93,6 +94,7 @@ export const objectPrompts: Record<string, string> = {
   label: labelPrompt,
   three: threePrompt,
   'three.dom': threeDomPrompt,
+  projmap: projmapPrompt,
   'wgpu.compute': wgpuPrompt,
   worker: workerPrompt,
   send: sendPrompt,

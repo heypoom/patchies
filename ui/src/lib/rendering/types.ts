@@ -14,6 +14,7 @@ export type RenderNode = {
   | { type: 'canvas'; data: { code: string } }
   | { type: 'textmode'; data: { code: string } }
   | { type: 'three'; data: { code: string } }
+  | { type: 'projmap'; data: { surfaces: import('$objects/projmap/types').ProjMapSurface[] } }
   | { type: 'img'; data: unknown }
   | { type: 'bg.out'; data: unknown }
   | { type: 'send.vdo'; data: { channel: string } }
@@ -208,6 +209,7 @@ export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = [
   'canvas',
   'textmode',
   'three',
+  'projmap',
   'img',
   'send.vdo',
   'recv.vdo'

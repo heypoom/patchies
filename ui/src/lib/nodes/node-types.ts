@@ -90,6 +90,7 @@ import CurveNode from '$objects/curve/CurveNode.svelte';
 import PadsNode from '$objects/pads/PadsNode.svelte';
 import SerialNode from '$objects/serial/SerialNode.svelte';
 import SerialTerminalNode from '$objects/serial/SerialTerminalNode.svelte';
+import ProjectionMapNode from '$objects/projmap/ProjectionMapNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -184,7 +185,8 @@ export const nodeTypes: Record<string, any> = {
   curve: CurveNode,
   'pads~': PadsNode,
   serial: SerialNode,
-  'serial.term': SerialTerminalNode
+  'serial.term': SerialTerminalNode,
+  projmap: ProjectionMapNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

@@ -444,6 +444,20 @@ export const EVAL_CASES: EvalCase[] = [
     expectedTypes: ['netrecv', 'msg']
   },
 
+  // === Projection mapping ===
+  {
+    id: 'video-projmap-two-sources',
+    prompt: 'glsl and hydra connected to projmap',
+    category: 'video',
+    expectedTypes: ['glsl', 'hydra', 'projmap', 'bg.out']
+  },
+  {
+    id: 'video-projmap-single-source',
+    prompt: 'p5 sketch mapped onto a projmap surface, output to bg.out',
+    category: 'video',
+    expectedTypes: ['p5', 'projmap', 'bg.out']
+  },
+
   // === Analysis connections (fft~ uses analysis-out-0, NOT message-out-0) ===
   {
     id: 'analysis-fft-to-hydra',
