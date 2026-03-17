@@ -17,4 +17,5 @@ export interface ThreadMessage {
   thinking?: string;
   actions?: ThreadActionRef[];
   images?: StagedImage[];
+  youtubeUrls?: string[];
 }

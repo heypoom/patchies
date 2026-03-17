@@ -10,9 +10,11 @@
     Square,
     Trash2,
     X,
+    Youtube,
     Zap
   } from '@lucide/svelte/icons';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import * as Popover from '$lib/components/ui/popover';
   import { compressImageFile } from '$lib/ai/google';
   import { useVoiceInput } from '$lib/ai/useVoiceInput.svelte';
   import { match } from 'ts-pattern';
@@ -32,6 +34,8 @@
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import ActionCard from './ActionCard.svelte';
   import PersistedActionCard from './PersistedActionCard.svelte';
+  import ChatStagedMedia from './ChatStagedMedia.svelte';
+  import { getYouTubeLabel } from './youtube-utils';
   import { SvelteMap } from 'svelte/reactivity';
   import { personaStore, BUILTIN_PRESETS, type Persona } from '../../../stores/persona.store';
   import {
@@ -39,7 +43,12 @@
     saveChatMessages,
     deleteChatMessages
   } from '../../../stores/chat-history.store';
-  import { getDraft, setDraft } from '../../../stores/chat-sessions.store';
+  import {
+    getDraft,
+    setDraft,
+    getStagedYouTubeUrls,
+    setStagedYouTubeUrls
+  } from '../../../stores/chat-sessions.store';
   import { chatSettingsStore } from '../../../stores/chat-settings.store';
   import type { ThreadMessage, StagedImage, ThreadActionRef } from '$lib/ai/chat/types';
 
@@ -81,6 +90,10 @@
     setDraft(sessionId, inputText);
   });
 
+  $effect(() => {
+    setStagedYouTubeUrls(sessionId, stagedYouTubeUrls);
+  });
+
   let isLoading = $state(false);
   let streamingText = $state('');
   let thinkingText = $state('');
@@ -99,6 +112,9 @@
   let addingCustom = $state(false);
   let newPersonaName = $state('');
   let newPersonaPrompt = $state('');
+  let addFilesOpen = $state(false);
+  let stagedYouTubeUrls = $state<string[]>(getStagedYouTubeUrls(sessionId));
+  let addingYouTubeUrl = $state(false);
 
   const allPersonas = $derived([...BUILTIN_PRESETS, ...$personaStore.custom]);
   const activePersona = $derived(
@@ -176,11 +192,17 @@
   }
 
   async function handleSubmit() {
-    if ((!inputText.trim() && stagedImages.length === 0) || isLoading) return;
+    if (
+      (!inputText.trim() && stagedImages.length === 0 && stagedYouTubeUrls.length === 0) ||
+      isLoading
+    )
+      return;
 
     const userContent = inputText.trim();
     const imagesToSend = [...stagedImages];
+    const youtubeUrlsToSend = [...stagedYouTubeUrls];
     stagedImages = [];
+    stagedYouTubeUrls = [];
 
     const chatHistory: ChatMessage[] = [
       ...messages.map((m) => {
@@ -194,12 +216,13 @@
           content = content ? `${content}\n${actionSummary}` : actionSummary;
         }
 
-        return { role: m.role, content, images: m.images };
+        return { role: m.role, content, images: m.images, youtubeUrls: m.youtubeUrls };
       }),
       {
         role: 'user',
         content: userContent,
-        images: imagesToSend.length > 0 ? imagesToSend : undefined
+        images: imagesToSend.length > 0 ? imagesToSend : undefined,
+        youtubeUrls: youtubeUrlsToSend.length > 0 ? youtubeUrlsToSend : undefined
       }
     ];
 
@@ -210,7 +233,8 @@
       {
         role: 'user',
         content: userContent,
-        images: imagesToSend.length > 0 ? imagesToSend : undefined
+        images: imagesToSend.length > 0 ? imagesToSend : undefined,
+        youtubeUrls: youtubeUrlsToSend.length > 0 ? youtubeUrlsToSend : undefined
       }
     ];
 
@@ -405,6 +429,22 @@
               {/each}
             </div>
           {/if}
+
+          {#if message.youtubeUrls?.length}
+            <div class="mb-1.5 flex flex-col gap-1">
+              {#each message.youtubeUrls as url, i (i)}
+                <div
+                  class="flex items-center gap-1.5 rounded border border-zinc-700 bg-transparent px-2 py-1"
+                >
+                  <Youtube class="h-3 w-3 shrink-0 text-red-400" />
+                  <span class="truncate font-mono text-[10px] text-zinc-400"
+                    >YouTube: {getYouTubeLabel(url)}</span
+                  >
+                </div>
+              {/each}
+            </div>
+          {/if}
+
           {#if message.content}
             <pre class="font-sans whitespace-pre-wrap">{message.content}</pre>
           {/if}
@@ -647,28 +687,7 @@
   <div>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="m-2.5" ondrop={handleDrop} ondragover={handleDragOver}>
-      {#if stagedImages.length > 0}
-        <div class="mb-1.5 flex flex-wrap gap-1.5">
-          {#each stagedImages as img, imageIndex (imageIndex)}
-            <div class="relative">
-              <img
-                src={img.previewUrl}
-                alt="Staged image {imageIndex + 1}"
-                class="h-16 w-16 rounded border border-zinc-700 object-cover"
-              />
-
-              <button
-                onclick={() => {
-                  stagedImages = stagedImages.filter((_, i) => i !== imageIndex);
-                }}
-                class="absolute -top-1 -right-1 flex h-4 w-4 cursor-pointer items-center justify-center rounded-full bg-zinc-900 text-zinc-400 hover:text-white"
-              >
-                <X class="h-2.5 w-2.5" />
-              </button>
-            </div>
-          {/each}
-        </div>
-      {/if}
+      <ChatStagedMedia bind:stagedImages bind:stagedYouTubeUrls bind:addingYouTubeUrl />
 
       <textarea
         bind:value={inputText}
@@ -780,14 +799,39 @@
           {/if}
         </button>
 
-        <button
-          onclick={() => fileInputEl?.click()}
-          disabled={isLoading}
-          class="cursor-pointer rounded p-1.5 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-30"
-          title="Attach images"
-        >
-          <ImagePlus class="h-3.5 w-3.5" />
-        </button>
+        <Popover.Root bind:open={addFilesOpen}>
+          <Popover.Trigger>
+            <button
+              disabled={isLoading}
+              class="cursor-pointer rounded p-1.5 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-30"
+              title="Add files"
+            >
+              <ImagePlus class="h-3.5 w-3.5" />
+            </button>
+          </Popover.Trigger>
+          <Popover.Content class="w-36 border-zinc-700 bg-zinc-900 p-1" side="top" align="end">
+            <button
+              class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-zinc-200 hover:bg-zinc-800"
+              onclick={() => {
+                addFilesOpen = false;
+                fileInputEl?.click();
+              }}
+            >
+              <ImagePlus class="h-3.5 w-3.5 text-zinc-400" />
+              Files
+            </button>
+            <button
+              class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-zinc-200 hover:bg-zinc-800"
+              onclick={() => {
+                addFilesOpen = false;
+                addingYouTubeUrl = true;
+              }}
+            >
+              <Youtube class="h-3.5 w-3.5 text-red-400" />
+              YouTube
+            </button>
+          </Popover.Content>
+        </Popover.Root>
 
         {#if isLoading}
           <button
@@ -800,7 +844,10 @@
         {:else}
           <button
             onclick={handleSubmit}
-            disabled={(!inputText.trim() && stagedImages.length === 0) || isLoading}
+            disabled={(!inputText.trim() &&
+              stagedImages.length === 0 &&
+              stagedYouTubeUrls.length === 0) ||
+              isLoading}
             class="cursor-pointer rounded bg-zinc-700 p-1.5 text-zinc-300 transition-colors hover:bg-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             <Send class="h-3.5 w-3.5" />
