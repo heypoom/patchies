@@ -55,6 +55,7 @@
 
   $effect(() => {
     void displayWidth;
+    void surfaces.length;
 
     setTimeout(() => updateNodeInternals(node.id), 0);
   });
@@ -105,7 +106,6 @@
     tracker.commit('surfaces', old, updated);
 
     activeSurfaceId = id;
-    setTimeout(() => updateNodeInternals(node.id), 0);
   }
 
   function deleteSurface(id: string) {
@@ -124,7 +124,6 @@
       }
 
       removeInvalidEdges(updated.length);
-      setTimeout(() => updateNodeInternals(node.id), 0);
     }
 
     applyUpdate(updated);
