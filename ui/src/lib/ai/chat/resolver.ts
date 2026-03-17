@@ -32,6 +32,7 @@ export interface ChatMessage {
   content: string;
   thinking?: string;
   images?: Array<{ mimeType: string; data: string }>;
+  youtubeUrls?: string[];
 }
 
 export interface ChatNodeContext {
@@ -145,6 +146,9 @@ export async function streamChatMessage(
     parts: [
       ...(msg.images ?? []).map((img) => ({
         inlineData: { mimeType: img.mimeType, data: img.data }
+      })),
+      ...(msg.youtubeUrls ?? []).map((url) => ({
+        fileData: { fileUri: url }
       })),
       { text: msg.content }
     ]
