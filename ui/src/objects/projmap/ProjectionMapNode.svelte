@@ -19,11 +19,8 @@
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
   import type { ProjMapSurface, ProjMapPoint } from './types';
-  import {
-    PROJMAP_VIDEO_INLET_COUNT,
-    SURFACE_COLORS,
-    DEFAULT_PROJMAP_NODE_DATA
-  } from './constants';
+  import { PROJMAP_VIDEO_INLET_COUNT, DEFAULT_PROJMAP_NODE_DATA } from './constants';
+  import { surfaceColor, toDisplay, toNorm, polyPoints, findInsertionIndex } from './utils';
 
   let node: {
     id: string;
@@ -79,23 +76,6 @@
 
   let activeSurface = $derived(surfaces.find((s) => s.id === activeSurfaceId) ?? null);
 
-  function surfaceColor(index: number) {
-    return SURFACE_COLORS[index % SURFACE_COLORS.length];
-  }
-
-  // ── Normalize / denormalize ───────────────────────────────────────────────
-
-  function toDisplay(p: ProjMapPoint, w: number, h: number) {
-    return { x: p.x * w, y: p.y * h };
-  }
-
-  function toNorm(x: number, y: number, w: number, h: number): ProjMapPoint {
-    return {
-      x: Math.max(0, Math.min(1, x / w)),
-      y: Math.max(0, Math.min(1, y / h))
-    };
-  }
-
   // ── Surface mutations ─────────────────────────────────────────────────────
 
   function addSurface() {
@@ -130,12 +110,17 @@
     tracker.commit('surfaces', old, updated);
   }
 
-  function addPoint(surfaceId: string, p: ProjMapPoint) {
+  function addPoint(surfaceId: string, p: ProjMapPoint, insertAt?: number) {
     const old = surfaces;
 
-    const updated = surfaces.map((s) =>
-      s.id === surfaceId ? { ...s, points: [...s.points, p] } : s
-    );
+    const updated = surfaces.map((s) => {
+      if (s.id !== surfaceId) return s;
+      const points =
+        insertAt !== undefined
+          ? [...s.points.slice(0, insertAt), p, ...s.points.slice(insertAt)]
+          : [...s.points, p];
+      return { ...s, points };
+    });
 
     applyUpdate(updated);
     tracker.commit('surfaces', old, updated);
@@ -177,6 +162,7 @@
 
   function applyUpdate(updated: ProjMapSurface[]) {
     updateNodeData(node.id, { surfaces: updated });
+
     glSystem.updateProjectionMap(node.id, updated);
   }
 
@@ -241,10 +227,12 @@
 
       el.setPointerCapture(e.pointerId);
     } else if (activeSurfaceId) {
-      addPoint(activeSurfaceId, toNorm(x, y, w, h));
+      const insertAt = activeSurface
+        ? findInsertionIndex(x, y, activeSurface.points, w, h)
+        : undefined;
+      addPoint(activeSurfaceId, toNorm(x, y, w, h), insertAt);
 
-      // New point is last — index is current length before add (will be length after)
-      draggingPointIndex = activeSurface?.points.length ?? 0;
+      draggingPointIndex = insertAt ?? activeSurface?.points.length ?? 0;
       surfacesBeforeDrag = surfaces;
 
       el.setPointerCapture(e.pointerId);
@@ -295,11 +283,6 @@
     sidebarView.set('help');
     isSidebarOpen.set(true);
   }
-
-  // ── SVG helpers ───────────────────────────────────────────────────────────
-
-  const polyPoints = (surface: ProjMapSurface, w: number, h: number): string =>
-    surface.points.map((p) => `${p.x * w},${p.y * h}`).join(' ');
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -591,8 +574,6 @@
     {hoverPointIndex}
     {hoverSurfaceId}
     {draggingPointIndex}
-    {surfaceColor}
-    {polyPoints}
     onclose={() => (expanded = false)}
     onsurfaceselect={(id) => (activeSurfaceId = id)}
     onaddsurface={addSurface}

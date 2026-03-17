@@ -2,6 +2,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { Plus, Trash2, Shrink } from '@lucide/svelte/icons';
   import type { ProjMapSurface } from './types';
+  import { surfaceColor, polyPoints, toDisplay } from './utils';
 
   let {
     surfaces,
@@ -11,8 +12,6 @@
     hoverPointIndex,
     hoverSurfaceId,
     draggingPointIndex,
-    surfaceColor,
-    polyPoints,
     onclose,
     onsurfaceselect,
     onaddsurface,
@@ -30,8 +29,6 @@
     hoverPointIndex: number;
     hoverSurfaceId: string | null;
     draggingPointIndex: number;
-    surfaceColor: (i: number) => string;
-    polyPoints: (surface: ProjMapSurface, w: number, h: number) => string;
     onclose: () => void;
     onsurfaceselect: (id: string) => void;
     onaddsurface: () => void;
@@ -46,10 +43,6 @@
   let svg = $state<SVGSVGElement | null>(null);
 
   let activeSurface = $derived(surfaces.find((s) => s.id === activeSurfaceId) ?? null);
-
-  function toDisplay(p: { x: number; y: number }, w: number, h: number) {
-    return { x: p.x * w, y: p.y * h };
-  }
 
   function portal(el: HTMLElement) {
     document.body.appendChild(el);
