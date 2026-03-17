@@ -376,8 +376,14 @@
   // ── Keyboard ──────────────────────────────────────────────────────────────
 
   function onKeydown(e: KeyboardEvent) {
-    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
     if (!isMouseOverEditor) return;
+
+    if (e.key === 'm') {
+      editMode = editMode === 'add' ? 'move' : 'add';
+      return;
+    }
+
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
 
     // Always stop propagation when mouse is inside the editor —
     // prevents xyflow from deleting the node while the user is editing points.
@@ -507,7 +513,7 @@
         </Tooltip.Trigger>
 
         <Tooltip.Content
-          >{editMode === 'add' ? 'Switch to move mode' : 'Switch to add mode'}</Tooltip.Content
+          >{editMode === 'add' ? 'Switch to move mode' : 'Switch to add mode'} (M)</Tooltip.Content
         >
       </Tooltip.Root>
 
