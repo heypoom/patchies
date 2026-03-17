@@ -74,15 +74,23 @@
       }
     };
   }
+
+  $effect(() => {
+    function onKeydown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onclose();
+    }
+
+    window.addEventListener('keydown', onKeydown);
+
+    return () => window.removeEventListener('keydown', onKeydown);
+  });
 </script>
 
-<!-- svelte-ignore a11y_interactive_supports_focus -->
 <div
   use:portal
   class="fixed inset-0 z-[9999] flex flex-col bg-zinc-950"
   role="dialog"
   aria-label="Projection Map Editor"
-  onkeydown={(e) => e.key === 'Escape' && onclose()}
 >
   <!-- Toolbar -->
   <div class="flex shrink-0 items-center gap-2 border-b border-zinc-800 px-4 py-2">
