@@ -71,6 +71,17 @@
 
   let expanded = $state(false);
 
+  // ── Portal action — teleports a node to document.body so position:fixed ──
+  // ── works correctly even inside xyflow's CSS-transformed node container ──
+  function portal(el: HTMLElement) {
+    document.body.appendChild(el);
+    return {
+      destroy() {
+        el.remove();
+      }
+    };
+  }
+
   let editorSvg = $state<SVGSVGElement | null>(null);
   let expandSvg = $state<SVGSVGElement | null>(null);
 
@@ -500,7 +511,8 @@
 {#if expanded}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
-    class="fixed inset-0 z-[9999] flex flex-col bg-zinc-950/95"
+    use:portal
+    class="fixed inset-0 z-[9999] flex flex-col bg-zinc-950"
     role="dialog"
     aria-label="Projection Map Editor"
     onkeydown={(e) => e.key === 'Escape' && (expanded = false)}
