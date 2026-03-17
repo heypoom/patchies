@@ -459,6 +459,15 @@
                   stroke="rgba(0,0,0,0.5)"
                   stroke-width="1"
                 />
+                <text
+                  x={dp.x}
+                  y={dp.y}
+                  text-anchor="middle"
+                  dominant-baseline="middle"
+                  fill="rgba(0,0,0,0.7)"
+                  font-size="8"
+                  style="pointer-events: none; user-select: none;">{pi + 1}</text
+                >
               {/each}
             {/each}
 
