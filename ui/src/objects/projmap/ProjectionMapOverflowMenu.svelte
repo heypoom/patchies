@@ -1,19 +1,23 @@
 <script lang="ts">
   import * as Popover from '$lib/components/ui/popover';
-  import { Expand, Plus, Trash2, EllipsisVertical } from '@lucide/svelte/icons';
+  import { Expand, Plus, Trash2, EllipsisVertical, Eye, EyeOff } from '@lucide/svelte/icons';
 
   let {
     selected,
     activeSurfaceId,
+    showOverlay,
     onexpand,
     onaddsurface,
-    ondeletesurface
+    ondeletesurface,
+    ontoggleoverlay
   }: {
     selected: boolean;
     activeSurfaceId: string | null;
+    showOverlay: boolean;
     onexpand: () => void;
     onaddsurface: () => void;
     ondeletesurface: () => void;
+    ontoggleoverlay: () => void;
   } = $props();
 
   let open = $state(false);
@@ -71,6 +75,24 @@
     >
       <Trash2 class="h-4 w-4 text-zinc-400" />
       Delete surface
+    </button>
+
+    <div class="my-1 border-t border-zinc-700"></div>
+
+    <button
+      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700"
+      onclick={() => {
+        ontoggleoverlay();
+        open = false;
+      }}
+    >
+      {#if showOverlay}
+        <EyeOff class="h-4 w-4 text-zinc-400" />
+        Hide overlay
+      {:else}
+        <Eye class="h-4 w-4 text-zinc-400" />
+        Show overlay
+      {/if}
     </button>
   </Popover.Content>
 </Popover.Root>

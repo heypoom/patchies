@@ -98,6 +98,7 @@
   );
 
   let expanded = $state(false);
+  let showOverlay = $state(true);
 
   let editorSvg = $state<SVGSVGElement | null>(null);
 
@@ -520,9 +521,11 @@
       <ProjectionMapOverflowMenu
         selected={node.selected}
         {activeSurfaceId}
+        {showOverlay}
         onexpand={() => (expanded = true)}
         onaddsurface={addSurface}
         ondeletesurface={() => activeSurfaceId && deleteSurface(activeSurfaceId)}
+        ontoggleoverlay={() => (showOverlay = !showOverlay)}
       />
     </div>
 
@@ -574,69 +577,71 @@
                 null;
             }}
           >
-            {#each surfaces as surface, si (surface.id)}
-              {@const color = surfaceColor(si)}
-              {@const isActive = surface.id === activeSurfaceId}
-              {@const alpha = isActive ? 1 : 0.35}
+            {#if showOverlay}
+              {#each surfaces as surface, si (surface.id)}
+                {@const color = surfaceColor(si)}
+                {@const isActive = surface.id === activeSurfaceId}
+                {@const alpha = isActive ? 1 : 0.35}
 
-              {#if surface.points.length >= 3}
-                <polygon
-                  points={polyPoints(surface, displayWidth, displayHeight)}
-                  fill={color}
-                  fill-opacity={isActive ? 0.18 : 0.07}
-                  stroke={color}
-                  stroke-width="1.5"
-                  stroke-opacity={alpha}
-                />
-              {:else if surface.points.length === 2}
-                <line
-                  x1={surface.points[0].x * displayWidth}
-                  y1={surface.points[0].y * displayHeight}
-                  x2={surface.points[1].x * displayWidth}
-                  y2={surface.points[1].y * displayHeight}
-                  stroke={color}
-                  stroke-width="1.5"
-                  stroke-opacity={alpha}
-                />
-              {/if}
+                {#if surface.points.length >= 3}
+                  <polygon
+                    points={polyPoints(surface, displayWidth, displayHeight)}
+                    fill={color}
+                    fill-opacity={isActive ? 0.18 : 0.07}
+                    stroke={color}
+                    stroke-width="1.5"
+                    stroke-opacity={alpha}
+                  />
+                {:else if surface.points.length === 2}
+                  <line
+                    x1={surface.points[0].x * displayWidth}
+                    y1={surface.points[0].y * displayHeight}
+                    x2={surface.points[1].x * displayWidth}
+                    y2={surface.points[1].y * displayHeight}
+                    stroke={color}
+                    stroke-width="1.5"
+                    stroke-opacity={alpha}
+                  />
+                {/if}
 
-              {#each surface.points as pt, pi (pi)}
-                {@const dp = toDisplay(pt, displayWidth, displayHeight)}
-                {@const isHover = hoverSurfaceId === surface.id && hoverPointIndex === pi}
-                {@const isDrag = activeSurfaceId === surface.id && draggingPointIndex === pi}
+                {#each surface.points as pt, pi (pi)}
+                  {@const dp = toDisplay(pt, displayWidth, displayHeight)}
+                  {@const isHover = hoverSurfaceId === surface.id && hoverPointIndex === pi}
+                  {@const isDrag = activeSurfaceId === surface.id && draggingPointIndex === pi}
 
-                <circle
-                  cx={dp.x}
-                  cy={dp.y}
-                  r={isDrag ? 9 : isHover ? 8 : 6}
-                  fill={isDrag ? '#facc15' : isHover ? '#ffffff' : color}
-                  fill-opacity={alpha}
-                  stroke="rgba(0,0,0,0.5)"
-                  stroke-width="1.5"
-                />
+                  <circle
+                    cx={dp.x}
+                    cy={dp.y}
+                    r={isDrag ? 9 : isHover ? 8 : 6}
+                    fill={isDrag ? '#facc15' : isHover ? '#ffffff' : color}
+                    fill-opacity={alpha}
+                    stroke="rgba(0,0,0,0.5)"
+                    stroke-width="1.5"
+                  />
 
-                <text
-                  x={dp.x + 9}
-                  y={dp.y + 3}
-                  fill={color}
-                  fill-opacity={alpha}
-                  font-size="9"
-                  font-family="monospace"
-                  style="pointer-events: none; user-select: none;">{pi + 1}</text
-                >
+                  <text
+                    x={dp.x + 9}
+                    y={dp.y + 3}
+                    fill={color}
+                    fill-opacity={alpha}
+                    font-size="9"
+                    font-family="monospace"
+                    style="pointer-events: none; user-select: none;">{pi + 1}</text
+                  >
+                {/each}
               {/each}
-            {/each}
 
-            {#if activeSurface?.points.length === 0}
-              <text
-                x={displayWidth / 2}
-                y={displayHeight / 2}
-                text-anchor="middle"
-                dominant-baseline="middle"
-                fill="#52525b"
-                font-size="11"
-                font-family="sans-serif">Click to add points</text
-              >
+              {#if activeSurface?.points.length === 0}
+                <text
+                  x={displayWidth / 2}
+                  y={displayHeight / 2}
+                  text-anchor="middle"
+                  dominant-baseline="middle"
+                  fill="#52525b"
+                  font-size="11"
+                  font-family="sans-serif">Click to add points</text
+                >
+              {/if}
             {/if}
           </svg>
 
@@ -663,7 +668,9 @@
         ondeletesurface={deleteSurface}
         ontogglemode={() => (editMode = editMode === 'add' ? 'move' : 'add')}
         ontoggleoutput={toggleBgOutput}
+        ontoggleoverlay={() => (showOverlay = !showOverlay)}
         onopenhelp={openHelp}
+        {showOverlay}
       />
     </ContextMenu.Root>
   </div>

@@ -8,7 +8,9 @@
     MonitorOff,
     CircleQuestionMark,
     Pen,
-    MousePointer2
+    MousePointer2,
+    Eye,
+    EyeOff
   } from '@lucide/svelte/icons';
   import type { ProjMapSurface } from './types';
 
@@ -18,11 +20,13 @@
     contextMenuSurfaceId,
     editMode,
     isOutputOverride,
+    showOverlay,
     onexpand,
     onaddsurface,
     ondeletesurface,
     ontogglemode,
     ontoggleoutput,
+    ontoggleoverlay,
     onopenhelp
   }: {
     surfaces: ProjMapSurface[];
@@ -35,7 +39,9 @@
     ondeletesurface: (id: string) => void;
     ontogglemode: () => void;
     ontoggleoutput: () => void;
+    ontoggleoverlay: () => void;
     onopenhelp: () => void;
+    showOverlay: boolean;
   } = $props();
 
   let deleteTargetId = $derived(contextMenuSurfaceId ?? activeSurfaceId);
@@ -94,11 +100,20 @@
     {deleteLabel}
   </ContextMenu.Item>
 
+  <ContextMenu.Item onclick={ontoggleoverlay}>
+    {#if showOverlay}
+      <EyeOff class="mr-2 h-4 w-4" />
+      Hide overlay
+    {:else}
+      <Eye class="mr-2 h-4 w-4" />
+      Show overlay
+    {/if}
+  </ContextMenu.Item>
+
   <ContextMenu.Separator />
 
   <ContextMenu.Item onclick={onopenhelp}>
     <CircleQuestionMark class="mr-2 h-4 w-4" />
-
     Help
   </ContextMenu.Item>
 </ContextMenu.Content>
