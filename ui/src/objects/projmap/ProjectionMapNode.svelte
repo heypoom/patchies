@@ -613,6 +613,7 @@
     {outputHeight}
     {hoverPointIndex}
     {hoverSurfaceId}
+    {hoverInactiveSurface}
     {draggingPointIndex}
     onclose={() => (expanded = false)}
     onsurfaceselect={(id) => (activeSurfaceId = id)}

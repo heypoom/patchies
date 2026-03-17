@@ -11,6 +11,7 @@
     outputHeight,
     hoverPointIndex,
     hoverSurfaceId,
+    hoverInactiveSurface,
     draggingPointIndex,
     onclose,
     onsurfaceselect,
@@ -28,6 +29,7 @@
     outputHeight: number;
     hoverPointIndex: number;
     hoverSurfaceId: string | null;
+    hoverInactiveSurface: boolean;
     draggingPointIndex: number;
     onclose: () => void;
     onsurfaceselect: (id: string) => void;
@@ -132,7 +134,7 @@
     <svg
       bind:this={svg}
       class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-      style="cursor: {hoverPointIndex !== -1
+      style="cursor: {hoverPointIndex !== -1 || hoverInactiveSurface
         ? 'pointer'
         : 'crosshair'}; width: min(100vw, {outputWidth}px); height: min(calc(100vh - 48px), {outputHeight}px);"
       viewBox="0 0 {outputWidth} {outputHeight}"
