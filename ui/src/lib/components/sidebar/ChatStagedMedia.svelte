@@ -15,6 +15,20 @@
 
   const YOUTUBE_REGEX = /^https?:\/\/(www\.)?(youtube\.com\/watch\?|youtu\.be\/)/;
 
+  function getYouTubeLabel(url: string): string {
+    try {
+      const u = new URL(url);
+
+      const id = u.hostname.includes('youtu.be')
+        ? u.pathname.slice(1)
+        : (u.searchParams.get('v') ?? url);
+
+      return id;
+    } catch {
+      return url;
+    }
+  }
+
   let youtubeUrlInput = $state('');
 
   function stageYouTubeUrl() {
@@ -61,7 +75,8 @@
       >
         <Youtube class="h-4 w-4 shrink-0 text-red-400" />
 
-        <span class="truncate font-mono text-xs text-zinc-300">{url}</span>
+        <span class="truncate font-mono text-xs text-zinc-300">YouTube: {getYouTubeLabel(url)}</span
+        >
 
         <button
           aria-label="Remove YouTube URL"
