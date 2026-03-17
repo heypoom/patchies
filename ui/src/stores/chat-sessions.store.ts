@@ -14,6 +14,7 @@ interface ChatSessionsState {
 
 const STORAGE_KEY = 'patchies:chat-sessions';
 const DRAFTS_KEY = 'patchies:chat-drafts';
+const STAGED_YOUTUBE_KEY = 'patchies:chat-staged-youtube';
 
 const defaultSession: ChatSession = { id: 'chat-1', name: 'Chat 1' };
 
@@ -80,6 +81,50 @@ function removeDraft(sessionId: string): void {
   persistDrafts(_drafts);
 }
 
+// --- Staged YouTube URLs: stored outside the reactive store to avoid update loops ---
+
+function loadStagedYouTube(): Record<string, string[]> {
+  try {
+    const raw = localStorage.getItem(STAGED_YOUTUBE_KEY);
+    if (raw) return JSON.parse(raw) as Record<string, string[]>;
+  } catch {
+    // ignore
+  }
+  return {};
+}
+
+function persistStagedYouTube(d: Record<string, string[]>): void {
+  try {
+    if (Object.keys(d).length > 0) {
+      localStorage.setItem(STAGED_YOUTUBE_KEY, JSON.stringify(d));
+    } else {
+      localStorage.removeItem(STAGED_YOUTUBE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+const _stagedYouTube = loadStagedYouTube();
+
+export function getStagedYouTubeUrls(sessionId: string): string[] {
+  return _stagedYouTube[sessionId] ?? [];
+}
+
+export function setStagedYouTubeUrls(sessionId: string, urls: string[]): void {
+  if (urls.length > 0) {
+    _stagedYouTube[sessionId] = urls;
+  } else {
+    delete _stagedYouTube[sessionId];
+  }
+  persistStagedYouTube(_stagedYouTube);
+}
+
+function removeStagedYouTubeUrls(sessionId: string): void {
+  delete _stagedYouTube[sessionId];
+  persistStagedYouTube(_stagedYouTube);
+}
+
 // --- Store ---
 
 function createChatSessionsStore() {
@@ -111,6 +156,7 @@ function createChatSessionsStore() {
     removeSession(id: string) {
       deleteChatMessages(id);
       removeDraft(id);
+      removeStagedYouTubeUrls(id);
 
       update((s) => {
         if (s.sessions.length <= 1) return s;

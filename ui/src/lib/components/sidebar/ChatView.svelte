@@ -34,6 +34,7 @@
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import ActionCard from './ActionCard.svelte';
   import PersistedActionCard from './PersistedActionCard.svelte';
+  import ChatStagedMedia from './ChatStagedMedia.svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import { personaStore, BUILTIN_PRESETS, type Persona } from '../../../stores/persona.store';
   import {
@@ -41,7 +42,12 @@
     saveChatMessages,
     deleteChatMessages
   } from '../../../stores/chat-history.store';
-  import { getDraft, setDraft } from '../../../stores/chat-sessions.store';
+  import {
+    getDraft,
+    setDraft,
+    getStagedYouTubeUrls,
+    setStagedYouTubeUrls
+  } from '../../../stores/chat-sessions.store';
   import { chatSettingsStore } from '../../../stores/chat-settings.store';
   import type { ThreadMessage, StagedImage, ThreadActionRef } from '$lib/ai/chat/types';
 
@@ -83,6 +89,10 @@
     setDraft(sessionId, inputText);
   });
 
+  $effect(() => {
+    setStagedYouTubeUrls(sessionId, stagedYouTubeUrls);
+  });
+
   let isLoading = $state(false);
   let streamingText = $state('');
   let thinkingText = $state('');
@@ -102,8 +112,7 @@
   let newPersonaName = $state('');
   let newPersonaPrompt = $state('');
   let addFilesOpen = $state(false);
-  let stagedYouTubeUrls = $state<string[]>([]);
-  let youtubeUrlInput = $state('');
+  let stagedYouTubeUrls = $state<string[]>(getStagedYouTubeUrls(sessionId));
   let addingYouTubeUrl = $state(false);
 
   const allPersonas = $derived([...BUILTIN_PRESETS, ...$personaStore.custom]);
@@ -372,19 +381,6 @@
       .map((item) => item.getAsFile())
       .filter((f): f is File => f !== null);
     if (files.length > 0) stageFiles(files);
-  }
-
-  function stageYouTubeUrl() {
-    const url = youtubeUrlInput.trim();
-    if (!url) return;
-    const isYouTubeUrl = /^https?:\/\/(www\.)?(youtube\.com\/watch\?|youtu\.be\/)/.test(url);
-    if (!isYouTubeUrl) {
-      toast.error('Please enter a valid YouTube URL');
-      return;
-    }
-    stagedYouTubeUrls = [...stagedYouTubeUrls, url];
-    youtubeUrlInput = '';
-    addingYouTubeUrl = false;
   }
 </script>
 
@@ -674,83 +670,7 @@
   <div>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="m-2.5" ondrop={handleDrop} ondragover={handleDragOver}>
-      {#if stagedImages.length > 0 || stagedYouTubeUrls.length > 0}
-        <div class="mb-1.5 flex flex-wrap gap-1.5">
-          {#each stagedImages as img, imageIndex (imageIndex)}
-            <div class="relative">
-              <img
-                src={img.previewUrl}
-                alt="Staged image {imageIndex + 1}"
-                class="h-16 w-16 rounded border border-zinc-700 object-cover"
-              />
-
-              <button
-                onclick={() => {
-                  stagedImages = stagedImages.filter((_, i) => i !== imageIndex);
-                }}
-                class="absolute -top-1 -right-1 flex h-4 w-4 cursor-pointer items-center justify-center rounded-full bg-zinc-900 text-zinc-400 hover:text-white"
-              >
-                <X class="h-2.5 w-2.5" />
-              </button>
-            </div>
-          {/each}
-
-          {#each stagedYouTubeUrls as url, urlIndex (urlIndex)}
-            <div
-              class="relative flex h-16 max-w-48 items-center gap-1.5 rounded border border-zinc-700 bg-zinc-800 px-2 py-1"
-            >
-              <Youtube class="h-4 w-4 shrink-0 text-red-400" />
-              <span class="truncate font-mono text-xs text-zinc-300">{url}</span>
-
-              <button
-                aria-label="Remove YouTube URL"
-                onclick={() => {
-                  stagedYouTubeUrls = stagedYouTubeUrls.filter((_, i) => i !== urlIndex);
-                }}
-                class="absolute -top-1 -right-1 flex h-4 w-4 cursor-pointer items-center justify-center rounded-full bg-zinc-900 text-zinc-400 hover:text-white"
-              >
-                <X class="h-2.5 w-2.5" />
-              </button>
-            </div>
-          {/each}
-        </div>
-      {/if}
-
-      {#if addingYouTubeUrl}
-        <div class="mb-1.5 flex gap-1.5">
-          <!-- svelte-ignore a11y_autofocus -->
-          <input
-            autofocus
-            bind:value={youtubeUrlInput}
-            onkeydown={(e) => {
-              if (e.key === 'Enter') stageYouTubeUrl();
-              if (e.key === 'Escape') {
-                addingYouTubeUrl = false;
-                youtubeUrlInput = '';
-              }
-            }}
-            placeholder="https://www.youtube.com/watch?v=..."
-            class="flex-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs text-zinc-100 placeholder-zinc-600 outline-none focus:border-zinc-500"
-          />
-          <button
-            aria-label="Add YouTube URL"
-            onclick={stageYouTubeUrl}
-            class="cursor-pointer rounded bg-zinc-700 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-600 hover:text-white"
-          >
-            Add
-          </button>
-          <button
-            aria-label="Cancel YouTube URL input"
-            onclick={() => {
-              addingYouTubeUrl = false;
-              youtubeUrlInput = '';
-            }}
-            class="cursor-pointer rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
-          >
-            Cancel
-          </button>
-        </div>
-      {/if}
+      <ChatStagedMedia bind:stagedImages bind:stagedYouTubeUrls bind:addingYouTubeUrl />
 
       <textarea
         bind:value={inputText}
