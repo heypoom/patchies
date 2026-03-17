@@ -1,5 +1,6 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals, NodeResizer } from '@xyflow/svelte';
+  import { useNodeDataTracker } from '$lib/history';
   import { onMount, onDestroy } from 'svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -35,6 +36,7 @@
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const glSystem = GLSystem.getInstance();
+  const tracker = useNodeDataTracker(node.id);
 
   const [outputWidth, outputHeight] = glSystem.outputSize;
   const outputAspect = outputWidth / outputHeight;
@@ -65,6 +67,7 @@
   let activeSurfaceId = $state<string | null>(null);
 
   let draggingPointIndex = $state(-1);
+  let surfacesBeforeDrag: ProjMapSurface[] = [];
   let hoverPointIndex = $state(-1);
   let hoverSurfaceId = $state<string | null>(null);
   let isMouseOverEditor = $state(false);
@@ -109,48 +112,56 @@
   // ── Surface mutations ─────────────────────────────────────────────────────
 
   function addSurface() {
+    const old = surfaces;
     const id = crypto.randomUUID();
     const updated: ProjMapSurface[] = [...surfaces, { id, points: [] }];
-    commit(updated);
+    applyUpdate(updated);
+    tracker.commit('surfaces', old, updated);
     activeSurfaceId = id;
   }
 
   function deleteSurface(id: string) {
+    const old = surfaces;
     const updated = surfaces.filter((s) => s.id !== id);
-    commit(updated);
+    applyUpdate(updated);
+    tracker.commit('surfaces', old, updated);
     if (activeSurfaceId === id) {
       activeSurfaceId = updated.length > 0 ? updated[updated.length - 1].id : null;
     }
   }
 
   function addPoint(surfaceId: string, p: ProjMapPoint) {
+    const old = surfaces;
     const updated = surfaces.map((s) =>
       s.id === surfaceId ? { ...s, points: [...s.points, p] } : s
     );
-    commit(updated);
+    applyUpdate(updated);
+    tracker.commit('surfaces', old, updated);
   }
 
   function movePoint(surfaceId: string, index: number, p: ProjMapPoint) {
     const updated = surfaces.map((s) =>
       s.id === surfaceId ? { ...s, points: s.points.map((pt, i) => (i === index ? p : pt)) } : s
     );
-    commit(updated);
+    applyUpdate(updated);
   }
 
   function deleteHoveredPoint() {
     if (hoverSurfaceId !== null && hoverPointIndex !== -1) {
+      const old = surfaces;
       const updated = surfaces.map((s) =>
         s.id === hoverSurfaceId
           ? { ...s, points: s.points.filter((_, i) => i !== hoverPointIndex) }
           : s
       );
-      commit(updated);
+      applyUpdate(updated);
+      tracker.commit('surfaces', old, updated);
       hoverSurfaceId = null;
       hoverPointIndex = -1;
     }
   }
 
-  function commit(updated: ProjMapSurface[]) {
+  function applyUpdate(updated: ProjMapSurface[]) {
     updateNodeData(node.id, { surfaces: updated });
     glSystem.updateProjectionMap(node.id, updated);
   }
@@ -204,17 +215,23 @@
     if (hit) {
       activeSurfaceId = hit.surfaceId;
       draggingPointIndex = hit.index;
+      surfacesBeforeDrag = surfaces;
       el.setPointerCapture(e.pointerId);
     } else if (activeSurfaceId) {
       addPoint(activeSurfaceId, toNorm(x, y, w, h));
       // New point is last — index is current length before add (will be length after)
       draggingPointIndex = activeSurface?.points.length ?? 0;
+      surfacesBeforeDrag = surfaces;
       el.setPointerCapture(e.pointerId);
     }
   }
 
   function onPointerup(e: PointerEvent, el: SVGSVGElement) {
     el.releasePointerCapture(e.pointerId);
+    if (draggingPointIndex !== -1 && surfacesBeforeDrag.length > 0) {
+      tracker.commit('surfaces', surfacesBeforeDrag, surfaces);
+      surfacesBeforeDrag = [];
+    }
     draggingPointIndex = -1;
   }
 
