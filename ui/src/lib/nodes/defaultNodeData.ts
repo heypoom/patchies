@@ -286,6 +286,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('pads~', () => DEFAULT_PADS_NODE_DATA)
     .with('serial', () => DEFAULT_SERIAL_DATA)
     .with('serial.term', () => DEFAULT_SERIAL_TERMINAL_DATA)
-    .with('projmap', () => DEFAULT_PROJMAP_NODE_DATA)
+    .with('projmap', () => ({ surfaces: [] }))
     .otherwise(() => ({}));
 }

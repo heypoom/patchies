@@ -79,6 +79,11 @@ export class ProjectionMapRenderer {
     return instance;
   }
 
+  resizeOutput(width: number, height: number) {
+    this.threeWebGLRenderer?.setSize(width, height, false);
+    this.renderTarget?.setSize(width, height);
+  }
+
   updateSurfaces(surfaces: ProjMapSurface[]) {
     this.config.surfaces = surfaces;
 
@@ -250,6 +255,12 @@ export class ProjectionMapRenderer {
 
     this.meshes.clear();
     this.renderTarget?.dispose();
+
+    for (const tex of this.threeInputTextures) {
+      tex.dispose();
+    }
+
+    this.threeInputTextures = [];
 
     // Don't dispose threeWebGLRenderer — it shares the WebGL context with regl!
   }

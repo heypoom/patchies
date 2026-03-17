@@ -1269,6 +1269,11 @@ export class FBORenderer {
 
     // Update pixel readback service's output size reference
     this.pixelReadbackService.setOutputSize(this.outputSize);
+
+    // Update projection map render targets to match the new output size
+    for (const projmap of this.projmapByNode.values()) {
+      projmap?.resizeOutput(width, height);
+    }
   }
 
   /**
@@ -1407,7 +1412,7 @@ export class FBORenderer {
 
         threeRenderer.handleMessage(message);
       })
-      .with(P.union('glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo'), () => {})
+      .with(P.union('glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'), () => {})
       .exhaustive();
   }
 
@@ -1429,7 +1434,7 @@ export class FBORenderer {
       .with('three', () => {
         this.threeByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
       })
-      .with(P.union('swgl', 'glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo'), () => {})
+      .with(P.union('swgl', 'glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'), () => {})
       .exhaustive();
   }
 
