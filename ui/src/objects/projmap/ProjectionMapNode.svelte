@@ -19,7 +19,7 @@
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
   import type { ProjMapSurface, ProjMapPoint } from './types';
-  import { PROJMAP_VIDEO_INLET_COUNT, DEFAULT_PROJMAP_NODE_DATA } from './constants';
+  import { DEFAULT_PROJMAP_NODE_DATA } from './constants';
   import {
     surfaceColor,
     toDisplay,
@@ -36,7 +36,7 @@
     width?: number;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const glSystem = GLSystem.getInstance();
   const tracker = useNodeDataTracker(node.id);
@@ -86,6 +86,15 @@
 
   // ── Surface mutations ─────────────────────────────────────────────────────
 
+  function removeInvalidEdges(validCount: number) {
+    const invalid = getEdges().filter((edge) => {
+      if (edge.target !== node.id) return false;
+      const match = edge.targetHandle?.match(/^video-in-(\d+)$/);
+      return match ? parseInt(match[1]) >= validCount : false;
+    });
+    if (invalid.length > 0) deleteElements({ edges: invalid });
+  }
+
   function addSurface() {
     const old = surfaces;
 
@@ -96,6 +105,7 @@
     tracker.commit('surfaces', old, updated);
 
     activeSurfaceId = id;
+    setTimeout(() => updateNodeInternals(node.id), 0);
   }
 
   function deleteSurface(id: string) {
@@ -112,6 +122,9 @@
       if (activeSurfaceId === id) {
         activeSurfaceId = updated[updated.length - 1].id;
       }
+
+      removeInvalidEdges(updated.length);
+      setTimeout(() => updateNodeInternals(node.id), 0);
     }
 
     applyUpdate(updated);
@@ -453,12 +466,12 @@
       <ContextMenu.Trigger>
         <div class="relative" style="width: {displayWidth}px; height: {displayHeight}px;">
           <!-- Inlets -->
-          {#each Array.from({ length: PROJMAP_VIDEO_INLET_COUNT }) as _, i (i)}
+          {#each { length: surfaces.length }, i (i)}
             <TypedHandle
               port="inlet"
               spec={{ handleType: 'video', handleId: i.toString() }}
-              title={`Video ${i}`}
-              total={PROJMAP_VIDEO_INLET_COUNT}
+              title={`Video ${i + 1}`}
+              total={surfaces.length}
               index={i}
               nodeId={node.id}
             />
