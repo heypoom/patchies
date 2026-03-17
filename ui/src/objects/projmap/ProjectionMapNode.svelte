@@ -6,10 +6,12 @@
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as ContextMenu from '$lib/components/ui/context-menu';
+  import * as Popover from '$lib/components/ui/popover';
   import {
     Expand,
     Plus,
     Trash2,
+    EllipsisVertical,
     Monitor,
     MonitorOff,
     CircleQuestionMark,
@@ -104,6 +106,7 @@
   );
 
   let expanded = $state(false);
+  let menuOpen = $state(false);
 
   let editorSvg = $state<SVGSVGElement | null>(null);
 
@@ -501,65 +504,6 @@
             ]}
             onclick={(e) => {
               e.stopPropagation();
-              addSurface();
-            }}
-          >
-            <Plus class="h-4 w-4 text-zinc-300" />
-          </button>
-        </Tooltip.Trigger>
-
-        <Tooltip.Content>Add surface</Tooltip.Content>
-      </Tooltip.Root>
-
-      {#if activeSurfaceId}
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            <button
-              class={[
-                'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-                node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-              ]}
-              onclick={(e) => {
-                e.stopPropagation();
-                if (activeSurfaceId) deleteSurface(activeSurfaceId);
-              }}
-            >
-              <Trash2 class="h-4 w-4 text-zinc-400 hover:text-red-400" />
-            </button>
-          </Tooltip.Trigger>
-
-          <Tooltip.Content>Delete surface</Tooltip.Content>
-        </Tooltip.Root>
-      {/if}
-
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          <button
-            class={[
-              'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-              node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-            ]}
-            onclick={(e) => {
-              e.stopPropagation();
-              expanded = true;
-            }}
-          >
-            <Expand class="h-4 w-4 text-zinc-300" />
-          </button>
-        </Tooltip.Trigger>
-
-        <Tooltip.Content>Expand editor (1:1)</Tooltip.Content>
-      </Tooltip.Root>
-
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          <button
-            class={[
-              'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-              node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-            ]}
-            onclick={(e) => {
-              e.stopPropagation();
               editMode = editMode === 'add' ? 'move' : 'add';
             }}
           >
@@ -575,6 +519,59 @@
           >{editMode === 'add' ? 'Switch to move mode' : 'Switch to add mode'}</Tooltip.Content
         >
       </Tooltip.Root>
+
+      <!-- Overflow menu -->
+      <Popover.Root bind:open={menuOpen}>
+        <Popover.Trigger>
+          <button
+            class={[
+              'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+              !menuOpen && (node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')
+            ]}
+          >
+            <EllipsisVertical class="h-4 w-4 text-zinc-400" />
+          </button>
+        </Popover.Trigger>
+        <Popover.Content
+          class="w-44 p-1"
+          align="end"
+          sideOffset={6}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
+          <button
+            class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700"
+            onclick={() => {
+              expanded = true;
+              menuOpen = false;
+            }}
+          >
+            <Expand class="h-4 w-4 text-zinc-400" />
+            Expand editor
+          </button>
+          <div class="my-1 border-t border-zinc-700"></div>
+          <button
+            class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700"
+            onclick={() => {
+              addSurface();
+              menuOpen = false;
+            }}
+          >
+            <Plus class="h-4 w-4 text-zinc-400" />
+            Add surface
+          </button>
+          <button
+            class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+            onclick={() => {
+              if (activeSurfaceId) deleteSurface(activeSurfaceId);
+              menuOpen = false;
+            }}
+            disabled={!activeSurfaceId}
+          >
+            <Trash2 class="h-4 w-4 text-zinc-400" />
+            Delete surface
+          </button>
+        </Popover.Content>
+      </Popover.Root>
     </div>
 
     <!-- Canvas + SVG overlay -->
@@ -705,9 +702,25 @@
 
         <ContextMenu.Item onclick={() => (expanded = true)}>
           <Expand class="mr-2 h-4 w-4" />
-
           Expand editor
         </ContextMenu.Item>
+
+        <ContextMenu.Separator />
+
+        <ContextMenu.Item onclick={addSurface}>
+          <Plus class="mr-2 h-4 w-4" />
+          Add surface
+        </ContextMenu.Item>
+
+        <ContextMenu.Item
+          onclick={() => activeSurfaceId && deleteSurface(activeSurfaceId)}
+          disabled={!activeSurfaceId}
+        >
+          <Trash2 class="mr-2 h-4 w-4" />
+          Delete surface
+        </ContextMenu.Item>
+
+        <ContextMenu.Separator />
 
         <ContextMenu.Item onclick={() => (editMode = editMode === 'add' ? 'move' : 'add')}>
           {#if editMode === 'add'}
