@@ -73,6 +73,7 @@
   let surfacesBeforeDrag: ProjMapSurface[] = [];
   let hoverPointIndex = $state(-1);
   let hoverSurfaceId = $state<string | null>(null);
+  let hoverInactiveSurface = $state(false);
   let isMouseOverEditor = $state(false);
 
   let expanded = $state(false);
@@ -206,7 +207,7 @@
     return null;
   }
 
-  function onPointermove(e: PointerEvent, el: SVGSVGElement) {
+  function onPointerMove(e: PointerEvent, el: SVGSVGElement) {
     const { x, y } = getSVGPoint(e, el);
     const { w, h } = getEditorSize(el);
     const hit = findPointAt(x, y, el);
@@ -214,12 +215,16 @@
     hoverSurfaceId = hit?.surfaceId ?? null;
     hoverPointIndex = hit?.index ?? -1;
 
+    hoverInactiveSurface =
+      !hit &&
+      surfaces.some((s) => s.id !== activeSurfaceId && pointInPolygon(x, y, s.points, w, h));
+
     if (draggingPointIndex !== -1 && activeSurfaceId) {
       movePoint(activeSurfaceId, draggingPointIndex, toNorm(x, y, w, h));
     }
   }
 
-  function onPointerdown(e: PointerEvent, el: SVGSVGElement) {
+  function onPointerDown(e: PointerEvent, el: SVGSVGElement) {
     if (e.button !== 0) return;
 
     const { x, y } = getSVGPoint(e, el);
@@ -471,11 +476,13 @@
           <svg
             bind:this={editorSvg}
             class="nodrag nopan absolute inset-0 h-full w-full rounded"
-            style="cursor: {hoverPointIndex !== -1 ? 'pointer' : 'crosshair'};"
+            style="cursor: {hoverPointIndex !== -1 || hoverInactiveSurface
+              ? 'pointer'
+              : 'crosshair'};"
             onpointerenter={() => (isMouseOverEditor = true)}
             onpointerleave={() => (isMouseOverEditor = false)}
-            onpointermove={(e) => editorSvg && onPointermove(e, editorSvg)}
-            onpointerdown={(e) => editorSvg && onPointerdown(e, editorSvg)}
+            onpointermove={(e) => editorSvg && onPointerMove(e, editorSvg)}
+            onpointerdown={(e) => editorSvg && onPointerDown(e, editorSvg)}
             onpointerup={(e) => editorSvg && onPointerup(e, editorSvg)}
           >
             {#each surfaces as surface, si (surface.id)}
@@ -601,8 +608,8 @@
     ondeletesurface={deleteSurface}
     onpointerenter={() => (isMouseOverEditor = true)}
     onpointerleave={() => (isMouseOverEditor = false)}
-    onpointermove={onPointermove}
-    onpointerdown={onPointerdown}
+    onpointermove={onPointerMove}
+    onpointerdown={onPointerDown}
     onpointerup={onPointerup}
   />
 {/if}
