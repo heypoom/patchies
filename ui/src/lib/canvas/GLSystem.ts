@@ -695,6 +695,10 @@ export class GLSystem {
     this.send('sendMessageToNode', { nodeId, message });
   }
 
+  updateProjectionMap(nodeId: string, surfaces: import('$objects/projmap/types').ProjMapSurface[]) {
+    this.send('updateProjectionMap', { nodeId, surfaces });
+  }
+
   /** Set which nodes are visible in the viewport for preview culling */
   setVisibleNodes(nodeIds: Set<string>) {
     this.send('setVisibleNodes', { nodeIds: Array.from(nodeIds) });

@@ -49,6 +49,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - glsl: GLSL fragment shaders for visual effects
 - three: Three.js 3D graphics (offscreen worker, for video chaining)
 - three.dom: Three.js 3D graphics (main thread, for mouse/keyboard interaction)
+- projmap: Projection mapper — warp video textures onto N-point polygon surfaces with built-in point editor and expand mode
 - canvas.dom: Interactive HTML5 Canvas with mouse/keyboard input
 - canvas: HTML5 Canvas 2D (offscreen, for fast video chaining in rendering pipeline)
 - dom: write to the DOM element
