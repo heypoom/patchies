@@ -92,6 +92,7 @@
   let hoverInactiveSurface = $state(false);
   let hoverActiveSurface = $state(false);
   let isMouseOverEditor = $state(false);
+  let contextMenuSurfaceId = $state<string | null>(null);
 
   let svgCursor = $derived(
     isDraggingSurface
@@ -599,6 +600,7 @@
           ></canvas>
 
           <!-- SVG editor overlay -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
           <svg
             bind:this={editorSvg}
             class="nodrag nopan absolute inset-0 h-full w-full rounded"
@@ -608,6 +610,15 @@
             onpointermove={(e) => editorSvg && onPointerMove(e, editorSvg)}
             onpointerdown={(e) => editorSvg && onPointerDown(e, editorSvg)}
             onpointerup={(e) => editorSvg && onPointerup(e, editorSvg)}
+            oncontextmenu={(e) => {
+              if (!editorSvg) return;
+              const rect = editorSvg.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const y = e.clientY - rect.top;
+              contextMenuSurfaceId =
+                surfaces.find((s) => pointInPolygon(x, y, s.points, rect.width, rect.height))?.id ??
+                null;
+            }}
           >
             {#each surfaces as surface, si (surface.id)}
               {@const color = surfaceColor(si)}
@@ -713,11 +724,15 @@
         </ContextMenu.Item>
 
         <ContextMenu.Item
-          onclick={() => activeSurfaceId && deleteSurface(activeSurfaceId)}
-          disabled={!activeSurfaceId}
+          onclick={() =>
+            (contextMenuSurfaceId ?? activeSurfaceId) &&
+            deleteSurface((contextMenuSurfaceId ?? activeSurfaceId)!)}
+          disabled={!contextMenuSurfaceId && !activeSurfaceId}
         >
           <Trash2 class="mr-2 h-4 w-4" />
-          Delete surface
+          Delete {contextMenuSurfaceId && contextMenuSurfaceId !== activeSurfaceId
+            ? `surface ${surfaces.findIndex((s) => s.id === contextMenuSurfaceId) + 1}`
+            : 'surface'}
         </ContextMenu.Item>
 
         <ContextMenu.Separator />
