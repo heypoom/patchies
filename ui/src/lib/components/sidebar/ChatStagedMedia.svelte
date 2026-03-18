@@ -7,11 +7,13 @@
   let {
     stagedImages = $bindable([]),
     stagedYouTubeUrls = $bindable([]),
-    addingYouTubeUrl = $bindable(false)
+    addingYouTubeUrl = $bindable(false),
+    detectedYouTubeUrls = []
   }: {
     stagedImages: StagedImage[];
     stagedYouTubeUrls: string[];
     addingYouTubeUrl: boolean;
+    detectedYouTubeUrls?: string[];
   } = $props();
 
   const YOUTUBE_REGEX = /^https?:\/\/(www\.)?(youtube\.com\/watch\?|youtu\.be\/)/;
@@ -35,7 +37,7 @@
   }
 </script>
 
-{#if stagedImages.length > 0 || stagedYouTubeUrls.length > 0}
+{#if stagedImages.length > 0 || stagedYouTubeUrls.length > 0 || detectedYouTubeUrls.length > 0}
   <div class="mb-1.5 flex flex-wrap gap-1.5">
     {#each stagedImages as img, i (i)}
       <div class="relative">
@@ -74,6 +76,17 @@
         >
           <X class="h-2.5 w-2.5" />
         </button>
+      </div>
+    {/each}
+
+    {#each detectedYouTubeUrls as url (url)}
+      <div
+        class="flex w-full items-center gap-1.5 rounded border border-dashed border-zinc-700 px-2 py-1 opacity-60"
+      >
+        <Youtube class="h-4 w-4 shrink-0 text-red-400" />
+
+        <span class="truncate font-mono text-xs text-zinc-400">YouTube: {getYouTubeLabel(url)}</span
+        >
       </div>
     {/each}
   </div>

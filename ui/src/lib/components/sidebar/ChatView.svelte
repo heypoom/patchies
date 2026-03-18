@@ -35,7 +35,7 @@
   import ActionCard from './ActionCard.svelte';
   import PersistedActionCard from './PersistedActionCard.svelte';
   import ChatStagedMedia from './ChatStagedMedia.svelte';
-  import { getYouTubeLabel } from './youtube-utils';
+  import { getYouTubeLabel, extractYouTubeUrls } from './youtube-utils';
   import { SvelteMap } from 'svelte/reactivity';
   import { personaStore, BUILTIN_PRESETS, type Persona } from '../../../stores/persona.store';
   import {
@@ -89,6 +89,11 @@
   $effect(() => {
     setDraft(sessionId, inputText);
   });
+
+  // Live-detected YouTube URLs from the current input text (never mutates inputText)
+  const detectedYouTubeUrls = $derived(
+    extractYouTubeUrls(inputText).urls.filter((u) => !stagedYouTubeUrls.includes(u))
+  );
 
   $effect(() => {
     setStagedYouTubeUrls(sessionId, stagedYouTubeUrls);
@@ -192,15 +197,18 @@
   }
 
   async function handleSubmit() {
-    if (
-      (!inputText.trim() && stagedImages.length === 0 && stagedYouTubeUrls.length === 0) ||
-      isLoading
-    )
-      return;
+    const emptyInput =
+      !inputText.trim() &&
+      stagedImages.length === 0 &&
+      stagedYouTubeUrls.length === 0 &&
+      detectedYouTubeUrls.length === 0;
+
+    if (emptyInput || isLoading) return;
 
     const userContent = inputText.trim();
     const imagesToSend = [...stagedImages];
-    const youtubeUrlsToSend = [...stagedYouTubeUrls];
+    const youtubeUrlsToSend = [...new Set([...stagedYouTubeUrls, ...detectedYouTubeUrls])];
+
     stagedImages = [];
     stagedYouTubeUrls = [];
 
@@ -352,14 +360,17 @@
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
+
       handleSubmit();
     }
   }
 
   async function stageFiles(files: FileList | File[]) {
     const imageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
+
     for (const file of imageFiles) {
       const compressed = await compressImageFile(file);
+
       stagedImages = [
         ...stagedImages,
         { ...compressed, previewUrl: `data:${compressed.mimeType};base64,${compressed.data}` }
@@ -369,7 +380,10 @@
 
   function handleDrop(event: DragEvent) {
     event.preventDefault();
-    if (event.dataTransfer?.files) stageFiles(event.dataTransfer.files);
+
+    if (event.dataTransfer?.files) {
+      stageFiles(event.dataTransfer.files);
+    }
   }
 
   function handleDragOver(event: DragEvent) {
@@ -381,7 +395,10 @@
       .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
       .map((item) => item.getAsFile())
       .filter((f): f is File => f !== null);
-    if (files.length > 0) stageFiles(files);
+
+    if (files.length > 0) {
+      stageFiles(files);
+    }
   }
 </script>
 
@@ -437,6 +454,7 @@
                   class="flex items-center gap-1.5 rounded border border-zinc-700 bg-transparent px-2 py-1"
                 >
                   <Youtube class="h-3 w-3 shrink-0 text-red-400" />
+
                   <span class="truncate font-mono text-[10px] text-zinc-400"
                     >YouTube: {getYouTubeLabel(url)}</span
                   >
@@ -687,7 +705,12 @@
   <div>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="m-2.5" ondrop={handleDrop} ondragover={handleDragOver}>
-      <ChatStagedMedia bind:stagedImages bind:stagedYouTubeUrls bind:addingYouTubeUrl />
+      <ChatStagedMedia
+        bind:stagedImages
+        bind:stagedYouTubeUrls
+        bind:addingYouTubeUrl
+        {detectedYouTubeUrls}
+      />
 
       <textarea
         bind:value={inputText}
