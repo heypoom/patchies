@@ -98,7 +98,7 @@
   );
 
   let expanded = $state(false);
-  let showOverlay = $state(true);
+  let showOverlay = $derived(node.data.showOverlay ?? true);
 
   let editorSvg = $state<SVGSVGElement | null>(null);
 
@@ -526,7 +526,7 @@
         onexpand={() => (expanded = true)}
         onaddsurface={addSurface}
         ondeletesurface={() => activeSurfaceId && deleteSurface(activeSurfaceId)}
-        ontoggleoverlay={() => (showOverlay = !showOverlay)}
+        ontoggleoverlay={() => updateNodeData(node.id, { showOverlay: !showOverlay })}
         ontoggleoutput={toggleBgOutput}
       />
     </div>
@@ -670,7 +670,7 @@
         ondeletesurface={deleteSurface}
         ontogglemode={() => (editMode = editMode === 'add' ? 'move' : 'add')}
         ontoggleoutput={toggleBgOutput}
-        ontoggleoverlay={() => (showOverlay = !showOverlay)}
+        ontoggleoverlay={() => updateNodeData(node.id, { showOverlay: !showOverlay })}
         onopenhelp={openHelp}
         {showOverlay}
       />

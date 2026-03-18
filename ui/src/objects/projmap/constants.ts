@@ -13,5 +13,6 @@ export const SURFACE_COLORS = [
 ];
 
 export const DEFAULT_PROJMAP_NODE_DATA: ProjMapNodeData = {
-  surfaces: []
+  surfaces: [],
+  showOverlay: true
 };

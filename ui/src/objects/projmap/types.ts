@@ -10,4 +10,5 @@ export interface ProjMapSurface {
 
 export interface ProjMapNodeData {
   surfaces: ProjMapSurface[];
+  showOverlay?: boolean;
 }
