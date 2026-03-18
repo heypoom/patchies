@@ -1,23 +1,36 @@
 <script lang="ts">
   import * as Popover from '$lib/components/ui/popover';
-  import { Expand, Plus, Trash2, EllipsisVertical, Eye, EyeOff } from '@lucide/svelte/icons';
+  import {
+    Expand,
+    Plus,
+    Trash2,
+    EllipsisVertical,
+    Eye,
+    EyeOff,
+    Monitor,
+    MonitorOff
+  } from '@lucide/svelte/icons';
 
   let {
     selected,
     activeSurfaceId,
     showOverlay,
+    isOutputOverride,
     onexpand,
     onaddsurface,
     ondeletesurface,
-    ontoggleoverlay
+    ontoggleoverlay,
+    ontoggleoutput
   }: {
     selected: boolean;
     activeSurfaceId: string | null;
     showOverlay: boolean;
+    isOutputOverride: boolean;
     onexpand: () => void;
     onaddsurface: () => void;
     ondeletesurface: () => void;
     ontoggleoverlay: () => void;
+    ontoggleoutput: () => void;
   } = $props();
 
   let open = $state(false);
@@ -36,13 +49,14 @@
   </Popover.Trigger>
 
   <Popover.Content
-    class="w-44 p-1"
-    align="end"
-    sideOffset={6}
+    class="w-60 p-1"
+    side="right"
+    align="start"
+    sideOffset={10}
     onCloseAutoFocus={(e) => e.preventDefault()}
   >
     <button
-      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700"
+      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
       onclick={() => {
         onexpand();
         open = false;
@@ -55,7 +69,7 @@
     <div class="my-1 border-t border-zinc-700"></div>
 
     <button
-      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700"
+      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
       onclick={() => {
         onaddsurface();
         open = false;
@@ -80,7 +94,7 @@
     <div class="my-1 border-t border-zinc-700"></div>
 
     <button
-      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700"
+      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
       onclick={() => {
         ontoggleoverlay();
         open = false;
@@ -92,6 +106,22 @@
       {:else}
         <Eye class="h-4 w-4 text-zinc-400" />
         Show overlay
+      {/if}
+    </button>
+
+    <button
+      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
+      onclick={() => {
+        ontoggleoutput();
+        open = false;
+      }}
+    >
+      {#if isOutputOverride}
+        <MonitorOff class="h-4 w-4 text-orange-400" />
+        <span class="text-orange-400">Remove background output</span>
+      {:else}
+        <Monitor class="h-4 w-4 text-zinc-400" />
+        Output to background
       {/if}
     </button>
   </Popover.Content>

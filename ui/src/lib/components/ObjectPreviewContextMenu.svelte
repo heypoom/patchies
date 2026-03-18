@@ -69,7 +69,7 @@
     <ContextMenu.Item onclick={onBgOutputToggle}>
       {#if isOutputOverride}
         <MonitorOff class="mr-2 h-4 w-4 text-orange-400" />
-        Remove background output
+        <span class="text-orange-400">Remove background output</span>
       {:else}
         <Monitor class="mr-2 h-4 w-4" />
         Output to background

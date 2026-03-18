@@ -522,10 +522,12 @@
         selected={node.selected}
         {activeSurfaceId}
         {showOverlay}
+        {isOutputOverride}
         onexpand={() => (expanded = true)}
         onaddsurface={addSurface}
         ondeletesurface={() => activeSurfaceId && deleteSurface(activeSurfaceId)}
         ontoggleoverlay={() => (showOverlay = !showOverlay)}
+        ontoggleoutput={toggleBgOutput}
       />
     </div>
 
