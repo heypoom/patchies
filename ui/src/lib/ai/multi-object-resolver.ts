@@ -10,6 +10,7 @@
 import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descriptions';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/shared-jsrunner';
 import { generateHandleDocs } from './generate-handle-docs';
+import { extractJson } from './extract-json';
 
 // Consolidated logging for AI Multi-Object debugging
 class MultiObjectLogger {
@@ -168,9 +169,7 @@ async function routeToMultiObjectPlan(
 
   try {
     // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-    const jsonText = jsonMatch ? jsonMatch[1] : responseText;
-
+    const jsonText = extractJson(responseText);
     const result = JSON.parse(jsonText);
 
     if (!result.objectTypes || !Array.isArray(result.objectTypes)) {
@@ -249,8 +248,7 @@ async function generateMultiObjectConfig(
 
   try {
     // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-    const jsonText = jsonMatch ? jsonMatch[1] : responseText;
+    const jsonText = extractJson(responseText);
 
     const result = JSON.parse(jsonText);
 

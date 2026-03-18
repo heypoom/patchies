@@ -6,6 +6,7 @@
 
 import { logger } from '$lib/utils/logger';
 import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descriptions';
+import { extractJson } from './extract-json';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/shared-jsrunner';
 
 /**
@@ -179,8 +180,7 @@ async function generateObjectConfig(
 
   try {
     // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-    const jsonText = jsonMatch ? jsonMatch[1] : responseText;
+    const jsonText = extractJson(responseText);
 
     const result = JSON.parse(jsonText);
 
