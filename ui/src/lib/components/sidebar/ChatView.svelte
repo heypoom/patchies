@@ -726,7 +726,7 @@
         style={voice.isRecording
           ? `border-color: rgba(239,68,68,${0.4 + voice.level * 0.6}); box-shadow: 0 0 0 ${(voice.level * 8).toFixed(1)}px rgba(239,68,68,${(0.2 + voice.level * 0.5).toFixed(2)})`
           : ''}
-        class="nodrag flex w-full resize-none rounded-sm border-1 border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 placeholder-zinc-600 outline-none focus-within:border-zinc-500 disabled:opacity-50"
+        class="nodrag flex w-full resize-y rounded-sm border-1 border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 placeholder-zinc-600 outline-none focus-within:border-zinc-500 disabled:opacity-50"
       ></textarea>
     </div>
 
