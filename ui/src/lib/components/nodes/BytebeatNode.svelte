@@ -24,7 +24,6 @@
 
   interface BytebeatNodeData {
     expr: string;
-    isPlaying: boolean;
     type: BytebeatType;
     syntax: BytebeatSyntax;
     sampleRate: number;
@@ -56,7 +55,7 @@
 
   // Derived values
   const expr = $derived(data.expr ?? '((t >> 10) & 42) * t');
-  const isPlaying = $derived(data.isPlaying ?? false);
+  let isPlaying = $state(false);
   const bytebeatType = $derived(data.type ?? 'bytebeat');
   const syntax = $derived(data.syntax ?? 'infix');
   const sampleRate = $derived(data.sampleRate ?? 8000);
@@ -92,23 +91,23 @@
   async function play() {
     warnIfNoOutletConnection();
     await audioService.send(nodeId, 'control', { type: 'play' });
-    updateNodeData(nodeId, { isPlaying: true });
+    isPlaying = true;
   }
 
   function pause() {
     audioService.send(nodeId, 'control', { type: 'pause' });
-    updateNodeData(nodeId, { isPlaying: false });
+    isPlaying = false;
   }
 
   function stop() {
     audioService.send(nodeId, 'control', { type: 'stop' });
-    updateNodeData(nodeId, { isPlaying: false });
+    isPlaying = false;
   }
 
   async function bang() {
     warnIfNoOutletConnection();
     await audioService.send(nodeId, 'control', { type: 'bang' });
-    updateNodeData(nodeId, { isPlaying: true });
+    isPlaying = true;
   }
 
   async function handleExpressionChange(expr: string) {
@@ -183,7 +182,7 @@
     const bytebeatNode = audioService.getNodeById(nodeId) as BytebeatAudioNode | undefined;
     if (bytebeatNode) {
       bytebeatNode.onPlayStateChange = (playing: boolean) => {
-        updateNodeData(nodeId, { isPlaying: playing });
+        isPlaying = playing;
       };
 
       bytebeatNode.onError = (error: string | null) => {
