@@ -194,37 +194,65 @@ export class P5Manager {
           }
         };
 
+        // Guard: only dispatch mouse events that originate within the canvas bounds.
+        // P5.js v2 listens on the window, so events outside the canvas still fire.
+        const isMouseInCanvas = () =>
+          p.mouseX >= 0 && p.mouseX <= p.width && p.mouseY >= 0 && p.mouseY <= p.height;
+
         p.mousePressed = function (event: MouseEvent) {
           adjustMouseForZoom();
-          userCode?.mousePressed?.call(p, event);
+
+          if (isMouseInCanvas()) {
+            userCode?.mousePressed?.call(p, event);
+          }
         };
 
         p.mouseReleased = function (event: MouseEvent) {
           adjustMouseForZoom();
-          userCode?.mouseReleased?.call(p, event);
+
+          if (isMouseInCanvas()) {
+            userCode?.mouseReleased?.call(p, event);
+          }
         };
 
         p.mouseClicked = function (event: MouseEvent) {
           adjustMouseForZoom();
-          userCode?.mouseClicked?.call(p, event);
+
+          if (isMouseInCanvas()) {
+            userCode?.mouseClicked?.call(p, event);
+          }
         };
 
         p.mouseMoved = function (event: MouseEvent) {
           adjustMouseForZoom();
-          userCode?.mouseMoved?.call(p, event);
+
+          if (isMouseInCanvas()) {
+            userCode?.mouseMoved?.call(p, event);
+          }
         };
 
         p.mouseDragged = function (event: MouseEvent) {
           adjustMouseForZoom();
-          userCode?.mouseDragged?.call(p, event);
+
+          if (isMouseInCanvas()) {
+            userCode?.mouseDragged?.call(p, event);
+          }
         };
 
         p.mouseWheel = function (event: WheelEvent) {
-          userCode?.mouseWheel?.call(p, event);
+          adjustMouseForZoom();
+
+          if (isMouseInCanvas()) {
+            userCode?.mouseWheel?.call(p, event);
+          }
         };
 
         p.doubleClicked = function (event: MouseEvent) {
-          userCode?.doubleClicked?.call(p, event);
+          adjustMouseForZoom();
+
+          if (isMouseInCanvas()) {
+            userCode?.doubleClicked?.call(p, event);
+          }
         };
 
         p.keyPressed = function (event: KeyboardEvent) {
