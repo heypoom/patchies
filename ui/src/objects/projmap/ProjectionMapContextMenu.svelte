@@ -68,8 +68,6 @@
     {/if}
   </ContextMenu.Item>
 
-  <ContextMenu.Separator />
-
   <ContextMenu.Item onclick={onexpand}>
     <Expand class="mr-2 h-4 w-4" />
     Expand editor
