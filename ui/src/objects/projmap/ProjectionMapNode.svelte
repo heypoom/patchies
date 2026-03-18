@@ -583,16 +583,15 @@
               {#each surfaces as surface, si (surface.id)}
                 {@const color = surfaceColor(si)}
                 {@const isActive = surface.id === activeSurfaceId}
-                {@const alpha = isActive ? 1 : 0.35}
 
                 {#if surface.points.length >= 3}
                   <polygon
                     points={polyPoints(surface, displayWidth, displayHeight)}
                     fill={color}
-                    fill-opacity={isActive ? 0.18 : 0.07}
+                    fill-opacity={isActive ? 0.18 : 0}
                     stroke={color}
-                    stroke-width="1.5"
-                    stroke-opacity={alpha}
+                    stroke-width={isActive ? 1.5 : 1}
+                    stroke-dasharray={isActive ? 'none' : '5 3'}
                   />
                 {:else if surface.points.length === 2}
                   <line
@@ -601,8 +600,8 @@
                     x2={surface.points[1].x * displayWidth}
                     y2={surface.points[1].y * displayHeight}
                     stroke={color}
-                    stroke-width="1.5"
-                    stroke-opacity={alpha}
+                    stroke-width={isActive ? 1.5 : 1}
+                    stroke-dasharray={isActive ? 'none' : '5 3'}
                   />
                 {/if}
 
@@ -614,22 +613,22 @@
                   <circle
                     cx={dp.x}
                     cy={dp.y}
-                    r={isDrag ? 9 : isHover ? 8 : 6}
-                    fill={isDrag ? '#facc15' : isHover ? '#ffffff' : color}
-                    fill-opacity={alpha}
-                    stroke="rgba(0,0,0,0.5)"
+                    r={isDrag ? 9 : isHover ? 8 : isActive ? 6 : 4}
+                    fill={isDrag ? '#facc15' : isHover ? '#ffffff' : isActive ? color : 'none'}
+                    stroke={isActive ? 'rgba(0,0,0,0.5)' : color}
                     stroke-width="1.5"
                   />
 
-                  <text
-                    x={dp.x + 9}
-                    y={dp.y + 3}
-                    fill={color}
-                    fill-opacity={alpha}
-                    font-size="9"
-                    font-family="monospace"
-                    style="pointer-events: none; user-select: none;">{pi + 1}</text
-                  >
+                  {#if isActive}
+                    <text
+                      x={dp.x + 9}
+                      y={dp.y + 3}
+                      fill={color}
+                      font-size="9"
+                      font-family="monospace"
+                      style="pointer-events: none; user-select: none;">{pi + 1}</text
+                    >
+                  {/if}
                 {/each}
               {/each}
 
