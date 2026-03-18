@@ -75,16 +75,6 @@
     Expand editor
   </ContextMenu.Item>
 
-  <ContextMenu.Item onclick={ontoggleoutput}>
-    {#if isOutputOverride}
-      <MonitorOff class="mr-2 h-4 w-4 text-orange-400" />
-      <span class="text-orange-400">Remove background output</span>
-    {:else}
-      <Monitor class="mr-2 h-4 w-4" />
-      Output to background
-    {/if}
-  </ContextMenu.Item>
-
   <ContextMenu.Separator />
 
   <ContextMenu.Item onclick={onaddsurface}>
@@ -100,6 +90,8 @@
     {deleteLabel}
   </ContextMenu.Item>
 
+  <ContextMenu.Separator />
+
   <ContextMenu.Item onclick={ontoggleoverlay}>
     {#if showOverlay}
       <EyeOff class="mr-2 h-4 w-4" />
@@ -107,6 +99,16 @@
     {:else}
       <Eye class="mr-2 h-4 w-4" />
       Show overlay
+    {/if}
+  </ContextMenu.Item>
+
+  <ContextMenu.Item onclick={ontoggleoutput}>
+    {#if isOutputOverride}
+      <MonitorOff class="mr-2 h-4 w-4 text-orange-400" />
+      <span class="text-orange-400">Remove background output</span>
+    {:else}
+      <Monitor class="mr-2 h-4 w-4" />
+      Output to background
     {/if}
   </ContextMenu.Item>
 
