@@ -5,52 +5,67 @@
 Native Patchies nodes for real-time vision ML using `@mediapipe/tasks-vision`, running in isolated per-node web workers. Connects to any video source (e.g. `webcam`, `video`, `screen`) via a video inlet and emits structured detection results as messages.
 
 **Nodes:**
-- `handpose` — hand skeleton + palm detection (HandLandmarker)
-- `bodypose` — full-body pose estimation (PoseLandmarker)
-- `facemesh` — facial landmark detection (FaceLandmarker)
-- `segmenter` — body segmentation mask (ImageSegmenter)
-- `objectdetect` — object detection with bounding boxes (ObjectDetector)
+
+- `vision.hand` — hand skeleton + palm detection (HandLandmarker)
+- `vision.body` — full-body pose estimation (PoseLandmarker)
+- `vision.face` — facial landmark detection (FaceLandmarker)
+- `vision.segment` — body segmentation mask (ImageSegmenter)
+- `vision.detect` — object detection with bounding boxes (ObjectDetector)
+
+These form the new **Vision** object pack.
 
 ---
 
 ## Architecture
 
 ```
-webcam ──video──► handpose ──message──► [downstream nodes]
-                    │
-                    ▼
+webcam ──video──► vision.hand ──message──► [downstream nodes]
+                      │
+                      ▼
               MediaPipeNodeSystem
               (singleton, rAF loop)
-                    │ ImageBitmap (per frame)
-                    ▼
-              handpose.worker.ts
-              (MediaPipe Tasks API)
-                    │ structured result
-                    ▼
+                      │ requestMediaPipeVideoFramesBatch (eventBus)
+                      ▼
+                  GLSystem.ts
+                      │ captureMediaPipeVideoFramesBatch (→ render worker)
+                      ▼
+               render worker
+               (captures ImageBitmap from source node textures)
+                      │ mediaPipeVideoFramesCapturedBatch (→ main thread)
+                      ▼
+                  GLSystem.ts
+                      │ MediaPipeNodeSystem.deliverVideoFrames()
+                      ▼
+              vision.hand worker
+              (MediaPipe HandLandmarker)
+                      │ { type: 'result', data }
+                      ▼
               MessageContext.send()
 ```
+
+This mirrors the `WorkerNodeSystem` batch frame delivery path exactly. No new render worker logic needed — we reuse the existing `captureWorkerVideoFramesBatch` infrastructure by adding a parallel event type.
 
 ### Key Components
 
 ```
 ui/src/lib/mediapipe/
-  MediaPipeNodeSystem.ts       # Singleton manager (mirrors WorkerNodeSystem pattern)
-  MediaPipeWorkerBase.ts       # Shared worker setup/teardown logic
-  types.ts                     # Shared TypeScript types (results, options, messages)
+  MediaPipeNodeSystem.ts       # Singleton manager (mirrors WorkerNodeSystem)
+  MediaPipeWorkerBase.ts       # Shared worker base class
+  types.ts                     # Shared TS types (results, options, worker messages)
   workers/
-    handpose.worker.ts
-    bodypose.worker.ts
-    facemesh.worker.ts
-    segmenter.worker.ts
-    objectdetect.worker.ts
+    hand.worker.ts
+    body.worker.ts
+    face.worker.ts
+    segment.worker.ts
+    detect.worker.ts
 
 ui/src/lib/components/nodes/
-  MediaPipeNodeLayout.svelte   # Shared Svelte layout (status badge, settings panel, handles)
-  HandPoseNode.svelte
-  BodyPoseNode.svelte
-  FaceMeshNode.svelte
-  SegmenterNode.svelte
-  ObjectDetectNode.svelte
+  MediaPipeNodeLayout.svelte   # Shared layout (handles, status, settings panel)
+  VisionHandNode.svelte
+  VisionBodyNode.svelte
+  VisionFaceNode.svelte
+  VisionSegmentNode.svelte
+  VisionDetectNode.svelte
 ```
 
 ---
@@ -59,14 +74,15 @@ ui/src/lib/components/nodes/
 
 ### MediaPipeNodeSystem (singleton)
 
-Mirrors `WorkerNodeSystem`:
+Mirrors `WorkerNodeSystem`. Responsibilities:
 
-- Maintains a registry of active MediaPipe node instances (node ID → worker + state)
-- Runs a global `requestAnimationFrame` loop
-- On each tick: dispatches `requestWorkerVideoFramesBatch` events so GLSystem captures `ImageBitmap` frames from connected source nodes
-- Delivers `ImageBitmap` to each node's worker via `postMessage` (with transfer)
-- Receives results from workers and routes them to the node's `MessageContext`
-- Handles frame skipping: only dispatches every Nth frame based on `skipFrames` setting
+- Registry of active instances: node ID → `{ worker, messageContext, sourceNodeIds, frameCounter, skipFrames }`
+- Global `requestAnimationFrame` loop (starts on first register, stops when empty)
+- On each tick: dispatches `requestMediaPipeVideoFramesBatch` to PatchiesEventBus
+- Frame skipping per node: only includes a node in the batch when `frameCounter % skipFrames === 0`
+- `deliverVideoFrames()`: posts `ImageBitmap` to the node's worker (with transfer)
+- Receives worker results via `onmessage` and calls `messageContext.send(data, { to: 0 })`
+- `updateConnections(edges)`: keeps `sourceNodeIds` up to date per node
 
 ```ts
 class MediaPipeNodeSystem {
@@ -74,14 +90,62 @@ class MediaPipeNodeSystem {
   register(nodeId: string, options: MediaPipeNodeOptions): void;
   unregister(nodeId: string): void;
   updateConnections(edges: Edge[]): void;
-  updateSettings(nodeId: string, settings: Partial<TaskSettings>): void;
+  updateSettings(nodeId: string, settings: Partial<TaskOptions>): void;
   deliverVideoFrames(nodeId: string, frames: (ImageBitmap | null)[], timestamp: number): void;
 }
+
+interface MediaPipeNodeOptions {
+  task: MediaPipeTask;
+  taskOptions: TaskOptions;
+  messageContext: MessageContext;
+  skipFrames: number;
+}
 ```
+
+### Wiring into GLSystem (3 additions)
+
+**`ui/src/lib/eventbus/events.ts`** — add new event type (same shape as `RequestWorkerVideoFramesBatchEvent`):
+
+```ts
+export interface RequestMediaPipeVideoFramesBatchEvent {
+  type: 'requestMediaPipeVideoFramesBatch';
+  requests: Array<{
+    targetNodeId: string;
+    sourceNodeIds: (string | null)[];
+    resolution?: [number, number];
+  }>;
+}
+```
+
+**`ui/src/lib/canvas/GLSystem.ts`** — add event listener (mirrors `requestWorkerVideoFramesBatch`):
+
+```ts
+this.eventBus.addEventListener('requestMediaPipeVideoFramesBatch', (event) => {
+  this.send('captureMediaPipeVideoFramesBatch', { requests: event.requests });
+});
+```
+
+And add response handler in `handleRenderWorkerMessage` (mirrors `workerVideoFramesCapturedBatch`):
+
+```ts
+.with({ type: 'mediaPipeVideoFramesCapturedBatch' }, (data) => {
+  import('$lib/mediapipe/MediaPipeNodeSystem').then(({ MediaPipeNodeSystem }) => {
+    const system = MediaPipeNodeSystem.getInstance();
+    for (const result of data.results) {
+      system.deliverVideoFrames(result.targetNodeId, result.frames, data.timestamp);
+    }
+  });
+})
+```
+
+**Render worker** — add handler for `captureMediaPipeVideoFramesBatch` that reuses the same frame capture logic as `captureWorkerVideoFramesBatch`, responding with `mediaPipeVideoFramesCapturedBatch`.
+
+**Wire `updateConnections`** — in the same place `WorkerNodeSystem.updateVideoConnections(edges)` is called on edge changes, also call `MediaPipeNodeSystem.getInstance().updateConnections(edges)`.
 
 ### Worker Message Protocol
 
 **Main → Worker:**
+
 ```ts
 { type: 'init'; task: MediaPipeTask; options: TaskOptions }
 { type: 'frame'; bitmap: ImageBitmap; timestamp: number }
@@ -90,6 +154,7 @@ class MediaPipeNodeSystem {
 ```
 
 **Worker → Main:**
+
 ```ts
 { type: 'ready' }
 { type: 'error'; message: string }
@@ -99,13 +164,13 @@ class MediaPipeNodeSystem {
 
 ### MediaPipeWorkerBase
 
-Shared class used inside every worker. Handles:
+Abstract base class used inside every worker. Handles:
 
 1. **WASM loading workaround** for module workers (see below)
-2. `FilesetResolver` setup (shared across all task types in same worker)
-3. Frame skip logic
-4. FPS tracking
-5. Error handling and recovery
+2. Task initialization via abstract `initTask()`
+3. Frame dispatch via abstract `detectFrame()`
+4. FPS tracking (posts `{ type: 'fps' }` every second)
+5. Error handling with CPU delegate fallback
 
 ```ts
 abstract class MediaPipeWorkerBase<TTask, TResult> {
@@ -121,100 +186,132 @@ abstract class MediaPipeWorkerBase<TTask, TResult> {
 
 ### WASM Module Worker Workaround
 
-MediaPipe internally calls `importScripts()`, which is not supported in module workers. The workaround (validated in prototype):
+MediaPipe calls `importScripts()` internally, which is unsupported in module workers. Workaround (validated in prototype):
 
 ```ts
 const vision = await FilesetResolver.forVisionTasks(WASM_CDN_BASE);
 const loaderCode = await fetch(vision.wasmLoaderPath).then(r => r.text());
-(0, eval)(loaderCode);       // sets globalThis.ModuleFactory in worker scope
-delete vision.wasmLoaderPath; // prevent MediaPipe from calling importScripts()
-// Now FilesetResolver works correctly
+(0, eval)(loaderCode);        // sets globalThis.ModuleFactory in worker scope
+delete vision.wasmLoaderPath; // prevents MediaPipe from calling importScripts()
 ```
 
-This is encapsulated entirely in `MediaPipeWorkerBase.init()`.
+Encapsulated entirely in `MediaPipeWorkerBase.init()`.
 
-**WASM CDN base:** `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.x/wasm`
+**WASM CDN base:** `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm`
 **Model CDN base:** `https://storage.googleapis.com/mediapipe-models/`
+
+Pin `@0.10.0` (version validated in prototype). Install: `bun add @mediapipe/tasks-vision`.
 
 ---
 
 ## Frame Pipeline
 
 1. `MediaPipeNodeSystem`'s rAF loop fires
-2. Dispatches `requestWorkerVideoFramesBatch` with source node IDs (same as WorkerNodeSystem)
-3. GLSystem captures `ImageBitmap` frames from upstream video nodes and returns them
-4. `MediaPipeNodeSystem.deliverVideoFrames()` posts bitmap to the node's worker
-5. Worker runs MediaPipe detection synchronously
-6. Worker posts `{ type: 'result', data }` back to main thread
-7. `MediaPipeNodeSystem` calls `messageContext.send(data, { to: 0 })` for the node
+2. For each registered node where `frameCounter % skipFrames === 0`: add to batch
+3. Dispatches `requestMediaPipeVideoFramesBatch` to PatchiesEventBus
+4. GLSystem forwards to render worker as `captureMediaPipeVideoFramesBatch`
+5. Render worker captures `ImageBitmap` from source node textures (same logic as worker nodes)
+6. Render worker responds with `mediaPipeVideoFramesCapturedBatch`
+7. GLSystem calls `MediaPipeNodeSystem.deliverVideoFrames()` for each result
+8. `deliverVideoFrames()` posts `{ type: 'frame', bitmap, timestamp }` to the node's worker (transferred)
+9. Worker runs MediaPipe detection synchronously
+10. Worker posts `{ type: 'result', data }` back
+11. `MediaPipeNodeSystem` calls `messageContext.send(data, { to: 0 })` (or routes to video outlet for `vision.segment`)
 
-Frame format: `ImageBitmap` (proven from prototype; `VideoFrame` can be explored post-MVP as it's worker-transferable and zero-copy).
+Frame format: `ImageBitmap`. `VideoFrame` is a future optimization (zero-copy, worker-transferable).
 
 ---
 
 ## Shared Svelte Layout: MediaPipeNodeLayout.svelte
 
-All five node components use this layout. It renders:
+All five node components use this layout. Props:
 
-- **Video inlet handle** (orange, `handleType: 'video'`)
-- **Message outlet handle(s)** (gray, `handleType: 'message'`)
-- **Status badge**: idle / initializing / running / error
-- **FPS display** (small, in corner when running)
-- **Settings panel** (collapsible, renders task-specific settings passed as snippet)
-- **Error message** (when init fails or detection crashes)
+```ts
+{
+  nodeId: string;
+  selected: boolean;
+  title: string;             // e.g. 'vision.hand'
+  status: 'idle' | 'initializing' | 'running' | 'error';
+  error?: string;
+  fps?: number;
+  schema: SettingsSchema;    // task-specific settings schema
+  settingsData: Record<string, unknown>;  // current node data values
+  onSettingChange: (key: string, value: unknown) => void;
+  onRevertSettings: () => void;
+  // outlet count varies per node
+  messageOutletCount?: number;  // default 1
+  hasVideoOutlet?: boolean;     // for vision.segment
+}
+```
+
+Renders:
+
+- **Video inlet handle** (orange)
+- **Message outlet handle(s)** (gray)
+- **Video outlet handle** (orange, only when `hasVideoOutlet`)
+- **Node label** (object type name)
+- **Status pill**: idle (zinc) / initializing (amber, pulsing) / running (green) / error (red)
+- **FPS** (tiny, shown when running)
+- **Settings button** → collapsible panel using `ObjectSettings.svelte` with `settingsPrefix=""`
+- **Error text** (when status is error)
+
+Node appearance is minimal — no preview canvas. Visualization is the user's responsibility.
+
+### Settings via ObjectSettings.svelte
+
+Each node uses `ObjectSettings.svelte` directly with `settingsPrefix=""` so undo/redo tracks keys directly in node data (e.g. `numHands`, not `settings.numHands`):
 
 ```svelte
-<!-- Usage in HandPoseNode.svelte -->
-<MediaPipeNodeLayout
+<ObjectSettings
   {nodeId}
-  {selected}
-  title="handpose"
-  status={nodeStatus}
-  fps={currentFps}
->
-  {#snippet settings()}
-    <!-- HandPose-specific settings -->
-    <label>Max Hands</label>
-    <input type="range" min={1} max={4} bind:value={numHands} />
-  {/snippet}
-</MediaPipeNodeLayout>
+  schema={HAND_SETTINGS_SCHEMA}
+  values={data}
+  settingsPrefix=""
+  onValueChange={(key, value) => {
+    updateNodeData(nodeId, { [key]: value });
+    mediaPipeSystem.updateSettings(nodeId, { [key]: value });
+  }}
+  onRevertAll={handleRevertAll}
+  onClose={() => showSettings = false}
+/>
 ```
 
 ---
 
 ## Output Data Shapes
 
-All results are output as message objects on outlet 0.
+### vision.hand (outlet 0 — message)
 
-### HandPose
 ```ts
-interface HandPoseOutput {
+interface HandOutput {
   hands: Array<{
     handedness: 'Left' | 'Right';
     score: number;
-    landmarks: Point3D[];        // 21 keypoints, normalized [0,1] x/y, z relative
-    worldLandmarks: Point3D[];   // 21 keypoints in meters
+    landmarks: Point3D[];       // 21 keypoints, normalized [0,1] x/y, z relative
+    worldLandmarks: Point3D[];  // 21 keypoints in meters
   }>;
   timestamp: number;
 }
 ```
 
-### BodyPose
+### vision.body (outlet 0 — message)
+
 ```ts
-interface BodyPoseOutput {
+interface BodyOutput {
   poses: Array<{
-    landmarks: Point4D[];        // 33 keypoints, normalized, with visibility
-    worldLandmarks: Point4D[];   // 33 keypoints in meters
+    landmarks: Point4D[];       // 33 keypoints, normalized, with visibility
+    worldLandmarks: Point4D[];  // 33 keypoints in meters
   }>;
   timestamp: number;
 }
 ```
 
-### FaceMesh
+### vision.face (outlet 0 — message)
+
 ```ts
-interface FaceMeshOutput {
+interface FaceOutput {
   faces: Array<{
-    landmarks: Point3D[];        // 478 landmarks, normalized
+    landmarks: Point3D[];       // 478 landmarks, normalized
     blendshapes?: Array<{ categoryName: string; score: number }>;
     transformationMatrix?: number[]; // 4x4, if enabled
   }>;
@@ -222,20 +319,27 @@ interface FaceMeshOutput {
 }
 ```
 
-### Segmenter
+### vision.segment
+
+- **Outlet 0 — video**: mask as greyscale `ImageBitmap`, fed into GLSystem via `setBitmap()`. Always active.
+- **Outlet 1 — message** (optional, toggled by `outputMessage` setting):
+
 ```ts
-interface SegmenterOutput {
+interface SegmentOutput {
   width: number;
   height: number;
-  mask: Uint8Array | Float32Array; // Uint8Array for category, Float32Array for confidence
+  mask: Uint8Array | Float32Array; // Uint8Array (category) or Float32Array (confidence)
   maskType: 'category' | 'confidence';
   timestamp: number;
 }
 ```
 
-### ObjectDetect
+The message outlet avoids wasteful `Uint8Array` serialization by default — users enable it only when they need the raw data.
+
+### vision.detect (outlet 0 — message)
+
 ```ts
-interface ObjectDetectOutput {
+interface DetectOutput {
   detections: Array<{
     label: string;
     score: number;
@@ -245,7 +349,6 @@ interface ObjectDetectOutput {
 }
 ```
 
-Where:
 ```ts
 interface Point3D { x: number; y: number; z: number }
 interface Point4D { x: number; y: number; z: number; visibility: number }
@@ -255,141 +358,137 @@ interface Point4D { x: number; y: number; z: number; visibility: number }
 
 ## Node Settings
 
+All settings stored directly in `data` (not `data.settings`), tracked with `settingsPrefix=""`.
+
 ### Common to all nodes
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `skipFrames` | slider 1–10 | 1 | Process every Nth frame |
-| `delegate` | radio CPU/GPU | GPU | Inference backend |
-| `model` | dropdown | lite | Model variant (see per-node) |
+| Setting | Field type | Default | Description |
+|---------|-----------|---------|-------------|
+| `skipFrames` | `SliderField` 1–10 | 1 | Process every Nth frame |
+| `delegate` | `SelectField` | `'GPU'` | `CPU` or `GPU` |
 
-### HandPose
+### vision.hand
 
-| Setting | Type | Default | Options |
-|---------|------|---------|---------|
-| `numHands` | slider 1–4 | 2 | Max simultaneous hands |
-| `model` | dropdown | lite | lite, full |
+| Setting | Field type | Default | Options |
+|---------|-----------|---------|---------|
+| `numHands` | `SliderField` 1–4 | 2 | Max simultaneous hands |
+| `model` | `SelectField` | `'lite'` | `lite`, `full` |
 
-### BodyPose
+### vision.body
 
-| Setting | Type | Default | Options |
-|---------|------|---------|---------|
-| `numPoses` | slider 1–4 | 1 | Max simultaneous poses |
-| `model` | dropdown | lite | lite, full, heavy |
+| Setting | Field type | Default | Options |
+|---------|-----------|---------|---------|
+| `numPoses` | `SliderField` 1–4 | 1 | Max simultaneous poses |
+| `model` | `SelectField` | `'lite'` | `lite`, `full`, `heavy` |
 
-### FaceMesh
+### vision.face
 
-| Setting | Type | Default | Options |
-|---------|------|---------|---------|
-| `numFaces` | slider 1–4 | 1 | Max simultaneous faces |
-| `blendshapes` | toggle | off | Output 52 ARKit blendshapes |
-| `model` | dropdown | (single) | — (only one variant) |
+| Setting | Field type | Default | Options |
+|---------|-----------|---------|---------|
+| `numFaces` | `SliderField` 1–4 | 1 | Max simultaneous faces |
+| `blendshapes` | `BooleanField` | `false` | Output 52 ARKit blendshapes |
 
-### Segmenter
+### vision.segment
 
-| Setting | Type | Default | Options |
-|---------|------|---------|---------|
-| `maskType` | radio | category | category, confidence |
-| `model` | dropdown | (single) | — |
+| Setting | Field type | Default | Options |
+|---------|-----------|---------|---------|
+| `maskType` | `SelectField` | `'category'` | `category`, `confidence` |
+| `outputMessage` | `BooleanField` | `false` | Also output mask data as message |
 
-### ObjectDetect
+### vision.detect
 
-| Setting | Type | Default | Options |
-|---------|------|---------|---------|
-| `maxResults` | slider 1–20 | 5 | Max detections per frame |
-| `scoreThreshold` | slider 0–1 | 0.5 | Min confidence |
-| `model` | dropdown | (single) | — |
-
----
-
-## Node Data (persisted in XY Flow)
-
-Each node stores its settings in `data`:
-
-```ts
-// HandPoseNode example
-interface HandPoseNodeData {
-  numHands: number;
-  delegate: 'CPU' | 'GPU';
-  model: 'lite' | 'full';
-  skipFrames: number;
-}
-```
+| Setting | Field type | Default | Options |
+|---------|-----------|---------|---------|
+| `maxResults` | `SliderField` 1–20 | 5 | Max detections per frame |
+| `scoreThreshold` | `SliderField` 0–1 | 0.5 | Min confidence threshold |
 
 ---
 
 ## Inlets & Outlets
 
-All five nodes share the same handle topology:
-
-| Port | Type | Description |
-|------|------|-------------|
-| Inlet 0 | video | Video source (webcam, video, screen, etc.) |
-| Outlet 0 | message | Detection results (structured object, every processed frame) |
+| Node | Inlet 0 | Outlet 0 | Outlet 1 |
+|------|---------|----------|----------|
+| `vision.hand` | video | message (hands array) | — |
+| `vision.body` | video | message (poses array) | — |
+| `vision.face` | video | message (faces array) | — |
+| `vision.segment` | video | video (greyscale mask) | message (mask data, optional) |
+| `vision.detect` | video | message (detections array) | — |
 
 ---
 
-## Node Checklist
+## Implementation Checklist
 
-For each of the five nodes:
+### Shared (implement first)
 
-- [ ] Worker file in `ui/src/lib/mediapipe/workers/{name}.worker.ts`
-- [ ] Svelte component in `ui/src/lib/components/nodes/`
-- [ ] Register node type in `src/lib/nodes/node-types.ts`
-- [ ] Register default data in `src/lib/nodes/defaultNodeData.ts`
+- [ ] `bun add @mediapipe/tasks-vision` (pin `@0.10.0`)
+- [ ] `ui/src/lib/mediapipe/types.ts` — all shared TS types
+- [ ] `ui/src/lib/mediapipe/MediaPipeWorkerBase.ts`
+- [ ] `ui/src/lib/mediapipe/MediaPipeNodeSystem.ts`
+- [ ] `ui/src/lib/eventbus/events.ts` — add `RequestMediaPipeVideoFramesBatchEvent`
+- [ ] `ui/src/lib/canvas/GLSystem.ts` — add event listener + response handler
+- [ ] Render worker — add `captureMediaPipeVideoFramesBatch` handler (reuse frame capture logic)
+- [ ] Wire `MediaPipeNodeSystem.updateConnections()` alongside `WorkerNodeSystem.updateVideoConnections()`
+- [ ] `ui/src/lib/components/nodes/MediaPipeNodeLayout.svelte`
+- [ ] New "Vision" pack in `src/lib/extensions/object-packs.ts`
+- [ ] Vision pack icon in `src/lib/extensions/pack-icons.ts`
+
+### Per node (× 5)
+
+- [ ] `ui/src/lib/mediapipe/workers/{name}.worker.ts`
+- [ ] Svelte component `ui/src/lib/components/nodes/Vision{Name}Node.svelte`
+- [ ] Register in `src/lib/nodes/node-types.ts`
+- [ ] Register defaults in `src/lib/nodes/defaultNodeData.ts`
 - [ ] Add to `src/lib/components/object-browser/get-categorized-objects.ts` (category: Vision)
-- [ ] Add to `src/lib/extensions/object-packs.ts` (new Vision pack)
-- [ ] AI object prompts in `src/lib/ai/object-prompts/`
+- [ ] Add to Vision pack in `object-packs.ts`
 - [ ] Add to `src/lib/ai/object-descriptions-types.ts` (OBJECT_TYPE_LIST)
-- [ ] Documentation in `ui/static/content/objects/{name}.md`
-
-Shared (once):
-- [ ] `MediaPipeNodeSystem.ts`
-- [ ] `MediaPipeWorkerBase.ts`
-- [ ] `types.ts`
-- [ ] `MediaPipeNodeLayout.svelte`
-- [ ] Wire `MediaPipeNodeSystem` into the edge-change handler (same as `WorkerNodeSystem.updateVideoConnections`)
-- [ ] Wire `deliverVideoFrames` in GLSystem response handler
-- [ ] New "Vision" object pack + icon in `pack-icons.ts`
+- [ ] AI prompt in `src/lib/ai/object-prompts/` + register in `index.ts`
+- [ ] Documentation `ui/static/content/objects/{vision.name}.md`
 
 ---
 
 ## Implementation Notes
 
-### One Worker Per Node Instance
-
-Each node creates its own worker. No GPU context is shared between tasks — this is a MediaPipe limitation (each task instance owns its own WebGL context). The isolation also means one node crashing doesn't affect others.
-
 ### Worker Lifecycle
 
 ```
 onMount → MediaPipeNodeSystem.register(nodeId, options)
-        → spawns worker, sends 'init'
+        → new Worker(workerUrl, { type: 'module' })
+        → worker.postMessage({ type: 'init', task, options })
         → worker initializes MediaPipe (WASM eval workaround)
-        → worker posts 'ready'
-        → rAF loop begins delivering frames
+        → worker.postMessage({ type: 'ready' })
+        → rAF loop begins (or was already running)
 
 onDestroy → MediaPipeNodeSystem.unregister(nodeId)
-          → sends 'destroy' to worker
+          → worker.postMessage({ type: 'destroy' })
           → worker.terminate()
+          → messageContext.destroy()
 ```
 
 ### Settings Changes
 
-When a setting changes (e.g. `numHands`), the node calls `MediaPipeNodeSystem.updateSettings(nodeId, { numHands: 3 })`. The system posts `{ type: 'updateSettings', settings }` to the worker. The worker recreates the task with new options (MediaPipe tasks are not reconfigurable in place).
+When a setting changes, the Svelte node calls:
+
+1. `updateNodeData(nodeId, { [key]: value })` — persists to XY Flow
+2. `MediaPipeNodeSystem.updateSettings(nodeId, { [key]: value })` — posts `{ type: 'updateSettings' }` to worker
+
+The worker recreates the task with new options (MediaPipe tasks cannot be reconfigured in place). During recreation, frames are queued/dropped.
 
 ### Frame Skipping
 
-Implemented in `MediaPipeNodeSystem` before frame dispatch, not in the worker. A per-node frame counter is incremented on every rAF tick; frames are only dispatched when `counter % skipFrames === 0`.
+`MediaPipeNodeSystem` increments a per-node `frameCounter` on every rAF tick. A node is only included in the batch request when `frameCounter % skipFrames === 0`. Frame skipping happens before any frame capture — zero overhead for skipped frames.
 
 ### Error Handling
 
-If the worker posts `{ type: 'error' }` (e.g. GPU delegate unavailable), the node shows an error badge and automatically retries with CPU delegate.
+If a worker posts `{ type: 'error' }` (e.g. GPU delegate unavailable), the node's status switches to `'error'`. The system automatically retries `init` with `delegate: 'CPU'`. If CPU also fails, the error message is shown permanently.
+
+### vision.segment Video Output
+
+After the worker returns the mask data, `MediaPipeNodeSystem` (or the node's message handler) creates an `ImageBitmap` from the mask array and calls `glSystem.setBitmap(nodeId, bitmap)`. The node registers itself in GLSystem with `glSystem.upsertNode(nodeId, 'img', {})` on mount, same as other video-output nodes.
 
 ### Future: HolisticLandmarker
 
-MediaPipe's `HolisticLandmarker` runs hand + pose + face in a single optimized graph (no separate workers). A future `holistic` node could wrap this for users who need all three simultaneously with lower overhead. Not in scope for initial implementation.
+`HolisticLandmarker` runs hand + pose + face in a single optimized graph. A future `vision.holistic` node could wrap this for users who need all three simultaneously. Not in scope for initial implementation.
 
-### Future: VideoFrame
+### Future: VideoFrame Transfer
 
-`VideoFrame` (WebCodecs) is worker-transferable and has a zero-copy GPU path. Post-MVP, `MediaPipeNodeSystem` could deliver `VideoFrame` instead of `ImageBitmap` when WebCodecs is available, reducing per-frame copy overhead.
+Post-MVP, `MediaPipeNodeSystem` could deliver `VideoFrame` instead of `ImageBitmap` when WebCodecs is available, eliminating the per-frame copy. The worker protocol already supports this — just change the transfer type.
