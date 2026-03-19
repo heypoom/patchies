@@ -19,6 +19,9 @@ export interface TransportStoreState {
   playState: TransportPlayState;
   dspEnabled: boolean;
   timelineVisible: boolean;
+  volume: number;
+  isMuted: boolean;
+  previousVolume: number;
 }
 
 const defaultState: TransportStoreState = {
@@ -29,7 +32,10 @@ const defaultState: TransportStoreState = {
   isPlaying: DEFAULT_AUTOPLAY,
   playState: DEFAULT_AUTOPLAY ? 'playing' : 'stopped',
   dspEnabled: true,
-  timelineVisible: false
+  timelineVisible: false,
+  volume: 0.8,
+  isMuted: false,
+  previousVolume: 0.8
 };
 
 function loadFromStorage(): TransportStoreState {
@@ -48,8 +54,11 @@ function loadFromStorage(): TransportStoreState {
       panelOpen: false, // Always start closed
       isPlaying: DEFAULT_AUTOPLAY,
       playState: DEFAULT_AUTOPLAY ? 'playing' : 'stopped',
-      dspEnabled: true,
-      timelineVisible: parsed.timelineVisible === true
+      dspEnabled: parsed.dspEnabled ?? true,
+      timelineVisible: parsed.timelineVisible === true,
+      volume: parsed.volume ?? 0.8,
+      isMuted: parsed.isMuted ?? false,
+      previousVolume: parsed.previousVolume ?? 0.8
     };
   } catch {
     console.warn('Failed to load transport state from localStorage');
@@ -119,6 +128,25 @@ function createTransportStore() {
 
     setDspEnabled(dspEnabled: boolean) {
       update((s) => ({ ...s, dspEnabled }));
+    },
+
+    setVolume(volume: number) {
+      update((s) => ({ ...s, volume }));
+    },
+
+    setMuted(isMuted: boolean) {
+      update((s) => ({ ...s, isMuted }));
+    },
+
+    toggleMute() {
+      update((s) => {
+        if (s.isMuted || s.volume === 0) {
+          const restoreVolume = s.previousVolume === 0 ? 0.5 : s.previousVolume;
+          return { ...s, isMuted: false, volume: restoreVolume };
+        } else {
+          return { ...s, isMuted: true, previousVolume: s.volume };
+        }
+      });
     },
 
     toggleTimeline() {

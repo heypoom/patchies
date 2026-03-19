@@ -542,6 +542,13 @@
     glSystem.start();
     audioService.start();
 
+    // Restore persisted state from store before transport panel mounts
+    const { volume, isMuted, bpm, timeSignature } = $transportStore;
+
+    audioService.setOutVolume(isMuted ? 0 : volume);
+    Transport.setBpm(bpm);
+    Transport.setTimeSignature(timeSignature[0], timeSignature[1]);
+
     loadPatch();
 
     // Check if Gemini API key is set

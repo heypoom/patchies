@@ -72,17 +72,8 @@
   let beat = $state(0);
   let bar = $state(0);
   let phase = $state(0);
-  let bpm = $state(120);
-  let beatsPerBar = $state(4);
-  let denominator = $state(4);
 
-  // Volume state (independent of DSP)
-  let volume = $state(0.8);
-  let isMuted = $state(false);
-  let previousVolume = 0.8;
-
-  // DSP state (independent of volume/mute)
-  let isDspEnabled = $state(true);
+  // Volume and DSP state live in the store for persistence
 
   // Whether this peer is a follower (sync enabled but not the leader)
   const isFollowing = $derived($transportSyncStore.enabled && !$transportSyncStore.isLeader);
@@ -146,17 +137,17 @@
   function formatBars(currentBar: number, currentBeat: number, currentPhase: number): string {
     // Display as 0-indexed to match clock scheduling API (like Tone.js)
     const sixteenths = Math.floor(currentPhase * 4);
-    let beatPad = beatsPerBar > 9 ? 2 : 1;
+    let beatPad = $transportStore.timeSignature[0] > 9 ? 2 : 1;
 
     return `${currentBar.toString().padStart(4, '0')}:${currentBeat.toString().padStart(beatPad, '0')}:${sixteenths.toString()}`;
   }
 
   // Volume icon
   const volumeIcon = $derived.by(() => {
-    if (isMuted || volume === 0) return VolumeX;
+    if ($transportStore.isMuted || $transportStore.volume === 0) return VolumeX;
 
-    if (volume < 0.33) return Volume;
-    if (volume < 0.66) return Volume1;
+    if ($transportStore.volume < 0.33) return Volume;
+    if ($transportStore.volume < 0.66) return Volume1;
 
     return Volume2;
   });
@@ -180,6 +171,7 @@
 
     if (!isNaN(newBpm) && newBpm > 0 && newBpm <= 999) {
       Transport.setBpm(newBpm);
+      transportStore.setBpm(newBpm);
     }
   }
 
@@ -188,7 +180,9 @@
   let editTimeSignatureValue = $state('');
   let timeSigInputRef: HTMLInputElement | null = null;
 
-  const timeSignatureDisplay = $derived(`${beatsPerBar}/${denominator}`);
+  const timeSignatureDisplay = $derived(
+    `${$transportStore.timeSignature[0]}/${$transportStore.timeSignature[1]}`
+  );
 
   function enterTimeSigEditMode() {
     editTimeSignatureValue = timeSignatureDisplay;
@@ -202,6 +196,7 @@
 
     if (parsed) {
       Transport.setTimeSignature(parsed.numerator, parsed.denominator);
+      transportStore.setTimeSignature(parsed.numerator, parsed.denominator);
     }
 
     isEditingTimeSig = false;
@@ -252,7 +247,11 @@
   }
 
   function handleTimeEditComplete() {
-    const parsed = parseTimeInput(editTimeValue, $transportStore.timeDisplayFormat, bpm);
+    const parsed = parseTimeInput(
+      editTimeValue,
+      $transportStore.timeDisplayFormat,
+      $transportStore.bpm
+    );
 
     if (parsed !== null) {
       Transport.seek(parsed);
@@ -299,9 +298,9 @@
         const [bars = 0, beats = 0, sixteenths = 0] = parts;
 
         // Each beat is (4/denominator) quarter notes long
-        const quarterNotesPerBeat = 4 / denominator;
+        const quarterNotesPerBeat = 4 / $transportStore.timeSignature[1];
         const totalQuarterNotes =
-          (bars * beatsPerBar + beats + sixteenths / 4) * quarterNotesPerBeat;
+          (bars * $transportStore.timeSignature[0] + beats + sixteenths / 4) * quarterNotesPerBeat;
 
         return Math.max(0, totalQuarterNotes / (currentBpm / 60));
       })
@@ -309,32 +308,22 @@
   }
 
   function toggleMute() {
-    if (isMuted || volume === 0) {
-      isMuted = false;
-      volume = previousVolume === 0 ? 0.5 : previousVolume;
-
-      audioService.setOutVolume(volume);
-    } else {
-      previousVolume = volume;
-      isMuted = true;
-
-      audioService.setOutVolume(0);
-    }
+    transportStore.toggleMute();
   }
 
   function handleVolumeChange(newVolume: number) {
-    volume = newVolume ?? 0;
+    transportStore.setVolume(newVolume ?? 0);
 
-    if (isMuted && volume > 0) {
-      isMuted = false;
+    if ($transportStore.isMuted && (newVolume ?? 0) > 0) {
+      transportStore.setMuted(false);
     }
   }
 
   async function toggleDsp() {
-    isDspEnabled = !isDspEnabled;
-    transportStore.setDspEnabled(isDspEnabled);
+    const newDspEnabled = !$transportStore.dspEnabled;
+    transportStore.setDspEnabled(newDspEnabled);
 
-    if (isDspEnabled) {
+    if (newDspEnabled) {
       audioService.resumeDsp();
       await Transport.setDspEnabled(true);
     } else {
@@ -343,33 +332,9 @@
     }
   }
 
-  // Update AudioService when volume changes (independent of DSP)
+  // Sync AudioService output volume from store
   $effect(() => {
-    if (!isMuted) {
-      audioService.setOutVolume(volume);
-    }
-  });
-
-  // Sync BPM from store on mount and when store changes
-  $effect(() => {
-    const storeBpm = $transportStore.bpm;
-
-    if (storeBpm !== bpm) {
-      bpm = storeBpm;
-      Transport.setBpm(storeBpm);
-    }
-  });
-
-  // Sync time signature from store on mount and when store changes
-  $effect(() => {
-    const [storeBeatsPerBar, storeDenominator] = $transportStore.timeSignature;
-
-    if (storeBeatsPerBar !== beatsPerBar || storeDenominator !== denominator) {
-      beatsPerBar = storeBeatsPerBar;
-      denominator = storeDenominator;
-
-      Transport.setTimeSignature(storeBeatsPerBar, storeDenominator);
-    }
+    audioService.setOutVolume($transportStore.isMuted ? 0 : $transportStore.volume);
   });
 
   onMount(() => {
@@ -395,21 +360,17 @@
       beat = Transport.beat;
       bar = Transport.bar;
       phase = Transport.phase;
-      bpm = Transport.bpm;
-      beatsPerBar = Transport.beatsPerBar;
-      denominator = Transport.denominator;
-    }, 1000 / 30);
 
-    // Sync volume from AudioService
-    const volumeInterval = setInterval(() => {
-      if (!isMuted) {
-        volume = audioService.outVolume;
+      // Sync bpm/timesig back to store to catch external changes (e.g. transport sync)
+      if (Transport.bpm !== $transportStore.bpm) transportStore.setBpm(Transport.bpm);
+      const [storeBeats, storeDenom] = $transportStore.timeSignature;
+      if (Transport.beatsPerBar !== storeBeats || Transport.denominator !== storeDenom) {
+        transportStore.setTimeSignature(Transport.beatsPerBar, Transport.denominator);
       }
-    }, 1000);
+    }, 1000 / 30);
 
     return () => {
       clearInterval(interval);
-      clearInterval(volumeInterval);
     };
   });
 </script>
@@ -436,7 +397,7 @@
           <button
             onclick={isPlaying ? handlePause : handlePlay}
             class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!isDspEnabled || isFollowing}
+            disabled={!$transportStore.dspEnabled || isFollowing}
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {#if isPlaying}
@@ -449,7 +410,7 @@
         <Tooltip.Content>
           {#if isFollowing}
             Controlled by room leader
-          {:else if !isDspEnabled}
+          {:else if !$transportStore.dspEnabled}
             Enable DSP first
           {:else}
             {isPlaying ? 'Pause' : 'Play'} (Space)
@@ -462,14 +423,14 @@
           <button
             onclick={handleStop}
             class="flex h-8 w-8 cursor-pointer items-center justify-center rounded bg-zinc-800 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!isDspEnabled || isFollowing}
+            disabled={!$transportStore.dspEnabled || isFollowing}
             aria-label="Stop"
           >
             <Square class="h-3.5 w-3.5 text-zinc-300" />
           </button>
         </Tooltip.Trigger>
         <Tooltip.Content>
-          {#if !isDspEnabled}
+          {#if !$transportStore.dspEnabled}
             Enable DSP first
           {:else}
             Stop
@@ -512,13 +473,13 @@
     <!-- Group 3: BPM & Time Signature -->
     <div class="flex flex-1 items-center gap-2 sm:flex-initial">
       <div class="flex flex-1 items-center gap-1.5 sm:flex-initial">
-        <MetronomeButton {bpm} />
+        <MetronomeButton bpm={$transportStore.bpm} />
 
         <Tooltip.Root>
           <Tooltip.Trigger class="flex-1 sm:flex-initial">
             <input
               type="number"
-              value={bpm}
+              value={$transportStore.bpm}
               onchange={handleBpmChange}
               onkeydown={(e) => {
                 if (e.key === 'Enter') {
@@ -568,20 +529,26 @@
           <button
             onclick={toggleMute}
             class="flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors hover:bg-zinc-700"
-            aria-label={isMuted || volume === 0 ? 'Unmute' : 'Mute'}
+            aria-label={$transportStore.isMuted || $transportStore.volume === 0 ? 'Unmute' : 'Mute'}
           >
             <!-- svelte-ignore svelte_component_deprecated -->
             <svelte:component
               this={volumeIcon}
-              class="h-4 w-4 {isMuted || volume === 0 ? 'text-red-400' : 'text-zinc-300'}"
+              class="h-4 w-4 {$transportStore.isMuted || $transportStore.volume === 0
+                ? 'text-red-400'
+                : 'text-zinc-300'}"
             />
           </button>
         </Tooltip.Trigger>
-        <Tooltip.Content>{isMuted || volume === 0 ? 'Unmute' : 'Mute'}</Tooltip.Content>
+        <Tooltip.Content
+          >{$transportStore.isMuted || $transportStore.volume === 0
+            ? 'Unmute'
+            : 'Mute'}</Tooltip.Content
+        >
       </Tooltip.Root>
 
       <Slider
-        value={volume}
+        value={$transportStore.volume}
         onValueChange={handleVolumeChange}
         type="single"
         min={0}
@@ -596,7 +563,7 @@
         <Tooltip.Trigger>
           <button
             onclick={toggleDsp}
-            class="cursor-pointer rounded px-2 py-1 text-xs font-medium transition-colors {isDspEnabled
+            class="cursor-pointer rounded px-2 py-1 text-xs font-medium transition-colors {$transportStore.dspEnabled
               ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
               : 'bg-red-900/50 text-red-400 hover:bg-red-900/70'}"
           >
@@ -605,7 +572,7 @@
         </Tooltip.Trigger>
 
         <Tooltip.Content>
-          {isDspEnabled ? 'DSP On - Click to disable' : 'DSP Off - Click to enable'}
+          {$transportStore.dspEnabled ? 'DSP On - Click to disable' : 'DSP Off - Click to enable'}
         </Tooltip.Content>
       </Tooltip.Root>
 
