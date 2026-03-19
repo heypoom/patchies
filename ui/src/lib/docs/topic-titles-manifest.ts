@@ -6,7 +6,9 @@
  */
 export const TOPIC_TITLES: Record<string, string> = {
   'adding-objects': 'Adding Objects',
-  'ai-features': 'Enabling AI',
+  'ai-chat': 'Chat',
+  'ai-edits': 'Edits',
+  'ai-patch-to-app': 'Patch to App',
   'audio-chaining': 'Audio Chaining',
   'audio-reactivity': 'Audio Reactivity',
   'browse-samples': 'Samples',
@@ -16,6 +18,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'connection-rules': 'Connection Rules',
   'data-storage': 'Data Storage',
   demos: 'Demos',
+  'enabling-ai': 'Enabling AI',
   'hot-cold-inlets': 'Hot and Cold Inlets',
   'in-app-help': 'Help',
   'javascript-runner': 'JavaScript Runner',

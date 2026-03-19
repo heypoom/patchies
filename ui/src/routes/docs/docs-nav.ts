@@ -6,7 +6,8 @@ export const categoryOrder = [
   'Audio & Video',
   'Scripting',
   'Timing & Sync',
-  'Other'
+  'Other',
+  'AI'
 ];
 
 // Topic order within each category
@@ -30,11 +31,6 @@ export const topicOrder: Record<string, string[]> = {
     'in-app-help',
     'browse-samples'
   ],
-  Other: [
-    'sharing-links',
-    'offline-usage',
-    'ai-features',
-    'rendering-pipeline',
-    'supporting-open-source'
-  ]
+  Other: ['sharing-links', 'offline-usage', 'rendering-pipeline', 'supporting-open-source'],
+  AI: ['enabling-ai', 'ai-edits', 'ai-chat', 'ai-patch-to-app']
 };
