@@ -193,7 +193,7 @@
   <!-- Floating settings button — visible on hover, like SamplerNode -->
   <div class="absolute -top-7 right-0 flex gap-1">
     <button
-      class="cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+      class="cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 [@media(hover:none)]:opacity-100"
       onclick={() => (showSettings = !showSettings)}
       title="Settings"
     >

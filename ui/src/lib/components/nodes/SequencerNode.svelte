@@ -372,7 +372,7 @@
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button
-              class="cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+              class="cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 [@media(hover:none)]:opacity-100"
               class:text-red-400={muted}
               class:text-zinc-300={!muted}
               onclick={() => setNodeData('muted', !muted)}
@@ -387,7 +387,7 @@
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button
-              class="cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700"
+              class="cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 [@media(hover:none)]:opacity-100"
               class:opacity-100={showSettings}
               onclick={() => (showSettings = !showSettings)}
             >

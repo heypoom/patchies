@@ -327,7 +327,7 @@
               'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700 disabled:cursor-not-allowed',
               node.selected
                 ? 'opacity-100 disabled:opacity-30'
-                : 'opacity-0 group-hover:opacity-100 group-hover:disabled:opacity-30'
+                : 'opacity-0 group-hover:opacity-100 group-hover:disabled:opacity-30 [@media(hover:none)]:opacity-100 [@media(hover:none)]:disabled:opacity-30'
             ]}
             disabled={isLocked}
             onclick={(e) => {
@@ -345,7 +345,9 @@
           <button
             class={[
               'cursor-pointer rounded p-1 text-zinc-300 transition-opacity hover:bg-zinc-700',
-              node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              node.selected
+                ? 'opacity-100'
+                : 'opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100'
             ]}
             onclick={(e) => {
               e.stopPropagation();
@@ -368,7 +370,9 @@
       <button
         class={[
           'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-          node.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          node.selected
+            ? 'opacity-100'
+            : 'opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100'
         ]}
         onclick={(e) => {
           e.stopPropagation();
