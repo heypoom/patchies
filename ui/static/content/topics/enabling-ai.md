@@ -26,9 +26,10 @@ These features use AI to help you with your patch:
 
 These objects use AI to generate content within your patch:
 
+- [ai.tts](/docs/objects/ai.tts) - Text-to-speech synthesis
+- [ai.stt](/docs/objects/ai.stt) - Speech-to-text transcription
 - [ai.txt](/docs/objects/ai.txt) - Generate text using AI
 - [ai.img](/docs/objects/ai.img) - Generate images using AI
-- [ai.tts](/docs/objects/ai.tts) - Text-to-speech synthesis
 - [ai.music](/docs/objects/ai.music) - Generate music using AI
 
 Be mindful of copyright and ethical considerations when generating content with AI, especially for public or commercial projects that goes beyond private prototyping or experimentation.
