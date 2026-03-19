@@ -1,10 +1,18 @@
-# AI Features
+# Enabling AI
 
-> **Security Warning**: API keys are stored in browser and can be stolen by malicious patches you open. Use a separate API key with strict budget limits. _Never load patches from strangers when an API key is set!_
+## AI will always be optional
 
-## Hide AI Features
+AI is optional with Patchies. By default, Patchies has no AI features enabled, and it has to be explicitly opted in.
 
-AI is 100% optional and _opt-in_ with Patchies. Dislike AI? Hit `Ctrl/Cmd + K` then `Toggle AI Features`. This _permanently_ turns all AI-based objects and AI generation features off.
+AI features are hidden unless an API key is present. You can also use `Ctrl/Cmd + K` then `Toggle AI Features` to hide all AI-based objects and AI generation features. It will stay hidden until you turn it back on.
+
+We believe in giving users the choice to use AI as a tool for code generation without forcing it on everyone.
+
+## Be mindful about API key security
+
+Your API keys are currently stored in your browser. We do not manage or have access to your keys in any way.
+
+Therefore, they can be stolen by malicious patches you open. Use a separate API key with strict budget limits. Never load patches from strangers when an API key is set.
 
 ## Create and Edit Objects with AI
 
@@ -53,14 +61,14 @@ Open the sidebar and switch to the **Chat** tab to chat with an AI assistant abo
 
 The assistant can act on your canvas directly when you ask it to. It will present proposed changes as action cards that you can **apply** or **dismiss** before anything is modified.
 
-- **Insert** — Create new objects on the canvas
-- **Edit** — Modify an existing object's code or settings
-- **Turn Into** — Replace an object with a different type
-- **Fix** — Fix errors using console output
-- **Split** — Break an object into multiple connected objects
-- **Fork** — Derive a new object from an existing one
-- **Connect** — Wire objects together with edges
-- **Disconnect** — Remove edges between objects
+- **Insert**: Create new objects on the canvas
+- **Edit**: Modify an existing object's code or settings
+- **Turn Into**: Replace an object with a different type
+- **Fix**: Fix errors using console output
+- **Split**: Break an object into multiple connected objects
+- **Fork**: Derive a new object from an existing one
+- **Connect**: Wire objects together with edges
+- **Disconnect**: Remove edges between objects
 
 ### Context Tools
 

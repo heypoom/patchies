@@ -6,7 +6,7 @@
  */
 export const TOPIC_TITLES: Record<string, string> = {
   'adding-objects': 'Adding Objects',
-  'ai-features': 'AI Features',
+  'ai-features': 'Enabling AI',
   'audio-chaining': 'Audio Chaining',
   'audio-reactivity': 'Audio Reactivity',
   'browse-samples': 'Samples',
