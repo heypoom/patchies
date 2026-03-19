@@ -37,10 +37,10 @@ interface PianoRollNodeData {
 
 ### Inlets
 
-| #   | Name    | Type    | Description                                                |
-| --- | ------- | ------- | ---------------------------------------------------------- |
-| 0   | midi    | message | MIDI messages to record (`noteOn` / `noteOff`)             |
-| 1   | command | message | `'arm'` \| `'stop'` \| `'clear'` \| `'loop'` \| `'unloop'` |
+| #   | Name    | Type    | Description                                                            |
+| --- | ------- | ------- | ---------------------------------------------------------------------- |
+| 0   | midi    | message | MIDI messages to record (`noteOn` / `noteOff`)                         |
+| 1   | command | message | `'arm'` \| `'record'` \| `'stop'` \| `'clear'` \| `'loop'` \| `'unloop'` |
 
 ### Outlets
 
@@ -62,7 +62,8 @@ playing ──loop on──► looping ──loop off──► playing
 
 Commands:
 
-- `'arm'` — arm for recording; starts when transport plays (or immediately if already playing). Re-arming with existing notes overwrites on next record.
+- `'arm'` — wait for transport to play, then start recording. Re-arming with existing notes overwrites on next record.
+- `'record'` — start recording immediately (requires transport to be playing; otherwise ignored)
 - `'stop'` — end recording / stop playback → `idle`
 - `'clear'` — discard all notes → `idle`
 - `'loop'` / `'unloop'` — toggle loop
