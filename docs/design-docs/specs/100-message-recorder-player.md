@@ -48,6 +48,7 @@ interface ClipData {
 interface TapeNodeData {
   mode: 'idle' | 'armed' | 'recording' | 'playing' | 'looping'
   loop: boolean
+  syncToTransport: boolean  // default: true
   quantize: 'off' | '1/32' | '1/16' | '1/8' | '1/4' | '1/2' | '1bar'
   bars: 0 | 1 | 2 | 4 | 8 | 16 // 0 = manual stop; N = auto-stop after N bars
   clip: ClipData | null // persisted with the patch
@@ -64,11 +65,12 @@ idle ──arm──► armed ──transport play──► recording ──stop
 playing ──loop on──► looping ──loop off──► playing
 ```
 
-- `'arm'` → sets mode to `armed`; recording begins when transport next plays
-- `'record'` → begin recording immediately (if transport is already playing)
-- `'stop'` → if recording: end recording and start playing; if playing/looping: stop
+- `'arm'` → sets mode to `armed`; recording begins when transport next plays (or immediately if already playing)
+- `'stop'` → if recording: discard and return to `idle`; if playing/looping: return to `idle`
 - `'clear'` → discard clip, return to `idle`
 - `'loop'` / `'unloop'` → toggle loop mode during playback
+
+**Re-arming with an existing clip**: sending `'arm'` when a clip already exists overwrites it on the next recording — no explicit `'clear'` needed.
 
 ### Recording Behavior
 
@@ -113,18 +115,23 @@ If BPM changes, re-schedule all pending events from the current transport positi
 
 ### Transport Sync
 
-By default the object follows the global transport:
+When `syncToTransport = true` (default):
 
 - Transport play while `armed` → start recording
-- Transport stop while `recording` → end recording, begin playing
-- Transport stop while `playing`/`looping` → stop playback
+- Transport stop while `recording` → end recording, discard, return to `idle` (see open question #4)
+- Transport stop while `playing`/`looping` → return to `idle`
+
+When `syncToTransport = false`:
+
+- `'arm'` starts recording immediately regardless of transport state
+- Playback runs freely; transport play/stop has no effect
 
 ### UI
 
 - Status badge: `IDLE` / `ARMED` / `REC ●` (pulsing red) / `PLAYING ▶` / `LOOPING ↻`
 - Clip info: `2 bars · 47 events` (shown once clip is recorded)
 - Inline buttons: **ARM**, **STOP**, **CLEAR**, **LOOP** toggle
-- Settings panel: **Quantize** (dropdown) + **Bars** (dropdown, 0 = manual)
+- Settings panel: **Sync to Transport** (toggle) + **Quantize** (dropdown) + **Bars** (dropdown, 0 = manual)
 
 ---
 
@@ -178,10 +185,11 @@ ui/src/lib/components/nodes/TapeNode.svelte
 
 ## Open Questions
 
-1. **Persistence**: `ClipData` is saved in node data and survives page reload. A 2-bar MIDI recording at 16th-note resolution is ~64 events — trivial to serialize.
+1. **Transport stop during manual recording** (`bars: 0`): Should stopping the transport end the recording (saving what was captured so far) or discard it? Currently specced as discard + return to `idle` for consistency with the `'stop'` command, but save-what-was-captured may be more useful. TBD.
 
-2. **VFS integration**: Save/load clips to VFS for sharing between patches. Deferred — can be added as `'save'` / `'load'` commands on inlet 1 later.
+## Deferred
 
-3. **Overdub**: Merging a new recording into an existing clip. Deferred.
-
-4. **Tempo map**: Assumes constant BPM during playback. BPM changes mid-playback will cause drift. Mitigation: reschedule pending events on BPM change via `PatchiesEventBus`.
+- **Persistence**: `ClipData` saved in node data, survives page reload. ~64 events for a 2-bar MIDI recording — trivial to serialize.
+- **VFS integration**: Save/load clips to VFS for cross-patch sharing. Can be added as `'save'` / `'load'` commands later.
+- **Overdub**: Merging a new recording into an existing clip.
+- **Tempo map**: BPM changes mid-playback cause drift. Mitigation: reschedule pending events on BPM change via `PatchiesEventBus`.
