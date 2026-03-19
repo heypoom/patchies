@@ -2,7 +2,9 @@
 
 ## Overview
 
-A single object that records and plays back any message stream in sync with the global transport. Designed with MIDI use cases in mind (recording from `midi-in`, sequencers, `pads~`) but works with any message type.
+> **Note**: For MIDI use cases, prefer the dedicated `pianoroll` object (spec #101) which adds visualization and editing. `tape` is for recording any generic message type.
+
+A single object that records and plays back any message stream in sync with the global transport.
 
 Events are stored in **ticks** (PPQ = 480), so recordings stay correct if BPM changes between sessions.
 
