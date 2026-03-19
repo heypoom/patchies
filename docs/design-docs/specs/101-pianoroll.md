@@ -215,23 +215,36 @@ When `syncToTransport = false`:
 
 ## Module Location
 
+All implementation files live together in one directory:
+
 ```text
-ui/src/lib/components/nodes/PianoRollNode.svelte   # node component + piano roll canvas
-ui/src/lib/objects/v2/nodes/PianoRollObject.ts     # playback + recording logic
+ui/src/objects/pianoroll/
+├── types.ts              # PianoRollNote, PianoRollNodeData interfaces
+├── schema.ts             # TypeBox message schemas + ts-pattern matchers
+├── PianoRollNode.svelte  # resizable node component (piano roll UI)
+├── PianoRollKeys.svelte  # left-side piano keyboard column
+├── PianoRollGrid.svelte  # note grid + playhead canvas
+├── PianoRollObject.ts    # V2 object class (recording + playback logic)
+└── prompt.ts             # AI object prompt
 ```
 
----
+The only file outside this directory is the documentation:
+
+```text
+ui/static/content/objects/pianoroll.md
+```
 
 ## Registration
 
-- `src/lib/objects/v2/nodes/index.ts` — add `PianoRollObject`
+Imports from `$objects/pianoroll/` added to existing files:
+
+- `src/lib/objects/v2/nodes/index.ts` — import + add `PianoRollObject` to `TEXT_OBJECTS`
 - `src/lib/nodes/node-types.ts` — add `'pianoroll'`
 - `src/lib/nodes/defaultNodeData.ts` — add defaults
 - `src/lib/components/object-browser/get-categorized-objects.ts` — category: **Sequencing**
 - `src/lib/extensions/object-packs.ts` — add to Core pack
 - `src/lib/ai/object-descriptions-types.ts` — add to `OBJECT_TYPE_LIST`
-- `src/lib/ai/object-prompts/index.ts` — register prompt
-- `static/content/objects/pianoroll.md` — documentation
+- `src/lib/ai/object-prompts/index.ts` — import `prompt` from `$objects/pianoroll/prompt`
 
 ---
 
