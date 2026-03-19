@@ -95,6 +95,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 ## MIDI & Network Objects
 - midi.in: MIDI input from devices
 - midi.out: MIDI output to devices
+- pianoroll: MIDI clip recorder and player with piano roll visualization — arm to record, plays back in sync with transport
 - netsend: Network message sender (WebRTC)
 - netrecv: Network message receiver (WebRTC)
 - serial: WebSerial port — send/receive strings, Uint8Array, or number[] to hardware devices (Arduino, etc.)

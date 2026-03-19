@@ -25,6 +25,7 @@ const FALLBACK_DESCRIPTIONS: Record<string, string> = {
   label: 'Text label for annotations and notes',
   link: 'Clickable hyperlink button',
   sequencer: 'Multi-track step sequencer synced to the global transport',
+  pianoroll: 'MIDI clip recorder and player with piano roll visualization',
   curve: 'Breakpoint curve editor — send X to get Y, or bang for the full point list',
   projmap:
     'Projection mapper — warp video textures onto N-point polygons with a built-in point editor'

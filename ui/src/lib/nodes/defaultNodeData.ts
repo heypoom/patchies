@@ -38,6 +38,7 @@ import {
   DEFAULT_DMX_DATA
 } from '$objects/serial/constants';
 import { DEFAULT_PROJMAP_NODE_DATA } from '$objects/projmap/constants';
+import { DEFAULT_PIANOROLL_DATA } from '$objects/pianoroll/types';
 
 // TODO: make this type-safe!
 export type NodeData = {
@@ -322,5 +323,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       skipFrames: 1
     }))
     .with('ngea', () => ({ tuning: 'Khong Wong Yai', index: 0 }))
+    .with('pianoroll', () => ({ ...DEFAULT_PIANOROLL_DATA }))
     .otherwise(() => ({}));
 }

@@ -88,6 +88,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: [
       'beat',
       'sequencer',
+      'pianoroll',
       'strudel',
       'orca',
       'sonic~',
