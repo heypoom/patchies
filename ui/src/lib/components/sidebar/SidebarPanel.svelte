@@ -46,7 +46,8 @@
     onOpenPatchToApp,
     aiCallbacks,
     getNodeById,
-    getGraphSummary
+    getGraphSummary,
+    hasGeminiApiKey = false
   }: {
     open: boolean;
     view?: SidebarView;
@@ -56,6 +57,7 @@
     aiCallbacks?: AiPromptCallbacks;
     getNodeById?: (nodeId: string) => ChatNode | undefined;
     getGraphSummary?: () => ChatGraphSummary;
+    hasGeminiApiKey?: boolean;
   } = $props();
 
   // Base views always shown
@@ -77,8 +79,10 @@
 
   const AI_VIEWS: SidebarView[] = ['chat', 'preview'];
 
+  let showAiFeatures = $derived($isAiFeaturesVisible && hasGeminiApiKey);
+
   let expandableItems = $derived(
-    $isAiFeaturesVisible ? allExpandableItems : allExpandableItems.filter((item) => !item.aiOnly)
+    showAiFeatures ? allExpandableItems : allExpandableItems.filter((item) => !item.aiOnly)
   );
 
   // Preview tab promotion logic
@@ -92,12 +96,12 @@
   let isExpanded = $state(false);
   // Tracks whether expandable views have been promoted to the top bar
   let isSamplesPromoted = $derived(view === 'samples');
-  let isChatPromoted = $derived(view === 'chat' && $isAiFeaturesVisible);
+  let isChatPromoted = $derived(view === 'chat' && showAiFeatures);
   let isProfilerPromoted = $derived(view === 'profiler');
 
   // Redirect away from AI views when AI features are hidden
   $effect(() => {
-    if (!$isAiFeaturesVisible && AI_VIEWS.includes(view)) {
+    if (!showAiFeatures && AI_VIEWS.includes(view)) {
       view = 'files';
     }
   });
@@ -169,7 +173,7 @@
           {/each}
 
           <!-- Promoted preview button (when active) -->
-          {#if previewTab.isPromoted && $isAiFeaturesVisible}
+          {#if previewTab.isPromoted && showAiFeatures}
             <Tooltip.Root delayDuration={300}>
               <Tooltip.Trigger>
                 <button

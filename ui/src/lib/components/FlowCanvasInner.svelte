@@ -1008,6 +1008,7 @@
     {aiCallbacks}
     {getNodeById}
     {getGraphSummary}
+    {hasGeminiApiKey}
   />
 
   <!-- Main content area -->
