@@ -40,9 +40,9 @@ The prompt adapts based on context. Use the mode dropdown in the header or press
 
 This feature uses the `gemini-3-flash-preview` model to understand your prompt and generate the object configuration.
 
-## Copilot
+## Chat
 
-Open the sidebar and switch to the **Copilot** tab to chat with an AI assistant about your patch.
+Open the sidebar and switch to the **Chat** tab to chat with an AI assistant about your patch.
 
 - Ask questions about Patchies, get help debugging, or brainstorm ideas
 - When a object is selected, its type and data are automatically included as context so the AI understands what you're working on
@@ -51,7 +51,7 @@ Open the sidebar and switch to the **Copilot** tab to chat with an AI assistant 
 
 ### Canvas Tools
 
-The copilot can act on your canvas directly when you ask it to. It will present proposed changes as action cards that you can **apply** or **dismiss** before anything is modified.
+The assistant can act on your canvas directly when you ask it to. It will present proposed changes as action cards that you can **apply** or **dismiss** before anything is modified.
 
 - **Insert** — Create new objects on the canvas
 - **Edit** — Modify an existing object's code or settings
@@ -64,7 +64,7 @@ The copilot can act on your canvas directly when you ask it to. It will present 
 
 ### Context Tools
 
-The copilot automatically uses these behind the scenes to understand your patch before acting:
+The assistant automatically uses these behind the scenes to understand your patch before acting:
 
 - **Get Graph Objects** — Lists all objects and edges on the canvas so it knows what exists and how things are connected
 - **Get Object Data** — Fetches the full data of a specific object (code, settings, connected edges)

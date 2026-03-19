@@ -72,7 +72,7 @@
   // Expandable items (shown under chevron, promoted to top bar when active)
   const allExpandableItems = [
     { id: 'samples', icon: Music, title: 'Samples' },
-    { id: 'chat', icon: MessageSquare, title: 'Copilot', aiOnly: true },
+    { id: 'chat', icon: MessageSquare, title: 'Chat', aiOnly: true },
     { id: 'preview', icon: AppWindow, title: 'Patch to App', aiOnly: true },
     { id: 'profiler', icon: Activity, title: 'Profiler' }
   ];
@@ -221,7 +221,7 @@
                   <MessageSquare class="h-4 w-4" />
                 </button>
               </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">Copilot</Tooltip.Content>
+              <Tooltip.Content side="bottom">Chat</Tooltip.Content>
             </Tooltip.Root>
           {/if}
 
