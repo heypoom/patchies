@@ -12,7 +12,8 @@
     values,
     onValueChange,
     onRevertAll,
-    onClose
+    onClose,
+    settingsPrefix = 'settings'
   }: {
     nodeId: string;
     schema: SettingsSchema;
@@ -20,9 +21,16 @@
     onValueChange: (key: string, value: unknown) => void;
     onRevertAll: () => void;
     onClose: () => void;
+    /** Prefix for undo/redo tracking keys. Defaults to 'settings' (e.g. 'settings.foo').
+     *  Pass '' to track at the top level (e.g. 'foo'). */
+    settingsPrefix?: string;
   } = $props();
 
   const tracker = useNodeDataTracker(nodeId);
+
+  function trackingKey(key: string): string {
+    return settingsPrefix ? `${settingsPrefix}.${key}` : key;
+  }
 
   function getCurrentValue(field: SettingsField): unknown {
     const val = values[field.key];
@@ -44,7 +52,7 @@
     onValueChange(field.key, newValue);
     const persistence = field.persistence ?? 'node';
     if (persistence === 'node') {
-      tracker.commit(`settings.${field.key}`, oldValue, newValue);
+      tracker.commit(trackingKey(field.key), oldValue, newValue);
     }
   }
 
@@ -53,7 +61,7 @@
     if ((field.persistence ?? 'node') !== 'node') {
       return { onFocus: () => {}, onBlur: () => {} };
     }
-    return tracker.track(`settings.${field.key}`, () => getCurrentValue(field));
+    return tracker.track(trackingKey(field.key), () => getCurrentValue(field));
   }
 </script>
 
