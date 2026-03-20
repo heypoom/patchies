@@ -12,8 +12,8 @@ import {
 } from '../../workers/shared/directChannelHandler';
 import { WorkerProfiler } from '../../workers/shared/WorkerProfiler';
 
-// MediaPipe WASM CDN (pinned to 0.10.0, matches installed package)
-export const WASM_CDN_BASE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm';
+// MediaPipe WASM CDN (pinned version must match installed package)
+export const WASM_CDN_BASE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.33/wasm';
 
 export const MODEL_CDN_BASE = 'https://storage.googleapis.com/mediapipe-models/';
 
