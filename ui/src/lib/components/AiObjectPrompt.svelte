@@ -267,11 +267,17 @@
   function handleDocumentKeydown(event: KeyboardEvent) {
     if (event.key === 'i' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
+
       if (!ctrl.isLoading) {
         const modes = availableModes;
         const currentIdx = modes.indexOf(ctrl.mode);
-        const nextIdx = (currentIdx + 1) % modes.length;
+
+        const nextIdx = event.shiftKey
+          ? (currentIdx - 1 + modes.length) % modes.length
+          : (currentIdx + 1) % modes.length;
+
         ctrl.setMode(modes[nextIdx]);
+
         modeDropdownOpen = false;
       }
     }
