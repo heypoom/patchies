@@ -287,5 +287,34 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('serial', () => DEFAULT_SERIAL_DATA)
     .with('serial.term', () => DEFAULT_SERIAL_TERMINAL_DATA)
     .with('projmap', () => ({ surfaces: [] }))
+    .with('vision.hand', () => ({ numHands: 2, model: 'lite', delegate: 'GPU', skipFrames: 1 }))
+    .with('vision.body', () => ({ numPoses: 1, model: 'lite', delegate: 'GPU', skipFrames: 1 }))
+    .with('vision.face', () => ({
+      numFaces: 1,
+      blendshapes: false,
+      delegate: 'GPU',
+      skipFrames: 1,
+      mode: 'landmarks'
+    }))
+    .with('vision.segment', () => ({
+      model: 'general',
+      maskType: 'category',
+      outputMessage: false,
+      delegate: 'GPU',
+      skipFrames: 1
+    }))
+    .with('vision.detect', () => ({
+      maxResults: 5,
+      scoreThreshold: 0.5,
+      delegate: 'GPU',
+      skipFrames: 1
+    }))
+    .with('vision.gesture', () => ({ numHands: 2, delegate: 'GPU', skipFrames: 1 }))
+    .with('vision.classify', () => ({
+      maxResults: 5,
+      scoreThreshold: 0.0,
+      delegate: 'GPU',
+      skipFrames: 1
+    }))
     .otherwise(() => ({}));
 }

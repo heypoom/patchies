@@ -44,14 +44,14 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 
 ## Visual & Creative Coding Objects
 - vue: write custom user interface and component using Vue.js
-- p5: P5.js sketches for interactive graphics and animations
+- p5: P5.js. readable code, great for shorter interactive sketches with mouse/keyboard via p5's API
+- canvas.dom: HTML5 Canvas on main thread. supports mouse/keyboard, lower overhead than p5, best for heavy visuals needing interactivity
+- canvas: HTML5 Canvas on web worker. no mouse/keyboard, highest performance. can chain into the rendering pipeline at high speed (e.g. video texture for glsl/hydra)
 - hydra: Live coding video synthesis with Hydra
 - glsl: GLSL fragment shaders for visual effects
 - three: Three.js 3D graphics (offscreen worker, for video chaining)
 - three.dom: Three.js 3D graphics (main thread, for mouse/keyboard interaction)
 - projmap: Projection mapper — warp video textures onto N-point polygon surfaces with built-in point editor and expand mode
-- canvas.dom: Interactive HTML5 Canvas with mouse/keyboard input
-- canvas: HTML5 Canvas 2D (offscreen, for fast video chaining in rendering pipeline)
 - dom: write to the DOM element
 - swgl: SwissGL shaders for WebGL2
 - bg.out: Background output (final video output)
@@ -112,4 +112,13 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 
 ## Video Routing
 - send.vdo: Send video frames to a named channel (wireless video routing)
-- recv.vdo: Receive video frames from a named channel (wireless video routing)`;
+- recv.vdo: Receive video frames from a named channel (wireless video routing)
+
+## Vision ML (MediaPipe)
+- vision.hand: Real-time hand skeleton detection — emits { hands: [{handedness, score, landmarks, worldLandmarks}], timestamp }
+- vision.body: Full-body pose estimation — emits { poses: [{landmarks, worldLandmarks}], timestamp }
+- vision.face: Facial landmark detection (478 points) — emits { faces: [{landmarks, blendshapes?}], timestamp }
+- vision.segment: Body segmentation mask — video outlet (greyscale mask bitmap), optional message outlet with raw mask data
+- vision.detect: Object detection with bounding boxes — emits { detections: [{label, score, boundingBox}], timestamp }
+- vision.gesture: Gesture recognition — emits { gestures: [{gesture, score, handedness, landmarks, worldLandmarks}], timestamp }
+- vision.classify: Image classification (EfficientNet Lite0, 1000 ImageNet classes) — emits { classifications: [{label, score}], timestamp }`;

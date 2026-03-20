@@ -25,6 +25,7 @@ export type PatchiesEvent =
   | WorkerFlashEvent
   | RequestWorkerVideoFramesEvent
   | RequestWorkerVideoFramesBatchEvent
+  | RequestMediaPipeVideoFramesBatchEvent
   | MediaBunnyMetadataEvent
   | MediaBunnyFirstFrameEvent
   | MediaBunnyTimeUpdateEvent
@@ -229,6 +230,15 @@ export interface RequestWorkerVideoFramesEvent {
 
 export interface RequestWorkerVideoFramesBatchEvent {
   type: 'requestWorkerVideoFramesBatch';
+  requests: Array<{
+    targetNodeId: string;
+    sourceNodeIds: (string | null)[];
+    resolution?: [number, number];
+  }>;
+}
+
+export interface RequestMediaPipeVideoFramesBatchEvent {
+  type: 'requestMediaPipeVideoFramesBatch';
   requests: Array<{
     targetNodeId: string;
     sourceNodeIds: (string | null)[];

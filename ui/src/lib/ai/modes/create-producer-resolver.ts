@@ -1,4 +1,5 @@
 import { resolveObjectFromPrompt } from '../single-object-resolver';
+import { getObjectSpecificInstructions } from '../object-prompts';
 import type { AiModeContext, AiModeResult, ModeResolver } from './types';
 
 /**
@@ -20,11 +21,20 @@ export const createProducerResolver: ModeResolver = async (
 
   const consumerType = selectedNode.type ?? 'unknown';
   const consumerData = (selectedNode.data as Record<string, unknown>) ?? {};
+
+  const consumerSubtype =
+    consumerType === 'object' && typeof consumerData.type === 'string'
+      ? consumerData.type
+      : consumerType;
+
   const consumerName = (consumerData.name as string) ?? '';
   const consumerCode = (consumerData.code as string) ?? '';
 
+  const consumerInstructions = getObjectSpecificInstructions(consumerSubtype);
+
   const contextLines = [
     `Consumer node type: "${consumerType}"`,
+    consumerInstructions ? `Consumer node documentation:\n${consumerInstructions}` : '',
     consumerName ? `Consumer node name: "${consumerName}"` : '',
     consumerCode
       ? `Consumer node code:\n\`\`\`\n${consumerCode}\n\`\`\``

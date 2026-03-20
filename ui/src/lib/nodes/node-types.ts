@@ -91,6 +91,13 @@ import PadsNode from '$objects/pads/PadsNode.svelte';
 import SerialNode from '$objects/serial/SerialNode.svelte';
 import SerialTerminalNode from '$objects/serial/SerialTerminalNode.svelte';
 import ProjectionMapNode from '$objects/projmap/ProjectionMapNode.svelte';
+import VisionHandNode from '$objects/mediapipe/components/VisionHandNode.svelte';
+import VisionBodyNode from '$objects/mediapipe/components/VisionBodyNode.svelte';
+import VisionFaceNode from '$objects/mediapipe/components/VisionFaceNode.svelte';
+import VisionSegmentNode from '$objects/mediapipe/components/VisionSegmentNode.svelte';
+import VisionDetectNode from '$objects/mediapipe/components/VisionDetectNode.svelte';
+import VisionGestureNode from '$objects/mediapipe/components/VisionGestureNode.svelte';
+import VisionClassifyNode from '$objects/mediapipe/components/VisionClassifyNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -186,7 +193,14 @@ export const nodeTypes: Record<string, any> = {
   'pads~': PadsNode,
   serial: SerialNode,
   'serial.term': SerialTerminalNode,
-  projmap: ProjectionMapNode
+  projmap: ProjectionMapNode,
+  'vision.hand': VisionHandNode,
+  'vision.body': VisionBodyNode,
+  'vision.face': VisionFaceNode,
+  'vision.segment': VisionSegmentNode,
+  'vision.detect': VisionDetectNode,
+  'vision.gesture': VisionGestureNode,
+  'vision.classify': VisionClassifyNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

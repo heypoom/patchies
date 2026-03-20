@@ -21,6 +21,7 @@
         "@iizukak/codemirror-lang-wgsl": "^0.3.0",
         "@lezer/generator": "^1.8.0",
         "@lezer/highlight": "^1.2.1",
+        "@mediapipe/tasks-vision": "0.10.33",
         "@replit/codemirror-vim": "^6.3.0",
         "@rollup/browser": "^4.50.1",
         "@sinclair/typebox": "^0.34.48",
@@ -745,6 +746,8 @@
     "@mediapipe/pose": ["@mediapipe/pose@0.5.1675469404", "", {}, "sha512-DFZsNWTsSphRIZppnUCuunzBiHP2FdJXR9ehc7mMi4KG+oPaOH0Em3d6kr7Py+TSyTXC1doH88KcF28k2sBxsQ=="],
 
     "@mediapipe/selfie_segmentation": ["@mediapipe/selfie_segmentation@0.1.1675465747", "", {}, "sha512-IxYxNhwE5VwOm52L1yoFWYLP7q9Pd+NJjzOC5tlepfvEGaY3o9hslhUrx9BgseqdfZtKSDtd/4NfCSMjNzQalA=="],
+
+    "@mediapipe/tasks-vision": ["@mediapipe/tasks-vision@0.10.33", "", {}, "sha512-Hh41r6ezzz6aeT1e3aJHjLaeVKtz7yhHLjVMQpoxg2fEgA8HRByS2KNMU28ahtDjJRJNCyDHWb2tJWVAyshyMw=="],
 
     "@multiformats/dns": ["@multiformats/dns@1.0.12", "", { "dependencies": { "@dnsquery/dns-packet": "^6.1.1", "hashlru": "^2.3.0", "p-queue": "^9.0.0", "progress-events": "^1.0.0", "uint8arrays": "^5.0.2" } }, "sha512-32J/4CY86VHiCREAcUT4/2hjns5HpfzS24+5e2cBLUEu78fAcJS5V14AfIJyz+A8Kh14HFQbVAiNRH03qn6x+g=="],
 

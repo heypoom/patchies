@@ -85,6 +85,9 @@ self.onmessage = (event) => {
     .with('captureWorkerVideoFramesBatch', () => {
       handleCaptureWorkerVideoFramesBatch(data.requests);
     })
+    .with('captureMediaPipeVideoFramesBatch', () => {
+      handleCaptureMediaPipeVideoFramesBatch(data.requests);
+    })
     .with('registerWorkerRenderPort', () => {
       handleRegisterWorkerRenderPort(data.nodeId, event.ports[0]);
     })
@@ -350,6 +353,55 @@ function handleCaptureWorkerVideoFramesBatch(
 ) {
   // Initiate async captures - results will be harvested in the render loop
   fboRenderer.initiateVideoFrameCaptureAsync(requests);
+}
+
+/**
+ * Capture video frames for multiple MediaPipe nodes in a single batched request.
+ * Uses synchronous bitmap capture (same as handleCaptureWorkerVideoFrames),
+ * responds with mediaPipeVideoFramesCapturedBatch.
+ */
+function handleCaptureMediaPipeVideoFramesBatch(
+  requests: Array<{
+    targetNodeId: string;
+    sourceNodeIds: (string | null)[];
+    resolution?: [number, number];
+  }>
+) {
+  const results: Array<{
+    targetNodeId: string;
+    frames: (ImageBitmap | null)[];
+  }> = [];
+
+  const transferList: ImageBitmap[] = [];
+
+  for (const request of requests) {
+    const frames: (ImageBitmap | null)[] = [];
+
+    for (const sourceNodeId of request.sourceNodeIds) {
+      if (!sourceNodeId) {
+        frames.push(null);
+        continue;
+      }
+
+      const bitmap = fboRenderer.capturePreviewBitmap(sourceNodeId, request.resolution);
+      frames.push(bitmap);
+
+      if (bitmap) {
+        transferList.push(bitmap);
+      }
+    }
+
+    results.push({ targetNodeId: request.targetNodeId, frames });
+  }
+
+  self.postMessage(
+    {
+      type: 'mediaPipeVideoFramesCapturedBatch',
+      results,
+      timestamp: performance.now()
+    },
+    { transfer: transferList }
+  );
 }
 
 /**

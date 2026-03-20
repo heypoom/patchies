@@ -319,6 +319,20 @@ Response:
   "structure": "button sends bang to p5 sketch to trigger animation"
 }
 
+User: "generative texture feeding into a GLSL shader"
+Response:
+{
+  "objectTypes": ["canvas", "glsl"],
+  "structure": "canvas generates offscreen texture, piped into glsl as video input for shader processing"
+}
+
+User: "heavy particle simulation with 10000 particles"
+Response:
+{
+  "objectTypes": ["canvas"],
+  "structure": "canvas runs computationally heavy particle simulation on web worker for performance"
+}
+
 User: "XY pad controlling two parameters"
 Response:
 {
@@ -334,6 +348,16 @@ Response:
 }
 
 IMPORTANT: For audio output to speakers, use "object" type (which will create out~), NOT "out~" as a direct type.
+
+CHOOSING BETWEEN p5 / canvas / canvas.dom for visuals:
+- p5: shorter, readable programs where code clarity matters; great for interactive sketches using p5's own mouse/keyboard helpers
+- canvas: runs on a web worker (offscreen, no DOM access, no interactivity) — highest performance; best when chaining into the rendering pipeline (e.g. as a video texture for glsl/hydra) or when no interactivity is needed
+- canvas.dom: runs on main thread so it can handle mouse/keyboard input and DOM access; more verbose than p5 but lower overhead; best for computationally heavy visuals or complex cases that need interactivity without p5's abstraction layer
+
+SPEED/PERFORMANCE KEYWORDS ("fast", "smooth", "60fps", "performant", "optimized", "efficient"):
+- If the user asks for speed/performance AND no interactivity → canvas (web worker, highest perf)
+- If the user asks for speed/performance AND needs mouse/keyboard → canvas.dom
+- Never choose p5 when performance is explicitly requested
 
 Now analyze this prompt:`;
 }
