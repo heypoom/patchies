@@ -31,14 +31,14 @@ class SegmentWorker extends MediaPipeWorkerBase<ImageSegmenter, ImageSegmenterRe
         modelAssetPath: MODEL_URLS[opts.model ?? 'general'],
         delegate: opts.delegate ?? 'GPU'
       },
-      runningMode: 'IMAGE',
+      runningMode: 'VIDEO',
       outputCategoryMask: opts.maskType === 'category',
       outputConfidenceMasks: opts.maskType === 'confidence'
     });
   }
 
-  protected detectFrame(task: ImageSegmenter, bitmap: ImageBitmap) {
-    return task.segment(bitmap);
+  protected detectFrame(task: ImageSegmenter, bitmap: ImageBitmap, timestamp: number) {
+    return task.segmentForVideo(bitmap, timestamp);
   }
 
   protected formatResult(): SegmentOutput {
@@ -64,7 +64,7 @@ class SegmentWorker extends MediaPipeWorkerBase<ImageSegmenter, ImageSegmenterRe
       let raw: any = null;
 
       this.workerProfiler.measure(this.nodeId, 'draw', () => {
-        raw = this.detectFrame(this.task!, bitmap);
+        raw = this.detectFrame(this.task!, bitmap, timestamp);
         isCategoryMask = this.segmentOptions!.maskType === 'category';
 
         maskData = isCategoryMask

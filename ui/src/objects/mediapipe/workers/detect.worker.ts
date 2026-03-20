@@ -20,14 +20,14 @@ class DetectWorker extends MediaPipeWorkerBase<ObjectDetector, ObjectDetectorRes
         modelAssetPath: MODEL_URL,
         delegate: opts.delegate ?? 'GPU'
       },
-      runningMode: 'IMAGE',
+      runningMode: 'VIDEO',
       maxResults: opts.maxResults ?? 5,
       scoreThreshold: opts.scoreThreshold ?? 0.5
     });
   }
 
-  protected detectFrame(task: ObjectDetector, bitmap: ImageBitmap) {
-    return task.detect(bitmap);
+  protected detectFrame(task: ObjectDetector, bitmap: ImageBitmap, timestamp: number) {
+    return task.detectForVideo(bitmap, timestamp);
   }
 
   protected formatResult(raw: ObjectDetectorResult): DetectOutput {

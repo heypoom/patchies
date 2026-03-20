@@ -20,13 +20,13 @@ class GestureWorker extends MediaPipeWorkerBase<GestureRecognizer, GestureRecogn
         modelAssetPath: MODEL_URL,
         delegate: opts.delegate ?? 'GPU'
       },
-      runningMode: 'IMAGE',
+      runningMode: 'VIDEO',
       numHands: opts.numHands ?? 2
     });
   }
 
-  protected detectFrame(task: GestureRecognizer, bitmap: ImageBitmap, _timestamp: number) {
-    return task.recognize(bitmap);
+  protected detectFrame(task: GestureRecognizer, bitmap: ImageBitmap, timestamp: number) {
+    return task.recognizeForVideo(bitmap, timestamp);
   }
 
   protected formatResult(raw: GestureRecognizerResult): GestureOutput {

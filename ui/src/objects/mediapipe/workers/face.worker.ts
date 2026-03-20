@@ -30,7 +30,7 @@ class FaceWorker extends MediaPipeWorkerBase<any, any> {
           modelAssetPath: DETECT_MODEL_URL,
           delegate: opts.delegate ?? 'GPU'
         },
-        runningMode: 'IMAGE'
+        runningMode: 'VIDEO'
       });
     } else {
       const { FaceLandmarker } = await import('@mediapipe/tasks-vision');
@@ -39,7 +39,7 @@ class FaceWorker extends MediaPipeWorkerBase<any, any> {
           modelAssetPath: LANDMARK_MODEL_URL,
           delegate: opts.delegate ?? 'GPU'
         },
-        runningMode: 'IMAGE',
+        runningMode: 'VIDEO',
         numFaces: opts.numFaces ?? 1,
         outputFaceBlendshapes: opts.blendshapes ?? false,
         outputFacialTransformationMatrixes: false
@@ -48,8 +48,8 @@ class FaceWorker extends MediaPipeWorkerBase<any, any> {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected detectFrame(task: any, bitmap: ImageBitmap) {
-    return task.detect(bitmap);
+  protected detectFrame(task: any, bitmap: ImageBitmap, timestamp: number) {
+    return task.detectForVideo(bitmap, timestamp);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

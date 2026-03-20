@@ -28,13 +28,13 @@ class BodyWorker extends MediaPipeWorkerBase<PoseLandmarker, PoseLandmarkerResul
         modelAssetPath: modelUrl,
         delegate: opts.delegate ?? 'GPU'
       },
-      runningMode: 'IMAGE',
+      runningMode: 'VIDEO',
       numPoses: opts.numPoses ?? 1
     });
   }
 
-  protected detectFrame(task: PoseLandmarker, bitmap: ImageBitmap) {
-    return task.detect(bitmap);
+  protected detectFrame(task: PoseLandmarker, bitmap: ImageBitmap, timestamp: number) {
+    return task.detectForVideo(bitmap, timestamp);
   }
 
   protected formatResult(raw: PoseLandmarkerResult): BodyOutput {

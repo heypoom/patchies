@@ -21,14 +21,14 @@ class ClassifyWorker extends MediaPipeWorkerBase<ImageClassifier, ImageClassifie
         modelAssetPath: MODEL_URL,
         delegate: opts.delegate ?? 'GPU'
       },
-      runningMode: 'IMAGE',
+      runningMode: 'VIDEO',
       maxResults: opts.maxResults ?? 5,
       scoreThreshold: opts.scoreThreshold ?? 0.0
     });
   }
 
-  protected detectFrame(task: ImageClassifier, bitmap: ImageBitmap) {
-    return task.classify(bitmap);
+  protected detectFrame(task: ImageClassifier, bitmap: ImageBitmap, timestamp: number) {
+    return task.classifyForVideo(bitmap, timestamp);
   }
 
   protected formatResult(raw: ImageClassifierResult): ClassifyOutput {

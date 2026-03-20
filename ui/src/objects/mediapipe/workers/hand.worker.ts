@@ -21,13 +21,13 @@ class HandWorker extends MediaPipeWorkerBase<HandLandmarker, HandLandmarkerResul
         modelAssetPath: MODEL_URL,
         delegate: opts.delegate ?? 'GPU'
       },
-      runningMode: 'IMAGE',
+      runningMode: 'VIDEO',
       numHands: opts.numHands ?? 2
     });
   }
 
-  protected detectFrame(task: HandLandmarker, bitmap: ImageBitmap) {
-    return task.detect(bitmap);
+  protected detectFrame(task: HandLandmarker, bitmap: ImageBitmap, timestamp: number) {
+    return task.detectForVideo(bitmap, timestamp);
   }
 
   protected formatResult(raw: HandLandmarkerResult): HandOutput {
