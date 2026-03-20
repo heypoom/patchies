@@ -116,7 +116,8 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
     // Destroy existing task
     if (this.task) {
       try {
-        this.task.close?.();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (this.task as any).close?.();
       } catch {
         // ignore
       }
@@ -134,7 +135,8 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
 
     if (this.task) {
       try {
-        this.task.close?.();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (this.task as any).close?.();
       } catch {
         // ignore
       }

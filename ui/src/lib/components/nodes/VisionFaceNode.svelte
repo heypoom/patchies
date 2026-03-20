@@ -75,7 +75,7 @@
       delegate: 'GPU',
       skipFrames: 1
     };
-    updateNodeData(nodeId, defaults);
+    updateNodeData(nodeId, defaults as unknown as Record<string, unknown>);
     mediaPipeSystem.updateSettings(nodeId, defaults);
   }
 

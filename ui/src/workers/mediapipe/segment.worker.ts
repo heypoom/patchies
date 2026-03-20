@@ -18,10 +18,8 @@ class SegmentWorker extends MediaPipeWorkerBase<
 > {
   private segmentOptions: SegmentTaskOptions | null = null;
 
-  protected async initTask(
-    vision: import('@mediapipe/tasks-vision').WasmFileset,
-    options: TaskOptions
-  ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected async initTask(vision: any, options: TaskOptions) {
     const { ImageSegmenter } = await import('@mediapipe/tasks-vision');
     this.segmentOptions = options as SegmentTaskOptions;
     const opts = options as SegmentTaskOptions;
@@ -119,7 +117,8 @@ class SegmentWorker extends MediaPipeWorkerBase<
         self.postMessage(msg, [maskBitmap]);
       });
 
-      raw.close?.();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (raw as any).close?.();
       bitmap.close();
     } catch (err) {
       bitmap.close();

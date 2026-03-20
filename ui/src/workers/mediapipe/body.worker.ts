@@ -16,10 +16,8 @@ class BodyWorker extends MediaPipeWorkerBase<
   import('@mediapipe/tasks-vision').PoseLandmarker,
   import('@mediapipe/tasks-vision').PoseLandmarkerResult
 > {
-  protected async initTask(
-    vision: import('@mediapipe/tasks-vision').WasmFileset,
-    options: TaskOptions
-  ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected async initTask(vision: any, options: TaskOptions) {
     const { PoseLandmarker } = await import('@mediapipe/tasks-vision');
     const opts = options as BodyTaskOptions;
     const modelUrl = MODEL_URLS[opts.model ?? 'lite'] ?? MODEL_URLS.lite;
@@ -45,13 +43,15 @@ class BodyWorker extends MediaPipeWorkerBase<
   protected formatResult(raw: import('@mediapipe/tasks-vision').PoseLandmarkerResult): BodyOutput {
     return {
       poses: raw.landmarks.map((lms, i) => ({
-        landmarks: lms.map((lm) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        landmarks: lms.map((lm: any) => ({
           x: lm.x,
           y: lm.y,
           z: lm.z,
           visibility: lm.visibility ?? 1
         })),
-        worldLandmarks: (raw.worldLandmarks[i] ?? []).map((lm) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        worldLandmarks: (raw.worldLandmarks[i] ?? []).map((lm: any) => ({
           x: lm.x,
           y: lm.y,
           z: lm.z,

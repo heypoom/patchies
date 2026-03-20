@@ -12,10 +12,8 @@ class FaceWorker extends MediaPipeWorkerBase<
   import('@mediapipe/tasks-vision').FaceLandmarker,
   import('@mediapipe/tasks-vision').FaceLandmarkerResult
 > {
-  protected async initTask(
-    vision: import('@mediapipe/tasks-vision').WasmFileset,
-    options: TaskOptions
-  ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected async initTask(vision: any, options: TaskOptions) {
     const { FaceLandmarker } = await import('@mediapipe/tasks-vision');
     const opts = options as FaceTaskOptions;
 

@@ -12,10 +12,8 @@ class HandWorker extends MediaPipeWorkerBase<
   import('@mediapipe/tasks-vision').HandLandmarker,
   import('@mediapipe/tasks-vision').HandLandmarkerResult
 > {
-  protected async initTask(
-    vision: import('@mediapipe/tasks-vision').WasmFileset,
-    options: TaskOptions
-  ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected async initTask(vision: any, options: TaskOptions) {
     const { HandLandmarker } = await import('@mediapipe/tasks-vision');
     const opts = options as HandTaskOptions;
 
