@@ -157,7 +157,12 @@
 
   function handleNoteDelete(index: number) {
     const newNotes = notes.filter((_, i) => i !== index);
+
     updateNodeData(nodeId, { notes: newNotes });
+  }
+
+  function handleNoteUpdate(index: number, patch: Partial<PianoRollNote>) {
+    updateNodeData(nodeId, { notes: notes.map((n, i) => (i === index ? { ...n, ...patch } : n)) });
   }
 
   function handleScroll(delta: number) {
@@ -348,6 +353,7 @@
         {mode}
         onNoteAdd={handleNoteAdd}
         onNoteDelete={handleNoteDelete}
+        onNoteUpdate={handleNoteUpdate}
         onScroll={handleScroll}
       />
     </div>
