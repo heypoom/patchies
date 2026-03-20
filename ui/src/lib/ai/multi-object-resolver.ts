@@ -354,6 +354,11 @@ CHOOSING BETWEEN p5 / canvas / canvas.dom for visuals:
 - canvas: runs on a web worker (offscreen, no DOM access, no interactivity) — highest performance; best when chaining into the rendering pipeline (e.g. as a video texture for glsl/hydra) or when no interactivity is needed
 - canvas.dom: runs on main thread so it can handle mouse/keyboard input and DOM access; more verbose than p5 but lower overhead; best for computationally heavy visuals or complex cases that need interactivity without p5's abstraction layer
 
+SPEED/PERFORMANCE KEYWORDS ("fast", "smooth", "60fps", "performant", "optimized", "efficient"):
+- If the user asks for speed/performance AND no interactivity → canvas (web worker, highest perf)
+- If the user asks for speed/performance AND needs mouse/keyboard → canvas.dom
+- Never choose p5 when performance is explicitly requested
+
 Now analyze this prompt:`;
 }
 
