@@ -36,6 +36,7 @@ import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 import type { RenderOp } from '$lib/profiler/types';
 import { createWorkerSettingsProxy } from '../shared/workerSettingsProxy';
+import { defaultUniformValue, isValidUniformData } from './glUniformUtils';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -648,30 +649,10 @@ export class FBORenderer {
       const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
 
       for (const def of node.data.glUniformDefs) {
-        const currentUniformData = uniformData.get(def.name);
+        const uniformFieldValue = uniformData.get(def.name);
 
-        const isValidData = match(def.type)
-          .with('bool', () => typeof currentUniformData === 'boolean')
-          .with('float', () => typeof currentUniformData === 'number')
-          .with('int', () => typeof currentUniformData === 'number')
-          .with('vec2', () => Array.isArray(currentUniformData) && currentUniformData.length === 2)
-          .with('vec3', () => Array.isArray(currentUniformData) && currentUniformData.length === 3)
-          .with('vec4', () => Array.isArray(currentUniformData) && currentUniformData.length === 4)
-          .with('sampler2D', () => currentUniformData === null)
-          .otherwise(() => false);
-
-        if (!isValidData) {
-          const defaultUniformValue = match(def.type)
-            .with('bool', () => true)
-            .with('float', () => 0.0)
-            .with('int', () => 0)
-            .with('vec2', () => [0, 0])
-            .with('vec3', () => [0, 0, 0])
-            .with('vec4', () => [0, 0, 0, 0])
-            .with('sampler2D', () => null)
-            .otherwise(() => null);
-
-          uniformData.set(def.name, defaultUniformValue);
+        if (!isValidUniformData(def, uniformFieldValue)) {
+          uniformData.set(def.name, defaultUniformValue(def));
         }
       }
 

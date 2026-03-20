@@ -14,4 +14,5 @@ export type GLUniformType =
 export interface GLUniformDef {
   name: string;
   type: GLUniformType;
+  arraySize?: number;
 }

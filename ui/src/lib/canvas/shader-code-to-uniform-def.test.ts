@@ -26,6 +26,7 @@ describe('shaderCodeToUniformDefs', () => {
       uniform int u_count;
       uniform bool u_enabled;
     `;
+
     expect(shaderCodeToUniformDefs(code)).toEqual([
       { name: 'u_time', type: 'float' },
       { name: 'u_count', type: 'int' },
@@ -33,10 +34,16 @@ describe('shaderCodeToUniformDefs', () => {
     ]);
   });
 
-  it('parses array uniforms', () => {
+  it('parses array uniforms with arraySize', () => {
     expect(shaderCodeToUniformDefs('uniform vec2 u_points[32];')).toEqual([
-      { name: 'u_points', type: 'vec2' }
+      { name: 'u_points', type: 'vec2', arraySize: 32 }
     ]);
+  });
+
+  it('does not set arraySize for non-array uniforms', () => {
+    const [def] = shaderCodeToUniformDefs('uniform float u_time;');
+
+    expect(def.arraySize).toBeUndefined();
   });
 
   it('ignores non-uniform lines', () => {
@@ -45,6 +52,7 @@ describe('shaderCodeToUniformDefs', () => {
         gl_FragColor = vec4(1.0);
       }
     `;
+
     expect(shaderCodeToUniformDefs(code)).toEqual([]);
   });
 });
@@ -52,6 +60,7 @@ describe('shaderCodeToUniformDefs', () => {
 describe('uniformDefsToSettingsSchema', () => {
   it('generates number field for float', () => {
     const fields = uniformDefsToSettingsSchema([{ name: 'u_time', type: 'float' }]);
+
     expect(fields).toEqual([
       { key: 'u_time', label: 'u_time', type: 'number', step: 0.01, persistence: 'none' }
     ]);
@@ -59,6 +68,7 @@ describe('uniformDefsToSettingsSchema', () => {
 
   it('generates number field for int', () => {
     const fields = uniformDefsToSettingsSchema([{ name: 'u_count', type: 'int' }]);
+
     expect(fields).toEqual([
       { key: 'u_count', label: 'u_count', type: 'number', step: 1, persistence: 'none' }
     ]);
@@ -66,6 +76,7 @@ describe('uniformDefsToSettingsSchema', () => {
 
   it('generates boolean field for bool', () => {
     const fields = uniformDefsToSettingsSchema([{ name: 'u_enabled', type: 'bool' }]);
+
     expect(fields).toEqual([
       { key: 'u_enabled', label: 'u_enabled', type: 'boolean', persistence: 'none' }
     ]);
