@@ -20,8 +20,10 @@
     type PianoRollNote
   } from './types';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { Repeat, Trash2, Settings } from '@lucide/svelte/icons';
+  import { Disc, Square, Repeat, Trash2, Settings } from '@lucide/svelte/icons';
   import { useNodeDataTracker } from '$lib/history';
+  import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
+  import type { SettingsSchema } from '$lib/settings/types';
 
   let { id: nodeId, data, selected }: NodeProps & { data: PianoRollNodeData } = $props();
 
@@ -207,69 +209,89 @@
     }, 200);
   }
 
-  const modeLabel = $derived(
-    match(mode)
-      .with('idle', () => 'IDLE')
-      .with('armed', () => 'ARMED')
-      .with('recording', () => 'REC')
-      .with('playing', () => 'PLAYING')
-      .with('looping', () => 'LOOPING')
-      .exhaustive()
-  );
-
-  const modeBadgeClass = $derived(
-    match(mode)
-      .with('idle', () => 'bg-zinc-800 text-zinc-500')
-      .with('armed', () => 'bg-amber-900/60 text-amber-300 ring-1 ring-amber-700/70')
-      .with('recording', () => 'bg-red-900/60 text-red-300 ring-1 ring-red-700/70 animate-pulse')
-      .with('playing', () => 'bg-green-900/60 text-green-300 ring-1 ring-green-700/70')
-      .with('looping', () => 'bg-blue-900/60 text-blue-300 ring-1 ring-blue-700/70')
-      .exhaustive()
-  );
-
   const containerBorderClass = $derived(
     match(mode)
       .with('recording', () => 'border-red-900/70')
       .with('armed', () => 'border-amber-900/70')
       .otherwise(() => 'border-zinc-800')
   );
+
+  const settingsSchema: SettingsSchema = [
+    {
+      key: 'lengthBars',
+      label: 'Bars',
+      type: 'select',
+      default: '2',
+      options: ['1', '2', '4', '8', '16']
+    },
+    {
+      key: 'quantize',
+      label: 'Quantize',
+      type: 'select',
+      default: '1/16',
+      options: ['off', '1/32', '1/16', '1/8', '1/4', '1/2']
+    },
+    { key: 'syncToTransport', label: 'Sync transport', type: 'boolean', default: true }
+  ];
+
+  const settingsValues = $derived({
+    lengthBars: String(lengthBars),
+    quantize,
+    syncToTransport: syncToTr
+  });
+
+  function handleSettingChange(key: string, value: unknown) {
+    if (key === 'lengthBars') setData('lengthBars', Number(value));
+    else if (key === 'quantize') setData('quantize', value as PianoRollNodeData['quantize']);
+    else if (key === 'syncToTransport') setData('syncToTransport', value as boolean);
+  }
+
+  function handleSettingRevertAll() {
+    setData('lengthBars', DEFAULT_PIANOROLL_DATA.lengthBars);
+    setData('quantize', DEFAULT_PIANOROLL_DATA.quantize);
+    setData('syncToTransport', DEFAULT_PIANOROLL_DATA.syncToTransport);
+  }
 </script>
 
-<NodeResizer isVisible={selected} minWidth={PIANOROLL_MIN_WIDTH} minHeight={PIANOROLL_MIN_HEIGHT} />
+<div class="group relative h-full w-full">
+  <NodeResizer
+    isVisible={selected}
+    minWidth={PIANOROLL_MIN_WIDTH}
+    minHeight={PIANOROLL_MIN_HEIGHT}
+  />
 
-<div
-  class="flex h-full w-full flex-col overflow-hidden rounded border bg-zinc-950 text-xs transition-colors duration-300 {containerBorderClass}"
->
-  <!-- Header -->
+  <!-- Transparent bridge so group-hover stays active between title and node -->
+  <div class="absolute inset-x-0 -top-7 h-7"></div>
+
+  <!-- Title — always visible -->
   <div
-    class="nodrag flex flex-shrink-0 items-center gap-1.5 border-b border-zinc-800 bg-zinc-900/40 px-2 py-1"
+    class="absolute -top-7 left-0 z-10 flex items-center gap-1.5 rounded-lg bg-zinc-900 px-2 py-1"
   >
-    <span class="font-mono text-[10px] font-semibold tracking-widest text-zinc-400 uppercase"
-      >pianoroll</span
-    >
+    <span class="font-mono text-xs font-medium text-zinc-400">pianoroll</span>
+  </div>
 
-    <!-- Mode badge -->
-    <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold {modeBadgeClass}">{modeLabel}</span
-    >
-
-    {#if notes.length > 0}
-      <span class="rounded bg-zinc-800 px-1 py-0.5 text-[9px] text-zinc-500">{notes.length}</span>
-    {/if}
-
-    <div class="flex-1"></div>
-
-    <!-- ARM button -->
+  <!-- Floating action buttons — visible on hover / selected -->
+  <div class="absolute -top-7 right-0 z-10 flex items-center gap-0.5">
+    <!-- ARM / STOP -->
     <Tooltip.Root>
       <Tooltip.Trigger>
         <button
-          class="cursor-pointer rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide ring-1 transition-colors
-            {mode === 'armed' || mode === 'recording'
-            ? 'bg-red-900/60 text-red-300 ring-red-700/70 hover:bg-red-900/80'
-            : 'bg-zinc-800 text-zinc-400 ring-zinc-700 hover:bg-zinc-700 hover:text-zinc-200'}"
+          class={[
+            'cursor-pointer rounded p-1 transition-opacity',
+            mode === 'armed' || mode === 'recording'
+              ? 'text-red-400 opacity-100 hover:text-red-300'
+              : selected
+                ? 'text-zinc-400 opacity-100 hover:text-zinc-200'
+                : 'text-zinc-400 opacity-0 group-hover:opacity-100 hover:text-zinc-200 [@media(hover:none)]:opacity-100'
+          ]}
           onclick={() =>
             mode === 'recording' || mode === 'armed' ? pianoRollObj?.stop() : pianoRollObj?.arm()}
         >
-          {mode === 'armed' || mode === 'recording' ? '■ STOP' : '● ARM'}
+          {#if mode === 'armed' || mode === 'recording'}
+            <Square class="h-4 w-4 fill-current" />
+          {:else}
+            <Disc class="h-4 w-4" />
+          {/if}
         </button>
       </Tooltip.Trigger>
       <Tooltip.Content
@@ -281,12 +303,16 @@
     <Tooltip.Root>
       <Tooltip.Trigger>
         <button
-          class="cursor-pointer rounded p-1 {loop
-            ? 'text-blue-400'
-            : 'text-zinc-500 hover:text-zinc-300'}"
+          class={[
+            'cursor-pointer rounded p-1 transition-opacity',
+            loop ? 'text-blue-400' : 'text-zinc-400 hover:text-zinc-200',
+            selected
+              ? 'opacity-100'
+              : 'opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100'
+          ]}
           onclick={() => setData('loop', !loop)}
         >
-          <Repeat class="h-3 w-3" />
+          <Repeat class="h-4 w-4" />
         </button>
       </Tooltip.Trigger>
       <Tooltip.Content>Loop {loop ? 'on' : 'off'}</Tooltip.Content>
@@ -296,13 +322,18 @@
     <Tooltip.Root>
       <Tooltip.Trigger>
         <button
-          class="cursor-pointer rounded p-1 text-zinc-500 hover:text-red-400"
+          class={[
+            'cursor-pointer rounded p-1 text-zinc-400 transition-opacity hover:text-red-400',
+            selected
+              ? 'opacity-100'
+              : 'opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100'
+          ]}
           onclick={() => {
             pianoRollObj?.clear();
             setData('notes', []);
           }}
         >
-          <Trash2 class="h-3 w-3" />
+          <Trash2 class="h-4 w-4" />
         </button>
       </Tooltip.Trigger>
       <Tooltip.Content>Clear all notes</Tooltip.Content>
@@ -312,109 +343,89 @@
     <Tooltip.Root>
       <Tooltip.Trigger>
         <button
-          class="cursor-pointer rounded p-1 text-zinc-500 hover:text-zinc-300"
+          class={[
+            'cursor-pointer rounded p-1 text-zinc-400 transition-opacity hover:text-zinc-200',
+            selected
+              ? 'opacity-100'
+              : 'opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100'
+          ]}
           onclick={() => (showSettings = !showSettings)}
         >
-          <Settings class="h-3 w-3" />
+          <Settings class="h-4 w-4" />
         </button>
       </Tooltip.Trigger>
       <Tooltip.Content>Settings</Tooltip.Content>
     </Tooltip.Root>
   </div>
 
-  <!-- Settings panel -->
+  <!-- Settings panel (floating, to the right) -->
   {#if showSettings}
-    <div
-      class="nodrag flex flex-shrink-0 flex-col gap-1 border-b border-zinc-800 bg-zinc-900 px-2 py-1.5 text-[10px] text-zinc-300"
-    >
-      <div class="flex items-center gap-2">
-        <span class="w-20">Bars</span>
-        <select
-          class="cursor-pointer rounded border border-zinc-600 bg-zinc-700 px-1 py-0.5"
-          value={lengthBars}
-          onchange={(e) => setData('lengthBars', Number(e.currentTarget.value))}
-        >
-          {#each [1, 2, 4, 8, 16] as n (n)}
-            <option value={n}>{n}</option>
-          {/each}
-        </select>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <span class="w-20">Quantize</span>
-        <select
-          class="cursor-pointer rounded border border-zinc-600 bg-zinc-700 px-1 py-0.5"
-          value={quantize}
-          onchange={(e) =>
-            setData('quantize', e.currentTarget.value as PianoRollNodeData['quantize'])}
-        >
-          {#each ['off', '1/32', '1/16', '1/8', '1/4', '1/2'] as q (q)}
-            <option value={q}>{q}</option>
-          {/each}
-        </select>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="w-20">Sync transport</span>
-        <input
-          type="checkbox"
-          checked={syncToTr}
-          onchange={(e) => setData('syncToTransport', e.currentTarget.checked)}
-          class="cursor-pointer"
-        />
-      </div>
+    <div class="absolute top-0 left-full z-20 ml-2">
+      <ObjectSettings
+        {nodeId}
+        schema={settingsSchema}
+        values={settingsValues}
+        onValueChange={handleSettingChange}
+        onRevertAll={handleSettingRevertAll}
+        onClose={() => (showSettings = false)}
+        settingsPrefix=""
+      />
     </div>
   {/if}
 
-  <!-- Piano roll -->
-  <div class="flex flex-1 overflow-hidden" bind:clientHeight={pianoRollAreaHeight}>
-    <!-- Piano keys canvas (includes ruler spacer) -->
-    <div class="nodrag nopan">
-      <PianoRollKeys {scrollNote} {visibleNotes} onPreviewNote={handlePreviewNote} />
+  <!-- Node body -->
+  <div
+    class="flex h-full w-full flex-col overflow-hidden rounded border bg-zinc-950 text-xs transition-colors duration-300 {containerBorderClass}"
+  >
+    <!-- Piano roll -->
+    <div class="flex flex-1 overflow-hidden" bind:clientHeight={pianoRollAreaHeight}>
+      <!-- Piano keys -->
+      <div class="nodrag nopan">
+        <PianoRollKeys {scrollNote} {visibleNotes} onPreviewNote={handlePreviewNote} />
+      </div>
+
+      <!-- Scrollable grid -->
+      <div class="nodrag nopan nowheel flex-1 overflow-x-auto overflow-y-hidden">
+        <PianoRollGrid
+          {notes}
+          {scrollNote}
+          {visibleNotes}
+          {zoom}
+          {lengthBars}
+          {quantize}
+          {mode}
+          onNoteAdd={handleNoteAdd}
+          onNoteDelete={handleNoteDelete}
+          onNoteUpdate={handleNoteUpdate}
+          onScroll={handleScroll}
+        />
+      </div>
     </div>
 
-    <!-- Scrollable grid -->
-    <div class="nodrag nopan nowheel flex-1 overflow-x-auto overflow-y-hidden">
-      <PianoRollGrid
-        {notes}
-        {scrollNote}
-        {visibleNotes}
-        {zoom}
-        {lengthBars}
-        {quantize}
-        {mode}
-        onNoteAdd={handleNoteAdd}
-        onNoteDelete={handleNoteDelete}
-        onNoteUpdate={handleNoteUpdate}
-        onScroll={handleScroll}
-      />
-    </div>
+    <!-- Handles -->
+    <TypedHandle
+      port="inlet"
+      spec={pianoRollHandles.midiIn}
+      title="MIDI input"
+      total={2}
+      index={0}
+      {nodeId}
+    />
+    <TypedHandle
+      port="inlet"
+      spec={pianoRollHandles.commandIn}
+      title="Commands"
+      total={2}
+      index={1}
+      {nodeId}
+    />
+    <TypedHandle
+      port="outlet"
+      spec={pianoRollHandles.midiOut}
+      title="MIDI output"
+      total={1}
+      index={0}
+      {nodeId}
+    />
   </div>
-
-  <!-- Handles -->
-  <TypedHandle
-    port="inlet"
-    spec={pianoRollHandles.midiIn}
-    title="MIDI input"
-    total={2}
-    index={0}
-    {nodeId}
-  />
-
-  <TypedHandle
-    port="inlet"
-    spec={pianoRollHandles.commandIn}
-    title="Commands"
-    total={2}
-    index={1}
-    {nodeId}
-  />
-
-  <TypedHandle
-    port="outlet"
-    spec={pianoRollHandles.midiOut}
-    title="MIDI output"
-    total={1}
-    index={0}
-    {nodeId}
-  />
 </div>
