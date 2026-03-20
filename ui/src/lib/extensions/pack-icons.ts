@@ -17,6 +17,7 @@ import {
   Brain,
   Code,
   Cpu,
+  Eye,
   FlaskConical,
   Package,
   Route,
@@ -57,5 +58,6 @@ export function getPackIcon(iconName: string) {
     .with('FileHeadphone', () => FileHeadphone)
     .with('Grid3x3', () => Grid3x3)
     .with('Usb', () => Usb)
+    .with('Eye', () => Eye)
     .otherwise(() => Package);
 }

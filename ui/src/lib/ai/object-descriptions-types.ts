@@ -112,4 +112,11 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 
 ## Video Routing
 - send.vdo: Send video frames to a named channel (wireless video routing)
-- recv.vdo: Receive video frames from a named channel (wireless video routing)`;
+- recv.vdo: Receive video frames from a named channel (wireless video routing)
+
+## Vision ML (MediaPipe)
+- vision.hand: Real-time hand skeleton detection — emits { hands: [{handedness, score, landmarks, worldLandmarks}], timestamp }
+- vision.body: Full-body pose estimation — emits { poses: [{landmarks, worldLandmarks}], timestamp }
+- vision.face: Facial landmark detection (478 points) — emits { faces: [{landmarks, blendshapes?}], timestamp }
+- vision.segment: Body segmentation mask — video outlet (greyscale mask bitmap), optional message outlet with raw mask data
+- vision.detect: Object detection with bounding boxes — emits { detections: [{label, score, boundingBox}], timestamp }`;

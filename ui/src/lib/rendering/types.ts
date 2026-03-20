@@ -87,6 +87,13 @@ export type WorkerMessage =
         sourceNodeIds: (string | null)[];
       }>;
     }
+  | {
+      type: 'captureMediaPipeVideoFramesBatch';
+      requests: Array<{
+        targetNodeId: string;
+        sourceNodeIds: (string | null)[];
+      }>;
+    }
   // Settings API responses (main → render worker)
   | {
       type: 'settingsValuesInit';
@@ -163,6 +170,14 @@ export type RenderWorkerMessage =
     }
   | {
       type: 'workerVideoFramesCapturedBatch';
+      results: Array<{
+        targetNodeId: string;
+        frames: (ImageBitmap | null)[];
+      }>;
+      timestamp: number;
+    }
+  | {
+      type: 'mediaPipeVideoFramesCapturedBatch';
       results: Array<{
         targetNodeId: string;
         frames: (ImageBitmap | null)[];

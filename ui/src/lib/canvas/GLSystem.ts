@@ -18,7 +18,8 @@ import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { PatchiesEventBus } from '../eventbus/PatchiesEventBus';
 import type {
   RequestWorkerVideoFramesEvent,
-  RequestWorkerVideoFramesBatchEvent
+  RequestWorkerVideoFramesBatchEvent,
+  RequestMediaPipeVideoFramesBatchEvent
 } from '../eventbus/events';
 import {
   AudioAnalysisSystem,
@@ -133,6 +134,16 @@ export class GLSystem {
       'requestWorkerVideoFramesBatch',
       (event: RequestWorkerVideoFramesBatchEvent) => {
         this.send('captureWorkerVideoFramesBatch', {
+          requests: event.requests
+        });
+      }
+    );
+
+    // Listen for batched video frame requests from MediaPipeNodeSystem
+    this.eventBus.addEventListener(
+      'requestMediaPipeVideoFramesBatch',
+      (event: RequestMediaPipeVideoFramesBatchEvent) => {
+        this.send('captureMediaPipeVideoFramesBatch', {
           requests: event.requests
         });
       }
@@ -270,6 +281,15 @@ export class GLSystem {
         // Relay batched captured frames to WorkerNodeSystem
         import('$lib/js-runner/WorkerNodeSystem').then(({ WorkerNodeSystem }) => {
           const system = WorkerNodeSystem.getInstance();
+          for (const result of data.results) {
+            system.deliverVideoFrames(result.targetNodeId, result.frames, data.timestamp);
+          }
+        });
+      })
+      .with({ type: 'mediaPipeVideoFramesCapturedBatch' }, (data) => {
+        // Relay batched captured frames to MediaPipeNodeSystem
+        import('$lib/mediapipe/MediaPipeNodeSystem').then(({ MediaPipeNodeSystem }) => {
+          const system = MediaPipeNodeSystem.getInstance();
           for (const result of data.results) {
             system.deliverVideoFrames(result.targetNodeId, result.frames, data.timestamp);
           }

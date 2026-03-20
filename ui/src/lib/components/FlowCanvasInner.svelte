@@ -76,6 +76,7 @@
     ObjectDataCommitEvent
   } from '$lib/eventbus/events';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
+  import { MediaPipeNodeSystem } from '$lib/mediapipe/MediaPipeNodeSystem';
   import { DirectChannelService } from '$lib/messages/DirectChannelService';
   import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
@@ -118,6 +119,7 @@
   let audioAnalysisSystem = AudioAnalysisSystem.getInstance();
   let eventBus = PatchiesEventBus.getInstance();
   let workerNodeSystem = WorkerNodeSystem.getInstance();
+  let mediaPipeNodeSystem = MediaPipeNodeSystem.getInstance();
   let directChannelService = DirectChannelService.getInstance();
   let workletDirectChannelService = WorkletDirectChannelService.getInstance();
   let historyManager = HistoryManager.getInstance();
@@ -332,6 +334,7 @@
     audioService.updateEdges(edges);
     audioAnalysisSystem.updateEdges(edges);
     workerNodeSystem.updateVideoConnections(edges);
+    mediaPipeNodeSystem.updateConnections(edges);
     directChannelService.updateEdges(edges);
     workletDirectChannelService.updateEdges(edges);
     audioSourceConnections.set(buildAudioSourceConnections(edges));

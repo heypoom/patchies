@@ -254,6 +254,13 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: ['ai.txt', 'ai.img', 'ai.music', 'ai.tts', 'ai.stt', 'tts', 'stt']
   },
   {
+    id: 'vision',
+    name: 'Vision',
+    description: 'Real-time ML vision detection (hands, body, face, objects)',
+    icon: 'Eye',
+    objects: ['vision.hand', 'vision.body', 'vision.face', 'vision.segment', 'vision.detect']
+  },
+  {
     id: 'experimental',
     name: 'Experimental',
     description: 'Unstable or work-in-progress',

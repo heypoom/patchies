@@ -52,6 +52,13 @@ import { wgpuPrompt } from './wgpu';
 import { workerPrompt } from './worker';
 import { scopePrompt } from './scope~';
 import { sequencerPrompt } from './sequencer';
+import {
+  visionHandPrompt,
+  visionBodyPrompt,
+  visionFacePrompt,
+  visionSegmentPrompt,
+  visionDetectPrompt
+} from './vision';
 
 /**
  * Mapping of object types to their instruction prompts.
@@ -104,7 +111,12 @@ export const objectPrompts: Record<string, string> = {
   'bytebeat~': bytebeatPrompt,
   'samplerate~': sampleratePrompt,
   sequencer: sequencerPrompt,
-  'scope~': scopePrompt
+  'scope~': scopePrompt,
+  'vision.hand': visionHandPrompt,
+  'vision.body': visionBodyPrompt,
+  'vision.face': visionFacePrompt,
+  'vision.segment': visionSegmentPrompt,
+  'vision.detect': visionDetectPrompt
 };
 
 /**
