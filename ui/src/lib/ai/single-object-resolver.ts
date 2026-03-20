@@ -212,7 +212,7 @@ AVAILABLE OBJECT TYPES:
 ${OBJECT_TYPE_LIST}
 
 EXAMPLES:
-- "rotating cube" → p5
+- "rotating cube" → p5  (short readable sketch, code clarity matters)
 - "slider from 0 to 1000" → slider
 - "audio output" -> object
 - "lowpass filter" → object
@@ -221,8 +221,16 @@ EXAMPLES:
 - "fragment shader" → glsl
 - "play audio file" → soundfile~
 - "python script" → python
-- "visualize audio spectrum" → p5
+- "visualize audio spectrum" → p5  (short, self-contained, good for learning)
 - "MIDI keyboard input" → midi.in
+- "particle system texture for a shader" → canvas  (feeds into rendering pipeline, no interactivity needed)
+- "heavy particle simulation, 10000 particles" → canvas.dom  (computationally heavy, performance over readability)
+- "interactive drawing canvas with mouse" → canvas.dom  (needs mouse input, main thread)
+
+CHOOSING BETWEEN p5 / canvas / canvas.dom:
+- p5: shorter, readable programs where code clarity matters; great for interactive sketches using p5's own mouse/keyboard helpers
+- canvas: runs on a web worker (offscreen, no DOM access, no interactivity) — highest performance; best when chaining into the rendering pipeline (e.g. as a video texture for glsl/hydra) or when no interactivity is needed
+- canvas.dom: runs on main thread so it can handle mouse/keyboard input and DOM access; more verbose than p5 but lower overhead; best for computationally heavy visuals or complex cases that need interactivity without p5's abstraction layer
 
 Now, return ONLY the object type for this prompt:`;
 }
