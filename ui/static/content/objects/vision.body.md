@@ -2,18 +2,6 @@
 
 Full-body pose estimation using MediaPipe PoseLandmarker. Detects up to 4 people with 33 body keypoints each.
 
-## Inlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | video | Video source |
-
-## Outlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | message | Detection results |
-
 ## Output
 
 ```js

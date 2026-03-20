@@ -1,18 +1,9 @@
 # vision.gesture
 
-Real-time hand gesture recognition using MediaPipe GestureRecognizer. Detects hand gestures (thumbs up, open palm, peace sign, etc.) along with 21 hand landmarks per hand.
+Real-time hand gesture recognition using MediaPipe GestureRecognizer.
 
-## Inlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | video | Video source (webcam, screen, video, etc.) |
-
-## Outlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | message | Recognition results |
+Detects hand gestures (thumbs up, open palm, peace sign, etc.) along with
+21 hand landmarks per hand.
 
 ## Output
 

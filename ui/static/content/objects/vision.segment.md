@@ -1,19 +1,9 @@
 # vision.segment
 
-Body segmentation using MediaPipe ImageSegmenter. Outputs a greyscale mask as video — white = foreground (person), black = background. Use as a video texture in GLSL/Hydra for compositing effects.
+Body segmentation using MediaPipe ImageSegmenter.
 
-## Inlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | video | Video source |
-
-## Outlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | video | Greyscale segmentation mask |
-| 1 | message | Raw mask data (when "Output Message" is enabled) |
+Outputs a greyscale mask as video — white = foreground (person),
+black = background. Use as a video texture in GLSL/Hydra for compositing effects.
 
 ## Message output (outlet 1)
 

@@ -1,18 +1,10 @@
 # vision.detect
 
-Object detection with bounding boxes using MediaPipe ObjectDetector (EfficientDet Lite0). Recognizes 90 COCO object classes including people, animals, vehicles, and everyday objects.
+Object detection with bounding boxes using MediaPipe ObjectDetector
+(EfficientDet Lite0).
 
-## Inlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | video | Video source |
-
-## Outlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | message | Detection results |
+Recognizes 90 COCO object classes including people, animals, vehicles,
+and everyday objects.
 
 ## Output
 

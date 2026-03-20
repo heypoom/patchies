@@ -1,18 +1,8 @@
 # vision.face
 
-Facial landmark detection (478 keypoints) using MediaPipe FaceLandmarker. Optionally outputs 52 ARKit blendshape coefficients for expression tracking.
+Facial landmark detection (478 keypoints) using MediaPipe FaceLandmarker.
 
-## Inlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | video | Video source |
-
-## Outlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | message | Detection results |
+Optionally outputs 52 ARKit blendshape coefficients for expression tracking.
 
 ## Output
 

@@ -1,18 +1,8 @@
 # vision.classify
 
-Image classification using MediaPipe ImageClassifier (EfficientNet Lite0). Returns the top matching labels from 1000 ImageNet classes for each frame.
+Image classification using MediaPipe ImageClassifier (EfficientNet Lite0).
 
-## Inlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | video | Video source (webcam, screen, video, etc.) |
-
-## Outlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | message | Classification results |
+Returns the top matching labels from 1000 ImageNet classes for each frame.
 
 ## Output
 

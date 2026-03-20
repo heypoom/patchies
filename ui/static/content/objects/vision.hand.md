@@ -3,18 +3,6 @@
 Real-time hand skeleton detection using MediaPipe HandLandmarker.
 Detects up to 4 hands with 21 keypoints each.
 
-## Inlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | video | Video source (webcam, screen, video, etc.) |
-
-## Outlets
-
-| Index | Type | Description |
-|-------|------|-------------|
-| 0 | message | Detection results |
-
 ## Output
 
 ```js
