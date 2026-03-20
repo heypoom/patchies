@@ -18,6 +18,10 @@ Offscreen Canvas on web worker thread for high-performance video chaining. NO DO
 - Runs in web worker - no DOM access, no mouse/keyboard events
 - Use canvas.dom for interactive sketches
 
+**Font & element sizes:**
+- The node is displayed very zoomed out in the patch canvas. Use large font sizes (18px minimum, 24–32px for primary text) so text remains readable.
+- Similarly, make shapes, lines, and UI elements larger than you would for a full-screen sketch.
+
 ${messagingInstructions}
 
 ${fftInstructions}

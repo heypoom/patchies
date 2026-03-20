@@ -14,6 +14,10 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - onKeyDown(event => {}) - Keyboard down events (event.key, event.code)
 - onKeyUp(event => {}) - Keyboard up events (event.key, event.code)
 
+**Font & element sizes:**
+- The node is displayed very zoomed out in the patch canvas. Use large font sizes (18px minimum, 24–32px for primary text) so text remains readable.
+- Similarly, make shapes, lines, and UI elements larger than you would for a full-screen sketch.
+
 ${messagingInstructions}
 
 ${fftInstructions}
