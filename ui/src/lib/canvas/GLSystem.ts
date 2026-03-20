@@ -73,6 +73,15 @@ export class GLSystem {
   private renderWorkerChannelSubscriptions = new Map<string, Set<string>>();
   private channelRegistry = MessageChannelRegistry.getInstance();
 
+  /** Cached singleton references to avoid repeated dynamic imports on hot paths */
+  private workerNodeSystem: null | {
+    deliverVideoFrames(targetNodeId: string, frames: unknown, timestamp: number): void;
+  } = null;
+
+  private mediaPipeNodeSystem: null | {
+    deliverVideoFrames(targetNodeId: string, frames: unknown, timestamp: number): void;
+  } = null;
+
   /** Settings callbacks for render worker nodes (canvas, hydra) */
   private settingsCallbacks = new Map<
     string,
@@ -139,6 +148,15 @@ export class GLSystem {
       }
     );
 
+    // Pre-warm singleton caches to avoid repeated dynamic imports on hot paths
+    import('$lib/js-runner/WorkerNodeSystem').then(({ WorkerNodeSystem }) => {
+      this.workerNodeSystem = WorkerNodeSystem.getInstance();
+    });
+
+    import('$objects/mediapipe/MediaPipeNodeSystem').then(({ MediaPipeNodeSystem }) => {
+      this.mediaPipeNodeSystem = MediaPipeNodeSystem.getInstance();
+    });
+
     // Listen for batched video frame requests from MediaPipeNodeSystem
     this.eventBus.addEventListener(
       'requestMediaPipeVideoFramesBatch',
@@ -186,6 +204,7 @@ export class GLSystem {
       })
       .with({ type: 'consoleOutput' }, (data) => {
         const args = data.args ?? [data.message];
+
         match(data.level)
           .with('error', () => {
             if (data.lineErrors && Object.keys(data.lineErrors).length > 0) {
@@ -267,33 +286,29 @@ export class GLSystem {
         this.handleVfsUrlResolution(data.requestId, data.nodeId, data.path);
       })
       .with({ type: 'workerVideoFramesCaptured' }, (data) => {
-        // Relay captured frames to WorkerNodeSystem
-        // Import dynamically to avoid circular dependency
-        import('$lib/js-runner/WorkerNodeSystem').then(({ WorkerNodeSystem }) => {
-          WorkerNodeSystem.getInstance().deliverVideoFrames(
-            data.targetNodeId,
-            data.frames,
-            data.timestamp
-          );
-        });
+        this.workerNodeSystem?.deliverVideoFrames(data.targetNodeId, data.frames, data.timestamp);
       })
       .with({ type: 'workerVideoFramesCapturedBatch' }, (data) => {
-        // Relay batched captured frames to WorkerNodeSystem
-        import('$lib/js-runner/WorkerNodeSystem').then(({ WorkerNodeSystem }) => {
-          const system = WorkerNodeSystem.getInstance();
-          for (const result of data.results) {
-            system.deliverVideoFrames(result.targetNodeId, result.frames, data.timestamp);
-          }
-        });
+        if (!this.workerNodeSystem) return;
+
+        for (const result of data.results) {
+          this.workerNodeSystem.deliverVideoFrames(
+            result.targetNodeId,
+            result.frames,
+            data.timestamp
+          );
+        }
       })
       .with({ type: 'mediaPipeVideoFramesCapturedBatch' }, (data) => {
-        // Relay batched captured frames to MediaPipeNodeSystem
-        import('$objects/mediapipe/MediaPipeNodeSystem').then(({ MediaPipeNodeSystem }) => {
-          const system = MediaPipeNodeSystem.getInstance();
-          for (const result of data.results) {
-            system.deliverVideoFrames(result.targetNodeId, result.frames, data.timestamp);
-          }
-        });
+        if (!this.mediaPipeNodeSystem) return;
+
+        for (const result of data.results) {
+          this.mediaPipeNodeSystem.deliverVideoFrames(
+            result.targetNodeId,
+            result.frames,
+            data.timestamp
+          );
+        }
       })
       // MediaBunny events from worker
       .with({ type: 'mediaBunnyMetadata' }, (data) => {

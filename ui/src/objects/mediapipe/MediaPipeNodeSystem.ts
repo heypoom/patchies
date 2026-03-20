@@ -12,6 +12,7 @@ import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { MediaPipeNodeOptions, MediaPipeTask, TaskOptions, WorkerOutMessage } from './types';
 import { GLSystem } from '$lib/canvas/GLSystem';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
+import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
 
 import HandWorker from './workers/hand.worker?worker';
 import BodyWorker from './workers/body.worker?worker';
@@ -27,6 +28,7 @@ type SimpleEdge = { source: string; target: string; targetHandle?: string | null
 
 export interface VisionNodeState {
   worker: Worker;
+  task: MediaPipeTask;
   sourceNodeId: string | null;
   frameCounter: number;
   skipFrames: number;
@@ -62,12 +64,22 @@ export class MediaPipeNodeSystem {
 
   private lastFrameTime = 0;
 
+  private readonly _unsubscribeProfilerEnable: () => void = () => {};
+
   static getInstance(): MediaPipeNodeSystem {
     if (!this.instance) {
       this.instance = new MediaPipeNodeSystem();
     }
 
     return this.instance;
+  }
+
+  private constructor() {
+    this._unsubscribeProfilerEnable = profiler.onEnableChange((enabled) => {
+      for (const state of this.nodes.values()) {
+        state.worker.postMessage({ type: 'profilerEnable', enabled });
+      }
+    });
   }
 
   private createWorker(task: MediaPipeTask): Worker {
@@ -93,6 +105,7 @@ export class MediaPipeNodeSystem {
 
     const state: VisionNodeState = {
       worker,
+      task: options.task,
       sourceNodeId: this.findSourceNodeId(nodeId),
       frameCounter: 0,
       skipFrames: Math.max(1, options.skipFrames),
@@ -118,7 +131,10 @@ export class MediaPipeNodeSystem {
     };
 
     // Initialize
-    worker.postMessage({ type: 'init', task: options.task, options: options.taskOptions });
+    worker.postMessage({ type: 'init', task: options.task, nodeId, options: options.taskOptions });
+
+    // Send current profiler state
+    worker.postMessage({ type: 'profilerEnable', enabled: profiler.enabled });
 
     // Register with DirectChannelService for worker→render direct messaging
     DirectChannelService.getInstance().registerWorker(nodeId, worker);
@@ -141,6 +157,7 @@ export class MediaPipeNodeSystem {
 
     this.nodes.delete(nodeId);
     this.statusCallbacks.delete(nodeId);
+    ProfilerCoordinator.getInstance().unregister(nodeId);
 
     if (this.nodes.size === 0 && this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
@@ -236,6 +253,15 @@ export class MediaPipeNodeSystem {
       });
       if (state.status !== 'running') {
         this.setStatus(nodeId, 'running');
+      }
+    } else if (msg.type === 'profilerStats') {
+      if (profiler.enabled) {
+        ProfilerCoordinator.getInstance().recordWorkerStats(
+          nodeId,
+          typeFromNodeId(nodeId),
+          msg.category as import('$lib/profiler').ProfilerCategory,
+          msg.stats
+        );
       }
     } else if (msg.type === 'segmentBitmap') {
       // vision.segment: push greyscale mask bitmap to GLSystem for video outlet

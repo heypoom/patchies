@@ -57,40 +57,49 @@ class SegmentWorker extends MediaPipeWorkerBase<ImageSegmenter, ImageSegmenterRe
     const height = bitmap.height;
 
     try {
-      const raw = this.detectFrame(this.task, bitmap);
-      const isCategoryMask = this.segmentOptions.maskType === 'category';
+      let imageData: ImageData | null = null;
+      let isCategoryMask = false;
+      let maskData: Uint8Array | Float32Array | null = null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let raw: any = null;
 
-      const maskData = isCategoryMask
-        ? raw.categoryMask?.getAsUint8Array()
-        : raw.confidenceMasks?.[0]?.getAsFloat32Array();
+      this.workerProfiler.measure(this.nodeId, 'draw', () => {
+        raw = this.detectFrame(this.task!, bitmap);
+        isCategoryMask = this.segmentOptions!.maskType === 'category';
 
-      if (!maskData) {
+        maskData = isCategoryMask
+          ? (raw.categoryMask?.getAsUint8Array() ?? null)
+          : (raw.confidenceMasks?.[0]?.getAsFloat32Array() ?? null);
+
+        if (!maskData) return;
+
+        imageData = new ImageData(width, height);
+        const pixels = imageData.data;
+
+        if (isCategoryMask) {
+          const uint8 = maskData as Uint8Array;
+          for (let i = 0; i < uint8.length; i++) {
+            const v = uint8[i] > 0 ? 255 : 0;
+            pixels[i * 4] = v;
+            pixels[i * 4 + 1] = v;
+            pixels[i * 4 + 2] = v;
+            pixels[i * 4 + 3] = 255;
+          }
+        } else {
+          const float32 = maskData as Float32Array;
+          for (let i = 0; i < float32.length; i++) {
+            const v = Math.round(float32[i] * 255);
+            pixels[i * 4] = v;
+            pixels[i * 4 + 1] = v;
+            pixels[i * 4 + 2] = v;
+            pixels[i * 4 + 3] = 255;
+          }
+        }
+      });
+
+      if (!imageData || !maskData) {
         bitmap.close();
         return;
-      }
-
-      // Build greyscale pixel data for ImageBitmap
-      const imageData = new ImageData(width, height);
-      const pixels = imageData.data;
-
-      if (isCategoryMask) {
-        const uint8 = maskData as Uint8Array;
-        for (let i = 0; i < uint8.length; i++) {
-          const v = uint8[i] > 0 ? 255 : 0;
-          pixels[i * 4] = v;
-          pixels[i * 4 + 1] = v;
-          pixels[i * 4 + 2] = v;
-          pixels[i * 4 + 3] = 255;
-        }
-      } else {
-        const float32 = maskData as Float32Array;
-        for (let i = 0; i < float32.length; i++) {
-          const v = Math.round(float32[i] * 255);
-          pixels[i * 4] = v;
-          pixels[i * 4 + 1] = v;
-          pixels[i * 4 + 2] = v;
-          pixels[i * 4 + 3] = 255;
-        }
       }
 
       createImageBitmap(imageData).then((maskBitmap) => {

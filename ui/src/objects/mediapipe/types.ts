@@ -181,10 +181,11 @@ export interface DirectChannelConnection {
 }
 
 export type WorkerInMessage =
-  | { type: 'init'; task: MediaPipeTask; options: TaskOptions }
+  | { type: 'init'; task: MediaPipeTask; nodeId: string; options: TaskOptions }
   | { type: 'frame'; bitmap: ImageBitmap; timestamp: number }
   | { type: 'updateSettings'; settings: Partial<TaskOptions> }
   | { type: 'destroy' }
+  | { type: 'profilerEnable'; enabled: boolean }
   | { type: 'setRenderPort'; nodeId: string }
   | { type: 'setWorkerPort'; nodeId: string; targetNodeId?: string; sourceNodeId?: string }
   | { type: 'updateRenderConnections'; nodeId: string; connections: DirectChannelConnection[] }
@@ -195,7 +196,13 @@ export type WorkerOutMessage =
   | { type: 'error'; message: string }
   | { type: 'result'; data: TaskResult; excludeTargets?: string[] }
   | { type: 'segmentBitmap'; bitmap: ImageBitmap; messageData?: SegmentOutput }
-  | { type: 'fps'; value: number };
+  | { type: 'fps'; value: number }
+  | {
+      type: 'profilerStats';
+      nodeId: string;
+      category: string;
+      stats: import('$lib/profiler').TimingStats;
+    };
 
 // ============================================================
 // MediaPipeNodeSystem registration options
