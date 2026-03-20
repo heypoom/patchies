@@ -57,6 +57,7 @@ export interface ClassifyTaskOptions {
 export interface SegmentTaskOptions {
   maskType: 'category' | 'confidence';
   outputMessage: boolean;
+  model: 'general' | 'landscape';
   delegate: 'GPU' | 'CPU';
   skipFrames: number;
 }

@@ -8,8 +8,12 @@ import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
 import type { SegmentTaskOptions, SegmentOutput, TaskOptions } from '$objects/mediapipe/types';
 import type { WorkerOutMessage } from '$objects/mediapipe/types';
 
-const MODEL_URL =
-  'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite';
+const MODEL_URLS = {
+  general:
+    'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',
+  landscape:
+    'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter_landscape/float16/latest/selfie_segmenter_landscape.tflite'
+};
 
 // Override processFrame for segment — needs to post segmentBitmap not result
 class SegmentWorker extends MediaPipeWorkerBase<
@@ -26,7 +30,7 @@ class SegmentWorker extends MediaPipeWorkerBase<
 
     return ImageSegmenter.createFromOptions(vision, {
       baseOptions: {
-        modelAssetPath: MODEL_URL,
+        modelAssetPath: MODEL_URLS[opts.model ?? 'general'],
         delegate: opts.delegate ?? 'GPU'
       },
       runningMode: 'IMAGE',

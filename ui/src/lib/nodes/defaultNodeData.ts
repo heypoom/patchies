@@ -297,6 +297,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       mode: 'landmarks'
     }))
     .with('vision.segment', () => ({
+      model: 'general',
       maskType: 'category',
       outputMessage: false,
       delegate: 'GPU',

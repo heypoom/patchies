@@ -26,6 +26,20 @@
 
   const SCHEMA: SettingsSchema = [
     {
+      key: 'model',
+      label: 'Model',
+      type: 'select',
+      default: 'general',
+      options: [
+        { label: 'General', value: 'general' },
+        {
+          label: 'Landscape (fast)',
+          value: 'landscape',
+          description: 'Optimised for landscape orientation, lower latency'
+        }
+      ]
+    },
+    {
       key: 'maskType',
       label: 'Mask Type',
       type: 'select',
@@ -71,6 +85,7 @@
 
   function handleRevertSettings() {
     const defaults: SegmentTaskOptions = {
+      model: 'general',
       maskType: 'category',
       outputMessage: false,
       delegate: 'GPU',
@@ -90,6 +105,7 @@
     mediaPipeSystem.register(nodeId, {
       task: 'segment',
       taskOptions: {
+        model: data.model ?? 'general',
         maskType: data.maskType ?? 'category',
         outputMessage: data.outputMessage ?? false,
         delegate: data.delegate ?? 'GPU',
