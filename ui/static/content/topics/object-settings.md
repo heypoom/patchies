@@ -156,7 +156,14 @@ A dropdown with predefined options.
 }
 ```
 
-Option `description` shows as a tooltip.
+Options can also be a plain string array — each string becomes both the label and value:
+
+```javascript
+{ key: 'shape', type: 'select', label: 'Shape', default: 'circle',
+  options: ['circle', 'square', 'triangle'] }
+```
+
+Option `description` shows as a tooltip (object form only).
 
 ### `color`
 
