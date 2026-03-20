@@ -177,6 +177,22 @@
 
     updateNodeData(nodeId, { notes: newNotes });
     tracker.commit('notes', oldNotes, newNotes);
+
+    const updated = newNotes[index];
+    messageContext?.send({
+      type: 'noteOn',
+      note: updated.note,
+      velocity: updated.velocity,
+      channel: updated.channel
+    });
+    setTimeout(() => {
+      messageContext?.send({
+        type: 'noteOff',
+        note: updated.note,
+        velocity: 0,
+        channel: updated.channel
+      });
+    }, 200);
   }
 
   function handleScroll(delta: number) {

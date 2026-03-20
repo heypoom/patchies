@@ -12,7 +12,10 @@
   } from './types';
 
   const BLACK_NOTES = new Set([1, 3, 6, 8, 10]);
+
   const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+  const WHEEL_THRESHOLD = 20;
 
   function noteName(n: number): string {
     return `${NOTE_NAMES[n % 12]}${Math.floor(n / 12) - 1}`;
@@ -80,12 +83,15 @@
   function noteLeft(tick: number) {
     return (tick / PPQ) * zoom;
   }
+
   function noteTop(note: number) {
     return RULER_HEIGHT + (scrollNote + visibleNotes - 1 - note) * NOTE_HEIGHT;
   }
+
   function noteWidth(durationTicks: number) {
     return Math.max((durationTicks / PPQ) * zoom, 4);
   }
+
   function isVisible(note: number) {
     return note >= scrollNote && note < scrollNote + visibleNotes;
   }
@@ -98,6 +104,7 @@
     // Sync buffer size to logical size × DPR
     const bw = Math.round(gridWidth * dpr);
     const bh = Math.round(canvasHeight * dpr);
+
     if (canvas.width !== bw) canvas.width = bw;
     if (canvas.height !== bh) canvas.height = bh;
 
@@ -327,9 +334,12 @@
 
     // Empty space → draw
     if (y < RULER_HEIGHT) return;
+
     const startTick = Math.max(0, snapTick((x / zoom) * PPQ, gridTicks));
+
     const noteNum = xToNote(y);
     if (noteNum < 0 || noteNum > 127) return;
+
     dragState = {
       type: 'drawing',
       note: noteNum,
@@ -337,6 +347,7 @@
       currentTick: startTick + gridTicks,
       gridTicks
     };
+
     cursor = 'crosshair';
   }
 
@@ -456,9 +467,19 @@
     }
   }
 
+  let wheelAccum = 0;
+
   function handleWheel(e: WheelEvent) {
     e.preventDefault();
-    onScroll?.(e.deltaY > 0 ? -2 : 2);
+
+    wheelAccum += e.deltaY;
+
+    const steps = Math.trunc(wheelAccum / WHEEL_THRESHOLD);
+
+    if (steps !== 0) {
+      wheelAccum -= steps * WHEEL_THRESHOLD;
+      onScroll?.(-steps);
+    }
   }
 
   function loop() {
