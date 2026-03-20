@@ -1,4 +1,5 @@
 import { resolveObjectFromPrompt } from '../single-object-resolver';
+import { getObjectSpecificInstructions } from '../object-prompts';
 import type { AiModeContext, AiModeResult, ModeResolver } from './types';
 
 /**
@@ -23,8 +24,11 @@ export const createConsumerResolver: ModeResolver = async (
   const sourceName = (sourceData.name as string) ?? '';
   const sourceCode = (sourceData.code as string) ?? '';
 
+  const sourceInstructions = getObjectSpecificInstructions(sourceType);
+
   const contextLines = [
     `Source node type: "${sourceType}"`,
+    sourceInstructions ? `Source node documentation:\n${sourceInstructions}` : '',
     sourceName ? `Source node name: "${sourceName}"` : '',
     sourceCode
       ? `Source node code:\n\`\`\`\n${sourceCode}\n\`\`\``
