@@ -27,7 +27,7 @@
     error?: string;
     fps?: number;
     schema: SettingsSchema;
-    settingsData: Record<string, unknown>;
+    settingsData: object;
     onSettingChange: (key: string, value: unknown) => void;
     onRevertSettings: () => void;
     messageOutletCount?: number;
@@ -137,7 +137,7 @@
       <ObjectSettings
         {nodeId}
         {schema}
-        values={settingsData}
+        values={settingsData as Record<string, unknown>}
         settingsPrefix=""
         onValueChange={onSettingChange}
         onRevertAll={onRevertSettings}

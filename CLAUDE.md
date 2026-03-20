@@ -441,6 +441,30 @@ export const MyNode = createWorkletDspNode({
 - Topic docs: `static/content/topics/` (update `src/routes/docs/docs-nav.ts` when adding new topics)
 - Object docs: `static/content/objects/`
 
+### Modular Object Modules (`src/objects/`)
+
+Complex objects with their own workers, system classes, or many files are co-located in `src/objects/<module>/`. Each module is self-contained and owns everything: components, workers, types, system class, and AI prompts.
+
+```text
+src/objects/<module>/
+  components/        # Svelte node components (imported via $objects alias)
+  workers/           # Web workers (*.worker.ts)
+  types.ts           # Shared types
+  *System.ts         # Singleton manager
+  prompts.ts         # AI object prompts
+```
+
+Import using the `$objects` alias (defined in `svelte.config.js`):
+
+```ts
+import { MySystem } from '$objects/mymodule/MySystem';
+import MyNode from '$objects/mymodule/components/MyNode.svelte';
+```
+
+**Current modules**: `mediapipe/` (vision ML nodes), `serial/`, `projmap/`, `curve/`, `pads/`, `table/`
+
+See `src/objects/README.md` for full documentation.
+
 ## Rendering Pipeline
 
 The pipeline coordinates across multiple files:

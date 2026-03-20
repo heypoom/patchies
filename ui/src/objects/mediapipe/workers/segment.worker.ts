@@ -114,7 +114,7 @@ class SegmentWorker extends MediaPipeWorkerBase<
           };
         }
 
-        self.postMessage(msg, [maskBitmap]);
+        self.postMessage(msg, { transfer: [maskBitmap] });
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

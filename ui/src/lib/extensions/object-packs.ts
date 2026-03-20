@@ -256,7 +256,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: 'vision',
     name: 'Vision',
-    description: 'Real-time ML vision detection (hands, body, face, objects)',
+    description: 'Real-time ML vision detection',
     icon: 'Eye',
     objects: ['vision.hand', 'vision.body', 'vision.face', 'vision.segment', 'vision.detect']
   },
