@@ -170,6 +170,7 @@ export class MediaPipeNodeSystem {
 
     const bitmap = frames[0];
     if (!bitmap) {
+      console.debug('[MediaPipe] null bitmap for', nodeId, '— source node may not be rendering');
       frames.forEach((f) => f?.close());
       return;
     }
@@ -186,6 +187,7 @@ export class MediaPipeNodeSystem {
     const edge = this.currentEdges.find(
       (e) => e.target === nodeId && (e.targetHandle === 'video-in' || e.targetHandle === null)
     );
+
     return edge?.source ?? null;
   }
 
@@ -262,7 +264,14 @@ export class MediaPipeNodeSystem {
 
     for (const [nodeId, state] of this.nodes) {
       // Skip if no source connected
-      if (!state.sourceNodeId) continue;
+      if (!state.sourceNodeId) {
+        console.debug(
+          '[MediaPipe] no source for',
+          nodeId,
+          '— check edge targetHandle is "video-in"'
+        );
+        continue;
+      }
 
       // Frame skipping
       state.frameCounter++;

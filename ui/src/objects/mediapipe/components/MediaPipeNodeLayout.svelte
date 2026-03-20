@@ -38,6 +38,7 @@
 
   const handleClass = $derived.by(() => {
     if (!selected && $shouldShowHandles) return 'z-1';
+
     return `z-1 ${selected ? '' : 'opacity-40'}`;
   });
 
@@ -60,6 +61,7 @@
       {#if status === 'running' && fps !== undefined}
         <span class="text-[9px] text-zinc-500">{fps}fps</span>
       {/if}
+
       <button
         class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
         onclick={(e) => {
@@ -76,7 +78,7 @@
       <!-- Video inlet (orange) -->
       <TypedHandle
         port="inlet"
-        spec={{ handleType: 'video', handleId: '0' }}
+        spec={{ handleType: 'video' }}
         title="Video input"
         total={1}
         index={0}
@@ -86,11 +88,11 @@
 
       <!-- Node body -->
       <div
-        class={`rounded-lg border-1 px-4 py-3 ${selected ? 'object-container-selected' : 'object-container'}`}
+        class={`rounded-lg border-1 px-4 py-2 ${selected ? 'object-container-selected' : 'object-container'}`}
       >
         <div class="flex items-center gap-2">
           <!-- Status pill -->
-          <div class={`h-2 w-2 rounded-full ${statusColor}`}></div>
+          <div class={`h-1.5 w-1.5 rounded-full ${statusColor}`}></div>
 
           <!-- Node name -->
           <span class="font-mono text-xs text-zinc-300">{title}</span>
@@ -104,10 +106,10 @@
       </div>
 
       <!-- Message outlets -->
-      {#each Array(messageOutletCount) as _, i}
+      {#each Array(messageOutletCount) as _, i (i)}
         <TypedHandle
           port="outlet"
-          spec={{ handleType: 'message' }}
+          spec={{ handleType: 'message', handleId: String(i) }}
           title={messageOutletCount > 1 ? `Outlet ${i}` : 'Output'}
           total={totalOutlets}
           index={i}
@@ -133,7 +135,7 @@
 
   <!-- Settings panel -->
   {#if showSettings}
-    <div class="absolute top-0 left-full">
+    <div class="absolute top-0 left-full ml-2">
       <ObjectSettings
         {nodeId}
         {schema}

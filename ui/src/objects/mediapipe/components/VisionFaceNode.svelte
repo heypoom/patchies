@@ -35,13 +35,6 @@
       default: 1
     },
     {
-      key: 'blendshapes',
-      label: 'Blendshapes',
-      type: 'boolean',
-      default: false,
-      description: 'Output 52 ARKit blendshape coefficients'
-    },
-    {
       key: 'delegate',
       label: 'Delegate',
       type: 'select',
@@ -60,6 +53,13 @@
       step: 1,
       default: 1,
       description: 'Process every Nth frame'
+    },
+    {
+      key: 'blendshapes',
+      label: 'Blendshapes',
+      type: 'boolean',
+      default: false,
+      description: 'Output 52 ARKit blendshape coefficients'
     }
   ];
 
