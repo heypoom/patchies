@@ -56,6 +56,16 @@
   }
 
   // For slider/string/number: track focus→blur for undo (node-persistence only)
+  function normalizeOptions(
+    options: { label: string; value: string; description?: string }[] | string[]
+  ): { label: string; value: string; description?: string }[] {
+    if (options.length === 0 || typeof options[0] !== 'string') {
+      return options as { label: string; value: string; description?: string }[];
+    }
+
+    return (options as string[]).map((s) => ({ label: s, value: s }));
+  }
+
   function makeTracker(field: SettingsField) {
     if ((field.persistence ?? 'node') !== 'node') {
       return { onFocus: () => {}, onBlur: () => {} };
@@ -225,8 +235,9 @@
           {:else}
             <label class="mb-2 block text-xs font-medium text-zinc-300">{field.label}</label>
           {/if}
+
           <div class="flex flex-wrap gap-1">
-            {#each field.options as option, index (index)}
+            {#each normalizeOptions(field.options) as option, index (index)}
               {@const isSelected = getCurrentValue(field) === option.value}
 
               {#if option.description}

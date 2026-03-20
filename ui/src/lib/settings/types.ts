@@ -29,7 +29,7 @@ export interface BooleanField extends SettingsFieldBase {
 export interface SelectField extends SettingsFieldBase {
   type: 'select';
   default?: string;
-  options: { label: string; value: string; description?: string }[];
+  options: string[] | { label: string; value: string; description?: string }[];
 }
 
 export interface ColorField extends SettingsFieldBase {
