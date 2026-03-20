@@ -15,4 +15,8 @@ export const messagingInstructions = `
 - Bang is {type: 'bang'}
 - Control messages MUST have a 'type' field (e.g. {type: 'bang'}, {type: 'play'})
 - Common control messages: bang (most common), clear, reset, start, stop, pause, play, run, toggle
+- MIDI Note: {type: 'noteOn' | 'noteOff', note: 60, velocity: 127, channel: 1}
+  - MIDI PB: {type: 'pitchBend', value, channel}
+  - MIDI CC: {type: 'controlChange', control, value}
+  - MIDI PC: {type: 'programChange', program, channel}
 `.trim();
