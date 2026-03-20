@@ -84,6 +84,7 @@ export * from './sequencer';
 export * from './bytebeat';
 export * from './projmap';
 export * from './from-v2-node';
+export * from '$objects/mediapipe/schemas';
 
 import type { ObjectSchemaRegistry } from './types';
 import { generatedObjectSchemas } from '$lib/generated/object-schemas.generated';
@@ -172,6 +173,15 @@ import { bytebeatSchema } from './bytebeat';
 import { projmapSchema } from './projmap';
 import { curveSchema } from '$objects/curve/schema';
 import { serialSchema, serialTermSchema } from '$objects/serial/schema';
+import {
+  visionHandSchema,
+  visionBodySchema,
+  visionFaceSchema,
+  visionGestureSchema,
+  visionClassifySchema,
+  visionDetectSchema,
+  visionSegmentSchema
+} from '$objects/mediapipe/schemas';
 
 /**
  * Registry of all object schemas.
@@ -270,7 +280,14 @@ export const objectSchemas: ObjectSchemaRegistry = {
   projmap: projmapSchema,
   curve: curveSchema,
   serial: serialSchema,
-  'serial.term': serialTermSchema
+  'serial.term': serialTermSchema,
+  'vision.hand': visionHandSchema,
+  'vision.body': visionBodySchema,
+  'vision.face': visionFaceSchema,
+  'vision.gesture': visionGestureSchema,
+  'vision.classify': visionClassifySchema,
+  'vision.detect': visionDetectSchema,
+  'vision.segment': visionSegmentSchema
 };
 
 /**
