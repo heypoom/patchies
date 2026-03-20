@@ -25,7 +25,7 @@ import MyNode from '$objects/mymodule/components/MyNode.svelte';
 
 ### `mediapipe/`
 
-MediaPipe ML vision nodes: `vision.hand`, `vision.body`, `vision.face`, `vision.segment`, `vision.detect`.
+MediaPipe ML vision nodes: `vision.hand`, `vision.body`, `vision.face`, `vision.segment`, `vision.detect`, `vision.gesture`, `vision.classify`.
 
 - `types.ts` — shared types and worker message protocol
 - `MediaPipeWorkerBase.ts` — abstract base class for all vision workers (WASM workaround, FPS tracking, GPU→CPU fallback)

@@ -92,6 +92,7 @@ export type WorkerMessage =
       requests: Array<{
         targetNodeId: string;
         sourceNodeIds: (string | null)[];
+        resolution?: [number, number];
       }>;
     }
   // Settings API responses (main → render worker)

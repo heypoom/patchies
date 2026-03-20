@@ -41,7 +41,7 @@ Body segmentation using MediaPipe ImageSegmenter. Outputs a greyscale mask as vi
 
 Connect to a GLSL shader to composite video over a background:
 
-```
+```text
 webcam ─────────────────────► glsl (sampler0: person video)
          └─ vision.segment ──► glsl (sampler1: mask)
 ```

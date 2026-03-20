@@ -43,7 +43,7 @@ Results are sorted by score descending. The first entry is the top prediction.
 
 Connect any video source to the video inlet:
 
-```
+```text
 webcam → vision.classify → js
 ```
 

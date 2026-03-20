@@ -53,7 +53,7 @@ class FaceWorker extends MediaPipeWorkerBase<any, any> {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected formatResult(raw: any): FaceOutput {
+  protected formatResult(raw: any, timestamp: number): FaceOutput {
     if (this.faceOptions?.mode === 'detect') {
       return {
         faces: raw.detections.map(
@@ -76,7 +76,7 @@ class FaceWorker extends MediaPipeWorkerBase<any, any> {
             )
           })
         ),
-        timestamp: performance.now()
+        timestamp
       };
     }
 
@@ -103,7 +103,7 @@ class FaceWorker extends MediaPipeWorkerBase<any, any> {
           return face;
         }
       ),
-      timestamp: performance.now()
+      timestamp
     };
   }
 }

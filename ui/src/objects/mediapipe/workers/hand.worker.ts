@@ -30,7 +30,7 @@ class HandWorker extends MediaPipeWorkerBase<HandLandmarker, HandLandmarkerResul
     return task.detectForVideo(bitmap, timestamp);
   }
 
-  protected formatResult(raw: HandLandmarkerResult): HandOutput {
+  protected formatResult(raw: HandLandmarkerResult, timestamp: number): HandOutput {
     return {
       hands: raw.handednesses.map((cat, i) => ({
         handedness: (cat[0]?.categoryName ?? 'Right') as 'Left' | 'Right',
@@ -42,7 +42,7 @@ class HandWorker extends MediaPipeWorkerBase<HandLandmarker, HandLandmarkerResul
           z: lm.z
         }))
       })),
-      timestamp: performance.now()
+      timestamp
     };
   }
 }

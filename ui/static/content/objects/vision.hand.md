@@ -50,7 +50,7 @@ Detects up to 4 hands with 21 keypoints each.
 
 Connect any video source to the video inlet:
 
-```
+```text
 webcam → vision.hand → js
 ```
 

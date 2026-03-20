@@ -29,7 +29,7 @@ class GestureWorker extends MediaPipeWorkerBase<GestureRecognizer, GestureRecogn
     return task.recognizeForVideo(bitmap, timestamp);
   }
 
-  protected formatResult(raw: GestureRecognizerResult): GestureOutput {
+  protected formatResult(raw: GestureRecognizerResult, timestamp: number): GestureOutput {
     return {
       gestures: raw.gestures.map((cats, i) => ({
         gesture: cats[0]?.categoryName ?? 'None',
@@ -44,7 +44,7 @@ class GestureWorker extends MediaPipeWorkerBase<GestureRecognizer, GestureRecogn
           z: lm.z
         }))
       })),
-      timestamp: performance.now()
+      timestamp
     };
   }
 }

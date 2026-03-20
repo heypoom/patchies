@@ -21,10 +21,14 @@ export const createConsumerResolver: ModeResolver = async (
 
   const sourceType = selectedNode.type ?? 'unknown';
   const sourceData = (selectedNode.data as Record<string, unknown>) ?? {};
+
+  const sourceSubtype =
+    sourceType === 'object' && typeof sourceData.type === 'string' ? sourceData.type : sourceType;
+
   const sourceName = (sourceData.name as string) ?? '';
   const sourceCode = (sourceData.code as string) ?? '';
 
-  const sourceInstructions = getObjectSpecificInstructions(sourceType);
+  const sourceInstructions = getObjectSpecificInstructions(sourceSubtype);
 
   const contextLines = [
     `Source node type: "${sourceType}"`,

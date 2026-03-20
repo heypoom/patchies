@@ -324,6 +324,7 @@
     for (const nodeId of deletedNodes) {
       messageSystem.unregisterNode(nodeId);
       audioService.removeNodeById(nodeId);
+      mediaPipeNodeSystem.unregister(nodeId);
       ProfilerCoordinator.getInstance().unregister(nodeId);
     }
   });

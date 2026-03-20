@@ -42,7 +42,7 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected abstract initTask(vision: any, options: TaskOptions): Promise<TTask>;
   protected abstract detectFrame(task: TTask, bitmap: ImageBitmap, timestamp: number): TResult;
-  protected abstract formatResult(raw: TResult): TaskResult;
+  protected abstract formatResult(raw: TResult, timestamp: number): TaskResult;
 
   protected post(msg: WorkerOutMessage, transfer?: Transferable[]) {
     if (transfer?.length) {
@@ -114,7 +114,7 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
       this.workerProfiler.measure(this.nodeId, 'draw', () => {
         // ! detectFrame is the slowest part
         const raw = this.detectFrame(this.task!, bitmap, timestamp);
-        const result = this.formatResult(raw);
+        const result = this.formatResult(raw, timestamp);
 
         this.sendResult(result);
         this.frameCount++;

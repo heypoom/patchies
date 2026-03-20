@@ -31,7 +31,7 @@ class ClassifyWorker extends MediaPipeWorkerBase<ImageClassifier, ImageClassifie
     return task.classifyForVideo(bitmap, timestamp);
   }
 
-  protected formatResult(raw: ImageClassifierResult): ClassifyOutput {
+  protected formatResult(raw: ImageClassifierResult, timestamp: number): ClassifyOutput {
     const categories = raw.classifications[0]?.categories ?? [];
 
     return {
@@ -39,7 +39,7 @@ class ClassifyWorker extends MediaPipeWorkerBase<ImageClassifier, ImageClassifie
         label: c.categoryName,
         score: c.score
       })),
-      timestamp: performance.now()
+      timestamp
     };
   }
 }

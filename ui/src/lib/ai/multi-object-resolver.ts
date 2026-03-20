@@ -329,8 +329,8 @@ Response:
 User: "heavy particle simulation with 10000 particles"
 Response:
 {
-  "objectTypes": ["canvas.dom"],
-  "structure": "canvas.dom runs computationally heavy particle simulation directly on main thread canvas"
+  "objectTypes": ["canvas"],
+  "structure": "canvas runs computationally heavy particle simulation on web worker for performance"
 }
 
 User: "XY pad controlling two parameters"

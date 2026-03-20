@@ -37,7 +37,7 @@ class BodyWorker extends MediaPipeWorkerBase<PoseLandmarker, PoseLandmarkerResul
     return task.detectForVideo(bitmap, timestamp);
   }
 
-  protected formatResult(raw: PoseLandmarkerResult): BodyOutput {
+  protected formatResult(raw: PoseLandmarkerResult, timestamp: number): BodyOutput {
     return {
       poses: raw.landmarks.map((lms, i) => ({
         landmarks: lms.map(
@@ -60,7 +60,7 @@ class BodyWorker extends MediaPipeWorkerBase<PoseLandmarker, PoseLandmarkerResul
           })
         )
       })),
-      timestamp: performance.now()
+      timestamp
     };
   }
 }

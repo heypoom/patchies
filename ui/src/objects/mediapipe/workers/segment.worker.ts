@@ -41,7 +41,7 @@ class SegmentWorker extends MediaPipeWorkerBase<ImageSegmenter, ImageSegmenterRe
     return task.segmentForVideo(bitmap, timestamp);
   }
 
-  protected formatResult(): SegmentOutput {
+  protected formatResult(_raw: ImageSegmenterResult, _timestamp: number): SegmentOutput {
     // Not used — segment worker overrides processFrame
     return { width: 0, height: 0, mask: new Uint8Array(0), maskType: 'category', timestamp: 0 };
   }
@@ -102,25 +102,33 @@ class SegmentWorker extends MediaPipeWorkerBase<ImageSegmenter, ImageSegmenterRe
         return;
       }
 
-      createImageBitmap(imageData).then((maskBitmap) => {
-        const msg: WorkerOutMessage = { type: 'segmentBitmap', bitmap: maskBitmap };
+      createImageBitmap(imageData)
+        .then((maskBitmap) => {
+          const msg: WorkerOutMessage = { type: 'segmentBitmap', bitmap: maskBitmap };
 
-        if (this.segmentOptions?.outputMessage) {
-          const cloned = isCategoryMask
-            ? new Uint8Array(maskData as Uint8Array)
-            : new Float32Array(maskData as Float32Array);
+          if (this.segmentOptions?.outputMessage) {
+            const cloned = isCategoryMask
+              ? new Uint8Array(maskData as Uint8Array)
+              : new Float32Array(maskData as Float32Array);
 
-          (msg as { messageData?: SegmentOutput }).messageData = {
-            width,
-            height,
-            mask: cloned,
-            maskType: this.segmentOptions.maskType,
-            timestamp
-          };
-        }
+            (msg as { messageData?: SegmentOutput }).messageData = {
+              width,
+              height,
+              mask: cloned,
+              maskType: this.segmentOptions.maskType,
+              timestamp
+            };
+          }
 
-        self.postMessage(msg, { transfer: [maskBitmap] });
-      });
+          self.postMessage(msg, { transfer: [maskBitmap] });
+        })
+        .catch((err) => {
+          const message = err instanceof Error ? err.message : String(err);
+          self.postMessage({
+            type: 'error',
+            message: `createImageBitmap failed: ${message}`
+          } satisfies WorkerOutMessage);
+        });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (raw as any).close?.();

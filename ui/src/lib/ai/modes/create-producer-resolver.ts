@@ -22,10 +22,15 @@ export const createProducerResolver: ModeResolver = async (
   const consumerType = selectedNode.type ?? 'unknown';
   const consumerData = (selectedNode.data as Record<string, unknown>) ?? {};
 
+  const consumerSubtype =
+    consumerType === 'object' && typeof consumerData.type === 'string'
+      ? consumerData.type
+      : consumerType;
+
   const consumerName = (consumerData.name as string) ?? '';
   const consumerCode = (consumerData.code as string) ?? '';
 
-  const consumerInstructions = getObjectSpecificInstructions(consumerType);
+  const consumerInstructions = getObjectSpecificInstructions(consumerSubtype);
 
   const contextLines = [
     `Consumer node type: "${consumerType}"`,

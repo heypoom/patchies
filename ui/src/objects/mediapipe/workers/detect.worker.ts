@@ -30,7 +30,7 @@ class DetectWorker extends MediaPipeWorkerBase<ObjectDetector, ObjectDetectorRes
     return task.detectForVideo(bitmap, timestamp);
   }
 
-  protected formatResult(raw: ObjectDetectorResult): DetectOutput {
+  protected formatResult(raw: ObjectDetectorResult, timestamp: number): DetectOutput {
     return {
       detections: raw.detections.map((d) => ({
         label: d.categories[0]?.categoryName ?? 'unknown',
@@ -42,7 +42,7 @@ class DetectWorker extends MediaPipeWorkerBase<ObjectDetector, ObjectDetectorRes
           height: d.boundingBox?.height ?? 0
         }
       })),
-      timestamp: performance.now()
+      timestamp
     };
   }
 }
