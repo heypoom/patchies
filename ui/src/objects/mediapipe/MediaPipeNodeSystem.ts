@@ -96,7 +96,7 @@ export class MediaPipeNodeSystem {
       frameCounter: 0,
       skipFrames: Math.max(1, options.skipFrames),
       status: 'initializing',
-      enabled: true,
+      enabled: false,
       isSegment
     };
 
