@@ -11,11 +11,11 @@ import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { MediaPipeNodeOptions, TaskOptions, WorkerOutMessage } from './types';
 import { GLSystem } from '$lib/canvas/GLSystem';
 
-import HandWorker from '../../workers/mediapipe/hand.worker?worker';
-import BodyWorker from '../../workers/mediapipe/body.worker?worker';
-import FaceWorker from '../../workers/mediapipe/face.worker?worker';
-import SegmentWorker from '../../workers/mediapipe/segment.worker?worker';
-import DetectWorker from '../../workers/mediapipe/detect.worker?worker';
+import HandWorker from './workers/hand.worker?worker';
+import BodyWorker from './workers/body.worker?worker';
+import FaceWorker from './workers/face.worker?worker';
+import SegmentWorker from './workers/segment.worker?worker';
+import DetectWorker from './workers/detect.worker?worker';
 
 export type VisionStatus = 'idle' | 'initializing' | 'running' | 'error';
 

@@ -58,7 +58,7 @@ import {
   visionFacePrompt,
   visionSegmentPrompt,
   visionDetectPrompt
-} from './vision';
+} from '$objects/mediapipe/prompts';
 
 /**
  * Mapping of object types to their instruction prompts.

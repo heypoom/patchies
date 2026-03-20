@@ -2,10 +2,10 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import MediaPipeNodeLayout from './MediaPipeNodeLayout.svelte';
-  import { MediaPipeNodeSystem } from '$lib/mediapipe/MediaPipeNodeSystem';
-  import type { FaceTaskOptions } from '$lib/mediapipe/types';
+  import { MediaPipeNodeSystem } from '$objects/mediapipe/MediaPipeNodeSystem';
+  import type { BodyTaskOptions } from '$objects/mediapipe/types';
   import type { SettingsSchema } from '$lib/settings/types';
-  import type { VisionStatus } from '$lib/mediapipe/MediaPipeNodeSystem';
+  import type { VisionStatus } from '$objects/mediapipe/MediaPipeNodeSystem';
 
   let {
     id: nodeId,
@@ -13,7 +13,7 @@
     selected
   }: {
     id: string;
-    data: FaceTaskOptions;
+    data: BodyTaskOptions;
     selected: boolean;
   } = $props();
 
@@ -26,8 +26,8 @@
 
   const SCHEMA: SettingsSchema = [
     {
-      key: 'numFaces',
-      label: 'Max Faces',
+      key: 'numPoses',
+      label: 'Max Poses',
       type: 'slider',
       min: 1,
       max: 4,
@@ -35,11 +35,15 @@
       default: 1
     },
     {
-      key: 'blendshapes',
-      label: 'Blendshapes',
-      type: 'boolean',
-      default: false,
-      description: 'Output 52 ARKit blendshape coefficients'
+      key: 'model',
+      label: 'Model',
+      type: 'select',
+      default: 'lite',
+      options: [
+        { label: 'Lite', value: 'lite' },
+        { label: 'Full', value: 'full' },
+        { label: 'Heavy', value: 'heavy' }
+      ]
     },
     {
       key: 'delegate',
@@ -65,18 +69,21 @@
 
   function handleSettingChange(key: string, value: unknown) {
     updateNodeData(nodeId, { [key]: value });
-    mediaPipeSystem.updateSettings(nodeId, { [key]: value } as Partial<FaceTaskOptions>);
+
+    mediaPipeSystem.updateSettings(nodeId, { [key]: value } as Partial<BodyTaskOptions>);
   }
 
   function handleRevertSettings() {
-    const defaults: FaceTaskOptions = {
-      numFaces: 1,
-      blendshapes: false,
+    const defaults = {
+      numPoses: 1,
+      model: 'lite',
       delegate: 'GPU',
       skipFrames: 1
     };
-    updateNodeData(nodeId, defaults as unknown as Record<string, unknown>);
-    mediaPipeSystem.updateSettings(nodeId, defaults);
+
+    updateNodeData(nodeId, defaults);
+
+    mediaPipeSystem.updateSettings(nodeId, defaults as BodyTaskOptions);
   }
 
   onMount(() => {
@@ -87,10 +94,10 @@
     });
 
     mediaPipeSystem.register(nodeId, {
-      task: 'face',
+      task: 'body',
       taskOptions: {
-        numFaces: data.numFaces ?? 1,
-        blendshapes: data.blendshapes ?? false,
+        numPoses: data.numPoses ?? 1,
+        model: data.model ?? 'lite',
         delegate: data.delegate ?? 'GPU',
         skipFrames: data.skipFrames ?? 1
       },
@@ -107,7 +114,7 @@
 <MediaPipeNodeLayout
   {nodeId}
   {selected}
-  title="vision.face"
+  title="vision.body"
   {status}
   {error}
   {fps}

@@ -2,8 +2,8 @@
  * MediaPipe Object Detector worker.
  */
 
-import { MediaPipeWorkerBase } from '$lib/mediapipe/MediaPipeWorkerBase';
-import type { DetectTaskOptions, DetectOutput, TaskOptions } from '$lib/mediapipe/types';
+import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
+import type { DetectTaskOptions, DetectOutput, TaskOptions } from '$objects/mediapipe/types';
 
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/latest/efficientdet_lite0.tflite';

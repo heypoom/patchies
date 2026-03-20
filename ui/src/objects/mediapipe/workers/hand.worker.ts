@@ -2,8 +2,8 @@
  * MediaPipe Hand Landmarker worker.
  */
 
-import { MediaPipeWorkerBase } from '$lib/mediapipe/MediaPipeWorkerBase';
-import type { HandTaskOptions, HandOutput, TaskOptions } from '$lib/mediapipe/types';
+import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
+import type { HandTaskOptions, HandOutput, TaskOptions } from '$objects/mediapipe/types';
 
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task';

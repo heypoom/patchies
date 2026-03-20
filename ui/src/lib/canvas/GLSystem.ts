@@ -288,7 +288,7 @@ export class GLSystem {
       })
       .with({ type: 'mediaPipeVideoFramesCapturedBatch' }, (data) => {
         // Relay batched captured frames to MediaPipeNodeSystem
-        import('$lib/mediapipe/MediaPipeNodeSystem').then(({ MediaPipeNodeSystem }) => {
+        import('$objects/mediapipe/MediaPipeNodeSystem').then(({ MediaPipeNodeSystem }) => {
           const system = MediaPipeNodeSystem.getInstance();
           for (const result of data.results) {
             system.deliverVideoFrames(result.targetNodeId, result.frames, data.timestamp);

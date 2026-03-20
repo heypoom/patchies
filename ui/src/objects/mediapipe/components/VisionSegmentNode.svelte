@@ -2,10 +2,10 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import MediaPipeNodeLayout from './MediaPipeNodeLayout.svelte';
-  import { MediaPipeNodeSystem } from '$lib/mediapipe/MediaPipeNodeSystem';
-  import type { BodyTaskOptions } from '$lib/mediapipe/types';
+  import { MediaPipeNodeSystem } from '$objects/mediapipe/MediaPipeNodeSystem';
+  import type { SegmentTaskOptions } from '$objects/mediapipe/types';
   import type { SettingsSchema } from '$lib/settings/types';
-  import type { VisionStatus } from '$lib/mediapipe/MediaPipeNodeSystem';
+  import type { VisionStatus } from '$objects/mediapipe/MediaPipeNodeSystem';
 
   let {
     id: nodeId,
@@ -13,7 +13,7 @@
     selected
   }: {
     id: string;
-    data: BodyTaskOptions;
+    data: SegmentTaskOptions;
     selected: boolean;
   } = $props();
 
@@ -26,24 +26,21 @@
 
   const SCHEMA: SettingsSchema = [
     {
-      key: 'numPoses',
-      label: 'Max Poses',
-      type: 'slider',
-      min: 1,
-      max: 4,
-      step: 1,
-      default: 1
+      key: 'maskType',
+      label: 'Mask Type',
+      type: 'select',
+      default: 'category',
+      options: [
+        { label: 'Category', value: 'category', description: 'Binary foreground/background mask' },
+        { label: 'Confidence', value: 'confidence', description: 'Greyscale confidence values 0–1' }
+      ]
     },
     {
-      key: 'model',
-      label: 'Model',
-      type: 'select',
-      default: 'lite',
-      options: [
-        { label: 'Lite', value: 'lite' },
-        { label: 'Full', value: 'full' },
-        { label: 'Heavy', value: 'heavy' }
-      ]
+      key: 'outputMessage',
+      label: 'Output Message',
+      type: 'boolean',
+      default: false,
+      description: 'Also emit raw mask data as a message on outlet 1'
     },
     {
       key: 'delegate',
@@ -69,18 +66,16 @@
 
   function handleSettingChange(key: string, value: unknown) {
     updateNodeData(nodeId, { [key]: value });
-
-    mediaPipeSystem.updateSettings(nodeId, { [key]: value } as Partial<BodyTaskOptions>);
+    mediaPipeSystem.updateSettings(nodeId, { [key]: value } as Partial<SegmentTaskOptions>);
   }
 
   function handleRevertSettings() {
-    const defaults: BodyTaskOptions = {
-      numPoses: 1,
-      model: 'lite',
+    const defaults: SegmentTaskOptions = {
+      maskType: 'category',
+      outputMessage: false,
       delegate: 'GPU',
       skipFrames: 1
     };
-
     updateNodeData(nodeId, defaults as unknown as Record<string, unknown>);
     mediaPipeSystem.updateSettings(nodeId, defaults);
   }
@@ -93,10 +88,10 @@
     });
 
     mediaPipeSystem.register(nodeId, {
-      task: 'body',
+      task: 'segment',
       taskOptions: {
-        numPoses: data.numPoses ?? 1,
-        model: data.model ?? 'lite',
+        maskType: data.maskType ?? 'category',
+        outputMessage: data.outputMessage ?? false,
         delegate: data.delegate ?? 'GPU',
         skipFrames: data.skipFrames ?? 1
       },
@@ -110,10 +105,11 @@
   });
 </script>
 
+<!-- vision.segment has video outlet (outlet 0) + optional message outlet (outlet 1) -->
 <MediaPipeNodeLayout
   {nodeId}
   {selected}
-  title="vision.body"
+  title="vision.segment"
   {status}
   {error}
   {fps}
@@ -121,4 +117,6 @@
   settingsData={data}
   onSettingChange={handleSettingChange}
   onRevertSettings={handleRevertSettings}
+  messageOutletCount={data.outputMessage ? 1 : 0}
+  hasVideoOutlet={true}
 />

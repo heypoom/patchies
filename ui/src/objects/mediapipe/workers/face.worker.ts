@@ -2,8 +2,8 @@
  * MediaPipe Face Landmarker worker.
  */
 
-import { MediaPipeWorkerBase } from '$lib/mediapipe/MediaPipeWorkerBase';
-import type { FaceTaskOptions, FaceOutput, TaskOptions } from '$lib/mediapipe/types';
+import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
+import type { FaceTaskOptions, FaceOutput, TaskOptions } from '$objects/mediapipe/types';
 
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task';

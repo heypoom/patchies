@@ -2,10 +2,10 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import MediaPipeNodeLayout from './MediaPipeNodeLayout.svelte';
-  import { MediaPipeNodeSystem } from '$lib/mediapipe/MediaPipeNodeSystem';
-  import type { HandTaskOptions } from '$lib/mediapipe/types';
+  import { MediaPipeNodeSystem } from '$objects/mediapipe/MediaPipeNodeSystem';
+  import type { FaceTaskOptions } from '$objects/mediapipe/types';
   import type { SettingsSchema } from '$lib/settings/types';
-  import type { VisionStatus } from '$lib/mediapipe/MediaPipeNodeSystem';
+  import type { VisionStatus } from '$objects/mediapipe/MediaPipeNodeSystem';
 
   let {
     id: nodeId,
@@ -13,7 +13,7 @@
     selected
   }: {
     id: string;
-    data: HandTaskOptions;
+    data: FaceTaskOptions;
     selected: boolean;
   } = $props();
 
@@ -26,23 +26,20 @@
 
   const SCHEMA: SettingsSchema = [
     {
-      key: 'numHands',
-      label: 'Max Hands',
+      key: 'numFaces',
+      label: 'Max Faces',
       type: 'slider',
       min: 1,
       max: 4,
       step: 1,
-      default: 2
+      default: 1
     },
     {
-      key: 'model',
-      label: 'Model',
-      type: 'select',
-      default: 'lite',
-      options: [
-        { label: 'Lite', value: 'lite' },
-        { label: 'Full', value: 'full' }
-      ]
+      key: 'blendshapes',
+      label: 'Blendshapes',
+      type: 'boolean',
+      default: false,
+      description: 'Output 52 ARKit blendshape coefficients'
     },
     {
       key: 'delegate',
@@ -68,13 +65,13 @@
 
   function handleSettingChange(key: string, value: unknown) {
     updateNodeData(nodeId, { [key]: value });
-    mediaPipeSystem.updateSettings(nodeId, { [key]: value } as Partial<HandTaskOptions>);
+    mediaPipeSystem.updateSettings(nodeId, { [key]: value } as Partial<FaceTaskOptions>);
   }
 
   function handleRevertSettings() {
-    const defaults: HandTaskOptions = {
-      numHands: 2,
-      model: 'lite',
+    const defaults: FaceTaskOptions = {
+      numFaces: 1,
+      blendshapes: false,
       delegate: 'GPU',
       skipFrames: 1
     };
@@ -90,10 +87,10 @@
     });
 
     mediaPipeSystem.register(nodeId, {
-      task: 'hand',
+      task: 'face',
       taskOptions: {
-        numHands: data.numHands ?? 2,
-        model: data.model ?? 'lite',
+        numFaces: data.numFaces ?? 1,
+        blendshapes: data.blendshapes ?? false,
         delegate: data.delegate ?? 'GPU',
         skipFrames: data.skipFrames ?? 1
       },
@@ -110,7 +107,7 @@
 <MediaPipeNodeLayout
   {nodeId}
   {selected}
-  title="vision.hand"
+  title="vision.face"
   {status}
   {error}
   {fps}

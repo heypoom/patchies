@@ -2,8 +2,8 @@
  * MediaPipe Pose Landmarker worker.
  */
 
-import { MediaPipeWorkerBase } from '$lib/mediapipe/MediaPipeWorkerBase';
-import type { BodyTaskOptions, BodyOutput, TaskOptions } from '$lib/mediapipe/types';
+import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
+import type { BodyTaskOptions, BodyOutput, TaskOptions } from '$objects/mediapipe/types';
 
 const MODEL_URLS: Record<string, string> = {
   lite: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task',

@@ -2,10 +2,10 @@
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import MediaPipeNodeLayout from './MediaPipeNodeLayout.svelte';
-  import { MediaPipeNodeSystem } from '$lib/mediapipe/MediaPipeNodeSystem';
-  import type { DetectTaskOptions } from '$lib/mediapipe/types';
+  import { MediaPipeNodeSystem } from '$objects/mediapipe/MediaPipeNodeSystem';
+  import type { DetectTaskOptions } from '$objects/mediapipe/types';
   import type { SettingsSchema } from '$lib/settings/types';
-  import type { VisionStatus } from '$lib/mediapipe/MediaPipeNodeSystem';
+  import type { VisionStatus } from '$objects/mediapipe/MediaPipeNodeSystem';
 
   let {
     id: nodeId,
