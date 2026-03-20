@@ -21,10 +21,12 @@
   } from './types';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { Repeat, Trash2, Settings } from '@lucide/svelte/icons';
+  import { useNodeDataTracker } from '$lib/history';
 
   let { id: nodeId, data, selected }: NodeProps & { data: PianoRollNodeData } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+  const tracker = useNodeDataTracker(nodeId);
 
   let messageContext: MessageContext | null = null;
   let pianoRollObj: PianoRollObject | null = null;
@@ -137,7 +139,12 @@
   });
 
   function handleNoteAdd(note: PianoRollNote) {
-    updateNodeData(nodeId, { notes: [...notes, note] });
+    const oldNotes = notes;
+    const newNotes = [...notes, note];
+
+    updateNodeData(nodeId, { notes: newNotes });
+    tracker.commit('notes', oldNotes, newNotes);
+
     // Preview: send noteOn immediately
     messageContext?.send({
       type: 'noteOn',
@@ -145,6 +152,7 @@
       velocity: note.velocity,
       channel: note.channel
     });
+
     setTimeout(() => {
       messageContext?.send({
         type: 'noteOff',
@@ -156,13 +164,19 @@
   }
 
   function handleNoteDelete(index: number) {
+    const oldNotes = notes;
     const newNotes = notes.filter((_, i) => i !== index);
 
     updateNodeData(nodeId, { notes: newNotes });
+    tracker.commit('notes', oldNotes, newNotes);
   }
 
   function handleNoteUpdate(index: number, patch: Partial<PianoRollNote>) {
-    updateNodeData(nodeId, { notes: notes.map((n, i) => (i === index ? { ...n, ...patch } : n)) });
+    const oldNotes = notes;
+    const newNotes = notes.map((n, i) => (i === index ? { ...n, ...patch } : n));
+
+    updateNodeData(nodeId, { notes: newNotes });
+    tracker.commit('notes', oldNotes, newNotes);
   }
 
   function handleScroll(delta: number) {
@@ -309,6 +323,7 @@
           {/each}
         </select>
       </div>
+
       <div class="flex items-center gap-2">
         <span class="w-20">Quantize</span>
         <select
