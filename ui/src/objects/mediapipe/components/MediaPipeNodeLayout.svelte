@@ -40,11 +40,7 @@
 
   let showSettings = $state(false);
 
-  const handleClass = $derived.by(() => {
-    if (!selected && $shouldShowHandles) return 'z-1';
-
-    return `z-1 ${selected ? '' : 'opacity-40'}`;
-  });
+  const handleClass = 'z-1';
 
   const totalOutlets = $derived(messageOutletCount + (hasVideoOutlet ? 1 : 0));
 
