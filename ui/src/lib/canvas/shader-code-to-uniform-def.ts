@@ -3,7 +3,7 @@ import type { GLUniformDef } from '../../types/uniform-config';
 import type { SettingsField } from '$lib/settings/types';
 
 export function shaderCodeToUniformDefs(code: string): GLUniformDef[] {
-  const uniformRegex = /uniform\s+(\w+)\s+(\w+);/g;
+  const uniformRegex = /uniform\s+(\w+)\s+(\w+)(?:\[\d+\])?;/g;
   const uniformDefs: GLUniformDef[] = [];
 
   let result;
