@@ -57,7 +57,9 @@ import {
   visionBodyPrompt,
   visionFacePrompt,
   visionSegmentPrompt,
-  visionDetectPrompt
+  visionDetectPrompt,
+  visionGesturePrompt,
+  visionClassifyPrompt
 } from '$objects/mediapipe/prompts';
 
 /**
@@ -116,7 +118,9 @@ export const objectPrompts: Record<string, string> = {
   'vision.body': visionBodyPrompt,
   'vision.face': visionFacePrompt,
   'vision.segment': visionSegmentPrompt,
-  'vision.detect': visionDetectPrompt
+  'vision.detect': visionDetectPrompt,
+  'vision.gesture': visionGesturePrompt,
+  'vision.classify': visionClassifyPrompt
 };
 
 /**

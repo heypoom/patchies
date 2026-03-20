@@ -6,9 +6,10 @@
  * and routes results via MessageSystem.
  */
 
+import { match } from 'ts-pattern';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageSystem } from '$lib/messages/MessageSystem';
-import type { MediaPipeNodeOptions, TaskOptions, WorkerOutMessage } from './types';
+import type { MediaPipeNodeOptions, MediaPipeTask, TaskOptions, WorkerOutMessage } from './types';
 import { GLSystem } from '$lib/canvas/GLSystem';
 
 import HandWorker from './workers/hand.worker?worker';
@@ -16,8 +17,12 @@ import BodyWorker from './workers/body.worker?worker';
 import FaceWorker from './workers/face.worker?worker';
 import SegmentWorker from './workers/segment.worker?worker';
 import DetectWorker from './workers/detect.worker?worker';
+import GestureWorker from './workers/gesture.worker?worker';
+import ClassifyWorker from './workers/classify.worker?worker';
 
 export type VisionStatus = 'idle' | 'initializing' | 'running' | 'error';
+
+type SimpleEdge = { source: string; target: string; targetHandle?: string | null };
 
 export interface VisionNodeState {
   worker: Worker;
@@ -42,34 +47,32 @@ export class MediaPipeNodeSystem {
   private nodes = new Map<string, VisionNodeState>();
   private statusCallbacks = new Map<string, StatusCallback>();
 
-  private currentEdges: Array<{ source: string; target: string; targetHandle?: string | null }> =
-    [];
+  private currentEdges: SimpleEdge[] = [];
 
   // Global rAF loop
   private rafId: number | null = null;
   private static readonly FRAME_INTERVAL_MS = 1000 / 30; // 30fps
+
   private lastFrameTime = 0;
 
   static getInstance(): MediaPipeNodeSystem {
     if (!this.instance) {
       this.instance = new MediaPipeNodeSystem();
     }
+
     return this.instance;
   }
 
-  private createWorker(task: MediaPipeNodeOptions['task']): Worker {
-    switch (task) {
-      case 'hand':
-        return new HandWorker();
-      case 'body':
-        return new BodyWorker();
-      case 'face':
-        return new FaceWorker();
-      case 'segment':
-        return new SegmentWorker();
-      case 'detect':
-        return new DetectWorker();
-    }
+  private createWorker(task: MediaPipeTask): Worker {
+    return match(task)
+      .with('hand', () => new HandWorker())
+      .with('body', () => new BodyWorker())
+      .with('face', () => new FaceWorker())
+      .with('segment', () => new SegmentWorker())
+      .with('detect', () => new DetectWorker())
+      .with('gesture', () => new GestureWorker())
+      .with('classify', () => new ClassifyWorker())
+      .exhaustive();
   }
 
   register(nodeId: string, options: MediaPipeNodeOptions): void {
@@ -78,6 +81,7 @@ export class MediaPipeNodeSystem {
     }
 
     const worker = this.createWorker(options.task);
+
     const isSegment = options.task === 'segment';
 
     const state: VisionNodeState = {
@@ -127,6 +131,7 @@ export class MediaPipeNodeSystem {
 
     if (this.nodes.size === 0 && this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
+
       this.rafId = null;
     }
   }
@@ -151,9 +156,7 @@ export class MediaPipeNodeSystem {
     this.statusCallbacks.delete(nodeId);
   }
 
-  updateConnections(
-    edges: Array<{ source: string; target: string; targetHandle?: string | null }>
-  ): void {
+  updateConnections(edges: SimpleEdge[]): void {
     this.currentEdges = edges;
 
     for (const [nodeId, state] of this.nodes) {

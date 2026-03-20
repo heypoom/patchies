@@ -3,7 +3,7 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import MediaPipeNodeLayout from './MediaPipeNodeLayout.svelte';
   import { MediaPipeNodeSystem } from '$objects/mediapipe/MediaPipeNodeSystem';
-  import type { FaceTaskOptions } from '$objects/mediapipe/types';
+  import type { ClassifyTaskOptions } from '$objects/mediapipe/types';
   import type { SettingsSchema } from '$lib/settings/types';
   import type { VisionStatus } from '$objects/mediapipe/MediaPipeNodeSystem';
 
@@ -13,7 +13,7 @@
     selected
   }: {
     id: string;
-    data: FaceTaskOptions;
+    data: ClassifyTaskOptions;
     selected: boolean;
   } = $props();
 
@@ -26,23 +26,23 @@
 
   const SCHEMA: SettingsSchema = [
     {
-      key: 'mode',
-      label: 'Mode',
-      type: 'select',
-      default: 'landmarks',
-      options: [
-        { label: 'Landmarks (478 pts)', value: 'landmarks' },
-        { label: 'Bounding Box (fast)', value: 'detect' }
-      ]
-    },
-    {
-      key: 'numFaces',
-      label: 'Max Faces',
+      key: 'maxResults',
+      label: 'Max Results',
       type: 'slider',
       min: 1,
-      max: 4,
+      max: 20,
       step: 1,
-      default: 1
+      default: 5
+    },
+    {
+      key: 'scoreThreshold',
+      label: 'Threshold',
+      type: 'slider',
+      min: 0,
+      max: 1,
+      step: 0.05,
+      default: 0,
+      description: 'Minimum confidence score'
     },
     {
       key: 'delegate',
@@ -63,28 +63,20 @@
       step: 1,
       default: 1,
       description: 'Process every Nth frame'
-    },
-    {
-      key: 'blendshapes',
-      label: 'Blendshapes',
-      type: 'boolean',
-      default: false,
-      description: 'Output 52 ARKit blendshape coefficients'
     }
   ];
 
   function handleSettingChange(key: string, value: unknown) {
     updateNodeData(nodeId, { [key]: value });
-    mediaPipeSystem.updateSettings(nodeId, { [key]: value } as Partial<FaceTaskOptions>);
+    mediaPipeSystem.updateSettings(nodeId, { [key]: value } as Partial<ClassifyTaskOptions>);
   }
 
   function handleRevertSettings() {
-    const defaults: FaceTaskOptions = {
-      numFaces: 1,
-      blendshapes: false,
+    const defaults: ClassifyTaskOptions = {
+      maxResults: 5,
+      scoreThreshold: 0.0,
       delegate: 'GPU',
-      skipFrames: 1,
-      mode: 'landmarks'
+      skipFrames: 1
     };
     updateNodeData(nodeId, defaults as unknown as Record<string, unknown>);
     mediaPipeSystem.updateSettings(nodeId, defaults);
@@ -98,13 +90,12 @@
     });
 
     mediaPipeSystem.register(nodeId, {
-      task: 'face',
+      task: 'classify',
       taskOptions: {
-        numFaces: data.numFaces ?? 1,
-        blendshapes: data.blendshapes ?? false,
+        maxResults: data.maxResults ?? 5,
+        scoreThreshold: data.scoreThreshold ?? 0.0,
         delegate: data.delegate ?? 'GPU',
-        skipFrames: data.skipFrames ?? 1,
-        mode: data.mode ?? 'landmarks'
+        skipFrames: data.skipFrames ?? 1
       },
       skipFrames: data.skipFrames ?? 1
     });
@@ -119,7 +110,7 @@
 <MediaPipeNodeLayout
   {nodeId}
   {selected}
-  title="vision.face"
+  title="vision.classify"
   {status}
   {error}
   {fps}

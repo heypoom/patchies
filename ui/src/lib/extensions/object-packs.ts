@@ -137,7 +137,15 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Vision',
     description: 'Real-time ML vision detection',
     icon: 'Eye',
-    objects: ['vision.hand', 'vision.body', 'vision.face', 'vision.segment', 'vision.detect']
+    objects: [
+      'vision.hand',
+      'vision.body',
+      'vision.face',
+      'vision.segment',
+      'vision.detect',
+      'vision.gesture',
+      'vision.classify'
+    ]
   },
   {
     id: 'audio-routing',

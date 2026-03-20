@@ -119,4 +119,6 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - vision.body: Full-body pose estimation — emits { poses: [{landmarks, worldLandmarks}], timestamp }
 - vision.face: Facial landmark detection (478 points) — emits { faces: [{landmarks, blendshapes?}], timestamp }
 - vision.segment: Body segmentation mask — video outlet (greyscale mask bitmap), optional message outlet with raw mask data
-- vision.detect: Object detection with bounding boxes — emits { detections: [{label, score, boundingBox}], timestamp }`;
+- vision.detect: Object detection with bounding boxes — emits { detections: [{label, score, boundingBox}], timestamp }
+- vision.gesture: Gesture recognition — emits { gestures: [{gesture, score, handedness, landmarks, worldLandmarks}], timestamp }
+- vision.classify: Image classification (EfficientNet Lite0, 1000 ImageNet classes) — emits { classifications: [{label, score}], timestamp }`;

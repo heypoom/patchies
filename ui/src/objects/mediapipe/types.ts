@@ -6,7 +6,14 @@
 // Task identifiers
 // ============================================================
 
-export type MediaPipeTask = 'hand' | 'body' | 'face' | 'segment' | 'detect';
+export type MediaPipeTask =
+  | 'hand'
+  | 'body'
+  | 'face'
+  | 'segment'
+  | 'detect'
+  | 'gesture'
+  | 'classify';
 
 // ============================================================
 // Task options (per node settings stored in node data)
@@ -31,6 +38,20 @@ export interface FaceTaskOptions {
   blendshapes: boolean;
   delegate: 'GPU' | 'CPU';
   skipFrames: number;
+  mode?: 'landmarks' | 'detect';
+}
+
+export interface GestureTaskOptions {
+  numHands: number;
+  delegate: 'GPU' | 'CPU';
+  skipFrames: number;
+}
+
+export interface ClassifyTaskOptions {
+  maxResults: number;
+  scoreThreshold: number;
+  delegate: 'GPU' | 'CPU';
+  skipFrames: number;
 }
 
 export interface SegmentTaskOptions {
@@ -52,7 +73,9 @@ export type TaskOptions =
   | BodyTaskOptions
   | FaceTaskOptions
   | SegmentTaskOptions
-  | DetectTaskOptions;
+  | DetectTaskOptions
+  | GestureTaskOptions
+  | ClassifyTaskOptions;
 
 // ============================================================
 // Output data shapes
@@ -93,10 +116,29 @@ export interface BodyOutput {
 
 export interface FaceOutput {
   faces: Array<{
-    landmarks: Point3D[];
+    landmarks?: Point3D[];
     blendshapes?: Array<{ categoryName: string; score: number }>;
     transformationMatrix?: number[];
+    boundingBox?: { originX: number; originY: number; width: number; height: number };
+    score?: number;
+    keypoints?: Array<{ x: number; y: number; label?: string }>;
   }>;
+  timestamp: number;
+}
+
+export interface GestureOutput {
+  gestures: Array<{
+    gesture: string;
+    score: number;
+    handedness: 'Left' | 'Right';
+    landmarks: Point3D[];
+    worldLandmarks: Point3D[];
+  }>;
+  timestamp: number;
+}
+
+export interface ClassifyOutput {
+  classifications: Array<{ label: string; score: number }>;
   timestamp: number;
 }
 
@@ -117,7 +159,14 @@ export interface DetectOutput {
   timestamp: number;
 }
 
-export type TaskResult = HandOutput | BodyOutput | FaceOutput | SegmentOutput | DetectOutput;
+export type TaskResult =
+  | HandOutput
+  | BodyOutput
+  | FaceOutput
+  | SegmentOutput
+  | DetectOutput
+  | GestureOutput
+  | ClassifyOutput;
 
 // ============================================================
 // Worker message protocol

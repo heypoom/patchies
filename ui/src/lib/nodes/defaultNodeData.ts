@@ -293,7 +293,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       numFaces: 1,
       blendshapes: false,
       delegate: 'GPU',
-      skipFrames: 1
+      skipFrames: 1,
+      mode: 'landmarks'
     }))
     .with('vision.segment', () => ({
       maskType: 'category',
@@ -304,6 +305,13 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('vision.detect', () => ({
       maxResults: 5,
       scoreThreshold: 0.5,
+      delegate: 'GPU',
+      skipFrames: 1
+    }))
+    .with('vision.gesture', () => ({ numHands: 2, delegate: 'GPU', skipFrames: 1 }))
+    .with('vision.classify', () => ({
+      maxResults: 5,
+      scoreThreshold: 0.0,
       delegate: 'GPU',
       skipFrames: 1
     }))

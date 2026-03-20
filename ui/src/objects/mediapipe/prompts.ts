@@ -123,3 +123,53 @@ Object detection with bounding boxes using MediaPipe ObjectDetector (EfficientDe
   "data": { "maxResults": 5, "scoreThreshold": 0.5, "delegate": "GPU", "skipFrames": 1 }
 }
 \`\`\``;
+
+export const visionGesturePrompt = `## vision.gesture Instructions
+
+Gesture recognition using MediaPipe GestureRecognizer. Detects named hand gestures + full hand landmarks. Connect a video source to its video inlet. Results emit on outlet 0.
+
+**Output shape:**
+\`\`\`js
+{
+  gestures: [{
+    gesture: string,            // "Thumb_Up", "Open_Palm", "Closed_Fist", "Victory", "ILoveYou", "Pointing_Up", "None"
+    score: number,              // confidence 0–1
+    handedness: 'Left' | 'Right',
+    landmarks: [{x, y, z}],    // 21 keypoints, normalized [0,1]
+    worldLandmarks: [{x, y, z}] // 21 keypoints in meters
+  }],
+  timestamp: number
+}
+\`\`\`
+
+**Example:**
+\`\`\`json
+{
+  "type": "vision.gesture",
+  "data": { "numHands": 2, "delegate": "GPU", "skipFrames": 1 }
+}
+\`\`\``;
+
+export const visionClassifyPrompt = `## vision.classify Instructions
+
+Image classification using MediaPipe ImageClassifier (EfficientNet Lite0, 1000 ImageNet classes). Classifies the entire frame. Connect a video source to its video inlet. Results emit on outlet 0.
+
+**Output shape:**
+\`\`\`js
+{
+  classifications: [
+    { label: string, score: number }  // sorted by score descending
+  ],
+  timestamp: number
+}
+\`\`\`
+
+Top labels are things like "person", "cat", "guitar", "beach", etc. Use maxResults to control how many are returned.
+
+**Example:**
+\`\`\`json
+{
+  "type": "vision.classify",
+  "data": { "maxResults": 5, "scoreThreshold": 0.0, "delegate": "GPU", "skipFrames": 1 }
+}
+\`\`\``;
