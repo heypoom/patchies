@@ -9,10 +9,17 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - ctx: 2D canvas context
 - width, height, mouse: {x, y, down, buttons}
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
-- noOutput() - Hide video output
+- noOutput() - Hide video output (call this when the sketch does not feed video to other nodes)
 - setCanvasSize(w, h) - Resize canvas
 - onKeyDown(event => {}) - Keyboard down events (event.key, event.code)
 - onKeyUp(event => {}) - Keyboard up events (event.key, event.code)
+- setPortCount(inlets, outlets) - Set inlet/outlet count (e.g. setPortCount(1, 0) if only an inlet is needed and no message outlet)
+
+**Default behaviors to apply unless there's a reason not to:**
+- Call noOutput() by default unless the sketch is explicitly meant to output video to another node.
+- Call noDrag() if the sketch uses mouse.down, mouse.x/y, or any click/drag interaction.
+- Call noWheel() if the sketch uses scroll or wheel interaction.
+- Call setPortCount(1, 0) if the sketch only needs to receive messages (inlet) and does not send any output messages.
 
 **Font & element sizes:**
 - The node is displayed very zoomed out in the patch canvas. Use large font sizes (18px minimum, 24–32px for primary text) so text remains readable.

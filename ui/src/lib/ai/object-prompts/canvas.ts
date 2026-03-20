@@ -12,7 +12,10 @@ Offscreen Canvas on web worker thread for high-performance video chaining. NO DO
 - width, height: canvas dimensions
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
 - noOutput() - Hide video output
-- setCanvasSize(w, h) - Resize canvas
+- setPortCount(inlets, outlets) - Set inlet/outlet count (e.g. setPortCount(1, 0) if only an inlet is needed and no message outlet)
+
+**Default behaviors to apply unless there's a reason not to:**
+- Call setPortCount(1, 0) if the sketch only needs to receive messages (inlet) and does not send any output messages.
 
 **Canvas-specific gotchas:**
 - Runs in web worker - no DOM access, no mouse/keyboard events
