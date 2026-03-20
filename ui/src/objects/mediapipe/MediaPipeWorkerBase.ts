@@ -112,8 +112,10 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
     this.isProcessing = true;
     try {
       this.workerProfiler.measure(this.nodeId, 'draw', () => {
+        // ! detectFrame is the slowest part
         const raw = this.detectFrame(this.task!, bitmap, timestamp);
         const result = this.formatResult(raw);
+
         this.sendResult(result);
         this.frameCount++;
       });

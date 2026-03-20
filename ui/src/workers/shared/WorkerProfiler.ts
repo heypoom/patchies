@@ -50,10 +50,9 @@ export class WorkerProfiler {
    * Run `fn`, record its duration under the given category, and return.
    * When disabled, calls `fn` directly with no overhead.
    */
-  measure(nodeId: string, category: ProfilerCategory, fn: () => void): void {
+  measure<T>(nodeId: string, category: ProfilerCategory, fn: () => T): T {
     if (!this.enabled) {
-      fn();
-      return;
+      return fn();
     }
 
     const t0 = performance.now();
@@ -69,7 +68,8 @@ export class WorkerProfiler {
     };
 
     try {
-      const result = fn() as unknown;
+      const result = fn();
+
       if (result instanceof Promise) {
         result.finally(() => {
           getCollector().record(performance.now() - t0);
@@ -77,6 +77,8 @@ export class WorkerProfiler {
       } else {
         getCollector().record(performance.now() - t0);
       }
+
+      return result;
     } catch (error) {
       getCollector().record(performance.now() - t0);
       throw error;
