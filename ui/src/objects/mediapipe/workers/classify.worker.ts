@@ -4,17 +4,16 @@
 
 import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
 import type { ClassifyTaskOptions, ClassifyOutput, TaskOptions } from '$objects/mediapipe/types';
+import type { ImageClassifier, ImageClassifierResult } from '@mediapipe/tasks-vision';
 
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/image_classifier/efficientnet_lite0/float32/latest/efficientnet_lite0.tflite';
 
-class ClassifyWorker extends MediaPipeWorkerBase<
-  import('@mediapipe/tasks-vision').ImageClassifier,
-  import('@mediapipe/tasks-vision').ImageClassifierResult
-> {
+class ClassifyWorker extends MediaPipeWorkerBase<ImageClassifier, ImageClassifierResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected async initTask(vision: any, options: TaskOptions) {
     const { ImageClassifier } = await import('@mediapipe/tasks-vision');
+
     const opts = options as ClassifyTaskOptions;
 
     return ImageClassifier.createFromOptions(vision, {
@@ -28,20 +27,15 @@ class ClassifyWorker extends MediaPipeWorkerBase<
     });
   }
 
-  protected detectFrame(
-    task: import('@mediapipe/tasks-vision').ImageClassifier,
-    bitmap: ImageBitmap,
-    _timestamp: number
-  ) {
+  protected detectFrame(task: ImageClassifier, bitmap: ImageBitmap) {
     return task.classify(bitmap);
   }
 
-  protected formatResult(
-    raw: import('@mediapipe/tasks-vision').ImageClassifierResult
-  ): ClassifyOutput {
-    const cats = raw.classifications[0]?.categories ?? [];
+  protected formatResult(raw: ImageClassifierResult): ClassifyOutput {
+    const categories = raw.classifications[0]?.categories ?? [];
+
     return {
-      classifications: cats.map((c) => ({
+      classifications: categories.map((c) => ({
         label: c.categoryName,
         score: c.score
       })),

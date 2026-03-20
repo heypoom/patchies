@@ -4,6 +4,7 @@
 
 import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
 import type { BodyTaskOptions, BodyOutput, TaskOptions } from '$objects/mediapipe/types';
+import type { PoseLandmarker, PoseLandmarkerResult } from '@mediapipe/tasks-vision';
 
 const MODEL_URLS: Record<string, string> = {
   lite: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task',
@@ -12,13 +13,13 @@ const MODEL_URLS: Record<string, string> = {
     'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task'
 };
 
-class BodyWorker extends MediaPipeWorkerBase<
-  import('@mediapipe/tasks-vision').PoseLandmarker,
-  import('@mediapipe/tasks-vision').PoseLandmarkerResult
-> {
+type Landmark = { x: number; y: number; z: number; visibility: number };
+
+class BodyWorker extends MediaPipeWorkerBase<PoseLandmarker, PoseLandmarkerResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected async initTask(vision: any, options: TaskOptions) {
     const { PoseLandmarker } = await import('@mediapipe/tasks-vision');
+
     const opts = options as BodyTaskOptions;
     const modelUrl = MODEL_URLS[opts.model ?? 'lite'] ?? MODEL_URLS.lite;
 
@@ -32,31 +33,32 @@ class BodyWorker extends MediaPipeWorkerBase<
     });
   }
 
-  protected detectFrame(
-    task: import('@mediapipe/tasks-vision').PoseLandmarker,
-    bitmap: ImageBitmap,
-    _timestamp: number
-  ) {
+  protected detectFrame(task: PoseLandmarker, bitmap: ImageBitmap) {
     return task.detect(bitmap);
   }
 
-  protected formatResult(raw: import('@mediapipe/tasks-vision').PoseLandmarkerResult): BodyOutput {
+  protected formatResult(raw: PoseLandmarkerResult): BodyOutput {
     return {
       poses: raw.landmarks.map((lms, i) => ({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        landmarks: lms.map((lm: any) => ({
-          x: lm.x,
-          y: lm.y,
-          z: lm.z,
-          visibility: lm.visibility ?? 1
-        })),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        worldLandmarks: (raw.worldLandmarks[i] ?? []).map((lm: any) => ({
-          x: lm.x,
-          y: lm.y,
-          z: lm.z,
-          visibility: lm.visibility ?? 1
-        }))
+        landmarks: lms.map(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (lm: any): Landmark => ({
+            x: lm.x,
+            y: lm.y,
+            z: lm.z,
+            visibility: lm.visibility ?? 1
+          })
+        ),
+
+        worldLandmarks: (raw.worldLandmarks[i] ?? []).map(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (lm: any): Landmark => ({
+            x: lm.x,
+            y: lm.y,
+            z: lm.z,
+            visibility: lm.visibility ?? 1
+          })
+        )
       })),
       timestamp: performance.now()
     };

@@ -4,14 +4,12 @@
 
 import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
 import type { DetectTaskOptions, DetectOutput, TaskOptions } from '$objects/mediapipe/types';
+import type { ObjectDetector, ObjectDetectorResult } from '@mediapipe/tasks-vision';
 
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/latest/efficientdet_lite0.tflite';
 
-class DetectWorker extends MediaPipeWorkerBase<
-  import('@mediapipe/tasks-vision').ObjectDetector,
-  import('@mediapipe/tasks-vision').ObjectDetectorResult
-> {
+class DetectWorker extends MediaPipeWorkerBase<ObjectDetector, ObjectDetectorResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected async initTask(vision: any, options: TaskOptions) {
     const { ObjectDetector } = await import('@mediapipe/tasks-vision');
@@ -28,17 +26,11 @@ class DetectWorker extends MediaPipeWorkerBase<
     });
   }
 
-  protected detectFrame(
-    task: import('@mediapipe/tasks-vision').ObjectDetector,
-    bitmap: ImageBitmap,
-    _timestamp: number
-  ) {
+  protected detectFrame(task: ObjectDetector, bitmap: ImageBitmap) {
     return task.detect(bitmap);
   }
 
-  protected formatResult(
-    raw: import('@mediapipe/tasks-vision').ObjectDetectorResult
-  ): DetectOutput {
+  protected formatResult(raw: ObjectDetectorResult): DetectOutput {
     return {
       detections: raw.detections.map((d) => ({
         label: d.categories[0]?.categoryName ?? 'unknown',

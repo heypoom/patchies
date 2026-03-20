@@ -4,14 +4,12 @@
 
 import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
 import type { GestureTaskOptions, GestureOutput, TaskOptions } from '$objects/mediapipe/types';
+import type { GestureRecognizer, GestureRecognizerResult } from '@mediapipe/tasks-vision';
 
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/latest/gesture_recognizer.task';
 
-class GestureWorker extends MediaPipeWorkerBase<
-  import('@mediapipe/tasks-vision').GestureRecognizer,
-  import('@mediapipe/tasks-vision').GestureRecognizerResult
-> {
+class GestureWorker extends MediaPipeWorkerBase<GestureRecognizer, GestureRecognizerResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected async initTask(vision: any, options: TaskOptions) {
     const { GestureRecognizer } = await import('@mediapipe/tasks-vision');
@@ -27,17 +25,11 @@ class GestureWorker extends MediaPipeWorkerBase<
     });
   }
 
-  protected detectFrame(
-    task: import('@mediapipe/tasks-vision').GestureRecognizer,
-    bitmap: ImageBitmap,
-    _timestamp: number
-  ) {
+  protected detectFrame(task: GestureRecognizer, bitmap: ImageBitmap, _timestamp: number) {
     return task.recognize(bitmap);
   }
 
-  protected formatResult(
-    raw: import('@mediapipe/tasks-vision').GestureRecognizerResult
-  ): GestureOutput {
+  protected formatResult(raw: GestureRecognizerResult): GestureOutput {
     return {
       gestures: raw.gestures.map((cats, i) => ({
         gesture: cats[0]?.categoryName ?? 'None',

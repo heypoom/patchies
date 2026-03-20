@@ -4,14 +4,12 @@
 
 import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
 import type { HandTaskOptions, HandOutput, TaskOptions } from '$objects/mediapipe/types';
+import type { HandLandmarker, HandLandmarkerResult } from '@mediapipe/tasks-vision';
 
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task';
 
-class HandWorker extends MediaPipeWorkerBase<
-  import('@mediapipe/tasks-vision').HandLandmarker,
-  import('@mediapipe/tasks-vision').HandLandmarkerResult
-> {
+class HandWorker extends MediaPipeWorkerBase<HandLandmarker, HandLandmarkerResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected async initTask(vision: any, options: TaskOptions) {
     const { HandLandmarker } = await import('@mediapipe/tasks-vision');
@@ -27,15 +25,11 @@ class HandWorker extends MediaPipeWorkerBase<
     });
   }
 
-  protected detectFrame(
-    task: import('@mediapipe/tasks-vision').HandLandmarker,
-    bitmap: ImageBitmap,
-    _timestamp: number
-  ) {
+  protected detectFrame(task: HandLandmarker, bitmap: ImageBitmap, _timestamp: number) {
     return task.detect(bitmap);
   }
 
-  protected formatResult(raw: import('@mediapipe/tasks-vision').HandLandmarkerResult): HandOutput {
+  protected formatResult(raw: HandLandmarkerResult): HandOutput {
     return {
       hands: raw.handednesses.map((cat, i) => ({
         handedness: (cat[0]?.categoryName ?? 'Right') as 'Left' | 'Right',

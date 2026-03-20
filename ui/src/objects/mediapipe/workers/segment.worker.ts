@@ -7,6 +7,7 @@
 import { MediaPipeWorkerBase } from '$objects/mediapipe/MediaPipeWorkerBase';
 import type { SegmentTaskOptions, SegmentOutput, TaskOptions } from '$objects/mediapipe/types';
 import type { WorkerOutMessage } from '$objects/mediapipe/types';
+import type { ImageSegmenter, ImageSegmenterResult } from '@mediapipe/tasks-vision';
 
 const MODEL_URLS = {
   general:
@@ -16,10 +17,7 @@ const MODEL_URLS = {
 };
 
 // Override processFrame for segment — needs to post segmentBitmap not result
-class SegmentWorker extends MediaPipeWorkerBase<
-  import('@mediapipe/tasks-vision').ImageSegmenter,
-  import('@mediapipe/tasks-vision').ImageSegmenterResult
-> {
+class SegmentWorker extends MediaPipeWorkerBase<ImageSegmenter, ImageSegmenterResult> {
   private segmentOptions: SegmentTaskOptions | null = null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,17 +37,11 @@ class SegmentWorker extends MediaPipeWorkerBase<
     });
   }
 
-  protected detectFrame(
-    task: import('@mediapipe/tasks-vision').ImageSegmenter,
-    bitmap: ImageBitmap,
-    _timestamp: number
-  ) {
+  protected detectFrame(task: ImageSegmenter, bitmap: ImageBitmap, _timestamp: number) {
     return task.segment(bitmap);
   }
 
-  protected formatResult(
-    _raw: import('@mediapipe/tasks-vision').ImageSegmenterResult
-  ): SegmentOutput {
+  protected formatResult(_raw: ImageSegmenterResult): SegmentOutput {
     // Not used — segment worker overrides processFrame
     return { width: 0, height: 0, mask: new Uint8Array(0), maskType: 'category', timestamp: 0 };
   }

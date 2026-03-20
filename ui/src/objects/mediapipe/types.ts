@@ -173,16 +173,27 @@ export type TaskResult =
 // Worker message protocol
 // ============================================================
 
+export interface DirectChannelConnection {
+  outlet: number;
+  targetNodeId: string;
+  inlet: number;
+  inletKey?: string;
+}
+
 export type WorkerInMessage =
   | { type: 'init'; task: MediaPipeTask; options: TaskOptions }
   | { type: 'frame'; bitmap: ImageBitmap; timestamp: number }
   | { type: 'updateSettings'; settings: Partial<TaskOptions> }
-  | { type: 'destroy' };
+  | { type: 'destroy' }
+  | { type: 'setRenderPort'; nodeId: string }
+  | { type: 'setWorkerPort'; nodeId: string; targetNodeId?: string; sourceNodeId?: string }
+  | { type: 'updateRenderConnections'; nodeId: string; connections: DirectChannelConnection[] }
+  | { type: 'updateWorkerConnections'; nodeId: string; connections: DirectChannelConnection[] };
 
 export type WorkerOutMessage =
   | { type: 'ready' }
   | { type: 'error'; message: string }
-  | { type: 'result'; data: TaskResult }
+  | { type: 'result'; data: TaskResult; excludeTargets?: string[] }
   | { type: 'segmentBitmap'; bitmap: ImageBitmap; messageData?: SegmentOutput }
   | { type: 'fps'; value: number };
 

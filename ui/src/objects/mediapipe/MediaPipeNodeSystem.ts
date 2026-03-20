@@ -11,6 +11,7 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { MessageSystem } from '$lib/messages/MessageSystem';
 import type { MediaPipeNodeOptions, MediaPipeTask, TaskOptions, WorkerOutMessage } from './types';
 import { GLSystem } from '$lib/canvas/GLSystem';
+import { DirectChannelService } from '$lib/messages/DirectChannelService';
 
 import HandWorker from './workers/hand.worker?worker';
 import BodyWorker from './workers/body.worker?worker';
@@ -119,6 +120,9 @@ export class MediaPipeNodeSystem {
     // Initialize
     worker.postMessage({ type: 'init', task: options.task, options: options.taskOptions });
 
+    // Register with DirectChannelService for worker→render direct messaging
+    DirectChannelService.getInstance().registerWorker(nodeId, worker);
+
     this.startLoop();
   }
 
@@ -128,6 +132,8 @@ export class MediaPipeNodeSystem {
 
     state.worker.postMessage({ type: 'destroy' });
     state.worker.terminate();
+
+    DirectChannelService.getInstance().unregisterWorker(nodeId);
 
     if (state.isSegment) {
       GLSystem.getInstance().removeNode(nodeId);
@@ -186,6 +192,7 @@ export class MediaPipeNodeSystem {
     }
 
     const bitmap = frames[0];
+
     if (!bitmap) {
       console.debug('[MediaPipe] null bitmap for', nodeId, '— source node may not be rendering');
       frames.forEach((f) => f?.close());
@@ -222,8 +229,11 @@ export class MediaPipeNodeSystem {
         this.statusCallbacks.get(nodeId)?.(state.status, state.error, msg.value, state.enabled);
       }
     } else if (msg.type === 'result') {
-      // Route message out via MessageSystem (outlet 0)
-      this.messageSystem.sendMessage(nodeId, msg.data, { to: 0 });
+      // Route message out via MessageSystem (outlet 0), skipping nodes already sent via direct channel
+      this.messageSystem.sendMessage(nodeId, msg.data, {
+        to: 0,
+        excludeTargets: msg.excludeTargets
+      });
       if (state.status !== 'running') {
         this.setStatus(nodeId, 'running');
       }

@@ -6,6 +6,10 @@
  */
 
 import type { TaskOptions, WorkerInMessage, WorkerOutMessage } from './types';
+import {
+  createDirectChannelHandler,
+  type DirectChannelHandler
+} from '../../workers/shared/directChannelHandler';
 
 // MediaPipe WASM CDN (pinned to 0.10.0, matches installed package)
 export const WASM_CDN_BASE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm';
@@ -23,6 +27,10 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
   // FPS tracking
   private frameCount = 0;
   private fpsIntervalId: ReturnType<typeof setInterval> | null = null;
+
+  // Direct channel (bypasses main thread when connected to render/worker nodes)
+  protected directChannel: DirectChannelHandler | null = null;
+  protected nodeId = '';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected abstract initTask(vision: any, options: TaskOptions): Promise<TTask>;
@@ -99,7 +107,7 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
     try {
       const raw = this.detectFrame(this.task, bitmap, timestamp);
       const result = this.formatResult(raw);
-      this.post({ type: 'result', data: result });
+      this.sendResult(result);
       this.frameCount++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -108,6 +116,16 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
       bitmap.close();
       this.isProcessing = false;
     }
+  }
+
+  protected sendResult(result: import('./types').TaskResult, outlet = 0): void {
+    const excludeTargets = this.directChannel
+      ? [
+          ...this.directChannel.sendToRenderTargets(result, { to: outlet }),
+          ...this.directChannel.sendToWorkerTargets(result, { to: outlet })
+        ]
+      : [];
+    this.post({ type: 'result', data: result, excludeTargets });
   }
 
   async updateSettings(settings: Partial<TaskOptions>): Promise<void> {
@@ -173,7 +191,30 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
       } else if (msg.type === 'updateSettings') {
         await this.updateSettings(msg.settings);
       } else if (msg.type === 'destroy') {
+        this.directChannel?.cleanup();
         this.destroy();
+      } else if (msg.type === 'setRenderPort' || msg.type === 'setWorkerPort') {
+        if (!this.directChannel) {
+          this.nodeId = msg.nodeId;
+          this.directChannel = createDirectChannelHandler({
+            nodeId: msg.nodeId,
+            onIncomingMessage: () => {},
+            onError: () => {}
+          });
+        }
+        if (msg.type === 'setRenderPort') {
+          this.directChannel.handleSetRenderPort(event.ports[0]);
+        } else {
+          this.directChannel.handleSetWorkerPort(
+            event.ports[0],
+            msg.targetNodeId,
+            msg.sourceNodeId
+          );
+        }
+      } else if (msg.type === 'updateRenderConnections') {
+        this.directChannel?.handleUpdateRenderConnections(msg.connections);
+      } else if (msg.type === 'updateWorkerConnections') {
+        this.directChannel?.handleUpdateWorkerConnections(msg.connections);
       }
     };
   }
