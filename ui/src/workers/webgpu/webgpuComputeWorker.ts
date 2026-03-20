@@ -368,8 +368,7 @@ async function handleDispatch(nodeId: string, dispatchCount?: [number, number, n
       // Send output via direct channels (as Float32Array for compatibility)
       // Use the binding number as the outlet index
       const typedArray = new Float32Array(copy);
-      state.directChannel.sendToRenderTargets(typedArray, { to: bindingIdx });
-      state.directChannel.sendToWorkerTargets(typedArray, { to: bindingIdx });
+      state.directChannel.sendToTargets(typedArray, { to: bindingIdx });
     }
 
     reply(

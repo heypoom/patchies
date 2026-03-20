@@ -22,12 +22,11 @@ export interface DirectChannelConfig {
   onError: (error: unknown) => void;
 }
 
-export interface DirectChannelHandler {
-  /** Send to render targets via direct port, returns target IDs that were sent to */
-  sendToRenderTargets: (data: unknown, options?: { to?: number }) => string[];
+type SendToTargetCallback = (data: unknown, options?: { to?: number }) => string[];
 
-  /** Send to worker targets via direct ports, returns target IDs that were sent to */
-  sendToWorkerTargets: (data: unknown, options?: { to?: number }) => string[];
+export interface DirectChannelHandler {
+  /** Send to all targets */
+  sendToTargets: SendToTargetCallback;
 
   /** Handle setRenderPort message - call with event.ports[0] */
   handleSetRenderPort: (port: MessagePort) => void;
@@ -50,10 +49,12 @@ export function createDirectChannelHandler(config: DirectChannelConfig): DirectC
 
   let renderPort: MessagePort | null = null;
   let renderConnections: RenderConnection[] = [];
+
   const workerPorts = new Map<string, MessagePort>();
+
   let workerConnections: RenderConnection[] = [];
 
-  function sendToRenderTargets(data: unknown, options?: { to?: number }): string[] {
+  function _sendToRenderTargets(data: unknown, options?: { to?: number }): string[] {
     if (!renderPort || renderConnections.length === 0) return [];
 
     const targets = renderConnections.filter(
@@ -73,7 +74,7 @@ export function createDirectChannelHandler(config: DirectChannelConfig): DirectC
     return targets.map((t) => t.targetNodeId);
   }
 
-  function sendToWorkerTargets(data: unknown, options?: { to?: number }): string[] {
+  function _sendToWorkerTargets(data: unknown, options?: { to?: number }): string[] {
     if (workerPorts.size === 0 || workerConnections.length === 0) return [];
 
     const targets = workerConnections.filter(
@@ -115,6 +116,7 @@ export function createDirectChannelHandler(config: DirectChannelConfig): DirectC
     if (targetNodeId) {
       // This is a sending port (we send TO targetNodeId)
       workerPorts.set(targetNodeId, port);
+
       port.start();
     } else if (sourceNodeId) {
       // This is a receiving port (we receive FROM sourceNodeId)
@@ -164,9 +166,13 @@ export function createDirectChannelHandler(config: DirectChannelConfig): DirectC
     workerConnections = [];
   }
 
+  const sendToTargets: SendToTargetCallback = (data, options) => [
+    ..._sendToRenderTargets(data, options),
+    ..._sendToWorkerTargets(data, options)
+  ];
+
   return {
-    sendToRenderTargets,
-    sendToWorkerTargets,
+    sendToTargets,
     handleSetRenderPort,
     handleSetWorkerPort,
     handleUpdateRenderConnections,

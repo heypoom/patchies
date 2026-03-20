@@ -58,20 +58,27 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
     try {
       await this.initWithDelegate(options);
     } catch (err) {
+      console.warn('GPU delegate failed. falling back to CPU.', err);
+
       // GPU delegate may fail; retry with CPU
       if ((options as { delegate?: string }).delegate !== 'CPU') {
         try {
           const cpuOptions = { ...options, delegate: 'CPU' as const };
           await this.initWithDelegate(cpuOptions);
+
           this.post({ type: 'error', message: 'GPU unavailable, using CPU delegate' });
         } catch (cpuErr) {
           const msg = cpuErr instanceof Error ? cpuErr.message : String(cpuErr);
+
           this.post({ type: 'error', message: msg });
+
           throw cpuErr;
         }
       } else {
         const msg = err instanceof Error ? err.message : String(err);
+
         this.post({ type: 'error', message: msg });
+
         throw err;
       }
     }
@@ -132,10 +139,7 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
 
   protected sendResult(result: TaskResult, outlet = 0): void {
     const excludeTargets = this.directChannel
-      ? [
-          ...this.directChannel.sendToRenderTargets(result, { to: outlet }),
-          ...this.directChannel.sendToWorkerTargets(result, { to: outlet })
-        ]
+      ? this.directChannel.sendToTargets(result, { to: outlet })
       : [];
 
     this.post({ type: 'result', data: result, excludeTargets });

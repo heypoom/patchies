@@ -171,11 +171,9 @@ function createWorkerContext(nodeId: string) {
     // At this point, `to` is number | undefined (edge-based routing)
     // TODO(Poom): support using named channels for direct channel comunication
     const edgeOptions = options as { to?: number } | undefined;
-    const renderTargets = state.directChannel.sendToRenderTargets(data, edgeOptions);
-    const workerTargets = state.directChannel.sendToWorkerTargets(data, edgeOptions);
 
     // Send via main thread, excluding targets we've already handled directly
-    const excludeTargets = [...renderTargets, ...workerTargets];
+    const excludeTargets = state.directChannel.sendToTargets(data, edgeOptions);
 
     postResponse({
       type: 'sendMessage',

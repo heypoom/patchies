@@ -92,6 +92,7 @@ export class DirectChannelService {
    */
   updateNodeTypes(nodes: Array<{ id: string; type: string }>): void {
     this.nodeTypes.clear();
+
     for (const node of nodes) {
       this.nodeTypes.set(node.id, node.type);
     }

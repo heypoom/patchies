@@ -213,11 +213,8 @@ function createWorkerContext(nodeId: string) {
   };
 
   const send = (data: unknown, options?: { to?: number }) => {
-    const renderTargets = state.directChannel.sendToRenderTargets(data, options);
-    const workerTargets = state.directChannel.sendToWorkerTargets(data, options);
-
     // Send via main thread, excluding targets we've already handled directly
-    const excludeTargets = [...renderTargets, ...workerTargets];
+    const excludeTargets = state.directChannel.sendToTargets(data, options);
 
     postResponse({ type: 'sendMessage', nodeId, data, options: { ...options, excludeTargets } });
   };
