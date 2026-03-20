@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import MediaPipeNodeLayout from './MediaPipeNodeLayout.svelte';
   import { MediaPipeNodeSystem } from '$objects/mediapipe/MediaPipeNodeSystem';
   import { useVisionEnable } from '$objects/mediapipe/useVisionEnable';
@@ -19,6 +19,7 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
   const mediaPipeSystem = MediaPipeNodeSystem.getInstance();
 
   let status = $state<VisionStatus>('idle');
@@ -83,7 +84,12 @@
 
   function handleSettingChange(key: string, value: unknown) {
     updateNodeData(nodeId, { [key]: value });
+
     mediaPipeSystem.updateSettings(nodeId, { [key]: value } as Partial<SegmentTaskOptions>);
+
+    if (key === 'outputMessage') {
+      updateNodeInternals(nodeId);
+    }
   }
 
   function handleRevertSettings() {
