@@ -32,11 +32,17 @@ export interface VisionNodeState {
   status: VisionStatus;
   error?: string;
   fps?: number;
+  enabled: boolean;
   /** For vision.segment: the node registers itself in GLSystem */
   isSegment: boolean;
 }
 
-type StatusCallback = (status: VisionStatus, error?: string, fps?: number) => void;
+type StatusCallback = (
+  status: VisionStatus,
+  error?: string,
+  fps?: number,
+  enabled?: boolean
+) => void;
 
 export class MediaPipeNodeSystem {
   private static instance: MediaPipeNodeSystem | null = null;
@@ -90,6 +96,7 @@ export class MediaPipeNodeSystem {
       frameCounter: 0,
       skipFrames: Math.max(1, options.skipFrames),
       status: 'initializing',
+      enabled: true,
       isSegment
     };
 
@@ -146,6 +153,13 @@ export class MediaPipeNodeSystem {
 
     state.worker.postMessage({ type: 'updateSettings', settings });
     this.setStatus(nodeId, 'initializing');
+  }
+
+  setEnabled(nodeId: string, enabled: boolean): void {
+    const state = this.nodes.get(nodeId);
+    if (!state) return;
+    state.enabled = enabled;
+    this.statusCallbacks.get(nodeId)?.(state.status, state.error, state.fps, state.enabled);
   }
 
   onStatusChange(nodeId: string, callback: StatusCallback): void {
@@ -205,7 +219,7 @@ export class MediaPipeNodeSystem {
     } else if (msg.type === 'fps') {
       if (state.status === 'running') {
         state.fps = msg.value;
-        this.statusCallbacks.get(nodeId)?.(state.status, state.error, msg.value);
+        this.statusCallbacks.get(nodeId)?.(state.status, state.error, msg.value, state.enabled);
       }
     } else if (msg.type === 'result') {
       // Route message out via MessageSystem (outlet 0)
@@ -234,7 +248,7 @@ export class MediaPipeNodeSystem {
 
     state.status = status;
     state.error = error;
-    this.statusCallbacks.get(nodeId)?.(status, error, state.fps);
+    this.statusCallbacks.get(nodeId)?.(status, error, state.fps, state.enabled);
   }
 
   private startLoop(): void {
@@ -266,6 +280,8 @@ export class MediaPipeNodeSystem {
     }> = [];
 
     for (const [nodeId, state] of this.nodes) {
+      if (!state.enabled) continue;
+
       // Skip if no source connected
       if (!state.sourceNodeId) {
         console.debug(

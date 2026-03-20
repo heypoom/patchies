@@ -3,6 +3,7 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import MediaPipeNodeLayout from './MediaPipeNodeLayout.svelte';
   import { MediaPipeNodeSystem } from '$objects/mediapipe/MediaPipeNodeSystem';
+  import { useVisionEnable } from '$objects/mediapipe/useVisionEnable';
   import type { DetectTaskOptions } from '$objects/mediapipe/types';
   import type { SettingsSchema } from '$lib/settings/types';
   import type { VisionStatus } from '$objects/mediapipe/MediaPipeNodeSystem';
@@ -23,6 +24,8 @@
   let status = $state<VisionStatus>('idle');
   let error = $state<string | undefined>(undefined);
   let fps = $state<number | undefined>(undefined);
+  let enabled = $state(true);
+  let visionEnable: ReturnType<typeof useVisionEnable> | null = null;
 
   const SCHEMA: SettingsSchema = [
     {
@@ -83,10 +86,11 @@
   }
 
   onMount(() => {
-    mediaPipeSystem.onStatusChange(nodeId, (s, e, f) => {
+    mediaPipeSystem.onStatusChange(nodeId, (s, e, f, en) => {
       status = s;
       error = e;
       fps = f;
+      enabled = en ?? true;
     });
 
     mediaPipeSystem.register(nodeId, {
@@ -99,11 +103,14 @@
       },
       skipFrames: data.skipFrames ?? 1
     });
+
+    visionEnable = useVisionEnable(nodeId, () => enabled);
   });
 
   onDestroy(() => {
     mediaPipeSystem.offStatusChange(nodeId);
     mediaPipeSystem.unregister(nodeId);
+    visionEnable?.destroy();
   });
 </script>
 
@@ -114,6 +121,8 @@
   {status}
   {error}
   {fps}
+  {enabled}
+  onToggleEnabled={() => mediaPipeSystem.setEnabled(nodeId, !enabled)}
   schema={SCHEMA}
   settingsData={data}
   onSettingChange={handleSettingChange}

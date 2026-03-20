@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Settings } from '@lucide/svelte/icons';
+  import { Settings, Power } from '@lucide/svelte/icons';
   import { match } from 'ts-pattern';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
@@ -13,6 +13,8 @@
     status,
     error,
     fps,
+    enabled = true,
+    onToggleEnabled,
     schema,
     settingsData,
     onSettingChange,
@@ -26,6 +28,8 @@
     status: 'idle' | 'initializing' | 'running' | 'error';
     error?: string;
     fps?: number;
+    enabled?: boolean;
+    onToggleEnabled?: () => void;
     schema: SettingsSchema;
     settingsData: object;
     onSettingChange: (key: string, value: unknown) => void;
@@ -48,7 +52,7 @@
     match(status)
       .with('idle', () => 'bg-zinc-600')
       .with('initializing', () => 'bg-amber-500 animate-pulse')
-      .with('running', () => 'bg-green-500')
+      .with('running', () => (enabled ? 'bg-green-500' : 'bg-zinc-600'))
       .with('error', () => 'bg-red-500')
       .exhaustive()
   );
@@ -58,7 +62,7 @@
   <div class="group relative">
     <!-- Settings button (top-right) -->
     <div class="absolute -top-7 right-0 flex items-center gap-1">
-      {#if status === 'running' && fps !== undefined}
+      {#if status === 'running' && fps !== undefined && enabled}
         <span class="text-[9px] text-zinc-500">{fps}fps</span>
       {/if}
 
@@ -80,15 +84,26 @@
         port="inlet"
         spec={{ handleType: 'video' }}
         title="Video input"
-        total={1}
+        total={2}
         index={0}
+        class={handleClass}
+        {nodeId}
+      />
+
+      <!-- Enable/disable message inlet -->
+      <TypedHandle
+        port="inlet"
+        spec={{ handleType: 'message' }}
+        title="Enable (1/0/bang)"
+        total={2}
+        index={1}
         class={handleClass}
         {nodeId}
       />
 
       <!-- Node body -->
       <div
-        class={`rounded-lg border-1 px-4 py-2 ${selected ? 'object-container-selected' : 'object-container'}`}
+        class={`rounded-lg border-1 px-4 py-2 ${selected ? 'object-container-selected' : 'object-container'} ${!enabled ? 'opacity-50' : ''}`}
       >
         <div class="flex items-center gap-2">
           <!-- Status pill -->
@@ -96,6 +111,20 @@
 
           <!-- Node name -->
           <span class="font-mono text-xs text-zinc-300">{title}</span>
+
+          <!-- Enable/disable toggle -->
+          {#if onToggleEnabled}
+            <button
+              class={`ml-auto cursor-pointer rounded p-0.5 transition-colors hover:bg-zinc-700 ${enabled ? 'text-zinc-400' : 'text-zinc-600'}`}
+              onclick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleEnabled();
+              }}
+            >
+              <Power class="h-3 w-3" />
+            </button>
+          {/if}
         </div>
 
         {#if status === 'error' && error}

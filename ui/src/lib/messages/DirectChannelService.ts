@@ -254,6 +254,7 @@ export class DirectChannelService {
 
     // Extract number from end of handle string (e.g., "message-out-2" → 2)
     const match = handle.match(/-(\d+)$/);
+
     return match ? parseInt(match[1], 10) : 0;
   }
 }
