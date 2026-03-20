@@ -145,6 +145,7 @@
       {/if}
 
       <!-- Message outlets -->
+      <!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
       {#each Array(messageOutletCount) as _, i (i)}
         <TypedHandle
           port="outlet"

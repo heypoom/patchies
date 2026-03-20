@@ -13,6 +13,7 @@ class HandWorker extends MediaPipeWorkerBase<HandLandmarker, HandLandmarkerResul
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected async initTask(vision: any, options: TaskOptions) {
     const { HandLandmarker } = await import('@mediapipe/tasks-vision');
+
     const opts = options as HandTaskOptions;
 
     return HandLandmarker.createFromOptions(vision, {
@@ -25,7 +26,7 @@ class HandWorker extends MediaPipeWorkerBase<HandLandmarker, HandLandmarkerResul
     });
   }
 
-  protected detectFrame(task: HandLandmarker, bitmap: ImageBitmap, _timestamp: number) {
+  protected detectFrame(task: HandLandmarker, bitmap: ImageBitmap) {
     return task.detect(bitmap);
   }
 

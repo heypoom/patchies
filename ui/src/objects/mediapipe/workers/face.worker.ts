@@ -48,7 +48,7 @@ class FaceWorker extends MediaPipeWorkerBase<any, any> {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected detectFrame(task: any, bitmap: ImageBitmap, _timestamp: number) {
+  protected detectFrame(task: any, bitmap: ImageBitmap) {
     return task.detect(bitmap);
   }
 
@@ -67,7 +67,9 @@ class FaceWorker extends MediaPipeWorkerBase<any, any> {
                   height: d.boundingBox.height
                 }
               : undefined,
+
             score: d.categories[0]?.score ?? 0,
+
             keypoints: d.keypoints?.map(
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (kp: any) => ({ x: kp.x, y: kp.y, label: kp.label })

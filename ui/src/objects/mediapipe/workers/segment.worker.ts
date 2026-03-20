@@ -37,11 +37,11 @@ class SegmentWorker extends MediaPipeWorkerBase<ImageSegmenter, ImageSegmenterRe
     });
   }
 
-  protected detectFrame(task: ImageSegmenter, bitmap: ImageBitmap, _timestamp: number) {
+  protected detectFrame(task: ImageSegmenter, bitmap: ImageBitmap) {
     return task.segment(bitmap);
   }
 
-  protected formatResult(_raw: ImageSegmenterResult): SegmentOutput {
+  protected formatResult(): SegmentOutput {
     // Not used — segment worker overrides processFrame
     return { width: 0, height: 0, mask: new Uint8Array(0), maskType: 'category', timestamp: 0 };
   }
@@ -57,7 +57,7 @@ class SegmentWorker extends MediaPipeWorkerBase<ImageSegmenter, ImageSegmenterRe
     const height = bitmap.height;
 
     try {
-      const raw = this.detectFrame(this.task, bitmap, timestamp);
+      const raw = this.detectFrame(this.task, bitmap);
       const isCategoryMask = this.segmentOptions.maskType === 'category';
 
       const maskData = isCategoryMask

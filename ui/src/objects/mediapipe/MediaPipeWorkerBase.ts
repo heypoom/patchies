@@ -5,7 +5,7 @@
  * frame dispatch, FPS tracking, and GPU→CPU fallback.
  */
 
-import type { TaskOptions, WorkerInMessage, WorkerOutMessage } from './types';
+import type { TaskOptions, TaskResult, WorkerInMessage, WorkerOutMessage } from './types';
 import {
   createDirectChannelHandler,
   type DirectChannelHandler
@@ -13,6 +13,7 @@ import {
 
 // MediaPipe WASM CDN (pinned to 0.10.0, matches installed package)
 export const WASM_CDN_BASE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm';
+
 export const MODEL_CDN_BASE = 'https://storage.googleapis.com/mediapipe-models/';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,7 +36,7 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected abstract initTask(vision: any, options: TaskOptions): Promise<TTask>;
   protected abstract detectFrame(task: TTask, bitmap: ImageBitmap, timestamp: number): TResult;
-  protected abstract formatResult(raw: TResult): import('./types').TaskResult;
+  protected abstract formatResult(raw: TResult): TaskResult;
 
   protected post(msg: WorkerOutMessage, transfer?: Transferable[]) {
     if (transfer?.length) {
@@ -73,7 +74,6 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
     this.post({ type: 'ready' });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async initWithDelegate(options: TaskOptions): Promise<void> {
     // Import FilesetResolver from the installed package.
     // Workers use `?worker&url` import — we load the ESM build directly.
@@ -86,7 +86,7 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
     // MediaPipe won't attempt importScripts().
     try {
       const loaderCode = await fetch(vision.wasmLoaderPath).then((r) => r.text());
-      // eslint-disable-next-line no-eval
+
       (0, eval)(loaderCode);
       // @ts-expect-error — delete non-standard property
       delete vision.wasmLoaderPath;
@@ -107,24 +107,28 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
     try {
       const raw = this.detectFrame(this.task, bitmap, timestamp);
       const result = this.formatResult(raw);
+
       this.sendResult(result);
       this.frameCount++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+
       this.post({ type: 'error', message: msg });
     } finally {
       bitmap.close();
+
       this.isProcessing = false;
     }
   }
 
-  protected sendResult(result: import('./types').TaskResult, outlet = 0): void {
+  protected sendResult(result: TaskResult, outlet = 0): void {
     const excludeTargets = this.directChannel
       ? [
           ...this.directChannel.sendToRenderTargets(result, { to: outlet }),
           ...this.directChannel.sendToWorkerTargets(result, { to: outlet })
         ]
       : [];
+
     this.post({ type: 'result', data: result, excludeTargets });
   }
 
@@ -139,11 +143,13 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
       } catch {
         // ignore
       }
+
       this.task = null;
     }
 
     // Merge new settings and reinit
     this.options = { ...this.options, ...settings } as TaskOptions;
+
     await this.init(this.options);
   }
 
@@ -158,6 +164,7 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
       } catch {
         // ignore
       }
+
       this.task = null;
     }
   }
