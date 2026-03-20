@@ -50,24 +50,20 @@ export const PIANOROLL_DEFAULT_WIDTH = 520;
 export const PIANOROLL_DEFAULT_HEIGHT = 240;
 export const PIANOROLL_MIN_HEIGHT = 140;
 
-// Zinc-950 palette — matches CurveNode
 export const COLORS = {
-  bgWhiteRow: '#141417', // slight lift from pure black
-  bgBlackRow: '#09090b', // zinc-950 pure
-  barLine: '#4b4b54', // more visible bar separators
+  bgWhiteRow: '#0f0f12', // near-black, slight blue tint
+  bgBlackRow: '#0a0a0d', // darker for black key rows
+  barLine: '#3f3f46', // zinc-700
   beatLine: '#27272a', // zinc-800
   subdivLine: '#1a1a1d',
-  ruler: '#18181b', // zinc-900 — subtle lift from grid
-  rulerText: '#a1a1aa', // zinc-400 — more readable
-  rulerBorder: '#3f3f46', // zinc-700 — visible separator
-  noteBase: '#4ade80', // green-400 (curve accent)
-  noteHover: '#86efac', // green-300
+  ruler: '#0d0d10', // very dark ruler
+  rulerText: '#71717a', // zinc-500
+  rulerBorder: '#27272a', // zinc-800
   noteText: 'rgba(0,0,0,0.85)',
-  playhead: 'rgba(255,255,255,0.9)', // bright white playhead
-  keyWhite: '#222226', // slightly lighter than pure black
-  keyBlack: '#09090b', // zinc-950
-  keyBorder: '#18181b', // zinc-900
-  keyLabel: '#52525b', // zinc-600
-  keyCLabel: '#a1a1aa', // zinc-400 — brighter C labels
+  keyWhite: '#131316', // dark key
+  keyBlack: '#07070a', // darker black key
+  keyBorder: '#1a1a1d',
+  keyLabel: '#3f3f46', // zinc-700
+  keyCLabel: '#71717a', // zinc-500
   keyActive: '#22c55e' // green-500 — active/preview key
 };

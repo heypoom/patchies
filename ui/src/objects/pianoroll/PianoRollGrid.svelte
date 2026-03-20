@@ -169,15 +169,16 @@
       const y = noteTop(note.note);
       const nw = noteWidth(note.durationTicks);
       const nh = NOTE_HEIGHT - 1;
-      const alpha = 0.55 + (note.velocity / 127) * 0.45;
+      const hue = (note.note * 8) % 360;
+      const alpha = 0.35 + (note.velocity / 127) * 0.65;
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = hoveredIndex === i ? COLORS.noteHover : COLORS.noteBase;
+      ctx.fillStyle = hoveredIndex === i ? `hsl(${hue}, 70%, 72%)` : `hsl(${hue}, 70%, 58%)`;
       ctx.beginPath();
       ctx.roundRect(x, y, nw, nh, 2);
       ctx.fill();
       // Subtle top highlight line
-      ctx.globalAlpha = alpha * 0.45;
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.globalAlpha = alpha * 0.5;
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.fillRect(x + 1, y + 1, Math.max(nw - 2, 1), 1);
       ctx.globalAlpha = 1;
       if (nw > 20) {
@@ -193,11 +194,12 @@
       if (dragState.type === 'drawing') {
         const { note: noteNum, startTick, currentTick } = dragState;
         if (isVisible(noteNum)) {
+          const hue = (noteNum * 8) % 360;
           const x = noteLeft(startTick);
           const y = noteTop(noteNum);
           const nw = noteWidth(Math.max(currentTick - startTick, dragState.gridTicks));
           ctx.globalAlpha = 0.75;
-          ctx.fillStyle = COLORS.noteHover;
+          ctx.fillStyle = `hsl(${hue}, 70%, 72%)`;
           ctx.beginPath();
           ctx.roundRect(x, y, nw, NOTE_HEIGHT - 1, 2);
           ctx.fill();
@@ -207,11 +209,12 @@
         const { currentTick, currentNote } = dragState;
         const orig = notes[dragState.index];
         if (orig && isVisible(currentNote)) {
+          const hue = (currentNote * 8) % 360;
           const x = noteLeft(currentTick);
           const y = noteTop(currentNote);
           const nw = noteWidth(orig.durationTicks);
           ctx.globalAlpha = 0.75;
-          ctx.fillStyle = COLORS.noteHover;
+          ctx.fillStyle = `hsl(${hue}, 70%, 72%)`;
           ctx.beginPath();
           ctx.roundRect(x, y, nw, NOTE_HEIGHT - 1, 2);
           ctx.fill();
@@ -220,11 +223,12 @@
       } else if (dragState.type === 'resizing') {
         const orig = notes[dragState.index];
         if (orig && isVisible(orig.note)) {
+          const hue = (orig.note * 8) % 360;
           const x = noteLeft(orig.tick);
           const y = noteTop(orig.note);
           const nw = noteWidth(dragState.currentDuration);
           ctx.globalAlpha = 0.75;
-          ctx.fillStyle = COLORS.noteHover;
+          ctx.fillStyle = `hsl(${hue}, 70%, 72%)`;
           ctx.beginPath();
           ctx.roundRect(x, y, nw, NOTE_HEIGHT - 1, 2);
           ctx.fill();
@@ -233,9 +237,9 @@
       }
     }
 
-    // Playhead — 2px wide, bright white
+    // Playhead — 2px wide, colored by mode
     if (mode !== 'idle' && mode !== 'armed') {
-      ctx.fillStyle = COLORS.playhead;
+      ctx.fillStyle = mode === 'recording' ? '#ef4444' : mode === 'looping' ? '#3b82f6' : '#6366f1';
       ctx.fillRect(Math.max(playheadLeft - 1, 0), 0, 2, h);
     }
   }
@@ -423,13 +427,33 @@
     if (idx >= 0) onNoteDelete?.(idx);
   }
 
+  let isMouseOver = false;
+
+  function handlePointerEnter() {
+    isMouseOver = true;
+  }
+
   function handlePointerLeave() {
+    isMouseOver = false;
     if (dragState) return;
     if (hoveredIndex !== null) {
       hoveredIndex = null;
       draw();
     }
     cursor = 'crosshair';
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (!isMouseOver) return;
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+
+    // Prevent xyflow from deleting the node while the user is editing notes
+    e.stopImmediatePropagation();
+
+    if (hoveredIndex !== null) {
+      onNoteDelete?.(hoveredIndex);
+      hoveredIndex = null;
+    }
   }
 
   function handleWheel(e: WheelEvent) {
@@ -448,8 +472,12 @@
   onMount(() => {
     dpr = window.devicePixelRatio || 1;
     rafId = requestAnimationFrame(loop);
+    window.addEventListener('keydown', handleKeydown, { capture: true });
   });
-  onDestroy(() => cancelAnimationFrame(rafId));
+  onDestroy(() => {
+    cancelAnimationFrame(rafId);
+    window.removeEventListener('keydown', handleKeydown, { capture: true });
+  });
 </script>
 
 <canvas
@@ -460,6 +488,7 @@
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
   oncontextmenu={handleContextMenu}
+  onpointerenter={handlePointerEnter}
   onpointerleave={handlePointerLeave}
   onwheel={handleWheel}
 ></canvas>
