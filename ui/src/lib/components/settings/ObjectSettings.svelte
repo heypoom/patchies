@@ -3,7 +3,6 @@
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useNodeDataTracker } from '$lib/history';
-  import { match } from 'ts-pattern';
   import type { SettingsField, SettingsSchema } from '$lib/settings/types';
 
   let {
@@ -91,7 +90,7 @@
 <!-- Settings panel -->
 <div class="nodrag w-48 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
   <div class="flex flex-col gap-3">
-    {#each schema as field (field.key)}
+    {#each schema as field, index (index)}
       {#if field.type === 'slider'}
         {@const sliderTracker = makeTracker(field)}
         {@const currentVal = (getCurrentValue(field) as number) ?? field.min}
@@ -227,8 +226,9 @@
             <label class="mb-2 block text-xs font-medium text-zinc-300">{field.label}</label>
           {/if}
           <div class="flex flex-wrap gap-1">
-            {#each field.options as option (option.value)}
+            {#each field.options as option, index (index)}
               {@const isSelected = getCurrentValue(field) === option.value}
+
               {#if option.description}
                 <Tooltip.Root>
                   <Tooltip.Trigger>
@@ -276,10 +276,12 @@
           {:else}
             <label class="mb-2 block text-xs font-medium text-zinc-300">{field.label}</label>
           {/if}
+
           {#if field.presets && field.presets.length > 0}
             <div class="flex flex-wrap gap-2">
-              {#each field.presets as preset (preset)}
+              {#each field.presets as preset, index (index)}
                 {@const isSelected = getCurrentValue(field) === preset}
+
                 <button
                   onclick={() => handleDiscreteChange(field, preset)}
                   class={[
