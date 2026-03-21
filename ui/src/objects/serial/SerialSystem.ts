@@ -70,7 +70,12 @@ export class SerialSystem {
       this.pendingCloses.delete(port);
     }
 
-    await port.open({ baudRate });
+    await port.open({
+      baudRate: 250000,
+      dataBits: 8,
+      stopBits: 2,
+      parity: 'none'
+    });
 
     const portId = `serial-${nextPortId++}`;
     const label = options?.label ?? `Port ${portId}`;
@@ -262,13 +267,14 @@ export class SerialSystem {
   }
 
   private async startReadLoop(entry: SerialPortEntry): Promise<void> {
-    if (!entry.port.readable) return;
+    const { readable } = entry.port;
+    if (!readable) return;
 
     const abortController = new AbortController();
     entry.abortController = abortController;
 
     const textDecoder = new TextDecoderStream();
-    const readablePromise = entry.port.readable.pipeTo(textDecoder.writable, {
+    const readablePromise = readable.pipeTo(textDecoder.writable as WritableStream<Uint8Array>, {
       signal: abortController.signal
     });
 

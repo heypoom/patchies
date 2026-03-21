@@ -1,7 +1,7 @@
 <script lang="ts">
   import { X, Usb } from '@lucide/svelte/icons';
   import { serialPorts } from '../../stores/serial.store';
-  import { SerialSystem } from '$lib/canvas/SerialSystem';
+  import { SerialSystem } from './SerialSystem';
   import { BAUD_RATES, LINE_ENDINGS } from './constants';
   import { useNodeDataTracker } from '$lib/history';
   import { useSvelteFlow } from '@xyflow/svelte';

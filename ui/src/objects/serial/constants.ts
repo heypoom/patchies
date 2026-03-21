@@ -10,7 +10,9 @@ export interface SerialTerminalNodeData extends SerialNodeData {
   resizable: boolean;
 }
 
-export const BAUD_RATES = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200] as const;
+export const BAUD_RATES = [
+  300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 250000
+] as const;
 
 export const LINE_ENDINGS: { label: string; value: string }[] = [
   { label: 'CR+LF (\\r\\n)', value: '\r\n' },

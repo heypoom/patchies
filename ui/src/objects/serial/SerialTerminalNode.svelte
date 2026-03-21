@@ -4,7 +4,7 @@
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy, tick } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import { SerialSystem } from '$lib/canvas/SerialSystem';
+  import { SerialSystem } from './SerialSystem';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { MessageSystem } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
@@ -119,7 +119,7 @@
     serialSystem.unsubscribe(pid, nodeId);
   }
 
-  async function handleConnect(newPortId: string) {
+  async function handleConnect() {
     errorMessage = null;
     log('Serial Connection Established', 'system');
   }
@@ -244,6 +244,26 @@
         .with(serialMessages.disconnect, () => handleDisconnect())
         .with(serialMessages.baud, ({ value }) => {
           updateNodeData(nodeId, { baudRate: value });
+        })
+        .with(serialMessages.uint8Array, async (bytes) => {
+          if (!portId || !isConnected) {
+            log('Not connected', 'error');
+            return;
+          }
+
+          await serialSystem.writeRaw(portId, bytes);
+
+          log(Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join(' '), 'tx');
+        })
+        .with(serialMessages.numberArray, async (arr) => {
+          if (!portId || !isConnected) {
+            log('Not connected', 'error');
+            return;
+          }
+
+          await serialSystem.writeRaw(portId, new Uint8Array(arr));
+
+          log(arr.map((b) => b.toString(16).padStart(2, '0')).join(' '), 'tx');
         })
         .with(P.string, async (text) => {
           if (!portId || !isConnected) {

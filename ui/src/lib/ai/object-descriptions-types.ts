@@ -95,6 +95,8 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - midi.out: MIDI output to devices
 - netsend: Network message sender (WebRTC)
 - netrecv: Network message receiver (WebRTC)
+- serial: WebSerial port — send/receive strings, Uint8Array, or number[] to hardware devices (Arduino, etc.)
+- serial.term: Interactive serial terminal with scrollback, ANSI colors, and command history
 
 ## Documentation & Content
 - markdown: Markdown renderer

@@ -4,7 +4,7 @@
   import StandardHandle from '$lib/components/StandardHandle.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import { SerialSystem } from '$lib/canvas/SerialSystem';
+  import { SerialSystem } from './SerialSystem';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { MessageSystem } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
@@ -101,6 +101,22 @@
         .with(serialMessages.disconnect, () => handleDisconnect())
         .with(serialMessages.baud, ({ value }) => {
           updateNodeData(nodeId, { baudRate: value });
+        })
+        .with(serialMessages.uint8Array, async (bytes) => {
+          if (!portId || !isConnected) {
+            errorMessage = 'Not connected';
+            return;
+          }
+
+          await serialSystem.writeRaw(portId, bytes);
+        })
+        .with(serialMessages.numberArray, async (arr) => {
+          if (!portId || !isConnected) {
+            errorMessage = 'Not connected';
+            return;
+          }
+
+          await serialSystem.writeRaw(portId, new Uint8Array(arr));
         })
         .with(P.string, async (text) => {
           if (!portId || !isConnected) {

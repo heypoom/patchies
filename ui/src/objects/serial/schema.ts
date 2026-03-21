@@ -3,6 +3,7 @@ import { msg, sym } from '$lib/objects/schemas/helpers';
 import { schema } from '$lib/objects/schemas/types';
 import type { ObjectSchema } from '$lib/objects/schemas/types';
 import { Bang } from '$lib/objects/schemas';
+import { P } from 'ts-pattern';
 
 // Inlet commands
 export const SerialConnect = sym('connect');
@@ -27,6 +28,8 @@ export const serialMessages = {
   connect: schema(SerialConnect),
   disconnect: schema(SerialDisconnect),
   baud: schema(SerialBaud),
+  uint8Array: P.instanceOf(Uint8Array),
+  numberArray: P.array(P.number),
   data: schema(SerialData),
   connected: schema(SerialConnected),
   disconnected: schema(SerialDisconnected),
@@ -47,6 +50,14 @@ export const serialSchema: ObjectSchema = {
       messages: [
         { schema: Bang, description: 'Open port picker and connect' },
         { schema: Type.String(), description: 'Send a string to the port' },
+        {
+          schema: Type.Object({ type: Type.Literal('Uint8Array') }),
+          description: 'Send raw bytes to the port'
+        },
+        {
+          schema: Type.Array(Type.Integer({ minimum: 0, maximum: 255 })),
+          description: 'Send raw bytes as a number array to the port'
+        },
         { schema: SerialConnect, description: 'Open port picker and connect' },
         { schema: SerialDisconnect, description: 'Disconnect from the port' },
         { schema: SerialBaud, description: 'Set the baud rate' }
@@ -82,6 +93,14 @@ export const serialTermSchema: ObjectSchema = {
       messages: [
         { schema: Bang, description: 'Open port picker and connect' },
         { schema: Type.String(), description: 'Send a string to the port' },
+        {
+          schema: Type.Object({ type: Type.Literal('Uint8Array') }),
+          description: 'Send raw bytes to the port'
+        },
+        {
+          schema: Type.Array(Type.Integer({ minimum: 0, maximum: 255 })),
+          description: 'Send raw bytes as a number array to the port'
+        },
         { schema: SerialConnect, description: 'Open port picker and connect' },
         { schema: SerialDisconnect, description: 'Disconnect from the port' },
         { schema: SerialBaud, description: 'Set the baud rate' }
