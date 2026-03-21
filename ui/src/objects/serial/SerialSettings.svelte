@@ -2,7 +2,14 @@
   import { X, Usb } from '@lucide/svelte/icons';
   import { serialPorts } from '../../stores/serial.store';
   import { SerialSystem } from './SerialSystem';
-  import { BAUD_RATES, LINE_ENDINGS } from './constants';
+  import {
+    BAUD_RATES,
+    DATA_BITS,
+    STOP_BITS,
+    PARITY_OPTIONS,
+    LINE_ENDINGS,
+    type SerialParity
+  } from './constants';
   import { useNodeDataTracker } from '$lib/history';
   import { useSvelteFlow } from '@xyflow/svelte';
 
@@ -10,6 +17,9 @@
     nodeId,
     portId,
     baudRate,
+    dataBits,
+    stopBits,
+    parity,
     lineEnding,
     resizable,
     show = $bindable(false),
@@ -20,6 +30,9 @@
     nodeId: string;
     portId: string;
     baudRate: number;
+    dataBits: number;
+    stopBits: number;
+    parity: SerialParity;
     lineEnding: string;
     resizable?: boolean;
     show: boolean;
@@ -36,7 +49,12 @@
 
   async function handleRequestPort() {
     try {
-      const newPortId = await serialSystem.requestPort({ baudRate });
+      const newPortId = await serialSystem.requestPort({
+        baudRate,
+        dataBits: dataBits as 7 | 8,
+        stopBits: stopBits as 1 | 2,
+        parity: parity as 'none' | 'even' | 'odd' | 'mark' | 'space'
+      });
       const oldPortId = portId;
       updateNodeData(nodeId, { portId: newPortId });
       tracker.commit('portId', oldPortId, newPortId);
@@ -125,6 +143,72 @@
         >
           {#each BAUD_RATES as rate}
             <option value={rate}>{rate}</option>
+          {/each}
+        </select>
+      </div>
+
+      <!-- Data Bits -->
+      <div>
+        <label for="serial-databits-{nodeId}" class="mb-2 block text-xs font-medium text-zinc-300"
+          >Data Bits</label
+        >
+        <select
+          id="serial-databits-{nodeId}"
+          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+          value={dataBits}
+          onchange={(e) => {
+            const old = dataBits;
+            const val = parseInt((e.target as HTMLSelectElement).value);
+            updateNodeData(nodeId, { dataBits: val });
+            tracker.commit('dataBits', old, val);
+          }}
+        >
+          {#each DATA_BITS as bits}
+            <option value={bits}>{bits}</option>
+          {/each}
+        </select>
+      </div>
+
+      <!-- Stop Bits -->
+      <div>
+        <label for="serial-stopbits-{nodeId}" class="mb-2 block text-xs font-medium text-zinc-300"
+          >Stop Bits</label
+        >
+        <select
+          id="serial-stopbits-{nodeId}"
+          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+          value={stopBits}
+          onchange={(e) => {
+            const old = stopBits;
+            const val = parseInt((e.target as HTMLSelectElement).value);
+            updateNodeData(nodeId, { stopBits: val });
+            tracker.commit('stopBits', old, val);
+          }}
+        >
+          {#each STOP_BITS as bits}
+            <option value={bits}>{bits}</option>
+          {/each}
+        </select>
+      </div>
+
+      <!-- Parity -->
+      <div>
+        <label for="serial-parity-{nodeId}" class="mb-2 block text-xs font-medium text-zinc-300"
+          >Parity</label
+        >
+        <select
+          id="serial-parity-{nodeId}"
+          class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+          value={parity}
+          onchange={(e) => {
+            const old = parity;
+            const val = (e.target as HTMLSelectElement).value as SerialParity;
+            updateNodeData(nodeId, { parity: val });
+            tracker.commit('parity', old, val);
+          }}
+        >
+          {#each PARITY_OPTIONS as opt}
+            <option value={opt.value}>{opt.label}</option>
           {/each}
         </select>
       </div>

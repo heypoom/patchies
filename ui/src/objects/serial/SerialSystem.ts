@@ -15,7 +15,8 @@ interface SerialPortEntry {
   label: string;
   lineBuffer: string;
   subscribers: Map<string, SerialSubscriber>;
-  abortController: AbortController | null;
+  keepReading: boolean;
+  reader: ReadableStreamDefaultReader<Uint8Array> | null;
   readLoopPromise: Promise<void> | null;
   writeChain: Promise<void>;
 }
@@ -39,12 +40,21 @@ export class SerialSystem {
   }
 
   /** Prompt user to select a port, open it (or reuse if already open), return portId */
-  async requestPort(options?: { baudRate?: number; label?: string }): Promise<string> {
+  async requestPort(options?: {
+    baudRate?: number;
+    dataBits?: 7 | 8;
+    stopBits?: 1 | 2;
+    parity?: ParityType;
+    label?: string;
+  }): Promise<string> {
     if (!SerialSystem.isSupported()) {
       throw new Error('WebSerial API is not supported in this browser');
     }
 
     const baudRate = options?.baudRate ?? 9600;
+    const dataBits = options?.dataBits ?? (8 as 7 | 8);
+    const stopBits = options?.stopBits ?? (1 as 1 | 2);
+    const parity: ParityType = options?.parity ?? 'none';
     const port = await navigator.serial.requestPort();
 
     // If this physical port is already managed, reuse if still connected with matching baud
@@ -70,12 +80,7 @@ export class SerialSystem {
       this.pendingCloses.delete(port);
     }
 
-    await port.open({
-      baudRate: 250000,
-      dataBits: 8,
-      stopBits: 2,
-      parity: 'none'
-    });
+    await port.open({ baudRate, dataBits, stopBits, parity });
 
     const portId = `serial-${nextPortId++}`;
     const label = options?.label ?? `Port ${portId}`;
@@ -88,7 +93,8 @@ export class SerialSystem {
       label,
       lineBuffer: '',
       subscribers: new Map(),
-      abortController: null,
+      keepReading: false,
+      reader: null,
       readLoopPromise: null,
       writeChain: Promise.resolve()
     };
@@ -142,13 +148,12 @@ export class SerialSystem {
   /** Write string data to a port (appends line ending) */
   async write(portId: string, data: string, lineEnding: string = '\r\n'): Promise<void> {
     const entry = this.ports.get(portId);
-    if (!entry?.connected || !entry.port.writable) {
-      throw new Error('Port not connected or not writable');
-    }
+    if (!entry?.connected) throw new Error('Port not connected');
 
     const encoder = new TextEncoder();
     await this.enqueueWrite(entry, async () => {
-      const writer = entry.port.writable!.getWriter();
+      if (!entry.port.writable) throw new Error('Port not writable');
+      const writer = entry.port.writable.getWriter();
       try {
         await writer.write(encoder.encode(data + lineEnding));
       } finally {
@@ -160,17 +165,31 @@ export class SerialSystem {
   /** Write raw bytes to a port */
   async writeRaw(portId: string, data: Uint8Array): Promise<void> {
     const entry = this.ports.get(portId);
-    if (!entry?.connected || !entry.port.writable) {
-      throw new Error('Port not connected or not writable');
-    }
+    if (!entry?.connected) throw new Error('Port not connected');
 
     await this.enqueueWrite(entry, async () => {
-      const writer = entry.port.writable!.getWriter();
+      if (!entry.port.writable) throw new Error('Port not writable');
+      const writer = entry.port.writable.getWriter();
       try {
         await writer.write(data);
       } finally {
         writer.releaseLock();
       }
+    });
+  }
+
+  /**
+   * Send a BREAK signal via SerialPort.setSignals().
+   * WebSerial supports break natively — no baud-rate switching needed.
+   * Required for DMX-512 framing.
+   */
+  async sendBreak(portId: string): Promise<void> {
+    const entry = this.ports.get(portId);
+    if (!entry?.connected) throw new Error('Port not connected');
+
+    return this.enqueueWrite(entry, async () => {
+      await entry.port.setSignals({ break: true });
+      await entry.port.setSignals({ break: false });
     });
   }
 
@@ -203,15 +222,7 @@ export class SerialSystem {
   }
 
   private async performClose(entry: SerialPortEntry): Promise<void> {
-    // Abort the read loop — this signals pipeTo to stop and release the stream lock
-    entry.abortController?.abort();
-    entry.abortController = null;
-
-    // Wait for the read loop to fully unwind so streams are unlocked
-    if (entry.readLoopPromise) {
-      await entry.readLoopPromise.catch(() => {});
-      entry.readLoopPromise = null;
-    }
+    await this.stopReadLoop(entry);
 
     // Flush remaining line buffer
     if (entry.lineBuffer) {
@@ -225,6 +236,22 @@ export class SerialSystem {
       await entry.port.close();
     } catch (e) {
       console.warn('[serial] error closing port:', e);
+    }
+  }
+
+  /**
+   * Stop the read loop cleanly.
+   * Uses reader.cancel() to release the stream lock before port.close() is called.
+   */
+  private async stopReadLoop(entry: SerialPortEntry): Promise<void> {
+    entry.keepReading = false;
+    if (entry.reader) {
+      await entry.reader.cancel().catch(() => {});
+      entry.reader = null;
+    }
+    if (entry.readLoopPromise) {
+      await entry.readLoopPromise.catch(() => {});
+      entry.readLoopPromise = null;
     }
   }
 
@@ -267,52 +294,49 @@ export class SerialSystem {
   }
 
   private async startReadLoop(entry: SerialPortEntry): Promise<void> {
-    const { readable } = entry.port;
-    if (!readable) return;
+    entry.keepReading = true;
+    const decoder = new TextDecoder();
 
-    const abortController = new AbortController();
-    entry.abortController = abortController;
+    while (entry.port.readable && entry.keepReading) {
+      const reader = entry.port.readable.getReader() as ReadableStreamDefaultReader<Uint8Array>;
+      entry.reader = reader;
 
-    const textDecoder = new TextDecoderStream();
-    const readablePromise = readable.pipeTo(textDecoder.writable as WritableStream<Uint8Array>, {
-      signal: abortController.signal
-    });
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          if (!value) continue;
 
-    const reader = textDecoder.readable.getReader();
+          const text = decoder.decode(value, { stream: true });
 
-    try {
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        if (!value) continue;
-
-        // Broadcast raw chunks to terminal subscribers
-        for (const sub of entry.subscribers.values()) {
-          sub.onRawData?.(value);
-        }
-
-        // Line buffering
-        entry.lineBuffer += value;
-        const lines = entry.lineBuffer.split(/\r\n|\n|\r/);
-        entry.lineBuffer = lines.pop() ?? '';
-
-        for (const line of lines) {
+          // Broadcast raw chunks to terminal subscribers
           for (const sub of entry.subscribers.values()) {
-            sub.onLine(line);
+            sub.onRawData?.(text);
+          }
+
+          // Line buffering
+          entry.lineBuffer += text;
+          const lines = entry.lineBuffer.split(/\r\n|\n|\r/);
+          entry.lineBuffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            for (const sub of entry.subscribers.values()) {
+              sub.onLine(line);
+            }
           }
         }
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error('[serial] read loop error:', err);
+          const error = err instanceof Error ? err : new Error(String(err));
+          this.notifySubscribers(entry, 'error', error);
+          entry.connected = false;
+          this.syncStore();
+        }
+      } finally {
+        reader.releaseLock();
+        entry.reader = null;
       }
-    } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        console.error('[serial] read loop error:', err);
-        const error = err instanceof Error ? err : new Error(String(err));
-        this.notifySubscribers(entry, 'error', error);
-        entry.connected = false;
-        this.syncStore();
-      }
-    } finally {
-      reader.releaseLock();
-      await readablePromise.catch(() => {});
     }
   }
 

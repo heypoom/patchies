@@ -66,6 +66,9 @@
 
   const portId = $derived(data.portId || '');
   const baudRate = $derived(data.baudRate || 9600);
+  const dataBits = $derived(data.dataBits ?? 8);
+  const stopBits = $derived(data.stopBits ?? 1);
+  const parity = $derived(data.parity ?? 'none');
   const lineEnding = $derived(data.lineEnding ?? '\r\n');
   const maxScrollback = $derived(data.maxScrollback || 500);
   const resizable = $derived(data.resizable ?? true);
@@ -244,6 +247,14 @@
         .with(serialMessages.disconnect, () => handleDisconnect())
         .with(serialMessages.baud, ({ value }) => {
           updateNodeData(nodeId, { baudRate: value });
+        })
+        .with(serialMessages.sendBreak, async () => {
+          if (!portId || !isConnected) {
+            log('Not connected', 'error');
+            return;
+          }
+          await serialSystem.sendBreak(portId);
+          log('BREAK', 'tx');
         })
         .with(serialMessages.uint8Array, async (bytes) => {
           if (!portId || !isConnected) {
@@ -455,6 +466,9 @@
         {nodeId}
         {portId}
         {baudRate}
+        {dataBits}
+        {stopBits}
+        {parity}
         {lineEnding}
         {resizable}
         bind:show={showSettings}

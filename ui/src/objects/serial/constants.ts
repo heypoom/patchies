@@ -1,6 +1,11 @@
+export type SerialParity = 'none' | 'even' | 'odd' | 'mark' | 'space';
+
 export interface SerialNodeData {
   portId: string;
   baudRate: number;
+  dataBits: number;
+  stopBits: number;
+  parity: SerialParity;
   lineEnding: string;
   autoConnect: boolean;
 }
@@ -21,9 +26,22 @@ export const LINE_ENDINGS: { label: string; value: string }[] = [
   { label: 'None', value: '' }
 ];
 
+export const DATA_BITS = [5, 6, 7, 8] as const;
+export const STOP_BITS = [1, 2] as const;
+export const PARITY_OPTIONS: { label: string; value: SerialParity }[] = [
+  { label: 'None', value: 'none' },
+  { label: 'Even', value: 'even' },
+  { label: 'Odd', value: 'odd' },
+  { label: 'Mark', value: 'mark' },
+  { label: 'Space', value: 'space' }
+];
+
 export const DEFAULT_SERIAL_DATA: SerialNodeData = {
   portId: '',
   baudRate: 9600,
+  dataBits: 8,
+  stopBits: 1,
+  parity: 'none',
   lineEnding: '\r\n',
   autoConnect: false
 };
@@ -38,6 +56,9 @@ export const SERIAL_TERM_DEFAULT_HEIGHT = 320;
 export const DEFAULT_SERIAL_TERMINAL_DATA: SerialTerminalNodeData = {
   portId: '',
   baudRate: 9600,
+  dataBits: 8,
+  stopBits: 1,
+  parity: 'none',
   lineEnding: '\r\n',
   autoConnect: false,
   maxScrollback: 500,

@@ -35,6 +35,9 @@
 
   const portId = $derived(data.portId || '');
   const baudRate = $derived(data.baudRate || 9600);
+  const dataBits = $derived(data.dataBits ?? 8);
+  const stopBits = $derived(data.stopBits ?? 1);
+  const parity = $derived(data.parity ?? 'none');
   const lineEnding = $derived(data.lineEnding ?? '\r\n');
 
   const portStoreEntry = $derived($serialPorts.find((p) => p.portId === portId));
@@ -101,6 +104,13 @@
         .with(serialMessages.disconnect, () => handleDisconnect())
         .with(serialMessages.baud, ({ value }) => {
           updateNodeData(nodeId, { baudRate: value });
+        })
+        .with(serialMessages.sendBreak, async () => {
+          if (!portId || !isConnected) {
+            errorMessage = 'Not connected';
+            return;
+          }
+          await serialSystem.sendBreak(portId);
         })
         .with(serialMessages.uint8Array, async (bytes) => {
           if (!portId || !isConnected) {
@@ -213,6 +223,9 @@
         {nodeId}
         {portId}
         {baudRate}
+        {dataBits}
+        {stopBits}
+        {parity}
         {lineEnding}
         bind:show={showSettings}
         {errorMessage}

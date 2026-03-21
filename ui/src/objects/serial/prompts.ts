@@ -15,6 +15,7 @@ Inlet messages:
 - {type: 'connect'}: Open port picker and connect
 - {type: 'disconnect'}: Disconnect from the port
 - {type: 'setBaud', value: number}: Set the baud rate
+- {type: 'sendBreak'}: Send a BREAK signal via setSignals() — required for DMX-512 framing
 
 Outlet messages:
 - {type: 'data', line: string}: A line received from the port
@@ -64,6 +65,7 @@ Inlet messages:
 - {type: 'connect'}: Toggle connection
 - {type: 'disconnect'}: Disconnect from the port
 - {type: 'setBaud', value: number}: Set the baud rate
+- {type: 'sendBreak'}: Send a BREAK signal via setSignals() — required for DMX-512 framing
 
 Outlet messages:
 - {type: 'data', line: string}: A line received from the port

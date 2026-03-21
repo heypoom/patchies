@@ -9,6 +9,7 @@ import { P } from 'ts-pattern';
 export const SerialConnect = sym('connect');
 export const SerialDisconnect = sym('disconnect');
 export const SerialBaud = msg('setBaud', { value: Type.Number() });
+export const SerialSendBreak = sym('sendBreak');
 
 // Outlet messages
 export const SerialData = msg('data', { line: Type.String() });
@@ -28,6 +29,7 @@ export const serialMessages = {
   connect: schema(SerialConnect),
   disconnect: schema(SerialDisconnect),
   baud: schema(SerialBaud),
+  sendBreak: schema(SerialSendBreak),
   uint8Array: P.instanceOf(Uint8Array),
   numberArray: P.array(P.number),
   data: schema(SerialData),
@@ -57,6 +59,10 @@ export const serialSchema: ObjectSchema = {
         {
           schema: Type.Array(Type.Integer({ minimum: 0, maximum: 255 })),
           description: 'Send raw bytes as a number array to the port'
+        },
+        {
+          schema: SerialSendBreak,
+          description: 'Send a BREAK signal via setSignals() — required for DMX-512 framing'
         },
         { schema: SerialConnect, description: 'Open port picker and connect' },
         { schema: SerialDisconnect, description: 'Disconnect from the port' },
@@ -100,6 +106,10 @@ export const serialTermSchema: ObjectSchema = {
         {
           schema: Type.Array(Type.Integer({ minimum: 0, maximum: 255 })),
           description: 'Send raw bytes as a number array to the port'
+        },
+        {
+          schema: SerialSendBreak,
+          description: 'Send a BREAK signal via setSignals() — required for DMX-512 framing'
         },
         { schema: SerialConnect, description: 'Open port picker and connect' },
         { schema: SerialDisconnect, description: 'Disconnect from the port' },
