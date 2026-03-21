@@ -172,7 +172,7 @@ import { sequencerSchema } from './sequencer';
 import { bytebeatSchema } from './bytebeat';
 import { projmapSchema } from './projmap';
 import { curveSchema } from '$objects/curve/schema';
-import { serialSchema, serialTermSchema } from '$objects/serial/schema';
+import { serialSchema, serialTermSchema, dmxSchema } from '$objects/serial/schema';
 import {
   visionHandSchema,
   visionBodySchema,
@@ -281,6 +281,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   curve: curveSchema,
   serial: serialSchema,
   'serial.term': serialTermSchema,
+  'serial.dmx': dmxSchema,
   'vision.hand': visionHandSchema,
   'vision.body': visionBodySchema,
   'vision.face': visionFaceSchema,

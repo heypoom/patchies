@@ -129,7 +129,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'vdo.ninja.push',
       'vdo.ninja.pull',
       'serial',
-      'serial.term'
+      'serial.term',
+      'serial.dmx'
     ]
   },
   {

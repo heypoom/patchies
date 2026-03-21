@@ -46,6 +46,42 @@ Common patterns:
 - Pair with a toggle/button to trigger connect/disconnect
 - Use setBaud to change baud rate at runtime before connecting`;
 
+export const dmxPrompt = `## dmx Object Instructions
+
+DMX-512 universe output node. Hardcoded to 250000 baud, 8 data bits, 2 stop bits, no parity — the standard DMX-512 serial configuration. Sends a BREAK + start code + channel data on every message received.
+
+CRITICAL RULES:
+1. Requires a browser that supports the WebSerial API (Chrome/Edge)
+2. Port is always opened at 250000/8N2/none — no configuration needed
+3. Fixtures go dark if they stop receiving frames — use setInterval in a js node to keep sending
+4. Channel values are 0-255; up to 512 channels per frame
+
+Inlet messages:
+- bang or {type: 'bang'}: Open port picker and connect
+- number[]: Set channel values and send a frame (e.g. [255, 128, 0, 0, ...])
+- Uint8Array: Set channel values from raw bytes and send a frame
+- {type: 'blackout'}: Send all channels as 0
+- {type: 'connect'}: Open port picker and connect
+- {type: 'disconnect'}: Send blackout then disconnect
+
+No outlets.
+
+Example — continuous DMX loop from a js node connected to dmx inlet:
+\`\`\`javascript
+const channels = new Array(512).fill(0);
+channels[0] = 255; // ch1 full
+channels[1] = 128; // ch2 half
+
+setInterval(() => send(channels), 40); // ~25fps
+
+onCleanup(() => send({ type: 'blackout' }));
+\`\`\`
+
+Example - dmx node JSON:
+\`\`\`json
+{ "type": "serial.dmx", "data": { "portId": "" } }
+\`\`\``;
+
 export const serialTermPrompt = `## serial.term Object Instructions
 
 Interactive serial terminal with scrollback buffer and ANSI color support. Combines serial port communication with a visual terminal UI.

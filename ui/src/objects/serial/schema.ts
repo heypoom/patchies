@@ -126,3 +126,45 @@ export const serialTermSchema: ObjectSchema = {
   ],
   tags: ['serial', 'terminal', 'hardware', 'usb', 'uart', 'arduino', 'console', 'network']
 };
+
+// DMX-specific messages
+export const DmxBlackout = sym('blackout');
+
+export const dmxMessages = {
+  connect: schema(SerialConnect),
+  disconnect: schema(SerialDisconnect),
+  blackout: schema(DmxBlackout),
+  uint8Array: P.instanceOf(Uint8Array),
+  numberArray: P.array(P.number)
+};
+
+/**
+ * Schema for the dmx object.
+ */
+export const dmxSchema: ObjectSchema = {
+  type: 'serial.dmx',
+  category: 'network',
+  description: 'DMX-512 universe output (250kbaud, 8N2) — send channel arrays to control lighting',
+  inlets: [
+    {
+      id: 'message',
+      description: 'Channel data and control messages',
+      messages: [
+        { schema: Bang, description: 'Open port picker and connect' },
+        {
+          schema: Type.Array(Type.Integer({ minimum: 0, maximum: 255 })),
+          description: 'Set channel values and send a DMX frame (up to 512 values)'
+        },
+        {
+          schema: Type.Object({ type: Type.Literal('Uint8Array') }),
+          description: 'Set channel values from raw bytes and send a DMX frame'
+        },
+        { schema: DmxBlackout, description: 'Send a blackout frame (all channels to 0)' },
+        { schema: SerialConnect, description: 'Open port picker and connect' },
+        { schema: SerialDisconnect, description: 'Disconnect from the port' }
+      ]
+    }
+  ],
+  outlets: [],
+  tags: ['serial.dmx', 'dmx', 'dmx512', 'lighting', 'hardware', 'usb', 'uart', 'network']
+};

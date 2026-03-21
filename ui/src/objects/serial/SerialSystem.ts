@@ -1,4 +1,5 @@
 import { updateSerialPorts, type SerialPortInfo } from '../../stores/serial.store';
+import type { SerialParity } from './constants';
 
 export interface SerialSubscriber {
   nodeId: string;
@@ -44,7 +45,7 @@ export class SerialSystem {
     baudRate?: number;
     dataBits?: 7 | 8;
     stopBits?: 1 | 2;
-    parity?: ParityType;
+    parity?: SerialParity;
     label?: string;
   }): Promise<string> {
     if (!SerialSystem.isSupported()) {

@@ -97,6 +97,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - netrecv: Network message receiver (WebRTC)
 - serial: WebSerial port — send/receive strings, Uint8Array, or number[] to hardware devices (Arduino, etc.)
 - serial.term: Interactive serial terminal with scrollback, ANSI colors, and command history
+- serial.dmx: DMX-512 lighting output over serial (250kbaud/8N2, hardcoded) — send number[] or Uint8Array of up to 512 channel values
 
 ## Documentation & Content
 - markdown: Markdown renderer

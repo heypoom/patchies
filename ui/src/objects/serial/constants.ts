@@ -1,4 +1,4 @@
-export type SerialParity = 'none' | 'even' | 'odd' | 'mark' | 'space';
+export type SerialParity = 'none' | 'even' | 'odd';
 
 export interface SerialNodeData {
   portId: string;
@@ -31,9 +31,7 @@ export const STOP_BITS = [1, 2] as const;
 export const PARITY_OPTIONS: { label: string; value: SerialParity }[] = [
   { label: 'None', value: 'none' },
   { label: 'Even', value: 'even' },
-  { label: 'Odd', value: 'odd' },
-  { label: 'Mark', value: 'mark' },
-  { label: 'Space', value: 'space' }
+  { label: 'Odd', value: 'odd' }
 ];
 
 export const DEFAULT_SERIAL_DATA: SerialNodeData = {
@@ -44,6 +42,22 @@ export const DEFAULT_SERIAL_DATA: SerialNodeData = {
   parity: 'none',
   lineEnding: '\r\n',
   autoConnect: false
+};
+
+export interface DmxNodeData {
+  portId: string;
+}
+
+export const DEFAULT_DMX_DATA: DmxNodeData = {
+  portId: ''
+};
+
+// DMX-512 serial settings — fixed, never change
+export const DMX_SERIAL_OPTIONS = {
+  baudRate: 250000,
+  dataBits: 8 as 7 | 8,
+  stopBits: 2 as 1 | 2,
+  parity: 'none' as SerialParity
 };
 
 export const SERIAL_TERM_MIN_WIDTH = 320;

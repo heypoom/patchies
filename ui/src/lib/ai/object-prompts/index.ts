@@ -61,7 +61,7 @@ import {
   visionGesturePrompt,
   visionClassifyPrompt
 } from '$objects/mediapipe/prompts';
-import { serialPrompt, serialTermPrompt } from '$objects/serial/prompts';
+import { serialPrompt, serialTermPrompt, dmxPrompt } from '$objects/serial/prompts';
 
 /**
  * Mapping of object types to their instruction prompts.
@@ -117,6 +117,7 @@ export const objectPrompts: Record<string, string> = {
   'scope~': scopePrompt,
   serial: serialPrompt,
   'serial.term': serialTermPrompt,
+  'serial.dmx': dmxPrompt,
   'vision.hand': visionHandPrompt,
   'vision.body': visionBodyPrompt,
   'vision.face': visionFacePrompt,

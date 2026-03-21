@@ -90,6 +90,7 @@ import CurveNode from '$objects/curve/CurveNode.svelte';
 import PadsNode from '$objects/pads/PadsNode.svelte';
 import SerialNode from '$objects/serial/SerialNode.svelte';
 import SerialTerminalNode from '$objects/serial/SerialTerminalNode.svelte';
+import DmxNode from '$objects/serial/DmxNode.svelte';
 import ProjectionMapNode from '$objects/projmap/ProjectionMapNode.svelte';
 import VisionHandNode from '$objects/mediapipe/components/VisionHandNode.svelte';
 import VisionBodyNode from '$objects/mediapipe/components/VisionBodyNode.svelte';
@@ -193,6 +194,7 @@ export const nodeTypes: Record<string, any> = {
   'pads~': PadsNode,
   serial: SerialNode,
   'serial.term': SerialTerminalNode,
+  'serial.dmx': DmxNode,
   projmap: ProjectionMapNode,
   'vision.hand': VisionHandNode,
   'vision.body': VisionBodyNode,
