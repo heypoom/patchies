@@ -305,3 +305,26 @@ class NodeLogger {
 }
 
 export const logger = Logger.getInstance();
+
+/**
+ * Returns deduplicated, limited error messages for a node.
+ * Preserves last-occurrence order (most recent unique errors last).
+ */
+export function getNodeErrors(nodeId: string, limit = 20): string[] {
+  const messages = logger
+    .getNodeLogs(nodeId)
+    .filter((e) => e.level === 'error')
+    .map((e) => e.message);
+
+  const unique: string[] = [];
+  const seen = new Set<string>();
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (!seen.has(messages[i])) {
+      seen.add(messages[i]);
+      unique.unshift(messages[i]);
+    }
+  }
+
+  return unique.slice(-limit);
+}

@@ -18,7 +18,7 @@
   import * as Popover from '$lib/components/ui/popover';
   import { compressImageFile } from '$lib/ai/google';
   import { useVoiceInput } from '$lib/ai/useVoiceInput.svelte';
-  import { logger } from '$lib/utils/logger';
+  import { getNodeErrors } from '$lib/utils/logger';
   import { onMount, onDestroy } from 'svelte';
   import { selectedNodeInfo } from '../../../stores/ui.store';
   import { type ChatNode, type ChatGraphSummary } from '$lib/ai/chat/resolver';
@@ -106,11 +106,7 @@
   const nodeContext = $derived.by(() => {
     if (!$selectedNodeInfo) return null;
 
-    const errors = logger
-      .getNodeLogs($selectedNodeInfo.id)
-      .filter((e) => e.level === 'error')
-      .map((e) => e.message)
-      .slice(-5);
+    const errors = getNodeErrors($selectedNodeInfo.id);
 
     return {
       nodeId: $selectedNodeInfo.id,

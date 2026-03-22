@@ -8,7 +8,7 @@
   import { getModeDescriptor, getAvailableModesForContext } from '$lib/ai/modes/descriptors';
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
-  import { logger } from '$lib/utils/logger';
+  import { getNodeErrors } from '$lib/utils/logger';
 
   let {
     open = $bindable(false),
@@ -110,10 +110,7 @@
 
   const fixErrorMessages = $derived(
     ctrl.mode === 'fix-error' && ctrl.context.selectedNode
-      ? logger
-          .getNodeLogs(ctrl.context.selectedNode.id)
-          .filter((e) => e.level === 'error')
-          .map((e) => e.message)
+      ? getNodeErrors(ctrl.context.selectedNode.id)
       : []
   );
 

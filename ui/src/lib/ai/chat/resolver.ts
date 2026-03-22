@@ -348,9 +348,19 @@ export async function streamChatMessage(
           const nodeId = (functionCall.args?.nodeId as string) ?? '';
           const count = Math.min(Math.max((functionCall.args?.count as number) ?? 10, 1), 50);
 
+          const seen = new Set<string>();
+
           const logs = logger
             .getNodeLogs(nodeId)
             .filter((e) => e.level === 'error' || e.level === 'warn')
+            .filter((e) => {
+              const key = `${e.level}:${e.message}`;
+
+              if (seen.has(key)) return false;
+              seen.add(key);
+
+              return true;
+            })
             .slice(-count)
             .map((e) => ({
               level: e.level,

@@ -1,5 +1,5 @@
 import { editObjectFromPrompt } from '../edit-object-resolver';
-import { logger } from '$lib/utils/logger';
+import { getNodeErrors } from '$lib/utils/logger';
 import type { AiModeContext, AiModeResult, ModeResolver } from './types';
 
 /**
@@ -22,12 +22,7 @@ export const fixErrorResolver: ModeResolver = async (
   const nodeType = selectedNode.type ?? 'unknown';
   const existingData = (selectedNode.data as Record<string, unknown>) ?? {};
 
-  const errors =
-    context.consoleErrors ??
-    logger
-      .getNodeLogs(selectedNode.id)
-      .filter((e) => e.level === 'error')
-      .map((e) => e.message);
+  const errors = context.consoleErrors ?? getNodeErrors(selectedNode.id);
 
   const errorContext =
     errors.length > 0 ? `Fix these errors:\n${errors.join('\n')}` : 'Fix any errors in this code';
