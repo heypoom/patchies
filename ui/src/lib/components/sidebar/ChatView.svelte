@@ -18,47 +18,26 @@
   import * as Popover from '$lib/components/ui/popover';
   import { compressImageFile } from '$lib/ai/google';
   import { useVoiceInput } from '$lib/ai/useVoiceInput.svelte';
-  import { match } from 'ts-pattern';
   import { logger } from '$lib/utils/logger';
-  import { toast } from 'svelte-sonner';
   import { onMount, onDestroy } from 'svelte';
   import { selectedNodeInfo } from '../../../stores/ui.store';
-  import {
-    streamChatMessage,
-    generateChatTitle,
-    type ChatMessage,
-    type ChatAction,
-    type ChatNode,
-    type ChatGraphSummary
-  } from '$lib/ai/chat/resolver';
-  import { modeDescriptors } from '$lib/ai/modes/descriptors';
-  import { toolNameToMode } from '$lib/ai/chat/canvas-tools';
+  import { type ChatNode, type ChatGraphSummary } from '$lib/ai/chat/resolver';
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import ActionCard from './ActionCard.svelte';
   import PersistedActionCard from './PersistedActionCard.svelte';
   import ChatStagedMedia from './ChatStagedMedia.svelte';
   import { getYouTubeLabel, extractYouTubeUrls } from './youtube-utils';
-  import { SvelteMap } from 'svelte/reactivity';
   import { personaStore, BUILTIN_PRESETS, type Persona } from '../../../stores/persona.store';
-  import {
-    loadChatMessages,
-    saveChatMessages,
-    deleteChatMessages
-  } from '../../../stores/chat-history.store';
   import {
     getDraft,
     setDraft,
     getStagedYouTubeUrls,
     setStagedYouTubeUrls
   } from '../../../stores/chat-sessions.store';
+  import { chatStreamStore } from '../../../stores/chat-streaming.store.svelte';
   import { chatSettingsStore } from '../../../stores/chat-settings.store';
-  import type {
-    ThreadMessage,
-    StagedImage,
-    ThreadActionRef,
-    ThreadToolCall
-  } from '$lib/ai/chat/types';
+  import type { StagedImage } from '$lib/ai/chat/types';
 
   let {
     sessionId,
@@ -74,23 +53,18 @@
     onRename?: (name: string) => void;
   } = $props();
 
-  const actions = new SvelteMap<string, ChatAction>();
+  // getSession creates the session if needed.
+  // must not be called inside $derived
+  const session = chatStreamStore.getSession(sessionId);
 
-  let messages = $state<ThreadMessage[]>([]);
   let inputText = $state(getDraft(sessionId));
 
   onMount(async () => {
-    messages = await loadChatMessages(sessionId);
+    await chatStreamStore.init(sessionId);
   });
 
   onDestroy(() => {
     voice.destroy();
-  });
-
-  $effect(() => {
-    if (messages.length > 0) {
-      saveChatMessages(sessionId, messages);
-    }
   });
 
   // Persist draft input text per session (non-reactive to avoid update loops)
@@ -107,29 +81,7 @@
     setStagedYouTubeUrls(sessionId, stagedYouTubeUrls);
   });
 
-  const getToolCallLabel = (name: string, args: Record<string, unknown>): string =>
-    match(name)
-      .with('get_object_instructions', () => `Looking up ${args.type ?? 'object'} docs`)
-      .with('get_graph_nodes', () => 'Reading patch graph')
-      .with('get_node_data', () => `Reading node data`)
-      .with('get_node_errors', () => `Checking node errors`)
-      .with('search_docs', () => `Searching: "${args.query ?? ''}"`)
-      .with('get_doc_content', () => `Fetching ${args.kind ?? 'doc'}: ${args.slug ?? ''}`)
-      .with('connect_edges', () => 'Connecting edges')
-      .with('disconnect_edges', () => 'Disconnecting edges')
-      .otherwise(() => {
-        const mode = modeDescriptors[toolNameToMode(name)];
-
-        return mode?.toolCallLabel ?? mode?.label ?? name;
-      });
-
-  let isLoading = $state(false);
-  let streamingText = $state('');
-  let thinkingText = $state('');
-  let streamingToolCalls = $state<ThreadToolCall[]>([]);
-  let pendingActions = $state<string[]>([]);
   let autoApprove = $state(false);
-  let abortController: AbortController | null = $state(null);
   let messagesEl: HTMLDivElement | undefined = $state();
   let stagedImages = $state<StagedImage[]>([]);
   const voice = useVoiceInput((text) => {
@@ -169,8 +121,8 @@
   });
 
   $effect(() => {
-    void messages;
-    void streamingText;
+    void session.messages;
+    void session.streamingText;
 
     setTimeout(() => {
       if (messagesEl) {
@@ -180,55 +132,17 @@
   });
 
   function updateActionState(id: string, state: 'applied' | 'dismissed') {
-    const action = actions.get(id);
-    if (!action) return;
-
-    actions.set(id, { ...action, state });
-
-    // Persist state to ThreadActionRef in messages so it survives reload
-    messages = messages.map((m) => {
-      if (!m.actions) return m;
-      const updated = m.actions.map((ref) => (ref.id === id ? { ...ref, state } : ref));
-      return { ...m, actions: updated };
-    });
+    chatStreamStore.updateActionState(sessionId, id, state);
   }
 
-  function applyAction(action: ChatAction) {
-    if (!aiCallbacks) return;
-
-    match(action.result)
-      .with({ kind: 'single' }, (r) => aiCallbacks!.onInsertObject(r.type, r.data))
-      .with({ kind: 'multi' }, (r) => aiCallbacks!.onInsertMultipleObjects(r.nodes, r.edges))
-      .with({ kind: 'edit' }, (r) => aiCallbacks!.onEditObject(r.nodeId, r.data))
-      .with({ kind: 'replace' }, (r) =>
-        aiCallbacks!.onReplaceObject(r.nodeId, r.newType, r.newData)
-      )
-      .with({ kind: 'connect-edges' }, (r) => {
-        aiCallbacks!.onConnectEdges(r.edges);
-        if (r.invalidEdges && r.invalidEdges.length > 0) {
-          const n = r.invalidEdges.length;
-          toast.warning(
-            `${n} edge${n === 1 ? '' : 's'} had invalid handles and ${n === 1 ? 'was' : 'were'} skipped`,
-            { description: 'You may need to connect some edges manually.' }
-          );
-        }
-      })
-      .with({ kind: 'disconnect-edges' }, (r) => {
-        aiCallbacks!.onDisconnectEdges(r.edgeIds);
-      })
-      .exhaustive();
-
-    updateActionState(action.id, 'applied');
-  }
-
-  async function handleSubmit() {
+  function handleSubmit() {
     const emptyInput =
       !inputText.trim() &&
       stagedImages.length === 0 &&
       stagedYouTubeUrls.length === 0 &&
       detectedYouTubeUrls.length === 0;
 
-    if (emptyInput || isLoading) return;
+    if (emptyInput || session.isLoading) return;
 
     const userContent = inputText.trim();
     const imagesToSend = [...stagedImages];
@@ -237,8 +151,8 @@
     stagedImages = [];
     stagedYouTubeUrls = [];
 
-    const chatHistory: ChatMessage[] = [
-      ...messages.map((m) => {
+    const chatHistory = [
+      ...session.messages.map((m) => {
         let content = m.content;
 
         if (m.actions && m.actions.length > 0) {
@@ -252,144 +166,44 @@
         return { role: m.role, content, images: m.images, youtubeUrls: m.youtubeUrls };
       }),
       {
-        role: 'user',
+        role: 'user' as const,
         content: userContent,
         images: imagesToSend.length > 0 ? imagesToSend : undefined,
         youtubeUrls: youtubeUrlsToSend.length > 0 ? youtubeUrlsToSend : undefined
       }
     ];
 
-    const isFirstMessage = messages.length === 0;
+    const isFirstMessage = session.messages.length === 0;
 
-    messages = [
-      ...messages,
-      {
-        role: 'user',
-        content: userContent,
-        images: imagesToSend.length > 0 ? imagesToSend : undefined,
-        youtubeUrls: youtubeUrlsToSend.length > 0 ? youtubeUrlsToSend : undefined
-      }
-    ];
+    chatStreamStore.addUserMessage(sessionId, {
+      role: 'user',
+      content: userContent,
+      images: imagesToSend.length > 0 ? imagesToSend : undefined,
+      youtubeUrls: youtubeUrlsToSend.length > 0 ? youtubeUrlsToSend : undefined
+    });
 
     inputText = '';
-    isLoading = true;
 
-    if (isFirstMessage && onRename && userContent) {
-      generateChatTitle(userContent).then((title) => {
-        if (title) onRename(title);
-      });
-    }
-
-    streamingText = '';
-    thinkingText = '';
-    streamingToolCalls = [];
-    pendingActions = [];
-    abortController = new AbortController();
-
-    try {
-      const fullText = await streamChatMessage(
-        chatHistory,
-        nodeContext,
-        (chunk) => {
-          streamingText += chunk;
-        },
-        abortController.signal,
-        (thought) => {
-          thinkingText += thought;
-        },
-        getNodeById,
-        aiCallbacks
-          ? (action) => {
-              actions.set(action.id, action);
-
-              pendingActions = [...pendingActions, action.id];
-
-              if (autoApprove) {
-                applyAction(action);
-              }
-            }
-          : undefined,
-        getGraphSummary,
-        activePersona?.prompt || undefined,
-        (name, args) => {
-          streamingToolCalls = [
-            ...streamingToolCalls,
-            { name, label: getToolCallLabel(name, args), args }
-          ];
-        }
-      );
-
-      const completedActions: ThreadActionRef[] = pendingActions.map((id) => {
-        const action = actions.get(id);
-
-        const summary = action
-          ? match(action.result)
-              .with({ kind: 'single' }, (r) => `Created ${r.type}`)
-              .with({ kind: 'multi' }, (r) => `Created ${r.nodes.length} objects`)
-              .with({ kind: 'edit' }, () => `Edited object`)
-              .with({ kind: 'replace' }, (r) => `Replaced with ${r.newType}`)
-              .with(
-                { kind: 'connect-edges' },
-                (r) => `Connected ${r.edges.length} edge${r.edges.length === 1 ? '' : 's'}`
-              )
-              .with(
-                { kind: 'disconnect-edges' },
-                (r) => `Disconnected ${r.edgeIds.length} edge${r.edgeIds.length === 1 ? '' : 's'}`
-              )
-              .exhaustive()
-          : undefined;
-
-        return {
-          id,
-          type: action?.mode ?? 'unknown',
-          summary,
-          state: action?.state === 'dismissed' ? 'dismissed' : 'applied'
-        };
-      });
-
-      messages = [
-        ...messages,
-        {
-          role: 'model',
-          content: fullText,
-          thinking: thinkingText || undefined,
-          actions: completedActions.length > 0 ? completedActions : undefined,
-          toolCalls: streamingToolCalls.length > 0 ? streamingToolCalls : undefined
-        }
-      ];
-
-      streamingText = '';
-      thinkingText = '';
-      streamingToolCalls = [];
-      pendingActions = [];
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-
-      if (message !== 'Request cancelled') {
-        toast.error(message);
-      }
-
-      streamingText = '';
-      thinkingText = '';
-      streamingToolCalls = [];
-      pendingActions = [];
-    } finally {
-      isLoading = false;
-      abortController = null;
-    }
+    void chatStreamStore.startStream(sessionId, {
+      chatHistory,
+      nodeContext,
+      getNodeById,
+      getGraphSummary,
+      activePersonaPrompt: activePersona?.prompt || undefined,
+      aiCallbacks,
+      autoApprove,
+      onRename,
+      isFirstMessage,
+      userContent
+    });
   }
 
   function handleCancel() {
-    abortController?.abort();
-    abortController = null;
+    chatStreamStore.cancel(sessionId);
   }
 
   function handleClear() {
-    messages = [];
-    actions.clear();
-    streamingText = '';
-
-    deleteChatMessages(sessionId);
+    chatStreamStore.clear(sessionId);
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -455,7 +269,7 @@
 
   <!-- Messages -->
   <div bind:this={messagesEl} class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
-    {#if messages.length === 0 && !isLoading}
+    {#if session.messages.length === 0 && !session.isLoading}
       <div class="flex h-full flex-col items-center justify-center gap-3 text-zinc-600">
         <MessageSquare class="h-8 w-8" />
 
@@ -465,7 +279,7 @@
       </div>
     {/if}
 
-    {#each messages as message, index (index)}
+    {#each session.messages as message, index (index)}
       {#if message.role === 'user'}
         <div
           class="max-w-[90%] rounded border border-zinc-700 bg-zinc-800/60 px-3 py-2 text-xs leading-relaxed text-zinc-200"
@@ -558,7 +372,7 @@
               class={message.actions?.length && (message.thinking || message.content) ? 'mt-2' : ''}
             >
               {#each message.actions ?? [] as ref (ref.id)}
-                {@const action = actions.get(ref.id)}
+                {@const action = session.actions.get(ref.id)}
 
                 {#if action && aiCallbacks}
                   <ActionCard
@@ -578,16 +392,16 @@
     {/each}
 
     <!-- Streaming response (in-flight) -->
-    {#if isLoading}
+    {#if session.isLoading}
       <div class="flex items-start gap-2">
         <div
-          class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full {streamingText
+          class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full {session.streamingText
             ? 'bg-zinc-600'
             : 'animate-pulse bg-zinc-700'}"
         ></div>
 
         <div class="min-w-0 flex-1">
-          {#if thinkingText}
+          {#if session.thinkingText}
             <details open={$chatSettingsStore.expandThinking}>
               <summary
                 class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
@@ -596,14 +410,14 @@
               </summary>
 
               <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
-                <MarkdownContent markdown={thinkingText} />
+                <MarkdownContent markdown={session.thinkingText} />
               </div>
             </details>
           {/if}
 
-          {#if streamingToolCalls.length > 0}
+          {#if session.streamingToolCalls.length > 0}
             <div class="mt-1 flex flex-col gap-0.5">
-              {#each streamingToolCalls as call, i (i)}
+              {#each session.streamingToolCalls as call, i (i)}
                 <details class="group">
                   <summary
                     class="flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
@@ -628,15 +442,15 @@
             </div>
           {/if}
 
-          {#if streamingText}
-            <div class={streamingToolCalls.length ? 'mt-2' : ''}>
-              <MarkdownContent markdown={streamingText} />
+          {#if session.streamingText}
+            <div class={session.streamingToolCalls.length ? 'mt-2' : ''}>
+              <MarkdownContent markdown={session.streamingText} />
             </div>
           {/if}
 
           <!-- ActionCards visible while response is still streaming -->
-          {#each pendingActions as actionId (actionId)}
-            {@const action = actions.get(actionId)}
+          {#each session.pendingActions as actionId (actionId)}
+            {@const action = session.actions.get(actionId)}
 
             {#if action && aiCallbacks}
               <ActionCard
@@ -812,7 +626,7 @@
           : voice.isTranscribing
             ? 'Transcribing...'
             : 'Ask anything or drop/paste images. Shift+Enter for new line.'}
-        disabled={isLoading || voice.isRecording || voice.isTranscribing}
+        disabled={session.isLoading || voice.isRecording || voice.isTranscribing}
         rows="3"
         style={voice.isRecording
           ? `border-color: rgba(239,68,68,${0.4 + voice.level * 0.6}); box-shadow: 0 0 0 ${(voice.level * 8).toFixed(1)}px rgba(239,68,68,${(0.2 + voice.level * 0.5).toFixed(2)})`
@@ -867,7 +681,7 @@
           <Settings class="h-3 w-3" />
         </button>
 
-        {#if messages.length > 0 && !isLoading}
+        {#if session.messages.length > 0 && !session.isLoading}
           <button
             onclick={() => (confirmingClear = !confirmingClear)}
             class="flex h-6 cursor-pointer items-center rounded px-1.5 transition-colors {confirmingClear
@@ -896,7 +710,7 @@
 
         <button
           onclick={voice.toggle}
-          disabled={isLoading || voice.isTranscribing}
+          disabled={session.isLoading || voice.isTranscribing}
           class="cursor-pointer rounded p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-30 {voice.isRecording
             ? 'animate-pulse text-red-400 hover:bg-zinc-800'
             : voice.isTranscribing
@@ -916,7 +730,7 @@
         <Popover.Root bind:open={addFilesOpen}>
           <Popover.Trigger>
             <button
-              disabled={isLoading}
+              disabled={session.isLoading}
               class="cursor-pointer rounded p-1.5 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-30"
               title="Add files"
             >
@@ -947,7 +761,7 @@
           </Popover.Content>
         </Popover.Root>
 
-        {#if isLoading}
+        {#if session.isLoading}
           <button
             onclick={handleCancel}
             class="cursor-pointer rounded p-1.5 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400"
@@ -961,7 +775,7 @@
             disabled={(!inputText.trim() &&
               stagedImages.length === 0 &&
               stagedYouTubeUrls.length === 0) ||
-              isLoading}
+              session.isLoading}
             class="cursor-pointer rounded bg-zinc-700 p-1.5 text-zinc-300 transition-colors hover:bg-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
           >
             <Send class="h-3.5 w-3.5" />
