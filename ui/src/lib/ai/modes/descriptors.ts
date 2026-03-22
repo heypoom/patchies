@@ -292,10 +292,10 @@ export function getAvailableModesForContext(ctx: AiModeContext): AiPromptMode[] 
     'edit',
     'fork',
     'fix-error',
-    'turn-into',
-    'split',
     'make-consumer',
-    'make-producer'
+    'make-producer',
+    'split',
+    'turn-into'
   ];
 
   return modes;
