@@ -81,7 +81,10 @@
     setStagedYouTubeUrls(sessionId, stagedYouTubeUrls);
   });
 
-  const SLASH_COMMANDS = [{ name: '/clear', description: 'Clear the chat' }];
+  const SLASH_COMMANDS = [
+    { name: '/clear', description: 'Clear the chat' },
+    { name: '/compact', description: 'Summarize and compact the context' }
+  ];
 
   let autoApprove = $state(false);
   let messagesEl: HTMLDivElement | undefined = $state();
@@ -148,6 +151,8 @@
   function executeSlashCommand(name: string) {
     if (name === '/clear') {
       handleClear();
+    } else if (name === '/compact') {
+      void chatStreamStore.compact(sessionId);
     }
     inputText = '';
   }

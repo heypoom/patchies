@@ -310,6 +310,85 @@ export const chatStreamStore = {
     saveChatMessages(sessionId, session.messages);
   },
 
+  async compact(sessionId: string): Promise<void> {
+    const session = getOrCreateSession(sessionId);
+
+    if (session.isLoading || session.messages.length === 0) return;
+
+    const historyForSummary: ChatMessage[] = [
+      ...session.messages.map((m) => ({ role: m.role, content: m.content })),
+      {
+        role: 'user' as const,
+        content:
+          'Please summarize our conversation so far into a concise context block. Capture key decisions, important context, code changes, and any open questions. This summary will replace the full conversation history to save context.'
+      }
+    ];
+
+    session.streamingText = '';
+    session.thinkingText = '';
+    session.streamingToolCalls = [];
+    session.pendingActions = [];
+    session.abortController = new AbortController();
+    session.isLoading = true;
+
+    const abortSignal = session.abortController.signal;
+
+    try {
+      const summaryText = await streamChatMessage(
+        historyForSummary,
+        null,
+        (chunk) => {
+          session.streamingText += chunk;
+        },
+        abortSignal,
+        (thought) => {
+          session.thinkingText += thought;
+        },
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        (name, args) => {
+          session.streamingToolCalls = [
+            ...session.streamingToolCalls,
+            { name, label: getToolCallLabel(name, args), args }
+          ];
+        },
+        buildGetPacksState(),
+        buildOnEnablePack(),
+        (callIndex, output) => {
+          session.streamingToolCalls = session.streamingToolCalls.map((c, i) =>
+            i === callIndex ? { ...c, output } : c
+          );
+        }
+      );
+
+      session.messages = [{ role: 'model', content: `**Conversation Summary**\n\n${summaryText}` }];
+      session.actions.clear();
+
+      await saveChatMessages(sessionId, session.messages);
+
+      session.streamingText = '';
+      session.thinkingText = '';
+      session.streamingToolCalls = [];
+      session.pendingActions = [];
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+
+      if (message !== 'Request cancelled') {
+        toast.error(message);
+      }
+
+      session.streamingText = '';
+      session.thinkingText = '';
+      session.streamingToolCalls = [];
+      session.pendingActions = [];
+    } finally {
+      session.isLoading = false;
+      session.abortController = null;
+    }
+  },
+
   clear(sessionId: string): void {
     const session = getOrCreateSession(sessionId);
 
