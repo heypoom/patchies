@@ -39,6 +39,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     isMulti: false,
     requiresNode: false,
     availableInChat: true,
+    toolCallLabel: 'Adding object',
     chatToolDescription:
       'Create a single new object on the canvas. Preferred over multi when only one object is needed, even for complex objects.',
     chatToolSchema: {
@@ -61,6 +62,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     isMulti: true,
     requiresNode: false,
     availableInChat: true,
+    toolCallLabel: 'Adding multiple objects',
     chatToolDescription:
       'Create multiple connected objects on the canvas. Only use when the task fundamentally requires more than one node wired together. Do NOT use for single objects.',
     chatToolSchema: {
@@ -83,6 +85,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     isMulti: false,
     requiresNode: true,
     availableInChat: true,
+    toolCallLabel: 'Editing object',
     chatToolDescription:
       'Edit an existing object on the canvas. Always prefer this over creating a new object when the node already exists.',
     chatToolSchema: {
@@ -108,6 +111,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     isMulti: false,
     requiresNode: true,
     availableInChat: true,
+    toolCallLabel: 'Replacing object',
     chatToolDescription: 'Replace an existing object with a different type',
     chatToolSchema: {
       type: 'object',
@@ -133,6 +137,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     requiresNode: true,
     promptOptional: true,
     availableInChat: true,
+    toolCallLabel: 'Fixing error',
     chatToolDescription: 'Fix a code error in an existing object',
     chatToolSchema: {
       type: 'object',
@@ -181,15 +186,16 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     id: 'split',
     label: 'Split',
     shortLabel: 'Split',
-    description: () => 'Decompose into multiple objects',
+    description: () => 'Split into multiple objects',
     placeholder: () => 'e.g., "separate drawing and data logic"',
-    loadingLabel: 'Decomposing',
+    loadingLabel: 'Splitting',
     generatingLabel: (t) => `Cooking ${t}`,
     color: 'blue',
     icon: Scissors,
     isMulti: true,
     requiresNode: true,
     availableInChat: true,
+    toolCallLabel: 'Splitting object',
     chatToolDescription: 'Split a complex object into multiple focused connected objects',
     chatToolSchema: {
       type: 'object',
@@ -214,6 +220,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     isMulti: false,
     requiresNode: true,
     availableInChat: true,
+    toolCallLabel: 'Forking object',
     chatToolDescription:
       'Create a new standalone object derived from an existing one — can stay the same type or become a different type based on the prompt',
     chatToolSchema: {

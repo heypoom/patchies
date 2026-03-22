@@ -53,7 +53,12 @@
     setStagedYouTubeUrls
   } from '../../../stores/chat-sessions.store';
   import { chatSettingsStore } from '../../../stores/chat-settings.store';
-  import type { ThreadMessage, StagedImage, ThreadActionRef } from '$lib/ai/chat/types';
+  import type {
+    ThreadMessage,
+    StagedImage,
+    ThreadActionRef,
+    ThreadToolCall
+  } from '$lib/ai/chat/types';
 
   let {
     sessionId,
@@ -102,8 +107,6 @@
     setStagedYouTubeUrls(sessionId, stagedYouTubeUrls);
   });
 
-  type ToolCallLog = { name: string; label: string; args: Record<string, unknown> };
-
   const getToolCallLabel = (name: string, args: Record<string, unknown>): string =>
     match(name)
       .with('get_object_instructions', () => `Looking up ${args.type ?? 'object'} docs`)
@@ -114,12 +117,16 @@
       .with('get_doc_content', () => `Fetching ${args.kind ?? 'doc'}: ${args.slug ?? ''}`)
       .with('connect_edges', () => 'Connecting edges')
       .with('disconnect_edges', () => 'Disconnecting edges')
-      .otherwise(() => modeDescriptors[toolNameToMode(name)]?.label ?? name);
+      .otherwise(() => {
+        const mode = modeDescriptors[toolNameToMode(name)];
+
+        return mode?.toolCallLabel ?? mode?.label ?? name;
+      });
 
   let isLoading = $state(false);
   let streamingText = $state('');
   let thinkingText = $state('');
-  let streamingToolCalls = $state<ToolCallLog[]>([]);
+  let streamingToolCalls = $state<ThreadToolCall[]>([]);
   let pendingActions = $state<string[]>([]);
   let autoApprove = $state(false);
   let abortController: AbortController | null = $state(null);
@@ -346,7 +353,8 @@
           role: 'model',
           content: fullText,
           thinking: thinkingText || undefined,
-          actions: completedActions.length > 0 ? completedActions : undefined
+          actions: completedActions.length > 0 ? completedActions : undefined,
+          toolCalls: streamingToolCalls.length > 0 ? streamingToolCalls : undefined
         }
       ];
 
@@ -515,8 +523,35 @@
               </details>
             {/if}
 
+            {#if message.toolCalls?.length}
+              <div class="mt-1 flex flex-col gap-0.5">
+                {#each message.toolCalls as call, i (i)}
+                  <details class="group">
+                    <summary
+                      class="flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
+                    >
+                      <Wrench class="h-2.5 w-2.5 shrink-0" />
+                      <span>{call.label}</span>
+                    </summary>
+                    {#if Object.keys(call.args).length > 0}
+                      <pre
+                        class="mt-0.5 ml-4 overflow-x-auto rounded border border-zinc-800 bg-zinc-900/60 px-2 py-1 font-mono text-[10px] leading-relaxed text-zinc-500">{JSON.stringify(
+                          call.args,
+                          null,
+                          2
+                        )}</pre>
+                    {:else}
+                      <p class="mt-0.5 ml-4 font-mono text-[10px] text-zinc-700">no args</p>
+                    {/if}
+                  </details>
+                {/each}
+              </div>
+            {/if}
+
             {#if message.content}
-              <MarkdownContent markdown={message.content} />
+              <div class={message.toolCalls?.length ? 'mt-2' : ''}>
+                <MarkdownContent markdown={message.content} />
+              </div>
             {/if}
 
             <div
@@ -566,10 +601,6 @@
             </details>
           {/if}
 
-          {#if streamingText}
-            <MarkdownContent markdown={streamingText} />
-          {/if}
-
           {#if streamingToolCalls.length > 0}
             <div class="mt-1 flex flex-col gap-0.5">
               {#each streamingToolCalls as call, i (i)}
@@ -594,6 +625,12 @@
                   {/if}
                 </details>
               {/each}
+            </div>
+          {/if}
+
+          {#if streamingText}
+            <div class={streamingToolCalls.length ? 'mt-2' : ''}>
+              <MarkdownContent markdown={streamingText} />
             </div>
           {/if}
 

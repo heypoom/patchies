@@ -11,11 +11,18 @@ export interface StagedImage {
   previewUrl: string;
 }
 
+export interface ThreadToolCall {
+  name: string;
+  label: string;
+  args: Record<string, unknown>;
+}
+
 export interface ThreadMessage {
   role: 'user' | 'model';
   content: string;
   thinking?: string;
   actions?: ThreadActionRef[];
+  toolCalls?: ThreadToolCall[];
   images?: StagedImage[];
   youtubeUrls?: string[];
 }

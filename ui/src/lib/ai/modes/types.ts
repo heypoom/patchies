@@ -65,6 +65,9 @@ export interface AiModeDescriptor {
   /** Whether this mode is available as a chat tool */
   availableInChat?: boolean;
 
+  /** Present-tense label shown in the tool call visualization, e.g. "Adding multiple objects" */
+  toolCallLabel?: string;
+
   /** One-line description for the LLM tool definition */
   chatToolDescription?: string;
 
