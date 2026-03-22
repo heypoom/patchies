@@ -121,7 +121,19 @@ const SCHEMA_DERIVABLE_TYPES = [
   'midi.in',
   'midi.out',
   'netsend',
-  'netrecv'
+  'netrecv',
+  'serial',
+  'serial.term',
+  'serial.dmx',
+
+  // Vision / MediaPipe
+  'vision.hand',
+  'vision.body',
+  'vision.face',
+  'vision.detect',
+  'vision.gesture',
+  'vision.classify',
+  'vision.segment'
 ];
 
 /**

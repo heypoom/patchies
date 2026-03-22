@@ -444,6 +444,33 @@ export const EVAL_CASES: EvalCase[] = [
     expectedTypes: ['netrecv', 'msg']
   },
 
+  // === Serial nodes ===
+  {
+    id: 'serial-to-js',
+    prompt: 'serial port receiving data connected to js node',
+    category: 'message',
+    expectedTypes: ['serial', 'js']
+  },
+  {
+    id: 'js-to-serial',
+    prompt:
+      'exactly two nodes: a js node with its outlet connected to a serial node inlet, nothing else',
+    category: 'message',
+    expectedTypes: ['js', 'serial']
+  },
+  {
+    id: 'serial-dmx-from-button',
+    prompt: 'button connected to serial.dmx to trigger connect',
+    category: 'message',
+    expectedTypes: ['button', 'serial.dmx']
+  },
+  {
+    id: 'serial-term-display',
+    prompt: 'serial.term terminal receiving lines, output to msg node',
+    category: 'message',
+    expectedTypes: ['serial.term', 'msg']
+  },
+
   // === Projection mapping ===
   {
     id: 'video-projmap-two-sources',
@@ -456,6 +483,56 @@ export const EVAL_CASES: EvalCase[] = [
     prompt: 'p5 sketch mapped onto a projmap surface, output to bg.out',
     category: 'video',
     expectedTypes: ['p5', 'projmap', 'bg.out']
+  },
+
+  // === Vision / MediaPipe nodes ===
+  {
+    id: 'vision-hand-to-js',
+    prompt: 'webcam into vision.hand, vision.hand results to js node',
+    category: 'mixed',
+    expectedTypes: ['webcam', 'vision.hand', 'js']
+  },
+  {
+    id: 'vision-body-to-js',
+    prompt: 'webcam into vision.body, vision.body pose results to js node',
+    category: 'mixed',
+    expectedTypes: ['webcam', 'vision.body', 'js']
+  },
+  {
+    id: 'vision-face-to-js',
+    prompt: 'webcam into vision.face, face landmark results to js node',
+    category: 'mixed',
+    expectedTypes: ['webcam', 'vision.face', 'js']
+  },
+  {
+    id: 'vision-detect-to-js',
+    prompt: 'webcam into vision.detect, object detection results to js node',
+    category: 'mixed',
+    expectedTypes: ['webcam', 'vision.detect', 'js']
+  },
+  {
+    id: 'vision-gesture-to-js',
+    prompt: 'webcam into vision.gesture, gesture recognition results to js node',
+    category: 'mixed',
+    expectedTypes: ['webcam', 'vision.gesture', 'js']
+  },
+  {
+    id: 'vision-classify-to-msg',
+    prompt: 'webcam into vision.classify, classification results to msg node',
+    category: 'mixed',
+    expectedTypes: ['webcam', 'vision.classify', 'msg']
+  },
+  {
+    id: 'vision-segment-to-glsl',
+    prompt: 'webcam into vision.segment, segmentation mask video to glsl shader',
+    category: 'video',
+    expectedTypes: ['webcam', 'vision.segment', 'glsl']
+  },
+  {
+    id: 'vision-segment-to-bgout',
+    prompt: 'webcam into vision.segment, mask video output to bg.out',
+    category: 'video',
+    expectedTypes: ['webcam', 'vision.segment', 'bg.out']
   },
 
   // === Analysis connections (fft~ uses analysis-out-0, NOT message-out-0) ===

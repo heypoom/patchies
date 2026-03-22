@@ -49,6 +49,7 @@ export const serialSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control and data messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Open port picker and connect' },
         { schema: Type.String(), description: 'Send a string to the port' },
@@ -74,6 +75,7 @@ export const serialSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Received data and connection events',
+      handle: { handleType: 'message' },
       messages: [
         { schema: SerialData, description: 'A line received from the port' },
         { schema: SerialConnected, description: 'Port connected' },
@@ -96,6 +98,7 @@ export const serialTermSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control and data messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Open port picker and connect' },
         { schema: Type.String(), description: 'Send a string to the port' },
@@ -121,6 +124,7 @@ export const serialTermSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Received lines from the port',
+      handle: { handleType: 'message' },
       messages: [{ schema: SerialData, description: 'A line received from the port' }]
     }
   ],
@@ -149,6 +153,7 @@ export const dmxSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Channel data and control messages',
+      handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Open port picker and connect' },
         {

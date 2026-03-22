@@ -194,6 +194,17 @@
     evalAbortController?.abort();
   }
 
+  async function runManualCase(evalCase: EvalCase) {
+    evalProgress = { ...evalProgress, running: [...evalProgress.running, evalCase.id] };
+    const result = await runSingleEval(evalCase, new AbortController().signal);
+    evalResults = [...evalResults.filter((r) => r.caseId !== evalCase.id), result];
+    saveResults(evalResults);
+    evalProgress = {
+      ...evalProgress,
+      running: evalProgress.running.filter((id) => id !== evalCase.id)
+    };
+  }
+
   function handleClearResults() {
     clearResults();
     evalResults = [];
@@ -638,12 +649,12 @@
               {/if}
 
               <!-- Re-run single -->
-              {#if !evalRunning}
+              {#if !evalProgress.running.includes(evalCase.id)}
                 <button
                   class="cursor-pointer rounded px-1.5 py-0.5 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
                   onclick={(e) => {
                     e.stopPropagation();
-                    runEval([evalCase]);
+                    runManualCase(evalCase);
                   }}
                 >
                   run
