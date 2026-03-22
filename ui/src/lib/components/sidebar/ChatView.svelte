@@ -312,28 +312,24 @@
             <pre class="font-sans whitespace-pre-wrap">{message.content}</pre>
           {/if}
         </div>
-      {:else}
+      {:else if message.thinking}
         <div class="flex items-start gap-2">
-          {#if !message.actions?.length || message.thinking || message.content}
-            <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
-          {/if}
+          <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
 
           <div class="min-w-0 flex-1">
-            {#if message.thinking}
-              <details>
-                <summary
-                  class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
-                >
-                  Thinking
-                </summary>
+            <details>
+              <summary
+                class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
+              >
+                Thinking
+              </summary>
 
-                <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
-                  <MarkdownContent markdown={message.thinking} />
-                </div>
-              </details>
-            {/if}
+              <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
+                <MarkdownContent markdown={message.thinking} />
+              </div>
+            </details>
 
-            <ChatToolCalls calls={message.toolCalls ?? []} class={message.thinking ? 'mt-1' : ''} />
+            <ChatToolCalls calls={message.toolCalls ?? []} class="mt-1" />
 
             {#if message.content}
               <div class={message.toolCalls?.length ? 'mt-2' : ''}>
@@ -341,9 +337,7 @@
               </div>
             {/if}
 
-            <div
-              class={message.actions?.length && (message.thinking || message.content) ? 'mt-2' : ''}
-            >
+            <div class={message.actions?.length && message.content ? 'mt-2' : ''}>
               {#each message.actions ?? [] as ref (ref.id)}
                 {@const action = session.actions.get(ref.id)}
 
@@ -361,20 +355,45 @@
             </div>
           </div>
         </div>
+      {:else}
+        <ChatToolCalls calls={message.toolCalls ?? []} />
+
+        {#if message.content}
+          <div>
+            <MarkdownContent markdown={message.content} />
+          </div>
+        {/if}
+
+        <div class={message.actions?.length && message.content ? 'mt-2' : ''}>
+          {#each message.actions ?? [] as ref (ref.id)}
+            {@const action = session.actions.get(ref.id)}
+
+            {#if action && aiCallbacks}
+              <ActionCard
+                {action}
+                callbacks={aiCallbacks}
+                onStateChange={updateActionState}
+                {getNodeById}
+              />
+            {:else if ref.summary || ref.type}
+              <PersistedActionCard {ref} />
+            {/if}
+          {/each}
+        </div>
       {/if}
     {/each}
 
     <!-- Streaming response (in-flight) -->
     {#if session.isLoading}
-      <div class="flex items-start gap-2">
-        <div
-          class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full {session.streamingText
-            ? 'bg-zinc-600'
-            : 'animate-pulse bg-zinc-700'}"
-        ></div>
+      {#if session.thinkingText}
+        <div class="flex items-start gap-2">
+          <div
+            class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full {session.streamingText
+              ? 'bg-zinc-600'
+              : 'animate-pulse bg-zinc-700'}"
+          ></div>
 
-        <div class="min-w-0 flex-1">
-          {#if session.thinkingText}
+          <div class="min-w-0 flex-1">
             <details open={$chatSettingsStore.expandThinking}>
               <summary
                 class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
@@ -386,34 +405,53 @@
                 <MarkdownContent markdown={session.thinkingText} />
               </div>
             </details>
-          {/if}
 
-          <ChatToolCalls
-            calls={session.streamingToolCalls}
-            class={session.thinkingText ? 'mt-1' : ''}
-          />
+            <ChatToolCalls calls={session.streamingToolCalls} class="mt-1" />
 
-          {#if session.streamingText}
-            <div class={session.streamingToolCalls.length ? 'mt-2' : ''}>
-              <MarkdownContent markdown={session.streamingText} />
-            </div>
-          {/if}
-
-          <!-- ActionCards visible while response is still streaming -->
-          {#each session.pendingActions as actionId (actionId)}
-            {@const action = session.actions.get(actionId)}
-
-            {#if action && aiCallbacks}
-              <ActionCard
-                {action}
-                callbacks={aiCallbacks}
-                onStateChange={updateActionState}
-                {getNodeById}
-              />
+            {#if session.streamingText}
+              <div class={session.streamingToolCalls.length ? 'mt-2' : ''}>
+                <MarkdownContent markdown={session.streamingText} />
+              </div>
             {/if}
-          {/each}
+
+            <!-- ActionCards visible while response is still streaming -->
+            {#each session.pendingActions as actionId (actionId)}
+              {@const action = session.actions.get(actionId)}
+
+              {#if action && aiCallbacks}
+                <ActionCard
+                  {action}
+                  callbacks={aiCallbacks}
+                  onStateChange={updateActionState}
+                  {getNodeById}
+                />
+              {/if}
+            {/each}
+          </div>
         </div>
-      </div>
+      {:else}
+        <ChatToolCalls calls={session.streamingToolCalls} />
+
+        {#if session.streamingText}
+          <div>
+            <MarkdownContent markdown={session.streamingText} />
+          </div>
+        {/if}
+
+        <!-- ActionCards visible while response is still streaming -->
+        {#each session.pendingActions as actionId (actionId)}
+          {@const action = session.actions.get(actionId)}
+
+          {#if action && aiCallbacks}
+            <ActionCard
+              {action}
+              callbacks={aiCallbacks}
+              onStateChange={updateActionState}
+              {getNodeById}
+            />
+          {/if}
+        {/each}
+      {/if}
     {/if}
   </div>
 

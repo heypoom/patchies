@@ -29,7 +29,7 @@
 
         {#if call.output !== undefined}
           <pre
-            class="mt-2 ml-4 overflow-x-auto rounded border border-zinc-800 bg-zinc-950/60 px-2 py-1 font-mono text-[10px] leading-relaxed text-zinc-600">{JSON.stringify(
+            class="mt-2 mb-2 ml-4 overflow-x-auto rounded border border-zinc-800 bg-zinc-950/60 px-2 py-1 font-mono text-[10px] leading-relaxed text-zinc-600">{JSON.stringify(
               call.output,
               null,
               2
