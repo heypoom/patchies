@@ -1,5 +1,5 @@
 import { getObjectSpecificInstructions } from '../object-descriptions';
-import { logger } from '$lib/utils/logger';
+import { logger, getNodeErrors } from '$lib/utils/logger';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from '../object-prompts/shared-jsrunner';
 import { buildCanvasToolDeclarations, toolNameToMode } from './canvas-tools';
 import { runModeResolver } from '../modes/run-resolver';
@@ -18,8 +18,9 @@ import {
   DISCONNECT_EDGES,
   GET_OBJECT_INSTRUCTIONS,
   GET_GRAPH_NODES,
-  GET_NODE_DATA,
-  GET_NODE_ERRORS,
+  GET_OBJECT_DATA,
+  GET_OBJECT_LOGS,
+  GET_OBJECT_ERRORS,
   SEARCH_DOCS,
   GET_DOC_CONTENT,
   contextToolDeclarations,
@@ -312,14 +313,14 @@ export async function streamChatMessage(
           };
         }
 
-        if (name === GET_NODE_DATA) {
-          const nodeId = (functionCall.args?.nodeId as string) ?? '';
+        if (name === GET_OBJECT_DATA) {
+          const nodeId = (functionCall.args?.objectId as string) ?? '';
           const node = getNodeById?.(nodeId);
 
           if (!node) {
             return {
               functionResponse: {
-                name: GET_NODE_DATA,
+                name: GET_OBJECT_DATA,
                 response: { error: `Node "${nodeId}" not found` }
               }
             };
@@ -333,7 +334,7 @@ export async function streamChatMessage(
 
           return {
             functionResponse: {
-              name: GET_NODE_DATA,
+              name: GET_OBJECT_DATA,
               response: {
                 id: node.id,
                 type: node.type,
@@ -344,8 +345,8 @@ export async function streamChatMessage(
           };
         }
 
-        if (name === GET_NODE_ERRORS) {
-          const nodeId = (functionCall.args?.nodeId as string) ?? '';
+        if (name === GET_OBJECT_LOGS) {
+          const nodeId = (functionCall.args?.objectId as string) ?? '';
           const count = Math.min(Math.max((functionCall.args?.count as number) ?? 10, 1), 50);
 
           const seen = new Set<string>();
@@ -370,8 +371,25 @@ export async function streamChatMessage(
 
           return {
             functionResponse: {
-              name: GET_NODE_ERRORS,
+              name: GET_OBJECT_LOGS,
               response: { nodeId, errors: logs, total: logs.length }
+            }
+          };
+        }
+
+        if (name === GET_OBJECT_ERRORS) {
+          const nodeIds = (functionCall.args?.objectIds as string[]) ?? [];
+          const result: Record<string, string[]> = {};
+
+          for (const id of nodeIds) {
+            const errors = getNodeErrors(id);
+            if (errors.length > 0) result[id] = errors;
+          }
+
+          return {
+            functionResponse: {
+              name: GET_OBJECT_ERRORS,
+              response: result
             }
           };
         }
