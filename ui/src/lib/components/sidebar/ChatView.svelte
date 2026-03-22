@@ -9,6 +9,7 @@
     Settings,
     Square,
     Trash2,
+    Wrench,
     X,
     Youtube,
     Zap
@@ -30,6 +31,8 @@
     type ChatNode,
     type ChatGraphSummary
   } from '$lib/ai/chat/resolver';
+  import { modeDescriptors } from '$lib/ai/modes/descriptors';
+  import { toolNameToMode } from '$lib/ai/chat/canvas-tools';
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import ActionCard from './ActionCard.svelte';
@@ -99,9 +102,24 @@
     setStagedYouTubeUrls(sessionId, stagedYouTubeUrls);
   });
 
+  type ToolCallLog = { name: string; label: string };
+
+  const getToolCallLabel = (name: string, args: Record<string, unknown>): string =>
+    match(name)
+      .with('get_object_instructions', () => `Looking up ${args.type ?? 'object'} docs`)
+      .with('get_graph_nodes', () => 'Reading patch graph')
+      .with('get_node_data', () => `Reading node data`)
+      .with('get_node_errors', () => `Checking node errors`)
+      .with('search_docs', () => `Searching: "${args.query ?? ''}"`)
+      .with('get_doc_content', () => `Fetching ${args.kind ?? 'doc'}: ${args.slug ?? ''}`)
+      .with('connect_edges', () => 'Connecting edges')
+      .with('disconnect_edges', () => 'Disconnecting edges')
+      .otherwise(() => modeDescriptors[toolNameToMode(name)]?.label ?? name);
+
   let isLoading = $state(false);
   let streamingText = $state('');
   let thinkingText = $state('');
+  let streamingToolCalls = $state<ToolCallLog[]>([]);
   let pendingActions = $state<string[]>([]);
   let autoApprove = $state(false);
   let abortController: AbortController | null = $state(null);
@@ -257,6 +275,7 @@
 
     streamingText = '';
     thinkingText = '';
+    streamingToolCalls = [];
     pendingActions = [];
     abortController = new AbortController();
 
@@ -284,7 +303,13 @@
             }
           : undefined,
         getGraphSummary,
-        activePersona?.prompt || undefined
+        activePersona?.prompt || undefined,
+        (name, args) => {
+          streamingToolCalls = [
+            ...streamingToolCalls,
+            { name, label: getToolCallLabel(name, args) }
+          ];
+        }
       );
 
       const completedActions: ThreadActionRef[] = pendingActions.map((id) => {
@@ -327,6 +352,7 @@
 
       streamingText = '';
       thinkingText = '';
+      streamingToolCalls = [];
       pendingActions = [];
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -337,6 +363,7 @@
 
       streamingText = '';
       thinkingText = '';
+      streamingToolCalls = [];
       pendingActions = [];
     } finally {
       isLoading = false;
@@ -541,6 +568,17 @@
 
           {#if streamingText}
             <MarkdownContent markdown={streamingText} />
+          {/if}
+
+          {#if streamingToolCalls.length > 0}
+            <div class="mt-1 flex flex-col gap-0.5">
+              {#each streamingToolCalls as call (call.label + streamingToolCalls.indexOf(call))}
+                <div class="flex items-center gap-1.5 font-mono text-[10px] text-zinc-600">
+                  <Wrench class="h-2.5 w-2.5 shrink-0" />
+                  <span>{call.label}</span>
+                </div>
+              {/each}
+            </div>
           {/if}
 
           <!-- ActionCards visible while response is still streaming -->

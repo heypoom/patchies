@@ -97,7 +97,8 @@ export async function streamChatMessage(
   getNodeById?: (nodeId: string) => ChatNode | undefined,
   onAction?: (action: ChatAction) => void,
   getGraphSummary?: () => ChatGraphSummary,
-  persona?: string
+  persona?: string,
+  onToolCall?: (name: string, args: Record<string, unknown>) => void
 ): Promise<string> {
   const apiKey = localStorage.getItem('gemini-api-key');
 
@@ -233,6 +234,10 @@ export async function streamChatMessage(
     const canvasCalls = functionCallParts.filter(
       (p) => !CONTEXT_TOOL_NAMES.has(p.functionCall.name ?? '')
     );
+
+    for (const { functionCall } of functionCallParts) {
+      onToolCall?.(functionCall.name ?? '', functionCall.args ?? {});
+    }
 
     // Canvas tool calls are terminal — resolve and surface as ActionCards
     for (const { functionCall } of canvasCalls) {
