@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { Settings, Play, Pause } from '@lucide/svelte/icons';
+  import { Settings, Play, Pause, X } from '@lucide/svelte/icons';
   import { match } from 'ts-pattern';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
-  import { shouldShowHandles } from '../../../stores/ui.store';
   import type { SettingsSchema } from '$lib/settings/types';
 
   let {
@@ -39,6 +38,13 @@
   } = $props();
 
   let showSettings = $state(false);
+  let errorDismissed = $state(false);
+  let showError = $derived(status === 'error' && !!error && !errorDismissed);
+
+  // Reset dismissed state when a new error comes in
+  $effect(() => {
+    if (status === 'error' && error) errorDismissed = false;
+  });
 
   const handleClass = 'z-1';
 
@@ -126,12 +132,6 @@
             >{title}</span
           >
         </div>
-
-        {#if status === 'error' && error}
-          <div class="mt-1 max-w-[140px] text-[9px] leading-tight break-words text-red-400">
-            {error}
-          </div>
-        {/if}
       </div>
 
       {#if status === 'running' && fps !== undefined && enabled}
@@ -181,6 +181,27 @@
         onRevertAll={onRevertSettings}
         onClose={() => (showSettings = false)}
       />
+    </div>
+  {/if}
+
+  <!-- Error panel (auto-shown when error, scrollable to handle long iOS stacktraces) -->
+  {#if showError}
+    <div
+      class="absolute top-0 left-full ml-2 w-64 rounded-lg border border-red-900 bg-zinc-900 shadow-xl"
+    >
+      <div class="flex items-center justify-between border-b border-red-900 px-3 py-1.5">
+        <span class="font-mono text-[10px] text-red-400">error</span>
+        <button
+          class="cursor-pointer rounded p-0.5 hover:bg-zinc-700"
+          onclick={() => (errorDismissed = true)}
+        >
+          <X class="h-3 w-3 text-zinc-400" />
+        </button>
+      </div>
+      <div class="nodrag nopan nowheel max-h-48 overflow-y-auto p-3">
+        <pre
+          class="font-mono text-[9px] leading-tight break-words whitespace-pre-wrap text-red-400">{error}</pre>
+      </div>
     </div>
   {/if}
 </div>
