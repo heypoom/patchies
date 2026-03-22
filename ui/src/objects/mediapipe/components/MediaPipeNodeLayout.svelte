@@ -60,7 +60,7 @@
     <div class="absolute -top-7 right-0 flex items-center gap-1">
       {#if onToggleEnabled}
         <button
-          class="cursor-pointer rounded p-1 text-zinc-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          class="cursor-pointer rounded p-1 text-zinc-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 [@media(hover:none)]:opacity-100"
           onclick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -76,7 +76,7 @@
       {/if}
 
       <button
-        class="cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+        class="cursor-pointer rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 [@media(hover:none)]:opacity-100"
         onclick={(e) => {
           e.preventDefault();
           e.stopPropagation();
