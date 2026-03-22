@@ -81,6 +81,8 @@
     setStagedYouTubeUrls(sessionId, stagedYouTubeUrls);
   });
 
+  const SLASH_COMMANDS = [{ name: '/clear', description: 'Clear the chat' }];
+
   let autoApprove = $state(false);
   let messagesEl: HTMLDivElement | undefined = $state();
   let stagedImages = $state<StagedImage[]>([]);
@@ -97,6 +99,18 @@
   let addFilesOpen = $state(false);
   let stagedYouTubeUrls = $state<string[]>(getStagedYouTubeUrls(sessionId));
   let addingYouTubeUrl = $state(false);
+  let slashSelectedIndex = $state(0);
+
+  const slashSuggestions = $derived(
+    inputText.startsWith('/')
+      ? SLASH_COMMANDS.filter((c) => c.name.startsWith(inputText.trim().toLowerCase()))
+      : []
+  );
+
+  $effect(() => {
+    void slashSuggestions;
+    slashSelectedIndex = 0;
+  });
 
   const allPersonas = $derived([...BUILTIN_PRESETS, ...$personaStore.custom]);
   const activePersona = $derived(
@@ -131,7 +145,19 @@
     chatStreamStore.updateActionState(sessionId, id, state);
   }
 
+  function executeSlashCommand(name: string) {
+    if (name === '/clear') {
+      handleClear();
+    }
+    inputText = '';
+  }
+
   function handleSubmit() {
+    if (slashSuggestions.length > 0) {
+      executeSlashCommand(slashSuggestions[slashSelectedIndex]?.name ?? slashSuggestions[0].name);
+      return;
+    }
+
     const emptyInput =
       !inputText.trim() &&
       stagedImages.length === 0 &&
@@ -203,9 +229,26 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
+    if (slashSuggestions.length > 0) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        slashSelectedIndex = (slashSelectedIndex + 1) % slashSuggestions.length;
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        slashSelectedIndex =
+          (slashSelectedIndex - 1 + slashSuggestions.length) % slashSuggestions.length;
+        return;
+      }
+      if (event.key === 'Escape') {
+        inputText = '';
+        return;
+      }
+    }
+
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-
       handleSubmit();
     }
   }
@@ -605,6 +648,23 @@
         bind:addingYouTubeUrl
         {detectedYouTubeUrls}
       />
+
+      {#if slashSuggestions.length > 0}
+        <div class="mb-1 overflow-hidden rounded border border-zinc-700 bg-zinc-900">
+          {#each slashSuggestions as cmd, i (cmd.name)}
+            <button
+              onclick={() => executeSlashCommand(cmd.name)}
+              class="flex w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left transition-colors {i ===
+              slashSelectedIndex
+                ? 'bg-zinc-800'
+                : 'hover:bg-zinc-800/60'}"
+            >
+              <span class="font-mono text-xs text-zinc-100">{cmd.name}</span>
+              <span class="font-mono text-[10px] text-zinc-500">{cmd.description}</span>
+            </button>
+          {/each}
+        </div>
+      {/if}
 
       <textarea
         bind:value={inputText}
