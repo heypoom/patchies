@@ -9,7 +9,6 @@
     Settings,
     Square,
     Trash2,
-    Wrench,
     X,
     Youtube,
     Zap
@@ -27,6 +26,7 @@
   import ActionCard from './ActionCard.svelte';
   import PersistedActionCard from './PersistedActionCard.svelte';
   import ChatStagedMedia from './ChatStagedMedia.svelte';
+  import ChatToolCalls from './ChatToolCalls.svelte';
   import { getYouTubeLabel, extractYouTubeUrls } from './youtube-utils';
   import { personaStore, BUILTIN_PRESETS, type Persona } from '../../../stores/persona.store';
   import {
@@ -333,30 +333,7 @@
               </details>
             {/if}
 
-            {#if message.toolCalls?.length}
-              <div class="mt-1 flex flex-col gap-0.5">
-                {#each message.toolCalls as call, i (i)}
-                  <details class="group">
-                    <summary
-                      class="flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
-                    >
-                      <Wrench class="h-2.5 w-2.5 shrink-0" />
-                      <span>{call.label}</span>
-                    </summary>
-                    {#if Object.keys(call.args).length > 0}
-                      <pre
-                        class="mt-0.5 ml-4 overflow-x-auto rounded border border-zinc-800 bg-zinc-900/60 px-2 py-1 font-mono text-[10px] leading-relaxed text-zinc-500">{JSON.stringify(
-                          call.args,
-                          null,
-                          2
-                        )}</pre>
-                    {:else}
-                      <p class="mt-0.5 ml-4 font-mono text-[10px] text-zinc-700">no args</p>
-                    {/if}
-                  </details>
-                {/each}
-              </div>
-            {/if}
+            <ChatToolCalls calls={message.toolCalls ?? []} class={message.thinking ? 'mt-1' : ''} />
 
             {#if message.content}
               <div class={message.toolCalls?.length ? 'mt-2' : ''}>
@@ -411,32 +388,10 @@
             </details>
           {/if}
 
-          {#if session.streamingToolCalls.length > 0}
-            <div class="mt-1 flex flex-col gap-0.5">
-              {#each session.streamingToolCalls as call, i (i)}
-                <details class="group">
-                  <summary
-                    class="flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
-                  >
-                    <Wrench class="h-2.5 w-2.5 shrink-0" />
-
-                    <span>{call.label}</span>
-                  </summary>
-
-                  {#if Object.keys(call.args).length > 0}
-                    <pre
-                      class="mt-1 mb-0.5 ml-4 overflow-x-auto rounded border border-zinc-800 bg-zinc-900/60 px-2 py-1 font-mono text-[10px] leading-relaxed text-zinc-500">{JSON.stringify(
-                        call.args,
-                        null,
-                        2
-                      )}</pre>
-                  {:else}
-                    <p class="mt-1 mb-0.5 ml-4 font-mono text-[10px] text-zinc-700">no args</p>
-                  {/if}
-                </details>
-              {/each}
-            </div>
-          {/if}
+          <ChatToolCalls
+            calls={session.streamingToolCalls}
+            class={session.thinkingText ? 'mt-1' : ''}
+          />
 
           {#if session.streamingText}
             <div class={session.streamingToolCalls.length ? 'mt-2' : ''}>

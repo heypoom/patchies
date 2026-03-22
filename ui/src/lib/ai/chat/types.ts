@@ -15,6 +15,7 @@ export interface ThreadToolCall {
   name: string;
   label: string;
   args: Record<string, unknown>;
+  output?: unknown;
 }
 
 export interface ThreadMessage {

@@ -16,7 +16,6 @@ import {
   CONTEXT_TOOL_NAMES,
   CONNECT_EDGES,
   DISCONNECT_EDGES,
-  GET_OBJECT_INSTRUCTIONS,
   GET_GRAPH_NODES,
   GET_OBJECT_DATA,
   GET_OBJECT_LOGS,
@@ -120,7 +119,8 @@ export async function streamChatMessage(
     packId: string,
     kind: 'object' | 'preset',
     enable: boolean
-  ) => { success: boolean; error?: string }
+  ) => { success: boolean; error?: string },
+  onToolCallOutput?: (callIndex: number, output: unknown) => void
 ): Promise<string> {
   const apiKey = localStorage.getItem('gemini-api-key');
 
@@ -186,6 +186,7 @@ export async function streamChatMessage(
   const tools = [{ functionDeclarations: [...contextToolDeclarations, ...allCanvasDeclarations] }];
 
   let fullText = '';
+  let globalCallIndex = 0;
 
   // Multi-turn loop: runs until the model produces a pure text response (no function calls)
   while (true) {
@@ -257,8 +258,12 @@ export async function streamChatMessage(
       (p) => !CONTEXT_TOOL_NAMES.has(p.functionCall.name ?? '')
     );
 
-    for (const { functionCall } of functionCallParts) {
-      onToolCall?.(functionCall.name ?? '', functionCall.args ?? {});
+    // Record the global index for each function call so we can match responses later
+    const callIndexMap = new Map<(typeof functionCallParts)[number], number>();
+
+    for (const part of functionCallParts) {
+      onToolCall?.(part.functionCall.name ?? '', part.functionCall.args ?? {});
+      callIndexMap.set(part, globalCallIndex++);
     }
 
     // Canvas tool calls are terminal — resolve and surface as ActionCards
@@ -320,32 +325,26 @@ export async function streamChatMessage(
 
     // Respond to context-fetching calls and loop for continuation
     const functionResponses = await Promise.all(
-      contextCalls.map(async ({ functionCall }) => {
+      contextCalls.map(async (part) => {
+        const { functionCall } = part;
         const name = functionCall.name ?? '';
+        const outputIndex = callIndexMap.get(part) ?? -1;
+
+        const respond = (response: unknown) => {
+          onToolCallOutput?.(outputIndex, response);
+          return { functionResponse: { name, response } };
+        };
 
         if (name === GET_GRAPH_NODES) {
           const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
-
-          return {
-            functionResponse: {
-              name: GET_GRAPH_NODES,
-              response: graph
-            }
-          };
+          return respond(graph);
         }
 
         if (name === GET_OBJECT_DATA) {
           const nodeId = (functionCall.args?.objectId as string) ?? '';
           const node = getNodeById?.(nodeId);
 
-          if (!node) {
-            return {
-              functionResponse: {
-                name: GET_OBJECT_DATA,
-                response: { error: `Node "${nodeId}" not found` }
-              }
-            };
-          }
+          if (!node) return respond({ error: `Node "${nodeId}" not found` });
 
           // Include connected edges so AI knows what's already wired
           const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
@@ -353,17 +352,7 @@ export async function streamChatMessage(
             (e) => e.source === nodeId || e.target === nodeId
           );
 
-          return {
-            functionResponse: {
-              name: GET_OBJECT_DATA,
-              response: {
-                id: node.id,
-                type: node.type,
-                data: node.data,
-                connectedEdges
-              }
-            }
-          };
+          return respond({ id: node.id, type: node.type, data: node.data, connectedEdges });
         }
 
         if (name === GET_OBJECT_LOGS) {
@@ -390,12 +379,7 @@ export async function streamChatMessage(
               timestamp: e.timestamp.toISOString()
             }));
 
-          return {
-            functionResponse: {
-              name: GET_OBJECT_LOGS,
-              response: { nodeId, errors: logs, total: logs.length }
-            }
-          };
+          return respond({ nodeId, errors: logs, total: logs.length });
         }
 
         if (name === GET_OBJECT_ERRORS) {
@@ -407,12 +391,7 @@ export async function streamChatMessage(
             if (errors.length > 0) result[id] = errors;
           }
 
-          return {
-            functionResponse: {
-              name: GET_OBJECT_ERRORS,
-              response: result
-            }
-          };
+          return respond(result);
         }
 
         if (name === SEARCH_DOCS) {
@@ -443,15 +422,10 @@ export async function streamChatMessage(
               description: s.description
             }));
 
-          return {
-            functionResponse: {
-              name: SEARCH_DOCS,
-              response: {
-                results: [...matchingTopics, ...matchingObjects],
-                total: matchingTopics.length + matchingObjects.length
-              }
-            }
-          };
+          return respond({
+            results: [...matchingTopics, ...matchingObjects],
+            total: matchingTopics.length + matchingObjects.length
+          });
         }
 
         if (name === GET_DOC_CONTENT) {
@@ -460,39 +434,25 @@ export async function streamChatMessage(
 
           if (kind === 'topic') {
             const content = await fetchTopicHelp(slug);
-
-            return {
-              functionResponse: {
-                name: GET_DOC_CONTENT,
-                response: content.markdown
-                  ? { kind: 'topic', slug, markdown: content.markdown }
-                  : { error: `No documentation found for topic "${slug}"` }
-              }
-            };
+            return respond(
+              content.markdown
+                ? { kind: 'topic', slug, markdown: content.markdown }
+                : { error: `No documentation found for topic "${slug}"` }
+            );
           }
 
           // kind === 'object'
           const content = await fetchObjectHelp(slug);
-
-          return {
-            functionResponse: {
-              name: GET_DOC_CONTENT,
-              response: content.markdown
-                ? { kind: 'object', slug, markdown: content.markdown }
-                : { error: `No documentation found for object "${slug}"` }
-            }
-          };
+          return respond(
+            content.markdown
+              ? { kind: 'object', slug, markdown: content.markdown }
+              : { error: `No documentation found for object "${slug}"` }
+          );
         }
 
         if (name === LIST_PACKS) {
           const state = getPacksState?.() ?? { objectPacks: [], presetPacks: [] };
-
-          return {
-            functionResponse: {
-              name: LIST_PACKS,
-              response: state
-            }
-          };
+          return respond(state);
         }
 
         if (name === ENABLE_PACK) {
@@ -501,25 +461,13 @@ export async function streamChatMessage(
           const enable = (functionCall.args?.enable as boolean) ?? true;
 
           if (!onEnablePack) {
-            return {
-              functionResponse: {
-                name: ENABLE_PACK,
-                response: {
-                  success: false,
-                  error: 'Pack management is not available in this context.'
-                }
-              }
-            };
+            return respond({
+              success: false,
+              error: 'Pack management is not available in this context.'
+            });
           }
 
-          const result = onEnablePack(packId, kind, enable);
-
-          return {
-            functionResponse: {
-              name: ENABLE_PACK,
-              response: result
-            }
-          };
+          return respond(onEnablePack(packId, kind, enable));
         }
 
         // GET_OBJECT_INSTRUCTIONS
@@ -529,15 +477,10 @@ export async function streamChatMessage(
 
         const handleDocs = generateHandleDocs([type]);
 
-        return {
-          functionResponse: {
-            name: GET_OBJECT_INSTRUCTIONS,
-            response: {
-              instructions,
-              ...(handleDocs ? { handleReference: handleDocs } : {})
-            }
-          }
-        };
+        return respond({
+          instructions,
+          ...(handleDocs ? { handleReference: handleDocs } : {})
+        });
       })
     );
 

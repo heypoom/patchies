@@ -214,7 +214,12 @@ export const chatStreamStore = {
           ];
         },
         buildGetPacksState(),
-        buildOnEnablePack()
+        buildOnEnablePack(),
+        (callIndex, output) => {
+          session.streamingToolCalls = session.streamingToolCalls.map((c, i) =>
+            i === callIndex ? { ...c, output } : c
+          );
+        }
       );
 
       const completedActions: ThreadActionRef[] = session.pendingActions.map((id) => {
