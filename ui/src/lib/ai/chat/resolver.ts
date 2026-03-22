@@ -23,6 +23,8 @@ import {
   GET_OBJECT_ERRORS,
   SEARCH_DOCS,
   GET_DOC_CONTENT,
+  LIST_PACKS,
+  ENABLE_PACK,
   contextToolDeclarations,
   connectEdgesDeclaration,
   disconnectEdgesDeclaration
@@ -89,6 +91,19 @@ export interface ChatGraphSummary {
  * @param getAllNodes  - Returns all nodes in the graph (used for the get_graph_nodes context tool)
  * @param onAction    - Fired when a tool resolver completes with a pending ChatAction
  */
+export interface PackInfo {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  locked: boolean;
+}
+
+export interface PacksState {
+  objectPacks: PackInfo[];
+  presetPacks: PackInfo[];
+}
+
 export async function streamChatMessage(
   messages: ChatMessage[],
   nodeContext: ChatNodeContext | null,
@@ -99,7 +114,13 @@ export async function streamChatMessage(
   onAction?: (action: ChatAction) => void,
   getGraphSummary?: () => ChatGraphSummary,
   persona?: string,
-  onToolCall?: (name: string, args: Record<string, unknown>) => void
+  onToolCall?: (name: string, args: Record<string, unknown>) => void,
+  getPacksState?: () => PacksState,
+  onEnablePack?: (
+    packId: string,
+    kind: 'object' | 'preset',
+    enable: boolean
+  ) => { success: boolean; error?: string }
 ): Promise<string> {
   const apiKey = localStorage.getItem('gemini-api-key');
 
@@ -459,6 +480,44 @@ export async function streamChatMessage(
               response: content.markdown
                 ? { kind: 'object', slug, markdown: content.markdown }
                 : { error: `No documentation found for object "${slug}"` }
+            }
+          };
+        }
+
+        if (name === LIST_PACKS) {
+          const state = getPacksState?.() ?? { objectPacks: [], presetPacks: [] };
+
+          return {
+            functionResponse: {
+              name: LIST_PACKS,
+              response: state
+            }
+          };
+        }
+
+        if (name === ENABLE_PACK) {
+          const packId = (functionCall.args?.packId as string) ?? '';
+          const kind = (functionCall.args?.kind as 'object' | 'preset') ?? 'object';
+          const enable = (functionCall.args?.enable as boolean) ?? true;
+
+          if (!onEnablePack) {
+            return {
+              functionResponse: {
+                name: ENABLE_PACK,
+                response: {
+                  success: false,
+                  error: 'Pack management is not available in this context.'
+                }
+              }
+            };
+          }
+
+          const result = onEnablePack(packId, kind, enable);
+
+          return {
+            functionResponse: {
+              name: ENABLE_PACK,
+              response: result
             }
           };
         }

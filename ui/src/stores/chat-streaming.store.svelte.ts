@@ -1,6 +1,8 @@
 import { SvelteMap } from 'svelte/reactivity';
+import { get } from 'svelte/store';
 import { match } from 'ts-pattern';
 import { toast } from 'svelte-sonner';
+
 import {
   streamChatMessage,
   generateChatTitle,
@@ -15,6 +17,16 @@ import { toolNameToMode } from '$lib/ai/chat/canvas-tools';
 import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
 import type { ThreadMessage, ThreadActionRef, ThreadToolCall } from '$lib/ai/chat/types';
 import { saveChatMessages, loadChatMessages, deleteChatMessages } from './chat-history.store';
+import {
+  BUILT_IN_PACKS,
+  BUILT_IN_PRESET_PACKS,
+  enabledPackIds,
+  enabledPresetPackIds,
+  togglePack,
+  togglePresetPack,
+  isPackLocked,
+  isPresetPackLocked
+} from './extensions.store';
 
 class SessionState {
   messages = $state<ThreadMessage[]>([]);
@@ -51,6 +63,8 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
     .with('get_object_errors', () => 'Checking object errors')
     .with('search_docs', () => `Searching: "${args.query ?? ''}"`)
     .with('get_doc_content', () => `Fetching ${args.kind ?? 'doc'}: ${args.slug ?? ''}`)
+    .with('list_packs', () => 'Listing packs')
+    .with('enable_pack', () => `${args.enable ? 'Enabling' : 'Disabling'} ${args.packId ?? 'pack'}`)
     .with('connect_edges', () => 'Connecting edges')
     .with('disconnect_edges', () => 'Disconnecting edges')
     .otherwise(() => {
@@ -84,6 +98,48 @@ export interface StartStreamParams {
   onRename?: (name: string) => void;
   isFirstMessage: boolean;
   userContent: string;
+}
+
+function buildGetPacksState() {
+  return () => {
+    const enabledObj = get(enabledPackIds);
+    const enabledPre = get(enabledPresetPackIds);
+
+    return {
+      objectPacks: BUILT_IN_PACKS.map((p) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        enabled: enabledObj.includes(p.id),
+        locked: isPackLocked(p.id)
+      })),
+      presetPacks: BUILT_IN_PRESET_PACKS.map((p) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        enabled: enabledPre.includes(p.id),
+        locked: isPresetPackLocked(p.id)
+      }))
+    };
+  };
+}
+
+function buildOnEnablePack() {
+  return (packId: string, kind: 'object' | 'preset', enable: boolean) => {
+    if (kind === 'object') {
+      if (isPackLocked(packId))
+        return { success: false, error: `Pack "${packId}" is locked and cannot be changed.` };
+      const enabled = get(enabledPackIds).includes(packId);
+      if (enabled !== enable) togglePack(packId);
+      return { success: true };
+    } else {
+      if (isPresetPackLocked(packId))
+        return { success: false, error: `Pack "${packId}" is locked and cannot be changed.` };
+      const enabled = get(enabledPresetPackIds).includes(packId);
+      if (enabled !== enable) togglePresetPack(packId);
+      return { success: true };
+    }
+  };
 }
 
 export const chatStreamStore = {
@@ -156,7 +212,9 @@ export const chatStreamStore = {
             ...session.streamingToolCalls,
             { name, label: getToolCallLabel(name, args), args }
           ];
-        }
+        },
+        buildGetPacksState(),
+        buildOnEnablePack()
       );
 
       const completedActions: ThreadActionRef[] = session.pendingActions.map((id) => {

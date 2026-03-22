@@ -60,6 +60,8 @@ export const GET_OBJECT_LOGS = 'get_object_logs';
 export const GET_OBJECT_ERRORS = 'get_object_errors';
 export const SEARCH_DOCS = 'search_docs';
 export const GET_DOC_CONTENT = 'get_doc_content';
+export const LIST_PACKS = 'list_packs';
+export const ENABLE_PACK = 'enable_pack';
 export const CONNECT_EDGES = 'connect_edges';
 export const DISCONNECT_EDGES = 'disconnect_edges';
 
@@ -70,7 +72,9 @@ export const CONTEXT_TOOL_NAMES = new Set([
   GET_OBJECT_LOGS,
   GET_OBJECT_ERRORS,
   SEARCH_DOCS,
-  GET_DOC_CONTENT
+  GET_DOC_CONTENT,
+  LIST_PACKS,
+  ENABLE_PACK
 ]);
 
 // ── Context tool declarations ─────────────────────────────────────────────────
@@ -175,6 +179,36 @@ export const contextToolDeclarations = [
         }
       },
       required: ['kind', 'slug']
+    }
+  },
+  {
+    name: LIST_PACKS,
+    description:
+      'List all available object packs and preset packs, including which ones are currently enabled. Use this to answer questions about what objects or presets are available, or before enabling/disabling packs.',
+    parametersJsonSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: ENABLE_PACK,
+    description:
+      'Enable or disable an object pack or preset pack. Call list_packs first to see pack IDs and current state. Locked packs (e.g. "starters") cannot be disabled.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        packId: {
+          type: 'string',
+          description: 'The pack ID to enable or disable (e.g. "vision", "midi", "p5-demos")'
+        },
+        kind: {
+          type: 'string',
+          enum: ['object', 'preset'],
+          description: '"object" for object packs, "preset" for preset packs'
+        },
+        enable: {
+          type: 'boolean',
+          description: 'true to enable the pack, false to disable it'
+        }
+      },
+      required: ['packId', 'kind', 'enable']
     }
   }
 ];
