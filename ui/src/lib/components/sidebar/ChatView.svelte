@@ -102,7 +102,7 @@
     setStagedYouTubeUrls(sessionId, stagedYouTubeUrls);
   });
 
-  type ToolCallLog = { name: string; label: string };
+  type ToolCallLog = { name: string; label: string; args: Record<string, unknown> };
 
   const getToolCallLabel = (name: string, args: Record<string, unknown>): string =>
     match(name)
@@ -307,7 +307,7 @@
         (name, args) => {
           streamingToolCalls = [
             ...streamingToolCalls,
-            { name, label: getToolCallLabel(name, args) }
+            { name, label: getToolCallLabel(name, args), args }
           ];
         }
       );
@@ -572,11 +572,25 @@
 
           {#if streamingToolCalls.length > 0}
             <div class="mt-1 flex flex-col gap-0.5">
-              {#each streamingToolCalls as call (call.label + streamingToolCalls.indexOf(call))}
-                <div class="flex items-center gap-1.5 font-mono text-[10px] text-zinc-600">
-                  <Wrench class="h-2.5 w-2.5 shrink-0" />
-                  <span>{call.label}</span>
-                </div>
+              {#each streamingToolCalls as call, i (i)}
+                <details class="group">
+                  <summary
+                    class="flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
+                  >
+                    <Wrench class="h-2.5 w-2.5 shrink-0" />
+                    <span>{call.label}</span>
+                  </summary>
+                  {#if Object.keys(call.args).length > 0}
+                    <pre
+                      class="mt-0.5 ml-4 overflow-x-auto rounded border border-zinc-800 bg-zinc-900/60 px-2 py-1 font-mono text-[10px] leading-relaxed text-zinc-500">{JSON.stringify(
+                        call.args,
+                        null,
+                        2
+                      )}</pre>
+                  {:else}
+                    <p class="mt-0.5 ml-4 font-mono text-[10px] text-zinc-700">no args</p>
+                  {/if}
+                </details>
               {/each}
             </div>
           {/if}
