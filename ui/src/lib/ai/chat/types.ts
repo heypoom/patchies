@@ -17,6 +17,10 @@ export interface ThreadToolCall {
   label: string;
   args: Record<string, unknown>;
   output?: unknown;
+  /** Accumulated thinking text from subagent (canvas tool calls only) */
+  thinking?: string;
+  /** True for canvas/subagent tool calls, false for context tool calls */
+  isSubagent?: boolean;
 }
 
 export interface ThreadMessage {

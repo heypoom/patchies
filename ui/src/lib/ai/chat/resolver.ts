@@ -121,7 +121,8 @@ export async function streamChatMessage(
     kind: 'object' | 'preset',
     enable: boolean
   ) => { success: boolean; error?: string },
-  onToolCallOutput?: (callIndex: number, output: unknown) => void
+  onToolCallOutput?: (callIndex: number, output: unknown) => void,
+  onSubagentThinking?: (callIndex: number, thought: string) => void
 ): Promise<string> {
   const apiKey = localStorage.getItem('gemini-api-key');
 
@@ -296,12 +297,13 @@ export async function streamChatMessage(
           const mode = toolNameToMode(toolName);
           const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
 
+          const callIdx = callIndexMap.get(fc) ?? -1;
           const result = await runModeResolver(
             mode,
             (args.prompt as string) ?? '',
             context,
             signal ?? new AbortController().signal,
-            () => {},
+            (thought) => onSubagentThinking?.(callIdx, thought),
             () => {}
           );
 

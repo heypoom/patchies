@@ -12,6 +12,7 @@ import {
   type ChatGraphSummary,
   type ChatNodeContext
 } from '$lib/ai/chat/resolver';
+import { CONTEXT_TOOL_NAMES } from '$lib/ai/chat/chat-tool-declarations';
 import { modeDescriptors } from '$lib/ai/modes/descriptors';
 import { toolNameToMode } from '$lib/ai/chat/canvas-tools';
 import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
@@ -212,7 +213,12 @@ export const chatStreamStore = {
         (name, args) => {
           session.streamingToolCalls = [
             ...session.streamingToolCalls,
-            { name, label: getToolCallLabel(name, args), args }
+            {
+              name,
+              label: getToolCallLabel(name, args),
+              args,
+              isSubagent: !CONTEXT_TOOL_NAMES.has(name)
+            }
           ];
         },
         buildGetPacksState(),
@@ -220,6 +226,11 @@ export const chatStreamStore = {
         (callIndex, output) => {
           session.streamingToolCalls = session.streamingToolCalls.map((c, i) =>
             i === callIndex ? { ...c, output } : c
+          );
+        },
+        (callIndex, thought) => {
+          session.streamingToolCalls = session.streamingToolCalls.map((c, i) =>
+            i === callIndex ? { ...c, thinking: (c.thinking ?? '') + thought } : c
           );
         }
       );

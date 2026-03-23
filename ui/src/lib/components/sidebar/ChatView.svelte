@@ -27,6 +27,8 @@
   import PersistedActionCard from './PersistedActionCard.svelte';
   import ChatStagedMedia from './ChatStagedMedia.svelte';
   import ChatToolCalls from './ChatToolCalls.svelte';
+  import SubagentExpandedView from './SubagentExpandedView.svelte';
+  import type { ThreadToolCall } from '$lib/ai/chat/types';
   import { getYouTubeLabel, extractYouTubeUrls } from './youtube-utils';
   import { personaStore, BUILTIN_PRESETS, type Persona } from '../../../stores/persona.store';
   import {
@@ -85,6 +87,27 @@
     { name: '/clear', description: 'Clear the chat' },
     { name: '/compact', description: 'Summarize and compact the context' }
   ];
+
+  // Expanded subagent view state
+  // source='streaming' tracks a live tool call by index; source='message' holds a frozen call
+  type ExpandedCall =
+    | { source: 'streaming'; index: number }
+    | { source: 'message'; call: ThreadToolCall }
+    | null;
+
+  let expandedCall = $state<ExpandedCall>(null);
+
+  const expandedCallData = $derived(
+    !expandedCall
+      ? null
+      : expandedCall.source === 'streaming'
+        ? (session.streamingToolCalls[expandedCall.index] ?? null)
+        : expandedCall.call
+  );
+
+  const expandedCallIsStreaming = $derived(
+    expandedCall?.source === 'streaming' && session.isLoading
+  );
 
   let autoApprove = $state(false);
   let messagesEl: HTMLDivElement | undefined = $state();
@@ -318,8 +341,22 @@
     </div>
   {/if}
 
+  <!-- Subagent expanded view (replaces messages while open) -->
+  {#if expandedCallData}
+    <SubagentExpandedView
+      call={expandedCallData}
+      isStreaming={expandedCallIsStreaming}
+      onBack={() => (expandedCall = null)}
+    />
+  {/if}
+
   <!-- Messages -->
-  <div bind:this={messagesEl} class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
+  <div
+    bind:this={messagesEl}
+    class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 {expandedCallData
+      ? 'hidden'
+      : ''}"
+  >
     {#if session.messages.length === 0 && !session.isLoading}
       <div class="flex h-full flex-col items-center justify-center gap-3 text-zinc-600">
         <MessageSquare class="h-8 w-8" />
@@ -384,7 +421,11 @@
               </div>
             </details>
 
-            <ChatToolCalls calls={message.toolCalls ?? []} class="mt-1" />
+            <ChatToolCalls
+              calls={message.toolCalls ?? []}
+              class="mt-1"
+              onExpand={(i) => (expandedCall = { source: 'message', call: message.toolCalls![i] })}
+            />
 
             {#if message.content}
               <div class={message.toolCalls?.length ? 'mt-2' : ''}>
@@ -411,7 +452,10 @@
           </div>
         </div>
       {:else}
-        <ChatToolCalls calls={message.toolCalls ?? []} />
+        <ChatToolCalls
+          calls={message.toolCalls ?? []}
+          onExpand={(i) => (expandedCall = { source: 'message', call: message.toolCalls![i] })}
+        />
 
         {#if message.content}
           <div>
@@ -461,7 +505,12 @@
               </div>
             </details>
 
-            <ChatToolCalls calls={session.streamingToolCalls} class="mt-1" />
+            <ChatToolCalls
+              calls={session.streamingToolCalls}
+              class="mt-1"
+              isStreaming={session.isLoading}
+              onExpand={(i) => (expandedCall = { source: 'streaming', index: i })}
+            />
 
             {#if session.streamingText}
               <div class={session.streamingToolCalls.length ? 'mt-2' : ''}>
@@ -485,7 +534,11 @@
           </div>
         </div>
       {:else}
-        <ChatToolCalls calls={session.streamingToolCalls} />
+        <ChatToolCalls
+          calls={session.streamingToolCalls}
+          isStreaming={session.isLoading}
+          onExpand={(i) => (expandedCall = { source: 'streaming', index: i })}
+        />
 
         {#if session.streamingText}
           <div>
