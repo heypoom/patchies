@@ -231,6 +231,9 @@
 
   function handleClear() {
     chatStreamStore.clear(sessionId);
+
+    const n = sessionId.replace('chat-', '');
+    onRename?.(`Chat ${n}`);
   }
 
   function handleKeydown(event: KeyboardEvent) {
