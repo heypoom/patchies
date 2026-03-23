@@ -321,5 +321,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       delegate: 'GPU',
       skipFrames: 1
     }))
+    .with('ngea', () => ({ tuning: 'Khong Wong Yai', index: 0 }))
     .otherwise(() => ({}));
 }

@@ -276,6 +276,6 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Experimental',
     description: 'Unstable or work-in-progress',
     icon: 'FlaskConical',
-    objects: ['bchrn']
+    objects: ['bchrn', 'ngea']
   }
 ];

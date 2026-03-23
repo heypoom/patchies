@@ -82,6 +82,7 @@ export * from './meter';
 export * from './sequencer';
 export * from './bytebeat';
 export * from './projmap';
+export * from './ngea';
 export * from './from-v2-node';
 export * from '$objects/mediapipe/schemas';
 
@@ -169,6 +170,7 @@ import { meterSchema } from './meter';
 import { sequencerSchema } from './sequencer';
 import { bytebeatSchema } from './bytebeat';
 import { projmapSchema } from './projmap';
+import { ngeaSchema } from './ngea';
 import { curveSchema } from '$objects/curve/schema';
 import { serialSchema, serialTermSchema, dmxSchema } from '$objects/serial/schema';
 import {
@@ -285,7 +287,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'vision.gesture': visionGestureSchema,
   'vision.classify': visionClassifySchema,
   'vision.detect': visionDetectSchema,
-  'vision.segment': visionSegmentSchema
+  'vision.segment': visionSegmentSchema,
+  ngea: ngeaSchema
 };
 
 /**
