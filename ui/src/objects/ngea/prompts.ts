@@ -31,9 +31,9 @@ NGEA tunings are registered globally in Strudel. Double-quoted strings become mi
 
 \`\`\`js
 // .ngea() method maps pattern indices to gong frequencies
-"0 2 4 6 3 1".slow(2).ngea('khong-wong-yai')
+"0 2 4 6 3 1".slow(2).ngea('Tuning Title')
 
 // ngea() as frequency array lookup
-note("0 2 4 1".slow(2)).freq(i => ngea('sumba')[i])
+note("0 2 4 1".slow(2)).freq(i => ngea('Tuning Title')[i])
 \`\`\`
 `;
