@@ -29,6 +29,8 @@
       <div class="font-mono text-xs font-medium text-zinc-300">{call.label}</div>
       {#if isStreaming}
         <div class="animate-pulse font-mono text-[10px] text-zinc-600">Thinking...</div>
+      {:else if call.aborted}
+        <div class="font-mono text-[10px] text-red-400/70">Aborted</div>
       {:else}
         <div class="font-mono text-[10px] text-zinc-700">Complete</div>
       {/if}
