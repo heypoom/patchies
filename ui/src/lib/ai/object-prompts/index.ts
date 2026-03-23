@@ -52,6 +52,8 @@ import { wgpuPrompt } from './wgpu';
 import { workerPrompt } from './worker';
 import { scopePrompt } from './scope~';
 import { sequencerPrompt } from './sequencer';
+import { stackPrompt } from './stack';
+import { queuePrompt } from './queue';
 import {
   visionHandPrompt,
   visionBodyPrompt,
@@ -114,6 +116,8 @@ export const objectPrompts: Record<string, string> = {
   'bytebeat~': bytebeatPrompt,
   'samplerate~': sampleratePrompt,
   sequencer: sequencerPrompt,
+  stack: stackPrompt,
+  queue: queuePrompt,
   'scope~': scopePrompt,
   serial: serialPrompt,
   'serial.term': serialTermPrompt,

@@ -26,6 +26,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'debounce',
       'float',
       'int',
+      'stack',
+      'queue',
       'kv',
       'send',
       'recv'

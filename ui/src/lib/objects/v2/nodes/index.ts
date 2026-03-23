@@ -22,6 +22,8 @@ import { SendObject } from './SendObject';
 import { RecvObject } from './RecvObject';
 import { SamplerateObject } from './SamplerateObject';
 import { UnpackObject } from './UnpackObject';
+import { StackObject } from './StackObject';
+import { QueueObject } from './QueueObject';
 
 import { ObjectRegistry } from '$lib/registry/ObjectRegistry';
 
@@ -47,7 +49,9 @@ export const TEXT_OBJECTS = [
   SendObject,
   RecvObject,
   SamplerateObject,
-  UnpackObject
+  UnpackObject,
+  StackObject,
+  QueueObject
 ] as const satisfies TextObjectClass[];
 
 /**
