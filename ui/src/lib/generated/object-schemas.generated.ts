@@ -1020,16 +1020,36 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       {
         id: 'message',
         type: 'message',
-        description: 'Message to pass through',
-        messages: [{ schema: Type.Any(), description: 'Message to pass through' }],
+        description: 'Message to delay',
+        messages: [{ schema: Type.Any(), description: 'Message to delay' }],
         handle: { handleType: 'message', handleId: 0 }
+      },
+      {
+        id: 'cmd',
+        type: 'message',
+        description:
+          'Number sets delay in ms; bang re-sends last value; clear cancels pending; flush outputs all pending immediately',
+        messages: [
+          {
+            schema: Type.Object({ type: Type.Literal('bang') }),
+            description: 'Re-send last received value after delay'
+          },
+          {
+            schema: Type.Object({ type: Type.Literal('clear') }),
+            description: 'Cancel all pending messages'
+          },
+          {
+            schema: Type.Object({ type: Type.Literal('flush') }),
+            description: 'Output all pending messages immediately'
+          }
+        ],
+        handle: { handleType: 'message', handleId: 1 }
       },
       {
         id: 'delay',
         type: 'int',
-        description: 'How long to delay for in ms',
-        messages: [{ schema: Type.Integer(), description: 'How long to delay for in ms' }],
-        handle: { handleType: 'message', handleId: 1 }
+        description: 'Delay time in ms',
+        messages: [{ schema: Type.Integer(), description: 'Delay time in ms' }]
       }
     ],
     outlets: [

@@ -61,7 +61,6 @@ export * from './uniq';
 export * from './peek';
 export * from './loadbang';
 export * from './metro';
-export * from './delay';
 export * from './markdown';
 export * from './tone';
 export * from './elem';
@@ -149,7 +148,6 @@ import { uniqSchema } from './uniq';
 import { peekSchema } from './peek';
 import { loadbangSchema } from './loadbang';
 import { metroSchema } from './metro';
-import { delaySchema } from './delay';
 import { markdownSchema } from './markdown';
 import { toneSchema } from './tone';
 import { elemSchema } from './elem';
@@ -256,7 +254,6 @@ export const objectSchemas: ObjectSchemaRegistry = {
   peek: peekSchema,
   loadbang: loadbangSchema,
   metro: metroSchema,
-  delay: delaySchema,
   markdown: markdownSchema,
   'tone~': toneSchema,
   'elem~': elemSchema,
