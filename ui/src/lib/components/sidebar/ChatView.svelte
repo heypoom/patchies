@@ -577,7 +577,7 @@
 
   <!-- Persona panel -->
   {#if personaPanelOpen}
-    <div class="border-t border-zinc-800 bg-zinc-900/60 p-2.5">
+    <div class="border-t border-zinc-800 bg-zinc-900/60 p-2.5 font-mono">
       <!-- Preset + custom persona chips -->
       <div class="mb-2 flex flex-wrap gap-1">
         <button
@@ -768,7 +768,7 @@
       <div class="flex items-center gap-1">
         <button
           onclick={() => (personaPanelOpen = !personaPanelOpen)}
-          class="flex h-6 cursor-pointer items-center gap-1 rounded px-1.5 text-xs transition-colors {personaPanelOpen ||
+          class="flex h-6 cursor-pointer items-center gap-1 rounded px-1.5 font-mono text-[10px] transition-colors {personaPanelOpen ||
           activePersona
             ? 'bg-purple-900/50 text-purple-400 hover:bg-purple-900/80'
             : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
