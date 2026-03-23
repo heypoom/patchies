@@ -424,50 +424,47 @@
           {/if}
         </div>
       {:else if message.thinking}
-        <div class="flex items-start gap-2">
-          <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
+        <div class="min-w-0">
+          <details>
+            <summary
+              class="flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
+            >
+              <div class="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
+              Thinking
+            </summary>
 
-          <div class="min-w-0 flex-1">
-            <details>
-              <summary
-                class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
-              >
-                Thinking
-              </summary>
-
-              <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
-                <MarkdownContent markdown={message.thinking} />
-              </div>
-            </details>
-
-            <ChatToolCalls
-              calls={message.toolCalls ?? []}
-              class="mt-1"
-              onExpand={(i) => (expandedCall = { source: 'message', call: message.toolCalls![i] })}
-            />
-
-            {#if message.content}
-              <div class={message.toolCalls?.length ? 'mt-2' : ''}>
-                <MarkdownContent markdown={message.content} />
-              </div>
-            {/if}
-
-            <div class={message.actions?.length && message.content ? 'mt-2' : ''}>
-              {#each message.actions ?? [] as ref (ref.id)}
-                {@const action = session.actions.get(ref.id)}
-
-                {#if action && aiCallbacks}
-                  <ActionCard
-                    {action}
-                    callbacks={aiCallbacks}
-                    onStateChange={updateActionState}
-                    {getNodeById}
-                  />
-                {:else if ref.summary || ref.type}
-                  <PersistedActionCard {ref} />
-                {/if}
-              {/each}
+            <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
+              <MarkdownContent markdown={message.thinking} />
             </div>
+          </details>
+
+          <ChatToolCalls
+            calls={message.toolCalls ?? []}
+            class="mt-1"
+            onExpand={(i) => (expandedCall = { source: 'message', call: message.toolCalls![i] })}
+          />
+
+          {#if message.content}
+            <div class={message.toolCalls?.length ? 'mt-2' : ''}>
+              <MarkdownContent markdown={message.content} />
+            </div>
+          {/if}
+
+          <div class={message.actions?.length && message.content ? 'mt-2' : ''}>
+            {#each message.actions ?? [] as ref (ref.id)}
+              {@const action = session.actions.get(ref.id)}
+
+              {#if action && aiCallbacks}
+                <ActionCard
+                  {action}
+                  callbacks={aiCallbacks}
+                  onStateChange={updateActionState}
+                  {getNodeById}
+                />
+              {:else if ref.summary || ref.type}
+                <PersistedActionCard {ref} />
+              {/if}
+            {/each}
           </div>
         </div>
       {:else}
@@ -504,53 +501,50 @@
     <!-- Streaming response (in-flight) -->
     {#if session.isLoading}
       {#if session.thinkingText}
-        <div class="flex items-start gap-2">
-          <div
-            class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full {session.streamingText
-              ? 'bg-zinc-600'
-              : 'animate-pulse bg-zinc-700'}"
-          ></div>
+        <div class="min-w-0">
+          <details open={$chatSettingsStore.expandThinking}>
+            <summary
+              class="flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
+            >
+              <div
+                class="h-1.5 w-1.5 shrink-0 rounded-full {session.streamingText
+                  ? 'bg-zinc-600'
+                  : 'animate-pulse bg-zinc-700'}"
+              ></div>
+              Thinking
+            </summary>
 
-          <div class="min-w-0 flex-1">
-            <details open={$chatSettingsStore.expandThinking}>
-              <summary
-                class="cursor-pointer list-none font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
-              >
-                Thinking
-              </summary>
+            <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
+              <MarkdownContent markdown={session.thinkingText} />
+            </div>
+          </details>
 
-              <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
-                <MarkdownContent markdown={session.thinkingText} />
-              </div>
-            </details>
+          <ChatToolCalls
+            calls={session.streamingToolCalls}
+            class="mt-1"
+            isStreaming={session.isLoading}
+            onExpand={(i) => (expandedCall = { source: 'streaming', index: i })}
+          />
 
-            <ChatToolCalls
-              calls={session.streamingToolCalls}
-              class="mt-1"
-              isStreaming={session.isLoading}
-              onExpand={(i) => (expandedCall = { source: 'streaming', index: i })}
-            />
+          {#if session.streamingText}
+            <div class={session.streamingToolCalls.length ? 'mt-2' : ''}>
+              <MarkdownContent markdown={session.streamingText} />
+            </div>
+          {/if}
 
-            {#if session.streamingText}
-              <div class={session.streamingToolCalls.length ? 'mt-2' : ''}>
-                <MarkdownContent markdown={session.streamingText} />
-              </div>
+          <!-- ActionCards visible while response is still streaming -->
+          {#each session.pendingActions as actionId (actionId)}
+            {@const action = session.actions.get(actionId)}
+
+            {#if action && aiCallbacks}
+              <ActionCard
+                {action}
+                callbacks={aiCallbacks}
+                onStateChange={updateActionState}
+                {getNodeById}
+              />
             {/if}
-
-            <!-- ActionCards visible while response is still streaming -->
-            {#each session.pendingActions as actionId (actionId)}
-              {@const action = session.actions.get(actionId)}
-
-              {#if action && aiCallbacks}
-                <ActionCard
-                  {action}
-                  callbacks={aiCallbacks}
-                  onStateChange={updateActionState}
-                  {getNodeById}
-                />
-              {/if}
-            {/each}
-          </div>
+          {/each}
         </div>
       {:else}
         <ChatToolCalls
