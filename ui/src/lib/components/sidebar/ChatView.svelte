@@ -183,6 +183,7 @@
   function handleSubmit() {
     if (slashSuggestions.length > 0) {
       executeSlashCommand(slashSuggestions[slashSelectedIndex]?.name ?? slashSuggestions[0].name);
+
       return;
     }
 
@@ -215,6 +216,16 @@
             .join(' ');
 
           content = content ? `${content}\n${actionSummary}` : actionSummary;
+        }
+
+        const abortedCalls = m.toolCalls?.filter((tc) => tc.aborted);
+
+        if (abortedCalls?.length) {
+          const abortSummary = abortedCalls
+            .map((tc) => `[Canvas tool call aborted by user: ${tc.label}]`)
+            .join(' ');
+
+          content = content ? `${content}\n${abortSummary}` : abortSummary;
         }
 
         return { role: m.role, content, images: m.images, youtubeUrls: m.youtubeUrls };
@@ -267,23 +278,31 @@
     if (slashSuggestions.length > 0) {
       if (event.key === 'ArrowDown') {
         event.preventDefault();
+
         slashSelectedIndex = (slashSelectedIndex + 1) % slashSuggestions.length;
+
         return;
       }
+
       if (event.key === 'ArrowUp') {
         event.preventDefault();
+
         slashSelectedIndex =
           (slashSelectedIndex - 1 + slashSuggestions.length) % slashSuggestions.length;
+
         return;
       }
+
       if (event.key === 'Escape') {
         inputText = '';
+
         return;
       }
     }
 
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
+
       handleSubmit();
     }
   }

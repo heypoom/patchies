@@ -21,6 +21,8 @@ export interface ThreadToolCall {
   thinking?: string;
   /** True for canvas/subagent tool calls, false for context tool calls */
   isSubagent?: boolean;
+  /** True when the tool call was aborted mid-flight by the user */
+  aborted?: boolean;
 }
 
 export interface ThreadMessage {

@@ -23,13 +23,23 @@
 >
   <div class="mt-1 shrink-0">
     <div
-      class="h-1.5 w-1.5 rounded-full {isStreaming ? 'animate-pulse bg-zinc-600' : 'bg-green-500'}"
+      class="h-1.5 w-1.5 rounded-full {call.aborted
+        ? 'bg-zinc-600'
+        : isStreaming
+          ? 'animate-pulse bg-green-500'
+          : 'bg-green-500'}"
     ></div>
   </div>
 
   <div class="min-w-0 flex-1">
     <div class="flex items-center gap-1.5">
-      <span class="font-mono text-[10px] font-medium text-zinc-400">{call.label}</span>
+      <span
+        class="font-mono text-[10px] font-medium {call.aborted ? 'text-zinc-600' : 'text-zinc-400'}"
+        >{call.label}</span
+      >
+      {#if call.aborted}
+        <span class="font-mono text-[10px] text-zinc-700">aborted</span>
+      {/if}
     </div>
 
     {#if thinkingPreview}

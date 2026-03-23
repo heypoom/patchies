@@ -287,7 +287,25 @@ export const chatStreamStore = {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
 
-      if (message !== 'Request cancelled') {
+      if (message === 'Request cancelled') {
+        // Mark any in-flight subagent calls (no output yet) as aborted and persist the partial message
+        const abortedCalls = session.streamingToolCalls.map((c) =>
+          c.isSubagent && c.output === undefined ? { ...c, aborted: true } : c
+        );
+
+        if (abortedCalls.some((c) => c.aborted) || session.streamingText) {
+          session.messages = [
+            ...session.messages,
+            {
+              role: 'model' as const,
+              content: session.streamingText,
+              thinking: session.thinkingText || undefined,
+              toolCalls: abortedCalls.length > 0 ? abortedCalls : undefined
+            }
+          ];
+          await saveChatMessages(sessionId, session.messages);
+        }
+      } else {
         toast.error(message);
       }
 
