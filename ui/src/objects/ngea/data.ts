@@ -1013,17 +1013,6 @@ export const NGEA_TUNINGS: NgeaTuning[] = [
   }
 ];
 
-/** Convert a tuning title to a kebab-case slug for Strudel scale names */
-export function ngeaSlug(title: string): string {
-  return (
-    'ngea-' +
-    title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-  );
-}
-
 /** Find a tuning by partial, case-insensitive title match */
 export function findTuning(query: string): NgeaTuning | undefined {
   const q = query.toLowerCase();

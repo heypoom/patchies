@@ -16,19 +16,19 @@ Send a **bang** to get the current gong. Outlet 1 emits the full scale when bang
 
 ## Strudel Integration
 
-Bang the node (or send any message) to emit the scale on outlet 1,
-then receive it in a connected Strudel node:
+NGEA tunings are registered globally in Strudel. Use `.ngea(name)`
+directly on any pattern — no node connection needed:
 
 ```js
-let freqs = [];
-recv(msg => { if (msg?.type === 'scale') freqs = msg.freqs; });
+// Chain directly on a pattern — maps indices to gong frequencies
+"0 2 4 6 3 1".slow(2).ngea("khong-wong-yai")
 
-note("0 2 4 1 5 3".slow(2))
-  .freq(i => freqs[Math.round(i) % freqs.length] ?? 440)
+// Or use ngea() as a frequency array lookup
+note("0 2 4 1".slow(2)).freq(i => ngea("sumba")[i])
 ```
 
-The `scaleName` field (e.g. `ngea-khong-wong-yai`) is available in
-the scale message for reference.
+Names are partial, case-insensitive matches against the tuning title
+(e.g. `"khong"`, `"sumba"`, `"tboli"`, `"ede bih"`).
 
 ## See Also
 

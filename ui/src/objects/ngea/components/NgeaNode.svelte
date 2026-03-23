@@ -6,7 +6,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { ngeaSchema } from '$lib/objects/schemas/ngea';
-  import { NGEA_TUNINGS, ngeaSlug, findTuning } from '../data';
+  import { NGEA_TUNINGS, findTuning } from '../data';
   import { ChevronDown, Info, X } from '@lucide/svelte/icons';
 
   let {
@@ -28,7 +28,6 @@
 
   const currentTuning = $derived(findTuning(currentTuningTitle) ?? NGEA_TUNINGS[0]);
   const gongCount = $derived(currentTuning.data.length);
-  const scaleName = $derived(ngeaSlug(currentTuning.title));
 
   function sendGong(index: number): void {
     const gong = currentTuning.data[index];
@@ -51,7 +50,6 @@
         type: 'scale',
         name: currentTuning.title,
         location: currentTuning.location,
-        scaleName,
         freqs: currentTuning.data.map((g) => g.freq),
         cents: currentTuning.data.map((g) => g.accumulate)
       },
@@ -142,7 +140,7 @@
     {nodeId}
   />
 
-  <div class={['max-w-[300px] rounded-lg border text-xs text-zinc-200', containerClass]}>
+  <div class={['max-w-[280px] rounded-lg border text-xs text-zinc-200', containerClass]}>
     <!-- Header row: label + info toggle -->
     <div class="flex items-center gap-1 border-b border-zinc-700 px-2 py-1">
       <span class="font-mono text-[10px] text-zinc-400">Network Gong Ensemble Archive</span>
@@ -190,14 +188,8 @@
 
     <!-- Info panel (expandable) -->
     {#if showInfo}
-      <!-- Strudel scale name hint -->
-      <div class="border-t border-zinc-700 px-2 py-1 text-[10px]">
-        <span class="font-mono text-zinc-500">scale: </span>
-        <span class="font-mono text-zinc-400">{scaleName}</span>
-      </div>
-
       <div
-        class="nowheel nodrag h-[180px] max-w-[280px] overflow-y-auto border-t border-zinc-700 px-2 py-2 font-mono text-[10px] text-zinc-400"
+        class="nowheel nodrag h-[180px] overflow-y-auto border-t border-zinc-700 px-2 py-2 font-mono text-[10px] text-zinc-400"
       >
         {#if currentTuning.contributor}
           <p class="mb-1"><span class="text-zinc-500">by</span> {currentTuning.contributor}</p>

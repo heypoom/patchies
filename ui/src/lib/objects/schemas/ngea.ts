@@ -53,11 +53,10 @@ export const ngeaSchema: ObjectSchema = {
             type: Type.Literal('scale'),
             name: Type.String(),
             location: Type.String(),
-            scaleName: Type.String(),
             freqs: Type.Array(Type.Number()),
             cents: Type.Array(Type.Number())
           }),
-          description: 'Scale info: name, location, scaleName (for Strudel), freqs[], cents[]'
+          description: 'Scale info: name, location, freqs[], cents[]'
         }
       ]
     }
