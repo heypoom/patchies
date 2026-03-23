@@ -213,6 +213,17 @@ The `bytebeat~` node uses a local TypeScript fork of [html5bytebeat](https://git
 
 The local fork converts the library to TypeScript and restructures it as a proper AudioWorklet module for Vite bundling compatibility. The original library uses `Function.toString()` to serialize classes into a Blob URL, which breaks under production minification. The fork preserves the core logic (ByteBeatCompiler, ByteBeatProcessor, WrappingStack) with minor TypeScript adaptations.
 
+#### Network Gong Ensemble Archive (NGEA)
+
+The `ngea` node uses tuning data from the [Network Gong Ensemble Archive](https://networkgongensemblearchive.online), an archive of Southeast Asian sound cultures.
+
+- **Original Project**: Network Gong Ensemble Archive
+- **Authors**: Elekhlekha Collective
+- **Website**: <https://networkgongensemblearchive.online>
+- **Collective**: <https://www.elekhlekha.xyz/>
+- **Instagram**: <https://www.instagram.com/elekhlekha/>
+- **License**: [CC Attribution-ShareAlike 4.0 (CC BY-SA 4.0)](https://creativecommons.org/licenses/by-sa/4.0/)
+
 ### Source Code Access
 
 The complete source code for Patchies is available on [GitHub](https://github.com/heypoom/patchies)

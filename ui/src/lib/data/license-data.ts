@@ -514,6 +514,16 @@ export const portedCode: PortedCode[] = [
     license: 'MIT',
     notes:
       'Local fork at ui/src/lib/bytebeat/ converts the library to TypeScript and restructures it as a proper AudioWorklet module for Vite bundling compatibility. Core logic (ByteBeatCompiler, ByteBeatProcessor, WrappingStack) is preserved with minor TypeScript adaptations.'
+  },
+  {
+    name: 'Network Gong Ensemble Archive (NGEA)',
+    description:
+      'The ngea node uses tuning data from the Network Gong Ensemble Archive, an archive of Southeast Asian sound cultures.',
+    authors: 'Elekhlekha Collective',
+    repository: 'https://networkgongensemblearchive.online',
+    license: 'CC BY-SA 4.0',
+    notes:
+      'Tuning data is used under the Creative Commons Attribution-ShareAlike 4.0 license. Find the collective on Instagram at @elekhlekha.'
   }
 ];
 
