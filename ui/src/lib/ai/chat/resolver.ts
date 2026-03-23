@@ -3,7 +3,7 @@ import { logger, getNodeErrors } from '$lib/utils/logger';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from '../object-prompts/shared-jsrunner';
 import { buildCanvasToolDeclarations, toolNameToMode } from './canvas-tools';
 import { runModeResolver } from '../modes/run-resolver';
-import { getModeDescriptor } from '../modes/descriptors';
+import { getModeDescriptor, modeDescriptors } from '../modes/descriptors';
 import type { AiModeContext, AiPromptMode, AiModeDescriptor, AiModeResult } from '../modes/types';
 import { topicMetas } from '$lib/docs/topic-index';
 import { objectSchemas } from '$lib/objects/schemas';
@@ -49,8 +49,9 @@ export interface ChatAction {
   id: string;
   mode: AiPromptMode;
   descriptor: AiModeDescriptor;
-  result: AiModeResult;
-  state: 'pending' | 'applied' | 'dismissed';
+  result?: AiModeResult;
+  state: 'pending' | 'applied' | 'dismissed' | 'failed';
+  error?: string;
 }
 
 /** Minimal node shape needed to build AiModeContext from a tool call */
@@ -266,60 +267,92 @@ export async function streamChatMessage(
       callIndexMap.set(part, globalCallIndex++);
     }
 
-    // Canvas tool calls are terminal — resolve and surface as ActionCards
-    for (const { functionCall } of canvasCalls) {
-      if (!onAction) continue;
+    // Canvas tool calls — resolve and surface as ActionCards; track per-call status for responses
+    type CanvasCallStatus =
+      | { status: 'queued'; message: string }
+      | { status: 'error'; message: string };
+    const canvasResultMap = new Map<(typeof canvasCalls)[number], CanvasCallStatus>();
 
+    for (const fc of canvasCalls) {
+      const { functionCall } = fc;
       const toolName = functionCall.name ?? '';
       const args = (functionCall.args ?? {}) as Record<string, unknown>;
+
+      if (!onAction) {
+        canvasResultMap.set(fc, {
+          status: 'queued',
+          message: 'Action has been queued for user review.'
+        });
+        continue;
+      }
 
       try {
         // Edge tools are handled directly — no mode resolver needed
         if (toolName === CONNECT_EDGES) {
           onAction(resolveConnectEdges(args, { getNodeById, getGraphSummary }));
-
-          continue;
-        }
-
-        if (toolName === DISCONNECT_EDGES) {
+        } else if (toolName === DISCONNECT_EDGES) {
           onAction(resolveDisconnectEdges(args, { getNodeById, getGraphSummary }));
+        } else {
+          const mode = toolNameToMode(toolName);
+          const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
 
-          continue;
+          const result = await runModeResolver(
+            mode,
+            (args.prompt as string) ?? '',
+            context,
+            signal ?? new AbortController().signal,
+            () => {},
+            () => {}
+          );
+
+          onAction({
+            id: crypto.randomUUID(),
+            mode,
+            descriptor: getModeDescriptor(mode),
+            result,
+            state: 'pending'
+          });
         }
 
-        const mode = toolNameToMode(toolName);
-        const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
-
-        const result = await runModeResolver(
-          mode,
-          (args.prompt as string) ?? '',
-          context,
-          signal ?? new AbortController().signal,
-          () => {},
-          () => {}
-        );
-
-        onAction({
-          id: crypto.randomUUID(),
-          mode,
-          descriptor: getModeDescriptor(mode),
-          result,
-          state: 'pending'
+        canvasResultMap.set(fc, {
+          status: 'queued',
+          message: 'Action has been queued for user review.'
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Tool call failed';
-        const errText = `\n\n_Canvas action failed (${toolName}): ${msg}_`;
 
-        onChunk(errText);
-        fullText += errText;
+        // Surface the failure as a visual action card instead of inline error text
+        let failMode: AiPromptMode;
+        let failDescriptor: AiModeDescriptor;
+        try {
+          failMode = toolNameToMode(toolName);
+          failDescriptor = getModeDescriptor(failMode);
+        } catch {
+          const fallbackMode = Object.keys(modeDescriptors)[0] as AiPromptMode;
+          failMode = fallbackMode;
+          failDescriptor = modeDescriptors[fallbackMode];
+        }
+
+        onAction({
+          id: crypto.randomUUID(),
+          mode: failMode,
+          descriptor: failDescriptor,
+          state: 'failed',
+          error: msg
+        });
+
+        canvasResultMap.set(fc, { status: 'error', message: msg });
       }
     }
 
-    // Build acknowledgement responses for canvas calls so the model can produce a brief summary
-    const canvasResponses = canvasCalls.map(({ functionCall }) => ({
+    // Build per-call responses — errors tell the model what failed so it can retry
+    const canvasResponses = canvasCalls.map((fc) => ({
       functionResponse: {
-        name: functionCall.name ?? '',
-        response: { status: 'queued', message: 'Action has been queued for user review.' }
+        name: fc.functionCall.name ?? '',
+        response: canvasResultMap.get(fc) ?? {
+          status: 'queued',
+          message: 'Action has been queued for user review.'
+        }
       }
     }));
 

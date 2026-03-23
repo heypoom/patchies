@@ -2,7 +2,8 @@ export interface ThreadActionRef {
   id: string;
   type: string;
   summary?: string;
-  state?: 'applied' | 'dismissed';
+  state?: 'applied' | 'dismissed' | 'failed';
+  error?: string;
 }
 
 export interface StagedImage {

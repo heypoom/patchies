@@ -184,7 +184,11 @@
 
         if (m.actions && m.actions.length > 0) {
           const actionSummary = m.actions
-            .map((a) => `[Action ${a.state ?? 'applied'}: ${a.summary ?? a.type}]`)
+            .map((a) =>
+              a.state === 'failed'
+                ? `[Action failed (${a.type}): ${a.error ?? 'unknown error'}]`
+                : `[Action ${a.state ?? 'applied'}: ${a.summary ?? a.type}]`
+            )
             .join(' ');
 
           content = content ? `${content}\n${actionSummary}` : actionSummary;

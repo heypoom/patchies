@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, ChevronLeft, ChevronRight, X } from '@lucide/svelte/icons';
+  import { AlertCircle, Check, ChevronLeft, ChevronRight, X } from '@lucide/svelte/icons';
   import { match } from 'ts-pattern';
   import { toast } from 'svelte-sonner';
   import { diffLines } from 'diff';
@@ -20,23 +20,29 @@
     getNodeById?: (nodeId: string) => ChatNode | undefined;
   } = $props();
 
-  const colorClass = $derived(getActionColorClass(action.descriptor.color));
+  const colorClass = $derived(
+    action.state === 'failed'
+      ? 'border-red-500/40 bg-red-950/30 text-red-400'
+      : getActionColorClass(action.descriptor.color)
+  );
 
   const summary = $derived(
-    match(action.result)
-      .with({ kind: 'single' }, (r) => `Create ${r.type}`)
-      .with({ kind: 'multi' }, (r) => `Create ${r.nodes.length} objects`)
-      .with({ kind: 'edit' }, () => `Edit object`)
-      .with({ kind: 'replace' }, (r) => `Replace with ${r.newType}`)
-      .with(
-        { kind: 'connect-edges' },
-        (r) => `Connect ${r.edges.length} edge${r.edges.length === 1 ? '' : 's'}`
-      )
-      .with(
-        { kind: 'disconnect-edges' },
-        (r) => `Disconnect ${r.edgeIds.length} edge${r.edgeIds.length === 1 ? '' : 's'}`
-      )
-      .exhaustive()
+    action.result
+      ? match(action.result)
+          .with({ kind: 'single' }, (r) => `Create ${r.type}`)
+          .with({ kind: 'multi' }, (r) => `Create ${r.nodes.length} objects`)
+          .with({ kind: 'edit' }, () => `Edit object`)
+          .with({ kind: 'replace' }, (r) => `Replace with ${r.newType}`)
+          .with(
+            { kind: 'connect-edges' },
+            (r) => `Connect ${r.edges.length} edge${r.edges.length === 1 ? '' : 's'}`
+          )
+          .with(
+            { kind: 'disconnect-edges' },
+            (r) => `Disconnect ${r.edgeIds.length} edge${r.edgeIds.length === 1 ? '' : 's'}`
+          )
+          .exhaustive()
+      : (action.error ?? 'Action failed')
   );
 
   type DiffLine = { type: 'added' | 'removed' | 'context'; text: string };
@@ -79,6 +85,7 @@
   // All previewable pages (one per node with code, or a single page for edit/replace/single)
   const pages = $derived.by((): Preview[] => {
     const result = action.result;
+    if (!result) return [];
 
     if (result.kind === 'edit' || result.kind === 'replace') {
       const newData = result.kind === 'edit' ? result.data : result.newData;
@@ -172,6 +179,7 @@
   }
 
   function apply() {
+    if (!action.result) return;
     match(action.result)
       .with({ kind: 'single' }, (r) => callbacks.onInsertObject(r.type, r.data))
       .with({ kind: 'multi' }, (r) => callbacks.onInsertMultipleObjects(r.nodes, r.edges))
@@ -213,10 +221,16 @@
     <ChevronRight
       class="h-3 w-3 shrink-0 text-current/50 transition-transform [[open]_&]:rotate-90"
     />
-    <action.descriptor.icon class="h-3 w-3 shrink-0" />
+    {#if action.state === 'failed'}
+      <AlertCircle class="h-3 w-3 shrink-0" />
+    {:else}
+      <action.descriptor.icon class="h-3 w-3 shrink-0" />
+    {/if}
     <span class="flex-1 font-medium">{summary}</span>
 
-    {#if action.state === 'applied'}
+    {#if action.state === 'failed'}
+      <span class="text-red-400/70">Failed</span>
+    {:else if action.state === 'applied'}
       <span class="flex items-center gap-1 text-green-400">
         <Check class="h-3 w-3" /> Applied
       </span>
@@ -252,7 +266,9 @@
 
   <!-- Preview pane -->
   <div class="border-t border-current/20">
-    {#if currentPage}
+    {#if action.state === 'failed' && action.error}
+      <div class="px-3 py-2 font-mono text-[10px] text-red-400/80">{action.error}</div>
+    {:else if currentPage}
       <!-- Pagination bar (only for multi-page) -->
       {#if pages.length > 1}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -290,7 +306,7 @@
               >-{line.text}</span
             >{:else}<span class="block text-zinc-500"> {line.text}</span>{/if}{/each}</pre>
     {:else}
-      {@const previewText = getPreviewText(action.result)}
+      {@const previewText = action.result ? getPreviewText(action.result) : null}
 
       <div class="px-3 py-2">
         {#if previewText}

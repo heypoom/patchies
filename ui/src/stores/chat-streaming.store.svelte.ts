@@ -73,7 +73,8 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
       return mode?.toolCallLabel ?? mode?.label ?? name;
     });
 
-const applyActionToCallbacks = (action: ChatAction, aiCallbacks: AiPromptCallbacks): void =>
+const applyActionToCallbacks = (action: ChatAction, aiCallbacks: AiPromptCallbacks): void => {
+  if (!action.result) return;
   match(action.result)
     .with({ kind: 'single' }, (r) => aiCallbacks.onInsertObject(r.type, r.data))
     .with({ kind: 'multi' }, (r) => aiCallbacks.onInsertMultipleObjects(r.nodes, r.edges))
@@ -86,6 +87,7 @@ const applyActionToCallbacks = (action: ChatAction, aiCallbacks: AiPromptCallbac
       aiCallbacks.onDisconnectEdges(r.edgeIds);
     })
     .exhaustive();
+};
 
 export interface StartStreamParams {
   chatHistory: ChatMessage[];
@@ -198,7 +200,7 @@ export const chatStreamStore = {
               session.actions.set(action.id, action);
               session.pendingActions = [...session.pendingActions, action.id];
 
-              if (params.autoApprove) {
+              if (params.autoApprove && action.state !== 'failed') {
                 applyActionToCallbacks(action, params.aiCallbacks!);
                 const existing = session.actions.get(action.id);
                 if (existing) session.actions.set(action.id, { ...existing, state: 'applied' });
@@ -225,7 +227,11 @@ export const chatStreamStore = {
       const completedActions: ThreadActionRef[] = session.pendingActions.map((id) => {
         const action = session.actions.get(id);
 
-        const summary = action
+        if (action?.state === 'failed') {
+          return { id, type: action.mode, state: 'failed' as const, error: action.error };
+        }
+
+        const summary = action?.result
           ? match(action.result)
               .with({ kind: 'single' }, (r) => `Created ${r.type}`)
               .with({ kind: 'multi' }, (r) => `Created ${r.nodes.length} objects`)
@@ -246,7 +252,7 @@ export const chatStreamStore = {
           id,
           type: action?.mode ?? 'unknown',
           summary,
-          state: action?.state === 'dismissed' ? 'dismissed' : 'applied'
+          state: action?.state === 'dismissed' ? ('dismissed' as const) : ('applied' as const)
         };
       });
 
