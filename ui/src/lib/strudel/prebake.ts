@@ -84,8 +84,8 @@ export async function prebake() {
 
   // .ngea("tuning-name") — map pattern indices to NGEA gong frequencies
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Pattern.prototype.ngea = function (this: any, name: string) {
-    const freqs = ngeaFreqs(name);
+  Pattern.prototype.ngea = function (this: any, name: unknown) {
+    const freqs = ngeaFreqs(String(name));
 
     return this.fmap((value: unknown) => {
       const rec =

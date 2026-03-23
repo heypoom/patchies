@@ -64,6 +64,7 @@ import {
   visionClassifyPrompt
 } from '$objects/mediapipe/prompts';
 import { serialPrompt, serialTermPrompt, dmxPrompt } from '$objects/serial/prompts';
+import { ngeaPrompt } from '$objects/ngea/prompts';
 
 /**
  * Mapping of object types to their instruction prompts.
@@ -128,7 +129,8 @@ export const objectPrompts: Record<string, string> = {
   'vision.segment': visionSegmentPrompt,
   'vision.detect': visionDetectPrompt,
   'vision.gesture': visionGesturePrompt,
-  'vision.classify': visionClassifyPrompt
+  'vision.classify': visionClassifyPrompt,
+  ngea: ngeaPrompt
 };
 
 /**

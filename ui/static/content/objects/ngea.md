@@ -21,14 +21,17 @@ directly on any pattern — no node connection needed:
 
 ```js
 // Chain directly on a pattern — maps indices to gong frequencies
-"0 2 4 6 3 1".slow(2).ngea("khong-wong-yai")
+"0 2 4 6 3 1".slow(2).ngea('khong-wong-yai')
 
 // Or use ngea() as a frequency array lookup
-note("0 2 4 1".slow(2)).freq(i => ngea("sumba")[i])
+note("0 2 4 1".slow(2)).freq(i => ngea('sumba')[i])
 ```
 
+Use **single quotes** for the tuning name — double quotes are
+interpreted as mini-notation in Strudel.
+
 Names are partial, case-insensitive matches against the tuning title
-(e.g. `"khong"`, `"sumba"`, `"tboli"`, `"ede bih"`).
+(e.g. `'khong'`, `'sumba'`, `'tboli'`, `'ede bih'`).
 
 ## See Also
 
