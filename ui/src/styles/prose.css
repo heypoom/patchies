@@ -12,7 +12,7 @@
   }
 
   .prose-markdown-sm {
-    --prose-scale: 0.73;
+    --prose-scale: 0.8;
     --prose-base: calc(0.9375rem * var(--prose-scale));
     --prose-code: calc(0.875rem * var(--prose-scale));
     --prose-h1: calc(1.5rem * var(--prose-scale));

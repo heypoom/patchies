@@ -378,9 +378,9 @@
   >
     {#if session.messages.length === 0 && !session.isLoading}
       <div class="flex h-full flex-col items-center justify-center gap-3 text-zinc-600">
-        <MessageSquare class="h-8 w-8" />
+        <MessageSquare class="h-7 w-7 opacity-50" />
 
-        <p class="text-center font-mono text-[10px]">
+        <p class="text-center text-xs text-zinc-500">
           Ask anything about Patchies,<br />or get help with your patch
         </p>
       </div>
@@ -389,7 +389,7 @@
     {#each session.messages as message, index (index)}
       {#if message.role === 'user'}
         <div
-          class="max-w-[90%] rounded border border-zinc-700 bg-zinc-800/60 px-3 py-2 text-xs leading-relaxed text-zinc-200"
+          class="max-w-[90%] rounded-lg border border-zinc-700/60 bg-zinc-800/50 px-3 py-2.5 text-xs leading-relaxed text-zinc-200"
         >
           {#if message.images?.length}
             <div class="mb-1.5 flex flex-wrap gap-1">
@@ -411,8 +411,7 @@
                 >
                   <Youtube class="h-3 w-3 shrink-0 text-red-400" />
 
-                  <span class="truncate font-mono text-[10px] text-zinc-400"
-                    >YouTube: {getYouTubeLabel(url)}</span
+                  <span class="truncate text-xs text-zinc-400">YouTube: {getYouTubeLabel(url)}</span
                   >
                 </div>
               {/each}
@@ -420,7 +419,7 @@
           {/if}
 
           {#if message.content}
-            <pre class="font-sans whitespace-pre-wrap">{message.content}</pre>
+            <p class="whitespace-pre-wrap">{message.content}</p>
           {/if}
         </div>
       {:else if message.thinking}
@@ -433,7 +432,7 @@
               Thinking
             </summary>
 
-            <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
+            <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-600">
               <MarkdownContent markdown={message.thinking} />
             </div>
           </details>
@@ -514,7 +513,7 @@
               Thinking
             </summary>
 
-            <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-700">
+            <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-600">
               <MarkdownContent markdown={session.thinkingText} />
             </div>
           </details>
@@ -583,7 +582,7 @@
       <div class="mb-2 flex flex-wrap gap-1">
         <button
           onclick={() => personaStore.setActive(null)}
-          class="cursor-pointer rounded px-2 py-0.5 font-mono text-[10px] transition-colors {$personaStore.activeId ===
+          class="cursor-pointer rounded px-2 py-0.5 text-xs transition-colors {$personaStore.activeId ===
           null
             ? 'bg-zinc-600 text-zinc-100'
             : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
@@ -595,7 +594,7 @@
           <div class="flex items-center gap-0.5">
             <button
               onclick={() => personaStore.setActive(p.id)}
-              class="cursor-pointer rounded px-2 py-0.5 font-mono text-[10px] transition-colors {$personaStore.activeId ===
+              class="cursor-pointer rounded px-2 py-0.5 text-xs transition-colors {$personaStore.activeId ===
               p.id
                 ? 'bg-purple-700/60 text-purple-200'
                 : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
@@ -616,7 +615,7 @@
 
       <!-- Active persona prompt preview -->
       {#if activePersona}
-        <p class="mx-2 mb-1 line-clamp-3 font-mono text-[10px] leading-relaxed text-zinc-600">
+        <p class="mx-2 mb-1 line-clamp-3 text-xs leading-relaxed text-zinc-500">
           {activePersona.prompt}
         </p>
       {/if}
@@ -644,7 +643,7 @@
                 newPersonaName = '';
                 newPersonaPrompt = '';
               }}
-              class="cursor-pointer rounded px-2 py-0.5 font-mono text-[10px] text-zinc-500 hover:text-zinc-300"
+              class="cursor-pointer rounded px-2 py-0.5 text-xs text-zinc-500 hover:text-zinc-300"
             >
               Cancel
             </button>
@@ -659,7 +658,7 @@
                 }
               }}
               disabled={!newPersonaName.trim() || !newPersonaPrompt.trim()}
-              class="cursor-pointer rounded bg-purple-700/60 px-2 py-0.5 font-mono text-[10px] text-purple-200 hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
+              class="cursor-pointer rounded bg-purple-700/60 px-2 py-0.5 text-xs text-purple-200 hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Save
             </button>
@@ -668,7 +667,7 @@
       {:else}
         <button
           onclick={() => (addingCustom = true)}
-          class="mx-2 cursor-pointer font-mono text-[10px] text-zinc-600 hover:text-zinc-400"
+          class="mx-2 cursor-pointer text-xs text-zinc-600 hover:text-zinc-400"
         >
           + Add custom
         </button>
@@ -679,7 +678,7 @@
   <!-- Settings panel -->
   {#if settingsPanelOpen}
     <div class="flex flex-col gap-1.5 border-t border-zinc-800 bg-zinc-900/60 px-3 py-2">
-      <label class="flex cursor-pointer items-center gap-2 font-mono text-[10px] text-zinc-400">
+      <label class="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
         <input
           type="checkbox"
           checked={$chatSettingsStore.expandThinking}
@@ -695,11 +694,11 @@
     <div
       class="flex shrink-0 items-center justify-between border-t border-zinc-800 bg-zinc-900/80 px-3 py-2"
     >
-      <span class="font-mono text-xs text-zinc-400">Clear chat?</span>
+      <span class="text-xs text-zinc-400">Clear chat?</span>
       <div class="flex items-center gap-2">
         <button
           onclick={() => (confirmingClear = false)}
-          class="cursor-pointer rounded px-3 py-1 font-mono text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+          class="cursor-pointer rounded px-3 py-1 text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
         >
           Cancel
         </button>
@@ -708,7 +707,7 @@
             confirmingClear = false;
             handleClear();
           }}
-          class="cursor-pointer rounded bg-red-900/60 px-3 py-1 font-mono text-xs text-red-300 transition-colors hover:bg-red-800/60"
+          class="cursor-pointer rounded bg-red-900/60 px-3 py-1 text-xs text-red-300 transition-colors hover:bg-red-800/60"
         >
           Clear
         </button>
@@ -738,7 +737,7 @@
                 : 'hover:bg-zinc-800/60'}"
             >
               <span class="font-mono text-xs text-zinc-100">{cmd.name}</span>
-              <span class="font-mono text-[10px] text-zinc-500">{cmd.description}</span>
+              <span class="text-xs text-zinc-500">{cmd.description}</span>
             </button>
           {/each}
         </div>
@@ -769,7 +768,7 @@
       <div class="flex items-center gap-1">
         <button
           onclick={() => (personaPanelOpen = !personaPanelOpen)}
-          class="flex h-6 cursor-pointer items-center gap-1 rounded px-1.5 font-mono text-[10px] transition-colors {personaPanelOpen ||
+          class="flex h-6 cursor-pointer items-center gap-1 rounded px-1.5 text-xs transition-colors {personaPanelOpen ||
           activePersona
             ? 'bg-purple-900/50 text-purple-400 hover:bg-purple-900/80'
             : 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-400'}"
