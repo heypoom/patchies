@@ -6,7 +6,8 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { ngeaSchema } from '$lib/objects/schemas/ngea';
-  import { NGEA_TUNINGS, findTuning } from '../data';
+  import { NGEA_TUNINGS } from '../data';
+  import { findTuning } from '../utils';
   import { ChevronDown, Info, X } from '@lucide/svelte/icons';
 
   let {
