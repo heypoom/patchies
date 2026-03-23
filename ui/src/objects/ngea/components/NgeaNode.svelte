@@ -6,8 +6,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { ngeaSchema } from '../schema';
-  import { NGEA_TUNINGS } from '../data';
-  import { findTuning } from '../utils';
+  import type { NgeaTuning } from '../data';
   import { ChevronDown, Info, X } from '@lucide/svelte/icons';
 
   let {
@@ -23,14 +22,23 @@
   const { updateNodeData } = useSvelteFlow();
 
   let messageContext: MessageContext;
+  let tunings = $state<NgeaTuning[]>([]);
+
+  const findTuning = (query: string) => {
+    const q = query.toLowerCase();
+    return tunings.find((t) => t.title.toLowerCase().includes(q));
+  };
+
   let showInfo = $derived(data.showInfo ?? false);
-  let currentTuningTitle = $derived(data.tuning ?? NGEA_TUNINGS[0].title);
+  let currentTuningTitle = $derived(data.tuning ?? tunings[0]?.title ?? '');
   let currentIndex = $derived(data.index ?? 0);
 
-  const currentTuning = $derived(findTuning(currentTuningTitle) ?? NGEA_TUNINGS[0]);
-  const gongCount = $derived(currentTuning.data.length);
+  const currentTuning = $derived(findTuning(currentTuningTitle) ?? tunings[0]);
+  const gongCount = $derived(currentTuning?.data.length ?? 0);
 
   function sendGong(index: number): void {
+    if (!currentTuning) return;
+
     const gong = currentTuning.data[index];
     if (!gong) return;
 
@@ -79,7 +87,11 @@
       .otherwise(() => {});
   };
 
-  onMount(() => {
+  onMount(async () => {
+    const { NGEA_TUNINGS } = await import('../data');
+
+    tunings = NGEA_TUNINGS;
+
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
   });
@@ -99,14 +111,20 @@
   );
 
   const sourceText = $derived(
-    typeof currentTuning.source === 'string'
-      ? currentTuning.source
-      : currentTuning.source.src
-        ? currentTuning.source.title
-        : ''
+    !currentTuning
+      ? ''
+      : typeof currentTuning.source === 'string'
+        ? currentTuning.source
+        : currentTuning.source.src
+          ? currentTuning.source.title
+          : ''
   );
   const sourceUrl = $derived(
-    typeof currentTuning.source === 'object' ? currentTuning.source.src : currentTuning.source
+    !currentTuning
+      ? ''
+      : typeof currentTuning.source === 'object'
+        ? currentTuning.source.src
+        : currentTuning.source
   );
 </script>
 
@@ -167,7 +185,7 @@
           value={currentTuningTitle}
           onchange={onTuningChange}
         >
-          {#each NGEA_TUNINGS as t, index (index)}
+          {#each tunings as t, index (index)}
             <option value={t.title}>{t.title}</option>
           {/each}
         </select>
@@ -183,12 +201,12 @@
       </span>
 
       <span class="max-w-[200px] truncate rounded bg-zinc-800 px-1.5 py-0.5 text-zinc-400">
-        {currentTuning.location}
+        {currentTuning?.location ?? ''}
       </span>
     </div>
 
     <!-- Info panel (expandable) -->
-    {#if showInfo}
+    {#if showInfo && currentTuning}
       <div
         class="nowheel nodrag h-[180px] overflow-y-auto border-t border-zinc-700 px-2 py-2 font-mono text-[10px] text-zinc-400"
       >
