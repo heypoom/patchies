@@ -94,7 +94,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'chuck~',
       'csound~',
       'tone~',
-      'bytebeat~'
+      'bytebeat~',
+      'ngea'
     ]
   },
   {
@@ -276,6 +277,6 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Experimental',
     description: 'Unstable or work-in-progress',
     icon: 'FlaskConical',
-    objects: ['bchrn', 'ngea']
+    objects: ['bchrn']
   }
 ];
