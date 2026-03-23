@@ -1,3 +1,6 @@
+import { NGEA_TUNINGS } from '$objects/ngea/data';
+import { findTuning } from '$objects/ngea/utils';
+
 export async function prebake() {
   // Load superdough first to initialize AudioWorklets
   // @ts-expect-error -- no typedef
@@ -67,10 +70,31 @@ export async function prebake() {
 
   aliasBank(`${tidalSamples}/tidal-drum-machines-alias.json`);
 
+  // Add NGEA tunings as a global function and Pattern method
+  const ngeaFreqs = (name: string): number[] => {
+    const tuning = findTuning(name) ?? NGEA_TUNINGS[0];
+    return tuning.data.map((g) => g.freq);
+  };
+
+  evalScope({ ngea: ngeaFreqs });
+
   // Add Pattern extensions
   const { noteToMidi, valueToMidi, Pattern } = strudelCore;
   const maxPan = noteToMidi('C8');
   const panwidth = (pan: number, width: number) => pan * width + (1 - width) / 2;
+
+  // .ngea("tuning-name") — map pattern indices to NGEA gong frequencies
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Pattern.prototype.ngea = function (this: any, name: unknown) {
+    const freqs = ngeaFreqs(String(name));
+
+    return this.fmap((value: unknown) => {
+      const rec =
+        typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+      const idx = Math.abs(Math.round(Number(value))) % freqs.length;
+      return { ...rec, freq: freqs[idx] };
+    });
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Pattern.prototype.piano = function (this: any) {

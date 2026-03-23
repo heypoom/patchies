@@ -94,7 +94,8 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'chuck~',
       'csound~',
       'tone~',
-      'bytebeat~'
+      'bytebeat~',
+      'ngea'
     ]
   },
   {
