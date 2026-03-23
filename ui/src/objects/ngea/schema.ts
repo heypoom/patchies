@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 
-import type { ObjectSchema } from './types';
-import { Bang } from './common';
+import type { ObjectSchema } from '$lib/objects/schemas/types';
+import { Bang } from '$lib/objects/schemas/common';
 
 /**
  * Schema for the ngea (Network Gong Ensemble Archive) object.

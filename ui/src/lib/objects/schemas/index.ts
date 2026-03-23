@@ -82,7 +82,7 @@ export * from './meter';
 export * from './sequencer';
 export * from './bytebeat';
 export * from './projmap';
-export * from './ngea';
+export * from '$objects/ngea/schema';
 export * from './from-v2-node';
 export * from '$objects/mediapipe/schemas';
 
@@ -170,7 +170,7 @@ import { meterSchema } from './meter';
 import { sequencerSchema } from './sequencer';
 import { bytebeatSchema } from './bytebeat';
 import { projmapSchema } from './projmap';
-import { ngeaSchema } from './ngea';
+import { ngeaSchema } from '$objects/ngea/schema';
 import { curveSchema } from '$objects/curve/schema';
 import { serialSchema, serialTermSchema, dmxSchema } from '$objects/serial/schema';
 import {
