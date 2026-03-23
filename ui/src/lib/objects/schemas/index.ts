@@ -172,6 +172,7 @@ import { bytebeatSchema } from './bytebeat';
 import { projmapSchema } from './projmap';
 import { ngeaSchema } from '$objects/ngea/schema';
 import { curveSchema } from '$objects/curve/schema';
+import { sheetSchema } from '$objects/sheet/schema';
 import { serialSchema, serialTermSchema, dmxSchema } from '$objects/serial/schema';
 import {
   visionHandSchema,
@@ -288,7 +289,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'vision.classify': visionClassifySchema,
   'vision.detect': visionDetectSchema,
   'vision.segment': visionSegmentSchema,
-  ngea: ngeaSchema
+  ngea: ngeaSchema,
+  sheet: sheetSchema
 };
 
 /**

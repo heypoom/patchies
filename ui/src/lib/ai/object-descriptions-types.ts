@@ -8,6 +8,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - msg: Send predefined messages
 - textbox: Text input and display
 - curve: Breakpoint curve editor
+- sheet: Spreadsheet grid — bang to output all cells as a 2D array, double-click to edit cells
 
 ## Audio I/O (Dedicated node types)
 - mic~: Audio input from microphone
