@@ -39,6 +39,7 @@
         class={['h-4 w-4 shrink-0 text-zinc-500 transition-transform', isOpen && 'rotate-180']}
       />
     </button>
+
     {#if isOpen}
       <div class={['border-t border-zinc-800', compact ? 'p-2 pt-0' : 'p-3 pt-0']}>
         <MessageTable

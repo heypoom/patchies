@@ -8,6 +8,7 @@
     getSchemaTypeName
   } from '$lib/objects/schemas/utils';
   import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+  import { SvelteSet } from 'svelte/reactivity';
 
   interface Props {
     messages: MessageSchema[];
@@ -21,7 +22,7 @@
   const SHOW_LIMIT = 6;
 
   // Track which complex messages are expanded (by index)
-  let expanded = $state<Set<number>>(new Set());
+  let expanded = new SvelteSet();
   let showAll = $state(false);
 
   function toggleExpand(index: number) {
@@ -30,8 +31,6 @@
     } else {
       expanded.add(index);
     }
-
-    expanded = new Set(expanded);
   }
 </script>
 
@@ -45,16 +44,16 @@
     </thead>
 
     <tbody class="divide-y divide-zinc-800/50">
-      {#each showAll ? messages : messages.slice(0, SHOW_LIMIT) as msg, i}
+      {#each showAll ? messages : messages.slice(0, SHOW_LIMIT) as msg, index (index)}
         {@const isComplex = isComplexSchema(msg.schema)}
         {@const typeName = getSchemaTypeName(msg.schema)}
-        {@const isExpanded = expanded.has(i)}
+        {@const isExpanded = expanded.has(index)}
 
         <tr>
           <td class="py-2 pr-4 align-top">
             {#if isComplex}
               <button
-                onclick={() => toggleExpand(i)}
+                onclick={() => toggleExpand(index)}
                 class="flex cursor-pointer items-center gap-1"
               >
                 <ChevronRight

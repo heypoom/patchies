@@ -94,6 +94,12 @@ export interface ObjectInlet {
    */
   hideTextParam?: boolean;
 
+  /**
+   * When true, hide this inlet from documentation.
+   * Use this for internal inlets that are controlled from other inlets.
+   */
+  hideDocs?: boolean;
+
   /** Floating point precision for displays. */
   precision?: number;
 

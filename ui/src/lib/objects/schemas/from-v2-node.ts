@@ -138,7 +138,10 @@ interface V2NodeClass {
  * ```
  */
 export function schemaFromNode(NodeClass: V2NodeClass, category: string): ObjectSchema {
-  const inlets = (NodeClass.inlets ?? []).map((inlet, i) => inletToSchema(inlet, i));
+  const inlets = (NodeClass.inlets ?? [])
+    .map((inlet, i) => ({ inlet, i }))
+    .filter(({ inlet }) => !inlet.hideDocs)
+    .map(({ inlet, i }) => inletToSchema(inlet, i));
   const outlets = (NodeClass.outlets ?? []).map((outlet, i) => outletToSchema(outlet, i));
 
   // Generate tags from type name and group if not provided

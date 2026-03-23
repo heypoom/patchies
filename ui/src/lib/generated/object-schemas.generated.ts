@@ -1044,12 +1044,6 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
           }
         ],
         handle: { handleType: 'message', handleId: 1 }
-      },
-      {
-        id: 'delay',
-        type: 'int',
-        description: 'Delay time in ms',
-        messages: [{ schema: Type.Integer(), description: 'Delay time in ms' }]
       }
     ],
     outlets: [

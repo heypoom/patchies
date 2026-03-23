@@ -52,7 +52,8 @@ export class DelayObject implements TextObjectV2 {
       type: 'int',
       description: 'Delay time in ms',
       defaultValue: 1000,
-      hideInlet: true
+      hideInlet: true,
+      hideDocs: true
     }
   ];
 
