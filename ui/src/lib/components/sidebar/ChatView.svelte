@@ -723,7 +723,7 @@
   {/if}
 
   <!-- Input area -->
-  <div>
+  <div class={expandedCallData ? 'hidden' : ''}>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="m-2.5" ondrop={handleDrop} ondragover={handleDragOver}>
       <ChatStagedMedia
