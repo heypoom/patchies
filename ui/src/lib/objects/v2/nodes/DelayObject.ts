@@ -5,6 +5,7 @@ import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
 import { sym } from '$lib/objects/schemas/helpers';
 import { schema } from '$lib/objects/schemas/types';
+import { Type } from '@sinclair/typebox';
 
 const BangMsg = sym('bang');
 const ClearMsg = sym('clear');
@@ -38,9 +39,9 @@ export class DelayObject implements TextObjectV2 {
       name: 'cmd',
       type: 'message',
       hot: true,
-      description:
-        'Number sets delay in ms; bang re-sends last value; clear cancels pending; flush outputs all pending immediately',
+      description: 'Set delay time or control pending messages.',
       messages: [
+        { schema: Type.Number(), description: 'Set delay time in ms' },
         { schema: BangMsg, description: 'Re-send last received value after delay' },
         { schema: ClearMsg, description: 'Cancel all pending messages' },
         { schema: FlushMsg, description: 'Output all pending messages immediately' }
