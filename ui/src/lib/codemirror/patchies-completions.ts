@@ -246,6 +246,20 @@ const patchiesAPICompletions: Completion[] = [
     info: 'Flash the node border to indicate activity',
     apply: 'flash()'
   },
+  {
+    label: 'focusObject',
+    type: 'function',
+    detail: '(id: string) => void',
+    info: 'Pan and zoom the canvas to focus a node by ID',
+    apply: 'focusObject()'
+  },
+  {
+    label: 'setBackgroundOutput',
+    type: 'function',
+    detail: '(id: string | null) => void',
+    info: 'Set the background output to a node by ID, or pass null to clear',
+    apply: 'setBackgroundOutput()'
+  },
   // Storage
   {
     label: 'kv',
@@ -415,6 +429,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'elem~'
   ],
   flash: ['js', 'worker'],
+  focusObject: ['js'],
+  setBackgroundOutput: ['js'],
   settings: [
     'js',
     'worker',

@@ -11,6 +11,9 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { requestFocusNodeId } from '../../../stores/ui.store';
+  import { overrideOutputNodeId } from '../../../stores/renderer.store';
+  import { GLSystem } from '$lib/canvas/GLSystem';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -165,7 +168,15 @@
         setPortCount,
         setRunOnMount,
         setTitle,
-        extraContext: { flash, settings: settingsAPI },
+        extraContext: {
+          flash,
+          focusObject: (id: string) => requestFocusNodeId.set(id),
+          setBackgroundOutput: (id: string | null) => {
+            overrideOutputNodeId.set(id);
+            GLSystem.getInstance().setOverrideOutputNode(id);
+          },
+          settings: settingsAPI
+        },
         onSchedulerCallbackRegistered: () => {
           isTimerCallbackActive = true;
         }

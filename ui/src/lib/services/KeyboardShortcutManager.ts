@@ -122,6 +122,18 @@ export class KeyboardShortcutManager {
     const key = event.key.toLowerCase();
     const isMod = event.metaKey || event.ctrlKey;
 
+    // CMD+Shift+C: Copy node ID to clipboard
+    if (key === 'c' && isMod && event.shiftKey && !isTyping) {
+      const nodeId = this.actions.getSelectedNodeId();
+      if (nodeId) {
+        event.preventDefault();
+        navigator.clipboard.writeText(nodeId);
+        toast.success(`Copied node ID: ${nodeId}`);
+      }
+
+      return;
+    }
+
     // CMD+C: Copy
     if (key === 'c' && isMod && !isTyping && hasNodeSelected && !hasTextSelection) {
       event.preventDefault();
