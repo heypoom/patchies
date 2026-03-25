@@ -253,7 +253,6 @@ export default defineConfig(() => ({
   ],
   optimizeDeps: {
     exclude: [
-      'regl',
       '@mediapipe/tasks-vision',
       'pyodide',
       '@rollup/browser',
