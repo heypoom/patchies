@@ -37,7 +37,8 @@
     isCablesVisible,
     connectingFromAcceptsFloat,
     connectingFromIsAudioParam,
-    requestFocusNodeId
+    requestFocusNodeId,
+    requestFitView
   } from '../../stores/ui.store';
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
@@ -288,7 +289,8 @@
     () => $requestFocusNodeId,
     () => nodes,
     (n) => (nodes = n),
-    fitView
+    fitView,
+    () => $requestFitView
   );
 
   useNodeLabels(() => nodes);

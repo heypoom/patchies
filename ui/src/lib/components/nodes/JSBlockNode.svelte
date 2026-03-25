@@ -11,7 +11,8 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
-  import { requestFocusNodeId } from '../../../stores/ui.store';
+  import { requestFitView } from '../../../stores/ui.store';
+  import type { FitViewOptions } from '@xyflow/svelte';
   import { overrideOutputNodeId } from '../../../stores/renderer.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
 
@@ -170,7 +171,7 @@
         setTitle,
         extraContext: {
           flash,
-          focusObject: (id: string) => requestFocusNodeId.set(id),
+          focusObjects: (options: FitViewOptions) => requestFitView.set(options),
           setBackgroundOutput: (id: string | null) => {
             overrideOutputNodeId.set(id);
             GLSystem.getInstance().setOverrideOutputNode(id);

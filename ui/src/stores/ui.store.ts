@@ -1,4 +1,5 @@
 import { writable, derived, readable } from 'svelte/store';
+import type { FitViewOptions } from '@xyflow/svelte';
 import { nanoid } from 'nanoid';
 
 // Mobile detection (768px breakpoint)
@@ -41,6 +42,9 @@ export const selectedNodeInfo = writable<{
 
 /** Set to a nodeId to request the canvas to select + pan to that node. Cleared after handled. */
 export const requestFocusNodeId = writable<string | null>(null);
+
+/** Set to FitViewOptions to request the canvas to pan/zoom. Cleared after handled. */
+export const requestFitView = writable<FitViewOptions | null>(null);
 
 /** Maps nodeId → display label (title/name/expr fallback) for sidebar components. */
 export const nodeLabelsStore = writable<Record<string, string>>({});

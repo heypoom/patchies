@@ -247,11 +247,11 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'flash()'
   },
   {
-    label: 'focusObject',
+    label: 'focusObjects',
     type: 'function',
-    detail: '(id: string) => void',
-    info: 'Pan and zoom the canvas to focus a node by ID',
-    apply: 'focusObject()'
+    detail: '(options: FitViewOptions) => void',
+    info: 'Pan and zoom the canvas using fitView options, e.g. { nodes: [{ id: "node-1" }], duration: 500, padding: 0.3 }',
+    apply: 'focusObjects()'
   },
   {
     label: 'setBackgroundOutput',
@@ -429,7 +429,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'elem~'
   ],
   flash: ['js', 'worker'],
-  focusObject: ['js'],
+  focusObjects: ['js'],
   setBackgroundOutput: ['js'],
   settings: [
     'js',

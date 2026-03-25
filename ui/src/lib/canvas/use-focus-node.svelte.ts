@@ -1,6 +1,6 @@
 import { tick, untrack } from 'svelte';
 import type { Node, FitViewOptions } from '@xyflow/svelte';
-import { requestFocusNodeId, nodeLabelsStore } from '../../stores/ui.store';
+import { requestFocusNodeId, requestFitView, nodeLabelsStore } from '../../stores/ui.store';
 
 /**
  * Reactive effect: when requestFocusNodeId is set, select and pan to that node.
@@ -10,7 +10,8 @@ export function useFocusNode(
   getFocusId: () => string | null,
   getNodes: () => Node[],
   setNodes: (nodes: Node[]) => void,
-  fitView: (options?: FitViewOptions) => void
+  fitView: (options?: FitViewOptions) => void,
+  getFitViewOptions: () => FitViewOptions | null
 ) {
   $effect(() => {
     const nodeId = getFocusId();
@@ -29,6 +30,16 @@ export function useFocusNode(
       });
 
       requestFocusNodeId.set(null);
+    });
+  });
+
+  $effect(() => {
+    const options = getFitViewOptions();
+    if (!options) return;
+
+    tick().then(() => {
+      fitView(options);
+      requestFitView.set(null);
     });
   });
 }
