@@ -626,6 +626,7 @@
         }
       },
       getSelectedNodeId: () => (selectedNodeIds.length === 1 ? selectedNodeIds[0] : null),
+      getSelectedNodeIds: () => selectedNodeIds,
       isAiPromptOpen: () => aiPromptInstances.some((i) => i.open)
     });
 
