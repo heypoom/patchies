@@ -259,6 +259,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('send.vdo', () => ({ channel: 'foo' }))
     .with('recv.vdo', () => ({ channel: 'foo' }))
     .with('note', () => ({ text: '', color: '#fef3c7', fontSize: 14 }))
+    .with('card', () => ({ text: '', color: '#1e293b', fontSize: 28, bordered: false }))
     .with('uiua', () => ({
       expr: `Life ← ↥∩=₃⟜+⊸(/+↻⊂A₂C₂)
 ⁅×0.6 gen⊙⚂ ˙⊟30 # Init
