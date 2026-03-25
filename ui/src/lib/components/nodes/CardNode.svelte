@@ -143,7 +143,7 @@
       {:else}
         <div
           class="flex h-full w-full items-center justify-center overflow-hidden px-3 text-center"
-          style="font-size: {fontSize}px; color: {textColor}; line-height: 1.2;"
+          style="font-size: {fontSize}px; color: {textColor}; line-height: 1.2; white-space: pre-wrap;"
         >
           {#if text}
             {text}
