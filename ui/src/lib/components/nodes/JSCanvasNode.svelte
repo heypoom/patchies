@@ -251,6 +251,15 @@
     glSystem.toggleNodePause(nodeId);
   }
 
+  $effect(() => {
+    const handle = (event: { nodeId: string; paused: boolean }) => {
+      if (event.nodeId !== nodeId) return;
+      if (event.paused !== (data.paused ?? false)) togglePlayback();
+    };
+    eventBus.addEventListener('nodeSetPaused', handle);
+    return () => eventBus.removeEventListener('nodeSetPaused', handle);
+  });
+
   function updateCanvas() {
     // Clear console and error highlighting on re-run
     consoleRef?.clearConsole();

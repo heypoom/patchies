@@ -311,6 +311,15 @@
     await glSystem.setBitmapSource(nodeId, canvas);
   }
 
+  $effect(() => {
+    const handle = (event: { nodeId: string; paused: boolean }) => {
+      if (event.nodeId !== nodeId) return;
+      if (event.paused !== (data.paused ?? false)) togglePlayback();
+    };
+    eventBus.addEventListener('nodeSetPaused', handle);
+    return () => eventBus.removeEventListener('nodeSetPaused', handle);
+  });
+
   function togglePlayback() {
     if (data.paused) {
       // Unpause - restart the animation loop with stored callback

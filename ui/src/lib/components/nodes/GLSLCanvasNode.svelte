@@ -193,6 +193,15 @@
     };
   });
 
+  $effect(() => {
+    const handle = (event: { nodeId: string; paused: boolean }) => {
+      if (event.nodeId !== nodeId) return;
+      if (event.paused !== isPaused) togglePause();
+    };
+    eventBus.addEventListener('nodeSetPaused', handle);
+    return () => eventBus.removeEventListener('nodeSetPaused', handle);
+  });
+
   // Listen for shader compilation errors and extract line numbers
   $effect(() => {
     const handleConsoleOutput = (event: ConsoleOutputEvent) => {

@@ -31,6 +31,8 @@ export const jsRunnerInstructions = `
 - setTitle(title) - Set node display title
 - focusObjects(options) - Pan and zoom the canvas using fitView options, e.g. { nodes: [{ id: 'node-1' }], duration: 800, padding: 0.3 }
 - setBackgroundOutput(id) - Set a node as the background visual output by ID, or null to clear
+- freezeFrame(id) - Freeze (pause) rendering of a visual node by ID (works on canvas, p5, hydra, glsl, swgl)
+- unfreezeFrame(id) - Unfreeze (unpause) rendering of a visual node by ID
 - setInterval(cb, ms), setTimeout(cb, ms) - Timers with auto-cleanup
 - delay(ms) - Promise that resolves after ms (rejects if node stops)
 - requestAnimationFrame(cb) - Animation frame with auto-cleanup

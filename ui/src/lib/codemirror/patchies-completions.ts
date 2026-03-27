@@ -254,6 +254,20 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'focusObjects()'
   },
   {
+    label: 'freezeFrame',
+    type: 'function',
+    detail: '(id: string) => void',
+    info: 'Freeze (pause) the rendering of a visual node by ID',
+    apply: 'freezeFrame()'
+  },
+  {
+    label: 'unfreezeFrame',
+    type: 'function',
+    detail: '(id: string) => void',
+    info: 'Unfreeze (unpause) the rendering of a visual node by ID',
+    apply: 'unfreezeFrame()'
+  },
+  {
     label: 'setBackgroundOutput',
     type: 'function',
     detail: '(id: string | null) => void',
@@ -431,6 +445,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   flash: ['js', 'worker'],
   focusObjects: ['js'],
   setBackgroundOutput: ['js'],
+  freezeFrame: ['js'],
+  unfreezeFrame: ['js'],
   settings: [
     'js',
     'worker',

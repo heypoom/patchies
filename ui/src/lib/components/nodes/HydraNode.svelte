@@ -209,6 +209,15 @@
     eventBus.removeEventListener('nodeMouseScopeUpdate', handleMouseScopeUpdate);
   });
 
+  $effect(() => {
+    const handle = (event: { nodeId: string; paused: boolean }) => {
+      if (event.nodeId !== nodeId) return;
+      if (event.paused !== isPaused) togglePause();
+    };
+    eventBus.addEventListener('nodeSetPaused', handle);
+    return () => eventBus.removeEventListener('nodeSetPaused', handle);
+  });
+
   function updateHydra() {
     // Clear console and error line highlighting on re-run
     consoleRef?.clearConsole();
