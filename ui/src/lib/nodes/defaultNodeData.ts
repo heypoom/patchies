@@ -37,7 +37,6 @@ import {
   DEFAULT_SERIAL_TERMINAL_DATA,
   DEFAULT_DMX_DATA
 } from '$objects/serial/constants';
-import { DEFAULT_PROJMAP_NODE_DATA } from '$objects/projmap/constants';
 
 // TODO: make this type-safe!
 export type NodeData = {
@@ -259,7 +258,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('send.vdo', () => ({ channel: 'foo' }))
     .with('recv.vdo', () => ({ channel: 'foo' }))
     .with('note', () => ({ text: '', color: '#fef3c7', fontSize: 14 }))
-    .with('sign', () => ({ text: '', color: '#1e293b', fontSize: 28, bordered: false }))
+    .with('title', () => ({ text: '', color: 'transparent', fontSize: 28, bordered: false }))
     .with('uiua', () => ({
       expr: `Life ← ↥∩=₃⟜+⊸(/+↻⊂A₂C₂)
 ⁅×0.6 gen⊙⚂ ˙⊟30 # Init

@@ -64,6 +64,12 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     transform: createExprTransform('label', 'message')
   },
   {
+    names: ['title'],
+    nodeType: 'title',
+    description: 'Text with title',
+    transform: createExprTransform('title', 'text')
+  },
+  {
     names: ['link'],
     nodeType: 'link',
     description: 'URL link',

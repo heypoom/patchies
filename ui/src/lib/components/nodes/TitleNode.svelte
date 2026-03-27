@@ -6,6 +6,10 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
 
   const COLOR_PRESETS = [
+    { name: 'Transparent', value: 'transparent' },
+    { name: 'Black', value: '#09090b' },
+    { name: 'Dark', value: '#18181b' },
+    { name: 'White', value: '#ffffff' },
     { name: 'Yellow', value: '#fef3c7' },
     { name: 'Pink', value: '#fce7f3' },
     { name: 'Blue', value: '#dbeafe' },
@@ -13,11 +17,7 @@
     { name: 'Purple', value: '#f3e8ff' },
     { name: 'Orange', value: '#ffedd5' },
     { name: 'Cyan', value: '#cffafe' },
-    { name: 'Rose', value: '#ffe4e6' },
-    { name: 'White', value: '#ffffff' },
-    { name: 'Slate', value: '#1e293b' },
-    { name: 'Dark', value: '#18181b' },
-    { name: 'Black', value: '#09090b' }
+    { name: 'Rose', value: '#ffe4e6' }
   ] as const;
 
   const FONT_SIZES = [
@@ -50,12 +50,12 @@
 
   let showSettings = $state(false);
   let isEditing = $state(false);
-  let textareaElement: HTMLTextAreaElement | null = $state(null);
+  let editableRef: HTMLDivElement | null = $state(null);
 
-  const [defaultWidth, defaultHeight] = [240, 120];
+  const [defaultWidth, defaultHeight] = [250, 50];
 
   const text = $derived(node.data.text ?? '');
-  const color = $derived(node.data.color ?? '#1e293b');
+  const color = $derived(node.data.color ?? 'transparent');
   const fontSize = $derived(node.data.fontSize ?? 28);
   const bordered = $derived(node.data.bordered ?? false);
   const font = $derived(node.data.font ?? 'default');
@@ -65,6 +65,7 @@
 
   // Determine text color based on background brightness
   const textColor = $derived.by(() => {
+    if (color === 'transparent') return '#f4f4f5';
     const hex = color.replace('#', '');
     const r = parseInt(hex.slice(0, 2), 16);
     const g = parseInt(hex.slice(2, 4), 16);
@@ -82,7 +83,19 @@
     e.stopPropagation();
     isEditing = true;
     textTracker.onFocus();
-    setTimeout(() => textareaElement?.focus(), 10);
+
+    setTimeout(() => {
+      if (!editableRef) return;
+      editableRef.innerText = text;
+      editableRef.focus();
+      // Place cursor at end
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(editableRef);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }, 10);
   }
 
   function handleBlur() {
@@ -98,8 +111,8 @@
       .otherwise(() => {});
   }
 
-  function handleTextChange(e: Event) {
-    updateConfig({ text: (e.target as HTMLTextAreaElement).value });
+  function handleInput(e: Event) {
+    updateConfig({ text: (e.target as HTMLDivElement).innerText });
   }
 </script>
 
@@ -133,16 +146,16 @@
       tabindex="0"
     >
       {#if isEditing}
-        <textarea
-          bind:this={textareaElement}
-          value={text}
-          oninput={handleTextChange}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          bind:this={editableRef}
+          contenteditable="true"
+          oninput={handleInput}
           onblur={handleBlur}
           onkeydown={handleKeydown}
-          class="nodrag h-full w-full resize-none border-none bg-transparent text-center outline-none"
-          style="font-size: {fontSize}px; color: {textColor}; line-height: 1.2; padding: 8px; font-family: {fontFamily};"
-          placeholder="Double-click to edit..."
-        ></textarea>
+          class="nodrag flex h-full w-full cursor-text items-center justify-center overflow-hidden px-3 text-center outline-none"
+          style="font-size: {fontSize}px; color: {textColor}; line-height: 1.2; white-space: pre-wrap; font-family: {fontFamily};"
+        ></div>
       {:else}
         <div
           class="flex h-full w-full items-center justify-center overflow-hidden px-3 text-center"
@@ -151,7 +164,7 @@
           {#if text}
             {text}
           {:else}
-            <span class="text-sm italic" style="opacity: 0.3;">Double-click to edit</span>
+            <span class="text-sm" style="opacity: 0.6;">Double-click to edit</span>
           {/if}
         </div>
       {/if}
@@ -183,7 +196,7 @@
             <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">Color</label>
             <div class="flex flex-wrap gap-2">
-              {#each COLOR_PRESETS as preset}
+              {#each COLOR_PRESETS as preset (preset.name)}
                 <Tooltip.Root>
                   <Tooltip.Trigger>
                     <button
@@ -196,9 +209,11 @@
                         'h-6 w-6 cursor-pointer rounded-full border-2 transition-all',
                         color === preset.value
                           ? 'scale-110 border-white shadow-md'
-                          : 'border-transparent hover:scale-105 hover:border-zinc-400'
+                          : 'border-zinc-600 hover:scale-105 hover:border-zinc-400'
                       ]}
-                      style="background-color: {preset.value};"
+                      style={preset.value === 'transparent'
+                        ? 'background-image: linear-gradient(45deg, #888 25%, transparent 25%), linear-gradient(-45deg, #888 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #888 75%), linear-gradient(-45deg, transparent 75%, #888 75%); background-size: 8px 8px; background-position: 0 0, 0 4px, 4px -4px, -4px 0px; background-color: #fff;'
+                        : `background-color: ${preset.value};`}
                       aria-label={preset.name}
                     ></button>
                   </Tooltip.Trigger>

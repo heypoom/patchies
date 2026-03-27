@@ -166,6 +166,7 @@ import { bgOutSchema } from './bg-out';
 import { sendVdoSchema } from './send-vdo';
 import { recvVdoSchema } from './recv-vdo';
 import { noteSchema } from './note';
+import { titleSchema } from './title';
 import { meterSchema } from './meter';
 import { sequencerSchema } from './sequencer';
 import { bytebeatSchema } from './bytebeat';
@@ -273,6 +274,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'send.vdo': sendVdoSchema,
   'recv.vdo': recvVdoSchema,
   note: noteSchema,
+  title: titleSchema,
   'meter~': meterSchema,
   sequencer: sequencerSchema,
   'bytebeat~': bytebeatSchema,
