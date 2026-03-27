@@ -20,7 +20,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'peek',
       'label',
       'note',
-      'card'
+      'sign'
     ]
   },
   {

@@ -36,6 +36,7 @@
       color?: string;
       fontSize?: number;
       bordered?: boolean;
+      font?: 'default' | 'mono';
     };
     selected: boolean;
     width?: number;
@@ -57,6 +58,8 @@
   const color = $derived(node.data.color ?? '#1e293b');
   const fontSize = $derived(node.data.fontSize ?? 28);
   const bordered = $derived(node.data.bordered ?? false);
+  const font = $derived(node.data.font ?? 'default');
+  const fontFamily = $derived(font === 'mono' ? 'monospace' : 'inherit');
   const width = $derived(node.width ?? defaultWidth);
   const height = $derived(node.height ?? defaultHeight);
 
@@ -137,13 +140,13 @@
           onblur={handleBlur}
           onkeydown={handleKeydown}
           class="nodrag h-full w-full resize-none border-none bg-transparent text-center outline-none"
-          style="font-size: {fontSize}px; color: {textColor}; line-height: 1.2; padding: 8px;"
+          style="font-size: {fontSize}px; color: {textColor}; line-height: 1.2; padding: 8px; font-family: {fontFamily};"
           placeholder="Double-click to edit..."
         ></textarea>
       {:else}
         <div
           class="flex h-full w-full items-center justify-center overflow-hidden px-3 text-center"
-          style="font-size: {fontSize}px; color: {textColor}; line-height: 1.2; white-space: pre-wrap;"
+          style="font-size: {fontSize}px; color: {textColor}; line-height: 1.2; white-space: pre-wrap; font-family: {fontFamily};"
         >
           {#if text}
             {text}
@@ -225,6 +228,31 @@
                   ]}
                 >
                   {size.label}
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <!-- Font -->
+          <div>
+            <!-- svelte-ignore a11y_label_has_associated_control -->
+            <label class="mb-2 block text-xs font-medium text-zinc-300">Font</label>
+            <div class="flex gap-1">
+              {#each [{ label: 'Default', value: 'default' }, { label: 'Mono', value: 'mono' }] as opt}
+                <button
+                  onclick={() => {
+                    const old = font;
+                    updateConfig({ font: opt.value as 'default' | 'mono' });
+                    tracker.commit('font', old, opt.value);
+                  }}
+                  class={[
+                    'cursor-pointer rounded px-2 py-1 text-xs transition-colors',
+                    font === opt.value
+                      ? 'bg-zinc-600 text-white'
+                      : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                  ]}
+                >
+                  {opt.label}
                 </button>
               {/each}
             </div>

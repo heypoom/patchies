@@ -82,7 +82,7 @@ import TableNode from '$lib/components/nodes/TableNode.svelte';
 import SendVideoNode from '$lib/components/nodes/SendVideoNode.svelte';
 import RecvVideoNode from '$lib/components/nodes/RecvVideoNode.svelte';
 import PostItNode from '$lib/components/nodes/PostItNode.svelte';
-import CardNode from '$lib/components/nodes/CardNode.svelte';
+import SignNode from '$lib/components/nodes/SignNode.svelte';
 import ScopeNode from '$lib/components/nodes/ScopeNode.svelte';
 import UiuaNode from '$lib/components/nodes/UiuaNode.svelte';
 import BytebeatNode from '$lib/components/nodes/BytebeatNode.svelte';
@@ -188,7 +188,7 @@ export const nodeTypes: Record<string, any> = {
   'send.vdo': SendVideoNode,
   'recv.vdo': RecvVideoNode,
   note: PostItNode,
-  card: CardNode,
+  sign: SignNode,
   'scope~': ScopeNode,
   uiua: UiuaNode,
   'bytebeat~': BytebeatNode,
