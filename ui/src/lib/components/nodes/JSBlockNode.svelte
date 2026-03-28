@@ -177,13 +177,13 @@
             overrideOutputNodeId.set(id);
             GLSystem.getInstance().setOverrideOutputNode(id);
           },
-          freezeFrame: (id: string) =>
+          pauseObject: (id: string) =>
             PatchiesEventBus.getInstance().dispatch({
               type: 'nodeSetPaused',
               nodeId: id,
               paused: true
             }),
-          unfreezeFrame: (id: string) =>
+          unpauseObject: (id: string) =>
             PatchiesEventBus.getInstance().dispatch({
               type: 'nodeSetPaused',
               nodeId: id,

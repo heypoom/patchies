@@ -254,18 +254,18 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'focusObjects()'
   },
   {
-    label: 'freezeFrame',
+    label: 'pauseObject',
     type: 'function',
     detail: '(id: string) => void',
-    info: 'Freeze (pause) the rendering of a visual node by ID',
-    apply: 'freezeFrame()'
+    info: 'Pause a node by ID (works on visual nodes, MediaPipe, and any node that supports pausing)',
+    apply: 'pauseObject()'
   },
   {
-    label: 'unfreezeFrame',
+    label: 'unpauseObject',
     type: 'function',
     detail: '(id: string) => void',
-    info: 'Unfreeze (unpause) the rendering of a visual node by ID',
-    apply: 'unfreezeFrame()'
+    info: 'Unpause a node by ID',
+    apply: 'unpauseObject()'
   },
   {
     label: 'setBackgroundOutput',
@@ -445,8 +445,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   flash: ['js', 'worker'],
   focusObjects: ['js'],
   setBackgroundOutput: ['js'],
-  freezeFrame: ['js'],
-  unfreezeFrame: ['js'],
+  pauseObject: ['js'],
+  unpauseObject: ['js'],
   settings: [
     'js',
     'worker',

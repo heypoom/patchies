@@ -9,11 +9,11 @@
   import { match } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem } from '$lib/canvas/GLSystem';
-  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import { SettingsManager } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   let {
     id: nodeId,
@@ -121,15 +121,7 @@
     glSystem.toggleNodePause(nodeId);
   }
 
-  $effect(() => {
-    const eventBus = PatchiesEventBus.getInstance();
-    const handle = (event: { nodeId: string; paused: boolean }) => {
-      if (event.nodeId !== nodeId) return;
-      if (event.paused !== isPaused) togglePause();
-    };
-    eventBus.addEventListener('nodeSetPaused', handle);
-    return () => eventBus.removeEventListener('nodeSetPaused', handle);
-  });
+  useNodeSetPaused(nodeId, () => isPaused, togglePause);
 </script>
 
 <CanvasPreviewLayout

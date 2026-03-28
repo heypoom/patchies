@@ -18,6 +18,7 @@
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   let {
     id: nodeId,
@@ -193,14 +194,7 @@
     };
   });
 
-  $effect(() => {
-    const handle = (event: { nodeId: string; paused: boolean }) => {
-      if (event.nodeId !== nodeId) return;
-      if (event.paused !== isPaused) togglePause();
-    };
-    eventBus.addEventListener('nodeSetPaused', handle);
-    return () => eventBus.removeEventListener('nodeSetPaused', handle);
-  });
+  useNodeSetPaused(nodeId, () => isPaused, togglePause);
 
   // Listen for shader compilation errors and extract line numbers
   $effect(() => {
