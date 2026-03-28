@@ -4,6 +4,7 @@
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings/types';
+  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   let {
     nodeId,
@@ -49,6 +50,10 @@
   const handleClass = 'z-1';
 
   const totalOutlets = $derived(messageOutletCount + (hasVideoOutlet ? 1 : 0));
+
+  if (onToggleEnabled) {
+    useNodeSetPaused(nodeId, () => !enabled, onToggleEnabled);
+  }
 
   const statusColor = $derived(
     match(status)
