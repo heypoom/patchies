@@ -67,21 +67,24 @@
 </script>
 
 {#if prevItem() || nextItem()}
-  <nav class="mt-12 flex flex-col gap-3 border-t border-zinc-800 pt-6 sm:flex-row sm:gap-4">
+  <nav class="mt-12 flex flex-col gap-3 border-t border-zinc-800/60 pt-6 sm:flex-row sm:gap-4">
     {#if prevItem()}
       {@const prev = prevItem()}
 
       {#if prev}
         <a
           href={prev.href}
-          class="group flex min-w-0 flex-1 flex-col rounded-lg border border-zinc-800 p-4 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+          class="group flex min-w-0 flex-1 flex-col rounded-lg border border-zinc-800/80 bg-zinc-900/30 p-4 transition-all hover:border-orange-500/30 hover:bg-zinc-900/60"
         >
-          <span class="mb-1 flex items-center gap-1 text-xs text-zinc-500">
+          <span
+            class="mb-1.5 flex items-center gap-1 text-[10px] font-bold tracking-widest text-zinc-600 uppercase transition-colors group-hover:text-orange-500/70"
+            style="font-family: 'Syne', sans-serif;"
+          >
             <ChevronLeft class="h-3 w-3" />
             Previous
           </span>
           <span
-            class="truncate text-sm font-medium text-zinc-300 transition-colors group-hover:text-zinc-100"
+            class="truncate text-sm font-medium text-zinc-400 transition-colors group-hover:text-zinc-200"
           >
             {prev.title}
           </span>
@@ -97,14 +100,17 @@
       {#if next}
         <a
           href={next.href}
-          class="group flex min-w-0 flex-1 flex-col items-end rounded-lg border border-zinc-800 p-4 text-right transition-colors hover:border-zinc-700 hover:bg-zinc-900 sm:items-end"
+          class="group flex min-w-0 flex-1 flex-col items-end rounded-lg border border-zinc-800/80 bg-zinc-900/30 p-4 text-right transition-all hover:border-orange-500/30 hover:bg-zinc-900/60 sm:items-end"
         >
-          <span class="mb-1 flex items-center gap-1 text-xs text-zinc-500">
+          <span
+            class="mb-1.5 flex items-center gap-1 text-[10px] font-bold tracking-widest text-zinc-600 uppercase transition-colors group-hover:text-orange-500/70"
+            style="font-family: 'Syne', sans-serif;"
+          >
             Next
             <ChevronRight class="h-3 w-3" />
           </span>
           <span
-            class="truncate text-sm font-medium text-zinc-300 transition-colors group-hover:text-zinc-100"
+            class="truncate text-sm font-medium text-zinc-400 transition-colors group-hover:text-zinc-200"
           >
             {next.title}
           </span>

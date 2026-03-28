@@ -81,14 +81,15 @@
 >
   <div class="sticky top-8 flex max-h-[calc(100vh-4rem)] w-56 flex-col">
     <!-- Sticky header -->
-    <div class="shrink-0 bg-zinc-950 pb-4">
+    <div class="shrink-0 pb-4">
       <div class="mb-4 flex items-center justify-between">
         <a
           href="/"
-          class="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+          class="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-600 transition-colors hover:text-orange-400"
+          style="font-family: 'Syne', sans-serif; letter-spacing: 0.04em;"
         >
-          <ArrowLeft class="h-4 w-4" />
-          Back to Patchies
+          <ArrowLeft class="h-3.5 w-3.5" />
+          Patchies
         </a>
         <button
           onclick={() => (visible = false)}
@@ -111,14 +112,15 @@
       <div class="mb-6">
         <button
           onclick={() => (guidesExpanded = !guidesExpanded)}
-          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
+          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-[10px] font-bold tracking-widest text-amber-600/80 uppercase transition-colors hover:text-amber-500"
+          style="font-family: 'Syne', sans-serif;"
         >
           {#if guidesExpanded}
-            <ChevronDown class="h-3.5 w-3.5" />
+            <ChevronDown class="h-3 w-3" />
           {:else}
-            <ChevronRight class="h-3.5 w-3.5" />
+            <ChevronRight class="h-3 w-3" />
           {/if}
-          <BookOpen class="h-3.5 w-3.5" />
+          <BookOpen class="h-3 w-3" />
           Guides
         </button>
 
@@ -129,7 +131,12 @@
 
               {#if categoryTopics && categoryTopics.length > 0}
                 <div>
-                  <div class="mb-1 text-xs text-zinc-600">{category}</div>
+                  <div
+                    class="mb-1 text-[9px] font-semibold tracking-widest text-zinc-600 uppercase"
+                    style="font-family: 'Syne', sans-serif;"
+                  >
+                    {category}
+                  </div>
 
                   <ul class="space-y-0.5">
                     {#each categoryTopics as topic}
@@ -139,10 +146,10 @@
                           href="/docs/{topic.slug}"
                           data-active={isActive}
                           class={[
-                            'block rounded px-2 py-1 text-sm transition-colors',
+                            'block border-l-2 py-1 pr-2 pl-1.5 text-sm transition-colors',
                             isActive
-                              ? 'bg-zinc-800 text-zinc-100'
-                              : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                              ? 'border-orange-500 bg-zinc-900/80 text-zinc-100'
+                              : 'border-transparent text-zinc-500 hover:border-zinc-700 hover:bg-zinc-800/40 hover:text-zinc-300'
                           ]}
                         >
                           {topic.title}
@@ -161,14 +168,15 @@
       <div>
         <button
           onclick={() => (objectsExpanded = !objectsExpanded)}
-          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-xs font-medium tracking-wider text-zinc-500 uppercase transition-colors hover:text-zinc-400"
+          class="mb-2 flex w-full cursor-pointer items-center gap-1.5 text-[10px] font-bold tracking-widest text-amber-600/80 uppercase transition-colors hover:text-amber-500"
+          style="font-family: 'Syne', sans-serif;"
         >
           {#if objectsExpanded}
-            <ChevronDown class="h-3.5 w-3.5" />
+            <ChevronDown class="h-3 w-3" />
           {:else}
-            <ChevronRight class="h-3.5 w-3.5" />
+            <ChevronRight class="h-3 w-3" />
           {/if}
-          <Box class="h-3.5 w-3.5" />
+          <Box class="h-3 w-3" />
           Objects
         </button>
 
@@ -181,10 +189,10 @@
                   href="/docs/objects/{object.slug}"
                   data-active={isActive}
                   class={[
-                    'block rounded px-2 py-1 font-mono text-sm transition-colors',
+                    'block border-l-2 py-1 pr-2 pl-1.5 font-mono text-sm transition-colors',
                     isActive
-                      ? 'bg-zinc-800 text-zinc-100'
-                      : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                      ? 'border-orange-500 bg-zinc-900/80 text-zinc-100'
+                      : 'border-transparent text-zinc-500 hover:border-zinc-700 hover:bg-zinc-800/40 hover:text-zinc-300'
                   ]}
                 >
                   {object.title}

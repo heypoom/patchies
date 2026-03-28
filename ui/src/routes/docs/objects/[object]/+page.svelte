@@ -23,17 +23,23 @@
 
 <!-- Header -->
 <header class="mb-8">
-  <div class="flex items-center gap-3">
-    <h1 class="font-mono text-2xl font-bold text-zinc-100">{data.objectType}</h1>
-    {#if data.schema}
-      <span class="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-500">
+  <div class="mb-1 flex items-start gap-3">
+    <h1
+      class="font-mono text-3xl font-bold text-zinc-50"
+      style="letter-spacing: -0.015em; text-shadow: 0 0 60px rgba(249,115,22,0.12);"
+    >
+      {data.objectType}
+    </h1>
+  </div>
+  {#if data.schema}
+    <div class="mt-2 flex items-center gap-2">
+      <span
+        class="rounded border border-zinc-700/60 bg-zinc-800/50 px-2 py-0.5 font-mono text-xs text-zinc-500"
+      >
         {data.schema.category}
       </span>
-    {/if}
-  </div>
-
-  {#if data.schema}
-    <p class="mt-2 text-zinc-400">{data.schema.description}</p>
+    </div>
+    <p class="mt-3 text-sm leading-relaxed text-zinc-400">{data.schema.description}</p>
   {/if}
 </header>
 
@@ -42,7 +48,12 @@
   <!-- Inlets -->
   {#if data.schema.inlets.length > 0}
     <section class="mb-6">
-      <h2 class="mb-3 text-sm font-medium tracking-wider text-zinc-500 uppercase">Inlets</h2>
+      <h2
+        class="mb-3 border-l-2 border-orange-500 pl-2 text-[10px] font-bold tracking-widest text-zinc-400 uppercase"
+        style="font-family: 'Syne', sans-serif;"
+      >
+        Inlets
+      </h2>
       <div class="space-y-4">
         {#each data.schema.inlets as inlet}
           <PortCard port={inlet} />
@@ -54,7 +65,12 @@
   <!-- Outlets -->
   {#if data.schema.outlets.length > 0 && !data.schema.hasDynamicOutlets}
     <section class="mb-6">
-      <h2 class="mb-3 text-sm font-medium tracking-wider text-zinc-500 uppercase">Outlets</h2>
+      <h2
+        class="mb-3 border-l-2 border-orange-500 pl-2 text-[10px] font-bold tracking-widest text-zinc-400 uppercase"
+        style="font-family: 'Syne', sans-serif;"
+      >
+        Outlets
+      </h2>
       <div class="space-y-4">
         {#each data.schema.outlets as outlet}
           <PortCard port={outlet} />
@@ -66,7 +82,10 @@
   <!-- Special: trigger type specifiers -->
   {#if data.objectType === 'trigger'}
     <section class="mb-6">
-      <h2 class="mb-3 text-sm font-medium tracking-wider text-zinc-500 uppercase">
+      <h2
+        class="mb-3 border-l-2 border-orange-500 pl-2 text-[10px] font-bold tracking-widest text-zinc-400 uppercase"
+        style="font-family: 'Syne', sans-serif;"
+      >
         Type Specifiers
       </h2>
       <p class="mb-3 text-sm text-zinc-400">
@@ -110,10 +129,18 @@
 <!-- Tags -->
 {#if data.schema?.tags && data.schema.tags.length > 0}
   <section class="mb-6">
-    <h2 class="mb-3 text-sm font-medium tracking-wider text-zinc-500 uppercase">Tags</h2>
-    <div class="flex flex-wrap gap-2">
+    <h2
+      class="mb-3 border-l-2 border-orange-500 pl-2 text-[10px] font-bold tracking-widest text-zinc-400 uppercase"
+      style="font-family: 'Syne', sans-serif;"
+    >
+      Tags
+    </h2>
+    <div class="flex flex-wrap gap-1.5">
       {#each data.schema.tags as tag}
-        <span class="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-400">{tag}</span>
+        <span
+          class="rounded border border-zinc-700/50 bg-zinc-800/40 px-2 py-0.5 font-mono text-xs text-zinc-500"
+          >{tag}</span
+        >
       {/each}
     </div>
   </section>

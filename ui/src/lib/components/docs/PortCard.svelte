@@ -15,9 +15,19 @@
 
   const hasMessages = $derived(port.messages && port.messages.length > 0);
   const isAudioParam = $derived('isAudioParam' in port && port.isAudioParam);
+
+  const portLeftBorderColor = $derived(() => {
+    const handleType = port.handle?.handleType;
+    if (handleType === 'audio' || port.type === 'signal') return 'rgb(59 130 246 / 0.45)';
+    if (handleType === 'video') return 'rgb(249 115 22 / 0.45)';
+    return 'rgb(63 63 70 / 0.5)';
+  });
 </script>
 
-<div class="rounded-lg border border-zinc-800 bg-zinc-900/50">
+<div
+  class="rounded-lg border border-zinc-800/80 bg-zinc-900/40"
+  style="border-left: 2px solid {portLeftBorderColor()};"
+>
   {#if hasMessages}
     <button
       onclick={() => (isOpen = !isOpen)}
