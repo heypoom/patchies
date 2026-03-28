@@ -29,7 +29,7 @@ To use this feature:
 
 ## See Also
 
-- [Connection Rules](/docs/connection-rules)
+- [Data Types](/docs/data-types)
 - [Message Passing](/docs/message-passing)
 - [Video Chaining](/docs/video-chaining)
 - [Audio Chaining](/docs/audio-chaining)

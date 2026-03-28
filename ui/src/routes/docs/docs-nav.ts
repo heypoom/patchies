@@ -20,7 +20,7 @@ export const topicOrder: Record<string, string[]> = {
     'audio-chaining',
     'video-chaining'
   ],
-  Connections: ['connection-rules', 'hot-cold-inlets'],
+  Connections: ['data-types', 'hot-cold-inlets'],
   Scripting: [
     'canvas-interaction',
     'virtual-filesystem',

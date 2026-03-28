@@ -82,29 +82,29 @@ Follow these steps to add complete help documentation for an object like `trigge
 Create `ui/src/lib/objects/schemas/<object>.ts`:
 
 ```ts
-import type { ObjectSchema } from "./types";
+import type {ObjectSchema} from './types'
 
 export const myObjectSchema: ObjectSchema = {
-  type: "myobject", // Must match the object type exactly
-  category: "control", // One of: control, audio, video, network, ai, etc.
-  description: "Short description shown in object browser",
+  type: 'myobject', // Must match the object type exactly
+  category: 'control', // One of: control, audio, video, network, ai, etc.
+  description: 'Short description shown in object browser',
   inlets: [
     {
-      id: "message",
-      description: "What this inlet accepts",
-      args: ["optional", "arg", "names"], // Optional
-      example: "send 42", // Optional
+      id: 'message',
+      description: 'What this inlet accepts',
+      args: ['optional', 'arg', 'names'], // Optional
+      example: 'send 42', // Optional
     },
   ],
   outlets: [
     {
-      id: "0",
-      description: "What this outlet emits",
+      id: '0',
+      description: 'What this outlet emits',
     },
   ],
-  tags: ["optional", "search", "tags"], // Optional
+  tags: ['optional', 'search', 'tags'], // Optional
   hasDynamicOutlets: false, // Set true if outlets change based on args
-};
+}
 ```
 
 **Dynamic ports**:
@@ -117,12 +117,12 @@ leave `inlets: []` and `outlets: []` empty. Document port behavior in the markdo
 Edit `ui/src/lib/objects/schemas/index.ts`:
 
 ```ts
-import { myObjectSchema } from "./myobject";
+import {myObjectSchema} from './myobject'
 
 export const objectSchemas: ObjectSchemaRegistry = {
   trigger: triggerSchema,
   myobject: myObjectSchema, // Add your schema here
-};
+}
 ```
 
 ### Step 3: Create Markdown Documentation
@@ -191,7 +191,7 @@ Topic pages support:
 | `creating-objects`       | Insert and modify objects       |
 | `keyboard-shortcuts`     | Essential shortcuts             |
 | `connecting-objects`     | Connect handles, easy connect   |
-| `connection-rules`       | What can connect to what        |
+| `data-types`             | What can connect to what        |
 | `message-passing`        | Send data between objects       |
 | `video-chaining`         | Chain visual effects            |
 | `audio-chaining`         | Chain audio processing          |
@@ -212,25 +212,25 @@ Topic pages support:
 
 ```ts
 interface ObjectSchema {
-  type: string; // Object name (e.g., 'trigger', 'metro')
-  category: string; // Grouping (e.g., 'control', 'audio')
-  description: string; // One-line summary
-  inlets: InletSchema[]; // Input definitions
-  outlets: OutletSchema[]; // Output definitions
-  tags?: string[]; // Search keywords
-  hasDynamicOutlets?: boolean; // True if outlets depend on arguments
+  type: string // Object name (e.g., 'trigger', 'metro')
+  category: string // Grouping (e.g., 'control', 'audio')
+  description: string // One-line summary
+  inlets: InletSchema[] // Input definitions
+  outlets: OutletSchema[] // Output definitions
+  tags?: string[] // Search keywords
+  hasDynamicOutlets?: boolean // True if outlets depend on arguments
 }
 
 interface InletSchema {
-  id: string; // Inlet identifier
-  description: string; // What it does
-  args?: string[]; // Parameter names (optional)
-  example?: string; // Example usage (optional)
+  id: string // Inlet identifier
+  description: string // What it does
+  args?: string[] // Parameter names (optional)
+  example?: string // Example usage (optional)
 }
 
 interface OutletSchema {
-  id: string; // Outlet identifier
-  description: string; // What it outputs
+  id: string // Outlet identifier
+  description: string // What it outputs
 }
 ```
 
@@ -272,17 +272,17 @@ Issues encountered during the first object migration from README.md:
 `marked` v16 changed its API. Don't use `marked.setOptions({ highlight })`. Instead:
 
 ```ts
-import { Marked } from "marked";
-import { markedHighlight } from "marked-highlight";
-import hljs from "highlight.js/lib/core";
+import {Marked} from 'marked'
+import {markedHighlight} from 'marked-highlight'
+import hljs from 'highlight.js/lib/core'
 
 export const marked = new Marked(
   markedHighlight({
     highlight(code, lang) {
-      return hljs.highlight(code, { language: lang }).value;
+      return hljs.highlight(code, {language: lang}).value
     },
   }),
-);
+)
 ```
 
 ### 2. Migration Strategy

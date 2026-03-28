@@ -90,4 +90,4 @@ Visual `send`/`recv` objects and the JavaScript `send()`/`recv()` API share the 
 - [JavaScript Runner](/docs/javascript-runner) — Full JS API: multiple ports, named channels, timers
 - [Hot and Cold Inlets](/docs/hot-cold-inlets) — Control when objects trigger output
 - [Connecting Objects](/docs/connecting-objects)
-- [Connection Rules](/docs/connection-rules)
+- [Data Types](/docs/data-types)

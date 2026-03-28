@@ -97,5 +97,5 @@ For high-performance video chaining, prefer:
 - [send.vdo](/docs/objects/send.vdo) — Send video to a named channel
 - [recv.vdo](/docs/objects/recv.vdo) — Receive video from a named channel
 - [Audio Chaining](/docs/audio-chaining)
-- [Connection Rules](/docs/connection-rules)
+- [Data Types](/docs/data-types)
 - [Rendering Pipeline](/docs/rendering-pipeline)

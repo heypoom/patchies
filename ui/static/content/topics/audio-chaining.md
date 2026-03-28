@@ -81,6 +81,6 @@ This keeps complex patches readable by removing long-distance cables.
 
 - [Audio Reactivity](/docs/audio-reactivity) — Drive visuals from audio data
 - [Video Chaining](/docs/video-chaining)
-- [Connection Rules](/docs/connection-rules)
+- [Data Types](/docs/data-types)
 - [send~](/docs/objects/send~) — Send audio to a named channel
 - [recv~](/docs/objects/recv~) — Receive audio from a named channel

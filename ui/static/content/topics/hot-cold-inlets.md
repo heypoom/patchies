@@ -1,50 +1,70 @@
 # Hot and Cold Inlets
 
-Objects with multiple inlets in Patchies uses the concept of hot and cold inlets found in [Max](https://docs.cycling74.com/userguide/objects/#inlets-and-outlets) and [Pd](https://msp.ucsd.edu/Pd_documentation/resources/chapter2.htm#s2.4.3). The goal is to give us more control over when to evaluate and send the stored messages.
+When an object has multiple inlets, not all of them behave the same way. The **first inlet is hot** — a message arriving there triggers the object to evaluate and send output immediately. **All other inlets are cold** — they quietly store the incoming value but produce no output on their own.
 
-## The Concept
+This design comes from [Max](https://docs.cycling74.com/userguide/objects/#inlets-and-outlets) and [Pure Data](https://msp.ucsd.edu/Pd_documentation/resources/chapter2.htm#s2.4.3). It gives you precise control over *when* a computation fires.
 
-- **Inlet 0 (hot)**: When a message arrives at the first inlet, the object evaluates and sends output immediately
-- **Inlets 1+ (cold)**: When a message arrives at other inlets, the value is stored but **no output is triggered**
+---
 
-This design allows you to set up all the values you need before triggering the computation.
+## How It Works
 
-## Example: expr $1 + $2
+| Inlet | Behavior |
+| --- | --- |
+| Inlet 0 (hot) | Stores the value **and** immediately triggers output |
+| Inlet 1, 2, … (cold) | Stores the value, does **not** trigger output |
+
+Think of cold inlets as staging areas: you load them up with values, then fire the hot inlet when everything is ready.
+
+---
+
+## Example: `expr $1 + $2`
 
 ```text
-[number 5] ────► inlet 0 (hot, $1)  ──┐
+[number 3] ──► inlet 1 (cold, $2)  ──┐
                                       ├──► [expr $1 + $2] ──► outlet
-[number 3] ────► inlet 1 (cold, $2) ──┘
+[number 5] ──► inlet 0 (hot,  $1)  ──┘
 ```
 
-1. Number `3` arrives at inlet 1 (cold) - stored as `$2`, no output
-2. Number `5` arrives at inlet 0 (hot) - triggers evaluation: `5 + 3 = 8`
+Step by step:
 
-If both numbers arrive at the hot inlet, you'd get intermediate (often wrong) results.
+1. `3` arrives at inlet 1 (cold) — stored as `$2`, no output yet
+2. `5` arrives at inlet 0 (hot) — triggers evaluation: `5 + 3 = 8` → sent to outlet
+
+If both values arrived at inlet 0, you'd get an intermediate result (`5 + 0 = 5`) before the second value even arrives — almost always the wrong behavior.
+
+---
 
 ## Controlling Execution Order
 
-Use [trigger](/docs/objects/trigger) to ensure values reach cold inlets before triggering hot inlets:
+When a single source feeds both inlets, you need to guarantee the cold inlet receives its value *before* the hot inlet fires. Use the [trigger](/docs/objects/trigger) object for this.
+
+`trigger` (or `t`) outputs its values **right-to-left**, so the rightmost outlet fires first:
 
 ```text
-[slider] ──► [t b a] ──► outlet 0 (bang) ──► expr inlet 0 (hot)
-                    └──► outlet 1 (value) ──► expr inlet 1 (cold)
+[slider]
+   │
+   ▼
+[t b a]
+   │         └──► outlet 1 (value, fires first) ──► expr inlet 1 (cold)
+   └──────────────► outlet 0 (bang,  fires second) ──► expr inlet 0 (hot)
 ```
 
-The `trigger` object outputs **right-to-left**, so:
+1. The value reaches the cold inlet first
+2. The bang triggers the hot inlet — by then the cold inlet is already loaded
 
-1. The value goes to the cold inlet first
-2. Then the bang triggers the hot inlet
+> **Tip**: Whenever you see unexpected or stale output from a multi-inlet object, check whether the cold inlets are being set before the hot inlet fires. A `trigger` object usually fixes it.
 
-## Objects Using Hot/Cold Inlets
+---
 
-These objects follow the hot/cold inlet convention:
+## Objects That Use Hot/Cold Inlets
 
-- [expr](/docs/objects/expr) - expression evaluator
-- [map](/docs/objects/map) - JavaScript transformer
-- [filter](/docs/objects/filter) - conditional message passing
+- [expr](/docs/objects/expr) — expression evaluator (`$1`, `$2`, …)
+- [map](/docs/objects/map) — JavaScript transformer
+- [filter](/docs/objects/filter) — conditional message passing
+
+---
 
 ## See Also
 
-- [trigger](/docs/objects/trigger) - control message order
-- [Message Passing](/docs/message-passing) - how messages flow between objects
+- [trigger](/docs/objects/trigger) — control message order
+- [Message Passing](/docs/message-passing) — how messages flow between objects
