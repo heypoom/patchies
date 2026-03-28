@@ -13,6 +13,7 @@
   import { helpViewStore } from '../../stores/help-view.store';
   import { overrideOutputNodeId } from '../../stores/renderer.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   let previewContainer: HTMLDivElement | null = null;
   const { getNode, updateNodeData } = useSvelteFlow();
@@ -67,6 +68,10 @@
     onSettingsValueChange?: (key: string, value: unknown) => void;
     onSettingsRevertAll?: () => void;
   } = $props();
+
+  if (nodeId && onPlaybackToggle) {
+    useNodeSetPaused(nodeId, () => paused, onPlaybackToggle);
+  }
 
   const editorGap = 10;
 

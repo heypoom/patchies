@@ -18,7 +18,6 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
-  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   let consoleRef: VirtualConsole | null = $state(null);
 
@@ -181,8 +180,6 @@
       updateNodeData(nodeId, { paused: true });
     }
   }
-
-  useNodeSetPaused(nodeId, () => data.paused ?? false, togglePlayback);
 
   // Handle runtime errors (from draw(), setup(), etc.)
   function handleRuntimeError(error: Error) {

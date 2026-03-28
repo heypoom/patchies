@@ -25,7 +25,6 @@
   import { SettingsManager } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
-  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   let {
     id: nodeId,
@@ -251,8 +250,6 @@
     updateNodeData(nodeId, { paused: !data.paused });
     glSystem.toggleNodePause(nodeId);
   }
-
-  useNodeSetPaused(nodeId, () => data.paused ?? false, togglePlayback);
 
   function updateCanvas() {
     // Clear console and error highlighting on re-run

@@ -22,7 +22,6 @@
   import { SettingsManager } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
-  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   let {
     id: nodeId,
@@ -209,8 +208,6 @@
     eventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
     eventBus.removeEventListener('nodeMouseScopeUpdate', handleMouseScopeUpdate);
   });
-
-  useNodeSetPaused(nodeId, () => isPaused, togglePause);
 
   function updateHydra() {
     // Clear console and error line highlighting on re-run

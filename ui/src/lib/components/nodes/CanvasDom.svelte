@@ -21,7 +21,6 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
-  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   let {
     id: nodeId,
@@ -311,8 +310,6 @@
 
     await glSystem.setBitmapSource(nodeId, canvas);
   }
-
-  useNodeSetPaused(nodeId, () => data.paused ?? false, togglePlayback);
 
   function togglePlayback() {
     if (data.paused) {

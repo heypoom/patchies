@@ -13,7 +13,6 @@
   import { SettingsManager } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
-  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   let {
     id: nodeId,
@@ -120,8 +119,6 @@
     isPaused = !isPaused;
     glSystem.toggleNodePause(nodeId);
   }
-
-  useNodeSetPaused(nodeId, () => isPaused, togglePause);
 </script>
 
 <CanvasPreviewLayout

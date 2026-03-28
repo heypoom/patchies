@@ -18,7 +18,6 @@
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
-  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   let {
     id: nodeId,
@@ -193,8 +192,6 @@
       mouseHandler?.detach();
     };
   });
-
-  useNodeSetPaused(nodeId, () => isPaused, togglePause);
 
   // Listen for shader compilation errors and extract line numbers
   $effect(() => {
