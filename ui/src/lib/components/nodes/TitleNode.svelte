@@ -46,12 +46,12 @@
   const { updateNodeData } = useSvelteFlow();
 
   const tracker = useNodeDataTracker(node.id);
-  const textTracker = tracker.track('text', () => node.data.text ?? '');
 
   let showSettings = $state(false);
   let isEditing = $state(false);
   let editableRef: HTMLDivElement | null = $state(null);
   let editingText = $state('');
+  let textBeforeEdit = '';
 
   const [defaultWidth, defaultHeight] = [250, 50];
 
@@ -83,8 +83,8 @@
     e?.preventDefault();
     e?.stopPropagation();
     editingText = text;
+    textBeforeEdit = text;
     isEditing = true;
-    textTracker.onFocus();
   }
 
   // Initialize content and focus when entering edit mode
@@ -104,8 +104,8 @@
   function handleBlur() {
     if (!isEditing) return;
     updateConfig({ text: editingText });
+    tracker.commit('text', textBeforeEdit, editingText);
     isEditing = false;
-    textTracker.onBlur();
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -114,7 +114,7 @@
     match(e.key)
       .with('Escape', () => {
         updateConfig({ text: editingText });
-        textTracker.onBlur();
+        tracker.commit('text', textBeforeEdit, editingText);
         isEditing = false;
       })
       .otherwise(() => {
