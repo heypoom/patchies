@@ -1,55 +1,86 @@
 # Audio Chaining
 
-You can chain many audio objects together to create audio effects and soundscapes.
+Audio objects connect together to form a signal chain — sound flows from sources through processors to output. Any object whose name ends with `~` is an audio object.
 
 ![Audio chain example](/content/images/patchies-audio-chain.png)
 
-> ✨ [Try this patch](/?id=b17136cy9rxxebw) - FM synthesis demo using oscillators, expressions, gain control, and frequency analysis.
+> ✨ [Try this patch](/?id=b17136cy9rxxebw) — FM synthesis using oscillators, expressions, gain control, and frequency analysis.
 
-## Fun Examples
-
-Here's [a little patch](/?id=93ip4c2tmua45ho) by [@kijjaz](https://www.instagram.com/kijjaz) that uses mathematical expressions to make a beat:
-
-![Beat example](/content/images/patchies-audio-super-fun.png)
-
-Or build your own drum machine! [Try it out](/?id=w46um7gafe7hgle) - use the `W A S D` keys to play some drums.
-
-![Simple drum machine](/content/images/patchies-simple-drums.png)
+---
 
 ## How It Works
 
-Connect audio objects together to build a signal chain — from sources through processors to output. Any object ending with `~` is an audio object.
+Think of audio chaining like a hardware signal chain: oscillator → filter → amp → speaker. Each `~` object processes the signal and passes it to the next.
 
-**Important**: You must connect your audio chain to `out~` to hear anything. Use `gain~` to control the volume.
+**Two rules to remember:**
 
-Browse all available audio objects in the object browser under the **Audio** category.
+1. **End your chain with `out~`** — nothing is audible until the signal reaches `out~`
+2. **Use `gain~` to control volume** — connect it just before `out~` to avoid clipping
+
+```text
+[osc~ 440] → [gain~ 0.5] → [out~]
+```
+
+Browse all audio objects in the object browser under the **Audio** category.
+
+---
+
+## Try It
+
+### Exercise — Simple tone
+
+1. Create an `osc~ 440` object (a 440 Hz sine wave)
+2. Connect it to a `gain~ 0.3` object
+3. Connect `gain~` to `out~`
+4. Press play in the transport — you should hear a tone
+
+### Exercise — Add a filter
+
+1. Insert a `lowpass~ 800` between `osc~` and `gain~`
+2. Drag the frequency value up and down — hear the tone get brighter and darker
+
+---
 
 ## Monitoring Audio
 
-When patching with audio, it's useful to be able to view the audio data.
+Visualize what's happening in your audio chain:
 
-- [scope~](/docs/objects/scope~) - oscilloscope for viewing waveforms in real time
-- [meter~](/docs/objects/meter~) - visual level meter for monitoring audio loudness
-- [env~](/docs/objects/env~) - envelope follower that outputs the audio loudness as a number
+- [scope~](/docs/objects/scope~) — oscilloscope, shows waveform shape in real time
+- [meter~](/docs/objects/meter~) — level meter, shows loudness as a visual bar
+- [env~](/docs/objects/env~) — envelope follower, outputs loudness as a number you can route elsewhere
 
-See [Audio Reactivity](/docs/audio-reactivity) for more ways to interact and visualize audio data.
+See [Audio Reactivity](/docs/audio-reactivity) to use audio data to drive visuals.
+
+---
+
+## Fun Examples
+
+Here's [a patch](/?id=93ip4c2tmua45ho) by [@kijjaz](https://www.instagram.com/kijjaz) that generates a beat entirely from mathematical expressions:
+
+![Beat example](/content/images/patchies-audio-super-fun.png)
+
+Or build your own drum machine — [try it out](/?id=w46um7gafe7hgle) and use `W A S D` to play some drums:
+
+![Simple drum machine](/content/images/patchies-simple-drums.png)
+
+---
 
 ## Wireless Audio Routing
 
-Connect distant audio objects without cables using named channels.
-
-Create [`send~ <channel>`](/docs/objects/send~) and [`recv~ <channel>`](/docs/objects/recv~) objects anywhere in your patch. Audio sent to `send~` appears at matching `recv~` outlets:
+You don't always need a cable. Use [`send~ <channel>`](/docs/objects/send~) and [`recv~ <channel>`](/docs/objects/recv~) to route audio wirelessly across the patch:
 
 ```text
-[osc~ 440] → [send~ synth]     ...     [recv~ synth] → [gain~ 0.5] → [out~]
+[osc~ 440] → [send~ synth]          [recv~ synth] → [gain~ 0.5] → [out~]
 ```
 
-This is useful for organizing complex audio routing or sending audio across different parts of a large patch.
+This keeps complex patches readable by removing long-distance cables.
+
+---
 
 ## See Also
 
+- [Audio Reactivity](/docs/audio-reactivity) — Drive visuals from audio data
 - [Video Chaining](/docs/video-chaining)
 - [Connection Rules](/docs/connection-rules)
-- [Audio Reactivity](/docs/audio-reactivity)
-- [send~](/docs/objects/send~) - Send audio to named channel
-- [recv~](/docs/objects/recv~) - Receive audio from named channel
+- [send~](/docs/objects/send~) — Send audio to a named channel
+- [recv~](/docs/objects/recv~) — Receive audio from a named channel

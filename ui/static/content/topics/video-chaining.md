@@ -1,67 +1,101 @@
 # Video Chaining
 
-You can chain visual objects together to create video effects and compositions, by using the output of a visual object as an input to another.
+Visual objects connect together to form a video pipeline — the output of one object feeds into the input of the next, letting you layer, blend, and transform visuals in real time.
 
 ![Video chain example](/content/images/patchies-video-chain.png)
 
-The above example creates a [hydra](/docs/objects/hydra) object and a [glsl](/docs/objects/hydra) object that produces a pattern, and connects them to another hydra object which subtracts the two visuals together using `src(s0).sub(s1).out(o0)`.
+In this example, a [hydra](/docs/objects/hydra) object and a [glsl](/docs/objects/glsl) object each produce a pattern. They feed into a third hydra object which subtracts them together using `src(s0).sub(s1).out(o0)`.
 
-This is similar to _shader graphs_ in programs like TouchDesigner, Unity, Blender, Godot and Substance Designer.
+This is similar to shader graphs in TouchDesigner, Unity, Blender, and Substance Designer.
 
-## Getting Started
+---
 
-Try out the presets to get started. Enable them in the [preset packs](/docs/manage-packs) sidebar menu.
+## How It Works
 
-- **Pipe presets** (e.g. `pipe.hydra`, `pipe.gl`) passes the visual through without any changes. This is the best starting point for chaining.
-- **Hydra presets** performs image operations (e.g. `diff.hydra`, `add.hydra`, `sub.hydra`) on two visual inputs.
-- Check out the docs of [hydra](/docs/objects/hydra) and [glsl](/docs/objects/glsl) for more fun presets you can use.
+Visual objects have **orange** inlets and outlets (circles on the top and bottom of the node):
 
-## How Video Chaining Works
+- **Orange inlet** — accepts a video frame as input
+- **Orange outlet** — outputs a video frame to the next object
 
-- Visual objects have orange inlets and/or outlets (circles on the top and bottom)
-  - **Inlets** provide visual input to the object
-  - **Outlets** output visual from the object
+Connect orange outlet → orange inlet to chain them:
 
-- In hydra, call `setVideoCount(ins = 1, outs = 1)` to specify how many visual inlets and outlets you want
+```text
+[p5] → [pipe.hydra] → [pipe.gl] → [bg.out]
+```
 
-- For glsl objects, dynamically create [sampler2D uniforms](https://thebookofshaders.com/glossary/?search=texture2D) to add video inputs
+To hear — er, *see* — anything, connect the final object to `bg.out` or use **Output to Background**.
 
-- Connect the orange outlet of a source object to the orange inlet of a target object
-  - Try connecting `p5` → `pipe.hydra` → `pipe.gl` to see visual passthrough in action
+---
 
-- Connect an object to `bg.out` to output it to the background.
+## Try It
+
+### Exercise — Visual passthrough
+
+1. Create a `p5` object and write something that draws to the canvas
+2. Create a `pipe.hydra` preset (`Enter` → search `pipe.hydra`)
+3. Connect the orange outlet of `p5` to the orange inlet of `pipe.hydra`
+4. Connect `pipe.hydra` to `bg.out` — the p5 sketch appears as the background
+
+### Exercise — Blend two visuals
+
+1. Create two visual objects (e.g. `p5` and `glsl`)
+2. Create a `sub.hydra` preset — it has two orange inlets
+3. Connect both visual objects to the two inlets of `sub.hydra`
+4. Connect `sub.hydra` to `bg.out` — the two visuals are subtracted together
+
+---
+
+## Getting Started with Presets
+
+The preset library has ready-made building blocks for video chaining. Enable them via the [Preset Packs](/docs/manage-packs) sidebar:
+
+- **`pipe.hydra`, `pipe.gl`** — pass video through unchanged; the simplest starting point for chaining
+- **`diff.hydra`, `add.hydra`, `sub.hydra`** — blend two video inputs with Hydra
+- Check the [hydra](/docs/objects/hydra) and [glsl](/docs/objects/glsl) docs for more preset ideas
+
+---
 
 ## Output to Background
 
-Right-click any visual object (or use its **···** menu) and choose **Output to background**. The object's output temporarily becomes the background. This also overrides the `bg.out` connection if there is one.
+Right-click any visual object (or use its **···** menu) and choose **Output to background** to make it the fullscreen output. This overrides any `bg.out` connection.
 
-This is useful for live performance when you want to quickly switch what is displayed. This is not persisted across sessions.
+- Click **Output to background** again on the same object to clear the override
+- Switching to a different object replaces the current output — only one at a time
+- This is great for live performance; it is not saved across sessions
 
-- Clicking **Output to background** again on the same node removes the override and falls back to the `bg.out` connection.
-- Switching to a different node replaces the current output. Only one node can output at a time.
+---
 
 ## Wireless Video Routing
 
-Connect distant visual objects without cables using named channels.
-
-Create [`send.vdo <channel>`](/docs/objects/send.vdo) and [`recv.vdo <channel>`](/docs/objects/recv.vdo) objects anywhere in your patch. Video frames sent to `send.vdo` appear at matching `recv.vdo` outlets:
+Route video across the patch without cables using [`send.vdo <channel>`](/docs/objects/send.vdo) and [`recv.vdo <channel>`](/docs/objects/recv.vdo):
 
 ```text
-[p5] → [send.vdo main]     ...     [recv.vdo main] → [bg.out]
+[p5] → [send.vdo main]          [recv.vdo main] → [bg.out]
 ```
 
-This is useful for organizing complex video routing or sending video across different parts of a large patch.
+Useful for keeping large patches readable by removing long-distance orange cables.
+
+---
 
 ## Performance
 
-Objects that runs on the [rendering pipeline](/docs/rendering-pipeline) are much more performant than objects that run on the main thread, as they do not require expensive pixel copy. For example, use [canvas](/docs/objects/canvas) instead of P5.js and canvas.dom for more performant video chaining.
+Objects on the [rendering pipeline](/docs/rendering-pipeline) are significantly faster than main-thread objects — they avoid expensive pixel copies between GPU and CPU.
+
+For high-performance video chaining, prefer:
+
+- [canvas](/docs/objects/canvas) over `canvas.dom`
+- [three](/docs/objects/three) over `three.dom`
+- [textmode](/docs/objects/textmode) over `textmode.dom`
+
+---
 
 ## See Also
 
-- [hydra](/docs/objects/hydra) - Hydra video synthesizer
-- [glsl](/docs/objects/glsl) - GLSL shaders
-- [canvas](/docs/objects/canvas) - HTML5 offscreen canvas
-- [send.vdo](/docs/objects/send.vdo) - Send video to named channel
-- [recv.vdo](/docs/objects/recv.vdo) - Receive video from named channel
+- [hydra](/docs/objects/hydra) — Hydra video synthesizer
+- [glsl](/docs/objects/glsl) — GLSL shaders
+- [canvas](/docs/objects/canvas) — Offscreen canvas (rendering pipeline)
+- [send.vdo](/docs/objects/send.vdo) — Send video to a named channel
+- [recv.vdo](/docs/objects/recv.vdo) — Receive video from a named channel
 - [Audio Chaining](/docs/audio-chaining)
 - [Connection Rules](/docs/connection-rules)
+- [Rendering Pipeline](/docs/rendering-pipeline)
