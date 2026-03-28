@@ -1,14 +1,12 @@
-# JavaScript Runner
+# JavaScript
 
-Most JavaScript-based objects in Patchies use the unified JavaScript Runner (JSRunner), which executes code in a sandboxed environment with Patchies-specific features.
+Patchies provides a couple of JavaScript methods that you can use in JS-enabled objects.
 
 ## Supported objects
 
-Full JSRunner features are available in these objects: [js](/docs/objects/js), [worker](/docs/objects/worker), [p5](/docs/objects/p5), [canvas](/docs/objects/canvas), [canvas.dom](/docs/objects/canvas.dom), [textmode](/docs/objects/textmode), [textmode.dom](/docs/objects/textmode.dom), [three](/docs/objects/three), [three.dom](/docs/objects/three.dom), [hydra](/docs/objects/hydra), [dom](/docs/objects/dom), [vue](/docs/objects/vue), [sonic~](/docs/objects/sonic~), [tone~](/docs/objects/tone~) and [elem~](/docs/objects/elem~).
+All methods are available in these objects: [js](/docs/objects/js), [worker](/docs/objects/worker), [p5](/docs/objects/p5), [canvas](/docs/objects/canvas), [canvas.dom](/docs/objects/canvas.dom), [textmode](/docs/objects/textmode), [textmode.dom](/docs/objects/textmode.dom), [three](/docs/objects/three), [three.dom](/docs/objects/three.dom), [hydra](/docs/objects/hydra), [dom](/docs/objects/dom), [vue](/docs/objects/vue), [sonic~](/docs/objects/sonic~), [tone~](/docs/objects/tone~) and [elem~](/docs/objects/elem~).
 
-### Expression objects
-
-Some expression-like objects e.g. [filter](/docs/objects/filter), [map](/docs/objects/map), [tap](/docs/objects/tap), [scan](/docs/objects/scan) evaluates the expression _once_ on message. These objects cannot use messaging functions like `send`, `recv`, `onCleanup`, timers, etc.
+Some expression-like objects e.g. [filter](/docs/objects/filter), [map](/docs/objects/map), [tap](/docs/objects/tap), [scan](/docs/objects/scan) evaluates the expression _once_ on message. These objects cannot use messaging and timer functions like `send`, `recv`, `onCleanup`, `setInterval`, etc.
 
 ## Essentials
 

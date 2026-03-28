@@ -21,7 +21,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'enabling-ai': 'Enabling AI',
   'hot-cold-inlets': 'Hot and Cold Inlets',
   'in-app-help': 'Help',
-  'javascript-runner': 'JavaScript Runner',
+  'javascript-runner': 'JavaScript',
   'manage-files': 'Files',
   'manage-packs': 'Packs',
   'manage-presets': 'Presets',
