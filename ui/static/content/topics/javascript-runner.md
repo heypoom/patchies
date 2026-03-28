@@ -8,15 +8,28 @@ Full JSRunner features are available in these objects: [js](/docs/objects/js), [
 
 ### Expression objects
 
-Some expression-like objects use _single-expression evaluation_ (e.g. [filter](/docs/objects/filter), [map](/docs/objects/map), [tap](/docs/objects/tap), [scan](/docs/objects/scan)) where the expression is evaluated once per message. These cannot use messaging callbacks like `send`, `recv`, `onCleanup`, timers, etc.
+Some expression-like objects e.g. [filter](/docs/objects/filter), [map](/docs/objects/map), [tap](/docs/objects/tap), [scan](/docs/objects/scan) evaluates the expression _once_ on message. These objects cannot use messaging functions like `send`, `recv`, `onCleanup`, timers, etc.
 
-## Common runtime functions
+## Essentials
 
 ### Console
 
 Use `console.log()` to log messages to the virtual console (not the browser console).
 
-### Timers (auto-cleanup)
+### Title
+
+- `setTitle(title)` - set the display title of the object
+
+### Messaging
+
+- `setPortCount(inletCount, outletCount)` - set the number of message inlets and outlets
+- `send(message)` - send a message out of the default outlet
+- `send(message, { to: outlet })` - send a message out of a specific outlet (0-indexed)
+- `recv(callback)` - receive messages from connected inlets
+
+Use `meta.inlet` in the `recv` callback to distinguish which inlet the message came from.
+
+### Timers
 
 All timers are automatically cleaned up when the object is unmounted or code is re-executed:
 
@@ -27,17 +40,18 @@ All timers are automatically cleaned up when the object is unmounted or code is 
 
 **Important**: Do not use `window.setInterval`, `window.setTimeout`, or `window.requestAnimationFrame` as they will not clean up automatically.
 
+### Top-level Async
+
+Top-level `await` is supported.
+For example, use `await delay(ms)` to pause execution.
+
 ### Custom Cleanup
 
 Use `onCleanup(callback)` to register cleanup logic that runs when the object is unmounted or code is re-executed. Useful for disconnecting resources or unsubscribing from events.
 
-### Message Passing
+### Audio Reactivity
 
-- `send(message)` - send a message out of the default outlet
-- `send(outlet, message)` - send a message out of a specific outlet (0-indexed)
-- `recv(callback)` - receive messages from connected inlets
-
-Use `meta.inlet` in the `recv` callback to distinguish which inlet the message came from.
+Use `fft()` to get audio frequency analysis from a connected `fft~` object. See [Audio Reactivity](/docs/audio-reactivity).
 
 ### Named Channels
 
@@ -51,7 +65,7 @@ send({ x: 100 }, { to: 'position' });
 recv((data, meta) => {
   console.log(data);           // the message
   console.log(meta.channel);   // 'position'
-  console.log(meta.source);    // sender's node ID
+  console.log(meta.source);    // sender's object ID
 }, { from: 'position' });
 ```
 
@@ -59,21 +73,34 @@ The `to` option is overloaded - a number routes to an outlet, a string broadcast
 
 Named channels work across `js`, `worker`, and visual `send`/`recv` objects. This enables wireless communication without visual connections.
 
-### Port Configuration
+### Presentation
 
-- `setPortCount(inletCount, outletCount)` - set the number of message inlets and outlets
+These methods requires the object's id. Use `Ctrl/Cmd + Shift + C` to copy selected object ids, and `Shift + Drag` to select multiple objects.
 
-### object Title
+- `focusObjects(options)` - pan and zoom the canvas using xy-flow's `fitView` options.
 
-- `setTitle(title)` - set the display title of the object
+  ```javascript
+  focusObjects({ nodes: [{ id: 'node-1' }], duration: 800, padding: 0.3 });
+  ```
 
-### Async Support
+- `setBackgroundOutput(id)` - set a object as the background visual output by ID (same as "Output to background" in the UI), ass `null` to clear
 
-Top-level `await` is supported. Use `await delay(ms)` to pause execution.
+  ```javascript
+  setBackgroundOutput('canvas-1');
+  setBackgroundOutput(null); // clear
+  ```
 
-### Audio Analysis
+- `pauseObject(id)` - pause a object by ID (works on visual objects, js, worker, MediaPipe, and any object that supports pausing).
 
-Use `fft()` to get audio frequency data from a connected `fft~` object. See [Audio Reactivity](/docs/audio-reactivity) for details.
+  ```javascript
+  pauseObject('p5-1');
+  ```
+
+- `unpauseObject(id)` - unpause a object by ID
+
+  ```javascript
+  unpauseObject('p5-1');
+  ```
 
 ### Clock & Timing
 
@@ -92,14 +119,15 @@ clock.every('1:0:0', () => pulse());
 
 See [Clock API](/docs/clock-api) for full scheduling documentation.
 
-### LLM Integration
+### AI
 
-Use `await llm(prompt, options?)` to call Google's Gemini API:
+Use `await llm(prompt, options?)` to call Google's Gemini API, using Gemini 3 Flash:
 
 ```javascript
 await llm("Generate a JSON of happy birthday");
 
-// With options
+// With options.
+// Use Ctrl/Cmd + Shift + C to copy object id.
 await llm("What's in this frame?", {
   abortSignal: controller.signal,
   imageNodeId: "glsl-54",  // include visual object output as context
