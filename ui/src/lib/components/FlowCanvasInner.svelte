@@ -37,7 +37,8 @@
     isCablesVisible,
     connectingFromAcceptsFloat,
     connectingFromIsAudioParam,
-    requestFocusNodeId
+    requestFocusNodeId,
+    requestFitView
   } from '../../stores/ui.store';
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
@@ -288,7 +289,8 @@
     () => $requestFocusNodeId,
     () => nodes,
     (n) => (nodes = n),
-    fitView
+    fitView,
+    () => $requestFitView
   );
 
   useNodeLabels(() => nodes);
@@ -624,6 +626,7 @@
         }
       },
       getSelectedNodeId: () => (selectedNodeIds.length === 1 ? selectedNodeIds[0] : null),
+      getSelectedNodeIds: () => selectedNodeIds,
       isAiPromptOpen: () => aiPromptInstances.some((i) => i.open)
     });
 

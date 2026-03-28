@@ -29,6 +29,10 @@ export const jsRunnerInstructions = `
 **Common Runtime Functions:**
 - console.log() - Log to virtual console (not browser console)
 - setTitle(title) - Set node display title
+- focusObjects(options) - Pan and zoom the canvas using fitView options, e.g. { nodes: [{ id: 'node-1' }], duration: 800, padding: 0.3 }
+- setBackgroundOutput(id) - Set a node as the background visual output by ID, or null to clear
+- pauseObject(id) - Pause a node by ID (works on visual nodes, MediaPipe, and any node that supports pausing)
+- unpauseObject(id) - Unpause a node by ID
 - setInterval(cb, ms), setTimeout(cb, ms) - Timers with auto-cleanup
 - delay(ms) - Promise that resolves after ms (rejects if node stops)
 - requestAnimationFrame(cb) - Animation frame with auto-cleanup

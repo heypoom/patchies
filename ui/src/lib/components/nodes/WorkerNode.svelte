@@ -14,6 +14,7 @@
   import { SettingsManager } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -159,6 +160,20 @@
     isMessageCallbackActive = false;
     isTimerCallbackActive = false;
   }
+
+  let isPaused = $state(false);
+
+  function togglePlayback() {
+    if (isPaused) {
+      isPaused = false;
+      executeCode();
+    } else {
+      isPaused = true;
+      cleanupRunningTasks();
+    }
+  }
+
+  useNodeSetPaused(nodeId, () => isPaused, togglePlayback);
 
   async function executeCode() {
     isRunning = true;

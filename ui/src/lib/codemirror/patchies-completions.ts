@@ -246,6 +246,34 @@ const patchiesAPICompletions: Completion[] = [
     info: 'Flash the node border to indicate activity',
     apply: 'flash()'
   },
+  {
+    label: 'focusObjects',
+    type: 'function',
+    detail: '(options: FitViewOptions) => void',
+    info: 'Pan and zoom the canvas using fitView options, e.g. { nodes: [{ id: "node-1" }], duration: 500, padding: 0.3 }',
+    apply: 'focusObjects()'
+  },
+  {
+    label: 'pauseObject',
+    type: 'function',
+    detail: '(id: string) => void',
+    info: 'Pause a node by ID (works on visual nodes, MediaPipe, and any node that supports pausing)',
+    apply: 'pauseObject()'
+  },
+  {
+    label: 'unpauseObject',
+    type: 'function',
+    detail: '(id: string) => void',
+    info: 'Unpause a node by ID',
+    apply: 'unpauseObject()'
+  },
+  {
+    label: 'setBackgroundOutput',
+    type: 'function',
+    detail: '(id: string | null) => void',
+    info: 'Set the background output to a node by ID, or pass null to clear',
+    apply: 'setBackgroundOutput()'
+  },
   // Storage
   {
     label: 'kv',
@@ -415,6 +443,10 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'elem~'
   ],
   flash: ['js', 'worker'],
+  focusObjects: ['js'],
+  setBackgroundOutput: ['js'],
+  pauseObject: ['js'],
+  unpauseObject: ['js'],
   settings: [
     'js',
     'worker',

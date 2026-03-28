@@ -85,6 +85,7 @@ export interface KeyboardShortcutActions {
   // AI editing state
   setAiEditingNodeId: (nodeId: string | null) => void;
   getSelectedNodeId: () => string | null;
+  getSelectedNodeIds: () => string[];
 }
 
 /**
@@ -121,6 +122,30 @@ export class KeyboardShortcutManager {
     const hasTextSelection = this.actions.hasTextSelection();
     const key = event.key.toLowerCase();
     const isMod = event.metaKey || event.ctrlKey;
+
+    // CMD+Shift+C: Copy node ID(s) to clipboard
+    if (key === 'c' && isMod && event.shiftKey && !isTyping) {
+      const nodeIds = this.actions.getSelectedNodeIds();
+      if (nodeIds.length > 0) {
+        event.preventDefault();
+        const text = nodeIds.length === 1 ? nodeIds[0] : JSON.stringify(nodeIds);
+        navigator.clipboard.writeText(text).then(
+          () => {
+            toast.success(
+              nodeIds.length === 1
+                ? `Copied node ID: ${nodeIds[0]}`
+                : `Copied ${nodeIds.length} node IDs`
+            );
+          },
+          (err) => {
+            console.error('Failed to copy node ID:', err);
+            toast.error('Failed to copy to clipboard');
+          }
+        );
+      }
+
+      return;
+    }
 
     // CMD+C: Copy
     if (key === 'c' && isMod && !isTyping && hasNodeSelected && !hasTextSelection) {

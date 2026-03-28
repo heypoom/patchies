@@ -15,7 +15,7 @@ Example - Documentation:
 {
   "type": "markdown",
   "data": {
-    "content": "# My Patch\\n\\nThis patch does **amazing** things:\\n\\n- Feature 1\\n- Feature 2\\n- Feature 3"
+    "markdown": "# My Patch\\n\\nThis patch does **amazing** things:\\n\\n- Feature 1\\n- Feature 2\\n- Feature 3"
   }
 }
 \`\`\`
@@ -25,7 +25,7 @@ Example - Instructions:
 {
   "type": "markdown",
   "data": {
-    "content": "## How to use\\n\\n1. Connect the slider to the frequency inlet\\n2. Press the button to start\\n3. Adjust parameters to taste"
+    "markdown": "## How to use\\n\\n1. Connect the slider to the frequency inlet\\n2. Press the button to start\\n3. Adjust parameters to taste"
   }
 }
 \`\`\``;

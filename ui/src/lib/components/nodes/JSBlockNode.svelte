@@ -11,6 +11,12 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { requestFitView } from '../../../stores/ui.store';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import type { FitViewOptions } from '@xyflow/svelte';
+  import { overrideOutputNodeId } from '../../../stores/renderer.store';
+  import { GLSystem } from '$lib/canvas/GLSystem';
+  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -130,6 +136,20 @@
     settingsManager.clearCallbacks();
   }
 
+  let isPaused = $state(false);
+
+  function togglePlayback() {
+    if (isPaused) {
+      isPaused = false;
+      executeCode();
+    } else {
+      isPaused = true;
+      cleanupRunningTasks();
+    }
+  }
+
+  useNodeSetPaused(nodeId, () => isPaused, togglePlayback);
+
   async function executeCode() {
     isRunning = true;
     isMessageCallbackActive = false;
@@ -165,7 +185,27 @@
         setPortCount,
         setRunOnMount,
         setTitle,
-        extraContext: { flash, settings: settingsAPI },
+        extraContext: {
+          flash,
+          focusObjects: (options: FitViewOptions) => requestFitView.set(options),
+          setBackgroundOutput: (id: string | null) => {
+            overrideOutputNodeId.set(id);
+            GLSystem.getInstance().setOverrideOutputNode(id);
+          },
+          pauseObject: (id: string) =>
+            PatchiesEventBus.getInstance().dispatch({
+              type: 'nodeSetPaused',
+              nodeId: id,
+              paused: true
+            }),
+          unpauseObject: (id: string) =>
+            PatchiesEventBus.getInstance().dispatch({
+              type: 'nodeSetPaused',
+              nodeId: id,
+              paused: false
+            }),
+          settings: settingsAPI
+        },
         onSchedulerCallbackRegistered: () => {
           isTimerCallbackActive = true;
         }

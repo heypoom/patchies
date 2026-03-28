@@ -78,6 +78,9 @@ export * from './bg-out';
 export * from './send-vdo';
 export * from './recv-vdo';
 export * from './note';
+export * from './label';
+export * from './title';
+export * from './link';
 export * from './meter';
 export * from './sequencer';
 export * from './bytebeat';
@@ -166,6 +169,9 @@ import { bgOutSchema } from './bg-out';
 import { sendVdoSchema } from './send-vdo';
 import { recvVdoSchema } from './recv-vdo';
 import { noteSchema } from './note';
+import { labelSchema } from './label';
+import { titleSchema } from './title';
+import { linkSchema } from './link';
 import { meterSchema } from './meter';
 import { sequencerSchema } from './sequencer';
 import { bytebeatSchema } from './bytebeat';
@@ -273,6 +279,9 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'send.vdo': sendVdoSchema,
   'recv.vdo': recvVdoSchema,
   note: noteSchema,
+  label: labelSchema,
+  title: titleSchema,
+  link: linkSchema,
   'meter~': meterSchema,
   sequencer: sequencerSchema,
   'bytebeat~': bytebeatSchema,

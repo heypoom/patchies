@@ -76,9 +76,11 @@
     if (!nodrag && !nopan && !nowheel) return 'cursor-grab';
 
     const classes: string[] = ['cursor-default'];
+
     if (nodrag) classes.push('nodrag');
     if (nopan) classes.push('nopan');
     if (nowheel) classes.push('nowheel');
+
     return classes.join(' ');
   });
 </script>
