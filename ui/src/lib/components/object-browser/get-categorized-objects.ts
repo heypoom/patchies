@@ -21,14 +21,7 @@ export interface CategoryGroup {
  * Fallback descriptions for objects that don't have schemas
  */
 const FALLBACK_DESCRIPTIONS: Record<string, string> = {
-  bchrn: 'Butterchurn milkdrop visualizer with audio reactivity',
-  label: 'Text label for annotations and notes',
-  link: 'Clickable hyperlink button',
-  title: 'Centered text card for slide titles and diagram labels',
-  sequencer: 'Multi-track step sequencer synced to the global transport',
-  curve: 'Breakpoint curve editor — send X to get Y, or bang for the full point list',
-  projmap:
-    'Projection mapper — warp video textures onto N-point polygons with a built-in point editor'
+  bchrn: 'Butterchurn milkdrop visualizer with audio reactivity'
 };
 
 /**
