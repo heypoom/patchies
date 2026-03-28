@@ -45,6 +45,7 @@ import { uxnPrompt } from './uxn';
 import { sonicPrompt } from './sonic~';
 import { elemPrompt } from './elem~';
 import { labelPrompt } from './label';
+import { titlePrompt } from './title';
 import { vuePrompt } from './vue';
 import { threePrompt } from './three';
 import { threeDomPrompt } from './three.dom';
@@ -105,6 +106,7 @@ export const objectPrompts: Record<string, string> = {
   'sonic~': sonicPrompt,
   'elem~': elemPrompt,
   label: labelPrompt,
+  title: titlePrompt,
   three: threePrompt,
   'three.dom': threeDomPrompt,
   projmap: projmapPrompt,

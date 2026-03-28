@@ -48,12 +48,13 @@
   });
 
   const handleClass = 'z-1';
-
   const totalOutlets = $derived(messageOutletCount + (hasVideoOutlet ? 1 : 0));
 
-  if (onToggleEnabled) {
-    useNodeSetPaused(nodeId, () => !enabled, onToggleEnabled);
-  }
+  useNodeSetPaused(
+    nodeId,
+    () => !enabled,
+    () => onToggleEnabled?.()
+  );
 
   const statusColor = $derived(
     match(status)

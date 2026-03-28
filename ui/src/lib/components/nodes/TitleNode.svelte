@@ -99,6 +99,7 @@
   }
 
   function handleBlur() {
+    if (!isEditing) return;
     isEditing = false;
     textTracker.onBlur();
   }
@@ -106,9 +107,17 @@
   function handleKeydown(e: KeyboardEvent) {
     match(e.key)
       .with('Escape', () => {
+        textTracker.onBlur();
         isEditing = false;
       })
       .otherwise(() => {});
+  }
+
+  function handleKeyActivate(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === ' ') e.preventDefault();
+      handleDoubleClick();
+    }
   }
 
   function handleInput(e: Event) {
@@ -142,6 +151,7 @@
       ]}
       style="width: {width}px; height: {height}px; background-color: {color}; border-color: {textColor}22;"
       ondblclick={handleDoubleClick}
+      onkeydown={handleKeyActivate}
       role="button"
       tabindex="0"
     >

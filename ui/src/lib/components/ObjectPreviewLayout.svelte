@@ -69,9 +69,11 @@
     onSettingsRevertAll?: () => void;
   } = $props();
 
-  if (nodeId && onPlaybackToggle) {
-    useNodeSetPaused(nodeId, () => paused, onPlaybackToggle);
-  }
+  useNodeSetPaused(
+    nodeId ?? '',
+    () => paused,
+    () => onPlaybackToggle?.()
+  );
 
   const editorGap = 10;
 

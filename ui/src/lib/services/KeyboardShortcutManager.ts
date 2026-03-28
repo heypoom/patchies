@@ -129,11 +129,18 @@ export class KeyboardShortcutManager {
       if (nodeIds.length > 0) {
         event.preventDefault();
         const text = nodeIds.length === 1 ? nodeIds[0] : JSON.stringify(nodeIds);
-        navigator.clipboard.writeText(text);
-        toast.success(
-          nodeIds.length === 1
-            ? `Copied node ID: ${nodeIds[0]}`
-            : `Copied ${nodeIds.length} node IDs`
+        navigator.clipboard.writeText(text).then(
+          () => {
+            toast.success(
+              nodeIds.length === 1
+                ? `Copied node ID: ${nodeIds[0]}`
+                : `Copied ${nodeIds.length} node IDs`
+            );
+          },
+          (err) => {
+            console.error('Failed to copy node ID:', err);
+            toast.error('Failed to copy to clipboard');
+          }
         );
       }
 
