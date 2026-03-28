@@ -51,6 +51,7 @@
   let showSettings = $state(false);
   let isEditing = $state(false);
   let editableRef: HTMLDivElement | null = $state(null);
+  let editingText = $state('');
 
   const [defaultWidth, defaultHeight] = [250, 50];
 
@@ -78,50 +79,67 @@
     updateNodeData(node.id, { ...node.data, ...updates });
   }
 
-  function handleDoubleClick(e: MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
+  function handleDoubleClick(e?: MouseEvent) {
+    e?.preventDefault();
+    e?.stopPropagation();
+    editingText = text;
     isEditing = true;
     textTracker.onFocus();
-
-    setTimeout(() => {
-      if (!editableRef) return;
-      editableRef.innerText = text;
-      editableRef.focus();
-      // Place cursor at end
-      const range = document.createRange();
-      const sel = window.getSelection();
-      range.selectNodeContents(editableRef);
-      range.collapse(false);
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-    }, 10);
   }
+
+  // Initialize content and focus when entering edit mode
+  $effect(() => {
+    if (!isEditing || !editableRef) return;
+    // eslint-disable-next-line svelte/no-dom-manipulating
+    editableRef.innerHTML = text;
+    editableRef.focus();
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(editableRef);
+    range.collapse(false);
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  });
 
   function handleBlur() {
     if (!isEditing) return;
+    updateConfig({ text: editingText });
     isEditing = false;
     textTracker.onBlur();
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    const isMod = e.metaKey || e.ctrlKey;
+
     match(e.key)
       .with('Escape', () => {
+        updateConfig({ text: editingText });
         textTracker.onBlur();
         isEditing = false;
       })
-      .otherwise(() => {});
+      .otherwise(() => {
+        if (isMod && e.key === 'b') {
+          e.preventDefault();
+          e.stopPropagation();
+          document.execCommand('bold');
+        } else if (isMod && e.key === 'i') {
+          e.preventDefault();
+          e.stopPropagation();
+          document.execCommand('italic');
+        } else if (isMod && e.key === 'u') {
+          e.preventDefault();
+          e.stopPropagation();
+          document.execCommand('underline');
+        }
+      });
   }
 
   function handleKeyActivate(e: KeyboardEvent) {
+    if (isEditing) return;
     if (e.key === 'Enter' || e.key === ' ') {
       if (e.key === ' ') e.preventDefault();
       handleDoubleClick();
     }
-  }
-
-  function handleInput(e: Event) {
-    updateConfig({ text: (e.target as HTMLDivElement).innerText });
   }
 </script>
 
@@ -160,7 +178,9 @@
         <div
           bind:this={editableRef}
           contenteditable="true"
-          oninput={handleInput}
+          oninput={() => {
+            editingText = editableRef?.innerHTML ?? '';
+          }}
           onblur={handleBlur}
           onkeydown={handleKeydown}
           class="nodrag flex h-full w-full cursor-text items-center justify-center overflow-hidden px-3 text-center outline-none"
@@ -172,7 +192,8 @@
           style="font-size: {fontSize}px; color: {textColor}; line-height: 1.2; white-space: pre-wrap; font-family: {fontFamily};"
         >
           {#if text}
-            {text}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html text}
           {:else}
             <span class="text-sm" style="opacity: 0.6;">Double-click to edit</span>
           {/if}
