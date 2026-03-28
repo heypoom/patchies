@@ -16,6 +16,7 @@
   import type { FitViewOptions } from '@xyflow/svelte';
   import { overrideOutputNodeId } from '../../../stores/renderer.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -134,6 +135,20 @@
     clearMessageHandler();
     settingsManager.clearCallbacks();
   }
+
+  let isPaused = $state(false);
+
+  function togglePlayback() {
+    if (isPaused) {
+      isPaused = false;
+      executeCode();
+    } else {
+      isPaused = true;
+      cleanupRunningTasks();
+    }
+  }
+
+  useNodeSetPaused(nodeId, () => isPaused, togglePlayback);
 
   async function executeCode() {
     isRunning = true;
