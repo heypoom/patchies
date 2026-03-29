@@ -1,5 +1,3 @@
-import { messagingInstructions } from './shared-messaging';
-
 export const tonePrompt = `## tone~ Object Instructions
 
 Tone.js synthesis and audio processing.
@@ -18,8 +16,6 @@ Tone.js synthesis and audio processing.
 **Tone-specific gotchas:**
 - fft() is NOT available (audio node, not video)
 - Use return { cleanup } instead of onCleanup for Tone.js disposal
-
-${messagingInstructions}
 
 Example - Simple synth:
 \`\`\`json

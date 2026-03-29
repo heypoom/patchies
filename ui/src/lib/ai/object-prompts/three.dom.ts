@@ -1,6 +1,4 @@
 import { fftInstructions } from './shared-fft';
-import { messagingInstructions } from './shared-messaging';
-
 export const threeDomPrompt = `## three.dom Object Instructions
 
 Three.js 3D graphics on the main thread. Use for interactive 3D with mouse/keyboard input. Renders directly to canvas (no worker).
@@ -25,8 +23,6 @@ Three.js 3D graphics on the main thread. Use for interactive 3D with mouse/keybo
 - Call setCanvasSize(width, height) with appropriate dimensions. Do not exceed 2000x2000 to avoid performance issues.
 - When using setCanvasSize, make sure to define width and height variables:
   e.g. const width = 800, height = 600; setCanvasSize(width, height);
-
-${messagingInstructions}
 
 ${fftInstructions}
 

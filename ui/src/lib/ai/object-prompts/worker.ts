@@ -1,4 +1,3 @@
-import { messagingInstructions } from './shared-messaging';
 import { esmInstructions, runOnMountInstructions } from './shared-jsrunner';
 
 export const workerPrompt = `## worker Object Instructions
@@ -8,8 +7,6 @@ JavaScript execution in a dedicated Web Worker thread for CPU-intensive computat
 **Additional worker methods:**
 ${esmInstructions}
 ${runOnMountInstructions}
-
-${messagingInstructions}
 
 **Worker-specific gotchas:**
 - requestAnimationFrame uses 60fps setInterval fallback (no DOM in workers)

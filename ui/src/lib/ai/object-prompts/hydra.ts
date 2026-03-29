@@ -1,6 +1,4 @@
 import { fftInstructions } from './shared-fft';
-import { messagingInstructions } from './shared-messaging';
-
 export const hydraPrompt = `## hydra Object Instructions
 
 Live coding video synthesis with chainable Hydra functions.
@@ -14,8 +12,6 @@ Live coding video synthesis with chainable Hydra functions.
 **Hydra-specific gotchas:**
 - Hydra has its own render loop - use arrow functions for dynamic values instead of requestAnimationFrame
 - When using settings in arrow functions, always use \`?? defaultValue\` fallback as settings will not be loaded on first render (e.g., \`() => settings.get('speed') ?? 1\`)
-
-${messagingInstructions}
 
 ${fftInstructions}
 

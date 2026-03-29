@@ -1,6 +1,4 @@
 import { fftInstructions } from './shared-fft';
-import { messagingInstructions } from './shared-messaging';
-
 export const canvasDomPrompt = `## canvas.dom Object Instructions
 
 Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
@@ -30,7 +28,6 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - When using setCanvasSize, make sure to define width and height variables:
   e.g. const width = 800, height = 600; setCanvasSize(width, height);
 
-${messagingInstructions}
 ${fftInstructions}
 
 Example - XY pad:

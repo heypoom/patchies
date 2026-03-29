@@ -42,6 +42,12 @@ export const jsRunnerInstructions = `
 - await llm(prompt, options?) - Call Gemini API (requires API key in settings)
   * Options: { abortSignal?: AbortSignal }
 
+**Message Passing (wired ports):**
+- send(data, {to: outletIndex}?) - Send to outlet (omit {to} to send to all outlets)
+- recv((data, meta) => {}) - Register inlet callback (data: payload; meta.inlet: inlet index)
+- setPortCount(inlets, outlets) - Configure number of message ports
+- Bang is {type: 'bang'}; control messages MUST have a 'type' field
+
 **Named Channels (wireless messaging):**
 - send(data, { to: 'name' }) - Broadcast to all listeners on channel (string 'to' = channel)
 - recv(cb, { from: 'name' }) - Receive from channel (cb receives data, meta with source/channel)

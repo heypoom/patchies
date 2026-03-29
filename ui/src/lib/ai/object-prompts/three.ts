@@ -1,6 +1,4 @@
 import { fftInstructions } from './shared-fft';
-import { messagingInstructions } from './shared-messaging';
-
 export const threePrompt = `## three Object Instructions
 
 Three.js 3D graphics environment running in a Web Worker (offscreen rendering). Use for GPU-accelerated 3D scenes that chain with other video nodes.
@@ -25,8 +23,6 @@ Three.js 3D graphics environment running in a Web Worker (offscreen rendering). 
 **Font & element sizes:**
 - The node is displayed very zoomed out in the patch canvas. Use large font sizes (18px minimum, 24–32px for primary text) so text remains readable.
 - Similarly, make shapes, lines, and UI elements larger than you would for a full-screen sketch.
-
-${messagingInstructions}
 
 ${fftInstructions}
 

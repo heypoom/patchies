@@ -1,4 +1,3 @@
-import { messagingInstructions } from './shared-messaging';
 import { patcherLibraryInstructions } from './shared-jsrunner';
 
 export const sonicPrompt = `## sonic~ Object Instructions
@@ -12,8 +11,6 @@ SuperCollider synthesis via SuperSonic AudioWorklet.
 
 **Sonic-specific gotchas:**
 - fft() is NOT available (audio output node, not video)
-
-${messagingInstructions}
 
 ${patcherLibraryInstructions}
 

@@ -1,5 +1,3 @@
-import { messagingInstructions } from './shared-messaging';
-
 export const vuePrompt = `## vue Object Instructions
 
 Vue 3 reactive components with Composition API. Container is fluid-sized by default.
@@ -26,8 +24,6 @@ Vue 3 reactive components with Composition API. Container is fluid-sized by defa
 
 **Vue-specific gotchas:**
 - fft() is NOT available (no video pipeline)
-
-${messagingInstructions}
 
 **Caveats**
 - If you use a border, you must use rounded-lg in the outer container, otherwise the border will be cut off.

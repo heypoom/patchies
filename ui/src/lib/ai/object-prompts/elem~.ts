@@ -1,4 +1,3 @@
-import { messagingInstructions } from './shared-messaging';
 import { patcherLibraryInstructions } from './shared-jsrunner';
 
 export const elemPrompt = `## elem~ Object Instructions
@@ -19,8 +18,6 @@ Elementary Audio declarative DSP synthesis and processing.
 
 **Elem-specific gotchas:**
 - fft() is NOT available (audio node, not video)
-
-${messagingInstructions}
 
 ${patcherLibraryInstructions}
 

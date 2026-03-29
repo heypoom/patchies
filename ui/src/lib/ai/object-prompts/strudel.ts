@@ -1,5 +1,3 @@
-import { messagingInstructions } from './shared-messaging';
-
 export const strudelPrompt = `## strudel Object Instructions
 
 Strudel live music coding based on TidalCycles.
@@ -15,7 +13,16 @@ Strudel live music coding based on TidalCycles.
 - Standard Strudel: sound(), note(), setcpm(), cpm() for tempo
 - All chainable Strudel pattern functions
 
-${messagingInstructions}
+**Message Passing:**
+- recv((data, meta) => {}) - Register inlet callback
+  * data: the message payload (use directly, NOT m.data)
+  * meta.inlet: inlet index (0, 1, 2, ...)
+- setPortCount(inlets, outlets) - Configure number of message ports
+
+**Control Messages Format:**
+- Bang is {type: 'bang'}
+- Control messages MUST have a 'type' field (e.g. {type: 'bang'}, {type: 'play'})
+- Common control messages: bang (most common), clear, reset, start, stop, pause, play, run, toggle
 
 Example - Drum pattern:
 \`\`\`json

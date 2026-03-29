@@ -1,5 +1,3 @@
-import { messagingInstructions } from './shared-messaging';
-
 export const domPrompt = `## dom Object Instructions
 
 DOM manipulation node with direct JavaScript access to a root div element. Container is fluid-sized by default.
@@ -16,8 +14,6 @@ DOM manipulation node with direct JavaScript access to a root div element. Conta
 
 **DOM-specific gotchas:**
 - fft() is NOT available (no video pipeline)
-
-${messagingInstructions}
 
 **Caveats**
 - Do NOT use gradient colors in Tailwind classes, like "bg-gradient-to-r from-amber-500 to-orange-400". They are not supported.

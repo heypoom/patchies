@@ -1,5 +1,4 @@
 import { fftInstructions } from './shared-fft';
-import { messagingInstructions } from './shared-messaging';
 import {
   esmInstructions,
   runOnMountInstructions,
@@ -13,8 +12,6 @@ JavaScript execution block for general-purpose logic and utilities.
 **Additional js methods:**
 ${esmInstructions}
 ${runOnMountInstructions}
-
-${messagingInstructions}
 
 ${fftInstructions}
 
