@@ -15,7 +15,9 @@ export const JS_ENABLED_OBJECTS = new Set([
   'vue',
   'sonic~',
   'tone~',
-  'elem~'
+  'elem~',
+  'textmode',
+  'textmode.dom'
 ]);
 
 /**

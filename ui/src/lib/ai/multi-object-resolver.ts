@@ -9,6 +9,7 @@
 
 import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descriptions';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/shared-jsrunner';
+import { UI_DESIGN_OBJECTS, UI_DESIGN_GUIDELINES } from './object-prompts/ui-design-guidelines';
 import { generateHandleDocs } from './generate-handle-docs';
 import { extractJson } from './extract-json';
 
@@ -373,6 +374,9 @@ function buildMultiObjectGeneratorPrompt(objectTypes: string[], structure: strin
     ? `## Common JSRunner Runtime Functions (applies to: ${objectTypes.filter((t) => JS_ENABLED_OBJECTS.has(t)).join(', ')})\n\n${jsRunnerInstructions}\n\n---\n\n`
     : '';
 
+  const hasUiObject = objectTypes.some((type) => UI_DESIGN_OBJECTS.has(type));
+  const uiDesignInstructions = hasUiObject ? `${UI_DESIGN_GUIDELINES}\n\n---\n\n` : '';
+
   // Deduplicate object types to avoid repeated prompt blocks
   const uniqueObjectTypes = [...new Set(objectTypes)];
 
@@ -442,7 +446,7 @@ LAYOUT EXAMPLE (top-to-bottom like Pd with generous spacing):
 
 OBJECT-SPECIFIC INSTRUCTIONS:
 
-${jsInstructions}${objectInstructions}
+${jsInstructions}${uiDesignInstructions}${objectInstructions}
 
 Now generate the multi-object configuration.`;
 }

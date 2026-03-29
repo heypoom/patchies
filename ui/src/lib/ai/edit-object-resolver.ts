@@ -6,6 +6,7 @@
 import { getObjectSpecificInstructions } from './object-descriptions';
 import { extractJson } from './extract-json';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/shared-jsrunner';
+import { UI_DESIGN_OBJECTS, UI_DESIGN_GUIDELINES } from './object-prompts/ui-design-guidelines';
 
 /**
  * Edit an existing object with a known type - skips routing, goes directly to generation.
@@ -155,13 +156,15 @@ RESPONSE FORMAT:
 
 `;
 
-  // Add JSRunner instructions once if this is a JS-enabled object
   const jsInstructions = JS_ENABLED_OBJECTS.has(objectType)
     ? `## Common JSRunner Runtime Functions\n\n${jsRunnerInstructions}\n\n`
     : '';
 
-  // Add object-specific instructions
+  const uiDesignInstructions = UI_DESIGN_OBJECTS.has(objectType)
+    ? `${UI_DESIGN_GUIDELINES}\n\n`
+    : '';
+
   const objectInstructions = getObjectSpecificInstructions(objectType);
 
-  return basePrompt + jsInstructions + objectInstructions;
+  return basePrompt + jsInstructions + uiDesignInstructions + objectInstructions;
 }
