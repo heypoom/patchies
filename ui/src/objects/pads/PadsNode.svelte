@@ -23,6 +23,7 @@
     type PadCount,
     type NoteOffMode
   } from './constants';
+  import { SvelteMap } from 'svelte/reactivity';
 
   let node: NodeProps & { data: PadsNodeData } = $props();
 
@@ -68,10 +69,12 @@
   });
 
   function flashPad(padIndex: number, velocity: number) {
-    activeFlash = new Map([...activeFlash, [padIndex, velocity]]);
+    activeFlash = new SvelteMap([...activeFlash, [padIndex, velocity]]);
+
     setTimeout(() => {
-      const next = new Map(activeFlash);
+      const next = new SvelteMap(activeFlash);
       next.delete(padIndex);
+
       activeFlash = next;
     }, 150);
   }

@@ -1,8 +1,8 @@
 import { match } from 'ts-pattern';
 import type { AudioNodeV2, AudioNodeGroup } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
-import { padsMessages } from './schema';
 import { BASE_NOTE, type NoteOffMode, type PadCount } from './constants';
+import { messages } from '$lib/objects/schemas';
 
 interface Voice {
   source: AudioBufferSourceNode;
@@ -63,14 +63,16 @@ export class PadsAudioNode implements AudioNodeV2 {
     if (key !== 'message') return;
 
     match(message)
-      .with(padsMessages.noteOn, ({ note, velocity }) => {
+      .with(messages.noteOn, ({ note, velocity }) => {
         const padIndex = note - BASE_NOTE;
+
         if (padIndex >= 0 && padIndex < this.padCount) {
           this.triggerOn(padIndex, velocity);
         }
       })
-      .with(padsMessages.noteOff, ({ note }) => {
+      .with(messages.noteOff, ({ note }) => {
         const padIndex = note - BASE_NOTE;
+
         if (padIndex >= 0 && padIndex < this.padCount) {
           this.triggerOff(padIndex);
         }
