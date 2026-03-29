@@ -61,6 +61,11 @@ export const PROVIDER_META: Record<string, { badge: string; label: string; color
     badge: 'SCD',
     label: 'SuperSonic SynthDefs (Sam Aaron) — 120 built-in SuperCollider synthdefs',
     color: 'text-indigo-400 bg-indigo-900/30'
+  },
+  freesound: {
+    badge: 'FS',
+    label: 'Freesound — community sound library (requires API key)',
+    color: 'text-yellow-400 bg-yellow-900/30'
   }
 };
 

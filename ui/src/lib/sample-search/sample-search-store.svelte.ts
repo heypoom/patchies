@@ -1,9 +1,10 @@
-import type { SampleResult } from './types';
+import type { SampleProvider, SampleResult } from './types';
 import { TidalDrumMachinesProvider } from './providers/tidal-drum-machines';
 import { DoughSamplesProvider } from './providers/dough-samples';
 import { StrudelJsonProvider } from './providers/strudel-json';
 import { SupersonicSamplesProvider } from './providers/supersonic-samples';
 import { SupersonicSynthdefsProvider } from './providers/supersonic-synthdefs';
+import { FreesoundProvider } from './providers/freesound';
 import { SvelteSet } from 'svelte/reactivity';
 
 const STRUDEL_PROVIDERS = [
@@ -56,13 +57,36 @@ const STRUDEL_PROVIDERS = [
 
 const MAX_RESULTS = 500;
 
+export const freesoundProvider = new FreesoundProvider();
+
 const ALL_PROVIDERS = [
   new TidalDrumMachinesProvider(),
   new DoughSamplesProvider(),
   ...STRUDEL_PROVIDERS,
   new SupersonicSamplesProvider(),
-  new SupersonicSynthdefsProvider()
+  new SupersonicSynthdefsProvider(),
+  freesoundProvider
 ];
+
+const ENABLED_PROVIDERS_KEY = 'sample-search:enabled-providers';
+const DEFAULT_ENABLED = new Set(ALL_PROVIDERS.filter((p) => p.id !== 'freesound').map((p) => p.id));
+
+function loadEnabledProviders(): Set<string> {
+  try {
+    const stored = localStorage.getItem(ENABLED_PROVIDERS_KEY);
+
+    if (stored) {
+      const ids = JSON.parse(stored) as string[];
+      const valid = ids.filter((id): id is string => ALL_PROVIDERS.some((p) => p.id === id));
+
+      if (valid.length > 0) return new Set(valid);
+    }
+  } catch {
+    // ignore malformed storage
+  }
+
+  return new Set(DEFAULT_ENABLED);
+}
 
 class SampleSearchStore {
   query = $state('');
@@ -77,11 +101,12 @@ class SampleSearchStore {
   /** Ordered list of all providers — read-only for the UI */
   readonly providers = ALL_PROVIDERS;
 
-  /** Set of enabled provider ids — all enabled by default */
-  enabledProviders = $state<Set<string>>(new Set(ALL_PROVIDERS.map((p) => p.id)));
+  /** Set of enabled provider ids — persisted to localStorage, Freesound off by default */
+  enabledProviders = $state<Set<string>>(loadEnabledProviders());
 
   /** Number of providers that have successfully loaded their index */
   loadedCount = $state(0);
+
   /** Whether index loading has started */
   isIndexLoading = $state(false);
 
@@ -101,6 +126,7 @@ class SampleSearchStore {
     }
 
     this.enabledProviders = next;
+    localStorage.setItem(ENABLED_PROVIDERS_KEY, JSON.stringify([...next]));
 
     // Re-run search with current query against new filter
     if (this.query.trim()) {
@@ -125,15 +151,19 @@ class SampleSearchStore {
           if (p.isLoaded()) {
             successCount++;
             this.loadedCount++;
+
             return;
           }
+
           try {
             await p.loadIndex();
+
             successCount++;
           } catch (e) {
             failures.push(p.name);
             console.warn(`[sample-search] Failed to load ${p.name}:`, e);
           }
+
           this.loadedCount++;
         })
       );
@@ -164,6 +194,7 @@ class SampleSearchStore {
       this.results = [];
       this.isLoading = false;
       this.error = null;
+
       return;
     }
 
@@ -191,8 +222,15 @@ class SampleSearchStore {
 
     const allResults = resultArrays.flat();
 
+    // Freesound results first when the provider is enabled
+    const freesoundResults = allResults.filter((r) => r.provider === 'freesound');
+    const otherResults = allResults.filter((r) => r.provider !== 'freesound');
+
+    const sorted =
+      freesoundResults.length > 0 ? [...freesoundResults, ...otherResults] : allResults;
+
     // Cap total results
-    this.results = allResults.slice(0, MAX_RESULTS);
+    this.results = sorted.slice(0, MAX_RESULTS);
     this.isLoading = false;
   }
 
@@ -201,7 +239,9 @@ class SampleSearchStore {
       this.selectedId = null;
       return;
     }
+
     this.selectedId = result.id;
+
     if (this.autoPreview && result.kind !== 'synthdef') {
       this.playPreview(result);
     }
@@ -209,12 +249,14 @@ class SampleSearchStore {
 
   setAutoPreview(value: boolean): void {
     this.autoPreview = value;
+
     localStorage.setItem('sample-search:auto-preview', String(value));
   }
 
   setPreviewVolume(value: number): void {
     this.previewVolume = value;
     localStorage.setItem('sample-search:preview-volume', String(value));
+
     if (this.currentAudio) {
       this.currentAudio.volume = value;
     }
@@ -228,6 +270,7 @@ class SampleSearchStore {
 
     const audio = new Audio(result.url);
     audio.volume = this.previewVolume;
+
     this.currentAudio = audio;
     this.playingId = result.id;
 
@@ -242,6 +285,7 @@ class SampleSearchStore {
       if (this.playingId === result.id && this.currentAudio === audio) {
         this.playingId = null;
       }
+
       if (this.currentAudio === audio) {
         this.currentAudio = null;
       }
@@ -265,6 +309,23 @@ class SampleSearchStore {
     }
 
     this.playingId = null;
+  }
+
+  isLoadingMore = $state(false);
+
+  async loadMoreFromProvider(providerId: string): Promise<void> {
+    const provider = this.providers.find((p) => p.id === providerId) as SampleProvider | undefined;
+    if (!provider?.loadMore) return;
+
+    this.isLoadingMore = true;
+
+    try {
+      const more = await provider.loadMore();
+
+      this.results = [...this.results, ...more];
+    } finally {
+      this.isLoadingMore = false;
+    }
   }
 }
 

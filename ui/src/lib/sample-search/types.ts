@@ -30,6 +30,9 @@ export interface SampleResult {
    * 'sc-sample' → SuperCollider sample (playable via CDN URL), drag creates sonic~ node
    */
   kind?: 'sample' | 'synthdef' | 'sc-sample';
+
+  /** Attribution info — present for providers that require it (e.g. Freesound) */
+  attribution?: { username: string; license: string; freesoundId: number };
 }
 
 export interface SampleProvider {
@@ -46,4 +49,10 @@ export interface SampleProvider {
 
   /** Search the in-memory index. May return sync or async results. */
   search(query: string): SampleResult[] | Promise<SampleResult[]>;
+
+  /** Optional: true if there are more results available beyond the last search() call */
+  hasMore?(): boolean;
+
+  /** Optional: fetch the next page of results (appends to last search) */
+  loadMore?(): Promise<SampleResult[]>;
 }
