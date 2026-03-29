@@ -27,6 +27,7 @@ function shortenLicense(url: string): string {
   if (url.includes('by-nc')) return 'CC BY-NC';
   if (url.includes('by-sa')) return 'CC BY-SA';
   if (url.includes('by')) return 'CC BY';
+
   return 'Other';
 }
 

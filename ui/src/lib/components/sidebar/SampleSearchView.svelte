@@ -66,6 +66,7 @@
   function saveFreesoundKey() {
     freesoundKeyStore.setApiKey(freesoundKeyInput);
     freesoundKeyInput = '';
+
     // Re-run search so Freesound results load immediately
     if (searchQuery.trim()) sampleSearchStore.search(searchQuery);
   }
@@ -417,6 +418,7 @@
         <span class="font-mono text-[10px] font-medium text-yellow-400"
           >Freesound API key required</span
         >
+
         <a
           href="https://freesound.org/apiv2/apply"
           target="_blank"
@@ -425,6 +427,7 @@
           >Get key ↗</a
         >
       </div>
+
       <div class="flex gap-1.5">
         <input
           class="min-w-0 flex-1 rounded bg-zinc-800 px-2 py-1 font-mono text-[10px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:ring-1 focus:ring-yellow-700"
@@ -434,6 +437,7 @@
             if (e.key === 'Enter') saveFreesoundKey();
           }}
         />
+
         <button
           class="cursor-pointer rounded bg-yellow-700 px-2 py-1 font-mono text-[10px] text-yellow-100 hover:bg-yellow-600 disabled:cursor-not-allowed disabled:opacity-40"
           disabled={!freesoundKeyInput.trim()}
@@ -637,6 +641,7 @@
                   {/if}
                   {#if row.result.attribution}
                     <ContextMenu.Separator />
+
                     <ContextMenu.Item
                       onclick={() =>
                         window.open(
@@ -646,6 +651,7 @@
                     >
                       Open on Freesound ↗
                     </ContextMenu.Item>
+
                     <ContextMenu.Item disabled class="font-mono text-[10px] opacity-50">
                       {row.result.attribution.username} · {row.result.attribution.license}
                     </ContextMenu.Item>
@@ -657,6 +663,7 @@
                     <ContextMenu.SubTrigger class="flex items-center gap-1.5">
                       <Tag class="h-3 w-3" />
                       Tags
+
                       {#if tagged}
                         <span class="ml-auto font-mono text-[9px] text-amber-400">
                           {sampleTags.length}

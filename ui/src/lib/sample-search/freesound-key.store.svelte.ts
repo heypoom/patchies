@@ -12,6 +12,7 @@ function createFreesoundKeyStore() {
     },
     setApiKey(key: string) {
       apiKey = key.trim();
+
       if (apiKey) {
         localStorage.setItem(STORAGE_KEY, apiKey);
       } else {
