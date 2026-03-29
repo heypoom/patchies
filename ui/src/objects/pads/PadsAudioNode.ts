@@ -1,8 +1,11 @@
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 import type { AudioNodeV2, AudioNodeGroup } from '$lib/audio/v2/interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { BASE_NOTE, type NoteOffMode, type PadCount } from './constants';
 import { messages } from '$lib/objects/schemas';
+import { NoteOn, NoteOff } from '$lib/objects/schemas/common';
+import { LoadPad } from './schema';
+import { Type } from '@sinclair/typebox';
 
 interface Voice {
   source: AudioBufferSourceNode;
@@ -19,8 +22,16 @@ export class PadsAudioNode implements AudioNodeV2 {
     {
       name: 'message',
       type: 'message',
-      description:
-        'MIDI noteOn/noteOff messages to trigger pads, or {type:"load", pad:N, src:"..."} to assign a sample'
+      description: 'Trigger pads or load samples',
+      messages: [
+        { schema: NoteOn, description: 'Trigger pad by MIDI note' },
+        { schema: NoteOff, description: 'Release pad' },
+        { schema: LoadPad, description: 'Load sample into pad slot' },
+        {
+          schema: Type.Number({ minimum: 0, maximum: 15 }),
+          description: 'Trigger pad by index with max velocity'
+        }
+      ]
     }
   ];
 
@@ -75,6 +86,12 @@ export class PadsAudioNode implements AudioNodeV2 {
 
         if (padIndex >= 0 && padIndex < this.padCount) {
           this.triggerOff(padIndex);
+        }
+      })
+      .with(P.number, (padIndex) => {
+        // Allow sending just a pad index to trigger with velocity 127
+        if (padIndex >= 0 && padIndex < this.padCount) {
+          this.triggerOn(padIndex, 127);
         }
       })
       .otherwise(() => {});

@@ -2338,13 +2338,35 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       {
         id: 'message',
         type: 'message',
-        description:
-          'MIDI noteOn/noteOff messages to trigger pads, or {type:"load", pad:N, src:"..."} to assign a sample',
+        description: 'Trigger pads or load samples',
         messages: [
           {
-            schema: Type.Any(),
-            description:
-              'MIDI noteOn/noteOff messages to trigger pads, or {type:"load", pad:N, src:"..."} to assign a sample'
+            schema: Type.Object({
+              type: Type.Literal('noteOn'),
+              note: Type.Number(),
+              velocity: Type.Number()
+            }),
+            description: 'Trigger pad by MIDI note'
+          },
+          {
+            schema: Type.Object({
+              type: Type.Literal('noteOff'),
+              note: Type.Number(),
+              velocity: Type.Number()
+            }),
+            description: 'Release pad'
+          },
+          {
+            schema: Type.Object({
+              type: Type.Literal('load'),
+              pad: Type.Number(),
+              src: Type.String()
+            }),
+            description: 'Load sample into pad slot'
+          },
+          {
+            schema: Type.Number({ minimum: 0, maximum: 15 }),
+            description: 'Trigger pad with velocity 127 by index'
           }
         ],
         handle: { handleType: 'message', handleId: 0 }
