@@ -1,13 +1,5 @@
 /** Object types that benefit from UI design guidelines injected into the generator prompt */
-export const UI_DESIGN_OBJECTS = new Set([
-  'p5',
-  'vue',
-  'dom',
-  'canvas',
-  'canvas.dom',
-  'three',
-  'three.dom'
-]);
+export const UI_DESIGN_OBJECTS = new Set(['vue', 'dom']);
 
 export const UI_DESIGN_GUIDELINES = `# UI Design Guidelines
 
