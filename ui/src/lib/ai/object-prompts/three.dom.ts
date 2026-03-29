@@ -23,8 +23,8 @@ Three.js 3D graphics on the main thread. Use for interactive 3D with mouse/keybo
 **Three.dom-specific gotchas:**
 - Use draw(time) function for render loop instead of requestAnimationFrame
 - Call setCanvasSize(width, height) with appropriate dimensions. Do not exceed 2000x2000 to avoid performance issues.
-- When using setCanvasSize, make sure to define width and height variables
-  so the rest of the code can adapt to different sizes.
+- When using setCanvasSize, make sure to define width and height variables:
+  e.g. const width = 800, height = 600; setCanvasSize(width, height);
 
 ${messagingInstructions}
 
