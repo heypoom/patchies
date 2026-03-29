@@ -34,6 +34,7 @@ function shortenLicense(url: string): string {
 export class FreesoundProvider implements SampleProvider {
   readonly id = 'freesound';
   readonly name = 'Freesound';
+  readonly isLive = true as const;
 
   private nextUrl: string | null = null;
 
@@ -67,6 +68,8 @@ export class FreesoundProvider implements SampleProvider {
   }
 
   async search(query: string): Promise<SampleResult[]> {
+    this.nextUrl = null;
+
     const apiKey = this.getApiKey();
     if (!apiKey || !query.trim()) return [];
 
@@ -76,8 +79,18 @@ export class FreesoundProvider implements SampleProvider {
     url.searchParams.set('page_size', String(PAGE_SIZE));
     url.searchParams.set('fields', FIELDS);
 
-    const response = await fetch(url.toString());
-    if (!response.ok) throw new Error(`Freesound search failed: ${response.status}`);
+    let response: Response;
+    try {
+      response = await fetch(url.toString());
+    } catch (e) {
+      this.nextUrl = null;
+      throw e;
+    }
+
+    if (!response.ok) {
+      this.nextUrl = null;
+      throw new Error(`Freesound search failed: ${response.status}`);
+    }
 
     const data = (await response.json()) as FreesoundResponse;
     this.nextUrl = data.next;

@@ -148,16 +148,20 @@ class SampleSearchStore {
 
       await Promise.all(
         this.providers.map(async (p) => {
+          // Live providers (e.g. Freesound) have no index — skip and don't count toward successCount
+          if ((p as SampleProvider).isLive) {
+            this.loadedCount++;
+            return;
+          }
+
           if (p.isLoaded()) {
             successCount++;
             this.loadedCount++;
-
             return;
           }
 
           try {
             await p.loadIndex();
-
             successCount++;
           } catch (e) {
             failures.push(p.name);
@@ -214,9 +218,10 @@ class SampleSearchStore {
       return;
     }
 
-    // Run all enabled provider searches in parallel
+    // Run all enabled provider searches in parallel — failures are isolated per provider
     const enabledProviders = this.providers.filter((p) => this.enabledProviders.has(p.id));
-    const resultArrays = await Promise.all(enabledProviders.map((p) => p.search(query)));
+    const settled = await Promise.allSettled(enabledProviders.map((p) => p.search(query)));
+    const resultArrays = settled.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
 
     if (this.query !== currentQuery) return;
 
@@ -317,12 +322,16 @@ class SampleSearchStore {
     const provider = this.providers.find((p) => p.id === providerId) as SampleProvider | undefined;
     if (!provider?.loadMore) return;
 
+    const queryAtStart = this.query;
     this.isLoadingMore = true;
 
     try {
       const more = await provider.loadMore();
 
-      this.results = [...this.results, ...more];
+      // Discard if the query changed or the provider was disabled while loading
+      if (this.query === queryAtStart && this.enabledProviders.has(providerId)) {
+        this.results = [...this.results, ...more];
+      }
     } finally {
       this.isLoadingMore = false;
     }

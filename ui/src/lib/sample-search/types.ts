@@ -50,6 +50,9 @@ export interface SampleProvider {
   /** Search the in-memory index. May return sync or async results. */
   search(query: string): SampleResult[] | Promise<SampleResult[]>;
 
+  /** True for live-API providers that have no index to load (e.g. Freesound) */
+  readonly isLive?: true;
+
   /** Optional: true if there are more results available beyond the last search() call */
   hasMore?(): boolean;
 

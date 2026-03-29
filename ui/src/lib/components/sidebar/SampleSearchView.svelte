@@ -141,8 +141,8 @@
       if (hidden > 0) out.push({ type: 'more', category, hidden, total: samples.length });
     }
 
-    // Append a load-more row for Freesound when there are more pages
-    if (freesoundProvider.hasMore() && !isTagMode) {
+    // Append a load-more row for Freesound when there are more pages and the source is active
+    if (freesoundProvider.hasMore() && !isTagMode && freesoundEnabled) {
       out.push({ type: 'fetch-more', provider: 'freesound' });
     }
 
@@ -295,8 +295,9 @@
   function formatDuration(seconds: number): string {
     if (seconds < 60) return `${seconds.toFixed(2)}s`;
 
-    const m = Math.floor(seconds / 60);
-    const s = (seconds % 60).toFixed(0).padStart(2, '0');
+    const total = Math.round(seconds);
+    const m = Math.floor(total / 60);
+    const s = String(total % 60).padStart(2, '0');
 
     return `${m}:${s}`;
   }
@@ -595,12 +596,14 @@
                       </Tooltip.Root>
                     {/if}
 
-                    <span
-                      class="min-w-0 flex-1 truncate font-mono text-zinc-300"
-                      title={row.result.name}
-                    >
-                      {row.result.name}
-                    </span>
+                    <Tooltip.Root>
+                      <Tooltip.Trigger
+                        class="min-w-0 flex-1 truncate text-left font-mono text-zinc-300"
+                      >
+                        {row.result.name}
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>{row.result.name}</Tooltip.Content>
+                    </Tooltip.Root>
 
                     {#if row.result.duration != null}
                       <span class="shrink-0 font-mono text-[10px] text-zinc-600">
