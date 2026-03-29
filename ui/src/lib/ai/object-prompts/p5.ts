@@ -32,7 +32,7 @@ ${esmInstructions}
 **Canvas size:**
 - Default to 252x164 or similar sizes unless the user specifies a size. Keep canvases small as p5 is CPU-bound and large canvases cause lag.
 - NEVER use windowWidth or windowHeight — the node is embedded in a canvas at a small size.
-- Acceptable size range: 200×150 minimum, 500×500 maximum. Prefer smaller when possible.
+- Acceptable size range: 200×150 minimum, 1000×1000 maximum. Prefer smaller when possible.
 
 **Font & element sizes:**
 - The node is displayed very zoomed out in the patch canvas. Use large font sizes (18px minimum, 24–32px for primary text) so text remains readable.

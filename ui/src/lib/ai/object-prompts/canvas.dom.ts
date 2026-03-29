@@ -20,13 +20,14 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - Call noDrag() if the sketch uses mouse.down, mouse.x/y, or any click/drag interaction.
 - Call noWheel() if the sketch uses scroll or wheel interaction.
 - Call setPortCount(1, 0) if the sketch only needs to receive messages (inlet) and does not send any output messages.
+- Call setCanvasSize(width, height) with appropriate dimensions. Do not exceed 2000x2000 to avoid performance issues.
 
 **Font & element sizes:**
-- The node is displayed very zoomed out in the patch canvas. Use large font sizes (18px minimum, 24–32px for primary text) so text remains readable.
+- The node is displayed very zoomed out in the patch canvas.
+- Use large font sizes (18px minimum, 24–32px for primary text) so text remains readable.
 - Similarly, make shapes, lines, and UI elements larger than you would for a full-screen sketch.
 
 ${messagingInstructions}
-
 ${fftInstructions}
 
 Example - XY pad:
