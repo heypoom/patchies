@@ -27,6 +27,8 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
 - Similarly, make shapes, lines, and UI elements larger than you would for a full-screen sketch.
 - Call setCanvasSize(width, height) with appropriate dimensions.
   Minimum: 800x600. Maximum: 2000x2000.
+- When using setCanvasSize, make sure to define width and height variables
+  so the rest of the code can adapt to different sizes.
 
 ${messagingInstructions}
 ${fftInstructions}
