@@ -9,8 +9,14 @@ Vue 3 reactive components with Composition API. Container is fluid-sized by defa
 - width, height: Container dimensions (undefined if fluid, set after setSize)
 - setSize(w, h): Set fixed container dimensions
 - setHidePorts(hide): Hide/show ports
-- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
+- noDrag(), noPan(), noWheel(), noInteract() - Interaction control (whole node)
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
+
+**Selective canvas interaction (CSS classes):**
+Apply these classes to individual elements to block canvas interactions only for that element:
+- "nodrag" — prevent node drag when the user interacts with this element
+- "nopan" — prevent canvas pan when the user interacts with this element
+- "nowheel" — prevent canvas zoom when scrolling over this element
 
 **Vue 3 APIs (auto-imported):**
 - createApp: Create and mount Vue applications
@@ -21,9 +27,6 @@ Vue 3 reactive components with Composition API. Container is fluid-sized by defa
 - nextTick: DOM update timing
 - h: Render function helper
 - defineComponent: Component definition
-
-**Vue-specific gotchas:**
-- fft() is NOT available (no video pipeline)
 
 **Caveats**
 - If you use a border, you must use rounded-lg in the outer container, otherwise the border will be cut off.

@@ -25,6 +25,23 @@ TailwindCSS is enabled by default. Call `tailwind(false)` to disable it.
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - see
   [Canvas Interaction](/docs/canvas-interaction)
 
+For selective control, add these CSS classes directly to elements in your template:
+
+| Class | Effect |
+| --- | --- |
+| `nodrag` | Prevents dragging the node when interacting with this element |
+| `nopan` | Prevents canvas panning when interacting with this element |
+| `nowheel` | Prevents canvas zoom when scrolling over this element |
+
+```js
+createApp({
+  template: `
+    <input class="nodrag" type="range" v-model="value" />
+    <div class="nowheel overflow-y-auto h-32">scrollable list</div>
+  `
+}).mount(root)
+```
+
 ## Shadow DOM
 
 The Vue component is mounted under an open

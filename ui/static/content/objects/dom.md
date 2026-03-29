@@ -17,6 +17,21 @@ TailwindCSS is enabled by default. Call `tailwind(false)` to disable it.
 - `noDrag()`, `noPan()`, `noWheel()`, `noInteract()` - see
   [Canvas Interaction](/docs/canvas-interaction)
 
+For selective control, add these CSS classes directly to individual elements:
+
+| Class | Effect |
+| --- | --- |
+| `nodrag` | Prevents dragging the node when interacting with this element |
+| `nopan` | Prevents canvas panning when interacting with this element |
+| `nowheel` | Prevents canvas zoom when scrolling over this element |
+
+```js
+root.innerHTML = `
+  <input class="nodrag" type="range" min="0" max="100" />
+  <div class="nowheel overflow-y-auto h-32">scrollable list</div>
+`;
+```
+
 ## Shadow DOM
 
 The `root` element runs under an open

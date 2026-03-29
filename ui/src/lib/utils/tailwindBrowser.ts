@@ -153,7 +153,41 @@ export function createIsolatedContainer(hostElement: HTMLElement): IsolatedConta
 
   const contentRoot = document.createElement('div');
   contentRoot.className = 'h-full w-full';
+
   shadow.appendChild(contentRoot);
+
+  // Forward xyflow interaction classes from inside shadow DOM.
+  //
+  // For `nowheel`: xyflow listens on the document in bubbling phase, so
+  // stopping propagation here (inside shadow root, before the boundary) works.
+  //
+  // For `nodrag`/`nopan`: xyflow uses d3-drag's hasSelector(), which walks up
+  // via parentElement from the retargeted event.target (shadow host). It never
+  // enters the shadow tree, so it can't find classes on inner elements.
+  // Fix: temporarily add the class to the shadow host so xyflow's walk finds it.
+  shadow.addEventListener(
+    'wheel',
+    (event) => {
+      if ((event.target as Element).closest?.('.nowheel')) {
+        event.stopPropagation();
+      }
+    },
+    { passive: false }
+  );
+
+  shadow.addEventListener('pointerdown', (e) => {
+    const target = e.target as Element;
+
+    for (const className of ['nodrag', 'nopan'] as const) {
+      if (target.closest?.(`.${className}`)) {
+        hostElement.classList.add(className);
+
+        const cleanup = () => hostElement.classList.remove(className);
+        document.addEventListener('pointerup', cleanup, { once: true });
+        document.addEventListener('pointercancel', cleanup, { once: true });
+      }
+    }
+  });
 
   // Enable Tailwind by default
   tailwindInstance = new ShadowTailwind(shadow);

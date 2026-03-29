@@ -9,11 +9,14 @@ DOM manipulation node with direct JavaScript access to a root div element. Conta
 - width, height: Container dimensions (undefined if fluid, set after setSize)
 - setSize(w, h): Set fixed container dimensions
 - setHidePorts(hide): Hide/show ports
-- noDrag(), noPan(), noWheel(), noInteract() - Interaction control
+- noDrag(), noPan(), noWheel(), noInteract() - Interaction control (whole node)
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)
 
-**DOM-specific gotchas:**
-- fft() is NOT available (no video pipeline)
+**Selective canvas interaction (CSS classes):**
+Apply these classes to individual elements to block canvas interactions only for that element:
+- "nodrag" — prevent node drag when the user interacts with this element
+- "nopan" — prevent canvas pan when the user interacts with this element
+- "nowheel" — prevent canvas zoom when scrolling over this element
 
 **Caveats**
 - Do NOT use gradient colors in Tailwind classes, like "bg-gradient-to-r from-amber-500 to-orange-400". They are not supported.
