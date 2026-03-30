@@ -18,7 +18,7 @@ export class GeminiProvider implements LLMProvider {
   ) {}
 
   async generateText(messages: LLMMessage[], options: LLMStreamOptions = {}): Promise<string> {
-    const { signal, onThinking, onToken, systemPrompt } = options;
+    const { signal, onThinking, onToken, systemPrompt, temperature, topK } = options;
 
     if (signal?.aborted) throw new Error('Request cancelled');
 
@@ -42,9 +42,9 @@ export class GeminiProvider implements LLMProvider {
       abortSignal: signal
     };
 
-    if (systemPrompt) {
-      config.systemInstruction = systemPrompt;
-    }
+    if (systemPrompt) config.systemInstruction = systemPrompt;
+    if (temperature !== undefined) config.temperature = temperature;
+    if (topK !== undefined) config.topK = topK;
 
     const response = await ai.models.generateContentStream({
       model: this.model,

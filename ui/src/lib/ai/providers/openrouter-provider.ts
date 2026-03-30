@@ -27,7 +27,7 @@ export class OpenRouterProvider implements LLMProvider {
   }
 
   async generateText(messages: LLMMessage[], options: LLMStreamOptions = {}): Promise<string> {
-    const { signal, onToken, systemPrompt } = options;
+    const { signal, onToken, systemPrompt, temperature } = options;
 
     type Role = 'user' | 'assistant' | 'system';
     const input = messages.map((m) => {
@@ -51,7 +51,7 @@ export class OpenRouterProvider implements LLMProvider {
     });
 
     const result = this.client.callModel(
-      { model: this.model, instructions: systemPrompt, input },
+      { model: this.model, instructions: systemPrompt, input, temperature },
       { signal }
     );
 

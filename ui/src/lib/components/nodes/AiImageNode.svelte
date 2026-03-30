@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { Image as ImageIcon, Loader, CircleAlert } from '@lucide/svelte/icons';
+  import {
+    Image as ImageIcon,
+    Loader,
+    CircleAlert,
+    Bot,
+    SlidersHorizontal,
+    ChevronDown
+  } from '@lucide/svelte/icons';
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -31,6 +38,7 @@
   let hasImage = $state(false);
   let abortController: AbortController | null = null;
   let editorReady = $state(false);
+  let showModelSettings = $state(false);
 
   const prompt = $derived(data.prompt || '');
   const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
@@ -253,16 +261,32 @@
         {nodeId}
         dataKey="prompt"
       />
-      <div class="mt-2 flex items-center gap-2">
-        <span class="shrink-0 text-xs text-zinc-500">Model</span>
-        <input
-          type="text"
-          value={data.model ?? ''}
-          oninput={(e) => updateNodeData(nodeId, { model: (e.target as HTMLInputElement).value })}
-          placeholder={defaultModelPlaceholder}
-          class="nodrag min-w-0 flex-1 rounded border border-zinc-700 bg-zinc-800/50 px-2 py-1 font-mono text-xs text-zinc-300 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none"
-        />
-      </div>
+      <button
+        class="nodrag flex w-full cursor-pointer items-center justify-between border-t border-zinc-700/50 px-2 py-1.5 text-zinc-600 transition-colors hover:text-zinc-400"
+        onclick={() => (showModelSettings = !showModelSettings)}
+      >
+        <div class="flex items-center gap-1.5">
+          <SlidersHorizontal class="h-3 w-3" />
+          <span class="font-mono text-[10px]">model settings</span>
+        </div>
+        <ChevronDown class={['h-3 w-3 transition-transform', showModelSettings && 'rotate-180']} />
+      </button>
+
+      {#if showModelSettings}
+        <div class="px-2 pb-2">
+          <div class="flex items-center gap-1.5">
+            <Bot class="h-3 w-3 shrink-0 text-zinc-600" />
+            <input
+              type="text"
+              value={data.model ?? ''}
+              oninput={(e) =>
+                updateNodeData(nodeId, { model: (e.target as HTMLInputElement).value })}
+              placeholder={defaultModelPlaceholder}
+              class="nodrag min-w-0 flex-1 bg-transparent font-mono text-[11px] text-zinc-400 placeholder-zinc-600 focus:outline-none"
+            />
+          </div>
+        </div>
+      {/if}
     </div>
   {/snippet}
 </ObjectPreviewLayout>

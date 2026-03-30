@@ -15,6 +15,12 @@ export interface LLMStreamOptions {
 
   /** Called with each text token as it streams. */
   onToken?: (token: string) => void;
+
+  /** Sampling temperature (0–2). Provider default if omitted. */
+  temperature?: number;
+
+  /** Top-K sampling. Provider default if omitted. */
+  topK?: number;
 }
 
 // ── Tool calling / multi-turn ──────────────────────────────────────────────────

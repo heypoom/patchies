@@ -153,7 +153,13 @@ export async function generateImageWithOpenRouter(
 export function createLLMFunction() {
   return async (
     prompt: string,
-    context?: { imageNodeId?: string; abortSignal?: AbortSignal; model?: string }
+    context?: {
+      imageNodeId?: string;
+      abortSignal?: AbortSignal;
+      model?: string;
+      temperature?: number;
+      topK?: number;
+    }
   ) => {
     const { getTextProvider } = await import('./providers');
     const provider = getTextProvider(context?.model);
@@ -173,7 +179,9 @@ export function createLLMFunction() {
     }
 
     return provider.generateText([{ role: 'user', content: prompt, images }], {
-      signal: context?.abortSignal
+      signal: context?.abortSignal,
+      temperature: context?.temperature,
+      topK: context?.topK
     });
   };
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Copy, Loader } from '@lucide/svelte/icons';
+  import { Copy, Loader, Bot, SlidersHorizontal, ChevronDown } from '@lucide/svelte/icons';
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -13,7 +13,11 @@
   import { aiTxtMessages } from '$lib/objects/schemas';
   import { aiSettings } from '../../../stores/ai-settings.store';
 
-  let { id: nodeId, data }: { id: string; data: { prompt: string; model?: string } } = $props();
+  let {
+    id: nodeId,
+    data
+  }: { id: string; data: { prompt: string; model?: string; temperature?: number; topK?: number } } =
+    $props();
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -24,6 +28,7 @@
   let generatedText = $state<string>('');
   let abortController: AbortController | null = null;
   let editorReady = $state(false);
+  let showModelSettings = $state(false);
 
   const prompt = $derived(data.prompt || '');
   const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
@@ -89,7 +94,9 @@
       const llmOutput = await llmFunction(prompt, {
         imageNodeId,
         abortSignal: abortController.signal,
-        model: data.model?.trim() || undefined
+        model: data.model?.trim() || undefined,
+        temperature: data.temperature,
+        topK: data.topK
       });
 
       generatedText = llmOutput ?? '';
@@ -184,16 +191,66 @@
         dataKey="prompt"
       />
 
-      <div class="mt-2 flex items-center gap-2">
-        <span class="shrink-0 text-xs text-zinc-500">Model</span>
-        <input
-          type="text"
-          value={data.model ?? ''}
-          oninput={(e) => updateNodeData(nodeId, { model: (e.target as HTMLInputElement).value })}
-          placeholder={defaultModelPlaceholder}
-          class="nodrag min-w-0 flex-1 rounded border border-zinc-700 bg-zinc-800/50 px-2 py-1 font-mono text-xs text-zinc-300 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none"
-        />
-      </div>
+      <button
+        class="nodrag flex w-full cursor-pointer items-center justify-between border-t border-zinc-700/50 px-2 py-1.5 text-zinc-600 transition-colors hover:text-zinc-400"
+        onclick={() => (showModelSettings = !showModelSettings)}
+      >
+        <div class="flex items-center gap-1.5">
+          <SlidersHorizontal class="h-3 w-3" />
+          <span class="font-mono text-[10px]">model settings</span>
+        </div>
+        <ChevronDown class={['h-3 w-3 transition-transform', showModelSettings && 'rotate-180']} />
+      </button>
+
+      {#if showModelSettings}
+        <div class="space-y-1.5 px-2 pb-2">
+          <div class="flex items-center gap-1.5">
+            <Bot class="h-3 w-3 shrink-0 text-zinc-600" />
+            <input
+              type="text"
+              value={data.model ?? ''}
+              oninput={(e) =>
+                updateNodeData(nodeId, { model: (e.target as HTMLInputElement).value })}
+              placeholder={defaultModelPlaceholder}
+              class="nodrag min-w-0 flex-1 bg-transparent font-mono text-[11px] text-zinc-400 placeholder-zinc-600 focus:outline-none"
+            />
+          </div>
+          <div class="flex gap-4">
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono text-[10px] text-zinc-600">temp</span>
+              <input
+                type="number"
+                min="0"
+                max="2"
+                step="0.1"
+                value={data.temperature ?? ''}
+                oninput={(e) => {
+                  const v = parseFloat((e.target as HTMLInputElement).value);
+                  updateNodeData(nodeId, { temperature: isNaN(v) ? undefined : v });
+                }}
+                placeholder="1"
+                class="nodrag w-14 bg-transparent font-mono text-[11px] text-zinc-400 placeholder-zinc-600 focus:outline-none"
+              />
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono text-[10px] text-zinc-600">top-k</span>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                value={data.topK ?? ''}
+                oninput={(e) => {
+                  const v = parseInt((e.target as HTMLInputElement).value, 10);
+                  updateNodeData(nodeId, { topK: isNaN(v) ? undefined : v });
+                }}
+                placeholder="40"
+                class="nodrag w-14 bg-transparent font-mono text-[11px] text-zinc-400 placeholder-zinc-600 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+      {/if}
 
       {#if errorMessage}
         <div class="mt-2 px-2 py-1 font-mono text-xs text-red-300">
