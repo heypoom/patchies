@@ -18,8 +18,12 @@
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { toast } from 'svelte-sonner';
-  import { sampleSearchStore } from '$lib/sample-search/sample-search-store.svelte';
+  import {
+    sampleSearchStore,
+    freesoundProvider
+  } from '$lib/sample-search/sample-search-store.svelte';
   import { sampleTagsStore, getTagColor } from '$lib/sample-search/sample-tags.store.svelte';
+  import { freesoundKeyStore } from '$lib/sample-search/freesound-key.store.svelte';
   import type { SampleResult } from '$lib/sample-search/types';
   import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
@@ -37,7 +41,8 @@
   type HeaderRow = { type: 'header'; category: string; provider: string };
   type SampleRow = { type: 'sample'; result: SampleResult };
   type MoreRow = { type: 'more'; category: string; hidden: number; total: number };
-  type Row = HeaderRow | SampleRow | MoreRow;
+  type FetchMoreRow = { type: 'fetch-more'; provider: string };
+  type Row = HeaderRow | SampleRow | MoreRow | FetchMoreRow;
 
   let searchQuery = $state('');
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -50,6 +55,21 @@
 
   // New tag input — shared across all open context menus (only one can be open at a time)
   let newTagInput = $state('');
+
+  // Freesound setup: enabled but no API key yet
+  const freesoundEnabled = $derived(sampleSearchStore.enabledProviders.has('freesound'));
+  const freesoundNeedsSetup = $derived(freesoundEnabled && !freesoundKeyStore.hasKey);
+
+  // Inline key input state
+  let freesoundKeyInput = $state('');
+
+  function saveFreesoundKey() {
+    freesoundKeyStore.setApiKey(freesoundKeyInput);
+    freesoundKeyInput = '';
+
+    // Re-run search so Freesound results load immediately
+    if (searchQuery.trim()) sampleSearchStore.search(searchQuery);
+  }
 
   // Tag search mode: query starts with '#'
   const isTagMode = $derived(searchQuery.startsWith('#'));
@@ -121,6 +141,11 @@
       if (hidden > 0) out.push({ type: 'more', category, hidden, total: samples.length });
     }
 
+    // Append a load-more row for Freesound when there are more pages and the source is active
+    if (freesoundProvider.hasMore() && !isTagMode && freesoundEnabled) {
+      out.push({ type: 'fetch-more', provider: 'freesound' });
+    }
+
     return out;
   });
 
@@ -151,6 +176,14 @@
 
     return last;
   });
+
+  const rowKey = (row: Row): string =>
+    match(row)
+      .with({ type: 'sample' }, (r) => r.result.id)
+      .with({ type: 'header' }, (r) => `h:${r.category}`)
+      .with({ type: 'fetch-more' }, (r) => `fm:${r.provider}`)
+      .with({ type: 'more' }, (r) => `m:${r.category}`)
+      .exhaustive();
 
   function onScroll(e: Event) {
     const el = e.currentTarget as HTMLElement;
@@ -257,6 +290,16 @@
 
   function providerColor(provider: string): string {
     return PROVIDER_META[provider]?.color ?? 'text-zinc-400 bg-zinc-800';
+  }
+
+  function formatDuration(seconds: number): string {
+    if (seconds < 60) return `${seconds.toFixed(2)}s`;
+
+    const total = Math.round(seconds);
+    const m = Math.floor(total / 60);
+    const s = String(total % 60).padStart(2, '0');
+
+    return `${m}:${s}`;
   }
 
   function strudelName(result: SampleResult): string {
@@ -369,6 +412,42 @@
     </div>
   {/if}
 
+  <!-- Freesound API key setup banner -->
+  {#if freesoundNeedsSetup}
+    <div class="flex flex-col gap-1.5 border-b border-yellow-900/40 bg-yellow-950/20 px-3 py-2">
+      <div class="flex items-center gap-1.5">
+        <span class="font-mono text-[10px] font-medium text-yellow-400"
+          >Freesound API key required</span
+        >
+
+        <a
+          href="https://freesound.org/apiv2/apply"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="ml-auto font-mono text-[9px] text-yellow-600 underline hover:text-yellow-400"
+          >Get key ↗</a
+        >
+      </div>
+
+      <div class="flex gap-1.5">
+        <input
+          class="min-w-0 flex-1 rounded bg-zinc-800 px-2 py-1 font-mono text-[10px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:ring-1 focus:ring-yellow-700"
+          placeholder="Paste API key…"
+          bind:value={freesoundKeyInput}
+          onkeydown={(e) => {
+            if (e.key === 'Enter') saveFreesoundKey();
+          }}
+        />
+
+        <button
+          class="cursor-pointer rounded bg-yellow-700 px-2 py-1 font-mono text-[10px] text-yellow-100 hover:bg-yellow-600 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={!freesoundKeyInput.trim()}
+          onclick={saveFreesoundKey}>Save</button
+        >
+      </div>
+    </div>
+  {/if}
+
   <!-- Index loading progress bar -->
   {#if sampleSearchStore.isIndexLoading}
     {@const total = sampleSearchStore.providers.length}
@@ -455,7 +534,7 @@
           <!-- Top padding -->
           <div style="height: {paddingTop}px"></div>
 
-          {#each visibleRows as row (row.type === 'sample' ? row.result.id : row.type === 'header' ? `h:${row.category}` : `m:${row.category}`)}
+          {#each visibleRows as row (rowKey(row))}
             {#if row.type === 'header'}
               <div
                 class="flex items-center justify-between border-b border-zinc-800 px-2"
@@ -517,9 +596,20 @@
                       </Tooltip.Root>
                     {/if}
 
-                    <span class="flex-1 truncate font-mono text-zinc-300" title={row.result.name}>
-                      {row.result.name}
-                    </span>
+                    <Tooltip.Root>
+                      <Tooltip.Trigger
+                        class="min-w-0 flex-1 truncate text-left font-mono text-zinc-300"
+                      >
+                        {row.result.name}
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>{row.result.name}</Tooltip.Content>
+                    </Tooltip.Root>
+
+                    {#if row.result.duration != null}
+                      <span class="shrink-0 font-mono text-[10px] text-zinc-600">
+                        {formatDuration(row.result.duration)}
+                      </span>
+                    {/if}
 
                     {#if tagged}
                       <div class="mr-0.5 flex shrink-0 items-center gap-0.5">
@@ -552,12 +642,31 @@
                       Copy as URL
                     </ContextMenu.Item>
                   {/if}
+                  {#if row.result.attribution}
+                    <ContextMenu.Separator />
+
+                    <ContextMenu.Item
+                      onclick={() =>
+                        window.open(
+                          `https://freesound.org/s/${row.result.attribution!.freesoundId}/`,
+                          '_blank'
+                        )}
+                    >
+                      Open on Freesound ↗
+                    </ContextMenu.Item>
+
+                    <ContextMenu.Item disabled class="font-mono text-[10px] opacity-50">
+                      {row.result.attribution.username} · {row.result.attribution.license}
+                    </ContextMenu.Item>
+                  {/if}
+
                   <ContextMenu.Separator />
 
                   <ContextMenu.Sub>
                     <ContextMenu.SubTrigger class="flex items-center gap-1.5">
                       <Tag class="h-3 w-3" />
                       Tags
+
                       {#if tagged}
                         <span class="ml-auto font-mono text-[9px] text-amber-400">
                           {sampleTags.length}
@@ -618,6 +727,16 @@
                     show all {row.total}
                   </button>
                 {/if}
+              </div>
+            {:else if row.type === 'fetch-more'}
+              <div class="flex items-center gap-2 pr-2 pl-4" style="height: {ROW_H}px">
+                <button
+                  class="cursor-pointer font-mono text-[10px] text-zinc-500 hover:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={sampleSearchStore.isLoadingMore}
+                  onclick={() => sampleSearchStore.loadMoreFromProvider(row.provider)}
+                >
+                  {sampleSearchStore.isLoadingMore ? 'Loading…' : 'Load more from Freesound'}
+                </button>
               </div>
             {/if}
           {/each}
