@@ -2,8 +2,8 @@ import { writable, derived, get } from 'svelte/store';
 
 export type AIProviderType = 'gemini' | 'openrouter';
 
-export const DEFAULT_OPENROUTER_TEXT_MODEL = 'google/gemini-2.5-flash-preview-05-20';
-export const DEFAULT_OPENROUTER_IMAGE_MODEL = 'google/gemini-2.5-flash-preview-05-20';
+export const DEFAULT_OPENROUTER_TEXT_MODEL = 'google/gemini-3-flash-preview';
+export const DEFAULT_OPENROUTER_IMAGE_MODEL = 'google/gemini-3-flash-preview';
 
 export interface AISettings {
   provider: AIProviderType;
