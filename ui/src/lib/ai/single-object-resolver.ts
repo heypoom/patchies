@@ -9,6 +9,8 @@ import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descri
 import { extractJson } from './extract-json';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/shared-jsrunner';
 import { UI_DESIGN_OBJECTS, UI_DESIGN_GUIDELINES } from './object-prompts/ui-design-guidelines';
+import { getTextProvider } from './providers';
+import type { LLMProvider } from './providers';
 
 /**
  * Uses Gemini AI to resolve a natural language prompt to a single object configuration.
@@ -30,22 +32,15 @@ export async function resolveObjectFromPrompt(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
   data: any;
 } | null> {
-  const apiKey = localStorage.getItem('gemini-api-key');
-
-  if (!apiKey) {
-    throw new Error('Gemini API key is not set. Please set it in the settings.');
-  }
-
   // Check for cancellation before starting
   if (signal?.aborted) {
     throw new Error('Request cancelled');
   }
 
-  const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey });
+  const provider = getTextProvider();
 
   // Call 1: Route to object type (lightweight)
-  const objectType = await routeToObjectType(ai, prompt, signal, onThinking);
+  const objectType = await routeToObjectType(provider, prompt, signal, onThinking);
   if (!objectType) {
     return null;
   }
@@ -59,8 +54,7 @@ export async function resolveObjectFromPrompt(
   onRouterComplete?.(objectType);
 
   // Call 2: Generate object config (targeted)
-
-  const config = await generateObjectConfig(ai, prompt, objectType, signal, onThinking);
+  const config = await generateObjectConfig(provider, prompt, objectType, signal, onThinking);
 
   return config;
 }
@@ -70,64 +64,29 @@ export async function resolveObjectFromPrompt(
  * This is a lightweight call that only includes object descriptions, not implementation details.
  */
 async function routeToObjectType(
-  ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
+  provider: LLMProvider,
   prompt: string,
   signal?: AbortSignal,
   onThinking?: (thought: string) => void
 ): Promise<string | null> {
-  // Check for cancellation before starting
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
-  }
+  if (signal?.aborted) throw new Error('Request cancelled');
 
   const routerPrompt = buildRouterPrompt();
 
-  // Use streaming with thinking enabled for real-time feedback
-  const response = await ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
-    contents: [{ text: `${routerPrompt}\n\nUser prompt: "${prompt}"` }],
-    config: {
-      thinkingConfig: {
-        includeThoughts: true
-      }
-    }
-  });
+  const responseText = await provider.generateText(
+    [{ role: 'user', content: `${routerPrompt}\n\nUser prompt: "${prompt}"` }],
+    { signal, onThinking }
+  );
 
-  let responseText = '';
-
-  for await (const chunk of response) {
-    // Check for cancellation during streaming
-    if (signal?.aborted) {
-      throw new Error('Request cancelled');
-    }
-
-    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-      if (part.thought && part.text && onThinking) {
-        // Stream thinking updates to UI
-        onThinking(part.text);
-      } else if (part.text) {
-        // Accumulate final response text
-        responseText += part.text;
-      }
-    }
-  }
-
-  responseText = responseText.trim();
-  if (!responseText) {
-    return null;
-  }
-
-  // Response should be just the object type name
-  return responseText;
+  return responseText.trim() || null;
 }
 
 /**
  * Call 2: Generates the full object configuration for the chosen object type.
  * This is a targeted call that includes only the relevant system prompt and API docs.
- * Uses streaming with thinking enabled to provide real-time feedback.
  */
 async function generateObjectConfig(
-  ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
+  provider: LLMProvider,
   prompt: string,
   objectType: string,
   signal?: AbortSignal,
@@ -137,63 +96,26 @@ async function generateObjectConfig(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
   data: any;
 } | null> {
-  // Check for cancellation before starting
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
-  }
+  if (signal?.aborted) throw new Error('Request cancelled');
 
   const systemPrompt = buildGeneratorPrompt(objectType);
 
-  // Use streaming with thinking enabled for real-time feedback
-  const response = await ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
-    contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }],
-    config: {
-      thinkingConfig: {
-        includeThoughts: true
-      }
-    }
-  });
+  const responseText = await provider.generateText(
+    [{ role: 'user', content: `${systemPrompt}\n\nUser prompt: "${prompt}"` }],
+    { signal, onThinking }
+  );
 
-  let responseText = '';
-
-  for await (const chunk of response) {
-    // Check for cancellation during streaming
-    if (signal?.aborted) {
-      throw new Error('Request cancelled');
-    }
-
-    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-      if (part.thought && part.text && onThinking) {
-        // Stream thinking updates to UI
-        onThinking(part.text);
-      } else if (part.text) {
-        // Accumulate final response text
-        responseText += part.text;
-      }
-    }
-  }
-
-  responseText = responseText.trim();
-  if (!responseText) {
-    return null;
-  }
+  if (!responseText.trim()) return null;
 
   try {
-    // Extract JSON from response (handle markdown code blocks)
-    const jsonText = extractJson(responseText);
-
+    const jsonText = extractJson(responseText.trim());
     const result = JSON.parse(jsonText);
 
-    // Validate the result has required fields
     if (!result.type) {
       throw new Error('Response missing required "type" field');
     }
 
-    return {
-      type: result.type,
-      data: result.data || {}
-    };
+    return { type: result.type, data: result.data || {} };
   } catch (error) {
     logger.error('Failed to parse AI response:', error);
     throw new Error('Failed to parse AI response as JSON');

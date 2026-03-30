@@ -1,4 +1,5 @@
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { aiSettings } from '../../stores/ai-settings.store';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { MessageSystem, type MessageCallbackFn, type Message } from '$lib/messages/MessageSystem';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
@@ -394,14 +395,14 @@ export class WorkerNodeSystem {
     imageNodeId?: string
   ) {
     try {
-      const apiKey = localStorage.getItem('gemini-api-key');
+      const apiKey = aiSettings.getActiveApiKey();
 
       if (!apiKey) {
         worker.postMessage({
           type: 'llmConfig',
           nodeId,
           requestId,
-          error: 'API key is not set. Please set it in the settings.'
+          error: 'AI API key is not set. Please configure it in AI settings.'
         } satisfies WorkerMessage);
         return;
       }

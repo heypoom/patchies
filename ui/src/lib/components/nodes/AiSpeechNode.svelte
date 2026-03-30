@@ -25,6 +25,7 @@
     type GoogleVoice
   } from '$lib/stores/googleTtsVoices';
   import { useNodeDataTracker } from '$lib/history';
+  import { aiSettings } from '../../../stores/ai-settings.store';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
 
   export type AiTtsNodeData = {
@@ -162,7 +163,7 @@
   );
 
   function getApiKey(): string | null {
-    return localStorage.getItem('gemini-api-key');
+    return aiSettings.getGeminiApiKey() || null;
   }
 
   async function generateSpeech({ playback = true }: { playback?: boolean } = {}) {

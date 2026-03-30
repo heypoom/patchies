@@ -59,7 +59,8 @@
   } from '$lib/utils/connection-validation';
   import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
   import { useFocusNode, useNodeLabels } from '$lib/canvas/use-focus-node.svelte';
-  import GeminiApiKeyDialog from './dialogs/GeminiApiKeyDialog.svelte';
+  import AIProviderSettingsDialog from './dialogs/AIProviderSettingsDialog.svelte';
+  import { hasAIApiKey } from '../../stores/ai-settings.store';
   import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
   import SavePatchModal from './dialogs/SavePatchModal.svelte';
   import ExportPatchModal from './dialogs/ExportPatchModal.svelte';
@@ -197,8 +198,8 @@
   let pendingAiPromptMode = $state<AiPromptMode>('insert');
   let pendingAiPromptContext = $state<AiModeContext>({});
 
-  // Check if Gemini API key is set (for showing AI button)
-  let hasGeminiApiKey = $state(false);
+  // Reactive: true when the active AI provider has an API key configured
+  let hasGeminiApiKey = $derived($hasAIApiKey);
 
   // Dialog state for missing API key
   let showMissingApiKeyDialog = $state(false);
@@ -412,8 +413,6 @@
   }
 
   function onGeminiApiKeySaved() {
-    hasGeminiApiKey = true;
-
     // If there's a pending callback (e.g., from PatchToPromptDialog), call it
     if (pendingApiKeyCallback) {
       const callback = pendingApiKeyCallback;
@@ -556,9 +555,6 @@
     Transport.setTimeSignature(timeSignature[0], timeSignature[1]);
 
     loadPatch();
-
-    // Check if Gemini API key is set
-    hasGeminiApiKey = !!localStorage.getItem('gemini-api-key');
 
     // Check if the user wants to see the startup modal on launch
     // Don't show if loading from URL params (src or id)
@@ -827,8 +823,6 @@
 
   function handleCommandPaletteCancel() {
     showCommandPalette = false;
-    // Re-check if API key was just set
-    hasGeminiApiKey = !!localStorage.getItem('gemini-api-key');
   }
 
   function handleConnectStart(params: { nodeId?: string | null; handleId?: string | null }) {
@@ -1393,8 +1387,8 @@
       />
     {/if}
 
-    <!-- Gemini API Key Missing Dialog -->
-    <GeminiApiKeyDialog
+    <!-- AI Provider Settings Dialog (shown when API key is missing) -->
+    <AIProviderSettingsDialog
       bind:open={showMissingApiKeyDialog}
       onSaveAndContinue={onGeminiApiKeySaved}
     />

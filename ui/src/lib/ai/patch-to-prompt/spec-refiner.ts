@@ -8,6 +8,7 @@
 
 import type { CleanedPatch } from './patch-transformer';
 import { getImplementationHints, getBriefDescriptions } from './context-injector';
+import { aiSettings } from '../../../stores/ai-settings.store';
 
 export interface RefineOptions {
   patchName?: string;
@@ -29,57 +30,18 @@ export async function refineSpec(
   patch: CleanedPatch,
   options: RefineOptions = {}
 ): Promise<string> {
-  const apiKey = localStorage.getItem('gemini-api-key');
-
-  if (!apiKey) {
-    throw new Error('Gemini API key is not set. Please set it in the settings.');
-  }
-
   const { signal, onThinking } = options;
+  if (signal?.aborted) throw new Error('Request cancelled');
 
-  // Check for cancellation before starting
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
-  }
+  const { getTextProvider } = await import('../providers');
+  const provider = getTextProvider();
 
-  const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey });
+  const responseText = await provider.generateText(
+    [{ role: 'user', content: buildRefinePrompt(patch, options) }],
+    { signal, onThinking }
+  );
 
-  const prompt = buildRefinePrompt(patch, options);
-
-  // Use streaming with thinking enabled for real-time feedback
-  const response = await ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config: {
-      thinkingConfig: {
-        includeThoughts: true
-      }
-    }
-  });
-
-  let responseText = '';
-
-  for await (const chunk of response) {
-    // Check for cancellation during streaming
-    if (signal?.aborted) {
-      throw new Error('Request cancelled');
-    }
-
-    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-      if (part.thought && part.text && onThinking) {
-        // Stream thinking updates to UI
-        onThinking(part.text);
-      } else if (part.text) {
-        // Accumulate final response text
-        responseText += part.text;
-      }
-    }
-  }
-
-  if (!responseText.trim()) {
-    throw new Error('No response from AI');
-  }
+  if (!responseText.trim()) throw new Error('No response from AI');
 
   return responseText.trim();
 }
@@ -250,8 +212,8 @@ Write the specification now:`);
 }
 
 /**
- * Checks if the Gemini API key is available.
+ * Checks if an AI provider API key is available.
  */
 export function hasGeminiApiKey(): boolean {
-  return !!localStorage.getItem('gemini-api-key');
+  return aiSettings.hasApiKey();
 }

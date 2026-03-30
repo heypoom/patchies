@@ -195,8 +195,8 @@
     },
     {
       id: 'set-gemini-api-key',
-      name: 'Set Gemini AI API Key',
-      description: 'Configure Google Gemini API key for AI features',
+      name: 'AI Provider Settings',
+      description: 'Configure AI provider (Gemini or OpenRouter) and API key',
       requiresAi: true
     },
     {

@@ -1,5 +1,6 @@
 import { getObjectSpecificInstructions } from '../object-descriptions';
 import { logger, getNodeErrors } from '$lib/utils/logger';
+import { requireGeminiApiKey, getTextProvider } from '../providers';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from '../object-prompts/shared-jsrunner';
 import { buildCanvasToolDeclarations, toolNameToMode } from './canvas-tools';
 import { runModeResolver } from '../modes/run-resolver';
@@ -124,11 +125,8 @@ export async function streamChatMessage(
   onToolCallOutput?: (callIndex: number, output: unknown) => void,
   onSubagentThinking?: (callIndex: number, thought: string) => void
 ): Promise<string> {
-  const apiKey = localStorage.getItem('gemini-api-key');
-
-  if (!apiKey) {
-    throw new Error('Gemini API key is not set. Please set it in the settings.');
-  }
+  // The chat resolver uses Gemini-specific multi-turn tool calling; always requires a Gemini key.
+  const apiKey = requireGeminiApiKey();
 
   if (signal?.aborted) {
     throw new Error('Request cancelled');
@@ -574,25 +572,15 @@ function buildContextFromArgs(
  * Returns null if the API key is missing or the call fails.
  */
 export async function generateChatTitle(userMessage: string): Promise<string | null> {
-  const apiKey = localStorage.getItem('gemini-api-key');
-  if (!apiKey) return null;
-
   try {
-    const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: [
-        {
-          text: `Generate a very short title (2-5 words) for a chat conversation that starts with this message. Reply with only the title, no quotes, no punctuation at the end:\n\n${userMessage}`
-        }
-      ]
-    });
-
-    const title = response.text?.trim();
-
-    return title || null;
+    const provider = getTextProvider();
+    const title = await provider.generateText([
+      {
+        role: 'user',
+        content: `Generate a very short title (2-5 words) for a chat conversation that starts with this message. Reply with only the title, no quotes, no punctuation at the end:\n\n${userMessage}`
+      }
+    ]);
+    return title.trim() || null;
   } catch (err) {
     console.error('[generateChatTitle] failed:', err);
     return null;

@@ -1,6 +1,5 @@
 import { GLSystem } from '$lib/canvas/GLSystem';
 import type { GLPreviewFrameCapturedEvent } from '$lib/eventbus/events';
-import type { ContentListUnion } from '@google/genai';
 
 export async function generateImageWithGemini(
   prompt: string,
@@ -94,15 +93,10 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
 
 export function createLLMFunction() {
   return async (prompt: string, context?: { imageNodeId?: string; abortSignal?: AbortSignal }) => {
-    const apiKey = localStorage.getItem('gemini-api-key');
+    const { getTextProvider } = await import('./providers');
+    const provider = getTextProvider();
 
-    if (!apiKey) {
-      throw new Error('API key is not set. Please set it in the settings.');
-    }
-
-    const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey });
-    const contents: ContentListUnion = [];
+    const images: Array<{ mimeType: string; data: string }> = [];
 
     // If there is a connected node that provides an image, we will include it in the request.
     if (context?.imageNodeId !== undefined) {
@@ -112,20 +106,13 @@ export function createLLMFunction() {
       if (bitmap) {
         const base64Image = bitmapToBase64Image({ bitmap, format, quality: 0.7 });
         console.log('[llm] base64 input image size:', base64Image.length);
-
-        contents.push({ inlineData: { mimeType: format, data: base64Image } });
+        images.push({ mimeType: format, data: base64Image });
       }
     }
 
-    contents.push({ text: prompt });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents,
-      config: { abortSignal: context?.abortSignal }
+    return provider.generateText([{ role: 'user', content: prompt, images }], {
+      signal: context?.abortSignal
     });
-
-    return response.text;
   };
 }
 

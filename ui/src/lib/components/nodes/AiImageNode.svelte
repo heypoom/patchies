@@ -5,6 +5,7 @@
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { generateImageWithGemini } from '$lib/ai/google';
+  import { requireGeminiApiKey } from '$lib/ai/providers';
   import { EditorView } from 'codemirror';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -82,12 +83,7 @@
     errorMessage = null;
 
     try {
-      const apiKey = localStorage.getItem('gemini-api-key');
-
-      if (!apiKey) {
-        throw new Error('API key not found. Please set your Gemini API key with CMD+K.');
-      }
-
+      const apiKey = requireGeminiApiKey();
       abortController = new AbortController();
 
       const imageNodeId = targetConnections.current.find((conn) =>

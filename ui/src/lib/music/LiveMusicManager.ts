@@ -1,4 +1,5 @@
 import { AudioService } from '$lib/audio/v2/AudioService';
+import { aiSettings } from '../../stores/ai-settings.store';
 import type {
   GoogleGenAI,
   AudioChunk,
@@ -42,7 +43,7 @@ export class LiveMusicManager {
   }
 
   get apiKey() {
-    return localStorage.getItem('gemini-api-key');
+    return aiSettings.getGeminiApiKey() || null;
   }
 
   get gainNode(): GainNode | null {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog';
+  import { hasAIApiKey } from '../../../stores/ai-settings.store';
 
   let {
     open = $bindable(false),
@@ -15,7 +16,7 @@
     onCancel: () => void;
   } = $props();
 
-  let hasApiKey = $derived(open && !!localStorage.getItem('gemini-api-key'));
+  let hasApiKey = $derived(open && $hasAIApiKey);
 
   function handleCancel() {
     onCancel();

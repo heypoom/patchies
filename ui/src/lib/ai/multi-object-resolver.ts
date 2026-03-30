@@ -12,6 +12,8 @@ import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/share
 import { UI_DESIGN_OBJECTS, UI_DESIGN_GUIDELINES } from './object-prompts/ui-design-guidelines';
 import { generateHandleDocs } from './generate-handle-docs';
 import { extractJson } from './extract-json';
+import { getTextProvider } from './providers';
+import type { LLMProvider } from './providers';
 
 // Consolidated logging for AI Multi-Object debugging
 class MultiObjectLogger {
@@ -73,25 +75,18 @@ export async function resolveMultipleObjectsFromPrompt(
   signal?: AbortSignal,
   onThinking?: (thought: string) => void
 ): Promise<MultiObjectResult | null> {
-  const apiKey = localStorage.getItem('gemini-api-key');
-
-  if (!apiKey) {
-    throw new Error('Gemini API key is not set. Please set it in the settings.');
-  }
-
   // Check for cancellation before starting
   if (signal?.aborted) {
     throw new Error('Request cancelled');
   }
 
-  const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey });
+  const provider = getTextProvider();
 
   logger.log('📝 Starting multi-object resolution');
   logger.log('User prompt', prompt);
 
   // Call 1: Route to object types and structure (lightweight)
-  const plan = await routeToMultiObjectPlan(ai, prompt, signal, onThinking);
+  const plan = await routeToMultiObjectPlan(provider, prompt, signal, onThinking);
   if (!plan) {
     logger.log('⚠️ Router returned no plan');
     logger.flush();
@@ -107,7 +102,7 @@ export async function resolveMultipleObjectsFromPrompt(
   onRouterComplete?.(plan.objectTypes);
 
   // Call 2: Generate full object configs (targeted)
-  const result = await generateMultiObjectConfig(ai, prompt, plan, signal, onThinking);
+  const result = await generateMultiObjectConfig(provider, prompt, plan, signal, onThinking);
 
   logger.flush();
 
@@ -119,58 +114,27 @@ export async function resolveMultipleObjectsFromPrompt(
  * This is a lightweight call that only includes object descriptions.
  */
 async function routeToMultiObjectPlan(
-  ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
+  provider: LLMProvider,
   prompt: string,
   signal?: AbortSignal,
   onThinking?: (thought: string) => void
 ): Promise<{ objectTypes: string[]; structure: string } | null> {
-  // Check for cancellation before starting
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
-  }
+  if (signal?.aborted) throw new Error('Request cancelled');
 
   const routerPrompt = buildMultiObjectRouterPrompt();
 
-  // Use streaming with thinking enabled for real-time feedback
-  const response = await ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
-    contents: [{ text: `${routerPrompt}\n\nUser prompt: "${prompt}"` }],
-    config: {
-      thinkingConfig: {
-        includeThoughts: true
-      }
-    }
-  });
+  const responseText = await provider.generateText(
+    [{ role: 'user', content: `${routerPrompt}\n\nUser prompt: "${prompt}"` }],
+    { signal, onThinking }
+  );
 
-  let responseText = '';
-
-  for await (const chunk of response) {
-    // Check for cancellation during streaming
-    if (signal?.aborted) {
-      throw new Error('Request cancelled');
-    }
-
-    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-      if (part.thought && part.text && onThinking) {
-        // Stream thinking updates to UI
-        onThinking(part.text);
-      } else if (part.text) {
-        // Accumulate final response text
-        responseText += part.text;
-      }
-    }
-  }
-
-  responseText = responseText.trim();
-
-  if (!responseText) {
+  if (!responseText.trim()) {
     logger.log('⚠️ Router response is empty');
     return null;
   }
 
   try {
-    // Extract JSON from response (handle markdown code blocks)
-    const jsonText = extractJson(responseText);
+    const jsonText = extractJson(responseText.trim());
     const result = JSON.parse(jsonText);
 
     if (!result.objectTypes || !Array.isArray(result.objectTypes)) {
@@ -194,66 +158,32 @@ async function routeToMultiObjectPlan(
 
 /**
  * Call 2 (Multi-object): Generates full object configurations based on the plan.
- * This is a targeted call that includes only relevant system prompts.
- * Uses streaming with thinking enabled to provide real-time feedback.
  */
 async function generateMultiObjectConfig(
-  ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
+  provider: LLMProvider,
   prompt: string,
   plan: { objectTypes: string[]; structure: string },
   signal?: AbortSignal,
   onThinking?: (thought: string) => void
 ): Promise<MultiObjectResult | null> {
-  // Check for cancellation before starting
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
-  }
+  if (signal?.aborted) throw new Error('Request cancelled');
 
   const systemPrompt = buildMultiObjectGeneratorPrompt(plan.objectTypes, plan.structure);
 
-  // Use streaming with thinking enabled for real-time feedback
-  const response = await ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
-    contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }],
-    config: {
-      thinkingConfig: {
-        includeThoughts: true
-      }
-    }
-  });
+  const responseText = await provider.generateText(
+    [{ role: 'user', content: `${systemPrompt}\n\nUser prompt: "${prompt}"` }],
+    { signal, onThinking }
+  );
 
-  let responseText = '';
-
-  for await (const chunk of response) {
-    // Check for cancellation during streaming
-    if (signal?.aborted) {
-      throw new Error('Request cancelled');
-    }
-
-    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-      if (part.thought && part.text && onThinking) {
-        // Stream thinking updates to UI
-        onThinking(part.text);
-      } else if (part.text) {
-        // Accumulate final response text
-        responseText += part.text;
-      }
-    }
-  }
-
-  responseText = responseText.trim();
-  if (!responseText) {
+  if (!responseText.trim()) {
     logger.log('⚠️ Generator response is empty');
     return null;
   }
 
   try {
-    // Extract JSON from response (handle markdown code blocks)
-    const jsonText = extractJson(responseText);
-
+    const jsonText = extractJson(responseText.trim());
     const result = JSON.parse(jsonText);
 
-    // Validate the result has required fields
     if (!result.nodes || !Array.isArray(result.nodes)) {
       throw new Error('Response missing required "nodes" array');
     }
@@ -262,21 +192,15 @@ async function generateMultiObjectConfig(
       throw new Error('Response missing required "edges" array');
     }
 
-    // Validate each node has a type
     for (const node of result.nodes) {
-      if (!node.type) {
-        throw new Error('Node missing required "type" field');
-      }
+      if (!node.type) throw new Error('Node missing required "type" field');
     }
 
     logger.log('✅ [Generator] Successfully parsed result');
     logger.log('✅ [Generator] Nodes created', result.nodes);
     logger.log('✅ [Generator] Edges created', result.edges);
 
-    return {
-      nodes: result.nodes,
-      edges: result.edges
-    };
+    return { nodes: result.nodes, edges: result.edges };
   } catch (error) {
     logger.error('[Generator] Failed to parse response', error);
     logger.log('Raw response text', responseText);

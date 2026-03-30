@@ -21,8 +21,8 @@ export async function transcribeAudio(
   mimeType: string,
   options: { languageHint?: string; prompt?: string; signal?: AbortSignal } = {}
 ): Promise<string> {
-  const apiKey = localStorage.getItem('gemini-api-key');
-  if (!apiKey) throw new Error('Set your Gemini API key first (Cmd+K)');
+  const { requireGeminiApiKey } = await import('./providers');
+  const apiKey = requireGeminiApiKey();
   if (!base64) throw new Error('No audio data to transcribe');
 
   const { GoogleGenAI } = await import('@google/genai');
