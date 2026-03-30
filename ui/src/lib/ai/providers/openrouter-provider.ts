@@ -1,4 +1,3 @@
-import { OpenRouter } from '@openrouter/sdk';
 import type {
   LLMMessage,
   LLMProvider,
@@ -9,62 +8,108 @@ import type {
   ToolCall
 } from './types';
 
+const OPENROUTER_API = 'https://openrouter.ai/api/v1/chat/completions';
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'HTTP-Referer': 'https://patchies.app',
+  'X-Title': 'Patchies'
+};
+
 export class OpenRouterProvider implements LLMProvider {
   readonly id = 'openrouter';
   readonly name = 'OpenRouter';
 
-  private readonly client: OpenRouter;
-
   constructor(
     private readonly apiKey: string,
     private readonly model: string
-  ) {
-    this.client = new OpenRouter({
-      apiKey,
-      httpReferer: 'https://patchies.app',
-      appTitle: 'Patchies'
-    });
+  ) {}
+
+  private get authHeaders() {
+    return { ...HEADERS, Authorization: `Bearer ${this.apiKey}` };
   }
 
   async generateText(messages: LLMMessage[], options: LLMStreamOptions = {}): Promise<string> {
-    const { signal, onToken, systemPrompt, temperature } = options;
+    const { signal, onToken, systemPrompt, temperature, topK } = options;
 
-    type Role = 'user' | 'assistant' | 'system';
-    const input = messages.map((m) => {
-      const role = (m.role === 'model' ? 'assistant' : m.role) as Role;
+    type OAIMessage =
+      | { role: 'system'; content: string }
+      | { role: 'user'; content: string | { type: string; [k: string]: unknown }[] }
+      | { role: 'assistant'; content: string };
 
+    const oaiMessages: OAIMessage[] = [];
+    if (systemPrompt) oaiMessages.push({ role: 'system', content: systemPrompt });
+
+    for (const m of messages) {
       if (m.images?.length) {
-        return {
-          role,
+        oaiMessages.push({
+          role: 'user',
           content: [
             ...m.images.map((img) => ({
-              type: 'input_image' as const,
-              detail: 'auto' as const,
-              imageUrl: `data:${img.mimeType};base64,${img.data}`
+              type: 'image_url',
+              image_url: { url: `data:${img.mimeType};base64,${img.data}` }
             })),
-            { type: 'input_text' as const, text: m.content }
+            { type: 'text', text: m.content }
           ]
-        };
+        });
+      } else if (m.role === 'model') {
+        oaiMessages.push({ role: 'assistant', content: m.content });
+      } else {
+        oaiMessages.push({ role: 'user', content: m.content });
       }
-
-      return { role, content: m.content };
-    });
-
-    const result = this.client.callModel(
-      { model: this.model, instructions: systemPrompt, input, temperature },
-      { signal }
-    );
-
-    if (onToken) {
-      let responseText = '';
-      for await (const delta of result.getTextStream()) {
-        responseText += delta;
-        onToken(delta);
-      }
-      return responseText;
     }
 
-    return result.getText();
+    const body: Record<string, unknown> = {
+      model: this.model,
+      messages: oaiMessages,
+      stream: true
+    };
+    if (temperature !== undefined) body.temperature = temperature;
+    if (topK !== undefined) body.top_k = topK;
+
+    const response = await fetch(OPENROUTER_API, {
+      method: 'POST',
+      headers: this.authHeaders,
+      body: JSON.stringify(body),
+      signal
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`OpenRouter error ${response.status}: ${errText}`);
+    }
+
+    let text = '';
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data: ')) continue;
+        const data = trimmed.slice(6);
+        if (data === '[DONE]') break;
+        try {
+          const chunk = JSON.parse(data);
+          const delta = chunk.choices?.[0]?.delta?.content;
+          if (delta) {
+            text += delta;
+            onToken?.(delta);
+          }
+        } catch {
+          // ignore malformed SSE lines
+        }
+      }
+    }
+
+    return text;
   }
 
   async streamTurn(
