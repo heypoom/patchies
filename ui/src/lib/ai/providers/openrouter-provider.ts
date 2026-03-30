@@ -65,7 +65,8 @@ export class OpenRouterProvider implements LLMProvider {
     const body: Record<string, unknown> = {
       model: this.model,
       messages: oaiMessages,
-      stream: true
+      stream: true,
+      reasoning: {}
     };
 
     if (temperature !== undefined) body.temperature = temperature;
@@ -204,7 +205,8 @@ export class OpenRouterProvider implements LLMProvider {
     const body: Record<string, unknown> = {
       model: this.model,
       messages: oaiMessages,
-      stream: true
+      stream: true,
+      reasoning: {}
     };
 
     if (tools.length > 0) {
