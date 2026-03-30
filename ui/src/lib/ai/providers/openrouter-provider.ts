@@ -9,6 +9,7 @@ import type {
 } from './types';
 
 const OPENROUTER_API = 'https://openrouter.ai/api/v1/chat/completions';
+
 const HEADERS = {
   'Content-Type': 'application/json',
   'HTTP-Referer': 'https://patchies.app',
@@ -29,7 +30,7 @@ export class OpenRouterProvider implements LLMProvider {
   }
 
   async generateText(messages: LLMMessage[], options: LLMStreamOptions = {}): Promise<string> {
-    const { signal, onToken, systemPrompt, temperature, topK } = options;
+    const { signal, onThinking, onToken, systemPrompt, temperature, topK } = options;
 
     type OAIMessage =
       | { role: 'system'; content: string }
@@ -37,7 +38,10 @@ export class OpenRouterProvider implements LLMProvider {
       | { role: 'assistant'; content: string };
 
     const oaiMessages: OAIMessage[] = [];
-    if (systemPrompt) oaiMessages.push({ role: 'system', content: systemPrompt });
+
+    if (systemPrompt) {
+      oaiMessages.push({ role: 'system', content: systemPrompt });
+    }
 
     for (const m of messages) {
       if (m.images?.length) {
@@ -63,6 +67,7 @@ export class OpenRouterProvider implements LLMProvider {
       messages: oaiMessages,
       stream: true
     };
+
     if (temperature !== undefined) body.temperature = temperature;
     if (topK !== undefined) body.top_k = topK;
 
@@ -79,6 +84,7 @@ export class OpenRouterProvider implements LLMProvider {
     }
 
     let text = '';
+
     const reader = response.body!.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -88,20 +94,34 @@ export class OpenRouterProvider implements LLMProvider {
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
+
       const lines = buffer.split('\n');
       buffer = lines.pop() ?? '';
 
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed.startsWith('data: ')) continue;
+
         const data = trimmed.slice(6);
+
         if (data === '[DONE]') break;
+
         try {
           const chunk = JSON.parse(data);
-          const delta = chunk.choices?.[0]?.delta?.content;
-          if (delta) {
-            text += delta;
-            onToken?.(delta);
+
+          const delta = chunk.choices?.[0]?.delta;
+          if (!delta) continue;
+
+          const reasoning = delta.reasoning ?? delta.reasoning_content;
+
+          if (reasoning) {
+            onThinking?.(reasoning);
+          }
+
+          if (delta.content) {
+            text += delta.content;
+
+            onToken?.(delta.content);
           }
         } catch {
           // ignore malformed SSE lines
@@ -116,7 +136,7 @@ export class OpenRouterProvider implements LLMProvider {
     messages: ChatTurnMessage[],
     options: StreamTurnOptions
   ): Promise<StreamTurnResult> {
-    const { systemPrompt, tools = [], signal, onChunk } = options;
+    const { systemPrompt, tools = [], signal, onChunk, onThinking } = options;
 
     type OAIMessage =
       | { role: 'system'; content: string }
@@ -132,44 +152,52 @@ export class OpenRouterProvider implements LLMProvider {
 
     const oaiMessages: OAIMessage[] = [];
 
-    if (systemPrompt) oaiMessages.push({ role: 'system', content: systemPrompt });
+    if (systemPrompt) {
+      oaiMessages.push({ role: 'system', content: systemPrompt });
+    }
 
-    for (const msg of messages) {
-      if (msg.role === 'model') {
+    for (const message of messages) {
+      if (message.role === 'model') {
         oaiMessages.push({
           role: 'assistant',
-          content: msg.content || null,
-          ...(msg.toolCalls?.length
+          content: message.content || null,
+          ...(message.toolCalls?.length
             ? {
-                tool_calls: msg.toolCalls.map((tc) => ({
-                  id: tc.id,
+                tool_calls: message.toolCalls.map((toolCall) => ({
+                  id: toolCall.id,
                   type: 'function' as const,
-                  function: { name: tc.name, arguments: JSON.stringify(tc.args) }
+                  function: {
+                    name: toolCall.name,
+                    arguments: JSON.stringify(toolCall.args)
+                  }
                 }))
               }
             : {})
         });
-      } else if (msg.toolResults?.length) {
-        for (const tr of msg.toolResults) {
+      } else if (message.toolResults?.length) {
+        for (const toolResult of message.toolResults) {
           oaiMessages.push({
             role: 'tool',
-            content: typeof tr.result === 'string' ? tr.result : JSON.stringify(tr.result),
-            tool_call_id: tr.callId
+            content:
+              typeof toolResult.result === 'string'
+                ? toolResult.result
+                : JSON.stringify(toolResult.result),
+            tool_call_id: toolResult.callId
           });
         }
-      } else if (msg.images?.length) {
+      } else if (message.images?.length) {
         oaiMessages.push({
           role: 'user',
           content: [
-            ...msg.images.map((img) => ({
+            ...message.images.map((image) => ({
               type: 'image_url',
-              image_url: { url: `data:${img.mimeType};base64,${img.data}` }
+              image_url: { url: `data:${image.mimeType};base64,${image.data}` }
             })),
-            { type: 'text', text: msg.content }
+            { type: 'text', text: message.content }
           ]
         });
       } else {
-        oaiMessages.push({ role: 'user', content: msg.content });
+        oaiMessages.push({ role: 'user', content: message.content });
       }
     }
 
@@ -180,9 +208,13 @@ export class OpenRouterProvider implements LLMProvider {
     };
 
     if (tools.length > 0) {
-      body.tools = tools.map((t) => ({
+      body.tools = tools.map((tool) => ({
         type: 'function',
-        function: { name: t.name, description: t.description, parameters: t.parametersJsonSchema }
+        function: {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parametersJsonSchema
+        }
       }));
     }
 
@@ -200,17 +232,17 @@ export class OpenRouterProvider implements LLMProvider {
 
     if (!response.ok) {
       const errText = await response.text();
+
       throw new Error(`OpenRouter error ${response.status}: ${errText}`);
     }
 
     let text = '';
-    const accumulator = new Map<number, { id: string; name: string; args: string }>();
+    const toolCallAccumulator = new Map<number, { id: string; name: string; args: string }>();
 
     const reader = response.body!.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
 
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -222,13 +254,21 @@ export class OpenRouterProvider implements LLMProvider {
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed.startsWith('data: ')) continue;
+
         const data = trimmed.slice(6);
         if (data === '[DONE]') break;
 
         try {
           const chunk = JSON.parse(data);
+
           const delta = chunk.choices?.[0]?.delta;
           if (!delta) continue;
+
+          const reasoning = delta.reasoning ?? delta.reasoning_content;
+
+          if (reasoning) {
+            onThinking?.(reasoning);
+          }
 
           if (delta.content) {
             text += delta.content;
@@ -236,15 +276,18 @@ export class OpenRouterProvider implements LLMProvider {
           }
 
           if (delta.tool_calls) {
-            for (const tc of delta.tool_calls) {
-              const idx: number = tc.index ?? 0;
-              if (!accumulator.has(idx)) {
-                accumulator.set(idx, { id: tc.id ?? '', name: '', args: '' });
+            for (const toolCall of delta.tool_calls) {
+              const index: number = toolCall.index ?? 0;
+
+              if (!toolCallAccumulator.has(index)) {
+                toolCallAccumulator.set(index, { id: toolCall.id ?? '', name: '', args: '' });
               }
-              const acc = accumulator.get(idx)!;
-              if (tc.id) acc.id = tc.id;
-              if (tc.function?.name) acc.name += tc.function.name;
-              if (tc.function?.arguments) acc.args += tc.function.arguments;
+
+              const accum = toolCallAccumulator.get(index)!;
+
+              if (toolCall.id) accum.id = toolCall.id;
+              if (toolCall.function?.name) accum.name += toolCall.function.name;
+              if (toolCall.function?.arguments) accum.args += toolCall.function.arguments;
             }
           }
         } catch {
@@ -253,14 +296,15 @@ export class OpenRouterProvider implements LLMProvider {
       }
     }
 
-    const toolCalls: ToolCall[] = Array.from(accumulator.entries())
+    const toolCalls: ToolCall[] = Array.from(toolCallAccumulator.entries())
       .sort(([a], [b]) => a - b)
-      .map(([, tc]) => ({
-        id: tc.id || crypto.randomUUID(),
-        name: tc.name,
+      .map(([, toolCall]) => ({
+        id: toolCall.id || crypto.randomUUID(),
+        name: toolCall.name,
+
         args: (() => {
           try {
-            return JSON.parse(tc.args) as Record<string, unknown>;
+            return JSON.parse(toolCall.args) as Record<string, unknown>;
           } catch {
             return {};
           }
