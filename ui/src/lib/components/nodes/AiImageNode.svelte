@@ -4,8 +4,10 @@
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { generateImageWithGemini } from '$lib/ai/google';
+  import { generateImageWithGemini, generateImageWithOpenRouter } from '$lib/ai/google';
   import { requireGeminiApiKey } from '$lib/ai/providers';
+  import { get } from 'svelte/store';
+  import { aiSettings } from '../../../stores/ai-settings.store';
   import { EditorView } from 'codemirror';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -15,7 +17,7 @@
   import { aiImgMessages } from '$lib/objects/schemas';
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 
-  let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
+  let { id: nodeId, data }: { id: string; data: { prompt: string; model?: string } } = $props();
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -32,6 +34,10 @@
 
   const prompt = $derived(data.prompt || '');
   const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
+
+  const defaultModelPlaceholder = $derived(
+    $aiSettings.provider === 'openrouter' ? $aiSettings.openRouterModel : 'gemini-2.5-flash-image'
+  );
 
   const [width, height] = [800 * 1.2, 600 * 1.2];
 
@@ -83,18 +89,34 @@
     errorMessage = null;
 
     try {
-      const apiKey = requireGeminiApiKey();
       abortController = new AbortController();
+      const settings = get(aiSettings);
+      const nodeModel = data.model?.trim() || undefined;
 
       const imageNodeId = targetConnections.current.find((conn) =>
         conn.targetHandle?.startsWith('video-in')
       )?.source;
 
-      const image = await generateImageWithGemini(prompt, {
-        apiKey,
-        abortSignal: abortController.signal,
-        inputImageNodeId: imageNodeId
-      });
+      let image: ImageBitmap;
+
+      if (settings.provider === 'openrouter') {
+        if (!settings.openRouterApiKey) {
+          throw new Error('OpenRouter API key is not set. Please configure it in AI settings.');
+        }
+        image = await generateImageWithOpenRouter(prompt, {
+          apiKey: settings.openRouterApiKey,
+          model: nodeModel ?? settings.openRouterModel,
+          abortSignal: abortController.signal
+        });
+      } else {
+        const apiKey = requireGeminiApiKey();
+        image = await generateImageWithGemini(prompt, {
+          apiKey,
+          model: nodeModel,
+          abortSignal: abortController.signal,
+          inputImageNodeId: imageNodeId
+        });
+      }
 
       const previewBitmap = await createImageBitmap(image);
       const flippedBitmap = await createImageBitmap(image);
@@ -231,6 +253,16 @@
         {nodeId}
         dataKey="prompt"
       />
+      <div class="mt-2 flex items-center gap-2">
+        <span class="shrink-0 text-xs text-zinc-500">Model</span>
+        <input
+          type="text"
+          value={data.model ?? ''}
+          oninput={(e) => updateNodeData(nodeId, { model: (e.target as HTMLInputElement).value })}
+          placeholder={defaultModelPlaceholder}
+          class="nodrag min-w-0 flex-1 rounded border border-zinc-700 bg-zinc-800/50 px-2 py-1 font-mono text-xs text-zinc-300 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none"
+        />
+      </div>
     </div>
   {/snippet}
 </ObjectPreviewLayout>

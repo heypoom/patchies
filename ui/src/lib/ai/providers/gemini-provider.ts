@@ -14,7 +14,7 @@ export class GeminiProvider implements LLMProvider {
 
   constructor(
     private readonly apiKey: string,
-    private readonly model = 'gemini-2.5-flash-preview-04-17'
+    private readonly model = 'gemini-3-flash-preview'
   ) {}
 
   async generateText(messages: LLMMessage[], options: LLMStreamOptions = {}): Promise<string> {
@@ -23,15 +23,16 @@ export class GeminiProvider implements LLMProvider {
     if (signal?.aborted) throw new Error('Request cancelled');
 
     const { GoogleGenAI } = await import('@google/genai');
+
     const ai = new GoogleGenAI({ apiKey: this.apiKey });
 
-    const contents = messages.map((m) => ({
-      role: m.role,
+    const contents = messages.map((message) => ({
+      role: message.role,
       parts: [
-        ...(m.images ?? []).map((img) => ({
+        ...(message.images ?? []).map((img) => ({
           inlineData: { mimeType: img.mimeType, data: img.data }
         })),
-        { text: m.content }
+        { text: message.content }
       ]
     }));
 
@@ -61,6 +62,7 @@ export class GeminiProvider implements LLMProvider {
           onThinking?.(part.text);
         } else if (part.text) {
           responseText += part.text;
+
           onToken?.(part.text);
         }
       }
@@ -78,6 +80,7 @@ export class GeminiProvider implements LLMProvider {
     if (signal?.aborted) throw new Error('Request cancelled');
 
     const { GoogleGenAI } = await import('@google/genai');
+
     const ai = new GoogleGenAI({ apiKey: this.apiKey });
 
     // Convert ChatTurnMessage[] to Gemini contents[]
@@ -85,6 +88,7 @@ export class GeminiProvider implements LLMProvider {
       // Model turn with _raw: use preserved parts directly (preserves thought_signature)
       if (msg.role === 'model' && msg._raw) {
         const raw = msg._raw as { parts: Record<string, unknown>[] };
+
         return { role: 'model', parts: raw.parts };
       }
 
@@ -92,13 +96,13 @@ export class GeminiProvider implements LLMProvider {
       if (msg.role === 'user' && msg.toolResults?.length) {
         return {
           role: 'user',
-          parts: msg.toolResults.map((tr) => ({
+          parts: msg.toolResults.map((toolResult) => ({
             functionResponse: {
-              name: tr.name,
+              name: toolResult.name,
               response:
-                tr.result !== null && typeof tr.result === 'object'
-                  ? (tr.result as Record<string, unknown>)
-                  : { value: tr.result }
+                toolResult.result !== null && typeof toolResult.result === 'object'
+                  ? (toolResult.result as Record<string, unknown>)
+                  : { value: toolResult.result }
             }
           }))
         };
@@ -111,9 +115,11 @@ export class GeminiProvider implements LLMProvider {
           ...(msg.images ?? []).map((img) => ({
             inlineData: { mimeType: img.mimeType, data: img.data }
           })),
+
           ...(msg.youtubeUrls ?? []).map((url) => ({
             fileData: { fileUri: url }
           })),
+
           { text: msg.content }
         ]
       };
@@ -125,7 +131,9 @@ export class GeminiProvider implements LLMProvider {
       abortSignal: signal
     };
 
-    if (systemPrompt) config.systemInstruction = systemPrompt;
+    if (systemPrompt) {
+      config.systemInstruction = systemPrompt;
+    }
 
     if (tools.length > 0) {
       config.tools = [
@@ -155,15 +163,22 @@ export class GeminiProvider implements LLMProvider {
 
     const consumeStream = async () => {
       for await (const chunk of stream) {
-        if (signal?.aborted) throw new Error('Request cancelled');
+        if (signal?.aborted) {
+          throw new Error('Request cancelled');
+        }
+
         for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
           if (part.thought) {
-            if (part.text && onThinking) onThinking(part.text);
+            if (part.text && onThinking) {
+              onThinking(part.text);
+            }
+
             turnParts.push(part as Record<string, unknown>);
           } else if (part.functionCall) {
             turnParts.push(part as Record<string, unknown>);
           } else if (part.text) {
             text += part.text;
+
             onChunk?.(part.text);
             turnParts.push({ text: part.text });
           }
@@ -174,11 +189,17 @@ export class GeminiProvider implements LLMProvider {
     await (abortPromise ? Promise.race([consumeStream(), abortPromise]) : consumeStream());
 
     const toolCalls: ToolCall[] = turnParts
-      .filter((p) => 'functionCall' in p)
-      .map((p) => {
-        const fc = (p as { functionCall: { name?: string; args?: Record<string, unknown> } })
-          .functionCall;
-        return { id: crypto.randomUUID(), name: fc.name ?? '', args: fc.args ?? {} };
+      .filter((part) => 'functionCall' in part)
+      .map((part) => {
+        const functionCall = (
+          part as { functionCall: { name?: string; args?: Record<string, unknown> } }
+        ).functionCall;
+
+        return {
+          id: crypto.randomUUID(),
+          name: functionCall.name ?? '',
+          args: functionCall.args ?? {}
+        };
       });
 
     return { text, toolCalls, _rawModelTurn: { parts: turnParts } };

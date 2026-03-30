@@ -174,6 +174,12 @@
             <code class="text-zinc-400">openai/gpt-4o</code>,
             <code class="text-zinc-400">google/gemini-2.5-flash-preview-05-20</code>
           </p>
+          <div
+            class="rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-300"
+          >
+            <span class="font-medium">Gemini-only features</span> won't work with OpenRouter: speech-to-text,
+            text-to-speech, and live music (Lyria). Add a Gemini API key too if you need these.
+          </div>
         </div>
       {/if}
 

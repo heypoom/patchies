@@ -244,9 +244,9 @@ unpauseObject('p5-1');
 
 ---
 
-## AI (Gemini)
+## AI
 
-Call Google's Gemini API directly from your patch:
+Call the configured AI provider directly from your patch:
 
 ```javascript
 const result = await llm("Generate a JSON list of 5 colors");
@@ -256,9 +256,14 @@ console.log(result);
 const description = await llm("What's in this frame?", {
   imageNodeId: "canvas-1",
 });
+
+// Override the model for a specific call
+const haiku = await llm("Write a haiku about recursion", {
+  model: "anthropic/claude-haiku-4-5",
+});
 ```
 
-Requires a Gemini API key — set it via `Ctrl/Cmd + K > Gemini`.
+Requires an API key — configure your provider via `Ctrl/Cmd + K > AI Provider Settings`.
 
 ---
 

@@ -10,22 +10,27 @@ export { OpenRouterProvider } from './openrouter-provider';
 /**
  * Returns an LLMProvider for general text generation based on the user's active AI settings.
  * Throws if no API key is configured.
+ *
+ * @param modelOverride  Optional model ID to use instead of the configured default.
  */
-export function getTextProvider() {
+export function getTextProvider(modelOverride?: string) {
   const settings = get(aiSettings);
 
   if (settings.provider === 'openrouter') {
     if (!settings.openRouterApiKey) {
       throw new Error('OpenRouter API key is not set. Please configure it in AI settings.');
     }
-    return new OpenRouterProvider(settings.openRouterApiKey, settings.openRouterModel);
+    return new OpenRouterProvider(
+      settings.openRouterApiKey,
+      modelOverride ?? settings.openRouterModel
+    );
   }
 
   if (!settings.geminiApiKey) {
     throw new Error('Gemini API key is not set. Please set it in the settings.');
   }
 
-  return new GeminiProvider(settings.geminiApiKey);
+  return new GeminiProvider(settings.geminiApiKey, modelOverride);
 }
 
 /**

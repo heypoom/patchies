@@ -11,8 +11,9 @@
   import ObjectPreviewLayout from '../ObjectPreviewLayout.svelte';
   import { match } from 'ts-pattern';
   import { aiTxtMessages } from '$lib/objects/schemas';
+  import { aiSettings } from '../../../stores/ai-settings.store';
 
-  let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
+  let { id: nodeId, data }: { id: string; data: { prompt: string; model?: string } } = $props();
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -26,6 +27,10 @@
 
   const prompt = $derived(data.prompt || '');
   const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
+
+  const defaultModelPlaceholder = $derived(
+    $aiSettings.provider === 'openrouter' ? $aiSettings.openRouterModel : 'gemini-3-flash-preview'
+  );
 
   const targetConnections = useNodeConnections({ id: nodeId, handleType: 'target' });
 
@@ -83,7 +88,8 @@
 
       const llmOutput = await llmFunction(prompt, {
         imageNodeId,
-        abortSignal: abortController.signal
+        abortSignal: abortController.signal,
+        model: data.model?.trim() || undefined
       });
 
       generatedText = llmOutput ?? '';
@@ -177,6 +183,17 @@
         {nodeId}
         dataKey="prompt"
       />
+
+      <div class="mt-2 flex items-center gap-2">
+        <span class="shrink-0 text-xs text-zinc-500">Model</span>
+        <input
+          type="text"
+          value={data.model ?? ''}
+          oninput={(e) => updateNodeData(nodeId, { model: (e.target as HTMLInputElement).value })}
+          placeholder={defaultModelPlaceholder}
+          class="nodrag min-w-0 flex-1 rounded border border-zinc-700 bg-zinc-800/50 px-2 py-1 font-mono text-xs text-zinc-300 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none"
+        />
+      </div>
 
       {#if errorMessage}
         <div class="mt-2 px-2 py-1 font-mono text-xs text-red-300">

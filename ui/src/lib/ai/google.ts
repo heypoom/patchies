@@ -5,10 +5,12 @@ export async function generateImageWithGemini(
   prompt: string,
   {
     apiKey,
+    model = 'gemini-2.5-flash-image',
     abortSignal,
     inputImageNodeId
   }: {
     apiKey: string;
+    model?: string;
     abortSignal?: AbortSignal;
     inputImageNodeId?: string;
   }
@@ -48,7 +50,7 @@ export async function generateImageWithGemini(
   contents.push({ text: prompt });
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
+    model,
     contents,
     config: { abortSignal }
   });
@@ -91,10 +93,70 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
   return new Blob([byteArray], { type: mimeType });
 }
 
+export async function generateImageWithOpenRouter(
+  prompt: string,
+  {
+    apiKey,
+    model,
+    abortSignal
+  }: {
+    apiKey: string;
+    model: string;
+    abortSignal?: AbortSignal;
+  }
+): Promise<ImageBitmap> {
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://patchies.app',
+      'X-Title': 'Patchies'
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      modalities: ['image']
+    }),
+    signal: abortSignal
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`OpenRouter error ${response.status}: ${errText}`);
+  }
+
+  const data = await response.json();
+  const images: { image_url?: { url?: string } }[] = data.choices?.[0]?.message?.images ?? [];
+
+  for (const img of images) {
+    const url = img.image_url?.url;
+    if (!url) continue;
+    const base64 = url.replace(/^data:[^;]+;base64,/, '');
+    const blob = base64ToBlob(base64, 'image/png');
+    return createImageBitmap(blob);
+  }
+
+  // Some models embed the image in content parts instead
+  const content = data.choices?.[0]?.message?.content;
+  if (typeof content === 'string' && content) {
+    throw new Error(
+      `Model did not generate an image. Try an image-capable model. Response: ${content}`
+    );
+  }
+
+  throw new Error(
+    'No image returned. Make sure your OpenRouter model supports image generation (e.g. google/gemini-2.5-flash-preview-05-20).'
+  );
+}
+
 export function createLLMFunction() {
-  return async (prompt: string, context?: { imageNodeId?: string; abortSignal?: AbortSignal }) => {
+  return async (
+    prompt: string,
+    context?: { imageNodeId?: string; abortSignal?: AbortSignal; model?: string }
+  ) => {
     const { getTextProvider } = await import('./providers');
-    const provider = getTextProvider();
+    const provider = getTextProvider(context?.model);
 
     const images: Array<{ mimeType: string; data: string }> = [];
 

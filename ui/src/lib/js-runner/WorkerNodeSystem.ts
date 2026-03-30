@@ -1,5 +1,4 @@
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-import { aiSettings } from '../../stores/ai-settings.store';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { MessageSystem, type MessageCallbackFn, type Message } from '$lib/messages/MessageSystem';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
@@ -37,7 +36,7 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'destroy' }
   // Responses for proxied features
   | { type: 'vfsUrlResolved'; requestId: string; url?: string; error?: string }
-  | { type: 'llmConfig'; requestId: string; apiKey?: string; imageBase64?: string; error?: string }
+  | { type: 'llmConfig'; requestId: string; text?: string; error?: string }
   | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
   // Video frame delivery
   | { type: 'videoFramesReady'; frames: (ImageBitmap | null)[]; timestamp: number }
@@ -82,7 +81,7 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'fftEnabled'; enabled: boolean }
   | { type: 'registerFFTRequest'; analysisType: AudioAnalysisType; format: AudioAnalysisFormat }
   | { type: 'resolveVfsUrl'; requestId: string; path: string }
-  | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string }
+  | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string; model?: string }
   // Video frame APIs
   | { type: 'setVideoCount'; inletCount: number; outletCount: number }
   | { type: 'videoFrameCallbackRegistered'; resolution?: [number, number] }
@@ -289,7 +288,14 @@ export class WorkerNodeSystem {
       })
       // LLM proxy messages
       .with({ type: 'llmRequest' }, (event) => {
-        this.handleLLMRequest(nodeId, worker, event.requestId, event.prompt, event.imageNodeId);
+        this.handleLLMRequest(
+          nodeId,
+          worker,
+          event.requestId,
+          event.prompt,
+          event.imageNodeId,
+          event.model
+        );
       })
       // Video frame APIs
       .with({ type: 'setVideoCount' }, (event) => {
@@ -384,50 +390,34 @@ export class WorkerNodeSystem {
   }
 
   /**
-   * Get LLM credentials and optionally capture image, send config to worker.
-   * Worker will make the actual HTTP request.
+   * Handle llm() call from worker: capture image if needed, call the active LLM provider,
+   * and send the text result back to the worker.
    */
   private async handleLLMRequest(
     nodeId: string,
     worker: Worker,
     requestId: string,
-    _prompt: string,
-    imageNodeId?: string
+    prompt: string,
+    imageNodeId?: string,
+    model?: string
   ) {
     try {
-      const apiKey = aiSettings.getActiveApiKey();
+      const { getTextProvider } = await import('$lib/ai/providers');
+      const provider = getTextProvider(model);
 
-      if (!apiKey) {
-        worker.postMessage({
-          type: 'llmConfig',
-          nodeId,
-          requestId,
-          error: 'AI API key is not set. Please configure it in AI settings.'
-        } satisfies WorkerMessage);
-        return;
-      }
+      const images: { mimeType: string; data: string }[] = [];
 
-      let imageBase64: string | undefined;
-
-      // If image node is specified, capture the preview frame
       if (imageNodeId) {
         const bitmap = await capturePreviewFrame(imageNodeId);
         if (bitmap) {
-          imageBase64 = bitmapToBase64Image({
-            bitmap,
-            format: 'image/jpeg',
-            quality: 0.7
-          });
+          const data = bitmapToBase64Image({ bitmap, format: 'image/jpeg', quality: 0.7 });
+          images.push({ mimeType: 'image/jpeg', data });
         }
       }
 
-      worker.postMessage({
-        type: 'llmConfig',
-        nodeId,
-        requestId,
-        apiKey,
-        imageBase64
-      } satisfies WorkerMessage);
+      const text = await provider.generateText([{ role: 'user', content: prompt, images }]);
+
+      worker.postMessage({ type: 'llmConfig', nodeId, requestId, text } satisfies WorkerMessage);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       worker.postMessage({

@@ -16,7 +16,7 @@ export class OpenRouterProvider implements LLMProvider {
   private readonly client: OpenRouter;
 
   constructor(
-    apiKey: string,
+    private readonly apiKey: string,
     private readonly model: string
   ) {
     this.client = new OpenRouter({
