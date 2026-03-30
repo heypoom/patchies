@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:openrouter.ai)",
+      "Bash(grep -r \"signal\\\\|AbortSignal\\\\|image_url\\\\|image\\\\|ImageUrl\" node_modules/@openrouter/sdk/dist --include=*.d.ts -l)"
+    ]
+  }
+}
