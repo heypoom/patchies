@@ -11,6 +11,10 @@
     --prose-h3: calc(0.9375rem * var(--prose-scale));
   }
 
+  .prose-chat.prose-markdown-sm {
+    --prose-scale: 0.9;
+  }
+
   .prose-markdown-sm {
     --prose-scale: 0.8;
     --prose-base: calc(0.9375rem * var(--prose-scale));
