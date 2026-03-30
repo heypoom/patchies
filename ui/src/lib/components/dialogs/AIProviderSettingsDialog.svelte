@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog';
-  import { ChevronDown } from '@lucide/svelte/icons';
+  import { ChevronDown, KeyRound } from '@lucide/svelte/icons';
+  import { match } from 'ts-pattern';
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
   import {
     aiSettings,
@@ -26,7 +27,6 @@
   let showDefaultModels = $state(false);
   let error = $state<string | null>(null);
 
-  // Sync state when dialog opens
   $effect(() => {
     if (open) {
       selectedProvider = $aiSettings.provider;
@@ -78,181 +78,169 @@
       'All AI features hidden. Use "Ctrl/Cmd + K > Toggle AI Features" to re-enable them.'
     );
   }
+
+  const onEnter = (fn: () => void) => (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      fn();
+    }
+  };
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content class="sm:max-w-md">
-    <Dialog.Header>
-      <Dialog.Title>AI Provider Settings</Dialog.Title>
-    </Dialog.Header>
-    <div class="space-y-4">
-      <div class="space-y-2">
-        <span class="block text-sm text-zinc-300">Provider</span>
-        <div class="flex gap-2">
-          <button
-            onclick={() => (selectedProvider = 'gemini')}
-            class="flex-1 cursor-pointer rounded border px-3 py-2 text-sm transition-colors {selectedProvider ===
-            'gemini'
-              ? 'border-blue-500 bg-blue-600/20 text-blue-300'
-              : 'border-zinc-600 bg-zinc-800 text-zinc-300 hover:border-zinc-500'}"
-          >
-            Google Gemini
-          </button>
-          <button
-            onclick={() => (selectedProvider = 'openrouter')}
-            class="flex-1 cursor-pointer rounded border px-3 py-2 text-sm transition-colors {selectedProvider ===
-            'openrouter'
-              ? 'border-blue-500 bg-blue-600/20 text-blue-300'
-              : 'border-zinc-600 bg-zinc-800 text-zinc-300 hover:border-zinc-500'}"
-          >
-            OpenRouter
-          </button>
-        </div>
+  <Dialog.Content class="gap-0 p-0 sm:max-w-sm">
+    <!-- Provider segmented control -->
+    <div class="p-5 pb-4">
+      <Dialog.Title class="mb-4 text-base font-semibold text-zinc-100">
+        AI Provider Settings
+      </Dialog.Title>
+      <div class="flex rounded-lg bg-zinc-800 p-1">
+        <button
+          onclick={() => (selectedProvider = 'gemini')}
+          class={[
+            'flex-1 cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-all',
+            match(selectedProvider)
+              .with('gemini', () => 'bg-zinc-600 text-white shadow-sm')
+              .otherwise(() => 'text-zinc-400 hover:text-zinc-200')
+          ]}
+        >
+          Google Gemini
+        </button>
+        <button
+          onclick={() => (selectedProvider = 'openrouter')}
+          class={[
+            'flex-1 cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-all',
+            match(selectedProvider)
+              .with('openrouter', () => 'bg-zinc-600 text-white shadow-sm')
+              .otherwise(() => 'text-zinc-400 hover:text-zinc-200')
+          ]}
+        >
+          OpenRouter
+        </button>
       </div>
+    </div>
 
+    <div class="space-y-4 border-t border-zinc-800 px-5 py-4">
       {#if selectedProvider === 'gemini'}
-        <div class="space-y-2">
-          <p class="text-sm text-zinc-300">
-            Get a free API key at
-            <a
-              href="https://aistudio.google.com/app/apikey"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-blue-400 underline hover:text-blue-300"
-            >
-              Google AI Studio
-            </a>.
-          </p>
-          <label for="gemini-key-input" class="block text-sm text-zinc-300">Gemini API key:</label>
+        <p class="text-xs text-zinc-500">
+          Get a free API key at
+          <a
+            href="https://aistudio.google.com/app/apikey"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-zinc-300 underline decoration-zinc-600 underline-offset-2 hover:decoration-zinc-400"
+          >
+            Google AI Studio
+          </a>. Keys are stored in localStorage.
+        </p>
+        <div class="relative">
+          <KeyRound class="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
           <input
             id="gemini-key-input"
             type="password"
             bind:value={geminiKeyInput}
-            onkeydown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                validateAndSave();
-              }
-            }}
+            onkeydown={onEnter(validateAndSave)}
             placeholder="AIza..."
-            class="w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            class="w-full rounded-lg border border-zinc-700 bg-zinc-800/80 py-2.5 pr-3 pl-9 text-sm text-zinc-100 placeholder-zinc-600 transition-colors focus:border-zinc-500 focus:outline-none"
           />
         </div>
       {:else}
-        <div class="space-y-2">
-          <p class="text-sm text-zinc-300">
-            Get an API key at
-            <a
-              href="https://openrouter.ai/keys"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-blue-400 underline hover:text-blue-300"
-            >
-              openrouter.ai/keys
-            </a>.
-          </p>
-          <label for="openrouter-key-input" class="block text-sm text-zinc-300"
-            >OpenRouter API key:</label
+        <p class="text-xs text-zinc-500">
+          Get an API key at
+          <a
+            href="https://openrouter.ai/keys"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-zinc-300 underline decoration-zinc-600 underline-offset-2 hover:decoration-zinc-400"
           >
+            openrouter.ai/keys
+          </a>. Keys are stored in localStorage.
+        </p>
+        <div class="relative">
+          <KeyRound class="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
           <input
             id="openrouter-key-input"
             type="password"
             bind:value={openRouterKeyInput}
-            onkeydown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                validateAndSave();
-              }
-            }}
+            onkeydown={onEnter(validateAndSave)}
             placeholder="sk-or-..."
-            class="w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            class="w-full rounded-lg border border-zinc-700 bg-zinc-800/80 py-2.5 pr-3 pl-9 text-sm text-zinc-100 placeholder-zinc-600 transition-colors focus:border-zinc-500 focus:outline-none"
           />
-
-          <!-- Collapsible default models -->
-          <button
-            type="button"
-            onclick={() => (showDefaultModels = !showDefaultModels)}
-            class="flex w-full cursor-pointer items-center justify-between rounded px-1 py-1 text-xs text-zinc-500 transition-colors hover:text-zinc-300"
-          >
-            <span>Default models</span>
-            <ChevronDown
-              class={['h-3.5 w-3.5 transition-transform', showDefaultModels && 'rotate-180']}
-            />
-          </button>
-
-          {#if showDefaultModels}
-            <div class="space-y-2 rounded border border-zinc-700/60 bg-zinc-800/50 px-3 py-2">
-              <div class="space-y-1">
-                <label for="openrouter-text-model-input" class="block text-xs text-zinc-400"
-                  >Text model</label
-                >
-                <input
-                  id="openrouter-text-model-input"
-                  type="text"
-                  bind:value={openRouterTextModelInput}
-                  placeholder={DEFAULT_OPENROUTER_TEXT_MODEL}
-                  class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 font-mono text-xs text-zinc-100 placeholder-zinc-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-              <div class="space-y-1">
-                <label for="openrouter-image-model-input" class="block text-xs text-zinc-400"
-                  >Image model</label
-                >
-                <input
-                  id="openrouter-image-model-input"
-                  type="text"
-                  bind:value={openRouterImageModelInput}
-                  placeholder={DEFAULT_OPENROUTER_IMAGE_MODEL}
-                  class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 font-mono text-xs text-zinc-100 placeholder-zinc-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-              <p class="text-xs text-zinc-600">
-                e.g. <code class="text-zinc-500">anthropic/claude-sonnet-4-5</code>,
-                <code class="text-zinc-500">openai/gpt-4o</code>
-              </p>
-            </div>
-          {/if}
-
-          <div
-            class="rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-300"
-          >
-            <span class="font-medium">Gemini-only features</span> won't work with OpenRouter: speech-to-text,
-            text-to-speech, and live music (Lyria). Add a Gemini API key too if you need these.
-          </div>
         </div>
+
+        <!-- Default models collapsible -->
+        <button
+          type="button"
+          onclick={() => (showDefaultModels = !showDefaultModels)}
+          class="flex w-full cursor-pointer items-center justify-between text-xs text-zinc-600 transition-colors hover:text-zinc-400"
+        >
+          <span>Default models</span>
+          <ChevronDown
+            class={['h-3.5 w-3.5 transition-transform', showDefaultModels && 'rotate-180']}
+          />
+        </button>
+
+        {#if showDefaultModels}
+          <div class="rounded-lg border border-zinc-700/50 bg-zinc-800/40">
+            <div class="grid grid-cols-[3.5rem_1fr] items-center gap-2 px-3 py-2">
+              <span class="text-xs text-zinc-500">text</span>
+              <input
+                id="openrouter-text-model-input"
+                type="text"
+                bind:value={openRouterTextModelInput}
+                placeholder={DEFAULT_OPENROUTER_TEXT_MODEL}
+                class="w-full bg-transparent font-mono text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none"
+              />
+            </div>
+            <div
+              class="grid grid-cols-[3.5rem_1fr] items-center gap-2 border-t border-zinc-700/50 px-3 py-2"
+            >
+              <span class="text-xs text-zinc-500">image</span>
+              <input
+                id="openrouter-image-model-input"
+                type="text"
+                bind:value={openRouterImageModelInput}
+                placeholder={DEFAULT_OPENROUTER_IMAGE_MODEL}
+                class="w-full bg-transparent font-mono text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none"
+              />
+            </div>
+            <p class="border-t border-zinc-700/50 px-3 py-2 text-[11px] text-zinc-600">
+              STT, TTS, and Lyria require a separate Gemini key.
+            </p>
+          </div>
+        {/if}
       {/if}
 
       {#if error}
         <p class="text-xs text-red-400">{error}</p>
       {/if}
 
-      <p class="text-xs text-zinc-400">
-        ⚠️ Keys are stored in browser localStorage. Use separate keys with strict budget limits.
-      </p>
-
-      <p class="text-xs text-zinc-500">
-        Don't want to use AI features?
+      <div class="border-t border-zinc-800/80 pt-3">
         <button
           onclick={hideAiFeatures}
-          class="cursor-pointer text-red-400 underline hover:text-red-300"
+          class="cursor-pointer text-xs text-zinc-700 transition-colors hover:text-red-400"
         >
-          Hide all AI features.
+          Don't want AI features? Hide them.
         </button>
-      </p>
+      </div>
     </div>
-    <Dialog.Footer class="flex gap-2">
-      <button
-        onclick={() => (open = false)}
-        class="flex-1 cursor-pointer rounded bg-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
-      >
-        Cancel
-      </button>
-      <button
-        onclick={validateAndSave}
-        class="flex-1 cursor-pointer rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
-      >
-        Save & Continue
-      </button>
-    </Dialog.Footer>
+
+    <!-- Footer: action buttons only -->
+    <div class="border-t border-zinc-800 px-5 py-4">
+      <div class="flex gap-2">
+        <button
+          onclick={() => (open = false)}
+          class="flex-1 cursor-pointer rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-700"
+        >
+          Cancel
+        </button>
+        <button
+          onclick={validateAndSave}
+          class="flex-1 cursor-pointer rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+        >
+          Save & Continue
+        </button>
+      </div>
+    </div>
   </Dialog.Content>
 </Dialog.Root>

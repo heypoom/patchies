@@ -14,7 +14,7 @@
   import { generateImageWithGemini, generateImageWithOpenRouter } from '$lib/ai/google';
   import { requireGeminiApiKey } from '$lib/ai/providers';
   import { get } from 'svelte/store';
-  import { aiSettings } from '../../../stores/ai-settings.store';
+  import { aiSettings, DEFAULT_GEMINI_IMAGE_MODEL } from '../../../stores/ai-settings.store';
   import { EditorView } from 'codemirror';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -46,7 +46,7 @@
   const defaultModelPlaceholder = $derived(
     $aiSettings.provider === 'openrouter'
       ? $aiSettings.openRouterImageModel
-      : 'gemini-2.5-flash-image'
+      : DEFAULT_GEMINI_IMAGE_MODEL
   );
 
   const [width, height] = [800 * 1.2, 600 * 1.2];
@@ -192,10 +192,7 @@
           ]}
         >
           <div
-            class={[
-              'flex h-full items-center',
-              !!errorMessage ? 'justify-start' : 'justify-center'
-            ]}
+            class={['flex h-full items-center', errorMessage ? 'justify-start' : 'justify-center']}
           >
             {#if errorMessage}
               <div class="max-h-full overflow-y-auto px-5 text-red-300">
@@ -271,6 +268,7 @@
           <SlidersHorizontal class="h-3 w-3" />
           <span class="font-mono text-[10px]">model settings</span>
         </div>
+
         <ChevronDown class={['h-3 w-3 transition-transform', showModelSettings && 'rotate-180']} />
       </button>
 
@@ -278,6 +276,7 @@
         <div class="px-2 pb-2">
           <div class="flex items-center gap-1.5">
             <Bot class="h-3 w-3 shrink-0 text-zinc-600" />
+
             <input
               type="text"
               value={data.model ?? ''}
