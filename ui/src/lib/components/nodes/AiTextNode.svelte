@@ -34,7 +34,9 @@
   const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
 
   const defaultModelPlaceholder = $derived(
-    $aiSettings.provider === 'openrouter' ? $aiSettings.openRouterModel : 'gemini-3-flash-preview'
+    $aiSettings.provider === 'openrouter'
+      ? $aiSettings.openRouterTextModel
+      : 'gemini-3-flash-preview'
   );
 
   const targetConnections = useNodeConnections({ id: nodeId, handleType: 'target' });

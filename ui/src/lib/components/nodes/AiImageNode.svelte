@@ -44,7 +44,9 @@
   const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
 
   const defaultModelPlaceholder = $derived(
-    $aiSettings.provider === 'openrouter' ? $aiSettings.openRouterModel : 'gemini-2.5-flash-image'
+    $aiSettings.provider === 'openrouter'
+      ? $aiSettings.openRouterImageModel
+      : 'gemini-2.5-flash-image'
   );
 
   const [width, height] = [800 * 1.2, 600 * 1.2];
@@ -113,7 +115,7 @@
         }
         image = await generateImageWithOpenRouter(prompt, {
           apiKey: settings.openRouterApiKey,
-          model: nodeModel ?? settings.openRouterModel,
+          model: nodeModel ?? settings.openRouterImageModel,
           abortSignal: abortController.signal
         });
       } else {

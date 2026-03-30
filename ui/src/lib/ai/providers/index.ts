@@ -22,7 +22,7 @@ export function getTextProvider(modelOverride?: string) {
     }
     return new OpenRouterProvider(
       settings.openRouterApiKey,
-      modelOverride ?? settings.openRouterModel
+      modelOverride ?? settings.openRouterTextModel
     );
   }
 

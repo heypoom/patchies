@@ -2,13 +2,15 @@ import { writable, derived, get } from 'svelte/store';
 
 export type AIProviderType = 'gemini' | 'openrouter';
 
-export const DEFAULT_OPENROUTER_MODEL = 'google/gemini-2.5-flash-preview-05-20';
+export const DEFAULT_OPENROUTER_TEXT_MODEL = 'google/gemini-2.5-flash-preview-05-20';
+export const DEFAULT_OPENROUTER_IMAGE_MODEL = 'google/gemini-2.5-flash-preview-05-20';
 
 export interface AISettings {
   provider: AIProviderType;
   geminiApiKey: string;
   openRouterApiKey: string;
-  openRouterModel: string;
+  openRouterTextModel: string;
+  openRouterImageModel: string;
 }
 
 const STORAGE_KEY = 'ai-settings';
@@ -18,13 +20,22 @@ const DEFAULT_SETTINGS: AISettings = {
   provider: 'gemini',
   geminiApiKey: '',
   openRouterApiKey: '',
-  openRouterModel: DEFAULT_OPENROUTER_MODEL
+  openRouterTextModel: DEFAULT_OPENROUTER_TEXT_MODEL,
+  openRouterImageModel: DEFAULT_OPENROUTER_IMAGE_MODEL
 };
 
 function loadAISettings(): AISettings {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Migrate: openRouterModel → openRouterTextModel
+      if (parsed.openRouterModel && !parsed.openRouterTextModel) {
+        parsed.openRouterTextModel = parsed.openRouterModel;
+        delete parsed.openRouterModel;
+      }
+      return { ...DEFAULT_SETTINGS, ...parsed };
+    }
   } catch {
     // ignore parse errors
   }

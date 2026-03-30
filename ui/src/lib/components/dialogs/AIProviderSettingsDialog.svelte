@@ -1,7 +1,13 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog';
+  import { ChevronDown } from '@lucide/svelte/icons';
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
-  import { aiSettings, type AIProviderType } from '../../../stores/ai-settings.store';
+  import {
+    aiSettings,
+    type AIProviderType,
+    DEFAULT_OPENROUTER_TEXT_MODEL,
+    DEFAULT_OPENROUTER_IMAGE_MODEL
+  } from '../../../stores/ai-settings.store';
   import { toast } from 'svelte-sonner';
 
   let {
@@ -15,7 +21,9 @@
   let selectedProvider = $state<AIProviderType>($aiSettings.provider);
   let geminiKeyInput = $state('');
   let openRouterKeyInput = $state('');
-  let openRouterModelInput = $state($aiSettings.openRouterModel);
+  let openRouterTextModelInput = $state($aiSettings.openRouterTextModel);
+  let openRouterImageModelInput = $state($aiSettings.openRouterImageModel);
+  let showDefaultModels = $state(false);
   let error = $state<string | null>(null);
 
   // Sync state when dialog opens
@@ -24,7 +32,9 @@
       selectedProvider = $aiSettings.provider;
       geminiKeyInput = $aiSettings.geminiApiKey;
       openRouterKeyInput = $aiSettings.openRouterApiKey;
-      openRouterModelInput = $aiSettings.openRouterModel;
+      openRouterTextModelInput = $aiSettings.openRouterTextModel;
+      openRouterImageModelInput = $aiSettings.openRouterImageModel;
+      showDefaultModels = false;
       error = null;
     }
   });
@@ -45,19 +55,15 @@
       aiSettings.updateSettings({ provider: 'gemini', geminiApiKey: key });
     } else {
       const key = openRouterKeyInput.trim();
-      const model = openRouterModelInput.trim();
       if (!key) {
         error = 'API key cannot be empty';
-        return;
-      }
-      if (!model) {
-        error = 'Model cannot be empty';
         return;
       }
       aiSettings.updateSettings({
         provider: 'openrouter',
         openRouterApiKey: key,
-        openRouterModel: model
+        openRouterTextModel: openRouterTextModelInput.trim() || DEFAULT_OPENROUTER_TEXT_MODEL,
+        openRouterImageModel: openRouterImageModelInput.trim() || DEFAULT_OPENROUTER_IMAGE_MODEL
       });
     }
 
@@ -161,19 +167,52 @@
             placeholder="sk-or-..."
             class="w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
-          <label for="openrouter-model-input" class="block text-sm text-zinc-300">Model:</label>
-          <input
-            id="openrouter-model-input"
-            type="text"
-            bind:value={openRouterModelInput}
-            placeholder="google/gemini-2.5-flash-preview-05-20"
-            class="w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
-          <p class="text-xs text-zinc-500">
-            Examples: <code class="text-zinc-400">anthropic/claude-sonnet-4-5</code>,
-            <code class="text-zinc-400">openai/gpt-4o</code>,
-            <code class="text-zinc-400">google/gemini-2.5-flash-preview-05-20</code>
-          </p>
+
+          <!-- Collapsible default models -->
+          <button
+            type="button"
+            onclick={() => (showDefaultModels = !showDefaultModels)}
+            class="flex w-full cursor-pointer items-center justify-between rounded px-1 py-1 text-xs text-zinc-500 transition-colors hover:text-zinc-300"
+          >
+            <span>Default models</span>
+            <ChevronDown
+              class={['h-3.5 w-3.5 transition-transform', showDefaultModels && 'rotate-180']}
+            />
+          </button>
+
+          {#if showDefaultModels}
+            <div class="space-y-2 rounded border border-zinc-700/60 bg-zinc-800/50 px-3 py-2">
+              <div class="space-y-1">
+                <label for="openrouter-text-model-input" class="block text-xs text-zinc-400"
+                  >Text model</label
+                >
+                <input
+                  id="openrouter-text-model-input"
+                  type="text"
+                  bind:value={openRouterTextModelInput}
+                  placeholder={DEFAULT_OPENROUTER_TEXT_MODEL}
+                  class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 font-mono text-xs text-zinc-100 placeholder-zinc-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+              <div class="space-y-1">
+                <label for="openrouter-image-model-input" class="block text-xs text-zinc-400"
+                  >Image model</label
+                >
+                <input
+                  id="openrouter-image-model-input"
+                  type="text"
+                  bind:value={openRouterImageModelInput}
+                  placeholder={DEFAULT_OPENROUTER_IMAGE_MODEL}
+                  class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 font-mono text-xs text-zinc-100 placeholder-zinc-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+              <p class="text-xs text-zinc-600">
+                e.g. <code class="text-zinc-500">anthropic/claude-sonnet-4-5</code>,
+                <code class="text-zinc-500">openai/gpt-4o</code>
+              </p>
+            </div>
+          {/if}
+
           <div
             class="rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-300"
           >
