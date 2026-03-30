@@ -49,6 +49,7 @@
   function handleDiscreteChange(field: SettingsField, newValue: unknown) {
     const oldValue = getCurrentValue(field);
     onValueChange(field.key, newValue);
+
     const persistence = field.persistence ?? 'node';
     if (persistence === 'node') {
       tracker.commit(trackingKey(field.key), oldValue, newValue);
@@ -308,17 +309,23 @@
             </div>
           {:else}
             <!-- Native color picker fallback -->
+            {@const colorTracker = makeTracker(field)}
+
             <label class="flex cursor-pointer items-center gap-2">
               <span
                 class="h-6 w-6 rounded border border-zinc-600"
                 style="background-color: {(getCurrentValue(field) as string) ?? '#ffffff'};"
               ></span>
+
               <input
                 type="color"
                 value={(getCurrentValue(field) as string) ?? '#ffffff'}
                 class="sr-only"
-                onchange={(e) => handleDiscreteChange(field, (e.target as HTMLInputElement).value)}
+                onfocus={colorTracker.onFocus}
+                oninput={(e) => onValueChange(field.key, (e.target as HTMLInputElement).value)}
+                onchange={colorTracker.onBlur}
               />
+
               <span class="text-xs text-zinc-400">{(getCurrentValue(field) as string) ?? ''}</span>
             </label>
           {/if}
