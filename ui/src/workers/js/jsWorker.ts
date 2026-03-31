@@ -750,8 +750,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
         data as {
           requestId: string;
           nodeId: string;
-          apiKey?: string;
-          imageBase64?: string;
+          text?: string;
           error?: string;
         }
       );

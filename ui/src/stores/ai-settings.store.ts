@@ -70,6 +70,8 @@ function saveAISettings(settings: AISettings) {
   // Keep legacy key in sync for Gemini-specific features (image gen, music, STT)
   if (settings.geminiApiKey) {
     localStorage.setItem(LEGACY_GEMINI_KEY, settings.geminiApiKey);
+  } else {
+    localStorage.removeItem(LEGACY_GEMINI_KEY);
   }
 }
 

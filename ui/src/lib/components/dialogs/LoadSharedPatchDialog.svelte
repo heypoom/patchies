@@ -47,7 +47,7 @@
     >
       <strong>Warning:</strong> Patches run un-sandboxed code. A malicious patch could execute
       arbitrary code, redirect you, or steal data{#if hasApiKey}
-        &nbsp;including your <em>Gemini API key</em>{/if}.{#if !isReadOnly}
+        &nbsp;including your <em>AI API key</em>{/if}.{#if !isReadOnly}
         &nbsp;This will also replace your current patch.{/if}
     </div>
 
