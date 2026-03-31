@@ -13,10 +13,12 @@
 
   let {
     open = $bindable(false),
-    onSaveAndContinue
+    onSaveAndContinue,
+    class: className = ''
   }: {
     open: boolean;
     onSaveAndContinue: () => void;
+    class?: string;
   } = $props();
 
   let selectedProvider = $state<AIProviderType>($aiSettings.provider);
@@ -34,7 +36,7 @@
       openRouterKeyInput = $aiSettings.openRouterApiKey;
       openRouterTextModelInput = $aiSettings.openRouterTextModel;
       openRouterImageModelInput = $aiSettings.openRouterImageModel;
-      showDefaultModels = false;
+      showDefaultModels = selectedProvider !== 'gemini';
       error = null;
     }
   });
@@ -88,7 +90,7 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content class="gap-0 p-0 sm:max-w-sm">
+  <Dialog.Content class={['gap-0 p-0 sm:max-w-sm', className]}>
     <!-- Provider segmented control -->
     <div class="p-5 pb-4">
       <Dialog.Title class="mb-4 text-base font-semibold text-zinc-100">

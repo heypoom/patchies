@@ -149,8 +149,10 @@ export async function generateImageWithOpenRouter(
     const url = img.image_url?.url;
     if (!url) continue;
 
+    const mimeMatch = url.match(/^data:([^;]+);base64,/);
+    const mime = mimeMatch?.[1] ?? 'image/png';
     const base64 = url.replace(/^data:[^;]+;base64,/, '');
-    const blob = base64ToBlob(base64, 'image/png');
+    const blob = base64ToBlob(base64, mime);
 
     return createImageBitmap(blob);
   }
