@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import { getObjectSpecificInstructions } from '../object-descriptions';
 import { logger, getNodeErrors } from '$lib/utils/logger';
 import { getTextProvider } from '../providers';
@@ -106,6 +107,8 @@ export interface PacksState {
   presetPacks: PackInfo[];
 }
 
+const MAX_TOOL_ROUNDS = 15;
+
 export async function streamChatMessage(
   messages: ChatMessage[],
   nodeContext: ChatNodeContext | null,
@@ -175,10 +178,15 @@ export async function streamChatMessage(
 
   let fullText = '';
   let globalCallIndex = 0;
+  let toolRound = 0;
 
   // Multi-turn loop: runs until the model produces a pure text response (no tool calls)
   while (true) {
     if (signal?.aborted) throw new Error('Request cancelled');
+
+    if (++toolRound > MAX_TOOL_ROUNDS) {
+      throw new Error(`Exceeded maximum tool rounds (${MAX_TOOL_ROUNDS})`);
+    }
 
     const { text, toolCalls, _rawModelTurn } = await provider.streamTurn(turnMessages, {
       systemPrompt: systemInstruction,
@@ -278,7 +286,7 @@ export async function streamChatMessage(
     }
 
     // Resolve context tool calls
-    const contextResults = await Promise.all(
+    const settledContextResults = await Promise.allSettled(
       contextCalls.map(async (tc) => {
         const { name, args } = tc;
         const outputIndex = callIndexMap.get(tc) ?? -1;
@@ -288,127 +296,146 @@ export async function streamChatMessage(
           return { callId: tc.id, name, result: response };
         };
 
-        if (name === GET_GRAPH_NODES) {
-          return respond(getGraphSummary?.() ?? { nodes: [], edges: [] });
-        }
-
-        if (name === GET_OBJECT_DATA) {
-          const nodeId = (args.objectId as string) ?? '';
-          const node = getNodeById?.(nodeId);
-          if (!node) return respond({ error: `Node "${nodeId}" not found` });
-          const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
-          const connectedEdges = graph.edges.filter(
-            (e) => e.source === nodeId || e.target === nodeId
-          );
-          return respond({ id: node.id, type: node.type, data: node.data, connectedEdges });
-        }
-
-        if (name === GET_OBJECT_LOGS) {
-          const nodeId = (args.objectId as string) ?? '';
-          const count = Math.min(Math.max((args.count as number) ?? 10, 1), 50);
-          const seen = new Set<string>();
-          const logs = logger
-            .getNodeLogs(nodeId)
-            .filter((e) => e.level === 'error' || e.level === 'warn')
-            .filter((e) => {
-              const key = `${e.level}:${e.message}`;
-              if (seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            })
-            .slice(-count)
-            .map((e) => ({
-              level: e.level,
-              message: e.message,
-              timestamp: e.timestamp.toISOString()
-            }));
-          return respond({ nodeId, errors: logs, total: logs.length });
-        }
-
-        if (name === GET_OBJECT_ERRORS) {
-          const nodeIds = (args.objectIds as string[]) ?? [];
-          const result: Record<string, string[]> = {};
-          for (const id of nodeIds) {
-            const errors = getNodeErrors(id);
-            if (errors.length > 0) result[id] = errors;
-          }
-          return respond(result);
-        }
-
-        if (name === SEARCH_DOCS) {
-          const query = ((args.query as string) ?? '').toLowerCase().trim();
-          const matchingTopics = topicMetas
-            .filter(
-              (t) =>
-                t.slug.includes(query) ||
-                t.title.toLowerCase().includes(query) ||
-                t.category.toLowerCase().includes(query)
-            )
-            .map((t) => ({ kind: 'topic', slug: t.slug, title: t.title, category: t.category }));
-          const matchingObjects = Object.values(objectSchemas)
-            .filter(
-              (s) =>
-                s.type.toLowerCase().includes(query) ||
-                s.description.toLowerCase().includes(query) ||
-                s.category.toLowerCase().includes(query) ||
-                s.tags?.some((tag) => tag.toLowerCase().includes(query))
-            )
-            .map((s) => ({
-              kind: 'object',
-              slug: s.type,
-              title: s.type,
-              category: s.category,
-              description: s.description
-            }));
-          return respond({
-            results: [...matchingTopics, ...matchingObjects],
-            total: matchingTopics.length + matchingObjects.length
-          });
-        }
-
-        if (name === GET_DOC_CONTENT) {
-          const kind = (args.kind as string) ?? '';
-          const slug = (args.slug as string) ?? '';
-          if (kind === 'topic') {
-            const content = await fetchTopicHelp(slug);
+        return await match(name)
+          .with(GET_GRAPH_NODES, async () =>
+            respond(getGraphSummary?.() ?? { nodes: [], edges: [] })
+          )
+          .with(GET_OBJECT_DATA, async () => {
+            const nodeId = (args.objectId as string) ?? '';
+            const node = getNodeById?.(nodeId);
+            if (!node) return respond({ error: `Node "${nodeId}" not found` });
+            const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
+            const connectedEdges = graph.edges.filter(
+              (e) => e.source === nodeId || e.target === nodeId
+            );
+            return respond({ id: node.id, type: node.type, data: node.data, connectedEdges });
+          })
+          .with(GET_OBJECT_LOGS, async () => {
+            const nodeId = (args.objectId as string) ?? '';
+            const count = Math.min(Math.max((args.count as number) ?? 10, 1), 50);
+            const seen = new Set<string>();
+            const logs = logger
+              .getNodeLogs(nodeId)
+              .filter((e) => e.level === 'error' || e.level === 'warn')
+              .filter((e) => {
+                const key = `${e.level}:${e.message}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+              })
+              .slice(-count)
+              .map((e) => ({
+                level: e.level,
+                message: e.message,
+                timestamp: e.timestamp.toISOString()
+              }));
+            return respond({ nodeId, errors: logs, total: logs.length });
+          })
+          .with(GET_OBJECT_ERRORS, async () => {
+            const nodeIds = (args.objectIds as string[]) ?? [];
+            const result: Record<string, string[]> = {};
+            for (const id of nodeIds) {
+              const errors = getNodeErrors(id);
+              if (errors.length > 0) result[id] = errors;
+            }
+            return respond(result);
+          })
+          .with(SEARCH_DOCS, async () => {
+            const query = ((args.query as string) ?? '').toLowerCase().trim();
+            if (!query) return respond({ results: [], total: 0 });
+            const matchingTopics = topicMetas
+              .filter(
+                (t) =>
+                  t.slug.includes(query) ||
+                  t.title.toLowerCase().includes(query) ||
+                  t.category.toLowerCase().includes(query)
+              )
+              .map((t) => ({ kind: 'topic', slug: t.slug, title: t.title, category: t.category }));
+            const matchingObjects = Object.values(objectSchemas)
+              .filter(
+                (s) =>
+                  s.type.toLowerCase().includes(query) ||
+                  s.description.toLowerCase().includes(query) ||
+                  s.category.toLowerCase().includes(query) ||
+                  s.tags?.some((tag) => tag.toLowerCase().includes(query))
+              )
+              .map((s) => ({
+                kind: 'object',
+                slug: s.type,
+                title: s.type,
+                category: s.category,
+                description: s.description
+              }));
+            return respond({
+              results: [...matchingTopics, ...matchingObjects],
+              total: matchingTopics.length + matchingObjects.length
+            });
+          })
+          .with(GET_DOC_CONTENT, async () => {
+            const kind = (args.kind as string) ?? '';
+            const slug = (args.slug as string) ?? '';
+            if (kind === 'topic') {
+              const content = await fetchTopicHelp(slug);
+              return respond(
+                content.markdown
+                  ? { kind: 'topic', slug, markdown: content.markdown }
+                  : { error: `No documentation found for topic "${slug}"` }
+              );
+            }
+            const content = await fetchObjectHelp(slug);
             return respond(
               content.markdown
-                ? { kind: 'topic', slug, markdown: content.markdown }
-                : { error: `No documentation found for topic "${slug}"` }
+                ? { kind: 'object', slug, markdown: content.markdown }
+                : { error: `No documentation found for object "${slug}"` }
             );
-          }
-          const content = await fetchObjectHelp(slug);
-          return respond(
-            content.markdown
-              ? { kind: 'object', slug, markdown: content.markdown }
-              : { error: `No documentation found for object "${slug}"` }
-          );
-        }
-
-        if (name === LIST_PACKS) {
-          return respond(getPacksState?.() ?? { objectPacks: [], presetPacks: [] });
-        }
-
-        if (name === ENABLE_PACK) {
-          const packId = (args.packId as string) ?? '';
-          const kind = (args.kind as 'object' | 'preset') ?? 'object';
-          const enable = (args.enable as boolean) ?? true;
-          if (!onEnablePack)
+          })
+          .with(LIST_PACKS, async () =>
+            respond(getPacksState?.() ?? { objectPacks: [], presetPacks: [] })
+          )
+          .with(ENABLE_PACK, async () => {
+            const packId = (args.packId as string) ?? '';
+            const kind = (args.kind as string) ?? '';
+            const enable = args.enable;
+            if (!packId)
+              return respond({ success: false, error: 'packId must be a non-empty string.' });
+            if (kind !== 'object' && kind !== 'preset')
+              return respond({
+                success: false,
+                error: `kind must be "object" or "preset", got "${kind}".`
+              });
+            if (typeof enable !== 'boolean')
+              return respond({ success: false, error: 'enable must be a boolean.' });
+            if (!onEnablePack)
+              return respond({
+                success: false,
+                error: 'Pack management is not available in this context.'
+              });
+            return respond(onEnablePack(packId, kind as 'object' | 'preset', enable));
+          })
+          .otherwise(async () => {
+            // GET_OBJECT_INSTRUCTIONS
+            const type = (args.type as string) ?? '';
+            const instructions =
+              getObjectSpecificInstructions(type) ||
+              `No specific instructions found for "${type}".`;
+            const handleDocs = generateHandleDocs([type]);
             return respond({
-              success: false,
-              error: 'Pack management is not available in this context.'
+              instructions,
+              ...(handleDocs ? { handleReference: handleDocs } : {})
             });
-          return respond(onEnablePack(packId, kind, enable));
-        }
-
-        // GET_OBJECT_INSTRUCTIONS
-        const type = (args.type as string) ?? '';
-        const instructions =
-          getObjectSpecificInstructions(type) || `No specific instructions found for "${type}".`;
-        const handleDocs = generateHandleDocs([type]);
-        return respond({ instructions, ...(handleDocs ? { handleReference: handleDocs } : {}) });
+          });
       })
     );
+
+    const contextResults: ToolResult[] = settledContextResults.map((result, i) => {
+      if (result.status === 'fulfilled') return result.value;
+      const tc = contextCalls[i];
+      const outputIndex = callIndexMap.get(tc) ?? -1;
+      const errorMsg =
+        result.reason instanceof Error ? result.reason.message : String(result.reason);
+      onToolCallOutput?.(outputIndex, { error: errorMsg });
+      return { callId: tc.id, name: tc.name, result: { error: errorMsg } };
+    });
 
     // Build canvas tool results
     const canvasToolResults: ToolResult[] = canvasCalls.map((tc) => ({
