@@ -1,19 +1,32 @@
 import { GLSystem } from '$lib/canvas/GLSystem';
 import type { GLPreviewFrameCapturedEvent } from '$lib/eventbus/events';
+import { DEFAULT_GEMINI_IMAGE_MODEL } from '../../stores/ai-settings.store';
+import type { AIProviderType } from './providers';
+
+type LLMFunctionContext = {
+  imageNodeId?: string;
+  abortSignal?: AbortSignal;
+  model?: string;
+  temperature?: number;
+  topK?: number;
+  provider?: AIProviderType;
+};
+
+type ImageGenerationContext = {
+  apiKey: string;
+  model?: string;
+  abortSignal?: AbortSignal;
+  inputImageNodeId?: string;
+};
 
 export async function generateImageWithGemini(
   prompt: string,
   {
     apiKey,
-    model = 'gemini-2.5-flash-image',
+    model = DEFAULT_GEMINI_IMAGE_MODEL,
     abortSignal,
     inputImageNodeId
-  }: {
-    apiKey: string;
-    model?: string;
-    abortSignal?: AbortSignal;
-    inputImageNodeId?: string;
-  }
+  }: ImageGenerationContext
 ): Promise<ImageBitmap> {
   const { GoogleGenAI } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey });
@@ -61,6 +74,7 @@ export async function generateImageWithGemini(
       if (part.inlineData && part.inlineData.data) {
         const base64Image = part.inlineData.data;
         const blob = base64ToBlob(base64Image, 'image/png');
+
         return createImageBitmap(blob);
       }
     }
@@ -123,22 +137,27 @@ export async function generateImageWithOpenRouter(
 
   if (!response.ok) {
     const errText = await response.text();
+
     throw new Error(`OpenRouter error ${response.status}: ${errText}`);
   }
 
   const data = await response.json();
+
   const images: { image_url?: { url?: string } }[] = data.choices?.[0]?.message?.images ?? [];
 
   for (const img of images) {
     const url = img.image_url?.url;
     if (!url) continue;
+
     const base64 = url.replace(/^data:[^;]+;base64,/, '');
     const blob = base64ToBlob(base64, 'image/png');
+
     return createImageBitmap(blob);
   }
 
   // Some models embed the image in content parts instead
   const content = data.choices?.[0]?.message?.content;
+
   if (typeof content === 'string' && content) {
     throw new Error(
       `Model did not generate an image. Try an image-capable model. Response: ${content}`
@@ -151,18 +170,9 @@ export async function generateImageWithOpenRouter(
 }
 
 export function createLLMFunction() {
-  return async (
-    prompt: string,
-    context?: {
-      imageNodeId?: string;
-      abortSignal?: AbortSignal;
-      model?: string;
-      temperature?: number;
-      topK?: number;
-    }
-  ) => {
+  return async (prompt: string, context?: LLMFunctionContext) => {
     const { getTextProvider } = await import('./providers');
-    const provider = getTextProvider(context?.model);
+    const provider = getTextProvider(context?.model, context?.provider);
 
     const images: Array<{ mimeType: string; data: string }> = [];
 
@@ -174,6 +184,7 @@ export function createLLMFunction() {
       if (bitmap) {
         const base64Image = bitmapToBase64Image({ bitmap, format, quality: 0.7 });
         console.log('[llm] base64 input image size:', base64Image.length);
+
         images.push({ mimeType: format, data: base64Image });
       }
     }
@@ -196,6 +207,7 @@ export function bitmapToBase64Image({
   quality?: number;
 }): string {
   const canvas = document.createElement('canvas');
+
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
 
@@ -211,6 +223,7 @@ export async function compressImageFile(
 ): Promise<{ mimeType: string; data: string }> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+
   const width = Math.round(bitmap.width * scale);
   const height = Math.round(bitmap.height * scale);
 
@@ -231,6 +244,7 @@ export async function capturePreviewFrame(
 ) {
   const glSystem = GLSystem.getInstance();
   const requestId = Math.random().toString(36).substring(2, 15);
+
   let timeoutHandle: number;
 
   return new Promise<ImageBitmap | null>((resolve) => {

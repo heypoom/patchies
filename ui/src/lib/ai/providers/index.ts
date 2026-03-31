@@ -1,10 +1,11 @@
 import { get } from 'svelte/store';
 import { match } from 'ts-pattern';
-import { aiSettings } from '../../../stores/ai-settings.store';
+import { aiSettings, type AIProviderType } from '../../../stores/ai-settings.store';
 import { GeminiProvider } from './gemini-provider';
 import { OpenRouterProvider } from './openrouter-provider';
 
 export type { LLMProvider, LLMMessage, LLMStreamOptions } from './types';
+export type { AIProviderType } from '../../../stores/ai-settings.store';
 export { GeminiProvider } from './gemini-provider';
 export { OpenRouterProvider } from './openrouter-provider';
 
@@ -12,12 +13,13 @@ export { OpenRouterProvider } from './openrouter-provider';
  * Returns an LLMProvider for general text generation based on the user's active AI settings.
  * Throws if no API key is configured.
  *
- * @param modelOverride  Optional model ID to use instead of the configured default.
+ * @param modelOverride    Optional model ID to use instead of the configured default.
+ * @param providerOverride Optional provider to use instead of the configured default.
  */
-export function getTextProvider(modelOverride?: string) {
+export function getTextProvider(modelOverride?: string, providerOverride?: AIProviderType) {
   const settings = get(aiSettings);
 
-  return match(settings.provider)
+  return match(providerOverride ?? settings.provider)
     .with('openrouter', () => {
       if (!settings.openRouterApiKey) {
         throw new Error('OpenRouter API key is not set. Please configure it in AI settings.');
