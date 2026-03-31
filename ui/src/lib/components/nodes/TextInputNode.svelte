@@ -174,7 +174,7 @@
         placeholder="Enter text here..."
         style="width: {width}px; height: {height}px;"
         class={[
-          'focus:outline-one nodrag block resize-none rounded border bg-zinc-900 px-3 py-2 text-xs text-zinc-100 placeholder-zinc-400 outline-none focus:bg-zinc-800',
+          'focus:outline-one nodrag nowheel nopan block resize-none rounded border bg-zinc-900 px-3 py-2 text-xs text-zinc-100 placeholder-zinc-400 outline-none focus:bg-zinc-800',
           node.selected
             ? isLocked
               ? 'border-blue-500'
