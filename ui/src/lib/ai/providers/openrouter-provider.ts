@@ -130,6 +130,28 @@ export class OpenRouterProvider implements LLMProvider {
       }
     }
 
+    // Flush any bytes remaining in the decoder after the stream ends
+    buffer += decoder.decode();
+    for (const line of buffer.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data: ')) continue;
+      const data = trimmed.slice(6);
+      if (data === '[DONE]') continue;
+      try {
+        const chunk = JSON.parse(data);
+        const delta = chunk.choices?.[0]?.delta;
+        if (!delta) continue;
+        const reasoning = delta.reasoning ?? delta.reasoning_content;
+        if (reasoning) onThinking?.(reasoning);
+        if (delta.content) {
+          text += delta.content;
+          onToken?.(delta.content);
+        }
+      } catch {
+        // ignore malformed SSE lines
+      }
+    }
+
     return text;
   }
 
@@ -295,6 +317,40 @@ export class OpenRouterProvider implements LLMProvider {
         } catch {
           // ignore malformed SSE lines
         }
+      }
+    }
+
+    // Flush any bytes remaining in the decoder after the stream ends
+    buffer += decoder.decode();
+    for (const line of buffer.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data: ')) continue;
+      const data = trimmed.slice(6);
+      if (data === '[DONE]') continue;
+      try {
+        const chunk = JSON.parse(data);
+        const delta = chunk.choices?.[0]?.delta;
+        if (!delta) continue;
+        const reasoning = delta.reasoning ?? delta.reasoning_content;
+        if (reasoning) onThinking?.(reasoning);
+        if (delta.content) {
+          text += delta.content;
+          onChunk?.(delta.content);
+        }
+        if (delta.tool_calls) {
+          for (const toolCall of delta.tool_calls) {
+            const index: number = toolCall.index ?? 0;
+            if (!toolCallAccumulator.has(index)) {
+              toolCallAccumulator.set(index, { id: toolCall.id ?? '', name: '', args: '' });
+            }
+            const accum = toolCallAccumulator.get(index)!;
+            if (toolCall.id) accum.id = toolCall.id;
+            if (toolCall.function?.name) accum.name += toolCall.function.name;
+            if (toolCall.function?.arguments) accum.args += toolCall.function.arguments;
+          }
+        }
+      } catch {
+        // ignore malformed SSE lines
       }
     }
 
