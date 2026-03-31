@@ -1,5 +1,7 @@
 <script lang="ts">
   import { Copy, Loader, Bot, SlidersHorizontal, ChevronDown } from '@lucide/svelte/icons';
+  import * as Tooltip from '$lib/components/ui/tooltip';
+  import { useNodeDataTracker } from '$lib/history';
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
@@ -20,6 +22,11 @@
     $props();
 
   const { updateNodeData } = useSvelteFlow();
+
+  const tracker = useNodeDataTracker(nodeId);
+  const modelTracker = tracker.track('model', () => data.model ?? '');
+  const temperatureTracker = tracker.track('temperature', () => data.temperature ?? '');
+  const topKTracker = tracker.track('topK', () => data.topK ?? '');
 
   const messageContext = new MessageContext(nodeId);
 
@@ -144,13 +151,17 @@
               {generatedText}
             </div>
 
-            <button
-              onclick={copyToClipboard}
-              class="absolute top-1 right-1 rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              title="Copy to clipboard"
-            >
-              <Copy class="h-4 w-4 text-zinc-300" />
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  onclick={copyToClipboard}
+                  class="absolute top-1 right-1 cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                >
+                  <Copy class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Copy to clipboard</Tooltip.Content>
+            </Tooltip.Root>
           </div>
         {:else}
           <div
@@ -213,6 +224,8 @@
               value={data.model ?? ''}
               oninput={(e) =>
                 updateNodeData(nodeId, { model: (e.target as HTMLInputElement).value })}
+              onfocus={modelTracker.onFocus}
+              onblur={modelTracker.onBlur}
               placeholder={defaultModelPlaceholder}
               class="nodrag min-w-0 flex-1 bg-transparent font-mono text-[11px] text-zinc-400 placeholder-zinc-600 focus:outline-none"
             />
@@ -230,6 +243,8 @@
                   const v = parseFloat((e.target as HTMLInputElement).value);
                   updateNodeData(nodeId, { temperature: isNaN(v) ? undefined : v });
                 }}
+                onfocus={temperatureTracker.onFocus}
+                onblur={temperatureTracker.onBlur}
                 placeholder="1"
                 class="nodrag w-14 bg-transparent font-mono text-[11px] text-zinc-400 placeholder-zinc-600 focus:outline-none"
               />
@@ -246,6 +261,8 @@
                   const v = parseInt((e.target as HTMLInputElement).value, 10);
                   updateNodeData(nodeId, { topK: isNaN(v) ? undefined : v });
                 }}
+                onfocus={topKTracker.onFocus}
+                onblur={topKTracker.onBlur}
                 placeholder="40"
                 class="nodrag w-14 bg-transparent font-mono text-[11px] text-zinc-400 placeholder-zinc-600 focus:outline-none"
               />

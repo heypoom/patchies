@@ -8,6 +8,7 @@
     ChevronDown
   } from '@lucide/svelte/icons';
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
+  import { useNodeDataTracker } from '$lib/history';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -39,6 +40,9 @@
   let abortController: AbortController | null = null;
   let editorReady = $state(false);
   let showModelSettings = $state(false);
+
+  const tracker = useNodeDataTracker(nodeId);
+  const modelTracker = tracker.track('model', () => data.model ?? '');
 
   const prompt = $derived(data.prompt || '');
   const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
@@ -112,6 +116,11 @@
       if (settings.provider === 'openrouter') {
         if (!settings.openRouterApiKey) {
           throw new Error('OpenRouter API key is not set. Please configure it in AI settings.');
+        }
+        if (imageNodeId) {
+          console.warn(
+            `ai.img (${nodeId}): image input is not supported with OpenRouter — imageNodeId "${imageNodeId}" will be ignored.`
+          );
         }
         image = await generateImageWithOpenRouter(prompt, {
           apiKey: settings.openRouterApiKey,
@@ -282,6 +291,8 @@
               value={data.model ?? ''}
               oninput={(e) =>
                 updateNodeData(nodeId, { model: (e.target as HTMLInputElement).value })}
+              onfocus={modelTracker.onFocus}
+              onblur={modelTracker.onBlur}
               placeholder={defaultModelPlaceholder}
               class="nodrag min-w-0 flex-1 bg-transparent font-mono text-[11px] text-zinc-400 placeholder-zinc-600 focus:outline-none"
             />
