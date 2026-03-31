@@ -1,4 +1,5 @@
 import { get } from 'svelte/store';
+import { match } from 'ts-pattern';
 import { aiSettings } from '../../../stores/ai-settings.store';
 import { GeminiProvider } from './gemini-provider';
 import { OpenRouterProvider } from './openrouter-provider';
@@ -16,21 +17,22 @@ export { OpenRouterProvider } from './openrouter-provider';
 export function getTextProvider(modelOverride?: string) {
   const settings = get(aiSettings);
 
-  if (settings.provider === 'openrouter') {
-    if (!settings.openRouterApiKey) {
-      throw new Error('OpenRouter API key is not set. Please configure it in AI settings.');
-    }
-    return new OpenRouterProvider(
-      settings.openRouterApiKey,
-      modelOverride ?? settings.openRouterTextModel
-    );
-  }
-
-  if (!settings.geminiApiKey) {
-    throw new Error('Gemini API key is not set. Please set it in the settings.');
-  }
-
-  return new GeminiProvider(settings.geminiApiKey, modelOverride);
+  return match(settings.provider)
+    .with('openrouter', () => {
+      if (!settings.openRouterApiKey) {
+        throw new Error('OpenRouter API key is not set. Please configure it in AI settings.');
+      }
+      return new OpenRouterProvider(
+        settings.openRouterApiKey,
+        modelOverride ?? settings.openRouterTextModel
+      );
+    })
+    .otherwise(() => {
+      if (!settings.geminiApiKey) {
+        throw new Error('Gemini API key is not set. Please set it in the settings.');
+      }
+      return new GeminiProvider(settings.geminiApiKey, modelOverride);
+    });
 }
 
 /**

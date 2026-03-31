@@ -8,6 +8,7 @@ import { extractJson } from './extract-json';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/shared-jsrunner';
 import { UI_DESIGN_OBJECTS, UI_DESIGN_GUIDELINES } from './object-prompts/ui-design-guidelines';
 import { getTextProvider } from './providers';
+import type { LLMProvider } from './providers';
 
 /**
  * Edit an existing object with a known type - skips routing, goes directly to generation.
@@ -41,7 +42,7 @@ export async function editObjectFromPrompt(
 }
 
 async function generateObjectConfig(
-  provider: import('./providers').LLMProvider,
+  provider: LLMProvider,
   prompt: string,
   objectType: string,
   signal?: AbortSignal,

@@ -1,5 +1,5 @@
 /**
- * AI-powered code generation using Gemini.
+ * AI-powered code generation using the configured AI provider.
  *
  * Takes a refined specification and generates a complete HTML file
  * that can be previewed in an iframe.

@@ -307,12 +307,19 @@ export class OpenRouterProvider implements LLMProvider {
         args: (() => {
           try {
             return JSON.parse(toolCall.args) as Record<string, unknown>;
-          } catch {
+          } catch (err) {
+            console.warn(
+              `OpenRouter: failed to parse tool call args for "${toolCall.name}":`,
+              toolCall.args,
+              err
+            );
             return {};
           }
         })()
       }));
 
+    // _rawModelTurn is null because OpenRouter's chat completions API does not
+    // expose per-turn state (e.g. thought_signature) needed for multi-turn thinking.
     return { text, toolCalls, _rawModelTurn: null };
   }
 }
