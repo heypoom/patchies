@@ -12,7 +12,7 @@ import {
   type AudioAnalysisType
 } from '$lib/audio/AudioAnalysisSystem';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
-import { capturePreviewFrame, bitmapToBase64Image } from '$lib/ai/google';
+import { WorkerLLMProxy } from './WorkerLLMProxy';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
 import JsWorker from '../../workers/js/jsWorker?worker';
 import { get } from 'svelte/store';
@@ -127,6 +127,7 @@ export class WorkerNodeSystem {
   private audioAnalysis = AudioAnalysisSystem.getInstance();
   private workers = new Map<string, WorkerInstance>();
   private settingsCallbacks = new Map<string, WorkerSettingsCallbacks>();
+  private llmProxy = new WorkerLLMProxy();
 
   /** Track channel subscriptions per worker for cleanup */
   private workerChannelSubscriptions = new Map<string, Set<string>>();
@@ -288,7 +289,7 @@ export class WorkerNodeSystem {
       })
       // LLM proxy messages
       .with({ type: 'llmRequest' }, (event) => {
-        this.handleLLMRequest(
+        this.llmProxy.handle(
           nodeId,
           worker,
           event.requestId,
@@ -382,46 +383,6 @@ export class WorkerNodeSystem {
       const errorMessage = error instanceof Error ? error.message : String(error);
       worker.postMessage({
         type: 'vfsUrlResolved',
-        nodeId,
-        requestId,
-        error: errorMessage
-      } satisfies WorkerMessage);
-    }
-  }
-
-  /**
-   * Handle llm() call from worker: capture image if needed, call the active LLM provider,
-   * and send the text result back to the worker.
-   */
-  private async handleLLMRequest(
-    nodeId: string,
-    worker: Worker,
-    requestId: string,
-    prompt: string,
-    imageNodeId?: string,
-    model?: string
-  ) {
-    try {
-      const { getTextProvider } = await import('$lib/ai/providers');
-      const provider = getTextProvider(model);
-
-      const images: { mimeType: string; data: string }[] = [];
-
-      if (imageNodeId) {
-        const bitmap = await capturePreviewFrame(imageNodeId);
-        if (bitmap) {
-          const data = bitmapToBase64Image({ bitmap, format: 'image/jpeg', quality: 0.7 });
-          images.push({ mimeType: 'image/jpeg', data });
-        }
-      }
-
-      const text = await provider.generateText([{ role: 'user', content: prompt, images }]);
-
-      worker.postMessage({ type: 'llmConfig', nodeId, requestId, text } satisfies WorkerMessage);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      worker.postMessage({
-        type: 'llmConfig',
         nodeId,
         requestId,
         error: errorMessage
@@ -808,6 +769,9 @@ export class WorkerNodeSystem {
     instance.worker.terminate();
 
     this.workers.delete(nodeId);
+
+    // Abort any pending LLM requests for this node
+    this.llmProxy.abortNode(nodeId);
 
     // Clean up video state
     this.videoStates.delete(nodeId);
