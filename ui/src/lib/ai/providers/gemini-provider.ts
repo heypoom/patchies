@@ -92,6 +92,27 @@ export class GeminiProvider implements LLMProvider {
         return { role: 'model', parts: raw.parts };
       }
 
+      // Model turn without _raw but with toolCalls (e.g. from OpenRouter)
+      if (msg.role === 'model' && msg.toolCalls?.length) {
+        const parts: Record<string, unknown>[] = [];
+
+        if (msg.content) parts.push({ text: msg.content });
+
+        for (const tc of msg.toolCalls) {
+          let args: Record<string, unknown>;
+
+          try {
+            args = typeof tc.args === 'string' ? JSON.parse(tc.args) : tc.args;
+          } catch {
+            args = tc.args;
+          }
+
+          parts.push({ functionCall: { name: tc.name, args } });
+        }
+
+        return { role: 'model', parts };
+      }
+
       // User turn with tool results
       if (msg.role === 'user' && msg.toolResults?.length) {
         return {
