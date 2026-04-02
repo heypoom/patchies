@@ -29,8 +29,10 @@
   let showDefaultModels = $state(false);
   let error = $state<string | null>(null);
 
+  let wasOpen = false;
+
   $effect(() => {
-    if (open) {
+    if (open && !wasOpen) {
       selectedProvider = $aiSettings.provider;
       geminiKeyInput = $aiSettings.geminiApiKey;
       openRouterKeyInput = $aiSettings.openRouterApiKey;
@@ -39,6 +41,8 @@
       showDefaultModels = selectedProvider !== 'gemini';
       error = null;
     }
+
+    wasOpen = open;
   });
 
   function validateAndSave() {
@@ -122,7 +126,15 @@
       </div>
     </div>
 
-    <div class="space-y-4 border-t border-zinc-800 px-5 py-4">
+    <form
+      autocomplete="off"
+      onsubmit={(e) => {
+        e.preventDefault();
+
+        validateAndSave();
+      }}
+      class="space-y-4 border-t border-zinc-800 px-5 py-4"
+    >
       {#if selectedProvider === 'gemini'}
         <p class="text-xs text-zinc-500">
           Get a free API key at
@@ -140,6 +152,7 @@
           <input
             id="gemini-key-input"
             type="password"
+            autocomplete="off"
             bind:value={geminiKeyInput}
             onkeydown={onEnter(validateAndSave)}
             placeholder="AIza..."
@@ -163,6 +176,7 @@
           <input
             id="openrouter-key-input"
             type="password"
+            autocomplete="off"
             bind:value={openRouterKeyInput}
             onkeydown={onEnter(validateAndSave)}
             placeholder="sk-or-..."
@@ -225,7 +239,7 @@
           Don't want AI features? Hide them.
         </button>
       </div>
-    </div>
+    </form>
 
     <!-- Footer: action buttons only -->
     <div class="border-t border-zinc-800 px-5 py-4">
