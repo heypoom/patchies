@@ -39,8 +39,8 @@ export const jsRunnerInstructions = `
 - delay(ms) - Promise that resolves after ms (rejects if node stops)
 - requestAnimationFrame(cb) - Animation frame with auto-cleanup
 - onCleanup(cb) - Register cleanup callback for unmount/re-execution
-- await llm(prompt, options?) - Call Gemini API (requires API key in settings)
-  * Options: { abortSignal?: AbortSignal }
+- await llm(prompt, options?) - Call the configured AI provider (requires API key in settings)
+  * Options: { model?: string, abortSignal?: AbortSignal, imageNodeId?: string }
 
 **Message Passing (wired ports):**
 - send(data, {to: outletIndex}?) - Send to outlet (omit {to} to send to all outlets)

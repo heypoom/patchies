@@ -1,10 +1,21 @@
 <script lang="ts">
-  import { Image as ImageIcon, Loader, CircleAlert } from '@lucide/svelte/icons';
+  import {
+    Image as ImageIcon,
+    Loader,
+    CircleAlert,
+    Bot,
+    SlidersHorizontal,
+    ChevronDown
+  } from '@lucide/svelte/icons';
   import { useNodeConnections, useSvelteFlow } from '@xyflow/svelte';
+  import { useNodeDataTracker } from '$lib/history';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { generateImageWithGemini } from '$lib/ai/google';
+  import { generateImageWithGemini, generateImageWithOpenRouter } from '$lib/ai/google';
+  import { requireGeminiApiKey } from '$lib/ai/providers';
+  import { get } from 'svelte/store';
+  import { aiSettings, DEFAULT_GEMINI_IMAGE_MODEL } from '../../../stores/ai-settings.store';
   import { EditorView } from 'codemirror';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -14,7 +25,7 @@
   import { aiImgMessages } from '$lib/objects/schemas';
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 
-  let { id: nodeId, data }: { id: string; data: { prompt: string } } = $props();
+  let { id: nodeId, data }: { id: string; data: { prompt: string; model?: string } } = $props();
 
   const { updateNodeData } = useSvelteFlow();
 
@@ -28,9 +39,19 @@
   let hasImage = $state(false);
   let abortController: AbortController | null = null;
   let editorReady = $state(false);
+  let showModelSettings = $state(false);
+
+  const tracker = useNodeDataTracker(nodeId);
+  const modelTracker = tracker.track('model', () => data.model ?? '');
 
   const prompt = $derived(data.prompt || '');
   const setPrompt = (prompt: string) => updateNodeData(nodeId, { prompt });
+
+  const defaultModelPlaceholder = $derived(
+    $aiSettings.provider === 'openrouter'
+      ? $aiSettings.openRouterImageModel
+      : DEFAULT_GEMINI_IMAGE_MODEL
+  );
 
   const [width, height] = [800 * 1.2, 600 * 1.2];
 
@@ -82,23 +103,39 @@
     errorMessage = null;
 
     try {
-      const apiKey = localStorage.getItem('gemini-api-key');
-
-      if (!apiKey) {
-        throw new Error('API key not found. Please set your Gemini API key with CMD+K.');
-      }
-
       abortController = new AbortController();
+      const settings = get(aiSettings);
+      const nodeModel = data.model?.trim() || undefined;
 
       const imageNodeId = targetConnections.current.find((conn) =>
         conn.targetHandle?.startsWith('video-in')
       )?.source;
 
-      const image = await generateImageWithGemini(prompt, {
-        apiKey,
-        abortSignal: abortController.signal,
-        inputImageNodeId: imageNodeId
-      });
+      let image: ImageBitmap;
+
+      if (settings.provider === 'openrouter') {
+        if (!settings.openRouterApiKey) {
+          throw new Error('OpenRouter API key is not set. Please configure it in AI settings.');
+        }
+        if (imageNodeId) {
+          console.warn(
+            `ai.img (${nodeId}): image input is not supported with OpenRouter — imageNodeId "${imageNodeId}" will be ignored.`
+          );
+        }
+        image = await generateImageWithOpenRouter(prompt, {
+          apiKey: settings.openRouterApiKey,
+          model: nodeModel ?? settings.openRouterImageModel,
+          abortSignal: abortController.signal
+        });
+      } else {
+        const apiKey = requireGeminiApiKey();
+        image = await generateImageWithGemini(prompt, {
+          apiKey,
+          model: nodeModel,
+          abortSignal: abortController.signal,
+          inputImageNodeId: imageNodeId
+        });
+      }
 
       const previewBitmap = await createImageBitmap(image);
       const flippedBitmap = await createImageBitmap(image);
@@ -164,10 +201,7 @@
           ]}
         >
           <div
-            class={[
-              'flex h-full items-center',
-              !!errorMessage ? 'justify-start' : 'justify-center'
-            ]}
+            class={['flex h-full items-center', errorMessage ? 'justify-start' : 'justify-center']}
           >
             {#if errorMessage}
               <div class="max-h-full overflow-y-auto px-5 text-red-300">
@@ -235,6 +269,36 @@
         {nodeId}
         dataKey="prompt"
       />
+      <button
+        class="nodrag flex w-full cursor-pointer items-center justify-between border-t border-zinc-700/50 px-2 py-1.5 text-zinc-600 transition-colors hover:text-zinc-400"
+        onclick={() => (showModelSettings = !showModelSettings)}
+      >
+        <div class="flex items-center gap-1.5">
+          <SlidersHorizontal class="h-3 w-3" />
+          <span class="font-mono text-[10px]">model settings</span>
+        </div>
+
+        <ChevronDown class={['h-3 w-3 transition-transform', showModelSettings && 'rotate-180']} />
+      </button>
+
+      {#if showModelSettings}
+        <div class="px-2 pb-2">
+          <div class="flex items-center gap-1.5">
+            <Bot class="h-3 w-3 shrink-0 text-zinc-600" />
+
+            <input
+              type="text"
+              value={data.model ?? ''}
+              oninput={(e) =>
+                updateNodeData(nodeId, { model: (e.target as HTMLInputElement).value })}
+              onfocus={modelTracker.onFocus}
+              onblur={modelTracker.onBlur}
+              placeholder={defaultModelPlaceholder}
+              class="nodrag min-w-0 flex-1 bg-transparent font-mono text-[11px] text-zinc-400 placeholder-zinc-600 focus:outline-none"
+            />
+          </div>
+        </div>
+      {/if}
     </div>
   {/snippet}
 </ObjectPreviewLayout>

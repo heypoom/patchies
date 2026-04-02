@@ -1,5 +1,8 @@
+import { match } from 'ts-pattern';
 import { getObjectSpecificInstructions } from '../object-descriptions';
 import { logger, getNodeErrors } from '$lib/utils/logger';
+import { getTextProvider } from '../providers';
+import type { ChatTurnMessage, ToolCall, ToolResult, ToolDeclaration } from '../providers/types';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from '../object-prompts/shared-jsrunner';
 import { buildCanvasToolDeclarations, toolNameToMode } from './canvas-tools';
 import { runModeResolver } from '../modes/run-resolver';
@@ -104,6 +107,8 @@ export interface PacksState {
   presetPacks: PackInfo[];
 }
 
+const MAX_TOOL_ROUNDS = 15;
+
 export async function streamChatMessage(
   messages: ChatMessage[],
   nodeContext: ChatNodeContext | null,
@@ -124,18 +129,9 @@ export async function streamChatMessage(
   onToolCallOutput?: (callIndex: number, output: unknown) => void,
   onSubagentThinking?: (callIndex: number, thought: string) => void
 ): Promise<string> {
-  const apiKey = localStorage.getItem('gemini-api-key');
+  const provider = getTextProvider();
 
-  if (!apiKey) {
-    throw new Error('Gemini API key is not set. Please set it in the settings.');
-  }
-
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
-  }
-
-  const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey });
+  if (signal?.aborted) throw new Error('Request cancelled');
 
   let systemInstruction = persona ? `${persona}\n\n${SYSTEM_PROMPT}` : SYSTEM_PROMPT;
 
@@ -166,121 +162,71 @@ export async function streamChatMessage(
     }
   }
 
-  const contents: { role: string; parts: Record<string, unknown>[] }[] = messages.map((msg) => ({
+  // Convert ChatMessage[] to ChatTurnMessage[] for the provider abstraction
+  const turnMessages: ChatTurnMessage[] = messages.map((msg) => ({
     role: msg.role,
-    parts: [
-      ...(msg.images ?? []).map((img) => ({
-        inlineData: { mimeType: img.mimeType, data: img.data }
-      })),
-      ...(msg.youtubeUrls ?? []).map((url) => ({
-        fileData: { fileUri: url }
-      })),
-      { text: msg.content }
-    ]
+    content: msg.content,
+    images: msg.images,
+    youtubeUrls: msg.youtubeUrls
   }));
 
   const canvasDeclarations = onAction ? buildCanvasToolDeclarations(nodeContext) : [];
-
   const allCanvasDeclarations = onAction
     ? [...canvasDeclarations, connectEdgesDeclaration, disconnectEdgesDeclaration]
     : [];
-
-  const tools = [{ functionDeclarations: [...contextToolDeclarations, ...allCanvasDeclarations] }];
+  const tools = [...contextToolDeclarations, ...allCanvasDeclarations] as ToolDeclaration[];
 
   let fullText = '';
   let globalCallIndex = 0;
+  let toolRound = 0;
 
-  // Multi-turn loop: runs until the model produces a pure text response (no function calls)
+  // Multi-turn loop: runs until the model produces a pure text response (no tool calls)
   while (true) {
     if (signal?.aborted) throw new Error('Request cancelled');
 
-    const stream = await ai.models.generateContentStream({
-      model: 'gemini-3-flash-preview',
-      contents,
-      config: {
-        systemInstruction,
-        thinkingConfig: { includeThoughts: true },
-        tools
-      }
-    });
-
-    // Collect ALL parts (including thought parts) for contents — Gemini requires thought_signature
-    // to be preserved in the model turn when there are function calls (thinking mode).
-    const turnParts: Record<string, unknown>[] = [];
-
-    // Race the stream against the abort signal so cancel takes effect immediately,
-    // even if the stream is waiting for the next chunk from the server.
-    const abortPromise = signal
-      ? new Promise<never>((_, reject) => {
-          if (signal.aborted) reject(new Error('Request cancelled'));
-          signal.addEventListener('abort', () => reject(new Error('Request cancelled')), {
-            once: true
-          });
-        })
-      : null;
-
-    const consumeStream = async () => {
-      for await (const chunk of stream) {
-        for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-          if (part.thought) {
-            if (part.text && onThinking) {
-              onThinking(part.text);
-            }
-
-            turnParts.push(part as Record<string, unknown>);
-          } else if (part.functionCall) {
-            // Preserve the full part — thought_signature lives at the Part level, not inside functionCall
-            turnParts.push(part as Record<string, unknown>);
-          } else if (part.text) {
-            fullText += part.text;
-            onChunk(part.text);
-
-            turnParts.push({ text: part.text });
-          }
-        }
-      }
-    };
-
-    await (abortPromise ? Promise.race([consumeStream(), abortPromise]) : consumeStream());
-
-    const functionCallParts = turnParts.filter((p) => 'functionCall' in p) as {
-      functionCall: { name?: string; args?: Record<string, unknown> };
-    }[];
-
-    if (functionCallParts.length === 0) break;
-
-    // Add model turn to contents (excluding thought parts — Gemini doesn't accept them back)
-    contents.push({ role: 'model', parts: turnParts });
-
-    const contextCalls = functionCallParts.filter((p) =>
-      CONTEXT_TOOL_NAMES.has(p.functionCall.name ?? '')
-    );
-
-    const canvasCalls = functionCallParts.filter(
-      (p) => !CONTEXT_TOOL_NAMES.has(p.functionCall.name ?? '')
-    );
-
-    // Record the global index for each function call so we can match responses later
-    const callIndexMap = new Map<(typeof functionCallParts)[number], number>();
-
-    for (const part of functionCallParts) {
-      onToolCall?.(part.functionCall.name ?? '', part.functionCall.args ?? {});
-      callIndexMap.set(part, globalCallIndex++);
+    if (++toolRound > MAX_TOOL_ROUNDS) {
+      throw new Error(`Exceeded maximum tool rounds (${MAX_TOOL_ROUNDS})`);
     }
 
-    // Canvas tool calls — resolve and surface as ActionCards; track per-call status for responses
-    type CanvasCallStatus =
-      | { status: 'queued'; message: string }
-      | { status: 'error'; message: string };
-    const canvasResultMap = new Map<(typeof canvasCalls)[number], CanvasCallStatus>();
+    const { text, toolCalls, _rawModelTurn } = await provider.streamTurn(turnMessages, {
+      systemPrompt: systemInstruction,
+      tools,
+      signal,
+      onChunk,
+      onThinking
+    });
 
-    for (const fc of canvasCalls) {
-      const { functionCall } = fc;
-      const toolName = functionCall.name ?? '';
-      const args = (functionCall.args ?? {}) as Record<string, unknown>;
+    fullText += text;
+
+    if (toolCalls.length === 0) break;
+
+    // Append model turn with tool calls (and _raw for thought_signature preservation)
+    turnMessages.push({
+      role: 'model',
+      content: text,
+      toolCalls,
+      _raw: _rawModelTurn
+    });
+
+    const contextCalls = toolCalls.filter((tc) => CONTEXT_TOOL_NAMES.has(tc.name));
+    const canvasCalls = toolCalls.filter((tc) => !CONTEXT_TOOL_NAMES.has(tc.name));
+
+    // Assign global indices
+    const callIndexMap = new Map<ToolCall, number>();
+    for (const tc of toolCalls) {
+      onToolCall?.(tc.name, tc.args);
+      callIndexMap.set(tc, globalCallIndex++);
+    }
+
+    // Process canvas tool calls
+    type CanvasCallStatus = { status: 'queued' | 'error'; message: string };
+    const canvasResultMap = new Map<ToolCall, CanvasCallStatus>();
+
+    for (const tc of canvasCalls) {
+      const { name: toolName, args } = tc;
 
       if (!onAction) {
-        canvasResultMap.set(fc, {
+        canvasResultMap.set(tc, {
           status: 'queued',
           message: 'Action has been queued for user review.'
         });
@@ -288,7 +234,6 @@ export async function streamChatMessage(
       }
 
       try {
-        // Edge tools are handled directly — no mode resolver needed
         if (toolName === CONNECT_EDGES) {
           onAction(resolveConnectEdges(args, { getNodeById, getGraphSummary }));
         } else if (toolName === DISCONNECT_EDGES) {
@@ -296,8 +241,7 @@ export async function streamChatMessage(
         } else {
           const mode = toolNameToMode(toolName);
           const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
-
-          const callIdx = callIndexMap.get(fc) ?? -1;
+          const callIdx = callIndexMap.get(tc) ?? -1;
           const result = await runModeResolver(
             mode,
             (args.prompt as string) ?? '',
@@ -306,7 +250,6 @@ export async function streamChatMessage(
             (thought) => onSubagentThinking?.(callIdx, thought),
             () => {}
           );
-
           onAction({
             id: crypto.randomUUID(),
             mode,
@@ -315,15 +258,12 @@ export async function streamChatMessage(
             state: 'pending'
           });
         }
-
-        canvasResultMap.set(fc, {
+        canvasResultMap.set(tc, {
           status: 'queued',
           message: 'Action has been queued for user review.'
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Tool call failed';
-
-        // Surface the failure as a visual action card instead of inline error text
         let failMode: AiPromptMode;
         let failDescriptor: AiModeDescriptor;
         try {
@@ -334,7 +274,6 @@ export async function streamChatMessage(
           failMode = fallbackMode;
           failDescriptor = modeDescriptors[fallbackMode];
         }
-
         onAction({
           id: crypto.randomUUID(),
           mode: failMode,
@@ -342,184 +281,178 @@ export async function streamChatMessage(
           state: 'failed',
           error: msg
         });
-
-        canvasResultMap.set(fc, { status: 'error', message: msg });
+        canvasResultMap.set(tc, { status: 'error', message: msg });
       }
     }
 
-    // Build per-call responses — errors tell the model what failed so it can retry
-    const canvasResponses = canvasCalls.map((fc) => ({
-      functionResponse: {
-        name: fc.functionCall.name ?? '',
-        response: canvasResultMap.get(fc) ?? {
-          status: 'queued',
-          message: 'Action has been queued for user review.'
-        }
-      }
-    }));
+    // Resolve context tool calls
+    const settledContextResults = await Promise.allSettled(
+      contextCalls.map(async (tc) => {
+        const { name, args } = tc;
+        const outputIndex = callIndexMap.get(tc) ?? -1;
 
-    // Respond to context-fetching calls and loop for continuation
-    const functionResponses = await Promise.all(
-      contextCalls.map(async (part) => {
-        const { functionCall } = part;
-        const name = functionCall.name ?? '';
-        const outputIndex = callIndexMap.get(part) ?? -1;
-
-        const respond = (response: unknown) => {
+        const respond = (response: unknown): ToolResult => {
           onToolCallOutput?.(outputIndex, response);
-          return { functionResponse: { name, response } };
+          return { callId: tc.id, name, result: response };
         };
 
-        if (name === GET_GRAPH_NODES) {
-          const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
-          return respond(graph);
-        }
-
-        if (name === GET_OBJECT_DATA) {
-          const nodeId = (functionCall.args?.objectId as string) ?? '';
-          const node = getNodeById?.(nodeId);
-
-          if (!node) return respond({ error: `Node "${nodeId}" not found` });
-
-          // Include connected edges so AI knows what's already wired
-          const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
-          const connectedEdges = graph.edges.filter(
-            (e) => e.source === nodeId || e.target === nodeId
-          );
-
-          return respond({ id: node.id, type: node.type, data: node.data, connectedEdges });
-        }
-
-        if (name === GET_OBJECT_LOGS) {
-          const nodeId = (functionCall.args?.objectId as string) ?? '';
-          const count = Math.min(Math.max((functionCall.args?.count as number) ?? 10, 1), 50);
-
-          const seen = new Set<string>();
-
-          const logs = logger
-            .getNodeLogs(nodeId)
-            .filter((e) => e.level === 'error' || e.level === 'warn')
-            .filter((e) => {
-              const key = `${e.level}:${e.message}`;
-
-              if (seen.has(key)) return false;
-              seen.add(key);
-
-              return true;
-            })
-            .slice(-count)
-            .map((e) => ({
-              level: e.level,
-              message: e.message,
-              timestamp: e.timestamp.toISOString()
-            }));
-
-          return respond({ nodeId, errors: logs, total: logs.length });
-        }
-
-        if (name === GET_OBJECT_ERRORS) {
-          const nodeIds = (functionCall.args?.objectIds as string[]) ?? [];
-          const result: Record<string, string[]> = {};
-
-          for (const id of nodeIds) {
-            const errors = getNodeErrors(id);
-            if (errors.length > 0) result[id] = errors;
-          }
-
-          return respond(result);
-        }
-
-        if (name === SEARCH_DOCS) {
-          const query = ((functionCall.args?.query as string) ?? '').toLowerCase().trim();
-
-          const matchingTopics = topicMetas
-            .filter(
-              (t) =>
-                t.slug.includes(query) ||
-                t.title.toLowerCase().includes(query) ||
-                t.category.toLowerCase().includes(query)
-            )
-            .map((t) => ({ kind: 'topic', slug: t.slug, title: t.title, category: t.category }));
-
-          const matchingObjects = Object.values(objectSchemas)
-            .filter(
-              (s) =>
-                s.type.toLowerCase().includes(query) ||
-                s.description.toLowerCase().includes(query) ||
-                s.category.toLowerCase().includes(query) ||
-                s.tags?.some((tag) => tag.toLowerCase().includes(query))
-            )
-            .map((s) => ({
-              kind: 'object',
-              slug: s.type,
-              title: s.type,
-              category: s.category,
-              description: s.description
-            }));
-
-          return respond({
-            results: [...matchingTopics, ...matchingObjects],
-            total: matchingTopics.length + matchingObjects.length
-          });
-        }
-
-        if (name === GET_DOC_CONTENT) {
-          const kind = (functionCall.args?.kind as string) ?? '';
-          const slug = (functionCall.args?.slug as string) ?? '';
-
-          if (kind === 'topic') {
-            const content = await fetchTopicHelp(slug);
+        return await match(name)
+          .with(GET_GRAPH_NODES, async () =>
+            respond(getGraphSummary?.() ?? { nodes: [], edges: [] })
+          )
+          .with(GET_OBJECT_DATA, async () => {
+            const nodeId = (args.objectId as string) ?? '';
+            const node = getNodeById?.(nodeId);
+            if (!node) return respond({ error: `Node "${nodeId}" not found` });
+            const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
+            const connectedEdges = graph.edges.filter(
+              (e) => e.source === nodeId || e.target === nodeId
+            );
+            return respond({ id: node.id, type: node.type, data: node.data, connectedEdges });
+          })
+          .with(GET_OBJECT_LOGS, async () => {
+            const nodeId = (args.objectId as string) ?? '';
+            const count = Math.min(Math.max((args.count as number) ?? 10, 1), 50);
+            const seen = new Set<string>();
+            const logs = logger
+              .getNodeLogs(nodeId)
+              .filter((e) => e.level === 'error' || e.level === 'warn')
+              .filter((e) => {
+                const key = `${e.level}:${e.message}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+              })
+              .slice(-count)
+              .map((e) => ({
+                level: e.level,
+                message: e.message,
+                timestamp: e.timestamp.toISOString()
+              }));
+            return respond({ nodeId, errors: logs, total: logs.length });
+          })
+          .with(GET_OBJECT_ERRORS, async () => {
+            const nodeIds = (args.objectIds as string[]) ?? [];
+            const result: Record<string, string[]> = {};
+            for (const id of nodeIds) {
+              const errors = getNodeErrors(id);
+              if (errors.length > 0) result[id] = errors;
+            }
+            return respond(result);
+          })
+          .with(SEARCH_DOCS, async () => {
+            const query = ((args.query as string) ?? '').toLowerCase().trim();
+            if (!query) return respond({ results: [], total: 0 });
+            const matchingTopics = topicMetas
+              .filter(
+                (t) =>
+                  t.slug.includes(query) ||
+                  t.title.toLowerCase().includes(query) ||
+                  t.category.toLowerCase().includes(query)
+              )
+              .map((t) => ({ kind: 'topic', slug: t.slug, title: t.title, category: t.category }));
+            const matchingObjects = Object.values(objectSchemas)
+              .filter(
+                (s) =>
+                  s.type.toLowerCase().includes(query) ||
+                  s.description.toLowerCase().includes(query) ||
+                  s.category.toLowerCase().includes(query) ||
+                  s.tags?.some((tag) => tag.toLowerCase().includes(query))
+              )
+              .map((s) => ({
+                kind: 'object',
+                slug: s.type,
+                title: s.type,
+                category: s.category,
+                description: s.description
+              }));
+            return respond({
+              results: [...matchingTopics, ...matchingObjects],
+              total: matchingTopics.length + matchingObjects.length
+            });
+          })
+          .with(GET_DOC_CONTENT, async () => {
+            const kind = (args.kind as string) ?? '';
+            const slug = (args.slug as string) ?? '';
+            if (kind === 'topic') {
+              const content = await fetchTopicHelp(slug);
+              return respond(
+                content.markdown
+                  ? { kind: 'topic', slug, markdown: content.markdown }
+                  : { error: `No documentation found for topic "${slug}"` }
+              );
+            }
+            const content = await fetchObjectHelp(slug);
             return respond(
               content.markdown
-                ? { kind: 'topic', slug, markdown: content.markdown }
-                : { error: `No documentation found for topic "${slug}"` }
+                ? { kind: 'object', slug, markdown: content.markdown }
+                : { error: `No documentation found for object "${slug}"` }
             );
-          }
-
-          // kind === 'object'
-          const content = await fetchObjectHelp(slug);
-          return respond(
-            content.markdown
-              ? { kind: 'object', slug, markdown: content.markdown }
-              : { error: `No documentation found for object "${slug}"` }
-          );
-        }
-
-        if (name === LIST_PACKS) {
-          const state = getPacksState?.() ?? { objectPacks: [], presetPacks: [] };
-          return respond(state);
-        }
-
-        if (name === ENABLE_PACK) {
-          const packId = (functionCall.args?.packId as string) ?? '';
-          const kind = (functionCall.args?.kind as 'object' | 'preset') ?? 'object';
-          const enable = (functionCall.args?.enable as boolean) ?? true;
-
-          if (!onEnablePack) {
+          })
+          .with(LIST_PACKS, async () =>
+            respond(getPacksState?.() ?? { objectPacks: [], presetPacks: [] })
+          )
+          .with(ENABLE_PACK, async () => {
+            const packId = (args.packId as string) ?? '';
+            const kind = (args.kind as string) ?? '';
+            const enable = args.enable;
+            if (!packId)
+              return respond({ success: false, error: 'packId must be a non-empty string.' });
+            if (kind !== 'object' && kind !== 'preset')
+              return respond({
+                success: false,
+                error: `kind must be "object" or "preset", got "${kind}".`
+              });
+            if (typeof enable !== 'boolean')
+              return respond({ success: false, error: 'enable must be a boolean.' });
+            if (!onEnablePack)
+              return respond({
+                success: false,
+                error: 'Pack management is not available in this context.'
+              });
+            return respond(onEnablePack(packId, kind as 'object' | 'preset', enable));
+          })
+          .otherwise(async () => {
+            // GET_OBJECT_INSTRUCTIONS
+            const type = (args.type as string) ?? '';
+            const instructions =
+              getObjectSpecificInstructions(type) ||
+              `No specific instructions found for "${type}".`;
+            const handleDocs = generateHandleDocs([type]);
             return respond({
-              success: false,
-              error: 'Pack management is not available in this context.'
+              instructions,
+              ...(handleDocs ? { handleReference: handleDocs } : {})
             });
-          }
-
-          return respond(onEnablePack(packId, kind, enable));
-        }
-
-        // GET_OBJECT_INSTRUCTIONS
-        const type = (functionCall.args?.type as string) ?? '';
-        const instructions =
-          getObjectSpecificInstructions(type) || `No specific instructions found for "${type}".`;
-
-        const handleDocs = generateHandleDocs([type]);
-
-        return respond({
-          instructions,
-          ...(handleDocs ? { handleReference: handleDocs } : {})
-        });
+          });
       })
     );
 
-    contents.push({ role: 'user', parts: [...canvasResponses, ...functionResponses] });
+    const contextResults: ToolResult[] = settledContextResults.map((result, i) => {
+      if (result.status === 'fulfilled') return result.value;
+      const tc = contextCalls[i];
+      const outputIndex = callIndexMap.get(tc) ?? -1;
+      const errorMsg =
+        result.reason instanceof Error ? result.reason.message : String(result.reason);
+      onToolCallOutput?.(outputIndex, { error: errorMsg });
+      return { callId: tc.id, name: tc.name, result: { error: errorMsg } };
+    });
+
+    // Build canvas tool results
+    const canvasToolResults: ToolResult[] = canvasCalls.map((tc) => ({
+      callId: tc.id,
+      name: tc.name,
+      result: canvasResultMap.get(tc) ?? {
+        status: 'queued',
+        message: 'Action has been queued for user review.'
+      }
+    }));
+
+    // Append user turn with all tool results
+    turnMessages.push({
+      role: 'user',
+      content: '',
+      toolResults: [...contextResults, ...canvasToolResults]
+    });
   }
 
   return fullText;
@@ -574,25 +507,15 @@ function buildContextFromArgs(
  * Returns null if the API key is missing or the call fails.
  */
 export async function generateChatTitle(userMessage: string): Promise<string | null> {
-  const apiKey = localStorage.getItem('gemini-api-key');
-  if (!apiKey) return null;
-
   try {
-    const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: [
-        {
-          text: `Generate a very short title (2-5 words) for a chat conversation that starts with this message. Reply with only the title, no quotes, no punctuation at the end:\n\n${userMessage}`
-        }
-      ]
-    });
-
-    const title = response.text?.trim();
-
-    return title || null;
+    const provider = getTextProvider();
+    const title = await provider.generateText([
+      {
+        role: 'user',
+        content: `Generate a very short title (2-5 words) for a chat conversation that starts with this message. Reply with only the title, no quotes, no punctuation at the end:\n\n${userMessage}`
+      }
+    ]);
+    return title.trim() || null;
   } catch (err) {
     console.error('[generateChatTitle] failed:', err);
     return null;

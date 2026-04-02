@@ -12,7 +12,7 @@ import {
   type AudioAnalysisType
 } from '$lib/audio/AudioAnalysisSystem';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
-import { capturePreviewFrame, bitmapToBase64Image } from '$lib/ai/google';
+import { WorkerLLMProxy } from './WorkerLLMProxy';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
 import JsWorker from '../../workers/js/jsWorker?worker';
 import { get } from 'svelte/store';
@@ -36,7 +36,7 @@ export type WorkerMessage = { nodeId: string } & (
   | { type: 'destroy' }
   // Responses for proxied features
   | { type: 'vfsUrlResolved'; requestId: string; url?: string; error?: string }
-  | { type: 'llmConfig'; requestId: string; apiKey?: string; imageBase64?: string; error?: string }
+  | { type: 'llmConfig'; requestId: string; text?: string; error?: string }
   | { type: 'setFFTData'; analysisType: string; format: string; array: Uint8Array | Float32Array }
   // Video frame delivery
   | { type: 'videoFramesReady'; frames: (ImageBitmap | null)[]; timestamp: number }
@@ -81,7 +81,7 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'fftEnabled'; enabled: boolean }
   | { type: 'registerFFTRequest'; analysisType: AudioAnalysisType; format: AudioAnalysisFormat }
   | { type: 'resolveVfsUrl'; requestId: string; path: string }
-  | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string }
+  | { type: 'llmRequest'; requestId: string; prompt: string; imageNodeId?: string; model?: string }
   // Video frame APIs
   | { type: 'setVideoCount'; inletCount: number; outletCount: number }
   | { type: 'videoFrameCallbackRegistered'; resolution?: [number, number] }
@@ -127,6 +127,7 @@ export class WorkerNodeSystem {
   private audioAnalysis = AudioAnalysisSystem.getInstance();
   private workers = new Map<string, WorkerInstance>();
   private settingsCallbacks = new Map<string, WorkerSettingsCallbacks>();
+  private llmProxy = new WorkerLLMProxy();
 
   /** Track channel subscriptions per worker for cleanup */
   private workerChannelSubscriptions = new Map<string, Set<string>>();
@@ -288,7 +289,14 @@ export class WorkerNodeSystem {
       })
       // LLM proxy messages
       .with({ type: 'llmRequest' }, (event) => {
-        this.handleLLMRequest(nodeId, worker, event.requestId, event.prompt, event.imageNodeId);
+        this.llmProxy.handle(
+          nodeId,
+          worker,
+          event.requestId,
+          event.prompt,
+          event.imageNodeId,
+          event.model
+        );
       })
       // Video frame APIs
       .with({ type: 'setVideoCount' }, (event) => {
@@ -375,62 +383,6 @@ export class WorkerNodeSystem {
       const errorMessage = error instanceof Error ? error.message : String(error);
       worker.postMessage({
         type: 'vfsUrlResolved',
-        nodeId,
-        requestId,
-        error: errorMessage
-      } satisfies WorkerMessage);
-    }
-  }
-
-  /**
-   * Get LLM credentials and optionally capture image, send config to worker.
-   * Worker will make the actual HTTP request.
-   */
-  private async handleLLMRequest(
-    nodeId: string,
-    worker: Worker,
-    requestId: string,
-    _prompt: string,
-    imageNodeId?: string
-  ) {
-    try {
-      const apiKey = localStorage.getItem('gemini-api-key');
-
-      if (!apiKey) {
-        worker.postMessage({
-          type: 'llmConfig',
-          nodeId,
-          requestId,
-          error: 'API key is not set. Please set it in the settings.'
-        } satisfies WorkerMessage);
-        return;
-      }
-
-      let imageBase64: string | undefined;
-
-      // If image node is specified, capture the preview frame
-      if (imageNodeId) {
-        const bitmap = await capturePreviewFrame(imageNodeId);
-        if (bitmap) {
-          imageBase64 = bitmapToBase64Image({
-            bitmap,
-            format: 'image/jpeg',
-            quality: 0.7
-          });
-        }
-      }
-
-      worker.postMessage({
-        type: 'llmConfig',
-        nodeId,
-        requestId,
-        apiKey,
-        imageBase64
-      } satisfies WorkerMessage);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      worker.postMessage({
-        type: 'llmConfig',
         nodeId,
         requestId,
         error: errorMessage
@@ -817,6 +769,9 @@ export class WorkerNodeSystem {
     instance.worker.terminate();
 
     this.workers.delete(nodeId);
+
+    // Abort any pending LLM requests for this node
+    this.llmProxy.abortNode(nodeId);
 
     // Clean up video state
     this.videoStates.delete(nodeId);

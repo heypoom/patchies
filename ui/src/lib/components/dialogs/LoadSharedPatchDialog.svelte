@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog';
+  import { hasAIApiKey } from '../../../stores/ai-settings.store';
 
   let {
     open = $bindable(false),
@@ -15,7 +16,7 @@
     onCancel: () => void;
   } = $props();
 
-  let hasApiKey = $derived(open && !!localStorage.getItem('gemini-api-key'));
+  let hasApiKey = $derived(open && $hasAIApiKey);
 
   function handleCancel() {
     onCancel();
@@ -46,7 +47,7 @@
     >
       <strong>Warning:</strong> Patches run un-sandboxed code. A malicious patch could execute
       arbitrary code, redirect you, or steal data{#if hasApiKey}
-        &nbsp;including your <em>Gemini API key</em>{/if}.{#if !isReadOnly}
+        &nbsp;including your <em>AI API key</em>{/if}.{#if !isReadOnly}
         &nbsp;This will also replace your current patch.{/if}
     </div>
 

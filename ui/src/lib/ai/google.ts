@@ -1,18 +1,32 @@
 import { GLSystem } from '$lib/canvas/GLSystem';
 import type { GLPreviewFrameCapturedEvent } from '$lib/eventbus/events';
-import type { ContentListUnion } from '@google/genai';
+import { DEFAULT_GEMINI_IMAGE_MODEL } from '../../stores/ai-settings.store';
+import type { AIProviderType } from './providers';
+
+type LLMFunctionContext = {
+  imageNodeId?: string;
+  abortSignal?: AbortSignal;
+  model?: string;
+  temperature?: number;
+  topK?: number;
+  provider?: AIProviderType;
+};
+
+type ImageGenerationContext = {
+  apiKey: string;
+  model?: string;
+  abortSignal?: AbortSignal;
+  inputImageNodeId?: string;
+};
 
 export async function generateImageWithGemini(
   prompt: string,
   {
     apiKey,
+    model = DEFAULT_GEMINI_IMAGE_MODEL,
     abortSignal,
     inputImageNodeId
-  }: {
-    apiKey: string;
-    abortSignal?: AbortSignal;
-    inputImageNodeId?: string;
-  }
+  }: ImageGenerationContext
 ): Promise<ImageBitmap> {
   const { GoogleGenAI } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey });
@@ -49,7 +63,7 @@ export async function generateImageWithGemini(
   contents.push({ text: prompt });
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
+    model,
     contents,
     config: { abortSignal }
   });
@@ -60,6 +74,7 @@ export async function generateImageWithGemini(
       if (part.inlineData && part.inlineData.data) {
         const base64Image = part.inlineData.data;
         const blob = base64ToBlob(base64Image, 'image/png');
+
         return createImageBitmap(blob);
       }
     }
@@ -92,17 +107,76 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
   return new Blob([byteArray], { type: mimeType });
 }
 
+export async function generateImageWithOpenRouter(
+  prompt: string,
+  {
+    apiKey,
+    model,
+    abortSignal
+  }: {
+    apiKey: string;
+    model: string;
+    abortSignal?: AbortSignal;
+  }
+): Promise<ImageBitmap> {
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://patchies.app',
+      'X-Title': 'Patchies'
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      modalities: ['image']
+    }),
+    signal: abortSignal
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+
+    throw new Error(`OpenRouter error ${response.status}: ${errText}`);
+  }
+
+  const data = await response.json();
+
+  const images: { image_url?: { url?: string } }[] = data.choices?.[0]?.message?.images ?? [];
+
+  for (const img of images) {
+    const url = img.image_url?.url;
+    if (!url) continue;
+
+    const mimeMatch = url.match(/^data:([^;]+);base64,/);
+    const mime = mimeMatch?.[1] ?? 'image/png';
+    const base64 = url.replace(/^data:[^;]+;base64,/, '');
+    const blob = base64ToBlob(base64, mime);
+
+    return createImageBitmap(blob);
+  }
+
+  // Some models embed the image in content parts instead
+  const content = data.choices?.[0]?.message?.content;
+
+  if (typeof content === 'string' && content) {
+    throw new Error(
+      `Model did not generate an image. Try an image-capable model. Response: ${content}`
+    );
+  }
+
+  throw new Error(
+    'No image returned. Make sure your OpenRouter model supports image generation (e.g. google/gemini-3-flash-preview).'
+  );
+}
+
 export function createLLMFunction() {
-  return async (prompt: string, context?: { imageNodeId?: string; abortSignal?: AbortSignal }) => {
-    const apiKey = localStorage.getItem('gemini-api-key');
+  return async (prompt: string, context?: LLMFunctionContext) => {
+    const { getTextProvider } = await import('./providers');
+    const provider = getTextProvider(context?.model, context?.provider);
 
-    if (!apiKey) {
-      throw new Error('API key is not set. Please set it in the settings.');
-    }
-
-    const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey });
-    const contents: ContentListUnion = [];
+    const images: Array<{ mimeType: string; data: string }> = [];
 
     // If there is a connected node that provides an image, we will include it in the request.
     if (context?.imageNodeId !== undefined) {
@@ -113,19 +187,15 @@ export function createLLMFunction() {
         const base64Image = bitmapToBase64Image({ bitmap, format, quality: 0.7 });
         console.log('[llm] base64 input image size:', base64Image.length);
 
-        contents.push({ inlineData: { mimeType: format, data: base64Image } });
+        images.push({ mimeType: format, data: base64Image });
       }
     }
 
-    contents.push({ text: prompt });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents,
-      config: { abortSignal: context?.abortSignal }
+    return provider.generateText([{ role: 'user', content: prompt, images }], {
+      signal: context?.abortSignal,
+      temperature: context?.temperature,
+      topK: context?.topK
     });
-
-    return response.text;
   };
 }
 
@@ -139,6 +209,7 @@ export function bitmapToBase64Image({
   quality?: number;
 }): string {
   const canvas = document.createElement('canvas');
+
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
 
@@ -154,6 +225,7 @@ export async function compressImageFile(
 ): Promise<{ mimeType: string; data: string }> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+
   const width = Math.round(bitmap.width * scale);
   const height = Math.round(bitmap.height * scale);
 
@@ -174,6 +246,7 @@ export async function capturePreviewFrame(
 ) {
   const glSystem = GLSystem.getInstance();
   const requestId = Math.random().toString(36).substring(2, 15);
+
   let timeoutHandle: number;
 
   return new Promise<ImageBitmap | null>((resolve) => {

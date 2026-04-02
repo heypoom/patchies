@@ -1,5 +1,5 @@
 /**
- * AI-powered code generation using Gemini.
+ * AI-powered code generation using the configured AI provider.
  *
  * Takes a refined specification and generates a complete HTML file
  * that can be previewed in an iframe.
@@ -24,58 +24,19 @@ export async function generateCode(
   specification: string,
   options: GenerateOptions = {}
 ): Promise<string> {
-  const apiKey = localStorage.getItem('gemini-api-key');
-
-  if (!apiKey) {
-    throw new Error('Gemini API key is not set. Please set it in the settings.');
-  }
-
   const { signal, onThinking } = options;
+  if (signal?.aborted) throw new Error('Request cancelled');
 
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
-  }
+  const { getTextProvider } = await import('../providers');
+  const provider = getTextProvider();
 
-  const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey });
+  const responseText = await provider.generateText(
+    [{ role: 'user', content: buildGeneratePrompt(specification) }],
+    { signal, onThinking }
+  );
 
-  const prompt = buildGeneratePrompt(specification);
+  if (!responseText.trim()) throw new Error('No response from AI');
 
-  // Use streaming with thinking enabled for real-time feedback
-  const response = await ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config: {
-      thinkingConfig: {
-        includeThoughts: true
-      }
-    }
-  });
-
-  let responseText = '';
-
-  for await (const chunk of response) {
-    // Check for cancellation during streaming
-    if (signal?.aborted) {
-      throw new Error('Request cancelled');
-    }
-
-    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-      if (part.thought && part.text && onThinking) {
-        // Stream thinking updates to UI
-        onThinking(part.text);
-      } else if (part.text) {
-        // Accumulate final response text
-        responseText += part.text;
-      }
-    }
-  }
-
-  if (!responseText.trim()) {
-    throw new Error('No response from AI');
-  }
-
-  // Extract HTML from response (handle markdown code blocks)
   return extractHtml(responseText.trim());
 }
 
@@ -90,58 +51,19 @@ export async function editCode(
   editPrompt: string,
   options: EditOptions = {}
 ): Promise<string> {
-  const apiKey = localStorage.getItem('gemini-api-key');
-
-  if (!apiKey) {
-    throw new Error('Gemini API key is not set. Please set it in the settings.');
-  }
-
   const { signal, onThinking } = options;
+  if (signal?.aborted) throw new Error('Request cancelled');
 
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
-  }
+  const { getTextProvider } = await import('../providers');
+  const provider = getTextProvider();
 
-  const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey });
+  const responseText = await provider.generateText(
+    [{ role: 'user', content: buildEditPrompt(currentHtml, editPrompt) }],
+    { signal, onThinking }
+  );
 
-  const prompt = buildEditPrompt(currentHtml, editPrompt);
+  if (!responseText.trim()) throw new Error('No response from AI');
 
-  // Use streaming with thinking enabled for real-time feedback
-  const response = await ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config: {
-      thinkingConfig: {
-        includeThoughts: true
-      }
-    }
-  });
-
-  let responseText = '';
-
-  for await (const chunk of response) {
-    // Check for cancellation during streaming
-    if (signal?.aborted) {
-      throw new Error('Request cancelled');
-    }
-
-    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-      if (part.thought && part.text && onThinking) {
-        // Stream thinking updates to UI
-        onThinking(part.text);
-      } else if (part.text) {
-        // Accumulate final response text
-        responseText += part.text;
-      }
-    }
-  }
-
-  if (!responseText.trim()) {
-    throw new Error('No response from AI');
-  }
-
-  // Extract HTML from response (handle markdown code blocks)
   return extractHtml(responseText.trim());
 }
 

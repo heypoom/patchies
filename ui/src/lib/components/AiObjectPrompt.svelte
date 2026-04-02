@@ -229,7 +229,9 @@
 
   function handleClickOutside(event: MouseEvent) {
     if (ctrl.isLoading || isDragging) return;
+
     const target = event.target as HTMLElement;
+
     if (!target.closest('.ai-prompt-dialog')) {
       modeDropdownOpen = false;
       handleClose();

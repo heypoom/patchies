@@ -1,4 +1,5 @@
 import { get, writable } from 'svelte/store';
+import { aiSettings } from '../../stores/ai-settings.store';
 import Fuse from 'fuse.js';
 
 export type GoogleVoice = {
@@ -32,7 +33,7 @@ export async function fetchGoogleTtsVoices(): Promise<void> {
     return;
   }
 
-  const apiKey = localStorage.getItem('gemini-api-key');
+  const apiKey = aiSettings.getGeminiApiKey();
   if (!apiKey) {
     googleTtsVoicesStore.update((s) => ({
       ...s,

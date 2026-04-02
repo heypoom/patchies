@@ -7,6 +7,8 @@ import { getObjectSpecificInstructions } from './object-descriptions';
 import { extractJson } from './extract-json';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/shared-jsrunner';
 import { UI_DESIGN_OBJECTS, UI_DESIGN_GUIDELINES } from './object-prompts/ui-design-guidelines';
+import { getTextProvider } from './providers';
+import type { LLMProvider } from './providers';
 
 /**
  * Edit an existing object with a known type - skips routing, goes directly to generation.
@@ -24,41 +26,23 @@ export async function editObjectFromPrompt(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
   data: any;
 } | null> {
-  const apiKey = localStorage.getItem('gemini-api-key');
+  if (signal?.aborted) throw new Error('Request cancelled');
 
-  if (!apiKey) {
-    throw new Error('Gemini API key is not set. Please set it in the settings.');
-  }
+  const provider = getTextProvider();
 
-  // Check for cancellation before starting
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
-  }
-
-  const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey });
-
-  // Enhance prompt with existing data context if provided
   let enhancedPrompt = prompt;
   if (existingData && Object.keys(existingData).length > 0) {
-    // Stringify the data - non-serializable objects will become [object Object] which is fine
     const dataString = JSON.stringify(existingData, null, 2);
     enhancedPrompt = `Modify this existing ${objectType} object. Current data:\n${dataString}\n\nUser request: ${prompt}`;
   } else {
     enhancedPrompt = `Modify this existing ${objectType} object. User request: ${prompt}`;
   }
 
-  // Single call: Generate object config (we already know the type)
-  const config = await generateObjectConfig(ai, enhancedPrompt, objectType, signal, onThinking);
-  return config;
+  return generateObjectConfig(provider, enhancedPrompt, objectType, signal, onThinking);
 }
 
-/**
- * Generates the full object configuration for editing.
- * Uses streaming with thinking enabled to provide real-time feedback.
- */
 async function generateObjectConfig(
-  ai: InstanceType<typeof import('@google/genai').GoogleGenAI>,
+  provider: LLMProvider,
   prompt: string,
   objectType: string,
   signal?: AbortSignal,
@@ -68,65 +52,26 @@ async function generateObjectConfig(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixme
   data: any;
 } | null> {
-  // Check for cancellation before starting
-  if (signal?.aborted) {
-    throw new Error('Request cancelled');
-  }
+  if (signal?.aborted) throw new Error('Request cancelled');
 
   const systemPrompt = buildGeneratorPrompt(objectType);
 
-  // Use streaming with thinking enabled for real-time feedback
-  const response = await ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
-    contents: [{ text: `${systemPrompt}\n\nUser prompt: "${prompt}"` }],
-    config: {
-      thinkingConfig: {
-        includeThoughts: true
-      }
-    }
-  });
+  const responseText = await provider.generateText(
+    [{ role: 'user', content: `${systemPrompt}\n\nUser prompt: "${prompt}"` }],
+    { signal, onThinking }
+  );
 
-  let responseText = '';
-
-  for await (const chunk of response) {
-    // Check for cancellation during streaming
-    if (signal?.aborted) {
-      throw new Error('Request cancelled');
-    }
-
-    for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
-      if (part.thought && part.text && onThinking) {
-        // Stream thinking updates to UI
-        onThinking(part.text);
-      } else if (part.text) {
-        // Accumulate final response text
-        responseText += part.text;
-      }
-    }
-  }
-
-  responseText = responseText.trim();
-  if (!responseText) {
-    return null;
-  }
+  if (!responseText.trim()) return null;
 
   try {
-    // Extract JSON from response (handle markdown code blocks)
-    const jsonText = extractJson(responseText);
+    const jsonText = extractJson(responseText.trim());
     const result = JSON.parse(jsonText);
 
-    // Validate the result has required fields
-    if (!result.type) {
-      throw new Error('Response missing required "type" field');
-    }
+    if (!result.type) throw new Error('Response missing required "type" field');
 
-    return {
-      type: result.type,
-      data: result.data || {}
-    };
+    return { type: result.type, data: result.data || {} };
   } catch (error) {
     console.error('Failed to parse AI response:', error);
-    console.log('Response text:', responseText);
     throw new Error('Failed to parse AI response as JSON');
   }
 }

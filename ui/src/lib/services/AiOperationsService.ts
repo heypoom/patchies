@@ -1,4 +1,5 @@
 import type { Node, Edge, Viewport } from '@xyflow/svelte';
+import { aiSettings } from '../../stores/ai-settings.store';
 import { toast } from 'svelte-sonner';
 import type { CanvasContext } from './CanvasContext';
 import type { NodeOperationsService } from './NodeOperationsService';
@@ -224,9 +225,9 @@ export class AiOperationsService {
   }
 
   /**
-   * Check if Gemini API key exists in localStorage.
+   * Check if an AI provider API key is configured.
    */
   hasApiKey(): boolean {
-    return !!localStorage.getItem('gemini-api-key');
+    return aiSettings.hasApiKey();
   }
 }

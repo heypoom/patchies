@@ -2366,7 +2366,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
           },
           {
             schema: Type.Number({ minimum: 0, maximum: 15 }),
-            description: 'Trigger pad with velocity 127 by index'
+            description: 'Trigger pad by index with max velocity'
           }
         ],
         handle: { handleType: 'message', handleId: 0 }

@@ -53,7 +53,7 @@
   <div class="min-h-0 flex-1 overflow-y-auto p-3">
     {#if call.thinking}
       <div class="font-mono text-[10px] leading-relaxed text-zinc-500">
-        <MarkdownContent markdown={call.thinking} />
+        <MarkdownContent markdown={call.thinking} class="prose-chat" />
       </div>
     {:else if isStreaming}
       <div class="flex items-center gap-2 text-zinc-600">

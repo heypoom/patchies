@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "allow": ["WebFetch(domain:www.npmjs.com)", "WebFetch(domain:openrouter.ai)"]
+  }
+}

@@ -285,23 +285,23 @@ function createWorkerContext(nodeId: string) {
     return new FFTAnalysis(bins, format, 44000, type);
   };
 
-  // LLM function - gets credentials from main thread, makes HTTP call in worker
+  // LLM function - proxied through main thread using the active provider
   const llm = async (
     prompt: string,
-    context?: { imageNodeId?: string; abortSignal?: AbortSignal }
+    context?: { imageNodeId?: string; abortSignal?: AbortSignal; model?: string }
   ): Promise<string> => {
     const requestId = `llm-${nodeId}-${++llmRequestIdCounter}`;
 
     return new Promise((resolve, reject) => {
       pendingLLMConfigs.set(requestId, { prompt, resolve, reject });
 
-      // Request LLM config (API key + optionally captured image) from main thread
       self.postMessage({
         type: 'llmRequest',
         requestId,
         nodeId,
         prompt,
-        imageNodeId: context?.imageNodeId
+        imageNodeId: context?.imageNodeId,
+        model: context?.model
       });
 
       // Handle abort signal
@@ -625,12 +625,11 @@ function handleVfsUrlResolved(data: {
   pending.reject(new Error('Invalid VFS resolution response'));
 }
 
-// Handle LLM config from main thread and make HTTP call
-async function handleLLMConfig(data: {
+// Handle LLM response from main thread (main thread made the actual provider call)
+function handleLLMConfig(data: {
   requestId: string;
   nodeId: string;
-  apiKey?: string;
-  imageBase64?: string;
+  text?: string;
   error?: string;
 }) {
   const pending = pendingLLMConfigs.get(data.requestId);
@@ -643,42 +642,7 @@ async function handleLLMConfig(data: {
     return;
   }
 
-  if (!data.apiKey) {
-    pending.reject(new Error('No API key provided'));
-    return;
-  }
-
-  try {
-    // Import GoogleGenAI dynamically and make the HTTP call in the worker
-    const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey: data.apiKey });
-
-    type ContentItem = { text: string } | { inlineData: { mimeType: string; data: string } };
-    const contents: ContentItem[] = [];
-
-    // Add image if provided
-    if (data.imageBase64) {
-      contents.push({
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: data.imageBase64
-        }
-      });
-    }
-
-    // Add text prompt
-    contents.push({ text: pending.prompt });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents
-    });
-
-    pending.resolve(response.text ?? '');
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    pending.reject(new Error(message));
-  }
+  pending.resolve(data.text ?? '');
 }
 
 // Handle FFT data from main thread
@@ -786,8 +750,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
         data as {
           requestId: string;
           nodeId: string;
-          apiKey?: string;
-          imageBase64?: string;
+          text?: string;
           error?: string;
         }
       );
