@@ -47,6 +47,11 @@ export const jsRunnerInstructions = `
 - recv((data, meta) => {}) - Register inlet callback (data: payload; meta.inlet: inlet index)
 - setPortCount(inlets, outlets) - Configure number of message ports
 - Bang is {type: 'bang'}; control messages MUST have a 'type' field
+- Common MIDI messages:
+  - {type: 'noteOn', note, velocity, channel}
+  - {type: 'noteOff', note, velocity, channel}
+  - {type: 'controlChange', control, value, channel}
+  - note and velocity is between 0-127
 
 **Named Channels (wireless messaging):**
 - send(data, { to: 'name' }) - Broadcast to all listeners on channel (string 'to' = channel)
