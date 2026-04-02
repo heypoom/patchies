@@ -20,7 +20,7 @@ Example - Sine Wave:
 {
   "type": "chuck~",
   "data": {
-    "code": "SinOsc s => dac;\\n440 => s.freq;\\n0.5 => s.gain;\\nwhile(true) { 1::second => now; }"
+    "expr": "SinOsc s => dac;\\n440 => s.freq;\\n0.5 => s.gain;\\nwhile(true) { 1::second => now; }"
   }
 }
 \`\`\`
@@ -30,7 +30,7 @@ Example - FM Synth:
 {
   "type": "chuck~",
   "data": {
-    "code": "SinOsc mod => SinOsc car => dac;\\n2 => mod.sync;\\n200 => mod.freq;\\n440 => car.freq;\\nwhile(true) {\\n  Math.random2f(100,500) => mod.freq;\\n  200::ms => now;\\n}"
+    "expr": "SinOsc mod => SinOsc car => dac;\\n2 => mod.sync;\\n200 => mod.freq;\\n440 => car.freq;\\nwhile(true) {\\n  Math.random2f(100,500) => mod.freq;\\n  200::ms => now;\\n}"
   }
 }
 \`\`\``;

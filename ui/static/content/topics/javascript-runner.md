@@ -261,6 +261,13 @@ const description = await llm("What's in this frame?", {
 const haiku = await llm("Write a haiku about recursion", {
   model: "anthropic/claude-haiku-4-5",
 });
+
+// Choose which LLM provider to use
+// Must be configured in AI provider settings
+const haiku = await llm("Write a haiku about recursion", {
+  provider: "openrouter"
+  // you can also specify the model for the provider here
+});
 ```
 
 Requires an API key — configure your provider via `Ctrl/Cmd + K > AI Provider Settings`.
