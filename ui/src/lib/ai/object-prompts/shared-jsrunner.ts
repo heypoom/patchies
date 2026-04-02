@@ -48,8 +48,7 @@ export const jsRunnerInstructions = `
 - setPortCount(inlets, outlets) - Configure number of message ports
 - Bang is {type: 'bang'}; control messages MUST have a 'type' field
 - Common MIDI messages:
-  - {type: 'noteOn', note, velocity, channel}
-  - {type: 'noteOff', note, velocity, channel}
+  - {type: 'noteOn' | 'noteOff', note, velocity, channel}
   - {type: 'controlChange', control, value, channel}
   - note and velocity is between 0-127
 
