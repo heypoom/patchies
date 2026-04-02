@@ -2,6 +2,7 @@
   import { Plus, X } from '@lucide/svelte/icons';
   import ChatView from './ChatView.svelte';
   import { chatSessionsStore } from '../../../stores/chat-sessions.store';
+  import { chatStreamStore } from '../../../stores/chat-streaming.store.svelte';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import type { ChatNode, ChatGraphSummary } from '$lib/ai/chat/resolver';
@@ -32,6 +33,16 @@
     if (renamingId) {
       chatSessionsStore.renameSession(renamingId, renameValue);
       renamingId = null;
+    }
+  }
+
+  function closeSession(id: string) {
+    const session = chatStreamStore.getSession(id);
+
+    if (session.messages.length === 0) {
+      chatSessionsStore.removeSession(id);
+    } else {
+      confirmingCloseId = id;
     }
   }
 
@@ -82,12 +93,12 @@
                 : ''}"
               onclick={(e) => {
                 e.stopPropagation();
-                confirmingCloseId = session.id;
+                closeSession(session.id);
               }}
               onkeydown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.stopPropagation();
-                  confirmingCloseId = session.id;
+                  closeSession(session.id);
                 }
               }}
             >
@@ -101,10 +112,7 @@
             Rename
           </ContextMenu.Item>
           <ContextMenu.Separator />
-          <ContextMenu.Item
-            variant="destructive"
-            onclick={() => chatSessionsStore.removeSession(session.id)}
-          >
+          <ContextMenu.Item variant="destructive" onclick={() => closeSession(session.id)}>
             Delete
           </ContextMenu.Item>
         </ContextMenu.Content>
