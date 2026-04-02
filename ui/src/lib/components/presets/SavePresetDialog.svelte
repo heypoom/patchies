@@ -68,7 +68,9 @@
   // Reset form when dialog opens with a new node
   $effect(() => {
     if (open && node) {
-      presetName = '';
+      const title = node?.data?.title;
+      presetName = typeof title === 'string' ? title : '';
+
       presetDescription = '';
       selectedLibraryId = getDefaultLibraryId();
       selectedFolderPath = [];
