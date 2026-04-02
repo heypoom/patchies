@@ -7,20 +7,36 @@
 
   const STEP_COUNTS = [4, 8, 12, 16, 24, 32] as const;
 
-  const OUTPUT_MODES = [
-    { id: 'bang', label: 'bang', tip: 'Sends {type:"bang"} — works with sampler~, trigger, etc.' },
-    { id: 'value', label: 'value', tip: 'Sends velocity value (0–1)' },
-    { id: 'audio', label: 'audio', tip: 'Sends {time, value} for Web Audio lookahead scheduling' }
-  ] as const;
+  type OutletMode = 'multi' | 'single';
 
-  const CLOCK_MODES = [
-    { id: 'auto', label: 'auto', tip: 'Advance steps automatically with the transport clock' },
-    { id: 'manual', label: 'manual', tip: 'Advance one step per bang received on the clock inlet' }
-  ] as const;
+  const MULTI_OUTPUT_MODES = [
+    {
+      id: 'bang' as const,
+      label: 'bang',
+      tip: 'Sends {type:"bang"} — works with sampler~, trigger, etc.'
+    },
+    { id: 'value' as const, label: 'value', tip: 'Sends velocity value (0–1)' },
+    {
+      id: 'audio' as const,
+      label: 'audio',
+      tip: 'Sends {time, value} for Web Audio lookahead scheduling'
+    }
+  ];
+
+  const SINGLE_OUTPUT_MODES = [
+    { id: 'index' as const, label: 'index', tip: 'Sends track index (0–N) — connect to pads~' },
+    { id: 'midi' as const, label: 'midi', tip: 'Sends {type:"noteOn", note, index, velocity}' },
+    {
+      id: 'audio' as const,
+      label: 'audio',
+      tip: 'Sends {type:"noteOn", note, index, velocity, time}'
+    }
+  ];
 
   let {
     steps,
     swing,
+    outletMode,
     outputMode,
     clockMode,
     showVelocity,
@@ -29,6 +45,7 @@
     swingTracker,
     onSetStepCount,
     onSetSwing,
+    onSetOutletMode,
     onSetOutputMode,
     onSetClockMode,
     onSetShowVelocity,
@@ -40,7 +57,8 @@
   }: {
     steps: number;
     swing: number;
-    outputMode: 'bang' | 'value' | 'audio';
+    outletMode: OutletMode;
+    outputMode: string;
     clockMode: 'auto' | 'manual';
     showVelocity: boolean;
     showInTimeline: boolean;
@@ -48,7 +66,8 @@
     swingTracker: ContinuousTracker;
     onSetStepCount: (n: number) => void;
     onSetSwing: (v: number) => void;
-    onSetOutputMode: (v: 'bang' | 'value' | 'audio') => void;
+    onSetOutletMode: (v: OutletMode) => void;
+    onSetOutputMode: (v: string) => void;
     onSetClockMode: (v: 'auto' | 'manual') => void;
     onSetShowVelocity: (v: boolean) => void;
     onSetShowInTimeline: (v: boolean) => void;
@@ -57,6 +76,10 @@
     onUpdateTrackName: (idx: number, name: string) => void;
     onUpdateTrackColor: (idx: number, color: string) => void;
   } = $props();
+
+  const activeOutputModes = $derived(
+    outletMode === 'single' ? SINGLE_OUTPUT_MODES : MULTI_OUTPUT_MODES
+  );
 </script>
 
 <div class="nodrag w-56 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
@@ -81,11 +104,11 @@
       </div>
     </div>
 
-    <!-- Output mode (bang / value / audio) -->
+    <!-- Output mode (dynamic based on outlet mode) -->
     <div class="py-1.5">
       <label class="mb-2 block text-xs font-medium text-zinc-300">Output</label>
       <div class="flex gap-1">
-        {#each OUTPUT_MODES as mode}
+        {#each activeOutputModes as mode}
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
@@ -105,69 +128,97 @@
         {/each}
       </div>
 
-      <!-- Velocity Lane — compact checkbox, subordinate to Output -->
-      <button
-        class="mt-2 flex cursor-pointer items-center gap-1.5 transition-colors"
-        onclick={() => onSetShowVelocity(!showVelocity)}
-      >
-        <div
-          class="h-3 w-3 shrink-0 rounded-sm border transition-colors"
-          class:border-zinc-500={showVelocity}
-          class:bg-zinc-500={showVelocity}
-          class:border-zinc-600={!showVelocity}
-        ></div>
-        <span
-          class="text-xs"
-          class:text-zinc-400={showVelocity}
-          class:text-zinc-500={!showVelocity}
+      <!-- Checkboxes -->
+      <div class="mt-2 flex flex-col gap-1">
+        <!-- Velocity Lane -->
+        <button
+          class="flex cursor-pointer items-center gap-1.5 transition-colors"
+          onclick={() => onSetShowVelocity(!showVelocity)}
         >
-          Velocity lane
-        </span>
-      </button>
+          <div
+            class="h-3 w-3 shrink-0 rounded-sm border transition-colors"
+            class:border-zinc-500={showVelocity}
+            class:bg-zinc-500={showVelocity}
+            class:border-zinc-600={!showVelocity}
+          ></div>
+          <span
+            class="text-xs"
+            class:text-zinc-400={showVelocity}
+            class:text-zinc-500={!showVelocity}
+          >
+            Velocity lane
+          </span>
+        </button>
 
-      <!-- Show in timeline -->
-      <button
-        class="mt-1 flex cursor-pointer items-center gap-1.5 transition-colors"
-        onclick={() => onSetShowInTimeline(!showInTimeline)}
-      >
-        <div
-          class="h-3 w-3 shrink-0 rounded-sm border transition-colors"
-          class:border-zinc-500={showInTimeline}
-          class:bg-zinc-500={showInTimeline}
-          class:border-zinc-600={!showInTimeline}
-        ></div>
-        <span
-          class="text-xs"
-          class:text-zinc-400={showInTimeline}
-          class:text-zinc-500={!showInTimeline}
-        >
-          Show in timeline
-        </span>
-      </button>
-    </div>
-
-    <!-- Clock mode -->
-    <div>
-      <label class="mb-2 block text-xs font-medium text-zinc-300">Clock</label>
-      <div class="flex gap-1">
-        {#each CLOCK_MODES as mode}
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                onclick={() => onSetClockMode(mode.id)}
-                class="cursor-pointer rounded px-2 py-1 text-xs transition-colors"
-                class:bg-zinc-600={clockMode === mode.id}
-                class:text-white={clockMode === mode.id}
-                class:bg-zinc-800={clockMode !== mode.id}
-                class:text-zinc-300={clockMode !== mode.id}
-                class:hover:bg-zinc-700={clockMode !== mode.id}
+        <!-- Single outlet -->
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="flex cursor-pointer items-center gap-1.5 transition-colors"
+              onclick={() => onSetOutletMode(outletMode === 'single' ? 'multi' : 'single')}
+            >
+              <div
+                class="h-3 w-3 shrink-0 rounded-sm border transition-colors"
+                class:border-zinc-500={outletMode === 'single'}
+                class:bg-zinc-500={outletMode === 'single'}
+                class:border-zinc-600={outletMode !== 'single'}
+              ></div>
+              <span
+                class="text-xs"
+                class:text-zinc-400={outletMode === 'single'}
+                class:text-zinc-500={outletMode !== 'single'}
               >
-                {mode.label}
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>{mode.tip}</Tooltip.Content>
-          </Tooltip.Root>
-        {/each}
+                Single outlet
+              </span>
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>One merged outlet instead of one per track</Tooltip.Content>
+        </Tooltip.Root>
+
+        <!-- Manual clock -->
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="flex cursor-pointer items-center gap-1.5 transition-colors"
+              onclick={() => onSetClockMode(clockMode === 'manual' ? 'auto' : 'manual')}
+            >
+              <div
+                class="h-3 w-3 shrink-0 rounded-sm border transition-colors"
+                class:border-zinc-500={clockMode === 'manual'}
+                class:bg-zinc-500={clockMode === 'manual'}
+                class:border-zinc-600={clockMode !== 'manual'}
+              ></div>
+              <span
+                class="text-xs"
+                class:text-zinc-400={clockMode === 'manual'}
+                class:text-zinc-500={clockMode !== 'manual'}
+              >
+                Manual clock
+              </span>
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Advance one step per bang on the clock inlet</Tooltip.Content>
+        </Tooltip.Root>
+
+        <!-- Show in timeline -->
+        <button
+          class="flex cursor-pointer items-center gap-1.5 transition-colors"
+          onclick={() => onSetShowInTimeline(!showInTimeline)}
+        >
+          <div
+            class="h-3 w-3 shrink-0 rounded-sm border transition-colors"
+            class:border-zinc-500={showInTimeline}
+            class:bg-zinc-500={showInTimeline}
+            class:border-zinc-600={!showInTimeline}
+          ></div>
+          <span
+            class="text-xs"
+            class:text-zinc-400={showInTimeline}
+            class:text-zinc-500={!showInTimeline}
+          >
+            Show in timeline
+          </span>
+        </button>
       </div>
     </div>
 

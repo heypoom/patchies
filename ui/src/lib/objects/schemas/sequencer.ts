@@ -46,7 +46,17 @@ const Unmute = sym('unmute');
 const SetSwing = msg('setSwing', { value: Type.Number() });
 
 const SetOutputMode = msg('setOutputMode', {
-  value: Type.Union([Type.Literal('bang'), Type.Literal('value'), Type.Literal('audio')])
+  value: Type.Union([
+    Type.Literal('bang'),
+    Type.Literal('value'),
+    Type.Literal('audio'),
+    Type.Literal('index'),
+    Type.Literal('midi')
+  ])
+});
+
+const SetOutletMode = msg('setOutletMode', {
+  value: Type.Union([Type.Literal('multi'), Type.Literal('single')])
 });
 
 const SetClockMode = msg('setClockMode', {
@@ -59,6 +69,20 @@ const SetStepCount = msg('setStepCount', { value: Type.Number() });
 const SetSchedule = msg('set', {
   time: Type.Number(),
   value: Type.Number({ minimum: 0, maximum: 1 })
+});
+
+// Single-outlet output schemas
+const NoteOn = msg('noteOn', {
+  note: Type.Number(),
+  index: Type.Number(),
+  velocity: Type.Number({ minimum: 0, maximum: 1 })
+});
+
+const NoteOnScheduled = msg('noteOn', {
+  note: Type.Number(),
+  index: Type.Number(),
+  velocity: Type.Number({ minimum: 0, maximum: 1 }),
+  time: Type.Number()
 });
 
 /**
@@ -87,6 +111,7 @@ export const sequencerMessages = {
   rotate: schema(Rotate),
   setSwing: schema(SetSwing),
   setOutputMode: schema(SetOutputMode),
+  setOutletMode: schema(SetOutletMode),
   setClockMode: schema(SetClockMode),
   setStepCount: schema(SetStepCount)
 };
@@ -111,7 +136,14 @@ export const sequencerSchema: ObjectSchema = {
 
         // Configuration
         { schema: SetSwing, description: 'Set swing amount (0–100)' },
-        { schema: SetOutputMode, description: 'Set output mode (bang / value / audio)' },
+        {
+          schema: SetOutputMode,
+          description: 'Set output mode (multi: bang/value/audio, single: index/midi/audio)'
+        },
+        {
+          schema: SetOutletMode,
+          description: 'Set outlet mode (multi = one outlet per track, single = one merged outlet)'
+        },
         { schema: SetClockMode, description: 'Set clock mode (auto / manual)' },
         { schema: SetStepCount, description: 'Set number of steps (4, 8, 12, 16, 24, or 32)' },
 
@@ -151,20 +183,31 @@ export const sequencerSchema: ObjectSchema = {
     {
       id: 'track',
       description:
-        'Per-track trigger outlet (one outlet per track, numbered 0–7). Fires on each active step.',
+        'Multi-outlet mode: per-track trigger outlet (one per track, numbered 0–7). Single-outlet mode: one merged outlet.',
       messages: [
         {
           schema: Bang,
-          description: 'Fired on active step when output mode is "bang" (default)'
+          description: 'Multi/bang: fired on active step'
         },
         {
           schema: Type.Number({ minimum: 0, maximum: 1 }),
-          description: 'Velocity value 0–1 when output mode is "value"'
+          description: 'Multi/value: velocity value 0–1'
         },
         {
           schema: SetSchedule,
-          description:
-            'Lookahead-scheduled audio event with precise Web Audio time and velocity, when output mode is "audio"'
+          description: 'Multi/audio: lookahead-scheduled event with Web Audio time and velocity'
+        },
+        {
+          schema: Type.Number({ minimum: 0 }),
+          description: 'Single/index: track index (0–N)'
+        },
+        {
+          schema: NoteOn,
+          description: 'Single/midi: noteOn with note (= track index), index, and velocity'
+        },
+        {
+          schema: NoteOnScheduled,
+          description: 'Single/audio: noteOn with note, index, velocity, and Web Audio time'
         }
       ]
     }

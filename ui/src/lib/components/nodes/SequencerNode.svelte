@@ -14,12 +14,19 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SequencerSettings from '$lib/components/settings/SequencerSettings.svelte';
   import { Settings, VolumeX, X } from '@lucide/svelte/icons';
+  import { BASE_NOTE } from '$objects/pads/constants';
+
+  type OutletMode = 'multi' | 'single';
+  type MultiOutputMode = 'bang' | 'value' | 'audio';
+  type SingleOutputMode = 'index' | 'midi' | 'audio';
+  type OutputMode = MultiOutputMode | SingleOutputMode;
 
   type NodeData = {
     steps?: number;
     tracks?: TrackData[];
     swing?: number;
-    outputMode?: 'bang' | 'value' | 'audio';
+    outletMode?: OutletMode;
+    outputMode?: OutputMode;
     clockMode?: 'auto' | 'manual';
     showVelocity?: boolean;
     showInTimeline?: boolean;
@@ -51,7 +58,8 @@
   const steps = $derived(data.steps ?? 16);
   const tracks = $derived((data.tracks ?? DEFAULT_TRACKS) as TrackData[]);
   const swing = $derived(data.swing ?? 0);
-  const outputMode = $derived(data.outputMode ?? 'bang');
+  const outletMode = $derived(data.outletMode ?? 'multi');
+  const outputMode = $derived(data.outputMode ?? (outletMode === 'single' ? 'index' : 'bang'));
   const clockMode = $derived(data.clockMode ?? 'auto');
 
   const showVelocity = $derived(data.showVelocity ?? false);
@@ -66,20 +74,42 @@
 
     const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
     const mode = outputMode;
+    const outlet = outletMode;
 
     for (let t = 0; t < currentTracks.length; t++) {
       const track = currentTracks[t];
       if (!(track.stepOn[stepIndex] ?? false)) continue;
 
-      const value = track.stepValues[stepIndex] ?? 1.0;
+      const velocity = track.stepValues[stepIndex] ?? 1.0;
 
-      const payload = match(mode)
-        .with('audio', () => ({ type: 'set', time, value }))
-        .with('value', () => value)
-        .with('bang', () => ({ type: 'bang' }))
-        .exhaustive();
+      if (outlet === 'single') {
+        const payload = match(mode)
+          .with('index', () => t)
+          .with('midi', () => ({
+            type: 'noteOn',
+            note: BASE_NOTE + t,
+            index: t,
+            velocity: Math.round(velocity * 127)
+          }))
+          .with('audio', () => ({
+            type: 'noteOn',
+            note: BASE_NOTE + t,
+            index: t,
+            velocity: Math.round(velocity * 127),
+            time
+          }))
+          .otherwise(() => t);
 
-      messageContext.send(payload, { to: t });
+        messageContext.send(payload, { to: 0 });
+      } else {
+        const payload = match(mode)
+          .with('audio', () => ({ type: 'set', time, value: velocity }))
+          .with('value', () => velocity)
+          .with('bang', () => ({ type: 'bang' }))
+          .otherwise(() => ({ type: 'bang' }));
+
+        messageContext.send(payload, { to: t });
+      }
     }
   }
 
@@ -90,6 +120,7 @@
 
   function applyTracks(newTracks: TrackData[]): void {
     const oldTracks = tracks;
+
     updateNodeData(nodeId, { ...data, tracks: newTracks });
     tracker.commit('tracks', oldTracks, newTracks);
   }
@@ -230,7 +261,17 @@
         setNodeData('swing', clamped);
       })
       .with(sequencerMessages.setOutputMode, ({ value }) => {
-        setNodeData('outputMode', value);
+        // Infer outletMode from unambiguous output modes (audio is valid in both)
+        const inferredOutlet = match(value)
+          .with('index', 'midi', () => 'single' as const)
+          .with('bang', 'value', () => 'multi' as const)
+          .otherwise(() => outletMode);
+
+        const oldData = { outputMode, outletMode };
+        const newData = { outputMode: value, outletMode: inferredOutlet };
+
+        updateNodeData(nodeId, { ...data, ...newData });
+        tracker.commit('outputMode', oldData, newData);
       })
       .with(sequencerMessages.setClockMode, ({ value }) => {
         setNodeData('clockMode', value);
@@ -238,22 +279,36 @@
       .with(sequencerMessages.setStepCount, ({ value }) => {
         setStepCount(value);
       })
+      .with(sequencerMessages.setOutletMode, ({ value }) => {
+        // Reset outputMode unless current mode is audio (valid in both)
+        const newOutput =
+          outputMode === 'audio' ? outputMode : value === 'single' ? 'index' : 'bang';
+
+        const oldData = { outletMode, outputMode };
+        const newData = { outletMode: value, outputMode: newOutput };
+
+        updateNodeData(nodeId, { ...data, ...newData });
+        tracker.commit('outletMode', oldData, newData);
+      })
       .with(sequencerMessages.mute, () => setNodeData('muted', true))
       .with(sequencerMessages.unmute, () => setNodeData('muted', false))
       .otherwise(() => {});
   }
 
-  // Update xyflow handle positions when track count or clockMode changes
+  // Update xyflow handle positions when track count, clockMode, or outletMode changes
   $effect(() => {
-    trackCount;
-    clockMode;
+    void trackCount;
+    void clockMode;
+    void outletMode;
+
     setTimeout(() => updateNodeInternals(nodeId), 0);
   });
 
   // Re-setup scheduler when outputMode or clockMode changes
   $effect(() => {
-    outputMode;
-    clockMode;
+    void outputMode;
+    void clockMode;
+
     schedulerHandle?.setup();
   });
 
@@ -509,17 +564,21 @@
       {nodeId}
     />
 
-    <!-- Dynamic outlets: one per track -->
-    {#each tracks as track, trackIdx (trackIdx)}
-      <StandardHandle
-        port="outlet"
-        id={trackIdx}
-        title={track.name}
-        total={tracks.length}
-        index={trackIdx}
-        {nodeId}
-      />
-    {/each}
+    <!-- Outlets: single or per-track -->
+    {#if outletMode === 'single'}
+      <StandardHandle port="outlet" id={0} title="out" total={1} index={0} {nodeId} />
+    {:else}
+      {#each tracks as track, trackIdx (trackIdx)}
+        <StandardHandle
+          port="outlet"
+          id={trackIdx}
+          title={track.name}
+          total={tracks.length}
+          index={trackIdx}
+          {nodeId}
+        />
+      {/each}
+    {/if}
   </div>
 
   <!-- Settings panel -->
@@ -543,6 +602,7 @@
       <SequencerSettings
         {steps}
         {swing}
+        {outletMode}
         {outputMode}
         {clockMode}
         {showVelocity}
@@ -551,7 +611,16 @@
         {swingTracker}
         onSetStepCount={setStepCount}
         onSetSwing={(v) => updateNodeData(nodeId, { ...data, swing: v })}
-        onSetOutputMode={(v) => setNodeData('outputMode', v)}
+        onSetOutletMode={(v: OutletMode) => {
+          const newOutput =
+            outputMode !== 'audio' ? (v === 'single' ? 'index' : 'bang') : outputMode;
+
+          const oldData = { outletMode, outputMode };
+          const newData = { outletMode: v, outputMode: newOutput };
+          updateNodeData(nodeId, { ...data, ...newData });
+          tracker.commit('outletMode', oldData, newData);
+        }}
+        onSetOutputMode={(v: string) => setNodeData('outputMode', v as OutputMode)}
         onSetClockMode={(v) => setNodeData('clockMode', v)}
         onSetShowVelocity={(v) => setNodeData('showVelocity', v)}
         onSetShowInTimeline={(v) => setNodeData('showInTimeline', v)}

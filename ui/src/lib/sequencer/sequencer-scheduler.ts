@@ -4,7 +4,7 @@ import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
 
 export interface SequencerConfig {
   clockMode: 'auto' | 'manual';
-  outputMode: 'bang' | 'value' | 'audio';
+  outputMode: string;
   steps: number;
   swing: number;
 }
