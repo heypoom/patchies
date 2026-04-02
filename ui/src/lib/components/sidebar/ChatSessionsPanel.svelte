@@ -73,28 +73,26 @@
               <span>{session.name}</span>
             {/if}
 
-            {#if $chatSessionsStore.sessions.length > 1}
-              <span
-                role="button"
-                tabindex="0"
-                class="cursor-pointer rounded text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100 hover:text-zinc-300 max-sm:opacity-100 {$chatSessionsStore.activeId ===
-                session.id
-                  ? 'opacity-100'
-                  : ''}"
-                onclick={(e) => {
+            <span
+              role="button"
+              tabindex="0"
+              class="cursor-pointer rounded text-zinc-600 opacity-0 transition-opacity group-hover:opacity-100 hover:text-zinc-300 max-sm:opacity-100 {$chatSessionsStore.activeId ===
+              session.id
+                ? 'opacity-100'
+                : ''}"
+              onclick={(e) => {
+                e.stopPropagation();
+                confirmingCloseId = session.id;
+              }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
                   e.stopPropagation();
                   confirmingCloseId = session.id;
-                }}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.stopPropagation();
-                    confirmingCloseId = session.id;
-                  }
-                }}
-              >
-                <X class="h-3 w-3" />
-              </span>
-            {/if}
+                }
+              }}
+            >
+              <X class="h-3 w-3" />
+            </span>
           </button>
         </ContextMenu.Trigger>
 
@@ -102,15 +100,13 @@
           <ContextMenu.Item onclick={() => startRename(session.id, session.name)}>
             Rename
           </ContextMenu.Item>
-          {#if $chatSessionsStore.sessions.length > 1}
-            <ContextMenu.Separator />
-            <ContextMenu.Item
-              variant="destructive"
-              onclick={() => chatSessionsStore.removeSession(session.id)}
-            >
-              Delete
-            </ContextMenu.Item>
-          {/if}
+          <ContextMenu.Separator />
+          <ContextMenu.Item
+            variant="destructive"
+            onclick={() => chatSessionsStore.removeSession(session.id)}
+          >
+            Delete
+          </ContextMenu.Item>
         </ContextMenu.Content>
       </ContextMenu.Root>
     {/each}

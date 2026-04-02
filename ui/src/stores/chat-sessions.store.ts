@@ -159,10 +159,16 @@ function createChatSessionsStore() {
       removeStagedYouTubeUrls(id);
 
       update((s) => {
-        if (s.sessions.length <= 1) return s;
-
         const idx = s.sessions.findIndex((sess) => sess.id === id);
         const sessions = s.sessions.filter((sess) => sess.id !== id);
+
+        if (sessions.length === 0) {
+          const counter = s.counter + 1;
+          const newId = `chat-${counter}`;
+
+          return { sessions: [{ id: newId, name: `Chat ${counter}` }], activeId: newId, counter };
+        }
+
         const activeId = s.activeId === id ? sessions[Math.max(0, idx - 1)].id : s.activeId;
 
         return { ...s, sessions, activeId };
