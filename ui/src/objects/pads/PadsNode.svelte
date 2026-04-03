@@ -44,6 +44,7 @@
   const noteOffMode = $derived(node.data.noteOffMode ?? 'ignore');
   const showGmLabels = $derived(node.data.showGmLabels ?? true);
   const showWaveform = $derived(node.data.showWaveform ?? true);
+  const showPadNumbers = $derived(node.data.showPadNumbers ?? true);
   const width = $derived(node.width ?? 280);
   const height = $derived(node.height ?? 300);
   const compact = $derived(width < 300);
@@ -147,6 +148,10 @@
 
   function updateShowWaveform(value: boolean) {
     updateNodeData(node.id, { ...node.data, showWaveform: value });
+  }
+
+  function updateShowPadNumbers(value: boolean) {
+    updateNodeData(node.id, { ...node.data, showPadNumbers: value });
   }
 
   function triggerPad(padIndex: number) {
@@ -267,6 +272,7 @@
             velocity={activeFlash.get(padIndex) ?? 0}
             audioBuffer={showWaveform ? padBuffers[padIndex] : null}
             {showGmLabels}
+            {showPadNumbers}
             onAssign={assignSample}
             onClear={clearPad}
             onTrigger={triggerPad}
@@ -287,11 +293,13 @@
       {noteOffMode}
       {showGmLabels}
       {showWaveform}
+      {showPadNumbers}
       onPadCountChange={updatePadCount}
       onMaxVoicesChange={updateMaxVoices}
       onNoteOffModeChange={updateNoteOffMode}
       onShowGmLabelsChange={updateShowGmLabels}
       onShowWaveformChange={updateShowWaveform}
+      onShowPadNumbersChange={updateShowPadNumbers}
       onClose={() => (showSettings = false)}
     />
   </div>

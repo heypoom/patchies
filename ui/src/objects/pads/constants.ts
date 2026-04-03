@@ -13,6 +13,7 @@ export interface PadsNodeData {
   noteOffMode: NoteOffMode;
   showGmLabels: boolean;
   showWaveform: boolean;
+  showPadNumbers: boolean;
   /** AI-provided initial sample URLs, keyed by pad index. Consumed on mount, then cleared. */
   _initialUrls?: Record<string, string>;
 }
@@ -66,7 +67,8 @@ export const DEFAULT_PADS_NODE_DATA: PadsNodeData = {
   maxVoices: 4,
   noteOffMode: 'ignore',
   showGmLabels: true,
-  showWaveform: true
+  showWaveform: true,
+  showPadNumbers: true
 };
 
 export const PADS_MIN_WIDTH = 160;

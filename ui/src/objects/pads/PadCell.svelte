@@ -11,6 +11,7 @@
     velocity: number;
     audioBuffer?: AudioBuffer | null;
     showGmLabels: boolean;
+    showPadNumbers: boolean;
     onAssign: (padIndex: number, vfsPath: string) => void;
     onClear: (padIndex: number) => void;
     onTrigger: (padIndex: number) => void;
@@ -23,6 +24,7 @@
     velocity,
     audioBuffer,
     showGmLabels,
+    showPadNumbers,
     onAssign,
     onClear,
     onTrigger
@@ -235,7 +237,9 @@
   {/if}
 
   <!-- Pad number badge -->
-  <span class="absolute right-1 bottom-0.5 font-mono text-[8px] text-zinc-500">
-    {padIndex + 1}
-  </span>
+  {#if showPadNumbers}
+    <span class="absolute right-1 bottom-0.5 font-mono text-[8px] text-zinc-500">
+      {padIndex + 1}
+    </span>
+  {/if}
 </div>

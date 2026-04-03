@@ -11,11 +11,13 @@
     noteOffMode: NoteOffMode;
     showGmLabels: boolean;
     showWaveform: boolean;
+    showPadNumbers: boolean;
     onPadCountChange: (value: PadCount) => void;
     onMaxVoicesChange: (value: number) => void;
     onNoteOffModeChange: (value: NoteOffMode) => void;
     onShowGmLabelsChange: (value: boolean) => void;
     onShowWaveformChange: (value: boolean) => void;
+    onShowPadNumbersChange: (value: boolean) => void;
     onClose: () => void;
   };
 
@@ -26,11 +28,13 @@
     noteOffMode,
     showGmLabels,
     showWaveform,
+    showPadNumbers,
     onPadCountChange,
     onMaxVoicesChange,
     onNoteOffModeChange,
     onShowGmLabelsChange,
     onShowWaveformChange,
+    onShowPadNumbersChange,
     onClose
   }: Props = $props();
 
@@ -90,6 +94,7 @@
       <!-- NoteOff Mode -->
       <div class="border-t border-zinc-700 pt-3">
         <div class="mb-2 text-xs font-medium text-zinc-300">Note Off Behavior</div>
+
         <div class="flex gap-1">
           {#each [['ignore', 'One-shot'], ['stop', 'Gated']] as [value, label] (value)}
             <button
@@ -115,25 +120,46 @@
       <!-- Display -->
       <div class="space-y-2 border-t border-zinc-700 pt-3">
         <label class="flex cursor-pointer items-center justify-between">
-          <span class="text-xs font-medium text-zinc-300">Show GM Labels</span>
+          <span class="text-xs font-medium text-zinc-300">Pad Numbers</span>
+
+          <input
+            type="checkbox"
+            checked={showPadNumbers}
+            onchange={() => {
+              const old = showPadNumbers;
+
+              onShowPadNumbersChange(!showPadNumbers);
+              tracker.commit('showPadNumbers', old, !old);
+            }}
+            class="h-3 w-3 cursor-pointer"
+          />
+        </label>
+
+        <label class="flex cursor-pointer items-center justify-between">
+          <span class="text-xs font-medium text-zinc-300">GM Labels</span>
+
           <input
             type="checkbox"
             checked={showGmLabels}
             onchange={() => {
               const old = showGmLabels;
+
               onShowGmLabelsChange(!showGmLabels);
               tracker.commit('showGmLabels', old, !old);
             }}
             class="h-3 w-3 cursor-pointer"
           />
         </label>
+
         <label class="flex cursor-pointer items-center justify-between">
-          <span class="text-xs font-medium text-zinc-300">Show Waveform</span>
+          <span class="text-xs font-medium text-zinc-300">Waveform</span>
+
           <input
             type="checkbox"
             checked={showWaveform}
             onchange={() => {
               const old = showWaveform;
+
               onShowWaveformChange(!showWaveform);
               tracker.commit('showWaveform', old, !old);
             }}

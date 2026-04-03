@@ -30,6 +30,7 @@ NODE DATA SCHEMA:
   noteOffMode: 'ignore'|'stop', // what happens on noteOff (default 'ignore')
   showGmLabels: boolean,        // show GM drum names (default true)
   showWaveform: boolean,        // show waveform display (default true)
+  showPadNumbers: boolean,      // show pad number badges (default true)
 }
 
 DATA FORMAT EXAMPLE:
