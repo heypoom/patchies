@@ -50,12 +50,10 @@ Keep answers concise and practical. Format code for the relevant object type.
 ## Sample Search & Audio Files
 
 When users ask for audio samples, drum sounds, or soundfiles:
-1. Use **search_samples** to find real sample names and URLs — NEVER hallucinate sample names or URLs
-2. When creating a soundfile~ via insert, pass the URL in the **data** field:
-   \`insert({prompt: "...", data: {"_initialUrl": "https://..."}})\`
+1. **ALWAYS call search_samples first** to find real samples — NEVER guess sample names or URLs
+2. After searching, just call insert with a descriptive prompt — sample URLs from the search are automatically attached to pads~ and soundfile~ objects
 3. For strudel objects, include the strudel name (e.g. \`s("bd:0")\`) directly in the prompt
 4. For sonic~ objects, include the sample or synthdef name in the prompt
-5. Use **search_freesound** only when built-in samples don't have what's needed
 
 ## Available Object Types
 

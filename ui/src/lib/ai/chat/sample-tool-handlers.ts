@@ -65,17 +65,34 @@ export async function resolveSearchSamples(args: Record<string, unknown>): Promi
     return true;
   });
 
-  const settled = await Promise.allSettled(providers.map((p) => p.search(query)));
+  // Split multi-word queries into individual terms and search each,
+  // then deduplicate. This handles AI queries like "kick snare hat".
+  const terms = query.split(/\s+/).filter(Boolean);
+  const seen = new Set<string>();
+  const allResults: SampleResult[] = [];
 
-  const allResults = settled
-    .flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))
-    .flat()
-    .slice(0, maxResults);
+  for (const term of terms) {
+    const settled = await Promise.allSettled(providers.map((p) => p.search(term)));
+    const termResults = settled.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : [])).flat();
+
+    for (const r of termResults) {
+      if (!seen.has(r.id)) {
+        seen.add(r.id);
+        allResults.push(r);
+      }
+    }
+
+    if (allResults.length >= maxResults) break;
+  }
+
+  allResults.splice(maxResults);
+
+  const formatted = allResults.map(formatSampleResult);
 
   return {
-    results: allResults.map(formatSampleResult),
-    total: allResults.length,
-    hint: 'For strudel nodes, use s("category:index"). For sonic~ nodes, use the sample or synthdef name. For soundfile~ nodes, use the URL.'
+    results: formatted,
+    total: formatted.length,
+    hint: 'Sample URLs are automatically loaded when you create pads~ or soundfile~ via insert after this search. For strudel, use s("category:index"). For sonic~, use the sample or synthdef name.'
   };
 }
 

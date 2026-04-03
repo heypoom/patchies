@@ -44,14 +44,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
       'Create a single new object on the canvas. Preferred over multi when only one object is needed, even for complex objects.',
     chatToolSchema: {
       type: 'object',
-      properties: {
-        prompt: { type: 'string', description: 'What to create' },
-        data: {
-          type: 'object',
-          description:
-            'Optional initial data to merge into the created object. Use this to pass through known values like URLs from search_samples (e.g. {"_initialUrl": "https://..."} for soundfile~, or {"synthdef": "..."} for sonic~) so they are not lost during generation.'
-        }
-      },
+      properties: { prompt: { type: 'string', description: 'What to create' } },
       required: ['prompt']
     }
   },

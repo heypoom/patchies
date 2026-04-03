@@ -183,6 +183,10 @@ export async function streamChatMessage(
   let globalCallIndex = 0;
   let toolRound = 0;
 
+  // Cache last search_samples URLs so we can auto-attach them to insert calls
+  // for pads~/soundfile~ — the AI can't reliably pass them through data.
+  let lastSampleUrls: string[] = [];
+
   // Multi-turn loop: runs until the model produces a pure text response (no tool calls)
   while (true) {
     if (signal?.aborted) throw new Error('Request cancelled');
@@ -245,31 +249,29 @@ export async function streamChatMessage(
           const mode = toolNameToMode(toolName);
           const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
           const callIdx = callIndexMap.get(tc) ?? -1;
-          const passthroughData = args.data as Record<string, unknown> | undefined;
-
-          // Enrich prompt with passthrough data so the subagent sees concrete values
-          let prompt = (args.prompt as string) ?? '';
-
-          if (passthroughData) {
-            const dataHints = Object.entries(passthroughData)
-              .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
-              .join(', ');
-
-            prompt += `\n\nIMPORTANT — use these exact values in the generated data: ${dataHints}`;
-          }
 
           const result = await runModeResolver(
             mode,
-            prompt,
+            (args.prompt as string) ?? '',
             context,
             signal ?? new AbortController().signal,
             (thought) => onSubagentThinking?.(callIdx, thought),
             () => {}
           );
 
-          // Also merge passthrough data directly to guarantee it's present
-          if (passthroughData && result && result.kind === 'single') {
-            result.data = { ...result.data, ...passthroughData };
+          // Auto-attach cached sample URLs for pads~/soundfile~ inserts.
+          // The AI cannot reliably pass URLs through tool args, so we
+          // automatically wire in the last search_samples results.
+          if (result && result.kind === 'single' && lastSampleUrls.length > 0) {
+            if (result.type === 'pads~' && !result.data._initialUrls) {
+              const urls: Record<string, string> = {};
+              lastSampleUrls.forEach((url, i) => {
+                urls[String(i)] = url;
+              });
+              result.data = { ...result.data, _initialUrls: urls };
+            } else if (result.type === 'soundfile~' && !result.data._initialUrl) {
+              result.data = { ...result.data, _initialUrl: lastSampleUrls[0] };
+            }
           }
 
           onAction({
@@ -414,7 +416,15 @@ export async function streamChatMessage(
           .with(LIST_PACKS, async () =>
             respond(getPacksState?.() ?? { objectPacks: [], presetPacks: [] })
           )
-          .with(SEARCH_SAMPLES, async () => respond(await resolveSearchSamples(args)))
+          .with(SEARCH_SAMPLES, async () => {
+            const result = await resolveSearchSamples(args);
+            // Cache URLs for auto-attach to subsequent insert calls
+            const res = result as { results?: Array<{ url?: string }> };
+            lastSampleUrls = (res.results ?? [])
+              .map((r) => r.url)
+              .filter((u): u is string => typeof u === 'string');
+            return respond(result);
+          })
           .with(SEARCH_FREESOUND, async () => respond(await resolveSearchFreesound(args)))
           .with(ENABLE_PACK, async () => {
             const packId = (args.packId as string) ?? '';

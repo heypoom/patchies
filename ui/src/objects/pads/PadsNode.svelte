@@ -7,7 +7,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
-  import { VirtualFilesystem } from '$lib/vfs';
+  import { VirtualFilesystem, VFS_FOLDERS } from '$lib/vfs';
   import { padsMessages } from './schema';
   import PadCell from './PadCell.svelte';
   import PadsSettings from './PadsSettings.svelte';
@@ -169,6 +169,31 @@
       v2Node.noteOffMode = noteOffMode;
       v2Node.padCount = padCount;
       v2Node.onTrigger = flashPad;
+    }
+
+    // Load initial URLs from AI (consume once)
+    if (node.data._initialUrls) {
+      const vfs = VirtualFilesystem.getInstance();
+      const urls = { ...node.data._initialUrls };
+
+      // Build updated pads array locally — can't rely on derived `pads` updating
+      // synchronously between awaits since node.data is a prop from xyflow store.
+      const updatedPads = [...pads];
+
+      for (const [idx, url] of Object.entries(urls)) {
+        const padIndex = Number(idx);
+        if (isNaN(padIndex) || padIndex < 0 || padIndex >= padCount) continue;
+        try {
+          const vfsPath = await vfs.registerUrl(url, VFS_FOLDERS.SAMPLES);
+          updatedPads[padIndex] = { ...updatedPads[padIndex], vfsPath };
+          await loadPadBuffer(padIndex, vfsPath);
+        } catch (err) {
+          console.error(`[pads~] failed to load initial URL for pad ${padIndex}:`, err);
+        }
+      }
+
+      // Single updateNodeData call with all pads + clear _initialUrls
+      updateNodeData(node.id, { ...node.data, pads: updatedPads, _initialUrls: undefined });
     }
 
     // Load all pads that have a saved vfsPath

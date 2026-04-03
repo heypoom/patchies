@@ -13,6 +13,8 @@ export interface PadsNodeData {
   noteOffMode: NoteOffMode;
   showGmLabels: boolean;
   showWaveform: boolean;
+  /** AI-provided initial sample URLs, keyed by pad index. Consumed on mount, then cleared. */
+  _initialUrls?: Record<string, string>;
 }
 
 /** MIDI note for pad 1 (GM: Bass Drum 1) */

@@ -78,7 +78,7 @@
 
     for (let t = 0; t < currentTracks.length; t++) {
       const track = currentTracks[t];
-      if (!(track.stepOn[stepIndex] ?? false)) continue;
+      if (!(track?.stepOn[stepIndex] ?? false)) continue;
 
       const velocity = track.stepValues[stepIndex] ?? 1.0;
 
@@ -333,7 +333,7 @@
         const currentTracks = (data.tracks ?? DEFAULT_TRACKS) as TrackData[];
 
         return currentTracks
-          .filter((t) => (t.stepOn[step] ?? false) && (t.stepValues[step] ?? 1.0) > 0)
+          .filter((t) => (t.stepOn?.[step] ?? false) && (t.stepValues?.[step] ?? 1.0) > 0)
           .map((t) => t.color);
       }
     );
@@ -478,8 +478,9 @@
               <div class="nodrag flex gap-0.5">
                 {#each Array.from({ length: stepsPerRow }) as _, colIdx (colIdx)}
                   {@const stepIdx = rowIdx * 16 + colIdx}
-                  {#if stepIdx < steps}
-                    {@const isOn = track.stepOn[stepIdx] ?? false}
+
+                  {#if track && stepIdx < steps}
+                    {@const isOn = track.stepOn?.[stepIdx] ?? false}
                     {@const isCurrent = stepIdx === currentVisualStep}
 
                     <button
@@ -504,10 +505,10 @@
                   {#each Array.from({ length: stepsPerRow }) as _, colIdx (colIdx)}
                     {@const stepIdx = rowIdx * 16 + colIdx}
 
-                    {#if stepIdx < steps}
-                      {@const barValue = track.stepValues[stepIdx] ?? 1.0}
-                      {@const isStepOn = track.stepOn[stepIdx] ?? false}
-                      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                    {#if track && stepIdx < steps}
+                      {@const barValue = track.stepValues?.[stepIdx] ?? 1.0}
+                      {@const isStepOn = track.stepOn?.[stepIdx] ?? false}
+
                       <div
                         role="slider"
                         aria-valuenow={barValue}
