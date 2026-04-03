@@ -99,7 +99,7 @@ export function buildPath(mode: Mode, pts: Point[], innerW: number, innerH: numb
   return match(mode)
     .with('linear', () => buildLinearPath(pts, innerW, innerH))
     .with('curve', () => buildCurvePath(pts, innerW, innerH))
-    .exhaustive();
+    .otherwise(() => '');
 }
 
 // ── Curve evaluation ──────────────────────────────────────────────────────────
