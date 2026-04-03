@@ -8,6 +8,7 @@ CRITICAL RULES:
 3. Supports audio chaining as source
 4. To load a URL on creation, use \`_initialUrl\` in data (NOT \`url\`)
 5. Use \`search_samples\` tool to find real sample URLs instead of guessing
+6. When calling insert tool, pass the URL via the data field: insert({prompt: "...", data: {"_initialUrl": "https://..."}})
 
 Messages:
 - string or {type: 'load', url: '...'}: load audio file

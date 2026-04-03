@@ -245,14 +245,33 @@ export async function streamChatMessage(
           const mode = toolNameToMode(toolName);
           const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
           const callIdx = callIndexMap.get(tc) ?? -1;
+          const passthroughData = args.data as Record<string, unknown> | undefined;
+
+          // Enrich prompt with passthrough data so the subagent sees concrete values
+          let prompt = (args.prompt as string) ?? '';
+
+          if (passthroughData) {
+            const dataHints = Object.entries(passthroughData)
+              .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+              .join(', ');
+
+            prompt += `\n\nIMPORTANT — use these exact values in the generated data: ${dataHints}`;
+          }
+
           const result = await runModeResolver(
             mode,
-            (args.prompt as string) ?? '',
+            prompt,
             context,
             signal ?? new AbortController().signal,
             (thought) => onSubagentThinking?.(callIdx, thought),
             () => {}
           );
+
+          // Also merge passthrough data directly to guarantee it's present
+          if (passthroughData && result && result.kind === 'single') {
+            result.data = { ...result.data, ...passthroughData };
+          }
+
           onAction({
             id: crypto.randomUUID(),
             mode,

@@ -72,7 +72,9 @@ async function generateObjectConfig(
     return { type: result.type, data: result.data || {} };
   } catch (error) {
     console.error('Failed to parse AI response:', error);
-    throw new Error('Failed to parse AI response as JSON');
+
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to parse AI response: ${reason}`);
   }
 }
 
