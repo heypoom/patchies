@@ -422,7 +422,9 @@ export async function streamChatMessage(
           .with(SEARCH_SAMPLES, async () => {
             const result = await resolveSearchSamples(args);
 
-            // Accumulate URLs for auto-attach to subsequent insert calls
+            // Accumulate URLs for auto-attach to subsequent insert calls.
+            // New results go to the end (latest = most relevant to next insert).
+            // Evict oldest when over the cap.
             const res = result as { results?: Array<{ url?: string }> };
 
             const newUrls = (res.results ?? [])
@@ -432,8 +434,12 @@ export async function streamChatMessage(
             const existing = new Set(sampleUrlCache);
 
             for (const url of newUrls) {
-              if (sampleUrlCache.length >= MAX_CACHED_SAMPLE_URLS) break;
               if (!existing.has(url)) sampleUrlCache.push(url);
+            }
+
+            // Evict oldest entries if over cap
+            if (sampleUrlCache.length > MAX_CACHED_SAMPLE_URLS) {
+              sampleUrlCache.splice(0, sampleUrlCache.length - MAX_CACHED_SAMPLE_URLS);
             }
 
             return respond(result);
