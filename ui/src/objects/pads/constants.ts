@@ -67,7 +67,7 @@ export const DEFAULT_PADS_NODE_DATA: PadsNodeData = {
   showWaveform: true
 };
 
-export const PADS_MIN_WIDTH = 240;
-export const PADS_MIN_HEIGHT = 180;
+export const PADS_MIN_WIDTH = 160;
+export const PADS_MIN_HEIGHT = 100;
 export const PADS_DEFAULT_WIDTH = 280;
 export const PADS_DEFAULT_HEIGHT = 300;
