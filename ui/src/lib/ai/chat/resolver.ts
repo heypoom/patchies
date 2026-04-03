@@ -183,9 +183,10 @@ export async function streamChatMessage(
   let globalCallIndex = 0;
   let toolRound = 0;
 
-  // Cache last search_samples URLs so we can auto-attach them to insert calls
-  // for pads~/soundfile~ — the AI can't reliably pass them through data.
-  let lastSampleUrls: string[] = [];
+  // Accumulate search_samples URLs across multiple searches so we can auto-attach
+  // them to insert calls for pads~/soundfile~.
+  const MAX_CACHED_SAMPLE_URLS = 24;
+  const sampleUrlCache: string[] = [];
 
   // Multi-turn loop: runs until the model produces a pure text response (no tool calls)
   while (true) {
@@ -262,15 +263,17 @@ export async function streamChatMessage(
           // Auto-attach cached sample URLs for pads~/soundfile~ inserts.
           // The AI cannot reliably pass URLs through tool args, so we
           // automatically wire in the last search_samples results.
-          if (result && result.kind === 'single' && lastSampleUrls.length > 0) {
+          if (result && result.kind === 'single' && sampleUrlCache.length > 0) {
             if (result.type === 'pads~' && !result.data._initialUrls) {
               const urls: Record<string, string> = {};
-              lastSampleUrls.forEach((url, i) => {
+
+              sampleUrlCache.forEach((url, i) => {
                 urls[String(i)] = url;
               });
+
               result.data = { ...result.data, _initialUrls: urls };
             } else if (result.type === 'soundfile~' && !result.data._initialUrl) {
-              result.data = { ...result.data, _initialUrl: lastSampleUrls[0] };
+              result.data = { ...result.data, _initialUrl: sampleUrlCache[0] };
             }
           }
 
@@ -418,11 +421,21 @@ export async function streamChatMessage(
           )
           .with(SEARCH_SAMPLES, async () => {
             const result = await resolveSearchSamples(args);
-            // Cache URLs for auto-attach to subsequent insert calls
+
+            // Accumulate URLs for auto-attach to subsequent insert calls
             const res = result as { results?: Array<{ url?: string }> };
-            lastSampleUrls = (res.results ?? [])
+
+            const newUrls = (res.results ?? [])
               .map((r) => r.url)
               .filter((u): u is string => typeof u === 'string');
+
+            const existing = new Set(sampleUrlCache);
+
+            for (const url of newUrls) {
+              if (sampleUrlCache.length >= MAX_CACHED_SAMPLE_URLS) break;
+              if (!existing.has(url)) sampleUrlCache.push(url);
+            }
+
             return respond(result);
           })
           .with(SEARCH_FREESOUND, async () => respond(await resolveSearchFreesound(args)))
