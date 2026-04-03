@@ -68,6 +68,9 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
     .with('enable_pack', () => `${args.enable ? 'Enabling' : 'Disabling'} ${args.packId ?? 'pack'}`)
     .with('connect_edges', () => 'Connecting edges')
     .with('disconnect_edges', () => 'Disconnecting edges')
+    .with('search_samples', () => `Searching samples: "${args.query ?? ''}"`)
+    .with('search_freesound', () => `Searching Freesound: "${args.query ?? ''}"`)
+
     .otherwise(() => {
       const mode = modeDescriptors[toolNameToMode(name)];
 

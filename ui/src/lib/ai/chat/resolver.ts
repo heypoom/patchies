@@ -27,10 +27,13 @@ import {
   GET_DOC_CONTENT,
   LIST_PACKS,
   ENABLE_PACK,
+  SEARCH_SAMPLES,
+  SEARCH_FREESOUND,
   contextToolDeclarations,
   connectEdgesDeclaration,
   disconnectEdgesDeclaration
 } from './chat-tool-declarations';
+import { resolveSearchSamples, resolveSearchFreesound } from './sample-tool-handlers';
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -392,6 +395,8 @@ export async function streamChatMessage(
           .with(LIST_PACKS, async () =>
             respond(getPacksState?.() ?? { objectPacks: [], presetPacks: [] })
           )
+          .with(SEARCH_SAMPLES, async () => respond(await resolveSearchSamples(args)))
+          .with(SEARCH_FREESOUND, async () => respond(await resolveSearchFreesound(args)))
           .with(ENABLE_PACK, async () => {
             const packId = (args.packId as string) ?? '';
             const kind = (args.kind as string) ?? '';

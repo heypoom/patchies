@@ -62,6 +62,8 @@ export const SEARCH_DOCS = 'search_docs';
 export const GET_DOC_CONTENT = 'get_doc_content';
 export const LIST_PACKS = 'list_packs';
 export const ENABLE_PACK = 'enable_pack';
+export const SEARCH_SAMPLES = 'search_samples';
+export const SEARCH_FREESOUND = 'search_freesound';
 export const CONNECT_EDGES = 'connect_edges';
 export const DISCONNECT_EDGES = 'disconnect_edges';
 
@@ -74,7 +76,9 @@ export const CONTEXT_TOOL_NAMES = new Set([
   SEARCH_DOCS,
   GET_DOC_CONTENT,
   LIST_PACKS,
-  ENABLE_PACK
+  ENABLE_PACK,
+  SEARCH_SAMPLES,
+  SEARCH_FREESOUND
 ]);
 
 // ── Context tool declarations ─────────────────────────────────────────────────
@@ -186,6 +190,51 @@ export const contextToolDeclarations = [
     description:
       'List all available object packs and preset packs, including which ones are currently enabled. Use this to answer questions about what objects or presets are available, or before enabling/disabling packs.',
     parametersJsonSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: SEARCH_SAMPLES,
+    description:
+      'Search for audio samples and SuperCollider synthdefs across all built-in sample libraries (Strudel/Tidal, SuperSonic). Returns sample names, categories, URLs, and usage hints for strudel and sonic~ nodes. Use this to find real sample names instead of guessing. Results include: Strudel samples (use with s("category:index") in strudel code or as soundfile~ URL), SuperSonic samples/synthdefs (use with sonic~ node).',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description:
+            'Search query — matches sample names, categories, and groups (e.g. "kick", "piano", "bd", "ambi")'
+        },
+        kind: {
+          type: 'string',
+          enum: ['all', 'strudel', 'supersonic'],
+          description:
+            'Filter by sample kind: "strudel" for Strudel/Tidal samples only, "supersonic" for SuperSonic samples/synthdefs only (for sonic~ node), "all" for everything (default)'
+        },
+        maxResults: {
+          type: 'number',
+          description: 'Maximum number of results to return (default 20, max 50)'
+        }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: SEARCH_FREESOUND,
+    description:
+      "Search Freesound.org for audio samples via live API. Requires the user to have configured a Freesound API key. Returns sample names, URLs, durations, and attribution info. Use this when built-in samples (search_samples) don't have what you need and the user wants to find specific real-world sounds.",
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Search query for Freesound (e.g. "rain ambience", "glass breaking")'
+        },
+        maxResults: {
+          type: 'number',
+          description: 'Maximum number of results to return (default 10, max 30)'
+        }
+      },
+      required: ['query']
+    }
   },
   {
     name: ENABLE_PACK,
