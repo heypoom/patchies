@@ -13,7 +13,7 @@
   import ObjectPreviewLayout from '../ObjectPreviewLayout.svelte';
   import { match } from 'ts-pattern';
   import { aiTxtMessages } from '$lib/objects/schemas';
-  import { aiSettings, DEFAULT_GEMINI_TEXT_MODEL } from '../../../stores/ai-settings.store';
+  import { aiSettings } from '../../../stores/ai-settings.store';
 
   let {
     id: nodeId,
@@ -43,7 +43,7 @@
   const defaultModelPlaceholder = $derived(
     $aiSettings.provider === 'openrouter'
       ? $aiSettings.openRouterTextModel
-      : DEFAULT_GEMINI_TEXT_MODEL
+      : $aiSettings.geminiTextModel
   );
 
   const targetConnections = useNodeConnections({ id: nodeId, handleType: 'target' });

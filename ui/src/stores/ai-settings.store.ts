@@ -11,6 +11,8 @@ export const DEFAULT_OPENROUTER_IMAGE_MODEL = 'google/gemini-3.1-flash-image-pre
 export interface AISettings {
   provider: AIProviderType;
   geminiApiKey: string;
+  geminiTextModel: string;
+  geminiImageModel: string;
   openRouterApiKey: string;
   openRouterTextModel: string;
   openRouterImageModel: string;
@@ -22,6 +24,8 @@ const LEGACY_GEMINI_KEY = 'gemini-api-key';
 const DEFAULT_SETTINGS: AISettings = {
   provider: 'gemini',
   geminiApiKey: '',
+  geminiTextModel: DEFAULT_GEMINI_TEXT_MODEL,
+  geminiImageModel: DEFAULT_GEMINI_IMAGE_MODEL,
   openRouterApiKey: '',
   openRouterTextModel: DEFAULT_OPENROUTER_TEXT_MODEL,
   openRouterImageModel: DEFAULT_OPENROUTER_IMAGE_MODEL
@@ -56,6 +60,14 @@ function saveAISettings(settings: AISettings) {
   // Don't persist model fields that equal the current defaults —
   // so changing a default constant takes effect without clearing localStorage.
   const toSave: Partial<AISettings> = { ...settings };
+
+  if (toSave.geminiTextModel === DEFAULT_GEMINI_TEXT_MODEL) {
+    delete toSave.geminiTextModel;
+  }
+
+  if (toSave.geminiImageModel === DEFAULT_GEMINI_IMAGE_MODEL) {
+    delete toSave.geminiImageModel;
+  }
 
   if (toSave.openRouterTextModel === DEFAULT_OPENROUTER_TEXT_MODEL) {
     delete toSave.openRouterTextModel;

@@ -15,7 +15,7 @@
   import { generateImageWithGemini, generateImageWithOpenRouter } from '$lib/ai/google';
   import { requireGeminiApiKey } from '$lib/ai/providers';
   import { get } from 'svelte/store';
-  import { aiSettings, DEFAULT_GEMINI_IMAGE_MODEL } from '../../../stores/ai-settings.store';
+  import { aiSettings } from '../../../stores/ai-settings.store';
   import { EditorView } from 'codemirror';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -50,7 +50,7 @@
   const defaultModelPlaceholder = $derived(
     $aiSettings.provider === 'openrouter'
       ? $aiSettings.openRouterImageModel
-      : DEFAULT_GEMINI_IMAGE_MODEL
+      : $aiSettings.geminiImageModel
   );
 
   const [width, height] = [800 * 1.2, 600 * 1.2];
@@ -117,11 +117,13 @@
         if (!settings.openRouterApiKey) {
           throw new Error('OpenRouter API key is not set. Please configure it in AI settings.');
         }
+
         if (imageNodeId) {
           console.warn(
             `ai.img (${nodeId}): image input is not supported with OpenRouter — imageNodeId "${imageNodeId}" will be ignored.`
           );
         }
+
         image = await generateImageWithOpenRouter(prompt, {
           apiKey: settings.openRouterApiKey,
           model: nodeModel ?? settings.openRouterImageModel,
@@ -129,9 +131,10 @@
         });
       } else {
         const apiKey = requireGeminiApiKey();
+
         image = await generateImageWithGemini(prompt, {
           apiKey,
-          model: nodeModel,
+          model: nodeModel ?? settings.geminiImageModel,
           abortSignal: abortController.signal,
           inputImageNodeId: imageNodeId
         });
@@ -139,6 +142,7 @@
 
       const previewBitmap = await createImageBitmap(image);
       const flippedBitmap = await createImageBitmap(image);
+
       glSystem.setBitmap(nodeId, flippedBitmap);
 
       // draw the preview image to the canvas

@@ -14,7 +14,7 @@ export class GeminiProvider implements LLMProvider {
 
   constructor(
     private readonly apiKey: string,
-    private readonly model = 'gemini-3-flash-preview'
+    private readonly model: string
   ) {}
 
   async generateText(messages: LLMMessage[], options: LLMStreamOptions = {}): Promise<string> {

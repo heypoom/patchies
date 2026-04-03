@@ -25,6 +25,9 @@ export async function transcribeAudio(
   const apiKey = requireGeminiApiKey();
   if (!base64) throw new Error('No audio data to transcribe');
 
+  const { get } = await import('svelte/store');
+  const { aiSettings } = await import('../../stores/ai-settings.store');
+
   const { GoogleGenAI } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey });
 
@@ -34,7 +37,7 @@ export async function transcribeAudio(
   if (options.prompt) textPrompt += ` Context: ${options.prompt}`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: get(aiSettings).geminiTextModel,
     contents: [{ parts: [{ inlineData: { data: base64, mimeType } }, { text: textPrompt }] }],
     config: { abortSignal: options.signal }
   });

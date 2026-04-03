@@ -19,7 +19,7 @@ export { OpenRouterProvider } from './openrouter-provider';
 export function getTextProvider(modelOverride?: string, providerOverride?: AIProviderType) {
   const settings = get(aiSettings);
 
-  return match(providerOverride ?? settings.provider)
+  return match(providerOverride ?? settings.provider ?? 'gemini')
     .with('openrouter', () => {
       if (!settings.openRouterApiKey) {
         throw new Error('OpenRouter API key is not set. Please configure it in AI settings.');
@@ -29,12 +29,14 @@ export function getTextProvider(modelOverride?: string, providerOverride?: AIPro
         modelOverride ?? settings.openRouterTextModel
       );
     })
-    .otherwise(() => {
+    .with('gemini', () => {
       if (!settings.geminiApiKey) {
         throw new Error('Gemini API key is not set. Please set it in the settings.');
       }
-      return new GeminiProvider(settings.geminiApiKey, modelOverride);
-    });
+
+      return new GeminiProvider(settings.geminiApiKey, modelOverride ?? settings.geminiTextModel);
+    })
+    .exhaustive();
 }
 
 /**
