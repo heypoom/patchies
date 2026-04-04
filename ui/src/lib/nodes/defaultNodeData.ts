@@ -15,7 +15,8 @@ import {
   DEFAULT_ELEM_CODE,
   DEFAULT_CSOUND_CODE,
   DEFAULT_TEXTMODE_CODE,
-  DEFAULT_THREE_CODE
+  DEFAULT_THREE_CODE,
+  DEFAULT_REGL_CODE
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
@@ -100,6 +101,13 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     }))
     .with('three', () => ({
       code: DEFAULT_THREE_CODE,
+      messageInletCount: 1,
+      messageOutletCount: 0,
+      videoInletCount: 1,
+      videoOutletCount: 1
+    }))
+    .with('regl', () => ({
+      code: DEFAULT_REGL_CODE,
       messageInletCount: 1,
       messageOutletCount: 0,
       videoInletCount: 1,

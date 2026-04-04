@@ -17,6 +17,7 @@ import { HydraRenderer } from './hydraRenderer';
 import { CanvasRenderer } from './canvasRenderer';
 import { TextmodeRenderer } from './textmodeRenderer';
 import { ThreeRenderer } from './threeRenderer';
+import { ReglRenderer } from './reglRenderer';
 import { ProjectionMapRenderer } from '$objects/projmap/ProjectionMapRenderer';
 import { getFramebuffer } from './utils';
 import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
@@ -80,6 +81,7 @@ export class FBORenderer {
   public canvasByNode = new Map<string, CanvasRenderer | null>();
   public textmodeByNode = new Map<string, TextmodeRenderer | null>();
   public threeByNode = new Map<string, ThreeRenderer | null>();
+  public reglByNode = new Map<string, ReglRenderer | null>();
   public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
   public swglByNode = new Map<string, SwissGLContext>();
 
@@ -324,6 +326,7 @@ export class FBORenderer {
         .with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
         .with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
         .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
+        .with({ type: 'regl' }, (node) => this.createReglRenderer(node, framebuffer))
         .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
         .with({ type: 'img' }, () => this.createEmptyRenderer())
         .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
@@ -592,6 +595,34 @@ export class FBORenderer {
       cleanup: () => {
         threeRenderer.destroy();
         this.threeByNode.delete(node.id);
+      }
+    };
+  }
+
+  async createReglRenderer(
+    node: RenderNode,
+    framebuffer: regl.Framebuffer2D
+  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
+    if (node.type !== 'regl') return null;
+
+    // Delete existing regl renderer if it exists.
+    if (this.reglByNode.has(node.id)) {
+      this.reglByNode.get(node.id)?.destroy();
+    }
+
+    const reglRenderer = await ReglRenderer.create(
+      { code: node.data.code, nodeId: node.id },
+      framebuffer,
+      this
+    );
+
+    this.reglByNode.set(node.id, reglRenderer);
+
+    return {
+      render: reglRenderer.renderFrame.bind(reglRenderer),
+      cleanup: () => {
+        reglRenderer.destroy();
+        this.reglByNode.delete(node.id);
       }
     };
   }
@@ -1411,6 +1442,12 @@ export class FBORenderer {
 
         threeRenderer.handleMessage(message);
       })
+      .with('regl', () => {
+        const reglRenderer = this.reglByNode.get(nodeId);
+        if (!reglRenderer) return;
+
+        reglRenderer.handleMessage(message);
+      })
       .with(P.union('glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'), () => {})
       .exhaustive();
   }
@@ -1433,6 +1470,9 @@ export class FBORenderer {
       .with('three', () => {
         this.threeByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
       })
+      .with('regl', () => {
+        this.reglByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
+      })
       .with(P.union('swgl', 'glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'), () => {})
       .exhaustive();
   }
@@ -1443,6 +1483,7 @@ export class FBORenderer {
       this.hydraByNode.get(nodeId)?.settingsProxy ??
       this.textmodeByNode.get(nodeId)?.settingsProxy ??
       this.threeByNode.get(nodeId)?.settingsProxy ??
+      this.reglByNode.get(nodeId)?.settingsProxy ??
       this.swglByNode.get(nodeId)?.settingsProxy ??
       null
     );
