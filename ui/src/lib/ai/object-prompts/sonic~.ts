@@ -13,7 +13,7 @@ SuperCollider synthesis via SuperSonic AudioWorklet.
 **Sonic-specific gotchas:**
 - fft() is NOT available (audio output node, not video)
 - By default, the Prophet synth is loaded
-- **CRITICAL**: Each sonic~ node has its own isolated output bus.
+- **CRITICAL**: Each sonic~ node has its own isolated output bus
   Always pass \`'out_bus', outBus\` when creating synths to route audio to the correct output.
   Without this, audio goes to bus 0 which may belong to a different sonic~ node.
 

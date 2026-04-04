@@ -54,7 +54,7 @@ export class SonicNode implements AudioNodeV2 {
 
   // SuperSonic state
   private isAudioConnected = false;
-  private busAllocation: SonicBusAllocation | null = null;
+  private busAllocation: SonicBusAllocation | null = null; // set on first code execution
   private recvCallback: RecvCallback | null = null;
 
   // Dynamic port counts for UI
@@ -125,15 +125,10 @@ export class SonicNode implements AudioNodeV2 {
 
       // First time setup: allocate a bus pair and wire audio routing
       if (!this.isAudioConnected) {
-        // Allocate an isolated stereo bus pair for this node
+        // Allocate an isolated stereo bus pair for this node.
+        // Falls back to bus 0 (shared) if all 16 pairs are taken.
         this.busAllocation = manager.allocateBusPair();
-
-        if (this.busAllocation) {
-          // Wire the bus pair's isolated output → our audioNode.
-          // The bus output is managed by SuperSonicManager (splitter → merger → gain)
-          // and is never touched by AudioService.updateEdges() disconnect cycles.
-          this.busAllocation.outputNode.connect(this.audioNode);
-        }
+        this.busAllocation.outputNode.connect(this.audioNode);
 
         // Audio input: our inputNode → shared input → sonic.node.input
         this.inputNode.connect(sharedInputNode);

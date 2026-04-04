@@ -33,8 +33,12 @@ sonic.send('/s_new', 'sonic-pi-beep', -1, 0, 0,
   'note', 64, 'out_bus', outBus);
 ```
 
-Most `sonic-pi-*` synthdefs accept an `out` parameter. Always pass `'out_bus', outBus`
-to keep audio isolated between `sonic~` nodes.
+Most `sonic-pi-*` synthdefs accept an `out_bus` parameter.
+Always pass `'out_bus', outBus` to keep audio isolated between
+`sonic~` nodes.
+
+Up to 16 `sonic~` nodes can have isolated output buses.
+Beyond that, `outBus` falls back to 0 (shared output).
 
 Available events: `'ready'`, `'loading:start'`, `'loading:complete'`,
 `'error'`, `'message'`

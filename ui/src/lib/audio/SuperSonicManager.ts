@@ -72,8 +72,10 @@ export class SuperSonicManager {
    * Allocate an isolated stereo bus pair for a sonic~ node.
    * Returns the scsynth bus index and a GainNode with that pair's audio.
    */
-  allocateBusPair(): SonicBusAllocation | null {
-    if (!this.audioContext || !this.splitter) return null;
+  allocateBusPair(): SonicBusAllocation {
+    if (!this.audioContext || !this.splitter) {
+      throw new Error('SuperSonicManager not initialized — call ensureSuperSonic() first');
+    }
 
     // Find first free pair
     for (let i = 0; i < MAX_SONIC_STEREO_PAIRS; i++) {
@@ -88,8 +90,14 @@ export class SuperSonicManager {
       }
     }
 
-    logger.warn(`[SuperSonic] all ${MAX_SONIC_STEREO_PAIRS} bus pairs allocated`);
-    return null;
+    // All pairs taken — fall back to bus 0 (shared with the first node)
+    logger.warn(
+      `[SuperSonic] all ${MAX_SONIC_STEREO_PAIRS} bus pairs allocated, falling back to bus 0`
+    );
+
+    const fallback = this.getOrCreatePairOutput(0);
+
+    return { busIndex: 0, outputNode: fallback.gain };
   }
 
   /**
