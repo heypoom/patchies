@@ -303,7 +303,7 @@ function createWorkerContext(nodeId: string) {
     const cached = state.fftDataCache.get(cacheKey);
     const bins = cached?.data ?? null;
 
-    return new FFTAnalysis(bins, format, 44000, type);
+    return new FFTAnalysis(bins, format, 44100, type);
   };
 
   // LLM function - proxied through main thread using the active provider

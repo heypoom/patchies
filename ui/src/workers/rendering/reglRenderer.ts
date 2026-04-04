@@ -6,9 +6,8 @@ import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSyste
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
-import { getFramebuffer } from './utils';
 import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
-import { THREE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+import { REGL_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { WorkerRendererMessageContext } from './WorkerRendererMessageContext';
 
@@ -21,13 +20,84 @@ type AudioAnalysisProps = {
   format?: AudioAnalysisFormat;
 };
 
-export interface ThreeConfig {
+export interface ReglConfig {
   code: string;
   nodeId: string;
 }
 
-export class ThreeRenderer {
-  public config: ThreeConfig;
+/**
+ * Creates a tracked wrapper around regl that auto-cleans allocated resources.
+ * Intercepts buffer/texture/elements/framebuffer/renderbuffer creation and
+ * draw command creation to track them for bulk cleanup.
+ *
+ * Also intercepts regl.clear() to auto-inject the output framebuffer when
+ * the user omits it, preventing accidental main canvas clears.
+ */
+function createTrackedRegl(
+  reglInstance: regl.Regl,
+  getFramebuffer: () => regl.Framebuffer2D | null
+) {
+  const tracked: Array<{ destroy(): void }> = [];
+
+  const proxy = new Proxy(reglInstance, {
+    apply(target, thisArg, args) {
+      // regl({...}) creates a draw command
+      const cmd = Reflect.apply(target, thisArg, args);
+      tracked.push(cmd);
+      return cmd;
+    },
+    get(target, prop) {
+      const val = Reflect.get(target, prop);
+
+      // Intercept resource creation methods
+      if (
+        prop === 'buffer' ||
+        prop === 'texture' ||
+        prop === 'elements' ||
+        prop === 'framebuffer' ||
+        prop === 'renderbuffer'
+      ) {
+        return (...args: unknown[]) => {
+          const resource = (val as Function).apply(target, args);
+          tracked.push(resource);
+          return resource;
+        };
+      }
+
+      // Intercept clear() to auto-inject framebuffer without mutating caller's object
+      if (prop === 'clear') {
+        return (opts: Record<string, unknown>) => {
+          if (opts && !('framebuffer' in opts)) {
+            const fb = getFramebuffer();
+            if (fb) {
+              return (val as Function).call(target, { ...opts, framebuffer: fb });
+            }
+          }
+          return (val as Function).call(target, opts);
+        };
+      }
+
+      return val;
+    }
+  });
+
+  return {
+    regl: proxy as regl.Regl,
+    destroyAll() {
+      for (const r of tracked) {
+        try {
+          r.destroy();
+        } catch {
+          // Resource may already be destroyed
+        }
+      }
+      tracked.length = 0;
+    }
+  };
+}
+
+export class ReglRenderer {
+  public config: ReglConfig;
   public renderer: FBORenderer;
 
   public framebuffer: regl.Framebuffer2D | null = null;
@@ -36,19 +106,13 @@ export class ThreeRenderer {
   public settingsProxy: WorkerSettingsProxy | null = null;
 
   private sampleRate: number = 44100;
-  private animationId: number | null = null;
 
   // FFT state tracking
   public isFFTEnabled = false;
   private fftRequestCache = new Map<string, boolean>();
   private fftDataCache = new Map<string, { data: Uint8Array | Float32Array; timestamp: number }>();
 
-  // Three.js instances
-  private THREE: typeof import('three') | null = null;
-  private threeWebGLRenderer: import('three').WebGLRenderer | null = null;
-  private renderTarget: import('three').WebGLRenderTarget | null = null;
-
-  // User-defined render function
+  // User's render function
   private userRenderFunc: ((time: number) => void) | null = null;
 
   // Mouse state (updated each frame from RenderParams)
@@ -58,65 +122,39 @@ export class ThreeRenderer {
   // Video input textures (from connected nodes)
   private inputTextures: (regl.Texture2D | undefined)[] = [];
 
-  // Three.js textures wrapping regl textures
-  private threeInputTextures: import('three').Texture[] = [];
+  // Tracked regl wrapper for automatic resource cleanup
+  private trackedRegl: ReturnType<typeof createTrackedRegl> | null = null;
 
-  private constructor(config: ThreeConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
+  /** 1x1 transparent texture returned when an inlet is not connected */
+  private fallbackTexture: regl.Texture2D;
+
+  private constructor(config: ReglConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
     this.config = config;
     this.framebuffer = framebuffer;
     this.renderer = renderer;
     this.msgContext = new WorkerRendererMessageContext(config.nodeId);
+    this.fallbackTexture = renderer.regl.texture({
+      width: 1,
+      height: 1,
+      data: new Uint8Array([0, 0, 0, 0])
+    });
   }
 
   static async create(
-    config: ThreeConfig,
+    config: ReglConfig,
     framebuffer: regl.Framebuffer2D,
     renderer: FBORenderer
-  ): Promise<ThreeRenderer> {
-    const instance = new ThreeRenderer(config, framebuffer, renderer);
-    instance.THREE = await import('three');
-
-    const [width, height] = instance.renderer.outputSize;
-
-    try {
-      // const _oc = new OffscreenCanvas(1, 1);
-
-      const fakeCanvas = {
-        addEventListener: () => {}
-      };
-
-      instance.threeWebGLRenderer = new instance.THREE.WebGLRenderer({
-        // @ts-expect-error -- hack: use fake canvas
-        canvas: fakeCanvas,
-        context: renderer.gl!,
-        antialias: true
-      });
-
-      instance.threeWebGLRenderer.setSize(width, height, false);
-
-      // Create render target for Three.js to render into.
-      // We'll blit from this to our regl FBO after each render.
-      instance.renderTarget = new instance.THREE.WebGLRenderTarget(width, height, {
-        format: instance.THREE.RGBAFormat,
-        type: instance.THREE.UnsignedByteType
-      });
-    } catch (error) {
-      console.error('error creating THREE', error);
-    }
-
+  ): Promise<ReglRenderer> {
+    const instance = new ReglRenderer(config, framebuffer, renderer);
     await instance.updateCode();
-
     return instance;
   }
 
   renderFrame(params: RenderParams) {
-    if (!this.threeWebGLRenderer || !this.renderTarget || !this.userRenderFunc) return;
+    if (!this.userRenderFunc) return;
 
     // Skip rendering when transport is paused — FBO retains last frame
     if (this.renderer.transportTime && !this.renderer.transportTime.isPlaying) return;
-
-    const gl = this.renderer.gl;
-    if (!gl) return;
 
     // Update mouse state from render params
     this.mouseX = params.mouseX;
@@ -125,71 +163,27 @@ export class ThreeRenderer {
     // Store input textures for getTexture() access
     this.inputTextures = params.userParams as (regl.Texture2D | undefined)[];
 
-    // Update Three.js textures from regl textures
-    this.updateThreeTextures();
-
-    // Render to Three.js's own render target
-    this.threeWebGLRenderer.setRenderTarget(this.renderTarget);
-
+    // FBO is already bound by the pipeline (fboNode.framebuffer.use())
     try {
-      // Call user's render function with transport time
       this.userRenderFunc(params.transportTime);
     } catch (error) {
       this.handleRuntimeError(error);
     }
-
-    // Blit from Three.js render target to our regl FBO
-    // This avoids sharing framebuffer references between Three.js and regl
-    this.blitToReglFramebuffer();
-
-    // Refresh both the Three.js and REGL internal state.
-    // We are sharing the same WebGL context between Three.js and REGL.
-    // Takes 0 - 1ms overall
-    this.threeWebGLRenderer.resetState();
-    this.renderer.regl._refresh();
-  }
-
-  /**
-   * Blits the Three.js render target to our regl framebuffer.
-   * Similar to how hydraRenderer copies its output to the regl FBO.
-   */
-  private blitToReglFramebuffer() {
-    if (!this.threeWebGLRenderer || !this.renderTarget || !this.framebuffer) return;
-
-    const gl = this.renderer.gl;
-    if (!gl) return;
-
-    const [width, height] = this.renderer.outputSize;
-
-    // Get Three.js's internal WebGL framebuffer from the render target
-    const threeProps = this.threeWebGLRenderer.properties.get(this.renderTarget);
-
-    // @ts-expect-error -- accessing internal Three.js property
-    const sourceFBO = threeProps.__webglFramebuffer as WebGLFramebuffer | undefined;
-    if (!sourceFBO) return;
-
-    const destFBO = getFramebuffer(this.framebuffer);
-
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
-
-    // Blit without Y-flip - Three.js output is already in correct orientation
-    gl.blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.LINEAR);
-
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
   }
 
   public async updateCode() {
-    if (!this.THREE || !this.threeWebGLRenderer || !this.renderTarget) return;
+    // Prevent stale render function from running during async rebuild
+    this.userRenderFunc = null;
+
+    // Clean up previous tracked resources
+    this.trackedRegl?.destroyAll();
 
     this.isFFTEnabled = false;
     this.fftDataCache.clear();
     this.fftRequestCache.clear();
     this.msgContext.reset();
 
-    // Reset settings proxy for re-run — reuse instance to preserve requestIdCounter
-    // and avoid request ID collisions on rapid re-runs
+    // Reset settings proxy for re-run
     if (!this.settingsProxy) {
       this.settingsProxy = createWorkerSettingsProxy(this.config.nodeId, (msg) =>
         self.postMessage(msg)
@@ -202,17 +196,11 @@ export class ThreeRenderer {
     this.setInteraction('interact', true);
     this.setVideoOutputEnabled(true);
 
-    // Cancel any existing animation frame
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
-
     try {
       const [width, height] = this.renderer.outputSize;
-      const THREE = this.THREE;
-      const renderer = this.threeWebGLRenderer;
-      const renderTarget = this.renderTarget;
+
+      // Create tracked regl wrapper
+      this.trackedRegl = createTrackedRegl(this.renderer.regl, () => this.framebuffer);
 
       // Preprocess code for module support
       const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {
@@ -221,21 +209,19 @@ export class ThreeRenderer {
 
       if (processedCode === null) return;
 
-      // Three.js wrapper code that extracts the draw function (same pattern as ThreeDom.svelte)
+      // Wrapper that extracts render() function
       const codeWithWrapper = `
-				var recv = onMessage; // alias for onMessage
-				var draw;
+        var recv = onMessage;
+        var render;
 
-				${processedCode}
+        ${processedCode}
 
-				return typeof draw === 'function' ? draw : null;
-			`;
+        return typeof render === 'function' ? render : null;
+      `;
 
-      // Three.js-specific extra context
+      // Build extra context exposed to user code
       const extraContext = {
-        THREE,
-        renderer,
-        renderTarget,
+        regl: this.trackedRegl.regl,
         width,
         height,
 
@@ -245,12 +231,11 @@ export class ThreeRenderer {
         // FFT function for audio analysis
         fft: this.createFFTFunction(),
 
-        // VFS URL resolution (worker -> main thread -> object URL)
+        // VFS URL resolution
         getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
 
         // Message passing
         onMessage: this.msgContext.createOnMessageFunction(),
-
         send: this.sendMessage.bind(this),
 
         // Video inlet/outlet control
@@ -259,37 +244,24 @@ export class ThreeRenderer {
         // Get texture from video inlet
         getTexture: this.getTexture.bind(this),
 
-        noDrag: () => {
-          this.setInteraction('drag', false);
-        },
+        noDrag: () => this.setInteraction('drag', false),
+        noPan: () => this.setInteraction('pan', false),
+        noWheel: () => this.setInteraction('wheel', false),
+        noInteract: () => this.setInteraction('interact', false),
+        noOutput: () => this.setVideoOutputEnabled(false),
 
-        noPan: () => {
-          this.setInteraction('pan', false);
-        },
-
-        noWheel: () => {
-          this.setInteraction('wheel', false);
-        },
-
-        noInteract: () => {
-          this.setInteraction('interact', false);
-        },
-
-        noOutput: () => {
-          this.setVideoOutputEnabled(false);
-        },
-
+        // No-op: regl uses render(time) called by the pipeline, not RAF
         requestAnimationFrame: () => {},
 
-        // Worker-compatible clock (overrides JSRunner's main-thread Transport-based clock)
+        // Worker-compatible clock
         clock: this.renderer.createWorkerClock(),
 
-        // Settings API — proxied through main thread
+        // Settings API
         settings: this.settingsProxy!.settings
       };
 
-      // Execute using JSRunner with Three.js-specific extra context
-      const userDraw = await this.renderer.jsRunner.executeJavaScript(
+      // Execute using JSRunner
+      const userRender = await this.renderer.jsRunner.executeJavaScript(
         this.config.nodeId,
         codeWithWrapper,
         {
@@ -304,11 +276,11 @@ export class ThreeRenderer {
         }
       );
 
-      this.userRenderFunc = typeof userDraw === 'function' ? userDraw : null;
+      this.userRenderFunc = typeof userRender === 'function' ? userRender : null;
 
       if (!this.userRenderFunc) {
         this.createCustomConsole().warn(
-          'No draw() function found. Define a draw(time) function to render.'
+          'No render() function found. Define a render(time) function to draw each frame.'
         );
       }
     } catch (error) {
@@ -317,21 +289,24 @@ export class ThreeRenderer {
   }
 
   destroy() {
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
-
-    // Dispose Three.js resources
-    this.renderTarget?.dispose();
-    // Note: We don't dispose the renderer since it shares context with regl
+    this.trackedRegl?.destroyAll();
+    this.trackedRegl = null;
+    this.fallbackTexture.destroy();
 
     // Clean up JSRunner context for this node
     this.renderer.jsRunner.destroy(this.config.nodeId);
 
-    this.threeWebGLRenderer = null;
-    this.renderTarget = null;
     this.userRenderFunc = null;
+  }
+
+  /**
+   * Gets a regl texture from a video inlet.
+   * Returns a 1x1 transparent fallback texture when the inlet is not connected,
+   * so regl uniforms always receive a valid texture.
+   * @param index The inlet index (0-based)
+   */
+  getTexture(index: number): regl.Texture2D {
+    return this.inputTextures[index] ?? this.fallbackTexture;
   }
 
   sendMessage(data: unknown, options: SendMessageOptions) {
@@ -381,14 +356,12 @@ export class ThreeRenderer {
       get x() {
         return getX();
       },
-
       get y() {
         return getY();
       }
     };
   }
 
-  // Method to receive FFT data from main thread
   setFFTData(payload: AudioAnalysisPayloadWithType) {
     const { analysisType, format, array, sampleRate } = payload;
 
@@ -446,59 +419,6 @@ export class ThreeRenderer {
     });
   }
 
-  /**
-   * Updates Three.js textures to use regl's WebGL textures directly.
-   * This avoids expensive readPixels by sharing the underlying WebGLTexture.
-   */
-  private updateThreeTextures() {
-    if (!this.THREE || !this.threeWebGLRenderer) return;
-
-    const [width, height] = this.renderer.outputSize;
-
-    for (let i = 0; i < this.inputTextures.length; i++) {
-      const reglTex = this.inputTextures[i];
-      if (!reglTex) continue;
-
-      // Create Three.js texture wrapper if it doesn't exist
-      if (!this.threeInputTextures[i]) {
-        // Create a minimal texture - we'll override its WebGL texture
-        this.threeInputTextures[i] = new this.THREE.Texture();
-        this.threeInputTextures[i].minFilter = this.THREE.LinearFilter;
-        this.threeInputTextures[i].magFilter = this.THREE.LinearFilter;
-      }
-
-      const threeTex = this.threeInputTextures[i];
-
-      // Get regl's internal WebGLTexture handle
-      // @ts-expect-error -- accessing internal regl property
-      const webglTexture = reglTex._texture?.texture as WebGLTexture | undefined;
-
-      if (webglTexture) {
-        // Directly assign the WebGL texture to Three.js's internal property
-        // This avoids expensive readPixels calls
-        const props = this.threeWebGLRenderer.properties.get(threeTex) as {
-          __webglTexture?: WebGLTexture;
-          __webglInit?: boolean;
-        };
-        props.__webglTexture = webglTexture;
-        props.__webglInit = true;
-
-        // Update texture dimensions for Three.js
-        threeTex.image = { width, height };
-        threeTex.needsUpdate = false; // Don't upload - we're using existing texture
-      }
-    }
-  }
-
-  /**
-   * Gets a Three.js texture from a video inlet.
-   * @param index The inlet index (0-based)
-   * @returns A Three.js Texture or null if not connected
-   */
-  getTexture(index: number): import('three').Texture | null {
-    return this.threeInputTextures[index] ?? null;
-  }
-
   handleMessage(message: Message) {
     this.msgContext.handleEdgeMessage(message.data, message);
   }
@@ -507,9 +427,7 @@ export class ThreeRenderer {
     this.msgContext.handleChannelMessage(channel, data, sourceNodeId);
   }
 
-  /**
-   * Handles runtime errors during rendering (throttled to avoid flooding at high fps)
-   */
+  /** Throttled runtime error reporting */
   private lastRuntimeError: string | null = null;
   private lastRuntimeErrorTime = 0;
   private static readonly RUNTIME_ERROR_THROTTLE_MS = 1000;
@@ -520,10 +438,9 @@ export class ThreeRenderer {
 
     const now = performance.now();
 
-    // Throttle: skip if same error was reported recently
     if (
       this.lastRuntimeError === errorMessage &&
-      now - this.lastRuntimeErrorTime < ThreeRenderer.RUNTIME_ERROR_THROTTLE_MS
+      now - this.lastRuntimeErrorTime < ReglRenderer.RUNTIME_ERROR_THROTTLE_MS
     ) {
       return;
     }
@@ -531,7 +448,7 @@ export class ThreeRenderer {
     this.lastRuntimeError = errorMessage;
     this.lastRuntimeErrorTime = now;
 
-    const errorInfo = parseJSError(error, countLines(code), THREE_WRAPPER_OFFSET);
+    const errorInfo = parseJSError(error, countLines(code), REGL_WRAPPER_OFFSET);
 
     self.postMessage({
       type: 'consoleOutput',
@@ -542,14 +459,11 @@ export class ThreeRenderer {
     });
   }
 
-  /**
-   * Handles code execution errors with line number extraction for inline highlighting.
-   */
   handleCodeError(error: unknown): void {
     const { nodeId, code } = this.config;
     const customConsole = this.createCustomConsole();
 
-    const errorInfo = parseJSError(error, countLines(code), THREE_WRAPPER_OFFSET);
+    const errorInfo = parseJSError(error, countLines(code), REGL_WRAPPER_OFFSET);
 
     if (errorInfo) {
       self.postMessage({
@@ -563,14 +477,11 @@ export class ThreeRenderer {
       return;
     }
 
-    // Fallback: no line info available
     const errorMessage = error instanceof Error ? error.message : String(error);
+
     customConsole.error(errorMessage);
   }
 
-  /**
-   * Creates a custom console object that routes output to VirtualConsole via the main thread.
-   */
   createCustomConsole() {
     const { nodeId } = this.config;
 

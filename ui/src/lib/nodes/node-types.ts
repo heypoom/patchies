@@ -9,6 +9,7 @@ import ThreeNode from '$lib/components/nodes/ThreeNode.svelte';
 import ThreeDom from '$lib/components/nodes/ThreeDom.svelte';
 import GLSLCanvasNode from '$lib/components/nodes/GLSLCanvasNode.svelte';
 import SwissGLNode from '$lib/components/nodes/SwissGLNode.svelte';
+import ReglNode from '$lib/components/nodes/ReglNode.svelte';
 import StrudelNode from '$lib/components/nodes/StrudelNode.svelte';
 import ButterchurnNode from '$lib/components/nodes/ButterchurnNode.svelte';
 import AiImageNode from '$lib/components/nodes/AiImageNode.svelte';
@@ -121,6 +122,7 @@ export const nodeTypes: Record<string, any> = {
   'three.dom': ThreeDom,
   dom: DomNode,
   vue: VueNode,
+  regl: ReglNode,
   glsl: GLSLCanvasNode,
   strudel: StrudelNode,
   bchrn: ButterchurnNode,

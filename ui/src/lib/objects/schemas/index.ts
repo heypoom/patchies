@@ -10,6 +10,7 @@ export * from './canvas';
 export * from './swgl';
 export * from './textmode';
 export * from './three';
+export * from './regl';
 export * from './img';
 export * from './video';
 export * from './webcam';
@@ -101,6 +102,7 @@ import { canvasSchema, canvasDomSchema } from './canvas';
 import { swglSchema } from './swgl';
 import { textmodeSchema, textmodeDomSchema } from './textmode';
 import { threeSchema, threeDomSchema } from './three';
+import { reglSchema } from './regl';
 import { imgSchema } from './img';
 import { videoSchema } from './video';
 import { webcamSchema } from './webcam';
@@ -211,6 +213,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'textmode.dom': textmodeDomSchema,
   three: threeSchema,
   'three.dom': threeDomSchema,
+  regl: reglSchema,
   img: imgSchema,
   video: videoSchema,
   webcam: webcamSchema,

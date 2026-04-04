@@ -167,6 +167,46 @@ function draw() {
   renderer.render(scene, camera)
 }`;
 
+export const DEFAULT_REGL_CODE = `const draw = regl({
+  vert: \`
+    precision mediump float;
+    attribute vec2 position;
+    varying vec2 uv;
+
+    void main() {
+      uv = position * 0.5 + 0.5;
+      gl_Position = vec4(position, 0, 1);
+    }
+  \`,
+  frag: \`
+    precision mediump float;
+    varying vec2 uv;
+    uniform float time;
+
+    void main() {
+      gl_FragColor = vec4(
+        sin(uv.x * 6.28 + time) * 0.5 + 0.5,
+        sin(uv.y * 6.28 + time * 1.3) * 0.5 + 0.5,
+        sin((uv.x + uv.y) * 3.14 + time * 0.7) * 0.5 + 0.5,
+        1.0
+      );
+    }
+  \`,
+  attributes: {
+    position: [[-1,-1], [1,-1], [-1,1], [-1,1], [1,-1], [1,1]]
+  },
+  uniforms: {
+    time: regl.prop('time'),
+  },
+  count: 6,
+  depth: { enable: false },
+})
+
+function render(time) {
+  regl.clear({ color: [0, 0, 0, 1] })
+  draw({ time })
+}`;
+
 export const DEFAULT_TEXTMODE_CODE = `tm.setup(() => {
   tm.fontSize(16)
   tm.frameRate(60)

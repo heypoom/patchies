@@ -17,5 +17,8 @@ export const THREE_DOM_WRAPPER_OFFSET = 3;
 // p5 has different wrapper structures
 export const P5_WRAPPER_OFFSET = 4;
 
+// regl has a wrapper that extracts render()
+export const REGL_WRAPPER_OFFSET = 4;
+
 // dsp~ does not use JSRunner
 export const DSP_WRAPPER_OFFSET = -2;

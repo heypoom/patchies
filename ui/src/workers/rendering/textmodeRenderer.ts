@@ -38,7 +38,7 @@ export class TextmodeRenderer {
   public settingsProxy: WorkerSettingsProxy | null = null;
 
   private timestamp = performance.now();
-  private sampleRate: number = 44000;
+  private sampleRate: number = 44100;
   private animationId: number | null = null;
   private drawCommand: regl.DrawCommand | null = null;
 
