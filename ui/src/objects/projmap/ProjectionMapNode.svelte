@@ -583,7 +583,7 @@
         onexpand={() => (expanded = true)}
         onaddsurface={addSurface}
         ondeletesurface={() => activeSurfaceId && deleteSurface(activeSurfaceId)}
-        ontogglemode={() => activeSurfaceId && toggleSurfaceMode(activeSurfaceId)}
+        ontogglewarpmask={() => activeSurfaceId && toggleSurfaceMode(activeSurfaceId)}
         ontoggleoverlay={() => updateNodeData(node.id, { showOverlay: !showOverlay })}
         ontoggleoutput={toggleBgOutput}
       />
@@ -768,7 +768,7 @@
     onsurfaceselect={(id) => (activeSurfaceId = id)}
     onaddsurface={addSurface}
     ondeletesurface={deleteSurface}
-    ontogglemode={() => (editMode = editMode === 'add' ? 'move' : 'add')}
+    ontoggleeditmode={() => (editMode = editMode === 'add' ? 'move' : 'add')}
     onpointerenter={() => (isMouseOverEditor = true)}
     onpointerleave={() => (isMouseOverEditor = false)}
     onpointermove={onPointerMove}

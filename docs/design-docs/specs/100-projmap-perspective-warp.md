@@ -39,9 +39,11 @@ export interface ProjMapSurface {
 1. Create `PlaneGeometry(1, 1, subdivisions, subdivisions)` (e.g., 20×20)
 2. For each vertex at parametric `(u, v)` in `[0,1]²`:
    - Bilinearly interpolate position from 4 corners:
-     ```
+
+     ```text
      x = (1-u)(1-v)*c0 + u*(1-v)*c1 + u*v*c2 + (1-u)*v*c3
      ```
+
    - Set vertex position to interpolated screen coordinate
    - UV stays at `(u, v)` — texture maps uniformly across the warped quad
 3. Use `MeshBasicMaterial` with the input texture (same as mask)

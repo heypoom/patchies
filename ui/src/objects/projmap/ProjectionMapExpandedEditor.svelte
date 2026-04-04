@@ -21,7 +21,7 @@
     onsurfaceselect,
     onaddsurface,
     ondeletesurface,
-    ontogglemode,
+    ontoggleeditmode,
     onpointerenter,
     onpointerleave,
     onpointermove,
@@ -43,7 +43,7 @@
     onsurfaceselect: (id: string) => void;
     onaddsurface: () => void;
     ondeletesurface: (id: string) => void;
-    ontogglemode: () => void;
+    ontoggleeditmode: () => void;
     onpointerenter: () => void;
     onpointerleave: () => void;
     onpointermove: (e: PointerEvent, svg: SVGSVGElement) => void;
@@ -79,7 +79,7 @@
   $effect(() => {
     function onKeydown(e: KeyboardEvent) {
       if (e.key === 'Escape') onclose();
-      if (e.key === 'm') ontogglemode();
+      if (e.key === 'm') ontoggleeditmode();
     }
 
     window.addEventListener('keydown', onKeydown);
@@ -139,7 +139,7 @@
 
     <Tooltip.Root>
       <Tooltip.Trigger>
-        <button class="cursor-pointer rounded p-1.5 hover:bg-zinc-800" onclick={ontogglemode}>
+        <button class="cursor-pointer rounded p-1.5 hover:bg-zinc-800" onclick={ontoggleeditmode}>
           {#if editMode === 'add'}
             <Pen class="h-4 w-4 text-zinc-400" />
           {:else}

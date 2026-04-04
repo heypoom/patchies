@@ -167,6 +167,14 @@ export class ProjectionMapRenderer {
     const segs = WARP_SUBDIVISIONS;
 
     const geometry = new THREE.PlaneGeometry(1, 1, segs, segs);
+
+    if (surface.points.length < 4) {
+      console.warn(
+        `[projmap] warp surface ${surface.id} has ${surface.points.length} points, need 4`
+      );
+      return geometry;
+    }
+
     const posAttr = geometry.attributes.position;
     const uvAttr = geometry.attributes.uv;
 

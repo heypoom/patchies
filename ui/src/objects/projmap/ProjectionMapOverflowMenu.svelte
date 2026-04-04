@@ -23,7 +23,7 @@
     onexpand,
     onaddsurface,
     ondeletesurface,
-    ontogglemode,
+    ontogglewarpmask,
     ontoggleoverlay,
     ontoggleoutput
   }: {
@@ -35,7 +35,7 @@
     onexpand: () => void;
     onaddsurface: () => void;
     ondeletesurface: () => void;
-    ontogglemode: () => void;
+    ontogglewarpmask: () => void;
     ontoggleoverlay: () => void;
     ontoggleoutput: () => void;
   } = $props();
@@ -101,7 +101,7 @@
     <button
       class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
       onclick={() => {
-        ontogglemode();
+        ontogglewarpmask();
         open = false;
       }}
       disabled={!activeSurfaceId}
