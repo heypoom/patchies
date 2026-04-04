@@ -263,6 +263,9 @@
             }
           }
         )
+        .with({ type: 'request-supersonic-channel', requestId: P.string }, (m) => {
+          node.handleSuperSonicChannelRequest(m.requestId);
+        })
         .with({ type: 'console-output', level: P.string, args: P.array(P.any) }, (consoleData) => {
           const args = consoleData.args;
 

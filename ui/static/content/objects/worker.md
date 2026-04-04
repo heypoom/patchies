@@ -59,7 +59,24 @@ Both methods accept an optional config object with:
 
 - `resolution?: [width, height]` - Capture at a specific resolution
 
+## SuperSonic OscChannel
+
+Worker nodes can send OSC messages directly to scsynth via
+`getSuperSonicChannel()`, bypassing the main thread for
+low-latency sequencing.
+
+```js
+const { channel, osc } = await getSuperSonicChannel()
+
+channel.send(osc.encodeMessage('/s_new',
+  ['sonic-pi-beep', -1, 0, 0, 'note', 64, 'amp', 0.5]))
+```
+
+See [sonic~](/docs/objects/sonic~) for full examples including
+a worker-based sequencer.
+
 ## See Also
 
 - [js](/docs/objects/js) - JavaScript in the main thread
+- [sonic~](/docs/objects/sonic~) - SuperSonic synthesis engine
 - [JavaScript Runner](/docs/javascript-runner) - full API reference

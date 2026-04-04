@@ -144,17 +144,125 @@ onCleanup(() => {
 });
 ```
 
-Connect a `midi-in` node to send MIDI messages. The `onCleanup` handler frees all active voices when the node is removed.
+Connect a `midi-in` node to send MIDI messages. The `onCleanup`
+handler frees all active voices when the node is removed.
+
+## Using SuperSonic in Workers
+
+You can send OSC messages to scsynth directly from a `worker` node
+using `getSuperSonicChannel()`. This gives you a dedicated `OscChannel`
+that bypasses the main thread. Ideal for sequencers, LFOs, or any
+timing-sensitive code.
+
+```js
+const { channel, osc } = await getSuperSonicChannel()
+```
+
+This returns both the `OscChannel` for sending messages and the
+`osc` encoder for building OSC packets.
+
+```js
+const { channel, osc } = await getSuperSonicChannel()
+
+const msg = osc.encodeMessage('/s_new',
+  ['sonic-pi-beep', -1, 0, 0, 'note', 64, 'amp', 0.5,
+   'out_bus', 0])
+
+channel.send(msg)
+```
+
+Pass `out_bus` to route audio to the correct `sonic~` node's
+isolated output. You can send `outBus` from a connected `sonic~` node.
+
+The channel is automatically closed when the worker re-runs or is deleted.
+
+### Worker Sequencer
+
+Connect a `sonic~` node's outlet to this worker's inlet to receive
+the `outBus` value for audio routing.
+
+```js
+const { channel, osc } = await getSuperSonicChannel()
+
+let outBus = 0
+recv((msg) => { outBus = msg })
+
+const pattern = [60, 62, 64, 65, 67, 65, 64, 62]
+let step = 0
+
+setInterval(() => {
+  const note = pattern[step % pattern.length]
+
+  channel.send(osc.encodeMessage('/s_new',
+    ['sonic-pi-beep', -1, 0, 0, 'note', note, 'amp', 0.3,
+     'out_bus', outBus]))
+
+  step++
+}, 200)
+```
+
+> **Tip**: `channel.sendDirect(bytes)` bypasses the prescheduler
+> for messages that must arrive immediately.
+
+---
+
+## Using OscChannel in an AudioWorklet
+
+OscChannel can also be used inside a `dsp~` AudioWorklet processor,
+not just Web Workers. This lets custom AudioWorklet code send OSC
+directly to scsynth without routing through the main thread.
+
+There are three key differences from worker usage:
+
+1. No `osc` encoder available**
+
+  The slim entry point only exports `OscChannel`. Unlike workers,
+  `getSuperSonicChannel()` in `dsp~` returns `{ channel }` without
+  the `osc` encoder. Encode your OSC bytes in a connected `worker`
+  or `js` node and send them via message passing.
+
+  ```js
+  let channel
+
+  getSuperSonicChannel().then(result => {
+    channel = result.channel
+  })
+
+  recv((oscBytes) => {
+    if (channel) channel.send(oscBytes)
+  })
+
+  function process(inputs, outputs) {
+    // audio processing here
+  }
+  ```
+
+2. NTP time source
+
+  `performance.timeOrigin` is unavailable in `AudioWorkletGlobalScope`,
+  so the default NTP clock won't work for far-future bundle scheduling.
+  Use the `getCurrentNTP` setter to provide the AudioWorklet's own
+  time source:
+
+  ```js
+  getSuperSonicChannel().then(({ channel }) => {
+    channel.getCurrentNTP = () => {
+      return currentTime + ntpStartTime + driftOffset
+    }
+  })
+  ```
+
+---
 
 ## Resources
 
-- [welcome docs for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/WELCOME.md)
-- [quickstart for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/QUICKSTART.md)
-- [scsynth OSC command reference](https://github.com/samaaron/supersonic/blob/main/docs/SCSYNTH_COMMAND_REFERENCE.md)
-- [included synthesizer definition list](https://github.com/samaaron/supersonic/tree/main/packages/supersonic-scsynth-synthdefs)
+- [Welcome docs for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/WELCOME.md)
+- [Quickstart for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/QUICKSTART.md)
+- [Scsynth OSC command reference](https://github.com/samaaron/supersonic/blob/main/docs/SCSYNTH_COMMAND_REFERENCE.md)
+- [Included synthesizer definition list](https://github.com/samaaron/supersonic/tree/main/packages/supersonic-scsynth-synthdefs)
 - [API reference for SuperSonic](https://github.com/samaaron/supersonic/blob/main/docs/API.md)
 - [SuperSonic code on GitHub](https://github.com/samaaron/supersonic)
-- [original scsynth OSC command reference](http://doc.sccode.org/Reference/Server-Command-Reference.html)
+- [Original scsynth OSC command reference](http://doc.sccode.org/Reference/Server-Command-Reference.html)
 
 Please consider supporting
 [Sam Aaron on Patreon](https://www.patreon.com/samaaron)!

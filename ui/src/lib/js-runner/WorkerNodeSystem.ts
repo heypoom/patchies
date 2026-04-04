@@ -14,6 +14,8 @@ import {
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 import { WorkerLLMProxy } from './WorkerLLMProxy';
 import { DirectChannelService } from '$lib/messages/DirectChannelService';
+import { SuperSonicManager } from '$lib/audio/SuperSonicManager';
+import { AudioService } from '$lib/audio/v2/AudioService';
 import JsWorker from '../../workers/js/jsWorker?worker';
 import { get } from 'svelte/store';
 import { currentPatchId } from '../../stores/ui.store';
@@ -53,6 +55,8 @@ export type WorkerMessage = { nodeId: string } & (
   // Settings API responses (main → worker)
   | { type: 'settingsValuesInit'; requestId: string; values: Record<string, unknown> }
   | { type: 'settingsValueChanged'; key: string; value: unknown }
+  // SuperSonic OscChannel (main → worker, channel transferred via transfer list)
+  | { type: 'superSonicChannelReady'; requestId: string; error?: string }
 );
 
 // Message types sent from worker to main thread
@@ -93,6 +97,8 @@ export type WorkerResponse = { nodeId: string } & (
   // Settings API requests (worker → main)
   | { type: 'settingsDefine'; requestId: string; schema: unknown[] }
   | { type: 'settingsClear' }
+  // SuperSonic OscChannel request (worker → main)
+  | { type: 'requestSuperSonicChannel'; requestId: string }
 );
 
 interface WorkerInstance {
@@ -323,6 +329,9 @@ export class WorkerNodeSystem {
       .with({ type: 'sendToChannel' }, (event) => {
         this.channelRegistry.broadcast(event.channel, event.data, nodeId);
       })
+      .with({ type: 'requestSuperSonicChannel' }, (event) => {
+        this.handleSuperSonicChannelRequest(nodeId, worker, event.requestId);
+      })
       .with({ type: 'subscribeChannel' }, (event) => {
         this.handleSubscribeChannel(nodeId, worker, event.channel);
       })
@@ -518,6 +527,37 @@ export class WorkerNodeSystem {
     const subscriptions = this.workerChannelSubscriptions.get(nodeId);
     if (subscriptions) {
       subscriptions.delete(channel);
+    }
+  }
+
+  /**
+   * Handle worker requesting a SuperSonic OscChannel.
+   * Lazy-loads SuperSonic, creates a transferable channel, and sends it to the worker.
+   */
+  private async handleSuperSonicChannelRequest(nodeId: string, worker: Worker, requestId: string) {
+    try {
+      const audioContext = AudioService.getInstance().getAudioContext();
+      const { sonic } = await SuperSonicManager.getInstance().ensureSuperSonic(audioContext);
+
+      const oscChannel = sonic.createOscChannel();
+
+      worker.postMessage(
+        {
+          type: 'superSonicChannelReady',
+          nodeId,
+          requestId,
+          channel: oscChannel.transferable
+        },
+        oscChannel.transferList
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      worker.postMessage({
+        type: 'superSonicChannelReady',
+        nodeId,
+        requestId,
+        error: message
+      } satisfies WorkerMessage);
     }
   }
 

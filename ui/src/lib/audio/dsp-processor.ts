@@ -1,9 +1,20 @@
 import { match, P } from 'ts-pattern';
+// @ts-expect-error -- slim AudioWorklet-safe entry point, no typedefs
+import { OscChannel } from 'supersonic-scsynth/osc-channel';
 
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { DSP_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { workletChannel } from './native-dsp/worklet-channel';
+
+// Pending SuperSonic channel requests (requestId → resolver)
+type PendingSuperSonicRequest = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  resolve: (result: { channel: any }) => void;
+  reject: (error: Error) => void;
+};
+
+const pendingSuperSonicRequests = new Map<string, PendingSuperSonicRequest>();
 
 type DspMessage =
   | { type: 'set-code'; code: string }
@@ -15,6 +26,7 @@ type DspMessage =
       type: 'update-direct-connections';
       connections: Array<{ outlet: number; targetNodeId: string; inlet: number }>;
     }
+  | { type: 'supersonic-channel-ready'; requestId: string; error?: string }
   | { type: 'stop' };
 
 type RecvMeta = {
@@ -48,6 +60,9 @@ class DSPProcessor extends AudioWorkletProcessor {
   private lastConsoleTime = 0; // Throttle console output (only in process())
   private isInProcess = false; // Track if we're inside process() for throttling
   private pendingAudioReconfiguration = false; // Skip process() during worklet recreation
+  private superSonicRequestIdCounter = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private oscChannels: any[] = []; // Track OscChannels for cleanup
 
   constructor(nodeOptions?: { processorOptions?: { nodeId?: string } }) {
     super();
@@ -87,8 +102,16 @@ class DSPProcessor extends AudioWorkletProcessor {
             workletChannel.updateConnections(this.nodeId, connections);
           }
         )
+        .with(
+          { type: 'supersonic-channel-ready', requestId: P.string },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ({ requestId, error, ...rest }: any) => {
+            this.handleSuperSonicChannelReady(requestId, rest.channel, error);
+          }
+        )
         .with({ type: 'stop' }, () => {
           this.shouldStop = true;
+          this.cleanupOscChannels();
           if (this.nodeId) workletChannel.unregister(this.nodeId);
         });
     };
@@ -112,6 +135,7 @@ class DSPProcessor extends AudioWorkletProcessor {
       this.messageInletCount = 0;
       this.messageOutletCount = 0;
       this.pendingAudioReconfiguration = false; // Clear any pending flag from previous code
+      this.cleanupOscChannels();
 
       this.recvCallback = null;
 
@@ -168,6 +192,19 @@ class DSPProcessor extends AudioWorkletProcessor {
       const setKeepAlive = (enabled: boolean) =>
         this.port.postMessage({ type: 'set-keep-alive', enabled });
 
+      const getSuperSonicChannel = (): Promise<{ channel: unknown }> => {
+        const requestId = `dsp-ch-${this.nodeId}-${++this.superSonicRequestIdCounter}`;
+
+        return new Promise((resolve, reject) => {
+          pendingSuperSonicRequests.set(requestId, { resolve, reject });
+
+          this.port.postMessage({
+            type: 'request-supersonic-channel',
+            requestId
+          });
+        });
+      };
+
       // Create custom console that forwards to main thread
       const customConsole = this.createCustomConsole();
 
@@ -179,6 +216,7 @@ class DSPProcessor extends AudioWorkletProcessor {
         'send',
         'setKeepAlive',
         'console',
+        'getSuperSonicChannel',
         `
 			var $1, $2, $3, $4, $5, $6, $7, $8, $9;
 			var counter = 0;
@@ -214,7 +252,8 @@ class DSPProcessor extends AudioWorkletProcessor {
         recv,
         send,
         setKeepAlive,
-        customConsole
+        customConsole,
+        getSuperSonicChannel
       );
     } catch (error) {
       this.handleCodeError(error, 'compile');
@@ -405,6 +444,43 @@ class DSPProcessor extends AudioWorkletProcessor {
     } catch (error) {
       this.handleCodeError(error, 'recv');
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private handleSuperSonicChannelReady(requestId: string, channelData: any, error?: string): void {
+    const pending = pendingSuperSonicRequests.get(requestId);
+    if (!pending) return;
+
+    pendingSuperSonicRequests.delete(requestId);
+
+    if (error) {
+      pending.reject(new Error(error));
+      return;
+    }
+
+    try {
+      // The channel transferable is passed via the message event's data
+      // We receive the raw transferable and reconstruct the OscChannel
+      // using the AudioWorklet-safe slim entry point
+      const channel = OscChannel.fromTransferable(channelData);
+
+      this.oscChannels.push(channel);
+      pending.resolve({ channel });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      pending.reject(new Error(`Failed to create OscChannel: ${message}`));
+    }
+  }
+
+  private cleanupOscChannels(): void {
+    for (const channel of this.oscChannels) {
+      try {
+        channel.close();
+      } catch {
+        // Ignore close errors
+      }
+    }
+    this.oscChannels = [];
   }
 }
 
