@@ -339,10 +339,10 @@
     hoverActiveSurface =
       editMode === 'move' && !!(activeSurface && pointInPolygon(x, y, activeSurface.points, w, h));
 
-    if (editMode === 'add' && draggingPointIndex !== -1 && activeSurfaceId) {
-      movePoint(activeSurfaceId, draggingPointIndex, toNorm(x, y, w, h));
-    } else if (editMode === 'move' && isDraggingSurface && activeSurfaceId) {
+    if (isDraggingSurface && activeSurfaceId) {
       moveSurface(activeSurfaceId, x - dragStartX, y - dragStartY, dragStartPoints);
+    } else if (editMode === 'add' && draggingPointIndex !== -1 && activeSurfaceId) {
+      movePoint(activeSurfaceId, draggingPointIndex, toNorm(x, y, w, h));
     }
   }
 
@@ -389,8 +389,21 @@
         return;
       }
 
-      // Warp surfaces have fixed 4 corners — no adding points
-      if (activeSurface?.mode === 'warp') return;
+      // Warp surfaces: drag the whole surface instead of adding points
+      if (activeSurface?.mode === 'warp') {
+        if (activeSurface && pointInPolygon(x, y, activeSurface.points, w, h)) {
+          dragStartX = x;
+          dragStartY = y;
+          dragStartPoints = activeSurface.points.map((p) => ({ ...p }));
+
+          surfacesBeforeDrag = surfaces;
+          isDraggingSurface = true;
+
+          el.setPointerCapture(e.pointerId);
+        }
+
+        return;
+      }
 
       if (!activeSurfaceId) return;
 
@@ -446,7 +459,13 @@
     // prevents xyflow from deleting the node while the user is editing points.
     e.stopImmediatePropagation();
 
-    if (editMode === 'move' && (hoverActiveSurface || isDraggingSurface) && activeSurfaceId) {
+    if (activeSurface?.mode === 'warp' && activeSurfaceId) {
+      deleteSurface(activeSurfaceId);
+    } else if (
+      editMode === 'move' &&
+      (hoverActiveSurface || isDraggingSurface) &&
+      activeSurfaceId
+    ) {
       deleteSurface(activeSurfaceId);
     } else if (hoverSurfaceId !== null && hoverPointIndex !== -1) {
       deleteHoveredPoint();
