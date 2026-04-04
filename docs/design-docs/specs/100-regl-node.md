@@ -352,16 +352,14 @@ function render(time) {
 }
 ```
 
-## Open Questions
+## Design Decisions
 
-1. **Naming**: `regl` as the node name exposes the library name to users. Alternatives: `gpu`, `webgl`, `draw`. `regl` is most honest about what it is. `gpu` is friendlier but vague.
+1. **Naming**: `regl` — honest about the underlying library. Leaves room for other GPU integrations (e.g. `wgpu` for WebGPU) in the future.
 
-2. **Multi-pass**: Should we provide a helper for ping-pong FBOs, or let users create their own via `regl.framebuffer()`? The tracked wrapper handles cleanup either way. Leaning toward letting users manage it — that's the point of a low-level node.
+2. **Multi-pass**: Users manage their own ping-pong FBOs via `regl.framebuffer()`. The tracked wrapper handles cleanup. That's the point of a low-level node.
 
-3. **Shared regl instance**: The regl instance is shared across all nodes in the pipeline. Users could theoretically mutate global WebGL state. The `framebuffer.use()` wrapper helps isolate, but users calling `regl.clear()` without specifying a framebuffer would clear the main canvas. We should document this, and possibly intercept `regl.clear()` to auto-inject the framebuffer if not specified.
+3. **`regl.clear()` safety**: The tracked wrapper intercepts `regl.clear()` — if the user omits the `framebuffer` key, it auto-injects the node's output framebuffer. This prevents accidentally clearing the main canvas (shared regl instance) with zero perf cost (just a property check on the options object).
 
-4. **Performance guardrails**: Should we limit the number of draw calls per frame, or buffer/texture memory? Probably not for v1 — power users who reach for a regl node know what they're doing.
+4. **No performance guardrails** for v1 — power users who reach for a regl node know what they're doing.
 
-5. **regl.prop() and the render call**: `regl.prop()` requires values passed at draw time. We auto-bind the FBO, but the user calls `draw({ time })` themselves. This is the right level of control — they choose what props to pass.
-
-6. **Should this just be the `glsl` node with a "custom" mode?** Probably not — the glsl node's value is its simplicity (write a fragment shader, get uniforms auto-detected). The regl node is fundamentally different in that you define the full pipeline.
+5. **Not a `glsl` mode**: The glsl node's value is simplicity (write a fragment shader, get uniforms auto-detected). The regl node is fundamentally different — you define the full pipeline.
