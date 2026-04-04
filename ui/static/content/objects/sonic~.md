@@ -214,58 +214,43 @@ directly to scsynth without routing through the main thread.
 
 There are three key differences from worker usage:
 
-**1. Import from the AudioWorklet-safe entry point**
+1. No `osc` encoder available**
 
-The standard `supersonic-scsynth` entry point pulls in `TextDecoder`,
-`Worker`, and DOM APIs that aren't available in
-`AudioWorkletGlobalScope`. The `dsp~` processor uses the slim entry
-point (`supersonic-scsynth/osc-channel`) automatically — you don't
-need to import anything.
+  The slim entry point only exports `OscChannel`. Unlike workers,
+  `getSuperSonicChannel()` in `dsp~` returns `{ channel }` without
+  the `osc` encoder. Encode your OSC bytes in a connected `worker`
+  or `js` node and send them via message passing.
 
-**2. `blocking: false` (SAB mode)**
+  ```js
+  let channel
 
-In SAB mode, AudioWorklet code runs on the audio rendering thread,
-which cannot call `Atomics.wait()`. Channels created for `dsp~` are
-automatically set to `blocking: false` for non-blocking ring buffer
-writes.
+  getSuperSonicChannel().then(result => {
+    channel = result.channel
+  })
 
-**3. No `osc` encoder available**
+  recv((oscBytes) => {
+    if (channel) channel.send(oscBytes)
+  })
 
-The slim entry point only exports `OscChannel`. Unlike workers,
-`getSuperSonicChannel()` in `dsp~` returns `{ channel }` without
-the `osc` encoder. Encode your OSC bytes in a connected `worker`
-or `js` node and send them via message passing.
-
-```js
-let channel
-
-getSuperSonicChannel().then(result => {
-  channel = result.channel
-})
-
-recv((oscBytes) => {
-  if (channel) channel.send(oscBytes)
-})
-
-function process(inputs, outputs) {
-  // audio processing here
-}
-```
-
-**4. NTP time source**
-
-`performance.timeOrigin` is unavailable in `AudioWorkletGlobalScope`,
-so the default NTP clock won't work for far-future bundle scheduling.
-Use the `getCurrentNTP` setter to provide the AudioWorklet's own
-time source:
-
-```js
-getSuperSonicChannel().then(({ channel }) => {
-  channel.getCurrentNTP = () => {
-    return currentTime + ntpStartTime + driftOffset
+  function process(inputs, outputs) {
+    // audio processing here
   }
-})
-```
+  ```
+
+2. NTP time source
+
+  `performance.timeOrigin` is unavailable in `AudioWorkletGlobalScope`,
+  so the default NTP clock won't work for far-future bundle scheduling.
+  Use the `getCurrentNTP` setter to provide the AudioWorklet's own
+  time source:
+
+  ```js
+  getSuperSonicChannel().then(({ channel }) => {
+    channel.getCurrentNTP = () => {
+      return currentTime + ntpStartTime + driftOffset
+    }
+  })
+  ```
 
 ---
 
