@@ -10,7 +10,9 @@
     Pen,
     MousePointer2,
     Eye,
-    EyeOff
+    EyeOff,
+    Grid2x2,
+    Pentagon
   } from '@lucide/svelte/icons';
   import type { ProjMapSurface } from './types';
 
@@ -24,9 +26,10 @@
     onexpand,
     onaddsurface,
     ondeletesurface,
-    ontogglemode,
+    ontoggleeditmode,
     ontoggleoutput,
     ontoggleoverlay,
+    ontogglewarpmask,
     onopenhelp
   }: {
     surfaces: ProjMapSurface[];
@@ -37,9 +40,10 @@
     onexpand: () => void;
     onaddsurface: () => void;
     ondeletesurface: (id: string) => void;
-    ontogglemode: () => void;
+    ontoggleeditmode: () => void;
     ontoggleoutput: () => void;
     ontoggleoverlay: () => void;
+    ontogglewarpmask: (id: string) => void;
     onopenhelp: () => void;
     showOverlay: boolean;
   } = $props();
@@ -58,7 +62,7 @@
 </script>
 
 <ContextMenu.Content>
-  <ContextMenu.Item onclick={ontogglemode}>
+  <ContextMenu.Item onclick={ontoggleeditmode}>
     {#if editMode === 'add'}
       <Pen class="mr-2 h-4 w-4" />
       Switch to move mode
@@ -86,6 +90,20 @@
   >
     <Trash2 class="mr-2 h-4 w-4" />
     {deleteLabel}
+  </ContextMenu.Item>
+
+  {@const targetSurface = deleteTargetId ? surfaces.find((s) => s.id === deleteTargetId) : null}
+  <ContextMenu.Item
+    onclick={() => deleteTargetId && ontogglewarpmask(deleteTargetId)}
+    disabled={!deleteTargetId}
+  >
+    {#if targetSurface?.mode === 'warp'}
+      <Pentagon class="mr-2 h-4 w-4" />
+      Switch to mask mode
+    {:else}
+      <Grid2x2 class="mr-2 h-4 w-4" />
+      Switch to warp mode
+    {/if}
   </ContextMenu.Item>
 
   <ContextMenu.Separator />

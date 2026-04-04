@@ -13,8 +13,8 @@
   import { overrideOutputNodeId } from '../../stores/renderer.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
-  import type { ProjMapSurface, ProjMapPoint } from './types';
-  import { DEFAULT_PROJMAP_NODE_DATA } from './constants';
+  import type { ProjMapSurface, ProjMapSurfaceMode, ProjMapPoint } from './types';
+  import { DEFAULT_PROJMAP_NODE_DATA, DEFAULT_WARP_CORNERS, WARP_CORNER_LABELS } from './constants';
   import {
     surfaceColor,
     toDisplay,
@@ -26,7 +26,7 @@
 
   let node: {
     id: string;
-    data: { surfaces?: ProjMapSurface[] };
+    data: { surfaces?: ProjMapSurface[]; showOverlay?: boolean };
     selected: boolean;
     width?: number;
   } = $props();
@@ -124,12 +124,57 @@
     const old = surfaces;
 
     const id = crypto.randomUUID();
-    const updated: ProjMapSurface[] = [...surfaces, { id, points: [] }];
+    const updated: ProjMapSurface[] = [
+      ...surfaces,
+      { id, mode: 'warp', points: DEFAULT_WARP_CORNERS.map((p) => ({ ...p })) }
+    ];
 
     applyUpdate(updated);
     tracker.commit('surfaces', old, updated);
 
     activeSurfaceId = id;
+  }
+
+  function toggleSurfaceMode(id: string) {
+    const old = surfaces;
+    const surface = surfaces.find((s) => s.id === id);
+    if (!surface) return;
+
+    const newMode: ProjMapSurfaceMode = surface.mode === 'warp' ? 'mask' : 'warp';
+
+    let newPoints: ProjMapPoint[];
+
+    if (newMode === 'warp') {
+      // mask → warp: use first 4 points if exactly 4, otherwise bounding box
+      if (surface.points.length === 4) {
+        newPoints = surface.points.map((p) => ({ ...p }));
+      } else if (surface.points.length >= 2) {
+        const xs = surface.points.map((p) => p.x);
+        const ys = surface.points.map((p) => p.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        newPoints = [
+          { x: minX, y: minY },
+          { x: maxX, y: minY },
+          { x: maxX, y: maxY },
+          { x: minX, y: maxY }
+        ];
+      } else {
+        newPoints = DEFAULT_WARP_CORNERS.map((p) => ({ ...p }));
+      }
+    } else {
+      // warp → mask: keep the 4 points as polygon vertices
+      newPoints = surface.points.map((p) => ({ ...p }));
+    }
+
+    const updated = surfaces.map((s) =>
+      s.id === id ? { ...s, mode: newMode, points: newPoints } : s
+    );
+
+    applyUpdate(updated);
+    tracker.commit('surfaces', old, updated);
   }
 
   function deleteSurface(id: string) {
@@ -138,8 +183,12 @@
     let updated: ProjMapSurface[];
 
     if (surfaces.length <= 1) {
-      // Wipe points but keep the surface
-      updated = surfaces.map((s) => (s.id === id ? { ...s, points: [] } : s));
+      // Reset to default warp surface
+      updated = surfaces.map((s) =>
+        s.id === id
+          ? { ...s, mode: 'warp' as const, points: DEFAULT_WARP_CORNERS.map((p) => ({ ...p })) }
+          : s
+      );
     } else {
       updated = surfaces.filter((s) => s.id !== id);
 
@@ -193,6 +242,10 @@
 
   function deleteHoveredPoint() {
     if (hoverSurfaceId !== null && hoverPointIndex !== -1) {
+      // Don't delete corners on warp surfaces
+      const hoverSurface = surfaces.find((s) => s.id === hoverSurfaceId);
+      if (hoverSurface?.mode === 'warp') return;
+
       const old = surfaces;
 
       const updated = surfaces.map((s) =>
@@ -335,6 +388,9 @@
         activeSurfaceId = hitSurface.id;
         return;
       }
+
+      // Warp surfaces have fixed 4 corners — no adding points
+      if (activeSurface?.mode === 'warp') return;
 
       if (!activeSurfaceId) return;
 
@@ -521,11 +577,13 @@
       <ProjectionMapOverflowMenu
         selected={node.selected}
         {activeSurfaceId}
+        activeSurfaceMode={activeSurface?.mode ?? 'warp'}
         {showOverlay}
         {isOutputOverride}
         onexpand={() => (expanded = true)}
         onaddsurface={addSurface}
         ondeletesurface={() => activeSurfaceId && deleteSurface(activeSurfaceId)}
+        ontogglemode={() => activeSurfaceId && toggleSurfaceMode(activeSurfaceId)}
         ontoggleoverlay={() => updateNodeData(node.id, { showOverlay: !showOverlay })}
         ontoggleoutput={toggleBgOutput}
       />
@@ -609,15 +667,29 @@
                   {@const dp = toDisplay(pt, displayWidth, displayHeight)}
                   {@const isHover = hoverSurfaceId === surface.id && hoverPointIndex === pi}
                   {@const isDrag = activeSurfaceId === surface.id && draggingPointIndex === pi}
+                  {@const isWarp = surface.mode === 'warp'}
 
-                  <circle
-                    cx={dp.x}
-                    cy={dp.y}
-                    r={isDrag ? 9 : isHover ? 8 : isActive ? 6 : 4}
-                    fill={isDrag ? '#facc15' : isHover ? '#ffffff' : isActive ? color : 'none'}
-                    stroke={isActive ? 'rgba(0,0,0,0.5)' : color}
-                    stroke-width="1.5"
-                  />
+                  {#if isWarp}
+                    {@const size = isDrag ? 10 : isHover ? 9 : isActive ? 7 : 5}
+                    <rect
+                      x={dp.x - size / 2}
+                      y={dp.y - size / 2}
+                      width={size}
+                      height={size}
+                      fill={isDrag ? '#facc15' : isHover ? '#ffffff' : isActive ? color : 'none'}
+                      stroke={isActive ? 'rgba(0,0,0,0.5)' : color}
+                      stroke-width="1.5"
+                    />
+                  {:else}
+                    <circle
+                      cx={dp.x}
+                      cy={dp.y}
+                      r={isDrag ? 9 : isHover ? 8 : isActive ? 6 : 4}
+                      fill={isDrag ? '#facc15' : isHover ? '#ffffff' : isActive ? color : 'none'}
+                      stroke={isActive ? 'rgba(0,0,0,0.5)' : color}
+                      stroke-width="1.5"
+                    />
+                  {/if}
 
                   {#if isActive}
                     <text
@@ -626,13 +698,14 @@
                       fill={color}
                       font-size="9"
                       font-family="monospace"
-                      style="pointer-events: none; user-select: none;">{pi + 1}</text
+                      style="pointer-events: none; user-select: none;"
+                      >{isWarp ? WARP_CORNER_LABELS[pi] : pi + 1}</text
                     >
                   {/if}
                 {/each}
               {/each}
 
-              {#if activeSurface?.points.length === 0}
+              {#if activeSurface?.mode === 'mask' && activeSurface?.points.length === 0}
                 <text
                   x={displayWidth / 2}
                   y={displayHeight / 2}
@@ -667,9 +740,10 @@
         onexpand={() => (expanded = true)}
         onaddsurface={addSurface}
         ondeletesurface={deleteSurface}
-        ontogglemode={() => (editMode = editMode === 'add' ? 'move' : 'add')}
+        ontoggleeditmode={() => (editMode = editMode === 'add' ? 'move' : 'add')}
         ontoggleoutput={toggleBgOutput}
         ontoggleoverlay={() => updateNodeData(node.id, { showOverlay: !showOverlay })}
+        ontogglewarpmask={(id: string) => toggleSurfaceMode(id)}
         onopenhelp={openHelp}
         {showOverlay}
       />

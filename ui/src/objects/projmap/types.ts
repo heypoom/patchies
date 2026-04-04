@@ -3,8 +3,11 @@ export interface ProjMapPoint {
   y: number; // normalized [0, 1]
 }
 
+export type ProjMapSurfaceMode = 'warp' | 'mask';
+
 export interface ProjMapSurface {
   id: string;
+  mode: ProjMapSurfaceMode;
   points: ProjMapPoint[];
 }
 

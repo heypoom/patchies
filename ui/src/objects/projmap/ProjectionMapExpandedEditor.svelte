@@ -2,6 +2,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { Plus, Trash2, Shrink, Pen, MousePointer2 } from '@lucide/svelte/icons';
   import type { ProjMapSurface } from './types';
+  import { WARP_CORNER_LABELS } from './constants';
   import { surfaceColor, polyPoints, toDisplay } from './utils';
 
   let {
@@ -237,15 +238,32 @@
           {@const dp = toDisplay(pt, outputWidth, outputHeight)}
           {@const isHover = hoverSurfaceId === surface.id && hoverPointIndex === pi}
           {@const isDrag = activeSurfaceId === surface.id && draggingPointIndex === pi}
-          <circle
-            cx={dp.x}
-            cy={dp.y}
-            r={isDrag ? 11 : isHover ? 10 : 8}
-            fill={isDrag ? '#facc15' : isHover ? '#ffffff' : color}
-            fill-opacity={alpha}
-            stroke="rgba(0,0,0,0.5)"
-            stroke-width="1.5"
-          />
+          {@const isWarp = surface.mode === 'warp'}
+
+          {#if isWarp}
+            {@const size = isDrag ? 14 : isHover ? 12 : 10}
+            <rect
+              x={dp.x - size / 2}
+              y={dp.y - size / 2}
+              width={size}
+              height={size}
+              fill={isDrag ? '#facc15' : isHover ? '#ffffff' : color}
+              fill-opacity={alpha}
+              stroke="rgba(0,0,0,0.5)"
+              stroke-width="1.5"
+            />
+          {:else}
+            <circle
+              cx={dp.x}
+              cy={dp.y}
+              r={isDrag ? 11 : isHover ? 10 : 8}
+              fill={isDrag ? '#facc15' : isHover ? '#ffffff' : color}
+              fill-opacity={alpha}
+              stroke="rgba(0,0,0,0.5)"
+              stroke-width="1.5"
+            />
+          {/if}
+
           <text
             x={dp.x + 13}
             y={dp.y + 4}
@@ -253,12 +271,13 @@
             fill-opacity={alpha}
             font-size="11"
             font-family="monospace"
-            style="pointer-events: none; user-select: none;">{pi + 1}</text
+            style="pointer-events: none; user-select: none;"
+            >{isWarp ? WARP_CORNER_LABELS[pi] : pi + 1}</text
           >
         {/each}
       {/each}
 
-      {#if activeSurface?.points.length === 0}
+      {#if activeSurface?.mode === 'mask' && activeSurface?.points.length === 0}
         <text
           x={outputWidth / 2}
           y={outputHeight / 2}

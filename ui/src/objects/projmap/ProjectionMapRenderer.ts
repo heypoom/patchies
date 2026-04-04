@@ -3,6 +3,7 @@ import type { FBORenderer } from '$workers/rendering/fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from '$workers/rendering/utils';
 import type { ProjMapSurface } from './types';
+import { WARP_SUBDIVISIONS } from './constants';
 
 export interface ProjectionMapConfig {
   nodeId: string;
@@ -113,9 +114,24 @@ export class ProjectionMapRenderer {
   }
 
   private buildSurfaceMesh(surface: ProjMapSurface): import('three').Mesh {
+    const geometry =
+      surface.mode === 'warp' ? this.buildWarpGeometry(surface) : this.buildMaskGeometry(surface);
+
     const THREE = this.THREE!;
 
-    // Build a Shape from screen-space [0,1] coords → Three ortho [-0.5, 0.5]
+    const material = new THREE.MeshBasicMaterial({
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+
+    return new THREE.Mesh(geometry, material);
+  }
+
+  /** Mask mode: existing ShapeGeometry polygon clipping with 1:1 UV */
+  private buildMaskGeometry(surface: ProjMapSurface): import('three').BufferGeometry {
+    const THREE = this.THREE!;
+
     const shape = new THREE.Shape();
     const first = surface.points[0];
     shape.moveTo(first.x - 0.5, 0.5 - first.y);
@@ -127,7 +143,6 @@ export class ProjectionMapRenderer {
 
     const geometry = new THREE.ShapeGeometry(shape);
 
-    // UV mapping: x+0.5 and y+0.5 maps back to [0,1] screen space
     const posAttr = geometry.attributes.position;
     const uvAttr = geometry.attributes.uv;
 
@@ -139,13 +154,44 @@ export class ProjectionMapRenderer {
 
     uvAttr.needsUpdate = true;
 
-    const material = new THREE.MeshBasicMaterial({
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide
-    });
+    return geometry;
+  }
 
-    return new THREE.Mesh(geometry, material);
+  /**
+   * Warp mode: subdivided plane with bilinear interpolation from 4 corners.
+   * Corners: TL(0), TR(1), BR(2), BL(3) in normalized [0,1] screen space.
+   * UVs stay uniform so texture warps with vertex positions.
+   */
+  private buildWarpGeometry(surface: ProjMapSurface): import('three').BufferGeometry {
+    const THREE = this.THREE!;
+    const segs = WARP_SUBDIVISIONS;
+
+    const geometry = new THREE.PlaneGeometry(1, 1, segs, segs);
+    const posAttr = geometry.attributes.position;
+    const uvAttr = geometry.attributes.uv;
+
+    const [tl, tr, br, bl] = surface.points;
+
+    for (let i = 0; i < posAttr.count; i++) {
+      // PlaneGeometry vertices are in [-0.5, 0.5]; map to parametric [0,1]
+      const u = posAttr.getX(i) + 0.5;
+      const v = 1 - (posAttr.getY(i) + 0.5); // flip Y (Three Y-up → screen Y-down)
+
+      // Bilinear interpolation from 4 corners (screen-space [0,1])
+      const sx = (1 - u) * (1 - v) * tl.x + u * (1 - v) * tr.x + u * v * br.x + (1 - u) * v * bl.x;
+      const sy = (1 - u) * (1 - v) * tl.y + u * (1 - v) * tr.y + u * v * br.y + (1 - u) * v * bl.y;
+
+      // Convert to Three ortho space [-0.5, 0.5]
+      posAttr.setXY(i, sx - 0.5, 0.5 - sy);
+
+      // UV maps uniformly [0,1] — texture fills the quad
+      uvAttr.setXY(i, u, 1 - v);
+    }
+
+    posAttr.needsUpdate = true;
+    uvAttr.needsUpdate = true;
+
+    return geometry;
   }
 
   renderFrame(params: RenderParams) {
