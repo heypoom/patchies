@@ -8,27 +8,34 @@
     Eye,
     EyeOff,
     Monitor,
-    MonitorOff
+    MonitorOff,
+    Grid2x2,
+    Pentagon
   } from '@lucide/svelte/icons';
+  import type { ProjMapSurfaceMode } from './types';
 
   let {
     selected,
     activeSurfaceId,
+    activeSurfaceMode,
     showOverlay,
     isOutputOverride,
     onexpand,
     onaddsurface,
     ondeletesurface,
+    ontogglewarpmask,
     ontoggleoverlay,
     ontoggleoutput
   }: {
     selected: boolean;
     activeSurfaceId: string | null;
+    activeSurfaceMode: ProjMapSurfaceMode;
     showOverlay: boolean;
     isOutputOverride: boolean;
     onexpand: () => void;
     onaddsurface: () => void;
     ondeletesurface: () => void;
+    ontogglewarpmask: () => void;
     ontoggleoverlay: () => void;
     ontoggleoutput: () => void;
   } = $props();
@@ -89,6 +96,23 @@
     >
       <Trash2 class="h-4 w-4 text-zinc-400" />
       Delete surface
+    </button>
+
+    <button
+      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-300 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+      onclick={() => {
+        ontogglewarpmask();
+        open = false;
+      }}
+      disabled={!activeSurfaceId}
+    >
+      {#if activeSurfaceMode === 'warp'}
+        <Pentagon class="h-4 w-4 text-zinc-400" />
+        Switch to mask mode
+      {:else}
+        <Grid2x2 class="h-4 w-4 text-zinc-400" />
+        Switch to warp mode
+      {/if}
     </button>
 
     <div class="my-1 border-t border-zinc-700"></div>
