@@ -165,17 +165,27 @@ This returns both the `OscChannel` for sending messages and the
 const { channel, osc } = await getSuperSonicChannel()
 
 const msg = osc.encodeMessage('/s_new',
-  ['sonic-pi-beep', -1, 0, 0, 'note', 64, 'amp', 0.5])
+  ['sonic-pi-beep', -1, 0, 0, 'note', 64, 'amp', 0.5,
+   'out_bus', 0])
 
 channel.send(msg)
 ```
+
+Pass `out_bus` to route audio to the correct `sonic~` node's
+isolated output. You can send `outBus` from a connected `sonic~` node.
 
 The channel is automatically closed when the worker re-runs or is deleted.
 
 ### Worker Sequencer
 
+Connect a `sonic~` node's outlet to this worker's inlet to receive
+the `outBus` value for audio routing.
+
 ```js
 const { channel, osc } = await getSuperSonicChannel()
+
+let outBus = 0
+recv((msg) => { outBus = msg })
 
 const pattern = [60, 62, 64, 65, 67, 65, 64, 62]
 let step = 0
@@ -184,7 +194,8 @@ setInterval(() => {
   const note = pattern[step % pattern.length]
 
   channel.send(osc.encodeMessage('/s_new',
-    ['sonic-pi-beep', -1, 0, 0, 'note', note, 'amp', 0.3]))
+    ['sonic-pi-beep', -1, 0, 0, 'note', note, 'amp', 0.3,
+     'out_bus', outBus]))
 
   step++
 }, 200)
