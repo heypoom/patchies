@@ -26,8 +26,10 @@ recv(msg => {
     if (activeNotes.has(note)) {
       sonic.send('/n_set', activeNotes.get(note), 'gate', 0);
     }
+
     const id = nextNodeId++;
     activeNotes.set(note, id);
+
     sonic.send('/s_new', name, id, 0, 0,
       'note', note,
       'amp', (velocity || 127) / 127,
@@ -36,11 +38,18 @@ recv(msg => {
     );
   } else if (type === 'noteOff') {
     const id = activeNotes.get(note);
+
     if (id !== undefined) {
       sonic.send('/n_set', id, 'gate', 0);
       activeNotes.delete(note);
     }
   }
+});
+
+sonic.on('error', e => console.error('error:', e));
+
+sonic.on('in', msg => {
+  if (msg[0] === '/fail') console.error('fail:', msg);
 });
 
 onCleanup(() => {
