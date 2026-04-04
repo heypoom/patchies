@@ -2,6 +2,7 @@ import { match } from 'ts-pattern';
 import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 import { VirtualFilesystem, VFS_FOLDERS } from '$lib/vfs';
 import { logger } from '$lib/utils/logger';
+import { synthdefTemplate, scSampleTemplate } from './sonic-templates';
 
 /**
  * Escape a string for safe embedding inside a JS string literal (single or double-quoted).
@@ -592,44 +593,7 @@ export class CanvasDragDropManager {
     const { synthdef } = parsed as { synthdef: string };
     const safeSynthdef = escapeJS(synthdef);
 
-    const code = `setPortCount(1);
-setTitle("${safeSynthdef}");
-
-await sonic.loadSynthDef('${safeSynthdef}');
-
-const activeNotes = new Map();
-let nextNodeId = sonic.nextNodeId();
-
-recv(msg => {
-  if (!msg || typeof msg !== 'object') return;
-
-  const { type, note, velocity } = msg;
-
-  if (type === 'noteOn') {
-    if (activeNotes.has(note)) {
-      sonic.send('/n_set', activeNotes.get(note), 'gate', 0);
-    }
-    const id = nextNodeId++;
-    activeNotes.set(note, id);
-    sonic.send('/s_new', '${safeSynthdef}', id, 0, 0,
-      'note', note,
-      'amp', (velocity || 127) / 127,
-      'gate', 1,
-      'out_bus', outBus
-    );
-  } else if (type === 'noteOff') {
-    const id = activeNotes.get(note);
-    if (id !== undefined) {
-      sonic.send('/n_set', id, 'gate', 0);
-      activeNotes.delete(note);
-    }
-  }
-});
-
-onCleanup(() => {
-  activeNotes.forEach(id => sonic.send('/n_free', id));
-  activeNotes.clear();
-});`;
+    const code = synthdefTemplate(safeSynthdef);
 
     this.createNode('sonic~', position, {
       ...getDefaultNodeData('sonic~'),
@@ -661,17 +625,7 @@ onCleanup(() => {
     const { name } = parsed as { name: string };
     const safeName = escapeJS(name);
 
-    const code = `setPortCount(1);
-setTitle("${safeName}");
-
-await sonic.loadSynthDef('sonic-pi-basic_stereo_player');
-await sonic.loadSample(0, '${safeName}.flac');
-await sonic.sync();
-
-recv(() => {
-  sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0,
-    'buf', 0, 'rate', 1, 'out_bus', outBus);
-});`;
+    const code = scSampleTemplate(safeName);
 
     this.createNode('sonic~', position, {
       ...getDefaultNodeData('sonic~'),
