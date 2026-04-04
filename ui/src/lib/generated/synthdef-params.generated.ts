@@ -92,7 +92,6 @@ export const SYNTHDEF_OUT_PARAMS: Record<string, 'out_bus' | 'out' | null> = {
   'sonic-pi-mono_player': 'out_bus',
   'sonic-pi-noise': 'out_bus',
   'sonic-pi-organ_tonewheel': 'out_bus',
-  'sonic-pi-piano': 'out_bus',
   'sonic-pi-pluck': 'out_bus',
   'sonic-pi-pnoise': 'out_bus',
   'sonic-pi-pretty_bell': 'out_bus',

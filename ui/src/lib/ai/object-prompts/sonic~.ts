@@ -103,10 +103,10 @@ recv(m => {
 });
 \`\`\`
 
-Example — MIDI-controlled polyphonic synth with note management:
+Example — MIDI-controlled synth with note management:
 \`\`\`js
 setPortCount(1);
-await sonic.loadSynthDef('sonic-pi-piano');
+await sonic.loadSynthDef('sonic-pi-beep');
 
 const activeNotes = new Map();
 
@@ -121,7 +121,7 @@ recv(msg => {
     const id = sonic.nextNodeId();
     activeNotes.set(note, id);
 
-    sonic.send('/s_new', 'sonic-pi-piano', id, 0, 0,
+    sonic.send('/s_new', 'sonic-pi-beep', id, 0, 0,
       'note', note, 'amp', (velocity || 127) / 127,
       'gate', 1, 'out_bus', outBus);
   } else if (type === 'noteOff') {

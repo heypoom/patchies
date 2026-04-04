@@ -91,7 +91,6 @@ export const SYNTHDEF_NAMES = [
   'sonic-pi-mono_player',
   'sonic-pi-noise',
   'sonic-pi-organ_tonewheel',
-  'sonic-pi-piano',
   'sonic-pi-pluck',
   'sonic-pi-pnoise',
   'sonic-pi-pretty_bell',
