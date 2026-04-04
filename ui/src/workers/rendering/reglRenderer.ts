@@ -123,11 +123,19 @@ export class ReglRenderer {
   // Tracked regl wrapper for automatic resource cleanup
   private trackedRegl: ReturnType<typeof createTrackedRegl> | null = null;
 
+  /** 1x1 transparent texture returned when an inlet is not connected */
+  private fallbackTexture: regl.Texture2D;
+
   private constructor(config: ReglConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
     this.config = config;
     this.framebuffer = framebuffer;
     this.renderer = renderer;
     this.msgContext = new WorkerRendererMessageContext(config.nodeId);
+    this.fallbackTexture = renderer.regl.texture({
+      width: 1,
+      height: 1,
+      data: new Uint8Array([0, 0, 0, 0])
+    });
   }
 
   static async create(
@@ -153,15 +161,11 @@ export class ReglRenderer {
     // Store input textures for getTexture() access
     this.inputTextures = params.userParams as (regl.Texture2D | undefined)[];
 
-    // Bind FBO and call user's render function
-    if (this.framebuffer) {
-      this.framebuffer.use(() => {
-        try {
-          this.userRenderFunc!(params.transportTime);
-        } catch (error) {
-          this.handleRuntimeError(error);
-        }
-      });
+    // FBO is already bound by the pipeline (fboNode.framebuffer.use())
+    try {
+      this.userRenderFunc(params.transportTime);
+    } catch (error) {
+      this.handleRuntimeError(error);
     }
   }
 
@@ -281,6 +285,7 @@ export class ReglRenderer {
   destroy() {
     this.trackedRegl?.destroyAll();
     this.trackedRegl = null;
+    this.fallbackTexture.destroy();
 
     // Clean up JSRunner context for this node
     this.renderer.jsRunner.destroy(this.config.nodeId);
@@ -290,11 +295,12 @@ export class ReglRenderer {
 
   /**
    * Gets a regl texture from a video inlet.
+   * Returns a 1x1 transparent fallback texture when the inlet is not connected,
+   * so regl uniforms always receive a valid texture.
    * @param index The inlet index (0-based)
-   * @returns A regl Texture2D or null if not connected
    */
-  getTexture(index: number): regl.Texture2D | null {
-    return this.inputTextures[index] ?? null;
+  getTexture(index: number): regl.Texture2D {
+    return this.inputTextures[index] ?? this.fallbackTexture;
   }
 
   sendMessage(data: unknown, options: SendMessageOptions) {
@@ -466,6 +472,7 @@ export class ReglRenderer {
     }
 
     const errorMessage = error instanceof Error ? error.message : String(error);
+
     customConsole.error(errorMessage);
   }
 

@@ -50,6 +50,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - hydra: Live coding video synthesis with Hydra
 - glsl: GLSL fragment shaders for visual effects
 - three: Three.js 3D graphics (offscreen worker, for video chaining)
+- regl: Low-level GPU rendering with regl draw commands (custom vertices, buffers, multi-pass, blend modes)
 - three.dom: Three.js 3D graphics (main thread, for mouse/keyboard interaction)
 - projmap: Projection mapper — warp video textures onto N-point polygon surfaces with built-in point editor and expand mode
 - dom: write to the DOM element

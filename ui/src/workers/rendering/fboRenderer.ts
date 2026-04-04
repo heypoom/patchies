@@ -1072,9 +1072,14 @@ export class FBORenderer {
       }
     }
 
-    // Convert texture map to array for Hydra, Three, and ProjMap
+    // Convert texture map to array.
     // Preserves gaps for unused video inlets.
-    if (node.type === 'hydra' || node.type === 'three' || node.type === 'projmap') {
+    if (
+      node.type === 'hydra' ||
+      node.type === 'three' ||
+      node.type === 'regl' ||
+      node.type === 'projmap'
+    ) {
       const maxInletIndex = Math.max(-1, ...inputTextureMap.keys());
       const textureArray: (regl.Texture2D | undefined)[] = [];
 

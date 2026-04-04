@@ -47,6 +47,7 @@ import { elemPrompt } from './elem~';
 import { labelPrompt } from './label';
 import { titlePrompt } from './title';
 import { vuePrompt } from './vue';
+import { reglPrompt } from './regl';
 import { threePrompt } from './three';
 import { threeDomPrompt } from './three.dom';
 import { wgpuPrompt } from './wgpu';
@@ -107,6 +108,7 @@ export const objectPrompts: Record<string, string> = {
   'elem~': elemPrompt,
   label: labelPrompt,
   title: titlePrompt,
+  regl: reglPrompt,
   three: threePrompt,
   'three.dom': threeDomPrompt,
   projmap: projmapPrompt,
