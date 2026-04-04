@@ -87,11 +87,64 @@ sonic.send('/s_new', 'sonic-pi-basic_stereo_player',
   -1, 0, 0, 'buf', 0, 'rate', 1, 'out_bus', outBus);
 ```
 
-To use your own sample, use loadVfsUrl from the [Virtual Filesystem](/docs/virtual-filesystem) API.
+To use your own sample, use a URL or use `loadVfsUrl` to load
+from the [Virtual Filesystem](/docs/virtual-filesystem).
 
 ```js
 await sonic.loadSample(0, await loadVfsUrl('user://loop.wav'));
 ```
+
+## Polyphonic MIDI Synth
+
+Handles MIDI `noteOn`/`noteOff` messages with polyphonic voice management.
+Each note gets its own synth instance, and voices are freed when released.
+
+```js
+setPortCount(1);
+
+const name = 'sonic-pi-prophet';
+setTitle(name);
+
+await sonic.loadSynthDef(name);
+
+const activeNotes = new Map();
+
+recv(msg => {
+  if (!msg || typeof msg !== 'object') return;
+
+  const { type, note, velocity } = msg;
+
+  if (type === 'noteOn') {
+    if (activeNotes.has(note)) {
+      sonic.send('/n_set', activeNotes.get(note), 'gate', 0);
+    }
+
+    const id = sonic.nextNodeId();
+    activeNotes.set(note, id);
+
+    sonic.send('/s_new', name, id, 0, 0,
+      'note', note,
+      'amp', (velocity || 127) / 127,
+      'gate', 1,
+      'out_bus', outBus
+    );
+  } else if (type === 'noteOff') {
+    const id = activeNotes.get(note);
+
+    if (id !== undefined) {
+      sonic.send('/n_set', id, 'gate', 0);
+      activeNotes.delete(note);
+    }
+  }
+});
+
+onCleanup(() => {
+  activeNotes.forEach(id => sonic.send('/n_free', id));
+  activeNotes.clear();
+});
+```
+
+Connect a `midi-in` node to send MIDI messages. The `onCleanup` handler frees all active voices when the node is removed.
 
 ## Resources
 
