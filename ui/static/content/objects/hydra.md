@@ -55,9 +55,10 @@ osc(() => fft().getEnergy('bass')).out()
 
 ## Resources
 
-- [Hydra Documentation](https://hydra.ojack.xyz/docs) - official docs
-- [Hydra Functions Reference](https://hydra.ojack.xyz/api) - API reference
-- [Olivia Jack's website](https://ojack.xyz/) - learn more about her work
+- [Hydra Documentation](https://hydra.ojack.xyz/docs)
+- [Hydra Functions Reference](https://hydra.ojack.xyz/api)
+- [Hydra Book](https://hydra-book.glitches.me)
+- [Olivia Jack's Website](https://ojack.xyz/)
 
 ## See Also
 
