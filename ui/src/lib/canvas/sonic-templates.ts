@@ -9,7 +9,7 @@
 export function synthdefTemplate(safeSynthdef: string): string {
   return `setPortCount(1);
 
-const name = "${safeSynthdef}";
+const name = '${safeSynthdef}';
 setTitle(name);
 
 await sonic.loadSynthDef(name);
