@@ -45,12 +45,6 @@ recv(msg => {
   }
 });
 
-sonic.on('error', e => console.error('error:', e));
-
-sonic.on('in', msg => {
-  if (msg[0] === '/fail') console.error('fail:', msg);
-});
-
 onCleanup(() => {
   activeNotes.forEach(id => sonic.send('/n_free', id));
   activeNotes.clear();
