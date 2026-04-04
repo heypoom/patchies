@@ -26,6 +26,10 @@ const workerProfiler = new WorkerProfiler((nodeId, category, stats) => {
   self.postMessage({ type: 'profilerStats', nodeId, category, stats });
 });
 
+interface OscChannelHandle {
+  close(): void;
+}
+
 // Timer and callback tracking per node
 interface NodeState {
   intervals: number[];
@@ -61,8 +65,7 @@ interface NodeState {
   settingsProxy: WorkerSettingsProxy | null;
 
   // SuperSonic OscChannels (closed on cleanup)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  oscChannels: any[];
+  oscChannels: OscChannelHandle[];
 
   // Store the executed code for error reporting with line numbers
   code: string | null;
@@ -715,10 +718,15 @@ async function handleSuperSonicChannelReady(
 
     const channel = superSonicModule.OscChannel.fromTransferable(data.channel);
 
-    // Track for cleanup
+    // Track for cleanup — if node was destroyed before channel arrived, close immediately
     const state = nodeStates.get(nodeId);
-    state?.oscChannels.push(channel);
+    if (!state) {
+      channel.close();
+      pending.reject(new Error('Node destroyed before channel ready'));
+      return;
+    }
 
+    state.oscChannels.push(channel);
     pending.resolve({ channel, osc: superSonicModule.osc });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

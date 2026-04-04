@@ -1,6 +1,7 @@
 import { type AudioNodeV2, type AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
+import { SuperSonicManager } from '$lib/audio/SuperSonicManager';
 import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
 import workletUrl from '../../../audio/dsp-processor?worker&url';
@@ -312,6 +313,38 @@ export class DspNode implements AudioNodeV2 {
     })();
 
     return this.modulePromise;
+  }
+
+  /**
+   * Handle SuperSonic OscChannel request from the processor.
+   * Creates a channel with blocking: false (safe for audio thread) and transfers it.
+   */
+  async handleSuperSonicChannelRequest(requestId: string): Promise<void> {
+    const port = this.workletNode?.port;
+    if (!port) return;
+
+    try {
+      const { sonic } = await SuperSonicManager.getInstance().ensureSuperSonic(this.audioContext);
+
+      const oscChannel = sonic.createOscChannel({ blocking: false });
+
+      port.postMessage(
+        {
+          type: 'supersonic-channel-ready',
+          requestId,
+          channel: oscChannel.transferable
+        },
+        oscChannel.transferList
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      port.postMessage({
+        type: 'supersonic-channel-ready',
+        requestId,
+        error: message
+      });
+    }
   }
 
   /** Get the internal worklet node (for UI to access port) */

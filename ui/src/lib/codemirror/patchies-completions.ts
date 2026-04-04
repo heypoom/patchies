@@ -305,8 +305,8 @@ const patchiesAPICompletions: Completion[] = [
   {
     label: 'getSuperSonicChannel',
     type: 'function',
-    detail: '() => Promise<{ channel, osc }>',
-    info: 'Get a SuperSonic OscChannel and osc encoder for sending OSC messages directly to scsynth from a worker thread. Lazy-loads SuperSonic on first call.',
+    detail: '() => Promise<{ channel, osc? }>',
+    info: 'Get a SuperSonic OscChannel for sending OSC messages directly to scsynth. In workers, also returns osc encoder. In dsp~, returns channel only. Lazy-loads SuperSonic on first call.',
     apply: 'getSuperSonicChannel()'
   }
 ];
@@ -484,7 +484,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'dom',
     'vue'
   ],
-  getSuperSonicChannel: ['worker']
+  getSuperSonicChannel: ['worker', 'dsp~']
 };
 
 /**
