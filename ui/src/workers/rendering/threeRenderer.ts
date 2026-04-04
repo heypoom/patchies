@@ -35,7 +35,7 @@ export class ThreeRenderer {
   private msgContext!: WorkerRendererMessageContext;
   public settingsProxy: WorkerSettingsProxy | null = null;
 
-  private sampleRate: number = 44000;
+  private sampleRate: number = 44100;
   private animationId: number | null = null;
 
   // FFT state tracking

@@ -105,7 +105,7 @@ export class ReglRenderer {
   private msgContext!: WorkerRendererMessageContext;
   public settingsProxy: WorkerSettingsProxy | null = null;
 
-  private sampleRate: number = 44000;
+  private sampleRate: number = 44100;
 
   // FFT state tracking
   public isFFTEnabled = false;
