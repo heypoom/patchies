@@ -1,6 +1,6 @@
 {
   "name": "supersonic-scsynth-core",
-  "version": "0.47.0",
+  "version": "0.66.0",
   "description": "SuperCollider scsynth WebAssembly engine and AudioWorklet for SuperSonic",
   "type": "module",
   "main": "index.js",
@@ -27,7 +27,7 @@
   "homepage": "https://github.com/samaaron/supersonic#readme",
   "files": [
     "wasm/",
-    "workers/",
+    "workers/scsynth_audio_worklet.js",
     "index.js",
     "README.md",
     "LICENSE"
