@@ -70,7 +70,7 @@ When `iMouse` is detected, the node becomes interactive (drag is disabled to all
 ## Presets
 
 - `red.gl` - solid red color
-- `pipe.gl` - pass through without changes
+- `glsl>` - pass through without changes
 - `mix.gl` - mix two video inputs
 - `overlay.gl` - overlay second input on first
 - `fft-freq.gl` - visualize frequency spectrum

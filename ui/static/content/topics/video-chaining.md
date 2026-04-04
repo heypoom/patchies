@@ -20,7 +20,7 @@ Visual objects have **orange** inlets and outlets (circles on the top and bottom
 Connect orange outlet → orange inlet to chain them:
 
 ```text
-[p5] → [pipe.hydra] → [pipe.gl] → [bg.out]
+[p5] → [hydra>] → [glsl>] → [bg.out]
 ```
 
 To hear — er, *see* — anything, connect the final object to `bg.out` or use **Output to Background**.
@@ -32,9 +32,9 @@ To hear — er, *see* — anything, connect the final object to `bg.out` or use 
 ### Exercise — Visual passthrough
 
 1. Create a `p5` object and write something that draws to the canvas
-2. Create a `pipe.hydra` preset (`Enter` → search `pipe.hydra`)
-3. Connect the orange outlet of `p5` to the orange inlet of `pipe.hydra`
-4. Connect `pipe.hydra` to `bg.out` — the p5 sketch appears as the background
+2. Create a `hydra>` preset (`Enter` → search `hydra>`)
+3. Connect the orange outlet of `p5` to the orange inlet of `hydra>`
+4. Connect `hydra>` to `bg.out` — the p5 sketch appears as the background
 
 ### Exercise — Blend two visuals
 
@@ -49,7 +49,7 @@ To hear — er, *see* — anything, connect the final object to `bg.out` or use 
 
 The preset library has ready-made building blocks for video chaining. Enable them via the [Preset Packs](/docs/manage-packs) sidebar:
 
-- **`pipe.hydra`, `pipe.gl`** — pass video through unchanged; the simplest starting point for chaining
+- **`hydra>`, `glsl>`** — pass video through unchanged; the simplest starting point for chaining
 - **`diff.hydra`, `add.hydra`, `sub.hydra`** — blend two video inputs with Hydra
 - Check the [hydra](/docs/objects/hydra) and [glsl](/docs/objects/glsl) docs for more preset ideas
 

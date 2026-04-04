@@ -38,7 +38,7 @@ Hydra-specific functions:
 
 Try out these presets to get started:
 
-- `pipe.hydra` - passes the image through without any changes
+- `hydra>` - passes the image through without any changes
 - `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra` - perform image operations on two video inputs
 - `filet-mignon.hydra` - example code from [AFALFL](https://www.instagram.com/a_f_alfl) (CC BY-NC-SA 4.0)
 - `fft.hydra` - audio-reactive visualization

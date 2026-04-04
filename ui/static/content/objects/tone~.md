@@ -73,7 +73,7 @@ onCleanup(() => inputNode.disconnect(outputNode));
 
 - `poly-synth.tone`: Polyphonic synthesizer with chord sequences
 - `lowpass.tone`: Low pass filter
-- `pipe.tone`: Direct input to output
+- `tone>`: Direct input to output
 
 Please consider supporting
 [Yotam Mann on GitHub Sponsors](https://github.com/sponsors/tambien)!

@@ -115,7 +115,7 @@ export const JS_PRESETS: Record<
     type: 'js',
     data: { code: WAVESHAPER_DISTORTION_JS, showConsole: false, runOnMount: false }
   },
-  'pipe.js': {
+  'js>': {
     type: 'js',
     data: { code: PIPE_MESSAGE_JS, showConsole: false, runOnMount: true }
   }

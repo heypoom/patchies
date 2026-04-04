@@ -92,7 +92,7 @@ const defaultsOneVideoIn: HydraNodeData = {
 const defaultsTwoVideoIn: HydraNodeData = { ...defaultsOneVideoIn, videoInletCount: 2 };
 
 export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }> = {
-  'pipe.hydra': {
+  'hydra>': {
     type: 'hydra',
     data: { ...defaultsOneVideoIn, code: PIPE.trim() }
   },

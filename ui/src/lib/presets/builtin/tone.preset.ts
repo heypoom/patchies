@@ -69,7 +69,7 @@ export const TONE_JS_PRESETS = {
     type: 'tone~',
     data: { code: POLY_SYNTH_MIDI_JS, messageInletCount: 1, title: 'synth~' }
   },
-  'pipe.tone': {
+  'tone>': {
     type: 'tone~',
     data: { code: PIPE_JS, messageInletCount: 0 }
   },

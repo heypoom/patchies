@@ -110,7 +110,7 @@
 - `text-banner.p5` - Text display with customizable styling
 - `fractal-tree.canvas` - Recursive tree generation
 - `fft.canvas` - Audio frequency visualization  
-- `pipe.js` - Message passing utilities
+- `js>` - Message passing utilities
 - `switcher.gl` - GLSL channel switching
 - `overlay.gl` - Video overlay effects
 - `add.hydra` / `sub.hydra` - Math operations in Hydra

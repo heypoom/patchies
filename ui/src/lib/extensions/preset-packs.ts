@@ -34,7 +34,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Video operators built with Hydra',
     icon: 'Palette',
     requiredObjects: ['hydra'],
-    presets: ['pipe.hydra', 'add.hydra', 'diff.hydra', 'sub.hydra', 'blend.hydra', 'mask.hydra']
+    presets: ['hydra>', 'add.hydra', 'diff.hydra', 'sub.hydra', 'blend.hydra', 'mask.hydra']
   },
   {
     id: 'glsl-presets',
@@ -42,7 +42,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Video operators built with GLSL',
     icon: 'Shapes',
     requiredObjects: ['glsl'],
-    presets: ['pipe.gl', 'mix.gl', 'overlay.gl', 'switcher.gl', 'red.gl']
+    presets: ['glsl>', 'mix.gl', 'overlay.gl', 'switcher.gl', 'red.gl']
   },
   {
     id: 'scripting-demos',
@@ -50,7 +50,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'JS scripts for control flow',
     icon: 'Code',
     requiredObjects: ['js'],
-    presets: ['pipe.js', 'delay.js']
+    presets: ['js>', 'delay.js']
   },
   {
     id: 'iframe-widgets',
@@ -146,7 +146,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Audio synthesis with Tone.js',
     icon: 'AudioLines',
     requiredObjects: ['tone~'],
-    presets: ['poly-synth-midi.tone', 'pipe.tone', 'reverb.tone', 'lowpass.tone']
+    presets: ['poly-synth-midi.tone', 'tone>', 'reverb.tone', 'lowpass.tone']
   },
   {
     id: 'asm-examples',
