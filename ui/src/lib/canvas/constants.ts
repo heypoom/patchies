@@ -116,7 +116,7 @@ await sonic.loadSynthDef('sonic-pi-prophet')
 recv(msg => {
   const note = typeof msg === 'number' ? msg : 60
 
-  sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', note, 'release', 2)
+  sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', note, 'release', 2, 'out_bus', outBus)
 })`;
 
 export const DEFAULT_CSOUND_CODE = `instr 1

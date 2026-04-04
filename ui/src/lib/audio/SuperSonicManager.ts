@@ -13,6 +13,19 @@ type SuperSonicInstance = any; // Will be actual SuperSonic instance
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SuperSonicClass = any; // Will be actual SuperSonic constructor
 
+/** Max stereo output pairs available for sonic~ nodes */
+/** WebAudio spec caps AudioWorkletNode channels at 32 */
+const MAX_SONIC_STEREO_PAIRS = 16;
+const MAX_OUTPUT_CHANNELS = MAX_SONIC_STEREO_PAIRS * 2;
+
+export interface SonicBusAllocation {
+  /** scsynth output bus index (0, 2, 4, ...) — use with Out.ar(outBus, signal) */
+  busIndex: number;
+
+  /** GainNode carrying this node's isolated stereo output */
+  outputNode: GainNode;
+}
+
 export class SuperSonicManager {
   private static instance: SuperSonicManager | null = null;
   private sonicInstance: SuperSonicInstance | null = null;
@@ -20,16 +33,28 @@ export class SuperSonicManager {
   private initPromise: Promise<void> | null = null;
   private audioContext: AudioContext | null = null;
 
+  /** Shared input GainNode → sonic.node.input (connected once) */
+  private sharedInputNode: GainNode | null = null;
+
+  /** Splits sonic.node's multi-channel output into individual channels */
+  private splitter: ChannelSplitterNode | null = null;
+
+  /** Tracks which stereo pairs are allocated (index = pair number) */
+  private allocatedPairs = new Set<number>();
+
+  /** Per-pair merger + gain nodes, created on demand */
+  private pairOutputs = new Map<number, { merger: ChannelMergerNode; gain: GainNode }>();
+
   private constructor() {}
 
   /**
    * Lazy load SuperSonic only when needed.
    * This is called when the first sonic~ node is created.
-   * @param audioContext - The AudioContext to use (should be from AudioService)
    */
   async ensureSuperSonic(audioContext: AudioContext): Promise<{
     sonic: SuperSonicInstance;
     SuperSonic: SuperSonicClass;
+    sharedInputNode: GainNode;
   }> {
     if (!this.initPromise) {
       this.audioContext = audioContext;
@@ -38,8 +63,77 @@ export class SuperSonicManager {
     await this.initPromise;
     return {
       sonic: this.sonicInstance!,
-      SuperSonic: this.SuperSonicClass!
+      SuperSonic: this.SuperSonicClass!,
+      sharedInputNode: this.sharedInputNode!
     };
+  }
+
+  /**
+   * Allocate an isolated stereo bus pair for a sonic~ node.
+   * Returns the scsynth bus index and a GainNode with that pair's audio.
+   */
+  allocateBusPair(): SonicBusAllocation | null {
+    if (!this.audioContext || !this.splitter) return null;
+
+    // Find first free pair
+    for (let i = 0; i < MAX_SONIC_STEREO_PAIRS; i++) {
+      if (!this.allocatedPairs.has(i)) {
+        this.allocatedPairs.add(i);
+
+        const busIndex = i * 2;
+        const output = this.getOrCreatePairOutput(i);
+
+        logger.log(`[SuperSonic] allocated bus pair ${i} (buses ${busIndex}-${busIndex + 1})`);
+        return { busIndex, outputNode: output.gain };
+      }
+    }
+
+    logger.warn(`[SuperSonic] all ${MAX_SONIC_STEREO_PAIRS} bus pairs allocated`);
+    return null;
+  }
+
+  /**
+   * Release a bus pair when a sonic~ node is destroyed.
+   */
+  releaseBusPair(busIndex: number): void {
+    const pairIndex = busIndex / 2;
+    this.allocatedPairs.delete(pairIndex);
+
+    // Disconnect and clean up the pair's output nodes
+    const output = this.pairOutputs.get(pairIndex);
+    if (output) {
+      try {
+        output.merger.disconnect();
+        output.gain.disconnect();
+      } catch {
+        // Already disconnected
+      }
+      this.pairOutputs.delete(pairIndex);
+    }
+
+    logger.log(`[SuperSonic] released bus pair (buses ${busIndex}-${busIndex + 1})`);
+  }
+
+  private getOrCreatePairOutput(pairIndex: number): { merger: ChannelMergerNode; gain: GainNode } {
+    const existing = this.pairOutputs.get(pairIndex);
+    if (existing) return existing;
+
+    const ctx = this.audioContext!;
+    const leftChannel = pairIndex * 2;
+    const rightChannel = pairIndex * 2 + 1;
+
+    // Merge 2 channels from the splitter into a stereo output
+    const merger = ctx.createChannelMerger(2);
+    this.splitter!.connect(merger, leftChannel, 0);
+    this.splitter!.connect(merger, rightChannel, 1);
+
+    const gain = ctx.createGain();
+    gain.gain.value = 1.0;
+    merger.connect(gain);
+
+    const output = { merger, gain };
+    this.pairOutputs.set(pairIndex, output);
+    return output;
   }
 
   private async initialize(): Promise<void> {
@@ -75,7 +169,12 @@ export class SuperSonicManager {
 
       // CDN for large assets
       sampleBaseURL: `${cdnBase}supersonic-scsynth-samples@${assetVersion}/samples/`,
-      synthdefBaseURL: `${cdnBase}supersonic-scsynth-synthdefs@${assetVersion}/synthdefs/`
+      synthdefBaseURL: `${cdnBase}supersonic-scsynth-synthdefs@${assetVersion}/synthdefs/`,
+
+      // Multi-channel output for per-node bus isolation
+      scsynthOptions: {
+        numOutputBusChannels: MAX_OUTPUT_CHANNELS
+      }
     });
 
     // Set up event listeners for debugging
@@ -97,7 +196,22 @@ export class SuperSonicManager {
 
     await this.sonicInstance.init();
 
-    logger.log('[SuperSonic] initialized');
+    // Shared input: all sonic~ nodes' inputNode → sharedInput → sonic.node.input
+    this.sharedInputNode = this.audioContext.createGain();
+    this.sharedInputNode.gain.value = 1.0;
+    this.sharedInputNode.connect(this.sonicInstance.node.input);
+
+    // Split sonic.node's multi-channel output so each sonic~ can extract its bus pair.
+    // This splitter is never disconnected by AudioService — it's manager-owned.
+    // We must use "discrete" interpretation to prevent Web Audio from downmixing
+    // the multi-channel output to stereo before it reaches the splitter.
+    this.splitter = this.audioContext.createChannelSplitter(MAX_OUTPUT_CHANNELS);
+    this.splitter.channelInterpretation = 'discrete';
+    this.sonicInstance.node.connect(this.splitter);
+
+    logger.log(
+      `[SuperSonic] initialized with ${MAX_OUTPUT_CHANNELS} output channels (${MAX_SONIC_STEREO_PAIRS} stereo pairs)`
+    );
   }
 
   static getInstance(): SuperSonicManager {
@@ -113,5 +227,16 @@ export class SuperSonicManager {
       // Use shutdown() instead of destroy() to allow re-init
       this.sonicInstance.shutdown();
     }
+
+    this.allocatedPairs.clear();
+    for (const output of this.pairOutputs.values()) {
+      try {
+        output.merger.disconnect();
+        output.gain.disconnect();
+      } catch {
+        // Already disconnected
+      }
+    }
+    this.pairOutputs.clear();
   }
 }

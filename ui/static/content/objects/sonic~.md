@@ -19,6 +19,22 @@ The `sonic~` JavaScript context provides:
 - `on(event, callback)`: Subscribe to events
 - `inputNode`: Audio input GainNode
 - `outputNode`: Audio output GainNode
+- `outBus`: Assigned output bus index for this node (number)
+
+## Audio Routing
+
+Each `sonic~` node gets its own isolated stereo output bus
+from the shared scsynth engine.
+
+Use `outBus` to route your synths to the correct output:
+
+```js
+sonic.send('/s_new', 'sonic-pi-beep', -1, 0, 0,
+  'note', 64, 'out_bus', outBus);
+```
+
+Most `sonic-pi-*` synthdefs accept an `out` parameter. Always pass `'out_bus', outBus`
+to keep audio isolated between `sonic~` nodes.
 
 Available events: `'ready'`, `'loading:start'`, `'loading:complete'`,
 `'error'`, `'message'`
@@ -50,7 +66,7 @@ await sonic.loadSynthDef('sonic-pi-prophet');
 
 recv((note) => {
   sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0,
-    'note', note, 'release', 2);
+    'note', note, 'release', 2, 'out_bus', outBus);
 });
 ```
 
@@ -63,8 +79,8 @@ await sonic.loadSynthDef('sonic-pi-basic_stereo_player');
 await sonic.loadSample(0, 'loop_amen.flac');
 await sonic.sync();
 
-sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0,
-  'buf', 0, 'rate', 1);
+sonic.send('/s_new', 'sonic-pi-basic_stereo_player',
+  -1, 0, 0, 'buf', 0, 'rate', 1, 'out_bus', outBus);
 ```
 
 To use your own sample, use loadVfsUrl from the [Virtual Filesystem](/docs/virtual-filesystem) API.

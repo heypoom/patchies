@@ -591,7 +591,6 @@ export class CanvasDragDropManager {
 
     const { synthdef } = parsed as { synthdef: string };
     const safeSynthdef = escapeJS(synthdef);
-    const nodeIdBase = generateNodeIdBase();
 
     const code = `setPortCount(1);
 setTitle("${safeSynthdef}");
@@ -599,7 +598,7 @@ setTitle("${safeSynthdef}");
 await sonic.loadSynthDef('${safeSynthdef}');
 
 const activeNotes = new Map();
-let nextNodeId = ${nodeIdBase};
+let nextNodeId = sonic.nextNodeId();
 
 recv(msg => {
   if (!msg || typeof msg !== 'object') return;
@@ -615,7 +614,8 @@ recv(msg => {
     sonic.send('/s_new', '${safeSynthdef}', id, 0, 0,
       'note', note,
       'amp', (velocity || 127) / 127,
-      'gate', 1
+      'gate', 1,
+      'out_bus', outBus
     );
   } else if (type === 'noteOff') {
     const id = activeNotes.get(note);
@@ -670,7 +670,7 @@ await sonic.sync();
 
 recv(() => {
   sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0,
-    'buf', 0, 'rate', 1);
+    'buf', 0, 'rate', 1, 'out_bus', outBus);
 });`;
 
     this.createNode('sonic~', position, {

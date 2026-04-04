@@ -8,10 +8,14 @@ SuperCollider synthesis via SuperSonic AudioWorklet.
 - \`sonic\` — SuperSonic instance (already initialized)
 - \`SuperSonic\` — Static utilities (e.g., \`SuperSonic.osc.encodeMessage()\`)
 - \`on(event, callback)\` — Subscribe to SuperSonic events
+- \`outBus\` — Assigned output bus index for this node (number)
 
 **Sonic-specific gotchas:**
 - fft() is NOT available (audio output node, not video)
 - By default, the Prophet synth is loaded
+- **CRITICAL**: Each sonic~ node has its own isolated output bus.
+  Always pass \`'out_bus', outBus\` when creating synths to route audio to the correct output.
+  Without this, audio goes to bus 0 which may belong to a different sonic~ node.
 
 ${patcherLibraryInstructions}
 
@@ -89,7 +93,8 @@ ${patcherLibraryInstructions}
 Example — simple synth controlled by frequency messages:
 \`\`\`js
 const id = sonic.nextNodeId();
-sonic.send('/s_new', 'default', id, 1, 0, 'freq', 440, 'amp', 0.3);
+sonic.send('/s_new', 'default', id, 1, 0,
+  'freq', 440, 'amp', 0.3, 'out_bus', outBus);
 
 recv(m => {
   if (typeof m === 'number') {
@@ -118,7 +123,8 @@ recv(msg => {
     activeNotes.set(note, id);
 
     sonic.send('/s_new', 'sonic-pi-piano', id, 0, 0,
-      'note', note, 'amp', (velocity || 127) / 127, 'gate', 1);
+      'note', note, 'amp', (velocity || 127) / 127,
+      'gate', 1, 'out_bus', outBus);
   } else if (type === 'noteOff') {
     const id = activeNotes.get(note);
 

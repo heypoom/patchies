@@ -6,7 +6,7 @@ import { handleCodeError } from '$lib/js-runner/handleCodeError';
 import { match, P } from 'ts-pattern';
 import { MessageContext } from '$lib/messages/MessageContext';
 import { JSRunner } from '$lib/js-runner/JSRunner';
-import { SuperSonicManager } from '$lib/audio/SuperSonicManager';
+import { SuperSonicManager, type SonicBusAllocation } from '$lib/audio/SuperSonicManager';
 import { SONIC_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { AudioService } from '../AudioService';
 import { createSettingsAPI } from '$lib/settings/create-settings-api';
@@ -18,6 +18,9 @@ type OnSetTitle = (title: string) => void;
 /**
  * SonicNode implements the sonic~ audio node.
  * Executes user-defined SuperSonic (SuperCollider scsynth) code for synthesis and audio processing.
+ *
+ * Each sonic~ gets an isolated stereo bus pair from scsynth's multi-channel output.
+ * User code should use `Out.ar(outBus, signal)` to write to their assigned bus.
  */
 export class SonicNode implements AudioNodeV2 {
   static type = 'sonic~';
@@ -51,6 +54,7 @@ export class SonicNode implements AudioNodeV2 {
 
   // SuperSonic state
   private isAudioConnected = false;
+  private busAllocation: SonicBusAllocation | null = null;
   private recvCallback: RecvCallback | null = null;
 
   // Dynamic port counts for UI
@@ -109,26 +113,35 @@ export class SonicNode implements AudioNodeV2 {
 
   private async setCode(code: string): Promise<void> {
     if (!code || code.trim() === '') {
-      // Handle empty code
       return;
     }
 
     try {
-      // Lazy load SuperSonic ONLY when code is executed
       const manager = SuperSonicManager.getInstance();
 
-      const { sonic, SuperSonic } = await manager.ensureSuperSonic(this.audioContext);
+      const { sonic, SuperSonic, sharedInputNode } = await manager.ensureSuperSonic(
+        this.audioContext
+      );
 
-      // First time setup: Connect audio routing
+      // First time setup: allocate a bus pair and wire audio routing
       if (!this.isAudioConnected) {
-        // Connect our input TO SuperSonic's input
-        this.inputNode.connect(sonic.node.input);
+        // Allocate an isolated stereo bus pair for this node
+        this.busAllocation = manager.allocateBusPair();
 
-        // Connect SuperSonic's output TO our output
-        sonic.node.connect(this.audioNode);
+        if (this.busAllocation) {
+          // Wire the bus pair's isolated output → our audioNode.
+          // The bus output is managed by SuperSonicManager (splitter → merger → gain)
+          // and is never touched by AudioService.updateEdges() disconnect cycles.
+          this.busAllocation.outputNode.connect(this.audioNode);
+        }
+
+        // Audio input: our inputNode → shared input → sonic.node.input
+        this.inputNode.connect(sharedInputNode);
 
         this.isAudioConnected = true;
-        logger.log('SuperSonic audio routing connected');
+        logger.log(
+          `SuperSonic audio routing connected (bus ${this.busAllocation?.busIndex ?? 'none'})`
+        );
       }
 
       // Reset message inlet count and recv callback for new code
@@ -177,6 +190,7 @@ export class SonicNode implements AudioNodeV2 {
           on,
           inputNode: this.inputNode,
           outputNode: this.audioNode,
+          outBus: this.busAllocation?.busIndex ?? 0,
           recv,
           send,
           ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
@@ -222,6 +236,12 @@ export class SonicNode implements AudioNodeV2 {
 
     this.messageContext.destroy();
     this.jsRunner.destroy(this.nodeId);
+
+    // Release the bus pair back to the manager
+    if (this.busAllocation) {
+      SuperSonicManager.getInstance().releaseBusPair(this.busAllocation.busIndex);
+      this.busAllocation = null;
+    }
 
     // Disconnect audio nodes
     if (this.isAudioConnected) {
