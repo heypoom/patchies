@@ -60,6 +60,10 @@ interface NodeState {
   // Settings proxy (created fresh each run, tracks cached values + onChange callbacks)
   settingsProxy: WorkerSettingsProxy | null;
 
+  // SuperSonic OscChannels (closed on cleanup)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  oscChannels: any[];
+
   // Store the executed code for error reporting with line numbers
   code: string | null;
 }
@@ -81,6 +85,7 @@ function createNodeState(nodeId: string): NodeState {
     videoFrameCallback: null,
     pendingVideoFrameResolvers: new Map(),
     videoFrameRequestIdCounter: 0,
+    oscChannels: [],
     settingsProxy: null,
     code: null
   };
@@ -140,6 +145,19 @@ type PendingLLMConfig = {
 
 const pendingLLMConfigs = new Map<string, PendingLLMConfig>();
 let llmRequestIdCounter = 0;
+
+// SuperSonic OscChannel requests
+type PendingSuperSonicRequest = {
+  resolve: (channel: unknown) => void;
+  reject: (error: Error) => void;
+};
+
+const pendingSuperSonicRequests = new Map<string, PendingSuperSonicRequest>();
+let superSonicRequestIdCounter = 0;
+
+// Cache for dynamically imported supersonic-scsynth module
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let superSonicModule: any = null;
 
 function postResponse(response: WorkerResponse) {
   self.postMessage(response);
@@ -372,6 +390,21 @@ function createWorkerContext(nodeId: string) {
   // _reset() is called in resetNodeForRerun before executeCode, so no need to reset here
   const settingsProxy = state.settingsProxy;
 
+  // getSuperSonicChannel - request an OscChannel from the main thread's SuperSonic instance
+  const getSuperSonicChannel = async (): Promise<unknown> => {
+    const requestId = `sonic-ch-${nodeId}-${++superSonicRequestIdCounter}`;
+
+    return new Promise((resolve, reject) => {
+      pendingSuperSonicRequests.set(requestId, { resolve, reject });
+
+      self.postMessage({
+        type: 'requestSuperSonicChannel',
+        nodeId,
+        requestId
+      });
+    });
+  };
+
   return {
     console: customConsole,
     send,
@@ -392,7 +425,8 @@ function createWorkerContext(nodeId: string) {
     onVideoFrame,
     getVideoFrames,
     kv,
-    settings: settingsProxy.settings
+    settings: settingsProxy.settings,
+    getSuperSonicChannel
   };
 }
 
@@ -450,6 +484,16 @@ function cleanupNode(nodeId: string) {
   }
   state.pendingVideoFrameResolvers.clear();
 
+  // Close SuperSonic OscChannels
+  for (const channel of state.oscChannels) {
+    try {
+      channel.close();
+    } catch {
+      // Ignore close errors
+    }
+  }
+  state.oscChannels = [];
+
   // Reset settings proxy — clears callbacks/pending/cache but preserves requestIdCounter
   state.settingsProxy?._reset();
 }
@@ -494,7 +538,8 @@ async function executeCode(nodeId: string, processedCode: string) {
     'onVideoFrame',
     'getVideoFrames',
     'kv',
-    'settings'
+    'settings',
+    'getSuperSonicChannel'
   ];
 
   const functionArgs = [
@@ -517,7 +562,8 @@ async function executeCode(nodeId: string, processedCode: string) {
     ctx.onVideoFrame,
     ctx.getVideoFrames,
     ctx.kv,
-    ctx.settings
+    ctx.settings,
+    ctx.getSuperSonicChannel
   ];
 
   try {
@@ -643,6 +689,42 @@ function handleLLMConfig(data: {
   }
 
   pending.resolve(data.text ?? '');
+}
+
+// Handle SuperSonic OscChannel response from main thread
+async function handleSuperSonicChannelReady(
+  nodeId: string,
+  data: { requestId: string; channel?: unknown; error?: string }
+) {
+  const pending = pendingSuperSonicRequests.get(data.requestId);
+  if (!pending) return;
+
+  pendingSuperSonicRequests.delete(data.requestId);
+
+  if (data.error) {
+    pending.reject(new Error(data.error));
+    return;
+  }
+
+  try {
+    // Lazy-load supersonic-scsynth module
+    if (!superSonicModule) {
+      // @ts-expect-error -- no typedef in worker context
+      superSonicModule = await import('supersonic-scsynth');
+    }
+
+    const channel = superSonicModule.OscChannel.fromTransferable(data.channel);
+
+    // Track for cleanup
+    const state = nodeStates.get(nodeId);
+    state?.oscChannels.push(channel);
+
+    pending.resolve({ channel, osc: superSonicModule.osc });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    pending.reject(new Error(`Failed to create OscChannel: ${message}`));
+  }
 }
 
 // Handle FFT data from main thread
@@ -801,6 +883,12 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     .with({ type: 'settingsValueChanged' }, ({ key, value }) => {
       const state = nodeStates.get(nodeId);
       state?.settingsProxy?._receiveValueChanged(key as string, value);
+    })
+    .with({ type: 'superSonicChannelReady' }, (data) => {
+      handleSuperSonicChannelReady(
+        nodeId,
+        data as { requestId: string; channel?: unknown; error?: string }
+      );
     })
     .otherwise(() => {});
 };
