@@ -93,6 +93,10 @@ export class FBORenderer {
   private prevTransportTime: number = 0;
   private frameCount: number = 0;
 
+  /** Minimum interval between rendered frames (ms). 0 = unlimited. */
+  private renderIntervalMs: number = 0;
+  private lastRenderTime: number = 0;
+
   /** Transport time from main thread for synchronized timing */
   public transportTime: {
     seconds: number;
@@ -1187,6 +1191,11 @@ export class FBORenderer {
     return this.offscreenCanvas.transferToImageBitmap();
   }
 
+  /** Set the render FPS cap. 0 = unlimited (render every frame). */
+  setRenderFpsCap(fps: number): void {
+    this.renderIntervalMs = fps > 0 ? 1000 / fps : 0;
+  }
+
   startRenderLoop(onFrame?: () => void) {
     this.stopRenderLoop();
     this.isAnimating = true;
@@ -1195,6 +1204,13 @@ export class FBORenderer {
       if (!this.isAnimating) {
         this.frameCancellable?.cancel();
         return;
+      }
+
+      // Skip frame if under the FPS cap interval
+      if (this.renderIntervalMs > 0) {
+        const now = performance.now();
+        if (now - this.lastRenderTime < this.renderIntervalMs) return;
+        this.lastRenderTime = now;
       }
 
       this.renderFrame();

@@ -62,6 +62,7 @@ self.onmessage = (event) => {
     .with('setFFTData', () => handleSetFFTData(data))
     .with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code))
     .with('profilerEnable', () => fboRenderer.setProfilingEnabled(data.enabled))
+    .with('setRenderFpsCap', () => fboRenderer.setRenderFpsCap(data.fps))
     .with('setMaxPreviewsPerFrame', () => {
       console.log('setMax::hasOutputNode', fboRenderer.isOutputEnabled);
 

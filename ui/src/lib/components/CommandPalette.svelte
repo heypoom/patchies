@@ -17,6 +17,7 @@
   import { savePatchToLocalStorage, getUniquePatchName } from '$lib/save-load/save-local-storage';
   import { toast } from 'svelte-sonner';
   import { useWebCodecs, toggleWebCodecs, toggleVideoStats } from '../../stores/video.store';
+  import { renderFpsCap, FPS_CAP_OPTIONS } from '../../stores/renderer.store';
   import type { Node, Edge } from '@xyflow/svelte';
   import { IpcSystem } from '$lib/canvas/IpcSystem';
   import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
@@ -235,6 +236,11 @@
       description: 'Show or hide the FPS monitor'
     },
     {
+      id: 'cycle-render-fps-cap',
+      name: `Render FPS Cap: ${$renderFpsCap === 0 ? 'Unlimited' : `${$renderFpsCap} FPS`}`,
+      description: 'Cycle render FPS limit (Unlimited → 30 → 60)'
+    },
+    {
       id: 'toggle-video-stats',
       name: 'Toggle Video Stats Overlay',
       description: 'Show or hide video/webcam performance stats (FPS, drops, pipeline)'
@@ -397,6 +403,15 @@
       })
       .with('toggle-fps-monitor', () => {
         $isFpsMonitorVisible = !$isFpsMonitorVisible;
+        onCancel();
+      })
+      .with('cycle-render-fps-cap', () => {
+        const index = FPS_CAP_OPTIONS.indexOf($renderFpsCap);
+        $renderFpsCap = FPS_CAP_OPTIONS[(index + 1) % FPS_CAP_OPTIONS.length];
+
+        const label = $renderFpsCap === 0 ? 'Unlimited' : `${$renderFpsCap} FPS`;
+        toast.success(`Render FPS cap: ${label}`);
+
         onCancel();
       })
       .with('toggle-video-stats', () => {

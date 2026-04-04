@@ -11,6 +11,7 @@ import {
 import { get } from 'svelte/store';
 import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 import { currentPatchId } from '../../stores/ui.store';
+import { renderFpsCap } from '../../stores/renderer.store';
 import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
@@ -132,6 +133,11 @@ export class GLSystem {
     this.renderWorker.postMessage({ type: 'setPatchId', patchId: get(currentPatchId) });
     currentPatchId.subscribe((patchId) => {
       this.renderWorker.postMessage({ type: 'setPatchId', patchId });
+    });
+
+    // Sync render FPS cap with render worker
+    renderFpsCap.subscribe((fps) => {
+      this.renderWorker.postMessage({ type: 'setRenderFpsCap', fps });
     });
 
     // Listen for video frame requests from WorkerNodeSystem
