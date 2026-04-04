@@ -73,6 +73,18 @@
     }
     return tracker.track(trackingKey(field.key), () => getCurrentValue(field));
   }
+
+  // Sync reactive value to a number input only when it's not focused,
+  // preventing the browser from resetting cursor position (iOS Safari bug).
+  function syncNumberValue(input: HTMLInputElement, getValue: () => number) {
+    $effect(() => {
+      const v = getValue();
+
+      if (document.activeElement !== input) {
+        input.value = v != null ? String(v) : '';
+      }
+    });
+  }
 </script>
 
 <!-- Close button bar -->
@@ -151,7 +163,7 @@
           <input
             id="setting-{field.key}"
             type="number"
-            value={getCurrentValue(field) as number}
+            use:syncNumberValue={() => getCurrentValue(field) as number}
             min={field.min}
             max={field.max}
             step={field.step}
