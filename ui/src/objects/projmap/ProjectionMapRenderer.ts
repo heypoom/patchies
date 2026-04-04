@@ -1,35 +1,34 @@
 import type regl from 'regl';
 import type { FBORenderer } from '$workers/rendering/fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
-import { getFramebuffer } from '$workers/rendering/utils';
 import type { ProjMapSurface } from './types';
 import { WARP_SUBDIVISIONS } from './constants';
+import { Earcut } from 'three/src/extras/Earcut.js';
 
 export interface ProjectionMapConfig {
   nodeId: string;
   surfaces: ProjMapSurface[];
 }
 
+/** Precomputed geometry for a single surface */
+interface SurfaceGeometry {
+  positions: regl.Buffer;
+  uvs: regl.Buffer;
+  elements: regl.Elements;
+  count: number;
+}
+
 export class ProjectionMapRenderer {
   public config: ProjectionMapConfig;
 
   private framebuffer: regl.Framebuffer2D;
-  private renderer: FBORenderer;
+  private reglInstance: regl.Regl;
 
-  private THREE: typeof import('three') | null = null;
-  private threeWebGLRenderer: import('three').WebGLRenderer | null = null;
-  private renderTarget: import('three').WebGLRenderTarget | null = null;
-  private scene: import('three').Scene | null = null;
-  private camera: import('three').OrthographicCamera | null = null;
+  /** Precomputed geometry per surface, keyed by surface id */
+  private geometries = new Map<string, SurfaceGeometry>();
 
-  /** One mesh per surface, keyed by surface id */
-  private meshes = new Map<string, import('three').Mesh>();
-
-  /** Regl textures from upstream nodes (set each frame) */
-  private inputTextures: (regl.Texture2D | undefined)[] = [];
-
-  /** Three.js wrappers around the regl textures (zero-copy) */
-  private threeInputTextures: import('three').Texture[] = [];
+  /** Regl draw command for textured surfaces */
+  private drawSurface: regl.DrawCommand;
 
   private constructor(
     config: ProjectionMapConfig,
@@ -38,7 +37,51 @@ export class ProjectionMapRenderer {
   ) {
     this.config = config;
     this.framebuffer = framebuffer;
-    this.renderer = renderer;
+    this.reglInstance = renderer.regl;
+
+    this.drawSurface = this.reglInstance({
+      vert: `
+        precision mediump float;
+        attribute vec2 position;
+        attribute vec2 uv;
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position * 2.0 - 1.0, 0, 1);
+        }
+      `,
+      frag: `
+        precision mediump float;
+        varying vec2 vUv;
+        uniform sampler2D inputTexture;
+        void main() {
+          gl_FragColor = texture2D(inputTexture, vUv);
+        }
+      `,
+      attributes: {
+        position: this.reglInstance.prop<{ position: regl.Buffer }, 'position'>('position'),
+        uv: this.reglInstance.prop<{ uv: regl.Buffer }, 'uv'>('uv')
+      },
+      uniforms: {
+        inputTexture: this.reglInstance.prop<{ inputTexture: regl.Texture2D }, 'inputTexture'>(
+          'inputTexture'
+        )
+      },
+      elements: this.reglInstance.prop<{ elements: regl.Elements }, 'elements'>('elements'),
+      framebuffer: this.reglInstance.prop<{ framebuffer: regl.Framebuffer2D }, 'framebuffer'>(
+        'framebuffer'
+      ),
+      blend: {
+        enable: true,
+        func: {
+          srcRGB: 'src alpha',
+          srcAlpha: 'one',
+          dstRGB: 'one minus src alpha',
+          dstAlpha: 'one minus src alpha'
+        }
+      },
+      depth: { enable: false }
+    });
   }
 
   static async create(
@@ -47,275 +90,173 @@ export class ProjectionMapRenderer {
     renderer: FBORenderer
   ): Promise<ProjectionMapRenderer> {
     const instance = new ProjectionMapRenderer(config, framebuffer, renderer);
-    instance.THREE = await import('three');
-
-    const [width, height] = renderer.outputSize;
-
-    const fakeCanvas = { addEventListener: () => {} };
-
-    instance.threeWebGLRenderer = new instance.THREE.WebGLRenderer({
-      // @ts-expect-error -- share WebGL context with regl
-      canvas: fakeCanvas,
-      context: renderer.gl!,
-      antialias: true
-    });
-
-    instance.threeWebGLRenderer.setSize(width, height, false);
-
-    instance.renderTarget = new instance.THREE.WebGLRenderTarget(width, height, {
-      format: instance.THREE.RGBAFormat,
-      type: instance.THREE.UnsignedByteType
-    });
-
-    instance.scene = new instance.THREE.Scene();
-
-    // Orthographic camera mapping [0,1] screen space to [-0.5, 0.5] Three space
-    instance.camera = new instance.THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, 0.1, 10);
-    instance.camera.position.z = 1;
 
     if (config.surfaces.length > 0) {
-      instance.rebuildScene();
+      instance.rebuildGeometries();
     }
 
     return instance;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   resizeOutput(width: number, height: number) {
-    this.threeWebGLRenderer?.setSize(width, height, false);
-    this.renderTarget?.setSize(width, height);
+    // No-op: regl framebuffer is resized externally
   }
 
   updateSurfaces(surfaces: ProjMapSurface[]) {
     this.config.surfaces = surfaces;
-
-    this.rebuildScene();
+    this.rebuildGeometries();
   }
 
-  private rebuildScene() {
-    if (!this.THREE || !this.scene) return;
-
-    // Dispose and remove all existing meshes
-    for (const mesh of this.meshes.values()) {
-      this.scene.remove(mesh);
-
-      mesh.geometry.dispose();
-
-      (mesh.material as import('three').Material).dispose();
+  private rebuildGeometries() {
+    // Dispose old geometries
+    for (const geo of this.geometries.values()) {
+      geo.positions.destroy();
+      geo.uvs.destroy();
+      geo.elements.destroy();
     }
-
-    this.meshes.clear();
+    this.geometries.clear();
 
     for (const surface of this.config.surfaces) {
       if (surface.points.length < 3) continue;
-      const mesh = this.buildSurfaceMesh(surface);
-      this.meshes.set(surface.id, mesh);
-      this.scene.add(mesh);
+
+      const geo =
+        surface.mode === 'warp' ? this.buildWarpGeometry(surface) : this.buildMaskGeometry(surface);
+
+      if (geo) this.geometries.set(surface.id, geo);
     }
-  }
-
-  private buildSurfaceMesh(surface: ProjMapSurface): import('three').Mesh {
-    const geometry =
-      surface.mode === 'warp' ? this.buildWarpGeometry(surface) : this.buildMaskGeometry(surface);
-
-    const THREE = this.THREE!;
-
-    const material = new THREE.MeshBasicMaterial({
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide
-    });
-
-    return new THREE.Mesh(geometry, material);
-  }
-
-  /** Mask mode: existing ShapeGeometry polygon clipping with 1:1 UV */
-  private buildMaskGeometry(surface: ProjMapSurface): import('three').BufferGeometry {
-    const THREE = this.THREE!;
-
-    const shape = new THREE.Shape();
-    const first = surface.points[0];
-    shape.moveTo(first.x - 0.5, 0.5 - first.y);
-    for (let i = 1; i < surface.points.length; i++) {
-      const p = surface.points[i];
-      shape.lineTo(p.x - 0.5, 0.5 - p.y);
-    }
-    shape.closePath();
-
-    const geometry = new THREE.ShapeGeometry(shape);
-
-    const posAttr = geometry.attributes.position;
-    const uvAttr = geometry.attributes.uv;
-
-    for (let i = 0; i < posAttr.count; i++) {
-      const x = posAttr.getX(i);
-      const y = posAttr.getY(i);
-      uvAttr.setXY(i, x + 0.5, y + 0.5);
-    }
-
-    uvAttr.needsUpdate = true;
-
-    return geometry;
   }
 
   /**
    * Warp mode: subdivided plane with bilinear interpolation from 4 corners.
-   * Corners: TL(0), TR(1), BR(2), BL(3) in normalized [0,1] screen space.
-   * UVs stay uniform so texture warps with vertex positions.
+   * Positions in [0,1] screen space, UVs uniform [0,1].
    */
-  private buildWarpGeometry(surface: ProjMapSurface): import('three').BufferGeometry {
-    const THREE = this.THREE!;
+  private buildWarpGeometry(surface: ProjMapSurface): SurfaceGeometry | null {
     const segs = WARP_SUBDIVISIONS;
-
-    const geometry = new THREE.PlaneGeometry(1, 1, segs, segs);
 
     if (surface.points.length < 4) {
       console.warn(
         `[projmap] warp surface ${surface.id} has ${surface.points.length} points, need 4`
       );
-      return geometry;
+      return null;
     }
-
-    const posAttr = geometry.attributes.position;
-    const uvAttr = geometry.attributes.uv;
 
     const [tl, tr, br, bl] = surface.points;
+    const vertCount = (segs + 1) * (segs + 1);
+    const positions = new Float32Array(vertCount * 2);
+    const uvs = new Float32Array(vertCount * 2);
 
-    for (let i = 0; i < posAttr.count; i++) {
-      // PlaneGeometry vertices are in [-0.5, 0.5]; map to parametric [0,1]
-      const u = posAttr.getX(i) + 0.5;
-      const v = 1 - (posAttr.getY(i) + 0.5); // flip Y (Three Y-up → screen Y-down)
+    for (let row = 0; row <= segs; row++) {
+      for (let col = 0; col <= segs; col++) {
+        const idx = (row * (segs + 1) + col) * 2;
+        const u = col / segs;
+        const v = row / segs;
 
-      // Bilinear interpolation from 4 corners (screen-space [0,1])
-      const sx = (1 - u) * (1 - v) * tl.x + u * (1 - v) * tr.x + u * v * br.x + (1 - u) * v * bl.x;
-      const sy = (1 - u) * (1 - v) * tl.y + u * (1 - v) * tr.y + u * v * br.y + (1 - u) * v * bl.y;
+        // Bilinear interpolation → screen-space [0,1]
+        positions[idx] =
+          (1 - u) * (1 - v) * tl.x + u * (1 - v) * tr.x + u * v * br.x + (1 - u) * v * bl.x;
+        positions[idx + 1] =
+          1 - ((1 - u) * (1 - v) * tl.y + u * (1 - v) * tr.y + u * v * br.y + (1 - u) * v * bl.y);
 
-      // Convert to Three ortho space [-0.5, 0.5]
-      posAttr.setXY(i, sx - 0.5, 0.5 - sy);
-
-      // UV maps uniformly [0,1] — texture fills the quad
-      uvAttr.setXY(i, u, 1 - v);
+        uvs[idx] = u;
+        uvs[idx + 1] = 1 - v;
+      }
     }
 
-    posAttr.needsUpdate = true;
-    uvAttr.needsUpdate = true;
+    // Build triangle indices for the grid
+    const indices = new Uint16Array(segs * segs * 6);
+    let ei = 0;
+    for (let row = 0; row < segs; row++) {
+      for (let col = 0; col < segs; col++) {
+        const a = row * (segs + 1) + col;
+        const b = a + 1;
+        const c = a + (segs + 1);
+        const d = c + 1;
+        indices[ei++] = a;
+        indices[ei++] = b;
+        indices[ei++] = c;
+        indices[ei++] = b;
+        indices[ei++] = d;
+        indices[ei++] = c;
+      }
+    }
 
-    return geometry;
+    return {
+      positions: this.reglInstance.buffer(positions),
+      uvs: this.reglInstance.buffer(uvs),
+      elements: this.reglInstance.elements({ data: indices, type: 'uint16' }),
+      count: indices.length
+    };
+  }
+
+  /** Mask mode: earcut-triangulated polygon with 1:1 UV mapping */
+  private buildMaskGeometry(surface: ProjMapSurface): SurfaceGeometry | null {
+    // Flatten points for earcut: [x0, y0, x1, y1, ...]
+    const flat = new Float64Array(surface.points.length * 2);
+    for (let i = 0; i < surface.points.length; i++) {
+      flat[i * 2] = surface.points[i].x;
+      flat[i * 2 + 1] = surface.points[i].y;
+    }
+
+    const triIndices = Earcut.triangulate(Array.from(flat), undefined, 2);
+    if (triIndices.length === 0) return null;
+
+    // Positions and UVs: screen [0,1] mapped to clip space in vertex shader
+    const positions = new Float32Array(surface.points.length * 2);
+    const uvs = new Float32Array(surface.points.length * 2);
+
+    for (let i = 0; i < surface.points.length; i++) {
+      const p = surface.points[i];
+      positions[i * 2] = p.x;
+      positions[i * 2 + 1] = 1 - p.y; // flip Y for GL
+      uvs[i * 2] = p.x;
+      uvs[i * 2 + 1] = 1 - p.y;
+    }
+
+    return {
+      positions: this.reglInstance.buffer(positions),
+      uvs: this.reglInstance.buffer(uvs),
+      elements: this.reglInstance.elements({
+        data: new Uint16Array(triIndices),
+        type: 'uint16'
+      }),
+      count: triIndices.length
+    };
   }
 
   renderFrame(params: RenderParams) {
-    if (!this.threeWebGLRenderer || !this.renderTarget || !this.scene || !this.camera) return;
-    const gl = this.renderer.gl;
+    const inputTextures = params.userParams as (regl.Texture2D | undefined)[];
 
-    if (!gl) return;
+    // Clear the framebuffer
+    this.reglInstance.clear({
+      color: [0, 0, 0, 0],
+      framebuffer: this.framebuffer
+    });
 
-    this.inputTextures = params.userParams as (regl.Texture2D | undefined)[];
-
-    this.updateThreeTextures();
-    this.updateMeshTextures();
-
-    this.threeWebGLRenderer.setRenderTarget(this.renderTarget);
-    this.threeWebGLRenderer.render(this.scene, this.camera);
-
-    this.blitToReglFramebuffer();
-
-    // Restore shared WebGL context state
-    this.threeWebGLRenderer.resetState();
-    this.renderer.regl._refresh();
-  }
-
-  /** Assign inlet N texture to surface N */
-  private updateMeshTextures() {
+    // Draw each surface with its input texture
     for (let i = 0; i < this.config.surfaces.length; i++) {
-      const mesh = this.meshes.get(this.config.surfaces[i].id);
-      if (!mesh) continue;
+      const surface = this.config.surfaces[i];
+      const geo = this.geometries.get(surface.id);
+      const tex = inputTextures[i];
 
-      const threeTex = this.threeInputTextures[i] ?? null;
-      const material = mesh.material as import('three').MeshBasicMaterial;
+      if (!geo || !tex) continue;
 
-      if (material.map !== threeTex) {
-        material.map = threeTex;
-        material.needsUpdate = true;
-      }
+      this.drawSurface({
+        position: geo.positions,
+        uv: geo.uvs,
+        elements: geo.elements,
+        inputTexture: tex,
+        framebuffer: this.framebuffer
+      });
     }
-  }
-
-  /**
-   * Wraps each regl texture with a Three.js Texture by directly swapping the
-   * underlying WebGLTexture handle — zero GPU copy.
-   */
-  private updateThreeTextures() {
-    if (!this.THREE || !this.threeWebGLRenderer) return;
-
-    const [width, height] = this.renderer.outputSize;
-
-    for (let i = 0; i < this.inputTextures.length; i++) {
-      const reglTex = this.inputTextures[i];
-      if (!reglTex) continue;
-
-      if (!this.threeInputTextures[i]) {
-        this.threeInputTextures[i] = new this.THREE.Texture();
-        this.threeInputTextures[i].minFilter = this.THREE.LinearFilter;
-        this.threeInputTextures[i].magFilter = this.THREE.LinearFilter;
-      }
-
-      const threeTex = this.threeInputTextures[i];
-
-      // @ts-expect-error -- accessing internal regl property
-      const webglTexture = reglTex._texture?.texture as WebGLTexture | undefined;
-
-      if (webglTexture) {
-        const props = this.threeWebGLRenderer.properties.get(threeTex) as {
-          __webglTexture?: WebGLTexture;
-          __webglInit?: boolean;
-        };
-
-        props.__webglTexture = webglTexture;
-        props.__webglInit = true;
-
-        threeTex.image = { width, height };
-        threeTex.needsUpdate = false;
-      }
-    }
-  }
-
-  private blitToReglFramebuffer() {
-    if (!this.threeWebGLRenderer || !this.renderTarget || !this.framebuffer) return;
-
-    const gl = this.renderer.gl;
-    if (!gl) return;
-
-    const [width, height] = this.renderer.outputSize;
-
-    const threeProps = this.threeWebGLRenderer.properties.get(this.renderTarget);
-
-    // @ts-expect-error -- accessing internal Three.js property
-    const sourceFBO = threeProps.__webglFramebuffer as WebGLFramebuffer | undefined;
-    if (!sourceFBO) return;
-
-    const destFBO = getFramebuffer(this.framebuffer);
-
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
-    gl.blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.LINEAR);
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
   }
 
   destroy() {
-    for (const mesh of this.meshes.values()) {
-      mesh.geometry.dispose();
-      (mesh.material as import('three').Material).dispose();
+    for (const geo of this.geometries.values()) {
+      geo.positions.destroy();
+      geo.uvs.destroy();
+      geo.elements.destroy();
     }
-
-    this.meshes.clear();
-    this.renderTarget?.dispose();
-
-    for (const tex of this.threeInputTextures) {
-      tex.dispose();
-    }
-
-    this.threeInputTextures = [];
-
-    // Don't dispose threeWebGLRenderer — it shares the WebGL context with regl!
+    this.geometries.clear();
   }
 }
