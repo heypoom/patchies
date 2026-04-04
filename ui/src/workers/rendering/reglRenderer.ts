@@ -64,12 +64,14 @@ function createTrackedRegl(
         };
       }
 
-      // Intercept clear() to auto-inject framebuffer
+      // Intercept clear() to auto-inject framebuffer without mutating caller's object
       if (prop === 'clear') {
         return (opts: Record<string, unknown>) => {
           if (opts && !('framebuffer' in opts)) {
             const fb = getFramebuffer();
-            if (fb) opts.framebuffer = fb;
+            if (fb) {
+              return (val as Function).call(target, { ...opts, framebuffer: fb });
+            }
           }
           return (val as Function).call(target, opts);
         };
@@ -170,6 +172,9 @@ export class ReglRenderer {
   }
 
   public async updateCode() {
+    // Prevent stale render function from running during async rebuild
+    this.userRenderFunc = null;
+
     // Clean up previous tracked resources
     this.trackedRegl?.destroyAll();
 
@@ -245,6 +250,7 @@ export class ReglRenderer {
         noInteract: () => this.setInteraction('interact', false),
         noOutput: () => this.setVideoOutputEnabled(false),
 
+        // No-op: regl uses render(time) called by the pipeline, not RAF
         requestAnimationFrame: () => {},
 
         // Worker-compatible clock
