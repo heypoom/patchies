@@ -28,7 +28,7 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
           label: def.name,
           type: 'number' as const,
           step: 0.01,
-          persistence: 'none' as const
+          persistence: 'node' as const
         }
       ])
       .with('int', () => [
@@ -37,11 +37,11 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
           label: def.name,
           type: 'number' as const,
           step: 1,
-          persistence: 'none' as const
+          persistence: 'node' as const
         }
       ])
       .with('bool', () => [
-        { key: def.name, label: def.name, type: 'boolean' as const, persistence: 'none' as const }
+        { key: def.name, label: def.name, type: 'boolean' as const, persistence: 'node' as const }
       ])
       .otherwise(() => [])
   );

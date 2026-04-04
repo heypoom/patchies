@@ -29,6 +29,7 @@
       title?: string;
       code: string;
       glUniformDefs: GLUniformDef[];
+      uniformValues?: Record<string, number | boolean>;
       executeCode?: number;
       showConsole?: boolean;
     };
@@ -52,7 +53,7 @@
 
   let isPaused = $state(false);
   let editorReady = $state(false);
-  let uniformValues = $state<Record<string, number | boolean>>({});
+  let uniformValues = $state<Record<string, number | boolean>>(data.uniformValues ?? {});
   const uniformsSchema = $derived(uniformDefsToSettingsSchema(data.glUniformDefs ?? []));
 
   let consoleRef = $state<{ clearConsole: () => void } | null>(null);
@@ -94,6 +95,7 @@
 
         if (typeof message === 'number' || typeof message === 'boolean') {
           uniformValues = { ...uniformValues, [uniformName]: message };
+          updateNodeData(nodeId, { uniformValues });
         }
 
         return;
@@ -146,9 +148,22 @@
     lineErrors = undefined;
 
     // Construct uniform definitions from the shader code.
+    const nextDefs = shaderCodeToUniformDefs(data.code);
+
+    // Prune saved uniform values for uniforms that no longer exist
+    const validNames = new Set(nextDefs.map((d) => d.name));
+    const pruned: Record<string, number | boolean> = {};
+
+    for (const [k, v] of Object.entries(uniformValues)) {
+      if (validNames.has(k)) pruned[k] = v;
+    }
+
+    uniformValues = pruned;
+
     const nextData = {
       ...data,
-      glUniformDefs: shaderCodeToUniformDefs(data.code)
+      glUniformDefs: nextDefs,
+      uniformValues: pruned
     };
 
     // Remove edges with invalid uniform names before updating
@@ -165,6 +180,7 @@
     uniformValues = { ...uniformValues, [key]: value as number | boolean };
 
     glSystem.setUniformData(nodeId, key, value as UserUniformValue);
+    updateNodeData(nodeId, { uniformValues });
   }
 
   function togglePause() {
@@ -220,6 +236,11 @@
     }
 
     updateShader();
+
+    // Restore persisted uniform values to the GL system
+    for (const [name, value] of Object.entries(uniformValues)) {
+      glSystem.setUniformData(nodeId, name, value as UserUniformValue);
+    }
 
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);

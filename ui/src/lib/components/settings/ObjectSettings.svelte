@@ -20,6 +20,7 @@
     onValueChange: (key: string, value: unknown) => void;
     onRevertAll: () => void;
     onClose: () => void;
+
     /** Prefix for undo/redo tracking keys. Defaults to 'settings' (e.g. 'settings.foo').
      *  Pass '' to track at the top level (e.g. 'foo'). */
     settingsPrefix?: string;
@@ -71,6 +72,7 @@
     if ((field.persistence ?? 'node') !== 'node') {
       return { onFocus: () => {}, onBlur: () => {} };
     }
+
     return tracker.track(trackingKey(field.key), () => getCurrentValue(field));
   }
 
