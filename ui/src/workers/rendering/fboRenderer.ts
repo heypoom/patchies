@@ -1193,7 +1193,9 @@ export class FBORenderer {
 
   /** Set the render FPS cap. 0 = unlimited (render every frame). */
   setRenderFpsCap(fps: number): void {
-    this.renderIntervalMs = fps > 0 ? 1000 / fps : 0;
+    // Subtract 1ms tolerance so rAF timing jitter doesn't cause us to skip
+    // the correct frame (e.g. 60 FPS on 120Hz: 16.6ms is just under 16.67ms)
+    this.renderIntervalMs = fps > 0 ? 1000 / fps - 1 : 0;
   }
 
   startRenderLoop(onFrame?: () => void) {
