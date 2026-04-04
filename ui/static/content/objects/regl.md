@@ -116,7 +116,6 @@ function render(time) {
 
 - `regl` — the regl instance
 - `width`, `height` — output dimensions
-- `mouse.x`, `mouse.y` — mouse position (normalized 0-1)
 
 ## Special Functions
 

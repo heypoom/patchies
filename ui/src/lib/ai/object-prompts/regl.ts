@@ -9,7 +9,6 @@ Sits between the high-level glsl node (fragment shader only) and building a full
 **regl-specific globals:**
 - regl: The regl instance (shared with the rendering pipeline)
 - width, height: Output framebuffer dimensions
-- mouse: {x, y} coordinates (normalized 0-1)
 
 **regl-specific methods:**
 - setVideoCount(inlets, outlets) - Configure video inlets/outlets (default 1, 1)
