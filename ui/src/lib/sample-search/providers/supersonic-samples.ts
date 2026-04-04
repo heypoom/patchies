@@ -1,7 +1,7 @@
 import type { SampleProvider, SampleResult } from '../types';
 
 // CDN base for SuperSonic samples (unpkg)
-const CDN_BASE = 'https://unpkg.com/supersonic-scsynth-samples@0.57.0/samples/';
+const CDN_BASE = 'https://unpkg.com/supersonic-scsynth-samples@latest/samples/';
 
 // All 206 Sonic Pi samples from supersonic-scsynth-samples
 // Source: https://github.com/samaaron/supersonic/tree/main/packages/supersonic-scsynth-samples

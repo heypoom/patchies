@@ -633,6 +633,10 @@
                     <ContextMenu.Item onclick={() => copyScSampleName(row.result)}>
                       Copy sample name
                     </ContextMenu.Item>
+
+                    <ContextMenu.Item onclick={() => copyAsUrl(row.result)}>
+                      Copy as URL
+                    </ContextMenu.Item>
                   {:else}
                     <ContextMenu.Item onclick={() => copyAsStrudelName(row.result)}>
                       Copy as Strudel name
