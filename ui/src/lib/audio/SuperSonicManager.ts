@@ -190,6 +190,13 @@ export class SuperSonicManager {
 
     this.sonicInstance.on('error', (err: unknown) => logger.error('[SuperSonic] error:', err));
 
+    // Log /fail responses so synthdef loading errors aren't silent
+    this.sonicInstance.on('in', (msg: unknown[]) => {
+      if (msg[0] === '/fail') {
+        logger.error('[SuperSonic]', ...msg.slice(1));
+      }
+    });
+
     this.sonicInstance.on(
       'loading:start',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
