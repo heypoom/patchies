@@ -1,65 +1,28 @@
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
-import type { Message } from '$lib/messages/MessageSystem';
-import { WorkerRendererMessageContext } from './WorkerRendererMessageContext';
-import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
-import type { SendMessageOptions } from '$lib/messages/MessageContext';
-import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
-import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
-import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
-import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
+import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
 
-type AudioAnalysisType = 'wave' | 'freq';
-type AudioAnalysisFormat = 'int' | 'float';
-
-type AudioAnalysisProps = {
-  id?: string;
-  type?: AudioAnalysisType;
-  format?: AudioAnalysisFormat;
-};
-
-export interface CanvasConfig {
-  code: string;
-  nodeId: string;
-}
-
-export class CanvasRenderer {
-  public config: CanvasConfig;
-  public renderer: FBORenderer;
-
-  public framebuffer: regl.Framebuffer2D | null = null;
+export class CanvasRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   public offscreenCanvas: OffscreenCanvas | null = null;
   public ctx: OffscreenCanvasRenderingContext2D | null = null;
   public canvasTexture: regl.Texture2D | null = null;
 
-  private msgContext!: WorkerRendererMessageContext;
-  public settingsProxy: WorkerSettingsProxy | null = null;
-
   private timestamp = performance.now();
-  private sampleRate: number = 44100;
   private animationId: number | null = null;
   private drawCommand: regl.DrawCommand | null = null;
   private pausedCallback: FrameRequestCallback | null = null;
 
-  // FFT state tracking
-  public isFFTEnabled = false;
-  private fftRequestCache = new Map<string, boolean>();
-  private fftDataCache = new Map<string, { data: Uint8Array | Float32Array; timestamp: number }>();
-
   private constructor(
-    config: CanvasConfig,
+    config: BaseRendererConfig,
     framebuffer: regl.Framebuffer2D,
     renderer: FBORenderer
   ) {
-    this.config = config;
-    this.framebuffer = framebuffer;
-    this.renderer = renderer;
-    this.msgContext = new WorkerRendererMessageContext(config.nodeId);
+    super(config, framebuffer, renderer);
   }
 
   static async create(
-    config: CanvasConfig,
+    config: BaseRendererConfig,
     framebuffer: regl.Framebuffer2D,
     renderer: FBORenderer
   ): Promise<CanvasRenderer> {
@@ -84,7 +47,6 @@ export class CanvasRenderer {
 
     this.ensureDrawCommand();
 
-    // Use flipY to match standard screen coordinates (Y-down, origin top-left)
     // @ts-expect-error -- regl type is wrong
     this.canvasTexture?.({ data: this.offscreenCanvas, flipY: true });
     this.drawCommand?.();
@@ -93,7 +55,6 @@ export class CanvasRenderer {
   ensureDrawCommand() {
     if (this.drawCommand || !this.ctx) return;
 
-    // Use flipY to match standard screen coordinates (Y-down, origin top-left)
     // @ts-expect-error -- regl type is wrong
     this.canvasTexture = this.renderer.regl.texture({
       data: this.offscreenCanvas,
@@ -103,23 +64,22 @@ export class CanvasRenderer {
     this.drawCommand = this.renderer.regl({
       framebuffer: this.framebuffer,
       vert: `
-				attribute vec2 position;
-				varying vec2 uv;
-				void main() {
-					uv = position * 0.5 + 0.5;
-					gl_Position = vec4(position, 0, 1);
-				}
-			`,
+        attribute vec2 position;
+        varying vec2 uv;
+        void main() {
+          uv = position * 0.5 + 0.5;
+          gl_Position = vec4(position, 0, 1);
+        }
+      `,
       frag: `
-				precision mediump float;
-				varying vec2 uv;
-				uniform sampler2D canvasTexture;
+        precision mediump float;
+        varying vec2 uv;
+        uniform sampler2D canvasTexture;
 
-				void main() {
-					// Texture is already flipped via flipY:true, so use uv directly
-					gl_FragColor = texture2D(canvasTexture, uv);
-				}
-			`,
+        void main() {
+          gl_FragColor = texture2D(canvasTexture, uv);
+        }
+      `,
       attributes: {
         position: [
           [-1, -1],
@@ -134,27 +94,13 @@ export class CanvasRenderer {
     });
   }
 
+  // Canvas uses RAF internally, not the pipeline's renderFrame
+  renderFrame() {}
+
   public async updateCode() {
     if (!this.ctx || !this.offscreenCanvas) return;
 
-    this.isFFTEnabled = false;
-    this.fftDataCache.clear();
-    this.fftRequestCache.clear();
-    this.msgContext.reset();
-
-    // Reset settings proxy for re-run — reuse instance to preserve requestIdCounter
-    // and avoid request ID collisions on rapid re-runs
-    if (!this.settingsProxy) {
-      this.settingsProxy = createWorkerSettingsProxy(this.config.nodeId, (msg) =>
-        self.postMessage(msg)
-      );
-    } else {
-      this.settingsProxy._reset();
-    }
-
-    // Reset interaction and video output state
-    this.setInteraction('interact', true);
-    this.setVideoOutputEnabled(true);
+    this.resetState();
 
     // Cancel any existing animation frame
     if (this.animationId !== null) {
@@ -169,12 +115,10 @@ export class CanvasRenderer {
       this.offscreenCanvas.width = width;
       this.offscreenCanvas.height = height;
 
-      // Create extra context for canvas-specific functionality
       const extraContext = {
+        ...this.buildBaseExtraContext(),
         canvas: this.offscreenCanvas,
         ctx: this.ctx,
-        width: width,
-        height: height,
 
         requestAnimationFrame: (callback: FrameRequestCallback) => {
           // Store callback for resume
@@ -200,55 +144,12 @@ export class CanvasRenderer {
           if (this.animationId === id) {
             this.animationId = null;
           }
-        },
-
-        // FFT function for audio analysis
-        fft: this.createFFTFunction(),
-
-        // VFS URL resolution (worker -> main thread -> object URL)
-        getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
-
-        // Worker-specific send override (JSRunner defaults use worker-local MessageSystem which has no edges)
-        send: this.sendMessage.bind(this),
-
-        onMessage: this.msgContext.createOnMessageFunction(),
-
-        // Interaction control methods
-        noDrag: () => this.setInteraction('drag', false),
-        noPan: () => this.setInteraction('pan', false),
-        noWheel: () => this.setInteraction('wheel', false),
-        noInteract: () => this.setInteraction('interact', false),
-        noOutput: () => this.setVideoOutputEnabled(false),
-
-        // Worker-compatible clock (overrides JSRunner's main-thread Transport-based clock)
-        clock: this.renderer.createWorkerClock(),
-
-        // Settings API — proxied through main thread
-        settings: this.settingsProxy!.settings
+        }
       };
 
-      const processedCode = await this.renderer.jsRunner.preprocessCode(this.config.code, {
-        nodeId: this.config.nodeId
-      });
-
-      if (processedCode === null) return;
-
-      // Use JSRunner's executeJavaScript method with full module support
-      await this.renderer.jsRunner.executeJavaScript(this.config.nodeId, processedCode, {
-        customConsole: this.createCustomConsole(),
-        setPortCount: (inletCount?: number, outletCount?: number) => {
-          this.setPortCount(inletCount, outletCount);
-        },
-        setTitle: (title: string) => {
-          this.setTitle(title);
-        },
-        setHidePorts: (hidePorts: boolean) => {
-          this.setHidePorts(hidePorts);
-        },
-        extraContext
-      });
+      await this.executeUserCode(this.config.code, extraContext);
     } catch (error) {
-      this.handleCodeError(error);
+      this.handleCodeError(error, CANVAS_WRAPPER_OFFSET);
     }
   }
 
@@ -258,114 +159,10 @@ export class CanvasRenderer {
       this.animationId = null;
     }
 
-    // Clean up JSRunner context for this node
-    this.renderer.jsRunner.destroy(this.config.nodeId);
-
     this.offscreenCanvas = null;
     this.ctx = null;
-  }
 
-  sendMessage(data: unknown, options: SendMessageOptions) {
-    self.postMessage({
-      type: 'sendMessageFromNode',
-      fromNodeId: this.config.nodeId,
-      data,
-      options
-    });
-  }
-
-  createFFTFunction() {
-    return (options: AudioAnalysisProps = {}) => {
-      const { type = 'wave', format = 'int' } = options;
-      const { nodeId } = this.config;
-
-      const cacheKey = `${type}-${format}`;
-
-      if (!this.isFFTEnabled) {
-        self.postMessage({ type: 'fftEnabled', nodeId, enabled: true });
-        this.isFFTEnabled = true;
-      }
-
-      if (!this.fftRequestCache.has(cacheKey)) {
-        self.postMessage({
-          type: 'registerFFTRequest',
-          nodeId,
-          analysisType: type,
-          format
-        });
-
-        this.fftRequestCache.set(cacheKey, true);
-      }
-
-      const cached = this.fftDataCache.get(cacheKey);
-      const bins = cached?.data ?? null;
-
-      return new FFTAnalysis(bins, format, this.sampleRate, type);
-    };
-  }
-
-  // Method to receive FFT data from main thread
-  setFFTData(payload: AudioAnalysisPayloadWithType) {
-    const { analysisType, format, array, sampleRate } = payload;
-
-    const cacheKey = `${analysisType}-${format}`;
-    this.sampleRate = sampleRate;
-
-    this.fftDataCache.set(cacheKey, {
-      data: array,
-      timestamp: performance.now()
-    });
-  }
-
-  setPortCount(inletCount = 1, outletCount = 0) {
-    self.postMessage({
-      type: 'setPortCount',
-      portType: 'message',
-      nodeId: this.config.nodeId,
-      inletCount,
-      outletCount
-    });
-  }
-
-  setTitle(title: string) {
-    self.postMessage({
-      type: 'setTitle',
-      nodeId: this.config.nodeId,
-      title
-    });
-  }
-
-  setHidePorts(hidePorts: boolean) {
-    self.postMessage({
-      type: 'setHidePorts',
-      nodeId: this.config.nodeId,
-      hidePorts
-    });
-  }
-
-  setInteraction(mode: 'drag' | 'pan' | 'wheel' | 'interact', enabled: boolean) {
-    self.postMessage({
-      type: 'setInteraction',
-      nodeId: this.config.nodeId,
-      mode,
-      enabled
-    });
-  }
-
-  setVideoOutputEnabled(videoOutputEnabled: boolean) {
-    self.postMessage({
-      type: 'setVideoOutputEnabled',
-      nodeId: this.config.nodeId,
-      videoOutputEnabled
-    });
-  }
-
-  handleMessage(message: Message) {
-    this.msgContext.handleEdgeMessage(message.data, message);
-  }
-
-  handleChannelMessage(channel: string, data: unknown, sourceNodeId: string) {
-    this.msgContext.handleChannelMessage(channel, data, sourceNodeId);
+    super.destroy();
   }
 
   /** Resume animation loop after unpausing */
@@ -381,49 +178,11 @@ export class CanvasRenderer {
     }
   }
 
-  /**
-   * Handles code execution errors with line number extraction for inline highlighting.
-   * Parses the error to extract line info and sends it via consoleOutput with lineErrors.
-   */
-  handleCodeError(error: unknown): void {
-    const { nodeId, code } = this.config;
-    const customConsole = this.createCustomConsole();
-
-    const errorInfo = parseJSError(error, countLines(code), CANVAS_WRAPPER_OFFSET);
-
-    if (errorInfo) {
-      // Send error with lineErrors for inline highlighting
-      self.postMessage({
-        type: 'consoleOutput',
-        nodeId,
-        level: 'error',
-        args: [errorInfo.message],
-        lineErrors: errorInfo.lineErrors
-      });
-
-      return;
-    }
-
-    // Fallback: no line info available
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    customConsole.error(errorMessage);
-  }
-
-  /**
-   * Creates a custom console object that routes output to VirtualConsole via the main thread.
-   */
-  createCustomConsole() {
-    const { nodeId } = this.config;
-
-    const sendLog = (level: 'log' | 'warn' | 'error', args: unknown[]) =>
-      self.postMessage({ type: 'consoleOutput', nodeId, level, args });
-
-    return {
-      log: (...args: unknown[]) => sendLog('log', args),
-      warn: (...args: unknown[]) => sendLog('warn', args),
-      error: (...args: unknown[]) => sendLog('error', args),
-      info: (...args: unknown[]) => sendLog('log', args),
-      debug: (...args: unknown[]) => sendLog('log', args)
-    };
+  setHidePorts(hidePorts: boolean) {
+    self.postMessage({
+      type: 'setHidePorts',
+      nodeId: this.config.nodeId,
+      hidePorts
+    });
   }
 }
