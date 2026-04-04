@@ -109,7 +109,6 @@ setPortCount(1);
 await sonic.loadSynthDef('sonic-pi-piano');
 
 const activeNotes = new Map();
-let nextId = sonic.nextNodeId();
 
 recv(msg => {
   if (!msg || typeof msg !== 'object') return;
@@ -119,7 +118,7 @@ recv(msg => {
   if (type === 'noteOn') {
     if (activeNotes.has(note)) sonic.send('/n_set', activeNotes.get(note), 'gate', 0);
 
-    const id = nextId++;
+    const id = sonic.nextNodeId();
     activeNotes.set(note, id);
 
     sonic.send('/s_new', 'sonic-pi-piano', id, 0, 0,

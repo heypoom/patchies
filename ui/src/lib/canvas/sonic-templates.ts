@@ -15,7 +15,6 @@ setTitle(name);
 await sonic.loadSynthDef(name);
 
 const activeNotes = new Map();
-let nextNodeId = sonic.nextNodeId();
 
 recv(msg => {
   if (!msg || typeof msg !== 'object') return;
@@ -27,7 +26,7 @@ recv(msg => {
       sonic.send('/n_set', activeNotes.get(note), 'gate', 0);
     }
 
-    const id = nextNodeId++;
+    const id = sonic.nextNodeId();
     activeNotes.set(note, id);
 
     sonic.send('/s_new', name, id, 0, 0,
