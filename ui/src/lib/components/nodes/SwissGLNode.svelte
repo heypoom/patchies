@@ -13,6 +13,11 @@
   import { SettingsManager } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import VirtualConsole from '$lib/components/VirtualConsole.svelte';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
+  import { logger } from '$lib/utils/logger';
 
   let {
     id: nodeId,
@@ -21,11 +26,17 @@
   }: {
     id: string;
     type: string;
-    data: { code: string; settingsSchema?: SettingsSchema; settings?: Record<string, unknown> };
+    data: {
+      code: string;
+      showConsole?: boolean;
+      settingsSchema?: SettingsSchema;
+      settings?: Record<string, unknown>;
+    };
     selected: boolean;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+  const eventBus = PatchiesEventBus.getInstance();
 
   const settingsManager = new SettingsManager(
     () => data.settings ?? {},
@@ -34,14 +45,26 @@
   );
 
   let glSystem: GLSystem;
+  let audioAnalysisSystem: AudioAnalysisSystem;
   let messageContext: MessageContext;
+  let consoleRef: VirtualConsole | null = $state(null);
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewBitmapContext: ImageBitmapRenderingContext;
   let isPaused = $state(false);
   let editorReady = $state(false);
-  let errorMessage = $state<string | null>(null);
+
+  // Track error line numbers for code highlighting
+  let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 
   const code = $derived(data.code || '');
+
+  function handleConsoleOutput(event: ConsoleOutputEvent) {
+    if (event.nodeId !== nodeId) return;
+
+    if (event.messageType === 'error' && event.lineErrors) {
+      lineErrors = event.lineErrors;
+    }
+  }
 
   const setCodeAndUpdate = (newCode: string) => {
     updateNodeData(nodeId, { code: newCode });
@@ -59,12 +82,13 @@
           glSystem.sendMessageToNode(nodeId, { ...meta, data: message });
         });
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('[swgl] message error:', error);
     }
   };
 
   onMount(() => {
     glSystem = GLSystem.getInstance();
+    audioAnalysisSystem = AudioAnalysisSystem.getInstance();
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
 
@@ -77,6 +101,9 @@
     }
 
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
+
+    // Listen for console output events to capture lineErrors
+    eventBus.addEventListener('consoleOutput', handleConsoleOutput);
 
     glSystem.registerSettingsCallbacks(nodeId, {
       onDefine: async (requestId, schema) => {
@@ -97,25 +124,29 @@
   });
 
   onDestroy(() => {
-    glSystem.unregisterSettingsCallbacks(nodeId);
-    messageContext.destroy();
-    glSystem.removeNode(nodeId);
-    glSystem.removePreviewContext(nodeId, previewBitmapContext);
+    eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+    glSystem?.unregisterSettingsCallbacks(nodeId);
+    audioAnalysisSystem?.disableFFT(nodeId);
+    messageContext?.destroy();
+    glSystem?.removeNode(nodeId);
+    glSystem?.removePreviewContext(nodeId, previewBitmapContext);
   });
 
   function updateSwissGL() {
+    // Clear console and error highlighting on re-run
+    consoleRef?.clearConsole();
+    lineErrors = undefined;
+
     try {
-      messageContext.clearTimers();
+      messageContext?.clearTimers();
+      audioAnalysisSystem?.disableFFT(nodeId);
 
       const isUpdated = glSystem.upsertNode(nodeId, 'swgl', { code });
 
       // If code hasn't changed, force re-run
       if (!isUpdated) glSystem.send('updateSwgl', { nodeId });
-
-      errorMessage = null;
     } catch (error) {
-      // Capture compilation/setup errors
-      errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('[swgl] update error:', error);
     }
   }
 
@@ -134,7 +165,7 @@
   showPauseButton={true}
   {selected}
   {editorReady}
-  hasError={errorMessage !== null}
+  hasError={lineErrors !== undefined}
   bind:previewCanvas
   settingsSchema={data.settingsSchema}
   settingsValues={data.settings ?? {}}
@@ -194,7 +225,19 @@
       class="nodrag h-64 w-full resize-none"
       onrun={updateSwissGL}
       onready={() => (editorReady = true)}
+      {lineErrors}
       {nodeId}
     />
+  {/snippet}
+
+  {#snippet console()}
+    <div class="mt-3 w-full" class:hidden={!data.showConsole}>
+      <VirtualConsole
+        bind:this={consoleRef}
+        {nodeId}
+        placeholder="SwissGL output will appear here."
+        maxHeight="200px"
+      />
+    </div>
   {/snippet}
 </CanvasPreviewLayout>

@@ -5,8 +5,7 @@ import type { SwissGL } from '$lib/rendering/swissgl';
 import { getFramebuffer } from './utils';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
 
-// SwissGL uses `new Function` with a `with` block, so the wrapper offset is 0
-const SWGL_WRAPPER_OFFSET = 0;
+const SWGL_WRAPPER_OFFSET = 4;
 
 export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   private glsl: ReturnType<typeof SwissGL>;
