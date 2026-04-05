@@ -84,7 +84,6 @@ export class FBORenderer {
   public swglByNode = new Map<string, SwissGLRenderer | null>();
 
   /** During textmode loading, we need to refresh REGL. */
-  public textmodeLoadingCount = 0;
 
   /** Old Hydra renderers pending cleanup (deferred to avoid visual glitch) */
   private pendingHydraCleanup: HydraRenderer[] = [];
@@ -549,8 +548,6 @@ export class FBORenderer {
 
     // 2. if there are no renderer to re-use, we create a new one!
     if (!textmodeRenderer) {
-      this.textmodeLoadingCount++;
-
       try {
         textmodeRenderer = await TextmodeRenderer.create(
           { code: node.data.code, nodeId: node.id },
@@ -561,8 +558,6 @@ export class FBORenderer {
         this.textmodeByNode.set(node.id, textmodeRenderer);
       } catch (error) {
         console.error('Failed to create textmode renderer for node', node.id, error);
-      } finally {
-        this.textmodeLoadingCount--;
       }
     }
 
@@ -891,14 +886,6 @@ export class FBORenderer {
   renderFrame(): void {
     if (!this.renderGraph || this.fboNodes.size === 0) {
       return;
-    }
-
-    // During textmode.js initialization (~4s), its loading screen runs an
-    // independent rAF loop on the shared GL context, modifying framebuffer
-    // bindings, viewport, blending, etc. Re-sync regl's state cache so
-    // other nodes don't flash from stale cached state.
-    if (this.textmodeLoadingCount > 0) {
-      this.regl._refresh();
     }
 
     // Update time for animation

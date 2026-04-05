@@ -4,6 +4,7 @@ import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { setupWorkerDOMMocks } from './workerDOMMocks';
 import type { Textmodifier } from 'textmode.js';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+import type { TextmodePlugin } from 'textmode.js/plugins';
 import { getFramebuffer } from './utils';
 
 export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
@@ -31,30 +32,14 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     return instance;
   }
 
-  // Drive textmode synchronously: one frame → blit → restore regl state.
-  // This mirrors how Three.js renders on the shared GL context.
+  // Drive textmode synchronously: one frame → restore regl state.
+  // The PatchiesPlugin redirects textmode's null framebuffer binds to our
+  // regl FBO, so textmode renders directly into it — no blit needed.
   renderFrame() {
     if (!this.tm) return;
 
     this.tm.redraw();
     this.renderer.regl._refresh();
-
-    this.blitToReglFramebuffer();
-  }
-
-  /** Blit from default framebuffer (textmode's present target) to regl FBO */
-  private blitToReglFramebuffer() {
-    if (!this.framebuffer) return;
-
-    const gl = this.renderer.gl;
-    const [width, height] = this.renderer.outputSize;
-    const destFBO = getFramebuffer(this.framebuffer);
-
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
-    gl.blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.NEAREST);
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
   }
 
   public async updateCode() {
@@ -71,6 +56,11 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         this.textmode = await import('textmode.js');
       }
 
+      const gl = this.renderer.gl;
+      // Mutable ref so the plugin always targets the current FBO,
+      // even after graph rebuilds swap the regl framebuffer.
+      const getTargetFBO = () => getFramebuffer(this.framebuffer);
+
       // Create a textmode if not already created
       if (!this.tm) {
         // @ts-expect-error -- OffscreenCanvas is looked up thru GL context.
@@ -78,12 +68,41 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
         const { FiltersPlugin } = await import('textmode.filters.js');
 
+        const originalBindFramebuffer = gl.bindFramebuffer.bind(gl);
+
+        // During textmode's draw cycle, redirect null (default FB) → our regl FBO.
+        // This makes textmode render directly into the FBO, avoiding a blit step
+        // and the OffscreenCanvas transferToImageBitmap() workaround.
+        const redirectedBindFramebuffer = (
+          target: number,
+          framebuffer: WebGLFramebuffer | null
+        ) => {
+          if (framebuffer === null) {
+            originalBindFramebuffer(target, getTargetFBO());
+          } else {
+            originalBindFramebuffer(target, framebuffer);
+          }
+        };
+
+        const PatchiesPlugin: TextmodePlugin = {
+          name: 'patchies',
+          install(_tm, api) {
+            api.registerPreDrawHook(() => {
+              gl.bindFramebuffer = redirectedBindFramebuffer;
+            });
+
+            api.registerPostDrawHook(() => {
+              gl.bindFramebuffer = originalBindFramebuffer;
+            });
+          }
+        };
+
         this.tm = this.textmode.create({
           width,
           height,
           fontSize: 18,
           frameRate: 60,
-          plugins: [FiltersPlugin],
+          plugins: [FiltersPlugin, PatchiesPlugin],
 
           // Share regl's WebGL2 context — no separate canvas, no CPU roundtrip
           gl: this.renderer.gl,
