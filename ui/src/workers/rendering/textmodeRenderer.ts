@@ -67,6 +67,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         this.renderer.offscreenCanvas.style = {};
 
         const { FiltersPlugin } = await import('textmode.filters.js');
+        const { SynthPlugin } = await import('textmode.synth.js');
 
         const originalBindFramebuffer = gl.bindFramebuffer.bind(gl);
 
@@ -102,7 +103,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
           height,
           fontSize: 18,
           frameRate: 60,
-          plugins: [FiltersPlugin, PatchiesPlugin],
+          plugins: [FiltersPlugin, SynthPlugin, PatchiesPlugin],
 
           // Share regl's WebGL2 context — no separate canvas, no CPU roundtrip
           gl: this.renderer.gl,

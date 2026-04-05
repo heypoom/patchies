@@ -215,7 +215,8 @@
 
       // Create textmode instance once (lazy initialization)
       if (!tm) {
-        const { createFiltersPlugin } = await import('textmode.filters.js');
+        const { FiltersPlugin } = await import('textmode.filters.js');
+        const { SynthPlugin } = await import('textmode.synth.js');
 
         tm = textmode.create({
           width: outputWidth,
@@ -223,7 +224,7 @@
           fontSize: data.fontSize ?? 18,
           frameRate: data.frameRate ?? 60,
           canvas,
-          plugins: [createFiltersPlugin()]
+          plugins: [FiltersPlugin, SynthPlugin]
         });
 
         // Wrap tm.draw once to catch errors in user callbacks (they run asynchronously)
