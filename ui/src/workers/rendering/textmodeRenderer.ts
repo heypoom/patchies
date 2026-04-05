@@ -77,7 +77,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
           target: number,
           framebuffer: WebGLFramebuffer | null
         ) => {
-          if (framebuffer === null) {
+          if (target === gl.FRAMEBUFFER && framebuffer === null) {
             originalBindFramebuffer(target, getTargetFBO());
           } else {
             originalBindFramebuffer(target, framebuffer);

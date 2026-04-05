@@ -190,13 +190,6 @@
 			"author": "@heypoom"
 		},
 		{
-			"id": "fjnmwdbf6emg4q9",
-			"name": "Textmode Textured Torus",
-			"description": "Uses textmode.js to create a texture to uv-wrap into a three.js torus knot. Textmode.js sketch by @humanbydefinition",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
 			"id": "3hd88qv62h4zltq",
 			"name": "Animated Wave Pattern",
 			"description": "Demo of textmode.js from 'animated wave pattern' sketch by @humanbydefinition",
