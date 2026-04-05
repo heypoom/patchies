@@ -83,6 +83,8 @@ export class FBORenderer {
   public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
   public swglByNode = new Map<string, SwissGLRenderer | null>();
 
+  /** During textmode loading, we need to refresh REGL. */
+
   /** Old Hydra renderers pending cleanup (deferred to avoid visual glitch) */
   private pendingHydraCleanup: HydraRenderer[] = [];
   private hydraCleanupTimer: ReturnType<typeof setInterval> | null = null;
@@ -536,9 +538,6 @@ export class FBORenderer {
         // Update framebuffer reference (new one is created each buildFBOs call)
         textmodeRenderer.framebuffer = framebuffer;
 
-        // Force recreate draw command with new framebuffer
-        textmodeRenderer.resetDrawCommand();
-
         // If textmode user code has changed, we update the underlying code
         if (renderer.config.code !== node.data.code) {
           textmodeRenderer.config.code = node.data.code;
@@ -558,10 +557,11 @@ export class FBORenderer {
       this.textmodeByNode.set(node.id, textmodeRenderer);
     }
 
+    if (!textmodeRenderer) return null;
+
     return {
-      render: () => {
-        textmodeRenderer.render();
-      },
+      render: textmodeRenderer.renderFrame.bind(textmodeRenderer),
+
       // No-op cleanup - textmode renderers are expensive to create,
       // so we keep them alive and reuse them across graph rebuilds.
       // They are only destroyed when explicitly removed via destroyTextmodeRenderer().
