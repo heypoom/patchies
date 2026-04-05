@@ -106,7 +106,11 @@
   function updateSwissGL() {
     try {
       messageContext.clearTimers();
-      glSystem.upsertNode(nodeId, 'swgl', { code });
+
+      const isUpdated = glSystem.upsertNode(nodeId, 'swgl', { code });
+
+      // If code hasn't changed, force re-run
+      if (!isUpdated) glSystem.send('updateSwgl', { nodeId });
 
       errorMessage = null;
     } catch (error) {

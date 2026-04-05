@@ -18,17 +18,16 @@ import { CanvasRenderer } from './canvasRenderer';
 import { TextmodeRenderer } from './textmodeRenderer';
 import { ThreeRenderer } from './threeRenderer';
 import { ReglRenderer } from './reglRenderer';
+import { SwissGLRenderer } from './swglRenderer';
 import { ProjectionMapRenderer } from '$objects/projmap/ProjectionMapRenderer';
 import { getFramebuffer } from './utils';
-import { isExternalTextureNode, type SwissGLContext } from '$lib/canvas/node-types';
-import type { Message, MessageCallbackFn } from '$lib/messages/MessageSystem';
-import { SwissGL } from '$lib/rendering/swissgl';
+import { isExternalTextureNode } from '$lib/canvas/node-types';
+import type { Message } from '$lib/messages/MessageSystem';
 import type {
   AudioAnalysisType,
   AudioAnalysisPayloadWithType,
   GlslFFTInletMeta
 } from '$lib/audio/AudioAnalysisSystem.js';
-import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
 import { WorkerProfiler } from '../shared/WorkerProfiler.js';
@@ -36,7 +35,6 @@ import { VideoTextureManager } from './VideoTextureManager.js';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 import type { RenderOp } from '$lib/profiler/types';
-import { createWorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { defaultUniformValue, isValidUniformData } from './glUniformUtils';
 
 export class FBORenderer {
@@ -83,7 +81,7 @@ export class FBORenderer {
   public threeByNode = new Map<string, ThreeRenderer | null>();
   public reglByNode = new Map<string, ReglRenderer | null>();
   public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
-  public swglByNode = new Map<string, SwissGLContext>();
+  public swglByNode = new Map<string, SwissGLRenderer | null>();
 
   /** Old Hydra renderers pending cleanup (deferred to avoid visual glitch) */
   private pendingHydraCleanup: HydraRenderer[] = [];
@@ -720,121 +718,29 @@ export class FBORenderer {
     };
   }
 
-  createSwglRenderer(
+  async createSwglRenderer(
     node: RenderNode,
     framebuffer: regl.Framebuffer2D
-  ): { render: RenderFunction; cleanup: () => void } | null {
+  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
     if (node.type !== 'swgl') return null;
-
-    const [width, height] = this.outputSize;
-
-    // Reuse existing settingsProxy if available to preserve requestIdCounter
-    // and avoid request ID collisions on rapid re-runs
-    const existingProxy = this.swglByNode.get(node.id)?.settingsProxy ?? null;
 
     // Delete existing SwissGL renderer if it exists
     if (this.swglByNode.has(node.id)) {
-      const existingSwgl = this.swglByNode.get(node.id);
-      existingSwgl?.glsl.reset();
+      this.swglByNode.get(node.id)?.destroy();
     }
 
-    const gl = this.regl._gl as WebGL2RenderingContext;
-    const glsl = SwissGL(gl);
+    const swglRenderer = await SwissGLRenderer.create(
+      { code: node.data.code, nodeId: node.id },
+      framebuffer,
+      this
+    );
 
-    const destinationFramebuffer = getFramebuffer(framebuffer);
-
-    const swglTarget = {
-      bindTarget: (gl: WebGL2RenderingContext) => {
-        gl.bindFramebuffer(gl.FRAMEBUFFER, destinationFramebuffer);
-        return [width, height];
-      }
-    };
-
-    // Reset settings proxy for re-run — reuse instance to preserve requestIdCounter
-    let settingsProxy: ReturnType<typeof createWorkerSettingsProxy>;
-    if (existingProxy) {
-      existingProxy._reset();
-      settingsProxy = existingProxy;
-    } else {
-      settingsProxy = createWorkerSettingsProxy(node.id, (msg) => self.postMessage(msg));
-    }
-
-    const swglContext: SwissGLContext = {
-      glsl,
-      userRenderFunc: null,
-      swglTarget,
-      gl,
-      onMessageCallbacks: [],
-      nodeId: node.id,
-      settingsProxy
-    };
-
-    // Parse user's render function from code
-    let userRenderFunc: ((params: { t: number }) => void) | null = null;
-
-    try {
-      const wrappedGlsl = (shaderConfig: unknown, targetConfig: Record<string, unknown> = {}) =>
-        glsl(shaderConfig, { ...targetConfig, ...swglTarget });
-
-      // Create context with message passing functions
-      const context = {
-        glsl: wrappedGlsl,
-
-        onMessage: (callback: MessageCallbackFn) => {
-          swglContext.onMessageCallbacks.push(callback);
-        },
-
-        send: (data: unknown, options: SendMessageOptions) => {
-          self.postMessage({
-            type: 'sendMessageFromNode',
-            fromNodeId: node.id,
-            data,
-            options
-          });
-        },
-
-        clock: this.createWorkerClock(),
-        settings: settingsProxy.settings
-      };
-
-      const funcBody = `
-				with (arguments[0]) {
-					var recv = onMessage; // alias for onMessage
-
-					${node.data.code}
-				}
-
-				return render;
-			`;
-
-      userRenderFunc = new Function(funcBody)(context);
-    } catch (error) {
-      console.error('Failed to parse SwissGL user code:', error);
-      return null;
-    }
-
-    swglContext.userRenderFunc = userRenderFunc;
-    this.swglByNode.set(node.id, swglContext);
+    this.swglByNode.set(node.id, swglRenderer);
 
     return {
-      render: (params) => {
-        if (!userRenderFunc) return;
-
-        // Skip rendering when transport is paused — FBO retains last frame
-        if (this.transportTime && !this.transportTime.isPlaying) return;
-
-        framebuffer.use(() => {
-          try {
-            userRenderFunc({ t: params.transportTime });
-          } catch (error) {
-            console.error('SwissGL render error:', error);
-          }
-        });
-      },
+      render: swglRenderer.renderFrame.bind(swglRenderer),
       cleanup: () => {
-        const swglContext = this.swglByNode.get(node.id);
-        swglContext?.glsl?.reset();
-
+        swglRenderer.destroy();
         this.swglByNode.delete(node.id);
       }
     };
@@ -1412,8 +1318,6 @@ export class FBORenderer {
     const node = this.renderGraph?.nodes.find((n) => n.id === nodeId);
     if (!node) return;
 
-    const data = message['data'];
-
     match(node.type)
       .with('hydra', () => {
         const hydraRenderer = this.hydraByNode.get(nodeId);
@@ -1428,12 +1332,10 @@ export class FBORenderer {
         canvasRenderer.handleMessage(message);
       })
       .with('swgl', () => {
-        const swglContext = this.swglByNode.get(nodeId);
-        if (!swglContext) return;
+        const swglRenderer = this.swglByNode.get(nodeId);
+        if (!swglRenderer) return;
 
-        for (const callback of swglContext.onMessageCallbacks) {
-          callback(data, message);
-        }
+        swglRenderer.handleMessage(message);
       })
       .with('textmode', () => {
         const textmodeRenderer = this.textmodeByNode.get(nodeId);
@@ -1478,7 +1380,10 @@ export class FBORenderer {
       .with('regl', () => {
         this.reglByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
       })
-      .with(P.union('swgl', 'glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'), () => {})
+      .with('swgl', () => {
+        this.swglByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
+      })
+      .with(P.union('glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'), () => {})
       .exhaustive();
   }
 

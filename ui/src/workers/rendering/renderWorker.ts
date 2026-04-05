@@ -59,6 +59,7 @@ self.onmessage = (event) => {
     .with('updateTextmode', () => handleUpdateTextmode(data.nodeId))
     .with('updateThree', () => handleUpdateThree(data.nodeId))
     .with('updateRegl', () => handleUpdateRegl(data.nodeId))
+    .with('updateSwgl', () => handleUpdateSwgl(data.nodeId))
     .with('updateProjectionMap', () => fboRenderer.updateProjectionMap(data.nodeId, data.surfaces))
     .with('setFFTData', () => handleSetFFTData(data))
     .with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code))
@@ -247,6 +248,12 @@ function handleSetFFTData(payload: AudioAnalysisPayloadWithType) {
 
       reglRenderer.setFFTData(payload);
     })
+    .with('swgl', () => {
+      const swglRenderer = fboRenderer.swglByNode.get(nodeId);
+      if (!swglRenderer) return;
+
+      swglRenderer.setFFTData(payload);
+    })
     .with('glsl', () => {
       fboRenderer.setFFTAsGlslUniforms(payload);
     })
@@ -286,6 +293,13 @@ function handleUpdateRegl(nodeId: string) {
   if (!reglRenderer) return;
 
   reglRenderer.updateCode();
+}
+
+function handleUpdateSwgl(nodeId: string) {
+  const swglRenderer = fboRenderer.swglByNode.get(nodeId);
+  if (!swglRenderer) return;
+
+  swglRenderer.updateCode();
 }
 
 function handleCapturePreview(nodeId: string, requestId?: string, customSize?: [number, number]) {
