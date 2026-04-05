@@ -71,6 +71,8 @@ t.filter('glitch', 0.2);
 t.filter('bloom', { threshold: 0.3, intensity: 1.5, radius: 6 });
 ```
 
+Put this in your `t.draw()` loop to apply the filters.
+
 See the [full filters API reference](https://code.textmode.art/api/textmode.filters.js/)
 for all options.
 
