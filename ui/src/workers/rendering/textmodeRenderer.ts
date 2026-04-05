@@ -12,6 +12,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   private timestamp = performance.now();
   private animationId: number | null = null;
   private drawCommand: regl.DrawCommand | null = null;
+  private lastUploadedFrame = -1;
 
   // textmode.js text modifier
   public tm: Textmodifier | null = null;
@@ -53,7 +54,8 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     this.ensureDrawCommand();
 
     // @ts-expect-error -- regl type is wrong
-    this.canvasTexture?.({ data: this.offscreenCanvas, flipY: true });
+
+    this.canvasTexture?.({ data: this.offscreenCanvas });
     this.drawCommand?.();
   }
 
@@ -62,8 +64,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
     // @ts-expect-error -- regl type is wrong
     this.canvasTexture = this.renderer.regl.texture({
-      data: this.offscreenCanvas,
-      flipY: true
+      data: this.offscreenCanvas
     });
 
     this.drawCommand = this.renderer.regl({
@@ -72,7 +73,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         attribute vec2 position;
         varying vec2 uv;
         void main() {
-          uv = position * 0.5 + 0.5;
+          uv = vec2(position.x * 0.5 + 0.5, 0.5 - position.y * 0.5);
           gl_Position = vec4(position, 0, 1);
         }
       `,
@@ -191,9 +192,14 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   }
 
   public render() {
-    if (this.tm?.isLooping) {
-      this.drawCanvasToTexture();
-    }
+    if (!this.tm?.isLooping) return;
+
+    // Prevent uploading more than the needed frame rate.
+    const currentFrame = this.tm.frameCount;
+    if (currentFrame === this.lastUploadedFrame) return;
+
+    this.lastUploadedFrame = currentFrame;
+    this.drawCanvasToTexture();
   }
 
   setHidePorts(hidePorts: boolean) {
