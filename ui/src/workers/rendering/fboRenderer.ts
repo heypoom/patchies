@@ -548,17 +548,13 @@ export class FBORenderer {
 
     // 2. if there are no renderer to re-use, we create a new one!
     if (!textmodeRenderer) {
-      try {
-        textmodeRenderer = await TextmodeRenderer.create(
-          { code: node.data.code, nodeId: node.id },
-          framebuffer,
-          this
-        );
+      textmodeRenderer = await TextmodeRenderer.create(
+        { code: node.data.code, nodeId: node.id },
+        framebuffer,
+        this
+      );
 
-        this.textmodeByNode.set(node.id, textmodeRenderer);
-      } catch (error) {
-        console.error('Failed to create textmode renderer for node', node.id, error);
-      }
+      this.textmodeByNode.set(node.id, textmodeRenderer);
     }
 
     if (!textmodeRenderer) return null;
