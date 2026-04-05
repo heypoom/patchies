@@ -1,6 +1,5 @@
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
-import type { RenderParams } from '$lib/rendering/types';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { setupWorkerDOMMocks } from './workerDOMMocks';
 import type { Textmodifier } from 'textmode.js';

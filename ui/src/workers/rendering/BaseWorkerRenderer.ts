@@ -243,7 +243,12 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
     };
   }
 
-  /** Preprocesses and executes user code via JSRunner. */
+  /**
+   * Preprocesses and executes user code via JSRunner.
+   * Returns null if preprocessing fails (e.g. library definition).
+   * Otherwise returns the result of executeJavaScript (the user's return value, if any).
+   * Callers should check for null before using the result.
+   */
   protected async executeUserCode(code: string, extraContext: Record<string, unknown>) {
     const processedCode = await this.renderer.jsRunner.preprocessCode(code, {
       nodeId: this.config.nodeId

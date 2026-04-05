@@ -17,6 +17,10 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   // Mouse scope: 'local' = canvas-relative, 'global' = screen-relative
   private mouseScope: 'global' | 'local' = 'local';
 
+  // Hydra-specific error throttling (separate from base class to avoid key collisions)
+  private hydraLastRuntimeError: string | null = null;
+  private hydraLastRuntimeErrorTime = 0;
+
   private constructor(
     config: BaseRendererConfig,
     framebuffer: regl.Framebuffer2D,
@@ -269,12 +273,12 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     const errorKey = `${context.transformName}:${context.paramName}:${errorMessage}`;
     const now = performance.now();
 
-    if (this.lastRuntimeError === errorKey && now - this.lastRuntimeErrorTime < 1000) {
+    if (this.hydraLastRuntimeError === errorKey && now - this.hydraLastRuntimeErrorTime < 1000) {
       return;
     }
 
-    this.lastRuntimeError = errorKey;
-    this.lastRuntimeErrorTime = now;
+    this.hydraLastRuntimeError = errorKey;
+    this.hydraLastRuntimeErrorTime = now;
 
     const contextInfo =
       context.transformType === 'render'
