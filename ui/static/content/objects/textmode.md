@@ -9,19 +9,19 @@ The `textmode` object creates ASCII art and text-mode graphics using [textmode.j
 The textmode instance is exposed as `tm`:
 
 ```javascript
-tm.setup(() => {
-  tm.fontSize(16);
-  tm.frameRate(60);
+t.setup(() => {
+  t.fontSize(16);
+  t.frameRate(60);
 });
 
-tm.draw(() => {
-  tm.background(0, 0, 0, 0);
+t.draw(() => {
+  t.background(0, 0, 0, 0);
 
-  tm.push();
-  tm.char("█");
-  tm.charColor(0, 150, 255);
-  tm.point();
-  tm.pop();
+  t.push();
+  t.char("█");
+  t.charColor(0, 150, 255);
+  t.point();
+  t.pop();
 });
 ```
 
@@ -55,19 +55,19 @@ Textmode-specific:
 The [textmode.synth.js](https://code.textmode.art/api/textmode.synth.js/) plugin provides composable visual sources for generating patterns, gradients, and effects. All synth functions are available as top-level globals — no import needed.
 
 ```javascript
-tm.setup(() => {
-  tm.fontSize(12);
+t.setup(() => {
+  t.fontSize(12);
 });
 
-tm.draw(() => {
-  tm.background(0);
+t.draw(() => {
+  t.background(0);
 
-  tm.push();
-  tm.cellColor(gradient(0.5, 1));
-  tm.charColor(noise(0.02, 0.5));
-  tm.char("█");
-  tm.point();
-  tm.pop();
+  t.push();
+  t.cellColor(gradient(0.5, 1));
+  t.charColor(noise(0.02, 0.5));
+  t.char("█");
+  t.point();
+  t.pop();
 });
 ```
 
@@ -80,7 +80,7 @@ See the [full synth API reference](https://code.textmode.art/api/textmode.synth.
 Use [textmode.filters.js](https://github.com/humanbydefinition/textmode.filters.js) for image filters:
 
 ```javascript
-tm.layers.base.filter('brightness', 1.3);
+t.layers.base.filter('brightness', 1.3);
 ```
 
 ## Presets

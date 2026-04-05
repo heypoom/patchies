@@ -207,28 +207,28 @@ function render(time) {
   draw({ time })
 }`;
 
-export const DEFAULT_TEXTMODE_CODE = `tm.setup(() => {
-  tm.fontSize(16)
-  tm.frameRate(60)
+export const DEFAULT_TEXTMODE_CODE = `t.setup(() => {
+  t.fontSize(16)
+  t.frameRate(60)
 })
 
-tm.draw(() => {
-  tm.background(0, 0, 0, 0)
+t.draw(() => {
+  t.background(0, 0, 0, 0)
   
-  const halfCols = tm.grid.cols / 1.95
-  const halfRows = tm.grid.rows / 1.95
+  const halfCols = t.grid.cols / 1.95
+  const halfRows = t.grid.rows / 1.95
   
   for (let y = -halfRows; y < halfRows; y++) {
     for (let x = -halfCols; x < halfCols; x++) {
       const dist = Math.sqrt(x * x + y * y)
-      const wave = Math.sin(dist * 0.2 - tm.frameCount * 0.1)
+      const wave = Math.sin(dist * 0.2 - t.frameCount * 0.1)
       
-      tm.push()
-      tm.translate(x, y, 0)
-      tm.char(wave > 0.5 ? '▓' : wave > 0 ? '▒' : '░')
-      tm.charColor(0, 150 + wave * 100, 255)
-      tm.point()
-      tm.pop()
+      t.push()
+      t.translate(x, y, 0)
+      t.char(wave > 0.5 ? '▓' : wave > 0 ? '▒' : '░')
+      t.charColor(0, 150 + wave * 100, 255)
+      t.point()
+      t.pop()
     }
   }
 })`;

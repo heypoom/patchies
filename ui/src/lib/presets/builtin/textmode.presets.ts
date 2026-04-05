@@ -1,38 +1,38 @@
 const RAIN_TM = `let drops = []
 
-tm.setup(() => {
-  tm.fontSize(14)
-  tm.frameRate(20)
+t.setup(() => {
+  t.fontSize(14)
+  t.frameRate(20)
 
   for (let i = 0; i < 50; i++) {
     drops.push({
-      x: Math.random() * tm.grid.cols,
-      y: Math.random() * tm.grid.rows,
+      x: Math.random() * t.grid.cols,
+      y: Math.random() * t.grid.rows,
       speed: 0.5 + Math.random() * 1.5,
       char: ['|', '/', '\\\\', ':'][Math.floor(Math.random() * 4)]
     })
   }
 })
 
-tm.draw(() => {
-  tm.background(0, 0, 0, 0)
+t.draw(() => {
+  t.background(0, 0, 0, 0)
 
   for (const drop of drops) {
-    tm.push()
-    tm.translate(
-      drop.x - tm.grid.cols / 2,
-      drop.y - tm.grid.rows / 2,
+    t.push()
+    t.translate(
+      drop.x - t.grid.cols / 2,
+      drop.y - t.grid.rows / 2,
       0
     )
-    tm.char(drop.char)
-    tm.charColor(100, 150, 255)
-    tm.point()
-    tm.pop()
+    t.char(drop.char)
+    t.charColor(100, 150, 255)
+    t.point()
+    t.pop()
 
     drop.y += drop.speed
-    if (drop.y > tm.grid.rows) {
+    if (drop.y > t.grid.rows) {
       drop.y = -1
-      drop.x = Math.random() * tm.grid.cols
+      drop.x = Math.random() * t.grid.cols
     }
   }
 })`;
@@ -40,16 +40,16 @@ tm.draw(() => {
 const TORUS_TM = `let A = 0
 let B = 0
 
-tm.setup(() => {
-  tm.fontSize(10)
-  tm.frameRate(30)
+t.setup(() => {
+  t.fontSize(10)
+  t.frameRate(30)
 })
 
-tm.draw(() => {
-  tm.background(0, 0, 0, 0)
+t.draw(() => {
+  t.background(0, 0, 0, 0)
 
-  const cols = tm.grid.cols
-  const rows = tm.grid.rows
+  const cols = t.grid.cols
+  const rows = t.grid.rows
   const output = Array(cols * rows).fill(' ')
   const zbuffer = Array(cols * rows).fill(0)
 
@@ -93,12 +93,12 @@ tm.draw(() => {
     for (let x = 0; x < cols; x++) {
       const char = output[x + y * cols]
       if (char !== ' ') {
-        tm.push()
-        tm.translate(x - cols / 2, y - rows / 2, 0)
-        tm.char(char)
-        tm.charColor(255, 200, 100)
-        tm.point()
-        tm.pop()
+        t.push()
+        t.translate(x - cols / 2, y - rows / 2, 0)
+        t.char(char)
+        t.charColor(255, 200, 100)
+        t.point()
+        t.pop()
       }
     }
   }
@@ -120,17 +120,17 @@ const colors = [
 ]
 let buffer = []
 
-tm.setup(() => {
-  tm.fontSize(10)
-  tm.frameRate(20)
-  buffer = Array(tm.grid.cols * tm.grid.rows).fill(0)
+t.setup(() => {
+  t.fontSize(10)
+  t.frameRate(20)
+  buffer = Array(t.grid.cols * t.grid.rows).fill(0)
 })
 
-tm.draw(() => {
-  tm.background(0, 0, 0, 0)
+t.draw(() => {
+  t.background(0, 0, 0, 0)
 
-  const cols = tm.grid.cols
-  const rows = tm.grid.rows
+  const cols = t.grid.cols
+  const rows = t.grid.rows
 
   // Seed bottom row with random values
   for (let x = 0; x < cols; x++) {
@@ -152,12 +152,12 @@ tm.draw(() => {
     for (let x = 0; x < cols; x++) {
       const val = buffer[x + y * cols]
       if (val > 0) {
-        tm.push()
-        tm.translate(x - cols / 2, y - rows / 2, 0)
-        tm.char(palette[val])
-        tm.charColor(...colors[val])
-        tm.point()
-        tm.pop()
+        t.push()
+        t.translate(x - cols / 2, y - rows / 2, 0)
+        t.char(palette[val])
+        t.charColor(...colors[val])
+        t.point()
+        t.pop()
       }
     }
   }
@@ -173,12 +173,12 @@ const DIGITAL_RAIN_TM = `/**
 const drops = [];
 const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-tm.setup(() => {
-  tm.fontSize(16)
-  tm.frameRate(60)
+t.setup(() => {
+  t.fontSize(16)
+  t.frameRate(60)
 
   // Initialize rain drops
-  for (let gridX = 0; gridX < tm.grid.cols; gridX++) {
+  for (let gridX = 0; gridX < t.grid.cols; gridX++) {
     drops[gridX] = {
       y: Math.random() * -50,
       speed: Math.random() * 0.3 + 0.1,
@@ -194,8 +194,8 @@ tm.setup(() => {
 });
 
 
-tm.draw(() => {
-  tm.background(0);
+t.draw(() => {
+  t.background(0);
 
   // Update and draw each rain drop
   for (let gridX = 0; gridX < drops.length; gridX++) {
@@ -205,17 +205,17 @@ tm.draw(() => {
     for (let i = 0; i < drop.length; i++) {
       const gridY = drop.y - i;
       
-      if (gridY >= 0 && gridY < tm.grid.rows) {
+      if (gridY >= 0 && gridY < t.grid.rows) {
         // Calculate fade based on position in trail
         const fade = (drop.length - i) / drop.length;
         
         // Head of the trail is brightest white
         if (i === 0) {
-          tm.charColor(255, 255, 255);
+          t.charColor(255, 255, 255);
         } else {
           // Body fades from bright green to dark green
           const green = Math.floor(255 * fade * 0.8);
-          tm.charColor(0, green, 0);
+          t.charColor(0, green, 0);
         }
         
         // Occasionally change character for glitch effect
@@ -223,17 +223,17 @@ tm.draw(() => {
           drop.chars[i] = chars[Math.floor(Math.random() * chars.length)];
         }
         
-        tm.char(drop.chars[i]);
-        tm.cellColor(0, 0, 0);
+        t.char(drop.chars[i]);
+        t.cellColor(0, 0, 0);
         
         // Convert grid coordinates to center-based coordinates
-        const x = (gridX + 1) - tm.grid.cols / 2;
-        const y = Math.floor(gridY) - tm.grid.rows / 2;
+        const x = (gridX + 1) - t.grid.cols / 2;
+        const y = Math.floor(gridY) - t.grid.rows / 2;
         
-        tm.push();
-        tm.translate(x, y, 0);
-        tm.rect(1, 1);
-        tm.pop();
+        t.push();
+        t.translate(x, y, 0);
+        t.rect(1, 1);
+        t.pop();
       }
     }
     
@@ -241,7 +241,7 @@ tm.draw(() => {
     drop.y += drop.speed;
     
     // Reset drop when it goes off screen
-    if (drop.y - drop.length > tm.grid.rows) {
+    if (drop.y - drop.length > t.grid.rows) {
       drop.y = Math.random() * -50;
       drop.speed = Math.random() * 0.3 + 0.1;
       drop.length = Math.floor(Math.random() * 15) + 5;
@@ -261,17 +261,17 @@ const ANIMATED_WAVE_TM = `/**
  * @link https://github.com/humanbydefinition/textmode.js
  */
 
-tm.draw(() => {
-  tm.background(0);
+t.draw(() => {
+  t.background(0);
 
-  const time = tm.frameCount * 0.01;
+  const time = t.frameCount * 0.01;
   const step = 3;
   
-  for (let gridY = 0; gridY < tm.grid.rows + step; gridY += step) {
-      for (let gridX = 0; gridX < tm.grid.cols + step; gridX += step) {
+  for (let gridY = 0; gridY < t.grid.rows + step; gridY += step) {
+      for (let gridX = 0; gridX < t.grid.cols + step; gridX += step) {
           // Calculate distance from center (in grid coordinates)
-          const dx = gridX - tm.grid.cols / 2;
-          const dy = gridY - tm.grid.rows / 2;
+          const dx = gridX - t.grid.cols / 2;
+          const dy = gridY - t.grid.rows / 2;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
           // Create ripple effect
@@ -283,30 +283,30 @@ tm.draw(() => {
           
           // Map to characters based on wave intensity
           if (combined > 0.7) {
-              tm.char('#');
-              tm.charColor(255, 200, 100);
+              t.char('#');
+              t.charColor(255, 200, 100);
           } else if (combined > 0.5) {
-              tm.char('@');
-              tm.charColor(200, 150, 255);
+              t.char('@');
+              t.charColor(200, 150, 255);
           } else if (combined > 0.3) {
-              tm.char('%');
-              tm.charColor(100, 255, 200);
+              t.char('%');
+              t.charColor(100, 255, 200);
           } else if (combined > 0.1) {
-              tm.char('.');
-              tm.charColor(150, 100, 255);
+              t.char('.');
+              t.charColor(150, 100, 255);
           } else {
-              tm.char(' ');
+              t.char(' ');
           }
           
           // Convert grid coordinates to center-based coordinates
-          const x = gridX + 1 - tm.grid.cols / 2;
-          const y = gridY - tm.grid.rows / 2;
+          const x = gridX + 1 - t.grid.cols / 2;
+          const y = gridY - t.grid.rows / 2;
           
-          tm.push();
-          tm.translate(x, y, 0);
-          tm.cellColor(0, 0, 0);
-          tm.rect(step, step);
-          tm.pop();
+          t.push();
+          t.translate(x, y, 0);
+          t.cellColor(0, 0, 0);
+          t.rect(step, step);
+          t.pop();
       }
   }
 })`;
@@ -318,16 +318,16 @@ const PLASMA_FIELD_TM = `/**
  * @link https://github.com/humanbydefinition/textmode.js
  */
 
-tm.draw(() => {
-    tm.background(0);
+t.draw(() => {
+    t.background(0);
 
-    const time = tm.frameCount * 0.02;
+    const time = t.frameCount * 0.02;
     
-    for (let gridY = 0; gridY < tm.grid.rows; gridY++) {
-        for (let gridX = 0; gridX < tm.grid.cols; gridX++) {
+    for (let gridY = 0; gridY < t.grid.rows; gridY++) {
+        for (let gridX = 0; gridX < t.grid.cols; gridX++) {
             // Normalize coordinates
-            const nx = gridX / tm.grid.cols;
-            const ny = gridY / tm.grid.rows;
+            const nx = gridX / t.grid.cols;
+            const ny = gridY / t.grid.rows;
             
             // Create multiple plasma waves
             const plasma1 = Math.sin(nx * 8 + time);
@@ -369,30 +369,30 @@ tm.draw(() => {
             
             // Map intensity to characters
             if (intensity > 0.8) {
-                tm.char('█');
+                t.char('█');
             } else if (intensity > 0.6) {
-                tm.char('▓');
+                t.char('▓');
             } else if (intensity > 0.4) {
-                tm.char('▒');
+                t.char('▒');
             } else if (intensity > 0.2) {
-                tm.char('░');
+                t.char('░');
             } else if (intensity > 0.1) {
-                tm.char('·');
+                t.char('·');
             } else {
-                tm.char(' ');
+                t.char(' ');
             }
             
-            tm.charColor(r, g, b);
-            tm.cellColor(0, 0, 0);
+            t.charColor(r, g, b);
+            t.cellColor(0, 0, 0);
             
             // Convert grid coordinates to center-based coordinates
-            const x = (gridX + 1) - tm.grid.cols / 2;
-            const y = gridY - tm.grid.rows / 2;
+            const x = (gridX + 1) - t.grid.cols / 2;
+            const y = gridY - t.grid.rows / 2;
             
-            tm.push();
-            tm.translate(x, y, 0);
-            tm.rect(1, 1);
-            tm.pop();
+            t.push();
+            t.translate(x, y, 0);
+            t.rect(1, 1);
+            t.pop();
         }
     }
 })`;
