@@ -66,6 +66,12 @@ export interface FBONode {
   texture: regl.Texture2D;
   render: RenderFunction;
   cleanup?: () => void;
+
+  /** Fingerprint of the node data used to build this renderer (for diffing on graph rebuild) */
+  dataFingerprint?: string;
+
+  /** The node type that this FBO was built for */
+  nodeType?: RenderNode['type'];
 }
 
 // Message types for worker communication (main -> worker)

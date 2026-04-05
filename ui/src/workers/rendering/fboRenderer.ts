@@ -215,6 +215,14 @@ export class FBORenderer {
     this.defineWorkerGlobals();
   }
 
+  /**
+   * Compute a fingerprint of a render node's data for change detection.
+   * Used to skip renderer recreation when only edges changed.
+   */
+  private computeNodeFingerprint(node: RenderNode): string {
+    return JSON.stringify(node.data);
+  }
+
   /** Build FBOs for all nodes in the render graph */
   async buildFBOs(renderGraph: RenderGraph) {
     const [width, height] = this.outputSize;
@@ -268,12 +276,29 @@ export class FBORenderer {
     this.outputNodeId = mergedGraph.outputNodeId;
 
     for (const node of renderGraph.nodes) {
-      // Check if we can reuse an existing FBO for this node.
-      // Reuse if available and size matches (size may change on resize).
       const existingFbo = this.fboNodes.get(node.id);
 
       const canReuseFbo =
         existingFbo && existingFbo.texture.width === width && existingFbo.texture.height === height;
+
+      // Diff: check if the node's data has changed since last build.
+      // If both FBO and data are unchanged, skip renderer recreation entirely.
+      // This preserves state in JS-based renderers (canvas, three, regl, etc.)
+      // that would otherwise lose their scene graphs, animation state, etc.
+      // Passthrough nodes (send.vdo, recv.vdo) capture inletMap in their closure
+      // so they must always be recreated when the graph changes.
+      const fingerprint = this.computeNodeFingerprint(node);
+      const isPassthroughNode = node.type === 'send.vdo' || node.type === 'recv.vdo';
+
+      if (
+        canReuseFbo &&
+        !isPassthroughNode &&
+        existingFbo.nodeType === node.type &&
+        existingFbo.dataFingerprint === fingerprint
+      ) {
+        // Node unchanged — skip renderer recreation entirely
+        continue;
+      }
 
       let texture: regl.Texture2D;
       let framebuffer: regl.Framebuffer2D;
@@ -351,7 +376,9 @@ export class FBORenderer {
         framebuffer,
         texture,
         render: renderer.render,
-        cleanup: renderer.cleanup
+        cleanup: renderer.cleanup,
+        dataFingerprint: fingerprint,
+        nodeType: node.type
       };
 
       this.fboNodes.set(node.id, fboNode);
