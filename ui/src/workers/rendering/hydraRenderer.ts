@@ -3,71 +3,34 @@ import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
-import { WorkerRendererMessageContext } from './WorkerRendererMessageContext';
-import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
-import type { Message } from '$lib/messages/MessageSystem';
-import type { SendMessageOptions } from '$lib/messages/MessageContext';
-import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { HYDRA_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
-import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
-import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
+import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
 
-type AudioAnalysisType = 'wave' | 'freq';
-type AudioAnalysisFormat = 'int' | 'float';
-
-type AudioAnalysisProps = {
-  id?: string;
-  type?: AudioAnalysisType;
-  format?: AudioAnalysisFormat;
-};
-
-export interface HydraConfig {
-  code: string;
-  nodeId: string;
-}
-
-export class HydraRenderer {
-  public config: HydraConfig;
-  public renderer: FBORenderer;
+export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   public precision: 'highp' | 'mediump' = 'highp';
-
   public hydra: Hydra | null = null;
-  public framebuffer: regl.Framebuffer2D | null = null;
-
-  private msgContext!: WorkerRendererMessageContext;
-  public settingsProxy: WorkerSettingsProxy | null = null;
 
   private timestamp = performance.now();
-
   private sourceToParamIndexMap: (number | null)[] = [null, null, null, null];
-
-  // FFT state tracking
-  public isFFTEnabled = false;
-  private fftRequestCache = new Map<string, boolean>();
-  private fftDataCache = new Map<string, { data: Uint8Array | Float32Array; timestamp: number }>();
-
-  // Mouse state (updated each frame from RenderParams)
-  private mouseX = 0;
-  private mouseY = 0;
 
   // Mouse scope: 'local' = canvas-relative, 'global' = screen-relative
   private mouseScope: 'global' | 'local' = 'local';
 
-  // Runtime error throttling (avoid flooding console at 120fps)
-  private lastRuntimeError: string | null = null;
-  private lastRuntimeErrorTime = 0;
-  private static readonly RUNTIME_ERROR_THROTTLE_MS = 1000;
+  // Hydra-specific error throttling (separate from base class to avoid key collisions)
+  private hydraLastRuntimeError: string | null = null;
+  private hydraLastRuntimeErrorTime = 0;
 
-  private constructor(config: HydraConfig, framebuffer: regl.Framebuffer2D, renderer: FBORenderer) {
-    this.config = config;
-    this.framebuffer = framebuffer;
-    this.renderer = renderer;
-    this.msgContext = new WorkerRendererMessageContext(config.nodeId);
+  private constructor(
+    config: BaseRendererConfig,
+    framebuffer: regl.Framebuffer2D,
+    renderer: FBORenderer
+  ) {
+    super(config, framebuffer, renderer);
   }
 
   static async create(
-    config: HydraConfig,
+    config: BaseRendererConfig,
     framebuffer: regl.Framebuffer2D,
     renderer: FBORenderer
   ): Promise<HydraRenderer> {
@@ -87,7 +50,8 @@ export class HydraRenderer {
       numSources: 4,
       numOutputs: 4,
       precision: instance.precision,
-      onError: (error, context) => instance.handleRuntimeError(error, context)
+      onError: (error: unknown, context: HydraErrorContext) =>
+        instance.handleHydraRuntimeError(error, context)
     });
 
     await instance.updateCode();
@@ -112,15 +76,12 @@ export class HydraRenderer {
     this.hydra.sources.forEach((source, sourceIndex) => {
       if (!this.hydra) return;
 
-      // We do the tick ourselves
       if (this.sourceToParamIndexMap[sourceIndex] !== null) {
         const paramIndex = this.sourceToParamIndexMap[sourceIndex];
 
         const param = params.userParams[paramIndex] as regl.Texture2D;
         if (!param) return;
 
-        // Check if the param is a valid regl texture - use property detection
-        // instead of name checking since names get mangled in production
         if (
           'width' in param &&
           'height' in param &&
@@ -156,14 +117,14 @@ export class HydraRenderer {
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
 
-    // Flip Y coordinates to match standard screen coordinates (Y-down, origin top-left)
+    // Flip Y coordinates to match standard screen coordinates
     gl.blitFramebuffer(
       0,
       0,
       hydraWidth,
       hydraHeight,
       0,
-      outputHeight, // Flip destination Y
+      outputHeight,
       outputWidth,
       0,
       gl.COLOR_BUFFER_BIT,
@@ -177,25 +138,12 @@ export class HydraRenderer {
     this.timestamp = time;
   }
 
-  public async updateCode() {
+  async updateCode() {
     if (!this.hydra) return;
 
     this.sourceToParamIndexMap = [null, null, null, null];
 
-    this.isFFTEnabled = false;
-    this.fftDataCache.clear();
-    this.fftRequestCache.clear();
-    this.msgContext.reset();
-
-    // Reset settings proxy for re-run — reuse instance to preserve requestIdCounter
-    // and avoid request ID collisions on rapid re-runs
-    if (!this.settingsProxy) {
-      this.settingsProxy = createWorkerSettingsProxy(this.config.nodeId, (msg) =>
-        self.postMessage(msg)
-      );
-    } else {
-      this.settingsProxy._reset();
-    }
+    this.resetState();
 
     // Reset mouse scope to local (default)
     this.mouseScope = 'local';
@@ -215,16 +163,8 @@ export class HydraRenderer {
       // Apply Hydra-specific code transformation (.out() -> .out(o0))
       const hydraCode = processCode(this.config.code);
 
-      // Preprocess code for module support
-      const processedCode = await this.renderer.jsRunner.preprocessCode(hydraCode, {
-        nodeId: this.config.nodeId
-      });
-
-      // If preprocessCode returns null, it means it's a library definition
-      if (processedCode === null) return;
-
-      // Hydra-specific context with synth instance and generators
       const extraContext = {
+        ...this.buildBaseExtraContext(),
         h: this.hydra.synth,
         render,
         hush,
@@ -251,46 +191,12 @@ export class HydraRenderer {
         o3,
 
         setVideoCount: this.setVideoCount.bind(this),
-
-        // Worker-specific overrides (JSRunner defaults are for main thread)
-        send: this.sendMessage.bind(this),
-        fft: this.createFFTFunction(),
-        getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
-        onMessage: this.msgContext.createOnMessageFunction(),
-
-        // Mouse object with getters for real-time values (Hydra-style)
-        mouse: this.createMouseObject(),
-
-        // Set mouse scope: 'local' (canvas-relative) or 'global' (screen-relative)
-        setMouseScope: this.setMouseScope.bind(this),
-
-        // Canvas dimensions for normalizing mouse coordinates
-        width: this.renderer.outputSize[0],
-        height: this.renderer.outputSize[1],
-
-        // Worker-compatible clock object (overrides JSRunner's main-thread Transport-based clock)
-        clock: this.renderer.createWorkerClock(),
-
-        // Settings API — proxied through main thread
-        settings: this.settingsProxy!.settings
+        setMouseScope: this.setMouseScope.bind(this)
       };
 
-      // Use JSRunner's executeJavaScript method with full module support
-      await this.renderer.jsRunner.executeJavaScript(this.config.nodeId, processedCode, {
-        customConsole: this.createCustomConsole(),
-        setPortCount: (inletCount?: number, outletCount?: number) => {
-          this.setPortCount(inletCount, outletCount);
-        },
-        setTitle: (title: string) => {
-          this.setTitle(title);
-        },
-        setHidePorts: (hidePorts: boolean) => {
-          this.setHidePorts(hidePorts);
-        },
-        extraContext
-      });
+      await this.executeUserCode(hydraCode, extraContext);
     } catch (error) {
-      this.handleCodeError(error);
+      this.handleCodeError(error, HYDRA_WRAPPER_OFFSET);
     }
   }
 
@@ -307,7 +213,6 @@ export class HydraRenderer {
 
     this.stop();
 
-    // Destroy all sources and outputs
     for (const source of this.hydra.sources) {
       source.getTexture()?.destroy();
     }
@@ -316,95 +221,9 @@ export class HydraRenderer {
       output.fbos.forEach((fbo) => fbo.destroy());
     }
 
-    // Clean up JSRunner context for this node
-    this.renderer.jsRunner.destroy(this.config.nodeId);
-
-    // Prevent double-destroy
     this.hydra = null;
-  }
 
-  handleMessage(message: Message) {
-    this.msgContext.handleEdgeMessage(message.data, message);
-  }
-
-  handleChannelMessage(channel: string, data: unknown, sourceNodeId: string) {
-    this.msgContext.handleChannelMessage(channel, data, sourceNodeId);
-  }
-
-  sendMessage(data: unknown, options: SendMessageOptions) {
-    self.postMessage({
-      type: 'sendMessageFromNode',
-      fromNodeId: this.config.nodeId,
-      data,
-      options
-    });
-  }
-
-  createFFTFunction() {
-    return (options: AudioAnalysisProps = {}) => {
-      const { type = 'wave', format = 'int' } = options;
-      const { nodeId } = this.config;
-
-      const cacheKey = `${type}-${format}`;
-
-      if (!this.isFFTEnabled) {
-        self.postMessage({ type: 'fftEnabled', nodeId, enabled: true });
-        this.isFFTEnabled = true;
-      }
-
-      if (!this.fftRequestCache.has(cacheKey)) {
-        self.postMessage({
-          type: 'registerFFTRequest',
-          nodeId,
-          analysisType: type,
-          format
-        });
-
-        this.fftRequestCache.set(cacheKey, true);
-      }
-
-      const cached = this.fftDataCache.get(cacheKey);
-      const bins = cached?.data ?? null;
-
-      return new FFTAnalysis(bins, format, 44100, type);
-    };
-  }
-
-  createMouseObject() {
-    const getX = () => this.mouseX;
-    const getY = () => this.mouseY;
-
-    return {
-      get x() {
-        return getX();
-      },
-
-      get y() {
-        return getY();
-      }
-    };
-  }
-
-  // Method to receive FFT data from main thread
-  setFFTData(payload: AudioAnalysisPayloadWithType) {
-    const { analysisType, format, array } = payload;
-
-    const cacheKey = `${analysisType}-${format}`;
-
-    this.fftDataCache.set(cacheKey, {
-      data: array,
-      timestamp: performance.now()
-    });
-  }
-
-  setPortCount(inletCount = 1, outletCount = 0) {
-    self.postMessage({
-      type: 'setPortCount',
-      portType: 'message',
-      nodeId: this.config.nodeId,
-      inletCount,
-      outletCount
-    });
+    super.destroy();
   }
 
   setVideoCount(inletCount = 1, outletCount = 1) {
@@ -423,14 +242,6 @@ export class HydraRenderer {
     for (let i = 0; i < inletCount; i++) {
       this.sourceToParamIndexMap[i] = i;
     }
-  }
-
-  setTitle(title: string) {
-    self.postMessage({
-      type: 'setTitle',
-      nodeId: this.config.nodeId,
-      title
-    });
   }
 
   setHidePorts(hidePorts: boolean) {
@@ -452,36 +263,28 @@ export class HydraRenderer {
   }
 
   /**
-   * Handles runtime errors from Hydra transforms (e.g., errors in arrow functions passed to osc(), rotate(), etc.)
-   * These errors occur during rendering, not during initial code evaluation.
-   * Throttled to avoid flooding console at high frame rates.
+   * Handles runtime errors from Hydra transforms (e.g., errors in arrow functions
+   * passed to osc(), rotate(), etc.). Throttled to avoid flooding at high frame rates.
    */
-  handleRuntimeError(error: unknown, context: HydraErrorContext): void {
+  private handleHydraRuntimeError(error: unknown, context: HydraErrorContext): void {
     const { nodeId, code } = this.config;
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    // Create a key to identify this specific error
     const errorKey = `${context.transformName}:${context.paramName}:${errorMessage}`;
     const now = performance.now();
 
-    // Throttle: skip if same error was reported recently
-    if (
-      this.lastRuntimeError === errorKey &&
-      now - this.lastRuntimeErrorTime < HydraRenderer.RUNTIME_ERROR_THROTTLE_MS
-    ) {
+    if (this.hydraLastRuntimeError === errorKey && now - this.hydraLastRuntimeErrorTime < 1000) {
       return;
     }
 
-    this.lastRuntimeError = errorKey;
-    this.lastRuntimeErrorTime = now;
+    this.hydraLastRuntimeError = errorKey;
+    this.hydraLastRuntimeErrorTime = now;
 
-    // Format a helpful error message with context
     const contextInfo =
       context.transformType === 'render'
         ? 'during render'
         : `in ${context.transformName}() parameter "${context.paramName}"`;
 
-    // Try to extract line number from stack trace
     const errorInfo = parseJSError(error, countLines(code), HYDRA_WRAPPER_OFFSET);
 
     self.postMessage({
@@ -491,52 +294,6 @@ export class HydraRenderer {
       args: [`Error ${contextInfo}: ${errorMessage}`],
       lineErrors: errorInfo?.lineErrors
     });
-  }
-
-  /**
-   * Handles code execution errors with line number extraction for inline highlighting.
-   * Parses the error to extract line info and sends it via consoleOutput with lineErrors.
-   */
-  handleCodeError(error: unknown): void {
-    const { nodeId, code } = this.config;
-    const customConsole = this.createCustomConsole();
-
-    const errorInfo = parseJSError(error, countLines(code), HYDRA_WRAPPER_OFFSET);
-
-    if (errorInfo) {
-      // Send error with lineErrors for inline highlighting
-      self.postMessage({
-        type: 'consoleOutput',
-        nodeId,
-        level: 'error',
-        args: [errorInfo.message],
-        lineErrors: errorInfo.lineErrors
-      });
-
-      return;
-    }
-
-    // Fallback: no line info available
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    customConsole.error(errorMessage);
-  }
-
-  /**
-   * Creates a custom console object that routes output to VirtualConsole via the main thread.
-   */
-  createCustomConsole() {
-    const { nodeId } = this.config;
-
-    const sendLog = (level: 'log' | 'warn' | 'error', args: unknown[]) =>
-      self.postMessage({ type: 'consoleOutput', nodeId, level, args });
-
-    return {
-      log: (...args: unknown[]) => sendLog('log', args),
-      warn: (...args: unknown[]) => sendLog('warn', args),
-      error: (...args: unknown[]) => sendLog('error', args),
-      info: (...args: unknown[]) => sendLog('log', args),
-      debug: (...args: unknown[]) => sendLog('log', args)
-    };
   }
 }
 
