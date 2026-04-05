@@ -53,6 +53,13 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'setVideoCount(1, 0)'
   },
   {
+    label: 'getTexture',
+    type: 'function',
+    detail: '(index: number) => Texture',
+    info: 'Get the texture from a video inlet by index. Returns a fallback texture when the inlet is not connected.',
+    apply: 'getTexture(0)'
+  },
+  {
     label: 'onVideoFrame',
     type: 'function',
     detail: '(callback: (frames, timestamp) => void) => void',
@@ -445,7 +452,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three',
     'three.dom'
   ],
-  setVideoCount: ['hydra', 'regl', 'three', 'worker'],
+  setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
+  getTexture: ['hydra', 'regl', 'swgl', 'three'],
   onVideoFrame: ['worker'],
   getVideoFrames: ['worker'],
   getVfsUrl: [

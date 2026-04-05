@@ -16,23 +16,45 @@ const SAMPLER_2D_TEMPLATE = `
 /**
  * Wraps a regl texture as a SwissGL-compatible TextureSampler so it can be
  * passed directly into glsl() calls as a uniform.
+ *
+ * Resolves the underlying WebGLTexture lazily at bind time via a callback,
+ * so it always reads the current texture even if inputTextures changes
+ * between frames.
  */
 class ReglTextureSampler extends TextureSampler {
   declare _root: ReglTextureSampler;
   declare filter: string;
   declare wrap: string;
   gl: WebGL2RenderingContext;
-  handle: WebGLTexture;
   gltarget: number;
 
-  constructor(gl: WebGL2RenderingContext, webglTexture: WebGLTexture) {
+  /** Static handle for the fallback texture. */
+  handle: WebGLTexture | null;
+
+  /** Lazy resolver — when set, takes priority over static handle. */
+  private resolveTexture: (() => WebGLTexture | null) | null;
+
+  constructor(gl: WebGL2RenderingContext, texture: WebGLTexture);
+  constructor(gl: WebGL2RenderingContext, resolver: () => WebGLTexture | null);
+  constructor(gl: WebGL2RenderingContext, source: WebGLTexture | (() => WebGLTexture | null)) {
     super();
     this._root = this;
     this.gl = gl;
-    this.handle = webglTexture;
     this.gltarget = gl.TEXTURE_2D;
     this.filter = 'linear';
     this.wrap = 'repeat';
+
+    if (typeof source === 'function') {
+      this.resolveTexture = source;
+      this.handle = null;
+    } else {
+      this.resolveTexture = null;
+      this.handle = source;
+    }
+  }
+
+  private getHandle(): WebGLTexture | null {
+    return this.resolveTexture ? this.resolveTexture() : this.handle;
   }
 
   _getUniformCode(name: string) {
@@ -40,7 +62,7 @@ class ReglTextureSampler extends TextureSampler {
   }
 
   bindTexture() {
-    this.gl.bindTexture(this.gltarget, this.handle);
+    this.gl.bindTexture(this.gltarget, this.getHandle());
   }
 }
 
@@ -56,10 +78,10 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
   // Video input textures (from connected nodes)
   private inputTextures: (regl.Texture2D | undefined)[] = [];
-  private samplerCache: (ReglTextureSampler | undefined)[] = [];
+  private lazySamplers: (ReglTextureSampler | undefined)[] = [];
 
   /** 1x1 transparent texture returned when an inlet is not connected */
-  private fallbackSampler: ReglTextureSampler | null = null;
+  private fallbackWebGLTexture: WebGLTexture | null = null;
 
   private constructor(
     config: BaseRendererConfig,
@@ -113,7 +135,7 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     );
 
     gl.bindTexture(gl.TEXTURE_2D, null);
-    instance.fallbackSampler = new ReglTextureSampler(gl, fallbackTex);
+    instance.fallbackWebGLTexture = fallbackTex;
 
     await instance.updateCode();
 
@@ -188,22 +210,22 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
   /**
    * Gets a SwissGL-compatible TextureSampler from a video inlet.
-   * Returns a 1x1 transparent fallback when the inlet is not connected.
+   * Returns a lazy sampler that resolves the actual texture at bind time,
+   * so it always reads the current frame's inputTextures.
    */
   getTexture(index: number): ReglTextureSampler {
-    const reglTex = this.inputTextures[index];
-    if (!reglTex) return this.fallbackSampler!;
+    const cached = this.lazySamplers[index];
+    if (cached) return cached;
 
-    // @ts-expect-error -- accessing internal regl property
-    const webglTexture = reglTex._texture?.texture as WebGLTexture | undefined;
-    if (!webglTexture) return this.fallbackSampler!;
+    const sampler = new ReglTextureSampler(this.gl, () => {
+      const reglTex = this.inputTextures[index];
+      if (!reglTex) return this.fallbackWebGLTexture;
 
-    // Reuse cached sampler if the underlying WebGL texture hasn't changed
-    const cached = this.samplerCache[index];
-    if (cached && cached.handle === webglTexture) return cached;
+      // @ts-expect-error -- accessing internal regl property
+      return (reglTex._texture?.texture as WebGLTexture) ?? this.fallbackWebGLTexture;
+    });
 
-    const sampler = new ReglTextureSampler(this.gl, webglTexture);
-    this.samplerCache[index] = sampler;
+    this.lazySamplers[index] = sampler;
 
     return sampler;
   }
@@ -221,6 +243,13 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   destroy() {
     this.glsl.reset();
     this.userRenderFunc = null;
+
+    if (this.fallbackWebGLTexture) {
+      this.gl.deleteTexture(this.fallbackWebGLTexture);
+      this.fallbackWebGLTexture = null;
+    }
+
+    this.lazySamplers.length = 0;
     super.destroy();
   }
 }
