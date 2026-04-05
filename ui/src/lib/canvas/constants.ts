@@ -208,7 +208,7 @@ function render(time) {
 }`;
 
 export const DEFAULT_TEXTMODE_CODE = `t.setup(() => {
-  t.fontSize(16)
+  t.fontSize(32)
   t.frameRate(60)
 })
 

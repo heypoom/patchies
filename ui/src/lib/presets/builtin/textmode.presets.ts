@@ -1,7 +1,7 @@
 const RAIN_TM = `let drops = []
 
 t.setup(() => {
-  t.fontSize(14)
+  t.fontSize(32)
   t.frameRate(20)
 
   for (let i = 0; i < 50; i++) {
@@ -41,7 +41,7 @@ const TORUS_TM = `let A = 0
 let B = 0
 
 t.setup(() => {
-  t.fontSize(10)
+  t.fontSize(32)
   t.frameRate(30)
 })
 
@@ -121,7 +121,7 @@ const colors = [
 let buffer = []
 
 t.setup(() => {
-  t.fontSize(10)
+  t.fontSize(32)
   t.frameRate(20)
   buffer = Array(t.grid.cols * t.grid.rows).fill(0)
 })
@@ -174,7 +174,7 @@ const drops = [];
 const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 t.setup(() => {
-  t.fontSize(16)
+  t.fontSize(32)
   t.frameRate(60)
 
   // Initialize rain drops

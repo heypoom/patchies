@@ -10,7 +10,7 @@ The textmode instance is exposed as `tm`:
 
 ```javascript
 t.setup(() => {
-  t.fontSize(16);
+  t.fontSize(32);
   t.frameRate(60);
 });
 
@@ -68,7 +68,7 @@ effects. All synth functions are available as top-level globals.
 const label = "synth.textmode.art";
 
 t.setup(() => {
-  t.fontSize(16);
+  t.fontSize(32);
 })
 
 t.layers.base.synth( // define a synth for the textmode.js base layer
