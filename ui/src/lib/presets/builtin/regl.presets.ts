@@ -42,5 +42,8 @@ function render(time) {
 `;
 
 export const REGL_PRESETS: Record<string, { type: string; data: { code: string } }> = {
-  'regl>': { type: 'regl', data: { code: PASSTHRU_REGL.trim() } }
+  'regl>': {
+    type: 'regl',
+    data: { code: PASSTHRU_REGL.trim() }
+  }
 };

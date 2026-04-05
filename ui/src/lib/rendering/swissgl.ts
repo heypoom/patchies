@@ -408,7 +408,7 @@ function linkShader(gl, uniforms, Inc, VP, FP, layern) {
   );
 }
 
-class TextureSampler {
+export class TextureSampler {
   fork(updates) {
     const { filter, wrap, _root } = { ...this, ...updates };
     return Object.assign(new TextureSampler(), { filter, wrap, _root });

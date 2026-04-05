@@ -41,8 +41,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     name: 'GLSL Operators',
     description: 'Video operators built with GLSL',
     icon: 'Shapes',
-    requiredObjects: ['glsl', 'regl'],
-    presets: ['glsl>', 'mix.gl', 'overlay.gl', 'switcher.gl', 'red.gl', 'regl>']
+    requiredObjects: ['glsl', 'regl', 'swgl'],
+    presets: ['glsl>', 'mix.gl', 'overlay.gl', 'switcher.gl', 'red.gl', 'regl>', 'swgl>']
   },
   {
     id: 'scripting-demos',
