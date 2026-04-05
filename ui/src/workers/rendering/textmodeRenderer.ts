@@ -117,10 +117,46 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         });
       }
 
+      const {
+        cellColor,
+        char,
+        charColor,
+        gradient,
+        noise,
+        plasma,
+        moire,
+        osc,
+        paint,
+        shape,
+        solid,
+        src,
+        voronoi,
+        setGlobalErrorCallback
+      } = await import('textmode.synth.js');
+
+      // Route synth parameter evaluation errors through our error handler
+      setGlobalErrorCallback((error: unknown) => {
+        this.handleCodeError(error, CANVAS_WRAPPER_OFFSET);
+      });
+
       const extraContext = {
         ...this.buildBaseExtraContext(),
+        t: this.tm,
         tm: this.tm,
-        textmode: this.textmode
+        textmode: this.textmode,
+        cellColor,
+        char,
+        charColor,
+        gradient,
+        noise,
+        plasma,
+        moire,
+        osc,
+        paint,
+        shape,
+        solid,
+        src,
+        voronoi
       };
 
       await this.executeUserCode(this.config.code, extraContext);

@@ -62,6 +62,33 @@ Textmode-specific:
 
 ## Plugins
 
+### Synth Plugin
+
+The [textmode.synth.js](https://code.textmode.art/api/textmode.synth.js/) plugin provides composable visual sources for generating patterns, gradients, and effects. All synth functions are available as top-level globals — no import needed.
+
+```javascript
+tm.setup(() => {
+  tm.fontSize(12);
+});
+
+tm.draw(() => {
+  tm.background(0);
+
+  tm.push();
+  tm.cellColor(gradient(0.5, 1));
+  tm.charColor(noise(0.02, 0.5));
+  tm.char("█");
+  tm.point();
+  tm.pop();
+});
+```
+
+> **Tip**: Try the [synth playground](https://synth.textmode.art) to experiment with these functions interactively.
+
+See the [full synth API reference](https://code.textmode.art/api/textmode.synth.js/) for all options and chaining methods.
+
+### Filters Plugin
+
 Use [textmode.filters.js](https://github.com/humanbydefinition/textmode.filters.js) for image filters:
 
 ```javascript

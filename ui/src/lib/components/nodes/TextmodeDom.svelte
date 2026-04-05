@@ -244,6 +244,28 @@
         };
       }
 
+      const {
+        cellColor,
+        char,
+        charColor,
+        gradient,
+        noise,
+        plasma,
+        moire,
+        osc,
+        paint,
+        shape,
+        solid,
+        src,
+        voronoi,
+        setGlobalErrorCallback
+      } = await import('textmode.synth.js');
+
+      // Route synth parameter evaluation errors through our error handler
+      setGlobalErrorCallback((error: unknown) => {
+        handleCodeError(error, data.code, nodeId, customConsole, CANVAS_DOM_WRAPPER_OFFSET);
+      });
+
       // Preprocess code for module support
       const processedCode = await jsRunner.preprocessCode(data.code, { nodeId });
 
@@ -260,8 +282,22 @@
         extraContext: {
           settings: createSettingsAPI(settingsManager),
           canvas,
+          t: tm,
           tm,
           textmode,
+          cellColor,
+          char,
+          charColor,
+          gradient,
+          noise,
+          plasma,
+          moire,
+          osc,
+          paint,
+          shape,
+          solid,
+          src,
+          voronoi,
           width: outputWidth,
           height: outputHeight,
           noDrag: () => {
