@@ -1011,6 +1011,7 @@ export class FBORenderer {
       node.type === 'hydra' ||
       node.type === 'three' ||
       node.type === 'regl' ||
+      node.type === 'swgl' ||
       node.type === 'projmap'
     ) {
       const maxInletIndex = Math.max(-1, ...inputTextureMap.keys());

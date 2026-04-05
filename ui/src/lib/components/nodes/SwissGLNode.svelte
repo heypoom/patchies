@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
-  import { swglSchema } from '$lib/objects/schemas/swgl';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas/common';
@@ -15,7 +14,7 @@
   import type { SettingsSchema } from '$lib/settings';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import type { ConsoleOutputEvent, NodePortCountUpdateEvent } from '$lib/eventbus/events';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import { logger } from '$lib/utils/logger';
 
@@ -25,17 +24,21 @@
     selected
   }: {
     id: string;
-    type: string;
     data: {
       code: string;
       showConsole?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
+      videoInletCount?: number;
+      videoOutletCount?: number;
+      messageInletCount?: number;
+      messageOutletCount?: number;
     };
     selected: boolean;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
   const eventBus = PatchiesEventBus.getInstance();
 
   const settingsManager = new SettingsManager(
@@ -57,6 +60,31 @@
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 
   const code = $derived(data.code || '');
+  let videoInletCount = $derived(data.videoInletCount ?? 0);
+  let videoOutletCount = $derived(data.videoOutletCount ?? 1);
+  let messageInletCount = $derived(data.messageInletCount ?? 1);
+  let messageOutletCount = $derived(data.messageOutletCount ?? 1);
+
+  function handlePortCountUpdate(e: NodePortCountUpdateEvent) {
+    if (e.nodeId !== nodeId) return;
+
+    match(e)
+      .with({ portType: 'message' }, (m) => {
+        updateNodeData(nodeId, {
+          messageInletCount: m.inletCount,
+          messageOutletCount: m.outletCount
+        });
+      })
+      .with({ portType: 'video' }, (m) => {
+        updateNodeData(nodeId, {
+          videoInletCount: m.inletCount,
+          videoOutletCount: m.outletCount
+        });
+      })
+      .exhaustive();
+
+    updateNodeInternals(nodeId);
+  }
 
   function handleConsoleOutput(event: ConsoleOutputEvent) {
     if (event.nodeId !== nodeId) return;
@@ -102,7 +130,8 @@
 
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 
-    // Listen for console output events to capture lineErrors
+    // Listen for console output and port count events
+    glSystem.eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
     eventBus.addEventListener('consoleOutput', handleConsoleOutput);
 
     glSystem.registerSettingsCallbacks(nodeId, {
@@ -124,6 +153,7 @@
   });
 
   onDestroy(() => {
+    glSystem?.eventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
     glSystem?.unregisterSettingsCallbacks(nodeId);
     audioAnalysisSystem?.disableFFT(nodeId);
@@ -159,6 +189,7 @@
 <CanvasPreviewLayout
   title="swgl"
   objectType="swgl"
+  {nodeId}
   onrun={updateSwissGL}
   onPlaybackToggle={togglePause}
   paused={isPaused}
@@ -183,34 +214,51 @@
   }}
 >
   {#snippet topHandle()}
-    <TypedHandle
-      port="inlet"
-      spec={swglSchema.inlets[0].handle!}
-      title="Message input"
-      total={1}
-      index={0}
-      {nodeId}
-    />
+    {#each Array.from({ length: videoInletCount }) as _, index (index)}
+      <TypedHandle
+        port="inlet"
+        spec={{ handleType: 'video', handleId: index.toString() }}
+        title={`Video Inlet ${index}`}
+        total={videoInletCount + messageInletCount}
+        {index}
+        {nodeId}
+      />
+    {/each}
+
+    {#each Array.from({ length: messageInletCount }) as _, index (index)}
+      <TypedHandle
+        port="inlet"
+        spec={{ handleType: 'message', handleId: index }}
+        title={`Message Inlet ${index}`}
+        total={videoInletCount + messageInletCount}
+        index={index + videoInletCount}
+        {nodeId}
+      />
+    {/each}
   {/snippet}
 
   {#snippet bottomHandle()}
-    <TypedHandle
-      port="outlet"
-      spec={swglSchema.outlets[0].handle!}
-      title="Video output"
-      total={2}
-      index={0}
-      {nodeId}
-    />
+    {#each Array.from({ length: videoOutletCount }) as _, index (index)}
+      <TypedHandle
+        port="outlet"
+        spec={{ handleType: 'video', handleId: index.toString() }}
+        title={`Video Outlet ${index}`}
+        total={videoOutletCount + messageOutletCount}
+        {index}
+        {nodeId}
+      />
+    {/each}
 
-    <TypedHandle
-      port="outlet"
-      spec={swglSchema.outlets[1].handle!}
-      title="Message output"
-      total={2}
-      index={1}
-      {nodeId}
-    />
+    {#each Array.from({ length: messageOutletCount }) as _, index (index)}
+      <TypedHandle
+        port="outlet"
+        spec={{ handleType: 'message', handleId: index }}
+        title={`Message Outlet ${index}`}
+        total={videoOutletCount + messageOutletCount}
+        index={index + videoOutletCount}
+        {nodeId}
+      />
+    {/each}
   {/snippet}
 
   {#snippet codeEditor()}

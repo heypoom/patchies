@@ -24,6 +24,7 @@ import { ASM_PRESETS } from './asm.presets';
 import { UIUA_PRESETS } from './uiua.presets';
 import { BYTEBEAT_PRESETS } from './bytebeat';
 import { REGL_PRESETS } from './regl.presets';
+import { SWGL_PRESETS } from './swgl.presets';
 
 // Re-export individual preset collections
 export {
@@ -49,7 +50,8 @@ export {
   ASM_PRESETS,
   UIUA_PRESETS,
   BYTEBEAT_PRESETS,
-  REGL_PRESETS
+  REGL_PRESETS,
+  SWGL_PRESETS
 };
 
 /**
@@ -79,5 +81,6 @@ export const BUILTIN_PRESETS: Record<string, { type: string; data: unknown }> = 
   ...ASM_PRESETS,
   ...UIUA_PRESETS,
   ...BYTEBEAT_PRESETS,
-  ...REGL_PRESETS
+  ...REGL_PRESETS,
+  ...SWGL_PRESETS
 };
