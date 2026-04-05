@@ -123,13 +123,13 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
       };
 
       await this.executeUserCode(this.config.code, extraContext);
-
+    } catch (error) {
+      this.handleCodeError(error, CANVAS_WRAPPER_OFFSET);
+    } finally {
       // Stop textmode's internal rAF loop. We drive rendering synchronously
       // from render() via redraw(), just like Three.js — this avoids two
       // async rAF loops fighting over GL state on the shared context.
       this.tm?.noLoop();
-    } catch (error) {
-      this.handleCodeError(error, CANVAS_WRAPPER_OFFSET);
     }
   }
 
