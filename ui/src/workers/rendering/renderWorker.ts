@@ -147,11 +147,19 @@ function handleStartAnimation() {
       return;
     }
 
-    if (fboRenderer.isOutputEnabled) {
+    // HACK: transferToImageBitmap() detaches and replaces the OffscreenCanvas
+    // draw buffer. textmode.js renders to the default framebuffer (gl.canvas) and
+    // requires this buffer swap each frame. without it, tm.redraw() silently
+    // produces empty pixels on both Firefox and Chrome.
+    const hasTextmode = fboRenderer.textmodeByNode.size > 0;
+
+    if (fboRenderer.isOutputEnabled || hasTextmode) {
       const outputBitmap = fboRenderer.measureOp('transfer', () => fboRenderer.getOutputBitmap());
 
-      if (outputBitmap) {
+      if (fboRenderer.isOutputEnabled && outputBitmap) {
         self.postMessage({ type: 'animationFrame', outputBitmap }, { transfer: [outputBitmap] });
+      } else {
+        outputBitmap?.close();
       }
     }
 

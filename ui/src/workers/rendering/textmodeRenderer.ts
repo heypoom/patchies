@@ -4,17 +4,12 @@ import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { setupWorkerDOMMocks } from './workerDOMMocks';
 import type { Textmodifier } from 'textmode.js';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+import { getFramebuffer } from './utils';
 
 export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
-  private animationId: number | null = null;
-  private lastUploadedFrame = -1;
-
   // textmode.js text modifier
   public tm: Textmodifier | null = null;
   public textmode: typeof import('textmode.js') | null = null;
-
-  // Blit state for GPU-to-GPU copy
-  private blitFBO: WebGLFramebuffer | null = null;
 
   private constructor(
     config: BaseRendererConfig,
@@ -23,9 +18,6 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   ) {
     super(config, framebuffer, renderer);
   }
-
-  /** Reset draw command when framebuffer changes */
-  resetDrawCommand() {}
 
   static async create(
     config: BaseRendererConfig,
@@ -39,40 +31,34 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     return instance;
   }
 
-  /** GPU-to-GPU blit from default framebuffer to regl FBO */
-  private blitToFramebuffer() {
+  // Drive textmode synchronously: one frame → blit → restore regl state.
+  // This mirrors how Three.js renders on the shared GL context.
+  renderFrame() {
+    if (!this.tm) return;
+
+    this.tm.redraw();
+    this.renderer.regl._refresh();
+
+    this.blitToReglFramebuffer();
+  }
+
+  /** Blit from default framebuffer (textmode's present target) to regl FBO */
+  private blitToReglFramebuffer() {
     if (!this.framebuffer) return;
 
     const gl = this.renderer.gl;
     const [width, height] = this.renderer.outputSize;
+    const destFBO = getFramebuffer(this.framebuffer);
 
-    // Get the regl FBO's underlying WebGL framebuffer
-    // @ts-expect-error -- accessing regl internals
-    const destFBO = this.framebuffer._framebuffer.framebuffer;
-
-    // Read from default framebuffer (textmode's render target)
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-    // Write to our destination FBO
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
-
     gl.blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.NEAREST);
-
-    // Restore default state
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
   }
 
-  // Textmode uses its own render loop, not the pipeline's renderFrame
-  renderFrame() {}
-
   public async updateCode() {
     this.resetState();
-
-    // Cancel any existing animation frame
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
 
     try {
       const [width, height] = this.renderer.outputSize;
@@ -87,49 +73,42 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
       // Create a textmode if not already created
       if (!this.tm) {
-        const { createFiltersPlugin } = await import('textmode.filters.js');
+        // @ts-expect-error -- OffscreenCanvas is looked up thru GL context.
+        this.renderer.offscreenCanvas.style = {};
+
+        const { FiltersPlugin } = await import('textmode.filters.js');
 
         this.tm = this.textmode.create({
           width,
           height,
           fontSize: 18,
           frameRate: 60,
-          plugins: [createFiltersPlugin()],
+          plugins: [FiltersPlugin],
 
           // Share regl's WebGL2 context — no separate canvas, no CPU roundtrip
           gl: this.renderer.gl,
 
-          // textmode needs a canvas for style/touch setup
-          // @ts-expect-error -- OffscreenCanvas hack: textmode expects HTMLCanvasElement with style
-          canvas: Object.assign(this.renderer.offscreenCanvas, { style: {} })
+          loadingScreen: {
+            message: 'Loading textmode...',
+            tone: 'dark',
+            transition: 'none',
+            transitionDuration: 0
+          }
         });
       }
 
-      const baseContext = this.buildBaseExtraContext();
-
       const extraContext = {
-        ...baseContext,
+        ...this.buildBaseExtraContext(),
         tm: this.tm,
-        textmode: this.textmode,
-
-        requestAnimationFrame: (callback: FrameRequestCallback) => {
-          this.animationId = requestAnimationFrame((ts) => {
-            this.renderer.drawProfiler.measure(this.config.nodeId, 'draw', () => callback(ts));
-          });
-
-          return this.animationId;
-        },
-
-        cancelAnimationFrame: (id: number) => {
-          cancelAnimationFrame(id);
-
-          if (this.animationId === id) {
-            this.animationId = null;
-          }
-        }
+        textmode: this.textmode
       };
 
       await this.executeUserCode(this.config.code, extraContext);
+
+      // Stop textmode's internal rAF loop. We drive rendering synchronously
+      // from render() via redraw(), just like Three.js — this avoids two
+      // async rAF loops fighting over GL state on the shared context.
+      this.tm?.noLoop();
     } catch (error) {
       this.handleCodeError(error, CANVAS_WRAPPER_OFFSET);
     }
@@ -138,28 +117,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   destroy() {
     this.tm?.destroy();
 
-    if (this.animationId !== null) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
-
-    if (this.blitFBO) {
-      this.renderer.gl.deleteFramebuffer(this.blitFBO);
-      this.blitFBO = null;
-    }
-
     super.destroy();
-  }
-
-  public render() {
-    if (!this.tm?.isLooping) return;
-
-    // Prevent uploading more than the needed frame rate.
-    const currentFrame = this.tm.frameCount;
-    if (currentFrame === this.lastUploadedFrame) return;
-
-    this.lastUploadedFrame = currentFrame;
-    this.blitToFramebuffer();
   }
 
   setHidePorts(hidePorts: boolean) {

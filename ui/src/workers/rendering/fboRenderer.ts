@@ -83,6 +83,9 @@ export class FBORenderer {
   public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
   public swglByNode = new Map<string, SwissGLRenderer | null>();
 
+  /** During textmode loading, we need to refresh REGL. */
+  public textmodeLoadingCount = 0;
+
   /** Old Hydra renderers pending cleanup (deferred to avoid visual glitch) */
   private pendingHydraCleanup: HydraRenderer[] = [];
   private hydraCleanupTimer: ReturnType<typeof setInterval> | null = null;
@@ -536,9 +539,6 @@ export class FBORenderer {
         // Update framebuffer reference (new one is created each buildFBOs call)
         textmodeRenderer.framebuffer = framebuffer;
 
-        // Force recreate draw command with new framebuffer
-        textmodeRenderer.resetDrawCommand();
-
         // If textmode user code has changed, we update the underlying code
         if (renderer.config.code !== node.data.code) {
           textmodeRenderer.config.code = node.data.code;
@@ -549,19 +549,28 @@ export class FBORenderer {
 
     // 2. if there are no renderer to re-use, we create a new one!
     if (!textmodeRenderer) {
-      textmodeRenderer = await TextmodeRenderer.create(
-        { code: node.data.code, nodeId: node.id },
-        framebuffer,
-        this
-      );
+      this.textmodeLoadingCount++;
 
-      this.textmodeByNode.set(node.id, textmodeRenderer);
+      try {
+        textmodeRenderer = await TextmodeRenderer.create(
+          { code: node.data.code, nodeId: node.id },
+          framebuffer,
+          this
+        );
+
+        this.textmodeByNode.set(node.id, textmodeRenderer);
+      } catch (error) {
+        console.error('Failed to create textmode renderer for node', node.id, error);
+      } finally {
+        this.textmodeLoadingCount--;
+      }
     }
 
+    if (!textmodeRenderer) return null;
+
     return {
-      render: () => {
-        textmodeRenderer.render();
-      },
+      render: textmodeRenderer.renderFrame.bind(textmodeRenderer),
+
       // No-op cleanup - textmode renderers are expensive to create,
       // so we keep them alive and reuse them across graph rebuilds.
       // They are only destroyed when explicitly removed via destroyTextmodeRenderer().
@@ -882,6 +891,14 @@ export class FBORenderer {
   renderFrame(): void {
     if (!this.renderGraph || this.fboNodes.size === 0) {
       return;
+    }
+
+    // During textmode.js initialization (~4s), its loading screen runs an
+    // independent rAF loop on the shared GL context, modifying framebuffer
+    // bindings, viewport, blending, etc. Re-sync regl's state cache so
+    // other nodes don't flash from stale cached state.
+    if (this.textmodeLoadingCount > 0) {
+      this.regl._refresh();
     }
 
     // Update time for animation
