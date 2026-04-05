@@ -50,6 +50,14 @@ Textmode-specific:
 
 ## Plugins
 
+### Filters Plugin
+
+Use [textmode.filters.js](https://github.com/humanbydefinition/textmode.filters.js) for image filters:
+
+```javascript
+t.layers.base.filter('brightness', 1.3);
+```
+
 ### Synth Plugin
 
 The [textmode.synth.js](https://code.textmode.art/api/textmode.synth.js/) plugin
@@ -114,14 +122,6 @@ labelLayer.draw(() => {
 
 See the [full synth API reference](https://code.textmode.art/api/textmode.synth.js/) for
 all options and chaining methods.
-
-### Filters Plugin
-
-Use [textmode.filters.js](https://github.com/humanbydefinition/textmode.filters.js) for image filters:
-
-```javascript
-t.layers.base.filter('brightness', 1.3);
-```
 
 ## Presets
 
