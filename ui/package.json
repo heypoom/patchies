@@ -147,6 +147,7 @@
     "supersonic-scsynth": "^0.66.0",
     "textmode.filters.js": "^1.1.1",
     "textmode.js": "^0.10.0",
+    "textmode.synth.js": "^1.5.1",
     "three": "^0.182.0",
     "tone": "^15.1.22",
     "trystero": "^0.22.0",
