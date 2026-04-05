@@ -25,6 +25,10 @@ t.draw(() => {
 });
 ```
 
+> **Important**: Smaller font sizes mean more cells to render.
+> Try not to go below `32` — the smaller the font size, the
+> more performance intensive it gets.
+
 ## Comparison with textmode.dom
 
 | Feature | `textmode` | `textmode.dom` |
