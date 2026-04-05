@@ -72,8 +72,8 @@
         "regl": "^2.1.1",
         "stats.js": "^0.17.0",
         "supersonic-scsynth": "^0.66.0",
-        "textmode.filters.js": "^1.0.1",
-        "textmode.js": "^0.8.1",
+        "textmode.filters.js": "^1.1.1",
+        "textmode.js": "^0.10.0",
         "three": "^0.182.0",
         "tone": "^15.1.22",
         "trystero": "^0.22.0",
@@ -2920,9 +2920,9 @@
 
     "text-table": ["text-table@0.2.0", "", {}, "sha512-N+8UisAXDGk8PFXP4HAzVR9nbfmVJ3zYLAWiTIoqC5v5isinhr+r5uaO8+7r3BMfuNIufIsA7RdpVgacC2cSpw=="],
 
-    "textmode.filters.js": ["textmode.filters.js@1.0.1", "", { "peerDependencies": { "textmode.js": "^0.7.1" } }, "sha512-7Z2/RIduAELlklsWa2P9Iwo8WXRbOp18Wqbz6aUWjM8QJaGG5QyJ1GEKFmARmtQqqEPDZGQwAOwFHmEtCOcgkg=="],
+    "textmode.filters.js": ["textmode.filters.js@1.1.1", "", { "dependencies": { "textmode.js": ">=0.9.1" } }, "sha512-lFjdSnTrSVTDSFC0lTcZVoc1QEFHR8qeBEAnKlR+31NMWkc2PH00/vNjUWuxwZJukniMGBh5IsVHcHC52+4beQ=="],
 
-    "textmode.js": ["textmode.js@0.8.1", "", {}, "sha512-aEyCrTgI76m0qomwt5DvTs5RuQ6fL9nHj6P2mb1i/On2FevgqH3l1DKLQ/rhnxaD6Jp0KeEcK97Y0DC1A966MA=="],
+    "textmode.js": ["textmode.js@0.10.0", "", {}, "sha512-hx5rus+d1CIPUWrRqgoSIwIJdrC6wlJJ04Za16PV8MsvhqMVg0fWv7+jVQneV2qRdUVSnUSDclKB4UHY2HMT5w=="],
 
     "thingies": ["thingies@2.5.0", "", { "peerDependencies": { "tslib": "^2" } }, "sha512-s+2Bwztg6PhWUD7XMfeYm5qliDdSiZm7M7n8KjTkIsm3l/2lgVRc2/Gx/v+ZX8lT4FMA+i8aQvhcWylldc+ZNw=="],
 
