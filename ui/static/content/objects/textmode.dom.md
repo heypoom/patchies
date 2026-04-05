@@ -72,15 +72,15 @@ Use [textmode.filters.js](https://github.com/humanbydefinition/textmode.filters.
 
 ```javascript
 // Examples of filters you can apply:
-t.layers.base.filter('brightness', 1.3);
-t.layers.base.filter('contrast', 1.2);
-t.layers.base.filter('saturation', 0.5);
-t.layers.base.filter('hueRotate', t.frameCount);
-t.layers.base.filter('posterize', 4);
-t.layers.base.filter('chromaticAberration', { amount: 8, direction: [1, 0] });
-t.layers.base.filter('pixelate', 4);
-t.layers.base.filter('glitch', 0.2);
-t.layers.base.filter('bloom', { threshold: 0.3, intensity: 1.5, radius: 6 });
+t.filter('brightness', 1.3);
+t.filter('contrast', 1.2);
+t.filter('saturation', 0.5);
+t.filter('hueRotate', t.frameCount);
+t.filter('posterize', 4);
+t.filter('chromaticAberration', { amount: 8, direction: [1, 0] });
+t.filter('pixelate', 4);
+t.filter('glitch', 0.2);
+t.filter('bloom', { threshold: 0.3, intensity: 1.5, radius: 6 });
 ```
 
 See the [full filters API reference](https://code.textmode.art/api/textmode.filters.js/)
@@ -127,9 +127,9 @@ const drawText = (s, x, y) => {
 t.draw(() => { // base layer draw loop
   const a = t.frameCount * 0.05, n = t.frameCount;
 
-  t.layers.base.filter("hueRotate", n);
-  t.layers.base.filter("chromaticAberration", { amount: 8, direction: [Math.sin(a), Math.cos(a)] });
-  t.layers.base.filter("glitch", (n * 0.01) % 0.2);
+  t.filter("hueRotate", n);
+  t.filter("chromaticAberration", { amount: 8, direction: [Math.sin(a), Math.cos(a)] });
+  t.filter("glitch", (n * 0.01) % 0.2);
 });
 
 labelLayer.draw(() => {
