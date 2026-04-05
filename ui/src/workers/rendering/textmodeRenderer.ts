@@ -6,17 +6,15 @@ import type { Textmodifier } from 'textmode.js';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
 
 export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
-  public offscreenCanvas: OffscreenCanvas | null = null;
-  public canvasTexture: regl.Texture2D | null = null;
-
-  private timestamp = performance.now();
   private animationId: number | null = null;
-  private drawCommand: regl.DrawCommand | null = null;
   private lastUploadedFrame = -1;
 
   // textmode.js text modifier
   public tm: Textmodifier | null = null;
   public textmode: typeof import('textmode.js') | null = null;
+
+  // Blit state for GPU-to-GPU copy
+  private blitFBO: WebGLFramebuffer | null = null;
 
   private constructor(
     config: BaseRendererConfig,
@@ -27,10 +25,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   }
 
   /** Reset draw command when framebuffer changes */
-  resetDrawCommand() {
-    this.drawCommand = null;
-    this.canvasTexture = null;
-  }
+  resetDrawCommand() {}
 
   static async create(
     config: BaseRendererConfig,
@@ -39,73 +34,38 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   ): Promise<TextmodeRenderer> {
     const instance = new TextmodeRenderer(config, framebuffer, renderer);
 
-    const [width, height] = instance.renderer.outputSize;
-
-    instance.offscreenCanvas = new OffscreenCanvas(width, height);
-
     await instance.updateCode();
 
     return instance;
   }
 
-  private drawCanvasToTexture() {
-    if (!this.offscreenCanvas || !this.framebuffer) return;
+  /** GPU-to-GPU blit from default framebuffer to regl FBO */
+  private blitToFramebuffer() {
+    if (!this.framebuffer) return;
 
-    this.ensureDrawCommand();
+    const gl = this.renderer.gl;
+    const [width, height] = this.renderer.outputSize;
 
-    // @ts-expect-error -- regl type is wrong
+    // Get the regl FBO's underlying WebGL framebuffer
+    // @ts-expect-error -- accessing regl internals
+    const destFBO = this.framebuffer._framebuffer.framebuffer;
 
-    this.canvasTexture?.({ data: this.offscreenCanvas });
-    this.drawCommand?.();
-  }
+    // Read from default framebuffer (textmode's render target)
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+    // Write to our destination FBO
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
 
-  ensureDrawCommand() {
-    if (this.drawCommand) return;
+    gl.blitFramebuffer(0, 0, width, height, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.NEAREST);
 
-    // @ts-expect-error -- regl type is wrong
-    this.canvasTexture = this.renderer.regl.texture({
-      data: this.offscreenCanvas
-    });
-
-    this.drawCommand = this.renderer.regl({
-      framebuffer: this.framebuffer,
-      vert: `
-        attribute vec2 position;
-        varying vec2 uv;
-        void main() {
-          uv = vec2(position.x * 0.5 + 0.5, 0.5 - position.y * 0.5);
-          gl_Position = vec4(position, 0, 1);
-        }
-      `,
-      frag: `
-        precision mediump float;
-        varying vec2 uv;
-        uniform sampler2D canvasTexture;
-
-        void main() {
-          gl_FragColor = texture2D(canvasTexture, uv);
-        }
-      `,
-      attributes: {
-        position: [
-          [-1, -1],
-          [1, -1],
-          [-1, 1],
-          [1, 1]
-        ]
-      },
-      uniforms: { canvasTexture: this.canvasTexture },
-      primitive: 'triangle strip',
-      count: 4
-    });
+    // Restore default state
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
   }
 
   // Textmode uses its own render loop, not the pipeline's renderFrame
   renderFrame() {}
 
   public async updateCode() {
-    if (!this.offscreenCanvas) return;
-
     this.resetState();
 
     // Cancel any existing animation frame
@@ -116,13 +76,6 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
     try {
       const [width, height] = this.renderer.outputSize;
-
-      // Set canvas size
-      this.offscreenCanvas.width = width;
-      this.offscreenCanvas.height = height;
-
-      // @ts-expect-error -- hack
-      this.offscreenCanvas.style = {};
 
       // Setup DOM mocks before importing textmode.js (it expects document, window APIs)
       setupWorkerDOMMocks();
@@ -135,6 +88,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
       // Create a textmode if not already created
       if (!this.tm) {
         const { createFiltersPlugin } = await import('textmode.filters.js');
+
         this.tm = this.textmode.create({
           width,
           height,
@@ -142,8 +96,12 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
           frameRate: 60,
           plugins: [createFiltersPlugin()],
 
-          // @ts-expect-error -- offscreen canvas hack
-          canvas: this.offscreenCanvas
+          // Share regl's WebGL2 context — no separate canvas, no CPU roundtrip
+          gl: this.renderer.gl,
+
+          // textmode needs a canvas for style/touch setup
+          // @ts-expect-error -- OffscreenCanvas hack: textmode expects HTMLCanvasElement with style
+          canvas: Object.assign(this.renderer.offscreenCanvas, { style: {} })
         });
       }
 
@@ -151,7 +109,6 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
       const extraContext = {
         ...baseContext,
-        canvas: this.offscreenCanvas,
         tm: this.tm,
         textmode: this.textmode,
 
@@ -186,7 +143,10 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
       this.animationId = null;
     }
 
-    this.offscreenCanvas = null;
+    if (this.blitFBO) {
+      this.renderer.gl.deleteFramebuffer(this.blitFBO);
+      this.blitFBO = null;
+    }
 
     super.destroy();
   }
@@ -199,7 +159,7 @@ export class TextmodeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     if (currentFrame === this.lastUploadedFrame) return;
 
     this.lastUploadedFrame = currentFrame;
-    this.drawCanvasToTexture();
+    this.blitToFramebuffer();
   }
 
   setHidePorts(hidePorts: boolean) {

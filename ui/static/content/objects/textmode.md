@@ -63,10 +63,6 @@ tm.layers.base.filter('brightness', 1.3);
 - `plasma-field.tm` - Plasma effect
 - `rain.tm`, `torus.tm`, `fire.tm` - More examples
 
-## Caution
-
-> Too many `textmode` objects can crash your browser with "Too many active WebGL contexts". Use sparingly.
-
 ## Resources
 
 - [Textmode.js Documentation](https://code.textmode.art/docs/introduction.html) - full reference
