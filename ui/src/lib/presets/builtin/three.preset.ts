@@ -96,7 +96,48 @@ function draw(t) {
   renderer.render(scene, camera)
 }`;
 
+const PIPE_THREE = `const { Scene, OrthographicCamera, PlaneGeometry, Mesh, MeshBasicMaterial } = THREE
+
+setVideoCount(1, 1)
+
+settings.define([
+  { key: 'opacity', label: 'Opacity', type: 'slider', min: 0, max: 1, step: 0.01, default: 1 }
+])
+
+const scene = new Scene()
+const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1)
+const geometry = new PlaneGeometry(2, 2)
+
+const material = new MeshBasicMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0,
+  visible: false
+})
+
+const plane = new Mesh(geometry, material)
+scene.add(plane)
+
+function draw(t) {
+  const tex = getTexture(0)
+  const op = settings.get('opacity')
+
+  if (tex) {
+    material.map = tex
+    material.visible = true
+    material.opacity = op
+    material.transparent = op < 1
+    material.needsUpdate = true
+  } else {
+    material.map = null
+    material.visible = false
+  }
+
+  renderer.render(scene, camera)
+}`;
+
 export const THREE_PRESETS: Record<string, { type: string; data: { code: string } }> = {
+  'three>': { type: 'three', data: { code: PIPE_THREE.trim() } },
   'video-cube.three': { type: 'three', data: { code: VIDEO_CUBE_THREE.trim() } },
   'video-torus.three': { type: 'three', data: { code: VIDEO_TORUS_THREE.trim() } },
   'video-sphere.three': { type: 'three', data: { code: VIDEO_SPHERE_THREE.trim() } },
