@@ -90,7 +90,7 @@ export const jsRunnerInstructions = `
   - tell the user in the response what settings they have and how to show it i.e. in the overflow menu > "Show settings"
   - do NOT add too much settings, 1 - 3 is enough. users can always ask to add more in a follow-up.
 - await settings.define([...schema]) - expose a settings panel on the node (gear icon appears)
-  - on P5.js: don't await - just settings.define is enough
+  - on P5.js: do NOT await in setup() - do it at top level outside setup()
 - settings.get(key) - read current value (sync, after define resolves)
   - IMPORTANT: do NOT access settings[key] - that does NOT exist!
 - settings.getAll() - all values as object
