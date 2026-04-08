@@ -63,22 +63,62 @@ const colorAttachments = node.mrtCount > 1
 const framebuffer = regl.framebuffer({ colors: colorAttachments, depth: true });
 ```
 
-Store the individual color textures on the FBONode so they can be routed independently.
+Update the `FBONode` type (`rendering/types.ts`) to support multiple color attachments:
+
+```typescript
+export interface FBONode {
+  id: string;
+  framebuffer: regl.Framebuffer2D;
+  colorAttachments: regl.Texture2D[];           // one texture per color attachment
+  /** @deprecated Use colorAttachments[0]. Kept for backwards compat. */
+  texture: regl.Texture2D;
+  render: RenderFunction;
+  cleanup?: () => void;
+  dataFingerprint?: string;
+  nodeType?: RenderNode['type'];
+}
+```
+
+When constructing a FBONode, populate both fields:
+
+```typescript
+const fboNode: FBONode = {
+  // ...
+  colorAttachments,
+  texture: colorAttachments[0],   // backwards-compat alias
+};
+```
+
+Existing code that reads `fboNode.texture` (e.g. `getInputTextureMap`) continues to work unchanged for single-attachment nodes. MRT-aware consumers index into `colorAttachments` instead.
 
 #### `fboRenderer.ts` — texture routing
 
-Currently `getInputTextureMap()` looks up `fboNodes.get(sourceNodeId).texture` (singular). Change to:
+Currently `getInputTextureMap()` iterates `node.inletMap` which maps `inletIndex → sourceNodeId` and reads `inputFBO.texture` (singular). To support MRT, the inlet map must also carry the source outlet index so the correct color attachment is selected:
 
 ```typescript
-// edge.sourceHandle encodes which outlet: "video-out-0", "video-out-1", etc.
-const outletIndex = parseOutletIndex(edge.sourceHandle);
-const sourceTexture = sourceFboNode.colorAttachments[outletIndex];
-textureMap.set(inletIndex, sourceTexture);
+// In getInputTextureMap():
+for (const [inletIndex, { sourceNodeId, outletIndex }] of node.inletMap) {
+  const inputFBO = this.fboNodes.get(sourceNodeId);
+  if (inputFBO) {
+    textureMap.set(inletIndex, inputFBO.colorAttachments[outletIndex]);
+  }
+}
 ```
 
-#### `graphUtils.ts` — edge parsing
+#### `graphUtils.ts` — outlet index parsing
 
-Currently only parses inlet index from `targetHandle`. Also parse outlet index from `sourceHandle` to know which attachment to read from.
+Currently only parses inlet index from `targetHandle` via `video-in-(\d+)`. Add a matching utility for outlet indices:
+
+```typescript
+/** Parse outlet index from a sourceHandle string like "video-out-0". Returns 0 if absent or unparseable. */
+export function parseOutletIndex(sourceHandle: string | undefined): number {
+  if (!sourceHandle?.startsWith('video-out')) return 0;
+  const match = sourceHandle.match(/video-out-(\d+)/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+```
+
+Place in `graphUtils.ts` alongside the existing inlet parsing. Use it when building `inletMap` from edges so MRT outlet indices propagate through the render graph.
 
 ### Backwards Compatibility
 

@@ -74,13 +74,17 @@ Selecting a snippet preset from the browser imports it into the current patch's 
 
 ### Drag-Drop
 
-Snippet presets support the same drag-drop as spec 112's VFS files:
+Snippet presets support the same drag-drop as spec 112's VFS files. In `CanvasDragDropManager.handlePresetDrop()`, branch on `preset.type`:
 
-- **Drop onto canvas** → import to VFS + create GLSL node with scaffold (for effect files)
-- **Drop onto existing node** → import to VFS + insert `#include` directive (for GLSL snippets)
-- **Drop onto Hydra node** → import to VFS + auto-register via `setFunction` (for `@hydra` snippets)
+- **Non-snippet presets** (`preset.type !== 'snippet'`): existing behavior — call `this.createNode(preset.type, position, preset.data)`.
+- **Snippet presets** (`preset.type === 'snippet'`):
+  1. Import files to VFS first: call `vfs.importFiles(preset.files)` (or equivalent batch write) to copy all `{ path, content }` entries into the patch's VFS.
+  2. Branch on drop target:
+     - **Drop onto canvas (no target node)** → create a GLSL scaffold node (reuse the existing GLSL node creation flow in `createNode('glsl', position, ...)`) with an `#include` pointing at the imported file.
+     - **Drop onto existing GLSL/REGL node** → insert `#include "user://..."` directive into the target node's source code.
+     - **Drop onto Hydra node** (detect via `@hydra` prefix in files or target node type) → call `setFunction` / register the snippet with the target Hydra node.
 
-The import-to-VFS step happens automatically on first use.
+The import-to-VFS step happens automatically before any node creation or modification.
 
 ### Community Sharing
 

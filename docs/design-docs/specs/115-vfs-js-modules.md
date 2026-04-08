@@ -12,20 +12,20 @@ Support importing JS modules from VFS files alongside existing `// @lib` nodes. 
 
 ```javascript
 // From a @lib node on the canvas (existing, unchanged)
-import { rand } from 'utils';
+import {rand} from 'utils'
 
 // From a VFS file (new)
-import { orbitCamera } from 'user://lib/camera.js';
+import {orbitCamera} from 'user://lib/camera.js'
 ```
 
 ## Why Keep Both
 
-| | `// @lib` nodes | VFS JS modules |
-|---|---|---|
-| **Visible on canvas** | Yes — spatial, glanceable | No — lives in file browser |
-| **Edit workflow** | Click node, edit in place | Open from VFS sidebar |
-| **Portability** | Patch-local only | Portable via snippet presets (spec 114) |
-| **Best for** | Patch-specific utils, live iteration | Stable libraries, reusable across patches |
+|                       | `// @lib` nodes                      | VFS JS modules                            |
+| --------------------- | ------------------------------------ | ----------------------------------------- |
+| **Visible on canvas** | Yes — spatial, glanceable            | No — lives in file browser                |
+| **Edit workflow**     | Click node, edit in place            | Open from VFS sidebar                     |
+| **Portability**       | Patch-local only                     | Portable via snippet presets (spec 114)   |
+| **Best for**          | Patch-specific utils, live iteration | Stable libraries, reusable across patches |
 
 Live coders benefit from `// @lib` — it's on the canvas, editable in the flow of performance. Stable utilities benefit from VFS — portable, invisible, out of the way.
 
@@ -39,28 +39,54 @@ Extend the Rollup plugin's `resolveId` hook in `JSRunner.ts` to check VFS when a
 resolveId(source) {
   // Existing: check @lib modules
   if (this.modules.has(source)) return source;
-  
+
   // New: check VFS paths
   if (source.startsWith('user://')) return source;
-  
+
   // Existing: check npm: prefix
   if (source.startsWith('npm:')) return source;
-  
+
   return null;
 }
 
 load(id) {
   // Existing: load from @lib modules
   if (this.modules.has(id)) return this.modules.get(id);
-  
-  // New: load from VFS
-  if (id.startsWith('user://')) return vfs.readFile(id);
-  
+
+  // New: load from VFS (see VFS-Worker bridge below)
+  if (id.startsWith('user://')) {
+    const content = this.vfsModules.get(id);
+    if (content === undefined) return null;  // file not found — Rollup reports the error
+    return content;
+  }
+
   return null;
 }
 ```
 
 VFS modules go through the same Rollup bundling pipeline as `// @lib` modules — tree-shaking, npm import resolution, etc.
+
+### VFS-Worker Bridge
+
+VFS lives on the main thread, but JS modules need to be available in both the **JS worker** (Rollup bundling) and the **render worker** (Three.js/canvas execution). VFS modules use the same sync path as `@lib` modules — `setModuleAndSync` already pushes module content to all workers via `updateJSModule`.
+
+When a VFS JS file is loaded or changes:
+
+```typescript
+// Main thread — same path as @lib modules
+this.setModuleAndSync('user://lib/camera.js', content)
+```
+
+This populates the local `modules` Map (for Rollup's synchronous `load` hook) and sends `updateJSModule` to the render worker via GLSystem. Both workers get the module through the same mechanism — no separate message type needed.
+
+**Resolution flow:**
+
+1. **On startup / file change**: Main thread reads VFS JS files, calls `setModuleAndSync(path, content)` for each. This pushes to all workers.
+2. **Rollup `load` hook**: Reads from the `modules` Map synchronously — `user://` paths are just module names like any `@lib` name.
+3. **Fallback**: If `load` encounters a `user://` path not in `modules`, it returns `null` and Rollup reports a missing module error — prompting the user to check the VFS path.
+4. **Cache invalidation**: When a VFS JS file changes (via VFS watcher), the main thread calls `setModuleAndSync` with updated content and triggers re-execution of dependent nodes (same as `// @lib` re-execution).
+
+This reuses the existing module sync infrastructure entirely — no new message types, no separate worker bridges. VFS modules work in `// @lib` importers, `worker` nodes, Three.js nodes, and any other JS-based node that goes through JSRunner.
 
 ### Re-Execution on Change
 
@@ -81,15 +107,15 @@ Folder presets work too — save `user://lib/` as a pack, import all JS modules 
 ```javascript
 // user://lib/camera.js
 export function orbitCamera(THREE, camera, t, radius = 5) {
-  camera.position.x = Math.cos(t * 0.1) * radius;
-  camera.position.z = Math.sin(t * 0.1) * radius;
-  camera.position.y = 2 + Math.sin(t * 0.05) * 1.5;
-  camera.lookAt(0, 0, 0);
+  camera.position.x = Math.cos(t * 0.1) * radius
+  camera.position.z = Math.sin(t * 0.1) * radius
+  camera.position.y = 2 + Math.sin(t * 0.05) * 1.5
+  camera.lookAt(0, 0, 0)
 }
 
 export function pulseCamera(camera, energy, baseRadius = 5) {
-  const r = baseRadius - energy * 2;
-  camera.position.setLength(r);
+  const r = baseRadius - energy * 2
+  camera.position.setLength(r)
 }
 ```
 
@@ -105,11 +131,11 @@ Used in any JS-based node:
 
 ```javascript
 // In a Three.js node
-import { orbitCamera, pulseCamera } from 'user://lib/camera.js';
+import {orbitCamera, pulseCamera} from 'user://lib/camera.js'
 
 function draw(t) {
-  orbitCamera(THREE, camera, t);
-  renderer.render(scene, camera);
+  orbitCamera(THREE, camera, t)
+  renderer.render(scene, camera)
 }
 ```
 

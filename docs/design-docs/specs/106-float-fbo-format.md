@@ -61,7 +61,14 @@ Add a dropdown to the node settings panel for visual nodes:
 
 ### Float Texture Filtering
 
-WebGL2 guarantees `rgba16f` is filterable (linear sampling). `rgba32f` is NOT filterable by default — requires `EXT_float_blend` and `OES_texture_float_linear`. If the extension is missing, fall back to nearest sampling. Check once at init and store the capability.
+Float texture **linear filtering** (bilinear/trilinear sampling) depends on optional extensions:
+
+- `rgba16f` — requires `OES_texture_half_float_linear`. Widely supported but not guaranteed.
+- `rgba32f` — requires `OES_texture_float_linear`. Less common.
+
+If the respective extension is missing, fall back to `nearest` sampling for that format. Note: `EXT_float_blend` is a separate extension that controls whether float render targets support alpha blending — it is unrelated to texture filtering.
+
+Check for these extensions once at init and store the capabilities so `buildFBOs()` can set the appropriate `min`/`mag` filter per format.
 
 ### Preview Rendering
 
