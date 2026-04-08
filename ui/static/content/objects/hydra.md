@@ -119,6 +119,43 @@ const snoiseGen = await setFunction({
 snoiseGen(6.0).kaleid(6).out()
 ```
 
+### Sharing Custom Functions Across Nodes
+
+Use a [Shared Library](/docs/topics/javascript-runner#shared-libraries)
+(`// @lib`) to define custom functions once and reuse them in multiple
+`hydra` objects.
+
+In JS object:
+
+```javascript
+// @lib hydra-utils
+
+export const getUtils = async () => ({
+  snoiseGen: await setFunction({
+    name: 'snoiseGen',
+    type: 'src',
+    inputs: [{ type: 'float', name: 'scale', default: 4.0 }],
+    glsl: `
+      #include <lygia/generative/snoise>
+      float n = snoise(vec3(_st * scale, time));
+      return vec4(vec3(n * 0.5 + 0.5), 1.0);
+    `,
+  }),
+})
+```
+
+In Hydra object:
+
+```javascript
+import { getUtils } from 'hydra-utils'
+
+const { snoiseGen } = await getUtils()
+
+snoiseGen(6.0)
+  .kaleid(4)
+  .out()
+```
+
 ---
 
 ## Audio Reactivity
