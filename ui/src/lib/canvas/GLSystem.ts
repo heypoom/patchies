@@ -103,6 +103,17 @@ export class GLSystem {
   /** Node types whose shaders may contain #include directives */
   private static SHADER_NODE_TYPES = new Set(['glsl', 'swgl', 'regl', 'three']);
 
+  /** File extensions that could be #included in shaders */
+  private static SHADER_EXTENSIONS = new Set([
+    '.glsl',
+    '.frag',
+    '.vert',
+    '.glslf',
+    '.glslv',
+    '.hlsl',
+    '.wgsl'
+  ]);
+
   public outputSize = DEFAULT_OUTPUT_SIZE;
 
   public previewSize: [width: number, height: number] = [
@@ -143,15 +154,26 @@ export class GLSystem {
       this.renderWorker.postMessage({ type: 'setRenderFpsCap', fps });
     });
 
-    // Invalidate shader nodes when VFS files change (e.g. edited #include sources)
-    let vfsInitialized = false;
+    // Invalidate shader nodes when VFS shader files are added or removed
+    let lastShaderEntryHash = '';
 
-    VirtualFilesystem.getInstance().entries$.subscribe(() => {
-      // Skip the initial subscription callback
-      if (!vfsInitialized) {
-        vfsInitialized = true;
-        return;
+    VirtualFilesystem.getInstance().entries$.subscribe((entries) => {
+      // Build a fingerprint of only shader-relevant VFS entries
+      const shaderPaths: string[] = [];
+
+      for (const path of entries.keys()) {
+        const ext = path.slice(path.lastIndexOf('.'));
+        if (GLSystem.SHADER_EXTENSIONS.has(ext)) shaderPaths.push(path);
       }
+
+      const hash = shaderPaths.sort().join('\0');
+      if (hash === lastShaderEntryHash) return;
+
+      const isInitial = lastShaderEntryHash === '';
+      lastShaderEntryHash = hash;
+
+      // Skip the initial subscription — no change to react to yet
+      if (isInitial) return;
 
       this.invalidateShaderIncludes();
     });
