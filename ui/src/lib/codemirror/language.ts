@@ -17,13 +17,29 @@ export async function loadLanguageExtension(language: string, context?: Patchies
 
   const extension = await match(language)
     .with('javascript', async () => {
-      const [{ javascript }, { autocompletion }, { patchiesCompletions }] = await Promise.all([
+      const [
+        { javascript, javascriptLanguage },
+        { LanguageSupport },
+        { autocompletion },
+        { patchiesCompletions },
+        { glslInJsWrap },
+        { glslIncludeHighlighter }
+      ] = await Promise.all([
         import('@codemirror/lang-javascript'),
+        import('@codemirror/language'),
         import('@codemirror/autocomplete'),
-        import('$lib/codemirror/patchies-completions')
+        import('$lib/codemirror/patchies-completions'),
+        import('$lib/codemirror/glsl-in-js'),
+        import('$lib/codemirror/glsl.codemirror')
       ]);
 
-      return [javascript(), autocompletion({ override: [patchiesCompletions(context)] })];
+      const jsWithGlsl = javascriptLanguage.configure({ wrap: glslInJsWrap });
+      const jsSupport = javascript();
+      return [
+        new LanguageSupport(jsWithGlsl, jsSupport.support),
+        autocompletion({ override: [patchiesCompletions(context)] }),
+        ...glslIncludeHighlighter
+      ];
     })
     .with('glsl', async () => {
       const [{ LanguageSupport }, { glslLanguage, glslIncludeHighlighter }] = await Promise.all([
