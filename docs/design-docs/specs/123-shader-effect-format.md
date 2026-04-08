@@ -1,181 +1,24 @@
-# 118. GLSL `#include` Preprocessor & Shader Effect Format
+# 123. Shader Effect Format
 
 ## Problem
 
-Every visual node has its own shader context with its own boilerplate. Common GLSL functions (noise, SDF, lighting, color math) get rewritten from scratch in every node. A live coder writing `sdSphere` for the third time in one session is wasting time on solved problems.
-
-There's also no way to share shader logic across node types. A great SDF function written in a GLSL node can't be used in Three.js ShaderMaterial or SwissGL without copy-pasting and adapting to each node's conventions.
+With `#include` (spec 118), users can import GLSL functions. But there's no standard way to package reusable shader effects with metadata — type inference, drag-drop scaffolding, material slots, or Hydra integration. Users still need to manually write boilerplate wrappers every time they use an effect function.
 
 ## Solution
 
-1. **`#include` preprocessor** — a single directive for importing GLSL code from NPM packages (e.g. [lygia](https://github.com/patriciogonzalezvivo/lygia)), user VFS files, and URLs
-2. **Shader effect format** — annotated GLSL functions with optional metadata, usable as include-able functions AND as drag-drop scaffolding for creating pre-configured GLSL nodes
+Annotated GLSL functions with optional metadata, stored in VFS. Usable as include-able functions AND as drag-drop scaffolding for creating pre-configured GLSL nodes. Not a new node type.
 
-No built-in GLSL function library. Patchies leans on established community libraries (lygia, etc.) rather than maintaining its own. No new node types.
+## What It Is
 
-## Layer 1: `#include` Preprocessor
-
-### What It Is
-
-A C-style `#include` directive that resolves GLSL source from three sources: NPM packages, user VFS files, and URLs. Inspired by [GLSL.app](https://glsl.app) and the stack.gl ecosystem, but runtime-agnostic.
-
-The preprocessor inlines the resolved source at the `#include` site, then hands the fully resolved GLSL to the shader compiler. Same thing the C preprocessor does, but with HTTP, NPM, and VFS as sources.
-
-### Import Sources
-
-| Syntax                                             | Source           | Resolution                                      |
-| -------------------------------------------------- | ---------------- | ----------------------------------------------- |
-| `#include <lygia/generative/snoise>`               | NPM package      | Local (installed via `bun add`) or CDN fallback |
-| `#include "user://my-shaders/foo.glsl"`            | User's VFS files | Local VFS read                                  |
-| `#include "https://raw.githubusercontent.com/..."` | Any URL          | Fetched + cached                                |
-
-**Angle brackets** (`< >`) resolve from NPM packages. Since lygia and similar packages can be installed locally via `bun add lygia`, resolution is file-system based at build time — works offline, no CDN dependency.
-
-**Double quotes** (`" "`) resolve as paths — VFS paths (`user://`) or absolute URLs.
-
-The `.glsl` extension is optional: `#include <lygia/generative/snoise>` and `#include <lygia/generative/snoise.glsl>` are equivalent.
-
-### Resolution & Caching
-
-1. **NPM packages** (`<pkg/path>`): Resolved from `node_modules/` at build time (bundled as raw strings). Works offline after `bun add`. Fallback: fetch from CDN at runtime if not installed.
-2. **VFS paths** (`"user://..."`): Read from Patchies' virtual filesystem. Immediate, no network.
-3. **URLs** (`"https://..."`): Fetched via `fetch()`, cached in memory. Useful for sharing GLSL code across projects or importing from GitHub.
-
-All resolution is recursive — an included file can contain its own `#include` directives. Circular includes are detected and errored.
-
-### Example
-
-```glsl
-#include <lygia/generative/snoise>
-#include <lygia/lighting/pbr>
-#include <lygia/animation/easing/bounce>
-#include "user://my-shaders/crystal-material.glsl"
-#include "https://raw.githubusercontent.com/stegu/psrdnoise/main/src/psrdnoise2.glsl"
-
-void mainImage(out vec4 fragColor, vec2 fragCoord) {
-    vec2 uv = fragCoord / iResolution.xy;
-    float n = snoise(vec3(uv * 4.0, iTime));
-    float b = bounce(n);
-    vec3 col = pbr(normal, viewDir, lightDir);
-    fragColor = vec4(col, 1.0);
-}
-```
-
-### Per-Node Integration
-
-**GLSL node**: Auto-preprocessed. The preprocessor runs on all user code before shader compilation. Insert resolved includes after `#version 300 es` and precision declaration, before user code.
-
-**SwissGL**: Auto-preprocessed. The `glsl()` wrapper (which Patchies controls) detects `#include` in `FP`, `VP`, and `Inc` fields and resolves them before rendering.
-
-**REGL**: Auto-preprocessed. The tracked `regl()` wrapper (which Patchies controls) detects `#include` in `frag` and `vert` properties and resolves them before creating draw commands.
-
-```javascript
-// REGL: just works — no glsl`` needed, the wrapper handles it
-const draw = regl({
-  frag: `
-    #include <lygia/generative/snoise>
-
-    void main() {
-      float n = snoise(vec3(vUv * 4.0, time));
-      gl_FragColor = vec4(vec3(n), 1.0);
-    }
-  `,
-})
-```
-
-**Three.js**: Requires `glsl` tagged template. Unlike REGL and SwissGL, `THREE.ShaderMaterial` is the real Three.js constructor — Patchies doesn't control it and can't intercept shader strings. The `glsl` tag preprocesses the string before Three.js sees it.
-
-```javascript
-// Three.js: needs glsl`` because we can't wrap THREE.ShaderMaterial
-const material = new THREE.ShaderMaterial({
-  fragmentShader: glsl`
-    #include <lygia/generative/worley>
-    #include <lygia/color/space/hsv2rgb>
-
-    void main() {
-      float w = worley(vUv * 8.0);
-      gl_FragColor = vec4(hsv2rgb(vec3(w, 0.8, 0.9)), 1.0);
-    }
-  `,
-})
-```
-
-**Hydra**: Auto-preprocessed via `setFunction`. Patchies controls the vendored Hydra fork, so we modify `setFunction` to resolve `#include` directives in the `glsl` string before shader compilation. Users can use lygia functions directly in custom Hydra transforms:
-
-```javascript
-// In a Hydra node
-setFunction({
-  name: 'crystalNoise',
-  type: 'src',
-  inputs: [
-    {type: 'float', name: 'scale', default: 4.0},
-    {type: 'float', name: 'speed', default: 0.1},
-  ],
-  glsl: `
-    #include <lygia/generative/snoise>
-
-    return vec4(vec3(snoise(vec3(_st * scale, time * speed))), 1.0);
-  `,
-})
-
-// Then chainable like any Hydra function
-crystalNoise(8.0, 0.2).rotate(0.5).out()
-```
-
-### `glsl` Tagged Template Literal
-
-The `glsl` tagged template serves two purposes:
-
-1. **Preprocessing** (required for Three.js): Resolves `#include` directives and returns a plain GLSL string with all dependencies inlined. Three.js nodes need this because Patchies can't intercept `THREE.ShaderMaterial`'s constructor.
-
-2. **Syntax highlighting** (all JS nodes): Enables mixed-language highlighting in CodeMirror — GLSL inside the backticks, JS outside. Useful in REGL and SwissGL nodes too, even though preprocessing happens automatically there.
-
-For REGL and SwissGL, `glsl` is a **pass-through** — it returns the string unchanged (the wrapper handles preprocessing). It exists purely for CodeMirror to know "this is GLSL, highlight it."
-
-For Three.js, `glsl` **actually preprocesses** — it resolves `#include` directives and returns the resolved string.
-
-All `#include` resolution happens during `updateCode()` before any shader is compiled. Async fetches (URLs) are resolved before user code executes.
-
-### Summary: Preprocessing by Node Type
-
-| Node type | Who preprocesses                         | `glsl` tag needed?                          |
-| --------- | ---------------------------------------- | ------------------------------------------- |
-| GLSL      | Node compiler (automatic)                | N/A (not JS)                                |
-| SwissGL   | `glsl()` wrapper (automatic)             | Optional (syntax highlighting only)         |
-| REGL      | `regl()` wrapper (automatic)             | Optional (syntax highlighting only)         |
-| Three.js  | `glsl` tagged template                   | **Required** for `#include` to work         |
-| Hydra     | `setFunction` (automatic, vendored fork) | N/A (GLSL is in the `glsl` property string) |
-
-### CodeMirror Integration
-
-**GLSL highlighting in JS nodes**: The `glsl` tagged template literal enables mixed-language syntax highlighting in CodeMirror 6 via nested language parsing. JS code outside the template gets JS highlighting; code inside `` glsl`...` `` gets GLSL highlighting; `#include` directives are highlighted as preprocessor directives.
-
-**Autocomplete**: Add commonly-used lygia function names to `patchies-completions.ts` for autocomplete in GLSL mode. When the user types `snoise`, they see the lygia function with parameter hints.
-
-### File Storage
-
-```
-src/lib/glsl-include/
-  preprocessor.ts    # resolves #include directives (NPM, VFS, URL)
-  cache.ts           # in-memory cache for fetched sources
-  tagged-template.ts # glsl tagged template literal implementation
-```
-
-NPM packages (lygia etc.) live in `node_modules/` — no Patchies-maintained GLSL code.
-
-## Layer 2: Shader Effect Format
-
-### What It Is
-
-Not a new node type. Effects are GLSL functions stored in VFS that can be:
+Effects are GLSL functions stored in VFS that can be:
 
 1. Included via `#include "user://effects/..."` in any shader
-2. **Drag-dropped** from the VFS sidebar onto a shader node → inserts the `#include` directive
-3. **Drag-dropped** onto empty canvas → creates a GLSL node with auto-generated wrapper code
+2. **Drag-dropped** from the VFS sidebar onto a shader node — inserts the `#include` directive
+3. **Drag-dropped** onto empty canvas — creates a GLSL node with auto-generated wrapper code
 
 **No metadata is required.** The scaffold generator infers everything from the function signature. Optional metadata annotations can override or enrich the inferred values.
 
-### Effect Definition
+## Effect Definition
 
 An effect is just a GLSL function. Metadata is optional:
 
@@ -209,7 +52,7 @@ vec4 chromaticAberration(vec2 uv, sampler2D input, float strength, float samples
 }
 ```
 
-### Inference Rules
+## Inference Rules
 
 The scaffold generator parses the function signature to determine everything automatically:
 
@@ -223,13 +66,13 @@ The scaffold generator parses the function signature to determine everything aut
 | `vec2`      | any              | —                  | `coordinate`  |
 | `vec4`      | 0                | `vec4`             | `color`       |
 
-**Inlet inference**: Count `sampler2D` params → that many video inlets (`iChannel0`, `iChannel1`, ...).
+**Inlet inference**: Count `sampler2D` params — that many video inlets (`iChannel0`, `iChannel1`, ...).
 
 **Uniform inference**: Non-sampler, non-uv, non-time params become `uniform` declarations. The existing GLSL node uniform parser then creates settings sliders from those declarations.
 
 **Wrapper inference**: The `mainImage` body is mechanical — call the function, passing `uv`, `iChannelN` for samplers, uniform names for the rest.
 
-### Optional Metadata
+## Optional Metadata
 
 All annotations are optional overrides. If absent, values are inferred.
 
@@ -247,7 +90,7 @@ All annotations are optional overrides. If absent, values are inferred.
 
 `@slot` is for materials — declares that a parameter has a standard semantic role (see Material Type below).
 
-### Effect Types
+## Effect Types
 
 | Type         | Signature                                                              | Inlets             | Description                          |
 | ------------ | ---------------------------------------------------------------------- | ------------------ | ------------------------------------ |
@@ -258,11 +101,11 @@ All annotations are optional overrides. If absent, values are inferred.
 | `color`      | `vec4 fn(vec4 color, ...)`                                             | 1 video            | Transforms a color value             |
 | `material`   | `vec4 fn(vec2 uv, sampler2D albedo, ..., vec3 lightDir, vec3 viewDir)` | N video (per slot) | Shading function with semantic slots |
 
-### Material Type
+## Material Type
 
 A `material` is an effect with **semantic slots** — parameters whose meaning is standardized so that tools (preview UI, Three.js integration, AI, render nodes) can be smart about them.
 
-#### Definition
+### Definition
 
 ```glsl
 // @type material
@@ -291,7 +134,7 @@ vec4 pbrStandard(vec2 uv, sampler2D albedo, sampler2D normal,
 
 Note: the material function itself uses `#include <lygia/lighting/pbr>` — no Patchies-maintained lighting code.
 
-#### `@slot` vs `@param`
+### `@slot` vs `@param`
 
 `@param` is a generic tweakable value — no semantic meaning beyond the name.
 
@@ -302,7 +145,7 @@ Note: the material function itself uses `#include <lygia/lighting/pbr>` — no P
 - AI should know that "albedo" means base color and generate accordingly
 - Render nodes (spec 115) can auto-map slots to material properties
 
-#### Standard Slot Names
+### Standard Slot Names
 
 | Slot name   | Type                   | Three.js property            | Description              |
 | ----------- | ---------------------- | ---------------------------- | ------------------------ |
@@ -317,16 +160,16 @@ Note: the material function itself uses `#include <lygia/lighting/pbr>` — no P
 
 These names match both PBR convention and Three.js property names, making the mapping mechanical.
 
-#### Drag-Drop Behavior for Materials
+### Drag-Drop Behavior for Materials
 
-**Drop onto empty canvas** → creates a GLSL node with:
+**Drop onto empty canvas** — creates a GLSL node with:
 
 - Video inlets labeled by slot name (Albedo, Normal, Roughness, etc.)
 - Uniform sliders for float slots with default values
 - Auto-generated `mainImage` calling the material function
 - A basic directional light + camera-relative view direction
 
-**Drop onto a Three.js node** → generates `MeshStandardMaterial` setup code:
+**Drop onto a Three.js node** — generates `MeshStandardMaterial` setup code:
 
 ```javascript
 const material = new THREE.MeshStandardMaterial()
@@ -349,7 +192,7 @@ if (getTexture(2)) material.emissiveMap = getTexture(2) // emissive
 
 Since the slot names are standardized, the preview preset doesn't need to know which specific material is connected — it just maps slots to `MeshStandardMaterial` properties by name.
 
-#### Built-In Materials
+### Built-In Materials
 
 Materials stored in VFS, using lygia for lighting math:
 
@@ -362,17 +205,17 @@ Materials stored in VFS, using lygia for lighting math:
 | `glass`         | Refraction + fresnel                      | albedo, normal, + ior, thickness                  |
 | `unlit`         | No lighting, just texture output          | albedo, emissive, opacity                         |
 
-#### Hot-Swappable Materials
+### Hot-Swappable Materials
 
 Since all PBR materials share the same standard slot names, they're interchangeable. Wire albedo + normal + roughness into `pbr-standard`, then swap to `toon` — the same texture connections just work. The toon shader reads albedo and normal the same way, just shades differently.
 
-### Drag-Drop Behavior
+## Drag-Drop Behavior
 
-#### Drop onto existing shader node
+### Drop onto existing shader node
 
 Inserts the `#include` directive at the top of the node's code. The user then calls the function in their own code. This works for GLSL, SwissGL, REGL, and Three.js nodes.
 
-#### Drop onto empty canvas
+### Drop onto empty canvas
 
 Creates a new GLSL node with auto-generated code. The scaffold is inferred from the function signature (with optional metadata overrides):
 
@@ -435,7 +278,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
 
 The generated code is fully editable — it's a normal GLSL node. The user can modify it, add logic, combine multiple effects. The scaffold is a starting point, not a locked template.
 
-### Using Effects as Functions in Code
+## Using Effects as Functions in Code
 
 Since effects are just GLSL functions included via `#include`, they compose naturally inside any shader:
 
@@ -458,7 +301,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
 
 This is more performant than chaining separate nodes (one pass vs three) and gives full control.
 
-### Built-In Effects
+## Built-In Effects
 
 Ship a starter set as VFS files. These use lygia for utility functions where applicable:
 
@@ -474,7 +317,7 @@ Ship a starter set as VFS files. These use lygia for utility functions where app
 
 **Materials**: `pbr-standard`, `pbr-clearcoat`, `toon`, `matcap`, `glass`, `unlit`
 
-### Effect File Storage
+## Effect File Storage
 
 Effects are VFS files, not bundled source code:
 
@@ -500,13 +343,13 @@ VFS: user://effects/
 
 Built-in effects ship as default VFS content. Users add their own effects to the same directory structure.
 
-### Hydra Integration
+## Hydra Integration
 
 Since Patchies controls the vendored Hydra fork, `setFunction` preprocesses `#include` directives automatically. Hydra-specific reusable functions are stored as VFS files with the `@hydra` directive.
 
 **Hydra snippets are separate from GLSL effect files.** Hydra functions use Hydra's conventions (`_st`, `_c0`, body-only format) which don't map cleanly to standalone GLSL functions. Don't try to bridge the two — they're different formats for different contexts.
 
-#### `@hydra` Directive
+### `@hydra` Directive
 
 VFS files with `@hydra` auto-register as Hydra transforms on patch load. The file contains the function body (not a full function declaration), using Hydra's implicit variables.
 
@@ -545,7 +388,7 @@ Then usable in any Hydra node:
 crystalNoise(8.0, 0.2).rotate(0.5).kaleid(4).out()
 ```
 
-#### Hydra Types
+### Hydra Types
 
 | `@type` value  | Hydra type     | Implicit args        | Description                      |
 | -------------- | -------------- | -------------------- | -------------------------------- |
@@ -555,11 +398,11 @@ crystalNoise(8.0, 0.2).rotate(0.5).kaleid(4).out()
 | `combine`      | `combine`      | `vec4 _c0, vec4 _c1` | Blends two colors                |
 | `combineCoord` | `combineCoord` | `vec2 _st, vec4 _c0` | Coordinate distortion with color |
 
-#### Drag-Drop onto Hydra Node
+### Drag-Drop onto Hydra Node
 
 Dropping a `@hydra`-annotated `.glsl` file onto a Hydra node calls `setFunction` with the extracted metadata. The function becomes immediately chainable.
 
-#### Hydra Snippet Storage
+### Hydra Snippet Storage
 
 ```
 VFS: user://hydra-effects/
@@ -571,32 +414,24 @@ VFS: user://hydra-effects/
 
 These are scanned on patch load. Each file with `@hydra` is auto-registered. Changes to files trigger re-registration.
 
-### AI Integration
+## AI Integration
 
 Add effect names and descriptions to `object-descriptions-types.ts` so the AI can suggest effects. When a user asks "add chromatic aberration", the AI writes the `#include` and function call in their existing node, or creates a new GLSL node with the scaffold.
 
 ## Implementation Priority
 
-1. **`#include` preprocessor** — NPM package resolution (lygia), VFS, URL, with caching
-2. **Per-node integration** — run preprocessor in each shader node type's compilation step
-3. **`glsl` tagged template literal** — preprocessor for JS-based nodes (REGL, Three.js, SwissGL)
-4. **CodeMirror autocomplete** — lygia function names + user effect function names
-5. **CodeMirror GLSL highlighting in JS** — mixed-language syntax highlighting for `glsl` tagged templates
-6. **Function signature parser** — infer type/inlets/uniforms from GLSL function signature
-7. **Drag-drop: onto node** — insert `#include` directive
-8. **Drag-drop: onto canvas** — create GLSL node with inferred scaffold
-9. **Optional metadata parser** — read `@name`, `@type`, `@param`, `@slot` for richer UX
-10. **Built-in effects** — ship the starter set as VFS files
-11. **Built-in materials** — `@slot` metadata, standard slot names, PBR/toon/matcap
-12. **Material preview preset** — Three.js preset that auto-maps slots to MeshStandardMaterial
-13. **`@hydra` directive + auto-registration** — VFS hydra-effects scanned on load, `setFunction` called automatically
+1. **Function signature parser** — infer type/inlets/uniforms from GLSL function signature
+2. **Drag-drop: onto node** — insert `#include` directive
+3. **Drag-drop: onto canvas** — create GLSL node with inferred scaffold
+4. **Optional metadata parser** — read `@name`, `@type`, `@param`, `@slot` for richer UX
+5. **Built-in effects** — ship the starter set as VFS files
+6. **Built-in materials** — `@slot` metadata, standard slot names, PBR/toon/matcap
+7. **Material preview preset** — Three.js preset that auto-maps slots to MeshStandardMaterial
+8. **`@hydra` directive + auto-registration** — VFS hydra-effects scanned on load, `setFunction` called automatically
 
 ## Dependencies
 
-- `#include` preprocessor requires NPM package resolution (lygia installed via `bun add lygia`)
-- `glsl` tagged template requires `#include` preprocessor
-- CodeMirror GLSL highlighting requires CodeMirror 6 mixed-language parser setup
+- Requires spec 118 (`#include` preprocessor) for importing GLSL code
 - Drag-drop extends existing `CanvasDragDropManager.ts`
 - `@hydra` directive requires `setFunction` implementation in vendored Hydra fork
-- CodeMirror completions extend existing `patchies-completions.ts`
 - Materials benefit from spec 111 (MRT) for multi-channel output and spec 117 (resource pool) for environment maps

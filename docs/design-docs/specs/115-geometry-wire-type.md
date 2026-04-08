@@ -320,7 +320,7 @@ function draw(t) {
 
 Wire geometry in, see it rendered. The preset outputs video into the FBO pipeline like any other Three.js node — downstream post-processing, feedback, compositing all work.
 
-Users fork the preset for more control: swap in a PBR material with `@slot` textures (spec 118), add orbit controls, use an environment cubemap from the resource pool (spec 117), accept multiple geometry inlets for scene composition. It's just a Three.js node.
+Users fork the preset for more control: swap in a PBR material with `@slot` textures (spec 123), add orbit controls, use an environment cubemap from the resource pool (spec 117), accept multiple geometry inlets for scene composition. It's just a Three.js node.
 
 ## What This Does NOT Cover
 

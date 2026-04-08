@@ -2,7 +2,7 @@
 
 ## Problem
 
-With `#include <lygia/...>` (spec 118), users have access to hundreds of GLSL utility functions. But using them still requires writing boilerplate: the `#include` directive, uniform declarations, the `mainImage` wrapper, and knowing which lygia path to use. For common operations (noise generator, blur, color grading), users shouldn't need to write 8-15 lines of scaffolding every time.
+With `#include <lygia/...>` (spec 118), users have access to hundreds of GLSL utility functions. But using them still requires writing boilerplate: the `#include` directive, uniform declarations, the `mainImage` wrapper, and knowing which lygia path to use. For common operations (noise generator, blur, color grading), users shouldn't need to write 8-15 lines of scaffolding every time. The shader effect format (spec 123) provides drag-drop scaffolding for effects, but presets cover the broader case of pre-configured nodes across all visual node types.
 
 ## Approach
 
@@ -67,7 +67,7 @@ Three.js presets that take texture inputs and render lit geometry:
 |--------|--------|-------------|
 | `pbr-sphere` | albedo, normal, roughness, metallic | Lit sphere preview (Substance-style) |
 | `pbr-plane` | same | Lit plane for texture preview |
-| `material-preview` | N inputs via `@slot` metadata | Generic material previewer (spec 118) |
+| `material-preview` | N inputs via `@slot` metadata | Generic material previewer (spec 123) |
 | `geometry-viewer` | geometry inlet | 3D preview of geometry data (spec 115) |
 
 These become much more useful once MRT (spec 111) lets a single GLSL node output albedo + normal + roughness as separate wires.

@@ -2,7 +2,7 @@
 
 ## Problem
 
-GLSL effect files and Hydra snippets (spec 118) live in the patch's VFS. They can't be reused across patches. A user who builds a library of useful GLSL functions or Hydra transforms has to manually copy files between patches.
+GLSL effect files (spec 123) and Hydra snippets live in the patch's VFS. They can't be reused across patches. A user who builds a library of useful GLSL functions or Hydra transforms has to manually copy files between patches.
 
 Node presets already solve this for nodes — save once, use anywhere. But there's no equivalent for code snippets (`#include` files, `@hydra` functions).
 
@@ -74,7 +74,7 @@ Selecting a snippet preset from the browser imports it into the current patch's 
 
 ### Drag-Drop
 
-Snippet presets support the same drag-drop as spec 118's VFS files. In `CanvasDragDropManager.handlePresetDrop()`, branch on `preset.type`:
+Snippet presets support the same drag-drop as spec 123's VFS files. In `CanvasDragDropManager.handlePresetDrop()`, branch on `preset.type`:
 
 - **Non-snippet presets** (`preset.type !== 'snippet'`): existing behavior — call `this.createNode(preset.type, position, preset.data)`.
 - **Snippet presets** (`preset.type === 'snippet'`):
@@ -124,6 +124,6 @@ Import the pack → all files land in VFS → Hydra functions auto-register → 
 
 ## Dependencies
 
-- Requires spec 118 (`#include` preprocessor, `@hydra` directive) for snippets to be useful
+- Requires spec 118 (`#include` preprocessor) and spec 123 (shader effect format, `@hydra` directive) for snippets to be useful
 - Extends existing preset system (preset library store, object browser, drag-drop)
 - No new VFS capabilities needed — just reading/writing files

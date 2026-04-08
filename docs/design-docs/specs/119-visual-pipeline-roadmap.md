@@ -52,7 +52,8 @@ Build a **code-oriented TouchDesigner** that runs in a browser. Patchies combine
 | [115](115-geometry-wire-type.md) | Geometry Wire Type | Geometry handle with auto-caching inlets, attributes, instancing |
 | [116](116-webgpu-render-bridge.md) | WebGPU Render Bridge | ImageBitmap + SharedArrayBuffer paths from compute to FBO pipeline |
 | [117](117-shared-resource-pool.md) | Shared Resource Pool | Named cubemaps, 3D textures, LUTs accessible by any node |
-| [118](118-shared-glsl-library.md) | GLSL `#include` & Effects | `#include` preprocessor (lygia, VFS, URLs), effect metadata, material system |
+| [118](118-glsl-include-preprocessor.md) | GLSL `#include` Preprocessor | `#include` preprocessor for lygia, VFS, and URL sources |
+| [123](123-shader-effect-format.md) | Shader Effect Format | Effect metadata, drag-drop scaffolding, material system, Hydra integration |
 | [120](120-snippet-presets.md) | Snippet Presets | Cross-patch portability for GLSL/Hydra/JS snippets via preset system |
 | [121](121-vfs-js-modules.md) | VFS JavaScript Modules | Import JS modules from VFS files alongside `// @lib` nodes |
 | [122](122-render-pipeline-optimizations.md) | Render Pipeline Optimizations | Per-node resolution, cook-on-demand caching, channel formats, preview LOD |
@@ -60,7 +61,7 @@ Build a **code-oriented TouchDesigner** that runs in a browser. Patchies combine
 ## Dependency Graph
 
 ```
-Independent (no deps):     111, 112, 113, 117, 118, 115 (Stage 2-3)
+Independent (no deps):     111, 112, 113, 117, 118, 123, 115 (Stage 2-3)
 
 114 presets (some) ←── 111 (channel-split needs MRT)
 114 presets (some) ←── 112 (particle-sim needs float)
@@ -71,8 +72,13 @@ Independent (no deps):     111, 112, 113, 117, 118, 115 (Stage 2-3)
 
 ```
                     ┌─────────┐
-                    │   118   │  #include + Effects
+                    │   118   │  #include Preprocessor
                     │ no deps │
+                    └────┬────┘
+                         │
+                    ┌────▼────┐
+                    │   123   │  Shader Effect Format
+                    │ dep: 118│
                     └─────────┘
 
 ┌─────────┐         ┌─────────┐         ┌─────────┐
@@ -105,7 +111,7 @@ Independent (no deps):     111, 112, 113, 117, 118, 115 (Stage 2-3)
 
 ### Phase 1 — Immediate (live coding essentials)
 
-1. **[118](118-shared-glsl-library.md) `#include` preprocessor** — `#include <lygia/generative/snoise>` in any shader node. Biggest quality-of-life win for live coders. No pipeline changes, no architectural risk. Includes the `glsl` tagged template literal for JS-based nodes.
+1. **[118](118-glsl-include-preprocessor.md) `#include` preprocessor** — `#include <lygia/generative/snoise>` in any shader node. Biggest quality-of-life win for live coders. No pipeline changes, no architectural risk. Includes the `glsl` tagged template literal for JS-based nodes.
 2. **[113](113-graph-level-feedback.md) Feedback Loops** — Multi-node feedback chains for trails, accumulation, reaction-diffusion. Transformative for live visual workflows.
 
 ### Phase 2 — Foundations (richer textures)
@@ -124,8 +130,8 @@ Independent (no deps):     111, 112, 113, 117, 118, 115 (Stage 2-3)
 8. **[115](115-geometry-wire-type.md) Geometry** (Stage 1) — Texture-encoded geometry via MRT + float FBOs. Requires 111 + 112.
 9. **[116](116-webgpu-render-bridge.md) WebGPU Bridge** (Bridge 2) — SharedArrayBuffer fast path. Benefits from 112.
 10. Remaining **[114](114-visual-convenience-presets.md) presets** that depend on MRT, float FBOs, or feedback.
-11. **[118](118-shared-glsl-library.md) Material system** — `@slot` metadata, material presets, material preview Three.js preset. Benefits from 111 (MRT for multi-channel material output) and 117 (resource pool for environment maps).
-12. **[120](120-snippet-presets.md) Snippet Presets** — Cross-patch portability for GLSL/Hydra snippets. Depends on 118.
+11. **[123](123-shader-effect-format.md) Shader Effect Format** — Effect metadata, drag-drop scaffolding, `@slot` metadata, material presets, material preview Three.js preset, `@hydra` directive. Benefits from 111 (MRT for multi-channel material output) and 117 (resource pool for environment maps). Depends on 118.
+12. **[120](120-snippet-presets.md) Snippet Presets** — Cross-patch portability for GLSL/Hydra snippets. Depends on 118 and 123.
 
 ## What This Unlocks at Each Phase
 
