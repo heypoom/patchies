@@ -31,7 +31,7 @@ export async function loadLanguageExtension(language: string, context?: Patchies
         import('$lib/codemirror/glsl.codemirror')
       ]);
 
-      return [new LanguageSupport(glslLanguage), glslIncludeHighlighter];
+      return [new LanguageSupport(glslLanguage), ...glslIncludeHighlighter];
     })
     .with('assembly', async () => {
       const { assembly } = await import('$lib/codemirror/assembly/assembly');

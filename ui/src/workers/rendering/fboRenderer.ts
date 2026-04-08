@@ -282,7 +282,6 @@ export class FBORenderer {
       node: RenderNode;
       texture: regl.Texture2D;
       framebuffer: regl.Framebuffer2D;
-      canReuseFbo: boolean;
       fingerprint: string;
     };
 
@@ -357,7 +356,7 @@ export class FBORenderer {
         });
       }
 
-      pending.push({ node, texture, framebuffer, canReuseFbo: !!canReuseFbo, fingerprint });
+      pending.push({ node, texture, framebuffer, fingerprint });
     }
 
     // Phase 2 (parallel): create all renderers concurrently
@@ -382,7 +381,7 @@ export class FBORenderer {
 
     // Phase 3: collect results into FBO map
     for (let i = 0; i < pending.length; i++) {
-      const { node, texture, framebuffer, canReuseFbo, fingerprint } = pending[i];
+      const { node, texture, framebuffer, fingerprint } = pending[i];
       const renderer = results[i];
 
       // If the renderer function is null, we skip defining this node.
@@ -392,10 +391,9 @@ export class FBORenderer {
         // Evict stale FBO entry so the old render function is not reused
         this.fboNodes.delete(node.id);
 
-        if (!canReuseFbo) {
-          framebuffer.destroy();
-          texture.destroy();
-        }
+        // Always destroy GPU resources when evicting from the map, regardless of canReuseFbo
+        framebuffer.destroy();
+        texture.destroy();
 
         continue;
       }

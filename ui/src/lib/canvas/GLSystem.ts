@@ -155,16 +155,22 @@ export class GLSystem {
       this.renderWorker.postMessage({ type: 'setRenderFpsCap', fps });
     });
 
-    // Invalidate shader nodes when VFS shader files are added or removed
+    // Invalidate shader nodes when VFS shader files are added, removed, or modified
     let lastShaderEntryHash = '';
 
     VirtualFilesystem.getInstance().entries$.subscribe((entries) => {
-      // Build a fingerprint of only shader-relevant VFS entries
+      // Build a fingerprint of only shader-relevant VFS entries, including content metadata
       const shaderPaths: string[] = [];
 
-      for (const path of entries.keys()) {
+      for (const [path, entry] of entries.entries()) {
         const ext = path.slice(path.lastIndexOf('.'));
-        if (GLSystem.SHADER_EXTENSIONS.has(ext)) shaderPaths.push(path);
+
+        if (GLSystem.SHADER_EXTENSIONS.has(ext)) {
+          // Include content-sensitive metadata (size) so changes to file contents trigger invalidation
+          const size = entry.size ?? '';
+
+          shaderPaths.push(`${path}\0${size}`);
+        }
       }
 
       const hash = shaderPaths.sort().join('\0');
