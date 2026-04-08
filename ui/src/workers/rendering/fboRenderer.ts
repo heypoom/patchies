@@ -149,9 +149,6 @@ export class FBORenderer {
   /** Video channel registry for send.vdo/recv.vdo wireless routing */
   public videoChannelRegistry = VideoChannelRegistry.getInstance();
 
-  /** Reusable passthrough draw command for video routing nodes */
-  private passthroughDraw: regl.DrawCommand | null = null;
-
   constructor() {
     const [width, height] = this.outputSize;
 
@@ -186,37 +183,6 @@ export class FBORenderer {
 
     // Create video texture manager
     this.videoTextures = new VideoTextureManager(this.regl, this.gl);
-
-    // Create passthrough draw command for video routing nodes
-    this.passthroughDraw = this.regl({
-      vert: `
-        precision mediump float;
-        attribute vec2 position;
-        varying vec2 uv;
-        void main() {
-          uv = position * 0.5 + 0.5;
-          gl_Position = vec4(position, 0, 1);
-        }
-      `,
-      frag: `
-        precision mediump float;
-        varying vec2 uv;
-        uniform sampler2D inputTexture;
-        void main() {
-          gl_FragColor = texture2D(inputTexture, uv);
-        }
-      `,
-      attributes: {
-        position: [-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]
-      },
-      uniforms: {
-        inputTexture: this.regl.prop<{ inputTexture: regl.Texture2D }, 'inputTexture'>(
-          'inputTexture'
-        )
-      },
-      count: 6,
-      framebuffer: this.regl.prop<{ framebuffer: regl.Framebuffer2D }, 'framebuffer'>('framebuffer')
-    });
 
     this.defineWorkerGlobals();
   }
@@ -507,11 +473,13 @@ export class FBORenderer {
         const sourceFbo = this.fboNodes.get(sourceNodeId);
         if (!sourceFbo) return;
 
-        // Blit input texture to output framebuffer
-        this.passthroughDraw?.({
-          inputTexture: sourceFbo.texture,
-          framebuffer
-        });
+        // Blit input FBO to output framebuffer
+        const [w, h] = this.outputSize;
+        const gl = this.gl;
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFbo.framebuffer));
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(framebuffer));
+        gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       },
       cleanup: () => {
         // Unsubscribe from video channel when node is destroyed
@@ -1045,10 +1013,12 @@ export class FBORenderer {
       const fboNode = this.fboNodes.get(nodeId);
       if (!fboNode?.prevFramebuffer || !fboNode.prevTexture) continue;
 
-      this.passthroughDraw?.({
-        inputTexture: fboNode.texture,
-        framebuffer: fboNode.prevFramebuffer
-      });
+      const [w, h] = this.outputSize;
+      const gl = this.gl;
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(fboNode.framebuffer));
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffer));
+      gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
     // Track previous transport time for iTimeDelta computation
