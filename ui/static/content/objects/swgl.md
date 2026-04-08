@@ -1,20 +1,27 @@
-The `swgl` object creates a [SwissGL](https://github.com/google/swissgl) shader. SwissGL is a wrapper for WebGL2 that lets you create shaders and 3D graphics in very few lines of code.
+The `swgl` object creates a [SwissGL](https://github.com/google/swissgl) shader.
+
+SwissGL is a wrapper for WebGL2 that lets you create shaders and 3D
+graphics in very few lines of code.
 
 ## Getting Started
 
-Use the `render` function with the `glsl` helper:
+Call `glsl()` once during setup to compile your shader, then call the 
+returned function inside `render`:
 
 ```javascript
+const shader = await glsl({
+  Clear: 0,
+  Mesh: [10, 10],
+  VP: `XY*0.8+sin(t+XY.yx*2.0)*0.2,0,1`,
+  FP: `UV,0.5,1`,
+});
+
 function render({ t }) {
-  glsl({
-    t,
-    Clear: 0,
-    Mesh: [10, 10],
-    VP: `XY*0.8+sin(t+XY.yx*2.0)*0.2,0,1`,
-    FP: `UV,0.5,1`,
-  });
+  shader({ t });
 }
 ```
+
+`glsl()` is always async — always `await` it during setup, never inside `render`.
 
 ## Available Parameters
 
@@ -25,7 +32,8 @@ The `render` function receives an object with:
 
 ## Limitations
 
-Mouse and camera controls are not yet hooked up to SwissGL in Patchies. Some examples from the SwissGL demo site won't work. PRs are welcome!
+Mouse and camera controls are not yet hooked up to SwissGL in Patchies.
+Some examples from the SwissGL demo site won't work. PRs are welcome!
 
 ## Resources
 

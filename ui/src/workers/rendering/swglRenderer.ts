@@ -194,39 +194,15 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
       const resolver = createWorkerResolver(this.config.nodeId);
       const includeCache = this.includeCache;
 
-      const wrappedGlsl = (
-        shaderConfig: Record<string, unknown>,
-        targetConfig: Record<string, unknown> = {}
-      ) => {
-        // Resolve #include directives from cache (pre-warmed during init)
-        let patched = shaderConfig;
-
-        for (const field of ['FP', 'VP', 'Inc'] as const) {
-          const src = patched[field];
-
-          if (typeof src === 'string' && src.includes('#include')) {
-            const cached = includeCache.get(src);
-            if (cached) {
-              patched = patched === shaderConfig ? { ...patched } : patched;
-              patched[field] = cached;
-            } else {
-              this.createCustomConsole().warn(
-                `[${field}] Shader contains unresolved #include directives. ` +
-                  `Use glslAsync() during setup for shaders that require include resolution.\n` +
-                  `Snippet: ${src.slice(0, 120)}...`
-              );
-            }
-          }
-        }
-
-        return this.glsl(patched, { ...targetConfig, ...this.swglTarget });
-      };
-
       /**
-       * Async version of glsl() for initialization code that needs #include.
-       * User code should call this during setup, not per-frame.
+       * glsl() — always async, always call during setup (not per-frame).
+       * Resolves any #include directives, then compiles and returns a callable shader.
+       *
+       * Pattern:
+       *   const shader = await glsl({ FP: `...` });
+       *   function render(t) { shader({ t }); }
        */
-      const wrappedGlslAsync = async (
+      const wrappedGlsl = async (
         shaderConfig: Record<string, unknown>,
         targetConfig: Record<string, unknown> = {}
       ) => {
@@ -278,13 +254,20 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
           });
         }
 
-        return this.glsl(patched, { ...targetConfig, ...this.swglTarget });
+        // Return a per-frame callable that merges the resolved (include-patched) config
+        // with per-frame params (uniforms like `t`). SwissGL receives all keys on every
+        // call, so it can declare and update uniforms correctly without requiring the user
+        // to pre-declare them in the setup call.
+        const resolvedConfig = patched;
+        const resolvedTarget = { ...targetConfig, ...this.swglTarget };
+
+        return (perFrameParams: Record<string, unknown> = {}) =>
+          this.glsl({ ...resolvedConfig, ...perFrameParams }, resolvedTarget);
       };
 
       const extraContext = {
         ...this.buildBaseExtraContext(),
         glsl: wrappedGlsl,
-        glslAsync: wrappedGlslAsync,
         setVideoCount: this.setVideoCount.bind(this),
         getTexture: this.getTexture.bind(this)
       };

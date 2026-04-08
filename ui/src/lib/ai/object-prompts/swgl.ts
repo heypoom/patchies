@@ -2,7 +2,16 @@ export const swglPrompt = `## swgl Object Instructions
 
 SwissGL - WebGL2 wrapper for concise shaders. Must implement \`render({ t })\` function.
 
-**\`#include\` directives are auto-preprocessed** in \`FP\`, \`VP\`, and \`Inc\` fields.
+**CRITICAL: \`glsl()\` is always async.** Always \`await\` it during setup, never inside \`render\`.
+**\`#include\` directives work automatically** in \`FP\`, \`VP\`, and \`Inc\` fields.
+
+**Required pattern — always:**
+\`\`\`javascript
+const shader = await glsl({ /* compile-time config */ });
+function render({ t }) {
+  shader({ t }); // per-frame uniforms passed here
+}
+\`\`\`
 
 ## Parameters
 
@@ -58,42 +67,48 @@ SwissGL - WebGL2 wrapper for concise shaders. Must implement \`render({ t })\` f
 
 ### Simple Fragment
 \`\`\`javascript
+const shader = await glsl({
+  FP: \\\`vec3(sin(t+XY.x*5.0), cos(t+XY.y*3.0), 0.5),1\\\`,
+});
 function render({ t }) {
-  glsl({ t, FP: \\\`vec3(sin(t+XY.x*5.0), cos(t+XY.y*3.0), 0.5),1\\\` });
+  shader({ t });
 }
 \`\`\`
 
 ### 3D Mesh with Lighting
 \`\`\`javascript
+const shader = await glsl({
+  Mesh: [40, 20],
+  VP: \\\`
+    vec2 ang = XY * vec2(TAU, TAU/2.0);
+    vec3 pos = vec3(cos(ang.x)*cos(ang.y), sin(ang.y), sin(ang.x)*cos(ang.y)) * 0.6;
+    float s = sin(t*0.5), c = cos(t*0.5);
+    pos.xz = mat2(c, s, -s, c) * pos.xz;
+    varying vec3 vPos = pos;
+    VPos = vec4(pos, 1.0);\\\`,
+  FP: \\\`
+    vec3 n = normalize(vPos);
+    float light = dot(n, normalize(vec3(1,1,0.5))) * 0.5 + 0.5;
+    FOut = vec4(vec3(0.4, 0.6, 1.0) * light, 1.0);\\\`
+});
 function render({ t }) {
-  glsl({
-    t, Mesh: [40, 20], Clear: [0, 0, 0, 1],
-    VP: \\\`
-      vec2 ang = XY * vec2(TAU, TAU/2.0);
-      vec3 pos = vec3(cos(ang.x)*cos(ang.y), sin(ang.y), sin(ang.x)*cos(ang.y)) * 0.6;
-      float s = sin(t*0.5), c = cos(t*0.5);
-      pos.xz = mat2(c, s, -s, c) * pos.xz;
-      varying vec3 vPos = pos;
-      VPos = vec4(pos, 1.0);\\\`,
-    FP: \\\`
-      vec3 n = normalize(vPos);
-      float light = dot(n, normalize(vec3(1,1,0.5))) * 0.5 + 0.5;
-      FOut = vec4(vec3(0.4, 0.6, 1.0) * light, 1.0);\\\`
-  });
+  shader({ t, Clear: [0, 0, 0, 1] });
 }
 \`\`\`
 
 ### Feedback Trail (using story)
 \`\`\`javascript
+const trail = await glsl({
+  story: 2, tag: 'trail',
+  FP: \\\`
+    vec3 col = Src(I).rgb * 0.98;
+    float d = length(XY*0.5 - 0.3*vec2(cos(t), sin(t)));
+    col += vec3(1, 0.5, 0.2) * smoothstep(0.1, 0.0, d);
+    FOut = vec4(col, 1);\\\`
+});
+const display = await glsl({ tag: 'trail', FP: 'Src(I)' });
 function render({ t }) {
-  glsl({
-    t, story: 2, tag: 'trail',
-    FP: \\\`
-      vec3 col = Src(I).rgb * 0.98;
-      float d = length(XY*0.5 - 0.3*vec2(cos(t), sin(t)));
-      col += vec3(1, 0.5, 0.2) * smoothstep(0.1, 0.0, d);
-      FOut = vec4(col, 1);\\\`
-  });
-  glsl({ tag: 'trail', FP: 'Src(I)' });
+  trail({ t });
+  display({});
 }
 \`\`\``;
