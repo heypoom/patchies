@@ -105,6 +105,7 @@ export class GLSystem {
 
   /** File extensions that could be #included in shaders */
   private static SHADER_EXTENSIONS = new Set([
+    '.gl',
     '.glsl',
     '.frag',
     '.vert',

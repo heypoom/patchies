@@ -98,8 +98,6 @@ export async function processIncludes(
   parts.push(source.slice(prevEnd));
   const result = parts.join('');
 
-  console.log('process includes :>', { source, result });
-
   return result;
 }
 
