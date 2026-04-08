@@ -7,6 +7,9 @@ export type RenderNode = {
   inputs: string[]; // IDs of input nodes
   outputs: string[]; // IDs of output nodes
   inletMap: Map<number, string>; // Maps inlet index to source node ID
+
+  /** Inlet indices connected via back-edges (feedback loops — reads previous frame) */
+  backEdgeInlets: Set<number>;
 } & (
   | { type: 'glsl'; data: { code: string; glUniformDefs: GLUniformDef[] } }
   | { type: 'hydra'; data: { code: string } }
@@ -39,6 +42,12 @@ export interface RenderGraph {
 
   /** ID of the node connected to bg.out (final output node) */
   outputNodeId: string | null;
+
+  /** Edge IDs that are back-edges (complete a feedback cycle) */
+  backEdges: Set<string>;
+
+  /** Node IDs that need double-buffered FBOs (sources of back-edges) */
+  feedbackNodes: Set<string>;
 }
 
 export type UserParam = number | boolean | regl.Texture2D | regl.Framebuffer;
@@ -72,6 +81,12 @@ export interface FBONode {
 
   /** The node type that this FBO was built for */
   nodeType?: RenderNode['type'];
+
+  /** Previous frame texture — only allocated for nodes in feedback loops */
+  prevTexture?: regl.Texture2D;
+
+  /** Previous frame framebuffer — only allocated for nodes in feedback loops */
+  prevFramebuffer?: regl.Framebuffer2D;
 }
 
 // Message types for worker communication (main -> worker)

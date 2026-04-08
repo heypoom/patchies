@@ -6,7 +6,8 @@ import * as ohash from 'ohash';
 import {
   previewVisibleMap,
   isGlslPlaying,
-  overrideOutputNodeId
+  overrideOutputNodeId,
+  feedbackEdgeIds
 } from '../../stores/renderer.store';
 import { get } from 'svelte/store';
 import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
@@ -765,6 +766,9 @@ export class GLSystem {
 
     this.send('buildRenderGraph', { graph });
     this.renderGraph = graph;
+
+    // Expose feedback back-edges to UI for dashed edge styling
+    feedbackEdgeIds.set(graph.backEdges);
 
     // Clear connection cache when render graph changes
     this.outgoingConnectionsCache.clear();
