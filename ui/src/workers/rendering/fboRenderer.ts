@@ -1033,18 +1033,22 @@ export class FBORenderer {
       }
     }
 
-    // Swap double-buffers for all feedback nodes.
-    // After this frame's render, the current texture becomes the previous frame
-    // for the next frame's back-edge consumers.
+    // Blit current frame into prevFramebuffer for all feedback nodes.
+    //
+    // We blit instead of swapping pointers because each renderer closes over
+    // its framebuffer at creation time — swapping fboNode.framebuffer would
+    // leave the render function pointing at the wrong buffer, causing every
+    // other frame to read stale content (flickering). Blitting keeps
+    // fboNode.framebuffer as the stable write target while prevTexture always
+    // holds the previous frame's output for back-edge consumers.
     for (const nodeId of this.renderGraph.feedbackNodes) {
       const fboNode = this.fboNodes.get(nodeId);
       if (!fboNode?.prevFramebuffer || !fboNode.prevTexture) continue;
 
-      [fboNode.framebuffer, fboNode.prevFramebuffer] = [
-        fboNode.prevFramebuffer,
-        fboNode.framebuffer
-      ];
-      [fboNode.texture, fboNode.prevTexture] = [fboNode.prevTexture, fboNode.texture];
+      this.passthroughDraw?.({
+        inputTexture: fboNode.texture,
+        framebuffer: fboNode.prevFramebuffer
+      });
     }
 
     // Track previous transport time for iTimeDelta computation
