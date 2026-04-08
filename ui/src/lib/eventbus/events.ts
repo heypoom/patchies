@@ -38,7 +38,8 @@ export type PatchiesEvent =
   | CodeCommitEvent
   | NodeDataCommitEvent
   | ObjectDataCommitEvent
-  | NodeSetPausedEvent;
+  | NodeSetPausedEvent
+  | IncludeProcessingEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -363,4 +364,10 @@ export interface ObjectDataCommitEvent {
   nodeId: string;
   oldData: { expr: string; name: string; params: unknown[] };
   newData: { expr: string; name: string; params: unknown[] };
+}
+
+export interface IncludeProcessingEvent {
+  type: 'includeProcessing';
+  nodeId: string;
+  active: boolean;
 }

@@ -43,7 +43,8 @@ async function preprocessReglConfig(
 function createTrackedRegl(
   reglInstance: regl.Regl,
   getFramebuffer: () => regl.Framebuffer2D | null,
-  resolver?: IncludeResolver
+  resolver?: IncludeResolver,
+  nodeId?: string
 ) {
   const tracked: Array<{ destroy(): void }> = [];
   let generation = 0;
@@ -56,7 +57,11 @@ function createTrackedRegl(
       if (resolver && config && (hasIncludes(config.frag) || hasIncludes(config.vert))) {
         const gen = generation;
 
+        if (nodeId) self.postMessage({ type: 'includeProcessing', nodeId, active: true });
+
         return preprocessReglConfig(config, resolver).then((resolved) => {
+          if (nodeId) self.postMessage({ type: 'includeProcessing', nodeId, active: false });
+
           const command = Reflect.apply(target, thisArg, [resolved, ...args.slice(1)]);
 
           // If destroyAll() was called while we were awaiting, discard the command
@@ -208,7 +213,12 @@ export class ReglRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     try {
       // Create tracked regl wrapper with #include preprocessing
       const resolver = createWorkerResolver(this.config.nodeId);
-      this.trackedRegl = createTrackedRegl(this.renderer.regl, () => this.framebuffer, resolver);
+      this.trackedRegl = createTrackedRegl(
+        this.renderer.regl,
+        () => this.framebuffer,
+        resolver,
+        this.config.nodeId
+      );
 
       const extraContext = {
         ...this.buildBaseExtraContext(),

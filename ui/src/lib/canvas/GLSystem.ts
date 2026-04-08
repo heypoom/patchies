@@ -468,6 +468,13 @@ export class GLSystem {
         const callbacks = this.settingsCallbacks.get(data.nodeId);
         callbacks?.onClear(data.nodeId);
       })
+      .with({ type: 'includeProcessing' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'includeProcessing',
+          nodeId: data.nodeId,
+          active: data.active
+        });
+      })
       .otherwise(() => {});
   };
 

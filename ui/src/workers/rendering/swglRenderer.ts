@@ -219,18 +219,35 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
       ) => {
         const gen = this.generation;
         let patched = shaderConfig;
+        let hasIncludes = false;
 
         for (const field of ['FP', 'VP', 'Inc'] as const) {
           const src = patched[field];
 
           if (typeof src === 'string' && src.includes('#include')) {
+            if (!hasIncludes) {
+              hasIncludes = true;
+              self.postMessage({
+                type: 'includeProcessing',
+                nodeId: this.config.nodeId,
+                active: true
+              });
+            }
+
             let resolved = includeCache.get(src);
 
             if (!resolved) {
               resolved = await processIncludes(src, resolver);
 
               // Renderer was reset/destroyed while awaiting — discard stale result
-              if (gen !== this.generation) return;
+              if (gen !== this.generation) {
+                self.postMessage({
+                  type: 'includeProcessing',
+                  nodeId: this.config.nodeId,
+                  active: false
+                });
+                return;
+              }
 
               includeCache.set(src, resolved);
             }
@@ -238,6 +255,14 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
             patched = patched === shaderConfig ? { ...patched } : patched;
             patched[field] = resolved;
           }
+        }
+
+        if (hasIncludes) {
+          self.postMessage({
+            type: 'includeProcessing',
+            nodeId: this.config.nodeId,
+            active: false
+          });
         }
 
         return this.glsl(patched, { ...targetConfig, ...this.swglTarget });

@@ -728,6 +728,7 @@ export class FBORenderer {
     let code = node.data.code;
     if (code && code.includes('#include')) {
       try {
+        self.postMessage({ type: 'includeProcessing', nodeId: node.id, active: true });
         const resolver = createWorkerResolver(node.id);
         code = await processIncludes(code, resolver);
       } catch (error) {
@@ -738,6 +739,8 @@ export class FBORenderer {
           stack: error instanceof Error ? error.stack : undefined
         });
         return null;
+      } finally {
+        self.postMessage({ type: 'includeProcessing', nodeId: node.id, active: false });
       }
     }
 
