@@ -56,7 +56,14 @@ export function createCachedResolver(base: IncludeResolver): CachedIncludeResolv
   };
 }
 
-/** Clear VFS entries from cache (call when VFS files change). */
+/**
+ * Clear VFS entries from cache (call when VFS files change).
+ *
+ * NOTE: Currently unused — VFS file editing is not yet supported, so cached
+ * VFS includes can never go stale. Wire this up once in-place VFS file editing
+ * is added: on every file-modified event, call this with the shared resolver
+ * and trigger updateCode() on any GLSL nodes that reference the changed path.
+ */
 export function clearVfsCache(resolver: CachedIncludeResolver): void {
   for (const key of resolver._cache.keys()) {
     if (key.startsWith('vfs:')) {

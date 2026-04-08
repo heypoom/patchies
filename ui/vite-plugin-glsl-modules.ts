@@ -47,8 +47,18 @@ export function glslModulesDev(): Plugin {
         if (!req.url?.startsWith(GLSL_MODULES_PREFIX)) return next();
 
         const modulePath = req.url.slice(GLSL_MODULES_PREFIX.length);
-        const [packageName, ...rest] = modulePath.split('/');
-        const filePath = rest.join('/');
+        const parts = modulePath.split('/');
+        let packageName: string;
+        let filePath: string;
+
+        // Scoped packages start with '@' and need two segments for the package name
+        if (parts[0].startsWith('@') && parts.length > 2) {
+          packageName = `${parts[0]}/${parts[1]}`;
+          filePath = parts.slice(2).join('/');
+        } else {
+          packageName = parts[0];
+          filePath = parts.slice(1).join('/');
+        }
 
         if (!filePath) {
           res.statusCode = 400;

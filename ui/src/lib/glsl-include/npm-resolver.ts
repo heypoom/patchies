@@ -15,7 +15,7 @@ export async function resolveNpmPackage(packagePath: string): Promise<string> {
   // Lygia packages are served locally.
   // This is because Lygia CDN rate-limits at 100 requests per minute.
   // TODO(Poom): once we add a local server, let's add a lygia proxy endpoint.
-  if (packagePath.includes('lygia')) {
+  if (packagePath.startsWith('lygia/')) {
     try {
       const localUrl = `/glsl-modules/${packagePath}`;
       const response = await fetch(localUrl);

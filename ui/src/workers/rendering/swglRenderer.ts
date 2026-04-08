@@ -47,7 +47,7 @@ class ReglTextureSampler extends TextureSampler {
     this.wrap = 'repeat';
 
     if (typeof source === 'function') {
-      this.resolveTexture = source;
+      this.resolveTexture = source as () => WebGLTexture | null;
       this.handle = null;
     } else {
       this.resolveTexture = null;
@@ -69,6 +69,13 @@ class ReglTextureSampler extends TextureSampler {
 }
 
 const SWGL_WRAPPER_OFFSET = 4;
+
+/** Thrown by glslAsync when the renderer generation changes mid-await (code was updated). */
+class StaleGenerationError extends Error {
+  constructor() {
+    super('generation aborted: stale request');
+  }
+}
 
 export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   private glsl: ReturnType<typeof SwissGL>;
@@ -202,6 +209,12 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
             if (cached) {
               patched = patched === shaderConfig ? { ...patched } : patched;
               patched[field] = cached;
+            } else {
+              this.createCustomConsole().warn(
+                `[${field}] Shader contains unresolved #include directives. ` +
+                  `Use glslAsync() during setup for shaders that require include resolution.\n` +
+                  `Snippet: ${src.slice(0, 120)}...`
+              );
             }
           }
         }
@@ -246,7 +259,7 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
                   nodeId: this.config.nodeId,
                   active: false
                 });
-                return;
+                throw new StaleGenerationError();
               }
 
               includeCache.set(src, resolved);
@@ -296,6 +309,9 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         );
       }
     } catch (error) {
+      // A stale generation error means updateCode() was called again before this one finished —
+      // the newer call will set up rendering, so there's nothing to report here.
+      if (error instanceof StaleGenerationError) return;
       this.handleCodeError(error, SWGL_WRAPPER_OFFSET);
     }
   }

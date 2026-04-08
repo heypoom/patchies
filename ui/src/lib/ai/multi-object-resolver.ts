@@ -356,7 +356,7 @@ LAYOUT EXAMPLE (top-to-bottom like Pd with generous spacing):
 
 OBJECT-SPECIFIC INSTRUCTIONS:
 
-${jsInstructions}${uiDesignInstructions}${glslImportInstructions}${objectInstructions}
+${[jsInstructions, uiDesignInstructions, glslImportInstructions, objectInstructions].filter(Boolean).join('\n\n')}
 
 Now generate the multi-object configuration.`;
 }
