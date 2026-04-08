@@ -8,6 +8,9 @@ import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { createWorkerGetVfsUrl } from './vfsWorkerUtils';
 import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
+import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
+import { createGlslTag } from '$lib/glsl-include/tagged-template';
+import { processIncludes } from '$lib/glsl-include/preprocessor';
 import { WorkerRendererMessageContext } from './WorkerRendererMessageContext';
 
 type AudioAnalysisType = 'wave' | 'freq';
@@ -225,12 +228,15 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
   /** Builds the common extraContext entries shared by all renderers. */
   protected buildBaseExtraContext(): Record<string, unknown> {
     const [width, height] = this.renderer.outputSize;
+    const resolver = createWorkerResolver(this.config.nodeId);
     return {
       width,
       height,
       mouse: this.createMouseObject(),
       fft: this.createFFTFunction(),
       getVfsUrl: createWorkerGetVfsUrl(this.config.nodeId),
+      glsl: createGlslTag(resolver),
+      processIncludes: (source: string) => processIncludes(source, resolver),
       onMessage: this.msgContext.createOnMessageFunction(),
       send: this.sendMessage.bind(this),
       noDrag: () => this.setInteraction('drag', false),

@@ -32,6 +32,8 @@ import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
 import { WorkerProfiler } from '../shared/WorkerProfiler.js';
 import { VideoTextureManager } from './VideoTextureManager.js';
+import { processIncludes } from '$lib/glsl-include/preprocessor';
+import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 import type { RenderOp } from '$lib/profiler/types';
@@ -696,10 +698,10 @@ export class FBORenderer {
     }
   }
 
-  createGlslRenderer(
+  async createGlslRenderer(
     node: RenderNode,
     framebuffer: regl.Framebuffer2D
-  ): { render: RenderFunction; cleanup: () => void } | null {
+  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
     if (node.type !== 'glsl') return null;
 
     const [width, height] = this.outputSize;
@@ -719,13 +721,30 @@ export class FBORenderer {
       this.uniformDataByNode.set(node.id, uniformData);
     }
 
+    // Resolve #include directives before shader compilation
+    let code = node.data.code;
+    if (code && code.includes('#include')) {
+      try {
+        const resolver = createWorkerResolver(node.id);
+        code = await processIncludes(code, resolver);
+      } catch (error) {
+        self.postMessage({
+          type: 'shaderError',
+          nodeId: node.id,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        return null;
+      }
+    }
+
     const renderCommand = createShaderToyDrawCommand({
       width,
       height,
       framebuffer,
       regl: this.regl,
       gl: this.gl!,
-      code: node.data.code,
+      code,
       uniformDefs: node.data.glUniformDefs ?? [],
       onError: (error: Error & { lineErrors?: Record<number, string[]> }) => {
         // Send error message back to main thread

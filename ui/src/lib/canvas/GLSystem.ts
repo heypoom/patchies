@@ -308,6 +308,9 @@ export class GLSystem {
       .with({ type: 'resolveVfsUrl' }, async (data) => {
         this.handleVfsUrlResolution(data.requestId, data.nodeId, data.path);
       })
+      .with({ type: 'resolveVfsText' }, async (data) => {
+        this.handleVfsTextResolution(data.requestId, data.nodeId, data.path);
+      })
       .with({ type: 'workerVideoFramesCaptured' }, async (data) => {
         const sys = this.workerNodeSystem ?? (await this.workerNodeSystemReady);
         sys.deliverVideoFrames(data.targetNodeId, data.frames, data.timestamp);
@@ -452,6 +455,22 @@ export class GLSystem {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.send('vfsUrlResolved', { requestId, nodeId, error: errorMessage });
+    }
+  }
+
+  /**
+   * Resolves a VFS path from the worker and sends back the text content.
+   * Used by the GLSL #include preprocessor to inline VFS shader files.
+   */
+  private async handleVfsTextResolution(requestId: string, nodeId: string, path: string) {
+    try {
+      const vfs = VirtualFilesystem.getInstance();
+      const blob = await vfs.resolve(path);
+      const text = await blob.text();
+      this.send('vfsTextResolved', { requestId, nodeId, text });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.send('vfsTextResolved', { requestId, nodeId, error: errorMessage });
     }
   }
 

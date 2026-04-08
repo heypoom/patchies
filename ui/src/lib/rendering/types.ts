@@ -170,6 +170,7 @@ export type RenderWorkerMessage =
   | { type: 'renderFrameStats'; stats: RenderFrameStats }
   | { type: 'error'; message: string }
   | { type: 'resolveVfsUrl'; requestId: string; nodeId: string; path: string }
+  | { type: 'resolveVfsText'; requestId: string; nodeId: string; path: string }
   | {
       type: 'workerVideoFramesCaptured';
       targetNodeId: string;

@@ -5,6 +5,8 @@ import type { RenderParams } from '$lib/rendering/types';
 import { TextureSampler, type SwissGL } from '$lib/rendering/swissgl';
 import { getFramebuffer } from './utils';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+import { processIncludes } from '$lib/glsl-include/preprocessor';
+import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 
 const SAMPLER_2D_TEMPLATE = `
   uniform sampler2D $name;
@@ -174,8 +176,30 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     this.resetState();
 
     try {
-      const wrappedGlsl = (shaderConfig: unknown, targetConfig: Record<string, unknown> = {}) =>
-        this.glsl(shaderConfig, { ...targetConfig, ...this.swglTarget });
+      const resolver = createWorkerResolver(this.config.nodeId);
+
+      const wrappedGlsl = async (
+        shaderConfig: Record<string, unknown>,
+        targetConfig: Record<string, unknown> = {}
+      ) => {
+        // Preprocess #include directives in shader fields
+        if (typeof shaderConfig.FP === 'string' && shaderConfig.FP.includes('#include')) {
+          shaderConfig = { ...shaderConfig, FP: await processIncludes(shaderConfig.FP, resolver) };
+        }
+
+        if (typeof shaderConfig.VP === 'string' && shaderConfig.VP.includes('#include')) {
+          shaderConfig = { ...shaderConfig, VP: await processIncludes(shaderConfig.VP, resolver) };
+        }
+
+        if (typeof shaderConfig.Inc === 'string' && shaderConfig.Inc.includes('#include')) {
+          shaderConfig = {
+            ...shaderConfig,
+            Inc: await processIncludes(shaderConfig.Inc, resolver)
+          };
+        }
+
+        return this.glsl(shaderConfig, { ...targetConfig, ...this.swglTarget });
+      };
 
       const extraContext = {
         ...this.buildBaseExtraContext(),
