@@ -164,11 +164,11 @@ NPM packages (lygia etc.) live in `node_modules/` — no Patchies-maintained GLS
 
 ## Implementation Priority
 
-1. **`#include` preprocessor** — NPM package resolution (lygia), VFS, URL, with caching
-2. **Per-node integration** — run preprocessor in each shader node type's compilation step
-3. **`glsl` tagged template literal** — preprocessor for JS-based nodes (REGL, Three.js, SwissGL)
+1. ✓ **`#include` preprocessor** — NPM package resolution (lygia), VFS, URL, with caching
+2. ✓ **Per-node integration** — run preprocessor in each shader node type's compilation step
+3. ✓ **`glsl` tagged template literal** — preprocessor for JS-based nodes (REGL, Three.js, SwissGL)
 4. **CodeMirror autocomplete** — lygia function names + user effect function names
-5. **CodeMirror GLSL highlighting in JS** — mixed-language syntax highlighting for `glsl` tagged templates
+5. ✓ **CodeMirror GLSL highlighting in JS** — mixed-language syntax highlighting via `parseMixed` for `glsl` tagged templates and GLSL property keys (`frag`, `vert`, `glsl`, `FP`, `VP`)
 
 ## Dependencies
 
@@ -179,7 +179,7 @@ NPM packages (lygia etc.) live in `node_modules/` — no Patchies-maintained GLS
 
 ## Implementation Plan
 
-Scope: core preprocessor + per-node integration + `glsl` tagged template. No CodeMirror changes.
+Scope: core preprocessor + per-node integration + `glsl` tagged template + CodeMirror GLSL highlighting in JS.
 
 ### Architecture Overview
 
@@ -401,16 +401,16 @@ Instantiated in each renderer's `updateCode()` or in `BaseWorkerRenderer`.
 
 ### Files Modified ✓
 
-| File                                             | Change                                                                    | Status                                               |
-| ------------------------------------------------ | ------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `ui/src/workers/rendering/fboRenderer.ts`        | Preprocess GLSL node code before `createShaderToyDrawCommand`             | ✓ Done                                               |
-| `ui/src/workers/rendering/BaseWorkerRenderer.ts` | Add `glsl` tag + `processIncludes` to `buildBaseExtraContext`             | ✓ Done                                               |
-| `ui/src/workers/rendering/swglRenderer.ts`       | Preprocess `FP`/`VP`/`Inc` in wrapped `glsl()`                            | ✓ Done                                               |
-| `ui/src/workers/rendering/reglRenderer.ts`       | Expose `glsl` tag (preprocessing via tagged template)                     | ✓ Done                                               |
-| `ui/src/workers/rendering/threeRenderer.ts`      | Expose `glsl` tag (required for Three.js `#include`)                      | ✓ Done (inherited from base context)                 |
-| `ui/src/workers/rendering/hydraRenderer.ts`      | `setFunction()` preprocesses `glsl` property; `glsl` tag in extraContext  | ✓ Done                                               |
-| `ui/src/lib/rendering/types.ts`                  | Added `resolveVfsText` message type for GLSL content                      | ✓ Done (was `vfsWorkerUtils.ts` in plan; moved here) |
-| `ui/src/lib/canvas/GLSystem.ts`                  | Handle `resolveVfsText` worker message on main thread                     | ✓ Done                                               |
+| File                                             | Change                                                                   | Status                                               |
+| ------------------------------------------------ | ------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `ui/src/workers/rendering/fboRenderer.ts`        | Preprocess GLSL node code before `createShaderToyDrawCommand`            | ✓ Done                                               |
+| `ui/src/workers/rendering/BaseWorkerRenderer.ts` | Add `glsl` tag + `processIncludes` to `buildBaseExtraContext`            | ✓ Done                                               |
+| `ui/src/workers/rendering/swglRenderer.ts`       | Preprocess `FP`/`VP`/`Inc` in wrapped `glsl()`                           | ✓ Done                                               |
+| `ui/src/workers/rendering/reglRenderer.ts`       | Expose `glsl` tag (preprocessing via tagged template)                    | ✓ Done                                               |
+| `ui/src/workers/rendering/threeRenderer.ts`      | Expose `glsl` tag (required for Three.js `#include`)                     | ✓ Done (inherited from base context)                 |
+| `ui/src/workers/rendering/hydraRenderer.ts`      | `setFunction()` preprocesses `glsl` property; `glsl` tag in extraContext | ✓ Done                                               |
+| `ui/src/lib/rendering/types.ts`                  | Added `resolveVfsText` message type for GLSL content                     | ✓ Done (was `vfsWorkerUtils.ts` in plan; moved here) |
+| `ui/src/lib/canvas/GLSystem.ts`                  | Handle `resolveVfsText` worker message on main thread                    | ✓ Done                                               |
 
 ### Implementation Order ✓ (All Complete)
 
@@ -424,9 +424,23 @@ Instantiated in each renderer's `updateCode()` or in `BaseWorkerRenderer`.
 8. ✓ `swglRenderer.ts` — SwissGL `FP`/`VP` auto-preprocessing
 9. ✓ Remaining renderers — REGL, Three.js, Hydra get `glsl` tag via base context
 
+### Additional Files Created (CodeMirror GLSL Highlighting) ✓
+
+| File                                  | Purpose                                                 | Status |
+| ------------------------------------- | ------------------------------------------------------- | ------ |
+| `ui/src/lib/codemirror/glsl-in-js.ts` | `parseMixed` wrapper for GLSL-in-JS nested highlighting | ✓ Done |
+
+**Modified:** `ui/src/lib/codemirror/language.ts` — JS language now uses `javascriptLanguage.configure({ wrap: glslInJsWrap })` + `glslIncludeHighlighter` for `#include` decoration in template strings.
+
+Patterns detected automatically:
+
+- `` glsl`...` `` tagged templates (Three.js)
+- `{ frag: \`...\`, vert: \`...\` }` (REGL)
+- `{ glsl: \`...\` }\` (Hydra`setFunction`)
+- `{ FP: \`...\`, VP: \`...\` }` (SwissGL)
+
+`${...}` interpolations are excluded from the GLSL overlay so JS highlighting applies inside them.
+
 ### Not Implemented (Out of Scope)
 
-The following items from the original priority list were explicitly excluded from this implementation:
-
 - **CodeMirror autocomplete** — lygia function names in `patchies-completions.ts`
-- **CodeMirror GLSL highlighting in JS** — mixed-language syntax highlighting for `` glsl`...` `` tagged templates
