@@ -38,6 +38,7 @@ import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 import type { RenderOp } from '$lib/profiler/types';
 import { defaultUniformValue, isValidUniformData } from './glUniformUtils';
+import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
@@ -84,6 +85,9 @@ export class FBORenderer {
   public reglByNode = new Map<string, ReglRenderer | null>();
   public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
   public swglByNode = new Map<string, SwissGLRenderer | null>();
+
+  /** Dedicated settings proxy registry — populated in BaseWorkerRenderer.resetState() before any async code runs, fixing the race where renderers aren't in their type-specific maps yet. */
+  private settingsProxiesByNode = new Map<string, WorkerSettingsProxy>();
 
   /** During textmode loading, we need to refresh REGL. */
 
@@ -1469,16 +1473,16 @@ export class FBORenderer {
       .exhaustive();
   }
 
-  private getSettingsProxy(nodeId: string) {
-    return (
-      this.canvasByNode.get(nodeId)?.settingsProxy ??
-      this.hydraByNode.get(nodeId)?.settingsProxy ??
-      this.textmodeByNode.get(nodeId)?.settingsProxy ??
-      this.threeByNode.get(nodeId)?.settingsProxy ??
-      this.reglByNode.get(nodeId)?.settingsProxy ??
-      this.swglByNode.get(nodeId)?.settingsProxy ??
-      null
-    );
+  registerSettingsProxy(nodeId: string, proxy: WorkerSettingsProxy) {
+    this.settingsProxiesByNode.set(nodeId, proxy);
+  }
+
+  unregisterSettingsProxy(nodeId: string) {
+    this.settingsProxiesByNode.delete(nodeId);
+  }
+
+  private getSettingsProxy(nodeId: string): WorkerSettingsProxy | null {
+    return this.settingsProxiesByNode.get(nodeId) ?? null;
   }
 
   receiveSettingsValues(nodeId: string, requestId: string, values: Record<string, unknown>) {

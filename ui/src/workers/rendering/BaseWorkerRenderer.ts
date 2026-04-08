@@ -221,6 +221,10 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
       this.settingsProxy._reset();
     }
 
+    // Register with fboRenderer so settingsValuesInit can be routed even while
+    // this renderer hasn't been stored in its type-specific map yet (create() is still awaiting).
+    this.renderer.registerSettingsProxy(this.config.nodeId, this.settingsProxy);
+
     this.setInteraction('interact', true);
     this.setVideoOutputEnabled(true);
   }
@@ -330,6 +334,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
 
   /** Clean up JSRunner context. Subclasses should call super.destroy(). */
   destroy() {
+    this.renderer.unregisterSettingsProxy(this.config.nodeId);
     this.renderer.jsRunner.destroy(this.config.nodeId);
   }
 }
