@@ -265,7 +265,7 @@ export class CanvasDragDropManager {
     } else if (result.kind === 'sc-sample') {
       this.handleScSampleDrop(JSON.stringify({ name: result.name }), position);
     } else {
-      void this.handleSampleDrop(JSON.stringify({ url: result.url, name: result.name }), position);
+      this.handleSampleDrop(JSON.stringify({ url: result.url, name: result.name }), position);
     }
   }
 
