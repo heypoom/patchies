@@ -39,7 +39,7 @@ export function formatArguments(
   onError: HydraErrorHandler = defaultOnError
 ): TypedArg[] {
   const { transform, userArgs } = transformApplication;
-  const { inputs } = transform;
+  const { inputs = [] } = transform;
 
   return inputs.map((input, index) => {
     const vecLen = input.vecLen ?? 0;

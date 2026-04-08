@@ -100,7 +100,7 @@ export type TransformDefinitionInput = TransformDefinitionInputUnion & {
 export interface TransformDefinition {
   name: string;
   type: TransformDefinitionType;
-  inputs: readonly TransformDefinitionInput[];
+  inputs?: readonly TransformDefinitionInput[];
   glsl: string;
 }
 
