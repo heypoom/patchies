@@ -88,6 +88,9 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   /** Cache of source→resolved include strings, pre-warmed during updateCode() */
   private includeCache = new Map<string, string>();
 
+  /** Monotonic counter incremented on updateCode()/destroy() to detect stale async work */
+  private generation = 0;
+
   private constructor(
     config: BaseRendererConfig,
     framebuffer: regl.Framebuffer2D,
@@ -176,6 +179,7 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     this.userRenderFunc = null;
     this.glsl.reset();
     this.includeCache.clear();
+    this.generation++;
 
     this.resetState();
 
@@ -213,6 +217,7 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         shaderConfig: Record<string, unknown>,
         targetConfig: Record<string, unknown> = {}
       ) => {
+        const gen = this.generation;
         let patched = shaderConfig;
 
         for (const field of ['FP', 'VP', 'Inc'] as const) {
@@ -223,6 +228,10 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
             if (!resolved) {
               resolved = await processIncludes(src, resolver);
+
+              // Renderer was reset/destroyed while awaiting — discard stale result
+              if (gen !== this.generation) return;
+
               includeCache.set(src, resolved);
             }
 
@@ -299,6 +308,7 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   }
 
   destroy() {
+    this.generation++;
     this.glsl.reset();
     this.userRenderFunc = null;
     this.includeCache.clear();
