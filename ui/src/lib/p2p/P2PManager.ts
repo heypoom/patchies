@@ -60,6 +60,7 @@ export class P2PManager {
 
     this.room = joinRoom(config, this.roomId);
 
+    // onPeerJoin now replays already-active peers immediately on registration (trystero v0.23+)
     this.room.onPeerJoin((peerId) => {
       this.peers.add(peerId);
       this.peerJoinCallbacks.forEach((cb) => cb(peerId));
@@ -69,9 +70,6 @@ export class P2PManager {
       this.peers.delete(peerId);
       this.peerLeaveCallbacks.forEach((cb) => cb(peerId));
     });
-
-    const currentPeers = this.room.getPeers();
-    Object.keys(currentPeers).forEach((peerId) => this.peers.add(peerId));
 
     this.connectionState = 'connected';
   }
