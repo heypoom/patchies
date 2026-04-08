@@ -26,37 +26,37 @@ Build a **code-oriented TouchDesigner** that runs in a browser. Patchies combine
 
 ### Comparison to Industry Tools
 
-| Capability | TouchDesigner | Substance Designer | Patchies (after roadmap) |
-|---|---|---|---|
-| Texture processing pipeline | TOP network | Node graph | Video pipeline (existing + MRT + float + feedback) |
-| Shader code | GLSL TOP (clunky) | Pixel Processor | GLSL/SwissGL/REGL nodes + `#include` lygia |
-| Materials | MAT operators | Material outputs | `@slot` metadata + material presets |
-| Geometry composition | SOP network | N/A | Geometry handles + `geo.*` presets |
-| Instancing | Instance SOP | N/A | `geo.instance` + `InstancedGeometryData` |
-| GPGPU / particles | Compute TOP | N/A | Float FBO feedback + wgpu.compute bridge |
-| Environment lighting | Environment Light | 3D viewport | Resource pool cubemaps + Three.js presets |
-| Feedback / temporal | Feedback TOP | N/A | Graph-level feedback loops |
-| Audio reactivity | CHOP → TOP | N/A | fft~ + env~ + messages (existing) |
-| Code generation | N/A | N/A | AI generates GLSL/Three.js with `#include` lygia |
-| Sharing | Export .toe file | Export .sbs file | Share as URL |
-| Cost | $2,200 license | $20/mo subscription | Free, open source, runs in a browser |
+| Capability                  | TouchDesigner     | Substance Designer  | Patchies (after roadmap)                           |
+| --------------------------- | ----------------- | ------------------- | -------------------------------------------------- |
+| Texture processing pipeline | TOP network       | Node graph          | Video pipeline (existing + MRT + float + feedback) |
+| Shader code                 | GLSL TOP (clunky) | Pixel Processor     | GLSL/SwissGL/REGL nodes + `#include` lygia         |
+| Materials                   | MAT operators     | Material outputs    | `@slot` metadata + material presets                |
+| Geometry composition        | SOP network       | N/A                 | Geometry handles + `geo.*` presets                 |
+| Instancing                  | Instance SOP      | N/A                 | `geo.instance` + `InstancedGeometryData`           |
+| GPGPU / particles           | Compute TOP       | N/A                 | Float FBO feedback + wgpu.compute bridge           |
+| Environment lighting        | Environment Light | 3D viewport         | Resource pool cubemaps + Three.js presets          |
+| Feedback / temporal         | Feedback TOP      | N/A                 | Graph-level feedback loops                         |
+| Audio reactivity            | CHOP → TOP        | N/A                 | fft~ + env~ + messages (existing)                  |
+| Code generation             | N/A               | N/A                 | AI generates GLSL/Three.js with `#include` lygia   |
+| Sharing                     | Export .toe file  | Export .sbs file    | Share as URL                                       |
+| Cost                        | $2,200 license    | $20/mo subscription | Free, open source, runs in a browser               |
 
 ## Specs
 
-| Spec | Title | Summary |
-|------|-------|---------|
-| [111](111-multi-render-target.md) | Multi-Render-Target | Multiple video outlets per node via MRT color attachments |
-| [112](112-float-fbo-format.md) | Float FBO Format | Per-node `rgba16f`/`rgba32f` for GPGPU and HDR |
-| [113](113-graph-level-feedback.md) | Graph-Level Feedback | Back-edges with 1-frame delay, double-buffered FBOs |
-| [114](114-visual-convenience-presets.md) | Convenience Presets | Procedural generators, post-processing, PBR, simulation presets |
-| [115](115-geometry-wire-type.md) | Geometry Wire Type | Geometry handle with auto-caching inlets, attributes, instancing |
-| [116](116-webgpu-render-bridge.md) | WebGPU Render Bridge | ImageBitmap + SharedArrayBuffer paths from compute to FBO pipeline |
-| [117](117-shared-resource-pool.md) | Shared Resource Pool | Named cubemaps, 3D textures, LUTs accessible by any node |
-| [118](118-glsl-include-preprocessor.md) | GLSL `#include` Preprocessor | `#include` preprocessor for lygia, VFS, and URL sources |
-| [123](123-shader-effect-format.md) | Shader Effect Format | Effect metadata, drag-drop scaffolding, material system, Hydra integration |
-| [120](120-snippet-presets.md) | Snippet Presets | Cross-patch portability for GLSL/Hydra/JS snippets via preset system |
-| [121](121-vfs-js-modules.md) | VFS JavaScript Modules | Import JS modules from VFS files alongside `// @lib` nodes |
-| [122](122-render-pipeline-optimizations.md) | Render Pipeline Optimizations | Per-node resolution, cook-on-demand caching, channel formats, preview LOD |
+| Spec                                        | Title                         | Summary                                                                    |
+| ------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------- |
+| [111](111-multi-render-target.md)           | Multi-Render-Target           | Multiple video outlets per node via MRT color attachments                  |
+| [112](112-float-fbo-format.md)              | Float FBO Format              | Per-node `rgba16f`/`rgba32f` for GPGPU and HDR                             |
+| [113](113-graph-level-feedback.md)          | Graph-Level Feedback          | Back-edges with 1-frame delay, double-buffered FBOs                        |
+| [114](114-visual-convenience-presets.md)    | Convenience Presets           | Procedural generators, post-processing, PBR, simulation presets            |
+| [115](115-geometry-wire-type.md)            | Geometry Wire Type            | Geometry handle with auto-caching inlets, attributes, instancing           |
+| [116](116-webgpu-render-bridge.md)          | WebGPU Render Bridge          | ImageBitmap + SharedArrayBuffer paths from compute to FBO pipeline         |
+| [117](117-shared-resource-pool.md)          | Shared Resource Pool          | Named cubemaps, 3D textures, LUTs accessible by any node                   |
+| [118](118-glsl-include-preprocessor.md)     | GLSL `#include` Preprocessor  | `#include` preprocessor for lygia, VFS, and URL sources ✓                  |
+| [123](123-shader-effect-format.md)          | Shader Effect Format          | Effect metadata, drag-drop scaffolding, material system, Hydra integration |
+| [120](120-snippet-presets.md)               | Snippet Presets               | Cross-patch portability for GLSL/Hydra/JS snippets via preset system       |
+| [121](121-vfs-js-modules.md)                | VFS JavaScript Modules        | Import JS modules from VFS files alongside `// @lib` nodes                 |
+| [122](122-render-pipeline-optimizations.md) | Render Pipeline Optimizations | Per-node resolution, cook-on-demand caching, channel formats, preview LOD  |
 
 ## Dependency Graph
 
@@ -136,15 +136,19 @@ Independent (no deps):     111, 112, 113, 117, 118, 123, 115 (Stage 2-3)
 ## What This Unlocks at Each Phase
 
 ### After Phase 1
+
 Live coders can `#include <lygia/generative/snoise>` and immediately have noise, SDF, lighting functions. Multi-node feedback chains enable trails, accumulation, and reaction-diffusion as visual wiring. This alone transforms the live coding experience.
 
 ### After Phase 2
+
 Patchies matches TouchDesigner's TOP network — multi-pass processing, float precision, GPGPU within the texture pipeline. A single GLSL node can output albedo + normal + roughness via MRT. Substance Designer-like procedural texture workflows become possible.
 
 ### After Phase 3
+
 3D scene composition via geometry handles — scatter instances, import models, transform meshes, render with shared cubemaps. Patchies now covers TD's SOP + TOP + MAT workflows. Audio-reactive 3D generative scenes with instanced geometry, PBR materials, and temporal post-processing — all in a browser.
 
 ### After Phase 4
+
 The full picture. GPU particle systems with millions of points via texture-encoded geometry. WebGPU compute results visualized in the FBO pipeline. Hot-swappable materials with standardized slots. Everything from the crystal cave example works as described.
 
 ## Key Design Decisions Made
