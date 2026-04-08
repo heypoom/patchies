@@ -23,11 +23,11 @@ The preprocessor inlines the resolved source at the `#include` site, then hands 
 
 ### Import Sources
 
-| Syntax | Source | Resolution |
-|--------|--------|------------|
-| `#include <lygia/generative/snoise>` | NPM package | Local (installed via `bun add`) or CDN fallback |
-| `#include "user://my-shaders/foo.glsl"` | User's VFS files | Local VFS read |
-| `#include "https://raw.githubusercontent.com/..."` | Any URL | Fetched + cached |
+| Syntax                                             | Source           | Resolution                                      |
+| -------------------------------------------------- | ---------------- | ----------------------------------------------- |
+| `#include <lygia/generative/snoise>`               | NPM package      | Local (installed via `bun add`) or CDN fallback |
+| `#include "user://my-shaders/foo.glsl"`            | User's VFS files | Local VFS read                                  |
+| `#include "https://raw.githubusercontent.com/..."` | Any URL          | Fetched + cached                                |
 
 **Angle brackets** (`< >`) resolve from NPM packages. Since lygia and similar packages can be installed locally via `bun add lygia`, resolution is file-system based at build time — works offline, no CDN dependency.
 
@@ -78,8 +78,8 @@ const draw = regl({
       float n = snoise(vec3(vUv * 4.0, time));
       gl_FragColor = vec4(vec3(n), 1.0);
     }
-  `
-});
+  `,
+})
 ```
 
 **Three.js**: Requires `glsl` tagged template. Unlike REGL and SwissGL, `THREE.ShaderMaterial` is the real Three.js constructor — Patchies doesn't control it and can't intercept shader strings. The `glsl` tag preprocesses the string before Three.js sees it.
@@ -94,8 +94,8 @@ const material = new THREE.ShaderMaterial({
       float w = worley(vUv * 8.0);
       gl_FragColor = vec4(hsv2rgb(vec3(w, 0.8, 0.9)), 1.0);
     }
-  `
-});
+  `,
+})
 ```
 
 **Hydra**: Auto-preprocessed via `setFunction`. Patchies controls the vendored Hydra fork, so we modify `setFunction` to resolve `#include` directives in the `glsl` string before shader compilation. Users can use lygia functions directly in custom Hydra transforms:
@@ -106,14 +106,15 @@ setFunction({
   name: 'crystalNoise',
   type: 'src',
   inputs: [
-    { type: 'float', name: 'scale', default: 4.0 },
-    { type: 'float', name: 'speed', default: 0.1 }
+    {type: 'float', name: 'scale', default: 4.0},
+    {type: 'float', name: 'speed', default: 0.1},
   ],
   glsl: `
     #include <lygia/generative/snoise>
+
     return vec4(vec3(snoise(vec3(_st * scale, time * speed))), 1.0);
-  `
-});
+  `,
+})
 
 // Then chainable like any Hydra function
 crystalNoise(8.0, 0.2).rotate(0.5).out()
@@ -135,13 +136,13 @@ All `#include` resolution happens during `updateCode()` before any shader is com
 
 ### Summary: Preprocessing by Node Type
 
-| Node type | Who preprocesses | `glsl` tag needed? |
-|-----------|-----------------|-------------------|
-| GLSL | Node compiler (automatic) | N/A (not JS) |
-| SwissGL | `glsl()` wrapper (automatic) | Optional (syntax highlighting only) |
-| REGL | `regl()` wrapper (automatic) | Optional (syntax highlighting only) |
-| Three.js | `glsl` tagged template | **Required** for `#include` to work |
-| Hydra | `setFunction` (automatic, vendored fork) | N/A (GLSL is in the `glsl` property string) |
+| Node type | Who preprocesses                         | `glsl` tag needed?                          |
+| --------- | ---------------------------------------- | ------------------------------------------- |
+| GLSL      | Node compiler (automatic)                | N/A (not JS)                                |
+| SwissGL   | `glsl()` wrapper (automatic)             | Optional (syntax highlighting only)         |
+| REGL      | `regl()` wrapper (automatic)             | Optional (syntax highlighting only)         |
+| Three.js  | `glsl` tagged template                   | **Required** for `#include` to work         |
+| Hydra     | `setFunction` (automatic, vendored fork) | N/A (GLSL is in the `glsl` property string) |
 
 ### CodeMirror Integration
 
@@ -165,6 +166,7 @@ NPM packages (lygia etc.) live in `node_modules/` — no Patchies-maintained GLS
 ### What It Is
 
 Not a new node type. Effects are GLSL functions stored in VFS that can be:
+
 1. Included via `#include "user://effects/..."` in any shader
 2. **Drag-dropped** from the VFS sidebar onto a shader node → inserts the `#include` directive
 3. **Drag-dropped** onto empty canvas → creates a GLSL node with auto-generated wrapper code
@@ -212,12 +214,12 @@ The scaffold generator parses the function signature to determine everything aut
 **Type inference** (from function signature):
 
 | Return type | sampler2D params | First non-uv param | Inferred type |
-|-------------|-----------------|---------------------|---------------|
-| `vec4` | 0 | — | `generator` |
-| `vec4` | 1 | `sampler2D` | `effect` |
-| `vec4` | 2 | `sampler2D` | `combiner` |
-| `vec2` | any | — | `coordinate` |
-| `vec4` | 0 | `vec4` | `color` |
+| ----------- | ---------------- | ------------------ | ------------- |
+| `vec4`      | 0                | —                  | `generator`   |
+| `vec4`      | 1                | `sampler2D`        | `effect`      |
+| `vec4`      | 2                | `sampler2D`        | `combiner`    |
+| `vec2`      | any              | —                  | `coordinate`  |
+| `vec4`      | 0                | `vec4`             | `color`       |
 
 **Inlet inference**: Count `sampler2D` params → that many video inlets (`iChannel0`, `iChannel1`, ...).
 
@@ -245,14 +247,14 @@ All annotations are optional overrides. If absent, values are inferred.
 
 ### Effect Types
 
-| Type | Signature | Inlets | Description |
-|------|-----------|--------|-------------|
-| `generator` | `vec4 fn(vec2 uv, float time, ...)` | 0 video | Produces color from UV + time |
-| `effect` | `vec4 fn(vec2 uv, sampler2D input, ...)` | 1 video | Transforms one texture |
-| `combiner` | `vec4 fn(vec2 uv, sampler2D a, sampler2D b, ...)` | 2 video | Blends two textures |
-| `coordinate` | `vec2 fn(vec2 uv, ...)` | 1 video | Transforms UV coordinates |
-| `color` | `vec4 fn(vec4 color, ...)` | 1 video | Transforms a color value |
-| `material` | `vec4 fn(vec2 uv, sampler2D albedo, ..., vec3 lightDir, vec3 viewDir)` | N video (per slot) | Shading function with semantic slots |
+| Type         | Signature                                                              | Inlets             | Description                          |
+| ------------ | ---------------------------------------------------------------------- | ------------------ | ------------------------------------ |
+| `generator`  | `vec4 fn(vec2 uv, float time, ...)`                                    | 0 video            | Produces color from UV + time        |
+| `effect`     | `vec4 fn(vec2 uv, sampler2D input, ...)`                               | 1 video            | Transforms one texture               |
+| `combiner`   | `vec4 fn(vec2 uv, sampler2D a, sampler2D b, ...)`                      | 2 video            | Blends two textures                  |
+| `coordinate` | `vec2 fn(vec2 uv, ...)`                                                | 1 video            | Transforms UV coordinates            |
+| `color`      | `vec4 fn(vec4 color, ...)`                                             | 1 video            | Transforms a color value             |
+| `material`   | `vec4 fn(vec2 uv, sampler2D albedo, ..., vec3 lightDir, vec3 viewDir)` | N video (per slot) | Shading function with semantic slots |
 
 ### Material Type
 
@@ -292,6 +294,7 @@ Note: the material function itself uses `#include <lygia/lighting/pbr>` — no P
 `@param` is a generic tweakable value — no semantic meaning beyond the name.
 
 `@slot` declares a **material property** with a standard role. This tells tools:
+
 - The material preview UI should label this inlet "Albedo" not "iChannel0"
 - A Three.js node should wire this to `MeshStandardMaterial.map`, not an arbitrary uniform
 - AI should know that "albedo" means base color and generate accordingly
@@ -299,40 +302,43 @@ Note: the material function itself uses `#include <lygia/lighting/pbr>` — no P
 
 #### Standard Slot Names
 
-| Slot name | Type | Three.js property | Description |
-|-----------|------|-------------------|-------------|
-| `albedo` | `sampler2D` | `map` | Base color texture |
-| `normal` | `sampler2D` | `normalMap` | Tangent-space normal map |
-| `roughness` | `sampler2D` or `float` | `roughnessMap` / `roughness` | Surface roughness |
-| `metallic` | `sampler2D` or `float` | `metalnessMap` / `metalness` | Metalness |
-| `emissive` | `sampler2D` | `emissiveMap` | Self-illumination |
-| `ao` | `sampler2D` | `aoMap` | Ambient occlusion |
-| `height` | `sampler2D` | `displacementMap` | Height/displacement |
-| `opacity` | `sampler2D` or `float` | `alphaMap` / `opacity` | Transparency |
+| Slot name   | Type                   | Three.js property            | Description              |
+| ----------- | ---------------------- | ---------------------------- | ------------------------ |
+| `albedo`    | `sampler2D`            | `map`                        | Base color texture       |
+| `normal`    | `sampler2D`            | `normalMap`                  | Tangent-space normal map |
+| `roughness` | `sampler2D` or `float` | `roughnessMap` / `roughness` | Surface roughness        |
+| `metallic`  | `sampler2D` or `float` | `metalnessMap` / `metalness` | Metalness                |
+| `emissive`  | `sampler2D`            | `emissiveMap`                | Self-illumination        |
+| `ao`        | `sampler2D`            | `aoMap`                      | Ambient occlusion        |
+| `height`    | `sampler2D`            | `displacementMap`            | Height/displacement      |
+| `opacity`   | `sampler2D` or `float` | `alphaMap` / `opacity`       | Transparency             |
 
 These names match both PBR convention and Three.js property names, making the mapping mechanical.
 
 #### Drag-Drop Behavior for Materials
 
 **Drop onto empty canvas** → creates a GLSL node with:
+
 - Video inlets labeled by slot name (Albedo, Normal, Roughness, etc.)
 - Uniform sliders for float slots with default values
 - Auto-generated `mainImage` calling the material function
 - A basic directional light + camera-relative view direction
 
 **Drop onto a Three.js node** → generates `MeshStandardMaterial` setup code:
+
 ```javascript
-const material = new THREE.MeshStandardMaterial();
+const material = new THREE.MeshStandardMaterial()
 
 // Auto-mapped from @slot metadata
-if (getTexture(0)) material.map = getTexture(0);           // albedo
-if (getTexture(1)) material.normalMap = getTexture(1);     // normal
-material.roughness = settings.roughness ?? 0.5;
-material.metalness = settings.metallic ?? 0.0;
-if (getTexture(2)) material.emissiveMap = getTexture(2);   // emissive
+if (getTexture(0)) material.map = getTexture(0) // albedo
+if (getTexture(1)) material.normalMap = getTexture(1) // normal
+material.roughness = settings.roughness ?? 0.5
+material.metalness = settings.metallic ?? 0.0
+if (getTexture(2)) material.emissiveMap = getTexture(2) // emissive
 ```
 
 **Material preview preset** — a Three.js node preset that:
+
 - Reads `@slot` metadata to create correctly-labeled inlets
 - Renders a sphere/cube with the material applied
 - Has settings for preview shape (sphere, cube, plane, custom geometry via spec 115)
@@ -345,14 +351,14 @@ Since the slot names are standardized, the preview preset doesn't need to know w
 
 Materials stored in VFS, using lygia for lighting math:
 
-| Material | Description | Key slots |
-|----------|-------------|-----------|
-| `pbr-standard` | Standard PBR (GGX/Smith) | albedo, normal, roughness, metallic, emissive, ao |
-| `pbr-clearcoat` | Clearcoat layer (car paint, wet surfaces) | + clearcoat, clearcoatRoughness |
-| `toon` | Cel shading with configurable steps | albedo, normal, + steps, edgeThreshold |
-| `matcap` | Matcap lookup shading | matcapTexture |
-| `glass` | Refraction + fresnel | albedo, normal, + ior, thickness |
-| `unlit` | No lighting, just texture output | albedo, emissive, opacity |
+| Material        | Description                               | Key slots                                         |
+| --------------- | ----------------------------------------- | ------------------------------------------------- |
+| `pbr-standard`  | Standard PBR (GGX/Smith)                  | albedo, normal, roughness, metallic, emissive, ao |
+| `pbr-clearcoat` | Clearcoat layer (car paint, wet surfaces) | + clearcoat, clearcoatRoughness                   |
+| `toon`          | Cel shading with configurable steps       | albedo, normal, + steps, edgeThreshold            |
+| `matcap`        | Matcap lookup shading                     | matcapTexture                                     |
+| `glass`         | Refraction + fresnel                      | albedo, normal, + ior, thickness                  |
+| `unlit`         | No lighting, just texture output          | albedo, emissive, opacity                         |
 
 #### Hot-Swappable Materials
 
@@ -517,13 +523,13 @@ setFunction({
   name: 'crystalNoise',
   type: 'src',
   inputs: [
-    { type: 'float', name: 'scale', default: 4.0 },
-    { type: 'float', name: 'speed', default: 0.1 },
+    {type: 'float', name: 'scale', default: 4.0},
+    {type: 'float', name: 'speed', default: 0.1},
   ],
   glsl: `
     #include <lygia/generative/snoise>
     return vec4(vec3(snoise(vec3(_st * scale, time * speed))), 1.0);
-  `
+  `,
 })
 ```
 
@@ -535,12 +541,12 @@ crystalNoise(8.0, 0.2).rotate(0.5).kaleid(4).out()
 
 #### Hydra Types
 
-| `@type` value | Hydra type | Implicit args | Description |
-|---------------|-----------|---------------|-------------|
-| `src` | `src` | `vec2 _st` | Generates color from coordinates |
-| `coord` | `coord` | `vec2 _st` | Transforms coordinates |
-| `color` | `color` | `vec4 _c0` | Transforms color |
-| `combine` | `combine` | `vec4 _c0, vec4 _c1` | Blends two colors |
+| `@type` value  | Hydra type     | Implicit args        | Description                      |
+| -------------- | -------------- | -------------------- | -------------------------------- |
+| `src`          | `src`          | `vec2 _st`           | Generates color from coordinates |
+| `coord`        | `coord`        | `vec2 _st`           | Transforms coordinates           |
+| `color`        | `color`        | `vec4 _c0`           | Transforms color                 |
+| `combine`      | `combine`      | `vec4 _c0, vec4 _c1` | Blends two colors                |
 | `combineCoord` | `combineCoord` | `vec2 _st, vec4 _c0` | Coordinate distortion with color |
 
 #### Drag-Drop onto Hydra Node
