@@ -11,38 +11,47 @@ export type CachedIncludeResolver = IncludeResolver & { _cache: Map<string, stri
 
 export function createCachedResolver(base: IncludeResolver): CachedIncludeResolver {
   const cache = new Map<string, string>();
+  const inflight = new Map<string, Promise<string>>();
+
+  function dedup(key: string, fetch: () => Promise<string>): Promise<string> {
+    const cached = cache.get(key);
+    if (cached !== undefined) return Promise.resolve(cached);
+
+    const pending = inflight.get(key);
+    if (pending) return pending;
+
+    const promise = fetch().then(
+      (content) => {
+        cache.set(key, content);
+        inflight.delete(key);
+
+        return content;
+      },
+      (error) => {
+        inflight.delete(key);
+
+        throw error;
+      }
+    );
+
+    inflight.set(key, promise);
+
+    return promise;
+  }
 
   return {
     _cache: cache,
 
-    async resolveNpm(packagePath: string): Promise<string> {
-      const key = `npm:${packagePath}`;
-      const cached = cache.get(key);
-      if (cached !== undefined) return cached;
-
-      const content = await base.resolveNpm(packagePath);
-      cache.set(key, content);
-      return content;
+    resolveNpm(packagePath: string): Promise<string> {
+      return dedup(`npm:${packagePath}`, () => base.resolveNpm(packagePath));
     },
 
-    async resolveVfs(vfsPath: string): Promise<string> {
-      const key = `vfs:${vfsPath}`;
-      const cached = cache.get(key);
-      if (cached !== undefined) return cached;
-
-      const content = await base.resolveVfs(vfsPath);
-      cache.set(key, content);
-      return content;
+    resolveVfs(vfsPath: string): Promise<string> {
+      return dedup(`vfs:${vfsPath}`, () => base.resolveVfs(vfsPath));
     },
 
-    async resolveUrl(url: string): Promise<string> {
-      const key = `url:${url}`;
-      const cached = cache.get(key);
-      if (cached !== undefined) return cached;
-
-      const content = await base.resolveUrl(url);
-      cache.set(key, content);
-      return content;
+    resolveUrl(url: string): Promise<string> {
+      return dedup(`url:${url}`, () => base.resolveUrl(url));
     }
   };
 }
@@ -50,6 +59,8 @@ export function createCachedResolver(base: IncludeResolver): CachedIncludeResolv
 /** Clear VFS entries from cache (call when VFS files change). */
 export function clearVfsCache(resolver: CachedIncludeResolver): void {
   for (const key of resolver._cache.keys()) {
-    if (key.startsWith('vfs:')) resolver._cache.delete(key);
+    if (key.startsWith('vfs:')) {
+      resolver._cache.delete(key);
+    }
   }
 }

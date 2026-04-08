@@ -277,6 +277,17 @@ export class FBORenderer {
     this.renderGraph = mergedGraph;
     this.outputNodeId = mergedGraph.outputNodeId;
 
+    // Phase 1 (sync): allocate FBOs and collect nodes that need renderer creation
+    type PendingNode = {
+      node: RenderNode;
+      texture: regl.Texture2D;
+      framebuffer: regl.Framebuffer2D;
+      canReuseFbo: boolean;
+      fingerprint: string;
+    };
+
+    const pending: PendingNode[] = [];
+
     for (const node of renderGraph.nodes) {
       const existingFbo = this.fboNodes.get(node.id);
 
@@ -346,20 +357,33 @@ export class FBORenderer {
         });
       }
 
-      const renderer = await match(node)
-        .with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
-        .with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
-        .with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
-        .with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
-        .with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
-        .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
-        .with({ type: 'regl' }, (node) => this.createReglRenderer(node, framebuffer))
-        .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
-        .with({ type: 'img' }, () => this.createEmptyRenderer())
-        .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
-        .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
-        .with({ type: 'recv.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
-        .exhaustive();
+      pending.push({ node, texture, framebuffer, canReuseFbo: !!canReuseFbo, fingerprint });
+    }
+
+    // Phase 2 (parallel): create all renderers concurrently
+    const results = await Promise.all(
+      pending.map(async ({ node, framebuffer }) =>
+        match(node)
+          .with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
+          .with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
+          .with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
+          .with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
+          .with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
+          .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
+          .with({ type: 'regl' }, (node) => this.createReglRenderer(node, framebuffer))
+          .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
+          .with({ type: 'img' }, () => this.createEmptyRenderer())
+          .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
+          .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
+          .with({ type: 'recv.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
+          .exhaustive()
+      )
+    );
+
+    // Phase 3: collect results into FBO map
+    for (let i = 0; i < pending.length; i++) {
+      const { node, texture, framebuffer, canReuseFbo, fingerprint } = pending[i];
+      const renderer = results[i];
 
       // If the renderer function is null, we skip defining this node.
       if (renderer === null) {
@@ -391,6 +415,7 @@ export class FBORenderer {
       // Do not send previews back to external texture nodes,
       // as the texture is managed by the node on the frontend.
       const defaultPreviewEnabled = !isExternalTextureNode(node.type);
+
       this.previewRenderer.setPreviewEnabled(node.id, defaultPreviewEnabled);
     }
 
