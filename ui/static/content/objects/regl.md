@@ -220,6 +220,7 @@ Use `glsl` when a fragment shader is enough. Use `regl` when you need custom geo
 
 ## See Also
 
+- [GLSL Imports](/docs/glsl-imports) — import functions from lygia and other GLSL libraries
 - [glsl](/docs/objects/glsl) — fragment shaders (simpler, single-pass)
 - [three](/docs/objects/three) — Three.js 3D scenes
 - [canvas](/docs/objects/canvas) — 2D canvas drawing

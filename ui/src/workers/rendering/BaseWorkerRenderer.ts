@@ -229,6 +229,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
   protected buildBaseExtraContext(): Record<string, unknown> {
     const [width, height] = this.renderer.outputSize;
     const resolver = createWorkerResolver(this.config.nodeId);
+
     return {
       width,
       height,

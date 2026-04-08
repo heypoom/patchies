@@ -1,10 +1,11 @@
 /**
  * GLSL #include preprocessor.
  *
- * Resolves #include directives from three sources:
- *   - NPM packages: #include <lygia/generative/snoise>
- *   - VFS files:    #include "user://my-shaders/foo.glsl"
- *   - URLs:         #include "https://raw.githubusercontent.com/..."
+ * Resolves #include directives from four sources:
+ *   - NPM packages:    #include <lygia/generative/snoise>
+ *   - Relative (npm):  #include "../math/mod289.glsl"  (within npm files)
+ *   - VFS files:       #include "user://my-shaders/foo.glsl"
+ *   - URLs:            #include "https://raw.githubusercontent.com/..."
  *
  * Resolution is recursive with circular-include detection.
  */
@@ -27,18 +28,49 @@ function ensureGlslExtension(path: string): string {
 }
 
 /**
+ * Resolve a relative path against a base directory path.
+ * e.g. resolveRelativePath("lygia/generative/", "../math/mod289.glsl")
+ *      → "lygia/math/mod289.glsl"
+ */
+function resolveRelativePath(basePath: string, relativePath: string): string {
+  const parts = basePath.split('/').filter(Boolean);
+  const relParts = relativePath.split('/');
+
+  for (const part of relParts) {
+    if (part === '..') {
+      parts.pop();
+    } else if (part !== '.') {
+      parts.push(part);
+    }
+  }
+
+  return parts.join('/');
+}
+
+/**
+ * Extract the directory portion of a path.
+ * e.g. "lygia/generative/snoise.glsl" → "lygia/generative/"
+ */
+function dirname(path: string): string {
+  const lastSlash = path.lastIndexOf('/');
+  return lastSlash === -1 ? '' : path.slice(0, lastSlash + 1);
+}
+
+/**
  * Resolve all #include directives in a GLSL source string.
  *
  * @param source - GLSL source code potentially containing #include directives
  * @param resolver - Strategy for resolving includes from different sources
  * @param seen - Set of already-resolved paths (for circular detection)
  * @param depth - Current recursion depth
+ * @param npmBasePath - Base path for resolving relative includes within npm packages
  */
 export async function processIncludes(
   source: string,
   resolver: IncludeResolver,
   seen: Set<string> = new Set(),
-  depth: number = 0
+  depth: number = 0,
+  npmBasePath: string = ''
 ): Promise<string> {
   if (depth > MAX_DEPTH) {
     throw new Error(`#include recursion depth exceeded (max ${MAX_DEPTH})`);
@@ -71,7 +103,12 @@ export async function processIncludes(
   // Resolve all includes in parallel
   const resolutions = await Promise.all(
     matches.map(async ({ npmPath, quotedPath }) => {
-      const { resolvedPath, content } = await resolveInclude(resolver, npmPath, quotedPath);
+      const { resolvedPath, content, nextBasePath } = await resolveInclude(
+        resolver,
+        npmPath,
+        quotedPath,
+        npmBasePath
+      );
 
       if (seen.has(resolvedPath)) {
         throw new Error(`Circular #include detected: ${resolvedPath}`);
@@ -80,8 +117,8 @@ export async function processIncludes(
       const innerSeen = new Set(seen);
       innerSeen.add(resolvedPath);
 
-      // Recursively resolve nested includes
-      return processIncludes(content, resolver, innerSeen, depth + 1);
+      // Recursively resolve nested includes, passing the base path for relative resolution
+      return processIncludes(content, resolver, innerSeen, depth + 1, nextBasePath);
     })
   );
 
@@ -104,14 +141,15 @@ export async function processIncludes(
 async function resolveInclude(
   resolver: IncludeResolver,
   npmPath: string | undefined,
-  quotedPath: string | undefined
-): Promise<{ resolvedPath: string; content: string }> {
-  // npm package imports
+  quotedPath: string | undefined,
+  npmBasePath: string
+): Promise<{ resolvedPath: string; content: string; nextBasePath: string }> {
+  // npm package imports: #include <lygia/generative/snoise>
   if (npmPath) {
     const resolved = ensureGlslExtension(npmPath);
     const content = await resolver.resolveNpm(resolved);
 
-    return { resolvedPath: `npm:${resolved}`, content };
+    return { resolvedPath: `npm:${resolved}`, content, nextBasePath: dirname(resolved) };
   }
 
   if (quotedPath) {
@@ -119,18 +157,26 @@ async function resolveInclude(
     if (quotedPath.startsWith('user://')) {
       const content = await resolver.resolveVfs(quotedPath);
 
-      return { resolvedPath: `vfs:${quotedPath}`, content };
+      return { resolvedPath: `vfs:${quotedPath}`, content, nextBasePath: '' };
     }
 
     // HTTP imports
     if (quotedPath.startsWith('https://') || quotedPath.startsWith('http://')) {
       const content = await resolver.resolveUrl(quotedPath);
 
-      return { resolvedPath: `url:${quotedPath}`, content };
+      return { resolvedPath: `url:${quotedPath}`, content, nextBasePath: '' };
+    }
+
+    // Relative imports within npm packages: #include "../math/mod289.glsl" or #include "mod289.glsl"
+    if (npmBasePath) {
+      const resolved = ensureGlslExtension(resolveRelativePath(npmBasePath, quotedPath));
+      const content = await resolver.resolveNpm(resolved);
+
+      return { resolvedPath: `npm:${resolved}`, content, nextBasePath: dirname(resolved) };
     }
 
     throw new Error(
-      `Unsupported #include path: "${quotedPath}". Use user:// for VFS or https:// for URLs.`
+      `Unsupported #include path: "${quotedPath}". Use <pkg/path> for npm, user:// for VFS, or https:// for URLs.`
     );
   }
 

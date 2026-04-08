@@ -677,6 +677,7 @@ export class FBORenderer {
       render: reglRenderer.renderFrame.bind(reglRenderer),
       cleanup: () => {
         reglRenderer.destroy();
+
         this.reglByNode.delete(node.id);
       }
     };
@@ -704,6 +705,7 @@ export class FBORenderer {
       render: projmapRenderer.renderFrame.bind(projmapRenderer),
       cleanup: () => {
         projmapRenderer.destroy();
+
         this.projmapByNode.delete(node.id);
       }
     };
@@ -751,10 +753,13 @@ export class FBORenderer {
 
     // Resolve #include directives before shader compilation
     let code = node.data.code;
+
     if (code && code.includes('#include')) {
       try {
         self.postMessage({ type: 'includeProcessing', nodeId: node.id, active: true });
+
         const resolver = createWorkerResolver(node.id);
+
         code = await processIncludes(code, resolver);
       } catch (error) {
         self.postMessage({
@@ -763,6 +768,7 @@ export class FBORenderer {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined
         });
+
         return null;
       } finally {
         self.postMessage({ type: 'includeProcessing', nodeId: node.id, active: false });

@@ -19,6 +19,7 @@ export const TOPIC_TITLES: Record<string, string> = {
   'data-types': 'Data Types',
   demos: 'Demos',
   'enabling-ai': 'Enabling AI',
+  'glsl-imports': 'GLSL Imports',
   'hot-cold-inlets': 'Hot and Cold Inlets',
   'in-app-help': 'Help',
   'javascript-runner': 'JavaScript',

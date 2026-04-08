@@ -125,6 +125,7 @@
     "katex": "^0.16.38",
     "lezer-glsl": "^0.6.0",
     "lodash": "^4.17.21",
+    "lygia": "^1.4.1",
     "machine": "./src/assets/vasm",
     "marked": "^16.1.2",
     "marked-highlight": "^2.2.3",

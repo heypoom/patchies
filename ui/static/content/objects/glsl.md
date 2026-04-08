@@ -85,6 +85,7 @@ When `iMouse` is detected, the node becomes interactive (drag is disabled to all
 
 ## See Also
 
+- [GLSL Imports](/docs/glsl-imports) - import functions from lygia and other GLSL libraries
 - [hydra](/docs/objects/hydra) - live coding visuals
 - [swgl](/docs/objects/swgl) - SwissGL shaders
 - [p5](/docs/objects/p5) - creative coding with P5.js

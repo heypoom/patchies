@@ -53,6 +53,7 @@
         "katex": "^0.16.38",
         "lezer-glsl": "^0.6.0",
         "lodash": "^4.17.21",
+        "lygia": "^1.4.1",
         "machine": "./src/assets/vasm",
         "marked": "^16.1.2",
         "marked-highlight": "^2.2.3",
@@ -2343,6 +2344,8 @@
     "loupe": ["loupe@3.1.4", "", {}, "sha512-wJzkKwJrheKtknCOKNEtDK4iqg/MxmZheEMtSTYvnzRdEYaZzmgH976nenp8WdJRdx5Vc1X/9MO0Oszl6ezeXg=="],
 
     "lru-cache": ["lru-cache@10.4.3", "", {}, "sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ=="],
+
+    "lygia": ["lygia@1.4.1", "", {}, "sha512-wMOioKBk4vr7Pt+x85J7TImaNFuB9ZfqDp5pIYuzbaiKjdfsvqiM67vC+ngXEYf4hxqWcgTUM4Sx6bn0se9R7w=="],
 
     "lz-string": ["lz-string@1.5.0", "", { "bin": { "lz-string": "bin/bin.js" } }, "sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ=="],
 

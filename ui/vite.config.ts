@@ -15,6 +15,7 @@ import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import { helpPatchesManifest } from './vite-plugin-help-patches-manifest';
 import { topicTitlesManifest } from './vite-plugin-topic-titles-manifest';
 import { objectSchemasPlugin } from './vite-plugin-object-schemas';
+import { glslModulesDev, glslModulesCopy } from './vite-plugin-glsl-modules';
 
 const PYODIDE_EXCLUDE = ['!**/*.{md,html}', '!**/*.d.ts', '!**/*.whl', '!**/node_modules'];
 
@@ -50,6 +51,7 @@ export default defineConfig(() => ({
         });
       }
     },
+    glslModulesDev(),
     helpPatchesManifest(),
     topicTitlesManifest(),
     objectSchemasPlugin(),
@@ -60,6 +62,7 @@ export default defineConfig(() => ({
     sveltekit(),
     devtoolsJson(),
     viteStaticCopyPyodide(),
+    glslModulesCopy(),
     SvelteKitPWA({
       // HOTFIX: Self-destroying SW to clean up aggressive caching issues
       // This generates a SW that unregisters itself and clears all caches

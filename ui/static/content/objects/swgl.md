@@ -35,6 +35,7 @@ Mouse and camera controls are not yet hooked up to SwissGL in Patchies. Some exa
 
 ## See Also
 
+- [GLSL Imports](/docs/glsl-imports) - import functions from lygia and other GLSL libraries
 - [glsl](/docs/objects/glsl) - standard GLSL shaders
 - [hydra](/docs/objects/hydra) - live coding visuals
 - [p5](/docs/objects/p5) - creative coding with P5.js

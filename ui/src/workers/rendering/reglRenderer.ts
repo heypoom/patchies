@@ -213,6 +213,7 @@ export class ReglRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     try {
       // Create tracked regl wrapper with #include preprocessing
       const resolver = createWorkerResolver(this.config.nodeId);
+
       this.trackedRegl = createTrackedRegl(
         this.renderer.regl,
         () => this.framebuffer,
