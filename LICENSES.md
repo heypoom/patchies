@@ -225,6 +225,14 @@ The `ngea` node uses tuning data from the [Network Gong Ensemble Archive](https:
 - **Instagram**: <https://www.instagram.com/elekhlekha/>
 - **License**: [CC Attribution-ShareAlike 4.0 (CC BY-SA 4.0)](https://creativecommons.org/licenses/by-sa/4.0/)
 
+## Licensing: Lygia Shader Library
+
+Lygia is free for non-commercial use, i.e. personal use and usage in non-commercial organizations. For commercial use, please purchase a license from the creator, Patricio Gonzalez Vivo.
+
+Lygia is dual licensed under the [Prosperity License](https://prosperitylicense.com/versions/3.0.0) and the [Lygia Patron License](https://lygia.xyz/license).
+
+This does NOT apply to you if you do not import the Lygia package by using `#include <lygia/...>` in your shaders. You can still use Patchies and all its features without importing Lygia.
+
 ### Source Code Access
 
 The complete source code for Patchies is available on [GitHub](https://github.com/heypoom/patchies)

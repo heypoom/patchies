@@ -152,6 +152,16 @@ Included files can contain their own `#include` directives. Resolution is recurs
 
 ---
 
+## Licensing: Lygia Shader Library
+
+Lygia is dual licensed under the [Prosperity License](https://prosperitylicense.com/versions/3.0.0) and the [Lygia Patron License](https://lygia.xyz/license).
+
+This means that Lygia is free for non-commercial use, i.e. for personal use and usage in non-commercial organizations. For _commercial_ use, please purchase a license from the creator, Patricio Gonzalez Vivo on [GitHub Sponsors](https://github.com/sponsors/patriciogonzalezvivo).
+
+This does NOT apply to you if you do not import the Lygia package by using `#include <lygia/...>` in your shaders. You can still use Patchies and all its features without importing Lygia.
+
+---
+
 ## See Also
 
 - [glsl](/docs/objects/glsl) — fragment shaders with Shadertoy-compatible uniforms
