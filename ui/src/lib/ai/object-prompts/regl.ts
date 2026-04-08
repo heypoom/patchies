@@ -26,7 +26,7 @@ Sits between the high-level glsl node (fragment shader only) and building a full
 
 **Fullscreen quad boilerplate** — use this for any 2D effect:
 \`\`\`js
-regl({
+await regl({
   vert: \\\`
     precision mediump float;
     attribute vec2 position;
@@ -62,7 +62,7 @@ Example - Fullscreen color gradient:
 {
   "type": "regl",
   "data": {
-    "code": "const draw = regl({\\n  vert: \`\\n    precision mediump float;\\n    attribute vec2 position;\\n    varying vec2 uv;\\n    void main() {\\n      uv = position * 0.5 + 0.5;\\n      gl_Position = vec4(position, 0, 1);\\n    }\\n  \`,\\n  frag: \`\\n    precision mediump float;\\n    varying vec2 uv;\\n    uniform float time;\\n    void main() {\\n      gl_FragColor = vec4(\\n        sin(uv.x * 6.28 + time) * 0.5 + 0.5,\\n        sin(uv.y * 6.28 + time * 1.3) * 0.5 + 0.5,\\n        sin((uv.x + uv.y) * 3.14 + time * 0.7) * 0.5 + 0.5,\\n        1.0\\n      );\\n    }\\n  \`,\\n  attributes: {\\n    position: [[-1,-1], [1,-1], [-1,1], [-1,1], [1,-1], [1,1]]\\n  },\\n  uniforms: {\\n    time: regl.prop('time'),\\n  },\\n  count: 6,\\n  depth: { enable: false },\\n})\\n\\nfunction render(time) {\\n  regl.clear({ color: [0, 0, 0, 1] })\\n  draw({ time })\\n}"
+    "code": "const draw = await regl({\\n  vert: \`\\n    precision mediump float;\\n    attribute vec2 position;\\n    varying vec2 uv;\\n    void main() {\\n      uv = position * 0.5 + 0.5;\\n      gl_Position = vec4(position, 0, 1);\\n    }\\n  \`,\\n  frag: \`\\n    precision mediump float;\\n    varying vec2 uv;\\n    uniform float time;\\n    void main() {\\n      gl_FragColor = vec4(\\n        sin(uv.x * 6.28 + time) * 0.5 + 0.5,\\n        sin(uv.y * 6.28 + time * 1.3) * 0.5 + 0.5,\\n        sin((uv.x + uv.y) * 3.14 + time * 0.7) * 0.5 + 0.5,\\n        1.0\\n      );\\n    }\\n  \`,\\n  attributes: {\\n    position: [[-1,-1], [1,-1], [-1,1], [-1,1], [1,-1], [1,1]]\\n  },\\n  uniforms: {\\n    time: regl.prop('time'),\\n  },\\n  count: 6,\\n  depth: { enable: false },\\n})\\n\\nfunction render(time) {\\n  regl.clear({ color: [0, 0, 0, 1] })\\n  draw({ time })\\n}"
   }
 }
 \`\`\`
@@ -72,7 +72,7 @@ Example - Video texture mixer (2 inputs):
 {
   "type": "regl",
   "data": {
-    "code": "setVideoCount(2, 1)\\n\\nconst draw = regl({\\n  vert: \`\\n    precision mediump float;\\n    attribute vec2 position;\\n    varying vec2 uv;\\n    void main() {\\n      uv = position * 0.5 + 0.5;\\n      gl_Position = vec4(position, 0, 1);\\n    }\\n  \`,\\n  frag: \`\\n    precision mediump float;\\n    varying vec2 uv;\\n    uniform sampler2D tex0;\\n    uniform sampler2D tex1;\\n    uniform float time;\\n    void main() {\\n      vec4 a = texture2D(tex0, uv);\\n      vec4 b = texture2D(tex1, uv);\\n      gl_FragColor = mix(a, b, sin(time) * 0.5 + 0.5);\\n    }\\n  \`,\\n  attributes: {\\n    position: [[-1,-1], [1,-1], [-1,1], [-1,1], [1,-1], [1,1]]\\n  },\\n  uniforms: {\\n    tex0: () => getTexture(0),\\n    tex1: () => getTexture(1),\\n    time: regl.prop('time'),\\n  },\\n  count: 6,\\n  depth: { enable: false },\\n})\\n\\nfunction render(time) {\\n  regl.clear({ color: [0, 0, 0, 0] })\\n  draw({ time })\\n}"
+    "code": "setVideoCount(2, 1)\\n\\nconst draw = await regl({\\n  vert: \`\\n    precision mediump float;\\n    attribute vec2 position;\\n    varying vec2 uv;\\n    void main() {\\n      uv = position * 0.5 + 0.5;\\n      gl_Position = vec4(position, 0, 1);\\n    }\\n  \`,\\n  frag: \`\\n    precision mediump float;\\n    varying vec2 uv;\\n    uniform sampler2D tex0;\\n    uniform sampler2D tex1;\\n    uniform float time;\\n    void main() {\\n      vec4 a = texture2D(tex0, uv);\\n      vec4 b = texture2D(tex1, uv);\\n      gl_FragColor = mix(a, b, sin(time) * 0.5 + 0.5);\\n    }\\n  \`,\\n  attributes: {\\n    position: [[-1,-1], [1,-1], [-1,1], [-1,1], [1,-1], [1,1]]\\n  },\\n  uniforms: {\\n    tex0: () => getTexture(0),\\n    tex1: () => getTexture(1),\\n    time: regl.prop('time'),\\n  },\\n  count: 6,\\n  depth: { enable: false },\\n})\\n\\nfunction render(time) {\\n  regl.clear({ color: [0, 0, 0, 0] })\\n  draw({ time })\\n}"
   }
 }
 \`\`\``;

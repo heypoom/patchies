@@ -3,6 +3,30 @@ import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { REGL_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+import { processIncludes } from '$lib/glsl-include/preprocessor';
+import type { IncludeResolver } from '$lib/glsl-include/preprocessor';
+import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
+
+const hasIncludes = (s: unknown): s is string => typeof s === 'string' && s.includes('#include');
+
+async function preprocessReglConfig(
+  config: Record<string, unknown>,
+  resolver: IncludeResolver
+): Promise<Record<string, unknown>> {
+  if (!hasIncludes(config.frag) && !hasIncludes(config.vert)) return config;
+
+  const result = { ...config };
+
+  if (hasIncludes(result.frag)) {
+    result.frag = await processIncludes(result.frag, resolver);
+  }
+
+  if (hasIncludes(result.vert)) {
+    result.vert = await processIncludes(result.vert, resolver);
+  }
+
+  return result;
+}
 
 /**
  * Creates a tracked wrapper around regl that auto-cleans allocated resources.
@@ -11,22 +35,40 @@ import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRendere
  *
  * Also intercepts regl.clear() to auto-inject the output framebuffer when
  * the user omits it, preventing accidental main canvas clears.
+ *
+ * When a resolver is provided, #include directives in frag/vert shaders are
+ * resolved automatically. regl() returns a Promise<DrawCommand> when includes
+ * are detected, otherwise returns a DrawCommand synchronously.
  */
 function createTrackedRegl(
   reglInstance: regl.Regl,
-  getFramebuffer: () => regl.Framebuffer2D | null
+  getFramebuffer: () => regl.Framebuffer2D | null,
+  resolver?: IncludeResolver
 ) {
   const tracked: Array<{ destroy(): void }> = [];
 
   const proxy = new Proxy(reglInstance, {
     apply(target, thisArg, args) {
-      // regl({...}) creates a draw command
-      const cmd = Reflect.apply(target, thisArg, args);
-      tracked.push(cmd);
-      return cmd;
+      const config = args[0] as Record<string, unknown> | undefined;
+
+      // If shader strings contain #include, resolve them async then create the command
+      if (resolver && config && (hasIncludes(config.frag) || hasIncludes(config.vert))) {
+        return preprocessReglConfig(config, resolver).then((resolved) => {
+          const command = Reflect.apply(target, thisArg, [resolved, ...args.slice(1)]);
+          tracked.push(command);
+
+          return command;
+        });
+      }
+
+      // No includes preprocessing = synchronous draw calls
+      const command = Reflect.apply(target, thisArg, args);
+      tracked.push(command);
+
+      return command;
     },
     get(target, prop) {
-      const val = Reflect.get(target, prop);
+      const value = Reflect.get(target, prop);
 
       // Intercept resource creation methods
       if (
@@ -37,39 +79,45 @@ function createTrackedRegl(
         prop === 'renderbuffer'
       ) {
         return (...args: unknown[]) => {
-          const resource = (val as Function).apply(target, args);
+          const resource = value.apply(target, args);
+
           tracked.push(resource);
+
           return resource;
         };
       }
 
       // Intercept clear() to auto-inject framebuffer without mutating caller's object
       if (prop === 'clear') {
-        return (opts: Record<string, unknown>) => {
-          if (opts && !('framebuffer' in opts)) {
-            const fb = getFramebuffer();
-            if (fb) {
-              return (val as Function).call(target, { ...opts, framebuffer: fb });
+        return (options: Record<string, unknown>) => {
+          if (options && !('framebuffer' in options)) {
+            const framebuffer = getFramebuffer();
+
+            if (framebuffer) {
+              return value.call(target, { ...options, framebuffer });
             }
           }
-          return (val as Function).call(target, opts);
+
+          return value.call(target, options);
         };
       }
 
-      return val;
+      return value;
     }
   });
 
   return {
     regl: proxy as regl.Regl,
+
     destroyAll() {
-      for (const r of tracked) {
+      for (const resource of tracked) {
         try {
-          r.destroy();
+          resource.destroy();
         } catch {
           // Resource may already be destroyed
         }
       }
+
       tracked.length = 0;
     }
   };
@@ -142,14 +190,16 @@ export class ReglRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     this.resetState();
 
     try {
-      // Create tracked regl wrapper
-      this.trackedRegl = createTrackedRegl(this.renderer.regl, () => this.framebuffer);
+      // Create tracked regl wrapper with #include preprocessing
+      const resolver = createWorkerResolver(this.config.nodeId);
+      this.trackedRegl = createTrackedRegl(this.renderer.regl, () => this.framebuffer, resolver);
 
       const extraContext = {
         ...this.buildBaseExtraContext(),
         regl: this.trackedRegl.regl,
         setVideoCount: this.setVideoCount.bind(this),
         getTexture: this.getTexture.bind(this),
+
         // No-op: regl uses render(time) called by the pipeline, not RAF
         requestAnimationFrame: () => {}
       };

@@ -1,7 +1,7 @@
 const PASSTHRU_REGL = `
 setVideoCount(1, 1)
 
-const draw = regl({
+const draw = await regl({
   vert: \`
     precision mediump float;
     attribute vec2 position;

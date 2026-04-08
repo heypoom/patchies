@@ -167,7 +167,7 @@ function draw() {
   renderer.render(scene, camera)
 }`;
 
-export const DEFAULT_REGL_CODE = `const draw = regl({
+export const DEFAULT_REGL_CODE = `const draw = await regl({
   vert: \`
     precision mediump float;
     attribute vec2 position;

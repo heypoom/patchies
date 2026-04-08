@@ -1,6 +1,8 @@
-The `regl` object gives you low-level GPU rendering with [regl](https://github.com/regl-project/regl) draw commands. It runs on a web worker for fast video chaining.
+The `regl` object gives you low-level GPU rendering with [regl](https://github.com/regl-project/regl) draw commands. Runs on the render worker for fast video chaining.
 
-Use it when you need full control over vertices, buffers, elements, blend modes, or multi-pass rendering — things the `glsl` node can't do because it only exposes a fragment shader on a fullscreen quad.
+Use it when you need full control over vertices, buffers, elements, blend 
+modes, or multi-pass rendering — things the `glsl` node can't do because it 
+only exposes a fragment shader on a fullscreen quad.
 
 ---
 
@@ -10,7 +12,7 @@ Define a `render(time)` function that gets called every frame.
 The output framebuffer is already bound — just draw.
 
 ```javascript
-const draw = regl({
+const draw = await regl({
   vert: `
     precision mediump float;
     attribute vec2 position;
@@ -47,6 +49,7 @@ const draw = regl({
 
 function render(time) {
   regl.clear({ color: [0, 0, 0, 1] })
+
   draw({ time })
 }
 ```
@@ -55,9 +58,71 @@ function render(time) {
 
 ## How It Works
 
-You write standard regl code — create draw commands with `regl({...})`, allocate buffers with `regl.buffer()`, and define a `render(time)` function. Patchies calls your `render()` every frame with transport time, and routes the output into the video pipeline.
+You write standard regl code — create draw commands with `regl({...})`,
+allocate buffers with `regl.buffer()`, and define a `render(time)` function.
+Patchies calls your `render()` every frame with transport time, and routes the
+output into the video pipeline.
 
-All regl resources you create (buffers, textures, elements, draw commands) are tracked automatically and cleaned up when your code reloads or the node is deleted. No manual cleanup needed.
+All regl resources you create (buffers, textures, elements, draw commands) are 
+tracked automatically and cleaned up when your code reloads or the node is 
+deleted. No manual cleanup needed.
+
+Use `await` when creating draw commands. This lets Patchies preprocess 
+`#include` directives in your shaders before compiling them. Without includes,
+the `await` resolves instantly with no overhead.
+
+---
+
+## Shader Includes
+
+Use `#include` in your `frag` or `vert` strings to import GLSL functions from the [lygia](https://github.com/patriciogonzalezvivo/lygia) shader library, your VFS files, or any URL:
+
+```javascript
+const draw = await regl({
+  vert: `
+    precision mediump float;
+    attribute vec2 position;
+    varying vec2 uv;
+    void main() {
+      uv = position * 0.5 + 0.5;
+      gl_Position = vec4(position, 0, 1);
+    }
+  `,
+  frag: `
+    precision mediump float;
+    varying vec2 uv;
+    uniform float time;
+
+    #include <lygia/generative/snoise>
+
+    void main() {
+      float n = snoise(vec3(uv * 4.0, time));
+      gl_FragColor = vec4(vec3(n), 1.0);
+    }
+  `,
+  attributes: {
+    position: [[-1,-1], [1,-1], [-1,1], [-1,1], [1,-1], [1,1]]
+  },
+  uniforms: { time: regl.prop('time') },
+  count: 6,
+  depth: { enable: false },
+})
+
+function render(time) {
+  regl.clear({ color: [0, 0, 0, 1] })
+  draw({ time })
+}
+```
+
+Supported sources:
+
+| Syntax | Source |
+| --- | --- |
+| `#include <lygia/generative/snoise>` | NPM package (fetched from CDN) |
+| `#include "user://my-shaders/foo.glsl"` | Your VFS files |
+| `#include "https://example.com/shader.glsl"` | Any URL |
+
+The `.glsl` extension is optional. Includes are resolved recursively and cached in memory.
 
 ---
 
@@ -68,7 +133,7 @@ Connect other video nodes to the regl node's inlets, then access them with `getT
 ```javascript
 setVideoCount(2, 1) // 2 video inlets, 1 outlet
 
-const draw = regl({
+const draw = await regl({
   vert: `
     precision mediump float;
     attribute vec2 position;
