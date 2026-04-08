@@ -74,6 +74,7 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
 const draw = regl({
   frag: `
     #include <lygia/generative/snoise>
+
     void main() {
       float n = snoise(vec3(vUv * 4.0, time));
       gl_FragColor = vec4(vec3(n), 1.0);
@@ -90,6 +91,7 @@ const material = new THREE.ShaderMaterial({
   fragmentShader: glsl`
     #include <lygia/generative/worley>
     #include <lygia/color/space/hsv2rgb>
+
     void main() {
       float w = worley(vUv * 8.0);
       gl_FragColor = vec4(hsv2rgb(vec3(w, 0.8, 0.9)), 1.0);
@@ -391,6 +393,7 @@ For a `generator` type:
 
 ```glsl
 #include "user://effects/fbm-noise.glsl"
+
 uniform float scale;    // 4.0
 uniform int octaves;    // 5
 
@@ -405,6 +408,7 @@ For a `combiner` type (node gets 2 video inlets):
 
 ```glsl
 #include "user://effects/blend-modes.glsl"
+
 uniform float mix_amount; // 0.5
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
@@ -419,6 +423,7 @@ For a `coordinate` type (wraps in texture sample):
 
 ```glsl
 #include "user://effects/barrel-distort.glsl"
+
 uniform float distortion; // 0.3
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
@@ -528,6 +533,7 @@ setFunction({
   ],
   glsl: `
     #include <lygia/generative/snoise>
+
     return vec4(vec3(snoise(vec3(_st * scale, time * speed))), 1.0);
   `,
 })
