@@ -100,6 +100,9 @@ export class GLSystem {
     }
   >();
 
+  /** Node types whose shaders may contain #include directives */
+  private static SHADER_NODE_TYPES = new Set(['glsl', 'swgl', 'regl', 'three']);
+
   public outputSize = DEFAULT_OUTPUT_SIZE;
 
   public previewSize: [width: number, height: number] = [
@@ -138,6 +141,19 @@ export class GLSystem {
     // Sync render FPS cap with render worker
     renderFpsCap.subscribe((fps) => {
       this.renderWorker.postMessage({ type: 'setRenderFpsCap', fps });
+    });
+
+    // Invalidate shader nodes when VFS files change (e.g. edited #include sources)
+    let vfsInitialized = false;
+
+    VirtualFilesystem.getInstance().entries$.subscribe(() => {
+      // Skip the initial subscription callback
+      if (!vfsInitialized) {
+        vfsInitialized = true;
+        return;
+      }
+
+      this.invalidateShaderIncludes();
     });
 
     // Listen for video frame requests from WorkerNodeSystem
@@ -684,6 +700,25 @@ export class GLSystem {
 
     this.updateRenderGraph();
     this.syncOutputEnabled();
+  }
+
+  /**
+   * Bump _includeRevision on all shader nodes so their fingerprint changes,
+   * forcing the render worker to recompile shaders with fresh #include content.
+   */
+  private invalidateShaderIncludes() {
+    let dirty = false;
+
+    for (let i = 0; i < this.nodes.length; i++) {
+      const node = this.nodes[i];
+      if (!GLSystem.SHADER_NODE_TYPES.has(node.type)) continue;
+
+      const rev = ((node.data._includeRevision as number) ?? 0) + 1;
+      this.nodes[i] = { ...node, data: { ...node.data, _includeRevision: rev } };
+      dirty = true;
+    }
+
+    if (dirty) this.updateRenderGraph(true);
   }
 
   private updateRenderGraph(force = false) {
