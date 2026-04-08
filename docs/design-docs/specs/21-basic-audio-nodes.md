@@ -1,4 +1,4 @@
-# 20. Web Audio Nodes
+# 21. Web Audio Nodes
 
 Let's add some basic Web Audio nodes to start building our node-based video engine.
 
