@@ -387,39 +387,46 @@ export function createWorkerResolver(nodeId: string): IncludeResolver {
 
 Instantiated in each renderer's `updateCode()` or in `BaseWorkerRenderer`.
 
-### Files to Create
+### Files Created ✓
 
-| File                                         | Purpose                                      |
-| -------------------------------------------- | -------------------------------------------- |
-| `ui/src/lib/glsl-include/preprocessor.ts`    | Core `#include` parser + recursive resolver  |
-| `ui/src/lib/glsl-include/cache.ts`           | In-memory cache for resolved sources         |
-| `ui/src/lib/glsl-include/npm-resolver.ts`    | NPM package resolution (glob + CDN fallback) |
-| `ui/src/lib/glsl-include/vfs-resolver.ts`    | VFS text resolution from worker              |
-| `ui/src/lib/glsl-include/worker-resolver.ts` | Combines all resolvers for worker context    |
-| `ui/src/lib/glsl-include/tagged-template.ts` | `glsl` tagged template literal               |
-| `ui/src/lib/glsl-include/index.ts`           | Public exports                               |
+| File                                         | Purpose                                      | Status |
+| -------------------------------------------- | -------------------------------------------- | ------ |
+| `ui/src/lib/glsl-include/preprocessor.ts`    | Core `#include` parser + recursive resolver  | ✓ Done |
+| `ui/src/lib/glsl-include/cache.ts`           | In-memory cache for resolved sources         | ✓ Done |
+| `ui/src/lib/glsl-include/npm-resolver.ts`    | NPM package resolution (glob + CDN fallback) | ✓ Done |
+| `ui/src/lib/glsl-include/vfs-resolver.ts`    | VFS text resolution from worker              | ✓ Done |
+| `ui/src/lib/glsl-include/worker-resolver.ts` | Combines all resolvers for worker context    | ✓ Done |
+| `ui/src/lib/glsl-include/tagged-template.ts` | `glsl` tagged template literal               | ✓ Done |
+| `ui/src/lib/glsl-include/index.ts`           | Public exports                               | ✓ Done |
 
-### Files to Modify
+### Files Modified ✓
 
-| File                                             | Change                                                        |
-| ------------------------------------------------ | ------------------------------------------------------------- |
-| `ui/src/workers/rendering/fboRenderer.ts`        | Preprocess GLSL node code before `createShaderToyDrawCommand` |
-| `ui/src/workers/rendering/BaseWorkerRenderer.ts` | Add `glsl` tag + `processIncludes` to `buildBaseExtraContext` |
-| `ui/src/workers/rendering/swglRenderer.ts`       | Preprocess `FP`/`VP`/`Inc` in wrapped `glsl()`                |
-| `ui/src/workers/rendering/reglRenderer.ts`       | Expose `glsl` tag (preprocessing via tagged template)         |
-| `ui/src/workers/rendering/threeRenderer.ts`      | Expose `glsl` tag (required for Three.js `#include`)          |
-| `ui/src/workers/rendering/hydraRenderer.ts`      | Expose `glsl` tag in extraContext                             |
-| `ui/src/workers/rendering/vfsWorkerUtils.ts`     | Add `resolveVfsText` message type for GLSL content            |
-| `ui/src/lib/canvas/GLSystem.ts`                  | Handle `resolveVfsText` worker message on main thread         |
+| File                                             | Change                                                                    | Status                                               |
+| ------------------------------------------------ | ------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `ui/src/workers/rendering/fboRenderer.ts`        | Preprocess GLSL node code before `createShaderToyDrawCommand`             | ✓ Done                                               |
+| `ui/src/workers/rendering/BaseWorkerRenderer.ts` | Add `glsl` tag + `processIncludes` to `buildBaseExtraContext`             | ✓ Done                                               |
+| `ui/src/workers/rendering/swglRenderer.ts`       | Preprocess `FP`/`VP`/`Inc` in wrapped `glsl()`                            | ✓ Done                                               |
+| `ui/src/workers/rendering/reglRenderer.ts`       | Expose `glsl` tag (preprocessing via tagged template)                     | ✓ Done                                               |
+| `ui/src/workers/rendering/threeRenderer.ts`      | Expose `glsl` tag (required for Three.js `#include`)                      | ✓ Done (inherited from base context)                 |
+| `ui/src/workers/rendering/hydraRenderer.ts`      | `setFunction()` preprocesses `glsl` property; `glsl` tag in extraContext  | ✓ Done                                               |
+| `ui/src/lib/rendering/types.ts`                  | Added `resolveVfsText` message type for GLSL content                      | ✓ Done (was `vfsWorkerUtils.ts` in plan; moved here) |
+| `ui/src/lib/canvas/GLSystem.ts`                  | Handle `resolveVfsText` worker message on main thread                     | ✓ Done                                               |
 
-### Implementation Order
+### Implementation Order ✓ (All Complete)
 
-1. `preprocessor.ts` + `cache.ts` — core logic, testable in isolation
-2. `npm-resolver.ts` — install `lygia` via `bun add lygia`, set up `import.meta.glob`
-3. `vfs-resolver.ts` + GLSystem handler — VFS text resolution from worker
-4. `worker-resolver.ts` + `index.ts` — wire up combined resolver
-5. `fboRenderer.ts` — GLSL node integration (first visible result)
-6. `tagged-template.ts` — `glsl` tagged template
-7. `BaseWorkerRenderer.ts` — expose `glsl` + `processIncludes` to all JS nodes
-8. `swglRenderer.ts` — SwissGL `FP`/`VP` auto-preprocessing
-9. Remaining renderers — REGL, Three.js, Hydra get `glsl` tag via base context
+1. ✓ `preprocessor.ts` + `cache.ts` — core logic, testable in isolation
+2. ✓ `npm-resolver.ts` — CDN fallback (local `/glsl-modules/` first, then Lygia CDN + jsDelivr)
+3. ✓ `vfs-resolver.ts` + GLSystem handler — VFS text resolution from worker
+4. ✓ `worker-resolver.ts` + `index.ts` — wire up combined resolver
+5. ✓ `fboRenderer.ts` — GLSL node integration (first visible result)
+6. ✓ `tagged-template.ts` — `glsl` tagged template
+7. ✓ `BaseWorkerRenderer.ts` — expose `glsl` + `processIncludes` to all JS nodes
+8. ✓ `swglRenderer.ts` — SwissGL `FP`/`VP` auto-preprocessing
+9. ✓ Remaining renderers — REGL, Three.js, Hydra get `glsl` tag via base context
+
+### Not Implemented (Out of Scope)
+
+The following items from the original priority list were explicitly excluded from this implementation:
+
+- **CodeMirror autocomplete** — lygia function names in `patchies-completions.ts`
+- **CodeMirror GLSL highlighting in JS** — mixed-language syntax highlighting for `` glsl`...` `` tagged templates
