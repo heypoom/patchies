@@ -1,4 +1,10 @@
 import type { Hydra, HydraErrorContext } from '$lib/hydra';
+import {
+  processGlsl,
+  createGenerator,
+  addTransformChainMethod
+} from '$lib/hydra/glsl/createGenerators';
+import type { TransformDefinition } from '$lib/hydra/glsl/transformDefinitions';
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
@@ -151,7 +157,18 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     try {
       const { generators } = await import('$lib/hydra');
 
-      const { src, osc, gradient, shape, voronoi, noise, solid } = generators;
+      const { src, osc, gradient, shape, voronoi, noise, solid, TransformChainClass } = generators;
+
+      // Used to add more Hydra operators.
+      const setFunction = (definition: TransformDefinition) => {
+        if (definition.type === 'src') {
+          // createGenerator calls processGlsl internally — don't pre-process
+          return createGenerator(definition, TransformChainClass);
+        } else {
+          addTransformChainMethod(TransformChainClass, processGlsl(definition));
+        }
+      };
+
       const { sources, outputs, hush, render } = this.hydra;
 
       const [s0, s1, s2, s3] = sources;
@@ -190,6 +207,7 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         o2,
         o3,
 
+        setFunction,
         setVideoCount: this.setVideoCount.bind(this),
         setMouseScope: this.setMouseScope.bind(this)
       };
