@@ -24,6 +24,7 @@ export const topicOrder: Record<string, string[]> = {
   Scripting: [
     'canvas-interaction',
     'virtual-filesystem',
+    'glsl-imports',
     'data-storage',
     'object-settings',
     'network-p2p'

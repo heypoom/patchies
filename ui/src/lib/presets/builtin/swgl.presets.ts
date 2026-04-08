@@ -1,12 +1,12 @@
 const PASSTHRU_SWGL = `
 setVideoCount(1)
 
-function render({t}) {
-  glsl({
-    t,
-    tex: getTexture(0),
-    FP: \`tex(UV)\`
-  })
+const shader = await glsl({
+  FP: \`tex(UV)\`
+})
+
+function render({ t }) {
+  shader({ t, tex: getTexture(0) })
 }
 `;
 

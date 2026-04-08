@@ -2,6 +2,8 @@ export const glslPrompt = `## glsl Object Instructions
 
 GLSL fragment shader for visual effects. Uses Shadertoy-compatible format.
 
+**\`#include\` directives are auto-preprocessed** before compilation — use them freely.
+
 CRITICAL RULES:
 1. MUST use mainImage function signature: void mainImage(out vec4 fragColor, in vec2 fragCoord)
 2. Write GLSL code, NOT JavaScript

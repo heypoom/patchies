@@ -3,6 +3,12 @@ export const threePrompt = `## three Object Instructions
 
 Three.js 3D graphics environment running in a Web Worker (offscreen rendering). Use for GPU-accelerated 3D scenes that chain with other video nodes.
 
+**\`#include\` directives**: Use \`await glsl\` tagged template — required because Patchies can't intercept THREE.ShaderMaterial directly:
+\`\`\`js
+const material = new THREE.ShaderMaterial({
+  fragmentShader: await glsl\`#include <lygia/generative/snoise>\\nvoid main() { ... }\`,
+})\`\`\`
+
 **Three-specific globals:**
 - THREE: Full Three.js library namespace
 - renderer: WebGLRenderer instance

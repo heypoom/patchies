@@ -286,6 +286,12 @@ export const dependencies: ProjectLicense[] = [
     url: 'https://npmjs.com/package/lezer-glsl'
   },
   { name: 'lodash', version: '^4.17.21', license: 'MIT', url: 'https://npmjs.com/package/lodash' },
+  {
+    name: 'lygia',
+    version: '^1.4.1',
+    license: 'Prosperity + Patron',
+    url: 'https://lygia.xyz'
+  },
   { name: 'marked', version: '^16.1.2', license: 'MIT', url: 'https://npmjs.com/package/marked' },
   {
     name: 'matter-js',
@@ -616,6 +622,14 @@ export const supportLinks: SupportLink[] = [
     url: 'https://ojack.xyz/',
     type: 'website',
     projects: ['Hydra']
+  },
+  {
+    name: 'Patricio Gonzalez Vivo',
+    description: 'Creator of lygia shader library and The Book of Shaders',
+    category: 'library',
+    url: 'https://github.com/sponsors/patriciogonzalezvivo',
+    type: 'github',
+    projects: ['lygia', 'The Book of Shaders', 'GlslViewer']
   },
   {
     name: 'Vanilagy',

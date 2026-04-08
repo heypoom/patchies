@@ -55,6 +55,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | json5                             | ^2.2.3       | MIT                    |
 | lezer-glsl                        | ^0.6.0       | MIT                    |
 | lodash                            | ^4.17.21     | MIT                    |
+| lygia                             | ^1.4.1       | Prosperity + Patron    |
 | marked                            | ^16.1.2      | MIT                    |
 | matter-js                         | ^0.20.0      | MIT                    |
 | mediabunny                        | ^0.1.1       | MPL-2.0                |
@@ -223,6 +224,14 @@ The `ngea` node uses tuning data from the [Network Gong Ensemble Archive](https:
 - **Collective**: <https://www.elekhlekha.xyz/>
 - **Instagram**: <https://www.instagram.com/elekhlekha/>
 - **License**: [CC Attribution-ShareAlike 4.0 (CC BY-SA 4.0)](https://creativecommons.org/licenses/by-sa/4.0/)
+
+## Licensing: Lygia Shader Library
+
+Lygia is free for non-commercial use, i.e. personal use and usage in non-commercial organizations. For commercial use, please purchase a license from the creator, Patricio Gonzalez Vivo.
+
+Lygia is dual licensed under the [Prosperity License](https://prosperitylicense.com/versions/3.0.0) and the [Lygia Patron License](https://lygia.xyz/license).
+
+This does NOT apply to you if you do not import the Lygia package by using `#include <lygia/...>` in your shaders. You can still use Patchies and all its features without importing Lygia.
 
 ### Source Code Access
 

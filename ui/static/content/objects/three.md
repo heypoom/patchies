@@ -68,6 +68,7 @@ See the [Patchies JavaScript Runner](/docs/javascript-runner) for all available 
 
 ## See Also
 
+- [GLSL Imports](/docs/glsl-imports) - import functions from lygia and other GLSL libraries
 - [three.dom](/docs/objects/three.dom) - main thread variant with interactivity
 - [glsl](/docs/objects/glsl) - GPU shaders
 - [swgl](/docs/objects/swgl) - SwissGL for quick WebGL

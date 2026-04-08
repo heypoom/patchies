@@ -7,9 +7,8 @@
  * See spec 99 (Schema-Driven Handles) for architecture details.
  */
 
-import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descriptions';
-import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/shared-jsrunner';
-import { UI_DESIGN_OBJECTS, UI_DESIGN_GUIDELINES } from './object-prompts/ui-design-guidelines';
+import { OBJECT_TYPE_LIST } from './object-descriptions';
+import { buildMultiObjectInstructionParts } from './object-prompts/build-generator-instructions';
 import { generateHandleDocs } from './generate-handle-docs';
 import { extractJson } from './extract-json';
 import { getTextProvider } from './providers';
@@ -291,25 +290,12 @@ Now analyze this prompt:`;
  * Builds the multi-object generator prompt - targeted for specific object types
  */
 function buildMultiObjectGeneratorPrompt(objectTypes: string[], structure: string): string {
-  // Check if any object type is JS-enabled (only inject jsRunnerInstructions once)
-  const hasJsEnabledObject = objectTypes.some((type) => JS_ENABLED_OBJECTS.has(type));
-
-  const jsInstructions = hasJsEnabledObject
-    ? `## Common JSRunner Runtime Functions (applies to: ${objectTypes.filter((t) => JS_ENABLED_OBJECTS.has(t)).join(', ')})\n\n${jsRunnerInstructions}\n\n---\n\n`
-    : '';
-
-  const hasUiObject = objectTypes.some((type) => UI_DESIGN_OBJECTS.has(type));
-  const uiDesignInstructions = hasUiObject ? `${UI_DESIGN_GUIDELINES}\n\n---\n\n` : '';
-
-  // Deduplicate object types to avoid repeated prompt blocks
-  const uniqueObjectTypes = [...new Set(objectTypes)];
-
-  // Get object-specific instructions for each type
-  const objectInstructions = uniqueObjectTypes
-    .map((type) => getObjectSpecificInstructions(type))
-    .join('\n\n---\n\n');
+  // Build all instruction sections at once (deduplicates shared sections)
+  const { jsInstructions, uiDesignInstructions, glslImportInstructions, objectInstructions } =
+    buildMultiObjectInstructionParts(objectTypes);
 
   // Generate handle ID reference from schemas for the requested object types
+  const uniqueObjectTypes = [...new Set(objectTypes)];
   const handleDocs = generateHandleDocs(uniqueObjectTypes);
 
   return `You are an AI assistant that generates multiple connected object configurations in Patchies, a visual patching environment for creative coding.
@@ -370,7 +356,7 @@ LAYOUT EXAMPLE (top-to-bottom like Pd with generous spacing):
 
 OBJECT-SPECIFIC INSTRUCTIONS:
 
-${jsInstructions}${uiDesignInstructions}${objectInstructions}
+${[jsInstructions, uiDesignInstructions, glslImportInstructions, objectInstructions].filter(Boolean).join('\n\n')}
 
 Now generate the multi-object configuration.`;
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code, Play, Terminal, X } from '@lucide/svelte/icons';
+  import { Code, Loader, Play, Terminal, X } from '@lucide/svelte/icons';
   import { onMount, type Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';
   import * as ContextMenu from './ui/context-menu';
@@ -14,6 +14,7 @@
   import { overrideOutputNodeId } from '../../stores/renderer.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
+  import { useIncludeProcessing } from '$lib/canvas/use-include-processing.svelte';
 
   let previewContainer: HTMLDivElement | null = null;
   const { getNode, updateNodeData } = useSvelteFlow();
@@ -74,6 +75,8 @@
     () => paused,
     () => onPlaybackToggle?.()
   );
+
+  const includeState = useIncludeProcessing(nodeId ?? '');
 
   const editorGap = 10;
 
@@ -204,7 +207,17 @@
 
           <div class="relative">
             {@render topHandle?.()}
-            <div bind:this={previewContainer}>{@render preview?.()}</div>
+            <div bind:this={previewContainer} class="relative">
+              {@render preview?.()}
+
+              {#if includeState.loading}
+                <div
+                  class="absolute inset-0 flex items-center justify-center rounded-md bg-black/40"
+                >
+                  <Loader class="h-5 w-5 animate-spin text-zinc-300" />
+                </div>
+              {/if}
+            </div>
             {@render bottomHandle?.()}
           </div>
         </div>

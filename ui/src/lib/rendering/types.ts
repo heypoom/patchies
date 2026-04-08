@@ -109,7 +109,10 @@ export type WorkerMessage =
       requestId: string;
       values: Record<string, unknown>;
     }
-  | { type: 'settingsValueChanged'; nodeId: string; key: string; value: unknown };
+  | { type: 'settingsValueChanged'; nodeId: string; key: string; value: unknown }
+  // VFS resolution responses (main → render worker)
+  | { type: 'vfsUrlResolved'; requestId: string; nodeId: string; url?: string; error?: string }
+  | { type: 'vfsTextResolved'; requestId: string; nodeId: string; text?: string; error?: string };
 
 export type MouseScope = 'local' | 'global';
 
@@ -170,6 +173,7 @@ export type RenderWorkerMessage =
   | { type: 'renderFrameStats'; stats: RenderFrameStats }
   | { type: 'error'; message: string }
   | { type: 'resolveVfsUrl'; requestId: string; nodeId: string; path: string }
+  | { type: 'resolveVfsText'; requestId: string; nodeId: string; path: string }
   | {
       type: 'workerVideoFramesCaptured';
       targetNodeId: string;
@@ -221,7 +225,8 @@ export type RenderWorkerMessage =
   | { type: 'subscribeChannel'; nodeId: string; channel: string }
   | { type: 'unsubscribeChannel'; nodeId: string; channel: string }
   | { type: 'settingsDefine'; nodeId: string; requestId: string; schema: unknown[] }
-  | { type: 'settingsClear'; nodeId: string };
+  | { type: 'settingsClear'; nodeId: string }
+  | { type: 'includeProcessing'; nodeId: string; active: boolean };
 
 export type PreviewState = Record<string, boolean>;
 

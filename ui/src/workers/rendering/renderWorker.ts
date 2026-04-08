@@ -4,6 +4,7 @@ import type { RenderGraph } from '../../lib/rendering/types.js';
 import { FBORenderer } from './fboRenderer.js';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem.js';
 import { handleVfsUrlResolved } from './vfsWorkerUtils.js';
+import { handleVfsTextResolved } from '$lib/glsl-include/vfs-resolver.js';
 import { MediaBunnyService } from './MediaBunnyService.js';
 import { PatchStorageService } from '$lib/storage/PatchStorageService.js';
 
@@ -81,6 +82,9 @@ self.onmessage = (event) => {
     })
     .with('vfsUrlResolved', () => {
       handleVfsUrlResolved(data);
+    })
+    .with('vfsTextResolved', () => {
+      handleVfsTextResolved(data);
     })
     .with('captureWorkerVideoFrames', () => {
       handleCaptureWorkerVideoFrames(data.targetNodeId, data.sourceNodeIds, data.resolution);

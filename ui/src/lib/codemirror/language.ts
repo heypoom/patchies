@@ -26,12 +26,12 @@ export async function loadLanguageExtension(language: string, context?: Patchies
       return [javascript(), autocompletion({ override: [patchiesCompletions(context)] })];
     })
     .with('glsl', async () => {
-      const [{ LanguageSupport }, { glslLanguage }] = await Promise.all([
+      const [{ LanguageSupport }, { glslLanguage, glslIncludeHighlighter }] = await Promise.all([
         import('@codemirror/language'),
         import('$lib/codemirror/glsl.codemirror')
       ]);
 
-      return new LanguageSupport(glslLanguage);
+      return [new LanguageSupport(glslLanguage), ...glslIncludeHighlighter];
     })
     .with('assembly', async () => {
       const { assembly } = await import('$lib/codemirror/assembly/assembly');

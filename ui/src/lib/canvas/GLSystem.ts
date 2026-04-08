@@ -100,6 +100,21 @@ export class GLSystem {
     }
   >();
 
+  /** Node types whose shaders may contain #include directives */
+  private static SHADER_NODE_TYPES = new Set(['glsl', 'swgl', 'regl', 'three']);
+
+  /** File extensions that could be #included in shaders */
+  private static SHADER_EXTENSIONS = new Set([
+    '.gl',
+    '.glsl',
+    '.frag',
+    '.vert',
+    '.glslf',
+    '.glslv',
+    '.hlsl',
+    '.wgsl'
+  ]);
+
   public outputSize = DEFAULT_OUTPUT_SIZE;
 
   public previewSize: [width: number, height: number] = [
@@ -138,6 +153,36 @@ export class GLSystem {
     // Sync render FPS cap with render worker
     renderFpsCap.subscribe((fps) => {
       this.renderWorker.postMessage({ type: 'setRenderFpsCap', fps });
+    });
+
+    // Invalidate shader nodes when VFS shader files are added, removed, or modified
+    let lastShaderEntryHash = '';
+
+    VirtualFilesystem.getInstance().entries$.subscribe((entries) => {
+      // Build a fingerprint of only shader-relevant VFS entries, including content metadata
+      const shaderPaths: string[] = [];
+
+      for (const [path, entry] of entries.entries()) {
+        const ext = path.slice(path.lastIndexOf('.'));
+
+        if (GLSystem.SHADER_EXTENSIONS.has(ext)) {
+          // Include content-sensitive metadata (size) so changes to file contents trigger invalidation
+          const size = entry.size ?? '';
+
+          shaderPaths.push(`${path}\0${size}`);
+        }
+      }
+
+      const hash = shaderPaths.sort().join('\0');
+      if (hash === lastShaderEntryHash) return;
+
+      const isInitial = lastShaderEntryHash === '';
+      lastShaderEntryHash = hash;
+
+      // Skip the initial subscription — no change to react to yet
+      if (isInitial) return;
+
+      this.invalidateShaderIncludes();
     });
 
     // Listen for video frame requests from WorkerNodeSystem
@@ -308,6 +353,9 @@ export class GLSystem {
       .with({ type: 'resolveVfsUrl' }, async (data) => {
         this.handleVfsUrlResolution(data.requestId, data.nodeId, data.path);
       })
+      .with({ type: 'resolveVfsText' }, async (data) => {
+        this.handleVfsTextResolution(data.requestId, data.nodeId, data.path);
+      })
       .with({ type: 'workerVideoFramesCaptured' }, async (data) => {
         const sys = this.workerNodeSystem ?? (await this.workerNodeSystemReady);
         sys.deliverVideoFrames(data.targetNodeId, data.frames, data.timestamp);
@@ -426,6 +474,13 @@ export class GLSystem {
         const callbacks = this.settingsCallbacks.get(data.nodeId);
         callbacks?.onClear(data.nodeId);
       })
+      .with({ type: 'includeProcessing' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'includeProcessing',
+          nodeId: data.nodeId,
+          active: data.active
+        });
+      })
       .otherwise(() => {});
   };
 
@@ -452,6 +507,35 @@ export class GLSystem {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.send('vfsUrlResolved', { requestId, nodeId, error: errorMessage });
+    }
+  }
+
+  /**
+   * Resolves a VFS path from the worker and sends back the text content.
+   * Used by the GLSL #include preprocessor to inline VFS shader files.
+   */
+  private async handleVfsTextResolution(requestId: string, nodeId: string, path: string) {
+    if (!path.startsWith('user://')) {
+      this.send('vfsTextResolved', {
+        requestId,
+        nodeId,
+        error: `Invalid VFS path: "${path}". Only user:// paths are supported.`
+      });
+
+      return;
+    }
+
+    try {
+      const vfs = VirtualFilesystem.getInstance();
+
+      const blob = await vfs.resolve(path);
+      const text = await blob.text();
+
+      this.send('vfsTextResolved', { requestId, nodeId, text });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      this.send('vfsTextResolved', { requestId, nodeId, error: errorMessage });
     }
   }
 
@@ -652,6 +736,25 @@ export class GLSystem {
 
     this.updateRenderGraph();
     this.syncOutputEnabled();
+  }
+
+  /**
+   * Bump _includeRevision on all shader nodes so their fingerprint changes,
+   * forcing the render worker to recompile shaders with fresh #include content.
+   */
+  private invalidateShaderIncludes() {
+    let dirty = false;
+
+    for (let i = 0; i < this.nodes.length; i++) {
+      const node = this.nodes[i];
+      if (!GLSystem.SHADER_NODE_TYPES.has(node.type)) continue;
+
+      const rev = ((node.data._includeRevision as number) ?? 0) + 1;
+      this.nodes[i] = { ...node, data: { ...node.data, _includeRevision: rev } };
+      dirty = true;
+    }
+
+    if (dirty) this.updateRenderGraph(true);
   }
 
   private updateRenderGraph(force = false) {

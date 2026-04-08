@@ -5,6 +5,8 @@ import type { RenderParams } from '$lib/rendering/types';
 import { TextureSampler, type SwissGL } from '$lib/rendering/swissgl';
 import { getFramebuffer } from './utils';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+import { processIncludes } from '$lib/glsl-include/preprocessor';
+import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 
 const SAMPLER_2D_TEMPLATE = `
   uniform sampler2D $name;
@@ -45,7 +47,7 @@ class ReglTextureSampler extends TextureSampler {
     this.wrap = 'repeat';
 
     if (typeof source === 'function') {
-      this.resolveTexture = source;
+      this.resolveTexture = source as () => WebGLTexture | null;
       this.handle = null;
     } else {
       this.resolveTexture = null;
@@ -68,6 +70,13 @@ class ReglTextureSampler extends TextureSampler {
 
 const SWGL_WRAPPER_OFFSET = 4;
 
+/** Thrown by glslAsync when the renderer generation changes mid-await (code was updated). */
+class StaleGenerationError extends Error {
+  constructor() {
+    super('generation aborted: stale request');
+  }
+}
+
 export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   private glsl: ReturnType<typeof SwissGL>;
   private gl: WebGL2RenderingContext;
@@ -82,6 +91,12 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
   /** 1x1 transparent texture returned when an inlet is not connected */
   private fallbackWebGLTexture: WebGLTexture | null = null;
+
+  /** Cache of source→resolved include strings, pre-warmed during updateCode() */
+  private includeCache = new Map<string, string>();
+
+  /** Monotonic counter incremented on updateCode()/destroy() to detect stale async work */
+  private generation = 0;
 
   private constructor(
     config: BaseRendererConfig,
@@ -170,12 +185,85 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   async updateCode() {
     this.userRenderFunc = null;
     this.glsl.reset();
+    this.includeCache.clear();
+    this.generation++;
 
     this.resetState();
 
     try {
-      const wrappedGlsl = (shaderConfig: unknown, targetConfig: Record<string, unknown> = {}) =>
-        this.glsl(shaderConfig, { ...targetConfig, ...this.swglTarget });
+      const resolver = createWorkerResolver(this.config.nodeId);
+      const includeCache = this.includeCache;
+
+      /**
+       * glsl() — always async, always call during setup (not per-frame).
+       * Resolves any #include directives, then compiles and returns a callable shader.
+       *
+       * Pattern:
+       *   const shader = await glsl({ FP: `...` });
+       *   function render(t) { shader({ t }); }
+       */
+      const wrappedGlsl = async (
+        shaderConfig: Record<string, unknown>,
+        targetConfig: Record<string, unknown> = {}
+      ) => {
+        const gen = this.generation;
+        let patched = shaderConfig;
+        let hasIncludes = false;
+
+        for (const field of ['FP', 'VP', 'Inc'] as const) {
+          const src = patched[field];
+
+          if (typeof src === 'string' && src.includes('#include')) {
+            if (!hasIncludes) {
+              hasIncludes = true;
+              self.postMessage({
+                type: 'includeProcessing',
+                nodeId: this.config.nodeId,
+                active: true
+              });
+            }
+
+            let resolved = includeCache.get(src);
+
+            if (!resolved) {
+              resolved = await processIncludes(src, resolver);
+
+              // Renderer was reset/destroyed while awaiting — discard stale result
+              if (gen !== this.generation) {
+                self.postMessage({
+                  type: 'includeProcessing',
+                  nodeId: this.config.nodeId,
+                  active: false
+                });
+                throw new StaleGenerationError();
+              }
+
+              includeCache.set(src, resolved);
+            }
+
+            patched = patched === shaderConfig ? { ...patched } : patched;
+            patched[field] = resolved;
+          }
+        }
+
+        if (hasIncludes) {
+          self.postMessage({
+            type: 'includeProcessing',
+            nodeId: this.config.nodeId,
+            active: false
+          });
+        }
+
+        // Return a per-frame callable that merges the resolved (include-patched) config
+        // with per-frame params (uniforms like `t`). SwissGL receives all keys on every
+        // call, so it can declare and update uniforms correctly without requiring the user
+        // to pre-declare them in the setup call.
+        const resolvedConfig = patched;
+        const resolvedTarget = { ...targetConfig, ...this.swglTarget };
+
+        return (perFrameParams: Record<string, unknown> = {}) =>
+          this.glsl({ ...resolvedConfig, ...perFrameParams }, resolvedTarget);
+      };
 
       const extraContext = {
         ...this.buildBaseExtraContext(),
@@ -204,6 +292,9 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         );
       }
     } catch (error) {
+      // A stale generation error means updateCode() was called again before this one finished —
+      // the newer call will set up rendering, so there's nothing to report here.
+      if (error instanceof StaleGenerationError) return;
       this.handleCodeError(error, SWGL_WRAPPER_OFFSET);
     }
   }
@@ -241,8 +332,10 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   }
 
   destroy() {
+    this.generation++;
     this.glsl.reset();
     this.userRenderFunc = null;
+    this.includeCache.clear();
 
     if (this.fallbackWebGLTexture) {
       this.gl.deleteTexture(this.fallbackWebGLTexture);

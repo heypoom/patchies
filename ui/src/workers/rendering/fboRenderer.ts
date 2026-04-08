@@ -32,6 +32,8 @@ import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
 import { WorkerProfiler } from '../shared/WorkerProfiler.js';
 import { VideoTextureManager } from './VideoTextureManager.js';
+import { processIncludes } from '$lib/glsl-include/preprocessor';
+import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 import type { RenderOp } from '$lib/profiler/types';
@@ -275,6 +277,16 @@ export class FBORenderer {
     this.renderGraph = mergedGraph;
     this.outputNodeId = mergedGraph.outputNodeId;
 
+    // Phase 1 (sync): allocate FBOs and collect nodes that need renderer creation
+    type PendingNode = {
+      node: RenderNode;
+      texture: regl.Texture2D;
+      framebuffer: regl.Framebuffer2D;
+      fingerprint: string;
+    };
+
+    const pending: PendingNode[] = [];
+
     for (const node of renderGraph.nodes) {
       const existingFbo = this.fboNodes.get(node.id);
 
@@ -344,29 +356,44 @@ export class FBORenderer {
         });
       }
 
-      const renderer = await match(node)
-        .with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
-        .with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
-        .with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
-        .with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
-        .with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
-        .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
-        .with({ type: 'regl' }, (node) => this.createReglRenderer(node, framebuffer))
-        .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
-        .with({ type: 'img' }, () => this.createEmptyRenderer())
-        .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
-        .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
-        .with({ type: 'recv.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
-        .exhaustive();
+      pending.push({ node, texture, framebuffer, fingerprint });
+    }
+
+    // Phase 2 (parallel): create all renderers concurrently
+    const results = await Promise.all(
+      pending.map(async ({ node, framebuffer }) =>
+        match(node)
+          .with({ type: 'glsl' }, (node) => this.createGlslRenderer(node, framebuffer))
+          .with({ type: 'hydra' }, (node) => this.createHydraRenderer(node, framebuffer))
+          .with({ type: 'swgl' }, (node) => this.createSwglRenderer(node, framebuffer))
+          .with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
+          .with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
+          .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
+          .with({ type: 'regl' }, (node) => this.createReglRenderer(node, framebuffer))
+          .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
+          .with({ type: 'img' }, () => this.createEmptyRenderer())
+          .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
+          .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
+          .with({ type: 'recv.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
+          .exhaustive()
+      )
+    );
+
+    // Phase 3: collect results into FBO map
+    for (let i = 0; i < pending.length; i++) {
+      const { node, texture, framebuffer, fingerprint } = pending[i];
+      const renderer = results[i];
 
       // If the renderer function is null, we skip defining this node.
       if (renderer === null) {
         console.warn(`skipped node ${node.type} ${node.id} - no renderer available`);
 
-        if (!canReuseFbo) {
-          framebuffer.destroy();
-          texture.destroy();
-        }
+        // Evict stale FBO entry so the old render function is not reused
+        this.fboNodes.delete(node.id);
+
+        // Always destroy GPU resources when evicting from the map, regardless of canReuseFbo
+        framebuffer.destroy();
+        texture.destroy();
 
         continue;
       }
@@ -386,6 +413,7 @@ export class FBORenderer {
       // Do not send previews back to external texture nodes,
       // as the texture is managed by the node on the frontend.
       const defaultPreviewEnabled = !isExternalTextureNode(node.type);
+
       this.previewRenderer.setPreviewEnabled(node.id, defaultPreviewEnabled);
     }
 
@@ -647,6 +675,7 @@ export class FBORenderer {
       render: reglRenderer.renderFrame.bind(reglRenderer),
       cleanup: () => {
         reglRenderer.destroy();
+
         this.reglByNode.delete(node.id);
       }
     };
@@ -674,6 +703,7 @@ export class FBORenderer {
       render: projmapRenderer.renderFrame.bind(projmapRenderer),
       cleanup: () => {
         projmapRenderer.destroy();
+
         this.projmapByNode.delete(node.id);
       }
     };
@@ -696,10 +726,10 @@ export class FBORenderer {
     }
   }
 
-  createGlslRenderer(
+  async createGlslRenderer(
     node: RenderNode,
     framebuffer: regl.Framebuffer2D
-  ): { render: RenderFunction; cleanup: () => void } | null {
+  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
     if (node.type !== 'glsl') return null;
 
     const [width, height] = this.outputSize;
@@ -719,13 +749,37 @@ export class FBORenderer {
       this.uniformDataByNode.set(node.id, uniformData);
     }
 
+    // Resolve #include directives before shader compilation
+    let code = node.data.code;
+
+    if (code && code.includes('#include')) {
+      try {
+        self.postMessage({ type: 'includeProcessing', nodeId: node.id, active: true });
+
+        const resolver = createWorkerResolver(node.id);
+
+        code = await processIncludes(code, resolver);
+      } catch (error) {
+        self.postMessage({
+          type: 'shaderError',
+          nodeId: node.id,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
+
+        return null;
+      } finally {
+        self.postMessage({ type: 'includeProcessing', nodeId: node.id, active: false });
+      }
+    }
+
     const renderCommand = createShaderToyDrawCommand({
       width,
       height,
       framebuffer,
       regl: this.regl,
       gl: this.gl!,
-      code: node.data.code,
+      code,
       uniformDefs: node.data.glUniformDefs ?? [],
       onError: (error: Error & { lineErrors?: Record<number, string[]> }) => {
         // Send error message back to main thread
