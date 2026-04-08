@@ -118,6 +118,16 @@ Creator of Hydra, the live-codeable video synthesizer that brings shader program
 
 ---
 
+### Patricio Gonzalez Vivo
+
+**Projects:** lygia, The Book of Shaders, GlslViewer
+
+Creator of lygia, a granular multi-language shader library used by Patchies for `#include` imports, and co-author of The Book of Shaders.
+
+**Support:** [GitHub Sponsors](https://github.com/sponsors/patriciogonzalezvivo)
+
+---
+
 ### Vanilagy
 
 **Projects:** MediaBunny, mp4-muxer, webm-muxer

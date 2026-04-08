@@ -75,7 +75,7 @@ the `await` resolves instantly with no overhead.
 
 ## Shader Includes
 
-Use `#include` in your `frag` or `vert` strings to import GLSL functions from the [lygia](https://github.com/patriciogonzalezvivo/lygia) shader library, your VFS files, or any URL:
+Use `#include` in your `frag` or `vert` strings to import GLSL functions from the [lygia](https://lygia.xyz) shader library, your VFS files, or any URL:
 
 ```javascript
 const draw = await regl({

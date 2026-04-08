@@ -55,6 +55,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | json5                             | ^2.2.3       | MIT                    |
 | lezer-glsl                        | ^0.6.0       | MIT                    |
 | lodash                            | ^4.17.21     | MIT                    |
+| lygia                             | ^1.4.1       | Prosperity + Patron    |
 | marked                            | ^16.1.2      | MIT                    |
 | matter-js                         | ^0.20.0      | MIT                    |
 | mediabunny                        | ^0.1.1       | MPL-2.0                |

@@ -18,7 +18,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
-This fetches the `snoise` function from the [lygia](https://github.com/patriciogonzalezvivo/lygia) shader library and makes it available in your code. No setup needed — includes are resolved automatically.
+This fetches the `snoise` function from the [lygia](https://lygia.xyz) shader library and makes it available in your code. No setup needed — includes are resolved automatically.
 
 ---
 
