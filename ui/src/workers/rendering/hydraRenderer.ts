@@ -5,6 +5,8 @@ import {
   addTransformChainMethod
 } from '$lib/hydra/glsl/createGenerators';
 import type { TransformDefinition } from '$lib/hydra/glsl/transformDefinitions';
+import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
+import { processIncludes } from '$lib/glsl-include/preprocessor';
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
@@ -159,13 +161,28 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
       const { src, osc, gradient, shape, voronoi, noise, solid, TransformChainClass } = generators;
 
-      // Used to add more Hydra operators.
-      const setFunction = (definition: TransformDefinition) => {
+      const resolver = createWorkerResolver(this.config.nodeId);
+
+      // Used to add more Hydra operators. Supports #include in the glsl field.
+      const setFunction = async (definition: TransformDefinition) => {
+        // Extract #include lines from the glsl body. Included files resolve to top-level
+        // function definitions which must live outside the transform function body.
+        const includeRegex = /#include\s+[^\n]+/g;
+        const includeLines = [...definition.glsl.matchAll(includeRegex)].map((m) => m[0]);
+        const bodyGlsl = definition.glsl.replace(includeRegex, '');
+
+        const preamble =
+          includeLines.length > 0 ? await processIncludes(includeLines.join('\n'), resolver) : '';
+
+        // Build the processed definition: preamble (helper functions) before the wrapped body
+        const processed = processGlsl({ ...definition, glsl: bodyGlsl });
+        const finalProcessed = { ...processed, glsl: preamble + processed.glsl };
+
         if (definition.type === 'src') {
-          // createGenerator calls processGlsl internally — don't pre-process
-          return createGenerator(definition, TransformChainClass);
+          // processGlsl is now idempotent — createGenerator won't double-wrap
+          return createGenerator(finalProcessed, TransformChainClass);
         } else {
-          addTransformChainMethod(TransformChainClass, processGlsl(definition));
+          addTransformChainMethod(TransformChainClass, finalProcessed);
         }
       };
 

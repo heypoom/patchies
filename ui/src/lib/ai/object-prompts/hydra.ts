@@ -9,6 +9,12 @@ Live coding video synthesis with chainable Hydra functions.
 - out(o0), out(o1), etc. - Set outputs from setVideoCount
 - Standard Hydra: .blend(), .add(), .mult(), .diff(), .kaleid(), etc.
 
+**setFunction — define custom generators/modifiers (always \`await\`):**
+- \`type: 'src'\` — generator; receives \`vec2 _st\`, returns the function to call
+- \`type: 'color'\` — color modifier; receives \`vec4 _c0\`, method added to all chains
+- \`type: 'coord'\` — coordinate transform; receives \`vec2 _st\`
+- \`glsl\` field supports \`#include <lygia/...>\` directives
+
 **Hydra-specific gotchas:**
 - Hydra has its own render loop - use arrow functions for dynamic values instead of requestAnimationFrame
 - When using settings in arrow functions, always use \`?? defaultValue\` fallback as settings will not be loaded on first render (e.g., \`() => settings.get('speed') ?? 1\`)
@@ -31,6 +37,16 @@ Example - Audio-reactive:
   "type": "hydra",
   "data": {
     "code": "src(s0).scale(() => 1 + fft().a[10] * 0.5).kaleid().out(o0)"
+  }
+}
+\`\`\`
+
+Example - Custom function with lygia:
+\`\`\`json
+{
+  "type": "hydra",
+  "data": {
+    "code": "const myNoise = await setFunction({\\n  name: 'myNoise',\\n  type: 'src',\\n  inputs: [{ type: 'float', name: 'scale', default: 4.0 }],\\n  glsl: \`\\n    #include <lygia/generative/snoise>\\n    float n = snoise(vec3(_st * scale, time));\\n    return vec4(vec3(n * 0.5 + 0.5), 1.0);\\n  \`,\\n})\\nmyNoise(6.0).kaleid(6).out()"
   }
 }
 \`\`\``;

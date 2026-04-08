@@ -13,8 +13,8 @@ export const utilityFunctions = {
     glsl: `
     //	Simplex 3D Noise
     //	by Ian McEwan, Ashima Arts
-    vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
-  vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+    vec4 _permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
+  vec4 _taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
 
   float _noise(vec3 v){
     const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
@@ -37,7 +37,7 @@ export const utilityFunctions = {
 
   // Permutations
     i = mod(i, 289.0 );
-    vec4 p = permute( permute( permute(
+    vec4 p = _permute( _permute( _permute(
                i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
              + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
              + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
@@ -72,7 +72,7 @@ export const utilityFunctions = {
     vec3 p3 = vec3(a1.zw,h.w);
 
   //Normalise gradients
-    vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+    vec4 norm = _taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
     p0 *= norm.x;
     p1 *= norm.y;
     p2 *= norm.z;

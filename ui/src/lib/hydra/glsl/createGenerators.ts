@@ -94,8 +94,13 @@ const typeLookup: Record<
 };
 
 export function processGlsl(
-  transformDefinition: TransformDefinition
+  transformDefinition: TransformDefinition | ProcessedTransformDefinition
 ): ProcessedTransformDefinition {
+  // Already processed — return as-is so callers can pre-build and pass through createGenerator
+  if ('processed' in transformDefinition && transformDefinition.processed) {
+    return transformDefinition;
+  }
+
   const { implicitFirstArg, returnType } = typeLookup[transformDefinition.type];
 
   const signature = [

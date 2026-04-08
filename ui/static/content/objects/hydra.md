@@ -43,6 +43,84 @@ Try out these presets to get started:
 - `filet-mignon.hydra` - example code from [AFALFL](https://www.instagram.com/a_f_alfl) (CC BY-NC-SA 4.0)
 - `fft.hydra` - audio-reactive visualization
 
+---
+
+## Custom Functions
+
+`setFunction` lets you define your own Hydra generators and modifiers, just like
+the built-in `osc`, `noise`, and `rotate` functions. Custom functions become
+chainable like any other Hydra transform.
+
+```javascript
+const crystalNoise = await setFunction({
+  name: 'crystalNoise',
+  type: 'src',
+  inputs: [
+    { type: 'float', name: 'scale', default: 4.0 },
+    { type: 'float', name: 'speed', default: 0.1 },
+  ],
+  glsl: `
+    return vec4(vec3(sin(_st.x * scale + time * speed)), 1.0);
+  `,
+})
+
+crystalNoise(8.0, 0.2).rotate(0.5).out()
+```
+
+`setFunction` is async — always `await` it before using the returned generator.
+
+The `type` field controls how the function fits into the Hydra chain:
+
+| Type | GLSL receives | Use for |
+| --- | --- | --- |
+| `src` | `vec2 _st` | Generators — starting points of a chain |
+| `color` | `vec4 _c0` | Color effects applied to an existing chain |
+| `coord` | `vec2 _st` | Coordinate transforms (like `rotate`, `scale`) |
+| `combine` | `vec4 _c0` + second chain | Blending two chains together |
+| `combineCoord` | `vec2 _st` + second chain | Warping coordinates using another chain |
+
+For modifier types (`color`, `coord`, `combine`, `combineCoord`), the returned
+value is unused — the method is added to all chains automatically:
+
+```javascript
+await setFunction({
+  name: 'glitch',
+  type: 'color',
+  inputs: [{ type: 'float', name: 'amount', default: 0.05 }],
+  glsl: `
+    float shift = sin(time * 20.0) * amount;
+
+    return vec4(_c0.r + shift, _c0.g, _c0.b - shift, _c0.a);
+  `,
+})
+
+osc(30).glitch(0.1).out()
+```
+
+### Using `#include` in Custom Functions
+
+The `glsl` field supports [`#include` directives](/docs/topics/glsl-imports), so
+you can pull in functions from [lygia](https://lygia.xyz) or other sources:
+
+```javascript
+const snoiseGen = await setFunction({
+  name: 'snoiseGen',
+  type: 'src',
+  inputs: [{ type: 'float', name: 'scale', default: 4.0 }],
+  glsl: `
+    #include <lygia/generative/snoise>
+
+    float n = snoise(vec3(_st * scale, time));
+
+    return vec4(vec3(n * 0.5 + 0.5), 1.0);
+  `,
+})
+
+snoiseGen(6.0).kaleid(6).out()
+```
+
+---
+
 ## Audio Reactivity
 
 Patchies does NOT use standard Hydra audio reactivity APIs like `a.fft[0]`.
