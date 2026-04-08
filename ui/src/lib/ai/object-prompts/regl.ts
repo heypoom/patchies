@@ -4,6 +4,8 @@ export const reglPrompt = `## regl Object Instructions
 
 Low-level GPU rendering using [regl](https://github.com/regl-project/regl) — a functional WebGL wrapper. Use for custom draw commands with full control over vertices, buffers, elements, blend modes, multi-pass rendering, and geometry.
 
+**\`#include\` directives are auto-preprocessed** in \`frag\` and \`vert\` shader strings.
+
 Sits between the high-level glsl node (fragment shader only) and building a full custom renderer. You get direct access to the regl instance and input textures as regl textures (zero copy).
 
 **regl-specific globals:**

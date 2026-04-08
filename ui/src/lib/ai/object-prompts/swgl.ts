@@ -2,6 +2,8 @@ export const swglPrompt = `## swgl Object Instructions
 
 SwissGL - WebGL2 wrapper for concise shaders. Must implement \`render({ t })\` function.
 
+**\`#include\` directives are auto-preprocessed** in \`FP\`, \`VP\`, and \`Inc\` fields.
+
 ## Parameters
 
 **Shaders:**

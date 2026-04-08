@@ -5,10 +5,9 @@
  */
 
 import { logger } from '$lib/utils/logger';
-import { getObjectSpecificInstructions, OBJECT_TYPE_LIST } from './object-descriptions';
+import { OBJECT_TYPE_LIST } from './object-descriptions';
 import { extractJson } from './extract-json';
-import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from './object-prompts/shared-jsrunner';
-import { UI_DESIGN_OBJECTS, UI_DESIGN_GUIDELINES } from './object-prompts/ui-design-guidelines';
+import { buildObjectTypeInstructions } from './object-prompts/build-generator-instructions';
 import { getTextProvider } from './providers';
 import type { LLMProvider } from './providers';
 
@@ -192,15 +191,7 @@ RESPONSE FORMAT:
 
 `;
 
-  const jsInstructions = JS_ENABLED_OBJECTS.has(objectType)
-    ? `## Common JSRunner Runtime Functions\n\n${jsRunnerInstructions}\n\n`
-    : '';
+  const objectInstructions = buildObjectTypeInstructions(objectType);
 
-  const uiDesignInstructions = UI_DESIGN_OBJECTS.has(objectType)
-    ? `${UI_DESIGN_GUIDELINES}\n\n`
-    : '';
-
-  const objectInstructions = getObjectSpecificInstructions(objectType);
-
-  return basePrompt + jsInstructions + uiDesignInstructions + objectInstructions;
+  return basePrompt + objectInstructions;
 }
