@@ -17,7 +17,9 @@ export const JS_ENABLED_OBJECTS = new Set([
   'tone~',
   'elem~',
   'textmode',
-  'textmode.dom'
+  'textmode.dom',
+  'regl',
+  'swgl'
 ]);
 
 /**
