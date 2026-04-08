@@ -46,6 +46,7 @@ function createTrackedRegl(
   resolver?: IncludeResolver
 ) {
   const tracked: Array<{ destroy(): void }> = [];
+  let generation = 0;
 
   const proxy = new Proxy(reglInstance, {
     apply(target, thisArg, args) {
@@ -53,8 +54,21 @@ function createTrackedRegl(
 
       // If shader strings contain #include, resolve them async then create the command
       if (resolver && config && (hasIncludes(config.frag) || hasIncludes(config.vert))) {
+        const gen = generation;
+
         return preprocessReglConfig(config, resolver).then((resolved) => {
           const command = Reflect.apply(target, thisArg, [resolved, ...args.slice(1)]);
+
+          // If destroyAll() was called while we were awaiting, discard the command
+          if (gen !== generation) {
+            try {
+              command.destroy();
+            } catch {
+              /* already destroyed */
+            }
+            return command;
+          }
+
           tracked.push(command);
 
           return command;
@@ -110,6 +124,8 @@ function createTrackedRegl(
     regl: proxy as regl.Regl,
 
     destroyAll() {
+      generation++;
+
       for (const resource of tracked) {
         try {
           resource.destroy();

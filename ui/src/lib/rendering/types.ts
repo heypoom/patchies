@@ -109,7 +109,10 @@ export type WorkerMessage =
       requestId: string;
       values: Record<string, unknown>;
     }
-  | { type: 'settingsValueChanged'; nodeId: string; key: string; value: unknown };
+  | { type: 'settingsValueChanged'; nodeId: string; key: string; value: unknown }
+  // VFS resolution responses (main → render worker)
+  | { type: 'vfsUrlResolved'; requestId: string; nodeId: string; url?: string; error?: string }
+  | { type: 'vfsTextResolved'; requestId: string; nodeId: string; text?: string; error?: string };
 
 export type MouseScope = 'local' | 'global';
 

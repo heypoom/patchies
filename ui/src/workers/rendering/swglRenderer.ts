@@ -85,6 +85,9 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   /** 1x1 transparent texture returned when an inlet is not connected */
   private fallbackWebGLTexture: WebGLTexture | null = null;
 
+  /** Cache of source→resolved include strings, pre-warmed during updateCode() */
+  private includeCache = new Map<string, string>();
+
   private constructor(
     config: BaseRendererConfig,
     framebuffer: regl.Framebuffer2D,
@@ -172,38 +175,69 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   async updateCode() {
     this.userRenderFunc = null;
     this.glsl.reset();
+    this.includeCache.clear();
 
     this.resetState();
 
     try {
       const resolver = createWorkerResolver(this.config.nodeId);
+      const includeCache = this.includeCache;
 
-      const wrappedGlsl = async (
+      const wrappedGlsl = (
         shaderConfig: Record<string, unknown>,
         targetConfig: Record<string, unknown> = {}
       ) => {
-        // Preprocess #include directives in shader fields
-        if (typeof shaderConfig.FP === 'string' && shaderConfig.FP.includes('#include')) {
-          shaderConfig = { ...shaderConfig, FP: await processIncludes(shaderConfig.FP, resolver) };
+        // Resolve #include directives from cache (pre-warmed during init)
+        let patched = shaderConfig;
+
+        for (const field of ['FP', 'VP', 'Inc'] as const) {
+          const src = patched[field];
+
+          if (typeof src === 'string' && src.includes('#include')) {
+            const cached = includeCache.get(src);
+            if (cached) {
+              patched = patched === shaderConfig ? { ...patched } : patched;
+              patched[field] = cached;
+            }
+          }
         }
 
-        if (typeof shaderConfig.VP === 'string' && shaderConfig.VP.includes('#include')) {
-          shaderConfig = { ...shaderConfig, VP: await processIncludes(shaderConfig.VP, resolver) };
+        return this.glsl(patched, { ...targetConfig, ...this.swglTarget });
+      };
+
+      /**
+       * Async version of glsl() for initialization code that needs #include.
+       * User code should call this during setup, not per-frame.
+       */
+      const wrappedGlslAsync = async (
+        shaderConfig: Record<string, unknown>,
+        targetConfig: Record<string, unknown> = {}
+      ) => {
+        let patched = shaderConfig;
+
+        for (const field of ['FP', 'VP', 'Inc'] as const) {
+          const src = patched[field];
+
+          if (typeof src === 'string' && src.includes('#include')) {
+            let resolved = includeCache.get(src);
+
+            if (!resolved) {
+              resolved = await processIncludes(src, resolver);
+              includeCache.set(src, resolved);
+            }
+
+            patched = patched === shaderConfig ? { ...patched } : patched;
+            patched[field] = resolved;
+          }
         }
 
-        if (typeof shaderConfig.Inc === 'string' && shaderConfig.Inc.includes('#include')) {
-          shaderConfig = {
-            ...shaderConfig,
-            Inc: await processIncludes(shaderConfig.Inc, resolver)
-          };
-        }
-
-        return this.glsl(shaderConfig, { ...targetConfig, ...this.swglTarget });
+        return this.glsl(patched, { ...targetConfig, ...this.swglTarget });
       };
 
       const extraContext = {
         ...this.buildBaseExtraContext(),
         glsl: wrappedGlsl,
+        glslAsync: wrappedGlslAsync,
         setVideoCount: this.setVideoCount.bind(this),
         getTexture: this.getTexture.bind(this)
       };
@@ -267,6 +301,7 @@ export class SwissGLRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   destroy() {
     this.glsl.reset();
     this.userRenderFunc = null;
+    this.includeCache.clear();
 
     if (this.fallbackWebGLTexture) {
       this.gl.deleteTexture(this.fallbackWebGLTexture);

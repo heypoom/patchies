@@ -365,6 +365,9 @@ export class FBORenderer {
       if (renderer === null) {
         console.warn(`skipped node ${node.type} ${node.id} - no renderer available`);
 
+        // Evict stale FBO entry so the old render function is not reused
+        this.fboNodes.delete(node.id);
+
         if (!canReuseFbo) {
           framebuffer.destroy();
           texture.destroy();

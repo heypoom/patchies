@@ -7,10 +7,14 @@
 
 import type { IncludeResolver } from './preprocessor';
 
-export function createCachedResolver(base: IncludeResolver): IncludeResolver {
+export type CachedIncludeResolver = IncludeResolver & { _cache: Map<string, string> };
+
+export function createCachedResolver(base: IncludeResolver): CachedIncludeResolver {
   const cache = new Map<string, string>();
 
   return {
+    _cache: cache,
+
     async resolveNpm(packagePath: string): Promise<string> {
       const key = `npm:${packagePath}`;
       const cached = cache.get(key);
@@ -44,9 +48,7 @@ export function createCachedResolver(base: IncludeResolver): IncludeResolver {
 }
 
 /** Clear VFS entries from cache (call when VFS files change). */
-export function clearVfsCache(resolver: IncludeResolver & { _cache?: Map<string, string> }): void {
-  if (!resolver._cache) return;
-
+export function clearVfsCache(resolver: CachedIncludeResolver): void {
   for (const key of resolver._cache.keys()) {
     if (key.startsWith('vfs:')) resolver._cache.delete(key);
   }

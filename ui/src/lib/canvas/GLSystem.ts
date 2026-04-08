@@ -463,13 +463,26 @@ export class GLSystem {
    * Used by the GLSL #include preprocessor to inline VFS shader files.
    */
   private async handleVfsTextResolution(requestId: string, nodeId: string, path: string) {
+    if (!path.startsWith('user://')) {
+      this.send('vfsTextResolved', {
+        requestId,
+        nodeId,
+        error: `Invalid VFS path: "${path}". Only user:// paths are supported.`
+      });
+
+      return;
+    }
+
     try {
       const vfs = VirtualFilesystem.getInstance();
+
       const blob = await vfs.resolve(path);
       const text = await blob.text();
+
       this.send('vfsTextResolved', { requestId, nodeId, text });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+
       this.send('vfsTextResolved', { requestId, nodeId, error: errorMessage });
     }
   }

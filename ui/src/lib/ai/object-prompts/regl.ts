@@ -26,7 +26,7 @@ Sits between the high-level glsl node (fragment shader only) and building a full
 
 **Fullscreen quad boilerplate** — use this for any 2D effect:
 \`\`\`js
-await regl({
+const draw = await regl({
   vert: \\\`
     precision mediump float;
     attribute vec2 position;

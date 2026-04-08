@@ -11,10 +11,14 @@
 type PendingRequest = {
   resolve: (text: string) => void;
   reject: (error: Error) => void;
+  timerId: ReturnType<typeof setTimeout>;
 };
 
 const pendingRequests = new Map<string, PendingRequest>();
 let requestIdCounter = 0;
+
+/** Timeout for VFS text resolution requests (ms). */
+const VFS_RESOLVE_TIMEOUT_MS = 10_000;
 
 /**
  * Handle VFS text resolution response from the main thread.
@@ -28,6 +32,7 @@ export function handleVfsTextResolved(data: {
   const pending = pendingRequests.get(data.requestId);
   if (!pending) return;
 
+  clearTimeout(pending.timerId);
   pendingRequests.delete(data.requestId);
 
   if (data.error) {
@@ -50,7 +55,14 @@ export function resolveVfsText(nodeId: string, vfsPath: string): Promise<string>
   const requestId = `glsl-vfs-${nodeId}-${++requestIdCounter}`;
 
   return new Promise((resolve, reject) => {
-    pendingRequests.set(requestId, { resolve, reject });
+    const timerId = setTimeout(() => {
+      pendingRequests.delete(requestId);
+      reject(
+        new Error(`VFS text resolution timed out for "${vfsPath}" (${VFS_RESOLVE_TIMEOUT_MS}ms)`)
+      );
+    }, VFS_RESOLVE_TIMEOUT_MS);
+
+    pendingRequests.set(requestId, { resolve, reject, timerId });
 
     self.postMessage({
       type: 'resolveVfsText',

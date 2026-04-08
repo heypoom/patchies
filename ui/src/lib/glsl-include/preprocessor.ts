@@ -47,6 +47,7 @@ export async function processIncludes(
   // Collect all matches first (regex is stateful)
   const matches: Array<{
     fullMatch: string;
+    index: number;
     npmPath: string | undefined;
     quotedPath: string | undefined;
   }> = [];
@@ -59,6 +60,7 @@ export async function processIncludes(
   while ((match = INCLUDE_RE.exec(source)) !== null) {
     matches.push({
       fullMatch: match[0],
+      index: match.index,
       npmPath: match[1],
       quotedPath: match[2]
     });
@@ -83,12 +85,18 @@ export async function processIncludes(
     })
   );
 
-  // Replace each #include with its resolved content
-  let result = source;
+  // Rebuild source by splicing resolved content at each match position
+  const parts: string[] = [];
+  let prevEnd = 0;
 
   for (let i = 0; i < matches.length; i++) {
-    result = result.replace(matches[i].fullMatch, resolutions[i]);
+    parts.push(source.slice(prevEnd, matches[i].index));
+    parts.push(resolutions[i]);
+    prevEnd = matches[i].index + matches[i].fullMatch.length;
   }
+
+  parts.push(source.slice(prevEnd));
+  const result = parts.join('');
 
   console.log('process includes :>', { source, result });
 
