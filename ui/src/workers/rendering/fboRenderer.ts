@@ -268,10 +268,15 @@ export class FBORenderer {
       const existingFbo = this.fboNodes.get(node.id);
 
       // MRT count: GLSL, REGL, and SwissGL nodes can request multiple color attachments.
+      // REGL stores outlet count as `videoOutletCount`; GLSL/SwissGL use `mrtCount`.
       const mrtCount =
-        node.type === 'glsl' || node.type === 'regl' || node.type === 'swgl'
+        node.type === 'glsl'
           ? (node.data.mrtCount ?? 1)
-          : 1;
+          : node.type === 'swgl'
+            ? (node.data.mrtCount ?? 1)
+            : node.type === 'regl'
+              ? (node.data.videoOutletCount ?? 1)
+              : 1;
 
       const canReuseFbo =
         existingFbo &&
@@ -363,6 +368,7 @@ export class FBORenderer {
           }
 
           gl.drawBuffers(colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
+
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         } else {
           framebuffer = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });

@@ -114,6 +114,7 @@
           videoInletCount: m.inletCount,
           videoOutletCount: m.outletCount
         });
+        glSystem.upsertNode(nodeId, 'regl', { code: data.code, videoOutletCount: m.outletCount });
       })
       .exhaustive();
 
@@ -209,7 +210,10 @@
       }
     });
 
-    glSystem.upsertNode(nodeId, 'regl', { code: data.code });
+    glSystem.upsertNode(nodeId, 'regl', {
+      code: data.code,
+      videoOutletCount: data.videoOutletCount ?? 1
+    });
 
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
@@ -256,7 +260,11 @@
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
 
-      glSystem.upsertNode(nodeId, 'regl', { code: data.code, _runRevision: Date.now() });
+      glSystem.upsertNode(nodeId, 'regl', {
+        code: data.code,
+        videoOutletCount: data.videoOutletCount ?? 1,
+        _runRevision: Date.now()
+      });
     } catch (error) {
       logger.error(`[regl] update regl error:`, error);
     }
