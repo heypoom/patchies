@@ -145,6 +145,17 @@
     margin-bottom: 0.625rem;
   }
 
+  .prose-markdown h4,
+  .prose-markdown-app h4 {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+    font-size: calc(0.8125rem * var(--prose-scale));
+    font-weight: 600;
+    color: #a1a1aa;
+    letter-spacing: 0.02em;
+    margin-top: 1.25rem;
+    margin-bottom: 0.375rem;
+  }
+
   .prose-markdown p {
     font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
   }
