@@ -44,7 +44,7 @@
     margin-top: 1rem;
   }
 
-  .prose-markdown-thinking {
+  .prose-markdown-thinking:not(.prose-markdown-object-prompt) {
     margin-left: 1.1em;
     margin-bottom: 1.1em;
   }

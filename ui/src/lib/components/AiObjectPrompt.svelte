@@ -419,7 +419,10 @@
                   ? 'opacity-100'
                   : 'opacity-40'}"
               >
-                <MarkdownContent markdown={thought} />
+                <MarkdownContent
+                  markdown={thought}
+                  class="prose-markdown-chat prose-markdown-thinking prose-markdown-object-prompt"
+                />
               </div>
             {/each}
           </div>
