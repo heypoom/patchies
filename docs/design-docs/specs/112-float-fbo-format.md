@@ -79,7 +79,7 @@ const fboFormat: FBOFormat =
   ((node.data as Record<string, unknown>)?.fboFormat as FBOFormat) || 'rgba8';
 ```
 
-**regl bypass**: regl is a WebGL1 library that doesn't support WebGL2 sized internal formats (`RGBA16F`, `RGBA32F`). It always sets `internalformat = format = GL_RGBA`, which is invalid for float textures in WebGL2. The workaround:
+**regl bypass**: regl is a WebGL1 library that doesn't support WebGL2-sized internal formats (`RGBA16F`, `RGBA32F`). It always sets `internalformat = format = GL_RGBA`, which is invalid for float textures in WebGL2. The workaround:
 
 1. Create a standard `uint8` texture via `regl.texture()` (so regl tracks it)
 2. Re-initialize the underlying GL texture with the correct format via raw WebGL2:

@@ -158,6 +158,9 @@ export class FBORenderer {
   /** Video channel registry for send.vdo/recv.vdo wireless routing */
   public videoChannelRegistry = VideoChannelRegistry.getInstance();
 
+  /** Whether rendering to float FBOs is supported (EXT_color_buffer_float) */
+  private colorBufferFloatSupported = false;
+
   /** Whether linear filtering is supported for half-float and float textures */
   private halfFloatLinearSupported = false;
   private floatLinearSupported = false;
@@ -177,7 +180,8 @@ export class FBORenderer {
       optionalExtensions: WEBGL_OPTIONAL_EXTENSIONS
     });
 
-    // Detect float texture linear filtering support
+    // Detect float FBO support
+    this.colorBufferFloatSupported = !!this.gl.getExtension('EXT_color_buffer_float');
     this.halfFloatLinearSupported = !!this.gl.getExtension('OES_texture_half_float_linear');
     this.floatLinearSupported = !!this.gl.getExtension('OES_texture_float_linear');
 
@@ -235,7 +239,15 @@ export class FBORenderer {
 
     if (format === 'rgba8') return texture;
 
-    // Re-initialize the raw GL texture with the correct WebGL2 sized format
+    // Fall back to rgba8 if float render targets aren't supported
+    if (!this.colorBufferFloatSupported) {
+      console.warn(
+        `[fbo] EXT_color_buffer_float not supported, falling back to rgba8 for ${format}`
+      );
+      return texture;
+    }
+
+    // Re-initialize the raw GL texture with the correct WebGL2-sized format
     const gl = this.gl;
     const rawTexture = getRawTexture(texture);
     const { internalFormat, type, linearSupported } = match(format)

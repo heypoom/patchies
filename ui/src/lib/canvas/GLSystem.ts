@@ -319,6 +319,7 @@ export class GLSystem {
         const idx = this.nodes.findIndex((n) => n.id === data.nodeId);
         if (idx !== -1) {
           const node = this.nodes[idx];
+          if ((node.data as Record<string, unknown>).fboFormat === data.format) return;
           this.nodes[idx] = { ...node, data: { ...node.data, fboFormat: data.format } };
           this.updateRenderGraph(true);
         }

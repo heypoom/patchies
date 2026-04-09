@@ -8,7 +8,7 @@ Patchies provides a JavaScript API available in all JS-enabled objects — from 
 
 These objects all run JavaScript and share the same API described on this page:
 
-[js](/docs/objects/js), [worker](/docs/objects/worker), [p5](/docs/objects/p5), [canvas](/docs/objects/canvas), [canvas.dom](/docs/objects/canvas.dom), [textmode](/docs/objects/textmode), [textmode.dom](/docs/objects/textmode.dom), [three](/docs/objects/three), [three.dom](/docs/objects/three.dom), [hydra](/docs/objects/hydra), [dom](/docs/objects/dom), [vue](/docs/objects/vue), [sonic~](/docs/objects/sonic~), [tone~](/docs/objects/tone~), [elem~](/docs/objects/elem~)
+[js](/docs/objects/js), [worker](/docs/objects/worker), [p5](/docs/objects/p5), [canvas](/docs/objects/canvas), [canvas.dom](/docs/objects/canvas.dom), [textmode](/docs/objects/textmode), [textmode.dom](/docs/objects/textmode.dom), [three](/docs/objects/three), [three.dom](/docs/objects/three.dom), [hydra](/docs/objects/hydra), [regl](/docs/objects/regl), [swgl](/docs/objects/swgl), [dom](/docs/objects/dom), [vue](/docs/objects/vue), [sonic~](/docs/objects/sonic~), [tone~](/docs/objects/tone~), [elem~](/docs/objects/elem~)
 
 Expression objects like [filter](/docs/objects/filter), [map](/docs/objects/map), [tap](/docs/objects/tap), and [scan](/docs/objects/scan) evaluate code *once per incoming message* and cannot use messaging or timer functions.
 
