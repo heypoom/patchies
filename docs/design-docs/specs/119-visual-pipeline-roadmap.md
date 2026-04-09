@@ -53,7 +53,7 @@ Build a **code-oriented TouchDesigner** that runs in a browser. Patchies combine
 | [116](116-webgpu-render-bridge.md)          | WebGPU Render Bridge          | ImageBitmap + SharedArrayBuffer paths from compute to FBO pipeline         |
 | [117](117-shared-resource-pool.md)          | Shared Resource Pool          | Named cubemaps, 3D textures, LUTs accessible by any node                   |
 | [118](118-glsl-include-preprocessor.md)     | GLSL `#include` Preprocessor  | `#include` preprocessor for lygia, VFS, and URL sources ✓                  |
-| [125](125-glsl-metadata-directives.md)      | GLSL Metadata Directives      | `@title` for node titles, `@param` for ranged sliders — no deps             |
+| [125](125-glsl-metadata-directives.md)      | GLSL Metadata Directives      | `@title` for node titles, `@param` for ranged sliders — no deps ✓           |
 | [123](123-shader-effect-format.md)          | Shader Effect Format          | Effect metadata, drag-drop scaffolding, material system, Hydra integration |
 | [120](120-snippet-presets.md)               | Snippet Presets               | Cross-patch portability for GLSL/Hydra/JS snippets via preset system       |
 | [121](121-vfs-js-modules.md)                | VFS JavaScript Modules        | Import JS modules from VFS files alongside `// @lib` nodes                 |
@@ -119,7 +119,7 @@ Independent (no deps):     111, 112, 113, 117, 118, 125, 123, 115 (Stage 2-3)
 ### Phase 2 — Foundations (richer textures)
 
 3. **[111](111-multi-render-target.md) MRT** ✓ and **[112](112-float-fbo-format.md) Float FBO** ✓ — Can be built in parallel. These are the foundation that makes later specs (presets, geometry, compute bridge) much more powerful.
-4. **[125](125-glsl-metadata-directives.md) GLSL Metadata Directives** — `@title` for node titles, `@param` for ranged sliders with min/max and descriptions. No deps, immediately improves every GLSL node's UX. Reused by spec 123 later.
+4. **[125](125-glsl-metadata-directives.md) GLSL Metadata Directives** ✓ — `@title` for node titles, `@param` for ranged sliders with min/max and descriptions. No deps, immediately improves every GLSL node's UX. Reused by spec 123 later.
 5. **[114](114-visual-convenience-presets.md) Presets** — Ship independent presets first (noise generators, post-processing, color grading). Add MRT/float/feedback-dependent presets as those land. Presets use `#include <lygia/...>` internally.
 
 ### Phase 3 — Expansion (new data types)
