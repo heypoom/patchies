@@ -319,7 +319,7 @@ export default defineConfig(() => ({
     global: 'globalThis'
   },
   worker: {
-    format: 'es',
+    format: 'es' as const,
     plugins: () => [wasm(), topLevelAwait()],
     rollupOptions: {
       // Exclude heavy dependencies from worker bundle
