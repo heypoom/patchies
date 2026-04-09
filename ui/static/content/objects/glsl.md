@@ -73,6 +73,29 @@ the next run reverts to a single outlet.
 > `out vec4 fragColor` parameter. Write directly to your named
 > output variables instead.
 
+## Float Texture Format
+
+By default, the output texture uses 8-bit RGBA (values clamped to 0–1).
+For GPGPU, HDR, or data that needs float precision, add a format directive:
+
+```glsl
+// @format rgba32f
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  fragColor = vec4(5.0, -2.0, 100.0, 1.0);  // values survive unclamped
+}
+```
+
+| Format | Precision | Range | Use case |
+|--------|-----------|-------|----------|
+| `rgba8` | 8-bit | 0–1 | Default. Color, visual output |
+| `rgba16f` | 16-bit float | ±65504 | HDR, moderate-precision data |
+| `rgba32f` | 32-bit float | full float | GPGPU, physics, positions |
+
+Downstream nodes sample float textures the same way — no code changes needed on
+the receiving end. The preview thumbnail clamps values for display, but the
+actual data on the wire stays float.
+
 ## Mouse Interaction
 
 If your shader uses the `iMouse` uniform (vec4), mouse interaction
