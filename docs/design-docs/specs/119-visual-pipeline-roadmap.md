@@ -43,22 +43,22 @@ Build a **code-oriented TouchDesigner** that runs in a browser. Patchies combine
 
 ## Specs
 
-| Spec                                        | Title                         | Summary                                                                    |
-| ------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------- |
-| [111](111-multi-render-target.md)           | Multi-Render-Target           | Multiple video outlets per node via MRT color attachments ✓                |
-| [112](112-float-fbo-format.md)              | Float FBO Format              | Per-node `rgba16f`/`rgba32f` for GPGPU and HDR ✓                           |
-| [113](113-graph-level-feedback.md)          | Graph-Level Feedback          | Back-edges with 1-frame delay, double-buffered FBOs ✓                      |
-| [114](114-visual-convenience-presets.md)    | Convenience Presets           | Procedural generators, post-processing, PBR, simulation presets            |
-| [115](115-geometry-wire-type.md)            | Geometry Wire Type            | Geometry handle with auto-caching inlets, attributes, instancing           |
-| [116](116-webgpu-render-bridge.md)          | WebGPU Render Bridge          | ImageBitmap + SharedArrayBuffer paths from compute to FBO pipeline         |
-| [117](117-shared-resource-pool.md)          | Shared Resource Pool          | Named cubemaps, 3D textures, LUTs accessible by any node                   |
-| [118](118-glsl-include-preprocessor.md)     | GLSL `#include` Preprocessor  | `#include` preprocessor for lygia, VFS, and URL sources ✓                  |
-| [125](125-glsl-metadata-directives.md)      | GLSL Metadata Directives      | `@title` for node titles, `@param` for ranged sliders — no deps ✓           |
-| [123](123-shader-effect-format.md)          | Shader Effect Format          | Effect metadata, drag-drop scaffolding, material system, Hydra integration |
-| [120](120-snippet-presets.md)               | Snippet Presets               | Cross-patch portability for GLSL/Hydra/JS snippets via preset system       |
-| [121](121-vfs-js-modules.md)                | VFS JavaScript Modules        | Import JS modules from VFS files alongside `// @lib` nodes                 |
-| [122](122-render-pipeline-optimizations.md) | Render Pipeline Optimizations | Per-node resolution, cook-on-demand caching, channel formats, preview LOD  |
-| [124](124-regl-to-webgl2-migration.md)      | regl → WebGL2 Migration       | Remove regl dependency, thin WebGL2 helpers, native MRT + float formats    |
+| Spec                                        | Title                         | Summary                                                                                |
+| ------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------- |
+| [111](111-multi-render-target.md)           | Multi-Render-Target           | Multiple video outlets per node via MRT color attachments ✓                            |
+| [112](112-float-fbo-format.md)              | Float FBO Format              | Per-node `rgba16f`/`rgba32f` for GPGPU and HDR ✓                                       |
+| [113](113-graph-level-feedback.md)          | Graph-Level Feedback          | Back-edges with 1-frame delay, double-buffered FBOs ✓                                  |
+| [114](114-visual-convenience-presets.md)    | Convenience Presets           | Procedural generators, post-processing, PBR, simulation presets                        |
+| [115](115-geometry-wire-type.md)            | Geometry Wire Type            | Geometry handle with auto-caching inlets, attributes, instancing                       |
+| [116](116-webgpu-render-bridge.md)          | WebGPU Render Bridge          | ImageBitmap + SharedArrayBuffer paths from compute to FBO pipeline                     |
+| [117](117-shared-resource-pool.md)          | Shared Resource Pool          | Named cubemaps, 3D textures, LUTs accessible by any node                               |
+| [118](118-glsl-include-preprocessor.md)     | GLSL `#include` Preprocessor  | `#include` preprocessor for lygia, VFS, and URL sources ✓                              |
+| [125](125-glsl-metadata-directives.md)      | GLSL Metadata Directives      | `@title` for node titles, `@param` for ranged sliders — no deps ✓                      |
+| [123](123-shader-effect-format.md)          | Shader Effect Format          | Effect metadata, drag-drop scaffolding, material system, Hydra integration             |
+| [120](120-snippet-presets.md)               | Snippet Presets               | Cross-patch portability for GLSL/Hydra/JS snippets via preset system                   |
+| [121](121-vfs-js-modules.md)                | VFS JavaScript Modules        | Import JS modules from VFS files alongside `// @lib` nodes                             |
+| [122](122-render-pipeline-optimizations.md) | Render Pipeline Optimizations | Per-node resolution, cook-on-demand caching, channel formats, preview LOD (4a ✓, 4b ✓) |
+| [124](124-regl-to-webgl2-migration.md)      | regl → WebGL2 Migration       | Remove regl dependency, thin WebGL2 helpers, native MRT + float formats                |
 
 ## Dependency Graph
 
