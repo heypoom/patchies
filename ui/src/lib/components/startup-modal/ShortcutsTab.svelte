@@ -122,6 +122,16 @@
       category: 'keyboard'
     },
     {
+      keys: ['Space'],
+      description: 'Toggle play/pause',
+      category: 'keyboard'
+    },
+    {
+      keys: ['Shift', 'Space'],
+      description: 'Toggle the transport panel',
+      category: 'keyboard'
+    },
+    {
       keys: ['Shift', 'P'],
       description: 'Toggle all node previews on/off',
       category: 'keyboard'
