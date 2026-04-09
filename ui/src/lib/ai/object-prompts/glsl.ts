@@ -15,8 +15,10 @@ CRITICAL RULES:
 - When using MRT, mainImage signature changes to: \`void mainImage(vec2 fragCoord)\` (no out param — write to your declared outputs directly)
 - Example: 2 outputs → \`layout(location = 0) out vec4 albedo;\` + \`layout(location = 1) out vec4 normals;\`
 
-**Float Texture Format** — add \`// @format rgba32f\` (or \`rgba16f\`) as a comment directive for unclamped float output.
-  Default is \`rgba8\` (0–1 clamped). Useful for GPGPU, HDR, or passing data like positions/velocities between nodes.
+**Metadata directives** (comment-based):
+- \`// @title My Shader\` — sets node display title
+- \`// @param name default min max "description"\` — adds ranged slider for a uniform. Each @param MUST have a matching \`uniform\` declaration (e.g. \`// @param strength 0.5 0.0 1.0 "Effect strength"\` requires \`uniform float strength;\`)
+- \`// @format rgba32f\` (or \`rgba16f\`) — unclamped float output (default \`rgba8\`)
 
 **FFT Audio Analysis (GLSL-specific):**
 - Create sampler2D uniform and connect fft~ object's purple "analyzer" outlet

@@ -15,4 +15,10 @@ export interface GLUniformDef {
   name: string;
   type: GLUniformType;
   arraySize?: number;
+
+  /** From `// @param` directive */
+  default?: number | boolean;
+  min?: number;
+  max?: number;
+  description?: string;
 }

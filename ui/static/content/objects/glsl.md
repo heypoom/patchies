@@ -73,6 +73,38 @@ the next run reverts to a single outlet.
 > `out vec4 fragColor` parameter. Write directly to your named
 > output variables instead.
 
+## Metadata Directives
+
+Add comment directives to customize the node's UI.
+
+### `@title` — Node Title
+
+```glsl
+// @title Chromatic Aberration
+```
+
+Sets the node's display title instead of the default "glsl".
+
+### `@param` — Ranged Sliders
+
+```glsl
+// @param strength 0.01 0.0 0.1 "Aberration strength"
+// @param samples 8.0 2.0 32.0 "Sample count"
+// @param invert false "Invert output"
+
+uniform float strength; // 0.01
+uniform float samples;  // 8.0
+uniform bool invert;    // false
+```
+
+Format: `// @param <name> [default] [min] [max] ["description"]`
+
+Each `@param` must have a matching `uniform` declaration — the type is inferred from it.
+
+When `min` and `max` are provided, the settings panel shows a slider instead of a plain number input. The description replaces the uniform name as the label.
+
+---
+
 ## Float Texture Format
 
 By default, the output texture uses 8-bit RGBA (values clamped to 0–1).

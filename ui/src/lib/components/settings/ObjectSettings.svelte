@@ -118,9 +118,17 @@
     {#each schema as field, index (index)}
       {#if field.type === 'slider'}
         {@const sliderTracker = makeTracker(field)}
-        {@const currentVal = (getCurrentValue(field) as number) ?? field.min}
+        {@const rawValue = (getCurrentValue(field) as number) ?? field.min}
+
+        {@const decimals =
+          field.step != null && field.step < 1
+            ? Math.max(0, Math.ceil(-Math.log10(field.step)))
+            : 0}
+
+        {@const displayValue = decimals > 0 ? rawValue.toFixed(decimals) : rawValue}
+
         <div>
-          <div class="mb-1 flex items-center justify-between">
+          <div class="mb-1 flex items-start justify-between gap-2">
             {#if field.description}
               <Tooltip.Root>
                 <Tooltip.Trigger>
@@ -132,13 +140,15 @@
             {:else}
               <span class="text-xs font-medium text-zinc-300">{field.label}</span>
             {/if}
-            <span class="text-xs text-zinc-500">{currentVal}</span>
+
+            <span class="shrink-0 text-xs text-zinc-500 tabular-nums">{displayValue}</span>
           </div>
+
           <SettingsSlider
             min={field.min}
             max={field.max}
             step={field.step}
-            value={currentVal}
+            value={rawValue}
             onchange={(v) => onValueChange(field.key, v)}
             onpointerdown={sliderTracker.onFocus}
             onpointerup={sliderTracker.onBlur}
@@ -155,6 +165,7 @@
                   for="setting-{field.key}">{field.label}</label
                 >
               </Tooltip.Trigger>
+
               <Tooltip.Content>{field.description}</Tooltip.Content>
             </Tooltip.Root>
           {:else}
@@ -175,6 +186,7 @@
             oninput={(e) => {
               const raw = (e.target as HTMLInputElement).value;
               if (raw === '' || raw === '-') return;
+
               const parsed = parseFloat(raw);
               if (Number.isFinite(parsed)) onValueChange(field.key, parsed);
             }}
@@ -191,6 +203,7 @@
                   for="setting-{field.key}">{field.label}</label
                 >
               </Tooltip.Trigger>
+
               <Tooltip.Content>{field.description}</Tooltip.Content>
             </Tooltip.Root>
           {:else}
@@ -211,6 +224,7 @@
         </div>
       {:else if field.type === 'boolean'}
         {@const checked = !!(getCurrentValue(field) ?? false)}
+
         <button
           class="flex cursor-pointer items-center gap-1.5 transition-colors"
           onclick={() => handleDiscreteChange(field, !getCurrentValue(field))}
@@ -221,6 +235,7 @@
               checked ? 'border-zinc-500 bg-zinc-500' : 'border-zinc-600'
             ]}
           ></div>
+
           {#if field.description}
             <Tooltip.Root>
               <Tooltip.Trigger>
