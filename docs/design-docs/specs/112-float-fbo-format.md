@@ -29,6 +29,47 @@ interface VisualNodeData {
 }
 ```
 
+### How Users Set the Format
+
+Code-first — no UI knobs. The format is declared in user code, matching each node type's language.
+
+#### GLSL / SwissGL — Comment Directive
+
+```glsl
+// @format rgba32f
+
+void main() {
+  fragColor = vec4(position, velocity, 0.0);
+}
+```
+
+Parsed from code on each update, same pattern as MRT count detection (`detectMrtCount` parses `layout(location = N) out`). A `detectFboFormat()` function strips comments, matches `// @format <value>`, and writes `fboFormat` into node data.
+
+Only `// @format` lines that are **not** inside block comments are matched. The regex strips comments first (same approach as `detectMrtCount`), then matches:
+
+```
+/@format\s+(rgba8|rgba16f|rgba32f)/
+```
+
+If no directive is found, defaults to `rgba8`.
+
+#### JS Nodes (Hydra, REGL, Three, Canvas) — API Function
+
+```javascript
+setTextureFormat('rgba32f');
+```
+
+Works like existing JS API functions (`setTitle()`, `flash()`). Sends a message to the main thread to update `fboFormat` in node data, which triggers FBO rebuild on next `buildFBOs()` cycle.
+
+The function is called once at init (not per-frame). Calling it again with a different value triggers a rebuild.
+
+#### Summary
+
+| Node type | Mechanism | Example |
+|-----------|-----------|---------|
+| glsl, swgl | `// @format rgba32f` comment directive | Parsed from code on change |
+| hydra, regl, three, canvas | `setTextureFormat('rgba32f')` JS API | Message to main thread |
+
 ### Pipeline Change — `fboRenderer.ts`
 
 In `buildFBOs()`, read format from node data:
@@ -48,16 +89,9 @@ const texture = regl.texture({
 });
 ```
 
-Fingerprint must include `fboFormat` so FBOs are recreated when format changes.
+This applies to both regular color attachments and feedback (previous-frame) textures.
 
-### UI — Settings Panel
-
-Add a dropdown to the node settings panel for visual nodes:
-
-- Label: "Texture Format"
-- Options: `RGBA8` (default), `Half Float (16f)`, `Float (32f)`
-- Only shown when node type is glsl, regl, swgl, three, hydra
-- Changing format triggers FBO rebuild
+Fingerprint already includes `fboFormat` (via `JSON.stringify(node.data)`), so FBOs are automatically recreated when format changes.
 
 ### Float Texture Filtering
 
