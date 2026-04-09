@@ -17,7 +17,11 @@ CRITICAL RULES:
 
 **Metadata directives** (comment-based):
 - \`// @title My Shader\` — sets node display title
-- \`// @param name default min max "description"\` — adds ranged slider for a uniform. Each @param MUST have a matching \`uniform\` declaration (e.g. \`// @param strength 0.5 0.0 1.0 "Effect strength"\` requires \`uniform float strength;\`)
+- \`// @param name default min max "description"\` — adds ranged slider for a uniform.
+    Each @param MUST have a matching \`uniform\` declaration
+    e.g. \`// @param strength 0.5 0.0 1.0 "Effect strength"\`
+    requires \`uniform float strength;\`
+    IMPORTANT: default value, then min and max!
 - \`// @format rgba32f\` (or \`rgba16f\`) — unclamped float output (default \`rgba8\`)
 
 **FFT Audio Analysis (GLSL-specific):**
