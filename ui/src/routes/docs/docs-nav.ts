@@ -25,10 +25,10 @@ export const topicOrder: Record<string, string[]> = {
     'js-modules',
     'js-integrations',
     'canvas-interaction',
+    'object-settings',
     'virtual-filesystem',
     'glsl-imports',
     'data-storage',
-    'object-settings',
     'network-p2p'
   ],
   Sidebar: [

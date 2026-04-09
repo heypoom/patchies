@@ -4,8 +4,6 @@ Import GLSL functions from NPM packages, your files, or URLs using `#include` �
 
 `#include` works across most visual objects: [glsl](/docs/objects/glsl), [swgl](/docs/objects/swgl), [regl](/docs/objects/regl), [hydra](/docs/objects/hydra) (inside `setFunction`), and [three](/docs/objects/three) (via `await glsl` tagged template). Write a utility once, use it everywhere.
 
----
-
 ## How It Works
 
 The `#include` directive inlines GLSL source code at the include site before shader compilation. It works like the C preprocessor: resolve the path, fetch the source, paste it in.
@@ -21,8 +19,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 ```
 
 This fetches the `snoise` function from the [lygia](https://lygia.xyz) shader library and makes it available in your code. No setup needed — includes are resolved automatically.
-
----
 
 ## Import Sources
 
@@ -60,8 +56,6 @@ Use double quotes with a full URL to import from anywhere on the web:
 ```
 
 URL imports are cached in memory for the session, so they only fetch once.
-
----
 
 ## Supported Objects
 
@@ -114,8 +108,6 @@ const material = new THREE.ShaderMaterial({
 
 The `glsl` tag and `processIncludes()` function are available in all JavaScript-based visual objects.
 
----
-
 ## Try It
 
 ### Exercise — Use lygia noise in a GLSL shader
@@ -159,21 +151,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 4. Create a second `glsl` object and include the same file — both nodes share the function
 
----
-
 ## Nested Includes
 
 Included files can contain their own `#include` directives. Resolution is recursive up to 32 levels deep. Circular includes are detected and produce an error.
-
----
 
 ## Caching
 
 - **NPM packages** are fetched from a CDN and cached for the session
 - **VFS files** are re-read when changed, so edits are reflected immediately
 - **URLs** are cached for the session (reload the page to re-fetch)
-
----
 
 ## Licensing: Lygia Shader Library
 
@@ -182,8 +168,6 @@ Lygia is dual licensed under the [Prosperity License](https://prosperitylicense.
 This means that Lygia is free for non-commercial use, i.e. for personal use and usage in non-commercial organizations. For _commercial_ use, please purchase a license from the creator, Patricio Gonzalez Vivo on [GitHub Sponsors](https://github.com/sponsors/patriciogonzalezvivo).
 
 This does NOT apply to you if you do not import the Lygia package by using `#include <lygia/...>` in your shaders. You can still use Patchies and all its features without importing Lygia.
-
----
 
 ## See Also
 
