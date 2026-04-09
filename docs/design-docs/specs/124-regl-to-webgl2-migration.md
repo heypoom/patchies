@@ -241,37 +241,230 @@ const loop = () => {
 this.frameId = requestAnimationFrame(loop)
 ```
 
-## User-Facing regl Node → GL Node
+## User-Facing regl Node → `gl` Node with `createDraw()`
 
-The regl node (`reglRenderer.ts`) was just added and isn't live yet. Replace with a twgl-based API:
+The regl node (`reglRenderer.ts`) was just added and isn't live yet. Replace with a `createDraw()` API that preserves regl's declarative ergonomics — config in, callable draw function out — but removes the `regl.prop()` indirection and encourages standard GLSL 300 es.
+
+### Side-by-Side Comparison
 
 ```javascript
-// User code in the "gl" node (backed by twgl internally)
-const shader = await createShader({
-  vert: `#version 300 es
-    in vec2 position;
-    void main() { gl_Position = vec4(position, 0, 1); }`,
-  frag: `#version 300 es
-    precision highp float;
-    uniform float time;
-    out vec4 fragColor;
+// ── BEFORE (regl) ──────────────────────────────
+const draw = await regl({
+  vert: `
+    precision mediump float;
+    attribute vec2 position;
+    varying vec2 uv;
     void main() {
-      fragColor = vec4(sin(time), 0.5, 1.0, 1.0);
-    }`,
+      uv = position * 0.5 + 0.5;
+      gl_Position = vec4(position, 0, 1);
+    }
+  `,
+  frag: `
+    precision mediump float;
+    varying vec2 uv;
+    uniform float time;
+    void main() {
+      gl_FragColor = vec4(uv, sin(time) * 0.5 + 0.5, 1.0);
+    }
+  `,
   attributes: {
-    position: {numComponents: 2, data: [-1, -1, 1, -1, -1, 1, 1, 1]},
+    position: [[-1,-1], [1,-1], [-1,1], [-1,1], [1,-1], [1,1]]
   },
+  uniforms: { time: regl.prop('time') },
+  count: 6,
+  depth: { enable: false },
 })
 
 function render(time) {
-  shader.draw({time})
+  regl.clear({ color: [0, 0, 0, 1] })
+  draw({ time })
 }
 ```
 
-Internally, `createShader()` calls `twgl.createProgramInfo()` + `twgl.createBufferInfoFromArrays()` and returns an object with a `draw(uniforms)` method. This is:
+```javascript
+// ── AFTER (createDraw) ─────────────────────────
+const draw = await createDraw({
+  vert: `#version 300 es
+    in vec2 position;
+    out vec2 uv;
+    void main() {
+      uv = position * 0.5 + 0.5;
+      gl_Position = vec4(position, 0, 1);
+    }
+  `,
+  frag: `#version 300 es
+    precision highp float;
+    uniform float time;
+    in vec2 uv;
+    out vec4 fragColor;
+    void main() {
+      fragColor = vec4(uv, sin(time) * 0.5 + 0.5, 1.0);
+    }
+  `,
+  attributes: {
+    position: [[-1,-1], [1,-1], [-1,1], [-1,1], [1,-1], [1,1]]
+  },
+  count: 6,
+  depth: false,
+})
 
-- **AI-friendly** — standard GLSL 300 es, no magic syntax
-- **Developer-friendly** — simpler than regl, no Proxy magic, standard WebGL2 shaders
+function render(time) {
+  clear({ color: [0, 0, 0, 1] })
+  draw({ time })  // uniforms passed directly — no prop() indirection
+}
+```
+
+### What Changed (and What Didn't)
+
+| Aspect | regl | `createDraw` |
+|---|---|---|
+| Shape | Config object → callable function | **Same** |
+| `await` for `#include` | Yes | **Same** |
+| Attributes | Array of vec2 arrays | **Same** |
+| Dynamic uniforms | `regl.prop('time')` declared upfront | Pass `{ time }` at draw time (simpler) |
+| Depth/blend config | `depth: { enable: false }` | `depth: false` (shorthand) |
+| Shader language | WebGL1 style (`attribute`/`varying`/`gl_FragColor`) | Standard GLSL 300 es (`in`/`out`/`fragColor`) |
+| Clear | `regl.clear(...)` | `clear(...)` (top-level function) |
+| Resources | `regl.buffer()`, `regl.texture()` | `createBuffer()`, `createTexture()` |
+| Video textures | `() => getTexture(0)` in uniforms | **Same** — `getTexture(0)` in uniforms |
+| Cleanup | Auto-tracked via Proxy | Auto-tracked (same behavior, simpler internals) |
+
+The `regl.prop()` removal is an improvement — declaring string keys upfront that get resolved later was always an unnecessary indirection. Passing uniforms directly at draw time is how SwissGL and Three.js both work.
+
+### Video Textures
+
+```javascript
+setVideoCount(2, 1)
+
+const draw = await createDraw({
+  vert: `#version 300 es
+    in vec2 position;
+    out vec2 uv;
+    void main() {
+      uv = position * 0.5 + 0.5;
+      gl_Position = vec4(position, 0, 1);
+    }
+  `,
+  frag: `#version 300 es
+    precision highp float;
+    uniform sampler2D tex0;
+    uniform sampler2D tex1;
+    uniform float time;
+    in vec2 uv;
+    out vec4 fragColor;
+    void main() {
+      vec4 a = texture(tex0, uv);
+      vec4 b = texture(tex1, uv);
+      fragColor = mix(a, b, sin(time) * 0.5 + 0.5);
+    }
+  `,
+  attributes: {
+    position: [[-1,-1], [1,-1], [-1,1], [-1,1], [1,-1], [1,1]]
+  },
+  count: 6,
+})
+
+function render(time) {
+  draw({ tex0: getTexture(0), tex1: getTexture(1), time })
+}
+```
+
+### MRT (Multiple Render Targets)
+
+```javascript
+setVideoCount(0, 2)
+
+const draw = await createDraw({
+  vert: `#version 300 es
+    in vec2 position;
+    out vec2 uv;
+    void main() {
+      uv = position * 0.5 + 0.5;
+      gl_Position = vec4(position, 0, 1);
+    }
+  `,
+  frag: `#version 300 es
+    precision mediump float;
+    layout(location = 0) out vec4 albedo;
+    layout(location = 1) out vec4 normals;
+    in vec2 uv;
+    uniform float time;
+    void main() {
+      albedo  = vec4(uv, sin(time) * 0.5 + 0.5, 1.0);
+      normals = vec4(normalize(vec3(uv - 0.5, 1.0)) * 0.5 + 0.5, 1.0);
+    }
+  `,
+  attributes: {
+    position: [[-1,-1],[1,-1],[-1,1],[-1,1],[1,-1],[1,1]]
+  },
+  count: 6,
+})
+
+function render(time) {
+  draw({ time })
+}
+```
+
+### Shader Includes
+
+```javascript
+const draw = await createDraw({
+  frag: `#version 300 es
+    precision highp float;
+    in vec2 uv;
+    uniform float time;
+    out vec4 fragColor;
+
+    #include <lygia/generative/snoise>
+
+    void main() {
+      float n = snoise(vec3(uv * 4.0, time));
+      fragColor = vec4(vec3(n), 1.0);
+    }
+  `,
+  // ... vert, attributes, count
+})
+```
+
+The `await` resolves `#include` directives before shader compilation — same behavior as the regl node.
+
+### `createDraw()` Config Options
+
+```typescript
+interface DrawConfig {
+  vert: string;                              // Vertex shader (GLSL 300 es)
+  frag: string;                              // Fragment shader (GLSL 300 es)
+  attributes: Record<string, number[][]>;    // Attribute arrays (e.g. position: [[-1,-1], ...])
+  count: number;                             // Vertex count
+  primitive?: 'triangles' | 'triangle strip' | 'lines' | 'points';  // Default: 'triangles'
+  depth?: boolean;                           // Default: true
+  blend?: boolean | BlendConfig;             // Default: false
+  elements?: number[];                       // Index buffer (optional)
+}
+
+// Returns:
+interface DrawCommand {
+  draw(uniforms?: Record<string, unknown>): void;
+  destroy(): void;
+}
+```
+
+### Internal Implementation
+
+`createDraw()` is a ~50-80 line wrapper over twgl:
+
+1. `await` preprocesses `#include` directives in `vert`/`frag`
+2. `twgl.createProgramInfo(gl, [vert, frag])` compiles shaders
+3. `twgl.createBufferInfoFromArrays(gl, attributes)` creates buffers + VAO
+4. Returns `{ draw(uniforms) }` which calls `twgl.setUniforms()` + `twgl.drawBufferInfo()`
+5. All resources auto-tracked for cleanup on code reload / node deletion
+
+### Why This Works
+
+- **Preserves regl's best quality** — declarative config → callable draw function
+- **Removes regl's worst quality** — `regl.prop()` string-key indirection
+- **AI-friendly** — standard GLSL 300 es, no library-specific syntax to learn
+- **Developer-friendly** — if you know regl, you know this. If you know WebGL2, you know this.
 - **`#include` compatible** — preprocessor works on frag/vert strings before compilation
 
 The node type changes from `regl` → `gl`.
