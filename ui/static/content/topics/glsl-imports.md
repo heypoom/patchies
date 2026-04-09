@@ -2,6 +2,8 @@
 
 Import GLSL functions from NPM packages, your files, or URLs using `#include` — no copy-pasting shader code between nodes.
 
+`#include` works across most visual objects: [glsl](/docs/objects/glsl), [swgl](/docs/objects/swgl), [regl](/docs/objects/regl), [hydra](/docs/objects/hydra) (inside `setFunction`), and [three](/docs/objects/three) (via `await glsl` tagged template). Write a utility once, use it everywhere.
+
 ---
 
 ## How It Works
@@ -63,18 +65,39 @@ URL imports are cached in memory for the session, so they only fetch once.
 
 ## Supported Objects
 
-`#include` works automatically in these visual objects:
+`#include` works in five visual objects — most of them auto-preprocess your shaders, so you just write `#include` and it works:
 
 | Object | How it works |
 | --- | --- |
 | [glsl](/docs/objects/glsl) | Auto-preprocessed before shader compilation |
 | [swgl](/docs/objects/swgl) | Auto-preprocessed in `FP`, `VP`, and `Inc` fields |
 | [regl](/docs/objects/regl) | Auto-preprocessed in `frag` and `vert` fields |
+| [hydra](/docs/objects/hydra) | Auto-preprocessed inside `setFunction` GLSL strings |
 | [three](/docs/objects/three) | Use `await glsl` tagged template or `processIncludes()` |
+
+### Hydra Usage
+
+Use `#include` inside `setFunction` to bring external GLSL into Hydra's shader pipeline:
+
+```javascript
+osc()
+  .setFunction({
+    type: "frag",
+    glsl: `
+      #include <lygia/generative/snoise>
+
+      vec4 myEffect(vec4 color, vec2 uv) {
+        float n = snoise(vec3(uv * 4.0, time));
+        return vec4(vec3(n), 1.0);
+      }
+    `,
+  })
+  .out()
+```
 
 ### Three.js Usage
 
-Three.js nodes can't auto-preprocess because Patchies doesn't control `THREE.ShaderMaterial`. Use the `glsl` tagged template instead:
+Three.js nodes can't auto-preprocess because Patchies doesn't control `THREE.ShaderMaterial`. Use the `await glsl` tagged template instead:
 
 ```javascript
 const material = new THREE.ShaderMaterial({
