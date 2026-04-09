@@ -120,6 +120,11 @@
       keys: ['Ctrl', 'Shift', 'Z'],
       description: 'Redo the last undone action',
       category: 'keyboard'
+    },
+    {
+      keys: ['Shift', 'P'],
+      description: 'Toggle all node previews on/off',
+      category: 'keyboard'
     }
   ];
 
