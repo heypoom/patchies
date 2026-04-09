@@ -26,7 +26,6 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
 
   private timestamp = performance.now();
   private sourceToParamIndexMap: (number | null)[] = [null, null, null, null];
-  private videoOutletCount = 1;
 
   // Mouse scope: 'local' = canvas-relative, 'global' = screen-relative
   private mouseScope: 'global' | 'local' = 'local';
@@ -124,7 +123,13 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
     const [outputWidth, outputHeight] = this.renderer.outputSize;
     const destPreviewFBO = getFramebuffer(this.framebuffer);
 
-    for (let i = 0; i < this.videoOutletCount; i++) {
+    // Use config outlet count — reflects the actual FBO color attachment count.
+    // this.videoOutletCount is set immediately when setVideoCount() runs but the FBO
+    // rebuild is async, so using it would call drawBuffers with more entries than
+    // the current FBO has attachments (INVALID_OPERATION).
+    const fboOutletCount = this.config.videoOutletCount ?? 1;
+
+    for (let i = 0; i < fboOutletCount; i++) {
       const hydraFramebuffer = this.hydra.outputs[i]?.getCurrent();
       if (!hydraFramebuffer) continue;
 
@@ -133,9 +138,10 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
 
-      if (this.videoOutletCount > 1) {
+      if (fboOutletCount > 1) {
         // Target only the i-th color attachment for MRT
-        const drawBuffers = new Array(this.videoOutletCount).fill(gl.NONE) as number[];
+        const drawBuffers = new Array(fboOutletCount).fill(gl.NONE) as number[];
+
         drawBuffers[i] = gl.COLOR_ATTACHMENT0 + i;
         gl.drawBuffers(drawBuffers);
       }
@@ -155,12 +161,10 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
       );
     }
 
-    if (this.videoOutletCount > 1) {
+    if (fboOutletCount > 1) {
       // Restore full drawBuffers state on the MRT FBO
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
-      gl.drawBuffers(
-        Array.from({ length: this.videoOutletCount }, (_, i) => gl.COLOR_ATTACHMENT0 + i)
-      );
+      gl.drawBuffers(Array.from({ length: fboOutletCount }, (_, i) => gl.COLOR_ATTACHMENT0 + i));
     }
 
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
@@ -174,7 +178,6 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
     if (!this.hydra) return;
 
     this.sourceToParamIndexMap = [null, null, null, null];
-    this.videoOutletCount = 1;
 
     this.resetState();
 
@@ -283,8 +286,6 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
     // cap to WebGL2's guaranteed MAX_COLOR_ATTACHMENTS / MAX_DRAW_BUFFERS
     inletCount = Math.min(inletCount, 8);
     outletCount = Math.min(outletCount, 8);
-
-    this.videoOutletCount = outletCount;
 
     self.postMessage({
       type: 'setPortCount',
