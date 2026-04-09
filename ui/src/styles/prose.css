@@ -35,6 +35,10 @@
     margin-bottom: 0.65rem;
   }
 
+  .prose-markdown-chat.prose-markdown-app h3 {
+    margin-top: 1rem;
+  }
+
   .prose-markdown-app {
     --prose-scale: 0.8;
     --prose-base: calc(0.9375rem * var(--prose-scale));
