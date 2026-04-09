@@ -55,12 +55,6 @@ self.onmessage = (event) => {
     .with('capturePreview', () =>
       handleCapturePreview(data.nodeId, data.requestId, data.customSize)
     )
-    .with('updateHydra', () => handleUpdateHydra(data.nodeId))
-    .with('updateCanvas', () => handleUpdateCanvas(data.nodeId))
-    .with('updateTextmode', () => handleUpdateTextmode(data.nodeId))
-    .with('updateThree', () => handleUpdateThree(data.nodeId))
-    .with('updateRegl', () => handleUpdateRegl(data.nodeId))
-    .with('updateSwgl', () => handleUpdateSwgl(data.nodeId))
     .with('updateProjectionMap', () => fboRenderer.updateProjectionMap(data.nodeId, data.surfaces))
     .with('setFFTData', () => handleSetFFTData(data))
     .with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code))
@@ -262,48 +256,6 @@ function handleSetFFTData(payload: AudioAnalysisPayloadWithType) {
       fboRenderer.setFFTAsGlslUniforms(payload);
     })
     .exhaustive();
-}
-
-function handleUpdateHydra(nodeId: string) {
-  const hydraRenderer = fboRenderer.hydraByNode.get(nodeId);
-  if (!hydraRenderer) return;
-
-  hydraRenderer.updateCode();
-}
-
-function handleUpdateCanvas(nodeId: string) {
-  const canvasRenderer = fboRenderer.canvasByNode.get(nodeId);
-  if (!canvasRenderer) return;
-
-  canvasRenderer.updateCode();
-}
-
-function handleUpdateTextmode(nodeId: string) {
-  const textmodeRenderer = fboRenderer.textmodeByNode.get(nodeId);
-  if (!textmodeRenderer) return;
-
-  textmodeRenderer.updateCode();
-}
-
-function handleUpdateThree(nodeId: string) {
-  const threeRenderer = fboRenderer.threeByNode.get(nodeId);
-  if (!threeRenderer) return;
-
-  threeRenderer.updateCode();
-}
-
-function handleUpdateRegl(nodeId: string) {
-  const reglRenderer = fboRenderer.reglByNode.get(nodeId);
-  if (!reglRenderer) return;
-
-  reglRenderer.updateCode();
-}
-
-function handleUpdateSwgl(nodeId: string) {
-  const swglRenderer = fboRenderer.swglByNode.get(nodeId);
-  if (!swglRenderer) return;
-
-  swglRenderer.updateCode();
 }
 
 function handleCapturePreview(nodeId: string, requestId?: string, customSize?: [number, number]) {
