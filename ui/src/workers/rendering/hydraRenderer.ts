@@ -60,8 +60,8 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
       regl: instance.renderer.regl,
       width,
       height,
-      numSources: config.videoInletCount ?? 4,
-      numOutputs: config.videoOutletCount ?? 4,
+      numSources: Math.max(4, config.videoInletCount ?? 4),
+      numOutputs: Math.max(4, config.videoOutletCount ?? 4),
       precision: instance.precision,
       onError: (error: unknown, context: HydraErrorContext) =>
         instance.handleHydraRuntimeError(error, context)
