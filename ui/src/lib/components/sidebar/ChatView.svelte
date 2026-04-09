@@ -372,7 +372,7 @@
   <!-- Messages -->
   <div
     bind:this={messagesEl}
-    class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 {expandedCallData
+    class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-3 {expandedCallData
       ? 'hidden'
       : ''}"
   >
@@ -426,7 +426,7 @@
         <div class="min-w-0">
           <details>
             <summary
-              class="flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
+              class="mb-1 flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
             >
               <div class="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600"></div>
               Thinking
@@ -503,7 +503,7 @@
         <div class="min-w-0">
           <details open={$chatSettingsStore.expandThinking}>
             <summary
-              class="flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
+              class="mb-1 flex cursor-pointer list-none items-center gap-1.5 font-mono text-[10px] text-zinc-600 hover:text-zinc-500"
             >
               <div
                 class="h-1.5 w-1.5 shrink-0 rounded-full {session.streamingText
