@@ -121,7 +121,9 @@
       {tabindex}
       width={typeof width === 'number' ? width : undefined}
       height={typeof height === 'number' ? height : undefined}
-      {style}
+      style={typeof width === 'number' && typeof height === 'number'
+        ? `width:${width}px;height:${height}px;${style}`
+        : style}
     ></canvas>
   {/snippet}
 </ObjectPreviewLayout>

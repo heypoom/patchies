@@ -153,6 +153,8 @@
       const [previewWidth, previewHeight] = glSystem.previewSize;
       previewCanvas.width = previewWidth;
       previewCanvas.height = previewHeight;
+      previewCanvas.style.width = `${previewWidth}px`;
+      previewCanvas.style.height = `${previewHeight}px`;
     }
 
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
