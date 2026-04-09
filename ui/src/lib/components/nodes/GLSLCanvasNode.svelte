@@ -95,6 +95,12 @@
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
+      // 'run' from any inlet re-runs the shader
+      if (message && typeof message === 'object' && 'type' in message && message.type === 'run') {
+        updateShader();
+        return;
+      }
+
       if (meta.inletKey?.startsWith('message-in-')) {
         const [, uniformName] = meta.inletKey.split('-').slice(2);
 
