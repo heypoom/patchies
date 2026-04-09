@@ -63,6 +63,14 @@
 
   const code = $derived(data.code || '');
 
+  function detectFboFormat(code: string): 'rgba8' | 'rgba16f' | 'rgba32f' | undefined {
+    // Match // @format directive in single-line comments (don't strip comments first!)
+    // Only skip directives inside block comments.
+    const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
+    const m = withoutBlocks.match(/\/\/\s*@format\s+(rgba8|rgba16f|rgba32f)/);
+    return (m?.[1] as 'rgba8' | 'rgba16f' | 'rgba32f') ?? undefined;
+  }
+
   let videoInletCount = $derived(data.videoInletCount ?? 0);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
   let messageInletCount = $derived(data.messageInletCount ?? 1);
@@ -91,7 +99,8 @@
 
         glSystem.upsertNode(nodeId, 'swgl', {
           code,
-          mrtCount: m.outletCount
+          mrtCount: m.outletCount,
+          fboFormat: detectFboFormat(code)
         });
       })
       .exhaustive();
@@ -160,7 +169,8 @@
 
     glSystem.upsertNode(nodeId, 'swgl', {
       code,
-      mrtCount: data.videoOutletCount ?? 1
+      mrtCount: data.videoOutletCount ?? 1,
+      fboFormat: detectFboFormat(code)
     });
 
     setTimeout(() => {
@@ -190,6 +200,7 @@
       glSystem.upsertNode(nodeId, 'swgl', {
         code,
         mrtCount: data.videoOutletCount ?? 1,
+        fboFormat: detectFboFormat(code),
         _runRevision: Date.now()
       });
     } catch (error) {

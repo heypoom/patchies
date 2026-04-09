@@ -154,6 +154,14 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
     });
   }
 
+  setTextureFormat(format: 'rgba8' | 'rgba16f' | 'rgba32f') {
+    self.postMessage({
+      type: 'setTextureFormat',
+      nodeId: this.config.nodeId,
+      format
+    });
+  }
+
   setInteraction(mode: 'drag' | 'pan' | 'wheel' | 'interact', enabled: boolean) {
     self.postMessage({
       type: 'setInteraction',
@@ -272,6 +280,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
         this.setPortCount(inletCount, outletCount);
       },
       setTitle: this.setTitle.bind(this),
+      setTextureFormat: this.setTextureFormat.bind(this),
       setHidePorts: (hidePorts: boolean) =>
         self.postMessage({ type: 'setHidePorts', nodeId: this.config.nodeId, hidePorts }),
       extraContext

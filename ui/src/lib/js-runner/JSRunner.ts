@@ -21,6 +21,7 @@ export interface JSRunnerOptions {
   setPortCount?: (inletCount?: number, outletCount?: number) => void;
   setRunOnMount?: (runOnMount?: boolean) => void;
   setTitle?: (title: string) => void;
+  setTextureFormat?: (format: 'rgba8' | 'rgba16f' | 'rgba32f') => void;
   setHidePorts?: (hidePorts: boolean) => void;
   extraContext?: Record<string, unknown>;
 
@@ -356,6 +357,7 @@ export class JSRunner {
       setPortCount = () => {},
       setRunOnMount = () => {},
       setTitle = () => {},
+      setTextureFormat = () => {},
       setHidePorts = () => {},
       extraContext = {},
       skipMessageContext = false,
@@ -398,6 +400,7 @@ export class JSRunner {
       'setPortCount',
       'setRunOnMount',
       'setTitle',
+      'setTextureFormat',
       'setHidePorts',
       'getVfsUrl',
       'clock',
@@ -484,6 +487,7 @@ export class JSRunner {
       setPortCount,
       setRunOnMount,
       setTitle,
+      setTextureFormat,
       setHidePorts,
       createGetVfsUrl(nodeId),
       clock,

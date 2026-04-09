@@ -2,6 +2,8 @@ import type regl from 'regl';
 import type { ProfilerCategory, RenderFrameStats, TimingStats } from '$lib/profiler/types';
 import type { GLUniformDef } from '../../types/uniform-config';
 
+export type FBOFormat = 'rgba8' | 'rgba16f' | 'rgba32f';
+
 export type RenderNode = {
   id: string;
   inputs: string[]; // IDs of input nodes
@@ -13,13 +15,29 @@ export type RenderNode = {
   /** Inlet indices connected via back-edges (feedback loops — reads previous frame) */
   backEdgeInlets: Set<number>;
 } & (
-  | { type: 'glsl'; data: { code: string; glUniformDefs: GLUniformDef[]; mrtCount?: number } }
-  | { type: 'hydra'; data: { code: string; videoInletCount?: number; videoOutletCount?: number } }
-  | { type: 'swgl'; data: { code: string; mrtCount?: number } }
-  | { type: 'canvas'; data: { code: string } }
-  | { type: 'textmode'; data: { code: string } }
-  | { type: 'three'; data: { code: string } }
-  | { type: 'regl'; data: { code: string; videoOutletCount?: number } }
+  | {
+      type: 'glsl';
+      data: {
+        code: string;
+        glUniformDefs: GLUniformDef[];
+        mrtCount?: number;
+        fboFormat?: FBOFormat;
+      };
+    }
+  | {
+      type: 'hydra';
+      data: {
+        code: string;
+        videoInletCount?: number;
+        videoOutletCount?: number;
+        fboFormat?: FBOFormat;
+      };
+    }
+  | { type: 'swgl'; data: { code: string; mrtCount?: number; fboFormat?: FBOFormat } }
+  | { type: 'canvas'; data: { code: string; fboFormat?: FBOFormat } }
+  | { type: 'textmode'; data: { code: string; fboFormat?: FBOFormat } }
+  | { type: 'three'; data: { code: string; fboFormat?: FBOFormat } }
+  | { type: 'regl'; data: { code: string; videoOutletCount?: number; fboFormat?: FBOFormat } }
   | { type: 'projmap'; data: { surfaces: import('$objects/projmap/types').ProjMapSurface[] } }
   | { type: 'img'; data: unknown }
   | { type: 'bg.out'; data: unknown }
@@ -252,7 +270,8 @@ export type RenderWorkerMessage =
   | { type: 'unsubscribeChannel'; nodeId: string; channel: string }
   | { type: 'settingsDefine'; nodeId: string; requestId: string; schema: unknown[] }
   | { type: 'settingsClear'; nodeId: string }
-  | { type: 'includeProcessing'; nodeId: string; active: boolean };
+  | { type: 'includeProcessing'; nodeId: string; active: boolean }
+  | { type: 'setTextureFormat'; nodeId: string; format: FBOFormat };
 
 export type PreviewState = Record<string, boolean>;
 
