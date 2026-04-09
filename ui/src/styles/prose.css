@@ -77,6 +77,24 @@
     color: #52525b;
   }
 
+  .prose-markdown-thinking.prose-markdown-object-prompt p,
+  .prose-markdown-thinking.prose-markdown-object-prompt li,
+  .prose-markdown-thinking.prose-markdown-object-prompt ul,
+  .prose-markdown-thinking.prose-markdown-object-prompt ol,
+  .prose-markdown-thinking.prose-markdown-object-prompt h1,
+  .prose-markdown-thinking.prose-markdown-object-prompt h2,
+  .prose-markdown-thinking.prose-markdown-object-prompt h3 {
+    color: #a1a1aa;
+  }
+
+  .prose-markdown-chat.prose-markdown-object-prompt strong {
+    color: #d4d4d8;
+  }
+
+  .prose-markdown-chat.prose-markdown-object-prompt code {
+    color: #a1a1aa;
+  }
+
   .prose-markdown-app {
     --prose-scale: 0.8;
     --prose-base: calc(0.9375rem * var(--prose-scale));

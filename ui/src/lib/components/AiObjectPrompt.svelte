@@ -417,7 +417,7 @@
               <div
                 class="border-l-2 border-zinc-600 pl-2 {index === ctrl.thinkingLog.length - 1
                   ? 'opacity-100'
-                  : 'opacity-40'}"
+                  : 'opacity-50'}"
               >
                 <MarkdownContent
                   markdown={thought}
