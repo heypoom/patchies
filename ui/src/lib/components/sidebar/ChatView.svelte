@@ -433,7 +433,7 @@
             </summary>
 
             <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-600">
-              <MarkdownContent markdown={message.thinking} class="prose-chat" />
+              <MarkdownContent markdown={message.thinking} class="prose-markdown-chat" />
             </div>
           </details>
 
@@ -445,7 +445,7 @@
 
           {#if message.content}
             <div class={message.toolCalls?.length ? 'mt-2' : ''}>
-              <MarkdownContent markdown={message.content} class="prose-chat" />
+              <MarkdownContent markdown={message.content} class="prose-markdown-chat" />
             </div>
           {/if}
 
@@ -474,7 +474,7 @@
 
         {#if message.content}
           <div>
-            <MarkdownContent markdown={message.content} class="prose-chat" />
+            <MarkdownContent markdown={message.content} class="prose-markdown-chat" />
           </div>
         {/if}
 
@@ -514,7 +514,7 @@
             </summary>
 
             <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-600">
-              <MarkdownContent markdown={session.thinkingText} class="prose-chat" />
+              <MarkdownContent markdown={session.thinkingText} class="prose-markdown-chat" />
             </div>
           </details>
 
@@ -527,7 +527,7 @@
 
           {#if session.streamingText}
             <div class={session.streamingToolCalls.length ? 'mt-2' : ''}>
-              <MarkdownContent markdown={session.streamingText} class="prose-chat" />
+              <MarkdownContent markdown={session.streamingText} class="prose-markdown-chat" />
             </div>
           {/if}
 
@@ -554,7 +554,7 @@
 
         {#if session.streamingText}
           <div>
-            <MarkdownContent markdown={session.streamingText} class="prose-chat" />
+            <MarkdownContent markdown={session.streamingText} class="prose-markdown-chat" />
           </div>
         {/if}
 

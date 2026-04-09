@@ -28,7 +28,7 @@
   );
 </script>
 
-<div class="prose-markdown-sm {className}">
+<div class="prose-markdown-app {className}">
   <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized with DOMPurify -->
   {@html html}
 </div>

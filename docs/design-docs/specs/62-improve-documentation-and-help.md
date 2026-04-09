@@ -306,7 +306,7 @@ Before deleting README content, verify the new docs include:
 Prose styles live in `ui/src/styles/prose.css` (imported in app.css):
 
 - `.prose-markdown` — full size for docs pages
-- `.prose-markdown-sm` — 73% scale for help sidebar
+- `.prose-markdown-app` — 73% scale for help sidebar
 
 Don't duplicate these styles in components.
 

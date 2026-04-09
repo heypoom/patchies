@@ -257,7 +257,7 @@
 
     <div class="flex-1 overflow-y-auto p-4">
       {#if topicContent.htmlContent}
-        <div class="prose-markdown-sm">
+        <div class="prose-markdown-app">
           {@html topicContent.htmlContent}
         </div>
       {:else if topicContent.loading}
@@ -368,7 +368,7 @@
       <!-- Prose documentation from markdown -->
       {#if helpContent.htmlContent}
         <div class="mb-4 border-t border-zinc-800 pt-4">
-          <div class="prose-markdown-sm">
+          <div class="prose-markdown-app">
             {@html helpContent.htmlContent}
           </div>
         </div>

@@ -1,5 +1,5 @@
 /* Prose styles for markdown content (docs, help sidebar) */
-/* Use prose-markdown for full size, prose-markdown-sm for compact (73% scale) */
+/* Use prose-markdown for full size, prose-markdown-app for compact (73% scale) */
 
 @layer components {
   .prose-markdown {
@@ -11,11 +11,15 @@
     --prose-h3: calc(0.9375rem * var(--prose-scale));
   }
 
-  .prose-chat.prose-markdown-sm {
+  .prose-markdown-chat.prose-markdown-app {
     --prose-scale: 0.9;
   }
 
-  .prose-markdown-sm {
+  .prose-markdown-chat.prose-markdown-app hr {
+    margin-bottom: 1rem;
+  }
+
+  .prose-markdown-app {
     --prose-scale: 0.8;
     --prose-base: calc(0.9375rem * var(--prose-scale));
     --prose-code: calc(0.875rem * var(--prose-scale));
@@ -24,9 +28,16 @@
     --prose-h3: calc(0.9375rem * var(--prose-scale));
   }
 
-  .prose-markdown h1,
-  .prose-markdown-sm h1 {
+  .prose-markdown h1 {
     font-family: 'Fraunces', serif;
+  }
+
+  .prose-markdown-app h1 {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  }
+
+  .prose-markdown h1,
+  .prose-markdown-app h1 {
     font-size: calc(2rem * var(--prose-scale));
     font-weight: 700;
     color: #fafafa;
@@ -37,9 +48,16 @@
     border-bottom: 1px solid #27272a;
   }
 
-  .prose-markdown h2,
-  .prose-markdown-sm h2 {
+  .prose-markdown h2 {
     font-family: 'Syne', sans-serif;
+  }
+
+  .prose-markdown-app h2 {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  }
+
+  .prose-markdown h2,
+  .prose-markdown-app h2 {
     font-size: calc(0.6875rem * var(--prose-scale));
     font-weight: 700;
     color: #a1a1aa;
@@ -51,9 +69,16 @@
     border-left: 2px solid #f97316;
   }
 
-  .prose-markdown h3,
-  .prose-markdown-sm h3 {
+  .prose-markdown h3 {
     font-family: 'Syne', sans-serif;
+  }
+
+  .prose-markdown-app h3 {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  }
+
+  .prose-markdown h3,
+  .prose-markdown-app h3 {
     font-size: calc(0.875rem * var(--prose-scale));
     font-weight: 600;
     color: #d4d4d8;
@@ -62,9 +87,16 @@
     margin-bottom: 0.625rem;
   }
 
-  .prose-markdown p,
-  .prose-markdown-sm p {
+  .prose-markdown p {
     font-family: 'DM Sans', sans-serif;
+  }
+
+  .prose-markdown-app p {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  }
+
+  .prose-markdown p,
+  .prose-markdown-app p {
     font-size: var(--prose-base);
     font-weight: 400;
     color: #a1a1aa;
@@ -72,19 +104,19 @@
     margin-bottom: 1rem;
   }
 
-  .prose-ai-quick-preview.prose-markdown-sm p {
+  .prose-ai-quick-preview.prose-markdown-app p {
     margin-bottom: 0 !important;
     color: inherit !important;
   }
 
-  .prose-code-expanded.prose-markdown-sm pre {
+  .prose-code-expanded.prose-markdown-app pre {
     border-radius: 0 0 0.25rem 0.25rem !important;
     margin: 0;
     border: none;
   }
 
   .prose-markdown code,
-  .prose-markdown-sm code {
+  .prose-markdown-app code {
     font-family: ui-monospace, monospace;
     font-size: var(--prose-code);
     background: #27272a;
@@ -94,7 +126,7 @@
   }
 
   .prose-markdown pre,
-  .prose-markdown-sm pre {
+  .prose-markdown-app pre {
     background: #18181b;
     border: 1px solid #27272a;
     border-radius: 0.5rem;
@@ -106,20 +138,27 @@
     padding: 1rem;
   }
 
-  .prose-markdown-sm pre {
+  .prose-markdown-app pre {
     padding: 0.625rem 0.75rem;
   }
 
   .prose-markdown pre code,
-  .prose-markdown-sm pre code {
+  .prose-markdown-app pre code {
     background: transparent;
     padding: 0;
     font-size: var(--prose-code);
   }
 
-  .prose-markdown ul,
-  .prose-markdown-sm ul {
+  .prose-markdown ul {
     font-family: 'DM Sans', sans-serif;
+  }
+
+  .prose-markdown-app ul {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  }
+
+  .prose-markdown ul,
+  .prose-markdown-app ul {
     font-size: var(--prose-base);
     color: #a1a1aa;
     padding-left: 0.8rem;
@@ -127,9 +166,16 @@
     list-style-type: disc;
   }
 
-  .prose-markdown ol,
-  .prose-markdown-sm ol {
+  .prose-markdown ol {
     font-family: 'DM Sans', sans-serif;
+  }
+
+  .prose-markdown-app ol {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  }
+
+  .prose-markdown ol,
+  .prose-markdown-app ol {
     font-size: var(--prose-base);
     color: #a1a1aa;
     padding-left: 0.8rem;
@@ -138,31 +184,31 @@
   }
 
   .prose-markdown li,
-  .prose-markdown-sm li {
+  .prose-markdown-app li {
     margin-bottom: 0.5rem;
   }
 
   .prose-markdown strong,
-  .prose-markdown-sm strong {
+  .prose-markdown-app strong {
     color: #e4e4e7;
     font-weight: 600;
   }
 
   .prose-markdown a,
-  .prose-markdown-sm a {
+  .prose-markdown-app a {
     color: #60a5fa;
     text-decoration: underline;
     text-underline-offset: 2px;
   }
 
   .prose-markdown a:hover,
-  .prose-markdown-sm a:hover {
+  .prose-markdown-app a:hover {
     color: #93c5fd;
   }
 
   /* Tables */
   .prose-markdown table,
-  .prose-markdown-sm table {
+  .prose-markdown-app table {
     display: block;
     width: 100%;
     font-size: var(--prose-base);
@@ -172,7 +218,7 @@
   }
 
   .prose-markdown th,
-  .prose-markdown-sm th {
+  .prose-markdown-app th {
     text-align: left;
     font-weight: 600;
     color: #e4e4e7;
@@ -181,74 +227,81 @@
     background: #27272a;
   }
 
-  .prose-markdown td,
-  .prose-markdown-sm td {
+  .prose-markdown td {
     font-family: 'DM Sans', sans-serif;
+  }
+
+  .prose-markdown-app td {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  }
+
+  .prose-markdown td,
+  .prose-markdown-app td {
     padding: 0.5rem 0.75rem;
     color: #a1a1aa;
     border-bottom: 1px solid #27272a;
   }
 
   .prose-markdown tr:last-child td,
-  .prose-markdown-sm tr:last-child td {
+  .prose-markdown-app tr:last-child td {
     border-bottom: none;
   }
 
   .prose-markdown tbody tr:hover,
-  .prose-markdown-sm tbody tr:hover {
+  .prose-markdown-app tbody tr:hover {
     background: #27272a40;
   }
 
   /* highlight.js syntax theme */
   .prose-markdown .hljs,
-  .prose-markdown-sm .hljs {
+  .prose-markdown-app .hljs {
     background: transparent !important;
   }
 
-  .prose-markdown-sm pre code.hljs {
+  .prose-markdown-app pre code.hljs {
     padding: 0 !important;
   }
 
   .prose-markdown .hljs-keyword,
   .prose-markdown .hljs-selector-tag,
   .prose-markdown .hljs-built_in,
-  .prose-markdown-sm .hljs-keyword,
-  .prose-markdown-sm .hljs-selector-tag,
-  .prose-markdown-sm .hljs-built_in {
+  .prose-markdown-app .hljs-keyword,
+  .prose-markdown-app .hljs-selector-tag,
+  .prose-markdown-app .hljs-built_in {
     color: #c084fc;
   }
 
   .prose-markdown .hljs-string,
   .prose-markdown .hljs-attr,
-  .prose-markdown-sm .hljs-string,
-  .prose-markdown-sm .hljs-attr {
+  .prose-markdown-app .hljs-string,
+  .prose-markdown-app .hljs-attr {
     color: #4ade80;
   }
 
   .prose-markdown .hljs-number,
   .prose-markdown .hljs-literal,
-  .prose-markdown-sm .hljs-number,
-  .prose-markdown-sm .hljs-literal {
+  .prose-markdown-app .hljs-number,
+  .prose-markdown-app .hljs-literal {
     color: #fb923c;
   }
 
   .prose-markdown .hljs-function,
   .prose-markdown .hljs-title,
-  .prose-markdown-sm .hljs-function,
-  .prose-markdown-sm .hljs-title {
+  .prose-markdown-app .hljs-function,
+  .prose-markdown-app .hljs-title {
     color: #60a5fa;
   }
 
   .prose-markdown .hljs-comment,
-  .prose-markdown-sm .hljs-comment {
+  .prose-markdown-app .hljs-comment {
     color: #71717a;
     font-style: italic;
   }
 
   .prose-markdown .hljs-variable,
   .prose-markdown .hljs-params,
-  .prose-markdown-sm .hljs-variable,
-  .prose-markdown-sm .hljs-params {
+  .prose-markdown-app .hljs-variable,
+  .prose-markdown-app .hljs-params {
     color: #e4e4e7;
   }
 }
