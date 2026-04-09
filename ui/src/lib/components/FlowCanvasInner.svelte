@@ -87,6 +87,7 @@
   import { Transport } from '$lib/transport';
   import { transportStore } from '../../stores/transport.store';
   import { allPreviewsDisabled } from '../../stores/renderer.store';
+  import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
   import {
     HistoryManager,
@@ -370,13 +371,20 @@
   });
 
   // Update visible nodes for preview culling when viewport or nodes change
-  // 4a: skip previews when zoomed out below 40%
+  // 4a: zoom-based preview LOD — half-res at moderate zoom, quarter-res when zoomed out
+  let currentLodMultiplier = 1;
+
   $effect(() => {
     const currentViewport = viewport.current;
 
-    if (currentViewport.zoom < 0.4) {
-      glSystem.setVisibleNodes(new Set());
-      return;
+    // Only send zoom level to worker when the LOD tier changes
+    const tier =
+      PREVIEW_ZOOM_LOD_TIERS.find((t) => currentViewport.zoom >= t.minZoom) ??
+      PREVIEW_ZOOM_LOD_TIERS.at(-1)!;
+
+    if (tier.scaleMultiplier !== currentLodMultiplier) {
+      currentLodMultiplier = tier.scaleMultiplier;
+      glSystem.setPreviewScaleMultiplier(tier.scaleMultiplier);
     }
 
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
