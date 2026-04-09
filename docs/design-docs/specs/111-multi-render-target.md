@@ -63,8 +63,12 @@ Writing these declarations automatically gives the node 3 video outlets. Removin
 #### SwissGL Node
 
 - `mrtCount` is set via node data (no auto-detection — SwissGL code is JS, not GLSL)
-- SwissGL's `glsl()` already supports render targets with multiple layers
-- Each outlet index maps to a color attachment
+- **Not yet supported for single-pass MRT**: SwissGL's `glsl()` manages its own framebuffer
+  binding via `bindTarget` and provides no way for user code to direct a draw call to a
+  specific color attachment index. Multiple outlets are created correctly, but only
+  `COLOR_ATTACHMENT0` receives rendered output — the remaining attachments stay black.
+- Future work: extend the SwissGL renderer with an `attachment` parameter on `glsl()` calls
+  so each pass can target a specific outlet.
 
 ### Pipeline Changes
 

@@ -80,6 +80,11 @@
           videoInletCount: m.inletCount,
           videoOutletCount: m.outletCount
         });
+
+        glSystem.upsertNode(nodeId, 'swgl', {
+          code,
+          mrtCount: m.outletCount
+        });
       })
       .exhaustive();
 
@@ -145,7 +150,10 @@
       }
     });
 
-    glSystem.upsertNode(nodeId, 'swgl', { code });
+    glSystem.upsertNode(nodeId, 'swgl', {
+      code,
+      mrtCount: data.videoOutletCount ?? 1
+    });
 
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
@@ -171,7 +179,11 @@
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
 
-      glSystem.upsertNode(nodeId, 'swgl', { code, _runRevision: Date.now() });
+      glSystem.upsertNode(nodeId, 'swgl', {
+        code,
+        mrtCount: data.videoOutletCount ?? 1,
+        _runRevision: Date.now()
+      });
     } catch (error) {
       logger.error('[swgl] update error:', error);
     }
