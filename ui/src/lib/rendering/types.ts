@@ -19,7 +19,7 @@ export type RenderNode = {
   | { type: 'canvas'; data: { code: string } }
   | { type: 'textmode'; data: { code: string } }
   | { type: 'three'; data: { code: string } }
-  | { type: 'regl'; data: { code: string; mrtCount?: number } }
+  | { type: 'regl'; data: { code: string; videoOutletCount?: number } }
   | { type: 'projmap'; data: { surfaces: import('$objects/projmap/types').ProjMapSurface[] } }
   | { type: 'img'; data: unknown }
   | { type: 'bg.out'; data: unknown }

@@ -6,3 +6,8 @@ export const getFramebuffer = (
   // @ts-expect-error -- hack: access WebGLFramebuffer directly
   return reglFramebuffer._framebuffer.framebuffer || null;
 };
+
+export const getRawTexture = (reglTexture: regl.Texture2D): WebGLTexture | null => {
+  // @ts-expect-error -- hack: access underlying WebGLTexture
+  return reglTexture._texture.texture || null;
+};

@@ -20,7 +20,7 @@ import { ThreeRenderer } from './threeRenderer';
 import { ReglRenderer } from './reglRenderer';
 import { SwissGLRenderer } from './swglRenderer';
 import { ProjectionMapRenderer } from '$objects/projmap/ProjectionMapRenderer';
-import { getFramebuffer } from './utils';
+import { getFramebuffer, getRawTexture } from './utils';
 import { isExternalTextureNode } from '$lib/canvas/node-types';
 import type { Message } from '$lib/messages/MessageSystem';
 import type {
@@ -340,10 +340,33 @@ export class FBORenderer {
           this.regl.texture({ width, height, wrapS: 'clamp', wrapT: 'clamp' })
         );
 
-        framebuffer =
-          mrtCount > 1
-            ? this.regl.framebuffer({ colors: colorAttachments, depthStencil: false })
-            : this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
+        if (mrtCount > 1) {
+          // regl's framebuffer({ colors: [...] }) requires WEBGL_draw_buffers which is
+          // a WebGL1 extension not exposed on WebGL2 contexts (it's core there).
+          // Instead: create a single-attachment regl framebuffer for attachment 0,
+          // then manually attach the remaining textures via raw WebGL2.
+          framebuffer = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
+
+          const gl = this.gl;
+          const rawFbo = getFramebuffer(framebuffer);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, rawFbo);
+
+          for (let i = 1; i < mrtCount; i++) {
+            const rawTex = getRawTexture(colorAttachments[i]);
+            gl.framebufferTexture2D(
+              gl.FRAMEBUFFER,
+              gl.COLOR_ATTACHMENT0 + i,
+              gl.TEXTURE_2D,
+              rawTex,
+              0
+            );
+          }
+
+          gl.drawBuffers(colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        } else {
+          framebuffer = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
+        }
       }
 
       pending.push({ node, colorAttachments, framebuffer, fingerprint });
@@ -1133,6 +1156,14 @@ export class FBORenderer {
     const transportTime = this.transportTime?.seconds ?? this.lastTime;
 
     fboNode.framebuffer.use(() => {
+      // For MRT nodes, regl's framebuffer.use() resets drawBuffers to [COLOR_ATTACHMENT0].
+      // Re-apply after bind so all attachments receive fragment shader output.
+      if (fboNode.colorAttachments.length > 1) {
+        const gl = this.gl;
+
+        gl.drawBuffers(fboNode.colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
+      }
+
       this.drawProfiler.measure(node.id, 'draw', () => {
         fboNode.render({
           prevTransportTime: this.prevTransportTime,

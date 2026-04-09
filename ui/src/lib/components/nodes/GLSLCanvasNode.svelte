@@ -142,6 +142,19 @@
     }
   }
 
+  function detectMrtCount(code: string): number {
+    const locationRegex = /layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*out/g;
+
+    let max = -1,
+      match;
+
+    while ((match = locationRegex.exec(code)) !== null) {
+      max = Math.max(max, parseInt(match[1], 10));
+    }
+
+    return max >= 0 ? max + 1 : 1;
+  }
+
   function updateShader() {
     // Clear console on re-run
     consoleRef?.clearConsole();
@@ -166,6 +179,7 @@
       ...data,
       glUniformDefs: nextDefs,
       uniformValues: pruned,
+      mrtCount: detectMrtCount(data.code),
       _runRevision: Date.now()
     };
 
