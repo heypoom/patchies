@@ -143,12 +143,15 @@
   }
 
   function detectMrtCount(code: string): number {
+    // Strip comments so commented-out layout declarations don't affect the count
+    const stripped = code.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+
     const locationRegex = /layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*out/g;
 
     let max = -1,
       match;
 
-    while ((match = locationRegex.exec(code)) !== null) {
+    while ((match = locationRegex.exec(stripped)) !== null) {
       max = Math.max(max, parseInt(match[1], 10));
     }
 

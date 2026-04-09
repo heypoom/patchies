@@ -213,8 +213,14 @@ export class FBORenderer {
           texture.destroy();
         }
 
-        fboNode.prevFramebuffer?.destroy();
-        fboNode.prevTexture?.destroy();
+        for (const framebuffer of fboNode.prevFramebuffers ?? []) {
+          framebuffer?.destroy();
+        }
+
+        for (const texture of fboNode.prevTextures ?? []) {
+          texture?.destroy();
+        }
+
         fboNode.cleanup?.();
 
         this.fboNodes.delete(nodeId);
@@ -334,8 +340,13 @@ export class FBORenderer {
             texture.destroy();
           }
 
-          existingFbo.prevFramebuffer?.destroy();
-          existingFbo.prevTexture?.destroy();
+          for (const framebuffer of existingFbo.prevFramebuffers ?? []) {
+            framebuffer?.destroy();
+          }
+
+          for (const texture of existingFbo.prevTextures ?? []) {
+            texture?.destroy();
+          }
 
           this.fboNodes.delete(node.id);
         }
@@ -443,23 +454,29 @@ export class FBORenderer {
     this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();
 
     // Phase 4 (sync): allocate previous-frame textures for feedback nodes.
-    // Idempotent — skipped if the node already has a prevTexture from a prior build.
+    // Idempotent — skipped if the node already has prevTextures from a prior build.
+    // One prev texture + framebuffer is allocated per color attachment so MRT
+    // feedback nodes can provide previous-frame data for each outlet independently.
     for (const nodeId of renderGraph.feedbackNodes) {
       const fboNode = this.fboNodes.get(nodeId);
-      if (!fboNode || fboNode.prevTexture) continue;
+      if (!fboNode || fboNode.prevTextures) continue;
 
-      fboNode.prevTexture = this.regl.texture({
-        width,
-        height,
-        wrapS: 'clamp',
-        wrapT: 'clamp'
-        // Defaults to all-zero (black transparent) — correct bootstrap behavior
-      });
+      fboNode.prevTextures = fboNode.colorAttachments.map(() =>
+        this.regl.texture({
+          width,
+          height,
+          wrapS: 'clamp',
+          wrapT: 'clamp'
+          // Defaults to all-zero (black transparent) — correct bootstrap behavior
+        })
+      );
 
-      fboNode.prevFramebuffer = this.regl.framebuffer({
-        color: fboNode.prevTexture,
-        depthStencil: false
-      });
+      fboNode.prevFramebuffers = fboNode.prevTextures.map((prevTexture) =>
+        this.regl.framebuffer({
+          color: prevTexture,
+          depthStencil: false
+        })
+      );
     }
   }
 
@@ -1071,13 +1088,19 @@ export class FBORenderer {
     // holds the previous frame's output for back-edge consumers.
     for (const nodeId of this.renderGraph.feedbackNodes) {
       const fboNode = this.fboNodes.get(nodeId);
-      if (!fboNode?.prevFramebuffer || !fboNode.prevTexture) continue;
+      if (!fboNode?.prevFramebuffers?.length) continue;
 
       const [w, h] = this.outputSize;
+
       const gl = this.gl;
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(fboNode.framebuffer));
-      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffer));
-      gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+
+      for (let i = 0; i < fboNode.prevFramebuffers.length; i++) {
+        gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffers[i]));
+        gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+      }
+
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
@@ -1352,8 +1375,9 @@ export class FBORenderer {
       if (inputFBO) {
         // For back-edge inlets (feedback loops), read from the previous frame's texture.
         // This implements the 1-frame delay that prevents the cycle from deadlocking.
-        if (node.backEdgeInlets.has(inletIndex) && inputFBO.prevTexture) {
-          textureMap.set(inletIndex, inputFBO.prevTexture);
+        if (node.backEdgeInlets.has(inletIndex) && inputFBO.prevTextures?.length) {
+          const prevTex = inputFBO.prevTextures[outletIndex] ?? inputFBO.prevTextures[0];
+          textureMap.set(inletIndex, prevTex);
         } else {
           // Index into the correct color attachment for MRT sources
           const texture = inputFBO.colorAttachments[outletIndex] ?? inputFBO.colorAttachments[0];

@@ -90,11 +90,11 @@ export interface FBONode {
   /** The node type that this FBO was built for */
   nodeType?: RenderNode['type'];
 
-  /** Previous frame texture — only allocated for nodes in feedback loops */
-  prevTexture?: regl.Texture2D;
+  /** Previous frame textures — one per color attachment, only allocated for nodes in feedback loops */
+  prevTextures?: regl.Texture2D[];
 
-  /** Previous frame framebuffer — only allocated for nodes in feedback loops */
-  prevFramebuffer?: regl.Framebuffer2D;
+  /** Previous frame framebuffers — one per color attachment, only allocated for nodes in feedback loops */
+  prevFramebuffers?: regl.Framebuffer2D[];
 }
 
 // Message types for worker communication (main -> worker)

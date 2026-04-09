@@ -166,7 +166,7 @@ function detectMrtCount(code: string): number {
 ### Backwards Compatibility
 
 - Default `mrtCount = 1` — existing nodes unchanged
-- Single-outlet GLSL nodes with no `layout(location=N) out` declarations keep the current ShaderToy wrapper and single outlet handle
+- Single-outlet GLSL nodes with no `layout(location=N) out` declarations keep the current ShaderToy wrapper and single-outlet handle
 - Existing edges to `video-out-out` continue to work (parsed as outlet index 0)
 
 ### Limits
