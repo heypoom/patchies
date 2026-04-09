@@ -44,6 +44,7 @@
       showConsole?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
+      _runRevision?: number;
     };
     selected?: boolean;
   } = $props();
@@ -256,9 +257,10 @@
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
 
-      const isUpdated = glSystem.upsertNode(nodeId, 'regl', { code: data.code });
+      const runRevision = (data._runRevision ?? 0) + 1;
 
-      if (!isUpdated) glSystem.send('updateRegl', { nodeId });
+      updateNodeData(nodeId, { _runRevision: runRevision });
+      glSystem.upsertNode(nodeId, 'regl', { code: data.code, _runRevision: runRevision });
     } catch (error) {
       logger.error(`[regl] update regl error:`, error);
     }

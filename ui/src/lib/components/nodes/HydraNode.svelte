@@ -39,6 +39,7 @@
       showConsole?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
+      _runRevision?: number;
     };
   } = $props();
 
@@ -224,11 +225,10 @@
       messageContext.clearTimers();
       audioAnalysisSystem.disableFFT(nodeId);
 
-      const isUpdated = glSystem.upsertNode(nodeId, 'hydra', { code });
+      const runRevision = (data._runRevision ?? 0) + 1;
 
-      // If the code hasn't changed, the code will not be re-run.
-      // This allows us to forcibly re-run hydra to update FFT.
-      if (!isUpdated) glSystem.send('updateHydra', { nodeId });
+      updateNodeData(nodeId, { _runRevision: runRevision });
+      glSystem.upsertNode(nodeId, 'hydra', { code, _runRevision: runRevision });
     } catch (error) {
       // Note: Most errors will be caught by the worker and sent via consoleOutput
       console.error('Hydra update error:', error);

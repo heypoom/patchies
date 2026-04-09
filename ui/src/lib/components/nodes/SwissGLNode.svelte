@@ -33,6 +33,7 @@
       videoOutletCount?: number;
       messageInletCount?: number;
       messageOutletCount?: number;
+      _runRevision?: number;
     };
     selected: boolean;
   } = $props();
@@ -171,10 +172,10 @@
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
 
-      const isUpdated = glSystem.upsertNode(nodeId, 'swgl', { code });
+      const runRevision = (data._runRevision ?? 0) + 1;
 
-      // If code hasn't changed, force re-run
-      if (!isUpdated) glSystem.send('updateSwgl', { nodeId });
+      updateNodeData(nodeId, { _runRevision: runRevision });
+      glSystem.upsertNode(nodeId, 'swgl', { code, _runRevision: runRevision });
     } catch (error) {
       logger.error('[swgl] update error:', error);
     }

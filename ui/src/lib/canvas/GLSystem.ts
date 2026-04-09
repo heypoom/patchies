@@ -752,6 +752,7 @@ export class GLSystem {
 
       const rev = ((node.data._includeRevision as number) ?? 0) + 1;
       this.nodes[i] = { ...node, data: { ...node.data, _includeRevision: rev } };
+
       dirty = true;
     }
 

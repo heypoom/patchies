@@ -32,6 +32,7 @@
       uniformValues?: Record<string, number | boolean>;
       executeCode?: number;
       showConsole?: boolean;
+      _runRevision?: number;
     };
     selected: boolean;
   } = $props();
@@ -163,7 +164,8 @@
     const nextData = {
       ...data,
       glUniformDefs: nextDefs,
-      uniformValues: pruned
+      uniformValues: pruned,
+      _runRevision: (data._runRevision ?? 0) + 1
     };
 
     // Remove edges with invalid uniform names before updating

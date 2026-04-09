@@ -43,6 +43,7 @@
       paused?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
+      _runRevision?: number;
     };
     selected?: boolean;
   } = $props();
@@ -259,11 +260,11 @@
     try {
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
-      const isUpdated = glSystem.upsertNode(nodeId, 'canvas', { code: data.code });
 
-      // If the code hasn't changed, the code will not be re-run.
-      // This allows us to forcibly re-run canvas to update FFT.
-      if (!isUpdated) glSystem.send('updateCanvas', { nodeId });
+      const runRevision = (data._runRevision ?? 0) + 1;
+
+      updateNodeData(nodeId, { _runRevision: runRevision });
+      glSystem.upsertNode(nodeId, 'canvas', { code: data.code, _runRevision: runRevision });
     } catch (error) {
       logger.error(`[canvas] update canvas error:`, error);
     }
