@@ -45,7 +45,7 @@ Build a **code-oriented TouchDesigner** that runs in a browser. Patchies combine
 
 | Spec                                        | Title                         | Summary                                                                    |
 | ------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------- |
-| [111](111-multi-render-target.md)           | Multi-Render-Target           | Multiple video outlets per node via MRT color attachments                  |
+| [111](111-multi-render-target.md)           | Multi-Render-Target           | Multiple video outlets per node via MRT color attachments ✓                |
 | [112](112-float-fbo-format.md)              | Float FBO Format              | Per-node `rgba16f`/`rgba32f` for GPGPU and HDR                             |
 | [113](113-graph-level-feedback.md)          | Graph-Level Feedback          | Back-edges with 1-frame delay, double-buffered FBOs ✓                      |
 | [114](114-visual-convenience-presets.md)    | Convenience Presets           | Procedural generators, post-processing, PBR, simulation presets            |

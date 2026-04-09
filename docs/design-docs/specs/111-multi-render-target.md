@@ -1,5 +1,11 @@
 # 111. Multi-Render-Target (MRT) Output
 
+## Status: Implemented ✓
+
+Core MRT is fully working. One known gap remains: edges to outlets that no longer exist after an `mrtCount` decrease are not automatically cleaned up (they become dangling rather than being deleted).
+
+---
+
 ## Problem
 
 Every visual node outputs exactly one texture (one FBO color attachment). A single GLSL shader that computes albedo, normal, and roughness must be run three times with a mode switch, or all downstream processing must happen inside the same node. There's no way to fan out structured multi-channel data from a single shader pass.
@@ -26,10 +32,10 @@ layout(location = 2) out vec4 fragData;     // outlet 2 — e.g. roughness/metal
 
 ### Node-Level Changes
 
-#### GLSL Node
+#### GLSL Node ✓
 
 - `mrtCount` is **auto-detected** from the shader code on every compile — no flag or UI control needed.
-- Detection: scan for `layout(location=N) out` declarations, take `max(N) + 1`. If none found, `mrtCount = 1` (standard mode).
+- Detection: strip single-line and block comments, then scan for `layout(location=N) out` declarations, take `max(N) + 1`. If none found, `mrtCount = 1` (standard mode).
 - When `mrtCount > 1`, the ShaderToy wrapper changes:
   - Remove the single `out vec4 fragColor` injection
   - Let user declare their own `layout(location=N) out` variables
@@ -54,15 +60,15 @@ void mainImage(vec2 fragCoord) {
 
 Writing these declarations automatically gives the node 3 video outlets. Removing them reverts to single-output mode.
 
-#### REGL Node
+#### REGL Node ✓
 
-- `mrtCount` is set via node data (no auto-detection — REGL code is JS, not GLSL)
+- `mrtCount` is set via `videoOutletCount` in node data (no auto-detection — REGL code is JS, not GLSL)
 - User's draw commands write to multiple attachments naturally (regl supports this)
 - Each outlet index maps to a color attachment
 
-#### SwissGL Node
+#### SwissGL Node ⚠️ (partial)
 
-- `mrtCount` is set via node data (no auto-detection — SwissGL code is JS, not GLSL)
+- `mrtCount` is set via `videoOutletCount` in node data (propagated as `mrtCount` to FBO allocation)
 - **Not yet supported for single-pass MRT**: SwissGL's `glsl()` manages its own framebuffer
   binding via `bindTarget` and provides no way for user code to direct a draw call to a
   specific color attachment index. Multiple outlets are created correctly, but only
@@ -72,64 +78,94 @@ Writing these declarations automatically gives the node 3 video outlets. Removin
 
 ### Pipeline Changes
 
-#### `fboRenderer.ts` — `buildFBOs()`
+#### `fboRenderer.ts` — `buildFBOs()` ✓
 
-Currently creates one `regl.framebuffer` with one color attachment per node. Change to:
+Creates `mrtCount` color attachments per node. For MRT nodes (mrtCount > 1), regl is used to allocate individual textures and the framebuffer's extra attachments are bound manually via raw WebGL2 (regl's `framebuffer()` only accepts a single `color` argument):
 
 ```typescript
-const colorAttachments =
-  node.mrtCount > 1
-    ? Array.from({length: node.mrtCount}, () =>
-        regl.texture({width, height, ...format}),
-      )
-    : [regl.texture({width, height, ...format})]
+// Allocate one texture per outlet
+colorAttachments = Array.from({ length: mrtCount }, () =>
+  this.regl.texture({ width, height, wrapS: 'clamp', wrapT: 'clamp' })
+);
 
-const framebuffer = regl.framebuffer({colors: colorAttachments, depth: true})
+// Build framebuffer, then attach remaining textures via raw WebGL2
+const fb = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
+for (let i = 1; i < colorAttachments.length; i++) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, getFramebuffer(fb));
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D,
+    getRawTexture(colorAttachments[i]), 0);
+}
+gl.drawBuffers(colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
 ```
 
-Update the `FBONode` type (`rendering/types.ts`) to support multiple color attachments:
+The `FBONode` type (`rendering/types.ts`) supports multiple color attachments:
 
 ```typescript
 export interface FBONode {
   id: string
   framebuffer: regl.Framebuffer2D
-  colorAttachments: regl.Texture2D[] // one texture per color attachment
-  /** @deprecated Use colorAttachments[0]. Kept for backwards compat. */
+  /** All color attachments — one per MRT outlet. Single-output nodes have exactly one entry. */
+  colorAttachments: regl.Texture2D[]
+  /** Alias for colorAttachments[0]. Kept for backwards compatibility. */
   texture: regl.Texture2D
   render: RenderFunction
   cleanup?: () => void
   dataFingerprint?: string
   nodeType?: RenderNode['type']
+  /** Previous frame textures — one per color attachment, only allocated for feedback nodes */
+  prevTextures?: regl.Texture2D[]
+  /** Previous frame framebuffers — one per color attachment, only allocated for feedback nodes */
+  prevFramebuffers?: regl.Framebuffer2D[]
 }
 ```
 
-When constructing a FBONode, populate both fields:
+#### `fboRenderer.ts` — texture routing ✓
+
+`getInputTextureMap()` iterates `node.inletMap` which maps `inletIndex → { sourceNodeId, outletIndex }` and reads the correct color attachment:
 
 ```typescript
-const fboNode: FBONode = {
-  // ...
-  colorAttachments,
-  texture: colorAttachments[0], // backwards-compat alias
-}
-```
-
-Existing code that reads `fboNode.texture` (e.g. `getInputTextureMap`) continues to work unchanged for single-attachment nodes. MRT-aware consumers index into `colorAttachments` instead.
-
-#### `fboRenderer.ts` — texture routing
-
-Currently `getInputTextureMap()` iterates `node.inletMap` which maps `inletIndex → sourceNodeId` and reads `inputFBO.texture` (singular). To support MRT, the inlet map must also carry the source outlet index so the correct color attachment is selected:
-
-```typescript
-// In getInputTextureMap():
-for (const [inletIndex, {sourceNodeId, outletIndex}] of node.inletMap) {
-  const inputFBO = this.fboNodes.get(sourceNodeId)
+for (const [inletIndex, { sourceNodeId, outletIndex }] of node.inletMap) {
+  const inputFBO = this.fboNodes.get(sourceNodeId);
   if (inputFBO) {
-    textureMap.set(inletIndex, inputFBO.colorAttachments[outletIndex])
+    // For back-edge inlets (feedback loops), read from the previous frame's texture
+    if (node.backEdgeInlets.has(inletIndex) && inputFBO.prevTextures?.length) {
+      const prevTex = inputFBO.prevTextures[outletIndex] ?? inputFBO.prevTextures[0];
+      textureMap.set(inletIndex, prevTex);
+    } else {
+      // Index into the correct color attachment for MRT sources
+      const texture = inputFBO.colorAttachments[outletIndex] ?? inputFBO.colorAttachments[0];
+      textureMap.set(inletIndex, texture);
+    }
   }
 }
 ```
 
-#### `graphUtils.ts` — outlet index parsing
+#### `fboRenderer.ts` — feedback (back-edges) ✓
+
+For feedback nodes in MRT mode, one `prevTexture`/`prevFramebuffer` pair is allocated per color attachment so every outlet has independent previous-frame data:
+
+```typescript
+fboNode.prevTextures = fboNode.colorAttachments.map(() =>
+  this.regl.texture({ width, height, wrapS: 'clamp', wrapT: 'clamp' })
+);
+fboNode.prevFramebuffers = fboNode.prevTextures.map((prevTexture) =>
+  this.regl.framebuffer({ color: prevTexture, depthStencil: false })
+);
+```
+
+The blit loop iterates each attachment separately, switching the read buffer before each blit:
+
+```typescript
+gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(fboNode.framebuffer));
+for (let i = 0; i < fboNode.prevFramebuffers.length; i++) {
+  gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
+  gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffers[i]));
+  gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+}
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+```
+
+#### `graphUtils.ts` — outlet index parsing ✓
 
 `inletMap` is extended from `Map<number, string>` to `Map<number, { sourceNodeId: string; outletIndex: number }>` so each inlet records which outlet of its source it reads from.
 
@@ -143,18 +179,19 @@ export function parseOutletIndex(sourceHandle: string | undefined): number {
 }
 ```
 
-Used when building `inletMap` from edges in `filterFBOCompatibleGraph()` so MRT outlet indices propagate through the render graph into `getInputTextureMap()`.
+### Auto-Detection (GLSL) ✓
 
-### Auto-Detection (GLSL)
-
-On every shader compile (`updateShader()`), scan for `layout(location=N) out` declarations and derive `mrtCount`:
+On every shader compile (`updateShader()`), comments are stripped first, then scan for `layout(location=N) out` declarations and derive `mrtCount`:
 
 ```typescript
 function detectMrtCount(code: string): number {
+  // Strip comments so commented-out declarations don't inflate the count
+  const stripped = code
+    .replace(/\/\/.*$/gm, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
   const locationRegex = /layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*out/g
-  let max = -1,
-    match
-  while ((match = locationRegex.exec(code)) !== null) {
+  let max = -1, match
+  while ((match = locationRegex.exec(stripped)) !== null) {
     max = Math.max(max, parseInt(match[1], 10))
   }
   return max >= 0 ? max + 1 : 1
@@ -163,11 +200,17 @@ function detectMrtCount(code: string): number {
 
 `mrtCount` is written to node data alongside `glUniformDefs`. No directive, no UI control — the shader declarations are the single source of truth.
 
-### Backwards Compatibility
+### Backwards Compatibility ✓
 
 - Default `mrtCount = 1` — existing nodes unchanged
 - Single-outlet GLSL nodes with no `layout(location=N) out` declarations keep the current ShaderToy wrapper and single-outlet handle
 - Existing edges to `video-out-out` continue to work (parsed as outlet index 0)
+
+### Known Gap: Edge cleanup on mrtCount decrease ❌
+
+When a GLSL node's `mrtCount` decreases (e.g. user removes a `layout(location=2)` declaration, reducing from 3 outlets to 2), edges connected to the removed outlet are not automatically deleted. They become dangling edges in the Svelte Flow graph. The render graph builder (`filterFBOCompatibleGraph`) will ignore them at runtime, but they persist visually until the user removes them manually.
+
+**Fix needed**: In `updateShader()` (GLSLCanvasNode.svelte), after computing the new `mrtCount`, compare against the previous value and call `deleteElements()` for any edges whose `sourceHandle` targets an outlet index ≥ new `mrtCount`.
 
 ### Limits
 
