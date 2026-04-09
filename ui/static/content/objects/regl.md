@@ -6,8 +6,6 @@ Use it when you need full control over vertices, buffers, elements, blend
 modes, or multi-pass rendering — things the `glsl` node can't do because it 
 only exposes a fragment shader on a fullscreen quad.
 
----
-
 ## Getting Started
 
 Define a `render(time)` function that gets called every frame.
@@ -56,8 +54,6 @@ function render(time) {
 }
 ```
 
----
-
 ## How It Works
 
 You write standard regl code — create draw commands with `regl({...})`,
@@ -72,8 +68,6 @@ deleted. No manual cleanup needed.
 Use `await` when creating draw commands. This lets Patchies preprocess 
 `#include` directives in your shaders before compiling them. Without includes,
 the `await` resolves instantly with no overhead.
-
----
 
 ## Shader Includes
 
@@ -126,8 +120,6 @@ Supported sources:
 
 The `.glsl` extension is optional. Includes are resolved recursively and cached in memory.
 
----
-
 ## Video Textures
 
 Connect other video nodes to the regl node's inlets, then access them with `getTexture()`:
@@ -176,8 +168,6 @@ function render(time) {
 ```
 
 `getTexture()` returns a regl `Texture2D` directly — no conversion or copying.
-
----
 
 ## Multiple Video Outputs (MRT)
 
@@ -238,8 +228,6 @@ receives its own texture.
 > /`gl_FragColor` when writing MRT shaders. WebGL1-style shaders only support
 > a single output.
 
----
-
 ## Available Variables
 
 - `regl` — the regl instance
@@ -261,8 +249,6 @@ all available functions.
 - `fft()` — audio analysis
 - `send()`, `onMessage()` — message passing
 
----
-
 ## When to Use regl vs glsl
 
 | | `glsl` | `regl` |
@@ -275,8 +261,6 @@ all available functions.
 
 Use `glsl` when a fragment shader is enough. Use `regl` when you need
 custom geometry, instancing, or multi-pass rendering.
-
----
 
 ## Resources
 

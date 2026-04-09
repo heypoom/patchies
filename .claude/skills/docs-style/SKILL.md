@@ -1,7 +1,7 @@
 ---
 name: docs-style
 description: Patchies documentation style guide. Load when writing or editing topic docs in ui/static/content/topics/ or ui/static/content/objects/. Describes the voice, structure, and formatting conventions for all Patchies docs.
-paths: "ui/static/content/**/*.md"
+paths: 'ui/static/content/**/*.md'
 ---
 
 # Patchies Documentation Style Guide
@@ -23,13 +23,10 @@ Follow this order — omit sections that don't apply:
 1. **H1 title** — one sentence intro explaining what this topic is and why it matters
 2. **Screenshot or image** (if available) — with a caption or context sentence below
 3. **✨ Try-it link** — `> ✨ [Try this patch](/?id=...) — brief description.`
-4. **`---` horizontal rule**
-5. **How It Works** — the mental model first, before any API or steps. Use analogies (e.g. "like a hardware signal chain")
-6. **`---` horizontal rule**
-7. **Try It** — hands-on exercises. Use `###` sub-headings per exercise.
-8. **`---` horizontal rule**
-9. **Feature sections** — one `##` section per major concept, separated by `---`
-10. **See Also** — links with one-line descriptions
+4. **How It Works** — the mental model first, before any API or steps. Use analogies (e.g. "like a hardware signal chain")
+5. **Try It** — hands-on exercises. Use `###` sub-headings per exercise.
+6. **Feature sections** — one `##` section per major concept, separated by `---`
+7. **See Also** — links with one-line descriptions
 
 ## Formatting Rules
 
@@ -41,15 +38,13 @@ Follow this order — omit sections that don't apply:
 
 ```markdown
 <!-- WRONG -->
+
 **Exercise — Simple tone**
 
 <!-- RIGHT -->
+
 ### Exercise — Simple tone
 ```
-
-### Horizontal Rules
-
-Separate every major `##` section with a `---` rule. This aids scannability.
 
 ### Callouts
 
@@ -68,17 +63,17 @@ Use blockquote callouts for tips, warnings, and try-it links:
 ### Code Examples
 
 - Every API function must have a runnable example, not just a signature
-- Add inline comments explaining *why*, not just what
+- Add inline comments explaining _why_, not just what
 - Show realistic values (use `440` not `n`, use `0.3` not `value`)
 
 ```javascript
 // WRONG — too abstract
-setInterval(callback, ms);
+setInterval(callback, ms)
 
 // RIGHT — copy-pasteable and clear
 setInterval(() => {
-  send({ type: "bang" });
-}, 500);
+  send({type: 'bang'})
+}, 500)
 ```
 
 ### Tables
@@ -87,8 +82,8 @@ Always include a spaced separator row:
 
 ```markdown
 | Column A | Column B | Column C |
-| --- | --- | --- |
-| value | value | value |
+| -------- | -------- | -------- |
+| value    | value    | value    |
 ```
 
 ### Lists
@@ -111,9 +106,11 @@ Always explain the mental model before listing functions:
 
 ```markdown
 <!-- WRONG — starts with API -->
+
 Use `setPortCount(inletCount, outletCount)` to set inlets.
 
 <!-- RIGHT — concept first -->
+
 Each js object starts with one inlet and one outlet.
 Use `setPortCount()` to add more when your logic needs them:
 ```

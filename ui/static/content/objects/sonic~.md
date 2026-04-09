@@ -204,8 +204,6 @@ setInterval(() => {
 > **Tip**: `channel.sendDirect(bytes)` bypasses the prescheduler
 > for messages that must arrive immediately.
 
----
-
 ## Using OscChannel in an AudioWorklet
 
 OscChannel can also be used inside a `dsp~` AudioWorklet processor,
@@ -251,8 +249,6 @@ There are three key differences from worker usage:
     }
   })
   ```
-
----
 
 ## Resources
 

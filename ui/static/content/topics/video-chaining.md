@@ -8,8 +8,6 @@ In this example, a [hydra](/docs/objects/hydra) object and a [glsl](/docs/object
 
 This is similar to shader graphs in TouchDesigner, Unity, Blender, and Substance Designer.
 
----
-
 ## How It Works
 
 Visual objects have **orange** inlets and outlets (circles on the top and bottom of the node):
@@ -24,8 +22,6 @@ Connect orange outlet → orange inlet to chain them:
 ```
 
 To hear — er, *see* — anything, connect the final object to `bg.out` or use **Output to Background**.
-
----
 
 ## Try It
 
@@ -43,8 +39,6 @@ To hear — er, *see* — anything, connect the final object to `bg.out` or use 
 3. Connect both visual objects to the two inlets of `sub.hydra`
 4. Connect `sub.hydra` to `bg.out` — the two visuals are subtracted together
 
----
-
 ## Getting Started with Presets
 
 The preset library has ready-made building blocks for video chaining. Enable them via the [Preset Packs](/docs/manage-packs) sidebar:
@@ -53,8 +47,6 @@ The preset library has ready-made building blocks for video chaining. Enable the
 - **`diff.hydra`, `add.hydra`, `sub.hydra`** — blend two video inputs with Hydra
 - Check the [hydra](/docs/objects/hydra) and [glsl](/docs/objects/glsl) docs for more preset ideas
 
----
-
 ## Output to Background
 
 Right-click any visual object (or use its **···** menu) and choose **Output to background** to make it the fullscreen output. This overrides any `bg.out` connection.
@@ -62,8 +54,6 @@ Right-click any visual object (or use its **···** menu) and choose **Output t
 - Click **Output to background** again on the same object to clear the override
 - Switching to a different object replaces the current output — only one at a time
 - This is great for live performance; it is not saved across sessions
-
----
 
 ## Wireless Video Routing
 
@@ -75,8 +65,6 @@ Route video across the patch without cables using [`send.vdo <channel>`](/docs/o
 
 Useful for keeping large patches readable by removing long-distance orange cables.
 
----
-
 ## Performance
 
 Objects on the [rendering pipeline](/docs/rendering-pipeline) are significantly faster than main-thread objects — they avoid expensive pixel copies between GPU and CPU.
@@ -86,8 +74,6 @@ For high-performance video chaining, prefer:
 - [canvas](/docs/objects/canvas) over `canvas.dom`
 - [three](/docs/objects/three) over `three.dom`
 - [textmode](/docs/objects/textmode) over `textmode.dom`
-
----
 
 ## See Also
 

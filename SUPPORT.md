@@ -24,8 +24,6 @@ Creator of Pure Data and the original Max. Nearly all of Patchies' audio and tex
 **Website:** [puredata.info](https://puredata.info/)
 **Repository:** [github.com/pure-data/pure-data](https://github.com/pure-data/pure-data)
 
----
-
 ### Sam Aaron
 
 **Projects:** Sonic Pi, SuperSonic
@@ -33,8 +31,6 @@ Creator of Pure Data and the original Max. Nearly all of Patchies' audio and tex
 Creator of Sonic Pi and SuperSonic, bringing live coding music to everyone from beginners to professionals.
 
 **Support:** [Patreon](https://www.patreon.com/samaaron)
-
----
 
 ### Strudel & TidalCycles
 
@@ -44,8 +40,6 @@ A vibrant community building live coding music tools, led by Felix Roos, Alex Mc
 
 **Support:** [OpenCollective](https://opencollective.com/tidalcycles)
 
----
-
 ### Hundred Rabbits
 
 **Projects:** Orca, Uxn, Uxntal
@@ -53,8 +47,6 @@ A vibrant community building live coding music tools, led by Felix Roos, Alex Mc
 Devine Lu Linvega and Rekka Bellum create minimalist software and tools for creative expression, living sustainably on a sailboat.
 
 **Support:** [Patreon](https://www.patreon.com/hundredrabbits)
-
----
 
 ### Processing Foundation
 
@@ -64,8 +56,6 @@ Non-profit organization supporting creative coding education and software develo
 
 **Support:** [Donate](https://processingfoundation.org/donate)
 
----
-
 ### Marijn Haverbeke
 
 **Projects:** CodeMirror, ProseMirror
@@ -73,8 +63,6 @@ Non-profit organization supporting creative coding education and software develo
 Creator and maintainer of CodeMirror, the powerful code editor used in countless web applications.
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/marijnh)
-
----
 
 ### Nick Thompson
 
@@ -84,8 +72,6 @@ Building Elementary Audio, a JavaScript library for digital audio signal process
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/nick-thompson)
 
----
-
 ### Yotam Mann
 
 **Projects:** Tone.js
@@ -93,8 +79,6 @@ Building Elementary Audio, a JavaScript library for digital audio signal process
 Creator of Tone.js, the framework for creating interactive music in the browser.
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/tambien)
-
----
 
 ### @humanbydefinition
 
@@ -106,8 +90,6 @@ Author of Textmode.js, ASCII text-mode graphics library for creative coding, bri
 **Patreon:** [Patreon](https://ko-fi.com/humanbydefinition)
 **GitHub Sponsors:** [GitHub](https://github.com/sponsors/humanbydefinition)
 
----
-
 ### Olivia Jack
 
 **Projects:** Hydra
@@ -115,8 +97,6 @@ Author of Textmode.js, ASCII text-mode graphics library for creative coding, bri
 Creator of Hydra, the live-codeable video synthesizer that brings shader programming to everyone.
 
 **Website:** [ojack.xyz](https://ojack.xyz/)
-
----
 
 ### Patricio Gonzalez Vivo
 
@@ -126,8 +106,6 @@ Creator of lygia, a granular multi-language shader library used by Patchies for 
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/patriciogonzalezvivo)
 
----
-
 ### Vanilagy
 
 **Projects:** MediaBunny, mp4-muxer, webm-muxer
@@ -135,8 +113,6 @@ Creator of lygia, a granular multi-language shader library used by Patchies for 
 Creator of MediaBunny, a high-performance WebCodecs-based video decoder, and media muxing libraries for the browser.
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/Vanilagy)
-
----
 
 ### @mrdoob
 
@@ -146,8 +122,6 @@ Creator of Three.js, the powerful 3D graphics library for WebGL that makes 3D gr
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/mrdoob)
 
----
-
 ### Csound
 
 **Projects:** Csound
@@ -155,8 +129,6 @@ Creator of Three.js, the powerful 3D graphics library for WebGL that makes 3D gr
 Powerful audio programming language with decades of development for sound synthesis and music creation.
 
 **Support:** [Contribute to Csound](https://csound.com/contribute.html)
-
----
 
 ### XYFlow
 
@@ -166,8 +138,6 @@ Powerful open source libraries for building node-based UIs with Svelte or React,
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/xyflow)
 
----
-
 ### Trystero
 
 **Projects:** Trystero
@@ -175,8 +145,6 @@ Powerful open source libraries for building node-based UIs with Svelte or React,
 Serverless WebRTC matchmaking library for building instant multiplayer web apps with P2P connections, powering the `netsend` and `netrecv` objects in Patchies for real-time collaboration.
 
 **Repository:** [GitHub](https://github.com/dmotz/trystero)
-
----
 
 ### Svelte
 
@@ -186,8 +154,6 @@ A JavaScript framework for building user interfaces with a focus on developer ex
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/sveltejs)
 
----
-
 ### Kai Schmidt
 
 **Projects:** Uiua
@@ -196,8 +162,6 @@ Creator of Uiua, a stack-based array programming language with a rich Unicode sy
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/kaikalii)
 **Repository:** [github.com/uiua-lang/uiua](https://github.com/uiua-lang/uiua)
-
----
 
 ### Tailwind Labs
 
@@ -217,8 +181,6 @@ Creative coding educator making programming accessible to all creative people th
 
 **Support:** [Check out her website](https://www.pattvira.com)
 
----
-
 ### Compudanzas
 
 **Resources:** Uxn programming tutorials
@@ -227,8 +189,6 @@ Creating comprehensive, beginner-friendly guides for Uxn programming and permaco
 
 **Support:** [Purchase Introduction to Uxn Programming](https://compudanzas.itch.io/introduction-to-uxn-programming) ($8)
 
----
-
 ### Daniel Shiffman
 
 **Resources:** The Nature of Code, The Coding Train
@@ -236,8 +196,6 @@ Creating comprehensive, beginner-friendly guides for Uxn programming and permaco
 Beloved educator creating accessible programming tutorials and the comprehensive Nature of Code book.
 
 **Support:** [Purchase Nature of Code](https://natureofcode.com) or [donate to the Processing Foundation](https://processingfoundation.org/donate)
-
----
 
 ## Tool & Dependency Maintainers
 
@@ -251,8 +209,6 @@ Prolific open source contributor maintaining hundreds of npm packages used acros
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/sindresorhus)
 
----
-
 ### Feross Aboukhadijeh
 
 **Projects:** simple-peer, buffer, base64-js, unmute-ios-audio
@@ -260,8 +216,6 @@ Prolific open source contributor maintaining hundreds of npm packages used acros
 Creator of WebTorrent and many popular web libraries for peer-to-peer communication and browser compatibility.
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/feross)
-
----
 
 ### Andrey Sitnik
 
@@ -271,8 +225,6 @@ Creator of PostCSS, Autoprefixer, and Nano Stores - essential tools for modern w
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/ai)
 
----
-
 ### Anthony Fu
 
 **Projects:** Vitest, strip-literal, error-stack-parser-es
@@ -280,8 +232,6 @@ Creator of PostCSS, Autoprefixer, and Nano Stores - essential tools for modern w
 Core team member of Vite, Vue, and Nuxt, building the future of JavaScript tooling.
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/antfu)
-
----
 
 ### Karolis Narkevicius
 
@@ -291,8 +241,6 @@ Creator of the thi.ng umbrella libraries - a comprehensive collection of functio
 
 **Support:** [GitHub Sponsors](https://github.com/sponsors/postspectacular) | [Patreon](https://patreon.com/thing_umbrella)
 
----
-
 ### ESLint
 
 **Projects:** ESLint, eslint-config-prettier
@@ -300,8 +248,6 @@ Creator of the thi.ng umbrella libraries - a comprehensive collection of functio
 Pluggable JavaScript linter helping developers find and fix problems in their code.
 
 **Support:** [Donate](https://eslint.org/donate)
-
----
 
 ### Vitest
 
@@ -311,8 +257,6 @@ Fast unit test framework powered by Vite - making testing delightful.
 
 **Support:** [OpenCollective](https://opencollective.com/vitest)
 
----
-
 ### PostCSS
 
 **Projects:** PostCSS, postcss-safe-parser
@@ -321,8 +265,6 @@ Tool for transforming CSS with JavaScript - the foundation of modern CSS process
 
 **Support:** [OpenCollective](https://opencollective.com/postcss/)
 
----
-
 ### core-js
 
 **Projects:** core-js
@@ -330,8 +272,6 @@ Tool for transforming CSS with JavaScript - the foundation of modern CSS process
 Modular standard library for JavaScript, providing polyfills for ECMAScript features.
 
 **Support:** [OpenCollective](https://opencollective.com/core-js)
-
----
 
 ## How to Support
 
@@ -390,7 +330,5 @@ If you'd like to contribute to Patchies itself, check out our [GitHub repository
 - Code contributions and pull requests
 - Documentation improvements
 - Community support and sharing your patches
-
----
 
 **Thank you** to all the creators who make the creative coding community vibrant, innovative, and accessible. Your generosity enables projects like Patchies to exist. I wish you a happy day 💜

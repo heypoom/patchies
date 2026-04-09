@@ -4,8 +4,6 @@ When an object has multiple inlets, not all of them behave the same way. The **f
 
 This design comes from [Max](https://docs.cycling74.com/userguide/objects/#inlets-and-outlets) and [Pure Data](https://msp.ucsd.edu/Pd_documentation/resources/chapter2.htm#s2.4.3). It gives you precise control over *when* a computation fires.
 
----
-
 ## How It Works
 
 | Inlet | Behavior |
@@ -14,8 +12,6 @@ This design comes from [Max](https://docs.cycling74.com/userguide/objects/#inlet
 | Inlet 1, 2, … (cold) | Stores the value, does **not** trigger output |
 
 Think of cold inlets as staging areas: you load them up with values, then fire the hot inlet when everything is ready.
-
----
 
 ## Example: `expr $1 + $2`
 
@@ -31,8 +27,6 @@ Step by step:
 2. `5` arrives at inlet 0 (hot) — triggers evaluation: `5 + 3 = 8` → sent to outlet
 
 If both values arrived at inlet 0, you'd get an intermediate result (`5 + 0 = 5`) before the second value even arrives — almost always the wrong behavior.
-
----
 
 ## Controlling Execution Order
 
@@ -54,15 +48,11 @@ When a single source feeds both inlets, you need to guarantee the cold inlet rec
 
 > **Tip**: Whenever you see unexpected or stale output from a multi-inlet object, check whether the cold inlets are being set before the hot inlet fires. A `trigger` object usually fixes it.
 
----
-
 ## Objects That Use Hot/Cold Inlets
 
 - [expr](/docs/objects/expr) — expression evaluator (`$1`, `$2`, …)
 - [map](/docs/objects/map) — JavaScript transformer
 - [filter](/docs/objects/filter) — conditional message passing
-
----
 
 ## See Also
 

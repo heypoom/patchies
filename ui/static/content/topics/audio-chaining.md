@@ -6,8 +6,6 @@ Audio objects connect together to form a signal chain — sound flows from sourc
 
 > ✨ [Try this patch](/?id=b17136cy9rxxebw) — FM synthesis using oscillators, expressions, gain control, and frequency analysis.
 
----
-
 ## How It Works
 
 Think of audio chaining like a hardware signal chain: oscillator → filter → amp → speaker. Each `~` object processes the signal and passes it to the next.
@@ -23,8 +21,6 @@ Think of audio chaining like a hardware signal chain: oscillator → filter → 
 
 Browse all audio objects in the object browser under the **Audio** category.
 
----
-
 ## Try It
 
 ### Exercise — Simple tone
@@ -39,8 +35,6 @@ Browse all audio objects in the object browser under the **Audio** category.
 1. Insert a `lowpass~ 800` between `osc~` and `gain~`
 2. Drag the frequency value up and down — hear the tone get brighter and darker
 
----
-
 ## Monitoring Audio
 
 Visualize what's happening in your audio chain:
@@ -50,8 +44,6 @@ Visualize what's happening in your audio chain:
 - [env~](/docs/objects/env~) — envelope follower, outputs loudness as a number you can route elsewhere
 
 See [Audio Reactivity](/docs/audio-reactivity) to use audio data to drive visuals.
-
----
 
 ## Fun Examples
 
@@ -63,8 +55,6 @@ Or build your own drum machine — [try it out](/?id=w46um7gafe7hgle) and use `W
 
 ![Simple drum machine](/content/images/patchies-simple-drums.png)
 
----
-
 ## Wireless Audio Routing
 
 You don't always need a cable. Use [`send~ <channel>`](/docs/objects/send~) and [`recv~ <channel>`](/docs/objects/recv~) to route audio wirelessly across the patch:
@@ -74,8 +64,6 @@ You don't always need a cable. Use [`send~ <channel>`](/docs/objects/send~) and 
 ```
 
 This keeps complex patches readable by removing long-distance cables.
-
----
 
 ## See Also
 

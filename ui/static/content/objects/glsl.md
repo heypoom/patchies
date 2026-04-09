@@ -103,8 +103,6 @@ Each `@param` must have a matching `uniform` declaration — the type is inferre
 
 When `min` and `max` are provided, the settings panel shows a slider instead of a plain number input. The description replaces the uniform name as the label.
 
----
-
 ## Float Texture Format
 
 By default, the output texture uses 8-bit RGBA (values clamped to 0–1).

@@ -8,8 +8,6 @@ In this patch, two `slider` objects send their values to `expr $1 + $2`, which a
 
 > **Note**: Objects like [expr](/docs/objects/expr) use [hot and cold inlets](/docs/hot-cold-inlets). Only the leftmost inlet (`$1`) triggers output — other inlets store their value silently until the hot inlet fires.
 
----
-
 ## Try It
 
 ![Basic examples](/content/images/basic-examples.webp)
@@ -28,8 +26,6 @@ In this patch, two `slider` objects send their values to `expr $1 + $2`, which a
 2. Search for the `logger.js` preset and connect `msg` → `logger.js`
 3. Click the message object — `'hello world'` appears in the virtual console
 
----
-
 ## Message Types
 
 Most Patchies messages are plain JavaScript values:
@@ -44,8 +40,6 @@ Most Patchies messages are plain JavaScript values:
 The message box has a shorthand: typing `bang` sends `{ type: 'bang' }` automatically. To send the literal string `"bang"`, wrap it in quotes.
 
 ![Implicit message type](/content/images/message-passing-bang-meow.webp)
-
----
 
 ## Sending & Receiving in JavaScript
 
@@ -67,8 +61,6 @@ recv((data) => {
 
 See [JavaScript Runner](/docs/javascript-runner) for the full API: multiple inlets and outlets, named channels, timers, and more.
 
----
-
 ## Named Channels (Wireless Messaging)
 
 You don't always need a cable. Named channels let objects communicate across any distance in the patch — useful when cables would make the patch hard to read.
@@ -82,8 +74,6 @@ Create a [`send <name>`](/docs/objects/send) object and a matching [`recv <name>
 Any message arriving at `send kick`'s inlet immediately appears at every `recv kick`'s outlet — no cable required.
 
 Visual `send`/`recv` objects and the JavaScript `send()`/`recv()` API share the same channel system and are fully interoperable. See [JavaScript Runner](/docs/javascript-runner) for the JS syntax.
-
----
 
 ## See Also
 

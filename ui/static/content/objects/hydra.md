@@ -56,8 +56,6 @@ feed different Hydra chains into different parts of your patch simultaneously.
 > **Note**: The maximum is 8 inlets and 8 outlets, matching WebGL2's
 > hardware limit for simultaneous render targets.
 
----
-
 ## Available Objects
 
 - Full Hydra synth is available as `h`
@@ -75,8 +73,6 @@ Enable the "Hydra Operators" preset packs to use these features:
   perform image operations on two video inputs
 - `filet-mignon.hydra` - demo code from [AFALFL](https://www.instagram.com/a_f_alfl) (CC BY-NC-SA 4.0)
 - `fft.hydra` - audio-reactive visualization
-
----
 
 ## Custom Functions
 
@@ -188,8 +184,6 @@ snoiseGen(6.0)
   .kaleid(4)
   .out()
 ```
-
----
 
 ## Audio Reactivity
 
