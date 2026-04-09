@@ -13,7 +13,7 @@ export const DEFAULT_MAX_PREVIEWS_PER_FRAME_NO_OUTPUT = 20;
  * Tiers are evaluated top-to-bottom; the first matching threshold is used.
  */
 export const PREVIEW_ZOOM_LOD_TIERS = [
-  { minZoom: 1.0, scaleMultiplier: 1 }, // >100%: full preview res
-  { minZoom: 0.6, scaleMultiplier: 2 }, // 60-100%: half-res
-  { minZoom: 0, scaleMultiplier: 4 } // <60%: quarter-res
+  { minZoom: 1.0, scaleMultiplier: 1 },
+  { minZoom: 0.6, scaleMultiplier: 1.3 },
+  { minZoom: 0, scaleMultiplier: 1.6 }
 ] as const;
