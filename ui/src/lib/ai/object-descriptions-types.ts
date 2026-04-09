@@ -54,7 +54,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - three.dom: Three.js 3D graphics (main thread, for mouse/keyboard interaction)
 - projmap: Projection mapper — warp video textures onto N-point polygon surfaces with built-in point editor and expand mode
 - dom: write to the DOM element
-- swgl: SwissGL shaders for WebGL2
+- swgl: do not use unless explicitly requested
 - bg.out: Background output (final video output)
 
 ## Audio & Music Objects
