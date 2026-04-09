@@ -97,10 +97,15 @@
           videoOutletCount: m.outletCount
         });
 
+        const existingNode = glSystem.nodes.find((n) => n.id === nodeId);
+        const runtimeFormat = (existingNode?.data as Record<string, unknown>)?.fboFormat as
+          | string
+          | undefined;
+
         glSystem.upsertNode(nodeId, 'swgl', {
           code,
           mrtCount: m.outletCount,
-          fboFormat: detectFboFormat(code)
+          fboFormat: runtimeFormat ?? detectFboFormat(code)
         });
       })
       .exhaustive();
