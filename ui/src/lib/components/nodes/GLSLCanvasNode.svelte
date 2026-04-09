@@ -33,6 +33,7 @@
       executeCode?: number;
       showConsole?: boolean;
       _runRevision?: number;
+      mrtCount?: number;
     };
     selected: boolean;
   } = $props();
@@ -294,15 +295,29 @@
   {/snippet}
 
   {#snippet bottomHandle()}
-    <StandardHandle
-      port="outlet"
-      type="video"
-      id="out"
-      title="Video output"
-      total={1}
-      index={0}
-      {nodeId}
-    />
+    {#if (data.mrtCount ?? 1) > 1}
+      {#each Array(data.mrtCount ?? 1) as _, i}
+        <StandardHandle
+          port="outlet"
+          type="video"
+          id={String(i)}
+          title={`Video output ${i}`}
+          total={data.mrtCount ?? 1}
+          index={i}
+          {nodeId}
+        />
+      {/each}
+    {:else}
+      <StandardHandle
+        port="outlet"
+        type="video"
+        id="out"
+        title="Video output"
+        total={1}
+        index={0}
+        {nodeId}
+      />
+    {/if}
   {/snippet}
 
   {#snippet codeEditor()}

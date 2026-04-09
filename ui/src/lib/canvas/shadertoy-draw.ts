@@ -44,6 +44,7 @@ export function createShaderToyDrawCommand({
   height,
   framebuffer,
   uniformDefs,
+  mrtCount = 1,
   onError
 }: {
   code: string;
@@ -53,12 +54,18 @@ export function createShaderToyDrawCommand({
   width: number;
   height: number;
   framebuffer: regl.Framebuffer2D | null;
+  /** Number of MRT color attachments. 1 = standard single-output mode. */
+  mrtCount?: number;
   onError?: (error: Error & { lineErrors?: LineErrors }) => void;
 }): regl.DrawCommand | null {
-  // Fragment shader with ShaderToy-compatible uniforms and textures
+  const isMRT = mrtCount > 1;
+
+  // Fragment shader with ShaderToy-compatible uniforms and textures.
+  // In MRT mode the user declares their own layout(location=N) out variables and
+  // mainImage only receives fragCoord — no fragColor injection.
   const fragmentShader = `#version 300 es
     precision highp float;
-    
+
     uniform vec3 iResolution;
     uniform float iTime;
     uniform vec4 iMouse;
@@ -67,18 +74,17 @@ export function createShaderToyDrawCommand({
     uniform int iFrame;
 
 		in vec2 uv;
-		out vec4 fragColor;
-    
+		${isMRT ? '' : 'out vec4 fragColor;'}
+
     ${code ?? PLACEHOLDER_MAIN_IMAGE}
-    
+
     void main() {
-      fragColor = vec4(0.0);
-      mainImage(fragColor, gl_FragCoord.xy);
+      ${isMRT ? 'mainImage(gl_FragCoord.xy);' : 'fragColor = vec4(0.0);\n      mainImage(fragColor, gl_FragCoord.xy);'}
     }
   `;
 
   // Count preamble lines (everything before user code insertion)
-  // Lines: #version, precision, blank, 5 uniforms, blank, in/out, blank = 13 lines
+  // Lines: #version, precision, blank, 5 uniforms, blank, in + optional out, blank = 13 lines
   const PREAMBLE_LINES = 13;
 
   // Validate both shaders before passing to regl
