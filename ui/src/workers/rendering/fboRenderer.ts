@@ -364,16 +364,18 @@ export class FBORenderer {
           framebuffer = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
 
           const gl = this.gl;
-          const rawFbo = getFramebuffer(framebuffer);
-          gl.bindFramebuffer(gl.FRAMEBUFFER, rawFbo);
+          const rawFramebuffer = getFramebuffer(framebuffer);
+
+          gl.bindFramebuffer(gl.FRAMEBUFFER, rawFramebuffer);
 
           for (let i = 1; i < mrtCount; i++) {
-            const rawTex = getRawTexture(colorAttachments[i]);
+            const rawTexture = getRawTexture(colorAttachments[i]);
+
             gl.framebufferTexture2D(
               gl.FRAMEBUFFER,
               gl.COLOR_ATTACHMENT0 + i,
               gl.TEXTURE_2D,
-              rawTex,
+              rawTexture,
               0
             );
           }
@@ -504,6 +506,7 @@ export class FBORenderer {
         if (!sourceNode.outputs.includes(edge.target)) {
           sourceNode.outputs.push(edge.target);
         }
+
         if (!targetNode.inputs.includes(edge.source)) {
           targetNode.inputs.push(edge.source);
         }
@@ -544,8 +547,8 @@ export class FBORenderer {
 
         // Blit input FBO to output framebuffer
         const [w, h] = this.outputSize;
-
         const gl = this.gl;
+
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFbo.framebuffer));
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(framebuffer));
         gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
