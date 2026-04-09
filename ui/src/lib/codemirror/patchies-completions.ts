@@ -111,6 +111,13 @@ const patchiesAPICompletions: Completion[] = [
     info: 'Hide the input/output ports on visual nodes',
     apply: 'setHidePorts(true)'
   },
+  {
+    label: 'setTextureFormat',
+    type: 'function',
+    detail: "('rgba8' | 'rgba16f' | 'rgba32f') => void",
+    info: 'Set output FBO texture format. Use rgba32f for unclamped float data (GPGPU, HDR).',
+    apply: "setTextureFormat('rgba32f')"
+  },
 
   // Timing Functions
   {
@@ -338,6 +345,7 @@ const topLevelOnlyFunctions = new Set([
   'setMouseScope',
   'setPortCount',
   'setRunOnMount',
+  'setTextureFormat',
   'setVideoCount'
 ]);
 
@@ -452,6 +460,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three',
     'three.dom'
   ],
+  setTextureFormat: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
   setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
   getTexture: ['hydra', 'regl', 'swgl', 'three'],
   onVideoFrame: ['worker'],
