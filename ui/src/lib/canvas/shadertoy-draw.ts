@@ -20,6 +20,10 @@ const PLACEHOLDER_MAIN_IMAGE = `
 	}
 `;
 
+const PLACEHOLDER_MAIN_IMAGE_MRT = `
+	void mainImage(in vec2 fragCoord) {}
+`;
+
 type UserUniformInputs = Record<string, (_: regl.DefaultContext, props: Props) => void>;
 
 type Props = {
@@ -76,7 +80,7 @@ export function createShaderToyDrawCommand({
 		in vec2 uv;
 		${isMRT ? '' : 'out vec4 fragColor;'}
 
-    ${code ?? PLACEHOLDER_MAIN_IMAGE}
+    ${code ?? (isMRT ? PLACEHOLDER_MAIN_IMAGE_MRT : PLACEHOLDER_MAIN_IMAGE)}
 
     void main() {
       ${isMRT ? 'mainImage(gl_FragCoord.xy);' : 'fragColor = vec4(0.0);\n      mainImage(fragColor, gl_FragCoord.xy);'}
