@@ -18,6 +18,11 @@ Sits between the high-level glsl node (fragment shader only) and building a full
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
 - noOutput() - Hide video output port
 
+**Multi-Render Target (MRT) — multiple video outlets:**
+- Call \`setVideoCount(inlets, N)\` for N outlets, then use \`layout(location = N) out vec4\` in frag
+- REQUIRES \`#version 300 es\` and WebGL2 syntax: \`in\`/\`out\` instead of \`attribute\`/\`varying\`, no \`gl_FragColor\`
+- Example: \`setVideoCount(0, 2)\` + \`layout(location = 0) out vec4 albedo; layout(location = 1) out vec4 normals;\`
+
 **regl-specific gotchas:**
 - CRITICAL: Every regl draw command MUST include vert, frag, attributes, and count. Omitting vert causes "(regl) missing vertex shader" errors. Always use the fullscreen quad boilerplate below.
 - Use render(time) function for the render loop — it's called every frame automatically
