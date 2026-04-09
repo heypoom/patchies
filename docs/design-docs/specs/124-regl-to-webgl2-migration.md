@@ -16,18 +16,19 @@ We're fighting regl more than using it. Removing it eliminates a class of bugs, 
 
 We evaluated thin WebGL2 helper libraries. twgl.js (by Gregg Tavares, Chrome WebGL team) is the clear choice:
 
-| Property | twgl.js | regl (current) |
-|---|---|---|
-| **Philosophy** | Stateless helper functions — pass `gl` to every call | Stateful framework with shadow state cache |
-| **Bundle size** | ~5kb gzip (base) / ~12kb (full) | ~150kb unminified |
-| **WebGL2** | Native — sized formats, MRT, VAOs, UBOs | WebGL1-designed, WebGL2 bolted on |
-| **State cache** | **None** — every call goes straight to GL | Yes — causes conflicts with SwissGL/Three.js |
-| **Shared context** | Safe — no state to go stale | Unsafe — requires `_refresh()` hacks |
-| **Maintenance** | Stable, maintained by Chrome WebGL team member | Active but fundamentally WebGL1 |
+| Property           | twgl.js                                              | regl (current)                               |
+| ------------------ | ---------------------------------------------------- | -------------------------------------------- |
+| **Philosophy**     | Stateless helper functions — pass `gl` to every call | Stateful framework with shadow state cache   |
+| **Bundle size**    | ~5kb gzip (base) / ~12kb (full)                      | ~150kb unminified                            |
+| **WebGL2**         | Native — sized formats, MRT, VAOs, UBOs              | WebGL1-designed, WebGL2 bolted on            |
+| **State cache**    | **None** — every call goes straight to GL            | Yes — causes conflicts with SwissGL/Three.js |
+| **Shared context** | Safe — no state to go stale                          | Unsafe — requires `_refresh()` hacks         |
+| **Maintenance**    | Stable, maintained by Chrome WebGL team member       | Active but fundamentally WebGL1              |
 
 **Key advantage**: twgl is purely functional. `createTexture(gl, options)`, `createFramebufferInfo(gl, attachments)`, `createProgramInfo(gl, shaders)` — no classes, no state, no magic. It coexists perfectly with SwissGL and Three.js on the same GL context.
 
 **Alternatives rejected**:
+
 - **PicoGL.js** — WebGL2-only (good) but has a state cache (bad) and unmaintained since 2022
 - **luma.gl** — 80-100kb, heavy state tracking, designed for deck.gl not standalone use
 - **OGL** — mini Three.js with scene graph, too high-level
@@ -43,27 +44,28 @@ We evaluated thin WebGL2 helper libraries. twgl.js (by Gregg Tavares, Chrome Web
 
 ### regl API → twgl/GL Mapping
 
-| regl API | Where | Replacement |
-|---|---|---|
-| `regl()` init | fboRenderer | Remove — just use `gl` directly |
-| `regl.texture()` | fboRenderer, VideoTextureMgr, PixelReadback, Hydra | `twgl.createTexture(gl, options)` |
-| `regl.framebuffer()` | fboRenderer, PixelReadback, Hydra | `twgl.createFramebufferInfo(gl, attachments)` |
-| `regl.buffer()` | Hydra Output, ProjectionMap, shadertoy-draw | `twgl.createBufferInfoFromArrays(gl, arrays)` |
-| `regl.elements()` | ProjectionMap | `twgl.createBufferInfoFromArrays(gl, { indices })` |
-| `regl({...})` draw command | shadertoy-draw, Hydra, canvasRenderer, projMap | `twgl.createProgramInfo(gl, [vert, frag])` + `twgl.setUniforms()` + `twgl.drawBufferInfo()` |
-| `regl.frame()` | fboRenderer | `requestAnimationFrame()` |
-| `regl.prop()` | Hydra | Compute uniforms at draw time, pass to `twgl.setUniforms()` |
-| `regl.clear()` | reglRenderer (wrapped) | `gl.clearColor()` + `gl.clear()` |
-| `texture.subimage()` | Hydra Source | `gl.texSubImage2D()` or `twgl.setTextureFromElement()` |
-| `texture({data})` reinit | Hydra Source, VideoTextureMgr | `twgl.setTextureFromElement()` or raw `gl.texImage2D()` |
-| `framebuffer.use()` | swglRenderer, render loop | `twgl.bindFramebufferInfo(gl, fbi)` |
-| `regl._gl` | swglRenderer | Direct `gl` reference (already available) |
-| `regl._refresh()` | swglRenderer | Not needed — twgl has no state cache |
-| `*.destroy()` | everywhere | `gl.deleteTexture()`, `gl.deleteFramebuffer()`, etc. |
+| regl API                   | Where                                              | Replacement                                                                                 |
+| -------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `regl()` init              | fboRenderer                                        | Remove — just use `gl` directly                                                             |
+| `regl.texture()`           | fboRenderer, VideoTextureMgr, PixelReadback, Hydra | `twgl.createTexture(gl, options)`                                                           |
+| `regl.framebuffer()`       | fboRenderer, PixelReadback, Hydra                  | `twgl.createFramebufferInfo(gl, attachments)`                                               |
+| `regl.buffer()`            | Hydra Output, ProjectionMap, shadertoy-draw        | `twgl.createBufferInfoFromArrays(gl, arrays)`                                               |
+| `regl.elements()`          | ProjectionMap                                      | `twgl.createBufferInfoFromArrays(gl, { indices })`                                          |
+| `regl({...})` draw command | shadertoy-draw, Hydra, canvasRenderer, projMap     | `twgl.createProgramInfo(gl, [vert, frag])` + `twgl.setUniforms()` + `twgl.drawBufferInfo()` |
+| `regl.frame()`             | fboRenderer                                        | `requestAnimationFrame()`                                                                   |
+| `regl.prop()`              | Hydra                                              | Compute uniforms at draw time, pass to `twgl.setUniforms()`                                 |
+| `regl.clear()`             | reglRenderer (wrapped)                             | `gl.clearColor()` + `gl.clear()`                                                            |
+| `texture.subimage()`       | Hydra Source                                       | `gl.texSubImage2D()` or `twgl.setTextureFromElement()`                                      |
+| `texture({data})` reinit   | Hydra Source, VideoTextureMgr                      | `twgl.setTextureFromElement()` or raw `gl.texImage2D()`                                     |
+| `framebuffer.use()`        | swglRenderer, render loop                          | `twgl.bindFramebufferInfo(gl, fbi)`                                                         |
+| `regl._gl`                 | swglRenderer                                       | Direct `gl` reference (already available)                                                   |
+| `regl._refresh()`          | swglRenderer                                       | Not needed — twgl has no state cache                                                        |
+| `*.destroy()`              | everywhere                                         | `gl.deleteTexture()`, `gl.deleteFramebuffer()`, etc.                                        |
 
 ### Files by Migration Phase
 
 **Phase 1 — Core infrastructure** (no user-facing changes)
+
 - `src/lib/rendering/types.ts` — replace `regl.Texture2D`, `regl.Framebuffer2D` with own types
 - `src/workers/rendering/fboRenderer.ts` — remove regl init, use twgl + raw GL
 - `src/workers/rendering/BaseWorkerRenderer.ts` — update `framebuffer` type
@@ -72,11 +74,13 @@ We evaluated thin WebGL2 helper libraries. twgl.js (by Gregg Tavares, Chrome Web
 - `src/workers/rendering/utils.ts` — remove `getRawTexture()`, `getFramebuffer()` hacks
 
 **Phase 2 — GLSL pipeline** (shadertoy-draw + canvasRenderer)
+
 - `src/lib/canvas/shadertoy-draw.ts` — replace draw command with twgl program
 - `src/workers/rendering/canvasRenderer.ts` — one texture + one draw command
 - `src/workers/rendering/CaptureRenderer.ts` — temp FBO creation
 
 **Phase 3 — Hydra fork**
+
 - `src/lib/hydra/Hydra.ts` — replace regl init, draw commands, `regl.prop()`
 - `src/lib/hydra/Output.ts` — ping-pong FBOs, draw command
 - `src/lib/hydra/Source.ts` — texture management
@@ -84,6 +88,7 @@ We evaluated thin WebGL2 helper libraries. twgl.js (by Gregg Tavares, Chrome Web
 - `src/lib/hydra/compiler/generateGlsl.ts` — type updates
 
 **Phase 4 — Remaining renderers + remove regl**
+
 - `src/workers/rendering/reglRenderer.ts` — redesign as twgl-based GL node (see below)
 - `src/objects/projmap/ProjectionMapRenderer.ts` — buffers, elements, draw command
 - `src/workers/rendering/swglRenderer.ts` — remove `regl._refresh()`, use `twgl.bindFramebufferInfo()` directly
@@ -98,17 +103,17 @@ Replace regl types with thin wrappers holding twgl/GL handles plus metadata:
 
 /** Wraps a WebGLTexture with format/size metadata. */
 export interface FBOTexture {
-  texture: WebGLTexture;
-  width: number;
-  height: number;
-  format: FBOFormat;
+  texture: WebGLTexture
+  width: number
+  height: number
+  format: FBOFormat
 }
 
 /** Wraps a twgl FramebufferInfo with our metadata. */
 export interface FBOFramebuffer {
-  framebufferInfo: twgl.FramebufferInfo;
+  framebufferInfo: twgl.FramebufferInfo
   /** Shortcut to the underlying WebGLFramebuffer for raw GL calls */
-  framebuffer: WebGLFramebuffer;
+  framebuffer: WebGLFramebuffer
 }
 ```
 
@@ -120,40 +125,67 @@ All existing `regl.Texture2D` → `FBOTexture`, `regl.Framebuffer2D` → `FBOFra
 
 ```typescript
 // Before (regl + workaround for float formats)
-const texture = this.regl.texture({ width, height, wrapS: 'clamp', wrapT: 'clamp' });
-const rawTexture = getRawTexture(texture);
-gl.bindTexture(gl.TEXTURE_2D, rawTexture);
-gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0, gl.RGBA, gl.HALF_FLOAT, null);
+const texture = this.regl.texture({
+  width,
+  height,
+  wrapS: 'clamp',
+  wrapT: 'clamp',
+})
+const rawTexture = getRawTexture(texture)
+gl.bindTexture(gl.TEXTURE_2D, rawTexture)
+gl.texImage2D(
+  gl.TEXTURE_2D,
+  0,
+  gl.RGBA16F,
+  width,
+  height,
+  0,
+  gl.RGBA,
+  gl.HALF_FLOAT,
+  null,
+)
 
 // After (twgl — native sized format support)
 const texture = twgl.createTexture(gl, {
-  width, height,
+  width,
+  height,
   internalFormat: gl.RGBA16F,
   format: gl.RGBA,
   type: gl.HALF_FLOAT,
   wrap: gl.CLAMP_TO_EDGE,
   min: linearSupported ? gl.LINEAR : gl.NEAREST,
   mag: linearSupported ? gl.LINEAR : gl.NEAREST,
-});
+})
 ```
 
 ### FBO with MRT (replaces regl FBO + manual attachment hack)
 
 ```typescript
 // Before (regl + raw GL workaround)
-const framebuffer = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
-const rawFramebuffer = getFramebuffer(framebuffer);
-gl.bindFramebuffer(gl.FRAMEBUFFER, rawFramebuffer);
+const framebuffer = this.regl.framebuffer({
+  color: colorAttachments[0],
+  depthStencil: false,
+})
+const rawFramebuffer = getFramebuffer(framebuffer)
+gl.bindFramebuffer(gl.FRAMEBUFFER, rawFramebuffer)
 for (let i = 1; i < mrtCount; i++) {
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, getRawTexture(colorAttachments[i]), 0);
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0 + i,
+    gl.TEXTURE_2D,
+    getRawTexture(colorAttachments[i]),
+    0,
+  )
 }
-gl.drawBuffers(colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
+gl.drawBuffers(colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i))
 
 // After (twgl — native MRT)
-const fbi = twgl.createFramebufferInfo(gl,
-  colorAttachments.map(tex => ({ attachment: tex })),
-  width, height
-);
+const fbi = twgl.createFramebufferInfo(
+  gl,
+  colorAttachments.map((tex) => ({attachment: tex})),
+  width,
+  height,
+)
 // twgl automatically calls gl.drawBuffers() for multiple attachments
 ```
 
@@ -164,40 +196,49 @@ const fbi = twgl.createFramebufferInfo(gl,
 const draw = regl({
   frag: fragShader,
   vert: vertShader,
-  attributes: { position: regl.buffer([[-1,-1], [1,-1], [-1,1], [1,1]]) },
-  uniforms: { time: regl.prop('time'), resolution: regl.prop('resolution') },
+  attributes: {
+    position: regl.buffer([
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ]),
+  },
+  uniforms: {time: regl.prop('time'), resolution: regl.prop('resolution')},
   primitive: 'triangle strip',
   count: 4,
   framebuffer: fbo,
-});
-draw({ time: t, resolution: [w, h] });
+})
+draw({time: t, resolution: [w, h]})
 
 // After (twgl)
-const programInfo = twgl.createProgramInfo(gl, [vertShader, fragShader]);
+const programInfo = twgl.createProgramInfo(gl, [vertShader, fragShader])
 const bufferInfo = twgl.createBufferInfoFromArrays(gl, {
-  position: { numComponents: 2, data: [-1,-1, 1,-1, -1,1, 1,1] },
-});
+  position: {numComponents: 2, data: [-1, -1, 1, -1, -1, 1, 1, 1]},
+})
 
 // Per frame:
-gl.useProgram(programInfo.program);
-twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
-twgl.setUniforms(programInfo, { time: t, resolution: [w, h] });
-twgl.drawBufferInfo(gl, bufferInfo, gl.TRIANGLE_STRIP);
+gl.useProgram(programInfo.program)
+twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo)
+twgl.setUniforms(programInfo, {time: t, resolution: [w, h]})
+twgl.drawBufferInfo(gl, bufferInfo, gl.TRIANGLE_STRIP)
 ```
 
 ### Render Loop (replaces `regl.frame()`)
 
 ```typescript
 // Before
-this.frameCancellable = this.regl.frame(() => { this.renderFrame(); });
+this.frameCancellable = this.regl.frame(() => {
+  this.renderFrame()
+})
 
 // After
 const loop = () => {
-  if (!this.isAnimating) return;
-  this.renderFrame();
-  this.frameId = requestAnimationFrame(loop);
-};
-this.frameId = requestAnimationFrame(loop);
+  if (!this.isAnimating) return
+  this.renderFrame()
+  this.frameId = requestAnimationFrame(loop)
+}
+this.frameId = requestAnimationFrame(loop)
 ```
 
 ## User-Facing regl Node → GL Node
@@ -218,12 +259,12 @@ const shader = await createShader({
       fragColor = vec4(sin(time), 0.5, 1.0, 1.0);
     }`,
   attributes: {
-    position: { numComponents: 2, data: [-1,-1, 1,-1, -1,1, 1,1] }
-  }
-});
+    position: {numComponents: 2, data: [-1, -1, 1, -1, -1, 1, 1, 1]},
+  },
+})
 
 function render(time) {
-  shader.draw({ time });
+  shader.draw({time})
 }
 ```
 
@@ -295,14 +336,14 @@ The node type changes from `regl` → `gl`.
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| Regression in rendering correctness | Phase-by-phase with validation at each step |
-| Hydra compatibility | Our fork, full control. Test with complex Hydra patches |
+| Risk                                                | Mitigation                                                                                                                     |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Regression in rendering correctness                 | Phase-by-phase with validation at each step                                                                                    |
+| Hydra compatibility                                 | Our fork, full control. Test with complex Hydra patches                                                                        |
 | Performance regression from lost regl optimizations | regl's state diffing is actually overhead we don't need — we control render order. twgl has zero overhead (stateless helpers). |
-| SwissGL interaction | SwissGL already uses raw GL; removing regl's state cache *reduces* conflicts |
-| Three.js interaction | Three.js manages its own GL state; same argument as SwissGL |
-| twgl.js maintenance risk | Extremely low — library is mature/stable, maintained by Chrome WebGL team member, essentially "done" |
+| SwissGL interaction                                 | SwissGL already uses raw GL; removing regl's state cache _reduces_ conflicts                                                   |
+| Three.js interaction                                | Three.js manages its own GL state; same argument as SwissGL                                                                    |
+| twgl.js maintenance risk                            | Extremely low — library is mature/stable, maintained by Chrome WebGL team member, essentially "done"                           |
 
 ## Non-Goals
 
