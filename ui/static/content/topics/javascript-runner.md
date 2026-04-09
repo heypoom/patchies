@@ -158,6 +158,56 @@ setInterval(() => {
 
 ---
 
+## Importing Packages
+
+Use the `npm:` prefix to import any package from npm (powered by [esm.sh](https://esm.sh)):
+
+```javascript
+import Matter from "npm:matter-js";
+import { uniq } from "npm:lodash-es";
+
+console.log(uniq([1, 1, 2, 2, 3])); // [1, 2, 3]
+```
+
+Or import dynamically with `await`:
+
+```javascript
+// Using a full URL
+const { uniq } = await import("https://esm.sh/lodash-es");
+
+// Using the shorthand (equivalent)
+const { uniq } = await esm("lodash-es");
+```
+
+> **Note**: `import * as X from "npm:..."` is not yet supported. Use named or default imports instead.
+
+---
+
+## Shared Libraries
+
+![Shared JavaScript libraries example](/content/images/patchies-js-modules.png)
+
+Share code between multiple `js` objects using the `// @lib <name>` comment at the top of a js object. This turns it into a library that others can import from:
+
+```javascript
+// In a js object — add "// @lib utils" at the very top
+// @lib utils
+export const rand = (min, max) => Math.random() * (max - min) + min;
+export class Vector { /* ... */ }
+```
+
+```javascript
+// In any other js object
+import { rand, Vector } from 'utils';
+console.log(rand(0, 10));
+```
+
+The library object shows a package icon in the patch. Any change to it automatically re-runs all importers.
+
+> **Note**: Top-level variables are *not* shared between objects — each object has its own isolated scope. Use message passing or named channels to communicate values between objects at runtime.
+
+---
+
 ## Named Channels (Wireless Messaging)
 
 Connect objects without drawing cables by using named channels. This is handy for sending data across a large patch.
@@ -182,6 +232,39 @@ send(data, { to: 'position' }); // named channel (wireless)
 ```
 
 Named channels work between `js`, `worker`, and the visual [send](/docs/objects/send)/[recv](/docs/objects/recv) objects.
+
+---
+
+## Virtual Filesystem
+
+Load images, videos, fonts, and other files from the patch's virtual filesystem:
+
+```javascript
+const url = await getVfsUrl("my-image.png");
+const img = loadImage(url); // works in p5, for example
+```
+
+See [Virtual Filesystem](/docs/virtual-filesystem) for how to add files to your patch.
+
+---
+
+## Persistent Storage
+
+Use `kv` to store data that survives page reloads:
+
+```javascript
+// Save a value
+await kv.set("score", 100);
+
+// Read it back later
+const score = await kv.get("score"); // 100
+
+// Namespaced stores
+const settings = kv.store("settings");
+await settings.set("theme", "dark");
+```
+
+See [Data Storage](/docs/data-storage) for more.
 
 ---
 
@@ -252,89 +335,6 @@ const haiku = await llm("Write a haiku about recursion", {
 ```
 
 Requires an API key — configure your provider via `Ctrl/Cmd + K > AI Provider Settings`.
-
----
-
-## Importing Packages
-
-Use the `npm:` prefix to import any package from npm (powered by [esm.sh](https://esm.sh)):
-
-```javascript
-import Matter from "npm:matter-js";
-import { uniq } from "npm:lodash-es";
-
-console.log(uniq([1, 1, 2, 2, 3])); // [1, 2, 3]
-```
-
-Or import dynamically with `await`:
-
-```javascript
-// Using a full URL
-const { uniq } = await import("https://esm.sh/lodash-es");
-
-// Using the shorthand (equivalent)
-const { uniq } = await esm("lodash-es");
-```
-
-> **Note**: `import * as X from "npm:..."` is not yet supported. Use named or default imports instead.
-
----
-
-## Shared Libraries
-
-![Shared JavaScript libraries example](/content/images/patchies-js-modules.png)
-
-Share code between multiple `js` objects using the `// @lib <name>` comment at the top of a js object. This turns it into a library that others can import from:
-
-```javascript
-// In a js object — add "// @lib utils" at the very top
-// @lib utils
-export const rand = (min, max) => Math.random() * (max - min) + min;
-export class Vector { /* ... */ }
-```
-
-```javascript
-// In any other js object
-import { rand, Vector } from 'utils';
-console.log(rand(0, 10));
-```
-
-The library object shows a package icon in the patch. Any change to it automatically re-runs all importers.
-
-> **Note**: Top-level variables are *not* shared between objects — each object has its own isolated scope. Use message passing or named channels to communicate values between objects at runtime.
-
----
-
-## Virtual Filesystem
-
-Load images, videos, fonts, and other files from the patch's virtual filesystem:
-
-```javascript
-const url = await getVfsUrl("my-image.png");
-const img = loadImage(url); // works in p5, for example
-```
-
-See [Virtual Filesystem](/docs/virtual-filesystem) for how to add files to your patch.
-
----
-
-## Persistent Storage
-
-Use `kv` to store data that survives page reloads:
-
-```javascript
-// Save a value
-await kv.set("score", 100);
-
-// Read it back later
-const score = await kv.get("score"); // 100
-
-// Namespaced stores
-const settings = kv.store("settings");
-await settings.set("theme", "dark");
-```
-
-See [Data Storage](/docs/data-storage) for more.
 
 ---
 
