@@ -34,6 +34,7 @@ const fboCompatibleTypes = new Set(FBO_COMPATIBLE_TYPES);
 export class ViewportCullingManager {
   private config: ViewportCullingConfig;
   private lastUpdateTime = 0;
+  private lastViewport = { x: 0, y: 0, zoom: 1 };
   private cachedVisibleNodes: Set<string> = new Set();
 
   public onVisibleNodesChange?: (nodeIds: Set<string>) => void;
@@ -100,12 +101,18 @@ export class ViewportCullingManager {
   ): Set<string> | null {
     const now = performance.now();
 
-    // Throttle updates
-    if (now - this.lastUpdateTime < this.config.throttleMs) {
+    // Skip throttle if viewport moved (ensures correct culling after fitView/load)
+    const viewportMoved =
+      viewport.x !== this.lastViewport.x ||
+      viewport.y !== this.lastViewport.y ||
+      viewport.zoom !== this.lastViewport.zoom;
+
+    if (!viewportMoved && now - this.lastUpdateTime < this.config.throttleMs) {
       return null;
     }
 
     this.lastUpdateTime = now;
+    this.lastViewport = { x: viewport.x, y: viewport.y, zoom: viewport.zoom };
 
     const bounds = this.calculateViewportBounds(viewport, screenWidth, screenHeight);
     const visibleNodes = new Set<string>();
