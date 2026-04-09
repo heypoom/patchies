@@ -13,15 +13,9 @@ async function preprocessReglConfig(
   config: Record<string, unknown>,
   resolver: IncludeResolver
 ): Promise<Record<string, unknown>> {
-  // Trim frag/vert so `#version 300 es` lands on the first line even when
-  // the shader is written as an indented template literal.
-  const hasFrag = typeof config.frag === 'string';
-  const hasVert = typeof config.vert === 'string';
-  if (!hasFrag && !hasVert) return config;
+  if (!hasIncludes(config.frag) && !hasIncludes(config.vert)) return config;
 
   const result = { ...config };
-  if (hasFrag) result.frag = (result.frag as string).trim();
-  if (hasVert) result.vert = (result.vert as string).trim();
 
   if (hasIncludes(result.frag)) {
     result.frag = await processIncludes(result.frag, resolver);
@@ -57,7 +51,23 @@ function createTrackedRegl(
 
   const proxy = new Proxy(reglInstance, {
     apply(target, thisArg, args) {
-      const config = args[0] as Record<string, unknown> | undefined;
+      let config = args[0] as Record<string, unknown> | undefined;
+
+      // Trim frag/vert so `#version 300 es` lands on the first line even when
+      // the shader is written as an indented template literal.
+      if (config && (typeof config.frag === 'string' || typeof config.vert === 'string')) {
+        config = { ...config };
+
+        if (typeof config.frag === 'string') {
+          config.frag = config.frag.trim();
+        }
+
+        if (typeof config.vert === 'string') {
+          config.vert = config.vert.trim();
+        }
+
+        args = [config, ...args.slice(1)];
+      }
 
       // If shader strings contain #include, resolve them async then create the command
       if (resolver && config && (hasIncludes(config.frag) || hasIncludes(config.vert))) {

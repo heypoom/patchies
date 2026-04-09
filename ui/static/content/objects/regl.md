@@ -193,7 +193,8 @@ location maps directly to the outlet at that index.
 setVideoCount(0, 2) // 0 inlets, 2 outlets
 
 const draw = await regl({
-  vert: `#version 300 es
+  vert: `
+    #version 300 es
     precision mediump float;
     in vec2 position;
     out vec2 uv;
@@ -202,7 +203,8 @@ const draw = await regl({
       gl_Position = vec4(position, 0, 1);
     }
   `,
-  frag: `#version 300 es
+  frag: `
+    #version 300 es
     precision mediump float;
 
     layout(location = 0) out vec4 albedo;   // video-out-0
