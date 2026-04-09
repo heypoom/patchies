@@ -4,7 +4,7 @@ export const hydraPrompt = `## hydra Object Instructions
 Live coding video synthesis with chainable Hydra functions.
 
 **Hydra-specific methods:**
-- setVideoCount(inlets, outlets) - Configure video ports (default 1, 1); max 4 each
+- setVideoCount(inlets, outlets) - Configure video ports (default 1, 1); max 8 each
 - src(s0), src(s1), etc. - Access video inputs from setVideoCount
 - out(o0), out(o1), etc. - Route to specific outlet; setVideoCount(0, 2) creates 2 outlets
 - Multiple outputs: setVideoCount(0, 2) then osc().out(o0); noise().out(o1)
