@@ -2,7 +2,7 @@
 
 ## Status: Implemented ✓
 
-Core MRT is fully working. One known gap remains: edges to outlets that no longer exist after an `mrtCount` decrease are not automatically cleaned up (they become dangling rather than being deleted).
+Core MRT is fully working. The one remaining known gap (dangling outlet edges after `mrtCount` decrease) has been fixed.
 
 ---
 
@@ -206,11 +206,9 @@ function detectMrtCount(code: string): number {
 - Single-outlet GLSL nodes with no `layout(location=N) out` declarations keep the current ShaderToy wrapper and single-outlet handle
 - Existing edges to `video-out-out` continue to work (parsed as outlet index 0)
 
-### Known Gap: Edge cleanup on mrtCount decrease ❌
+### Edge cleanup on mrtCount decrease ✓
 
-When a GLSL node's `mrtCount` decreases (e.g. user removes a `layout(location=2)` declaration, reducing from 3 outlets to 2), edges connected to the removed outlet are not automatically deleted. They become dangling edges in the Svelte Flow graph. The render graph builder (`filterFBOCompatibleGraph`) will ignore them at runtime, but they persist visually until the user removes them manually.
-
-**Fix needed**: In `updateShader()` (GLSLCanvasNode.svelte), after computing the new `mrtCount`, compare against the previous value and call `deleteElements()` for any edges whose `sourceHandle` targets an outlet index ≥ new `mrtCount`.
+When a GLSL node's `mrtCount` decreases, `removeInvalidEdges()` is called with the new count before updating node data. It filters source edges whose `video-out-N` handle index is ≥ the new `mrtCount` and passes them to `deleteElements()`, keeping the graph consistent.
 
 ### Limits
 

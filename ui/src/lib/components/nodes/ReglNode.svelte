@@ -8,6 +8,7 @@
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
+  import { removeExcessVideoOutletEdges } from './outlet-edges';
   import { messages } from '$lib/objects/schemas/common';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import { shouldShowHandles } from '../../../stores/ui.store';
@@ -80,7 +81,7 @@
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
   const [outputWidth, outputHeight] = glSystem.outputSize;
@@ -91,6 +92,10 @@
   let videoInletCount = $derived(data.videoInletCount ?? 1);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
   let previousExecuteCode = $state<number | undefined>(undefined);
+
+  $effect(() => {
+    removeExcessVideoOutletEdges(nodeId, videoOutletCount, getEdges, deleteElements);
+  });
 
   $effect(() => {
     if (data.executeCode && data.executeCode !== previousExecuteCode) {

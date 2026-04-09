@@ -6,6 +6,7 @@
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
+  import { removeExcessVideoOutletEdges } from './outlet-edges';
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
@@ -37,7 +38,8 @@
     selected: boolean;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
+
   const updateNodeInternals = useUpdateNodeInternals();
   const eventBus = PatchiesEventBus.getInstance();
 
@@ -60,9 +62,15 @@
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 
   const code = $derived(data.code || '');
+
   let videoInletCount = $derived(data.videoInletCount ?? 0);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
   let messageInletCount = $derived(data.messageInletCount ?? 1);
+
+  $effect(() => {
+    removeExcessVideoOutletEdges(nodeId, videoOutletCount, getEdges, deleteElements);
+  });
+
   let messageOutletCount = $derived(data.messageOutletCount ?? 1);
 
   function handlePortCountUpdate(e: NodePortCountUpdateEvent) {

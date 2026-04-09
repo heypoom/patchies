@@ -13,6 +13,7 @@
     shaderCodeToUniformDefs,
     uniformDefsToSettingsSchema
   } from '$lib/canvas/shader-code-to-uniform-def';
+  import { removeExcessVideoOutletEdges } from './outlet-edges';
   import type { GLUniformDef } from '../../../types/uniform-config';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -115,31 +116,26 @@
     }
   };
 
-  function removeInvalidEdges(uniformDefs: GLUniformDef[]) {
-    const connectedEdges = getEdges().filter((edge) => edge.target === nodeId);
-
+  function removeInvalidEdges(uniformDefs: GLUniformDef[], mrtCount: number) {
     const textureUniforms = new Set(
       uniformDefs.filter((def) => def.type === 'sampler2D').map((def) => def.name)
     );
 
-    // Find edges that are no longer valid (uniform changed or removed)
-    const invalidEdges = connectedEdges.filter((edge) => {
-      if (!edge.targetHandle?.startsWith('video-in-')) return false;
-
+    // Remove inlet edges whose uniform no longer exists
+    const invalidInlets = getEdges().filter((edge) => {
+      if (edge.target !== nodeId || !edge.targetHandle?.startsWith('video-in-')) return false;
       // Parse the uniform name: video-in-0-uniformName-sampler2D
       const handleParts = edge.targetHandle.split('-');
-
-      if (handleParts.length > 3) {
-        return !textureUniforms.has(handleParts[3]);
-      }
-
-      return false;
+      return handleParts.length > 3 && !textureUniforms.has(handleParts[3]);
     });
 
-    if (invalidEdges.length > 0) {
-      console.log('removing invalid edges:', invalidEdges);
-      deleteElements({ edges: invalidEdges });
+    if (invalidInlets.length > 0) {
+      console.log('removing invalid edges:', invalidInlets);
+      deleteElements({ edges: invalidInlets });
     }
+
+    // Remove outlet edges beyond the new mrtCount
+    removeExcessVideoOutletEdges(nodeId, mrtCount, getEdges, deleteElements);
   }
 
   function detectMrtCount(code: string): number {
@@ -186,8 +182,8 @@
       _runRevision: Date.now()
     };
 
-    // Remove edges with invalid uniform names before updating
-    removeInvalidEdges(nextData.glUniformDefs);
+    // Remove edges with invalid uniform names or out-of-range outlet indices before updating
+    removeInvalidEdges(nextData.glUniformDefs, nextData.mrtCount);
 
     updateNodeData(nodeId, nextData);
     glSystem.upsertNode(nodeId, 'glsl', nextData, { force: true }); // force rebuild even if code hasn't changed
