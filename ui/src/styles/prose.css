@@ -12,11 +12,27 @@
   }
 
   .prose-markdown-chat.prose-markdown-app {
-    --prose-scale: 0.9;
+    --prose-scale: 0.85;
   }
 
   .prose-markdown-chat.prose-markdown-app hr {
     margin-bottom: 1rem;
+  }
+
+  .prose-markdown-chat.prose-markdown-app p,
+  .prose-markdown-chat.prose-markdown-app li {
+    line-height: 1.6;
+    color: #d4d4d8;
+  }
+
+  .prose-markdown-chat.prose-markdown-app p {
+    margin-bottom: 0.65rem;
+  }
+
+  .prose-markdown-chat.prose-markdown-app ul,
+  .prose-markdown-chat.prose-markdown-app ol {
+    color: #d4d4d8;
+    margin-bottom: 0.65rem;
   }
 
   .prose-markdown-app {
