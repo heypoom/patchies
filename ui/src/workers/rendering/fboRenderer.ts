@@ -575,7 +575,12 @@ export class FBORenderer {
     }
 
     const hydraRenderer = await HydraRenderer.create(
-      { code: node.data.code, nodeId: node.id },
+      {
+        code: node.data.code,
+        nodeId: node.id,
+        videoInletCount: node.data.videoInletCount ?? 1,
+        videoOutletCount: node.data.videoOutletCount ?? 1
+      },
       framebuffer,
       this
     );

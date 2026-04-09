@@ -1,8 +1,11 @@
-The `hydra` object creates a [Hydra](https://hydra.ojack.xyz) live coding video synthesizer. Hydra is created by [Olivia Jack](https://ojack.xyz) and lets you create all kinds of video effects with minimal code.
+The `hydra` object creates a [Hydra](https://hydra.ojack.xyz) live coding
+video synthesizer. Hydra is created by [Olivia Jack](https://ojack.xyz)
+and lets you create all kinds of video effects with minimal code.
 
 ![Random walker with Hydra shader](/content/images/patchies-random-walker.png)
 
-> Try out [this demo](/?id=ng7a8mcxobde7kv) which uses P5.js with Hydra to create a random walk shader.
+> Try out [this demo](/?id=ng7a8mcxobde7kv) which uses P5.js with Hydra to
+> create a random walk shader.
 
 ## Getting Started
 
@@ -14,33 +17,63 @@ osc(10, 0.1, 1.5)
   .out()
 ```
 
-See the [Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use Hydra. Try out the standalone editor at [hydra.ojack.xyz](https://hydra.ojack.xyz) to see how Hydra works - use the "shuffle" button to get code samples you can copy into Patchies.
+See the [Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use
+Hydra. Try out the standalone editor at [hydra.ojack.xyz](https://hydra.ojack.xyz)
+to see how Hydra works - use the "shuffle" button to get code samples you can copy
+into Patchies.
 
 ## Special Functions
 
-See the [Patchies JavaScript Runner](/docs/javascript-runner) for all available functions like `send()`, `recv()`, `setPortCount()`, `onCleanup()`, and more.
+See the [Patchies JavaScript Runner](/docs/javascript-runner) for all
+available functions like `send()`, `recv()`, `setPortCount()`,
+`onCleanup()`, and more.
 
 Hydra-specific functions:
 
-- `setVideoCount(ins = 1, outs = 1)` - creates the specified number of video source ports
-  - `setVideoCount(2)` initializes `s0` and `s1` sources with the first two visual inlets
+- `setVideoCount(ins = 1, outs = 1)` - creates the specified number
+  of video source ports
+  - `setVideoCount(2)` initializes `s0` and `s1` sources with the
+     first two visual inlets
 - `setMouseScope('global' | 'local')` - sets mouse tracking scope
   - `'local'` (default) tracks mouse within the canvas preview
   - `'global'` tracks mouse across the entire screen
 
+## Multiple Video Outputs
+
+Pass a second argument to `setVideoCount` to create multiple outlets,
+then route each Hydra output to its matching `oN`:
+
+```javascript
+setVideoCount(0, 2) // no inlets, 2 outlets
+
+osc(10, 0.1).out(o0)           // → outlet 0
+noise(3).colorama(0.5).out(o1) // → outlet 1
+```
+
+Each outlet is independently connectable to downstream nodes, so you can
+feed different Hydra chains into different parts of your patch simultaneously.
+
+> **Note**: The maximum is 8 inlets and 8 outlets, matching WebGL2's
+> hardware limit for simultaneous render targets.
+
+---
+
 ## Available Objects
 
 - Full Hydra synth is available as `h`
-- Outputs are available as `o0`, `o1`, `o2`, and `o3`
-- `mouse.x` and `mouse.y` provide real-time mouse coordinates (scope depends on `setMouseScope`)
+- Outputs `o0`, `o1`, ... and sources `s0`, `s1`, ... are available up to the
+  counts set by `setVideoCount`
+- `mouse.x` and `mouse.y` provide real-time mouse coordinates
+  (scope depends on `setMouseScope`)
 
 ## Presets
 
-Try out these presets to get started:
+Enable the "Hydra Operators" preset packs to use these features:
 
 - `hydra>` - passes the image through without any changes
-- `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra` - perform image operations on two video inputs
-- `filet-mignon.hydra` - example code from [AFALFL](https://www.instagram.com/a_f_alfl) (CC BY-NC-SA 4.0)
+- `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra`:
+  perform image operations on two video inputs
+- `filet-mignon.hydra` - demo code from [AFALFL](https://www.instagram.com/a_f_alfl) (CC BY-NC-SA 4.0)
 - `fft.hydra` - audio-reactive visualization
 
 ---

@@ -15,7 +15,12 @@ import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { HYDRA_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
 
-export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
+export interface HydraRendererConfig extends BaseRendererConfig {
+  videoInletCount?: number;
+  videoOutletCount?: number;
+}
+
+export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
   public precision: 'highp' | 'mediump' = 'highp';
   public hydra: Hydra | null = null;
 
@@ -31,7 +36,7 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   private hydraLastRuntimeErrorTime = 0;
 
   private constructor(
-    config: BaseRendererConfig,
+    config: HydraRendererConfig,
     framebuffer: regl.Framebuffer2D,
     renderer: FBORenderer
   ) {
@@ -39,7 +44,7 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   }
 
   static async create(
-    config: BaseRendererConfig,
+    config: HydraRendererConfig,
     framebuffer: regl.Framebuffer2D,
     renderer: FBORenderer
   ): Promise<HydraRenderer> {
@@ -56,8 +61,8 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
       regl: instance.renderer.regl,
       width,
       height,
-      numSources: 4,
-      numOutputs: 4,
+      numSources: config.videoInletCount ?? 4,
+      numOutputs: config.videoOutletCount ?? 4,
       precision: instance.precision,
       onError: (error: unknown, context: HydraErrorContext) =>
         instance.handleHydraRuntimeError(error, context)
@@ -208,14 +213,15 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
       const { sources, outputs, hush, render } = this.hydra;
 
-      const [s0, s1, s2, s3] = sources;
-      const [o0, o1, o2, o3] = outputs;
-
       // Clear any existing patterns
       this.stop();
 
       // Apply Hydra-specific code transformation (.out() -> .out(o0))
       const hydraCode = processCode(this.config.code);
+
+      // Build sN/oN context entries dynamically from the actual sources/outputs arrays
+      const sourceContext = Object.fromEntries(sources.map((s, i) => [`s${i}`, s]));
+      const outputContext = Object.fromEntries(outputs.map((o, i) => [`o${i}`, o]));
 
       const extraContext = {
         ...this.buildBaseExtraContext(),
@@ -232,17 +238,9 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         src,
         solid,
 
-        // Sources
-        s0,
-        s1,
-        s2,
-        s3,
-
-        // Outputs
-        o0,
-        o1,
-        o2,
-        o3,
+        // Sources (s0..sN-1) and outputs (o0..oN-1) derived from Hydra instance
+        ...sourceContext,
+        ...outputContext,
 
         setFunction,
         setVideoCount: this.setVideoCount.bind(this),
@@ -282,9 +280,9 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   }
 
   setVideoCount(inletCount = 1, outletCount = 1) {
-    // hydra allows max 4 inlets and outlets
-    inletCount = Math.min(inletCount, 4);
-    outletCount = Math.min(outletCount, 4);
+    // cap to WebGL2's guaranteed MAX_COLOR_ATTACHMENTS / MAX_DRAW_BUFFERS
+    inletCount = Math.min(inletCount, 8);
+    outletCount = Math.min(outletCount, 8);
 
     this.videoOutletCount = outletCount;
 

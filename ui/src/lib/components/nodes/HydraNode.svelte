@@ -113,6 +113,7 @@
 
         glSystem.upsertNode(nodeId, 'hydra', {
           code,
+          videoInletCount: m.inletCount,
           videoOutletCount: m.outletCount
         });
       })
@@ -195,6 +196,7 @@
 
     glSystem.upsertNode(nodeId, 'hydra', {
       code,
+      videoInletCount: data.videoInletCount ?? 1,
       videoOutletCount: data.videoOutletCount ?? 1
     });
 
@@ -234,6 +236,7 @@
 
       glSystem.upsertNode(nodeId, 'hydra', {
         code,
+        videoInletCount: data.videoInletCount ?? 1,
         videoOutletCount: data.videoOutletCount ?? 1,
         _runRevision: Date.now()
       });
