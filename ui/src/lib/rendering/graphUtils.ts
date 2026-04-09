@@ -179,7 +179,7 @@ export function topologicalSort(
  * Cycles are supported — back-edges get 1-frame delay via double-buffered FBOs.
  */
 export function buildRenderGraph(nodes: RNode[], edges: REdge[]): RenderGraph {
-  const outputNodeId = findOutputNode(nodes, edges);
+  const outputResult = findOutputNode(nodes, edges);
 
   const { nodes: renderNodes, edges: renderEdges } = filterFBOCompatibleGraph(nodes, edges);
 
@@ -189,7 +189,8 @@ export function buildRenderGraph(nodes: RNode[], edges: REdge[]): RenderGraph {
     nodes: renderNodes,
     edges: renderEdges,
     sortedNodes,
-    outputNodeId,
+    outputNodeId: outputResult?.nodeId ?? null,
+    outputOutletIndex: outputResult?.outletIndex ?? 0,
     backEdges: backEdgeIds,
     feedbackNodes: feedbackNodeIds
   };
@@ -204,9 +205,12 @@ export function findPreviewNodes(renderGraph: RenderGraph): string[] {
 }
 
 /**
- * Find the output node (connected to bg.out)
+ * Find the output node (connected to bg.out) and which outlet is connected.
  */
-export function findOutputNode(nodes: RNode[], edges: REdge[]): string | null {
+export function findOutputNode(
+  nodes: RNode[],
+  edges: REdge[]
+): { nodeId: string; outletIndex: number } | null {
   // Find bg.out node
   const bgOutNode = nodes.find((node) => node.type === 'bg.out');
   if (!bgOutNode) return null;
@@ -215,5 +219,8 @@ export function findOutputNode(nodes: RNode[], edges: REdge[]): string | null {
   const inputEdge = edges.find((edge) => edge.target === bgOutNode.id);
   if (!inputEdge) return null;
 
-  return inputEdge.source;
+  return {
+    nodeId: inputEdge.source,
+    outletIndex: parseOutletIndex(inputEdge.sourceHandle ?? undefined)
+  };
 }

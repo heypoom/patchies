@@ -10,6 +10,8 @@ Core MRT is fully working. The one remaining known gap (dangling outlet edges af
 
 - **Intermittent black outputs on load**: Serialized `buildFBOs` calls in `renderWorker.ts`. Previously, if a Hydra renderer's `setVideoCount()` triggered a rebuild during the initial build's async Phase 2, two `buildFBOs` ran concurrently with interleaving Phase 3 overwrites to `this.fboNodes`, leaving some nodes with stale or missing renderers.
 
+- **bg.out ignoring MRT outlet index**: `bg.out` always displayed `COLOR_ATTACHMENT0` regardless of which outlet was connected. Fixed by propagating `outputOutletIndex` through the render graph (`findOutputNode` now returns the outlet index parsed from the edge's `sourceHandle`) and calling `gl.readBuffer(COLOR_ATTACHMENT0 + outletIndex)` before the final blit in `renderNodeToMainOutput`.
+
 ---
 
 ## Problem

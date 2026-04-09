@@ -45,6 +45,9 @@ export interface RenderGraph {
   /** ID of the node connected to bg.out (final output node) */
   outputNodeId: string | null;
 
+  /** Which color attachment of the output node to display (for MRT sources) */
+  outputOutletIndex: number;
+
   /** Edge IDs that are back-edges (complete a feedback cycle) */
   backEdges: Set<string>;
 

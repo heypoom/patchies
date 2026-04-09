@@ -48,6 +48,9 @@ export class FBORenderer {
   /** Output node determined by bg.out connection in the render graph */
   public outputNodeId: string | null = null;
 
+  /** Which color attachment of the output node to display (for MRT sources) */
+  public outputOutletIndex: number = 0;
+
   /** Override output node set by the user (bypasses bg.out). Falls back to outputNodeId if the override node doesn't exist. */
   public overrideOutputNodeId: string | null = null;
 
@@ -259,6 +262,7 @@ export class FBORenderer {
 
     this.renderGraph = mergedGraph;
     this.outputNodeId = mergedGraph.outputNodeId;
+    this.outputOutletIndex = mergedGraph.outputOutletIndex;
 
     // Phase 1 (sync): allocate FBOs and collect nodes that need renderer creation
     type PendingNode = {
@@ -1073,10 +1077,13 @@ export class FBORenderer {
 
     // Render the final result to the main canvas.
     // Use override if set and the node exists; otherwise fall back to bg.out.
-    const effectiveOutputNodeId =
-      this.overrideOutputNodeId && this.fboNodes.has(this.overrideOutputNodeId)
-        ? this.overrideOutputNodeId
-        : this.outputNodeId;
+    const isOverride = this.overrideOutputNodeId && this.fboNodes.has(this.overrideOutputNodeId);
+
+    const effectiveOutputNodeId = isOverride ? this.overrideOutputNodeId : this.outputNodeId;
+
+    // Override always uses attachment 0; bg.out respects the connected outlet index.
+    const savedOutletIndex = this.outputOutletIndex;
+    if (isOverride) this.outputOutletIndex = 0;
 
     if (effectiveOutputNodeId !== null) {
       const outputFBONode = this.fboNodes.get(effectiveOutputNodeId);
@@ -1085,6 +1092,8 @@ export class FBORenderer {
         this.profiler.measureOp('blit', () => this.renderNodeToMainOutput(outputFBONode));
       }
     }
+
+    this.outputOutletIndex = savedOutletIndex;
 
     // Blit current frame into prevFramebuffer for all feedback nodes.
     //
@@ -1300,6 +1309,7 @@ export class FBORenderer {
 
     gl.viewport(0, 0, renderWidth, renderHeight);
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(framebuffer));
+    gl.readBuffer(gl.COLOR_ATTACHMENT0 + this.outputOutletIndex);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
     gl.blitFramebuffer(
