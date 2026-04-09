@@ -168,24 +168,12 @@ export class FBORenderer {
     this.offscreenCanvas = new OffscreenCanvas(width, height);
     this.gl = this.offscreenCanvas.getContext('webgl2', { antialias: false })!;
 
-    // WebGL2 has float textures as core, but regl (a WebGL1 library) checks for
-    // WebGL1 extension names like OES_texture_float. On WebGL2, getExtension()
-    // returns null for these since they're built-in. Shim it so regl is happy.
-    const origGetExtension = this.gl.getExtension.bind(this.gl);
-    const WEBGL2_CORE_EXTENSIONS = new Set([
-      'oes_texture_float',
-      'oes_texture_half_float',
-      'ext_color_buffer_float'
-    ]);
-    this.gl.getExtension = ((name: string) => {
-      const result = origGetExtension(name);
-      if (!result && WEBGL2_CORE_EXTENSIONS.has(name.toLowerCase())) return {};
-      return result;
-    }) as typeof this.gl.getExtension;
-
+    // Float textures are created via raw WebGL2 in createFboTexture(), bypassing
+    // regl entirely. No need to request float extensions through regl — doing so
+    // triggers invalid texImage2D probes that emit WebGL warnings.
     this.regl = regl({
       gl: this.gl,
-      extensions: [...WEBGL_EXTENSIONS, 'OES_texture_float', 'OES_texture_half_float'],
+      extensions: WEBGL_EXTENSIONS,
       optionalExtensions: WEBGL_OPTIONAL_EXTENSIONS
     });
 
