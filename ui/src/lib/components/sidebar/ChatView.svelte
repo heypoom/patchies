@@ -433,7 +433,10 @@
             </summary>
 
             <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-600">
-              <MarkdownContent markdown={message.thinking} class="prose-markdown-chat" />
+              <MarkdownContent
+                markdown={message.thinking}
+                class="prose-markdown-chat prose-markdown-thinking"
+              />
             </div>
           </details>
 
@@ -514,7 +517,10 @@
             </summary>
 
             <div class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-600">
-              <MarkdownContent markdown={session.thinkingText} class="prose-markdown-chat" />
+              <MarkdownContent
+                markdown={session.thinkingText}
+                class="prose-markdown-chat prose-markdown-thinking"
+              />
             </div>
           </details>
 

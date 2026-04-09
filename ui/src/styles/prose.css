@@ -39,6 +39,39 @@
     margin-top: 1rem;
   }
 
+  .prose-markdown-thinking {
+    margin-left: 1.1em;
+    margin-bottom: 1.1em;
+  }
+
+  .prose-markdown-chat.prose-markdown-thinking p,
+  .prose-markdown-chat.prose-markdown-thinking li,
+  .prose-markdown-chat.prose-markdown-thinking ul,
+  .prose-markdown-chat.prose-markdown-thinking ol,
+  .prose-markdown-chat.prose-markdown-thinking h1,
+  .prose-markdown-chat.prose-markdown-thinking h2,
+  .prose-markdown-chat.prose-markdown-thinking h3 {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.6875rem;
+    color: #52525b;
+    line-height: 1.5;
+  }
+
+  .prose-markdown-chat.prose-markdown-thinking p {
+    margin-bottom: 0.4rem;
+  }
+
+  .prose-markdown-chat.prose-markdown-thinking strong {
+    color: #71717a;
+    font-weight: 600;
+  }
+
+  .prose-markdown-chat.prose-markdown-thinking code {
+    font-size: 0.6875rem;
+    background: #1c1c1f;
+    color: #52525b;
+  }
+
   .prose-markdown-app {
     --prose-scale: 0.8;
     --prose-base: calc(0.9375rem * var(--prose-scale));
