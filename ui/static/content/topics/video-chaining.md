@@ -49,7 +49,7 @@ To hear — er, *see* — anything, connect the final object to `bg.out` or use 
 
 The preset library has ready-made building blocks for video chaining. Enable them via the [Preset Packs](/docs/manage-packs) sidebar:
 
-- **`hydra>`, `glsl>`** — pass video through unchanged; the simplest starting point for chaining
+- **`hydra>`, `glsl>`, `regl>`, `swgl>`, `three>`** — pass video through unchanged; the simplest starting point for chaining
 - **`diff.hydra`, `add.hydra`, `sub.hydra`** — blend two video inputs with Hydra
 - Check the [hydra](/docs/objects/hydra) and [glsl](/docs/objects/glsl) docs for more preset ideas
 
