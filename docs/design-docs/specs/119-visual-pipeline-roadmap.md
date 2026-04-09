@@ -53,16 +53,17 @@ Build a **code-oriented TouchDesigner** that runs in a browser. Patchies combine
 | [116](116-webgpu-render-bridge.md)          | WebGPU Render Bridge          | ImageBitmap + SharedArrayBuffer paths from compute to FBO pipeline         |
 | [117](117-shared-resource-pool.md)          | Shared Resource Pool          | Named cubemaps, 3D textures, LUTs accessible by any node                   |
 | [118](118-glsl-include-preprocessor.md)     | GLSL `#include` Preprocessor  | `#include` preprocessor for lygia, VFS, and URL sources ✓                  |
+| [125](125-glsl-metadata-directives.md)      | GLSL Metadata Directives      | `@name` for node titles, `@param` for ranged sliders — no deps             |
 | [123](123-shader-effect-format.md)          | Shader Effect Format          | Effect metadata, drag-drop scaffolding, material system, Hydra integration |
 | [120](120-snippet-presets.md)               | Snippet Presets               | Cross-patch portability for GLSL/Hydra/JS snippets via preset system       |
 | [121](121-vfs-js-modules.md)                | VFS JavaScript Modules        | Import JS modules from VFS files alongside `// @lib` nodes                 |
 | [122](122-render-pipeline-optimizations.md) | Render Pipeline Optimizations | Per-node resolution, cook-on-demand caching, channel formats, preview LOD  |
-| [124](124-regl-to-webgl2-migration.md)     | regl → WebGL2 Migration       | Remove regl dependency, thin WebGL2 helpers, native MRT + float formats   |
+| [124](124-regl-to-webgl2-migration.md)      | regl → WebGL2 Migration       | Remove regl dependency, thin WebGL2 helpers, native MRT + float formats    |
 
 ## Dependency Graph
 
 ```
-Independent (no deps):     111, 112, 113, 117, 118, 123, 115 (Stage 2-3)
+Independent (no deps):     111, 112, 113, 117, 118, 125, 123, 115 (Stage 2-3)
 
 114 presets (some) ←── 111 (channel-split needs MRT)
 114 presets (some) ←── 112 (particle-sim needs float)
@@ -118,21 +119,22 @@ Independent (no deps):     111, 112, 113, 117, 118, 123, 115 (Stage 2-3)
 ### Phase 2 — Foundations (richer textures)
 
 3. **[111](111-multi-render-target.md) MRT** ✓ and **[112](112-float-fbo-format.md) Float FBO** ✓ — Can be built in parallel. These are the foundation that makes later specs (presets, geometry, compute bridge) much more powerful.
-4. **[114](114-visual-convenience-presets.md) Presets** — Ship independent presets first (noise generators, post-processing, color grading). Add MRT/float/feedback-dependent presets as those land. Presets use `#include <lygia/...>` internally.
+4. **[125](125-glsl-metadata-directives.md) GLSL Metadata Directives** — `@name` for node titles, `@param` for ranged sliders with min/max and descriptions. No deps, immediately improves every GLSL node's UX. Reused by spec 123 later.
+5. **[114](114-visual-convenience-presets.md) Presets** — Ship independent presets first (noise generators, post-processing, color grading). Add MRT/float/feedback-dependent presets as those land. Presets use `#include <lygia/...>` internally.
 
 ### Phase 3 — Expansion (new data types)
 
-5. **[115](115-geometry-wire-type.md) Geometry** (Stage 2-3) — Geometry handle type, auto-caching inlets, `geo.*` presets (not dedicated node types). No pipeline deps.
-6. **[117](117-shared-resource-pool.md) Resource Pool** — Cubemaps, LUTs, 3D textures. Important for production quality and PBR workflows.
-7. **[116](116-webgpu-render-bridge.md) WebGPU Bridge** (Bridge 1) — ImageBitmap path from compute to FBO pipeline. No deps.
+6. **[115](115-geometry-wire-type.md) Geometry** (Stage 2-3) — Geometry handle type, auto-caching inlets, `geo.*` presets (not dedicated node types). No pipeline deps.
+7. **[117](117-shared-resource-pool.md) Resource Pool** — Cubemaps, LUTs, 3D textures. Important for production quality and PBR workflows.
+8. **[116](116-webgpu-render-bridge.md) WebGPU Bridge** (Bridge 1) — ImageBitmap path from compute to FBO pipeline. No deps.
 
 ### Phase 4 — Full picture
 
-8. **[115](115-geometry-wire-type.md) Geometry** (Stage 1) — Texture-encoded geometry via MRT + float FBOs. Requires 111 + 112.
-9. **[116](116-webgpu-render-bridge.md) WebGPU Bridge** (Bridge 2) — SharedArrayBuffer fast path. Benefits from 112.
-10. Remaining **[114](114-visual-convenience-presets.md) presets** that depend on MRT, float FBOs, or feedback.
-11. **[123](123-shader-effect-format.md) Shader Effect Format** — Effect metadata, drag-drop scaffolding, `@slot` metadata, material presets, material preview Three.js preset, `@hydra` directive. Benefits from 111 (MRT for multi-channel material output) and 117 (resource pool for environment maps). Depends on 118.
-12. **[120](120-snippet-presets.md) Snippet Presets** — Cross-patch portability for GLSL/Hydra snippets. Depends on 118 and 123.
+9. **[115](115-geometry-wire-type.md) Geometry** (Stage 1) — Texture-encoded geometry via MRT + float FBOs. Requires 111 + 112.
+10. **[116](116-webgpu-render-bridge.md) WebGPU Bridge** (Bridge 2) — SharedArrayBuffer fast path. Benefits from 112.
+11. Remaining **[114](114-visual-convenience-presets.md) presets** that depend on MRT, float FBOs, or feedback.
+12. **[123](123-shader-effect-format.md) Shader Effect Format** — Effect metadata, drag-drop scaffolding, `@slot` metadata, material presets, material preview Three.js preset, `@hydra` directive. Benefits from 111 (MRT for multi-channel material output) and 117 (resource pool for environment maps). Depends on 118.
+13. **[120](120-snippet-presets.md) Snippet Presets** — Cross-patch portability for GLSL/Hydra snippets. Depends on 118 and 123.
 
 ## What This Unlocks at Each Phase
 

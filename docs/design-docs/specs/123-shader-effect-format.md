@@ -76,10 +76,14 @@ The scaffold generator parses the function signature to determine everything aut
 
 All annotations are optional overrides. If absent, values are inferred.
 
+`@name` and `@param` are defined in [spec 125](125-glsl-metadata-directives.md) and work in any GLSL node — they don't require the effect system.
+
+This spec adds effect-specific directives on top:
+
 ```
-// @name human-readable name          (default: filename)
+// @name human-readable name          (spec 125 — works in any GLSL node)
+// @param <type> <name> <default> [min] [max] ["description"]  (spec 125 — works in any GLSL node)
 // @type generator|effect|combiner|coordinate|color|material  (default: inferred from signature)
-// @param <type> <name> <default> [min] [max] ["description"]  (default: no range hints)
 // @slot <type> <name> ["description"]  (material slots with semantic meaning)
 // @depend <include_path>              (auto-includes another file)
 ```
@@ -423,7 +427,7 @@ Add effect names and descriptions to `object-descriptions-types.ts` so the AI ca
 1. **Function signature parser** — infer type/inlets/uniforms from GLSL function signature
 2. **Drag-drop: onto node** — insert `#include` directive
 3. **Drag-drop: onto canvas** — create GLSL node with inferred scaffold
-4. **Optional metadata parser** — read `@name`, `@type`, `@param`, `@slot` for richer UX
+4. **Effect-specific metadata parser** — read `@type`, `@slot`, `@depend` (`@name` and `@param` already implemented via spec 125)
 5. **Built-in effects** — ship the starter set as VFS files
 6. **Built-in materials** — `@slot` metadata, standard slot names, PBR/toon/matcap
 7. **Material preview preset** — Three.js preset that auto-maps slots to MeshStandardMaterial
@@ -432,6 +436,7 @@ Add effect names and descriptions to `object-descriptions-types.ts` so the AI ca
 ## Dependencies
 
 - Requires spec 118 (`#include` preprocessor) for importing GLSL code
+- Reuses `@name` and `@param` directive parser from spec 125 (GLSL Metadata Directives)
 - Drag-drop extends existing `CanvasDragDropManager.ts`
 - `@hydra` directive requires `setFunction` implementation in vendored Hydra fork
 - Materials benefit from spec 111 (MRT) for multi-channel output and spec 117 (resource pool) for environment maps
