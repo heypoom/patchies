@@ -15,4 +15,9 @@ export interface GLUniformDef {
   name: string;
   type: GLUniformType;
   arraySize?: number;
+
+  /** From `// @param` directive */
+  min?: number;
+  max?: number;
+  description?: string;
 }

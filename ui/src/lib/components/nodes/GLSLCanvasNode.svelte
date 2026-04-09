@@ -11,7 +11,8 @@
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
   import {
     shaderCodeToUniformDefs,
-    uniformDefsToSettingsSchema
+    uniformDefsToSettingsSchema,
+    parseShaderName
   } from '$lib/canvas/shader-code-to-uniform-def';
   import { removeExcessVideoOutletEdges } from './outlet-edges';
   import type { GLUniformDef } from '../../../types/uniform-config';
@@ -64,6 +65,7 @@
   let lineErrors: Record<number, string[]> | undefined = $state(undefined);
 
   const code = $derived(data.code || '');
+  const shaderName = $derived(parseShaderName(code));
   const errorLines = $derived(
     lineErrors
       ? Object.keys(lineErrors)
@@ -283,7 +285,7 @@
 </script>
 
 <CanvasPreviewLayout
-  title={data.title ?? 'glsl'}
+  title={shaderName ?? data.title ?? 'glsl'}
   objectType="glsl"
   {nodeId}
   onrun={updateShader}

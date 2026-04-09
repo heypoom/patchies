@@ -83,6 +83,47 @@ const includeHighlightTheme = EditorView.baseTheme({
 /**
  * Highlights `// @format rgba32f` directives that control FBO texture format.
  */
+/**
+ * Highlights `// @title` and `// @param` metadata directives (spec 125).
+ */
+const METADATA_DIRECTIVE_RE = /^[ \t]*\/\/\s*(@(?:title|param))\s+(.+)$/gm;
+
+const metadataKeywordMark = Decoration.mark({ class: 'cm-glsl-metadata-keyword' });
+const metadataValueMark = Decoration.mark({ class: 'cm-glsl-metadata-value' });
+
+function buildMetadataDecorations(view: EditorView): DecorationSet {
+  const builder = new RangeSetBuilder<Decoration>();
+  const doc = view.state.doc;
+
+  for (let i = 1; i <= doc.lines; i++) {
+    const line = doc.line(i);
+    METADATA_DIRECTIVE_RE.lastIndex = 0;
+    const m = METADATA_DIRECTIVE_RE.exec(line.text);
+    if (!m) continue;
+
+    const lineStart = line.from + m.index;
+    // @name or @param keyword
+    const kwStart = lineStart + m[0].indexOf(m[1]);
+    builder.add(kwStart, kwStart + m[1].length, metadataKeywordMark);
+    // value portion
+    const valStart = kwStart + m[1].length + 1;
+    const valEnd = lineStart + m[0].length;
+    if (valStart < valEnd) {
+      builder.add(valStart, valEnd, metadataValueMark);
+    }
+  }
+
+  return builder.finish();
+}
+
+const metadataHighlightTheme = EditorView.baseTheme({
+  '.cm-glsl-metadata-keyword, .cm-glsl-metadata-keyword *': { color: '#6b7280 !important' },
+  '.cm-glsl-metadata-value, .cm-glsl-metadata-value *': { color: '#8b95a5 !important' }
+});
+
+/**
+ * Highlights `// @format rgba32f` directives that control FBO texture format.
+ */
 const FORMAT_DIRECTIVE_RE = /^[ \t]*\/\/\s*(@format)\s+(rgba8|rgba16f|rgba32f)/gm;
 
 const formatKeywordMark = Decoration.mark({ class: 'cm-glsl-format-keyword' });
@@ -115,35 +156,28 @@ const formatHighlightTheme = EditorView.baseTheme({
   '.cm-glsl-format-value, .cm-glsl-format-value *': { color: '#8b95a5 !important' }
 });
 
+function decorationPlugin(build: (view: EditorView) => DecorationSet) {
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      constructor(view: EditorView) {
+        this.decorations = build(view);
+      }
+      update(update: import('@codemirror/view').ViewUpdate) {
+        if (update.docChanged || update.viewportChanged) {
+          this.decorations = build(update.view);
+        }
+      }
+    },
+    { decorations: (v) => v.decorations }
+  );
+}
+
 export const glslIncludeHighlighter = [
-  ViewPlugin.fromClass(
-    class {
-      decorations: DecorationSet;
-      constructor(view: EditorView) {
-        this.decorations = buildIncludeDecorations(view);
-      }
-      update(update: import('@codemirror/view').ViewUpdate) {
-        if (update.docChanged || update.viewportChanged) {
-          this.decorations = buildIncludeDecorations(update.view);
-        }
-      }
-    },
-    { decorations: (v) => v.decorations }
-  ),
-  ViewPlugin.fromClass(
-    class {
-      decorations: DecorationSet;
-      constructor(view: EditorView) {
-        this.decorations = buildFormatDecorations(view);
-      }
-      update(update: import('@codemirror/view').ViewUpdate) {
-        if (update.docChanged || update.viewportChanged) {
-          this.decorations = buildFormatDecorations(update.view);
-        }
-      }
-    },
-    { decorations: (v) => v.decorations }
-  ),
+  decorationPlugin(buildIncludeDecorations),
+  decorationPlugin(buildFormatDecorations),
+  decorationPlugin(buildMetadataDecorations),
   includeHighlightTheme,
-  formatHighlightTheme
+  formatHighlightTheme,
+  metadataHighlightTheme
 ];

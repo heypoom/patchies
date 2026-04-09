@@ -42,7 +42,7 @@ vec4 chromaticAberration(vec2 uv, sampler2D input, float strength, float samples
 With optional metadata for richer UX:
 
 ```glsl
-// @name Chromatic Aberration
+// @title Chromatic Aberration
 // @type effect
 // @param float strength 0.01 0.0 0.1 "Aberration strength"
 // @param float samples 8.0 2.0 32.0 "Sample count"
@@ -76,12 +76,12 @@ The scaffold generator parses the function signature to determine everything aut
 
 All annotations are optional overrides. If absent, values are inferred.
 
-`@name` and `@param` are defined in [spec 125](125-glsl-metadata-directives.md) and work in any GLSL node — they don't require the effect system.
+`@title` and `@param` are defined in [spec 125](125-glsl-metadata-directives.md) and work in any GLSL node — they don't require the effect system.
 
 This spec adds effect-specific directives on top:
 
 ```
-// @name human-readable name          (spec 125 — works in any GLSL node)
+// @title human-readable name         (spec 125 — works in any GLSL node)
 // @param <type> <name> <default> [min] [max] ["description"]  (spec 125 — works in any GLSL node)
 // @type generator|effect|combiner|coordinate|color|material  (default: inferred from signature)
 // @slot <type> <name> ["description"]  (material slots with semantic meaning)
@@ -427,7 +427,7 @@ Add effect names and descriptions to `object-descriptions-types.ts` so the AI ca
 1. **Function signature parser** — infer type/inlets/uniforms from GLSL function signature
 2. **Drag-drop: onto node** — insert `#include` directive
 3. **Drag-drop: onto canvas** — create GLSL node with inferred scaffold
-4. **Effect-specific metadata parser** — read `@type`, `@slot`, `@depend` (`@name` and `@param` already implemented via spec 125)
+4. **Effect-specific metadata parser** — read `@type`, `@slot`, `@depend` (`@title` and `@param` already implemented via spec 125)
 5. **Built-in effects** — ship the starter set as VFS files
 6. **Built-in materials** — `@slot` metadata, standard slot names, PBR/toon/matcap
 7. **Material preview preset** — Three.js preset that auto-maps slots to MeshStandardMaterial
@@ -436,7 +436,7 @@ Add effect names and descriptions to `object-descriptions-types.ts` so the AI ca
 ## Dependencies
 
 - Requires spec 118 (`#include` preprocessor) for importing GLSL code
-- Reuses `@name` and `@param` directive parser from spec 125 (GLSL Metadata Directives)
+- Reuses `@title` and `@param` directive parser from spec 125 (GLSL Metadata Directives)
 - Drag-drop extends existing `CanvasDragDropManager.ts`
 - `@hydra` directive requires `setFunction` implementation in vendored Hydra fork
 - Materials benefit from spec 111 (MRT) for multi-channel output and spec 117 (resource pool) for environment maps
