@@ -13,8 +13,6 @@ const img = loadImage(url); // works in p5, for example
 
 See [Virtual Filesystem](/docs/virtual-filesystem) for how to add files to your patch.
 
----
-
 ## Persistent Storage
 
 Use `kv` to store data that survives page reloads:
@@ -33,8 +31,6 @@ await settings.set("theme", "dark");
 
 See [Data Storage](/docs/data-storage) for more.
 
----
-
 ## Audio Reactivity
 
 Connect an `fft~` object to your js object and call `fft()` to read frequency data:
@@ -46,8 +42,6 @@ const treble = data[data.length - 10];
 ```
 
 See [Audio Reactivity](/docs/audio-reactivity) for a full walkthrough.
-
----
 
 ## Clock & Beat Sync
 
@@ -72,8 +66,6 @@ clock.every('1:0:0', () => {
 ```
 
 See [Clock API](/docs/clock-api) for the full scheduling reference.
-
----
 
 ## AI
 
@@ -103,8 +95,6 @@ const haiku = await llm("Write a haiku about recursion", {
 
 Requires an API key — configure your provider via `Ctrl/Cmd + K > AI Provider Settings`.
 
----
-
 ## Presentation
 
 Control how other objects appear in the patch. Use `Ctrl/Cmd + Shift + C` to copy an object's ID, and `Shift + Drag` to select multiple.
@@ -121,8 +111,6 @@ setBackgroundOutput(null); // clear it
 pauseObject('p5-1');
 unpauseObject('p5-1');
 ```
-
----
 
 ## Float Texture Format
 
@@ -141,8 +129,6 @@ setTextureFormat('rgba32f');
 Call once at init — not per-frame. Downstream nodes sample the texture the same way regardless of format.
 
 > **Tip**: For `glsl` and `swgl` nodes, you can also use the `// @format rgba32f` comment directive instead.
-
----
 
 ## See Also
 

@@ -25,8 +25,6 @@ const { uniq } = await esm("lodash-es");
 
 > **Note**: `import * as X from "npm:..."` is not yet supported. Use named or default imports instead.
 
----
-
 ## Shared Libraries
 
 ![Shared JavaScript libraries example](/content/images/patchies-js-modules.png)
@@ -49,8 +47,6 @@ console.log(rand(0, 10));
 The library object shows a package icon in the patch. Any change to it automatically re-runs all importers.
 
 > **Note**: Top-level variables are *not* shared between objects — each object has its own isolated scope. Use message passing or named channels to communicate values between objects at runtime.
-
----
 
 ## See Also
 
