@@ -346,6 +346,7 @@ export class FBORenderer {
       colorAttachments: regl.Texture2D[];
       framebuffer: regl.Framebuffer2D;
       fingerprint: string;
+      fboFormat: FBOFormat;
     };
 
     const pending: PendingNode[] = [];
@@ -372,7 +373,8 @@ export class FBORenderer {
         existingFbo &&
         existingFbo.texture.width === width &&
         existingFbo.texture.height === height &&
-        existingFbo.colorAttachments.length === mrtCount;
+        existingFbo.colorAttachments.length === mrtCount &&
+        (existingFbo.fboFormat ?? 'rgba8') === fboFormat;
 
       // Diff: check if the node's data has changed since last build.
       // If both FBO and data are unchanged, skip renderer recreation entirely.
@@ -472,7 +474,7 @@ export class FBORenderer {
         }
       }
 
-      pending.push({ node, colorAttachments, framebuffer, fingerprint });
+      pending.push({ node, colorAttachments, framebuffer, fingerprint, fboFormat });
     }
 
     // Phase 2 (parallel): create all renderers concurrently
@@ -497,7 +499,7 @@ export class FBORenderer {
 
     // Phase 3: collect results into FBO map
     for (let i = 0; i < pending.length; i++) {
-      const { node, colorAttachments, framebuffer, fingerprint } = pending[i];
+      const { node, colorAttachments, framebuffer, fingerprint, fboFormat } = pending[i];
       const renderer = results[i];
 
       // If the renderer function is null, we skip defining this node.
@@ -525,7 +527,8 @@ export class FBORenderer {
         render: renderer.render,
         cleanup: renderer.cleanup,
         dataFingerprint: fingerprint,
-        nodeType: node.type
+        nodeType: node.type,
+        fboFormat
       };
 
       this.fboNodes.set(node.id, fboNode);

@@ -111,6 +111,9 @@ export interface FBONode {
   /** The node type that this FBO was built for */
   nodeType?: RenderNode['type'];
 
+  /** The FBO texture format this node was built with */
+  fboFormat?: FBOFormat;
+
   /** Previous frame textures — one per color attachment, only allocated for nodes in feedback loops */
   prevTextures?: regl.Texture2D[];
 
