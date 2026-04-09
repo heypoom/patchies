@@ -110,6 +110,11 @@
           videoInletCount: m.inletCount,
           videoOutletCount: m.outletCount
         });
+
+        glSystem.upsertNode(nodeId, 'hydra', {
+          code,
+          videoOutletCount: m.outletCount
+        });
       })
       .exhaustive();
 
@@ -188,7 +193,10 @@
       }
     });
 
-    glSystem.upsertNode(nodeId, 'hydra', { code });
+    glSystem.upsertNode(nodeId, 'hydra', {
+      code,
+      videoOutletCount: data.videoOutletCount ?? 1
+    });
 
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
@@ -224,7 +232,11 @@
       messageContext.clearTimers();
       audioAnalysisSystem.disableFFT(nodeId);
 
-      glSystem.upsertNode(nodeId, 'hydra', { code, _runRevision: Date.now() });
+      glSystem.upsertNode(nodeId, 'hydra', {
+        code,
+        videoOutletCount: data.videoOutletCount ?? 1,
+        _runRevision: Date.now()
+      });
     } catch (error) {
       // Note: Most errors will be caught by the worker and sent via consoleOutput
       console.error('Hydra update error:', error);

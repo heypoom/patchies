@@ -273,14 +273,14 @@ export class FBORenderer {
     for (const node of renderGraph.nodes) {
       const existingFbo = this.fboNodes.get(node.id);
 
-      // MRT count: GLSL, REGL, and SwissGL nodes can request multiple color attachments.
-      // REGL stores outlet count as `videoOutletCount`; GLSL/SwissGL use `mrtCount`.
+      // MRT count: GLSL, REGL, SwissGL, and Hydra nodes can request multiple color attachments.
+      // REGL/Hydra store outlet count as `videoOutletCount`; GLSL/SwissGL use `mrtCount`.
       const mrtCount =
         node.type === 'glsl'
           ? (node.data.mrtCount ?? 1)
           : node.type === 'swgl'
             ? (node.data.mrtCount ?? 1)
-            : node.type === 'regl'
+            : node.type === 'regl' || node.type === 'hydra'
               ? (node.data.videoOutletCount ?? 1)
               : 1;
 

@@ -21,6 +21,7 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
   private timestamp = performance.now();
   private sourceToParamIndexMap: (number | null)[] = [null, null, null, null];
+  private videoOutletCount = 1;
 
   // Mouse scope: 'local' = canvas-relative, 'global' = screen-relative
   private mouseScope: 'global' | 'local' = 'local';
@@ -111,33 +112,51 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
       output.tick(this.hydra.synth);
     });
 
-    const hydraFramebuffer = this.hydra.output.getCurrent();
     const gl = this.renderer.gl;
+    if (!gl) return;
 
     const [hydraWidth, hydraHeight] = this.hydra.synth.resolution;
     const [outputWidth, outputHeight] = this.renderer.outputSize;
-
-    if (!gl || !hydraFramebuffer) return;
-
-    const sourceFBO = getFramebuffer(hydraFramebuffer);
     const destPreviewFBO = getFramebuffer(this.framebuffer);
 
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
+    for (let i = 0; i < this.videoOutletCount; i++) {
+      const hydraFramebuffer = this.hydra.outputs[i]?.getCurrent();
+      if (!hydraFramebuffer) continue;
 
-    // Flip Y coordinates to match standard screen coordinates
-    gl.blitFramebuffer(
-      0,
-      0,
-      hydraWidth,
-      hydraHeight,
-      0,
-      outputHeight,
-      outputWidth,
-      0,
-      gl.COLOR_BUFFER_BIT,
-      gl.LINEAR
-    );
+      const sourceFBO = getFramebuffer(hydraFramebuffer);
+
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
+
+      if (this.videoOutletCount > 1) {
+        // Target only the i-th color attachment for MRT
+        const drawBuffers = new Array(this.videoOutletCount).fill(gl.NONE) as number[];
+        drawBuffers[i] = gl.COLOR_ATTACHMENT0 + i;
+        gl.drawBuffers(drawBuffers);
+      }
+
+      // Flip Y coordinates to match standard screen coordinates
+      gl.blitFramebuffer(
+        0,
+        0,
+        hydraWidth,
+        hydraHeight,
+        0,
+        outputHeight,
+        outputWidth,
+        0,
+        gl.COLOR_BUFFER_BIT,
+        gl.LINEAR
+      );
+    }
+
+    if (this.videoOutletCount > 1) {
+      // Restore full drawBuffers state on the MRT FBO
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destPreviewFBO);
+      gl.drawBuffers(
+        Array.from({ length: this.videoOutletCount }, (_, i) => gl.COLOR_ATTACHMENT0 + i)
+      );
+    }
 
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
@@ -150,6 +169,7 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     if (!this.hydra) return;
 
     this.sourceToParamIndexMap = [null, null, null, null];
+    this.videoOutletCount = 1;
 
     this.resetState();
 
@@ -266,6 +286,8 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     inletCount = Math.min(inletCount, 4);
     outletCount = Math.min(outletCount, 4);
 
+    this.videoOutletCount = outletCount;
+
     self.postMessage({
       type: 'setPortCount',
       portType: 'video',
@@ -274,6 +296,7 @@ export class HydraRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
       outletCount
     });
 
+    this.sourceToParamIndexMap = [null, null, null, null];
     for (let i = 0; i < inletCount; i++) {
       this.sourceToParamIndexMap[i] = i;
     }

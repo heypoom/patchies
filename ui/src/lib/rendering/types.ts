@@ -14,7 +14,7 @@ export type RenderNode = {
   backEdgeInlets: Set<number>;
 } & (
   | { type: 'glsl'; data: { code: string; glUniformDefs: GLUniformDef[]; mrtCount?: number } }
-  | { type: 'hydra'; data: { code: string } }
+  | { type: 'hydra'; data: { code: string; videoOutletCount?: number } }
   | { type: 'swgl'; data: { code: string; mrtCount?: number } }
   | { type: 'canvas'; data: { code: string } }
   | { type: 'textmode'; data: { code: string } }
