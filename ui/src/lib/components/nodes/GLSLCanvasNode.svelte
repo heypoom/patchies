@@ -312,8 +312,6 @@
   paused={isPaused}
   showPauseButton={true}
   nodrag={usesMouseUniform}
-  nopan={usesMouseUniform}
-  nowheel={usesMouseUniform}
   bind:previewCanvas
   {width}
   {height}
