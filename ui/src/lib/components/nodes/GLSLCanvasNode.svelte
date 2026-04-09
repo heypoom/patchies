@@ -33,6 +33,7 @@
       executeCode?: number;
       showConsole?: boolean;
       _runRevision?: number;
+      mrtCount?: number;
     };
     selected: boolean;
   } = $props();
@@ -141,6 +142,22 @@
     }
   }
 
+  function detectMrtCount(code: string): number {
+    // Strip comments so commented-out layout declarations don't affect the count
+    const stripped = code.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+
+    const locationRegex = /layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*out/g;
+
+    let max = -1,
+      match;
+
+    while ((match = locationRegex.exec(stripped)) !== null) {
+      max = Math.max(max, parseInt(match[1], 10));
+    }
+
+    return max >= 0 ? max + 1 : 1;
+  }
+
   function updateShader() {
     // Clear console on re-run
     consoleRef?.clearConsole();
@@ -165,6 +182,7 @@
       ...data,
       glUniformDefs: nextDefs,
       uniformValues: pruned,
+      mrtCount: detectMrtCount(data.code),
       _runRevision: Date.now()
     };
 
@@ -294,15 +312,29 @@
   {/snippet}
 
   {#snippet bottomHandle()}
-    <StandardHandle
-      port="outlet"
-      type="video"
-      id="out"
-      title="Video output"
-      total={1}
-      index={0}
-      {nodeId}
-    />
+    {#if (data.mrtCount ?? 1) > 1}
+      {#each Array(data.mrtCount ?? 1) as _, i}
+        <StandardHandle
+          port="outlet"
+          type="video"
+          id={String(i)}
+          title={`Video output ${i}`}
+          total={data.mrtCount ?? 1}
+          index={i}
+          {nodeId}
+        />
+      {/each}
+    {:else}
+      <StandardHandle
+        port="outlet"
+        type="video"
+        id="out"
+        title="Video output"
+        total={1}
+        index={0}
+        {nodeId}
+      />
+    {/if}
   {/snippet}
 
   {#snippet codeEditor()}

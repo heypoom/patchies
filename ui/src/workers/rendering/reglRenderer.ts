@@ -51,7 +51,23 @@ function createTrackedRegl(
 
   const proxy = new Proxy(reglInstance, {
     apply(target, thisArg, args) {
-      const config = args[0] as Record<string, unknown> | undefined;
+      let config = args[0] as Record<string, unknown> | undefined;
+
+      // Trim frag/vert so `#version 300 es` lands on the first line even when
+      // the shader is written as an indented template literal.
+      if (config && (typeof config.frag === 'string' || typeof config.vert === 'string')) {
+        config = { ...config };
+
+        if (typeof config.frag === 'string') {
+          config.frag = config.frag.trim();
+        }
+
+        if (typeof config.vert === 'string') {
+          config.vert = config.vert.trim();
+        }
+
+        args = [config, ...args.slice(1)];
+      }
 
       // If shader strings contain #include, resolve them async then create the command
       if (resolver && config && (hasIncludes(config.frag) || hasIncludes(config.vert))) {

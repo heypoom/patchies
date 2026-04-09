@@ -39,15 +39,44 @@ uniform float iMix;
 uniform vec2 iFoo;
 ```
 
-This creates two inlets that accept messages. Send `0.5` to `iMix`, or `[0.0, 1.0]` to `iFoo`.
+This creates two inlets that accept messages. Send `0.5` to `iMix`,
+or `[0.0, 1.0]` to `iFoo`.
 
 **Supported types**: `bool`, `int`, `float`, `vec2`, `vec3`, `vec4`
 
-**Default values**: Connect a `loadbang` → `msg` chain to set initial uniform values when the patch loads.
+**Default values**: Connect a `loadbang` → `msg` chain to set
+initial uniform values when the patch loads.
+
+## Multi-Output (MRT)
+
+Output multiple textures from a single shader pass by declaring
+`layout(location=N) out` variables. Each declaration adds a video
+outlet to the node.
+
+```glsl
+layout(location = 0) out vec4 albedo;
+layout(location = 1) out vec4 normals;
+
+void mainImage(vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+
+  albedo = vec4(uv, 0.5, 1.0);
+  normals = vec4(normalize(vec3(uv - 0.5, 1.0)) * 0.5 + 0.5, 1.0);
+}
+```
+
+Hit **Run** — the node grows two outlets (`video-out-0`, `video-out-1`).
+Connect them to separate downstream nodes. Removing the declarations on
+the next run reverts to a single outlet.
+
+> **Note**: In MRT mode the `mainImage` signature changes — no
+> `out vec4 fragColor` parameter. Write directly to your named
+> output variables instead.
 
 ## Mouse Interaction
 
-If your shader uses the `iMouse` uniform (vec4), mouse interaction is automatically enabled:
+If your shader uses the `iMouse` uniform (vec4), mouse interaction
+is automatically enabled:
 
 - `iMouse.xy`: current mouse position or last click position
 - `iMouse.zw`: drag start position

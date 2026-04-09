@@ -20,7 +20,7 @@ import { ThreeRenderer } from './threeRenderer';
 import { ReglRenderer } from './reglRenderer';
 import { SwissGLRenderer } from './swglRenderer';
 import { ProjectionMapRenderer } from '$objects/projmap/ProjectionMapRenderer';
-import { getFramebuffer } from './utils';
+import { getFramebuffer, getRawTexture } from './utils';
 import { isExternalTextureNode } from '$lib/canvas/node-types';
 import type { Message } from '$lib/messages/MessageSystem';
 import type {
@@ -208,10 +208,21 @@ export class FBORenderer {
     for (const [nodeId, fboNode] of this.fboNodes) {
       if (!newNodeIds.has(nodeId)) {
         fboNode.framebuffer.destroy();
-        fboNode.texture.destroy();
-        fboNode.prevFramebuffer?.destroy();
-        fboNode.prevTexture?.destroy();
+
+        for (const texture of fboNode.colorAttachments) {
+          texture.destroy();
+        }
+
+        for (const framebuffer of fboNode.prevFramebuffers ?? []) {
+          framebuffer?.destroy();
+        }
+
+        for (const texture of fboNode.prevTextures ?? []) {
+          texture?.destroy();
+        }
+
         fboNode.cleanup?.();
+
         this.fboNodes.delete(nodeId);
 
         // Unsubscribe removed nodes from video channels
@@ -252,7 +263,7 @@ export class FBORenderer {
     // Phase 1 (sync): allocate FBOs and collect nodes that need renderer creation
     type PendingNode = {
       node: RenderNode;
-      texture: regl.Texture2D;
+      colorAttachments: regl.Texture2D[];
       framebuffer: regl.Framebuffer2D;
       fingerprint: string;
     };
@@ -262,8 +273,22 @@ export class FBORenderer {
     for (const node of renderGraph.nodes) {
       const existingFbo = this.fboNodes.get(node.id);
 
+      // MRT count: GLSL, REGL, and SwissGL nodes can request multiple color attachments.
+      // REGL stores outlet count as `videoOutletCount`; GLSL/SwissGL use `mrtCount`.
+      const mrtCount =
+        node.type === 'glsl'
+          ? (node.data.mrtCount ?? 1)
+          : node.type === 'swgl'
+            ? (node.data.mrtCount ?? 1)
+            : node.type === 'regl'
+              ? (node.data.videoOutletCount ?? 1)
+              : 1;
+
       const canReuseFbo =
-        existingFbo && existingFbo.texture.width === width && existingFbo.texture.height === height;
+        existingFbo &&
+        existingFbo.texture.width === width &&
+        existingFbo.texture.height === height &&
+        existingFbo.colorAttachments.length === mrtCount;
 
       // Diff: check if the node's data has changed since last build.
       // If both FBO and data are unchanged, skip renderer recreation entirely.
@@ -284,12 +309,12 @@ export class FBORenderer {
         continue;
       }
 
-      let texture: regl.Texture2D;
+      let colorAttachments: regl.Texture2D[];
       let framebuffer: regl.Framebuffer2D;
 
       if (canReuseFbo) {
         // Reuse existing FBO - preserves content, prevents flash
-        texture = existingFbo.texture;
+        colorAttachments = existingFbo.colorAttachments;
         framebuffer = existingFbo.framebuffer;
 
         // For Hydra nodes: skip cleanup to avoid visual glitch.
@@ -301,7 +326,7 @@ export class FBORenderer {
           existingFbo.cleanup?.();
         }
       } else {
-        // Destroy old FBO if it exists but size doesn't match
+        // Destroy old FBO if it exists but size or mrtCount doesn't match
         if (existingFbo) {
           // For Hydra: skip cleanup (will be GC'd after createHydraRenderer reads synth time)
           const isHydraNode = this.hydraByNode.has(node.id);
@@ -310,27 +335,58 @@ export class FBORenderer {
           }
 
           existingFbo.framebuffer.destroy();
-          existingFbo.texture.destroy();
-          existingFbo.prevFramebuffer?.destroy();
-          existingFbo.prevTexture?.destroy();
+
+          for (const texture of existingFbo.colorAttachments) {
+            texture.destroy();
+          }
+
+          for (const framebuffer of existingFbo.prevFramebuffers ?? []) {
+            framebuffer?.destroy();
+          }
+
+          for (const texture of existingFbo.prevTextures ?? []) {
+            texture?.destroy();
+          }
+
           this.fboNodes.delete(node.id);
         }
 
-        // Create new FBO
-        texture = this.regl.texture({
-          width,
-          height,
-          wrapS: 'clamp',
-          wrapT: 'clamp'
-        });
+        // Create color attachments — one for standard nodes, N for MRT GLSL nodes
+        colorAttachments = Array.from({ length: mrtCount }, () =>
+          this.regl.texture({ width, height, wrapS: 'clamp', wrapT: 'clamp' })
+        );
 
-        framebuffer = this.regl.framebuffer({
-          color: texture,
-          depthStencil: false
-        });
+        if (mrtCount > 1) {
+          // regl's framebuffer({ colors: [...] }) requires WEBGL_draw_buffers which is
+          // a WebGL1 extension not exposed on WebGL2 contexts (it's core there).
+          // Instead: create a single-attachment regl framebuffer for attachment 0,
+          // then manually attach the remaining textures via raw WebGL2.
+          framebuffer = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
+
+          const gl = this.gl;
+          const rawFbo = getFramebuffer(framebuffer);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, rawFbo);
+
+          for (let i = 1; i < mrtCount; i++) {
+            const rawTex = getRawTexture(colorAttachments[i]);
+            gl.framebufferTexture2D(
+              gl.FRAMEBUFFER,
+              gl.COLOR_ATTACHMENT0 + i,
+              gl.TEXTURE_2D,
+              rawTex,
+              0
+            );
+          }
+
+          gl.drawBuffers(colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
+
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        } else {
+          framebuffer = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
+        }
       }
 
-      pending.push({ node, texture, framebuffer, fingerprint });
+      pending.push({ node, colorAttachments, framebuffer, fingerprint });
     }
 
     // Phase 2 (parallel): create all renderers concurrently
@@ -355,7 +411,7 @@ export class FBORenderer {
 
     // Phase 3: collect results into FBO map
     for (let i = 0; i < pending.length; i++) {
-      const { node, texture, framebuffer, fingerprint } = pending[i];
+      const { node, colorAttachments, framebuffer, fingerprint } = pending[i];
       const renderer = results[i];
 
       // If the renderer function is null, we skip defining this node.
@@ -367,7 +423,10 @@ export class FBORenderer {
 
         // Always destroy GPU resources when evicting from the map, regardless of canReuseFbo
         framebuffer.destroy();
-        texture.destroy();
+
+        for (const texture of colorAttachments) {
+          texture.destroy();
+        }
 
         continue;
       }
@@ -375,7 +434,8 @@ export class FBORenderer {
       const fboNode: FBONode = {
         id: node.id,
         framebuffer,
-        texture,
+        colorAttachments,
+        texture: colorAttachments[0],
         render: renderer.render,
         cleanup: renderer.cleanup,
         dataFingerprint: fingerprint,
@@ -394,23 +454,29 @@ export class FBORenderer {
     this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();
 
     // Phase 4 (sync): allocate previous-frame textures for feedback nodes.
-    // Idempotent — skipped if the node already has a prevTexture from a prior build.
+    // Idempotent — skipped if the node already has prevTextures from a prior build.
+    // One prev texture + framebuffer is allocated per color attachment so MRT
+    // feedback nodes can provide previous-frame data for each outlet independently.
     for (const nodeId of renderGraph.feedbackNodes) {
       const fboNode = this.fboNodes.get(nodeId);
-      if (!fboNode || fboNode.prevTexture) continue;
+      if (!fboNode || fboNode.prevTextures) continue;
 
-      fboNode.prevTexture = this.regl.texture({
-        width,
-        height,
-        wrapS: 'clamp',
-        wrapT: 'clamp'
-        // Defaults to all-zero (black transparent) — correct bootstrap behavior
-      });
+      fboNode.prevTextures = fboNode.colorAttachments.map(() =>
+        this.regl.texture({
+          width,
+          height,
+          wrapS: 'clamp',
+          wrapT: 'clamp'
+          // Defaults to all-zero (black transparent) — correct bootstrap behavior
+        })
+      );
 
-      fboNode.prevFramebuffer = this.regl.framebuffer({
-        color: fboNode.prevTexture,
-        depthStencil: false
-      });
+      fboNode.prevFramebuffers = fboNode.prevTextures.map((prevTexture) =>
+        this.regl.framebuffer({
+          color: prevTexture,
+          depthStencil: false
+        })
+      );
     }
   }
 
@@ -445,9 +511,12 @@ export class FBORenderer {
         // Parse inlet index from target handle (e.g., "video-in-0" -> 0)
         if (edge.targetHandle?.startsWith('video-in')) {
           const inletMatch = edge.targetHandle.match(/video-in-(\d+)/);
+
           if (inletMatch) {
             const inletIndex = parseInt(inletMatch[1], 10);
-            targetNode.inletMap.set(inletIndex, edge.source);
+
+            // Virtual edges always come from outlet 0 of the source
+            targetNode.inletMap.set(inletIndex, { sourceNodeId: edge.source, outletIndex: 0 });
           }
         }
       }
@@ -467,14 +536,15 @@ export class FBORenderer {
     return {
       render: () => {
         // Get input texture from inlet 0
-        const sourceNodeId = node.inletMap.get(0);
-        if (!sourceNodeId) return;
+        const inlet0 = node.inletMap.get(0);
+        if (!inlet0) return;
 
-        const sourceFbo = this.fboNodes.get(sourceNodeId);
+        const sourceFbo = this.fboNodes.get(inlet0.sourceNodeId);
         if (!sourceFbo) return;
 
         // Blit input FBO to output framebuffer
         const [w, h] = this.outputSize;
+
         const gl = this.gl;
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFbo.framebuffer));
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(framebuffer));
@@ -776,6 +846,7 @@ export class FBORenderer {
       regl: this.regl,
       gl: this.gl!,
       code,
+      mrtCount: node.data.mrtCount ?? 1,
       uniformDefs: node.data.glUniformDefs ?? [],
       onError: (error: Error & { lineErrors?: Record<number, string[]> }) => {
         // Send error message back to main thread
@@ -826,7 +897,11 @@ export class FBORenderer {
   destroyNodes(newNodeIds?: Set<string>) {
     for (const fboNode of this.fboNodes.values()) {
       fboNode.framebuffer.destroy();
-      fboNode.texture.destroy();
+
+      for (const texture of fboNode.colorAttachments) {
+        texture.destroy();
+      }
+
       fboNode.cleanup?.();
     }
 
@@ -910,6 +985,7 @@ export class FBORenderer {
   toggleNodePause(nodeId: string) {
     const currentState = this.nodePausedMap.get(nodeId) ?? false;
     const newState = !currentState;
+
     this.nodePausedMap.set(nodeId, newState);
 
     // If resuming (unpausing), trigger animation resume on the renderer
@@ -972,6 +1048,7 @@ export class FBORenderer {
       beat: this.transportTime?.beat ?? -1,
       bpm: this.transportTime?.bpm ?? 120
     };
+
     this.clockScheduler.tick(clockState);
 
     // Render each node in topological order
@@ -1011,13 +1088,19 @@ export class FBORenderer {
     // holds the previous frame's output for back-edge consumers.
     for (const nodeId of this.renderGraph.feedbackNodes) {
       const fboNode = this.fboNodes.get(nodeId);
-      if (!fboNode?.prevFramebuffer || !fboNode.prevTexture) continue;
+      if (!fboNode?.prevFramebuffers?.length) continue;
 
       const [w, h] = this.outputSize;
+
       const gl = this.gl;
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(fboNode.framebuffer));
-      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffer));
-      gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+
+      for (let i = 0; i < fboNode.prevFramebuffers.length; i++) {
+        gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffers[i]));
+        gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+      }
+
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
@@ -1102,6 +1185,14 @@ export class FBORenderer {
     const transportTime = this.transportTime?.seconds ?? this.lastTime;
 
     fboNode.framebuffer.use(() => {
+      // For MRT nodes, regl's framebuffer.use() resets drawBuffers to [COLOR_ATTACHMENT0].
+      // Re-apply after bind so all attachments receive fragment shader output.
+      if (fboNode.colorAttachments.length > 1) {
+        const gl = this.gl;
+
+        gl.drawBuffers(fboNode.colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
+      }
+
       this.drawProfiler.measure(node.id, 'draw', () => {
         fboNode.render({
           prevTransportTime: this.prevTransportTime,
@@ -1272,10 +1363,10 @@ export class FBORenderer {
     const textureMap = new Map<number, regl.Texture2D>();
 
     // Use inletMap for proper slot-based assignment
-    for (const [inletIndex, sourceNodeId] of node.inletMap) {
+    for (const [inletIndex, { sourceNodeId, outletIndex }] of node.inletMap) {
       const inputFBO = this.fboNodes.get(sourceNodeId);
 
-      // If there exists an external texture for an input node, use it.
+      // If there exists an external texture for an input node, use it (always outlet 0).
       if (this.videoTextures.has(sourceNodeId)) {
         textureMap.set(inletIndex, this.videoTextures.getDestinationTexture(sourceNodeId)!);
         continue;
@@ -1284,10 +1375,14 @@ export class FBORenderer {
       if (inputFBO) {
         // For back-edge inlets (feedback loops), read from the previous frame's texture.
         // This implements the 1-frame delay that prevents the cycle from deadlocking.
-        if (node.backEdgeInlets.has(inletIndex) && inputFBO.prevTexture) {
-          textureMap.set(inletIndex, inputFBO.prevTexture);
+        if (node.backEdgeInlets.has(inletIndex) && inputFBO.prevTextures?.length) {
+          const prevTex = inputFBO.prevTextures[outletIndex] ?? inputFBO.prevTextures[0];
+          textureMap.set(inletIndex, prevTex);
         } else {
-          textureMap.set(inletIndex, inputFBO.texture);
+          // Index into the correct color attachment for MRT sources
+          const texture = inputFBO.colorAttachments[outletIndex] ?? inputFBO.colorAttachments[0];
+
+          textureMap.set(inletIndex, texture);
         }
       }
     }

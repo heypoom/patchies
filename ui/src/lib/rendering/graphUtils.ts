@@ -14,6 +14,18 @@ export type RNode = {
 export type REdge = Pick<XYEdge, 'id' | 'source' | 'target' | 'sourceHandle' | 'targetHandle'>;
 
 /**
+ * Parse outlet index from a sourceHandle string like "video-out-0". Returns 0 if absent or unparseable.
+ * Handles both numeric ("video-out-1") and legacy non-numeric ("video-out-out") handles.
+ */
+export function parseOutletIndex(sourceHandle: string | undefined): number {
+  if (!sourceHandle?.startsWith('video-out')) return 0;
+
+  const match = sourceHandle.match(/video-out-(\d+)/);
+
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+/**
  * Filter nodes and edges to only include FBO-compatible nodes
  */
 export function filterFBOCompatibleGraph(
@@ -65,8 +77,9 @@ export function filterFBOCompatibleGraph(
 
         if (inletMatch) {
           const inletIndex = parseInt(inletMatch[1], 10);
+          const outletIndex = parseOutletIndex(edge.sourceHandle);
 
-          targetNode.inletMap.set(inletIndex, edge.source);
+          targetNode.inletMap.set(inletIndex, { sourceNodeId: edge.source, outletIndex });
         }
       }
     }
@@ -129,8 +142,8 @@ export function topologicalSort(
           feedbackNodeIds.add(inputId);
 
           // Mark which inlets of this node connect to the feedback source
-          for (const [inletIndex, sourceId] of node.inletMap) {
-            if (sourceId === inputId) {
+          for (const [inletIndex, { sourceNodeId }] of node.inletMap) {
+            if (sourceNodeId === inputId) {
               node.backEdgeInlets.add(inletIndex);
             }
           }

@@ -6,18 +6,20 @@ export type RenderNode = {
   id: string;
   inputs: string[]; // IDs of input nodes
   outputs: string[]; // IDs of output nodes
-  inletMap: Map<number, string>; // Maps inlet index to source node ID
+
+  /** Maps inlet index → { source node ID, outlet index on source } */
+  inletMap: Map<number, { sourceNodeId: string; outletIndex: number }>;
 
   /** Inlet indices connected via back-edges (feedback loops — reads previous frame) */
   backEdgeInlets: Set<number>;
 } & (
-  | { type: 'glsl'; data: { code: string; glUniformDefs: GLUniformDef[] } }
+  | { type: 'glsl'; data: { code: string; glUniformDefs: GLUniformDef[]; mrtCount?: number } }
   | { type: 'hydra'; data: { code: string } }
-  | { type: 'swgl'; data: { code: string } }
+  | { type: 'swgl'; data: { code: string; mrtCount?: number } }
   | { type: 'canvas'; data: { code: string } }
   | { type: 'textmode'; data: { code: string } }
   | { type: 'three'; data: { code: string } }
-  | { type: 'regl'; data: { code: string } }
+  | { type: 'regl'; data: { code: string; videoOutletCount?: number } }
   | { type: 'projmap'; data: { surfaces: import('$objects/projmap/types').ProjMapSurface[] } }
   | { type: 'img'; data: unknown }
   | { type: 'bg.out'; data: unknown }
@@ -72,7 +74,13 @@ export type RenderFunction = (renderParams: RenderParams) => void;
 export interface FBONode {
   id: string;
   framebuffer: regl.Framebuffer2D;
+
+  /** All color attachments — one per MRT outlet. Single-output nodes have exactly one entry. */
+  colorAttachments: regl.Texture2D[];
+
+  /** Alias for colorAttachments[0]. Kept for backwards compatibility. */
   texture: regl.Texture2D;
+
   render: RenderFunction;
   cleanup?: () => void;
 
@@ -82,11 +90,11 @@ export interface FBONode {
   /** The node type that this FBO was built for */
   nodeType?: RenderNode['type'];
 
-  /** Previous frame texture — only allocated for nodes in feedback loops */
-  prevTexture?: regl.Texture2D;
+  /** Previous frame textures — one per color attachment, only allocated for nodes in feedback loops */
+  prevTextures?: regl.Texture2D[];
 
-  /** Previous frame framebuffer — only allocated for nodes in feedback loops */
-  prevFramebuffer?: regl.Framebuffer2D;
+  /** Previous frame framebuffers — one per color attachment, only allocated for nodes in feedback loops */
+  prevFramebuffers?: regl.Framebuffer2D[];
 }
 
 // Message types for worker communication (main -> worker)

@@ -28,26 +28,47 @@ layout(location = 2) out vec4 fragData;     // outlet 2 — e.g. roughness/metal
 
 #### GLSL Node
 
-- Add `mrtEnabled` flag to node data (default: false, preserving current behavior)
-- When enabled, the ShaderToy wrapper changes:
+- `mrtCount` is **auto-detected** from the shader code on every compile — no flag or UI control needed.
+- Detection: scan for `layout(location=N) out` declarations, take `max(N) + 1`. If none found, `mrtCount = 1` (standard mode).
+- When `mrtCount > 1`, the ShaderToy wrapper changes:
   - Remove the single `out vec4 fragColor` injection
   - Let user declare their own `layout(location=N) out` variables
   - `mainImage` signature changes to just `void mainImage(vec2 fragCoord)` — user writes to named outputs directly
-- Video outlet count becomes configurable (like REGL already is)
+- Outlet handles switch from a single `video-out-out` to numbered `video-out-0`, `video-out-1`, … `video-out-N`
 - Uniform inlet generation stays the same (top handles), MRT outlets appear at bottom
+
+**Example — 3-output MRT shader (no configuration needed):**
+
+```glsl
+layout(location = 0) out vec4 albedo;
+layout(location = 1) out vec4 normal;
+layout(location = 2) out vec4 roughness;
+
+void mainImage(vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
+  albedo   = vec4(uv, 0.0, 1.0);
+  normal   = vec4(0.0, 0.0, 1.0, 1.0);
+  roughness = vec4(0.5, 0.5, 0.5, 1.0);
+}
+```
+
+Writing these declarations automatically gives the node 3 video outlets. Removing them reverts to single-output mode.
 
 #### REGL Node
 
-- Already has configurable video outlet count via `setVideoCount()`
-- Add `setMRT(true)` API that creates multi-attachment FBO
+- `mrtCount` is set via node data (no auto-detection — REGL code is JS, not GLSL)
 - User's draw commands write to multiple attachments naturally (regl supports this)
 - Each outlet index maps to a color attachment
 
 #### SwissGL Node
 
-- SwissGL's `glsl()` already supports render targets with multiple layers
-- Expose outlet-to-layer mapping
-- `setVideoCount()` already exists — MRT adds multi-attachment backing
+- `mrtCount` is set via node data (no auto-detection — SwissGL code is JS, not GLSL)
+- **Not yet supported for single-pass MRT**: SwissGL's `glsl()` manages its own framebuffer
+  binding via `bindTarget` and provides no way for user code to direct a draw call to a
+  specific color attachment index. Multiple outlets are created correctly, but only
+  `COLOR_ATTACHMENT0` receives rendered output — the remaining attachments stay black.
+- Future work: extend the SwissGL renderer with an `attachment` parameter on `glsl()` calls
+  so each pass can target a specific outlet.
 
 ### Pipeline Changes
 
@@ -56,26 +77,29 @@ layout(location = 2) out vec4 fragData;     // outlet 2 — e.g. roughness/metal
 Currently creates one `regl.framebuffer` with one color attachment per node. Change to:
 
 ```typescript
-const colorAttachments = node.mrtCount > 1
-  ? Array.from({ length: node.mrtCount }, () => regl.texture({ width, height, ...format }))
-  : [regl.texture({ width, height, ...format })];
+const colorAttachments =
+  node.mrtCount > 1
+    ? Array.from({length: node.mrtCount}, () =>
+        regl.texture({width, height, ...format}),
+      )
+    : [regl.texture({width, height, ...format})]
 
-const framebuffer = regl.framebuffer({ colors: colorAttachments, depth: true });
+const framebuffer = regl.framebuffer({colors: colorAttachments, depth: true})
 ```
 
 Update the `FBONode` type (`rendering/types.ts`) to support multiple color attachments:
 
 ```typescript
 export interface FBONode {
-  id: string;
-  framebuffer: regl.Framebuffer2D;
-  colorAttachments: regl.Texture2D[];           // one texture per color attachment
+  id: string
+  framebuffer: regl.Framebuffer2D
+  colorAttachments: regl.Texture2D[] // one texture per color attachment
   /** @deprecated Use colorAttachments[0]. Kept for backwards compat. */
-  texture: regl.Texture2D;
-  render: RenderFunction;
-  cleanup?: () => void;
-  dataFingerprint?: string;
-  nodeType?: RenderNode['type'];
+  texture: regl.Texture2D
+  render: RenderFunction
+  cleanup?: () => void
+  dataFingerprint?: string
+  nodeType?: RenderNode['type']
 }
 ```
 
@@ -85,8 +109,8 @@ When constructing a FBONode, populate both fields:
 const fboNode: FBONode = {
   // ...
   colorAttachments,
-  texture: colorAttachments[0],   // backwards-compat alias
-};
+  texture: colorAttachments[0], // backwards-compat alias
+}
 ```
 
 Existing code that reads `fboNode.texture` (e.g. `getInputTextureMap`) continues to work unchanged for single-attachment nodes. MRT-aware consumers index into `colorAttachments` instead.
@@ -97,34 +121,53 @@ Currently `getInputTextureMap()` iterates `node.inletMap` which maps `inletIndex
 
 ```typescript
 // In getInputTextureMap():
-for (const [inletIndex, { sourceNodeId, outletIndex }] of node.inletMap) {
-  const inputFBO = this.fboNodes.get(sourceNodeId);
+for (const [inletIndex, {sourceNodeId, outletIndex}] of node.inletMap) {
+  const inputFBO = this.fboNodes.get(sourceNodeId)
   if (inputFBO) {
-    textureMap.set(inletIndex, inputFBO.colorAttachments[outletIndex]);
+    textureMap.set(inletIndex, inputFBO.colorAttachments[outletIndex])
   }
 }
 ```
 
 #### `graphUtils.ts` — outlet index parsing
 
-Currently only parses inlet index from `targetHandle` via `video-in-(\d+)`. Add a matching utility for outlet indices:
+`inletMap` is extended from `Map<number, string>` to `Map<number, { sourceNodeId: string; outletIndex: number }>` so each inlet records which outlet of its source it reads from.
+
+`parseOutletIndex` parses the outlet index from edge `sourceHandle` strings. Handles both numeric MRT handles (`video-out-1` → 1) and the legacy single-output handle (`video-out-out` → 0) for full backwards compatibility:
 
 ```typescript
-/** Parse outlet index from a sourceHandle string like "video-out-0". Returns 0 if absent or unparseable. */
 export function parseOutletIndex(sourceHandle: string | undefined): number {
-  if (!sourceHandle?.startsWith('video-out')) return 0;
-  const match = sourceHandle.match(/video-out-(\d+)/);
-  return match ? parseInt(match[1], 10) : 0;
+  if (!sourceHandle?.startsWith('video-out')) return 0
+  const match = sourceHandle.match(/video-out-(\d+)/)
+  return match ? parseInt(match[1], 10) : 0
 }
 ```
 
-Place in `graphUtils.ts` alongside the existing inlet parsing. Use it when building `inletMap` from edges so MRT outlet indices propagate through the render graph.
+Used when building `inletMap` from edges in `filterFBOCompatibleGraph()` so MRT outlet indices propagate through the render graph into `getInputTextureMap()`.
+
+### Auto-Detection (GLSL)
+
+On every shader compile (`updateShader()`), scan for `layout(location=N) out` declarations and derive `mrtCount`:
+
+```typescript
+function detectMrtCount(code: string): number {
+  const locationRegex = /layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*out/g
+  let max = -1,
+    match
+  while ((match = locationRegex.exec(code)) !== null) {
+    max = Math.max(max, parseInt(match[1], 10))
+  }
+  return max >= 0 ? max + 1 : 1
+}
+```
+
+`mrtCount` is written to node data alongside `glUniformDefs`. No directive, no UI control — the shader declarations are the single source of truth.
 
 ### Backwards Compatibility
 
 - Default `mrtCount = 1` — existing nodes unchanged
-- Single-outlet GLSL nodes keep the current ShaderToy wrapper
-- MRT is opt-in per node
+- Single-outlet GLSL nodes with no `layout(location=N) out` declarations keep the current ShaderToy wrapper and single-outlet handle
+- Existing edges to `video-out-out` continue to work (parsed as outlet index 0)
 
 ### Limits
 

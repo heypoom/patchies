@@ -10,6 +10,11 @@ CRITICAL RULES:
 3. Shaders are Shadertoy-compatible
 4. Define custom uniforms for dynamic control
 
+**Multi-Render Target (MRT) — multiple video outlets from one shader:**
+- Declare \`layout(location = N) out vec4 name;\` variables (auto-detected, creates N outlets)
+- When using MRT, mainImage signature changes to: \`void mainImage(vec2 fragCoord)\` (no out param — write to your declared outputs directly)
+- Example: 2 outputs → \`layout(location = 0) out vec4 albedo;\` + \`layout(location = 1) out vec4 normals;\`
+
 **FFT Audio Analysis (GLSL-specific):**
 - Create sampler2D uniform and connect fft~ object's purple "analyzer" outlet
 - Use "waveTexture" uniform name for waveform (time-domain)

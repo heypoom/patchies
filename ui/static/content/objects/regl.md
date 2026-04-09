@@ -1,4 +1,6 @@
-The `regl` object gives you low-level GPU rendering with [regl](https://github.com/regl-project/regl) draw commands. Runs on the render worker for fast video chaining.
+The `regl` object gives you low-level GPU rendering with
+[regl](https://github.com/regl-project/regl) draw commands. Runs on
+the render worker for fast video chaining.
 
 Use it when you need full control over vertices, buffers, elements, blend 
 modes, or multi-pass rendering — things the `glsl` node can't do because it 
@@ -177,6 +179,67 @@ function render(time) {
 
 ---
 
+## Multiple Video Outputs (MRT)
+
+A single regl draw call can write to multiple video outlets at once using
+WebGL2 multi-render targets. This lets you compute albedo, normals, depth,
+or any structured G-buffer data in one pass — no redundant renders.
+
+Call `setVideoCount(inlets, outlets)` with more than one outlet, then declare
+`layout(location = N) out vec4` variables in your fragment shader. Each
+location maps directly to the outlet at that index.
+
+```javascript
+setVideoCount(0, 2) // 0 inlets, 2 outlets
+
+const draw = await regl({
+  vert: `
+    #version 300 es
+    precision mediump float;
+    in vec2 position;
+    out vec2 uv;
+    void main() {
+      uv = position * 0.5 + 0.5;
+      gl_Position = vec4(position, 0, 1);
+    }
+  `,
+  frag: `
+    #version 300 es
+    precision mediump float;
+
+    layout(location = 0) out vec4 albedo;   // video-out-0
+    layout(location = 1) out vec4 normals;  // video-out-1
+
+    in vec2 uv;
+    uniform float time;
+
+    void main() {
+      albedo  = vec4(uv, sin(time) * 0.5 + 0.5, 1.0);
+      normals = vec4(normalize(vec3(uv - 0.5, 1.0)) * 0.5 + 0.5, 1.0);
+    }
+  `,
+  attributes: {
+    position: [[-1,-1],[1,-1],[-1,1],[-1,1],[1,-1],[1,1]]
+  },
+  uniforms: { time: regl.prop('time') },
+  count: 6,
+  depth: { enable: false },
+})
+
+function render(time) {
+  draw({ time })
+}
+```
+
+Connect downstream nodes to `video-out-0` and `video-out-1` — each
+receives its own texture.
+
+> **Note**: Use `#version 300 es` and `in`/`out` instead of `attribute`/`varying`
+> /`gl_FragColor` when writing MRT shaders. WebGL1-style shaders only support
+> a single output.
+
+---
+
 ## Available Variables
 
 - `regl` — the regl instance
@@ -189,7 +252,8 @@ function render(time) {
 
 ## Common Functions
 
-See the [Patchies JavaScript Runner](/docs/javascript-runner) for all available functions.
+See the [Patchies JavaScript Runner](/docs/javascript-runner) for
+all available functions.
 
 - `noOutput()` — hides video output port
 - `setHidePorts(true | false)` — hide/show all ports
@@ -209,7 +273,8 @@ See the [Patchies JavaScript Runner](/docs/javascript-runner) for all available 
 | Blend modes | Fixed | Custom per draw call |
 | Complexity | Low | Medium-high |
 
-Use `glsl` when a fragment shader is enough. Use `regl` when you need custom geometry, instancing, or multi-pass rendering.
+Use `glsl` when a fragment shader is enough. Use `regl` when you need
+custom geometry, instancing, or multi-pass rendering.
 
 ---
 
