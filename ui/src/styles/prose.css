@@ -88,7 +88,7 @@
   }
 
   .prose-markdown p {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
   }
 
   .prose-markdown-app p {
@@ -150,7 +150,7 @@
   }
 
   .prose-markdown ul {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
   }
 
   .prose-markdown-app ul {
@@ -167,7 +167,7 @@
   }
 
   .prose-markdown ol {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
   }
 
   .prose-markdown-app ol {
@@ -228,7 +228,7 @@
   }
 
   .prose-markdown td {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
   }
 
   .prose-markdown-app td {
