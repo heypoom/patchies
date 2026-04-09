@@ -30,6 +30,26 @@ The `render` function receives an object with:
 - `t` - time in seconds
 - `frame` - current frame number
 
+## Float Texture Format
+
+By default, the output texture uses 8-bit RGBA (values clamped to 0–1). For GPGPU or HDR, add a format directive as a comment:
+
+```javascript
+// @format rgba32f
+
+const shader = await glsl({
+  FP: `vec4(5.0, -2.0, 100.0, 1.0)`,
+});
+
+function render({ t }) {
+  shader({ t });
+}
+```
+
+You can also use the JS API: `setTextureFormat('rgba32f')`.
+
+Formats: `rgba8` (default), `rgba16f` (half float), `rgba32f` (full float). See [glsl docs](/docs/objects/glsl#float-texture-format) for details.
+
 ## Limitations
 
 Mouse and camera controls are not yet hooked up to SwissGL in Patchies.

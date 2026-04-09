@@ -15,6 +15,9 @@ CRITICAL RULES:
 - When using MRT, mainImage signature changes to: \`void mainImage(vec2 fragCoord)\` (no out param — write to your declared outputs directly)
 - Example: 2 outputs → \`layout(location = 0) out vec4 albedo;\` + \`layout(location = 1) out vec4 normals;\`
 
+**Float Texture Format** — add \`// @format rgba32f\` (or \`rgba16f\`) as a comment directive for unclamped float output.
+  Default is \`rgba8\` (0–1 clamped). Useful for GPGPU, HDR, or passing data like positions/velocities between nodes.
+
 **FFT Audio Analysis (GLSL-specific):**
 - Create sampler2D uniform and connect fft~ object's purple "analyzer" outlet
 - Use "waveTexture" uniform name for waveform (time-domain)

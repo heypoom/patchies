@@ -314,6 +314,16 @@ export class GLSystem {
           title: data.title
         });
       })
+      .with({ type: 'setTextureFormat' }, (data) => {
+        // Update internal node data and rebuild render graph so fboRenderer picks up the new format
+        const idx = this.nodes.findIndex((n) => n.id === data.nodeId);
+        if (idx !== -1) {
+          const node = this.nodes[idx];
+          if ((node.data as Record<string, unknown>).fboFormat === data.format) return;
+          this.nodes[idx] = { ...node, data: { ...node.data, fboFormat: data.format } };
+          this.updateRenderGraph(true);
+        }
+      })
       .with({ type: 'setHidePorts' }, (data) => {
         this.eventBus.dispatch({
           type: 'nodeHidePortsUpdate',

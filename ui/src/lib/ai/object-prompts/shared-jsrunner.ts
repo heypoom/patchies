@@ -81,6 +81,11 @@ export const jsRunnerInstructions = `
 - await kv.store(namespace).set/get/delete - namespaced store
 - For full kv docs call get_doc_content({ kind: 'topic', slug: 'data-storage' })
 
+**Float Texture Format (visual nodes only: hydra, canvas, three, regl, swgl, textmode):**
+- setTextureFormat('rgba8'|'rgba16f'|'rgba32f') - Set output FBO format.
+  Default rgba8 clamps to 0–1; use rgba32f for unclamped float data (GPGPU, HDR).
+  Call once at init. For glsl/swgl, prefer \`// @format rgba32f\` comment directive.
+
 **User-defined Settings:**
 - only add a few settings by default where it makes sense.
   - tell the user in the response what settings they have and how to show it i.e. in the overflow menu > "Show settings"

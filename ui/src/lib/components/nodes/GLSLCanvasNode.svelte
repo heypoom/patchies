@@ -35,6 +35,7 @@
       showConsole?: boolean;
       _runRevision?: number;
       mrtCount?: number;
+      fboFormat?: 'rgba8' | 'rgba16f' | 'rgba32f';
     };
     selected: boolean;
   } = $props();
@@ -154,6 +155,14 @@
     return max >= 0 ? max + 1 : 1;
   }
 
+  function detectFboFormat(code: string): 'rgba8' | 'rgba16f' | 'rgba32f' {
+    // Match // @format directive in single-line comments (don't strip comments first!)
+    // Only skip directives inside block comments.
+    const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
+    const m = withoutBlocks.match(/^\s*\/\/\s*@format\s+(rgba8|rgba16f|rgba32f)\s*$/m);
+    return (m?.[1] as 'rgba8' | 'rgba16f' | 'rgba32f') ?? 'rgba8';
+  }
+
   function updateShader() {
     // Clear console on re-run
     consoleRef?.clearConsole();
@@ -179,6 +188,7 @@
       glUniformDefs: nextDefs,
       uniformValues: pruned,
       mrtCount: detectMrtCount(data.code),
+      fboFormat: detectFboFormat(data.code),
       _runRevision: Date.now()
     };
 

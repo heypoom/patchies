@@ -1,5 +1,11 @@
 export const WEBGL_EXTENSIONS = ['OES_texture_float_linear'];
 
+/** Extensions requested but not required — EXT_color_buffer_float enables rendering to float FBOs. */
+export const WEBGL_OPTIONAL_EXTENSIONS = [
+  'EXT_color_buffer_float',
+  'OES_texture_half_float_linear'
+];
+
 export const DEFAULT_OUTPUT_SIZE = [1008, 654] as [width: number, height: number];
 export const PREVIEW_SCALE_FACTOR = 4;
 

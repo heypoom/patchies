@@ -5,10 +5,16 @@ import type {
   RenderNode,
   FBONode,
   RenderFunction,
-  UserParam
+  UserParam,
+  FBOFormat
 } from '../../lib/rendering/types';
 import type { ClockCommandMessage } from '$lib/transport/types';
-import { DEFAULT_OUTPUT_SIZE, WEBGL_EXTENSIONS, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+import {
+  DEFAULT_OUTPUT_SIZE,
+  WEBGL_EXTENSIONS,
+  WEBGL_OPTIONAL_EXTENSIONS,
+  PREVIEW_SCALE_FACTOR
+} from '$lib/canvas/constants';
 import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
 import { CaptureRenderer } from './CaptureRenderer';
@@ -152,12 +158,32 @@ export class FBORenderer {
   /** Video channel registry for send.vdo/recv.vdo wireless routing */
   public videoChannelRegistry = VideoChannelRegistry.getInstance();
 
+  /** Whether rendering to float FBOs is supported (EXT_color_buffer_float) */
+  private colorBufferFloatSupported = false;
+
+  /** Whether linear filtering is supported for half-float and float textures */
+  private halfFloatLinearSupported = false;
+  private floatLinearSupported = false;
+
   constructor() {
     const [width, height] = this.outputSize;
 
     this.offscreenCanvas = new OffscreenCanvas(width, height);
     this.gl = this.offscreenCanvas.getContext('webgl2', { antialias: false })!;
-    this.regl = regl({ gl: this.gl, extensions: WEBGL_EXTENSIONS });
+
+    // Float textures are created via raw WebGL2 in createFboTexture(), bypassing
+    // regl entirely. No need to request float extensions through regl — doing so
+    // triggers invalid texImage2D probes that emit WebGL warnings.
+    this.regl = regl({
+      gl: this.gl,
+      extensions: WEBGL_EXTENSIONS,
+      optionalExtensions: WEBGL_OPTIONAL_EXTENSIONS
+    });
+
+    // Detect float FBO support
+    this.colorBufferFloatSupported = !!this.gl.getExtension('EXT_color_buffer_float');
+    this.halfFloatLinearSupported = !!this.gl.getExtension('OES_texture_half_float_linear');
+    this.floatLinearSupported = !!this.gl.getExtension('OES_texture_float_linear');
 
     this.fallbackTexture = this.regl.texture({
       width: 1,
@@ -196,6 +222,56 @@ export class FBORenderer {
    */
   private computeNodeFingerprint(node: RenderNode): string {
     return JSON.stringify(node.data);
+  }
+
+  /**
+   * Create a regl texture, then re-initialize it with the correct WebGL2
+   * internal format if float. regl doesn't support WebGL2 sized internal
+   * formats (RGBA16F/RGBA32F) — it always uses GL_RGBA for internalformat,
+   * which is invalid for float in WebGL2. So we create via regl (for tracking)
+   * then fix the underlying GL texture with raw texImage2D.
+   */
+  private createFboTexture(width: number, height: number, format: FBOFormat): regl.Texture2D {
+    // Create as uint8 first so regl doesn't complain about float types.
+    // regl's initial texImage2D with GL_RGBA emits a harmless WebGL warning
+    // for float nodes — we immediately overwrite with the correct format below.
+    const texture = this.regl.texture({ width, height, wrapS: 'clamp', wrapT: 'clamp' });
+
+    if (format === 'rgba8') return texture;
+
+    // Fall back to rgba8 if float render targets aren't supported
+    if (!this.colorBufferFloatSupported) {
+      console.warn(
+        `[fbo] EXT_color_buffer_float not supported, falling back to rgba8 for ${format}`
+      );
+      return texture;
+    }
+
+    // Re-initialize the raw GL texture with the correct WebGL2-sized format
+    const gl = this.gl;
+    const rawTexture = getRawTexture(texture);
+    const { internalFormat, type, linearSupported } = match(format)
+      .with('rgba16f', () => ({
+        internalFormat: gl.RGBA16F,
+        type: gl.HALF_FLOAT,
+        linearSupported: this.halfFloatLinearSupported
+      }))
+      .with('rgba32f', () => ({
+        internalFormat: gl.RGBA32F,
+        type: gl.FLOAT,
+        linearSupported: this.floatLinearSupported
+      }))
+      .exhaustive();
+
+    const filter = linearSupported ? gl.LINEAR : gl.NEAREST;
+
+    gl.bindTexture(gl.TEXTURE_2D, rawTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, width, height, 0, gl.RGBA, type, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+    return texture;
   }
 
   /** Build FBOs for all nodes in the render graph */
@@ -270,6 +346,7 @@ export class FBORenderer {
       colorAttachments: regl.Texture2D[];
       framebuffer: regl.Framebuffer2D;
       fingerprint: string;
+      fboFormat: FBOFormat;
     };
 
     const pending: PendingNode[] = [];
@@ -288,11 +365,16 @@ export class FBORenderer {
               ? (node.data.videoOutletCount ?? 1)
               : 1;
 
+      // FBO format: read from node data, default to rgba8
+      const fboFormat: FBOFormat =
+        ((node.data as Record<string, unknown>)?.fboFormat as FBOFormat) || 'rgba8';
+
       const canReuseFbo =
         existingFbo &&
         existingFbo.texture.width === width &&
         existingFbo.texture.height === height &&
-        existingFbo.colorAttachments.length === mrtCount;
+        existingFbo.colorAttachments.length === mrtCount &&
+        (existingFbo.fboFormat ?? 'rgba8') === fboFormat;
 
       // Diff: check if the node's data has changed since last build.
       // If both FBO and data are unchanged, skip renderer recreation entirely.
@@ -357,7 +439,7 @@ export class FBORenderer {
 
         // Create color attachments — one for standard nodes, N for MRT GLSL nodes
         colorAttachments = Array.from({ length: mrtCount }, () =>
-          this.regl.texture({ width, height, wrapS: 'clamp', wrapT: 'clamp' })
+          this.createFboTexture(width, height, fboFormat)
         );
 
         if (mrtCount > 1) {
@@ -392,7 +474,7 @@ export class FBORenderer {
         }
       }
 
-      pending.push({ node, colorAttachments, framebuffer, fingerprint });
+      pending.push({ node, colorAttachments, framebuffer, fingerprint, fboFormat });
     }
 
     // Phase 2 (parallel): create all renderers concurrently
@@ -417,7 +499,7 @@ export class FBORenderer {
 
     // Phase 3: collect results into FBO map
     for (let i = 0; i < pending.length; i++) {
-      const { node, colorAttachments, framebuffer, fingerprint } = pending[i];
+      const { node, colorAttachments, framebuffer, fingerprint, fboFormat } = pending[i];
       const renderer = results[i];
 
       // If the renderer function is null, we skip defining this node.
@@ -445,7 +527,8 @@ export class FBORenderer {
         render: renderer.render,
         cleanup: renderer.cleanup,
         dataFingerprint: fingerprint,
-        nodeType: node.type
+        nodeType: node.type,
+        fboFormat
       };
 
       this.fboNodes.set(node.id, fboNode);
@@ -467,14 +550,14 @@ export class FBORenderer {
       const fboNode = this.fboNodes.get(nodeId);
       if (!fboNode || fboNode.prevTextures) continue;
 
+      // Match the format of the node's color attachments for feedback textures.
+      // Read the format from the render graph node data.
+      const feedbackNode = renderGraph.nodes.find((n) => n.id === nodeId);
+      const feedbackData = feedbackNode?.data as Record<string, unknown> | undefined;
+      const feedbackFormat: FBOFormat = (feedbackData?.fboFormat as FBOFormat) || 'rgba8';
+
       fboNode.prevTextures = fboNode.colorAttachments.map(() =>
-        this.regl.texture({
-          width,
-          height,
-          wrapS: 'clamp',
-          wrapT: 'clamp'
-          // Defaults to all-zero (black transparent) — correct bootstrap behavior
-        })
+        this.createFboTexture(width, height, feedbackFormat)
       );
 
       fboNode.prevFramebuffers = fboNode.prevTextures.map((prevTexture) =>

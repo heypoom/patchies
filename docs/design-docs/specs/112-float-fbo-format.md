@@ -1,4 +1,4 @@
-# 112. Configurable FBO Format (Float Textures)
+# 112. Configurable FBO Format (Float Textures) ✓
 
 ## Problem
 
@@ -43,15 +43,15 @@ void main() {
 }
 ```
 
-Parsed from code on each update, same pattern as MRT count detection (`detectMrtCount` parses `layout(location = N) out`). A `detectFboFormat()` function strips comments, matches `// @format <value>`, and writes `fboFormat` into node data.
+Parsed from code on each update, same pattern as MRT count detection (`detectMrtCount` parses `layout(location = N) out`). A `detectFboFormat()` function strips block comments only, then matches the directive in `//` single-line comments:
 
-Only `// @format` lines that are **not** inside block comments are matched. The regex strips comments first (same approach as `detectMrtCount`), then matches:
-
-```
-/@format\s+(rgba8|rgba16f|rgba32f)/
+```javascript
+/\/\/\s*@format\s+(rgba8|rgba16f|rgba32f)/
 ```
 
-If no directive is found, defaults to `rgba8`.
+If no directive is found, returns `'rgba8'` (not `undefined` — see fingerprint note below).
+
+The directive is also syntax-highlighted in the GLSL CodeMirror editor with muted colors to distinguish it from active code.
 
 #### JS Nodes (Hydra, REGL, Three, Canvas) — API Function
 
@@ -72,26 +72,30 @@ The function is called once at init (not per-frame). Calling it again with a dif
 
 ### Pipeline Change — `fboRenderer.ts`
 
-In `buildFBOs()`, read format from node data:
+In `buildFBOs()`, read format from node data and create textures via `createFboTexture()`:
 
 ```typescript
-const format = node.data.fboFormat ?? 'rgba8';
-const textureType = match(format)
-  .with('rgba8', () => 'uint8')
-  .with('rgba16f', () => 'float16')
-  .with('rgba32f', () => 'float32')
-  .exhaustive();
-
-const texture = regl.texture({
-  width, height,
-  type: textureType,
-  format: 'rgba',
-});
+const fboFormat: FBOFormat =
+  ((node.data as Record<string, unknown>)?.fboFormat as FBOFormat) || 'rgba8';
 ```
+
+**regl bypass**: regl is a WebGL1 library that doesn't support WebGL2-sized internal formats (`RGBA16F`, `RGBA32F`). It always sets `internalformat = format = GL_RGBA`, which is invalid for float textures in WebGL2. The workaround:
+
+1. Create a standard `uint8` texture via `regl.texture()` (so regl tracks it)
+2. Re-initialize the underlying GL texture with the correct format via raw WebGL2:
+
+```typescript
+gl.bindTexture(gl.TEXTURE_2D, rawTexture);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, width, height, 0, gl.RGBA, gl.FLOAT, null);
+```
+
+This also requires shimming `gl.getExtension()` to return truthy values for WebGL1 extension names (`OES_texture_float`, `OES_texture_half_float`) that regl checks but which return null on WebGL2 (where they're core).
 
 This applies to both regular color attachments and feedback (previous-frame) textures.
 
-Fingerprint already includes `fboFormat` (via `JSON.stringify(node.data)`), so FBOs are automatically recreated when format changes.
+**FBO reuse check**: `canReuseFbo` compares `existingFbo.fboFormat` against the requested format. When format changes, the old FBO is destroyed and a new one is created.
+
+**Fingerprint**: `fboFormat` must be a concrete value (`'rgba8'`), not `undefined`, because `JSON.stringify` strips `undefined` keys — making format changes invisible to the fingerprint diff.
 
 ### Float Texture Filtering
 
@@ -102,11 +106,11 @@ Float texture **linear filtering** (bilinear/trilinear sampling) depends on opti
 
 If the respective extension is missing, fall back to `nearest` sampling for that format. Note: `EXT_float_blend` is a separate extension that controls whether float render targets support alpha blending — it is unrelated to texture filtering.
 
-Check for these extensions once at init and store the capabilities so `buildFBOs()` can set the appropriate `min`/`mag` filter per format.
+Checked once at init via `gl.getExtension()`, stored as `halfFloatLinearSupported` / `floatLinearSupported`, and used in `createFboTexture()` to set the appropriate `TEXTURE_MIN_FILTER` / `TEXTURE_MAG_FILTER`.
 
 ### Preview Rendering
 
-The preview canvas (`transferFromImageBitmap`) expects RGBA8 bitmaps. For float FBOs, the PixelReadbackService already reads pixels — just needs to clamp/tonemap when reading from float FBOs for preview display. The actual texture passed between nodes stays float.
+The preview canvas (`transferFromImageBitmap`) expects RGBA8 bitmaps. When `readPixels` reads from a float FBO into a `Uint8Array`, WebGL implicitly clamps values to [0, 255] — so previews display clamped colors without extra work. The actual float texture passed between nodes is unaffected.
 
 ### Backwards Compatibility
 
