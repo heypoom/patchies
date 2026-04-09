@@ -46,7 +46,7 @@ Build a **code-oriented TouchDesigner** that runs in a browser. Patchies combine
 | Spec                                        | Title                         | Summary                                                                    |
 | ------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------- |
 | [111](111-multi-render-target.md)           | Multi-Render-Target           | Multiple video outlets per node via MRT color attachments ✓                |
-| [112](112-float-fbo-format.md)              | Float FBO Format              | Per-node `rgba16f`/`rgba32f` for GPGPU and HDR                             |
+| [112](112-float-fbo-format.md)              | Float FBO Format              | Per-node `rgba16f`/`rgba32f` for GPGPU and HDR ✓                           |
 | [113](113-graph-level-feedback.md)          | Graph-Level Feedback          | Back-edges with 1-frame delay, double-buffered FBOs ✓                      |
 | [114](114-visual-convenience-presets.md)    | Convenience Presets           | Procedural generators, post-processing, PBR, simulation presets            |
 | [115](115-geometry-wire-type.md)            | Geometry Wire Type            | Geometry handle with auto-caching inlets, attributes, instancing           |
@@ -116,7 +116,7 @@ Independent (no deps):     111, 112, 113, 117, 118, 123, 115 (Stage 2-3)
 
 ### Phase 2 — Foundations (richer textures)
 
-3. **[111](111-multi-render-target.md) MRT** ✓ and **[112](112-float-fbo-format.md) Float FBO** — Can be built in parallel. These are the foundation that makes later specs (presets, geometry, compute bridge) much more powerful.
+3. **[111](111-multi-render-target.md) MRT** ✓ and **[112](112-float-fbo-format.md) Float FBO** ✓ — Can be built in parallel. These are the foundation that makes later specs (presets, geometry, compute bridge) much more powerful.
 4. **[114](114-visual-convenience-presets.md) Presets** — Ship independent presets first (noise generators, post-processing, color grading). Add MRT/float/feedback-dependent presets as those land. Presets use `#include <lygia/...>` internally.
 
 ### Phase 3 — Expansion (new data types)

@@ -1,4 +1,4 @@
-# 112. Configurable FBO Format (Float Textures)
+# 112. Configurable FBO Format (Float Textures) ✓
 
 ## Problem
 
