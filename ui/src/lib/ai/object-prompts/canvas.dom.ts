@@ -1,4 +1,5 @@
 import { fftInstructions } from './shared-fft';
+import { typographyInstructions } from './shared-typography';
 export const canvasDomPrompt = `## canvas.dom Object Instructions
 
 Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
@@ -27,6 +28,8 @@ Interactive Canvas on main thread. Use for mouse/keyboard input and instant FFT.
   Minimum: 800x600. Maximum: 2000x2000.
 - When using setCanvasSize, make sure to define width and height variables:
   e.g. const width = 800, height = 600; setCanvasSize(width, height);
+
+${typographyInstructions}
 
 ${fftInstructions}
 

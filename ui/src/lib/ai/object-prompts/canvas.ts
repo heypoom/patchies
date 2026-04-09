@@ -1,4 +1,5 @@
 import { fftInstructions } from './shared-fft';
+
 export const canvasPrompt = `## canvas Object Instructions
 
 Offscreen Canvas on web worker thread for high-performance video chaining. NO DOM access.
