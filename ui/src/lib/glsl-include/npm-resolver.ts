@@ -21,7 +21,11 @@ export async function resolveNpmPackage(packagePath: string): Promise<string> {
       const response = await fetch(localUrl);
 
       if (response.ok) {
-        return response.text();
+        const out = await response.text();
+
+        if (!out.trimStart().startsWith('<')) {
+          return out;
+        }
       }
     } catch {
       // Local not available, fall through to CDN!
@@ -38,7 +42,18 @@ export async function resolveNpmPackage(packagePath: string): Promise<string> {
     );
   }
 
-  return response.text();
+  const text = await response.text();
+
+  // lygia.xyz returns plaintext "Path X not found" with status 200 for missing files.
+  // Other CDNs return HTML error pages with status 200.
+  // Both cases produce cryptic GLSL compiler errors (e.g. "'Path' : syntax error").
+  const trimmed = text.trimStart();
+
+  if (trimmed.startsWith('<') || trimmed.startsWith('Path ')) {
+    throw new Error(`Failed to resolve #include <${packagePath}>: file not found on CDN (${url})`);
+  }
+
+  return text;
 }
 
 function getModuleCdnUrl(packagePath: string): string {
