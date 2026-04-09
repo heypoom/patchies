@@ -112,30 +112,51 @@ export function shaderCodeToUniformDefs(code: string): GLUniformDef[] {
   return uniformDefs;
 }
 
+function deriveFloatStep(...values: (number | undefined)[]): number {
+  let maxDecimals = 0;
+
+  for (const value of values) {
+    if (value == null) continue;
+
+    const valueString = value.toString();
+    const dotIndex = valueString.indexOf('.');
+
+    if (dotIndex !== -1) {
+      maxDecimals = Math.max(maxDecimals, valueString.length - dotIndex - 1);
+    }
+  }
+
+  return maxDecimals === 0 ? 0.01 : Math.pow(10, -maxDecimals);
+}
+
 export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField[] =>
   defs.flatMap((def) =>
     match<string, SettingsField[]>(def.type)
-      .with('float', () => [
-        def.min != null && def.max != null
-          ? {
-              key: def.name,
-              label: def.description ?? def.name,
-              type: 'slider' as const,
-              default: (def.default as number) ?? 0,
-              min: def.min,
-              max: def.max,
-              step: 0.01,
-              persistence: 'node' as const
-            }
-          : {
-              key: def.name,
-              label: def.description ?? def.name,
-              type: 'number' as const,
-              default: (def.default as number) ?? 0,
-              step: 0.01,
-              persistence: 'node' as const
-            }
-      ])
+      .with('float', () => {
+        const step = deriveFloatStep(def.default as number, def.min, def.max);
+
+        return [
+          def.min != null && def.max != null
+            ? {
+                key: def.name,
+                label: def.description ?? def.name,
+                type: 'slider' as const,
+                default: (def.default as number) ?? 0,
+                min: def.min,
+                max: def.max,
+                step,
+                persistence: 'node' as const
+              }
+            : {
+                key: def.name,
+                label: def.description ?? def.name,
+                type: 'number' as const,
+                default: (def.default as number) ?? 0,
+                step,
+                persistence: 'node' as const
+              }
+        ];
+      })
       .with('int', () => [
         def.min != null && def.max != null
           ? {
