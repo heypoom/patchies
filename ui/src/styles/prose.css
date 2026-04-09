@@ -11,6 +11,11 @@
     --prose-h3: calc(0.9375rem * var(--prose-scale));
   }
 
+  .prose-markdown:not(.promise-markdown-app) hr {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
   .prose-markdown-chat.prose-markdown-app {
     --prose-scale: 0.85;
   }

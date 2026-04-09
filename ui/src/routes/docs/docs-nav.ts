@@ -22,6 +22,8 @@ export const topicOrder: Record<string, string[]> = {
   ],
   Connections: ['data-types', 'hot-cold-inlets'],
   Scripting: [
+    'js-modules',
+    'js-integrations',
     'canvas-interaction',
     'virtual-filesystem',
     'glsl-imports',

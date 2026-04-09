@@ -23,6 +23,8 @@ export const TOPIC_TITLES: Record<string, string> = {
   'hot-cold-inlets': 'Hot and Cold Inlets',
   'in-app-help': 'Help',
   'javascript-runner': 'JavaScript',
+  'js-integrations': 'JS Integrations',
+  'js-modules': 'JS Modules',
   'manage-files': 'Files',
   'manage-packs': 'Packs',
   'manage-presets': 'Presets',
