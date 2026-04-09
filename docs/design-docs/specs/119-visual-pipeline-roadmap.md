@@ -109,10 +109,10 @@ Independent (no deps):     111, 112, 113, 117, 118, 123, 115 (Stage 2-3)
 
 ## Implementation Order
 
-### Phase 1 — Immediate (live coding essentials)
+### Phase 1 — Immediate (live coding essentials) ✓ DONE
 
-1. **[118](118-glsl-include-preprocessor.md) `#include` preprocessor** — `#include <lygia/generative/snoise>` in any shader node. Biggest quality-of-life win for live coders. No pipeline changes, no architectural risk. Includes the `glsl` tagged template literal for JS-based nodes.
-2. **[113](113-graph-level-feedback.md) Feedback Loops** — Multi-node feedback chains for trails, accumulation, reaction-diffusion. Transformative for live visual workflows.
+1. **[118](118-glsl-include-preprocessor.md) `#include` preprocessor** ✓ — `#include <lygia/generative/snoise>` in any shader node. Biggest quality-of-life win for live coders. No pipeline changes, no architectural risk. Includes the `glsl` tagged template literal for JS-based nodes.
+2. **[113](113-graph-level-feedback.md) Feedback Loops** ✓ — Multi-node feedback chains for trails, accumulation, reaction-diffusion. Transformative for live visual workflows.
 
 ### Phase 2 — Foundations (richer textures)
 
