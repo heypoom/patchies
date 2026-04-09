@@ -1,5 +1,7 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
+  import { tick } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
 
   type Difficulty = 'beginner' | 'intermediate' | 'advanced';
   type PatchType = 'starter' | 'template' | 'example' | 'showcase';
@@ -136,42 +138,103 @@
   ];
 
   const allNodes = [...new Set(sparks.flatMap((s) => s.nodes))].sort();
-  const allTags = [...new Set(sparks.flatMap((s) => s.tags))].sort();
 
-  let selectedNodes = $state<Set<string>>(new Set());
-  let selectedTags = $state<Set<string>>(new Set());
+  // Today's challenge — could be date-seeded later
+  const todaysChallenge = ['fft', 'p5', 'dmx'];
 
-  function toggleNode(node: string) {
-    const next = new Set(selectedNodes);
-    if (next.has(node)) next.delete(node);
-    else next.add(node);
-    selectedNodes = next;
+  // ── Bench state ──────────────────────────────────────────────
+  const MAX_BENCH = 5;
+  let benchNodes = $state<string[]>([]);
+  let lockedNodes = new SvelteSet<string>();
+
+  // Wire SVG
+  let benchEl: HTMLDivElement | null = $state(null);
+  let benchNodeEls: (HTMLElement | null)[] = [];
+  let wirePaths = $state<{ d: string; key: string }[]>([]);
+  let wireViewBox = $state('0 0 800 140');
+
+  function computeWires() {
+    if (!benchEl || benchNodes.length < 2) {
+      wirePaths = [];
+      return;
+    }
+    const cr = benchEl.getBoundingClientRect();
+    const paths: { d: string; key: string }[] = [];
+    for (let i = 0; i < benchNodes.length - 1; i++) {
+      const a = benchNodeEls[i];
+      const b = benchNodeEls[i + 1];
+      if (!a || !b) continue;
+      const ra = a.getBoundingClientRect();
+      const rb = b.getBoundingClientRect();
+      // connect from bottom-center of each token
+      const x1 = ra.left + ra.width / 2 - cr.left;
+      const y1 = ra.bottom - cr.top;
+      const x2 = rb.left + rb.width / 2 - cr.left;
+      const y2 = rb.bottom - cr.top;
+      const droop = 32;
+      paths.push({
+        d: `M ${x1} ${y1} C ${x1} ${y1 + droop}, ${x2} ${y2 + droop}, ${x2} ${y2}`,
+        key: `${benchNodes[i]}-${benchNodes[i + 1]}-${i}`
+      });
+    }
+    wirePaths = paths;
+    wireViewBox = `0 0 ${cr.width} ${cr.height}`;
   }
 
-  function toggleTag(tag: string) {
-    const next = new Set(selectedTags);
-    if (next.has(tag)) next.delete(tag);
-    else next.add(tag);
-    selectedTags = next;
+  $effect(() => {
+    void benchNodes;
+    tick().then(computeWires);
+  });
+
+  function addToBench(node: string) {
+    if (benchNodes.includes(node) || benchNodes.length >= MAX_BENCH) return;
+    benchNodes = [...benchNodes, node];
   }
 
-  const filteredSparks = $derived(
-    sparks.filter((spark) => {
-      const nodeMatch =
-        selectedNodes.size === 0 || [...selectedNodes].every((n) => spark.nodes.includes(n));
-      const tagMatch =
-        selectedTags.size === 0 || [...selectedTags].every((t) => spark.tags.includes(t));
-      return nodeMatch && tagMatch;
-    })
+  function removeFromBench(node: string) {
+    benchNodes = benchNodes.filter((n) => n !== node);
+    lockedNodes.delete(node);
+  }
+
+  function toggleLock(node: string, e: MouseEvent) {
+    e.stopPropagation();
+    if (lockedNodes.has(node)) lockedNodes.delete(node);
+    else lockedNodes.add(node);
+  }
+
+  function surpriseMe() {
+    const keep = benchNodes.filter((n) => lockedNodes.has(n));
+    const available = allNodes.filter((n) => !keep.includes(n));
+    const shuffled = [...available].sort(() => Math.random() - 0.5);
+    const needed = Math.max(0, 3 - keep.length);
+    benchNodes = [...keep, ...shuffled.slice(0, needed)];
+  }
+
+  function loadChallenge() {
+    benchNodes = [...todaysChallenge];
+    lockedNodes.clear();
+  }
+
+  function clearBench() {
+    benchNodes = [];
+    lockedNodes.clear();
+    wirePaths = [];
+  }
+
+  // ── Spark scoring ─────────────────────────────────────────────
+  function scoreSpark(spark: Spark): number {
+    if (benchNodes.length === 0) return 0;
+    return benchNodes.filter((n) => spark.nodes.includes(n)).length;
+  }
+
+  const scoredSparks = $derived(
+    sparks
+      .map((s) => ({ spark: s, score: scoreSpark(s) }))
+      .filter(({ score }) => benchNodes.length === 0 || score > 0)
+      .sort((a, b) => b.score - a.score)
   );
 
-  function clearFilters() {
-    selectedNodes = new Set();
-    selectedTags = new Set();
-  }
-
-  const hasFilters = $derived(selectedNodes.size > 0 || selectedTags.size > 0);
-
+  // ── Style helpers ─────────────────────────────────────────────
   function difficultyClass(d: Difficulty): string {
     return match(d)
       .with('beginner', () => 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10')
@@ -206,13 +269,6 @@
       .with('showcase', () => '★')
       .exhaustive();
   }
-
-  const filterSummary = $derived(() => {
-    const parts: string[] = [];
-    if (selectedNodes.size > 0) parts.push([...selectedNodes].join(' + '));
-    if (selectedTags.size > 0) parts.push([...selectedTags].join(' + '));
-    return parts.join(' · ');
-  });
 </script>
 
 <svelte:head>
@@ -226,174 +282,311 @@
 </svelte:head>
 
 <div class="sparks-page min-h-screen text-zinc-200">
-  <!-- Hero -->
-  <header class="hero relative overflow-hidden px-8 pt-14 pb-10">
+  <!-- ── Hero ── -->
+  <header class="hero relative overflow-hidden px-8 pt-12 pb-8">
     <div class="mx-auto max-w-5xl">
-      <p class="mono mb-3 text-xs tracking-[0.2em] text-orange-400/80 uppercase">
+      <p class="mono mb-2 text-[11px] tracking-[0.25em] text-orange-400/70 uppercase">
         patchies ✦ inspiration
       </p>
-      <h1 class="title-font leading-none text-white" style="font-size: clamp(5rem, 14vw, 10rem);">
-        SPARKS
-      </h1>
-      <p class="bricolage mt-4 max-w-lg text-base leading-relaxed text-zinc-400">
-        Ideas that ignite. Combine objects and themes to discover what's possible — recipes,
-        starting points, and builds from the community.
-      </p>
+      <div class="flex items-end gap-6">
+        <h1 class="title-font leading-none text-white" style="font-size: clamp(4rem, 11vw, 8rem);">
+          SPARKS
+        </h1>
+        <p class="bricolage mb-2 max-w-sm text-sm leading-relaxed text-zinc-500">
+          Combine objects on the bench to discover recipes, starting points, and community builds.
+        </p>
+      </div>
     </div>
     <div class="hero-orb" aria-hidden="true"></div>
-    <div class="hero-orb-2" aria-hidden="true"></div>
   </header>
 
-  <!-- Filter bar -->
-  <section class="filter-section border-y border-zinc-800/50 px-8 py-6">
+  <!-- ── Patch Bench ── -->
+  <section class="bench-section px-8 pb-8">
     <div class="mx-auto max-w-5xl">
-      <div class="flex flex-wrap gap-8">
-        <!-- Objects filter -->
-        <div class="min-w-0 flex-1">
-          <p class="mono mb-3 text-[10px] tracking-widest text-zinc-600 uppercase">Objects</p>
-          <div class="flex flex-wrap gap-2">
-            {#each allNodes as node}
-              <button
-                class="filter-chip node-chip mono cursor-pointer rounded px-3 py-1.5 text-xs transition-all duration-150"
-                class:node-active={selectedNodes.has(node)}
-                onclick={() => toggleNode(node)}
-              >
-                {node}
-              </button>
-            {/each}
-          </div>
+      <!-- Bench header -->
+      <div class="mb-4 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <h2 class="title-font text-2xl tracking-wide text-zinc-300">PATCH BENCH</h2>
+          {#if benchNodes.length > 0}
+            <span class="mono text-[11px] text-zinc-600">
+              {benchNodes.length}/{MAX_BENCH} objects
+            </span>
+          {/if}
         </div>
-
-        <div class="hidden w-px self-stretch bg-zinc-800/60 md:block"></div>
-
-        <!-- Themes filter -->
-        <div class="min-w-0 flex-1">
-          <p class="mono mb-3 text-[10px] tracking-widest text-zinc-600 uppercase">Themes</p>
-          <div class="flex flex-wrap gap-2">
-            {#each allTags as tag}
-              <button
-                class="filter-chip tag-chip mono cursor-pointer rounded px-3 py-1.5 text-xs transition-all duration-150"
-                class:tag-active={selectedTags.has(tag)}
-                onclick={() => toggleTag(tag)}
-              >
-                {tag}
-              </button>
-            {/each}
-          </div>
+        <div class="flex items-center gap-2">
+          <button onclick={loadChallenge} class="challenge-btn mono cursor-pointer text-xs">
+            ⚡ Today's Challenge
+          </button>
+          <button onclick={surpriseMe} class="surprise-btn mono cursor-pointer text-xs">
+            ↺ Surprise me
+          </button>
+          {#if benchNodes.length > 0}
+            <button onclick={clearBench} class="clear-btn mono cursor-pointer text-xs">
+              Clear
+            </button>
+          {/if}
         </div>
       </div>
 
-      <!-- Active filter summary -->
-      {#if hasFilters}
-        <div class="mt-5 flex items-center gap-3">
-          <div class="filter-summary-bar flex items-center gap-2 rounded px-3 py-1.5">
-            <span class="mono text-[11px] text-zinc-400">
-              <span class="text-zinc-500">showing</span>
-              <span class="font-medium text-white">{filteredSparks.length}</span>
-              <span class="text-zinc-500"> spark{filteredSparks.length !== 1 ? 's' : ''} for</span>
-              <span class="ml-1 text-orange-400">{filterSummary()}</span>
-            </span>
-          </div>
-          <button
-            onclick={clearFilters}
-            class="mono cursor-pointer text-[11px] text-zinc-600 transition-colors hover:text-zinc-300"
+      <!-- Bench surface -->
+      <div class="bench-surface relative" bind:this={benchEl}>
+        <!-- Wire SVG -->
+        {#if wirePaths.length > 0}
+          <svg
+            class="wire-svg pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+            viewBox={wireViewBox}
+            preserveAspectRatio="none"
           >
-            ✕ clear all
-          </button>
+            <defs>
+              <filter id="wire-glow" x="-20%" y="-40%" width="140%" height="180%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            {#each wirePaths as wire (wire.key)}
+              <!-- Glow layer -->
+              <path
+                d={wire.d}
+                fill="none"
+                stroke="rgba(249,115,22,0.25)"
+                stroke-width="4"
+                filter="url(#wire-glow)"
+              />
+              <!-- Main cable -->
+              <path d={wire.d} fill="none" class="wire-cable" />
+              <!-- Signal flow -->
+              <path d={wire.d} fill="none" class="wire-flow" />
+            {/each}
+          </svg>
+        {/if}
+
+        <!-- Node tokens on bench -->
+        <div class="bench-nodes relative z-10">
+          {#if benchNodes.length === 0}
+            <div class="bench-empty">
+              <span class="mono text-xs text-zinc-700"
+                >click objects below · or try Surprise me ↑</span
+              >
+            </div>
+          {:else}
+            {#each benchNodes as node, i}
+              <div
+                class="bench-token"
+                class:bench-token-locked={lockedNodes.has(node)}
+                bind:this={benchNodeEls[i]}
+              >
+                <!-- Lock -->
+                <button
+                  class="token-lock cursor-pointer"
+                  onclick={(e) => toggleLock(node, e)}
+                  title={lockedNodes.has(node) ? 'Unlock — will reroll' : 'Lock — keep on Surprise'}
+                >
+                  {#if lockedNodes.has(node)}
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                      <path
+                        d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"
+                      />
+                    </svg>
+                  {:else}
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                      <path
+                        d="M12 1C9.24 1 7 3.24 7 6v1H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2h-1V6c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v1H9V6c0-1.66 1.34-3 3-3zm0 9c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"
+                      />
+                    </svg>
+                  {/if}
+                </button>
+                <!-- Node name -->
+                <span class="mono text-sm font-medium text-zinc-100">{node}</span>
+                <!-- Remove -->
+                <button
+                  class="token-remove cursor-pointer"
+                  onclick={() => removeFromBench(node)}
+                  title="Remove from bench"
+                >
+                  ×
+                </button>
+              </div>
+            {/each}
+          {/if}
         </div>
-      {:else}
-        <p class="mono mt-4 text-[11px] text-zinc-700">
-          {sparks.length} sparks · click objects or themes to filter
-        </p>
-      {/if}
+      </div>
+
+      <!-- Node tray -->
+      <div class="node-tray mt-3">
+        <p class="mono mb-2 text-[10px] tracking-widest text-zinc-700 uppercase">All Objects</p>
+        <div class="flex flex-wrap gap-1.5">
+          {#each allNodes as node (node)}
+            {@const onBench = benchNodes.includes(node)}
+            {@const full = benchNodes.length >= MAX_BENCH && !onBench}
+            <button
+              class="tray-chip mono cursor-pointer rounded px-2.5 py-1 text-xs transition-all duration-100"
+              class:tray-on-bench={onBench}
+              class:tray-full={full}
+              onclick={() => (onBench ? removeFromBench(node) : addToBench(node))}
+              disabled={full}
+              title={full
+                ? 'Bench is full — remove a node first'
+                : onBench
+                  ? 'Remove from bench'
+                  : 'Add to bench'}
+            >
+              {node}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <!-- Challenge card -->
+      <div class="challenge-hint mono mt-4 text-[11px] text-zinc-700">
+        ⚡ <span class="text-zinc-500">Today's challenge:</span>
+        {todaysChallenge.join(' + ')}
+        <span class="ml-2 text-zinc-700">· 12 builds submitted</span>
+      </div>
     </div>
   </section>
 
-  <!-- Cards grid -->
+  <!-- ── Divider ── -->
+  <div class="mx-8 border-t border-zinc-800/50"></div>
+
+  <!-- ── Sparks Grid ── -->
   <main class="px-8 py-10">
     <div class="mx-auto max-w-5xl">
-      {#if filteredSparks.length === 0}
-        <div class="py-28 text-center">
-          <p class="title-font text-6xl text-zinc-800">NO SPARKS</p>
-          <p class="mono mt-3 text-sm text-zinc-700">Try removing some filters</p>
-          <button
-            onclick={clearFilters}
-            class="mono mt-6 cursor-pointer rounded border border-zinc-800 px-4 py-2 text-xs text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-300"
+      {#if benchNodes.length > 0}
+        <p class="mono mb-6 text-[11px] text-zinc-600">
+          {#if scoredSparks.filter((s) => s.score === benchNodes.length).length > 0}
+            <span class="text-orange-400"
+              >{scoredSparks.filter((s) => s.score === benchNodes.length).length} full match{scoredSparks.filter(
+                (s) => s.score === benchNodes.length
+              ).length !== 1
+                ? 'es'
+                : ''}</span
+            >
+            {#if scoredSparks.filter((s) => s.score < benchNodes.length).length > 0}
+              · {scoredSparks.filter((s) => s.score < benchNodes.length).length} partial
+            {/if}
+          {:else}
+            {scoredSparks.length} partial match{scoredSparks.length !== 1 ? 'es' : ''}
+          {/if}
+          for {benchNodes.join(' + ')}
+        </p>
+      {/if}
+
+      {#if scoredSparks.length === 0}
+        <div class="py-24 text-center">
+          <p class="title-font text-6xl text-zinc-800">NO SPARKS YET</p>
+          <p class="mono mt-3 text-sm text-zinc-700">
+            No existing recipes use all these nodes together. You might be first!
+          </p>
+          <a
+            href="/sparks/submit"
+            class="mono mt-6 inline-block cursor-pointer rounded border border-zinc-800 px-4 py-2 text-xs text-zinc-500 transition-colors hover:border-orange-500/40 hover:text-orange-400"
           >
-            Clear filters
-          </button>
+            Submit a build with these nodes →
+          </a>
         </div>
       {:else}
         <div class="sparks-grid">
-          {#each filteredSparks as spark (spark.id)}
-            <article class="spark-card group">
-              <!-- Accent line (top) -->
-              <div class="card-accent-line"></div>
+          {#each scoredSparks as { spark, score } (spark.id)}
+            {@const isFullMatch = benchNodes.length > 0 && score === benchNodes.length}
+            {@const isPartial = benchNodes.length > 0 && score > 0 && score < benchNodes.length}
+            <article
+              class="spark-card"
+              class:spark-full-match={isFullMatch}
+              class:spark-partial={isPartial}
+            >
+              {#if isFullMatch}
+                <div class="card-accent-line"></div>
+              {/if}
 
-              <!-- Header row: nodes + difficulty -->
-              <div class="mb-4 flex items-start justify-between gap-2">
-                <div class="flex flex-wrap gap-1.5">
+              <!-- Nodes + difficulty -->
+              <div class="mb-3 flex items-start justify-between gap-2">
+                <div class="flex flex-wrap gap-1">
                   {#each spark.nodes as node}
+                    {@const active = benchNodes.includes(node)}
                     <button
-                      class="mono cursor-pointer rounded-sm px-2 py-0.5 text-[11px] transition-all duration-100"
-                      class:node-pill-active={selectedNodes.has(node)}
-                      class:node-pill={!selectedNodes.has(node)}
-                      onclick={() => toggleNode(node)}
-                      title="Filter by {node}">{node}</button
+                      class="mono cursor-pointer rounded-sm px-1.5 py-0.5 text-[10px] transition-all"
+                      class:node-pill-active={active}
+                      class:node-pill={!active}
+                      onclick={() => (active ? removeFromBench(node) : addToBench(node))}
+                      title={active ? 'Remove from bench' : 'Add to bench'}>{node}</button
                     >
                   {/each}
                 </div>
-                <span
-                  class="mono shrink-0 rounded border px-2 py-0.5 text-[11px] {difficultyClass(
-                    spark.difficulty
-                  )}"
-                >
-                  {spark.difficulty}
-                </span>
+                <div class="flex shrink-0 items-center gap-1.5">
+                  {#if isFullMatch}
+                    <span class="mono text-[10px] text-orange-400">✦ match</span>
+                  {:else if isPartial && benchNodes.length > 0}
+                    <span class="mono text-[10px] text-zinc-600">{score}/{benchNodes.length}</span>
+                  {/if}
+                  <span
+                    class="mono rounded border px-1.5 py-0.5 text-[10px] {difficultyClass(
+                      spark.difficulty
+                    )}">{spark.difficulty}</span
+                  >
+                </div>
               </div>
 
-              <!-- Title -->
-              <h2 class="bricolage mb-2 text-[1.15rem] leading-snug font-semibold text-white">
+              <h2 class="bricolage mb-1.5 text-base leading-snug font-semibold text-white">
                 {spark.title}
               </h2>
+              <p class="mb-4 text-xs leading-relaxed text-zinc-500">{spark.description}</p>
 
-              <!-- Description -->
-              <p class="mb-5 text-sm leading-relaxed text-zinc-400">{spark.description}</p>
-
-              <!-- Tag pills -->
-              <div class="mb-5 flex flex-wrap gap-1.5">
+              <!-- Tags -->
+              <div class="mb-4 flex flex-wrap gap-1">
                 {#each spark.tags as tag}
-                  <button
-                    class="mono cursor-pointer rounded-full border px-2.5 py-0.5 text-[10px] transition-all duration-100"
-                    class:tag-pill-active={selectedTags.has(tag)}
-                    class:tag-pill={!selectedTags.has(tag)}
-                    onclick={() => toggleTag(tag)}
-                    title="Filter by {tag}"
+                  <span
+                    class="mono rounded-full border border-zinc-800 px-2 py-0.5 text-[10px] text-zinc-600"
                   >
                     {tag}
-                  </button>
+                  </span>
                 {/each}
               </div>
 
               <!-- Patches -->
-              <div class="flex flex-wrap gap-2 border-t border-zinc-800/80 pt-4">
+              <div class="flex flex-wrap gap-1.5 border-t border-zinc-800/70 pt-3">
                 {#each spark.patches as patch}
                   <a
                     href={patch.url}
-                    class="mono inline-flex cursor-pointer items-center rounded px-3 py-1.5 text-xs transition-all {patchTypeClass(
+                    class="mono inline-flex cursor-pointer items-center rounded px-2.5 py-1 text-xs transition-all {patchTypeClass(
                       patch.type
                     )}"
                   >
-                    <span class="mr-1.5 opacity-60">{patchTypeIcon(patch.type)}</span>
+                    <span class="mr-1 opacity-50">{patchTypeIcon(patch.type)}</span>
                     {patch.title}
                     {#if patch.author && patch.author !== spark.author}
-                      <span class="ml-1.5 opacity-40">by {patch.author}</span>
+                      <span class="ml-1 opacity-40">by {patch.author}</span>
                     {/if}
                   </a>
                 {/each}
               </div>
             </article>
           {/each}
+
+          <!-- Submit ghost card (when bench has nodes) -->
+          {#if benchNodes.length >= 2}
+            <article class="spark-card spark-submit-ghost">
+              <p class="mono mb-1 text-[10px] tracking-widest text-zinc-700 uppercase">
+                Your build
+              </p>
+              <h2 class="bricolage mb-2 text-base font-semibold text-zinc-600">
+                Made something with {benchNodes.slice(0, 3).join(' + ')}{benchNodes.length > 3
+                  ? '…'
+                  : ''}?
+              </h2>
+              <p class="mb-4 text-xs leading-relaxed text-zinc-700">
+                Share your patch and it might be featured here for others to remix.
+              </p>
+              <a
+                href="/sparks/submit"
+                class="mono inline-flex cursor-pointer items-center gap-1.5 rounded border border-zinc-800 px-3 py-1.5 text-xs text-zinc-600 transition-all hover:border-orange-500/30 hover:text-orange-400"
+              >
+                Submit a build →
+              </a>
+            </article>
+          {/if}
         </div>
       {/if}
     </div>
@@ -404,9 +597,8 @@
   .sparks-page {
     background-color: #09090b;
     background-image:
-      radial-gradient(ellipse 70% 50% at 85% 0%, rgba(249, 115, 22, 0.07) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 40% at 5% 90%, rgba(6, 182, 212, 0.04) 0%, transparent 55%),
-      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.012'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      radial-gradient(ellipse 65% 45% at 90% 0%, rgba(249, 115, 22, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 45% 35% at 5% 85%, rgba(6, 182, 212, 0.03) 0%, transparent 55%);
     font-family: 'Bricolage Grotesque', sans-serif;
   }
 
@@ -423,79 +615,228 @@
 
   .hero-orb {
     position: absolute;
-    top: -80px;
-    right: -120px;
-    width: 600px;
-    height: 600px;
+    top: -60px;
+    right: -80px;
+    width: 500px;
+    height: 500px;
     border-radius: 50%;
     background: radial-gradient(circle, rgba(249, 115, 22, 0.09) 0%, transparent 65%);
     pointer-events: none;
   }
-  .hero-orb-2 {
-    position: absolute;
-    bottom: -100px;
-    left: 30%;
-    width: 400px;
-    height: 400px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(249, 115, 22, 0.03) 0%, transparent 65%);
-    pointer-events: none;
+
+  .challenge-btn {
+    padding: 6px 12px;
+    background: rgba(249, 115, 22, 0.08);
+    border: 1px solid rgba(249, 115, 22, 0.25);
+    border-radius: 6px;
+    color: #fb923c;
+    transition: all 0.15s;
+  }
+  .challenge-btn:hover {
+    background: rgba(249, 115, 22, 0.15);
+    border-color: rgba(249, 115, 22, 0.45);
   }
 
-  /* Filter chips (sidebar) */
-  .filter-chip {
+  .surprise-btn {
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #a1a1aa;
+    transition: all 0.15s;
+  }
+  .surprise-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e4e4e7;
+  }
+
+  .clear-btn {
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 6px;
+    color: #52525b;
+    transition: all 0.15s;
+  }
+  .clear-btn:hover {
+    color: #a1a1aa;
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Bench surface */
+  .bench-surface {
+    background: #0a0a0d;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+    background-size: 24px 24px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    min-height: 130px;
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  .bench-nodes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    min-height: 86px;
+  }
+
+  .bench-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 86px;
+  }
+
+  /* Wire SVG */
+  .wire-svg {
+    z-index: 0;
+  }
+
+  .wire-cable {
+    stroke: rgba(249, 115, 22, 0.55);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+  }
+
+  .wire-flow {
+    stroke: rgba(249, 115, 22, 0.9);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-dasharray: 6 18;
+    animation: flow 1.2s linear infinite;
+  }
+
+  @keyframes flow {
+    from {
+      stroke-dashoffset: 24;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Bench tokens */
+  .bench-token {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 16px;
+    background: #161619;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    min-width: 80px;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
+  }
+  .bench-token:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+  .bench-token-locked {
+    border-color: rgba(249, 115, 22, 0.4) !important;
+    box-shadow: 0 0 14px rgba(249, 115, 22, 0.1);
+  }
+  .bench-token-locked .mono {
+    color: #fb923c;
+  }
+
+  .token-lock {
+    position: absolute;
+    top: 5px;
+    left: 6px;
+    color: #52525b;
+    transition: color 0.1s;
+    background: none;
+    border: none;
+    padding: 1px;
+  }
+  .bench-token-locked .token-lock {
+    color: #fb923c;
+  }
+  .token-lock:hover {
+    color: #a1a1aa;
+  }
+
+  .token-remove {
+    position: absolute;
+    top: 3px;
+    right: 5px;
+    color: #3f3f46;
+    font-size: 13px;
+    line-height: 1;
+    background: none;
+    border: none;
+    padding: 1px 2px;
+    transition: color 0.1s;
+  }
+  .token-remove:hover {
+    color: #ef4444;
+  }
+
+  /* Node tray */
+  .tray-chip {
     border: 1px solid transparent;
     background: rgba(255, 255, 255, 0.04);
     color: #71717a;
   }
-  .filter-chip:hover {
-    background: rgba(255, 255, 255, 0.07);
-    color: #a1a1aa;
+  .tray-chip:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    color: #d4d4d8;
   }
-  .node-chip.node-active {
-    background: rgba(249, 115, 22, 0.14);
-    border-color: rgba(249, 115, 22, 0.4);
-    color: #fb923c;
-    box-shadow: 0 0 12px rgba(249, 115, 22, 0.12);
+  .tray-on-bench {
+    background: rgba(249, 115, 22, 0.12) !important;
+    border-color: rgba(249, 115, 22, 0.35) !important;
+    color: #fb923c !important;
   }
-  .tag-chip.tag-active {
-    background: rgba(6, 182, 212, 0.11);
-    border-color: rgba(6, 182, 212, 0.38);
-    color: #22d3ee;
-    box-shadow: 0 0 12px rgba(6, 182, 212, 0.1);
+  .tray-full {
+    opacity: 0.3;
+    cursor: not-allowed !important;
   }
 
-  .filter-summary-bar {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-  }
-
-  /* Grid */
+  /* ── Cards ── */
   .sparks-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(295px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
   }
 
-  /* Card */
   .spark-card {
     position: relative;
-    background: #101012;
+    background: #0f0f11;
     border: 1px solid rgba(255, 255, 255, 0.065);
-    border-radius: 10px;
-    padding: 1.2rem;
+    border-radius: 8px;
+    padding: 1rem;
     transition:
-      border-color 0.2s ease,
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
+      border-color 0.2s,
+      box-shadow 0.2s,
+      opacity 0.2s;
     overflow: hidden;
   }
   .spark-card:hover {
-    border-color: rgba(249, 115, 22, 0.22);
-    transform: translateY(-2px);
-    box-shadow:
-      0 12px 40px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(249, 115, 22, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+  .spark-full-match {
+    border-color: rgba(249, 115, 22, 0.25) !important;
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.06);
+  }
+  .spark-full-match:hover {
+    border-color: rgba(249, 115, 22, 0.4) !important;
+    box-shadow: 0 4px 24px rgba(249, 115, 22, 0.1);
+  }
+  .spark-partial {
+    opacity: 0.65;
+  }
+  .spark-partial:hover {
+    opacity: 0.9;
   }
 
   .card-accent-line {
@@ -504,49 +845,28 @@
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(249, 115, 22, 0.4) 50%,
-      transparent 100%
-    );
-    opacity: 0;
-    transition: opacity 0.25s ease;
+    background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.5), transparent);
   }
-  .spark-card:hover .card-accent-line {
-    opacity: 1;
+
+  .spark-submit-ghost {
+    border-style: dashed !important;
+    border-color: rgba(255, 255, 255, 0.06) !important;
+    background: transparent !important;
   }
 
   /* Node pills on cards */
   .node-pill {
-    background: rgba(255, 255, 255, 0.05);
-    color: #71717a;
+    background: rgba(255, 255, 255, 0.04);
+    color: #52525b;
     border: 1px solid transparent;
   }
   .node-pill:hover {
-    background: rgba(249, 115, 22, 0.1);
+    background: rgba(249, 115, 22, 0.08);
     color: #fb923c;
   }
   .node-pill-active {
-    background: rgba(249, 115, 22, 0.15);
+    background: rgba(249, 115, 22, 0.12);
     color: #fb923c;
-    border: 1px solid rgba(249, 115, 22, 0.35);
-  }
-
-  /* Tag pills on cards */
-  .tag-pill {
-    border-color: rgba(255, 255, 255, 0.08);
-    color: #52525b;
-    background: transparent;
-  }
-  .tag-pill:hover {
-    border-color: rgba(6, 182, 212, 0.3);
-    color: #22d3ee;
-    background: rgba(6, 182, 212, 0.06);
-  }
-  .tag-pill-active {
-    border-color: rgba(6, 182, 212, 0.38);
-    color: #22d3ee;
-    background: rgba(6, 182, 212, 0.09);
+    border: 1px solid rgba(249, 115, 22, 0.3);
   }
 </style>
