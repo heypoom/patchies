@@ -1326,6 +1326,16 @@ export class FBORenderer {
     this.previewRenderer.setVisibleNodes(nodeIds);
   }
 
+  /** Globally enable/disable all previews */
+  setAllPreviewsDisabled(disabled: boolean) {
+    this.previewRenderer.setAllPreviewsDisabled(disabled);
+  }
+
+  /** Update preview readback resolution. Called only when LOD tier changes. */
+  setPreviewScaleMultiplier(multiplier: number) {
+    this.previewRenderer.setPreviewScaleMultiplier(multiplier, PREVIEW_SCALE_FACTOR);
+  }
+
   /** Enable/disable all profiling (per-node draw timing + frame stats). */
   public setProfilingEnabled(enabled: boolean) {
     this.profiler.setEnabled(enabled);

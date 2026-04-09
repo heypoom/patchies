@@ -35,7 +35,8 @@ export class PreviewRenderer {
   // Preview state
   private previewState: PreviewState = {};
   private previewRoundRobinIndex = 0;
-  private visibleNodes: Set<string> = new Set();
+  private visibleNodes: Set<string> | null = null;
+  private allPreviewsDisabled = false;
 
   // Throttling configuration
   public maxPreviewsPerFrame = DEFAULT_MAX_PREVIEWS_PER_FRAME_WITH_OUTPUT;
@@ -44,6 +45,9 @@ export class PreviewRenderer {
   // Frame rate limiting for previews (in ms)
   private previewIntervalMs = Math.round(1000 / DEFAULT_PREVIEW_MAX_FPS_CAP);
   private lastPreviewTime = 0;
+
+  // Reusable result map to avoid per-frame allocation
+  private frameResults: Map<string, ImageBitmap> = new Map();
 
   // PBO async read state
   private pendingReads: PendingRead[] = [];
@@ -79,6 +83,22 @@ export class PreviewRenderer {
     this.visibleNodes = nodeIds;
   }
 
+  /** Globally enable/disable all previews */
+  setAllPreviewsDisabled(disabled: boolean): void {
+    this.allPreviewsDisabled = disabled;
+  }
+
+  /** Update preview readback resolution. Called only when LOD tier changes (gated by sender). */
+  setPreviewScaleMultiplier(multiplier: number, baseScaleFactor: number): void {
+    const [outW, outH] = this.service.outputSize;
+    const scaleFactor = baseScaleFactor * multiplier || 1;
+
+    this.service.setPreviewSize(
+      Math.max(1, Math.floor(outW / scaleFactor)),
+      Math.max(1, Math.floor(outH / scaleFactor))
+    );
+  }
+
   removeNode(nodeId: string): void {
     delete this.previewState[nodeId];
 
@@ -110,7 +130,14 @@ export class PreviewRenderer {
     isOutputEnabled: boolean,
     getCustomSize?: (nodeId: string) => [number, number] | undefined
   ): Map<string, ImageBitmap> {
-    const results = new Map<string, ImageBitmap>();
+    const results = this.frameResults;
+    results.clear();
+
+    // Bail early if all previews are globally disabled
+    if (this.allPreviewsDisabled) {
+      this.clearPendingReads();
+      return results;
+    }
 
     // Step 1: Harvest any completed reads (non-blocking)
     this.harvestCompletedReads(results);
@@ -276,11 +303,11 @@ export class PreviewRenderer {
   // ===== Helpers =====
 
   private selectNodesForFrame(enabledPreviews: string[], maxLimit: number): string[] {
-    // Filter to only visible nodes (fallback to all if visibleNodes is empty)
+    // Filter to only visible nodes (fallback to all if visibleNodes not yet set)
     const visibleEnabledPreviews =
-      this.visibleNodes.size === 0
+      this.visibleNodes === null
         ? enabledPreviews
-        : enabledPreviews.filter((nodeId) => this.visibleNodes.has(nodeId));
+        : enabledPreviews.filter((nodeId) => this.visibleNodes!.has(nodeId));
 
     if (maxLimit <= 0 || visibleEnabledPreviews.length <= maxLimit) {
       return visibleEnabledPreviews;
@@ -299,6 +326,19 @@ export class PreviewRenderer {
   }
 
   // ===== Cleanup =====
+
+  /** Free all in-flight PBO reads, returning buffers to the pool. */
+  private clearPendingReads(): void {
+    if (this.pendingReads.length === 0) return;
+
+    for (const pending of this.pendingReads) {
+      this.gl.deleteSync(pending.sync);
+      this.service.returnPbo(pending.pbo);
+    }
+
+    this.pendingReads = [];
+    this.pendingNodeIds.clear();
+  }
 
   destroy(): void {
     // Clean up pending reads

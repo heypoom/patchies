@@ -74,6 +74,12 @@ self.onmessage = (event) => {
     .with('setVisibleNodes', () => {
       fboRenderer.setVisibleNodes(new Set(data.nodeIds as string[]));
     })
+    .with('setAllPreviewsDisabled', () => {
+      fboRenderer.setAllPreviewsDisabled(data.disabled as boolean);
+    })
+    .with('setPreviewScaleMultiplier', () => {
+      fboRenderer.setPreviewScaleMultiplier(data.multiplier as number);
+    })
     .with('vfsUrlResolved', () => {
       handleVfsUrlResolved(data);
     })
