@@ -154,7 +154,7 @@ export class ViewportCullingManager {
     screenWidth: number,
     screenHeight: number
   ): Set<string> | null {
-    this.lastUpdateTime = 0;
+    this.lastUpdateTime = -Infinity;
 
     return this.updateVisibleNodes(viewport, nodes, screenWidth, screenHeight);
   }

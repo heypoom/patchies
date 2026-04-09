@@ -91,9 +91,12 @@ export class PreviewRenderer {
   /** Update preview readback resolution. Called only when LOD tier changes (gated by sender). */
   setPreviewScaleMultiplier(multiplier: number, baseScaleFactor: number): void {
     const [outW, outH] = this.service.outputSize;
-    const scaleFactor = baseScaleFactor * multiplier;
+    const scaleFactor = baseScaleFactor * multiplier || 1;
 
-    this.service.setPreviewSize(Math.floor(outW / scaleFactor), Math.floor(outH / scaleFactor));
+    this.service.setPreviewSize(
+      Math.max(1, Math.floor(outW / scaleFactor)),
+      Math.max(1, Math.floor(outH / scaleFactor))
+    );
   }
 
   removeNode(nodeId: string): void {
@@ -131,7 +134,10 @@ export class PreviewRenderer {
     results.clear();
 
     // Bail early if all previews are globally disabled
-    if (this.allPreviewsDisabled) return results;
+    if (this.allPreviewsDisabled) {
+      this.clearPendingReads();
+      return results;
+    }
 
     // Step 1: Harvest any completed reads (non-blocking)
     this.harvestCompletedReads(results);
@@ -320,6 +326,19 @@ export class PreviewRenderer {
   }
 
   // ===== Cleanup =====
+
+  /** Free all in-flight PBO reads, returning buffers to the pool. */
+  private clearPendingReads(): void {
+    if (this.pendingReads.length === 0) return;
+
+    for (const pending of this.pendingReads) {
+      this.gl.deleteSync(pending.sync);
+      this.service.returnPbo(pending.pbo);
+    }
+
+    this.pendingReads = [];
+    this.pendingNodeIds.clear();
+  }
 
   destroy(): void {
     // Clean up pending reads

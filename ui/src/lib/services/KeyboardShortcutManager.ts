@@ -269,7 +269,14 @@ export class KeyboardShortcutManager {
     }
 
     // Shift+P: Toggle all previews
-    if (key === 'p' && event.shiftKey && !isMod && !isTyping && !isInteractiveFocus()) {
+    if (
+      key === 'p' &&
+      event.shiftKey &&
+      !isMod &&
+      !isTyping &&
+      !isInteractiveFocus() &&
+      !event.repeat
+    ) {
       event.preventDefault();
       this.actions.toggleAllPreviews();
 
