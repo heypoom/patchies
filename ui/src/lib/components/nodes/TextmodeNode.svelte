@@ -42,7 +42,6 @@
       showConsole?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
-      _runRevision?: number;
     };
     selected?: boolean;
   } = $props();
@@ -257,10 +256,7 @@
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
 
-      const runRevision = (data._runRevision ?? 0) + 1;
-
-      updateNodeData(nodeId, { _runRevision: runRevision });
-      glSystem.upsertNode(nodeId, 'textmode', { code: data.code, _runRevision: runRevision });
+      glSystem.upsertNode(nodeId, 'textmode', { code: data.code, _runRevision: Date.now() });
     } catch (error) {
       logger.error(`[textmode] update textmode error:`, error);
     }

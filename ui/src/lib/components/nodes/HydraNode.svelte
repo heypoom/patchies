@@ -39,7 +39,6 @@
       showConsole?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
-      _runRevision?: number;
     };
   } = $props();
 
@@ -225,10 +224,7 @@
       messageContext.clearTimers();
       audioAnalysisSystem.disableFFT(nodeId);
 
-      const runRevision = (data._runRevision ?? 0) + 1;
-
-      updateNodeData(nodeId, { _runRevision: runRevision });
-      glSystem.upsertNode(nodeId, 'hydra', { code, _runRevision: runRevision });
+      glSystem.upsertNode(nodeId, 'hydra', { code, _runRevision: Date.now() });
     } catch (error) {
       // Note: Most errors will be caught by the worker and sent via consoleOutput
       console.error('Hydra update error:', error);

@@ -165,7 +165,7 @@
       ...data,
       glUniformDefs: nextDefs,
       uniformValues: pruned,
-      _runRevision: (data._runRevision ?? 0) + 1
+      _runRevision: Date.now()
     };
 
     // Remove edges with invalid uniform names before updating

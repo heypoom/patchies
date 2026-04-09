@@ -43,7 +43,6 @@
       paused?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
-      _runRevision?: number;
     };
     selected?: boolean;
   } = $props();
@@ -261,10 +260,7 @@
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
 
-      const runRevision = (data._runRevision ?? 0) + 1;
-
-      updateNodeData(nodeId, { _runRevision: runRevision });
-      glSystem.upsertNode(nodeId, 'canvas', { code: data.code, _runRevision: runRevision });
+      glSystem.upsertNode(nodeId, 'canvas', { code: data.code, _runRevision: Date.now() });
     } catch (error) {
       logger.error(`[canvas] update canvas error:`, error);
     }
