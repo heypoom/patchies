@@ -1190,14 +1190,6 @@ export class FBORenderer {
     const transportTime = this.transportTime?.seconds ?? this.lastTime;
 
     fboNode.framebuffer.use(() => {
-      // For MRT nodes, regl's framebuffer.use() resets drawBuffers to [COLOR_ATTACHMENT0].
-      // Re-apply after bind so all attachments receive fragment shader output.
-      if (fboNode.colorAttachments.length > 1) {
-        const gl = this.gl;
-
-        gl.drawBuffers(fboNode.colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
-      }
-
       this.drawProfiler.measure(node.id, 'draw', () => {
         fboNode.render({
           prevTransportTime: this.prevTransportTime,
