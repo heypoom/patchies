@@ -225,25 +225,6 @@ See [Clock API](/docs/clock-api) for the full scheduling reference.
 
 ---
 
-## Presentation
-
-Control how other objects appear in the patch. Use `Ctrl/Cmd + Shift + C` to copy an object's ID, and `Shift + Drag` to select multiple.
-
-```javascript
-// Pan and zoom the canvas to focus on specific objects
-focusObjects({ nodes: [{ id: 'canvas-1' }], duration: 800, padding: 0.3 });
-
-// Set a visual object as the fullscreen background output
-setBackgroundOutput('canvas-1');
-setBackgroundOutput(null); // clear it
-
-// Pause / unpause objects by ID
-pauseObject('p5-1');
-unpauseObject('p5-1');
-```
-
----
-
 ## AI
 
 Call the configured AI provider directly from your patch:
@@ -299,6 +280,31 @@ const { uniq } = await esm("lodash-es");
 
 ---
 
+## Shared Libraries
+
+![Shared JavaScript libraries example](/content/images/patchies-js-modules.png)
+
+Share code between multiple `js` objects using the `// @lib <name>` comment at the top of a js object. This turns it into a library that others can import from:
+
+```javascript
+// In a js object — add "// @lib utils" at the very top
+// @lib utils
+export const rand = (min, max) => Math.random() * (max - min) + min;
+export class Vector { /* ... */ }
+```
+
+```javascript
+// In any other js object
+import { rand, Vector } from 'utils';
+console.log(rand(0, 10));
+```
+
+The library object shows a package icon in the patch. Any change to it automatically re-runs all importers.
+
+> **Note**: Top-level variables are *not* shared between objects — each object has its own isolated scope. Use message passing or named channels to communicate values between objects at runtime.
+
+---
+
 ## Virtual Filesystem
 
 Load images, videos, fonts, and other files from the patch's virtual filesystem:
@@ -332,28 +338,42 @@ See [Data Storage](/docs/data-storage) for more.
 
 ---
 
-## Shared Libraries
+## Presentation
 
-![Shared JavaScript libraries example](/content/images/patchies-js-modules.png)
-
-Share code between multiple `js` objects using the `// @lib <name>` comment at the top of a js object. This turns it into a library that others can import from:
+Control how other objects appear in the patch. Use `Ctrl/Cmd + Shift + C` to copy an object's ID, and `Shift + Drag` to select multiple.
 
 ```javascript
-// In a js object — add "// @lib utils" at the very top
-// @lib utils
-export const rand = (min, max) => Math.random() * (max - min) + min;
-export class Vector { /* ... */ }
+// Pan and zoom the canvas to focus on specific objects
+focusObjects({ nodes: [{ id: 'canvas-1' }], duration: 800, padding: 0.3 });
+
+// Set a visual object as the fullscreen background output
+setBackgroundOutput('canvas-1');
+setBackgroundOutput(null); // clear it
+
+// Pause / unpause objects by ID
+pauseObject('p5-1');
+unpauseObject('p5-1');
 ```
+
+---
+
+## Float Texture Format
+
+Visual objects (`hydra`, `canvas`, `three`, `regl`, `swgl`, `textmode`) output 8-bit RGBA textures by default, clamping values to 0–1. Call `setTextureFormat()` to switch to float precision:
 
 ```javascript
-// In any other js object
-import { rand, Vector } from 'utils';
-console.log(rand(0, 10));
+setTextureFormat('rgba32f');
 ```
 
-The library object shows a package icon in the patch. Any change to it automatically re-runs all importers.
+| Format | Precision | Range | Use case |
+|--------|-----------|-------|----------|
+| `rgba8` | 8-bit | 0–1 | Default. Color, visual output |
+| `rgba16f` | 16-bit float | ±65504 | HDR, moderate-precision data |
+| `rgba32f` | 32-bit float | full float | GPGPU, physics, positions |
 
-> **Note**: Top-level variables are *not* shared between objects — each object has its own isolated scope. Use message passing or named channels to communicate values between objects at runtime.
+Call once at init — not per-frame. Downstream nodes sample the texture the same way regardless of format.
+
+> **Tip**: For `glsl` and `swgl` nodes, you can also use the `// @format rgba32f` comment directive instead.
 
 ---
 
