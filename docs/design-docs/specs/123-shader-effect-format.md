@@ -44,8 +44,8 @@ With optional metadata for richer UX:
 ```glsl
 // @title Chromatic Aberration
 // @type effect
-// @param float strength 0.01 0.0 0.1 "Aberration strength"
-// @param float samples 8.0 2.0 32.0 "Sample count"
+// @param strength 0.01 0.0 0.1 "Aberration strength"
+// @param samples 8.0 2.0 32.0 "Sample count"
 
 vec4 chromaticAberration(vec2 uv, sampler2D input, float strength, float samples) {
     // ... same code
@@ -82,7 +82,7 @@ This spec adds effect-specific directives on top:
 
 ```
 // @title human-readable name         (spec 125 — works in any GLSL node)
-// @param <type> <name> <default> [min] [max] ["description"]  (spec 125 — works in any GLSL node)
+// @param <name> <default> [min] [max] ["description"]  (spec 125 — works in any GLSL node)
 // @type generator|effect|combiner|coordinate|color|material  (default: inferred from signature)
 // @slot <type> <name> ["description"]  (material slots with semantic meaning)
 // @depend <include_path>              (auto-includes another file)
@@ -361,8 +361,8 @@ VFS files with `@hydra` auto-register as Hydra transforms on patch load. The fil
 // user://hydra-effects/crystal-noise.glsl
 // @hydra crystalNoise
 // @type src
-// @param float scale 4.0
-// @param float speed 0.1
+// @param scale 4.0
+// @param speed 0.1
 
 #include <lygia/generative/snoise>
 return vec4(vec3(snoise(vec3(_st * scale, time * speed))), 1.0);

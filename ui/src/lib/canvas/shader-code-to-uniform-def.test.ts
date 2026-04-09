@@ -159,39 +159,40 @@ describe('parseShaderName', () => {
 
 describe('parseShaderDirectives', () => {
   it('parses @param with all fields', () => {
-    const code = '// @param float strength 0.01 0.0 0.1 "Aberration strength"';
+    const code = '// @param strength 0.01 0.0 0.1 "Aberration strength"';
     const directives = parseShaderDirectives(code);
     const param = directives.params.get('strength');
 
     expect(param).toEqual({
-      type: 'float',
       name: 'strength',
-      default: 0.01,
+      default: '0.01',
       min: 0.0,
       max: 0.1,
       description: 'Aberration strength'
     });
   });
 
-  it('parses @param with only type and name', () => {
-    const directives = parseShaderDirectives('// @param float gain');
+  it('parses @param with only name', () => {
+    const directives = parseShaderDirectives('// @param gain');
 
-    expect(directives.params.get('gain')).toEqual({ type: 'float', name: 'gain' });
+    expect(directives.params.get('gain')).toEqual({ name: 'gain' });
   });
 
-  it('parses @param for bool', () => {
-    const directives = parseShaderDirectives('// @param bool invert true "Invert output"');
-    const param = directives.params.get('invert');
+  it('parses @param for bool (coerced at merge time)', () => {
+    const code = `
+// @param invert true "Invert output"
+uniform bool invert;
+`;
+    const defs = shaderCodeToUniformDefs(code);
 
-    expect(param).toMatchObject({ type: 'bool', default: true, description: 'Invert output' });
-    expect(param?.min).toBeUndefined();
+    expect(defs[0]).toMatchObject({ name: 'invert', default: true, description: 'Invert output' });
   });
 
   it('parses multiple directives together', () => {
     const code = `
 // @title My Shader
-// @param float x 0.5 0.0 1.0 "X value"
-// @param int y 5 1 10 "Y value"
+// @param x 0.5 0.0 1.0 "X value"
+// @param y 5 1 10 "Y value"
 `;
     const directives = parseShaderDirectives(code);
 
@@ -203,7 +204,7 @@ describe('parseShaderDirectives', () => {
 
   it('merges @param metadata into uniform defs', () => {
     const code = `
-// @param float strength 0.01 0.0 0.1 "Aberration strength"
+// @param strength 0.01 0.0 0.1 "Aberration strength"
 uniform float strength; // 0.01
 uniform float other; // 1.0
 `;
@@ -211,6 +212,7 @@ uniform float other; // 1.0
 
     expect(defs[0]).toMatchObject({
       name: 'strength',
+      default: 0.01,
       min: 0.0,
       max: 0.1,
       description: 'Aberration strength'

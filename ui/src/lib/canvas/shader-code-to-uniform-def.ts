@@ -3,9 +3,10 @@ import type { GLUniformDef } from '../../types/uniform-config';
 import type { SettingsField } from '$lib/settings/types';
 
 export interface ParamDirective {
-  type: string;
   name: string;
-  default?: number | boolean;
+
+  /** Raw default string — coerced to number/boolean at merge time based on uniform type */
+  default?: string;
 
   min?: number;
   max?: number;
@@ -18,8 +19,35 @@ export interface ShaderDirectives {
 }
 
 const DIRECTIVE_RE = /^[ \t]*\/\/\s*@(title|param)\s+(.+)$/gm;
-const PARAM_RE =
-  /^(\w+)\s+(\w+)(?:\s+(-?[\w.]+))?(?:\s+(-?[\d.]+))?(?:\s+(-?[\d.]+))?(?:\s+"([^"]*)")?$/;
+
+// @param name [default] [min] [max] ["description"]
+const PARAM_RE = /^(\w+)(?:\s+(-?[\w.]+))?(?:\s+(-?[\d.]+))?(?:\s+(-?[\d.]+))?(?:\s+"([^"]*)")?$/;
+
+function parseParamDirective(value: string): ParamDirective | null {
+  const match = PARAM_RE.exec(value);
+  if (!match) return null;
+
+  const [, name, defaultValue, minValue, maxValue, description] = match;
+  const param: ParamDirective = { name };
+
+  if (defaultValue != null) {
+    param.default = defaultValue;
+  }
+
+  if (minValue != null) {
+    param.min = parseFloat(minValue);
+  }
+
+  if (maxValue != null) {
+    param.max = parseFloat(maxValue);
+  }
+
+  if (description != null) {
+    param.description = description;
+  }
+
+  return param;
+}
 
 export function parseShaderDirectives(code: string): ShaderDirectives {
   const result: ShaderDirectives = { params: new Map() };
@@ -35,33 +63,10 @@ export function parseShaderDirectives(code: string): ShaderDirectives {
     if (directive === 'title' && !result.name) {
       result.name = value;
     } else if (directive === 'param') {
-      const paramMatch = PARAM_RE.exec(value);
-      if (!paramMatch) continue;
+      const param = parseParamDirective(value);
+      if (!param) continue;
 
-      const [, type, name, defaultVal, minVal, maxVal, description] = paramMatch;
-      const param: ParamDirective = { type, name };
-
-      if (type === 'bool') {
-        if (defaultVal != null) {
-          param.default = defaultVal === 'true' || defaultVal === '1';
-        }
-      } else {
-        if (defaultVal != null) {
-          param.default = parseFloat(defaultVal);
-        }
-
-        if (minVal != null) {
-          param.min = parseFloat(minVal);
-        }
-
-        if (maxVal != null) {
-          param.max = parseFloat(maxVal);
-        }
-      }
-
-      if (description != null) param.description = description;
-
-      result.params.set(name, param);
+      result.params.set(param.name, param);
     }
   }
 
@@ -92,7 +97,12 @@ export function shaderCodeToUniformDefs(code: string): GLUniformDef[] {
       name,
       type,
       ...(arraySize !== undefined && { arraySize }),
-      ...(param?.default != null && { default: param.default }),
+      ...(param?.default != null && {
+        default:
+          type === 'bool'
+            ? param.default === 'true' || param.default === '1'
+            : parseFloat(param.default)
+      }),
       ...(param?.min != null && { min: param.min }),
       ...(param?.max != null && { max: param.max }),
       ...(param?.description != null && { description: param.description })

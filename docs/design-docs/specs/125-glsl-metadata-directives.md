@@ -33,10 +33,10 @@ Only the first `@title` directive is used.
 Enriches a uniform's settings slider with range, step, and description.
 
 ```glsl
-// @param float strength 0.01 0.0 0.1 "Aberration strength"
-// @param float samples 8.0 2.0 32.0 "Sample count"
-// @param int octaves 5 1 16 "Noise octaves"
-// @param bool invert false "Invert output"
+// @param strength 0.01 0.0 0.1 "Aberration strength"
+// @param samples 8.0 2.0 32.0 "Sample count"
+// @param octaves 5 1 16 "Noise octaves"
+// @param invert false "Invert output"
 
 uniform float strength; // 0.01
 uniform float samples;  // 8.0
@@ -44,11 +44,12 @@ uniform int octaves;    // 5
 uniform bool invert;    // false
 ```
 
-**Format**: `// @param <type> <name> [default] [min] [max] ["description"]`
+**Format**: `// @param <name> [default] [min] [max] ["description"]`
+
+Each `@param` must have a matching `uniform` declaration — the type is inferred from it.
 
 | Field         | Required | Description                                    |
 | ------------- | -------- | ---------------------------------------------- |
-| `type`        | yes      | `float`, `int`, or `bool`                      |
 | `name`        | yes      | Must match a `uniform` declaration in the code |
 | `default`     | no       | Default value (overrides inline comment value)  |
 | `min`         | no       | Minimum slider value                            |
@@ -171,8 +172,8 @@ Node title: "glsl". Settings panel: two unbounded number inputs labeled "strengt
 
 ```glsl
 // @title Chromatic Aberration
-// @param float strength 0.01 0.0 0.1 "Aberration strength"
-// @param float samples 8.0 2.0 32.0 "Sample count"
+// @param strength 0.01 0.0 0.1 "Aberration strength"
+// @param samples 8.0 2.0 32.0 "Sample count"
 
 uniform float strength; // 0.01
 uniform float samples;  // 8.0
