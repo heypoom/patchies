@@ -99,9 +99,9 @@ describe('uniformDefsToSettingsSchema', () => {
     expect(uniformDefsToSettingsSchema([{ name: 'u_tex', type: 'sampler2D' }])).toEqual([]);
   });
 
-  it('generates slider field when min/max are present', () => {
+  it('generates slider field when min/max are present with default', () => {
     const fields = uniformDefsToSettingsSchema([
-      { name: 'strength', type: 'float', min: 0.0, max: 1.0 }
+      { name: 'strength', type: 'float', default: 0.5, min: 0.0, max: 1.0 }
     ]);
 
     expect(fields).toEqual([
@@ -109,7 +109,7 @@ describe('uniformDefsToSettingsSchema', () => {
         key: 'strength',
         label: 'strength',
         type: 'slider',
-        default: 0,
+        default: 0.5,
         min: 0.0,
         max: 1.0,
         step: 0.01,

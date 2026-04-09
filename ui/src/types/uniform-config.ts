@@ -17,6 +17,7 @@ export interface GLUniformDef {
   arraySize?: number;
 
   /** From `// @param` directive */
+  default?: number | boolean;
   min?: number;
   max?: number;
   description?: string;

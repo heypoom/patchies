@@ -92,6 +92,7 @@ export function shaderCodeToUniformDefs(code: string): GLUniformDef[] {
       name,
       type,
       ...(arraySize !== undefined && { arraySize }),
+      ...(param?.default != null && { default: param.default }),
       ...(param?.min != null && { min: param.min }),
       ...(param?.max != null && { max: param.max }),
       ...(param?.description != null && { description: param.description })
@@ -110,7 +111,7 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
               key: def.name,
               label: def.description ?? def.name,
               type: 'slider' as const,
-              default: 0,
+              default: (def.default as number) ?? 0,
               min: def.min,
               max: def.max,
               step: 0.01,
@@ -120,7 +121,7 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
               key: def.name,
               label: def.description ?? def.name,
               type: 'number' as const,
-              default: 0,
+              default: (def.default as number) ?? 0,
               step: 0.01,
               persistence: 'node' as const
             }
@@ -131,7 +132,7 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
               key: def.name,
               label: def.description ?? def.name,
               type: 'slider' as const,
-              default: 0,
+              default: (def.default as number) ?? 0,
               min: def.min,
               max: def.max,
               step: 1,
@@ -141,7 +142,7 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
               key: def.name,
               label: def.description ?? def.name,
               type: 'number' as const,
-              default: 0,
+              default: (def.default as number) ?? 0,
               step: 1,
               persistence: 'node' as const
             }
@@ -151,7 +152,7 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
           key: def.name,
           label: def.description ?? def.name,
           type: 'boolean' as const,
-          default: false,
+          default: (def.default as boolean) ?? false,
           persistence: 'node' as const
         }
       ])

@@ -53,13 +53,14 @@ function buildIncludeDecorations(view: EditorView): DecorationSet {
 
   for (let i = 1; i <= doc.lines; i++) {
     const line = doc.line(i);
+
     INCLUDE_LINE_RE.lastIndex = 0;
-    const m = INCLUDE_LINE_RE.exec(line.text);
 
-    if (!m) continue;
+    const match = INCLUDE_LINE_RE.exec(line.text);
+    if (!match) continue;
 
-    const fullMatch = m[0];
-    const directiveStart = line.from + m.index;
+    const fullMatch = match[0];
+    const directiveStart = line.from + match.index;
 
     // #include keyword
     const includeIdx = fullMatch.indexOf('#');
@@ -67,7 +68,7 @@ function buildIncludeDecorations(view: EditorView): DecorationSet {
     builder.add(directiveStart + includeIdx, hashIncludeEnd, includeDirectiveMark);
 
     // path portion (<...> or "...")
-    const pathChar = m[1] ? '<' : '"';
+    const pathChar = match[1] ? '<' : '"';
     const pathOffset = fullMatch.indexOf(pathChar);
     builder.add(directiveStart + pathOffset, directiveStart + fullMatch.length, includePathMark);
   }
@@ -80,9 +81,6 @@ const includeHighlightTheme = EditorView.baseTheme({
   '.cm-glsl-include-path, .cm-glsl-include-path *': { color: '#9ece6a !important' }
 });
 
-/**
- * Highlights `// @format rgba32f` directives that control FBO texture format.
- */
 /**
  * Highlights `// @title` and `// @param` metadata directives (spec 125).
  */
@@ -98,18 +96,22 @@ function buildMetadataDecorations(view: EditorView): DecorationSet {
   for (let i = 1; i <= doc.lines; i++) {
     const line = doc.line(i);
     METADATA_DIRECTIVE_RE.lastIndex = 0;
-    const m = METADATA_DIRECTIVE_RE.exec(line.text);
-    if (!m) continue;
 
-    const lineStart = line.from + m.index;
-    // @name or @param keyword
-    const kwStart = lineStart + m[0].indexOf(m[1]);
-    builder.add(kwStart, kwStart + m[1].length, metadataKeywordMark);
+    const match = METADATA_DIRECTIVE_RE.exec(line.text);
+    if (!match) continue;
+
+    const lineStart = line.from + match.index;
+
+    // @title or @param keyword
+    const keywordStart = lineStart + match[0].indexOf(match[1]);
+    builder.add(keywordStart, keywordStart + match[1].length, metadataKeywordMark);
+
     // value portion
-    const valStart = kwStart + m[1].length + 1;
-    const valEnd = lineStart + m[0].length;
-    if (valStart < valEnd) {
-      builder.add(valStart, valEnd, metadataValueMark);
+    const valueStart = keywordStart + match[1].length + 1;
+    const valueEnd = lineStart + match[0].length;
+
+    if (valueStart < valueEnd) {
+      builder.add(valueStart, valueEnd, metadataValueMark);
     }
   }
 

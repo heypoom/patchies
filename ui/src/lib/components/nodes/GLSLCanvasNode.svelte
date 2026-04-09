@@ -59,13 +59,13 @@
   let isPaused = $state(false);
   let editorReady = $state(false);
   let uniformValues = $state<Record<string, number | boolean>>(data.uniformValues ?? {});
-  const uniformsSchema = $derived(uniformDefsToSettingsSchema(data.glUniformDefs ?? []));
-
   let consoleRef = $state<{ clearConsole: () => void } | null>(null);
+  let shaderName = $state<string | undefined>(parseShaderName(data.code || ''));
   let lineErrors: Record<number, string[]> | undefined = $state(undefined);
 
   const code = $derived(data.code || '');
-  const shaderName = $derived(parseShaderName(code));
+  const uniformsSchema = $derived(uniformDefsToSettingsSchema(data.glUniformDefs ?? []));
+
   const errorLines = $derived(
     lineErrors
       ? Object.keys(lineErrors)
@@ -73,6 +73,7 @@
           .sort((a, b) => a - b)
       : undefined
   );
+
   let previousExecuteCode = $state<number | undefined>(undefined);
 
   // Detect if shader uses iMouse uniform (ignore comments)
@@ -172,15 +173,22 @@
     // Clear error line highlighting on re-run
     lineErrors = undefined;
 
+    // Update title from @title directive
+    shaderName = parseShaderName(data.code);
+
     // Construct uniform definitions from the shader code.
     const nextDefs = shaderCodeToUniformDefs(data.code);
 
-    // Prune saved uniform values for uniforms that no longer exist
-    const validNames = new Set(nextDefs.map((d) => d.name));
+    // Prune saved uniform values for uniforms that no longer exist,
+    // and seed missing values from @param defaults
     const pruned: Record<string, number | boolean> = {};
 
-    for (const [k, v] of Object.entries(uniformValues)) {
-      if (validNames.has(k)) pruned[k] = v;
+    for (const def of nextDefs) {
+      if (def.name in uniformValues) {
+        pruned[def.name] = uniformValues[def.name];
+      } else if (def.default != null) {
+        pruned[def.name] = def.default;
+      }
     }
 
     uniformValues = pruned;
@@ -199,6 +207,11 @@
 
     updateNodeData(nodeId, nextData);
     glSystem.upsertNode(nodeId, 'glsl', nextData, { force: true }); // force rebuild even if code hasn't changed
+
+    // Push uniform values (including @param defaults) to the GL system
+    for (const [name, value] of Object.entries(pruned)) {
+      glSystem.setUniformData(nodeId, name, value as UserUniformValue);
+    }
 
     // inform XYFlow that the handle has changed
     updateNodeInternals();
