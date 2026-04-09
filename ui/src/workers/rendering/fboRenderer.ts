@@ -149,9 +149,6 @@ export class FBORenderer {
   /** Video channel registry for send.vdo/recv.vdo wireless routing */
   public videoChannelRegistry = VideoChannelRegistry.getInstance();
 
-  /** Reusable passthrough draw command for video routing nodes */
-  private passthroughDraw: regl.DrawCommand | null = null;
-
   constructor() {
     const [width, height] = this.outputSize;
 
@@ -187,37 +184,6 @@ export class FBORenderer {
     // Create video texture manager
     this.videoTextures = new VideoTextureManager(this.regl, this.gl);
 
-    // Create passthrough draw command for video routing nodes
-    this.passthroughDraw = this.regl({
-      vert: `
-        precision mediump float;
-        attribute vec2 position;
-        varying vec2 uv;
-        void main() {
-          uv = position * 0.5 + 0.5;
-          gl_Position = vec4(position, 0, 1);
-        }
-      `,
-      frag: `
-        precision mediump float;
-        varying vec2 uv;
-        uniform sampler2D inputTexture;
-        void main() {
-          gl_FragColor = texture2D(inputTexture, uv);
-        }
-      `,
-      attributes: {
-        position: [-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]
-      },
-      uniforms: {
-        inputTexture: this.regl.prop<{ inputTexture: regl.Texture2D }, 'inputTexture'>(
-          'inputTexture'
-        )
-      },
-      count: 6,
-      framebuffer: this.regl.prop<{ framebuffer: regl.Framebuffer2D }, 'framebuffer'>('framebuffer')
-    });
-
     this.defineWorkerGlobals();
   }
 
@@ -243,6 +209,8 @@ export class FBORenderer {
       if (!newNodeIds.has(nodeId)) {
         fboNode.framebuffer.destroy();
         fboNode.texture.destroy();
+        fboNode.prevFramebuffer?.destroy();
+        fboNode.prevTexture?.destroy();
         fboNode.cleanup?.();
         this.fboNodes.delete(nodeId);
 
@@ -343,6 +311,8 @@ export class FBORenderer {
 
           existingFbo.framebuffer.destroy();
           existingFbo.texture.destroy();
+          existingFbo.prevFramebuffer?.destroy();
+          existingFbo.prevTexture?.destroy();
           this.fboNodes.delete(node.id);
         }
 
@@ -422,6 +392,26 @@ export class FBORenderer {
     }
 
     this.shouldProcessPreviews = this.previewRenderer.hasEnabledPreviews();
+
+    // Phase 4 (sync): allocate previous-frame textures for feedback nodes.
+    // Idempotent — skipped if the node already has a prevTexture from a prior build.
+    for (const nodeId of renderGraph.feedbackNodes) {
+      const fboNode = this.fboNodes.get(nodeId);
+      if (!fboNode || fboNode.prevTexture) continue;
+
+      fboNode.prevTexture = this.regl.texture({
+        width,
+        height,
+        wrapS: 'clamp',
+        wrapT: 'clamp'
+        // Defaults to all-zero (black transparent) — correct bootstrap behavior
+      });
+
+      fboNode.prevFramebuffer = this.regl.framebuffer({
+        color: fboNode.prevTexture,
+        depthStencil: false
+      });
+    }
   }
 
   // Some nodes are externally managed, e.g. the texture will be uploaded on it.
@@ -483,11 +473,13 @@ export class FBORenderer {
         const sourceFbo = this.fboNodes.get(sourceNodeId);
         if (!sourceFbo) return;
 
-        // Blit input texture to output framebuffer
-        this.passthroughDraw?.({
-          inputTexture: sourceFbo.texture,
-          framebuffer
-        });
+        // Blit input FBO to output framebuffer
+        const [w, h] = this.outputSize;
+        const gl = this.gl;
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFbo.framebuffer));
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(framebuffer));
+        gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       },
       cleanup: () => {
         // Unsubscribe from video channel when node is destroyed
@@ -1009,6 +1001,26 @@ export class FBORenderer {
       }
     }
 
+    // Blit current frame into prevFramebuffer for all feedback nodes.
+    //
+    // We blit instead of swapping pointers because each renderer closes over
+    // its framebuffer at creation time — swapping fboNode.framebuffer would
+    // leave the render function pointing at the wrong buffer, causing every
+    // other frame to read stale content (flickering). Blitting keeps
+    // fboNode.framebuffer as the stable write target while prevTexture always
+    // holds the previous frame's output for back-edge consumers.
+    for (const nodeId of this.renderGraph.feedbackNodes) {
+      const fboNode = this.fboNodes.get(nodeId);
+      if (!fboNode?.prevFramebuffer || !fboNode.prevTexture) continue;
+
+      const [w, h] = this.outputSize;
+      const gl = this.gl;
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(fboNode.framebuffer));
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffer));
+      gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+
     // Track previous transport time for iTimeDelta computation
     this.prevTransportTime = this.transportTime?.seconds ?? this.lastTime;
   }
@@ -1270,7 +1282,13 @@ export class FBORenderer {
       }
 
       if (inputFBO) {
-        textureMap.set(inletIndex, inputFBO.texture);
+        // For back-edge inlets (feedback loops), read from the previous frame's texture.
+        // This implements the 1-frame delay that prevents the cycle from deadlocking.
+        if (node.backEdgeInlets.has(inletIndex) && inputFBO.prevTexture) {
+          textureMap.set(inletIndex, inputFBO.prevTexture);
+        } else {
+          textureMap.set(inletIndex, inputFBO.texture);
+        }
       }
     }
 

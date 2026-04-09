@@ -224,11 +224,7 @@
       messageContext.clearTimers();
       audioAnalysisSystem.disableFFT(nodeId);
 
-      const isUpdated = glSystem.upsertNode(nodeId, 'hydra', { code });
-
-      // If the code hasn't changed, the code will not be re-run.
-      // This allows us to forcibly re-run hydra to update FFT.
-      if (!isUpdated) glSystem.send('updateHydra', { nodeId });
+      glSystem.upsertNode(nodeId, 'hydra', { code, _runRevision: Date.now() });
     } catch (error) {
       // Note: Most errors will be caught by the worker and sent via consoleOutput
       console.error('Hydra update error:', error);

@@ -30,7 +30,8 @@ export function filterFBOCompatibleGraph(
         inputs: [],
         outputs: [],
         inletMap: new Map(),
-        data: node.data
+        data: node.data,
+        backEdgeInlets: new Set()
       })
     );
 
@@ -64,6 +65,7 @@ export function filterFBOCompatibleGraph(
 
         if (inletMatch) {
           const inletIndex = parseInt(inletMatch[1], 10);
+
           targetNode.inletMap.set(inletIndex, edge.source);
         }
       }
@@ -74,30 +76,74 @@ export function filterFBOCompatibleGraph(
 }
 
 /**
- * Topological sort of nodes to determine render order
+ * Topological sort with feedback loop support.
+ *
+ * Cycles are handled by detecting back-edges during DFS. A back-edge is an
+ * edge whose source is already on the current DFS stack — meaning it completes
+ * a cycle. Back-edges are "broken" by routing them through the previous frame's
+ * texture instead of the current frame's (1-frame delay).
+ *
+ * Returns the sorted node IDs, the set of back-edge IDs, and the set of node
+ * IDs that need double-buffered FBOs (sources of back-edges).
+ *
+ * Also annotates each RenderNode's `backEdgeInlets` set in-place.
  */
-export function topologicalSort(nodes: RenderNode[]): string[] {
+export function topologicalSort(
+  nodes: RenderNode[],
+  edges: RenderEdge[]
+): { sortedNodes: string[]; backEdgeIds: Set<string>; feedbackNodeIds: Set<string> } {
   const visited = new Set<string>();
   const visiting = new Set<string>();
   const result: string[] = [];
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
-  function visit(nodeId: string): void {
-    if (visiting.has(nodeId)) {
-      throw new Error(`Circular dependency detected involving node ${nodeId}`);
-    }
+  const backEdgeIds = new Set<string>();
+  const feedbackNodeIds = new Set<string>();
 
-    if (visited.has(nodeId)) {
-      return;
+  // Build edge lookup: `${source}:${target}` → edge IDs (multiple edges can share same source/target)
+  const edgeLookup = new Map<string, string[]>();
+
+  for (const edge of edges) {
+    const key = `${edge.source}:${edge.target}`;
+    const existing = edgeLookup.get(key);
+
+    if (existing) {
+      existing.push(edge.id);
+    } else {
+      edgeLookup.set(key, [edge.id]);
     }
+  }
+
+  function visit(nodeId: string): void {
+    if (visited.has(nodeId)) return;
+    if (visiting.has(nodeId)) return; // cycle back-edge — handled by caller
 
     visiting.add(nodeId);
 
     const node = nodeMap.get(nodeId);
+
     if (node) {
-      // Visit all input nodes first
       for (const inputId of node.inputs) {
-        visit(inputId);
+        if (visiting.has(inputId)) {
+          // Back-edge detected: inputId (source) → nodeId (target) completes a cycle
+          feedbackNodeIds.add(inputId);
+
+          // Mark which inlets of this node connect to the feedback source
+          for (const [inletIndex, sourceId] of node.inletMap) {
+            if (sourceId === inputId) {
+              node.backEdgeInlets.add(inletIndex);
+            }
+          }
+
+          // Record edge IDs for the back-edge
+          const edgeIds = edgeLookup.get(`${inputId}:${nodeId}`);
+
+          if (edgeIds) {
+            for (const id of edgeIds) backEdgeIds.add(id);
+          }
+        } else {
+          visit(inputId);
+        }
       }
     }
 
@@ -106,36 +152,34 @@ export function topologicalSort(nodes: RenderNode[]): string[] {
     result.push(nodeId);
   }
 
-  // Visit all nodes
   for (const node of nodes) {
     if (!visited.has(node.id)) {
       visit(node.id);
     }
   }
 
-  return result;
+  return { sortedNodes: result, backEdgeIds, feedbackNodeIds };
 }
 
 /**
- * Build a complete render graph from XYFlow nodes and edges
+ * Build a complete render graph from XYFlow nodes and edges.
+ * Cycles are supported — back-edges get 1-frame delay via double-buffered FBOs.
  */
 export function buildRenderGraph(nodes: RNode[], edges: REdge[]): RenderGraph {
   const outputNodeId = findOutputNode(nodes, edges);
 
   const { nodes: renderNodes, edges: renderEdges } = filterFBOCompatibleGraph(nodes, edges);
 
-  try {
-    const sortedNodes = topologicalSort(renderNodes);
+  const { sortedNodes, backEdgeIds, feedbackNodeIds } = topologicalSort(renderNodes, renderEdges);
 
-    return {
-      nodes: renderNodes,
-      edges: renderEdges,
-      sortedNodes,
-      outputNodeId
-    };
-  } catch (error) {
-    return { nodes: [], edges: [], sortedNodes: [], outputNodeId: null };
-  }
+  return {
+    nodes: renderNodes,
+    edges: renderEdges,
+    sortedNodes,
+    outputNodeId,
+    backEdges: backEdgeIds,
+    feedbackNodes: feedbackNodeIds
+  };
 }
 
 /**

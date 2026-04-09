@@ -171,10 +171,7 @@
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
 
-      const isUpdated = glSystem.upsertNode(nodeId, 'swgl', { code });
-
-      // If code hasn't changed, force re-run
-      if (!isUpdated) glSystem.send('updateSwgl', { nodeId });
+      glSystem.upsertNode(nodeId, 'swgl', { code, _runRevision: Date.now() });
     } catch (error) {
       logger.error('[swgl] update error:', error);
     }

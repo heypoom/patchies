@@ -256,9 +256,7 @@
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
 
-      const isUpdated = glSystem.upsertNode(nodeId, 'regl', { code: data.code });
-
-      if (!isUpdated) glSystem.send('updateRegl', { nodeId });
+      glSystem.upsertNode(nodeId, 'regl', { code: data.code, _runRevision: Date.now() });
     } catch (error) {
       logger.error(`[regl] update regl error:`, error);
     }

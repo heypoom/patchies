@@ -11,6 +11,7 @@
   import { match } from 'ts-pattern';
   import { isBackgroundOutputCanvasEnabled } from '../../../stores/canvas.store';
   import { isCablesVisible } from '../../../stores/ui.store';
+  import { feedbackEdgeIds } from '../../../stores/renderer.store';
 
   let {
     id,
@@ -35,6 +36,8 @@
 
     return getEdgeTypes(sourceData, targetData, sourceHandleId ?? null, targetHandleId ?? null);
   });
+
+  const isFeedback = $derived($feedbackEdgeIds.has(id));
 
   const edgeClass = $derived.by(() => {
     const baseClass = match(type)
@@ -74,5 +77,7 @@
   path={edgePath}
   {markerEnd}
   class={edgeClass}
-  style={$isCablesVisible ? '' : 'display: none'}
+  style={[$isCablesVisible ? '' : 'display: none', isFeedback ? 'stroke-dasharray: 6 4' : '']
+    .filter(Boolean)
+    .join('; ')}
 />
