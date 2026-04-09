@@ -112,7 +112,22 @@ self.onmessage = (event) => {
     });
 };
 
+// Serializes buildFBOs calls: only one runs at a time, and if a new request
+// arrives while one is in-flight, the latest graph is queued and built after
+// the current build finishes. This prevents race conditions when setPortCount
+// messages trigger rebuilds during the initial build's async Phase 2.
+let buildInProgress = false;
+let pendingGraph: RenderGraph | null = null;
+
 async function handleBuildRenderGraph(graph: RenderGraph) {
+  if (buildInProgress) {
+    // A build is running — queue the latest graph (drop any previously queued one)
+    pendingGraph = graph;
+    return;
+  }
+
+  buildInProgress = true;
+
   try {
     await fboRenderer.buildFBOs(graph);
   } catch (error) {
@@ -121,6 +136,16 @@ async function handleBuildRenderGraph(graph: RenderGraph) {
         type: 'error',
         message: 'failed to build render graph: ' + error.message
       });
+    }
+  } finally {
+    buildInProgress = false;
+
+    // If a new graph was queued while we were building, build it now
+    if (pendingGraph) {
+      const next = pendingGraph;
+
+      pendingGraph = null;
+      handleBuildRenderGraph(next);
     }
   }
 }

@@ -4,6 +4,12 @@
 
 Core MRT is fully working. The one remaining known gap (dangling outlet edges after `mrtCount` decrease) has been fixed.
 
+### Bug fixes
+
+- **drawBuffers warning**: Removed redundant per-frame `gl.drawBuffers()` call from `renderFboNode`. In WebGL2, `drawBuffers` is per-FBO state set once during `buildFBOs` — regl never touches it (the `WEBGL_draw_buffers` extension doesn't exist on WebGL2 contexts). The per-frame call was hitting the default framebuffer when regl's state tracking was stale, producing "INVALID_OPERATION: drawBuffers: the number of buffers is not 1".
+
+- **Intermittent black outputs on load**: Serialized `buildFBOs` calls in `renderWorker.ts`. Previously, if a Hydra renderer's `setVideoCount()` triggered a rebuild during the initial build's async Phase 2, two `buildFBOs` ran concurrently with interleaving Phase 3 overwrites to `this.fboNodes`, leaving some nodes with stale or missing renderers.
+
 ---
 
 ## Problem
@@ -84,18 +90,26 @@ Creates `mrtCount` color attachments per node. For MRT nodes (mrtCount > 1), reg
 
 ```typescript
 // Allocate one texture per outlet
-colorAttachments = Array.from({ length: mrtCount }, () =>
-  this.regl.texture({ width, height, wrapS: 'clamp', wrapT: 'clamp' })
-);
+colorAttachments = Array.from({length: mrtCount}, () =>
+  this.regl.texture({width, height, wrapS: 'clamp', wrapT: 'clamp'}),
+)
 
 // Build framebuffer, then attach remaining textures via raw WebGL2
-const fb = this.regl.framebuffer({ color: colorAttachments[0], depthStencil: false });
+const fb = this.regl.framebuffer({
+  color: colorAttachments[0],
+  depthStencil: false,
+})
 for (let i = 1; i < colorAttachments.length; i++) {
-  gl.bindFramebuffer(gl.FRAMEBUFFER, getFramebuffer(fb));
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D,
-    getRawTexture(colorAttachments[i]), 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, getFramebuffer(fb))
+  gl.framebufferTexture2D(
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0 + i,
+    gl.TEXTURE_2D,
+    getRawTexture(colorAttachments[i]),
+    0,
+  )
 }
-gl.drawBuffers(colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
+gl.drawBuffers(colorAttachments.map((_, i) => gl.COLOR_ATTACHMENT0 + i))
 ```
 
 The `FBONode` type (`rendering/types.ts`) supports multiple color attachments:
@@ -124,17 +138,19 @@ export interface FBONode {
 `getInputTextureMap()` iterates `node.inletMap` which maps `inletIndex → { sourceNodeId, outletIndex }` and reads the correct color attachment:
 
 ```typescript
-for (const [inletIndex, { sourceNodeId, outletIndex }] of node.inletMap) {
-  const inputFBO = this.fboNodes.get(sourceNodeId);
+for (const [inletIndex, {sourceNodeId, outletIndex}] of node.inletMap) {
+  const inputFBO = this.fboNodes.get(sourceNodeId)
   if (inputFBO) {
     // For back-edge inlets (feedback loops), read from the previous frame's texture
     if (node.backEdgeInlets.has(inletIndex) && inputFBO.prevTextures?.length) {
-      const prevTex = inputFBO.prevTextures[outletIndex] ?? inputFBO.prevTextures[0];
-      textureMap.set(inletIndex, prevTex);
+      const prevTex =
+        inputFBO.prevTextures[outletIndex] ?? inputFBO.prevTextures[0]
+      textureMap.set(inletIndex, prevTex)
     } else {
       // Index into the correct color attachment for MRT sources
-      const texture = inputFBO.colorAttachments[outletIndex] ?? inputFBO.colorAttachments[0];
-      textureMap.set(inletIndex, texture);
+      const texture =
+        inputFBO.colorAttachments[outletIndex] ?? inputFBO.colorAttachments[0]
+      textureMap.set(inletIndex, texture)
     }
   }
 }
@@ -146,23 +162,26 @@ For feedback nodes in MRT mode, one `prevTexture`/`prevFramebuffer` pair is allo
 
 ```typescript
 fboNode.prevTextures = fboNode.colorAttachments.map(() =>
-  this.regl.texture({ width, height, wrapS: 'clamp', wrapT: 'clamp' })
-);
+  this.regl.texture({width, height, wrapS: 'clamp', wrapT: 'clamp'}),
+)
 fboNode.prevFramebuffers = fboNode.prevTextures.map((prevTexture) =>
-  this.regl.framebuffer({ color: prevTexture, depthStencil: false })
-);
+  this.regl.framebuffer({color: prevTexture, depthStencil: false}),
+)
 ```
 
 The blit loop iterates each attachment separately, switching the read buffer before each blit:
 
 ```typescript
-gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(fboNode.framebuffer));
+gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(fboNode.framebuffer))
 for (let i = 0; i < fboNode.prevFramebuffers.length; i++) {
-  gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
-  gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffers[i]));
-  gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+  gl.readBuffer(gl.COLOR_ATTACHMENT0 + i)
+  gl.bindFramebuffer(
+    gl.DRAW_FRAMEBUFFER,
+    getFramebuffer(fboNode.prevFramebuffers[i]),
+  )
+  gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST)
 }
-gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 ```
 
 #### `graphUtils.ts` — outlet index parsing ✓
@@ -188,9 +207,10 @@ function detectMrtCount(code: string): number {
   // Strip comments so commented-out declarations don't inflate the count
   const stripped = code
     .replace(/\/\/.*$/gm, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '');
+    .replace(/\/\*[\s\S]*?\*\//g, '')
   const locationRegex = /layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*out/g
-  let max = -1, match
+  let max = -1,
+    match
   while ((match = locationRegex.exec(stripped)) !== null) {
     max = Math.max(max, parseInt(match[1], 10))
   }
