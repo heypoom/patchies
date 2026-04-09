@@ -13,9 +13,15 @@ async function preprocessReglConfig(
   config: Record<string, unknown>,
   resolver: IncludeResolver
 ): Promise<Record<string, unknown>> {
-  if (!hasIncludes(config.frag) && !hasIncludes(config.vert)) return config;
+  // Trim frag/vert so `#version 300 es` lands on the first line even when
+  // the shader is written as an indented template literal.
+  const hasFrag = typeof config.frag === 'string';
+  const hasVert = typeof config.vert === 'string';
+  if (!hasFrag && !hasVert) return config;
 
   const result = { ...config };
+  if (hasFrag) result.frag = (result.frag as string).trim();
+  if (hasVert) result.vert = (result.vert as string).trim();
 
   if (hasIncludes(result.frag)) {
     result.frag = await processIncludes(result.frag, resolver);
