@@ -140,6 +140,18 @@ export class ViewportCullingManager {
     return true;
   }
 
+  /** Force an update, bypassing the throttle. */
+  forceUpdate(
+    viewport: { x: number; y: number; zoom: number },
+    nodes: Node[],
+    screenWidth: number,
+    screenHeight: number
+  ): Set<string> | null {
+    this.lastUpdateTime = 0;
+
+    return this.updateVisibleNodes(viewport, nodes, screenWidth, screenHeight);
+  }
+
   getVisibleNodes(): Set<string> {
     return this.cachedVisibleNodes;
   }

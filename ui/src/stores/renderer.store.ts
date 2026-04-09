@@ -11,6 +11,9 @@ export const overrideOutputNodeId = writable<string | null>(null);
 /** Edge IDs that are feedback back-edges (rendered dashed in the canvas). */
 export const feedbackEdgeIds = writable<Set<string>>(new Set());
 
+/** When true, all node previews are disabled (Shift+P toggle). */
+export const allPreviewsDisabled = writable(false);
+
 /** Available FPS cap options. 0 = unlimited (match display refresh rate). */
 export const FPS_CAP_OPTIONS = [0, 30, 60] as const;
 

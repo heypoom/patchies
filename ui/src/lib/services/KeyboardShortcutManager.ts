@@ -73,6 +73,7 @@ export interface KeyboardShortcutActions {
 
   // Node operations
   quickAddNode: () => void;
+  toggleAllPreviews: () => void;
 
   // State getters
   hasNodeSelected: () => boolean;
@@ -263,6 +264,14 @@ export class KeyboardShortcutManager {
     if (key === 'enter' && !this.actions.isCommandPaletteOpen() && !isTyping && !hasNodeSelected) {
       event.preventDefault();
       this.actions.quickAddNode();
+
+      return;
+    }
+
+    // Shift+P: Toggle all previews
+    if (key === 'p' && event.shiftKey && !isMod && !isTyping && !isInteractiveFocus()) {
+      event.preventDefault();
+      this.actions.toggleAllPreviews();
 
       return;
     }

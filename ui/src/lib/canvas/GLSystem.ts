@@ -873,6 +873,11 @@ export class GLSystem {
     this.send('setVisibleNodes', { nodeIds: Array.from(nodeIds) });
   }
 
+  /** Globally enable/disable all previews */
+  setAllPreviewsDisabled(disabled: boolean) {
+    this.send('setAllPreviewsDisabled', { disabled });
+  }
+
   /**
    * Check if a node has outgoing connections to GPU video nodes (glsl, hydra, swgl)
    * Used to optimize bitmap transfers - no need to send bitmaps if nothing consumes them

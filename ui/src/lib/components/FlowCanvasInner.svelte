@@ -86,6 +86,7 @@
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
   import { transportStore } from '../../stores/transport.store';
+  import { allPreviewsDisabled } from '../../stores/renderer.store';
   import { initializeVFS } from '$lib/vfs';
   import {
     HistoryManager,
@@ -369,8 +370,15 @@
   });
 
   // Update visible nodes for preview culling when viewport or nodes change
+  // 4a: skip previews when zoomed out below 40%
   $effect(() => {
     const currentViewport = viewport.current;
+
+    if (currentViewport.zoom < 0.4) {
+      glSystem.setVisibleNodes(new Set());
+      return;
+    }
+
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
     const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
 
@@ -605,6 +613,13 @@
         const position = screenToFlowPosition(lastMousePosition);
 
         nodeOps.createNode('object', position, undefined, { skipHistory: true });
+      },
+      toggleAllPreviews: () => {
+        const willDisable = !$allPreviewsDisabled;
+        $allPreviewsDisabled = willDisable;
+        glSystem.setAllPreviewsDisabled(willDisable);
+
+        toast.success(willDisable ? 'Previews disabled' : 'Previews enabled');
       },
       hasNodeSelected: () => selectedNodeIds.length > 0,
       hasTextSelection: () => !!window.getSelection()?.toString().trim(),
