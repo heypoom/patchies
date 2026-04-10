@@ -129,3 +129,80 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - vision.detect: Object detection with bounding boxes — emits { detections: [{label, score, boundingBox}], timestamp }
 - vision.gesture: Gesture recognition — emits { gestures: [{gesture, score, handedness, landmarks, worldLandmarks}], timestamp }
 - vision.classify: Image classification (EfficientNet Lite0, 1000 ImageNet classes) — emits { classifications: [{label, score}], timestamp }`;
+
+/**
+ * Compact object list for Sparks idea generation — names + brief purpose, no implementation detail.
+ */
+export const SPARKS_OBJECT_LIST = `## Visuals
+- p5: P5.js sketches — generative drawing, particle systems, interactive 2D graphics
+- canvas: High-performance HTML5 canvas (web worker) — great for heavy visual pipelines
+- hydra: Live video synthesis — feedback loops, texture blending, webcam warping
+- glsl: GLSL fragment shaders — pixel-level visual effects, raymarching, procedural textures
+- three: Three.js 3D graphics — meshes, lighting, cameras, 3D scenes
+- regl: Low-level GPU rendering — custom vertices, multi-pass, blend modes
+- projmap: Projection mapping — warp video onto surfaces with a built-in point editor
+
+## Audio Synthesis
+- osc~: Oscillator — sine, saw, square, triangle waves
+- noise~: White noise generator
+- phasor~: Ramp wave 0→1, useful for driving table lookups or LFOs
+- bytebeat~: One-expression algorithmic audio — t-based math formulas that generate sound
+- dsp~: Custom DSP with AudioWorklet — write your own sample-level processing in JS
+- elem~: Functional reactive audio with Elementary Audio
+- strudel: TidalCycles-style live coding — pattern-based music, polymeter, mini-notation
+- orca: Esoteric livecoding sequencer — 2D grid of operators that fire MIDI/messages
+
+## Audio Processing
+- gain~, pan~: Volume and stereo panning
+- delay~: Echo and delay lines
+- reverb~ (convolver~): Convolution reverb
+- lowpass~, highpass~, bandpass~, vcf~: Filters
+- compressor~: Dynamic range compression
+- waveshaper~: Wavefold and distortion
+- comb~: Comb filter — metallic resonance, Karplus-Strong-style sounds
+- adsr~: Attack-decay-sustain-release envelope
+- lfo~: Low-frequency oscillator for modulation
+
+## Audio Analysis
+- fft~: FFT spectrum analyzer — frequency bands drive visuals or routing
+- scope~: Oscilloscope — visualise waveforms in real time
+- meter~: Audio level meter
+
+## Audio I/O
+- mic~: Microphone input
+- out~: Speaker/headphone output
+- soundfile~: Load and play audio files
+- sampler~: Sample playback with pitch and trigger control
+- pads~: 16-pad drum sampler (GM drum map)
+
+## MIDI & Hardware
+- midi.in, midi.out: MIDI controller input/output
+- serial: WebSerial — communicate with Arduino, sensors, any serial device
+- serial.dmx: DMX-512 lighting output — send up to 512 channel values to DMX fixtures
+
+## Vision & Camera
+- webcam: Live webcam video input
+- screen: Screen capture input
+- vision.hand: Real-time hand skeleton tracking (21 landmarks per hand)
+- vision.body: Full-body pose estimation (33 body landmarks)
+- vision.face: Facial landmark mesh (478 points, blend shapes)
+- vision.gesture: Gesture recognition (thumbs up, peace sign, etc.)
+- vision.detect: Object detection with bounding boxes (1000 classes)
+- vision.segment: Body segmentation — separate person from background as a mask
+
+## Low-Level
+- asm: Virtual stack machine assembly — minimalist bytecode VM, send/receive messages
+- uxn: Uxn virtual machine — runs Uxntal programs, visual and interactive
+- wgpu.compute: WebGPU compute shaders (WGSL) — massively parallel data processing on GPU
+- uiua: UIUA stack based virtual machine
+
+## Scripting & Logic
+- js: JavaScript — full scripting, access to Patchies API (fft, send, recv, flash, etc.)
+- worker: JavaScript in a Web Worker — non-blocking heavy computation
+- expr: Mathematical expression evaluator — compact formula nodes
+- sequencer: Step sequencer synced to transport clock — drum machine style, one outlet per track
+- slider, button, toggle, keyboard: UI controls for interaction
+
+## Routing & Utilities
+- send, recv: Wireless message routing between nodes (named channels)
+- transport: Global clock — beat, bar, BPM sync`;

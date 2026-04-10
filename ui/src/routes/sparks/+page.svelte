@@ -3,7 +3,7 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { getTextProvider } from '$lib/ai/providers';
   import { extractJson } from '$lib/ai/extract-json';
-  import { OBJECT_TYPE_LIST } from '$lib/ai/object-descriptions-types';
+  import { SPARKS_OBJECT_LIST } from '$lib/ai/object-descriptions-types';
   import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
   import {
     Layers,
@@ -304,7 +304,7 @@ ${outputContext}
 ${steerContext}
 
 AVAILABLE PATCHIES OBJECTS (suggest nodes only from this list):
-${OBJECT_TYPE_LIST}
+${SPARKS_OBJECT_LIST}
 
 Respond ONLY with a valid JSON array of exactly 3 ideas:
 [
@@ -642,22 +642,22 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
           <!-- CTA pill row -->
           <div class="flip-ctas">
             <Tooltip.Root>
-              <Tooltip.Trigger>
-                <button class="flip-cta mono cursor-pointer">⊞ scatter</button>
+              <Tooltip.Trigger class="flex-1">
+                <button class="flip-cta mono w-full cursor-pointer">⊞ scatter</button>
               </Tooltip.Trigger>
-              <Tooltip.Content>Scatter nodes onto your board</Tooltip.Content>
+              <Tooltip.Content class="z-[200]">Scatter nodes onto your board</Tooltip.Content>
             </Tooltip.Root>
             <Tooltip.Root>
-              <Tooltip.Trigger>
-                <button class="flip-cta mono cursor-pointer">✦ chat</button>
+              <Tooltip.Trigger class="flex-1">
+                <button class="flip-cta mono w-full cursor-pointer">✦ chat</button>
               </Tooltip.Trigger>
-              <Tooltip.Content>Open this idea in AI chat</Tooltip.Content>
+              <Tooltip.Content class="z-[200]">Open this idea in AI chat</Tooltip.Content>
             </Tooltip.Root>
             <Tooltip.Root>
-              <Tooltip.Trigger>
-                <button class="flip-cta mono cursor-pointer">⎘ copy</button>
+              <Tooltip.Trigger class="flex-1">
+                <button class="flip-cta mono w-full cursor-pointer">⎘ copy</button>
               </Tooltip.Trigger>
-              <Tooltip.Content>Copy idea to clipboard</Tooltip.Content>
+              <Tooltip.Content class="z-[200]">Copy idea to clipboard</Tooltip.Content>
             </Tooltip.Root>
           </div>
         </div>
