@@ -253,7 +253,7 @@
   let urlLoadError = $state<string | null>(null);
   let showAudioHint = $state(audioService.getAudioContext().state === 'suspended');
   let showStartupModal = $state(localStorage.getItem('patchies-show-startup-modal') !== 'false');
-  let startupInitialTab = $state<'about' | 'demos' | 'shortcuts' | 'thanks'>('about');
+  let startupInitialTab = $state<'about' | 'demos' | 'sparks' | 'shortcuts' | 'thanks'>('about');
   let isReadOnlyMode = $state(false);
   let pendingReadOnlyMode = $state(false); // Stores intended readonly state for shared patches until confirmed
 

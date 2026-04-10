@@ -549,6 +549,72 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
+/* Inline packs panel */
+.ob-packs-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ob-packs-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.ob-packs-section-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #52525b;
+}
+
+.ob-packs-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ob-packs-section-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: #3f3f46;
+}
+
+.ob-packs-reset-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: #52525b;
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.ob-packs-reset-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #a1a1aa;
+}
+
+.ob-packs-all-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: #e4e4e7;
+  background: #3f3f46;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.ob-packs-all-btn:hover {
+  background: #52525b;
+}
+
 /* Packs CTA */
 .ob-packs-cta {
   display: flex;

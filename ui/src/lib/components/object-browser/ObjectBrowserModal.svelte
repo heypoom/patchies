@@ -5,7 +5,6 @@
     SearchX,
     X,
     Bookmark,
-    ChevronRight,
     Package,
     CircleQuestionMark
   } from '@lucide/svelte/icons';
@@ -21,13 +20,27 @@
     enabledObjects,
     enabledPresets,
     enabledPackIds,
+    enabledPresetPackIds,
     BUILT_IN_PACKS,
-    togglePack
+    BUILT_IN_PRESET_PACKS,
+    togglePack,
+    togglePresetPack,
+    enableAllPacks,
+    enableAllPresetPacks,
+    disableAllPacks,
+    disableAllPresetPacks,
+    isPackEnabled,
+    isPresetPackEnabled,
+    isPackLocked,
+    isPresetPackLocked,
+    enabledPrimaryObjects
   } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../../stores/ui.store';
   import { getPackIcon } from '$lib/extensions/pack-icons';
   import DisabledObjectSuggestion from './DisabledObjectSuggestion.svelte';
+  import ExtensionPackCard from '../sidebar/ExtensionPackCard.svelte';
+  import PresetPackCard from '../sidebar/PresetPackCard.svelte';
   import {
     useDisabledObjectSuggestion,
     type DisabledObjectInfo
@@ -37,12 +50,10 @@
 
   import './object-browser.css';
 
-  type BrowserMode = 'insert' | 'help';
+  type BrowserMode = 'insert' | 'help' | 'packs';
 
   function openPacks() {
-    $sidebarView = 'packs';
-    $isSidebarOpen = true;
-    open = false;
+    browserMode = 'packs';
   }
 
   const getIconComponent = getPackIcon;
@@ -223,6 +234,7 @@
   function handleClose() {
     open = false;
     searchQuery = '';
+    browserMode = 'insert';
   }
 
   function handleSelectObject(name: string) {
@@ -267,6 +279,43 @@
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
   });
+
+  // Pack filtering for packs mode
+  const filteredObjectPacks = $derived.by(() => {
+    if (!searchQuery.trim()) return BUILT_IN_PACKS;
+    const query = searchQuery.toLowerCase();
+    return BUILT_IN_PACKS.filter(
+      (pack) =>
+        pack.name.toLowerCase().includes(query) ||
+        pack.description.toLowerCase().includes(query) ||
+        pack.objects.some((obj) => obj.toLowerCase().includes(query))
+    );
+  });
+
+  const filteredPresetPacks = $derived.by(() => {
+    if (!searchQuery.trim()) return BUILT_IN_PRESET_PACKS;
+    const query = searchQuery.toLowerCase();
+    return BUILT_IN_PRESET_PACKS.filter(
+      (pack) =>
+        pack.name.toLowerCase().includes(query) ||
+        pack.description.toLowerCase().includes(query) ||
+        pack.presets.some((preset) => preset.toLowerCase().includes(query))
+    );
+  });
+
+  const totalObjectCount = $derived.by(() => {
+    const allObjects = new Set<string>();
+    for (const pack of BUILT_IN_PACKS) {
+      for (const obj of pack.objects) allObjects.add(obj);
+    }
+    return allObjects.size;
+  });
+
+  const enabledCount = $derived($enabledPrimaryObjects.size);
+  const allObjectPacksEnabled = $derived($enabledPackIds.length === BUILT_IN_PACKS.length);
+  const allPresetPacksEnabled = $derived(
+    $enabledPresetPackIds.length === BUILT_IN_PRESET_PACKS.length
+  );
 </script>
 
 {#if open}
@@ -310,10 +359,12 @@
             <!-- Packs button -->
             <Tooltip.Root delayDuration={100}>
               <Tooltip.Trigger>
-                <button onclick={openPacks} class="ob-chip ob-chip-action">
+                <button
+                  onclick={() => (browserMode = browserMode === 'packs' ? 'insert' : 'packs')}
+                  class={['ob-chip', browserMode === 'packs' ? 'ob-chip-active' : 'ob-chip-action']}
+                >
                   <Package class="h-3 w-3" />
                   <span>packs</span>
-                  <ChevronRight class="h-3 w-3 opacity-50" />
                 </button>
               </Tooltip.Trigger>
               <Tooltip.Content side="bottom">Enable or disable object packs</Tooltip.Content>
@@ -386,9 +437,79 @@
         </div>
       </div>
 
-      <!-- Object list -->
+      <!-- Object list / Packs panel -->
       <div class="ob-body">
-        {#if filteredCategories.length === 0}
+        {#if browserMode === 'packs'}
+          <div class="ob-packs-panel">
+            <!-- Object Packs Section -->
+            {#if filteredObjectPacks.length > 0}
+              <div>
+                <div class="ob-packs-section-header">
+                  <span class="ob-packs-section-title">Object Packs</span>
+                  <div class="ob-packs-section-actions">
+                    <span class="ob-packs-section-count">{enabledCount}/{totalObjectCount}</span>
+                    {#if allObjectPacksEnabled}
+                      <button onclick={disableAllPacks} class="ob-packs-reset-btn">Reset</button>
+                    {:else}
+                      <button onclick={enableAllPacks} class="ob-packs-all-btn">All</button>
+                    {/if}
+                  </div>
+                </div>
+                <div>
+                  {#each filteredObjectPacks as pack (pack.id)}
+                    <ExtensionPackCard
+                      {pack}
+                      enabled={isPackEnabled(pack.id, $enabledPackIds)}
+                      onToggle={() => togglePack(pack.id)}
+                      {searchQuery}
+                      locked={isPackLocked(pack.id)}
+                    />
+                  {/each}
+                </div>
+              </div>
+            {/if}
+
+            <!-- Preset Packs Section -->
+            {#if filteredPresetPacks.length > 0}
+              <div>
+                <div class="ob-packs-section-header">
+                  <span class="ob-packs-section-title">Preset Packs</span>
+                  <div class="ob-packs-section-actions">
+                    <span class="ob-packs-section-count"
+                      >{$enabledPresetPackIds.length}/{BUILT_IN_PRESET_PACKS.length}</span
+                    >
+                    {#if allPresetPacksEnabled}
+                      <button onclick={disableAllPresetPacks} class="ob-packs-reset-btn"
+                        >Reset</button
+                      >
+                    {:else}
+                      <button onclick={enableAllPresetPacks} class="ob-packs-all-btn">All</button>
+                    {/if}
+                  </div>
+                </div>
+                <div>
+                  {#each filteredPresetPacks as pack (pack.id)}
+                    <PresetPackCard
+                      {pack}
+                      enabled={isPresetPackEnabled(pack.id, $enabledPresetPackIds)}
+                      onToggle={() => togglePresetPack(pack.id)}
+                      {searchQuery}
+                      locked={isPresetPackLocked(pack.id)}
+                    />
+                  {/each}
+                </div>
+              </div>
+            {/if}
+
+            <!-- No results -->
+            {#if filteredObjectPacks.length === 0 && filteredPresetPacks.length === 0}
+              <div class="ob-empty">
+                <SearchX class="ob-empty-icon" />
+                <p class="ob-empty-text">No packs match "{searchQuery}"</p>
+              </div>
+            {/if}
+          </div>
+        {:else if filteredCategories.length === 0}
           <div class="ob-empty">
             <SearchX class="ob-empty-icon" />
             <p class="ob-empty-text">No objects found for "{searchQuery}"</p>
@@ -521,7 +642,7 @@
             {/each}
 
             <!-- Enable more packs CTA -->
-            <button onclick={openPacks} class="ob-packs-cta">
+            <button onclick={() => (browserMode = 'packs')} class="ob-packs-cta">
               <Package class="h-4 w-4" />
               <span>enable more object packs</span>
             </button>
