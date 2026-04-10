@@ -158,6 +158,7 @@
   .modal-card {
     position: relative;
     z-index: 10;
+    outline: none;
     background: #09090b;
     border: 1px solid color-mix(in srgb, var(--modal-accent, #f97316) 18%, transparent);
     box-shadow:
