@@ -16,7 +16,8 @@ import {
   DEFAULT_CSOUND_CODE,
   DEFAULT_TEXTMODE_CODE,
   DEFAULT_THREE_CODE,
-  DEFAULT_REGL_CODE
+  DEFAULT_REGL_CODE,
+  DEFAULT_SURFACE_CODE
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
 import { DEFAULT_HYDRA_CODE } from '$lib/hydra/constants';
@@ -336,5 +337,11 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       skipFrames: 1
     }))
     .with('ngea', () => ({ tuning: 'Khong Wong Yai', index: 0 }))
+    .with('surface', () => ({
+      code: DEFAULT_SURFACE_CODE,
+      showConsole: true,
+      inletCount: 1,
+      outletCount: 1
+    }))
     .otherwise(() => ({}));
 }

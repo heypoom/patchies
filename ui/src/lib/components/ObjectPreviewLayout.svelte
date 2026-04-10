@@ -8,6 +8,7 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
+  import type { ExtraMenuItem } from './ObjectPreviewOverflowMenu.svelte';
   import { transportStore } from '../../stores/transport.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
@@ -42,7 +43,8 @@
     settingsSchema = undefined,
     settingsValues = {},
     onSettingsValueChange = undefined,
-    onSettingsRevertAll = undefined
+    onSettingsRevertAll = undefined,
+    extraMenuItems = undefined
   }: {
     title: string;
     nodeId?: string;
@@ -68,6 +70,7 @@
     settingsValues?: Record<string, unknown>;
     onSettingsValueChange?: (key: string, value: unknown) => void;
     onSettingsRevertAll?: () => void;
+    extraMenuItems?: ExtraMenuItem[];
   } = $props();
 
   useNodeSetPaused(
@@ -185,6 +188,7 @@
                 onBgOutputToggle={handleBgOutputToggle}
                 onPlaybackToggle={handlePlaybackToggle}
                 onOpenHelp={handleOpenHelp}
+                {extraMenuItems}
               />
 
               <Tooltip.Root>
@@ -243,6 +247,7 @@
       onBgOutputToggle={handleBgOutputToggle}
       onPlaybackToggle={handlePlaybackToggle}
       onOpenHelp={handleOpenHelp}
+      {extraMenuItems}
     />
   </ContextMenu.Root>
 

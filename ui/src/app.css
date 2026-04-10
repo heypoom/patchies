@@ -16,6 +16,11 @@
 @custom-variant dark (&:is(.dark *));
 @variant pointer-coarse (@media (pointer: coarse));
 
+html,
+body {
+  overscroll-behavior: none;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

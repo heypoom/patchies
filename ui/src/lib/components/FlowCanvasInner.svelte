@@ -87,6 +87,7 @@
   import { Transport } from '$lib/transport';
   import { transportStore } from '../../stores/transport.store';
   import { allPreviewsDisabled } from '../../stores/renderer.store';
+  import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
   import {
@@ -601,7 +602,9 @@
       paste: () => pasteNode('keyboard'),
       undo: () => historyManager.undo(),
       redo: () => historyManager.redo(),
-      toggleSidebar: () => ($isSidebarOpen = !$isSidebarOpen),
+      toggleSidebar: () => {
+        if (!$isFullscreenActive) $isSidebarOpen = !$isSidebarOpen;
+      },
       openObjectBrowser: () => ($isObjectBrowserOpen = true),
       openCommandPalette: triggerCommandPalette,
       togglePlayPause: () => {
@@ -1028,7 +1031,11 @@
   }
 </script>
 
-<div class="flow-container flex h-dvh w-full">
+<div class="flow-container relative flex h-dvh w-full">
+  <!-- Background output canvas lives outside the flow editor so it stays visible during surface fullscreen -->
+  <div class="pointer-events-none absolute inset-0 z-0">
+    <BackgroundOutputCanvas />
+  </div>
   <!-- Sidebar (Files / Presets) -->
   <SidebarPanel
     bind:open={$isSidebarOpen}
@@ -1043,7 +1050,7 @@
   />
 
   <!-- Main content area -->
-  <div class="relative flex flex-1 flex-col">
+  <div class="relative flex flex-1 flex-col" class:hidden={$isFullscreenActive}>
     <!-- URL Loading Indicator -->
     {#if isLoadingFromUrl && !($isMobile && $isSidebarOpen)}
       <div class="top-safe-4 absolute left-1/2 z-50 -translate-x-1/2 transform">
@@ -1265,8 +1272,6 @@
         }}
       >
         <BackgroundPattern />
-
-        <BackgroundOutputCanvas />
 
         <Controls class={$isBottomBarVisible && !$isMobile ? '' : '!hidden'} />
       </SvelteFlow>

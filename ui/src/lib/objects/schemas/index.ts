@@ -7,6 +7,7 @@ export * from './p5';
 export * from './hydra';
 export * from './glsl';
 export * from './canvas';
+export * from './surface';
 export * from './swgl';
 export * from './textmode';
 export * from './three';
@@ -99,6 +100,7 @@ import { p5Schema } from './p5';
 import { hydraSchema } from './hydra';
 import { glslSchema } from './glsl';
 import { canvasSchema, canvasDomSchema } from './canvas';
+import { surfaceSchema } from './surface';
 import { swglSchema } from './swgl';
 import { textmodeSchema, textmodeDomSchema } from './textmode';
 import { threeSchema, threeDomSchema } from './three';
@@ -208,6 +210,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   glsl: glslSchema,
   canvas: canvasSchema,
   'canvas.dom': canvasDomSchema,
+  surface: surfaceSchema,
   swgl: swglSchema,
   textmode: textmodeSchema,
   'textmode.dom': textmodeDomSchema,

@@ -37,6 +37,7 @@ import { sampleratePrompt } from './samplerate~';
 import { sliderPrompt } from './slider';
 import { soundfilePrompt } from './soundfile~';
 import { strudelPrompt } from './strudel';
+import { surfacePrompt } from './surface';
 import { swglPrompt } from './swgl';
 import { textboxPrompt } from './textbox';
 import { togglePrompt } from './toggle';
@@ -89,6 +90,7 @@ export const objectPrompts: Record<string, string> = {
   msg: msgPrompt,
   textbox: textboxPrompt,
   canvas: canvasPrompt,
+  surface: surfacePrompt,
   strudel: strudelPrompt,
   python: pythonPrompt,
   ruby: rubyPrompt,
