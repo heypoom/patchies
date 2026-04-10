@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { match } from 'ts-pattern';
   import { SvelteSet } from 'svelte/reactivity';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import { getTextProvider } from '$lib/ai/providers';
   import { extractJson } from '$lib/ai/extract-json';
   import { OBJECT_TYPE_LIST } from '$lib/ai/object-descriptions-types';
@@ -36,9 +36,6 @@
     serial: Usb
   };
 
-  type PatchType = 'starter' | 'template' | 'example' | 'showcase';
-  type Difficulty = 'beginner' | 'intermediate' | 'advanced';
-
   interface Mood {
     id: string;
     name: string;
@@ -64,24 +61,6 @@
       (packId) => BUILT_IN_PACKS.find((p) => p.id === packId)?.objects ?? []
     );
     return [...new Set([...fromPacks, ...(output.nodes ?? [])])];
-  }
-
-  interface Patch {
-    title: string;
-    type: PatchType;
-    url: string;
-    author?: string;
-  }
-
-  interface Spark {
-    id: string;
-    title: string;
-    description: string;
-    nodes: string[];
-    difficulty: Difficulty;
-    patches: Patch[];
-    mood: string[];
-    outputs: string[];
   }
 
   const moods: Mood[] = [
@@ -255,193 +234,17 @@
     }
   ];
 
-  const sparks: Spark[] = [
-    {
-      id: 'music-light-show',
-      title: 'Music-Driven Light Show',
-      description: 'FFT frequency bands map to DMX RGB channels in real time.',
-      nodes: ['fft', 'dmx', 'map'],
-      difficulty: 'intermediate',
-      mood: ['chaotic', 'euphoric', 'industrial'],
-      outputs: ['sound', 'lighting'],
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
-        { title: 'Full Stage Setup', type: 'template', url: '/sparks/submit' }
-      ]
-    },
-    {
-      id: 'reactive-particles',
-      title: 'Reactive Particle Storm',
-      description:
-        'Thousands of particles orbit an attractor. Frequency bands control mass and color.',
-      nodes: ['fft', 'p5', 'osc~'],
-      difficulty: 'intermediate',
-      mood: ['euphoric', 'chaotic', 'dark'],
-      outputs: ['2d-visual', 'sound'],
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
-        { title: 'Festival Build', type: 'showcase', url: '/sparks/submit', author: 'maya' }
-      ]
-    },
-    {
-      id: 'video-feedback',
-      title: 'Live Video Feedback Loop',
-      description: 'Webcam fed back through Hydra transforms — hypnotic recursive visuals.',
-      nodes: ['hydra', 'webcam', 'canvas'],
-      difficulty: 'beginner',
-      mood: ['glitchy', 'dreamy', 'meditative'],
-      outputs: ['video', 'gestures'],
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
-        { title: 'Performance Build', type: 'showcase', url: '/sparks/submit', author: 'joey' }
-      ]
-    },
-    {
-      id: 'beat-typography',
-      title: 'Beat-Synced Typography',
-      description: 'Text that explodes on every kick drum. Works with Strudel or live audio.',
-      nodes: ['transport', 'p5', 'strudel', 'fft'],
-      difficulty: 'intermediate',
-      mood: ['euphoric', 'chaotic', 'playful'],
-      outputs: ['2d-visual', 'music'],
-      patches: [{ title: 'Starter Kit', type: 'starter', url: '/sparks/submit' }]
-    },
-    {
-      id: 'glsl-raymarcher',
-      title: 'GLSL Raymarched Shapes',
-      description: 'Signed distance functions in a shader, animated by OSC messages.',
-      nodes: ['glsl', 'osc~', 'js'],
-      difficulty: 'advanced',
-      mood: ['dark', 'meditative', 'industrial'],
-      outputs: ['video', 'code'],
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
-        { title: 'SDF Playground', type: 'template', url: '/sparks/submit' }
-      ]
-    },
-    {
-      id: 'drone-landscape',
-      title: 'Drone Soundscape',
-      description:
-        'Slowly evolving LFOs modulate oscillator timbre. Plays forever without repeating.',
-      nodes: ['lfo', 'osc~', 'reverb~'],
-      difficulty: 'beginner',
-      mood: ['dark', 'meditative', 'dreamy'],
-      outputs: ['sound'],
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
-        { title: 'Cathedral Version', type: 'example', url: '/sparks/submit' }
-      ]
-    },
-    {
-      id: 'webcam-glitch',
-      title: 'Webcam Glitch Engine',
-      description:
-        'GLSL shaders corrupt the webcam feed in real time. Datamosh, pixel sort, scan lines.',
-      nodes: ['webcam', 'glsl', 'js'],
-      difficulty: 'intermediate',
-      mood: ['glitchy', 'dark', 'chaotic'],
-      outputs: ['video', 'gestures', 'code'],
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
-        { title: 'VJ Set Build', type: 'template', url: '/sparks/submit' }
-      ]
-    },
-    {
-      id: 'generative-terrain',
-      title: 'Infinite Generative Terrain',
-      description: 'Perlin noise landscape that scrolls forever. Sliders control scale and color.',
-      nodes: ['p5', 'slider', 'js'],
-      difficulty: 'beginner',
-      mood: ['playful', 'dreamy', 'meditative'],
-      outputs: ['2d-visual', 'code'],
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
-        { title: 'Audio-Reactive', type: 'example', url: '/sparks/submit' }
-      ]
-    },
-    {
-      id: 'hand-synth',
-      title: 'Hand-Tracked Synth',
-      description: 'Wave your hand to control pitch and filter cutoff. No keyboard needed.',
-      nodes: ['vision.hand', 'osc~', 'lowpass~'],
-      difficulty: 'intermediate',
-      mood: ['playful', 'euphoric', 'glitchy'],
-      outputs: ['sound', 'gestures'],
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
-        { title: 'Theremin Mode', type: 'example', url: '/sparks/submit' }
-      ]
-    },
-    {
-      id: 'bytebeat-viz',
-      title: 'Bytebeat Visualizer',
-      description:
-        'One-line math expressions generate audio and drive a GLSL scope simultaneously.',
-      nodes: ['bytebeat~', 'scope~', 'glsl'],
-      difficulty: 'advanced',
-      mood: ['glitchy', 'industrial', 'dark'],
-      outputs: ['low-level', 'sound', 'video'],
-      patches: [{ title: 'Starter Kit', type: 'starter', url: '/sparks/submit' }]
-    },
-    {
-      id: 'strudel-visuals',
-      title: 'Live Coded Visuals',
-      description:
-        'Strudel patterns trigger P5 drawing commands. Code music, get visuals for free.',
-      nodes: ['strudel', 'p5', 'recv'],
-      difficulty: 'beginner',
-      mood: ['euphoric', 'playful', 'chaotic'],
-      outputs: ['music', '2d-visual', 'code'],
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
-        { title: 'Performance Template', type: 'template', url: '/sparks/submit' }
-      ]
-    },
-    {
-      id: 'body-conductor',
-      title: 'Body as Conductor',
-      description: 'Pose detection maps limb positions to oscillator parameters. Dance to compose.',
-      nodes: ['vision.body', 'osc~', 'map'],
-      difficulty: 'intermediate',
-      mood: ['playful', 'euphoric', 'meditative'],
-      outputs: ['gestures', 'sound'],
-      patches: [{ title: 'Starter Kit', type: 'starter', url: '/sparks/submit' }]
-    }
-  ];
-
   // ── State ─────────────────────────────────────────────────────
   let selectedMoodId = $state<string | null>(null);
   let selectedOutputIds = new SvelteSet<string>();
 
   const selectedMood = $derived(moods.find((m) => m.id === selectedMoodId) ?? null);
 
-  const matchingSparks = $derived(
-    sparks.filter((s) => {
-      const moodOk = !selectedMoodId || s.mood.includes(selectedMoodId);
-      // multi-select: spark must match ALL selected outputs (AND logic — "I have all of these")
-      const outputOk =
-        selectedOutputIds.size === 0 ||
-        [...selectedOutputIds].every((id) => s.outputs.includes(id));
-      return moodOk && outputOk;
-    })
-  );
-
   const hasSelection = $derived(selectedMoodId !== null || selectedOutputIds.size > 0);
 
   const accentColor = $derived(selectedMood?.accentColor ?? '#f97316');
   const glowColor = $derived(selectedMood?.glowColor ?? 'rgba(249,115,22,0.05)');
   const textColor = $derived(selectedMood?.textColor ?? '#fed7aa');
-
-  const suggestedNodes = $derived([
-    ...new Set([
-      ...(selectedMood?.nodes ?? []),
-      ...[...selectedOutputIds].flatMap((id) => {
-        const o = outputs.find((out) => out.id === id);
-        return o ? resolveNodes(o).slice(0, 2) : [];
-      })
-    ])
-  ]);
 
   // ── AI Vision Generator ───────────────────────────────────────
 
@@ -576,15 +379,6 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') closeVision();
   }
-
-  function patchTypeIcon(t: PatchType): string {
-    return match(t)
-      .with('starter', () => '▸')
-      .with('template', () => '⊞')
-      .with('example', () => '◈')
-      .with('showcase', () => '★')
-      .exhaustive();
-  }
 </script>
 
 <svelte:head>
@@ -599,410 +393,291 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div
-  class="sparks-page min-h-screen"
-  style:--accent={accentColor}
-  style:--glow={glowColor}
-  style:--text-acc={textColor}
->
-  <!-- ── Hero ── -->
-  <header class="px-8 pt-14 pb-8">
-    <div class="mx-auto max-w-4xl">
-      <p class="mono mb-3 text-[11px] tracking-[0.25em] uppercase" style:color="var(--accent)">
-        patchies ✦ sparks
-      </p>
-      <h1 class="serif-italic">
-        What do you want<br />to make people feel?
-      </h1>
-      <p class="syne mt-4 max-w-sm text-sm leading-relaxed text-zinc-600">
-        Two questions. Pick one or both to find your spark.
-      </p>
-    </div>
-  </header>
-
-  <!-- ── Two-question layout ── -->
-  <div class="px-8 pb-10">
-    <div class="mx-auto max-w-4xl space-y-8">
-      <!-- Question 1: Mood -->
-      <div>
-        <div class="mb-4 flex items-baseline gap-3">
-          <span class="serif-italic text-xl text-zinc-200">How should it feel?</span>
-          {#if selectedMoodId}
-            <button
-              class="mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
-              onclick={() => (selectedMoodId = null)}
-            >
-              ✕ clear
-            </button>
-          {/if}
-        </div>
-        <div class="mood-grid">
-          {#each moods as mood (mood.id)}
-            {@const active = selectedMoodId === mood.id}
-            <button
-              class="mood-tile cursor-pointer"
-              class:mood-tile-active={active}
-              style:background={mood.gradient}
-              style:--tile-accent={mood.accentColor}
-              style:--tile-glow={mood.glowColor}
-              onclick={() => (selectedMoodId = selectedMoodId === mood.id ? null : mood.id)}
-            >
-              <span class="mood-name syne">{mood.name}</span>
-              <span class="mood-tagline mono">{mood.tagline}</span>
-              {#if active}<span class="mood-check">✦</span>{/if}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <!-- Divider -->
-      <div class="flex items-center gap-4">
-        <div class="h-px flex-1 bg-zinc-900"></div>
-        <span class="mono text-[10px] tracking-widest text-zinc-800 uppercase">and / or</span>
-        <div class="h-px flex-1 bg-zinc-900"></div>
-      </div>
-
-      <!-- Question 2: Output (multi-select) -->
-      <div>
-        <div class="mb-4 flex items-baseline gap-3">
-          <span class="serif-italic text-xl text-zinc-200">What do you want to make?</span>
-          {#if selectedOutputIds.size > 0}
-            <button
-              class="mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
-              onclick={() => selectedOutputIds.clear()}
-            >
-              ✕ clear
-            </button>
-          {/if}
-        </div>
-        <div class="output-grid">
-          {#each outputs as output (output.id)}
-            {@const active = selectedOutputIds.has(output.id)}
-            {@const Icon = outputIcons[output.id]}
-            <button
-              class="output-tile cursor-pointer"
-              class:output-tile-active={active}
-              onclick={() =>
-                active ? selectedOutputIds.delete(output.id) : selectedOutputIds.add(output.id)}
-            >
-              <span class="output-icon"><Icon size={18} /></span>
-              <span class="output-name syne">{output.name}</span>
-              <span class="output-desc mono">{output.description}</span>
-            </button>
-          {/each}
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── AI Vision Generator ── -->
-  {#if hasSelection}
-    <section class="vision-section px-8 pb-10">
+<Tooltip.Provider>
+  <div
+    class="sparks-page min-h-screen"
+    style:--accent={accentColor}
+    style:--glow={glowColor}
+    style:--text-acc={textColor}
+  >
+    <!-- ── Hero ── -->
+    <header class="px-8 pt-14 pb-8">
       <div class="mx-auto max-w-4xl">
-        <!-- Header row -->
-        <div class="mb-5 flex items-center gap-4">
-          <div class="flex-1">
-            <h2 class="serif-italic text-xl text-zinc-200">Dream a build</h2>
-            <p class="mono mt-0.5 text-[11px] text-zinc-700">three what-ifs based on your picks</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <!-- Steer input -->
-            <input
-              type="text"
-              bind:value={steerPrompt}
-              placeholder="try: stranger, lo-fi, for a gallery opening"
-              class="steer-input mono text-xs"
-              onkeydown={(e) => e.key === 'Enter' && generateVisions()}
-            />
-            <button
-              onclick={generateVisions}
-              disabled={!canGenerate}
-              class="generate-btn mono cursor-pointer text-xs disabled:cursor-not-allowed disabled:opacity-40"
-              style:border-color="color-mix(in srgb, {accentColor} 35%, transparent)"
-              style:color={isGenerating ? accentColor : undefined}
-            >
-              {#if isGenerating}
-                <span class="generating-dot"></span> stop
-              {:else if visions.length > 0}
-                ↺ again
-              {:else}
-                ✦ imagine
-              {/if}
-            </button>
-          </div>
-        </div>
+        <p class="mono mb-3 text-[11px] tracking-[0.25em] uppercase" style:color="var(--accent)">
+          patchies ✦ sparks
+        </p>
+        <h1 class="serif-italic">
+          What do you want<br />to make people feel?
+        </h1>
+        <p class="syne mt-4 max-w-sm text-sm leading-relaxed text-zinc-600">
+          Two questions. Pick one or both to find your spark.
+        </p>
+      </div>
+    </header>
 
-        <!-- Error -->
-        {#if generationError}
-          <p class="mono mb-4 text-xs text-red-500">{generationError}</p>
-        {/if}
-
-        <!-- Vision cards -->
-        {#if isGenerating && visions.length === 0}
-          <!-- Skeleton loading -->
-          <div class="visions-grid">
-            {#each [0, 1, 2] as i (i)}
-              <div class="vision-card vision-skeleton" style:animation-delay="{i * 120}ms"></div>
-            {/each}
-          </div>
-        {:else if visions.length > 0}
-          <div class="visions-grid">
-            {#each visions as v, i (i)}
+    <!-- ── Two-question layout ── -->
+    <div class="px-8 pb-10">
+      <div class="mx-auto max-w-4xl space-y-8">
+        <!-- Question 1: Mood -->
+        <div>
+          <div class="mb-4 flex items-baseline gap-3">
+            <span class="serif-italic text-xl text-zinc-200">How should it feel?</span>
+            {#if selectedMoodId}
               <button
-                class="vision-card cursor-pointer text-left"
-                style:--card-accent={accentColor}
-                style:animation-delay="{i * 80}ms"
-                onclick={() => openVision(v, i)}
-                title="Click to explore this idea"
+                class="mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
+                onclick={() => (selectedMoodId = null)}
               >
-                <div class="vision-top-line"></div>
-                <h3 class="serif-italic vision-title" style:color={textColor}>{v.title}</h3>
-                <p class="vision-text">{v.vision}</p>
-                <div class="mt-auto flex flex-wrap gap-1 pt-4">
-                  {#each v.nodes as node (node)}
-                    <span class="mono vision-node">{node}</span>
-                  {/each}
-                </div>
-                <span class="vision-tap-hint mono">tap to explore →</span>
+                ✕ clear
+              </button>
+            {/if}
+          </div>
+          <div class="mood-grid">
+            {#each moods as mood (mood.id)}
+              {@const active = selectedMoodId === mood.id}
+              <button
+                class="mood-tile cursor-pointer"
+                class:mood-tile-active={active}
+                style:background={mood.gradient}
+                style:--tile-accent={mood.accentColor}
+                style:--tile-glow={mood.glowColor}
+                onclick={() => (selectedMoodId = selectedMoodId === mood.id ? null : mood.id)}
+              >
+                <span class="mood-name syne">{mood.name}</span>
+                <span class="mood-tagline mono">{mood.tagline}</span>
+                {#if active}<span class="mood-check">✦</span>{/if}
               </button>
             {/each}
           </div>
-        {:else}
-          <!-- Idle prompt -->
-          <button
-            onclick={generateVisions}
-            disabled={!canGenerate}
-            class="vision-idle-prompt w-full cursor-pointer disabled:cursor-not-allowed"
-          >
-            <span
-              class="serif-italic text-2xl text-zinc-800 transition-colors group-hover:text-zinc-600"
-            >
-              Click ✦ imagine to dream up ideas →
-            </span>
-          </button>
-        {/if}
-      </div>
-    </section>
-  {/if}
+        </div>
 
-  <!-- ── Results ── -->
-  {#if hasSelection}
-    <section class="border-t border-zinc-900 px-8 py-10">
-      <div class="mx-auto max-w-4xl">
-        <!-- Result header -->
-        <div class="mb-6 flex items-end justify-between">
-          <div>
-            <p class="serif-italic mb-1 text-lg text-zinc-200">
-              {#if selectedMood && selectedOutputIds.size > 0}
-                {selectedMood.name} × {[...selectedOutputIds]
-                  .map((id) => outputs.find((o) => o.id === id)?.name)
-                  .join(', ')}
-              {:else if selectedMood}
-                {selectedMood.name}
-              {:else if selectedOutputIds.size > 0}
-                {[...selectedOutputIds]
-                  .map((id) => outputs.find((o) => o.id === id)?.name)
-                  .join(' + ')}
-              {/if}
-            </p>
-            <p class="mono text-[11px] text-zinc-600">
-              {matchingSparks.length} spark{matchingSparks.length !== 1 ? 's' : ''}
-              {#if matchingSparks.length === 0}— try loosening the filters{/if}
-            </p>
+        <!-- Divider -->
+        <div class="flex items-center gap-4">
+          <div class="h-px flex-1 bg-zinc-900"></div>
+          <span class="mono text-[10px] tracking-widest text-zinc-800 uppercase">and / or</span>
+          <div class="h-px flex-1 bg-zinc-900"></div>
+        </div>
+
+        <!-- Question 2: Output (multi-select) -->
+        <div>
+          <div class="mb-4 flex items-baseline gap-3">
+            <span class="serif-italic text-xl text-zinc-200">What do you want to make?</span>
+            {#if selectedOutputIds.size > 0}
+              <button
+                class="mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
+                onclick={() => selectedOutputIds.clear()}
+              >
+                ✕ clear
+              </button>
+            {/if}
+          </div>
+          <div class="output-grid">
+            {#each outputs as output (output.id)}
+              {@const active = selectedOutputIds.has(output.id)}
+              {@const Icon = outputIcons[output.id]}
+              <button
+                class="output-tile cursor-pointer"
+                class:output-tile-active={active}
+                onclick={() =>
+                  active ? selectedOutputIds.delete(output.id) : selectedOutputIds.add(output.id)}
+              >
+                <span class="output-icon"><Icon size={18} /></span>
+                <span class="output-name syne">{output.name}</span>
+                <span class="output-desc mono">{output.description}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AI Vision Generator ── -->
+    {#if hasSelection}
+      <section class="vision-section px-8 pb-10">
+        <div class="mx-auto max-w-4xl">
+          <!-- Header row -->
+          <div class="mb-5 flex items-center gap-4">
+            <div class="flex-1">
+              <h2 class="serif-italic text-xl text-zinc-200">Dream a build</h2>
+              <p class="mono mt-0.5 text-[11px] text-zinc-700">
+                three what-ifs based on your picks
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <!-- Steer input -->
+              <input
+                type="text"
+                bind:value={steerPrompt}
+                placeholder="try: stranger, lo-fi, for a gallery opening"
+                class="steer-input mono text-xs"
+                onkeydown={(e) => e.key === 'Enter' && generateVisions()}
+              />
+              <button
+                onclick={generateVisions}
+                disabled={!canGenerate}
+                class="generate-btn mono cursor-pointer text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                style:border-color="color-mix(in srgb, {accentColor} 35%, transparent)"
+                style:color={isGenerating ? accentColor : undefined}
+              >
+                {#if isGenerating}
+                  <span class="generating-dot"></span> stop
+                {:else if visions.length > 0}
+                  ↺ again
+                {:else}
+                  ✦ imagine
+                {/if}
+              </button>
+            </div>
           </div>
 
-          <!-- Suggested nodes from both selections -->
-          {#if selectedMood || selectedOutputIds.size > 0}
-            <div class="flex flex-wrap justify-end gap-1.5">
-              {#each suggestedNodes as node (node)}
-                <span
-                  class="mono rounded px-2 py-0.5 text-[11px]"
-                  style:background="color-mix(in srgb, {accentColor} 10%, transparent)"
-                  style:color={textColor}
-                  style:border="1px solid color-mix(in srgb, {accentColor} 25%, transparent)"
-                >
-                  {node}
-                </span>
+          <!-- Error -->
+          {#if generationError}
+            <p class="mono mb-4 text-xs text-red-500">{generationError}</p>
+          {/if}
+
+          <!-- Vision cards -->
+          {#if isGenerating && visions.length === 0}
+            <!-- Skeleton loading -->
+            <div class="visions-grid">
+              {#each [0, 1, 2] as i (i)}
+                <div class="vision-card vision-skeleton" style:animation-delay="{i * 120}ms"></div>
               {/each}
             </div>
+          {:else if visions.length > 0}
+            <div class="visions-grid">
+              {#each visions as v, i (i)}
+                <button
+                  class="vision-card cursor-pointer text-left"
+                  style:--card-accent={accentColor}
+                  style:animation-delay="{i * 80}ms"
+                  onclick={() => openVision(v, i)}
+                  title="Click to explore this idea"
+                >
+                  <div class="vision-top-line"></div>
+                  <h3 class="serif-italic vision-title" style:color={textColor}>{v.title}</h3>
+                  <p class="vision-text">{v.vision}</p>
+                  <div class="mt-auto flex flex-wrap gap-1 pt-4">
+                    {#each v.nodes as node (node)}
+                      <span class="mono vision-node">{node}</span>
+                    {/each}
+                  </div>
+                  <span class="vision-tap-hint mono">tap to explore →</span>
+                </button>
+              {/each}
+            </div>
+          {:else}
+            <!-- Idle prompt -->
+            <button
+              onclick={generateVisions}
+              disabled={!canGenerate}
+              class="vision-idle-prompt w-full cursor-pointer disabled:cursor-not-allowed"
+            >
+              <span
+                class="serif-italic text-2xl text-zinc-800 transition-colors group-hover:text-zinc-600"
+              >
+                Click ✦ imagine to dream up ideas →
+              </span>
+            </button>
           {/if}
         </div>
+      </section>
+    {/if}
 
-        <!-- Sparks grid -->
-        {#if matchingSparks.length > 0}
-          <div class="sparks-grid">
-            {#each matchingSparks as spark (spark.id)}
-              <article
-                class="spark-card"
-                style:border-color="color-mix(in srgb, {accentColor} 14%, rgba(255,255,255,0.06))"
-              >
-                <div class="mb-2 flex flex-wrap gap-1">
-                  {#each spark.nodes as node (node)}
-                    <span class="mono node-chip text-[10px]">{node}</span>
-                  {/each}
-                </div>
-                <h3 class="syne mb-1 text-sm leading-snug font-semibold text-zinc-100">
-                  {spark.title}
-                </h3>
-                <p class="mb-3 text-xs leading-relaxed text-zinc-600">{spark.description}</p>
-                <!-- Output badges -->
-                <div class="mb-3 flex flex-wrap gap-1">
-                  {#each spark.outputs as oid (oid)}
-                    {@const out = outputs.find((o) => o.id === oid)}
-                    {#if out}
-                      <span
-                        class="mono rounded-full px-2 py-0.5 text-[10px]"
-                        class:output-badge-active={selectedOutputIds.has(oid)}
-                        class:output-badge={!selectedOutputIds.has(oid)}
-                      >
-                        {out.name}
-                      </span>
-                    {/if}
-                  {/each}
-                </div>
-                <div
-                  class="flex flex-wrap gap-1.5 border-t pt-3"
-                  style:border-color="color-mix(in srgb, {accentColor} 10%, rgba(255,255,255,0.05))"
-                >
-                  {#each spark.patches as patch (patch.title)}
-                    <a
-                      href={patch.url}
-                      class="mono inline-flex cursor-pointer items-center rounded px-2 py-1 text-[11px] transition-opacity hover:opacity-80"
-                      style:background="color-mix(in srgb, {accentColor} 10%, transparent)"
-                      style:color={textColor}
-                      style:border="1px solid color-mix(in srgb, {accentColor} 20%, transparent)"
-                    >
-                      <span class="mr-1 opacity-50">{patchTypeIcon(patch.type)}</span>
-                      {patch.title}
-                      {#if patch.author}
-                        <span class="ml-1 opacity-40">by {patch.author}</span>
-                      {/if}
-                    </a>
-                  {/each}
-                </div>
-              </article>
-            {/each}
+    <!-- ── Results ── -->
+    <!-- TODO: Phase 2 — add <SparkResults> component here once curated content is ready. -->
 
-            <!-- Ghost submit -->
-            <article class="spark-card spark-ghost">
-              <p class="syne mb-2 text-sm font-semibold text-zinc-700">
-                {#if selectedMood && selectedOutputIds.size > 0}
-                  Made something {selectedMood.name.toLowerCase()} with {[...selectedOutputIds]
-                    .map((id) => outputs.find((o) => o.id === id)?.name.toLowerCase())
-                    .join(' + ')}?
-                {:else if selectedMood}
-                  Made something {selectedMood.name.toLowerCase()}?
-                {:else}
-                  Working on something like this?
-                {/if}
-              </p>
-              <p class="mb-4 text-xs leading-relaxed text-zinc-700">
-                Share your patch and it might appear here.
-              </p>
-              <a
-                href="/sparks/submit"
-                class="mono inline-flex cursor-pointer items-center gap-1 text-xs transition-colors hover:opacity-80"
-                style:color="color-mix(in srgb, {accentColor} 65%, #71717a)"
-              >
-                Submit a build →
-              </a>
-            </article>
-          </div>
-        {:else}
-          <div class="py-16 text-center">
-            <p class="syne mb-2 text-4xl font-bold text-zinc-800">No sparks yet</p>
-            <p class="mono text-sm text-zinc-700">
-              This combination doesn't have recipes yet — maybe you'll make the first one.
-            </p>
-          </div>
-        {/if}
-      </div>
-    </section>
-  {:else}
-    <div class="px-8 pb-20">
-      <p class="mono text-center text-[11px] tracking-widest text-zinc-800">
-        ↑ pick a mood, an output, or both
-      </p>
-    </div>
-  {/if}
-
-  <!-- ── Flipped Vision Overlay ── -->
-  {#if flippedVision}
-    <div
-      class="flip-backdrop"
-      onclick={closeVision}
-      onkeydown={handleKeydown}
-      role="dialog"
-      aria-modal="true"
-      tabindex="-1"
-    >
+    <!-- ── Flipped Vision Overlay ── -->
+    {#if flippedVision}
       <div
-        class="flip-card"
-        style:--card-accent={accentColor}
-        style:--card-glow={glowColor}
-        onclick={(e) => e.stopPropagation()}
-        onkeydown={(e) => e.stopPropagation()}
-        role="presentation"
+        class="flip-backdrop"
+        onclick={closeVision}
+        onkeydown={handleKeydown}
+        role="dialog"
+        aria-modal="true"
+        tabindex="-1"
       >
-        <!-- Corner ornaments -->
-        <span class="fc fc-tl" aria-hidden="true"></span>
-        <span class="fc fc-tr" aria-hidden="true"></span>
-        <span class="fc fc-bl" aria-hidden="true"></span>
-        <span class="fc fc-br" aria-hidden="true"></span>
+        <div
+          class="flip-card"
+          style:--card-accent={accentColor}
+          style:--card-glow={glowColor}
+          onclick={(e) => e.stopPropagation()}
+          onkeydown={(e) => e.stopPropagation()}
+          role="presentation"
+        >
+          <!-- Corner ornaments -->
+          <span class="fc fc-tl" aria-hidden="true"></span>
+          <span class="fc fc-tr" aria-hidden="true"></span>
+          <span class="fc fc-bl" aria-hidden="true"></span>
+          <span class="fc fc-br" aria-hidden="true"></span>
 
-        <!-- Roman numeral watermark -->
-        <span class="flip-roman mono" aria-hidden="true">{ROMAN[flippedVisionIndex] ?? 'I'}</span>
+          <!-- Roman numeral watermark -->
+          <span class="flip-roman mono" aria-hidden="true">{ROMAN[flippedVisionIndex] ?? 'I'}</span>
 
-        <!-- Close -->
-        <button class="flip-close mono cursor-pointer" onclick={closeVision}>✕</button>
+          <!-- Close -->
+          <button class="flip-close mono cursor-pointer" onclick={closeVision}>✕</button>
 
-        <!-- Accent glow -->
-        <div class="flip-glow" aria-hidden="true"></div>
+          <!-- Accent glow -->
+          <div class="flip-glow" aria-hidden="true"></div>
 
-        <!-- Content -->
-        <div class="flip-content">
-          <p class="flip-eyebrow mono">vision · {ROMAN[flippedVisionIndex] ?? 'I'}</p>
-          <h3 class="serif-italic flip-title" style:color={textColor}>{flippedVision.title}</h3>
-          <p class="flip-vision-text">{flippedVision.vision}</p>
-        </div>
+          <!-- Content -->
+          <div class="flip-content">
+            <p class="flip-eyebrow mono">vision · {ROMAN[flippedVisionIndex] ?? 'I'}</p>
+            <h3 class="serif-italic flip-title" style:color={textColor}>{flippedVision.title}</h3>
+            <p class="flip-vision-text">{flippedVision.vision}</p>
+          </div>
 
-        <!-- Aspects divider -->
-        <div class="flip-divider" aria-hidden="true">
-          <span class="flip-divider-line"></span>
-          <span class="flip-divider-label mono">aspects</span>
-          <span class="flip-divider-line"></span>
-        </div>
+          <!-- Aspects divider -->
+          <div class="flip-divider" aria-hidden="true">
+            <span class="flip-divider-line"></span>
+            <span class="flip-divider-label mono">aspects</span>
+            <span class="flip-divider-line"></span>
+          </div>
 
-        <!-- Node chips -->
-        <div class="flip-nodes">
-          {#each flippedVision.nodes as node (node)}
-            <span class="mono flip-node-chip">{node}</span>
-          {/each}
-        </div>
+          <!-- Node chips -->
+          <div class="flip-nodes">
+            {#each flippedVision.nodes as node (node)}
+              <span class="mono flip-node-chip">{node}</span>
+            {/each}
+          </div>
 
-        <!-- CTA pill row -->
-        <div class="flip-ctas">
-          <button class="flip-cta mono cursor-pointer">⊞ scatter</button>
-          <button class="flip-cta mono cursor-pointer">✦ chat</button>
-          <button class="flip-cta mono cursor-pointer">⎘ copy</button>
+          <!-- CTA pill row -->
+          <div class="flip-ctas">
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button class="flip-cta mono cursor-pointer">⊞ scatter</button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Scatter nodes onto your board</Tooltip.Content>
+            </Tooltip.Root>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button class="flip-cta mono cursor-pointer">✦ chat</button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Open this idea in AI chat</Tooltip.Content>
+            </Tooltip.Root>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button class="flip-cta mono cursor-pointer">⎘ copy</button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Copy idea to clipboard</Tooltip.Content>
+            </Tooltip.Root>
+          </div>
         </div>
       </div>
-    </div>
-  {/if}
+    {/if}
 
-  <!-- ── Footer ── -->
-  <div class="border-t border-zinc-900 px-8 py-5">
-    <div class="mx-auto flex max-w-4xl items-center justify-between">
-      <p class="mono text-[11px] text-zinc-800">patchies sparks · mood board</p>
-      <a
-        href="/sparks"
-        class="mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
-      >
-        ← patch bench
-      </a>
+    <!-- ── Footer ── -->
+    <div class="border-t border-zinc-900 px-8 py-5">
+      <div class="mx-auto flex max-w-4xl items-center justify-between">
+        <p class="mono text-[11px] text-zinc-800">patchies · sparks</p>
+        <a
+          href="/"
+          class="mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
+        >
+          ← back to patchies
+        </a>
+      </div>
     </div>
   </div>
-</div>
+</Tooltip.Provider>
 
 <style>
   .sparks-page {
@@ -1160,53 +835,6 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     color: #3f3f46;
     line-height: 1.3;
     text-align: center;
-  }
-
-  /* ── Sparks ── */
-  .sparks-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 10px;
-  }
-
-  .spark-card {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid;
-    border-radius: 8px;
-    padding: 14px;
-    transition:
-      transform 0.15s,
-      opacity 0.2s;
-  }
-  .spark-card:hover {
-    transform: translateY(-1px);
-  }
-
-  .spark-ghost {
-    border-style: dashed !important;
-    border-color: rgba(255, 255, 255, 0.05) !important;
-    background: transparent !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  .node-chip {
-    background: rgba(255, 255, 255, 0.04);
-    color: #52525b;
-    border-radius: 3px;
-    padding: 1px 5px;
-  }
-
-  .output-badge {
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    color: #52525b;
-    background: transparent;
-  }
-  .output-badge-active {
-    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-    color: var(--text-acc);
-    background: color-mix(in srgb, var(--accent) 8%, transparent);
   }
 
   /* ── Vision Generator ── */
