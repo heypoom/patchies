@@ -7,7 +7,13 @@
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
-  import { messages } from '$lib/objects/schemas';
+  import { messages, SurfaceExpand, SurfaceCollapse } from '$lib/objects/schemas';
+  import { schema } from '$lib/objects/schemas/types';
+
+  const surfaceMessages = {
+    expand: schema(SurfaceExpand),
+    collapse: schema(SurfaceCollapse)
+  };
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
@@ -164,17 +170,9 @@
       match(message)
         .with(messages.setCode, ({ value }) => setCodeAndUpdate(value))
         .with(messages.run, () => runCode())
-        .otherwise((msg: unknown) => {
-          const m = msg as Record<string, unknown>;
-          // bang or { type: 'activate' } → go fullscreen
-          if (msg === 'bang' || m?.type === 'activate') {
-            enterFullscreen();
-          }
-          // { type: 'exit' } → exit fullscreen
-          if (m?.type === 'exit') {
-            exitSurface();
-          }
-        });
+        .with(surfaceMessages.expand, () => enterFullscreen())
+        .with(surfaceMessages.collapse, () => exitSurface())
+        .otherwise(() => {});
     } catch (error) {
       console.error('Error handling message:', error);
     }
@@ -200,7 +198,7 @@
     }
 
     const pointerOutletIdx = videoOutputEnabled ? 1 : 0;
-    jsRunner.getMessageContext(nodeId).send(pointerOutletIdx, event);
+    jsRunner.getMessageContext(nodeId).send(event, { to: pointerOutletIdx });
 
     if (drawMode === 'interact') triggerDraw();
   }
@@ -218,11 +216,11 @@
 
   // ── Bitmap output ────────────────────────────────────────────────────────
 
-  async function sendBitmap() {
+  function sendBitmap() {
     if (!activeCanvas) return;
     if (!videoOutputEnabled) return;
     if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
-    await glSystem.setBitmapSource(nodeId, activeCanvas);
+    glSystem.setBitmapSource(nodeId, activeCanvas);
   }
 
   // ── Thumbnail copy ───────────────────────────────────────────────────────
