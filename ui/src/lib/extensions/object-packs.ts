@@ -168,7 +168,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Audio Routing',
     description: 'Mixing, routing and monitoring',
     icon: 'Route',
-    objects: ['pan~', 'split~', 'merge~', 'send~', 'recv~', 'meter~', 'scope~', 'fft~']
+    objects: ['pan~', 'split~', 'merge~', 'send~', 'recv~', 'meter~', 'scope~', 'tap~', 'fft~']
   },
   {
     id: 'signal-generators',
