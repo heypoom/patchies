@@ -4,6 +4,7 @@
   let { isMac }: { isMac: boolean } = $props();
 
   const mod = $derived(isMac ? 'Cmd' : 'Ctrl');
+  let expanded = $state(false);
 </script>
 
 <div class="tips-root">
@@ -31,12 +32,12 @@
       </span>
     </div>
 
-    <div class="tip">
+    <div class="tip tip--collapse" class:tip--hidden={!expanded}>
       <span class="tip-label">Command palette</span>
       <kbd class="tip-key">{mod} + K</kbd>
     </div>
 
-    <div class="tip">
+    <div class="tip tip--collapse" class:tip--hidden={!expanded}>
       <span class="tip-label">Run code</span>
       <span class="tip-keys">
         <Play class="tip-icon" />
@@ -45,7 +46,7 @@
       </span>
     </div>
 
-    <div class="tip">
+    <div class="tip tip--collapse" class:tip--hidden={!expanded}>
       <span class="tip-label">Connect</span>
       <span class="tip-keys">
         <span class="tip-desc">drag handle</span>
@@ -54,6 +55,10 @@
       </span>
     </div>
   </div>
+
+  <button class="tips-more" onclick={() => (expanded = !expanded)}>
+    {expanded ? '↑ less' : '+ more shortcuts'}
+  </button>
 </div>
 
 <style>
@@ -70,10 +75,55 @@
     gap: 10px 24px;
   }
 
+  /* On mobile: single column, hide last 3, show toggle */
   @media (max-width: 460px) {
     .tips-grid {
       grid-template-columns: 1fr;
       gap: 8px;
+    }
+
+    .tip--collapse {
+      display: none;
+    }
+
+    .tip--collapse.tip--hidden {
+      display: none;
+    }
+
+    .tip--collapse:not(.tip--hidden) {
+      display: flex;
+    }
+
+    .tips-more {
+      display: block;
+    }
+  }
+
+  /* On desktop: always show all */
+  @media (min-width: 461px) {
+    .tip--collapse {
+      display: flex !important;
+    }
+  }
+
+  .tips-more {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: #3f3f46;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  @media (min-width: 461px) {
+    .tips-more {
+      display: none;
     }
   }
 
