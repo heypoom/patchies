@@ -33,18 +33,21 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 ## Presets
 
-Enable the **GLSL Operators** preset pack to access 6 GLSL shader presets:
+Enable the **GLSL Operators** preset pack for basic presets:
 
 - `glsl>` - a passthrough shader
 - `red.gl` - solid red color
 - `mix.gl` - mix two video inputs
 - `overlay.gl` - overlay second input on first
-- `fft-freq.gl` - visualize frequency spectrum
-- `fft-waveform.gl` - visualize audio waveform
 - `switcher.gl` - switch between 6 inputs (send int 0-5)
 
 The `glsl>` preset is the best starting point for building GLSL shaders
 that process video inputs.
+
+Enable the **FFT Demos** preset pack for audio-reactive examples:
+
+- `fft-freq.gl` - visualize frequency spectrum
+- `fft-waveform.gl` - visualize audio waveform
 
 ## Built-in Uniforms
 
