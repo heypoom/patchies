@@ -32,13 +32,14 @@
   const IconComponent = $derived(getPackIcon(pack.icon));
 </script>
 
-<div class={['pack-row', enabled && 'pack-row--enabled']}>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class={['pack-row', enabled && 'pack-row--enabled']}
+  onclick={() => (manualExpanded = !manualExpanded)}
+>
   <!-- Left: icon + name + description -->
-  <button
-    class="pack-row-main"
-    onclick={() => (manualExpanded = !manualExpanded)}
-    title="Show objects in {pack.name}"
-  >
+  <div class="pack-row-main">
     <div class={['pack-icon', enabled ? 'pack-icon--on' : 'pack-icon--off']}>
       <IconComponent class="h-3 w-3" />
     </div>
@@ -49,18 +50,14 @@
       </span>
       <span class="pack-desc">{pack.description}</span>
     </div>
+  </div>
 
-    <ChevronDown class={['pack-chevron', expanded && 'pack-chevron--open']} />
-  </button>
-
-  <!-- Right: count + toggle -->
+  <!-- Right: count + toggle + chevron -->
   <div class="pack-actions">
-    <span class="pack-count">{pack.objects.length}</span>
-
     {#if locked}
       <Tooltip.Root delayDuration={100}>
         <Tooltip.Trigger>
-          <div class="pack-toggle pack-toggle--locked">
+          <div class="pack-toggle pack-toggle--locked" onclick={(e) => e.stopPropagation()}>
             <Lock class="h-2.5 w-2.5" />
           </div>
         </Tooltip.Trigger>
@@ -70,7 +67,10 @@
       </Tooltip.Root>
     {:else}
       <button
-        onclick={onToggle}
+        onclick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
         class={['pack-toggle', enabled ? 'pack-toggle--on' : 'pack-toggle--off']}
         title={enabled ? 'Disable pack' : 'Enable pack'}
       >
@@ -79,6 +79,11 @@
         {/if}
       </button>
     {/if}
+
+    <div class="pack-expand-indicator">
+      <span class="pack-count">{pack.objects.length}</span>
+      <ChevronDown class={['pack-chevron', expanded && 'pack-chevron--open']} />
+    </div>
   </div>
 </div>
 
@@ -101,6 +106,7 @@
     gap: 0;
     border-radius: 4px;
     transition: background 0.12s;
+    cursor: pointer;
   }
   .pack-row:hover {
     background: rgba(255, 255, 255, 0.02);
@@ -113,10 +119,6 @@
     flex: 1;
     min-width: 0;
     padding: 5px 4px 5px 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-align: left;
   }
 
   .pack-icon {
@@ -184,6 +186,12 @@
     gap: 6px;
     padding: 0 8px 0 4px;
     flex-shrink: 0;
+  }
+
+  .pack-expand-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .pack-count {

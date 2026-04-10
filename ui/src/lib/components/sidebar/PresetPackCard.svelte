@@ -64,13 +64,14 @@
   const isPartial = $derived(hasAnyRequiredObjects && !hasAllRequiredObjects);
 </script>
 
-<div class={['pack-row', enabled && 'pack-row--enabled', isUnavailable && 'pack-row--unavailable']}>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class={['pack-row', enabled && 'pack-row--enabled', isUnavailable && 'pack-row--unavailable']}
+  onclick={() => (manualExpanded = !manualExpanded)}
+>
   <!-- Left: icon + name + description -->
-  <button
-    class="pack-row-main"
-    onclick={() => (manualExpanded = !manualExpanded)}
-    title="Show presets in {pack.name}"
-  >
+  <div class="pack-row-main">
     <div class={['pack-icon', enabled && !isUnavailable ? 'pack-icon--on' : 'pack-icon--off']}>
       <IconComponent class="h-3 w-3" />
     </div>
@@ -80,7 +81,6 @@
         <span class={['pack-name', enabled && !isUnavailable ? 'pack-name--on' : 'pack-name--off']}>
           {pack.name}
         </span>
-        <span class="pack-count-inline">({pack.presets.length})</span>
         {#if isPartial && enabled && missingPacks.length > 0}
           <Tooltip.Root disableHoverableContent={false} delayDuration={100}>
             <Tooltip.Trigger>
@@ -101,11 +101,9 @@
       </div>
       <span class="pack-desc">{pack.description}</span>
     </div>
+  </div>
 
-    <ChevronDown class={['pack-chevron', expanded && 'pack-chevron--open']} />
-  </button>
-
-  <!-- Right: toggle -->
+  <!-- Right: toggle + expand -->
   <div class="pack-actions">
     {#if locked}
       <Tooltip.Root delayDuration={100}>
@@ -120,7 +118,10 @@
       </Tooltip.Root>
     {:else}
       <button
-        onclick={onToggle}
+        onclick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
         disabled={isUnavailable}
         class={[
           'pack-toggle',
@@ -137,6 +138,11 @@
         {/if}
       </button>
     {/if}
+
+    <div class="pack-expand-indicator">
+      <span class="pack-count-inline">{pack.presets.length}</span>
+      <ChevronDown class={['pack-chevron', expanded && 'pack-chevron--open']} />
+    </div>
   </div>
 </div>
 
@@ -168,6 +174,7 @@
     align-items: center;
     border-radius: 4px;
     transition: background 0.12s;
+    cursor: pointer;
   }
   .pack-row:hover {
     background: rgba(255, 255, 255, 0.02);
@@ -183,10 +190,6 @@
     flex: 1;
     min-width: 0;
     padding: 5px 4px 5px 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-align: left;
   }
 
   .pack-icon {
@@ -258,8 +261,15 @@
   .pack-actions {
     display: flex;
     align-items: center;
+    gap: 6px;
     padding: 0 8px 0 4px;
     flex-shrink: 0;
+  }
+
+  .pack-expand-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .pack-toggle {
