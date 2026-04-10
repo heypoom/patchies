@@ -79,6 +79,24 @@ setDrawMode('interact'); // Draw only on pointer activity
 setDrawMode('manual');   // Draw only when redraw() is called
 ```
 
+> **Important**: Register your draw function with `requestAnimationFrame(draw)`,
+> not by calling it directly. The surface uses this to know which function
+> to invoke on each frame or interaction.
+
+```javascript
+// WRONG — draw() runs once at startup, then never again
+setDrawMode('interact');
+function draw() { /* ... */ }
+draw(); // ← surface never calls this again on pointer events
+
+// RIGHT — surface calls draw() on every interaction
+setDrawMode('interact');
+function draw() { /* ... */ }
+requestAnimationFrame(draw); // ← registers draw as the active callback
+```
+
+This applies to all draw modes: `'always'`, `'interact'`, and `'manual'`.
+
 ## Activation API
 
 You can programmatically enter or exit fullscreen surface mode through JavaScript:

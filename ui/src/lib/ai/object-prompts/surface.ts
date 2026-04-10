@@ -31,6 +31,22 @@ Fullscreen interactive canvas overlay for live performance. Captures pointer/tou
 - setDrawMode('interact') for input-reactive sketches (no continuous rAF needed)
 - setDrawMode('manual') + redraw() for fully manual control
 
+**CRITICAL — draw function registration:**
+You MUST call \`requestAnimationFrame(draw)\` to register the draw function — never call \`draw()\` directly.
+The surface intercepts requestAnimationFrame to set its internal draw callback (pausedCallback).
+Without it, triggerDraw() (called on pointer events in 'interact' mode) has nothing to invoke,
+so nothing ever renders.
+
+\`\`\`javascript
+// WRONG — draw() runs once, surface never calls it again
+function draw() { ctx.clearRect(0, 0, width, height); }
+draw(); // ← not registered, pointer events do nothing
+
+// RIGHT — surface calls draw() on each frame/interaction
+function draw() { ctx.clearRect(0, 0, width, height); }
+requestAnimationFrame(draw); // ← registers as the active draw callback
+\`\`\`
+
 Example - Paint on touch/pointer:
 \`\`\`json
 {
