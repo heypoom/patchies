@@ -3488,34 +3488,53 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         handle: { handleType: 'audio', handleId: 1 }
       },
       {
-        id: 'settings',
-        type: 'message',
-        description: 'Control messages for mode, bufferSize, and fps',
+        id: 'bufferSize',
+        type: 'int',
+        description: 'Number of samples captured per frame',
         messages: [
           {
-            schema: Type.Object({
-              mode: Type.Union([Type.Literal('waveform'), Type.Literal('xy')])
-            }),
-            description: 'Set capture mode: waveform or xy'
-          },
-          {
-            schema: Type.Object({ bufferSize: Type.Number() }),
-            description: 'Set buffer size (64–2048)'
-          },
-          {
-            schema: Type.Object({ fps: Type.Number() }),
-            description: 'Set max refresh rate in fps (0 = unlimited)'
+            schema: Type.Integer({ minimum: 64, maximum: 2048 }),
+            description: 'Number of samples captured per frame'
           }
         ],
         handle: { handleType: 'message', handleId: 2 }
+      },
+      {
+        id: 'mode',
+        type: 'string',
+        description: 'Capture mode',
+        messages: [{ schema: Type.String(), description: 'Capture mode' }],
+        handle: { handleType: 'message', handleId: 3 }
+      },
+      {
+        id: 'fps',
+        type: 'float',
+        description: 'Max refresh rate in fps (0 = unlimited)',
+        messages: [
+          {
+            schema: Type.Number({ minimum: 0, maximum: 120 }),
+            description: 'Max refresh rate in fps (0 = unlimited)'
+          }
+        ],
+        handle: { handleType: 'message', handleId: 4 }
       }
     ],
     outlets: [
       {
         id: 'out',
         type: 'message',
-        description:
-          'Captured buffer: Float32Array (waveform) or { x, y: Float32Array } (XY mode). Trigger-synced on rising zero-crossing.',
+        description: 'Captured buffer, trigger-synced on rising zero-crossing.',
+        messages: [
+          { schema: Type.Unsafe({ type: 'Float32Array' }), description: 'Wave Mode' },
+          {
+            schema: Type.Object({
+              type: Type.Literal('xy'),
+              x: Type.Unsafe({ type: 'Float32Array' }),
+              y: Type.Unsafe({ type: 'Float32Array' })
+            }),
+            description: 'XY Mode'
+          }
+        ],
         handle: { handleType: 'message', handleId: 0 }
       }
     ],

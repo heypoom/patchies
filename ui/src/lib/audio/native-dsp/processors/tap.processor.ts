@@ -16,39 +16,39 @@ defineDSP({
     bufferSize: 512,
     maxWait: 4096,
     cooldownSamples: 0,
-    mode: 'waveform' as 'waveform' | 'xy'
+    mode: 'wave' as 'wave' | 'xy'
   }),
 
-  recv(state, data) {
-    if (typeof data !== 'object' || data === null) return;
-
-    const msg = data as Record<string, unknown>;
-
-    if ('bufferSize' in msg) {
-      const size = msg.bufferSize;
-      if (typeof size === 'number' && size >= 64 && size <= 2048) {
+  recv(state, data, inlet) {
+    // inlet 2 = bufferSize (number)
+    if (inlet === 2 && typeof data === 'number') {
+      const size = data;
+      if (size >= 64 && size <= 2048) {
         state.bufferSize = size;
         state.buffers = [new Float32Array(size), new Float32Array(size)];
         state.buffersY = [new Float32Array(size), new Float32Array(size)];
         state.writeIndex = 0;
         state.phase = 'waiting';
       }
+      return;
     }
 
-    if ('fps' in msg) {
-      const fps = msg.fps;
-      if (typeof fps === 'number') {
-        state.cooldownSamples = fps > 0 ? Math.floor(sampleRate / fps) : 0;
-      }
+    // inlet 3 = mode ('wave' | 'xy')
+    if (inlet === 3 && (data === 'wave' || data === 'xy')) {
+      state.mode = data;
+      state.phase = 'waiting';
+      state.writeIndex = 0;
+      return;
     }
 
-    if ('mode' in msg) {
-      const mode = msg.mode;
-      if (mode === 'waveform' || mode === 'xy') {
-        state.mode = mode;
-        state.phase = 'waiting';
-        state.writeIndex = 0;
-      }
+    // inlet 4 = fps (number)
+    if (inlet === 4 && typeof data === 'number') {
+      // sampleRate is a global in AudioWorkletGlobalScope
+      state.cooldownSamples =
+        data > 0
+          ? Math.floor((globalThis as unknown as { sampleRate: number }).sampleRate / data)
+          : 0;
+      return;
     }
   },
 
@@ -86,7 +86,7 @@ defineDSP({
 
         if (state.writeIndex >= state.bufferSize) {
           if (isXY) {
-            send({ x: bufX, y: bufY }, 0);
+            send({ type: 'xy', x: bufX, y: bufY }, 0);
           } else {
             send(bufX, 0);
           }

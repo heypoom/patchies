@@ -25,7 +25,7 @@ settings.onChange((_, __, all) => {
 })
 
 recv(m => {
-  if (m && typeof m === 'object' && !ArrayBuffer.isView(m) && ArrayBuffer.isView(m.x)) {
+  if (m && typeof m === 'object' && m.type === 'xy' && ArrayBuffer.isView(m.x)) {
     bufX = m.x
     bufY = m.y
   }

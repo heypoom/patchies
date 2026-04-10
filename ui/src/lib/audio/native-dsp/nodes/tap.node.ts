@@ -2,10 +2,6 @@ import { createWorkletDspNode } from '../create-worklet-dsp-node';
 import workletUrl from '../processors/tap.processor?worker&url';
 import { Type } from '@sinclair/typebox';
 
-const SetMode = Type.Object({ mode: Type.Union([Type.Literal('waveform'), Type.Literal('xy')]) });
-const SetBufferSize = Type.Object({ bufferSize: Type.Number() });
-const SetFps = Type.Object({ fps: Type.Number() });
-
 export const TapNode = createWorkletDspNode({
   type: 'tap~',
   group: 'processors',
@@ -28,14 +24,27 @@ export const TapNode = createWorkletDspNode({
       description: 'Y axis signal (XY mode only)'
     },
     {
-      name: 'settings',
-      type: 'message',
-      description: 'Control messages for mode, bufferSize, and fps',
-      messages: [
-        { schema: SetMode, description: 'Set capture mode: waveform or xy' },
-        { schema: SetBufferSize, description: 'Set buffer size (64–2048)' },
-        { schema: SetFps, description: 'Set max refresh rate in fps (0 = unlimited)' }
-      ]
+      name: 'bufferSize',
+      type: 'int',
+      description: 'Number of samples captured per frame',
+      defaultValue: 512,
+      minNumber: 64,
+      maxNumber: 2048
+    },
+    {
+      name: 'mode',
+      type: 'string',
+      description: 'Capture mode',
+      defaultValue: 'wave',
+      options: ['wave', 'xy']
+    },
+    {
+      name: 'fps',
+      type: 'float',
+      description: 'Max refresh rate in fps (0 = unlimited)',
+      defaultValue: 0,
+      minNumber: 0,
+      maxNumber: 120
     }
   ],
 
@@ -43,8 +52,21 @@ export const TapNode = createWorkletDspNode({
     {
       name: 'out',
       type: 'message',
-      description:
-        'Captured buffer: Float32Array (waveform) or { x, y: Float32Array } (XY mode). Trigger-synced on rising zero-crossing.'
+      description: 'Captured buffer, trigger-synced on rising zero-crossing.',
+      messages: [
+        {
+          schema: Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
+          description: 'Wave Mode'
+        },
+        {
+          schema: Type.Object({
+            type: Type.Literal('xy'),
+            x: Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
+            y: Type.Unsafe<Float32Array>({ type: 'Float32Array' })
+          }),
+          description: 'XY Mode'
+        }
+      ]
     }
   ],
 
