@@ -40,6 +40,7 @@ Browse all audio objects in the object browser under the **Audio** category.
 Visualize what's happening in your audio chain:
 
 - [scope~](/docs/objects/scope~) — oscilloscope, shows waveform shape in real time
+- [tap~](/docs/objects/tap~) — headless oscilloscope, forwards waveform frames as messages for use in canvas or GLSL
 - [meter~](/docs/objects/meter~) — level meter, shows loudness as a visual bar
 - [env~](/docs/objects/env~) — envelope follower, outputs loudness as a number you can route elsewhere
 

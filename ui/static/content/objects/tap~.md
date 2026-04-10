@@ -10,7 +10,7 @@ rendering it. Connect the outlet to a canvas preset or any
 node that can process sample data.
 
 **Waveform mode** sends a `Float32Array` of audio samples.
-**XY mode** sends `{ x: Float32Array, y: Float32Array }`.
+**XY mode** sends `{ type: 'xy', x: Float32Array, y: Float32Array }`.
 
 ## Usage
 
@@ -58,3 +58,5 @@ a capture is forced to prevent stalling.
 - [scope~](/docs/objects/scope~) - self-contained visual oscilloscope
 - [snapshot~](/docs/objects/snapshot~) - sample a single value on bang
 - [fft~](/docs/objects/fft~) - frequency-domain analysis
+- [env~](/docs/objects/env~) - envelope follower
+- [meter~](/docs/objects/meter~) - audio level meter
