@@ -2,23 +2,32 @@ export const SCOPE_WAVEFORM_JS = `setPortCount(1, 0)
 setTitle('scope.canvas')
 noDrag()
 
-let xScale = 1
-let yScale = 1
-let plotType = 'line'
-let decay = 1
-let unipolar = false
+await settings.define([
+  { key: 'xScale', type: 'slider', label: 'X Scale', min: 0.5, max: 8, step: 0.1, default: 1 },
+  { key: 'yScale', type: 'slider', label: 'Y Scale', min: 0.1, max: 10, step: 0.1, default: 1 },
+  { key: 'plotType', type: 'select', label: 'Plot', default: 'line',
+    options: ['line', 'point', 'bezier'] },
+  { key: 'decay', type: 'slider', label: 'Decay', min: 0.01, max: 1, step: 0.01, default: 1 },
+  { key: 'unipolar', type: 'boolean', label: 'Unipolar', default: false }
+])
+
+let xScale = settings.get('xScale')
+let yScale = settings.get('yScale')
+let plotType = settings.get('plotType')
+let decay = settings.get('decay')
+let unipolar = settings.get('unipolar')
 let buffer = null
 
+settings.onChange((_, __, all) => {
+  xScale = all.xScale
+  yScale = all.yScale
+  plotType = all.plotType
+  decay = all.decay
+  unipolar = all.unipolar
+})
+
 recv(m => {
-  if (ArrayBuffer.isView(m)) {
-    buffer = m
-  } else if (m && typeof m === 'object') {
-    if ('xScale' in m) xScale = m.xScale
-    if ('yScale' in m) yScale = m.yScale
-    if ('plotType' in m) plotType = m.plotType
-    if ('decay' in m) decay = m.decay
-    if ('unipolar' in m) unipolar = m.unipolar
-  }
+  if (ArrayBuffer.isView(m)) buffer = m
 })
 
 function sampleToY(sample, h) {
@@ -107,7 +116,7 @@ function draw() {
 draw()`;
 
 export const scopeWaveformPreset = {
-  type: 'canvas.dom' as const,
+  type: 'canvas' as const,
   data: {
     code: SCOPE_WAVEFORM_JS,
     inletCount: 1,

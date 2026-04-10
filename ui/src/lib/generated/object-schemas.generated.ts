@@ -3486,6 +3486,28 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         type: 'signal',
         description: 'Y axis signal (XY mode only)',
         handle: { handleType: 'audio', handleId: 1 }
+      },
+      {
+        id: 'settings',
+        type: 'message',
+        description: 'Control messages for mode, bufferSize, and fps',
+        messages: [
+          {
+            schema: Type.Object({
+              mode: Type.Union([Type.Literal('waveform'), Type.Literal('xy')])
+            }),
+            description: 'Set capture mode: waveform or xy'
+          },
+          {
+            schema: Type.Object({ bufferSize: Type.Number() }),
+            description: 'Set buffer size (64–2048)'
+          },
+          {
+            schema: Type.Object({ fps: Type.Number() }),
+            description: 'Set max refresh rate in fps (0 = unlimited)'
+          }
+        ],
+        handle: { handleType: 'message', handleId: 2 }
       }
     ],
     outlets: [

@@ -1,5 +1,10 @@
 import { createWorkletDspNode } from '../create-worklet-dsp-node';
 import workletUrl from '../processors/tap.processor?worker&url';
+import { Type } from '@sinclair/typebox';
+
+const SetMode = Type.Object({ mode: Type.Union([Type.Literal('waveform'), Type.Literal('xy')]) });
+const SetBufferSize = Type.Object({ bufferSize: Type.Number() });
+const SetFps = Type.Object({ fps: Type.Number() });
 
 export const TapNode = createWorkletDspNode({
   type: 'tap~',
@@ -21,6 +26,16 @@ export const TapNode = createWorkletDspNode({
       name: 'y',
       type: 'signal',
       description: 'Y axis signal (XY mode only)'
+    },
+    {
+      name: 'settings',
+      type: 'message',
+      description: 'Control messages for mode, bufferSize, and fps',
+      messages: [
+        { schema: SetMode, description: 'Set capture mode: waveform or xy' },
+        { schema: SetBufferSize, description: 'Set buffer size (64–2048)' },
+        { schema: SetFps, description: 'Set max refresh rate in fps (0 = unlimited)' }
+      ]
     }
   ],
 

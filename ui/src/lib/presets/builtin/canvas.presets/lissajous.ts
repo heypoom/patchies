@@ -2,24 +2,32 @@ export const LISSAJOUS_JS = `setPortCount(1, 0)
 setTitle('lissajous.canvas')
 noDrag()
 
-let xScale = 1
-let yScale = 1
-let plotType = 'line'
-let decay = 1
+await settings.define([
+  { key: 'xScale', type: 'slider', label: 'X Scale', min: 0.1, max: 10, step: 0.1, default: 1 },
+  { key: 'yScale', type: 'slider', label: 'Y Scale', min: 0.1, max: 10, step: 0.1, default: 1 },
+  { key: 'plotType', type: 'select', label: 'Plot', default: 'line',
+    options: ['line', 'point', 'bezier'] },
+  { key: 'decay', type: 'slider', label: 'Decay', min: 0.01, max: 1, step: 0.01, default: 1 }
+])
+
+let xScale = settings.get('xScale')
+let yScale = settings.get('yScale')
+let plotType = settings.get('plotType')
+let decay = settings.get('decay')
 let bufX = null
 let bufY = null
 
+settings.onChange((_, __, all) => {
+  xScale = all.xScale
+  yScale = all.yScale
+  plotType = all.plotType
+  decay = all.decay
+})
+
 recv(m => {
-  if (m && typeof m === 'object' && !ArrayBuffer.isView(m)) {
-    if ('x' in m && 'y' in m && ArrayBuffer.isView(m.x)) {
-      bufX = m.x
-      bufY = m.y
-    } else {
-      if ('xScale' in m) xScale = m.xScale
-      if ('yScale' in m) yScale = m.yScale
-      if ('plotType' in m) plotType = m.plotType
-      if ('decay' in m) decay = m.decay
-    }
+  if (m && typeof m === 'object' && !ArrayBuffer.isView(m) && ArrayBuffer.isView(m.x)) {
+    bufX = m.x
+    bufY = m.y
   }
 })
 
@@ -100,7 +108,7 @@ function draw() {
 draw()`;
 
 export const lissajousPreset = {
-  type: 'canvas.dom' as const,
+  type: 'canvas' as const,
   data: {
     code: LISSAJOUS_JS,
     inletCount: 1,
