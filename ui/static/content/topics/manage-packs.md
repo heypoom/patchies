@@ -6,7 +6,7 @@ Patchies starts with a few objects enabled by default. Packs let you enable more
 
 ## Accessing Packs
 
-Open the object browser (`Ctrl/Cmd + B`) and click the **packs** chip in the top-right corner. This opens the packs panel inline, showing both object packs and preset packs. You can also reach it from the sidebar via the **Packs** tab.
+Open the object browser (`Ctrl/Cmd + O`) and click the **packs** chip in the top-right corner. This opens the packs panel inline, showing both object packs and preset packs. You can also reach it from the sidebar via the **Packs** tab.
 
 ## Object Packs
 
