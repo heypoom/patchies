@@ -66,7 +66,7 @@
           {category.name}
         </h2>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div class="examples-grid">
           {#each category.patches as patch (patch.id)}
             <ExampleCard {patch} onLoad={loadExample} />
           {/each}
@@ -75,3 +75,17 @@
     {/each}
   {/if}
 </div>
+
+<style>
+  .examples-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 460px) {
+    .examples-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
