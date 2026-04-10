@@ -57,10 +57,21 @@ uniform vec2 iFoo;
 This creates two inlets that accept messages. Send `0.5` to `iMix`,
 or `[0.0, 1.0]` to `iFoo`.
 
-**Supported types**: `bool`, `int`, `float`, `vec2`, `vec3`, `vec4`
+**Supported types**: `bool`, `int`, `float`, `vec2`, `vec3`, `vec4`,
+`mat2`, `mat3`, `mat4`
 
 **Default values**: Connect a `loadbang` → `msg` chain to set
 initial uniform values when the patch loads.
+
+## Array Uniforms
+
+Arrays are supported for vector and matrix types:
+
+```glsl
+uniform vec2 iPoints[4];
+```
+
+Send `[[0.0, 0.0], [0.5, 0.0], [0.5, 1.0], [1.0, 1.0]]` to `iPoints`.
 
 ## Presets
 
