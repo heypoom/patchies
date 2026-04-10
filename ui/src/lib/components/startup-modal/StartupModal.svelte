@@ -6,6 +6,7 @@
   import SparksTab from './SparksTab.svelte';
   import type { Tab } from './types';
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
+  import { sparksMoodTheme } from '../../../stores/sparks.store';
 
   let {
     open = $bindable(false),
@@ -57,6 +58,8 @@
       aria-modal="true"
       aria-labelledby="modal-title"
       tabindex="-1"
+      style:--modal-accent={$sparksMoodTheme.accentColor}
+      style:--modal-glow={$sparksMoodTheme.glowColor}
       onclick={(e) => e.stopPropagation()}
       onkeydown={(e) => {
         if (e.key === 'Escape') {
@@ -141,10 +144,10 @@
     position: relative;
     z-index: 10;
     background: #09090b;
-    border: 1px solid rgba(249, 115, 22, 0.18);
+    border: 1px solid color-mix(in srgb, var(--modal-accent, #f97316) 18%, transparent);
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.03),
-      0 0 80px rgba(249, 115, 22, 0.06),
+      0 0 80px var(--modal-glow, rgba(249, 115, 22, 0.06)),
       0 40px 80px rgba(0, 0, 0, 0.8);
     border-radius: 14px;
     width: 100%;
@@ -154,6 +157,9 @@
     display: flex;
     flex-direction: column;
     animation: card-in 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    transition:
+      border-color 0.6s ease,
+      box-shadow 0.6s ease;
   }
 
   @media (min-width: 640px) {
@@ -187,26 +193,30 @@
   .mc-tl {
     top: 12px;
     left: 12px;
-    border-top: 1px solid #f97316;
-    border-left: 1px solid #f97316;
+    border-top: 1px solid var(--modal-accent, #f97316);
+    border-left: 1px solid var(--modal-accent, #f97316);
+    transition: border-color 0.6s ease;
   }
   .mc-tr {
     top: 12px;
     right: 12px;
-    border-top: 1px solid #f97316;
-    border-right: 1px solid #f97316;
+    border-top: 1px solid var(--modal-accent, #f97316);
+    border-right: 1px solid var(--modal-accent, #f97316);
+    transition: border-color 0.6s ease;
   }
   .mc-bl {
     bottom: 12px;
     left: 12px;
-    border-bottom: 1px solid #f97316;
-    border-left: 1px solid #f97316;
+    border-bottom: 1px solid var(--modal-accent, #f97316);
+    border-left: 1px solid var(--modal-accent, #f97316);
+    transition: border-color 0.6s ease;
   }
   .mc-br {
     bottom: 12px;
     right: 12px;
-    border-bottom: 1px solid #f97316;
-    border-right: 1px solid #f97316;
+    border-bottom: 1px solid var(--modal-accent, #f97316);
+    border-right: 1px solid var(--modal-accent, #f97316);
+    transition: border-color 0.6s ease;
   }
 
   /* Top radial glow */
@@ -218,11 +228,12 @@
     height: 280px;
     background: radial-gradient(
       ellipse 70% 60% at 50% 35%,
-      rgba(249, 115, 22, 0.07),
+      var(--modal-glow, rgba(249, 115, 22, 0.07)),
       transparent 70%
     );
     pointer-events: none;
     z-index: 0;
+    transition: background 0.6s ease;
   }
 
   /* Tab bar */
@@ -263,7 +274,8 @@
   }
 
   .modal-tab--active {
-    color: #f97316;
+    color: var(--modal-accent, #f97316);
+    transition: color 0.6s ease;
   }
 
   .modal-tab--active::after {
@@ -273,8 +285,9 @@
     left: 8px;
     right: 8px;
     height: 1px;
-    background: #f97316;
+    background: var(--modal-accent, #f97316);
     opacity: 0.8;
+    transition: background 0.6s ease;
   }
 
   /* Close button */

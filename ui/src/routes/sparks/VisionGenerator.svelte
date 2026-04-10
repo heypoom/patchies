@@ -149,14 +149,14 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 <section class="vision-section px-8 pb-10">
   <div class="mx-auto max-w-4xl">
     <!-- Header row -->
-    <div class="mb-5 flex items-center gap-4">
+    <div class="vision-header mb-5">
       <div class="flex-1">
         <h2 class="sparks-serif text-xl text-zinc-200">Dream a build</h2>
         <p class="sparks-mono mt-0.5 text-[11px] text-zinc-700">
           three what-ifs based on your picks
         </p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="vision-controls">
         <input
           type="text"
           bind:value={steerPrompt}
@@ -264,13 +264,40 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     padding-top: 2rem;
   }
 
+  .vision-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .vision-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  @media (max-width: 600px) {
+    .vision-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .vision-controls {
+      flex: unset;
+    }
+  }
+
   .steer-input {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 6px;
     padding: 6px 12px;
     color: #a1a1aa;
-    width: 340px;
+    flex: 1;
+    min-width: 0;
+    max-width: 340px;
     outline: none;
     transition: border-color 0.15s;
   }
@@ -324,9 +351,24 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
   }
+
+  /* On 2-col layouts, third card spans full width */
   @media (max-width: 768px) {
     .visions-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .visions-grid > *:last-child:nth-child(3) {
+      grid-column: 1 / -1;
+      min-height: unset;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .visions-grid {
       grid-template-columns: 1fr;
+    }
+    .visions-grid > *:last-child:nth-child(3) {
+      grid-column: unset;
     }
   }
 

@@ -4,16 +4,20 @@
   import OutputGrid from '$routes/sparks/OutputGrid.svelte';
   import VisionGenerator from '$routes/sparks/VisionGenerator.svelte';
   import { moods, outputs } from '$routes/sparks/data';
+  import { sparksMoodTheme, sparksSelectedMoodId } from '../../../stores/sparks.store';
 
-  let selectedMoodId = $state<string | null>(null);
   let selectedOutputIds = new SvelteSet<string>();
 
-  const selectedMood = $derived(moods.find((m) => m.id === selectedMoodId) ?? null);
-  const hasSelection = $derived(selectedMoodId !== null || selectedOutputIds.size > 0);
+  const selectedMood = $derived(moods.find((m) => m.id === $sparksSelectedMoodId) ?? null);
+  const hasSelection = $derived($sparksSelectedMoodId !== null || selectedOutputIds.size > 0);
 
   const accentColor = $derived(selectedMood?.accentColor ?? '#f97316');
   const glowColor = $derived(selectedMood?.glowColor ?? 'rgba(249,115,22,0.05)');
   const textColor = $derived(selectedMood?.textColor ?? '#fed7aa');
+
+  $effect(() => {
+    sparksMoodTheme.set({ accentColor, glowColor, textColor });
+  });
 </script>
 
 <div
@@ -36,7 +40,11 @@
 
   <!-- Selectors -->
   <div class="sparks-tab-body">
-    <MoodGrid {moods} {selectedMoodId} onSelect={(id) => (selectedMoodId = id)} />
+    <MoodGrid
+      {moods}
+      selectedMoodId={$sparksSelectedMoodId}
+      onSelect={(id) => sparksSelectedMoodId.set(id)}
+    />
 
     <div class="sparks-tab-divider">
       <div class="sparks-tab-rule"></div>
@@ -148,25 +156,18 @@
 
   /* ── VisionGenerator overrides for modal context ── */
 
-  /* Remove page-level horizontal padding from the section */
+  /* Remove page-level horizontal padding — modal provides its own */
   :global(.sparks-tab-generator .vision-section) {
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
 
-  /* Remove the max-width wrapper so it fills the modal */
+  /* Remove max-width — modal constrains width itself */
   :global(.sparks-tab-generator .vision-section > div) {
     max-width: none !important;
   }
 
-  /* Make the header row wrap and the input fill available space */
-  :global(.sparks-tab-generator .steer-input) {
-    width: auto !important;
-    flex: 1 !important;
-    min-width: 0 !important;
-  }
-
-  /* Collapse 3-col vision grid to 2-col inside modal */
+  /* Force 2-col grid — modal is too narrow for 3 */
   :global(.sparks-tab-generator .visions-grid) {
     grid-template-columns: repeat(2, 1fr) !important;
   }
