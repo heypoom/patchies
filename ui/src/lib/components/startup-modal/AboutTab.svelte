@@ -23,57 +23,70 @@
     localStorage.setItem('patchies-show-startup-modal', String(showOnStartup));
   }
 
-  const techNodes = ['hydra', 'strudel', 'p5', 'glsl', 'three', 'orca', 'tone~'];
+  const techNodes = ['p5', 'hydra', 'strudel', 'glsl', 'orca', 'chuck~', 'tone~', 'js'];
 </script>
 
-<div class="about-root">
+<div class="flex min-h-full flex-col gap-6">
   <!-- Hero -->
-  <div class="about-hero">
-    <p class="about-eyebrow">patchies · creative environment</p>
-
-    <h1 id="modal-title" class="about-headline">Patch the world together.</h1>
-
-    <p class="about-subhead">
-      Connect computational, audio and visual objects in real time, on the web.
+  <div class="pb-1">
+    <p class="mb-3.5 font-mono text-[10px] tracking-[0.25em] text-orange-500/70 uppercase">
+      patchies · creative environment
+    </p>
+    <h1
+      id="modal-title"
+      class="mb-3.5 font-['Instrument_Serif'] text-[clamp(2rem,6vw,2.8rem)] leading-[1.12] text-zinc-100 italic"
+    >
+      Patch the world together.
+    </h1>
+    <p class="mb-5 font-[Syne] text-[0.85rem] leading-[1.7] text-zinc-600">
+      Connect computational, audio and visual objects in real time - on the web.
     </p>
 
     <!-- Tech node chips -->
-    <div class="about-chips">
+    <div class="flex flex-wrap gap-1.5">
       {#each techNodes as node (node)}
-        <a href="/docs/objects/{node}" target="_blank" class="about-chip">{node}</a>
+        <a
+          href="/docs/objects/{node}"
+          target="_blank"
+          class="rounded-[3px] border border-orange-500/[0.22] bg-orange-500/[0.06] px-[9px] py-[3px] font-mono text-[10px] text-orange-500/75 no-underline transition-colors hover:border-orange-500/45 hover:bg-orange-500/[0.12] hover:text-orange-400"
+          >{node}</a
+        >
       {/each}
-      <button class="about-chip about-chip--more cursor-pointer" onclick={onOpenObjectBrowser}
-        >+ more</button
+      <button
+        class="cursor-pointer rounded-[3px] border border-white/[0.07] bg-transparent px-[9px] py-[3px] font-mono text-[10px] text-zinc-600 transition-colors hover:border-orange-500/30 hover:bg-orange-500/[0.06] hover:text-orange-500/60"
+        onclick={onOpenObjectBrowser}>+ more</button
       >
     </div>
   </div>
 
   <!-- Divider -->
-  <div class="about-divider">
-    <span class="about-divider-line"></span>
-    <span class="about-divider-label">get started</span>
-    <span class="about-divider-line"></span>
+  <div class="flex items-center gap-2.5">
+    <span class="h-px flex-1 bg-white/[0.06]"></span>
+    <span class="font-mono text-[9px] tracking-[0.25em] text-zinc-700 uppercase">get started</span>
+    <span class="h-px flex-1 bg-white/[0.06]"></span>
   </div>
 
   <!-- Getting started panel -->
-  <div class="about-panel">
-    <div class="about-panel-row">
-      <Play class="about-panel-icon" />
-      <span class="about-panel-text">
+  <div
+    class="flex flex-col gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] px-[18px] py-4"
+  >
+    <div class="flex items-start gap-3">
+      <Play class="mt-0.5 h-[13px] w-[13px] shrink-0 text-orange-500/50" />
+      <span class="font-[Syne] text-[0.83rem] leading-[1.5] text-zinc-500">
         <button class="about-link" onclick={() => setTab('demos')}>Browse demos</button>
         for inspiration and working patches.
       </span>
     </div>
-    <div class="about-panel-row">
-      <Diamond class="about-panel-icon" />
-      <span class="about-panel-text">
+    <div class="flex items-start gap-3">
+      <Diamond class="mt-0.5 h-[13px] w-[13px] shrink-0 text-orange-500/50" />
+      <span class="font-[Syne] text-[0.83rem] leading-[1.5] text-zinc-500">
         <a href="/docs/adding-objects" target="_blank" class="about-link">Read the guide</a>
         to learn to patch and code objects.
       </span>
     </div>
-    <div class="about-panel-row">
-      <Command class="about-panel-icon" />
-      <span class="about-panel-text">
+    <div class="flex items-start gap-3">
+      <Command class="mt-0.5 h-[13px] w-[13px] shrink-0 text-orange-500/50" />
+      <span class="font-[Syne] text-[0.83rem] leading-[1.5] text-zinc-500">
         Check <button class="about-link" onclick={() => setTab('shortcuts')}>shortcuts</button>
         to move fast.
       </span>
@@ -84,183 +97,49 @@
   <QuickTips {isMac} />
 
   <!-- Footer row -->
-  <div class="about-footer">
-    <!-- Links -->
-    <div class="about-footer-links">
-      <a
-        href="/docs/adding-objects"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="about-footer-link"
-      >
-        <BookOpen class="about-footer-icon" />
+  <div
+    class="mt-auto flex flex-col gap-4 border-t border-white/[0.05] pt-2 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div class="flex items-center gap-4">
+      <a href="/docs/adding-objects" target="_blank" rel="noopener noreferrer" class="footer-link">
+        <BookOpen class="h-3 w-3" />
         docs
       </a>
       <a
         href="https://github.com/heypoom/patchies"
         target="_blank"
         rel="noopener noreferrer"
-        class="about-footer-link"
+        class="footer-link"
       >
-        <Github class="about-footer-icon" />
+        <Github class="h-3 w-3" />
         github
       </a>
-      <button class="about-footer-link cursor-pointer" onclick={() => setTab('thanks')}>
+      <button class="footer-link cursor-pointer" onclick={() => setTab('thanks')}>
         ♥ thanks
       </button>
     </div>
 
     <!-- Show on startup toggle -->
-    <div class="about-toggle-row">
-      <Info class="about-toggle-icon" />
-      <span class="about-toggle-label">show on startup</span>
+    <div class="flex items-center gap-2">
+      <Info class="h-[13px] w-[13px] shrink-0 text-zinc-700" />
+      <span class="font-mono text-[10px] tracking-[0.08em] whitespace-nowrap text-zinc-700"
+        >show on startup</span
+      >
       <button
         onclick={toggleShowOnStartup}
-        class="about-toggle"
-        class:about-toggle--on={showOnStartup}
+        class="toggle shrink-0"
+        class:toggle--on={showOnStartup}
         role="switch"
         aria-checked={showOnStartup}
         aria-label="toggle show on startup"
       >
-        <span class="about-toggle-thumb" class:about-toggle-thumb--on={showOnStartup}></span>
+        <span class="toggle-thumb" class:toggle-thumb--on={showOnStartup}></span>
       </button>
     </div>
   </div>
 </div>
 
 <style>
-  .about-root {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    min-height: 100%;
-  }
-
-  /* Hero */
-  .about-hero {
-    padding-bottom: 4px;
-  }
-
-  .about-eyebrow {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: rgba(249, 115, 22, 0.7);
-    margin-bottom: 14px;
-  }
-
-  .about-headline {
-    font-family: 'Instrument Serif', serif;
-    font-style: italic;
-    font-size: clamp(2rem, 6vw, 2.8rem);
-    line-height: 1.12;
-    color: #f4f4f5;
-    margin-bottom: 14px;
-  }
-
-  .about-subhead {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.85rem;
-    line-height: 1.7;
-    color: #52525b;
-    margin-bottom: 20px;
-  }
-
-  /* Tech chips */
-  .about-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .about-chip {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    padding: 3px 9px;
-    border-radius: 3px;
-    border: 1px solid rgba(249, 115, 22, 0.22);
-    background: rgba(249, 115, 22, 0.06);
-    color: rgba(249, 115, 22, 0.75);
-    text-decoration: none;
-    transition:
-      border-color 0.15s,
-      background 0.15s,
-      color 0.15s;
-    cursor: pointer;
-  }
-
-  .about-chip:hover {
-    border-color: rgba(249, 115, 22, 0.45);
-    background: rgba(249, 115, 22, 0.12);
-    color: #fb923c;
-  }
-
-  .about-chip--more {
-    border-color: rgba(255, 255, 255, 0.07);
-    background: transparent;
-    color: #3f3f46;
-  }
-
-  .about-chip--more:hover {
-    border-color: rgba(249, 115, 22, 0.3);
-    background: rgba(249, 115, 22, 0.06);
-    color: rgba(249, 115, 22, 0.6);
-  }
-
-  /* Divider */
-  .about-divider {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .about-divider-line {
-    flex: 1;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.06);
-  }
-
-  .about-divider-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: #3f3f46;
-  }
-
-  /* Getting started panel */
-  .about-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    padding: 16px 18px;
-  }
-
-  .about-panel-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  :global(.about-panel-icon) {
-    color: rgba(249, 115, 22, 0.5);
-    margin-top: 2px;
-    flex-shrink: 0;
-    width: 13px;
-    height: 13px;
-  }
-
-  .about-panel-text {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.83rem;
-    color: #71717a;
-    line-height: 1.5;
-  }
-
   .about-link {
     color: #f97316;
     background: none;
@@ -272,38 +151,13 @@
     text-decoration: none;
     transition: color 0.15s;
   }
-
   .about-link:hover {
     color: #fb923c;
     text-decoration: underline;
     text-underline-offset: 2px;
   }
 
-  /* Footer */
-  .about-footer {
-    margin-top: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  @media (min-width: 480px) {
-    .about-footer {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-    }
-  }
-
-  .about-footer-links {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .about-footer-link {
+  .footer-link {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -317,39 +171,12 @@
     padding: 0;
     transition: color 0.15s;
   }
-
-  .about-footer-link:hover {
+  .footer-link:hover {
     color: #71717a;
   }
 
-  :global(.about-footer-icon) {
-    width: 12px;
-    height: 12px;
-  }
-
-  /* Toggle */
-  .about-toggle-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  :global(.about-toggle-icon) {
-    width: 13px;
-    height: 13px;
-    color: #3f3f46;
-    flex-shrink: 0;
-  }
-
-  .about-toggle-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    color: #3f3f46;
-    white-space: nowrap;
-  }
-
-  .about-toggle {
+  /* Toggle switch — kept in CSS due to pseudo-element positioning */
+  .toggle {
     position: relative;
     display: inline-flex;
     width: 36px;
@@ -363,13 +190,11 @@
       border-color 0.2s;
     flex-shrink: 0;
   }
-
-  .about-toggle--on {
+  .toggle--on {
     background: rgba(249, 115, 22, 0.25);
     border-color: rgba(249, 115, 22, 0.4);
   }
-
-  .about-toggle-thumb {
+  .toggle-thumb {
     position: absolute;
     top: 2px;
     left: 2px;
@@ -381,8 +206,7 @@
       transform 0.2s,
       background 0.2s;
   }
-
-  .about-toggle-thumb--on {
+  .toggle-thumb--on {
     transform: translateX(16px);
     background: #f97316;
   }

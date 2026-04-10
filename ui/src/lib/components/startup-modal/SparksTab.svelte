@@ -160,6 +160,10 @@
   :global(.sparks-tab-generator .vision-section) {
     padding-left: 0 !important;
     padding-right: 0 !important;
+    background: none !important;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-bottom: none !important;
   }
 
   /* Remove max-width — modal constrains width itself */

@@ -347,7 +347,7 @@ export const dependencies: ProjectLicense[] = [
   {
     name: 'supersonic-scsynth',
     version: '^0.25.5',
-    license: 'Tiered: MIT (client) + GPL-3.0-or-later (core)',
+    license: 'MIT + GPL-3+',
     url: 'https://npmjs.com/package/supersonic-scsynth'
   },
   {
