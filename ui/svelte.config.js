@@ -17,7 +17,8 @@ const config = {
     },
     alias: {
       $workers: 'src/workers',
-      $objects: 'src/objects'
+      $objects: 'src/objects',
+      $routes: 'src/routes'
     }
   }
 };

@@ -3,7 +3,9 @@
   import ExamplesTab from './ExamplesTab.svelte';
   import ThanksTab from './ThanksTab.svelte';
   import ShortcutsTab from './ShortcutsTab.svelte';
+  import SparksTab from './SparksTab.svelte';
   import type { Tab } from './types';
+  import { isAiFeaturesVisible } from '../../../stores/ui.store';
 
   let {
     open = $bindable(false),
@@ -27,7 +29,11 @@
     open = false;
   }
 
-  const tabs: Tab[] = ['about', 'demos', 'shortcuts', 'thanks'];
+  const tabs = $derived<Tab[]>(
+    $isAiFeaturesVisible
+      ? ['about', 'demos', 'sparks', 'shortcuts', 'thanks']
+      : ['about', 'demos', 'shortcuts', 'thanks']
+  );
 </script>
 
 {#if open}
@@ -90,6 +96,8 @@
           <AboutTab setTab={(tab) => (activeTab = tab)} />
         {:else if activeTab === 'demos'}
           <ExamplesTab {onLoadPatch} />
+        {:else if activeTab === 'sparks' && $isAiFeaturesVisible}
+          <SparksTab />
         {:else if activeTab === 'thanks'}
           <ThanksTab />
         {:else if activeTab === 'shortcuts'}

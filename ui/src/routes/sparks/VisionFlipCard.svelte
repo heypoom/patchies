@@ -102,8 +102,8 @@
   .flip-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.82);
-    backdrop-filter: blur(8px);
+    background: rgba(9, 9, 11, 0.97);
+    backdrop-filter: blur(16px);
     display: flex;
     align-items: center;
     justify-content: center;

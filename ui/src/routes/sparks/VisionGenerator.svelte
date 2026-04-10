@@ -29,6 +29,15 @@
   let abortController: AbortController | null = null;
   let aiSettingsOpen = $state(false);
 
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        node.remove();
+      }
+    };
+  }
+
   // ── Flip card state ───────────────────────────────────────────
   let flippedVision = $state<Vision | null>(null);
   let flippedIndex = $state(0);
@@ -233,16 +242,18 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 <!-- AI Provider Settings dialog -->
 <AIProviderSettingsDialog bind:open={aiSettingsOpen} onSaveAndContinue={generateVisions} />
 
-<!-- Flip card overlay -->
+<!-- Flip card overlay — portaled to body to escape any parent stacking context -->
 {#if flippedVision}
-  <VisionFlipCard
-    vision={flippedVision}
-    index={flippedIndex}
-    {accentColor}
-    {glowColor}
-    {textColor}
-    onClose={() => (flippedVision = null)}
-  />
+  <div use:portal>
+    <VisionFlipCard
+      vision={flippedVision}
+      index={flippedIndex}
+      {accentColor}
+      {glowColor}
+      {textColor}
+      onClose={() => (flippedVision = null)}
+    />
+  </div>
 {/if}
 
 <style>
