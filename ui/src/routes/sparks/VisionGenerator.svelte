@@ -65,6 +65,11 @@
       return;
     }
 
+    if (!$hasAIApiKey) {
+      aiSettingsOpen = true;
+      return;
+    }
+
     isGenerating = true;
     sparksVisions.set([]);
     generationError = null;
