@@ -1,6 +1,6 @@
 # Patchies.app: creative coding patcher in the browser
 
-<img src="./docs/images/patchies-v4-hero.webp" alt="Patchies.app Hero Image" width="700">
+<img src="./docs/images/patchies-v4-hero.webp" alt="Hero Image" width="700">
 
 Patchies is a patcher for audio, visual and computational things that runs on the web.
 
@@ -25,7 +25,7 @@ Patchies lets you use the audio, visual and computational tools and libraries th
 
 ## ...by patching them together ✨
 
-<img src="./docs/images/patchies-random-walker.png" alt="Patchies.app random walk with hydra shader" width="700">
+<img src="./docs/images/patchies-random-walker.png" alt="Random walk with hydra shader" width="700">
 
 > Try out [the above demo](https://patchies.app/?id=ng7a8mcxobde7kv) which uses P5.js with Hydra to create a random walk shader.
 
@@ -38,6 +38,8 @@ This lets you visually see the program's core composition and its in-between res
 > "What I cannot create, I do not understand. Know how to solve every problem that has been solved." - Richard Feynman
 
 ## Get started
+
+<img src="./docs/images/startup-modal.webp" alt="Startup Modal" width="700">
 
 No installation needed. Open [patchies.app](https://patchies.app) and start patching. Use the [demos tab](https://patchies.app/?startup=demos) to get some inspirations.
 
