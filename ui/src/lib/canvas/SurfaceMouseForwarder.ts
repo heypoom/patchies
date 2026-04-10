@@ -3,7 +3,7 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { Node } from '@xyflow/svelte';
 
 const SHADERTOY_TYPES = new Set(['glsl', 'swgl', 'regl']);
-const SIMPLE_TYPES = new Set(['hydra']);
+const SIMPLE_TYPES = new Set(['hydra', 'three', 'canvas', 'textmode']);
 
 /**
  * Forwards normalized surface mouse events to all render nodes in the graph.
