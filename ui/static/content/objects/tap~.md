@@ -34,8 +34,9 @@ Two canvas presets work directly with `tap~` output:
 - **scope.canvas** — waveform display, accepts `Float32Array`
 - **scope-xy.canvas** — XY plot, accepts `{ x, y }` pairs
 
-Both presets accept visual parameter messages on their inlet:
-`{ xScale }`, `{ yScale }`, `{ plotType }`, `{ decay }`.
+Both presets are available in the **Scope Demos** preset pack.
+Visual parameters (xScale, yScale, plotType, decay) are
+configurable via the settings panel on each preset.
 
 ## Settings
 
