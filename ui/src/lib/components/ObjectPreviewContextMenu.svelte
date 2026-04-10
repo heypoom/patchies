@@ -12,6 +12,7 @@
   } from '@lucide/svelte/icons';
   import * as ContextMenu from './ui/context-menu';
   import type { SettingsSchema } from '$lib/settings';
+  import type { ExtraMenuItem } from './ObjectPreviewOverflowMenu.svelte';
 
   let {
     onrun,
@@ -28,7 +29,8 @@
     onSettingsToggle,
     onBgOutputToggle,
     onPlaybackToggle,
-    onOpenHelp
+    onOpenHelp,
+    extraMenuItems
   }: {
     onrun?: () => void;
     showBgOutputOption: boolean;
@@ -45,6 +47,7 @@
     onBgOutputToggle: () => void;
     onPlaybackToggle: () => void;
     onOpenHelp: () => void;
+    extraMenuItems?: ExtraMenuItem[];
   } = $props();
 </script>
 
@@ -54,7 +57,15 @@
       <Play class="mr-2 h-4 w-4" />
       Run
     </ContextMenu.Item>
+  {/if}
 
+  {#if extraMenuItems && extraMenuItems.length > 0}
+    {#each extraMenuItems as item}
+      <ContextMenu.Item onclick={item.onclick}>
+        <item.icon class="mr-2 h-4 w-4 {item.variant === 'danger' ? 'text-red-400' : ''}" />
+        <span class={item.variant === 'danger' ? 'text-red-400' : ''}>{item.label}</span>
+      </ContextMenu.Item>
+    {/each}
     <ContextMenu.Separator />
   {/if}
 
@@ -99,6 +110,16 @@
         Show preview
       {/if}
     </ContextMenu.Item>
+  {/if}
+
+  {#if extraMenuItems && extraMenuItems.length > 0}
+    <ContextMenu.Separator />
+    {#each extraMenuItems as item}
+      <ContextMenu.Item onclick={item.onclick}>
+        <item.icon class="mr-2 h-4 w-4 {item.variant === 'danger' ? 'text-red-400' : ''}" />
+        <span class={item.variant === 'danger' ? 'text-red-400' : ''}>{item.label}</span>
+      </ContextMenu.Item>
+    {/each}
   {/if}
 
   <ContextMenu.Separator />

@@ -14,6 +14,14 @@
   import * as Popover from './ui/popover';
   import type { SettingsSchema } from '$lib/settings';
   import Separator from './ui/separator/separator.svelte';
+  import type { Component } from 'svelte';
+
+  export interface ExtraMenuItem {
+    label: string;
+    icon: Component<{ class?: string }>;
+    onclick: () => void;
+    variant?: 'default' | 'danger';
+  }
 
   let {
     onrun,
@@ -30,7 +38,8 @@
     onSettingsToggle,
     onBgOutputToggle,
     onPlaybackToggle,
-    onOpenHelp
+    onOpenHelp,
+    extraMenuItems
   }: {
     onrun?: () => void;
     settingsSchema?: SettingsSchema;
@@ -47,6 +56,7 @@
     onBgOutputToggle?: () => void;
     onPlaybackToggle?: () => void;
     onOpenHelp: () => void;
+    extraMenuItems?: ExtraMenuItem[];
   } = $props();
 </script>
 
@@ -71,7 +81,22 @@
           <span>Run</span>
         </button>
       </Popover.Close>
+    {/if}
 
+    {#if extraMenuItems && extraMenuItems.length > 0}
+      {#each extraMenuItems as item}
+        <Popover.Close class="contents">
+          <button
+            class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
+            onclick={item.onclick}
+          >
+            <item.icon
+              class="h-4 w-4 {item.variant === 'danger' ? 'text-red-400' : 'text-zinc-300'}"
+            />
+            <span class={item.variant === 'danger' ? 'text-red-400' : ''}>{item.label}</span>
+          </button>
+        </Popover.Close>
+      {/each}
       <Separator />
     {/if}
 

@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import ObjectPreviewLayout from './ObjectPreviewLayout.svelte';
   import type { SettingsSchema } from '$lib/settings';
+  import type { ExtraMenuItem } from './ObjectPreviewOverflowMenu.svelte';
 
   let {
     title,
@@ -35,7 +36,8 @@
     settingsSchema = undefined,
     settingsValues = {},
     onSettingsValueChange = undefined,
-    onSettingsRevertAll = undefined
+    onSettingsRevertAll = undefined,
+    extraMenuItems = undefined
   }: {
     title: string;
     nodeId?: string;
@@ -69,6 +71,7 @@
     settingsValues?: Record<string, unknown>;
     onSettingsValueChange?: (key: string, value: unknown) => void;
     onSettingsRevertAll?: () => void;
+    extraMenuItems?: ExtraMenuItem[];
   } = $props();
 
   // Build the interaction class string based on individual flags
@@ -105,6 +108,7 @@
   {settingsValues}
   {onSettingsValueChange}
   {onSettingsRevertAll}
+  {extraMenuItems}
 >
   {#snippet preview()}
     <canvas

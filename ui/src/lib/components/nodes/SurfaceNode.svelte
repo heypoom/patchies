@@ -18,6 +18,8 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
+  import type { ExtraMenuItem } from '$lib/components/ObjectPreviewOverflowMenu.svelte';
+  import { Expand, Shrink } from '@lucide/svelte/icons';
   import { profiler } from '$lib/profiler';
 
   // Error reporting offset reuse (surface is structurally identical to canvas.dom)
@@ -105,6 +107,15 @@
 
   // Mouse state (normalized 0–1)
   let mouse = $state({ x: 0, y: 0, down: false, buttons: 0 });
+
+  const extraMenuItems: ExtraMenuItem[] = $derived([
+    {
+      label: isFullscreen ? 'Exit surface' : 'Go Live',
+      icon: isFullscreen ? Shrink : Expand,
+      onclick: () => (isFullscreen ? exitSurface() : enterFullscreen()),
+      variant: isFullscreen ? 'danger' : 'default'
+    }
+  ]);
 
   const { updateNodeData, getNodes } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -565,18 +576,9 @@
   {selected}
   {editorReady}
   hasError={lineErrors !== undefined}
+  {extraMenuItems}
 >
   {#snippet topHandle()}
-    <!-- Go Live button -->
-    <button
-      class="absolute top-1 right-1 z-10 cursor-pointer rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors {isFullscreen
-        ? 'bg-red-600 text-white hover:bg-red-700'
-        : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}"
-      onclick={() => (isFullscreen ? exitSurface() : enterFullscreen())}
-    >
-      {isFullscreen ? 'Exit' : 'Go Live'}
-    </button>
-
     {#each Array.from({ length: inletCount }) as _, index (index)}
       <TypedHandle
         port="inlet"
