@@ -112,16 +112,6 @@
     </ContextMenu.Item>
   {/if}
 
-  {#if extraMenuItems && extraMenuItems.length > 0}
-    <ContextMenu.Separator />
-    {#each extraMenuItems as item}
-      <ContextMenu.Item onclick={item.onclick}>
-        <item.icon class="mr-2 h-4 w-4 {item.variant === 'danger' ? 'text-red-400' : ''}" />
-        <span class={item.variant === 'danger' ? 'text-red-400' : ''}>{item.label}</span>
-      </ContextMenu.Item>
-    {/each}
-  {/if}
-
   <ContextMenu.Separator />
 
   <ContextMenu.Item onclick={onOpenHelp}>

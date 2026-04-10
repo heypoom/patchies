@@ -11,6 +11,7 @@
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
+  import { SurfaceListeners } from '$lib/canvas/SurfaceListeners';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
@@ -181,15 +182,6 @@
 
   // ── Pointer helpers ──────────────────────────────────────────────────────
 
-  function normalizePointer(clientX: number, clientY: number, sourceCanvas: HTMLCanvasElement) {
-    const rect = sourceCanvas.getBoundingClientRect();
-    // Map to normalized 0–1 in fullscreen space
-    return {
-      x: (clientX - rect.left) / rect.width,
-      y: (clientY - rect.top) / rect.height
-    };
-  }
-
   function dispatchPointer(x: number, y: number, buttons: number, type: string) {
     const down = buttons > 0;
     mouse.x = x;
@@ -199,7 +191,6 @@
 
     const event = { x, y, pressure: 0, buttons, down, type };
 
-    // Fire user callback
     if (pointerCallback) {
       try {
         pointerCallback(event);
@@ -208,44 +199,10 @@
       }
     }
 
-    // Send to pointer outlet (outlet index after video outlet)
     const pointerOutletIdx = videoOutputEnabled ? 1 : 0;
     jsRunner.getMessageContext(nodeId).send(pointerOutletIdx, event);
 
-    if (drawMode === 'interact') {
-      triggerDraw();
-    }
-  }
-
-  function setupPointerListeners(canvas: HTMLCanvasElement): () => void {
-    const onPointerMove = (e: PointerEvent) => {
-      const { x, y } = normalizePointer(e.clientX, e.clientY, canvas);
-      dispatchPointer(x, y, e.buttons, 'move');
-    };
-    const onPointerDown = (e: PointerEvent) => {
-      const { x, y } = normalizePointer(e.clientX, e.clientY, canvas);
-      dispatchPointer(x, y, e.buttons || 1, 'down');
-    };
-    const onPointerUp = (e: PointerEvent) => {
-      const { x, y } = normalizePointer(e.clientX, e.clientY, canvas);
-      dispatchPointer(x, y, 0, 'up');
-    };
-    const onPointerLeave = () => {
-      mouse.down = false;
-      mouse.buttons = 0;
-    };
-
-    canvas.addEventListener('pointermove', onPointerMove);
-    canvas.addEventListener('pointerdown', onPointerDown);
-    canvas.addEventListener('pointerup', onPointerUp);
-    canvas.addEventListener('pointerleave', onPointerLeave);
-
-    return () => {
-      canvas.removeEventListener('pointermove', onPointerMove);
-      canvas.removeEventListener('pointerdown', onPointerDown);
-      canvas.removeEventListener('pointerup', onPointerUp);
-      canvas.removeEventListener('pointerleave', onPointerLeave);
-    };
+    if (drawMode === 'interact') triggerDraw();
   }
 
   // ── Draw mode & rAF ──────────────────────────────────────────────────────
@@ -294,8 +251,26 @@
 
   // ── Fullscreen activation ────────────────────────────────────────────────
 
-  let cleanupPreviewListeners: (() => void) | null = null;
-  let cleanupOverlayListeners: (() => void) | null = null;
+  const previewListeners = new SurfaceListeners();
+  const overlayListeners = new SurfaceListeners();
+
+  function listenerOpts() {
+    return {
+      onPointer: (e: import('$lib/canvas/SurfaceListeners').PointerEvent_) =>
+        dispatchPointer(e.x, e.y, e.buttons, e.type),
+      get onTouch() {
+        return touchCallback;
+      },
+      onLeave: () => {
+        mouse.down = false;
+        mouse.buttons = 0;
+      },
+      code: data.code,
+      nodeId,
+      customConsole,
+      wrapperOffset: SURFACE_WRAPPER_OFFSET
+    };
+  }
 
   function enterFullscreen() {
     if (isFullscreen) return;
@@ -311,9 +286,8 @@
     activeCtx = overlay.ctx;
 
     // Swap pointer listeners
-    cleanupPreviewListeners?.();
-    cleanupPreviewListeners = null;
-    cleanupOverlayListeners = setupPointerListeners(overlay.canvas);
+    previewListeners.detach();
+    overlayListeners.attach(overlay.canvas, listenerOpts());
 
     // Stop thumbnail loop (XYFlow is hidden anyway)
     stopThumbnailLoop();
@@ -335,16 +309,13 @@
     }
 
     // Swap pointer listeners
-    cleanupOverlayListeners?.();
-    cleanupOverlayListeners = null;
-    if (previewCanvas) {
-      cleanupPreviewListeners = setupPointerListeners(previewCanvas);
-    }
+    overlayListeners.detach();
+    if (previewCanvas) previewListeners.attach(previewCanvas, listenerOpts());
 
     // Re-run code with preview canvas
     runCode();
 
-    // Restart thumbnail loop (now drawing overlay → preview thumbnail)
+    // Restart thumbnail loop
     startThumbnailLoop();
   }
 
@@ -534,7 +505,7 @@
     setupPreviewCanvas();
 
     if (previewCanvas) {
-      cleanupPreviewListeners = setupPointerListeners(previewCanvas);
+      previewListeners.attach(previewCanvas, listenerOpts());
     }
 
     window.addEventListener('resize', handleWindowResize);
@@ -548,8 +519,8 @@
   onDestroy(() => {
     if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
     stopThumbnailLoop();
-    cleanupPreviewListeners?.();
-    cleanupOverlayListeners?.();
+    previewListeners.detach();
+    overlayListeners.detach();
 
     window.removeEventListener('resize', handleWindowResize);
 
