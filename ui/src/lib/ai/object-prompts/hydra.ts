@@ -16,6 +16,12 @@ Live coding video synthesis with chainable Hydra functions.
 - \`type: 'coord'\` — coordinate transform; receives \`vec2 _st\`
 - \`glsl\` field supports \`#include <lygia/...>\` directives
 
+**Available context variables:**
+- mouse.x, mouse.y - current mouse position in output pixels
+- width, height - output dimensions in pixels
+- Normalize mouse: \`() => mouse.x / width\`, \`() => mouse.y / height\` (gives 0–1 range)
+- Example: \`gradient().hue(() => mouse.x / width).scale(1, 1, () => mouse.y / height).out()\`
+
 **Hydra-specific gotchas:**
 - Hydra has its own render loop - use arrow functions for dynamic values instead of requestAnimationFrame
 
