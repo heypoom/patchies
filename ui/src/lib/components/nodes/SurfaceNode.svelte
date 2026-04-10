@@ -23,6 +23,7 @@
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import { SurfaceMouseForwarder } from '$lib/canvas/SurfaceMouseForwarder';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import type { ExtraMenuItem } from '$lib/components/ObjectPreviewOverflowMenu.svelte';
@@ -127,6 +128,12 @@
   // Mouse state (normalized 0–1)
   let mouse = $state({ x: 0, y: 0, down: false, buttons: 0 });
 
+  const mouseForwarder = new SurfaceMouseForwarder(
+    () => getNodes(),
+    () => outputWidth,
+    () => outputHeight
+  );
+
   function clearCanvas() {
     if (activeCanvas && activeCtx) {
       activeCtx.clearRect(0, 0, activeCanvas.width, activeCanvas.height);
@@ -209,6 +216,8 @@
       }
     }
 
+    mouseForwarder.forward(x, y, buttons, type);
+
     if (drawMode === 'interact') triggerDraw();
   }
 
@@ -286,6 +295,7 @@
     const nodes = getNodes().map((n) => ({ id: n.id, type: n.type }));
 
     overlay.activate(nodeId, nodes, () => exitSurface());
+    mouseForwarder.forceHydraScope('global');
 
     // Switch active canvas to overlay
     activeCanvas = overlay.canvas;
@@ -314,6 +324,7 @@
     isFullscreen = false;
 
     SurfaceOverlay.getInstance().deactivate(nodeId);
+    mouseForwarder.forceHydraScope('local');
 
     // Remove keyboard listeners
     if (keyboardListenerHandlers) {
