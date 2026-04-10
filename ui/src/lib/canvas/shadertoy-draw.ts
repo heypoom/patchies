@@ -112,7 +112,18 @@ export function createShaderToyDrawCommand({
   const userUniformInputs: UserUniformInputs = {};
 
   uniformDefs.forEach((def, paramIndex) => {
-    userUniformInputs[def.name] = (_, props) => props.userParams[paramIndex];
+    if (def.arraySize !== undefined) {
+      // Regl expands array uniforms into 'name[0]', 'name[1]', … entries.
+      // We must register each index separately and return the i-th element.
+      for (let i = 0; i < def.arraySize; i++) {
+        userUniformInputs[`${def.name}[${i}]`] = (_, props) => {
+          const arr = props.userParams[paramIndex] as unknown[] | null;
+          return arr?.[i] ?? null;
+        };
+      }
+    } else {
+      userUniformInputs[def.name] = (_, props) => props.userParams[paramIndex];
+    }
   });
 
   try {

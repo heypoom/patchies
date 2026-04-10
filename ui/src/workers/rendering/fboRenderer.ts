@@ -1253,6 +1253,10 @@ export class FBORenderer {
 
           if (value !== undefined && value !== null) {
             userUniformParams.push(value);
+          } else {
+            // Push a zero default so indices stay aligned with uniformDefs indices.
+            // Without this, a missing uniform causes all subsequent params to shift.
+            userUniformParams.push(defaultUniformValue(n));
           }
         }
       }

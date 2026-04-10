@@ -35,7 +35,7 @@ import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 import { Transport, type TransportState } from '$lib/transport';
 
-export type UserUniformValue = number | boolean | number[];
+export type UserUniformValue = number | boolean | number[] | number[][];
 
 export class GLSystem {
   /** Web worker for offscreen rendering. */
