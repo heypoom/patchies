@@ -1,6 +1,6 @@
 # Packs
 
-![Packs search](/content/images/packs-search.webp)
+![Packs search](/content/images/sidebar-packs.webp)
 
 By default, Patchies only shows you a few objects and presets. Use `Ctrl/Cmd + B > Packs` to pick and choose **object packs** and **preset packs**, tailoring the shown objects and presets for your use cases.
 

@@ -1,6 +1,6 @@
 # Shortcuts
 
-![Shortcuts](/content/images/patchies-shortcuts.png)
+![Shortcuts](/content/images/startup-modal-shortcut.webp)
 
 Patchies is designed to be keyboard-first so you can get in the flow. Go to [Help > Shortcuts](/?startup=shortcuts) to see the full list of keyboard and mouse shortcuts.
 

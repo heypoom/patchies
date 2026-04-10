@@ -1,6 +1,6 @@
 # Supporting Open Source
 
-![Please support open source](/content/images/patchies-thanks-modal.webp)
+![Please support open source](/content/images/startup-modal-thanks.webp)
 
 Patchies is licensed under [AGPL-3.0](https://github.com/heypoom/patchies/blob/main/LICENSE) and builds upon many amazing open source projects.
 

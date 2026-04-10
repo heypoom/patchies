@@ -1,6 +1,6 @@
 # Demos
 
-![Patchies demo modal](/content/images/demos-modal.webp)
+![Patchies demo modal](/content/images/startup-modal-demos.webp)
 
 Playing around with demos first is a nice way to get inspirations and see what Patchies can do, first-hand.
 

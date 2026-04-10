@@ -1,6 +1,6 @@
 # Help
 
-![In-app help panel](/content/images/in-app-help.webp)
+![In-app help panel](/content/images/sidebar-help.webp)
 
 The Help panel in the sidebar provides quick reference for any object in your patch.
 
