@@ -394,7 +394,7 @@
                   ? 'Presets hidden in help mode'
                   : browserMode === 'packs'
                     ? 'Switch to insert mode to browse presets'
-                    : 'Show saved presets?'}
+                    : 'Show saved and enabled presets'}
               </Tooltip.Content>
             </Tooltip.Root>
 
