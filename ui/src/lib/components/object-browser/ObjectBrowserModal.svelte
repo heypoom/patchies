@@ -425,10 +425,11 @@
           <input
             type="text"
             bind:value={searchQuery}
-            placeholder="search objects..."
+            placeholder="search objects and presets..."
             class="ob-search-input"
             id="ob-title"
           />
+
           {#if searchQuery}
             <button
               onclick={() => (searchQuery = '')}
