@@ -1,10 +1,70 @@
 <script lang="ts">
   import { match } from 'ts-pattern';
-  import { tick } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
+  import { getTextProvider } from '$lib/ai/providers';
+  import { extractJson } from '$lib/ai/extract-json';
+  import { OBJECT_TYPE_LIST } from '$lib/ai/object-descriptions-types';
+  import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
+  import {
+    Layers,
+    Box,
+    AudioLines,
+    Music,
+    Hand,
+    Code,
+    Cpu,
+    Lightbulb,
+    Projector,
+    Piano,
+    Usb,
+    type Icon as LucideIcon
+  } from '@lucide/svelte';
 
-  type Difficulty = 'beginner' | 'intermediate' | 'advanced';
+  type LucideComponent = typeof LucideIcon;
+
+  const outputIcons: Record<string, LucideComponent> = {
+    '2d-visual': Layers,
+    video: Box,
+    sound: AudioLines,
+    music: Music,
+    gestures: Hand,
+    code: Code,
+    'low-level': Cpu,
+    lighting: Lightbulb,
+    projection: Projector,
+    midi: Piano,
+    serial: Usb
+  };
+
   type PatchType = 'starter' | 'template' | 'example' | 'showcase';
+  type Difficulty = 'beginner' | 'intermediate' | 'advanced';
+
+  interface Mood {
+    id: string;
+    name: string;
+    tagline: string;
+    description: string;
+    nodes: string[];
+    gradient: string;
+    accentColor: string;
+    glowColor: string;
+    textColor: string;
+  }
+
+  interface Output {
+    id: string;
+    name: string;
+    description: string;
+    packIds?: string[]; // derive nodes from these packs
+    nodes?: string[]; // explicit nodes (used alone or to supplement packIds)
+  }
+
+  function resolveNodes(output: Output): string[] {
+    const fromPacks = (output.packIds ?? []).flatMap(
+      (packId) => BUILT_IN_PACKS.find((p) => p.id === packId)?.objects ?? []
+    );
+    return [...new Set([...fromPacks, ...(output.nodes ?? [])])];
+  }
 
   interface Patch {
     title: string;
@@ -18,247 +78,499 @@
     title: string;
     description: string;
     nodes: string[];
-    tags: string[];
     difficulty: Difficulty;
     patches: Patch[];
-    author: string;
+    mood: string[];
+    outputs: string[];
   }
+
+  const moods: Mood[] = [
+    {
+      id: 'dark',
+      name: 'Dark',
+      tagline: 'Heavy. Slow. Threatening.',
+      description:
+        'Deep bass drones that fill a room. Monochrome visuals that shift like smoke. The kind of patch that makes people uncomfortable in the best way.',
+      nodes: ['osc~', 'glsl', 'lfo'],
+      gradient: 'linear-gradient(135deg, #0a0a1a 0%, #1a1030 50%, #0d0d1a 100%)',
+      accentColor: '#818cf8',
+      glowColor: 'rgba(99, 102, 241, 0.15)',
+      textColor: '#c7d2fe'
+    },
+    {
+      id: 'euphoric',
+      name: 'Euphoric',
+      tagline: 'Bright. Fast. Alive.',
+      description:
+        'Festival energy in a patch. Audio-reactive explosions of color, strudel patterns that accelerate, visuals that peak with the drop.',
+      nodes: ['fft', 'strudel', 'p5'],
+      gradient: 'linear-gradient(135deg, #1a0f00 0%, #2d1a00 50%, #1a1200 100%)',
+      accentColor: '#fbbf24',
+      glowColor: 'rgba(251, 191, 36, 0.15)',
+      textColor: '#fde68a'
+    },
+    {
+      id: 'glitchy',
+      name: 'Glitchy',
+      tagline: 'Broken. Wrong. Perfect.',
+      description:
+        'Corrupted video feeds, stuttering audio, visuals that fight against themselves. Deliberately malfunctioning systems are the most interesting ones.',
+      nodes: ['glsl', 'webcam', 'js'],
+      gradient: 'linear-gradient(135deg, #000d00 0%, #001a04 50%, #000e00 100%)',
+      accentColor: '#4ade80',
+      glowColor: 'rgba(74, 222, 128, 0.12)',
+      textColor: '#86efac'
+    },
+    {
+      id: 'meditative',
+      name: 'Meditative',
+      tagline: 'Slow. Looping. Breathable.',
+      description:
+        'Long reverb tails that blur into silence. Hydra visuals that drift without destination. Time stretches. The patch breathes on its own.',
+      nodes: ['hydra', 'reverb~', 'lfo'],
+      gradient: 'linear-gradient(135deg, #001214 0%, #001e20 50%, #001012 100%)',
+      accentColor: '#22d3ee',
+      glowColor: 'rgba(34, 211, 238, 0.1)',
+      textColor: '#a5f3fc'
+    },
+    {
+      id: 'chaotic',
+      name: 'Chaotic',
+      tagline: 'Too much. All at once.',
+      description:
+        "Every frequency band triggering something different. DMX strobing. Strudel patterns racing. Controlled overwhelm — the audience doesn't know where to look.",
+      nodes: ['fft', 'dmx', 'strudel'],
+      gradient: 'linear-gradient(135deg, #1a0000 0%, #2d0000 50%, #1a0500 100%)',
+      accentColor: '#f87171',
+      glowColor: 'rgba(248, 113, 113, 0.14)',
+      textColor: '#fca5a5'
+    },
+    {
+      id: 'dreamy',
+      name: 'Dreamy',
+      tagline: 'Soft. Drifting. Hazy.',
+      description:
+        'Delay trails that smear the past into the present. Hydra textures like oil on water. Something ambient that forgets it started.',
+      nodes: ['hydra', 'delay~', 'p5'],
+      gradient: 'linear-gradient(135deg, #0d0014 0%, #160020 50%, #0a0012 100%)',
+      accentColor: '#c084fc',
+      glowColor: 'rgba(192, 132, 252, 0.12)',
+      textColor: '#e9d5ff'
+    },
+    {
+      id: 'industrial',
+      name: 'Industrial',
+      tagline: 'Mechanical. Rhythmic. Cold.',
+      description:
+        'Clock-driven light rigs, oscillators that clank rather than sing. The beauty of machinery doing exactly what it was told.',
+      nodes: ['dmx', 'osc~', 'transport'],
+      gradient: 'linear-gradient(135deg, #0f0d0a 0%, #1a1610 50%, #100e0a 100%)',
+      accentColor: '#fb923c',
+      glowColor: 'rgba(249, 115, 22, 0.12)',
+      textColor: '#fed7aa'
+    },
+    {
+      id: 'playful',
+      name: 'Playful',
+      tagline: 'Interactive. Light. Joyful.',
+      description:
+        'Sliders that feel good to touch. Canvases that react to cursor position. Patches that invite people to break them.',
+      nodes: ['p5', 'slider', 'canvas'],
+      gradient: 'linear-gradient(135deg, #0a1200 0%, #111e00 50%, #0b1300 100%)',
+      accentColor: '#a3e635',
+      glowColor: 'rgba(163, 230, 53, 0.12)',
+      textColor: '#d9f99d'
+    }
+  ];
+
+  const outputs: Output[] = [
+    {
+      id: '2d-visual',
+      name: '2D Visual',
+      description: 'Canvas, P5.js, generative graphics',
+      packIds: ['2d']
+    },
+    {
+      id: 'video',
+      name: 'Video',
+      description: 'Three.js, Hydra, shaders, projection',
+      packIds: ['video-synthesis']
+    },
+    {
+      id: 'sound',
+      name: 'Sound',
+      description: 'Synthesis, effects, audio processing',
+      packIds: ['signal-generators', 'audio-effects']
+    },
+    {
+      id: 'music',
+      name: 'Music',
+      description: 'Composition, patterns, sequencing',
+      packIds: ['music']
+    },
+    {
+      id: 'gestures',
+      name: 'Gestures',
+      description: 'Webcam, body & hand tracking',
+      packIds: ['vision'],
+      nodes: ['webcam']
+    },
+    {
+      id: 'code',
+      name: 'Code',
+      description: 'JS runners, workers, scripting',
+      packIds: ['scripting'],
+      nodes: ['js', 'worker']
+    },
+    {
+      id: 'low-level',
+      name: 'Low-Level',
+      description: 'VMs, assembly, DSP, bytecode',
+      packIds: ['low-level'],
+      nodes: ['bytebeat~', 'dsp~', 'wgpu.compute']
+    },
+    {
+      id: 'lighting',
+      name: 'Lighting',
+      description: 'DMX lights & LED strips',
+      nodes: ['serial.dmx']
+    },
+    {
+      id: 'projection',
+      name: 'Projection',
+      description: 'Projection mapping',
+      nodes: ['projmap']
+    },
+    {
+      id: 'midi',
+      name: 'MIDI',
+      description: 'MIDI controllers & instruments',
+      packIds: ['midi']
+    },
+    {
+      id: 'serial',
+      name: 'Serial',
+      description: 'Arduino, sensors, physical I/O',
+      nodes: ['serial', 'serial.term']
+    }
+  ];
 
   const sparks: Spark[] = [
     {
       id: 'music-light-show',
       title: 'Music-Driven Light Show',
-      description:
-        'Turn any audio input into dynamic DMX lighting. FFT frequency bands map to RGB channels — kick drums flash red, highs shimmer blue.',
+      description: 'FFT frequency bands map to DMX RGB channels in real time.',
       nodes: ['fft', 'dmx', 'map'],
-      tags: ['audio-reactive', 'live-performance', 'hardware'],
       difficulty: 'intermediate',
-      author: 'poom',
+      mood: ['chaotic', 'euphoric', 'industrial'],
+      outputs: ['sound', 'lighting'],
       patches: [
-        { title: 'Starter Kit', type: 'starter', url: '#' },
-        { title: 'Full Stage Setup', type: 'template', url: '#' }
-      ]
-    },
-    {
-      id: 'generative-terrain',
-      title: 'Infinite Generative Terrain',
-      description:
-        'Scrolling Perlin noise landscape that never repeats. Sliders control terrain scale, scroll speed, and color palette in real time.',
-      nodes: ['p5', 'slider', 'js'],
-      tags: ['generative', 'visual', 'interactive'],
-      difficulty: 'beginner',
-      author: 'poom',
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '#' },
-        { title: 'Audio-Reactive Version', type: 'example', url: '#' }
-      ]
-    },
-    {
-      id: 'video-feedback',
-      title: 'Live Video Feedback Loop',
-      description:
-        'Webcam fed back through Hydra transforms creates hypnotic recursive visuals. A classic video synthesis technique made trivial.',
-      nodes: ['hydra', 'webcam', 'canvas'],
-      tags: ['visual', 'generative', 'video-synthesis'],
-      difficulty: 'beginner',
-      author: 'poom',
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '#' },
-        { title: 'Festival Build', type: 'showcase', url: '#', author: 'joey' }
-      ]
-    },
-    {
-      id: 'beat-typography',
-      title: 'Beat-Synced Typography',
-      description:
-        'Text that dances to the beat. Each kick drum fires a font-size explosion. Works with Strudel patterns or live mic input.',
-      nodes: ['transport', 'p5', 'strudel', 'fft'],
-      tags: ['audio-reactive', 'visual', 'live-performance'],
-      difficulty: 'intermediate',
-      author: 'poom',
-      patches: [{ title: 'Starter Kit', type: 'starter', url: '#' }]
-    },
-    {
-      id: 'data-sonification',
-      title: 'Data Sonification',
-      description:
-        'Fetch live data from any API and map values to synth parameters. Hear the stock market, weather, or crypto as a drone.',
-      nodes: ['fetch', 'osc~', 'map', 'js'],
-      tags: ['data', 'experimental', 'audio'],
-      difficulty: 'advanced',
-      author: 'poom',
-      patches: [
-        { title: 'Starter Kit', type: 'starter', url: '#' },
-        { title: 'Bitcoin Price Drone', type: 'example', url: '#' }
+        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
+        { title: 'Full Stage Setup', type: 'template', url: '/sparks/submit' }
       ]
     },
     {
       id: 'reactive-particles',
       title: 'Reactive Particle Storm',
       description:
-        'Thousands of particles orbit a central attractor. Frequency bands control speed, mass, and color temperature in real time.',
+        'Thousands of particles orbit an attractor. Frequency bands control mass and color.',
       nodes: ['fft', 'p5', 'osc~'],
-      tags: ['audio-reactive', 'generative', 'visual'],
       difficulty: 'intermediate',
-      author: 'poom',
+      mood: ['euphoric', 'chaotic', 'dark'],
+      outputs: ['2d-visual', 'sound'],
       patches: [
-        { title: 'Starter Kit', type: 'starter', url: '#' },
-        { title: 'With MIDI', type: 'template', url: '#' },
-        { title: 'Festival Build', type: 'showcase', url: '#', author: 'maya' }
+        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
+        { title: 'Festival Build', type: 'showcase', url: '/sparks/submit', author: 'maya' }
       ]
+    },
+    {
+      id: 'video-feedback',
+      title: 'Live Video Feedback Loop',
+      description: 'Webcam fed back through Hydra transforms — hypnotic recursive visuals.',
+      nodes: ['hydra', 'webcam', 'canvas'],
+      difficulty: 'beginner',
+      mood: ['glitchy', 'dreamy', 'meditative'],
+      outputs: ['video', 'gestures'],
+      patches: [
+        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
+        { title: 'Performance Build', type: 'showcase', url: '/sparks/submit', author: 'joey' }
+      ]
+    },
+    {
+      id: 'beat-typography',
+      title: 'Beat-Synced Typography',
+      description: 'Text that explodes on every kick drum. Works with Strudel or live audio.',
+      nodes: ['transport', 'p5', 'strudel', 'fft'],
+      difficulty: 'intermediate',
+      mood: ['euphoric', 'chaotic', 'playful'],
+      outputs: ['2d-visual', 'music'],
+      patches: [{ title: 'Starter Kit', type: 'starter', url: '/sparks/submit' }]
     },
     {
       id: 'glsl-raymarcher',
       title: 'GLSL Raymarched Shapes',
-      description:
-        'Signed distance functions in a GLSL shader, animated by OSC messages. Change geometry, color, and lighting from other nodes.',
+      description: 'Signed distance functions in a shader, animated by OSC messages.',
       nodes: ['glsl', 'osc~', 'js'],
-      tags: ['visual', 'shader', 'generative'],
       difficulty: 'advanced',
-      author: 'poom',
+      mood: ['dark', 'meditative', 'industrial'],
+      outputs: ['video', 'code'],
       patches: [
-        { title: 'Starter Kit', type: 'starter', url: '#' },
-        { title: 'SDF Playground', type: 'template', url: '#' }
+        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
+        { title: 'SDF Playground', type: 'template', url: '/sparks/submit' }
       ]
     },
     {
-      id: 'collaborative-canvas',
-      title: 'Multiplayer Drawing Canvas',
+      id: 'drone-landscape',
+      title: 'Drone Soundscape',
       description:
-        'A shared canvas where every connected peer can draw simultaneously. Built on Patchies P2P — no server needed.',
-      nodes: ['canvas', 'p5', 'network'],
-      tags: ['interactive', 'collaboration', 'experimental'],
-      difficulty: 'intermediate',
-      author: 'poom',
+        'Slowly evolving LFOs modulate oscillator timbre. Plays forever without repeating.',
+      nodes: ['lfo', 'osc~', 'reverb~'],
+      difficulty: 'beginner',
+      mood: ['dark', 'meditative', 'dreamy'],
+      outputs: ['sound'],
       patches: [
-        { title: 'Starter Kit', type: 'starter', url: '#' },
-        { title: 'With Strudel Score', type: 'example', url: '#', author: 'rin' }
+        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
+        { title: 'Cathedral Version', type: 'example', url: '/sparks/submit' }
       ]
+    },
+    {
+      id: 'webcam-glitch',
+      title: 'Webcam Glitch Engine',
+      description:
+        'GLSL shaders corrupt the webcam feed in real time. Datamosh, pixel sort, scan lines.',
+      nodes: ['webcam', 'glsl', 'js'],
+      difficulty: 'intermediate',
+      mood: ['glitchy', 'dark', 'chaotic'],
+      outputs: ['video', 'gestures', 'code'],
+      patches: [
+        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
+        { title: 'VJ Set Build', type: 'template', url: '/sparks/submit' }
+      ]
+    },
+    {
+      id: 'generative-terrain',
+      title: 'Infinite Generative Terrain',
+      description: 'Perlin noise landscape that scrolls forever. Sliders control scale and color.',
+      nodes: ['p5', 'slider', 'js'],
+      difficulty: 'beginner',
+      mood: ['playful', 'dreamy', 'meditative'],
+      outputs: ['2d-visual', 'code'],
+      patches: [
+        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
+        { title: 'Audio-Reactive', type: 'example', url: '/sparks/submit' }
+      ]
+    },
+    {
+      id: 'hand-synth',
+      title: 'Hand-Tracked Synth',
+      description: 'Wave your hand to control pitch and filter cutoff. No keyboard needed.',
+      nodes: ['vision.hand', 'osc~', 'lowpass~'],
+      difficulty: 'intermediate',
+      mood: ['playful', 'euphoric', 'glitchy'],
+      outputs: ['sound', 'gestures'],
+      patches: [
+        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
+        { title: 'Theremin Mode', type: 'example', url: '/sparks/submit' }
+      ]
+    },
+    {
+      id: 'bytebeat-viz',
+      title: 'Bytebeat Visualizer',
+      description:
+        'One-line math expressions generate audio and drive a GLSL scope simultaneously.',
+      nodes: ['bytebeat~', 'scope~', 'glsl'],
+      difficulty: 'advanced',
+      mood: ['glitchy', 'industrial', 'dark'],
+      outputs: ['low-level', 'sound', 'video'],
+      patches: [{ title: 'Starter Kit', type: 'starter', url: '/sparks/submit' }]
+    },
+    {
+      id: 'strudel-visuals',
+      title: 'Live Coded Visuals',
+      description:
+        'Strudel patterns trigger P5 drawing commands. Code music, get visuals for free.',
+      nodes: ['strudel', 'p5', 'recv'],
+      difficulty: 'beginner',
+      mood: ['euphoric', 'playful', 'chaotic'],
+      outputs: ['music', '2d-visual', 'code'],
+      patches: [
+        { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
+        { title: 'Performance Template', type: 'template', url: '/sparks/submit' }
+      ]
+    },
+    {
+      id: 'body-conductor',
+      title: 'Body as Conductor',
+      description: 'Pose detection maps limb positions to oscillator parameters. Dance to compose.',
+      nodes: ['vision.body', 'osc~', 'map'],
+      difficulty: 'intermediate',
+      mood: ['playful', 'euphoric', 'meditative'],
+      outputs: ['gestures', 'sound'],
+      patches: [{ title: 'Starter Kit', type: 'starter', url: '/sparks/submit' }]
     }
   ];
 
-  const allNodes = [...new Set(sparks.flatMap((s) => s.nodes))].sort();
+  // ── State ─────────────────────────────────────────────────────
+  let selectedMoodId = $state<string | null>(null);
+  let selectedOutputIds = new SvelteSet<string>();
 
-  // Today's challenge — could be date-seeded later
-  const todaysChallenge = ['fft', 'p5', 'dmx'];
+  const selectedMood = $derived(moods.find((m) => m.id === selectedMoodId) ?? null);
 
-  // ── Bench state ──────────────────────────────────────────────
-  const MAX_BENCH = 5;
-  let benchNodes = $state<string[]>([]);
-  let lockedNodes = new SvelteSet<string>();
-
-  // Wire SVG
-  let benchEl: HTMLDivElement | null = $state(null);
-  let benchNodeEls: (HTMLElement | null)[] = [];
-  let wirePaths = $state<{ d: string; key: string }[]>([]);
-  let wireViewBox = $state('0 0 800 140');
-
-  function computeWires() {
-    if (!benchEl || benchNodes.length < 2) {
-      wirePaths = [];
-      return;
-    }
-    const cr = benchEl.getBoundingClientRect();
-    const paths: { d: string; key: string }[] = [];
-    for (let i = 0; i < benchNodes.length - 1; i++) {
-      const a = benchNodeEls[i];
-      const b = benchNodeEls[i + 1];
-      if (!a || !b) continue;
-      const ra = a.getBoundingClientRect();
-      const rb = b.getBoundingClientRect();
-      // connect from bottom-center of each token
-      const x1 = ra.left + ra.width / 2 - cr.left;
-      const y1 = ra.bottom - cr.top;
-      const x2 = rb.left + rb.width / 2 - cr.left;
-      const y2 = rb.bottom - cr.top;
-      const droop = 32;
-      paths.push({
-        d: `M ${x1} ${y1} C ${x1} ${y1 + droop}, ${x2} ${y2 + droop}, ${x2} ${y2}`,
-        key: `${benchNodes[i]}-${benchNodes[i + 1]}-${i}`
-      });
-    }
-    wirePaths = paths;
-    wireViewBox = `0 0 ${cr.width} ${cr.height}`;
-  }
-
-  $effect(() => {
-    void benchNodes;
-    tick().then(computeWires);
-  });
-
-  function addToBench(node: string) {
-    if (benchNodes.includes(node) || benchNodes.length >= MAX_BENCH) return;
-    benchNodes = [...benchNodes, node];
-  }
-
-  function removeFromBench(node: string) {
-    benchNodes = benchNodes.filter((n) => n !== node);
-    lockedNodes.delete(node);
-  }
-
-  function toggleLock(node: string, e: MouseEvent) {
-    e.stopPropagation();
-    if (lockedNodes.has(node)) lockedNodes.delete(node);
-    else lockedNodes.add(node);
-  }
-
-  function surpriseMe() {
-    const keep = benchNodes.filter((n) => lockedNodes.has(n));
-    const available = allNodes.filter((n) => !keep.includes(n));
-    const shuffled = [...available].sort(() => Math.random() - 0.5);
-    const needed = Math.max(0, 3 - keep.length);
-    benchNodes = [...keep, ...shuffled.slice(0, needed)];
-  }
-
-  function loadChallenge() {
-    benchNodes = [...todaysChallenge];
-    lockedNodes.clear();
-  }
-
-  function clearBench() {
-    benchNodes = [];
-    lockedNodes.clear();
-    wirePaths = [];
-  }
-
-  // ── Spark scoring ─────────────────────────────────────────────
-  function scoreSpark(spark: Spark): number {
-    if (benchNodes.length === 0) return 0;
-    return benchNodes.filter((n) => spark.nodes.includes(n)).length;
-  }
-
-  const scoredSparks = $derived(
-    sparks
-      .map((s) => ({ spark: s, score: scoreSpark(s) }))
-      .filter(({ score }) => benchNodes.length === 0 || score > 0)
-      .sort((a, b) => b.score - a.score)
+  const matchingSparks = $derived(
+    sparks.filter((s) => {
+      const moodOk = !selectedMoodId || s.mood.includes(selectedMoodId);
+      // multi-select: spark must match ALL selected outputs (AND logic — "I have all of these")
+      const outputOk =
+        selectedOutputIds.size === 0 ||
+        [...selectedOutputIds].every((id) => s.outputs.includes(id));
+      return moodOk && outputOk;
+    })
   );
 
-  // ── Style helpers ─────────────────────────────────────────────
-  function difficultyClass(d: Difficulty): string {
-    return match(d)
-      .with('beginner', () => 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10')
-      .with('intermediate', () => 'text-amber-400 border-amber-400/30 bg-amber-400/10')
-      .with('advanced', () => 'text-rose-400 border-rose-400/30 bg-rose-400/10')
-      .exhaustive();
+  const hasSelection = $derived(selectedMoodId !== null || selectedOutputIds.size > 0);
+
+  const accentColor = $derived(selectedMood?.accentColor ?? '#f97316');
+  const glowColor = $derived(selectedMood?.glowColor ?? 'rgba(249,115,22,0.05)');
+  const textColor = $derived(selectedMood?.textColor ?? '#fed7aa');
+
+  const suggestedNodes = $derived([
+    ...new Set([
+      ...(selectedMood?.nodes ?? []),
+      ...[...selectedOutputIds].flatMap((id) => {
+        const o = outputs.find((out) => out.id === id);
+        return o ? resolveNodes(o).slice(0, 2) : [];
+      })
+    ])
+  ]);
+
+  // ── AI Vision Generator ───────────────────────────────────────
+
+  interface Vision {
+    title: string;
+    vision: string;
+    nodes: string[];
   }
 
-  function patchTypeClass(t: PatchType): string {
-    return match(t)
-      .with('starter', () => 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-zinc-700')
-      .with(
-        'template',
-        () => 'bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border border-blue-500/25'
-      )
-      .with(
-        'example',
-        () => 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/25'
-      )
-      .with(
-        'showcase',
-        () => 'bg-orange-500/15 text-orange-300 hover:bg-orange-500/25 border border-orange-500/35'
-      )
-      .exhaustive();
+  let visions = $state<Vision[]>([]);
+  let isGenerating = $state(false);
+
+  let steerPrompt = $state('');
+  let generationError = $state<string | null>(null);
+  let abortController: AbortController | null = null;
+
+  async function generateVisions() {
+    if (isGenerating) {
+      abortController?.abort();
+      return;
+    }
+
+    isGenerating = true;
+    visions = [];
+    generationError = null;
+    abortController = new AbortController();
+
+    const moodContext = selectedMood
+      ? `MOOD: ${selectedMood.name} — ${selectedMood.tagline}\n${selectedMood.description}`
+      : '';
+
+    const outputContext =
+      selectedOutputIds.size > 0
+        ? `OUTPUT FOCUS — each idea MUST use at least one object from these categories:\n${[
+            ...selectedOutputIds
+          ]
+            .map((id) => {
+              const o = outputs.find((out) => out.id === id);
+              return o ? `- ${o.name}: ${resolveNodes(o).join(', ')}` : '';
+            })
+            .filter(Boolean)
+            .join('\n')}`
+        : '';
+
+    const steerContext = steerPrompt.trim()
+      ? `CREATIVE DIRECTION FROM USER: "${steerPrompt.trim()}"`
+      : '';
+
+    const systemPrompt = `You are a creative director for Patchies — a visual/audio patching environment where artists connect nodes to build audio-visual experiences.
+
+Your task: Generate 3 "what if..." ideas — concrete, surprising premises for things someone could build. Each has a specific "what if..." question as the hook, and 1–2 sentences that make the premise feel tangible without explaining how to build it.
+
+The goal: one concrete anchor (the what-if) + open implementation. Not too abstract, not too prescriptive.
+
+${moodContext}
+${outputContext}
+${steerContext}
+
+AVAILABLE PATCHIES OBJECTS (suggest nodes only from this list):
+${OBJECT_TYPE_LIST}
+
+Respond ONLY with a valid JSON array of exactly 3 ideas:
+[
+  {
+    "title": "What if [specific, concrete premise in under 10 words]?",
+    "vision": "1–2 sentences. Describe the specific experience — what happens, what the person does, sees, or hears. Concrete enough to picture immediately. Never mention code, nodes, or how it works.",
+    "nodes": ["node1", "node2", "node3"]
+  }
+]
+
+Good title examples:
+- "What if your heartbeat set the tempo?"
+- "What if turning off the lights tuned the bass?"
+- "What if the longer you held still, the louder it got?"
+- "What if your audience's phones were the only instrument?"
+
+Bad titles (too vague — no anchor):
+- "What if shadows had meaning?" — unpictureable
+- "What if sound became visual?" — generic
+
+Rules:
+- Title must be a specific what-if you can immediately picture
+- Vision answers it with concrete specificity: what exactly happens
+- Never use words: patch, node, code, connect, map, route, signal
+- Vary scale: one intimate/personal, one performative, one unexpected
+- Avoid: "pulsing", "ethereal", "sonic journey", "immersive", "generative"
+- Try cross-domain combinations that feel fresh, e.g. assembly + projection = ?
+- ${steerContext || 'Prioritise ideas that feel genuinely new and a little strange'}
+${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes" array MUST contain AT LEAST one object from the OUTPUT FOCUS list. This is a hard requirement. Do not suggest nodes outside that list unless supplementing it.` : ''}`;
+
+    try {
+      const provider = getTextProvider();
+      let accumulated = '';
+
+      await provider.generateText([{ role: 'user', content: systemPrompt }], {
+        signal: abortController.signal,
+        temperature: 1.1,
+        onToken: (token) => {
+          accumulated += token;
+        }
+      });
+
+      const jsonText = extractJson(accumulated.trim());
+      visions = JSON.parse(jsonText);
+    } catch (e) {
+      if ((e as Error)?.name !== 'AbortError') {
+        generationError = e instanceof Error ? e.message : 'Generation failed';
+      }
+    } finally {
+      isGenerating = false;
+      abortController = null;
+    }
+  }
+
+  const canGenerate = $derived(hasSelection);
+
+  // ── Flipped card ──────────────────────────────────────────────
+  let flippedVision = $state<Vision | null>(null);
+
+  function openVision(v: Vision) {
+    flippedVision = v;
+  }
+
+  function closeVision() {
+    flippedVision = null;
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') closeVision();
   }
 
   function patchTypeIcon(t: PatchType): string {
@@ -272,601 +584,908 @@
 </script>
 
 <svelte:head>
-  <title>Sparks | Patchies</title>
+  <title>Mood Board | Sparks | Patchies</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
   <link
-    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&family=JetBrains+Mono:wght@400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet"
   />
 </svelte:head>
 
-<div class="sparks-page min-h-screen text-zinc-200">
+<svelte:window onkeydown={handleKeydown} />
+
+<div
+  class="sparks-page min-h-screen"
+  style:--accent={accentColor}
+  style:--glow={glowColor}
+  style:--text-acc={textColor}
+>
   <!-- ── Hero ── -->
-  <header class="hero relative overflow-hidden px-8 pt-12 pb-8">
-    <div class="mx-auto max-w-5xl">
-      <p class="mono mb-2 text-[11px] tracking-[0.25em] text-orange-400/70 uppercase">
-        patchies ✦ inspiration
+  <header class="px-8 pt-14 pb-8">
+    <div class="mx-auto max-w-4xl">
+      <p class="mono mb-3 text-[11px] tracking-[0.25em] uppercase" style:color="var(--accent)">
+        patchies ✦ sparks
       </p>
-      <div class="flex items-end gap-6">
-        <h1 class="title-font leading-none text-white" style="font-size: clamp(4rem, 11vw, 8rem);">
-          SPARKS
-        </h1>
-        <p class="bricolage mb-2 max-w-sm text-sm leading-relaxed text-zinc-500">
-          Combine objects on the bench to discover recipes, starting points, and community builds.
-        </p>
-      </div>
+      <h1 class="serif-italic">
+        What do you want<br />to make people feel?
+      </h1>
+      <p class="syne mt-4 max-w-sm text-sm leading-relaxed text-zinc-600">
+        Two questions. Pick one or both to find your spark.
+      </p>
     </div>
-    <div class="hero-orb" aria-hidden="true"></div>
   </header>
 
-  <!-- ── Patch Bench ── -->
-  <section class="bench-section px-8 pb-8">
-    <div class="mx-auto max-w-5xl">
-      <!-- Bench header -->
-      <div class="mb-4 flex items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <h2 class="title-font text-2xl tracking-wide text-zinc-300">PATCH BENCH</h2>
-          {#if benchNodes.length > 0}
-            <span class="mono text-[11px] text-zinc-600">
-              {benchNodes.length}/{MAX_BENCH} objects
-            </span>
-          {/if}
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick={loadChallenge} class="challenge-btn mono cursor-pointer text-xs">
-            ⚡ Today's Challenge
-          </button>
-          <button onclick={surpriseMe} class="surprise-btn mono cursor-pointer text-xs">
-            ↺ Surprise me
-          </button>
-          {#if benchNodes.length > 0}
-            <button onclick={clearBench} class="clear-btn mono cursor-pointer text-xs">
-              Clear
+  <!-- ── Two-question layout ── -->
+  <div class="px-8 pb-10">
+    <div class="mx-auto max-w-4xl space-y-8">
+      <!-- Question 1: Mood -->
+      <div>
+        <div class="mb-4 flex items-baseline gap-3">
+          <span class="serif-italic text-xl text-zinc-200">How should it feel?</span>
+          {#if selectedMoodId}
+            <button
+              class="mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
+              onclick={() => (selectedMoodId = null)}
+            >
+              ✕ clear
             </button>
           {/if}
         </div>
-      </div>
-
-      <!-- Bench surface -->
-      <div class="bench-surface relative" bind:this={benchEl}>
-        <!-- Wire SVG -->
-        {#if wirePaths.length > 0}
-          <svg
-            class="wire-svg pointer-events-none absolute inset-0 h-full w-full overflow-visible"
-            viewBox={wireViewBox}
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <filter id="wire-glow" x="-20%" y="-40%" width="140%" height="180%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-            {#each wirePaths as wire (wire.key)}
-              <!-- Glow layer -->
-              <path
-                d={wire.d}
-                fill="none"
-                stroke="rgba(249,115,22,0.25)"
-                stroke-width="4"
-                filter="url(#wire-glow)"
-              />
-              <!-- Main cable -->
-              <path d={wire.d} fill="none" class="wire-cable" />
-              <!-- Signal flow -->
-              <path d={wire.d} fill="none" class="wire-flow" />
-            {/each}
-          </svg>
-        {/if}
-
-        <!-- Node tokens on bench -->
-        <div class="bench-nodes relative z-10">
-          {#if benchNodes.length === 0}
-            <div class="bench-empty">
-              <span class="mono text-xs text-zinc-700"
-                >click objects below · or try Surprise me ↑</span
-              >
-            </div>
-          {:else}
-            {#each benchNodes as node, i}
-              <div
-                class="bench-token"
-                class:bench-token-locked={lockedNodes.has(node)}
-                bind:this={benchNodeEls[i]}
-              >
-                <!-- Lock -->
-                <button
-                  class="token-lock cursor-pointer"
-                  onclick={(e) => toggleLock(node, e)}
-                  title={lockedNodes.has(node) ? 'Unlock — will reroll' : 'Lock — keep on Surprise'}
-                >
-                  {#if lockedNodes.has(node)}
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                      <path
-                        d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"
-                      />
-                    </svg>
-                  {:else}
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                      <path
-                        d="M12 1C9.24 1 7 3.24 7 6v1H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2h-1V6c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v1H9V6c0-1.66 1.34-3 3-3zm0 9c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"
-                      />
-                    </svg>
-                  {/if}
-                </button>
-                <!-- Node name -->
-                <span class="mono text-sm font-medium text-zinc-100">{node}</span>
-                <!-- Remove -->
-                <button
-                  class="token-remove cursor-pointer"
-                  onclick={() => removeFromBench(node)}
-                  title="Remove from bench"
-                >
-                  ×
-                </button>
-              </div>
-            {/each}
-          {/if}
-        </div>
-      </div>
-
-      <!-- Node tray -->
-      <div class="node-tray mt-3">
-        <p class="mono mb-2 text-[10px] tracking-widest text-zinc-700 uppercase">All Objects</p>
-        <div class="flex flex-wrap gap-1.5">
-          {#each allNodes as node (node)}
-            {@const onBench = benchNodes.includes(node)}
-            {@const full = benchNodes.length >= MAX_BENCH && !onBench}
+        <div class="mood-grid">
+          {#each moods as mood (mood.id)}
+            {@const active = selectedMoodId === mood.id}
             <button
-              class="tray-chip mono cursor-pointer rounded px-2.5 py-1 text-xs transition-all duration-100"
-              class:tray-on-bench={onBench}
-              class:tray-full={full}
-              onclick={() => (onBench ? removeFromBench(node) : addToBench(node))}
-              disabled={full}
-              title={full
-                ? 'Bench is full — remove a node first'
-                : onBench
-                  ? 'Remove from bench'
-                  : 'Add to bench'}
+              class="mood-tile cursor-pointer"
+              class:mood-tile-active={active}
+              style:background={mood.gradient}
+              style:--tile-accent={mood.accentColor}
+              style:--tile-glow={mood.glowColor}
+              onclick={() => (selectedMoodId = selectedMoodId === mood.id ? null : mood.id)}
             >
-              {node}
+              <span class="mood-name syne">{mood.name}</span>
+              <span class="mood-tagline mono">{mood.tagline}</span>
+              {#if active}<span class="mood-check">✦</span>{/if}
             </button>
           {/each}
         </div>
       </div>
 
-      <!-- Challenge card -->
-      <div class="challenge-hint mono mt-4 text-[11px] text-zinc-700">
-        ⚡ <span class="text-zinc-500">Today's challenge:</span>
-        {todaysChallenge.join(' + ')}
-        <span class="ml-2 text-zinc-700">· 12 builds submitted</span>
+      <!-- Divider -->
+      <div class="flex items-center gap-4">
+        <div class="h-px flex-1 bg-zinc-900"></div>
+        <span class="mono text-[10px] tracking-widest text-zinc-800 uppercase">and / or</span>
+        <div class="h-px flex-1 bg-zinc-900"></div>
+      </div>
+
+      <!-- Question 2: Output (multi-select) -->
+      <div>
+        <div class="mb-4 flex items-baseline gap-3">
+          <span class="serif-italic text-xl text-zinc-200">What do you want to make?</span>
+          {#if selectedOutputIds.size > 0}
+            <button
+              class="mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
+              onclick={() => selectedOutputIds.clear()}
+            >
+              ✕ clear
+            </button>
+          {/if}
+        </div>
+        <div class="output-grid">
+          {#each outputs as output (output.id)}
+            {@const active = selectedOutputIds.has(output.id)}
+            {@const Icon = outputIcons[output.id]}
+            <button
+              class="output-tile cursor-pointer"
+              class:output-tile-active={active}
+              onclick={() =>
+                active ? selectedOutputIds.delete(output.id) : selectedOutputIds.add(output.id)}
+            >
+              <span class="output-icon"><Icon size={18} /></span>
+              <span class="output-name syne">{output.name}</span>
+              <span class="output-desc mono">{output.description}</span>
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- ── Divider ── -->
-  <div class="mx-8 border-t border-zinc-800/50"></div>
-
-  <!-- ── Sparks Grid ── -->
-  <main class="px-8 py-10">
-    <div class="mx-auto max-w-5xl">
-      {#if benchNodes.length > 0}
-        <p class="mono mb-6 text-[11px] text-zinc-600">
-          {#if scoredSparks.filter((s) => s.score === benchNodes.length).length > 0}
-            <span class="text-orange-400"
-              >{scoredSparks.filter((s) => s.score === benchNodes.length).length} full match{scoredSparks.filter(
-                (s) => s.score === benchNodes.length
-              ).length !== 1
-                ? 'es'
-                : ''}</span
+  <!-- ── AI Vision Generator ── -->
+  {#if hasSelection}
+    <section class="vision-section px-8 pb-10">
+      <div class="mx-auto max-w-4xl">
+        <!-- Header row -->
+        <div class="mb-5 flex items-center gap-4">
+          <div class="flex-1">
+            <h2 class="serif-italic text-xl text-zinc-200">Dream a build</h2>
+            <p class="mono mt-0.5 text-[11px] text-zinc-700">
+              AI-generated provocations — felt, not followed
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <!-- Steer input -->
+            <input
+              type="text"
+              bind:value={steerPrompt}
+              placeholder="steer it… darker, weirder, for a party"
+              class="steer-input mono text-xs"
+              onkeydown={(e) => e.key === 'Enter' && generateVisions()}
+            />
+            <button
+              onclick={generateVisions}
+              disabled={!canGenerate}
+              class="generate-btn mono cursor-pointer text-xs disabled:cursor-not-allowed disabled:opacity-40"
+              style:border-color="color-mix(in srgb, {accentColor} 35%, transparent)"
+              style:color={isGenerating ? accentColor : undefined}
             >
-            {#if scoredSparks.filter((s) => s.score < benchNodes.length).length > 0}
-              · {scoredSparks.filter((s) => s.score < benchNodes.length).length} partial
-            {/if}
-          {:else}
-            {scoredSparks.length} partial match{scoredSparks.length !== 1 ? 'es' : ''}
-          {/if}
-          for {benchNodes.join(' + ')}
-        </p>
-      {/if}
-
-      {#if scoredSparks.length === 0}
-        <div class="py-24 text-center">
-          <p class="title-font text-6xl text-zinc-800">NO SPARKS YET</p>
-          <p class="mono mt-3 text-sm text-zinc-700">
-            No existing recipes use all these nodes together. You might be first!
-          </p>
-          <a
-            href="/sparks/submit"
-            class="mono mt-6 inline-block cursor-pointer rounded border border-zinc-800 px-4 py-2 text-xs text-zinc-500 transition-colors hover:border-orange-500/40 hover:text-orange-400"
-          >
-            Submit a build with these nodes →
-          </a>
-        </div>
-      {:else}
-        <div class="sparks-grid">
-          {#each scoredSparks as { spark, score } (spark.id)}
-            {@const isFullMatch = benchNodes.length > 0 && score === benchNodes.length}
-            {@const isPartial = benchNodes.length > 0 && score > 0 && score < benchNodes.length}
-            <article
-              class="spark-card"
-              class:spark-full-match={isFullMatch}
-              class:spark-partial={isPartial}
-            >
-              {#if isFullMatch}
-                <div class="card-accent-line"></div>
+              {#if isGenerating}
+                <span class="generating-dot"></span> stop
+              {:else if visions.length > 0}
+                ↺ again
+              {:else}
+                ✦ imagine
               {/if}
+            </button>
+          </div>
+        </div>
 
-              <!-- Nodes + difficulty -->
-              <div class="mb-3 flex items-start justify-between gap-2">
-                <div class="flex flex-wrap gap-1">
-                  {#each spark.nodes as node}
-                    {@const active = benchNodes.includes(node)}
-                    <button
-                      class="mono cursor-pointer rounded-sm px-1.5 py-0.5 text-[10px] transition-all"
-                      class:node-pill-active={active}
-                      class:node-pill={!active}
-                      onclick={() => (active ? removeFromBench(node) : addToBench(node))}
-                      title={active ? 'Remove from bench' : 'Add to bench'}>{node}</button
-                    >
+        <!-- Error -->
+        {#if generationError}
+          <p class="mono mb-4 text-xs text-red-500">{generationError}</p>
+        {/if}
+
+        <!-- Vision cards -->
+        {#if isGenerating && visions.length === 0}
+          <!-- Skeleton loading -->
+          <div class="visions-grid">
+            {#each [0, 1, 2] as i (i)}
+              <div class="vision-card vision-skeleton" style:animation-delay="{i * 120}ms"></div>
+            {/each}
+          </div>
+        {:else if visions.length > 0}
+          <div class="visions-grid">
+            {#each visions as v, i (i)}
+              <button
+                class="vision-card cursor-pointer text-left"
+                style:--card-accent={accentColor}
+                style:animation-delay="{i * 80}ms"
+                onclick={() => openVision(v)}
+                title="Click to explore this idea"
+              >
+                <div class="vision-top-line"></div>
+                <h3 class="serif-italic vision-title" style:color={textColor}>{v.title}</h3>
+                <p class="vision-text">{v.vision}</p>
+                <div class="mt-auto flex flex-wrap gap-1 pt-4">
+                  {#each v.nodes as node (node)}
+                    <span class="mono vision-node">{node}</span>
                   {/each}
                 </div>
-                <div class="flex shrink-0 items-center gap-1.5">
-                  {#if isFullMatch}
-                    <span class="mono text-[10px] text-orange-400">✦ match</span>
-                  {:else if isPartial && benchNodes.length > 0}
-                    <span class="mono text-[10px] text-zinc-600">{score}/{benchNodes.length}</span>
-                  {/if}
-                  <span
-                    class="mono rounded border px-1.5 py-0.5 text-[10px] {difficultyClass(
-                      spark.difficulty
-                    )}">{spark.difficulty}</span
-                  >
+                <span class="vision-tap-hint mono">tap to explore →</span>
+              </button>
+            {/each}
+          </div>
+        {:else}
+          <!-- Idle prompt -->
+          <button
+            onclick={generateVisions}
+            disabled={!canGenerate}
+            class="vision-idle-prompt w-full cursor-pointer disabled:cursor-not-allowed"
+          >
+            <span
+              class="serif-italic text-2xl text-zinc-800 transition-colors group-hover:text-zinc-600"
+            >
+              Click ✦ imagine to dream up ideas →
+            </span>
+          </button>
+        {/if}
+      </div>
+    </section>
+  {/if}
+
+  <!-- ── Results ── -->
+  {#if hasSelection}
+    <section class="border-t border-zinc-900 px-8 py-10">
+      <div class="mx-auto max-w-4xl">
+        <!-- Result header -->
+        <div class="mb-6 flex items-end justify-between">
+          <div>
+            <p class="serif-italic mb-1 text-lg text-zinc-200">
+              {#if selectedMood && selectedOutputIds.size > 0}
+                {selectedMood.name} × {[...selectedOutputIds]
+                  .map((id) => outputs.find((o) => o.id === id)?.name)
+                  .join(', ')}
+              {:else if selectedMood}
+                {selectedMood.name}
+              {:else if selectedOutputIds.size > 0}
+                {[...selectedOutputIds]
+                  .map((id) => outputs.find((o) => o.id === id)?.name)
+                  .join(' + ')}
+              {/if}
+            </p>
+            <p class="mono text-[11px] text-zinc-600">
+              {matchingSparks.length} spark{matchingSparks.length !== 1 ? 's' : ''}
+              {#if matchingSparks.length === 0}— try loosening the filters{/if}
+            </p>
+          </div>
+
+          <!-- Suggested nodes from both selections -->
+          {#if selectedMood || selectedOutputIds.size > 0}
+            <div class="flex flex-wrap justify-end gap-1.5">
+              {#each suggestedNodes as node (node)}
+                <span
+                  class="mono rounded px-2 py-0.5 text-[11px]"
+                  style:background="color-mix(in srgb, {accentColor} 10%, transparent)"
+                  style:color={textColor}
+                  style:border="1px solid color-mix(in srgb, {accentColor} 25%, transparent)"
+                >
+                  {node}
+                </span>
+              {/each}
+            </div>
+          {/if}
+        </div>
+
+        <!-- Sparks grid -->
+        {#if matchingSparks.length > 0}
+          <div class="sparks-grid">
+            {#each matchingSparks as spark (spark.id)}
+              <article
+                class="spark-card"
+                style:border-color="color-mix(in srgb, {accentColor} 14%, rgba(255,255,255,0.06))"
+              >
+                <div class="mb-2 flex flex-wrap gap-1">
+                  {#each spark.nodes as node (node)}
+                    <span class="mono node-chip text-[10px]">{node}</span>
+                  {/each}
                 </div>
-              </div>
-
-              <h2 class="bricolage mb-1.5 text-base leading-snug font-semibold text-white">
-                {spark.title}
-              </h2>
-              <p class="mb-4 text-xs leading-relaxed text-zinc-500">{spark.description}</p>
-
-              <!-- Tags -->
-              <div class="mb-4 flex flex-wrap gap-1">
-                {#each spark.tags as tag}
-                  <span
-                    class="mono rounded-full border border-zinc-800 px-2 py-0.5 text-[10px] text-zinc-600"
-                  >
-                    {tag}
-                  </span>
-                {/each}
-              </div>
-
-              <!-- Patches -->
-              <div class="flex flex-wrap gap-1.5 border-t border-zinc-800/70 pt-3">
-                {#each spark.patches as patch}
-                  <a
-                    href={patch.url}
-                    class="mono inline-flex cursor-pointer items-center rounded px-2.5 py-1 text-xs transition-all {patchTypeClass(
-                      patch.type
-                    )}"
-                  >
-                    <span class="mr-1 opacity-50">{patchTypeIcon(patch.type)}</span>
-                    {patch.title}
-                    {#if patch.author && patch.author !== spark.author}
-                      <span class="ml-1 opacity-40">by {patch.author}</span>
+                <h3 class="syne mb-1 text-sm leading-snug font-semibold text-zinc-100">
+                  {spark.title}
+                </h3>
+                <p class="mb-3 text-xs leading-relaxed text-zinc-600">{spark.description}</p>
+                <!-- Output badges -->
+                <div class="mb-3 flex flex-wrap gap-1">
+                  {#each spark.outputs as oid (oid)}
+                    {@const out = outputs.find((o) => o.id === oid)}
+                    {#if out}
+                      <span
+                        class="mono rounded-full px-2 py-0.5 text-[10px]"
+                        class:output-badge-active={selectedOutputIds.has(oid)}
+                        class:output-badge={!selectedOutputIds.has(oid)}
+                      >
+                        {out.name}
+                      </span>
                     {/if}
-                  </a>
-                {/each}
-              </div>
-            </article>
-          {/each}
+                  {/each}
+                </div>
+                <div
+                  class="flex flex-wrap gap-1.5 border-t pt-3"
+                  style:border-color="color-mix(in srgb, {accentColor} 10%, rgba(255,255,255,0.05))"
+                >
+                  {#each spark.patches as patch (patch.title)}
+                    <a
+                      href={patch.url}
+                      class="mono inline-flex cursor-pointer items-center rounded px-2 py-1 text-[11px] transition-opacity hover:opacity-80"
+                      style:background="color-mix(in srgb, {accentColor} 10%, transparent)"
+                      style:color={textColor}
+                      style:border="1px solid color-mix(in srgb, {accentColor} 20%, transparent)"
+                    >
+                      <span class="mr-1 opacity-50">{patchTypeIcon(patch.type)}</span>
+                      {patch.title}
+                      {#if patch.author}
+                        <span class="ml-1 opacity-40">by {patch.author}</span>
+                      {/if}
+                    </a>
+                  {/each}
+                </div>
+              </article>
+            {/each}
 
-          <!-- Submit ghost card (when bench has nodes) -->
-          {#if benchNodes.length >= 2}
-            <article class="spark-card spark-submit-ghost">
-              <p class="mono mb-1 text-[10px] tracking-widest text-zinc-700 uppercase">
-                Your build
+            <!-- Ghost submit -->
+            <article class="spark-card spark-ghost">
+              <p class="syne mb-2 text-sm font-semibold text-zinc-700">
+                {#if selectedMood && selectedOutputIds.size > 0}
+                  Made something {selectedMood.name.toLowerCase()} with {[...selectedOutputIds]
+                    .map((id) => outputs.find((o) => o.id === id)?.name.toLowerCase())
+                    .join(' + ')}?
+                {:else if selectedMood}
+                  Made something {selectedMood.name.toLowerCase()}?
+                {:else}
+                  Working on something like this?
+                {/if}
               </p>
-              <h2 class="bricolage mb-2 text-base font-semibold text-zinc-600">
-                Made something with {benchNodes.slice(0, 3).join(' + ')}{benchNodes.length > 3
-                  ? '…'
-                  : ''}?
-              </h2>
               <p class="mb-4 text-xs leading-relaxed text-zinc-700">
-                Share your patch and it might be featured here for others to remix.
+                Share your patch and it might appear here.
               </p>
               <a
                 href="/sparks/submit"
-                class="mono inline-flex cursor-pointer items-center gap-1.5 rounded border border-zinc-800 px-3 py-1.5 text-xs text-zinc-600 transition-all hover:border-orange-500/30 hover:text-orange-400"
+                class="mono inline-flex cursor-pointer items-center gap-1 text-xs transition-colors hover:opacity-80"
+                style:color="color-mix(in srgb, {accentColor} 65%, #71717a)"
               >
                 Submit a build →
               </a>
             </article>
-          {/if}
-        </div>
-      {/if}
+          </div>
+        {:else}
+          <div class="py-16 text-center">
+            <p class="syne mb-2 text-4xl font-bold text-zinc-800">No sparks yet</p>
+            <p class="mono text-sm text-zinc-700">
+              This combination doesn't have recipes yet — maybe you'll make the first one.
+            </p>
+          </div>
+        {/if}
+      </div>
+    </section>
+  {:else}
+    <div class="px-8 pb-20">
+      <p class="mono text-center text-[11px] tracking-widest text-zinc-800">
+        ↑ pick a mood, an output, or both
+      </p>
     </div>
-  </main>
+  {/if}
+
+  <!-- ── Flipped Vision Overlay ── -->
+  {#if flippedVision}
+    <div
+      class="flip-backdrop"
+      onclick={closeVision}
+      onkeydown={handleKeydown}
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+    >
+      <div
+        class="flip-card"
+        style:--card-accent={accentColor}
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={(e) => e.stopPropagation()}
+        role="presentation"
+      >
+        <div class="vision-top-line"></div>
+
+        <!-- Close -->
+        <button class="flip-close mono cursor-pointer" onclick={closeVision}>✕</button>
+
+        <h3 class="serif-italic vision-title flip-title" style:color={textColor}>
+          {flippedVision.title}
+        </h3>
+        <p class="vision-text flip-vision-text">{flippedVision.vision}</p>
+
+        <div class="flex flex-wrap gap-1 pt-2">
+          {#each flippedVision.nodes as node (node)}
+            <span class="mono vision-node">{node}</span>
+          {/each}
+        </div>
+
+        <!-- CTA buttons -->
+        <div class="flip-ctas">
+          <button class="flip-cta mono cursor-pointer" disabled>
+            <span class="flip-cta-icon">⊞</span> Scatter on board
+          </button>
+          <button class="flip-cta mono cursor-pointer" disabled>
+            <span class="flip-cta-icon">✦</span> Open in chat
+          </button>
+          <button class="flip-cta mono cursor-pointer" disabled>
+            <span class="flip-cta-icon">⎘</span> Copy idea
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- ── Footer ── -->
+  <div class="border-t border-zinc-900 px-8 py-5">
+    <div class="mx-auto flex max-w-4xl items-center justify-between">
+      <p class="mono text-[11px] text-zinc-800">patchies sparks · mood board</p>
+      <a
+        href="/sparks"
+        class="mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
+      >
+        ← patch bench
+      </a>
+    </div>
+  </div>
 </div>
 
 <style>
   .sparks-page {
     background-color: #09090b;
-    background-image:
-      radial-gradient(ellipse 65% 45% at 90% 0%, rgba(249, 115, 22, 0.08) 0%, transparent 60%),
-      radial-gradient(ellipse 45% 35% at 5% 85%, rgba(6, 182, 212, 0.03) 0%, transparent 55%);
-    font-family: 'Bricolage Grotesque', sans-serif;
+    background-image: radial-gradient(ellipse 80% 50% at 50% -5%, var(--glow), transparent 60%);
+    transition: background-image 0.5s ease;
+    font-family: 'Syne', sans-serif;
+    color: #e4e4e7;
   }
 
-  .title-font {
-    font-family: 'Bebas Neue', sans-serif;
-    letter-spacing: 0.02em;
+  .serif-italic {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: clamp(2rem, 5vw, 3.8rem);
+    line-height: 1.1;
+    color: #f4f4f5;
+  }
+
+  .syne {
+    font-family: 'Syne', sans-serif;
   }
   .mono {
     font-family: 'JetBrains Mono', monospace;
   }
-  .bricolage {
-    font-family: 'Bricolage Grotesque', sans-serif;
-  }
 
-  .hero-orb {
-    position: absolute;
-    top: -60px;
-    right: -80px;
-    width: 500px;
-    height: 500px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(249, 115, 22, 0.09) 0%, transparent 65%);
-    pointer-events: none;
+  /* ── Mood grid ── */
+  .mood-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
   }
-
-  .challenge-btn {
-    padding: 6px 12px;
-    background: rgba(249, 115, 22, 0.08);
-    border: 1px solid rgba(249, 115, 22, 0.25);
-    border-radius: 6px;
-    color: #fb923c;
-    transition: all 0.15s;
-  }
-  .challenge-btn:hover {
-    background: rgba(249, 115, 22, 0.15);
-    border-color: rgba(249, 115, 22, 0.45);
-  }
-
-  .surprise-btn {
-    padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    color: #a1a1aa;
-    transition: all 0.15s;
-  }
-  .surprise-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #e4e4e7;
-  }
-
-  .clear-btn {
-    padding: 6px 10px;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 6px;
-    color: #52525b;
-    transition: all 0.15s;
-  }
-  .clear-btn:hover {
-    color: #a1a1aa;
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-
-  /* Bench surface */
-  .bench-surface {
-    background: #0a0a0d;
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
-    background-size: 24px 24px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 10px;
-    min-height: 130px;
-    padding: 20px;
-    overflow: hidden;
-  }
-
-  .bench-nodes {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
-    min-height: 86px;
-  }
-
-  .bench-empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 86px;
-  }
-
-  /* Wire SVG */
-  .wire-svg {
-    z-index: 0;
-  }
-
-  .wire-cable {
-    stroke: rgba(249, 115, 22, 0.55);
-    stroke-width: 1.5;
-    stroke-linecap: round;
-  }
-
-  .wire-flow {
-    stroke: rgba(249, 115, 22, 0.9);
-    stroke-width: 1.5;
-    stroke-linecap: round;
-    stroke-dasharray: 6 18;
-    animation: flow 1.2s linear infinite;
-  }
-
-  @keyframes flow {
-    from {
-      stroke-dashoffset: 24;
-    }
-    to {
-      stroke-dashoffset: 0;
+  @media (max-width: 640px) {
+    .mood-grid {
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 
-  /* Bench tokens */
-  .bench-token {
+  .mood-tile {
     position: relative;
+    border-radius: 8px;
+    padding: 16px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    text-align: left;
+    overflow: hidden;
+    transition:
+      border-color 0.2s,
+      transform 0.15s,
+      box-shadow 0.2s;
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 4px;
+  }
+  .mood-tile::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 110%, var(--tile-glow), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .mood-tile:hover::after,
+  .mood-tile-active::after {
+    opacity: 1;
+  }
+  .mood-tile:hover {
+    border-color: color-mix(in srgb, var(--tile-accent) 30%, transparent);
+    transform: translateY(-1px);
+  }
+  .mood-tile-active {
+    border-color: color-mix(in srgb, var(--tile-accent) 50%, transparent) !important;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--tile-accent) 10%, transparent);
+    transform: translateY(-1px);
+  }
+  .mood-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f4f4f5;
+    position: relative;
+    z-index: 1;
+  }
+  .mood-tagline {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.28);
+    position: relative;
+    z-index: 1;
+    line-height: 1.4;
+  }
+  .mood-tile-active .mood-tagline {
+    color: color-mix(in srgb, var(--tile-accent) 65%, rgba(255, 255, 255, 0.3));
+  }
+  .mood-check {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 11px;
+    color: var(--tile-accent);
+    z-index: 1;
+  }
+
+  /* ── Output grid ── */
+  .output-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+
+  .output-tile {
+    border-radius: 8px;
+    padding: 14px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 12px 16px;
-    background: #161619;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    min-width: 80px;
+    gap: 5px;
     transition:
       border-color 0.15s,
-      box-shadow 0.15s;
+      background 0.15s,
+      transform 0.15s;
   }
-  .bench-token:hover {
-    border-color: rgba(255, 255, 255, 0.18);
-  }
-  .bench-token-locked {
-    border-color: rgba(249, 115, 22, 0.4) !important;
-    box-shadow: 0 0 14px rgba(249, 115, 22, 0.1);
-  }
-  .bench-token-locked .mono {
-    color: #fb923c;
-  }
-
-  .token-lock {
-    position: absolute;
-    top: 5px;
-    left: 6px;
-    color: #52525b;
-    transition: color 0.1s;
-    background: none;
-    border: none;
-    padding: 1px;
-  }
-  .bench-token-locked .token-lock {
-    color: #fb923c;
-  }
-  .token-lock:hover {
-    color: #a1a1aa;
-  }
-
-  .token-remove {
-    position: absolute;
-    top: 3px;
-    right: 5px;
-    color: #3f3f46;
-    font-size: 13px;
-    line-height: 1;
-    background: none;
-    border: none;
-    padding: 1px 2px;
-    transition: color 0.1s;
-  }
-  .token-remove:hover {
-    color: #ef4444;
-  }
-
-  /* Node tray */
-  .tray-chip {
-    border: 1px solid transparent;
+  .output-tile:hover {
+    border-color: rgba(255, 255, 255, 0.14);
     background: rgba(255, 255, 255, 0.04);
-    color: #71717a;
+    transform: translateY(-1px);
   }
-  .tray-chip:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    color: #d4d4d8;
-  }
-  .tray-on-bench {
-    background: rgba(249, 115, 22, 0.12) !important;
-    border-color: rgba(249, 115, 22, 0.35) !important;
-    color: #fb923c !important;
-  }
-  .tray-full {
-    opacity: 0.3;
-    cursor: not-allowed !important;
+  .output-tile-active {
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent) !important;
+    background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
   }
 
-  /* ── Cards ── */
+  .output-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+    color: #52525b;
+    transition: color 0.15s;
+  }
+  .output-tile:hover .output-icon,
+  .output-tile-active .output-icon {
+    color: var(--accent);
+  }
+  .output-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #a1a1aa;
+    transition: color 0.15s;
+  }
+  .output-tile-active .output-name {
+    color: var(--text-acc);
+  }
+  .output-desc {
+    font-size: 9px;
+    color: #3f3f46;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  /* ── Sparks ── */
   .sparks-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
   }
 
   .spark-card {
-    position: relative;
-    background: #0f0f11;
-    border: 1px solid rgba(255, 255, 255, 0.065);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid;
     border-radius: 8px;
-    padding: 1rem;
+    padding: 14px;
     transition:
-      border-color 0.2s,
-      box-shadow 0.2s,
+      transform 0.15s,
       opacity 0.2s;
-    overflow: hidden;
   }
   .spark-card:hover {
-    border-color: rgba(255, 255, 255, 0.12);
-  }
-  .spark-full-match {
-    border-color: rgba(249, 115, 22, 0.25) !important;
-    box-shadow: 0 0 20px rgba(249, 115, 22, 0.06);
-  }
-  .spark-full-match:hover {
-    border-color: rgba(249, 115, 22, 0.4) !important;
-    box-shadow: 0 4px 24px rgba(249, 115, 22, 0.1);
-  }
-  .spark-partial {
-    opacity: 0.65;
-  }
-  .spark-partial:hover {
-    opacity: 0.9;
+    transform: translateY(-1px);
   }
 
-  .card-accent-line {
+  .spark-ghost {
+    border-style: dashed !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+    background: transparent !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .node-chip {
+    background: rgba(255, 255, 255, 0.04);
+    color: #52525b;
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+
+  .output-badge {
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: #52525b;
+    background: transparent;
+  }
+  .output-badge-active {
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    color: var(--text-acc);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+
+  /* ── Vision Generator ── */
+  .vision-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.2);
+    padding-top: 2rem;
+  }
+
+  .steer-input {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #a1a1aa;
+    width: 260px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .steer-input::placeholder {
+    color: #3f3f46;
+  }
+  .steer-input:focus {
+    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    color: #e4e4e7;
+  }
+
+  .generate-btn {
+    padding: 6px 14px;
+    border: 1px solid;
+    border-radius: 6px;
+    background: transparent;
+    transition:
+      background 0.15s,
+      opacity 0.15s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .generate-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  .generating-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse-dot 0.9s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.4;
+      transform: scale(0.7);
+    }
+  }
+
+  .visions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 768px) {
+    .visions-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .vision-card {
+    position: relative;
+    background: #0c0c0e;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 20px;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: vision-in 0.35s ease both;
+    overflow: hidden;
+  }
+  @keyframes vision-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .vision-top-line {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.5), transparent);
+    background: linear-gradient(90deg, transparent, var(--card-accent, #f97316), transparent);
+    opacity: 0.5;
   }
 
-  .spark-submit-ghost {
-    border-style: dashed !important;
-    border-color: rgba(255, 255, 255, 0.06) !important;
-    background: transparent !important;
+  .vision-title {
+    font-size: 1.1rem;
+    line-height: 1.2;
   }
 
-  /* Node pills on cards */
-  .node-pill {
+  .vision-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    line-height: 1.65;
+    color: #71717a;
+    flex: 1;
+  }
+
+  .vision-node {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
     background: rgba(255, 255, 255, 0.04);
     color: #52525b;
-    border: 1px solid transparent;
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
-  .node-pill:hover {
-    background: rgba(249, 115, 22, 0.08);
-    color: #fb923c;
+
+  .vision-skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.02) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-color: rgba(255, 255, 255, 0.04);
+    min-height: 180px;
   }
-  .node-pill-active {
-    background: rgba(249, 115, 22, 0.12);
-    color: #fb923c;
-    border: 1px solid rgba(249, 115, 22, 0.3);
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* ── Vision card hover & hint ── */
+  .vision-card:hover {
+    border-color: color-mix(in srgb, var(--card-accent) 30%, transparent);
+    box-shadow: 0 4px 24px color-mix(in srgb, var(--card-accent) 10%, transparent);
+    transform: translateY(-2px);
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s,
+      transform 0.15s;
+  }
+  .vision-card:hover .vision-top-line {
+    opacity: 1;
+  }
+
+  .vision-tap-hint {
+    font-size: 10px;
+    color: transparent;
+    transition: color 0.2s;
+    margin-top: 2px;
+    letter-spacing: 0.05em;
+  }
+  .vision-card:hover .vision-tap-hint {
+    color: color-mix(in srgb, var(--card-accent) 55%, transparent);
+  }
+
+  /* ── Flip overlay ── */
+  .flip-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 24px;
+    animation: fade-in 0.18s ease both;
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .flip-card {
+    position: relative;
+    background: #0e0e12;
+    border: 1px solid color-mix(in srgb, var(--card-accent) 35%, transparent);
+    border-radius: 14px;
+    padding: 28px 28px 24px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow:
+      0 0 60px color-mix(in srgb, var(--card-accent) 12%, transparent),
+      0 24px 48px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    animation: flip-in 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  @keyframes flip-in {
+    from {
+      opacity: 0;
+      transform: rotateY(-90deg) scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: rotateY(0deg) scale(1);
+    }
+  }
+
+  .flip-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-size: 12px;
+    color: #52525b;
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    transition: color 0.15s;
+    line-height: 1;
+  }
+  .flip-close:hover {
+    color: #a1a1aa;
+  }
+
+  .flip-title {
+    font-size: 1.35rem;
+    padding-right: 28px;
+  }
+
+  .flip-vision-text {
+    font-size: 0.875rem;
+    color: #71717a;
+    line-height: 1.7;
+  }
+
+  .flip-ctas {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .flip-cta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    color: #71717a;
+    font-size: 12px;
+    text-align: left;
+    transition:
+      border-color 0.15s,
+      background 0.15s,
+      color 0.15s;
+    opacity: 0.5;
+    cursor: not-allowed !important;
+  }
+
+  .flip-cta-icon {
+    opacity: 0.5;
+    font-size: 13px;
+    width: 16px;
+    text-align: center;
+  }
+
+  .vision-idle-prompt {
+    background: none;
+    border: 1px dashed rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 32px;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .vision-idle-prompt:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.12);
   }
 </style>
