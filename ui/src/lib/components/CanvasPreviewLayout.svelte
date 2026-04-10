@@ -120,8 +120,8 @@
         hasError
           ? 'border-red-500/70'
           : selected
-            ? 'shadow-glow-md border-zinc-400 [&>canvas]:rounded-[7px]'
-            : 'hover:shadow-glow-sm border-transparent [&>canvas]:rounded-md',
+            ? 'shadow-glow-md border-zinc-300 [&>canvas]:rounded-[7px]'
+            : 'hover:shadow-glow-sm border-zinc-400 [&>canvas]:rounded-md',
         interactionClass
       ]}
       {tabindex}
