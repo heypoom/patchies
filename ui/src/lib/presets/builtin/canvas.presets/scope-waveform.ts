@@ -64,7 +64,7 @@ function draw() {
     return
   }
 
-  const samplesToShow = Math.max(1, Math.floor(buffer.length / xScale))
+  const samplesToShow = Math.min(buffer.length, Math.max(1, Math.floor(buffer.length / xScale)))
   const sliceWidth = w / samplesToShow
 
   ctx.strokeStyle = '#22c55e'

@@ -32,7 +32,8 @@ panel and connect two signals:
 Two canvas presets work directly with `tap~` output:
 
 - **scope.canvas** — waveform display, accepts `Float32Array`
-- **scope-xy.canvas** — XY plot, accepts `{ x, y }` pairs
+- **scope-xy.canvas** — XY plot, accepts
+  `{ type: 'xy', x: Float32Array, y: Float32Array }`
 
 Both presets are available in the **Scope Demos** preset pack.
 Visual parameters (xScale, yScale, plotType, decay) are
@@ -52,7 +53,7 @@ configurable via the settings panel on each preset.
 Frames are trigger-synced on rising zero-crossings of the X
 (first) inlet signal, giving the same stable display as
 `scope~`. If no zero-crossing is found within 2048 samples,
-a capture is forced to prevent stalling.
+a capture is forced after 4096 samples to prevent stalling.
 
 ## See Also
 
