@@ -255,8 +255,10 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
   </div>
 </section>
 
-<!-- AI Provider Settings dialog -->
-<AIProviderSettingsDialog bind:open={aiSettingsOpen} onSaveAndContinue={generateVisions} />
+<!-- AI Provider Settings dialog — portaled to body to escape parent stacking context -->
+<div use:portal>
+  <AIProviderSettingsDialog bind:open={aiSettingsOpen} onSaveAndContinue={generateVisions} />
+</div>
 
 <!-- Flip card overlay — portaled to body to escape any parent stacking context -->
 {#if flippedVision}
