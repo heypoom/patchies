@@ -45,7 +45,7 @@ Open [patchies.app](https://patchies.app) and get patching.
 
 - Play with the [demos](https://patchies.app/?startup=demos) to see what you can make with Patchies.
 - Skim the [docs](https://patchies.app/docs/adding-objects) for tutorials and object references.
-- Dunno what to make? Open [sparks](https://patchies.app/sparks) to use your mood and interests as inspiration.
+- Dunno what to make? Open [sparks](https://patchies.app/?startup=sparks) to use your mood and interests as inspiration.
 - Join our [Discord](https://discord.gg/PvKnYCQA) to share your creations, ask for help and chat with other patchers.
 
 ## Thanks
