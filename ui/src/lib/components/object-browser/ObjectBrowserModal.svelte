@@ -367,7 +367,7 @@
                   <span>packs</span>
                 </button>
               </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">Enable or disable object packs</Tooltip.Content>
+              <Tooltip.Content side="bottom">Enable or disable packs</Tooltip.Content>
             </Tooltip.Root>
 
             <!-- Presets toggle -->
@@ -393,7 +393,7 @@
                 {browserMode === 'help'
                   ? 'Presets hidden in help mode'
                   : browserMode === 'packs'
-                    ? 'Presets hidden in packs mode'
+                    ? 'Switch to insert mode to browse presets'
                     : 'Show saved presets?'}
               </Tooltip.Content>
             </Tooltip.Root>
