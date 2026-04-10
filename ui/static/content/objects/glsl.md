@@ -90,7 +90,6 @@ GLSL shader libraries directly in your code:
 
 ```glsl
 #include <lygia/color/space/rgb2hsv>
-#include <lygia/generative/snoise>
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec3 hsv = rgb2hsv(vec3(uv, 0.5));
