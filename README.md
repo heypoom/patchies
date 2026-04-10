@@ -41,7 +41,7 @@ This lets you visually see the program's core composition and its in-between res
 
 <img src="./docs/images/startup-modal.webp" alt="Startup Modal" width="700">
 
-No installation. Open [patchies.app](https://patchies.app) and you're ready to patch!
+Open [patchies.app](https://patchies.app) and get patching.
 
 - Play with the [demos](https://patchies.app/?startup=demos) to see what you can make with Patchies.
 - Skim the [docs](https://patchies.app/docs/adding-objects) for tutorials and object references.
