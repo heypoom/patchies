@@ -147,10 +147,17 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - noise~: White noise generator
 - phasor~: Ramp wave 0→1, useful for driving table lookups or LFOs
 - bytebeat~: One-expression algorithmic audio — t-based math formulas that generate sound
-- dsp~: Custom DSP with AudioWorklet — write your own sample-level processing in JS
-- elem~: Functional reactive audio with Elementary Audio
 - strudel: TidalCycles-style live coding — pattern-based music, polymeter, mini-notation
 - orca: Esoteric livecoding sequencer — 2D grid of operators that fire MIDI/messages
+
+## Signal Processors
+- dsp~: Custom DSP with AudioWorklet — write your own sample-level processing in JS
+- elem~: Functional reactive audio with Elementary Audio
+- expr~: Audio-rate mathematical expressions — inline formula on the signal path
+- snapshot~: Sample an audio signal on demand (bang → current value)
+- samphold~: Sample-and-hold — freeze a signal when triggered
+- env~: Envelope follower — tracks the amplitude of an audio signal
+- latch~: Hold a signal value until retriggered
 
 ## Audio Processing
 - gain~, pan~: Volume and stereo panning
