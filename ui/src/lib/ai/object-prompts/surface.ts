@@ -5,8 +5,9 @@ Fullscreen interactive canvas overlay for live performance. Captures pointer/tou
 **Surface-specific methods:**
 - ctx: 2D canvas context
 - width, height: always window dimensions (updated on resize)
-- mouse: {x, y, down, buttons} — normalized 0–1
-- onPointer(({ x, y, buttons, down, type }) => {}) — pointer events (type: 'move'|'down'|'up')
+- mouse: {x, y, down, buttons} — x/y normalized 0–1, down: boolean, buttons: 0=none 1=left 2=right
+- onPointer(({ x, y, buttons, down, type }) => {})
+  pointer events (type: 'move'|'down'|'up'); down: boolean, buttons: 0=none 1=left 2=right
 - onTouch((touches) => {}) — multi-touch: array of { id, x, y, pressure }
 - onKeyDown(event => {}) — keyboard down
 - onKeyUp(event => {}) — keyboard up
