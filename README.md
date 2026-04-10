@@ -1,6 +1,6 @@
 # Patchies.app: creative coding patcher in the browser
 
-<img src="./docs/images/patchies-v3-hero.png" alt="Patchies.app Hero Image" width="700">
+<img src="./docs/images/patchies-v4-hero.webp" alt="Patchies.app Hero Image" width="700">
 
 > The above image remixes the Hydra code "Filet Mignon" from [AFALFL](https://www.instagram.com/a_f_alfl) and GLSL shader ["Just another cube"](https://www.shadertoy.com/view/3XdXRr) from mrange. Licensed under CC BY-NC-SA 4.0 and CC0 respectively.
 
