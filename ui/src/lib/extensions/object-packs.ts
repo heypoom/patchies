@@ -83,7 +83,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: '2D Graphics',
     description: 'Interactive 2D canvas objects',
     icon: 'Palette',
-    objects: ['p5', 'canvas', 'canvas.dom', 'textmode', 'textmode.dom']
+    objects: ['p5', 'canvas', 'canvas.dom', 'surface', 'textmode', 'textmode.dom']
   },
   {
     id: 'video-synthesis',

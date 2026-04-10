@@ -156,6 +156,25 @@ endin
 
 schedule("Main", 0, 0, 0)`;
 
+export const DEFAULT_SURFACE_CODE = `// surface — fullscreen interactive canvas
+// mouse.x, mouse.y are normalized 0–1 coords
+// width, height are always window dimensions
+
+function draw() {
+  ctx.clearRect(0, 0, width, height)
+
+  if (mouse.down) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
+    ctx.beginPath()
+    ctx.arc(mouse.x * width, mouse.y * height, 30, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  requestAnimationFrame(draw)
+}
+
+draw()`;
+
 export const DEFAULT_THREE_CODE = `const { Scene, PerspectiveCamera, BoxGeometry, Mesh, MeshNormalMaterial } = THREE
 
 const scene = new Scene()

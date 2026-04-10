@@ -102,6 +102,7 @@ import VisionDetectNode from '$objects/mediapipe/components/VisionDetectNode.sve
 import VisionGestureNode from '$objects/mediapipe/components/VisionGestureNode.svelte';
 import VisionClassifyNode from '$objects/mediapipe/components/VisionClassifyNode.svelte';
 import NgeaNode from '$objects/ngea/components/NgeaNode.svelte';
+import SurfaceNode from '$lib/components/nodes/SurfaceNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -208,7 +209,8 @@ export const nodeTypes: Record<string, any> = {
   'vision.detect': VisionDetectNode,
   'vision.gesture': VisionGestureNode,
   'vision.classify': VisionClassifyNode,
-  ngea: NgeaNode
+  ngea: NgeaNode,
+  surface: SurfaceNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

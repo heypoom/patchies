@@ -46,6 +46,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - vue: write custom user interface and component using Vue.js
 - p5: P5.js. readable code, great for shorter interactive sketches with mouse/keyboard via p5's API
 - canvas.dom: HTML5 Canvas on main thread. supports mouse/keyboard, lower overhead than p5, best for heavy visuals needing interactivity
+- surface: Fullscreen interactive canvas overlay. captures pointer/touch input across the entire screen. auto-freezes other DOM-renderer nodes. use for live performance drawing, painting, or touch interaction. setDrawMode('always'|'interact'|'manual'), onPointer(cb), onTouch(cb), activate(), deactivate()
 - canvas: HTML5 Canvas on web worker. no mouse/keyboard, highest performance. can chain into the rendering pipeline at high speed (e.g. video texture for glsl/hydra)
 - hydra: Live coding video synthesis with Hydra
 - glsl: GLSL fragment shaders for visual effects

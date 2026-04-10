@@ -46,7 +46,7 @@ FBO-renderer nodes (`hydra`, `regl`, `glsl`, `swgl`, `canvas`, `three`, `textmod
 **State transitions:**
 
 - `preview` → `fullscreen`: click **Go Live** button on node / send `bang` / call `activate()`
-- `fullscreen` → `preview`: press **Escape** / click floating exit badge / send `{type: 'exit'}` / call `deactivate()`
+- `fullscreen` → `preview`: press **Shift+Escape** / click floating exit badge / send `{type: 'exit'}` / call `deactivate()`
 - `preview` ↔ `stopped`: click **Stop/Play** button on node (pause canvas to save CPU)
 
 Escape always returns to `preview`, never to `stopped`.
