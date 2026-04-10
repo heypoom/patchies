@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { HelpCircle, X } from '@lucide/svelte/icons';
   import AboutTab from './AboutTab.svelte';
   import ExamplesTab from './ExamplesTab.svelte';
   import ThanksTab from './ThanksTab.svelte';
@@ -18,7 +17,6 @@
 
   let activeTab = $state<Tab>(initialTab);
 
-  // Reset to initialTab when modal opens with a different initialTab
   $effect(() => {
     if (open && initialTab) {
       activeTab = initialTab;
@@ -33,11 +31,10 @@
 </script>
 
 {#if open}
-  <!-- Modal backdrop -->
-  <div class="fixed inset-0 z-50 flex items-center justify-center font-mono" role="presentation">
-    <!-- Backdrop overlay -->
+  <div class="modal-root" role="presentation">
+    <!-- Backdrop -->
     <div
-      class="fixed inset-0 bg-black/60 backdrop-blur-sm"
+      class="modal-backdrop"
       role="button"
       tabindex="-1"
       onclick={handleClose}
@@ -49,7 +46,7 @@
 
     <!-- Modal container -->
     <div
-      class="pt-safe relative z-10 flex h-dvh w-full flex-col overflow-hidden bg-zinc-950 sm:mx-4 sm:h-[85vh] sm:max-w-3xl sm:rounded-lg sm:border sm:border-zinc-700 sm:shadow-2xl md:mx-8 lg:mx-12"
+      class="modal-card"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
@@ -62,37 +59,33 @@
         }
       }}
     >
+      <!-- Corner ornaments -->
+      <span class="mc mc-tl" aria-hidden="true"></span>
+      <span class="mc mc-tr" aria-hidden="true"></span>
+      <span class="mc mc-bl" aria-hidden="true"></span>
+      <span class="mc mc-br" aria-hidden="true"></span>
+
+      <!-- Radial glow -->
+      <div class="modal-glow" aria-hidden="true"></div>
+
       <!-- Tab navigation -->
-      <div class="relative border-b border-zinc-800 px-4 pt-4 sm:px-6">
-        <div class="flex items-start gap-4">
-          <nav class="flex flex-1 gap-4 overflow-x-auto sm:gap-6">
-            {#each tabs as tab (tab)}
-              <button
-                onclick={() => (activeTab = tab)}
-                class="flex-shrink-0 cursor-pointer pb-3 text-sm font-medium transition-colors {activeTab ===
-                tab
-                  ? 'border-b-2 border-orange-500 text-orange-500'
-                  : 'text-zinc-400 hover:text-zinc-200'}"
-              >
-                {tab}
-              </button>
-            {/each}
-          </nav>
-          <!-- Close button -->
-          <button
-            onclick={handleClose}
-            class="flex-shrink-0 rounded text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-            aria-label="Close modal"
-          >
-            <X class="h-5 w-5" />
-          </button>
-        </div>
+      <div class="modal-tabbar">
+        <nav class="modal-tabs">
+          {#each tabs as tab (tab)}
+            <button
+              onclick={() => (activeTab = tab)}
+              class="modal-tab"
+              class:modal-tab--active={activeTab === tab}
+            >
+              {tab}
+            </button>
+          {/each}
+        </nav>
+        <button onclick={handleClose} class="modal-close" aria-label="Close modal">✕</button>
       </div>
 
       <!-- Tab content -->
-      <div
-        class="flex min-h-0 flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]"
-      >
+      <div class="modal-body">
         {#if activeTab === 'about'}
           <AboutTab setTab={(tab) => (activeTab = tab)} />
         {:else if activeTab === 'demos'}
@@ -108,21 +101,225 @@
 {/if}
 
 <style>
-  /* Custom scrollbar styling */
-  :global(.overflow-y-auto::-webkit-scrollbar) {
-    width: 8px;
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;600;700;800&display=swap');
+
+  .modal-root {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-family: 'Syne', sans-serif;
   }
 
-  :global(.overflow-y-auto::-webkit-scrollbar-track) {
-    background: rgb(39 39 42); /* zinc-800 */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(12px);
+    animation: fade-in 0.2s ease both;
   }
 
-  :global(.overflow-y-auto::-webkit-scrollbar-thumb) {
-    background: rgb(63 63 70); /* zinc-700 */
-    border-radius: 4px;
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
-  :global(.overflow-y-auto::-webkit-scrollbar-thumb:hover) {
-    background: rgb(82 82 91); /* zinc-600 */
+  .modal-card {
+    position: relative;
+    z-index: 10;
+    background: #09090b;
+    border: 1px solid rgba(249, 115, 22, 0.18);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+      0 0 80px rgba(249, 115, 22, 0.06),
+      0 40px 80px rgba(0, 0, 0, 0.8);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 680px;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: card-in 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  @media (min-width: 640px) {
+    .modal-card {
+      height: 85vh;
+      max-height: 720px;
+      margin: 16px;
+    }
+  }
+
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Corner ornaments */
+  .mc {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .mc-tl {
+    top: 12px;
+    left: 12px;
+    border-top: 1px solid #f97316;
+    border-left: 1px solid #f97316;
+  }
+  .mc-tr {
+    top: 12px;
+    right: 12px;
+    border-top: 1px solid #f97316;
+    border-right: 1px solid #f97316;
+  }
+  .mc-bl {
+    bottom: 12px;
+    left: 12px;
+    border-bottom: 1px solid #f97316;
+    border-left: 1px solid #f97316;
+  }
+  .mc-br {
+    bottom: 12px;
+    right: 12px;
+    border-bottom: 1px solid #f97316;
+    border-right: 1px solid #f97316;
+  }
+
+  /* Top radial glow */
+  .modal-glow {
+    position: absolute;
+    top: -60px;
+    left: -60px;
+    right: -60px;
+    height: 280px;
+    background: radial-gradient(
+      ellipse 70% 60% at 50% 35%,
+      rgba(249, 115, 22, 0.07),
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Tab bar */
+  .modal-tabbar {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
+  }
+
+  .modal-tabs {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+  }
+
+  .modal-tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #3f3f46;
+    background: none;
+    border: none;
+    padding: 8px 12px 12px;
+    cursor: pointer;
+    transition: color 0.15s;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .modal-tab:hover {
+    color: #71717a;
+  }
+
+  .modal-tab--active {
+    color: #f97316;
+  }
+
+  .modal-tab--active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 8px;
+    right: 8px;
+    height: 1px;
+    background: #f97316;
+    opacity: 0.8;
+  }
+
+  /* Close button */
+  .modal-close {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #3f3f46;
+    background: none;
+    border: none;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: color 0.15s;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-bottom: 8px;
+  }
+
+  .modal-close:hover {
+    color: #71717a;
+  }
+
+  /* Content area */
+  .modal-body {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 24px max(20px, env(safe-area-inset-bottom));
+  }
+
+  @media (min-width: 640px) {
+    .modal-tabbar {
+      padding: 18px 28px 0;
+    }
+    .modal-body {
+      padding: 28px 28px max(24px, env(safe-area-inset-bottom));
+    }
+  }
+
+  /* Scrollbar */
+  .modal-body::-webkit-scrollbar {
+    width: 6px;
+  }
+  .modal-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .modal-body::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 3px;
+  }
+  .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
   }
 </style>

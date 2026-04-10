@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { BookOpen, Github, Heart, Info, Play } from '@lucide/svelte/icons';
+  import { BookOpen, Github, Info, Play, Diamond, Command } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
 
-  import demoImage from '$lib/images/startup-modal.webp';
   import QuickTips from './QuickTips.svelte';
   import type { Tab } from './types';
 
@@ -12,158 +11,375 @@
 
   onMount(() => {
     isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
-    // Load the current setting from localStorage
     const setting = localStorage.getItem('patchies-show-startup-modal');
-    showOnStartup = setting !== 'false'; // Default to true if not set
+    showOnStartup = setting !== 'false';
   });
 
   function toggleShowOnStartup() {
     showOnStartup = !showOnStartup;
     localStorage.setItem('patchies-show-startup-modal', String(showOnStartup));
   }
+
+  const techNodes = ['p5', 'hydra', 'strudel', 'glsl', 'orca', 'chuck', 'tone.js', 'js'];
 </script>
 
-<div class="flex min-h-[calc(85vh-120px)] w-full flex-col">
-  <img
-    src={demoImage}
-    alt="patch demo"
-    class="mb-[20px] h-[10dvh] w-full object-cover object-center"
-  />
+<div class="about-root">
+  <!-- Hero -->
+  <div class="about-hero">
+    <p class="about-eyebrow">patchies · creative environment</p>
 
-  <div class="space-y-4">
-    <!-- Header -->
-    <div>
-      <h1 id="modal-title" class="text-xl font-semibold text-zinc-100">Patchies</h1>
-    </div>
+    <h1 id="modal-title" class="about-headline">Patch the world together.</h1>
 
-    <!-- Description -->
-    <div class="space-y-4 text-zinc-300">
-      <p class="text-sm">
-        Patchies is a patcher for things that runs on the web. Patch together <a
-          class="text-orange-300"
-          href="/docs/audio-chaining"
-          target="_blank">audio</a
-        >,
-        <a class="text-orange-300" href="/docs/video-chaining" target="_blank">visual</a>
-        and
-        <a class="text-orange-300" href="/docs/message-passing" target="_blank">computational</a>
-        objects e.g.
-        <a class="text-orange-300" href="/docs/objects/p5" target="_blank">P5</a>,
-        <a class="text-orange-300" href="/docs/objects/hydra" target="_blank">Hydra</a>,
-        <a
-          class="text-orange-300"
-          href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#strudel-strudel-music-environment"
-          target="_blank">Strudel</a
-        >,
-        <a
-          class="text-orange-300"
-          href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#chuck-creates-a-chuck-audio-programming-environment"
-          target="_blank">ChucK</a
-        >,
-        <a
-          class="text-orange-300"
-          href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#orca-orca-livecoding-sequencer"
-          target="_blank">Orca</a
-        >,
-        <a
-          class="text-orange-300"
-          href="https://github.com/heypoom/patchies/tree/main?tab=readme-ov-file#tone-tonejs-synthesis-and-processing"
-          target="_blank">Tone.js</a
-        >,
-        <a class="text-orange-300" href="/docs/objects/glsl" target="_blank">GLSL</a>, etc.
-      </p>
+    <p class="about-subhead">
+      Connect computational, audio and visual objects in real time - on the web.
+    </p>
 
-      <!-- Getting Started -->
-      <div class="rounded-lg bg-zinc-800/50 p-4">
-        <h3 class="mb-3 text-xs font-medium text-zinc-200">New to Patchies?</h3>
-
-        <ul class="grid gap-x-6 gap-y-2 text-sm text-zinc-300 sm:grid-cols-2">
-          <li class="flex items-start gap-2">
-            <Play class="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
-            <span>
-              <a href="#!" class="text-orange-300 hover:underline" onclick={() => setTab('demos')}
-                >Browse demos</a
-              > for inspiration.
-            </span>
-          </li>
-
-          <li class="flex items-start gap-2">
-            <BookOpen class="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
-            <span>
-              <a href="/docs/adding-objects" target="_blank" class="text-orange-300 hover:underline"
-                >Read the guide</a
-              > to learn the basics.
-            </span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Shortcuts -->
-      <QuickTips {isMac} />
-
-      <!-- Open Source -->
-      <p class="flex items-center gap-1.5 text-xs text-zinc-500">
-        <Heart class="h-3.5 w-3.5" />
-        <span>
-          Built with
-          <a href="#!" class="text-zinc-400 hover:underline" onclick={() => setTab('thanks')}
-            >these amazing OSS libraries.</a
-          >
-        </span>
-      </p>
+    <!-- Tech node chips -->
+    <div class="about-chips">
+      {#each techNodes as node (node)}
+        <a href="/docs/objects/{node}" target="_blank" class="about-chip">{node}</a>
+      {/each}
+      <span class="about-chip about-chip--muted">+ more</span>
     </div>
   </div>
 
-  <!-- Resources and Show on startup - pushed to bottom -->
-  <div class="mt-auto flex flex-col gap-y-4 pt-4 md:flex-row md:items-end md:justify-between">
-    <!-- Links -->
-    <div class="space-y-3">
-      <h2 class="text-sm font-semibold text-zinc-200">Resources</h2>
-      <div class="flex gap-4">
-        <a
-          href="/docs/adding-objects"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="flex items-center gap-2 text-sm text-blue-400 hover:underline"
-        >
-          <BookOpen class="h-4 w-4" />
-          Guides & References
-        </a>
+  <!-- Divider -->
+  <div class="about-divider">
+    <span class="about-divider-line"></span>
+    <span class="about-divider-label">get started</span>
+    <span class="about-divider-line"></span>
+  </div>
 
-        <a
-          href="https://github.com/heypoom/patchies"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="flex items-center gap-2 text-sm text-blue-400 hover:underline"
-        >
-          <Github class="h-4 w-4" />
-          GitHub
-        </a>
-      </div>
+  <!-- Getting started panel -->
+  <div class="about-panel">
+    <div class="about-panel-row">
+      <Play class="about-panel-icon" />
+      <span class="about-panel-text">
+        <button class="about-link" onclick={() => setTab('demos')}>Browse demos</button>
+        for inspiration and working patches.
+      </span>
+    </div>
+    <div class="about-panel-row">
+      <Diamond class="about-panel-icon" />
+      <span class="about-panel-text">
+        <a href="/docs/adding-objects" target="_blank" class="about-link">Read the guide</a>
+        to learn to patch and code objects.
+      </span>
+    </div>
+    <div class="about-panel-row">
+      <Command class="about-panel-icon" />
+      <span class="about-panel-text">
+        Check <button class="about-link" onclick={() => setTab('shortcuts')}>shortcuts</button>
+        to move fast.
+      </span>
+    </div>
+  </div>
+
+  <!-- Quick tips -->
+  <QuickTips {isMac} />
+
+  <!-- Footer row -->
+  <div class="about-footer">
+    <!-- Links -->
+    <div class="about-footer-links">
+      <a
+        href="/docs/adding-objects"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="about-footer-link"
+      >
+        <BookOpen class="about-footer-icon" />
+        docs
+      </a>
+      <a
+        href="https://github.com/heypoom/patchies"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="about-footer-link"
+      >
+        <Github class="about-footer-icon" />
+        github
+      </a>
+      <button class="about-footer-link cursor-pointer" onclick={() => setTab('thanks')}>
+        ♥ thanks
+      </button>
     </div>
 
     <!-- Show on startup toggle -->
-    <div class="flex max-w-xs items-center justify-between gap-x-10 rounded-lg border p-3">
-      <div class="flex items-center gap-2">
-        <Info class="h-4 w-4 text-zinc-400" />
-        <span class="text-sm text-zinc-300">show on startup?</span>
-      </div>
-
+    <div class="about-toggle-row">
+      <Info class="about-toggle-icon" />
+      <span class="about-toggle-label">show on startup</span>
       <button
         onclick={toggleShowOnStartup}
-        class="relative inline-flex h-6 w-11 cursor-pointer items-center rounded-full transition-colors {showOnStartup
-          ? 'bg-orange-500'
-          : 'bg-zinc-700'}"
+        class="about-toggle"
+        class:about-toggle--on={showOnStartup}
         role="switch"
         aria-checked={showOnStartup}
         aria-label="toggle show on startup"
       >
-        <span
-          class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {showOnStartup
-            ? 'translate-x-6'
-            : 'translate-x-1'}"
-        ></span>
+        <span class="about-toggle-thumb" class:about-toggle-thumb--on={showOnStartup}></span>
       </button>
     </div>
   </div>
 </div>
+
+<style>
+  .about-root {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-height: 100%;
+  }
+
+  /* Hero */
+  .about-hero {
+    padding-bottom: 4px;
+  }
+
+  .about-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(249, 115, 22, 0.7);
+    margin-bottom: 14px;
+  }
+
+  .about-headline {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: clamp(2rem, 6vw, 2.8rem);
+    line-height: 1.12;
+    color: #f4f4f5;
+    margin-bottom: 14px;
+  }
+
+  .about-subhead {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: #52525b;
+    margin-bottom: 20px;
+  }
+
+  /* Tech chips */
+  .about-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .about-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 3px 9px;
+    border-radius: 3px;
+    border: 1px solid rgba(249, 115, 22, 0.22);
+    background: rgba(249, 115, 22, 0.06);
+    color: rgba(249, 115, 22, 0.75);
+    text-decoration: none;
+    transition:
+      border-color 0.15s,
+      background 0.15s,
+      color 0.15s;
+    cursor: pointer;
+  }
+
+  .about-chip:hover {
+    border-color: rgba(249, 115, 22, 0.45);
+    background: rgba(249, 115, 22, 0.12);
+    color: #fb923c;
+  }
+
+  .about-chip--muted {
+    border-color: rgba(255, 255, 255, 0.07);
+    background: transparent;
+    color: #3f3f46;
+    cursor: default;
+  }
+
+  .about-chip--muted:hover {
+    border-color: rgba(255, 255, 255, 0.07);
+    background: transparent;
+    color: #3f3f46;
+  }
+
+  /* Divider */
+  .about-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .about-divider-line {
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .about-divider-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #3f3f46;
+  }
+
+  /* Getting started panel */
+  .about-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+
+  .about-panel-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  :global(.about-panel-icon) {
+    color: rgba(249, 115, 22, 0.5);
+    margin-top: 2px;
+    flex-shrink: 0;
+    width: 13px;
+    height: 13px;
+  }
+
+  .about-panel-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.83rem;
+    color: #71717a;
+    line-height: 1.5;
+  }
+
+  .about-link {
+    color: #f97316;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .about-link:hover {
+    color: #fb923c;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* Footer */
+  .about-footer {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  @media (min-width: 480px) {
+    .about-footer {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .about-footer-links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .about-footer-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: #3f3f46;
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+    transition: color 0.15s;
+  }
+
+  .about-footer-link:hover {
+    color: #71717a;
+  }
+
+  :global(.about-footer-icon) {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Toggle */
+  .about-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  :global(.about-toggle-icon) {
+    width: 13px;
+    height: 13px;
+    color: #3f3f46;
+    flex-shrink: 0;
+  }
+
+  .about-toggle-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: #3f3f46;
+    white-space: nowrap;
+  }
+
+  .about-toggle {
+    position: relative;
+    display: inline-flex;
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: #27272a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      border-color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .about-toggle--on {
+    background: rgba(249, 115, 22, 0.25);
+    border-color: rgba(249, 115, 22, 0.4);
+  }
+
+  .about-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #52525b;
+    transition:
+      transform 0.2s,
+      background 0.2s;
+  }
+
+  .about-toggle-thumb--on {
+    transform: translateX(16px);
+    background: #f97316;
+  }
+</style>

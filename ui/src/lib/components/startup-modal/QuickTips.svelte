@@ -2,50 +2,128 @@
   import { Cable, CirclePlus, PanelLeftOpen, Play } from '@lucide/svelte/icons';
 
   let { isMac }: { isMac: boolean } = $props();
+
+  const mod = $derived(isMac ? 'Cmd' : 'Ctrl');
 </script>
 
-<div class="rounded-lg bg-zinc-800/50 p-4">
-  <ul class="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs text-zinc-400">
-    <li class="hidden sm:block">
-      Add object: <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Enter</kbd>
-    </li>
+<div class="tips-root">
+  <div class="tips-grid">
+    <div class="tip hidden sm:flex">
+      <span class="tip-label">Add object</span>
+      <kbd class="tip-key">Enter</kbd>
+    </div>
 
-    <li>
-      Browse objects: <CirclePlus class="inline h-3.5 w-3.5" />
-      <span class="hidden md:inline">
-        / <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
-          >{isMac ? 'Cmd' : 'Ctrl'} + O</kbd
-        >
+    <div class="tip">
+      <span class="tip-label">Browse objects</span>
+      <span class="tip-keys">
+        <CirclePlus class="tip-icon" />
+
+        <span class="tip-sep hidden md:inline">/</span>
+
+        <kbd class="tip-key hidden md:inline-flex">{mod} + O</kbd>
       </span>
-    </li>
+    </div>
 
-    <li class="hidden md:block">Connect objects: drag between handles</li>
+    <div class="tip md:hidden">
+      <span class="tip-label">Connect</span>
 
-    <li class="md:hidden">
-      Connect objects: <Cable class="inline h-3.5 w-3.5" />
-    </li>
+      <div class="flex items-center justify-center">
+        <span class="tip-desc mr-1">drag handle /</span>
 
-    <li>
-      Open sidebar: <PanelLeftOpen class="inline h-3.5 w-3.5" />
-      <span class="hidden md:inline">
-        / <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
-          >{isMac ? 'Cmd' : 'Ctrl'} + B</kbd
-        >
+        <Cable class="tip-icon" />
+      </div>
+    </div>
+
+    <div class="tip">
+      <span class="tip-label">Open sidebar</span>
+      <span class="tip-keys">
+        <PanelLeftOpen class="tip-icon" />
+        <span class="tip-sep hidden md:inline">/</span>
+        <kbd class="tip-key hidden md:inline-flex">{mod} + B</kbd>
       </span>
-    </li>
+    </div>
 
-    <li class="hidden sm:block">
-      Command palette:
-      <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs"
-        >{isMac ? 'Cmd' : 'Ctrl'} + K</kbd
-      >
-    </li>
+    <div class="tip hidden sm:flex">
+      <span class="tip-label">Command palette</span>
+      <kbd class="tip-key">{mod} + K</kbd>
+    </div>
 
-    <li>
-      Run code: <Play class="inline h-3.5 w-3.5" />
-      <span class="hidden md:inline">
-        / <kbd class="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">Shift + Enter</kbd>
+    <div class="tip">
+      <span class="tip-label">Run code</span>
+      <span class="tip-keys">
+        <Play class="tip-icon" />
+        <span class="tip-sep hidden md:inline">/</span>
+        <kbd class="tip-key hidden md:inline-flex">Shift + Enter</kbd>
       </span>
-    </li>
-  </ul>
+    </div>
+  </div>
 </div>
+
+<style>
+  .tips-root {
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.015);
+  }
+
+  .tips-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 24px;
+  }
+
+  .tip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .tip-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    color: #52525b;
+    white-space: nowrap;
+  }
+
+  .tip-keys {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tip-sep {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: #27272a;
+  }
+
+  .tip-desc {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: #3f3f46;
+    letter-spacing: 0.03em;
+  }
+
+  :global(.tip-icon) {
+    width: 12px;
+    height: 12px;
+    color: #3f3f46;
+    flex-shrink: 0;
+  }
+
+  .tip-key {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.03em;
+    color: #71717a;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 2px 7px;
+    white-space: nowrap;
+  }
+</style>
