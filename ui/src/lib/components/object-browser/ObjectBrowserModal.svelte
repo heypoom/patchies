@@ -375,10 +375,10 @@
               <Tooltip.Trigger>
                 <button
                   onclick={() => (showPresets = !showPresets)}
-                  disabled={browserMode === 'help'}
+                  disabled={browserMode === 'help' || browserMode === 'packs'}
                   class={[
                     'ob-chip',
-                    browserMode === 'help'
+                    browserMode === 'help' || browserMode === 'packs'
                       ? 'ob-chip-disabled'
                       : showPresets
                         ? 'ob-chip-active'
@@ -390,7 +390,11 @@
                 </button>
               </Tooltip.Trigger>
               <Tooltip.Content side="bottom">
-                {browserMode === 'help' ? 'Presets hidden in help mode' : 'Show saved presets?'}
+                {browserMode === 'help'
+                  ? 'Presets hidden in help mode'
+                  : browserMode === 'packs'
+                    ? 'Presets hidden in packs mode'
+                    : 'Show saved presets?'}
               </Tooltip.Content>
             </Tooltip.Root>
 
