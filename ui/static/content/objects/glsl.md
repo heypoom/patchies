@@ -31,8 +31,20 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
-Use the `glsl>` preset from the **GLSL Operators** preset pack to quickly
-create a passthrough shader.
+## Presets
+
+Enable the **GLSL Operators** preset pack to access 6 GLSL shader presets:
+
+- `glsl>` - a passthrough shader
+- `red.gl` - solid red color
+- `mix.gl` - mix two video inputs
+- `overlay.gl` - overlay second input on first
+- `fft-freq.gl` - visualize frequency spectrum
+- `fft-waveform.gl` - visualize audio waveform
+- `switcher.gl` - switch between 6 inputs (send int 0-5)
+
+The `glsl>` preset is the best starting point for building GLSL shaders
+that process video inputs.
 
 ## Built-in Uniforms
 
@@ -72,16 +84,6 @@ uniform vec2 iPoints[4];
 ```
 
 Send `[[0.0, 0.0], [0.5, 0.0], [0.5, 1.0], [1.0, 1.0]]` to `iPoints`.
-
-## Presets
-
-- `glsl>` - pass through without changes
-- `red.gl` - solid red color
-- `mix.gl` - mix two video inputs
-- `overlay.gl` - overlay second input on first
-- `fft-freq.gl` - visualize frequency spectrum
-- `fft-waveform.gl` - visualize audio waveform
-- `switcher.gl` - switch between 6 inputs (send int 0-5)
 
 ## GLSL Imports
 
@@ -200,8 +202,8 @@ When `iMouse` is detected, the node becomes interactive (drag is disabled to all
 
 ## See Also
 
-- [hydra](/docs/objects/hydra) - live coding visuals
-- [regl](/docs/objects/regl) - Regl shaders with JavaScript control
+- [hydra](/docs/objects/hydra) - live coding video synth, supports GLSL
+- [regl](/docs/objects/regl) - REGL rendering (custom vertex, multiple draw calls)
 - [swgl](/docs/objects/swgl) - SwissGL shaders
 - [three](/docs/objects/three) - 3D graphics with Three.js
 - [p5](/docs/objects/p5) - creative coding with P5.js
