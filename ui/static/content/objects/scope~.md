@@ -72,6 +72,7 @@ In XY mode, the trigger is based on the X channel (first inlet).
 
 ## See Also
 
+- [tap~](/docs/objects/tap~) - headless scope that forwards waveform frames as messages
 - [meter~](/docs/objects/meter~) - audio level metering
 - [fft~](/docs/objects/fft~) - frequency analysis
 - [snapshot~](/docs/objects/snapshot~) - sample signal values

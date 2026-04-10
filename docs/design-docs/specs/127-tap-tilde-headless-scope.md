@@ -19,25 +19,27 @@ The existing `scope~` visual node is **unchanged**.
 
 ### Inlets
 
-| # | Name | Type | Description |
-|---|------|------|-------------|
-| 0 | `in` | signal | Audio input (or X axis in XY mode) |
-| 1 | `y` | signal | Y axis signal (XY mode only, visible when mode = xy) |
+| #   | Name | Type   | Description                                          |
+| --- | ---- | ------ | ---------------------------------------------------- |
+| 0   | `in` | signal | Audio input (or X axis in XY mode)                   |
+| 1   | `y`  | signal | Y axis signal (XY mode only, visible when mode = xy) |
 
 ### Outlets
 
-| # | Name | Type | Description |
-|---|------|------|-------------|
-| 0 | `out` | message | Waveform buffer or XY pair, emitted each captured frame |
+| #   | Name  | Type    | Description                                             |
+| --- | ----- | ------- | ------------------------------------------------------- |
+| 0   | `out` | message | Waveform buffer or XY pair, emitted each captured frame |
 
 ### Output message format
 
 **Waveform mode:**
+
 ```
 Float32Array  (length = bufferSize)
 ```
 
 **XY mode:**
+
 ```
 { x: Float32Array, y: Float32Array }  (each length = bufferSize)
 ```
@@ -49,11 +51,11 @@ guarantee as `scope~`.
 
 Exposed via the same `ScopeSettings.svelte` panel:
 
-| Setting | Range | Default | Notes |
-|---------|-------|---------|-------|
-| Samples (bufferSize) | 64–2048 | 512 | Controls buffer length sent per frame |
-| Mode | waveform / xy | waveform | Switches inlet count and output shape |
-| Refresh (fps) | 0–120 | 0 (max) | Throttles how often the worklet sends |
+| Setting              | Range         | Default  | Notes                                 |
+| -------------------- | ------------- | -------- | ------------------------------------- |
+| Samples (bufferSize) | 64–2048       | 512      | Controls buffer length sent per frame |
+| Mode                 | waveform / xy | waveform | Switches inlet count and output shape |
+| Refresh (fps)        | 0–120         | 0 (max)  | Throttles how often the worklet sends |
 
 X Scale, Y Scale, Plot Type, Decay, and Unipolar are **not** settings of `tap~` —
 they are rendering concerns owned by whichever canvas preset receives the data.
@@ -75,14 +77,14 @@ Renders a triggered waveform. Equivalent to `scope~` in waveform mode.
 
 **Inlets (via `recv`):**
 
-| Message | Type | Description |
-|---------|------|-------------|
-| buffer | `Float32Array` | Waveform data from `tap~` |
-| xScale | number | Horizontal zoom (default 1) |
-| yScale | number | Vertical zoom (default 1) |
-| plotType | `'line'`\|`'point'`\|`'bezier'` | Drawing style (default `'line'`) |
-| decay | number 0.01–1 | Phosphor persistence (1 = off, default 1) |
-| unipolar | boolean | Map range to 0–1 instead of -1–1 (default false) |
+| Message  | Type                            | Description                                      |
+| -------- | ------------------------------- | ------------------------------------------------ |
+| buffer   | `Float32Array`                  | Waveform data from `tap~`                        |
+| xScale   | number                          | Horizontal zoom (default 1)                      |
+| yScale   | number                          | Vertical zoom (default 1)                        |
+| plotType | `'line'`\|`'point'`\|`'bezier'` | Drawing style (default `'line'`)                 |
+| decay    | number 0.01–1                   | Phosphor persistence (1 = off, default 1)        |
+| unipolar | boolean                         | Map range to 0–1 instead of -1–1 (default false) |
 
 Parameters arrive as keyed messages: `{ xScale: 2 }`, `{ plotType: 'bezier' }`, etc.
 The waveform buffer is detected by `ArrayBuffer.isView(m)`.
@@ -91,19 +93,19 @@ The waveform buffer is detected by `ArrayBuffer.isView(m)`.
 
 Drawing code is lifted directly from `ScopeNode.svelte:148–217` (`drawWaveform`).
 
-### lissajous.canvas
+### scope-xy.canvas
 
 Renders an XY/Lissajous plot. Equivalent to `scope~` in XY mode.
 
 **Inlets (via `recv`):**
 
-| Message | Type | Description |
-|---------|------|-------------|
-| data | `{ x: Float32Array, y: Float32Array }` | XY pair from `tap~` in XY mode |
-| xScale | number | Horizontal zoom (default 1) |
-| yScale | number | Vertical zoom (default 1) |
-| plotType | `'line'`\|`'point'`\|`'bezier'` | Drawing style (default `'line'`) |
-| decay | number 0.01–1 | Phosphor persistence (default 1) |
+| Message  | Type                                   | Description                      |
+| -------- | -------------------------------------- | -------------------------------- |
+| data     | `{ x: Float32Array, y: Float32Array }` | XY pair from `tap~` in XY mode   |
+| xScale   | number                                 | Horizontal zoom (default 1)      |
+| yScale   | number                                 | Vertical zoom (default 1)        |
+| plotType | `'line'`\|`'point'`\|`'bezier'`        | Drawing style (default `'line'`) |
+| decay    | number 0.01–1                          | Phosphor persistence (default 1) |
 
 Drawing code is lifted directly from `ScopeNode.svelte:219–287` (`drawLissajous`).
 
@@ -151,7 +153,7 @@ Pattern to follow: examine how hybrid audio/message nodes are handled in the cod
 ui/src/lib/audio/v2/nodes/TapAudioNode.ts          # AudioNodeV2 with message forwarding
 ui/src/lib/objects/v2/nodes/TapTildeObject.ts       # TextObjectV2 wrapper (owns audio node)
 ui/src/lib/presets/builtin/canvas.presets/scope.ts  # scope.canvas preset
-ui/src/lib/presets/builtin/canvas.presets/lissajous.ts  # lissajous.canvas preset
+ui/src/lib/presets/builtin/canvas.presets/lissajous.ts  # scope-xy.canvas preset
 ui/static/content/objects/tap~.md                   # Object documentation
 ```
 
@@ -161,7 +163,7 @@ ui/static/content/objects/tap~.md                   # Object documentation
 ui/src/lib/audio/v2/nodes/index.ts                  # Register TapAudioNode
 ui/src/lib/objects/v2/nodes/index.ts                # Register TapTildeObject
 ui/src/lib/extensions/object-packs.ts               # Add tap~ to Audio pack
-ui/src/lib/presets/builtin/canvas.presets/index.ts  # Export scope.canvas + lissajous.canvas
+ui/src/lib/presets/builtin/canvas.presets/index.ts  # Export scope.canvas + scope-xy.canvas
 ui/src/lib/extensions/preset-packs.ts               # Add presets to pack
 ui/src/lib/components/settings/ScopeSettings.svelte # Add props to hide irrelevant controls
 ```
@@ -177,7 +179,7 @@ ui/src/lib/components/settings/ScopeSettings.svelte # Add props to hide irreleva
 
 ```
 [osc~ 440] ─┐
-[osc~ 220] ─┘ [tap~ mode=xy] → [lissajous.canvas]
+[osc~ 220] ─┘ [tap~ mode=xy] → [scope-xy.canvas]
 ```
 
 ---

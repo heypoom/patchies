@@ -85,6 +85,14 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presets: ['bouncing-balls.p5', 'cam.p5', 'slider.p5', 'text-banner.p5', 'traffic-light.p5']
   },
   {
+    id: 'scope-demos',
+    name: 'Scope Demos',
+    description: 'Waveform and Lissajous visualizers for tap~',
+    icon: 'AudioWaveform',
+    requiredObjects: ['tap~', 'canvas.dom'],
+    presets: ['scope.canvas', 'scope-xy.canvas']
+  },
+  {
     id: 'fft-demos',
     name: 'FFT Demos',
     description: 'Audio analysis demo in various objects',

@@ -11,6 +11,7 @@ and Hydra, presets, and converting existing code.
 
 - [snapshot~](/docs/objects/snapshot~) - sample signal values
 - [scope~](/docs/objects/scope~) - oscilloscope
+- [tap~](/docs/objects/tap~) - capture waveform frames as messages
 - [meter~](/docs/objects/meter~) - level meter
 - [mic~](/docs/objects/mic~) - microphone input
 - [p5](/docs/objects/p5) - P5.js visualization

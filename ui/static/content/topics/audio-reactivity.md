@@ -106,5 +106,6 @@ osc(10, 0, () => a() * 4).out()
 - [Video Chaining](/docs/video-chaining) - Connect visual objects
 - [Rendering Pipeline](/docs/rendering-pipeline) - Performance details
 - [env~](/docs/objects/env~) - envelope follower for audio loudness
+- [tap~](/docs/objects/tap~) - capture waveform frames as messages for custom visualizers
 - [scope~](/docs/objects/scope~) - audio oscilloscope
 - [meter~](/docs/objects/meter~) - visual level meter

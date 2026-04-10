@@ -54,6 +54,7 @@ import { threeDomPrompt } from './three.dom';
 import { wgpuPrompt } from './wgpu';
 import { workerPrompt } from './worker';
 import { scopePrompt } from './scope~';
+import { tapTildePrompt } from './tap~';
 import { sequencerPrompt } from './sequencer';
 import { stackPrompt } from './stack';
 import { queuePrompt } from './queue';
@@ -126,6 +127,7 @@ export const objectPrompts: Record<string, string> = {
   stack: stackPrompt,
   queue: queuePrompt,
   'scope~': scopePrompt,
+  'tap~': tapTildePrompt,
   serial: serialPrompt,
   'serial.term': serialTermPrompt,
   'serial.dmx': dmxPrompt,
