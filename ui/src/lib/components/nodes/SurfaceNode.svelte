@@ -448,6 +448,7 @@
           // Surface activation
           activate: () => enterFullscreen(),
           deactivate: () => exitSurface(),
+          hideExitButton: () => SurfaceOverlay.getInstance().hideBadge(),
 
           // Browser fullscreen (separate from surface activation)
           goFullscreen: () => document.documentElement.requestFullscreen?.(),

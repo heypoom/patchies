@@ -111,6 +111,7 @@ plus:
 - `setDrawMode('always'|'interact'|'manual')` — control render loop
 - `redraw()` — manually trigger a draw (manual mode)
 - `activate()` / `deactivate()` — enter/exit fullscreen
+- `hideExitButton()` — hide the "Exit surface (Shift+Esc)" badge
 - `noOutput()` — hide video output port
 
 ## See Also

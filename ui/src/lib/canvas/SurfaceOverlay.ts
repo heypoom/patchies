@@ -21,7 +21,8 @@ export class SurfaceOverlay {
   private _ctx: CanvasRenderingContext2D;
   private _activeNodeId: string | null = null;
   private _frozenNodeIds: string[] = [];
-  private _badge: HTMLDivElement | null = null;
+  private _badge: HTMLButtonElement | null = null;
+
   private _onEscape: (e: KeyboardEvent) => void;
   private _onExit: (() => void) | null = null;
 
@@ -29,13 +30,16 @@ export class SurfaceOverlay {
     if (!SurfaceOverlay._instance) {
       SurfaceOverlay._instance = new SurfaceOverlay();
     }
+
     return SurfaceOverlay._instance;
   }
 
   private constructor() {
     this._canvas = document.createElement('canvas');
+
     this._canvas.style.cssText =
       'position: fixed; inset: 0; display: none; z-index: 50; pointer-events: none;';
+
     document.body.appendChild(this._canvas);
 
     this._ctx = this._canvas.getContext('2d')!;
@@ -48,6 +52,7 @@ export class SurfaceOverlay {
         this.deactivate(this._activeNodeId);
       }
     };
+
     window.addEventListener('keydown', this._onEscape);
   }
 
@@ -74,6 +79,7 @@ export class SurfaceOverlay {
   private _resize() {
     this._canvas.width = window.innerWidth;
     this._canvas.height = window.innerHeight;
+
     this._canvas.style.width = '100vw';
     this._canvas.style.height = '100vh';
   }
@@ -99,6 +105,7 @@ export class SurfaceOverlay {
     // Freeze DOM-renderer nodes (not the surface node itself)
     const eventBus = PatchiesEventBus.getInstance();
     this._frozenNodeIds = [];
+
     for (const node of nodes) {
       if (node.type && DOM_RENDERER_TYPES.has(node.type) && node.id !== nodeId) {
         eventBus.dispatch({ type: 'nodeSetPaused', nodeId: node.id, paused: true });
@@ -107,8 +114,10 @@ export class SurfaceOverlay {
     }
 
     this._onExit = onExit;
+
     isFullscreenActive.set(true);
     isSidebarOpen.set(false);
+
     this._showBadge(onExit);
   }
 
@@ -118,11 +127,13 @@ export class SurfaceOverlay {
    */
   deactivate(nodeId: string): void {
     if (this._activeNodeId !== nodeId) return;
+
     this._deactivateInternal(nodeId, true);
   }
 
   private _deactivateInternal(nodeId: string, unfreeze: boolean): void {
     if (this._activeNodeId !== nodeId) return;
+
     this._activeNodeId = null;
 
     this._canvas.style.display = 'none';
@@ -130,16 +141,20 @@ export class SurfaceOverlay {
 
     if (unfreeze) {
       const eventBus = PatchiesEventBus.getInstance();
+
       for (const id of this._frozenNodeIds) {
         eventBus.dispatch({ type: 'nodeSetPaused', nodeId: id, paused: false });
       }
+
       this._frozenNodeIds = [];
     }
 
     isFullscreenActive.set(false);
     this._removeBadge();
+
     const onExit = this._onExit;
     this._onExit = null;
+
     onExit?.();
   }
 
@@ -147,7 +162,9 @@ export class SurfaceOverlay {
     this._removeBadge();
 
     const badge = document.createElement('button');
+
     badge.type = 'button';
+
     badge.style.cssText = `
       position: fixed;
       bottom: 16px;
@@ -164,21 +181,32 @@ export class SurfaceOverlay {
       transition: color 0.15s, background 0.15s;
       user-select: none;
     `;
+
     badge.textContent = 'Exit surface (Shift+Esc)';
+
     badge.addEventListener('mouseenter', () => {
       badge.style.color = 'rgba(255,255,255,0.9)';
       badge.style.background = 'rgba(0,0,0,0.75)';
     });
+
     badge.addEventListener('mouseleave', () => {
       badge.style.color = 'rgba(255,255,255,0.6)';
       badge.style.background = 'rgba(0,0,0,0.5)';
     });
+
     badge.addEventListener('click', () => {
       onExit();
     });
 
     document.body.appendChild(badge);
+
     this._badge = badge;
+  }
+
+  hideBadge(): void {
+    if (this._badge) {
+      this._badge.style.display = 'none';
+    }
   }
 
   private _removeBadge(): void {
