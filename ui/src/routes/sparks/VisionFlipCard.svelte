@@ -26,7 +26,7 @@
   }
 
   function handleChat() {
-    const prompt = `I want to build this: "${vision.title}"\n\n${vision.vision}\n\nSuggested objects: ${vision.nodes.join(', ')}\n\nHelp me get started.`;
+    const prompt = `I want to explore this idea: "${vision.title}"\n\n${vision.vision}\n\nSuggested objects: ${vision.nodes.join(', ')}\n\nLet's brainstorm this together. Don't create anything yet.`;
     onChat?.(prompt);
     onClose();
   }
