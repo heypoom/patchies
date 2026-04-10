@@ -1,5 +1,10 @@
 {
   "permissions": {
-    "deny": ["Read(ui/src/objects/ngea/data.ts)"]
+    "deny": [
+      "Read(ui/src/objects/ngea/data.ts)"
+    ],
+    "allow": [
+      "Bash(grep -r \"from ''''@lucide/svelte''''\" src/routes/sparks/)"
+    ]
   }
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import { LayoutGrid, MessageSquare, Copy } from '@lucide/svelte';
   import type { Vision } from './types';
 
   const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -78,19 +79,24 @@
     <div class="flip-ctas">
       <Tooltip.Root>
         <Tooltip.Trigger class="flex-1">
-          <button class="flip-cta sparks-mono w-full cursor-pointer">⊞ scatter</button>
+          <button class="flip-cta sparks-mono w-full cursor-pointer"
+            ><LayoutGrid size={11} /> scatter</button
+          >
         </Tooltip.Trigger>
         <Tooltip.Content class="z-[200]">Scatter nodes onto your board</Tooltip.Content>
       </Tooltip.Root>
       <Tooltip.Root>
         <Tooltip.Trigger class="flex-1">
-          <button class="flip-cta sparks-mono w-full cursor-pointer">✦ chat</button>
+          <button class="flip-cta sparks-mono w-full cursor-pointer"
+            ><MessageSquare size={11} /> chat</button
+          >
         </Tooltip.Trigger>
         <Tooltip.Content class="z-[200]">Open this idea in AI chat</Tooltip.Content>
       </Tooltip.Root>
       <Tooltip.Root>
         <Tooltip.Trigger class="flex-1">
-          <button class="flip-cta sparks-mono w-full cursor-pointer">⎘ copy</button>
+          <button class="flip-cta sparks-mono w-full cursor-pointer"><Copy size={11} /> copy</button
+          >
         </Tooltip.Trigger>
         <Tooltip.Content class="z-[200]">Copy idea to clipboard</Tooltip.Content>
       </Tooltip.Root>
@@ -303,6 +309,10 @@
     color: #52525b;
     font-size: 10px;
     letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
     transition:
       border-color 0.15s,
       background 0.15s,
