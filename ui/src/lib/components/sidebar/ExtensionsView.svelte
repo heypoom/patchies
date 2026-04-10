@@ -99,7 +99,7 @@
             {/if}
           </div>
         </div>
-        <div class="space-y-1.5">
+        <div>
           {#each filteredObjectPacks as pack (pack.id)}
             <ExtensionPackCard
               {pack}
@@ -141,7 +141,7 @@
             {/if}
           </div>
         </div>
-        <div class="space-y-1.5">
+        <div>
           {#each filteredPresetPacks as pack (pack.id)}
             <PresetPackCard
               {pack}
