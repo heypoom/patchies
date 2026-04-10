@@ -6,6 +6,8 @@
   import VisionFlipCard from './VisionFlipCard.svelte';
   import { resolveNodes } from './types';
   import type { Mood, Output, Vision } from './types';
+  import AIProviderSettingsDialog from '$lib/components/dialogs/AIProviderSettingsDialog.svelte';
+  import { hasAIApiKey } from '../../stores/ai-settings.store';
 
   interface Props {
     selectedMood: Mood | null;
@@ -25,6 +27,7 @@
   let steerPrompt = $state('');
   let generationError = $state<string | null>(null);
   let abortController: AbortController | null = null;
+  let aiSettingsOpen = $state(false);
 
   // ── Flip card state ───────────────────────────────────────────
   let flippedVision = $state<Vision | null>(null);
@@ -202,6 +205,19 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
           </button>
         {/each}
       </div>
+    {:else if !$hasAIApiKey}
+      <div class="vision-idle-prompt w-full">
+        <p class="sparks-serif mb-3 text-2xl text-zinc-800">Generation needs an AI key</p>
+        <p class="sparks-mono mb-5 text-[11px] text-zinc-700">
+          Sparks uses your own API key — nothing is shared with Patchies servers.
+        </p>
+        <button
+          onclick={() => (aiSettingsOpen = true)}
+          class="sparks-mono cursor-pointer rounded-md border border-zinc-700 px-4 py-2 text-xs text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"
+        >
+          Set up AI Provider →
+        </button>
+      </div>
     {:else}
       <button onclick={generateVisions} class="vision-idle-prompt w-full cursor-pointer">
         <span
@@ -213,6 +229,9 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     {/if}
   </div>
 </section>
+
+<!-- AI Provider Settings dialog -->
+<AIProviderSettingsDialog bind:open={aiSettingsOpen} onSaveAndContinue={generateVisions} />
 
 <!-- Flip card overlay -->
 {#if flippedVision}
