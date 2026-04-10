@@ -6,7 +6,7 @@ export interface SparksMoodTheme {
   textColor: string;
 }
 
-const DEFAULT_THEME: SparksMoodTheme = {
+export const DEFAULT_THEME: SparksMoodTheme = {
   accentColor: '#f97316',
   glowColor: 'rgba(249,115,22,0.06)',
   textColor: '#fed7aa'

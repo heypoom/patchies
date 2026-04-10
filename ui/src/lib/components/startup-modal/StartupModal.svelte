@@ -6,7 +6,7 @@
   import SparksTab from './SparksTab.svelte';
   import type { Tab } from './types';
   import { isAiFeaturesVisible } from '../../../stores/ui.store';
-  import { sparksMoodTheme } from '../../../stores/sparks.store';
+  import { sparksMoodTheme, DEFAULT_THEME } from '../../../stores/sparks.store';
 
   let {
     open = $bindable(false),
@@ -23,6 +23,12 @@
   $effect(() => {
     if (open && initialTab) {
       activeTab = initialTab;
+    }
+  });
+
+  $effect(() => {
+    if (activeTab !== 'sparks') {
+      sparksMoodTheme.set(DEFAULT_THEME);
     }
   });
 
