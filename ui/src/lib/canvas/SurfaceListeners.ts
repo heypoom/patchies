@@ -64,15 +64,34 @@ export class SurfaceListeners {
 
     const onPointerMove = (e: PointerEvent) => {
       const { x, y } = normalize(e.clientX, e.clientY);
-      opts.onPointer({ x, y, pressure: 0, buttons: e.buttons, down: e.buttons > 0, type: 'move' });
+      try {
+        opts.onPointer({
+          x,
+          y,
+          pressure: 0,
+          buttons: e.buttons,
+          down: e.buttons > 0,
+          type: 'move'
+        });
+      } catch (err) {
+        handleCodeError(err, opts.code, opts.nodeId, opts.customConsole, opts.wrapperOffset);
+      }
     };
     const onPointerDown = (e: PointerEvent) => {
       const { x, y } = normalize(e.clientX, e.clientY);
-      opts.onPointer({ x, y, pressure: 0, buttons: e.buttons || 1, down: true, type: 'down' });
+      try {
+        opts.onPointer({ x, y, pressure: 0, buttons: e.buttons || 1, down: true, type: 'down' });
+      } catch (err) {
+        handleCodeError(err, opts.code, opts.nodeId, opts.customConsole, opts.wrapperOffset);
+      }
     };
     const onPointerUp = (e: PointerEvent) => {
       const { x, y } = normalize(e.clientX, e.clientY);
-      opts.onPointer({ x, y, pressure: 0, buttons: 0, down: false, type: 'up' });
+      try {
+        opts.onPointer({ x, y, pressure: 0, buttons: 0, down: false, type: 'up' });
+      } catch (err) {
+        handleCodeError(err, opts.code, opts.nodeId, opts.customConsole, opts.wrapperOffset);
+      }
     };
     const onPointerLeave = () => opts.onLeave();
 

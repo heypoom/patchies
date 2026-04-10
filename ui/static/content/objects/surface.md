@@ -81,7 +81,7 @@ setDrawMode('manual');   // Draw only when redraw() is called
 
 ## Activation API
 
-You can programmatically enter or exit fullscreen surface mode thru JavaScript:
+You can programmatically enter or exit fullscreen surface mode through JavaScript:
 
 ```javascript
 activate();    // Enter fullscreen surface mode

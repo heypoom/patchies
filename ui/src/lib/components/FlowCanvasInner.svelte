@@ -602,7 +602,9 @@
       paste: () => pasteNode('keyboard'),
       undo: () => historyManager.undo(),
       redo: () => historyManager.redo(),
-      toggleSidebar: () => ($isSidebarOpen = !$isSidebarOpen),
+      toggleSidebar: () => {
+        if (!$isFullscreenActive) $isSidebarOpen = !$isSidebarOpen;
+      },
       openObjectBrowser: () => ($isObjectBrowserOpen = true),
       openCommandPalette: triggerCommandPalette,
       togglePlayPause: () => {
@@ -1031,7 +1033,7 @@
 
 <div class="flow-container relative flex h-dvh w-full">
   <!-- Background output canvas lives outside the flow editor so it stays visible during surface fullscreen -->
-  <div class="pointer-events-none absolute inset-0 z-[-1]">
+  <div class="pointer-events-none absolute inset-0 z-0">
     <BackgroundOutputCanvas />
   </div>
   <!-- Sidebar (Files / Presets) -->

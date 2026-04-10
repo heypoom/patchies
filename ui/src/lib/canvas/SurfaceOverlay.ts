@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { isSidebarOpen } from '../../stores/ui.store';
 
 /**
  * DOM-renderer node types that get auto-frozen when surface goes fullscreen.
@@ -107,6 +108,7 @@ export class SurfaceOverlay {
 
     this._onExit = onExit;
     isFullscreenActive.set(true);
+    isSidebarOpen.set(false);
     this._showBadge(onExit);
   }
 
@@ -144,7 +146,8 @@ export class SurfaceOverlay {
   private _showBadge(onExit: () => void): void {
     this._removeBadge();
 
-    const badge = document.createElement('div');
+    const badge = document.createElement('button');
+    badge.type = 'button';
     badge.style.cssText = `
       position: fixed;
       bottom: 16px;

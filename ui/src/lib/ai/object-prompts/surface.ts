@@ -45,7 +45,7 @@ Example - Multi-touch ripples:
 {
   "type": "surface",
   "data": {
-    "code": "noOutput(); setDrawMode('always'); const ripples = []; onTouch((touches) => { for (const t of touches) ripples.push({ x: t.x * width, y: t.y * height, r: 0, a: 1 }); }); function draw() { ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fillRect(0, 0, width, height); for (let i = ripples.length - 1; i >= 0; i--) { const r = ripples[i]; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2); ctx.strokeStyle = \`rgba(100,200,255,\${r.a})\`; ctx.lineWidth = 2; ctx.stroke(); r.r += 4; r.a -= 0.02; if (r.a <= 0) ripples.splice(i, 1); } requestAnimationFrame(draw); } draw();"
+    "code": "noOutput(); setDrawMode('always'); const ripples = []; onTouch((touches) => { for (const t of touches) ripples.push({ x: t.x * width, y: t.y * height, r: 0, a: 1 }); }); function draw() { ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fillRect(0, 0, width, height); for (let i = ripples.length - 1; i >= 0; i--) { const r = ripples[i]; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2); ctx.strokeStyle = \`rgba(100,200,255,\${r.a})\`; ctx.lineWidth = 2; ctx.stroke(); r.r += 4; r.a -= 0.02; if (r.a <= 0) ripples.splice(i, 1); } }"
   }
 }
 \`\`\``;

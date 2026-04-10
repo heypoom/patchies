@@ -45,8 +45,8 @@ FBO-renderer nodes (`hydra`, `regl`, `glsl`, `swgl`, `canvas`, `three`, `textmod
 
 **State transitions:**
 
-- `preview` → `fullscreen`: click **Go Live** button on node / send `bang` / call `activate()`
-- `fullscreen` → `preview`: press **Shift+Escape** / click floating exit badge / send `{type: 'exit'}` / call `deactivate()`
+- `preview` → `fullscreen`: click **Go Live** button on node / send `bang` / send `{ type: 'expand' }` / call `activate()`
+- `fullscreen` → `preview`: press **Shift+Escape** / click floating exit badge / send `{ type: 'collapse' }` / call `deactivate()`
 - `preview` ↔ `stopped`: click **Stop/Play** button on node (pause canvas to save CPU)
 
 Escape always returns to `preview`, never to `stopped`.
@@ -113,8 +113,8 @@ deactivate() // return to preview state: remove overlay, restore XYFlow and froz
 Messages also trigger these:
 
 ```js
-// bang or { type: 'activate' } → calls activate()
-// { type: 'exit' }             → calls deactivate()
+// bang or { type: 'expand' }   → calls activate()
+// { type: 'collapse' }         → calls deactivate()
 ```
 
 ### Browser Fullscreen (optional)
@@ -256,7 +256,7 @@ Based on `CanvasDom.svelte` with these differences:
 
 ### 5. Z-Index Layer Order
 
-```
+```text
 z-index:
   XYFlow HTML canvas (node editor)   ← top
   surface overlay canvas             ← new layer

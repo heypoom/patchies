@@ -113,6 +113,17 @@
     onKeyUp?: (event: KeyboardEvent) => void;
   } = {};
 
+  let keyboardListenerHandlers: {
+    keydown: (e: KeyboardEvent) => void;
+    keyup: (e: KeyboardEvent) => void;
+  } | null = null;
+
+  let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  const debouncedHandleWindowResize = () => {
+    if (resizeDebounceTimer !== null) clearTimeout(resizeDebounceTimer);
+    resizeDebounceTimer = setTimeout(() => handleWindowResize(), 150);
+  };
+
   // Mouse state (normalized 0–1)
   let mouse = $state({ x: 0, y: 0, down: false, buttons: 0 });
 
@@ -204,8 +215,7 @@
   // ── Draw mode & rAF ──────────────────────────────────────────────────────
 
   function triggerDraw() {
-    if (drawMode !== 'manual') return;
-    // In manual mode, redraw() calls here; nothing else needed
+    if (drawMode !== 'manual' && drawMode !== 'interact') return;
     if (pausedCallback) {
       pausedCallback(performance.now());
       sendBitmap();
@@ -288,6 +298,13 @@
     // Stop thumbnail loop (XYFlow is hidden anyway)
     stopThumbnailLoop();
 
+    // Attach keyboard listeners
+    const handleKeyDown = (e: KeyboardEvent) => keyboardCallbacks.onKeyDown?.(e);
+    const handleKeyUp = (e: KeyboardEvent) => keyboardCallbacks.onKeyUp?.(e);
+    keyboardListenerHandlers = { keydown: handleKeyDown, keyup: handleKeyUp };
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+
     // Re-run code with overlay canvas
     runCode();
   }
@@ -297,6 +314,13 @@
     isFullscreen = false;
 
     SurfaceOverlay.getInstance().deactivate(nodeId);
+
+    // Remove keyboard listeners
+    if (keyboardListenerHandlers) {
+      document.removeEventListener('keydown', keyboardListenerHandlers.keydown);
+      document.removeEventListener('keyup', keyboardListenerHandlers.keyup);
+      keyboardListenerHandlers = null;
+    }
 
     // Switch active canvas back to preview
     if (previewCanvas) {
@@ -450,7 +474,7 @@
           requestAnimationFrame: (callback: FrameRequestCallback) => {
             pausedCallback = callback;
 
-            if (data.paused || drawMode === 'manual') {
+            if (data.paused || drawMode === 'manual' || drawMode === 'interact') {
               return -1;
             }
 
@@ -504,7 +528,7 @@
       previewListeners.attach(previewCanvas, listenerOpts());
     }
 
-    window.addEventListener('resize', handleWindowResize);
+    window.addEventListener('resize', debouncedHandleWindowResize);
 
     setTimeout(() => {
       runCode();
@@ -518,7 +542,13 @@
     previewListeners.detach();
     overlayListeners.detach();
 
-    window.removeEventListener('resize', handleWindowResize);
+    window.removeEventListener('resize', debouncedHandleWindowResize);
+    if (resizeDebounceTimer !== null) clearTimeout(resizeDebounceTimer);
+    if (keyboardListenerHandlers) {
+      document.removeEventListener('keydown', keyboardListenerHandlers.keydown);
+      document.removeEventListener('keyup', keyboardListenerHandlers.keyup);
+      keyboardListenerHandlers = null;
+    }
 
     // Deactivate overlay if this node was active
     if (isFullscreen) SurfaceOverlay.getInstance().deactivate(nodeId);
