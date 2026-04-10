@@ -19,7 +19,7 @@
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import type { ExtraMenuItem } from '$lib/components/ObjectPreviewOverflowMenu.svelte';
-  import { Expand, Shrink } from '@lucide/svelte/icons';
+  import { Expand, Shrink, Eraser } from '@lucide/svelte/icons';
   import { profiler } from '$lib/profiler';
 
   // Error reporting offset reuse (surface is structurally identical to canvas.dom)
@@ -108,12 +108,23 @@
   // Mouse state (normalized 0–1)
   let mouse = $state({ x: 0, y: 0, down: false, buttons: 0 });
 
+  function clearCanvas() {
+    if (activeCanvas && activeCtx) {
+      activeCtx.clearRect(0, 0, activeCanvas.width, activeCanvas.height);
+    }
+  }
+
   const extraMenuItems: ExtraMenuItem[] = $derived([
     {
       label: isFullscreen ? 'Exit surface' : 'Go Live',
       icon: isFullscreen ? Shrink : Expand,
       onclick: () => (isFullscreen ? exitSurface() : enterFullscreen()),
       variant: isFullscreen ? 'danger' : 'default'
+    },
+    {
+      label: 'Clear canvas',
+      icon: Eraser,
+      onclick: clearCanvas
     }
   ]);
 
