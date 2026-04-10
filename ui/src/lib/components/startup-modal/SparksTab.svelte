@@ -172,6 +172,12 @@
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
+  /* Third card always spans full width in modal (2-col is always active here) */
+  :global(.sparks-tab-generator .visions-grid > *:last-child:nth-child(3)) {
+    grid-column: 1 / -1;
+    min-height: unset;
+  }
+
   /* On narrow modal, single column */
   @media (max-width: 520px) {
     :global(.sparks-tab-generator .visions-grid) {
