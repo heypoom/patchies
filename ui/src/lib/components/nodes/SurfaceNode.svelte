@@ -606,6 +606,7 @@
   onPlaybackToggle={togglePlayback}
   paused={data.paused}
   showPauseButton={true}
+  showBgOutputOption={false}
   bind:previewCanvas
   nodrag={!dragEnabled}
   nopan={!panEnabled}

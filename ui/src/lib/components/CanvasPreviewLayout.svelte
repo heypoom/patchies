@@ -37,7 +37,8 @@
     settingsValues = {},
     onSettingsValueChange = undefined,
     onSettingsRevertAll = undefined,
-    extraMenuItems = undefined
+    extraMenuItems = undefined,
+    showBgOutputOption = true
   }: {
     title: string;
     nodeId?: string;
@@ -72,6 +73,7 @@
     onSettingsValueChange?: (key: string, value: unknown) => void;
     onSettingsRevertAll?: () => void;
     extraMenuItems?: ExtraMenuItem[];
+    showBgOutputOption?: boolean;
   } = $props();
 
   // Build the interaction class string based on individual flags
@@ -98,7 +100,7 @@
   {paused}
   {previewVisible}
   {showPauseButton}
-  showBgOutputOption
+  {showBgOutputOption}
   {topHandle}
   {bottomHandle}
   {codeEditor}
