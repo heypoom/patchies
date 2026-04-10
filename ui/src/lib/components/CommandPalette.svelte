@@ -44,7 +44,7 @@
     onNewPatch?: () => void;
     onToggleSidebar?: () => void;
     onSaveAsPreset?: (node: Node) => void;
-    onShowHelp?: () => void;
+    onShowHelp?: (tab?: 'about' | 'demos' | 'sparks' | 'shortcuts' | 'thanks') => void;
     onBrowseObjects?: () => void;
     onSavePatch?: () => void;
     onLoadPatch?: () => void;
@@ -175,9 +175,34 @@
       requiresSelection: true
     },
     {
-      id: 'help',
-      name: 'Getting Started',
-      description: 'Show the getting started guide and help documentation'
+      id: 'help-about',
+      name: 'Getting Started: About',
+      description: 'Open the About tab in the Getting Started guide'
+    },
+    {
+      id: 'help-demos',
+      name: 'Getting Started: Demos',
+      description: 'Open the Demos tab to browse example patches'
+    },
+    {
+      id: 'help-sparks',
+      name: 'Getting Started: Sparks',
+      description: 'Open the Sparks tab for AI-generated patch ideas'
+    },
+    {
+      id: 'help-shortcuts',
+      name: 'Getting Started: Shortcuts',
+      description: 'Open the Shortcuts tab for keyboard shortcuts'
+    },
+    {
+      id: 'help-thanks',
+      name: 'Getting Started: Thanks',
+      description: 'Open the Thanks tab for credits and acknowledgements'
+    },
+    {
+      id: 'open-docs',
+      name: 'Open Docs / Help',
+      description: 'Browse the docs for adding and using objects'
     },
     {
       id: 'set-room',
@@ -480,9 +505,29 @@
           onSaveAsPreset?.(selectedNode);
         }
       })
-      .with('help', () => {
+      .with('help-about', () => {
         onCancel();
-        onShowHelp?.();
+        onShowHelp?.('about');
+      })
+      .with('help-demos', () => {
+        onCancel();
+        onShowHelp?.('demos');
+      })
+      .with('help-sparks', () => {
+        onCancel();
+        onShowHelp?.('sparks');
+      })
+      .with('help-shortcuts', () => {
+        onCancel();
+        onShowHelp?.('shortcuts');
+      })
+      .with('help-thanks', () => {
+        onCancel();
+        onShowHelp?.('thanks');
+      })
+      .with('open-docs', () => {
+        onCancel();
+        window.open('/docs/adding-objects', '_blank');
       })
       .with('set-room', () => {
         roomName = getSearchParam('room') || '';

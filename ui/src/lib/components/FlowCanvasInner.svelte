@@ -1343,7 +1343,10 @@
             nodeToSaveAsPreset = node;
             showSavePresetDialog = true;
           }}
-          onShowHelp={() => (showStartupModal = true)}
+          onShowHelp={(tab) => {
+            if (tab) startupInitialTab = tab;
+            showStartupModal = true;
+          }}
           onBrowseObjects={() => ($isObjectBrowserOpen = true)}
           onSavePatch={() => (showSavePatchModal = true)}
           onExportPatch={() => (showExportPatchModal = true)}
