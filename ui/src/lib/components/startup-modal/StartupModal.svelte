@@ -5,7 +5,7 @@
   import ShortcutsTab from './ShortcutsTab.svelte';
   import SparksTab from './SparksTab.svelte';
   import type { Tab } from './types';
-  import { isAiFeaturesVisible } from '../../../stores/ui.store';
+  import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
   import { sparksMoodTheme, DEFAULT_THEME } from '../../../stores/sparks.store';
 
   let {
@@ -102,7 +102,16 @@
       <!-- Tab content -->
       <div class="modal-body">
         {#if activeTab === 'about'}
-          <AboutTab setTab={(tab) => (activeTab = tab)} />
+          <AboutTab
+            setTab={(tab) => (activeTab = tab)}
+            onOpenObjectBrowser={() => {
+              open = false;
+
+              setTimeout(() => {
+                isObjectBrowserOpen.set(true);
+              }, 50);
+            }}
+          />
         {:else if activeTab === 'demos'}
           <ExamplesTab {onLoadPatch} />
         {:else if activeTab === 'sparks' && $isAiFeaturesVisible}

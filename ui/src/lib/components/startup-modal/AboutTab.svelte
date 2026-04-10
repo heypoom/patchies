@@ -7,7 +7,10 @@
 
   let showOnStartup = $state(true);
   let isMac = $state(false);
-  let { setTab }: { setTab: (tab: Tab) => void } = $props();
+  let {
+    setTab,
+    onOpenObjectBrowser
+  }: { setTab: (tab: Tab) => void; onOpenObjectBrowser: () => void } = $props();
 
   onMount(() => {
     isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -39,7 +42,9 @@
       {#each techNodes as node (node)}
         <a href="/docs/objects/{node}" target="_blank" class="about-chip">{node}</a>
       {/each}
-      <span class="about-chip about-chip--muted">+ more</span>
+      <button class="about-chip about-chip--more cursor-pointer" onclick={onOpenObjectBrowser}
+        >+ more</button
+      >
     </div>
   </div>
 
@@ -191,17 +196,16 @@
     color: #fb923c;
   }
 
-  .about-chip--muted {
+  .about-chip--more {
     border-color: rgba(255, 255, 255, 0.07);
     background: transparent;
     color: #3f3f46;
-    cursor: default;
   }
 
-  .about-chip--muted:hover {
-    border-color: rgba(255, 255, 255, 0.07);
-    background: transparent;
-    color: #3f3f46;
+  .about-chip--more:hover {
+    border-color: rgba(249, 115, 22, 0.3);
+    background: rgba(249, 115, 22, 0.06);
+    color: rgba(249, 115, 22, 0.6);
   }
 
   /* Divider */
