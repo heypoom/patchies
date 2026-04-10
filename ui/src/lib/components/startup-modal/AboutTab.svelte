@@ -34,7 +34,7 @@
     <h1 id="modal-title" class="about-headline">Patch the world together.</h1>
 
     <p class="about-subhead">
-      Connect computational, audio and visual objects in real time - on the web.
+      Connect computational, audio and visual objects in real time, on the web.
     </p>
 
     <!-- Tech node chips -->
