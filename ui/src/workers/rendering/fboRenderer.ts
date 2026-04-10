@@ -1521,6 +1521,13 @@ export class FBORenderer {
     for (const projmap of this.projmapByNode.values()) {
       projmap?.resizeOutput(width, height);
     }
+
+    // Rebuild FBOs at the new output dimensions so GLSL shaders render into
+    // correctly-sized framebuffers (old FBOs would leave stale pixels in the
+    // expanded area after a resize).
+    if (this.renderGraph) {
+      this.buildFBOs(this.renderGraph);
+    }
   }
 
   /**

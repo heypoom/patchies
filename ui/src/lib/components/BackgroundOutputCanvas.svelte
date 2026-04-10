@@ -6,6 +6,7 @@
   let outputCanvasElement: HTMLCanvasElement;
   let bitmapContext: ImageBitmapRenderingContext;
   let glSystem = GLSystem.getInstance();
+  let resizeTimer: ReturnType<typeof setTimeout> | null = null;
 
   function setOutputToWindowSize() {
     const width = window.innerWidth;
@@ -14,20 +15,28 @@
     outputCanvasElement.width = width;
     outputCanvasElement.height = height;
 
-    glSystem.setOutputSize(width, height);
+    if (resizeTimer !== null) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      glSystem.setOutputSize(width, height);
+      resizeTimer = null;
+    }, 150);
   }
 
   onMount(() => {
     bitmapContext = outputCanvasElement.getContext('bitmaprenderer')!;
 
     glSystem.backgroundOutputCanvasContext = bitmapContext;
-    setOutputToWindowSize();
+    // Call directly (no debounce) on mount so initial size is set immediately.
+    glSystem.setOutputSize(window.innerWidth, window.innerHeight);
+    outputCanvasElement.width = window.innerWidth;
+    outputCanvasElement.height = window.innerHeight;
 
     window.addEventListener('resize', setOutputToWindowSize);
   });
 
   onDestroy(() => {
     window.removeEventListener('resize', setOutputToWindowSize);
+    if (resizeTimer !== null) clearTimeout(resizeTimer);
 
     // Unregister the context if we are still using it.
     if (glSystem.backgroundOutputCanvasContext === bitmapContext) {

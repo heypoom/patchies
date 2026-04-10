@@ -128,8 +128,12 @@
 
   let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   const debouncedHandleWindowResize = () => {
+    // Resize canvas immediately so the draw loop sends correctly-sized bitmaps
+    // to the GLSL renderer (which resizes its output synchronously on resize).
+    resizeCanvasToWindow();
+
     if (resizeDebounceTimer !== null) clearTimeout(resizeDebounceTimer);
-    resizeDebounceTimer = setTimeout(() => handleWindowResize(), 150);
+    resizeDebounceTimer = setTimeout(() => runCode(), 150);
   };
 
   // Mouse state (normalized 0–1)
@@ -525,20 +529,16 @@
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
-  function handleWindowResize() {
+  function resizeCanvasToWindow() {
     outputWidth = window.innerWidth;
     outputHeight = window.innerHeight;
 
-    // Resize preview canvas to new dimensions
     if (previewCanvas) {
       previewCanvas.width = outputWidth;
       previewCanvas.height = outputHeight;
       previewCanvas.style.width = `${outputWidth / PREVIEW_SCALE_FACTOR}px`;
       previewCanvas.style.height = `${outputHeight / PREVIEW_SCALE_FACTOR}px`;
     }
-
-    // Re-run code so user code sees new width/height
-    runCode();
   }
 
   onMount(() => {
