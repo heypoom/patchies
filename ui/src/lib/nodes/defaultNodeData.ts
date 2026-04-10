@@ -337,6 +337,11 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       skipFrames: 1
     }))
     .with('ngea', () => ({ tuning: 'Khong Wong Yai', index: 0 }))
-    .with('surface', () => ({ code: DEFAULT_SURFACE_CODE, showConsole: true }))
+    .with('surface', () => ({
+      code: DEFAULT_SURFACE_CODE,
+      showConsole: true,
+      inletCount: 1,
+      outletCount: 1
+    }))
     .otherwise(() => ({}));
 }

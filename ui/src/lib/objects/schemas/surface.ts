@@ -1,4 +1,3 @@
-import { Type } from '@sinclair/typebox';
 import { msg } from './helpers';
 import type { ObjectSchema } from './types';
 import { Run, SetCode } from './common';
@@ -29,30 +28,6 @@ export const surfaceSchema: ObjectSchema = {
       handle: {
         handleType: 'video'
       }
-    },
-    {
-      id: 'pointer',
-      description: 'Pointer events',
-      messages: [
-        {
-          schema: Type.Object({
-            x: Type.Number({ description: 'X coordinate of the pointer event' }),
-            y: Type.Number({ description: 'Y coordinate of the pointer event' }),
-            buttons: Type.Number({ description: 'Bitmask of pressed buttons' }),
-            down: Type.Boolean({ description: 'Whether the pointer is currently down' }),
-            type: Type.Union(
-              [
-                Type.Literal('pointerdown'),
-                Type.Literal('pointermove'),
-                Type.Literal('pointerup'),
-                Type.Literal('pointercancel')
-              ],
-              { description: 'Type of pointer event' }
-            )
-          }),
-          description: 'Pointer event object with x, y, buttons, down, and type'
-        }
-      ]
     }
   ],
   tags: ['graphics', 'interaction', 'touch', 'pointer', 'mouse', 'fullscreen', 'overlay', '2d'],
@@ -62,8 +37,7 @@ export const surfaceSchema: ObjectSchema = {
     outlet: {
       template: 'video-out-{index}',
       handleType: 'video',
-      description:
-        'Video output at index 0, pointer events at index 1, message outlets use out-{index}'
+      description: 'Video output at index 0, message outlets use out-{index}'
     }
   }
 };

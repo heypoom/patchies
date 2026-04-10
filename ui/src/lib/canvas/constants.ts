@@ -156,9 +156,11 @@ endin
 
 schedule("Main", 0, 0, 0)`;
 
-export const DEFAULT_SURFACE_CODE = `// surface — fullscreen interactive canvas
-// mouse.x, mouse.y are normalized 0–1 coords
-// width, height are always window dimensions
+export const DEFAULT_SURFACE_CODE = `setPortCount(1, 1)
+noOutput()
+
+// x, y are normalized 0–1 coords; width/height are window dimensions
+onPointer(data => send(data))
 
 function draw() {
   ctx.clearRect(0, 0, width, height)

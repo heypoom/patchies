@@ -47,6 +47,7 @@
       executeCode?: number;
       showConsole?: boolean;
       paused?: boolean;
+      videoOutput?: boolean;
     };
     selected?: boolean;
   } = $props();
@@ -74,7 +75,7 @@
   let dragEnabled = $state(false);
   let panEnabled = $state(true);
   let wheelEnabled = $state(true);
-  let videoOutputEnabled = $state(true);
+  let videoOutputEnabled = $derived(data.videoOutput ?? true);
   let editorReady = $state(false);
   let animationFrameId: number | null = null;
   let pausedCallback: FrameRequestCallback | null = null;
@@ -196,9 +197,6 @@
         handleCodeError(err, data.code, nodeId, customConsole, SURFACE_WRAPPER_OFFSET);
       }
     }
-
-    const pointerOutletIdx = videoOutputEnabled ? 1 : 0;
-    jsRunner.getMessageContext(nodeId).send(event, { to: pointerOutletIdx });
 
     if (drawMode === 'interact') triggerDraw();
   }
@@ -361,7 +359,7 @@
     dragEnabled = false;
     panEnabled = true;
     wheelEnabled = true;
-    videoOutputEnabled = true;
+    updateNodeData(nodeId, { videoOutput: true });
     drawMode = 'always';
     pointerCallback = null;
     touchCallback = null;
@@ -444,7 +442,7 @@
             wheelEnabled = false;
           },
           noOutput: () => {
-            videoOutputEnabled = false;
+            updateNodeData(nodeId, { videoOutput: false });
             updateNodeInternals(nodeId);
           },
 
@@ -578,31 +576,20 @@
         port="outlet"
         spec={{ handleType: 'video', handleId: '0' }}
         title="Video output"
-        total={outletCount + 2}
+        total={outletCount + 1}
         index={0}
         class={handleClass}
         {nodeId}
       />
     {/if}
 
-    <!-- pointer outlet -->
-    <TypedHandle
-      port="outlet"
-      spec={{ handleId: videoOutputEnabled ? 1 : 0 }}
-      title="Pointer events"
-      total={videoOutputEnabled ? outletCount + 2 : outletCount + 1}
-      index={videoOutputEnabled ? 1 : 0}
-      class={handleClass}
-      {nodeId}
-    />
-
     {#each Array.from({ length: outletCount }) as _, index (index)}
       <TypedHandle
         port="outlet"
-        spec={{ handleId: index + (videoOutputEnabled ? 2 : 1) }}
+        spec={{ handleId: index + (videoOutputEnabled ? 1 : 0) }}
         title={`Outlet ${index}`}
-        total={videoOutputEnabled ? outletCount + 2 : outletCount + 1}
-        index={index + (videoOutputEnabled ? 2 : 1)}
+        total={videoOutputEnabled ? outletCount + 1 : outletCount}
+        index={index + (videoOutputEnabled ? 1 : 0)}
         class={handleClass}
         {nodeId}
       />
