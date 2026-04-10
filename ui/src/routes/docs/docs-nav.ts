@@ -18,7 +18,8 @@ export const topicOrder: Record<string, string[]> = {
     'message-passing',
     'javascript-runner',
     'audio-chaining',
-    'video-chaining'
+    'video-chaining',
+    'manage-packs'
   ],
   Connections: ['data-types', 'hot-cold-inlets'],
   Scripting: [
@@ -31,14 +32,7 @@ export const topicOrder: Record<string, string[]> = {
     'data-storage',
     'network-p2p'
   ],
-  Sidebar: [
-    'manage-files',
-    'manage-presets',
-    'manage-saves',
-    'manage-packs',
-    'in-app-help',
-    'browse-samples'
-  ],
+  Sidebar: ['manage-files', 'manage-presets', 'manage-saves', 'in-app-help', 'browse-samples'],
   'Timing & Sync': ['audio-reactivity', 'transport-control', 'clock-api', 'parameter-automation'],
   Other: ['sharing-links', 'offline-usage', 'rendering-pipeline', 'supporting-open-source'],
   AI: ['enabling-ai', 'ai-edits', 'ai-chat', 'ai-patch-to-app']

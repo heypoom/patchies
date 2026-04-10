@@ -18,8 +18,9 @@ There are two ways to add objects to your canvas: quick add and the object brows
 
 - Use `Ctrl/Cmd + O` or the add button on the bottom right to open the object browser
 - Objects and presets are grouped by [packs](/docs/manage-packs), with searchable names and descriptions
+- Click the **packs** chip to enable or disable packs without leaving the browser
 - Click to insert an object or preset — pick one at random and see what it can do!
-- If you search for disabled objects, a suggestion to enable relevant packs will appear
+- If you search for disabled objects, a suggestion to enable the relevant pack will appear
 
 ## Presets
 
