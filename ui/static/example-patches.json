@@ -274,13 +274,6 @@
 			"author": "@heypoom"
 		},
 		{
-			"id": "yv4vnfnv4r37hwt",
-			"name": "Textmode.js Filters Test",
-			"description": "Poom uses this patch to test the textmode.filters.js plugin",
-			"category": "Dev Patches",
-			"author": "@heypoom"
-		},
-		{
 			"id": "il660heq9qujme4",
 			"name": "Y-Flip Consistency Matrix",
 			"description": "Poom uses this patch to test the y-flip consistency across all visual nodes",
