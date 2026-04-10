@@ -16,15 +16,26 @@
   let { vision, index, accentColor, glowColor, textColor, onClose }: Props = $props();
 
   const roman = $derived(ROMAN[index] ?? 'I');
+
+  function focusOnMount(el: HTMLElement) {
+    el.focus();
+  }
 </script>
 
-<div class="flip-backdrop" onclick={onClose} role="dialog" aria-modal="true" tabindex="-1">
+<div
+  class="flip-backdrop"
+  onclick={onClose}
+  onkeydown={(e: KeyboardEvent) => (e.key === 'Escape' || e.key === 'Esc') && onClose()}
+  role="dialog"
+  aria-modal="true"
+  tabindex="-1"
+  use:focusOnMount
+>
   <div
     class="flip-card"
     style:--card-accent={accentColor}
     style:--card-glow={glowColor}
     onclick={(e) => e.stopPropagation()}
-    onkeydown={(e) => e.stopPropagation()}
     role="presentation"
   >
     <!-- Corner ornaments -->

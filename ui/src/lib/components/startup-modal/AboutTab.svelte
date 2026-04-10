@@ -20,7 +20,7 @@
     localStorage.setItem('patchies-show-startup-modal', String(showOnStartup));
   }
 
-  const techNodes = ['p5', 'hydra', 'strudel', 'glsl', 'orca', 'chuck', 'tone.js', 'js'];
+  const techNodes = ['p5', 'hydra', 'strudel', 'glsl', 'orca', 'chuck~', 'tone~', 'js'];
 </script>
 
 <div class="about-root">

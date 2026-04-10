@@ -19,7 +19,7 @@ export const moods: Mood[] = [
     tagline: 'Bright. Fast. Alive.',
     description:
       'Festival energy in a patch. Audio-reactive explosions of color, strudel patterns that accelerate, visuals that peak with the drop.',
-    nodes: ['fft', 'strudel', 'p5'],
+    nodes: ['fft~', 'strudel', 'p5'],
     gradient: 'linear-gradient(135deg, #1a0f00 0%, #2d1a00 50%, #1a1200 100%)',
     accentColor: '#fbbf24',
     glowColor: 'rgba(251, 191, 36, 0.15)',
@@ -55,7 +55,7 @@ export const moods: Mood[] = [
     tagline: 'Too much. All at once.',
     description:
       "Every frequency band triggering something different. DMX strobing. Strudel patterns racing. Controlled overwhelm — the audience doesn't know where to look.",
-    nodes: ['fft', 'dmx', 'strudel'],
+    nodes: ['fft', 'serial.dmx', 'strudel'],
     gradient: 'linear-gradient(135deg, #1a0000 0%, #2d0000 50%, #1a0500 100%)',
     accentColor: '#f87171',
     glowColor: 'rgba(248, 113, 113, 0.14)',
@@ -79,7 +79,7 @@ export const moods: Mood[] = [
     tagline: 'Mechanical. Rhythmic. Cold.',
     description:
       'Clock-driven light rigs, oscillators that clank rather than sing. The beauty of machinery doing exactly what it was told.',
-    nodes: ['dmx', 'osc~', 'transport'],
+    nodes: ['serial.dmx', 'osc~', 'transport'],
     gradient: 'linear-gradient(135deg, #0f0d0a 0%, #1a1610 50%, #100e0a 100%)',
     accentColor: '#fb923c',
     glowColor: 'rgba(249, 115, 22, 0.12)',
