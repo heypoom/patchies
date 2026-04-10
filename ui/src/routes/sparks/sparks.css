@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+.sparks-serif {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  line-height: 1.1;
+  color: #f4f4f5;
+}
+
+.sparks-syne {
+  font-family: 'Syne', sans-serif;
+}
+
+.sparks-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
