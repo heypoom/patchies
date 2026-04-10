@@ -7,13 +7,20 @@
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
-  import { messages, SurfaceExpand, SurfaceCollapse } from '$lib/objects/schemas';
+  import {
+    messages,
+    SurfaceExpand,
+    SurfaceCollapse,
+    SurfaceFullscreen
+  } from '$lib/objects/schemas';
   import { schema } from '$lib/objects/schemas/types';
 
   const surfaceMessages = {
     expand: schema(SurfaceExpand),
-    collapse: schema(SurfaceCollapse)
+    collapse: schema(SurfaceCollapse),
+    fullscreen: schema(SurfaceFullscreen)
   };
+
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
@@ -180,13 +187,14 @@
     setTimeout(() => runCode());
   };
 
-  const handleMessage: MessageCallbackFn = (message, _meta) => {
+  const handleMessage: MessageCallbackFn = (message) => {
     try {
       match(message)
         .with(messages.setCode, ({ value }) => setCodeAndUpdate(value))
         .with(messages.run, () => runCode())
         .with(surfaceMessages.expand, () => enterFullscreen())
         .with(surfaceMessages.collapse, () => exitSurface())
+        .with(surfaceMessages.fullscreen, () => document.documentElement.requestFullscreen?.())
         .otherwise(() => {});
     } catch (error) {
       console.error('Error handling message:', error);
