@@ -418,7 +418,12 @@
       const processedCode = await jsRunner.preprocessCode(data.code, { nodeId });
       if (processedCode === null) return;
 
-      await jsRunner.executeJavaScript(nodeId, processedCode, {
+      // Wrap code to auto-extract a draw() function (same pattern as ThreeDom).
+      // This lets users define `function draw() {}` without needing to call
+      // requestAnimationFrame(draw) themselves.
+      const codeWithWrapper = `var draw;\n${processedCode}\nreturn typeof draw === 'function' ? draw : null;`;
+
+      const userDraw = await jsRunner.executeJavaScript(nodeId, codeWithWrapper, {
         customConsole,
         setPortCount,
         setTitle: (title: string) => updateNodeData(nodeId, { title }),
@@ -486,33 +491,25 @@
           noOutput: () => {
             updateNodeData(nodeId, { videoOutput: false });
             updateNodeInternals(nodeId);
-          },
-
-          // rAF override — respects draw mode and paused state
-          requestAnimationFrame: (callback: FrameRequestCallback) => {
-            pausedCallback = callback;
-
-            if (data.paused || drawMode === 'manual' || drawMode === 'interact') {
-              return -1;
-            }
-
-            animationFrameId = requestAnimationFrame((time) => {
-              profiler.measure(nodeId, 'draw', () => {
-                callback(time);
-                sendBitmap();
-              });
-            });
-            return animationFrameId;
-          },
-          cancelAnimationFrame: (id: number) => {
-            cancelAnimationFrame(id);
-
-            if (animationFrameId === id) {
-              animationFrameId = null;
-            }
           }
         }
       });
+
+      // If user defined a draw() function, register it and start the appropriate loop.
+      if (typeof userDraw === 'function') {
+        pausedCallback = userDraw;
+
+        if (drawMode === 'always' && !data.paused) {
+          const loop: FrameRequestCallback = (time) => {
+            profiler.measure(nodeId, 'draw', () => {
+              pausedCallback!(time);
+              sendBitmap();
+            });
+            animationFrameId = requestAnimationFrame(loop);
+          };
+          animationFrameId = requestAnimationFrame(loop);
+        }
+      }
     } catch (error) {
       handleCodeError(error, data.code, nodeId, customConsole, SURFACE_WRAPPER_OFFSET);
     }

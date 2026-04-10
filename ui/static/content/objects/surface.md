@@ -79,23 +79,21 @@ setDrawMode('interact'); // Draw only on pointer activity
 setDrawMode('manual');   // Draw only when redraw() is called
 ```
 
-> **Important**: Register your draw function with `requestAnimationFrame(draw)`,
-> not by calling it directly. The surface uses this to know which function
-> to invoke on each frame or interaction.
+Define a function named `draw` and the surface will call it automatically
+at the right time for the current mode:
 
 ```javascript
-// WRONG — draw() runs once at startup, then never again
 setDrawMode('interact');
-function draw() { /* ... */ }
-draw(); // ← surface never calls this again on pointer events
 
-// RIGHT — surface calls draw() on every interaction
-setDrawMode('interact');
-function draw() { /* ... */ }
-requestAnimationFrame(draw); // ← registers draw as the active callback
+function draw() {
+  ctx.clearRect(0, 0, width, height);
+  // draw your frame here
+}
 ```
 
-This applies to all draw modes: `'always'`, `'interact'`, and `'manual'`.
+- `'always'` — `draw` is called every frame in a continuous loop
+- `'interact'` — `draw` is called whenever a pointer event fires
+- `'manual'` — `draw` is called only when you call `redraw()`
 
 ## Activation API
 

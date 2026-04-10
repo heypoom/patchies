@@ -71,17 +71,14 @@ behaves identically in both modes.
 
 ### Draw Modes
 
-`draw` is a magic named function — define it and the runner calls it automatically on each
-rAF frame (same pattern as `canvas.dom`):
+`draw` is a magic named function — define it and the surface calls it automatically
+based on the current draw mode. No `requestAnimationFrame` or manual invocation needed:
 
 ```js
 function draw() {
   ctx.clearRect(0, 0, width, height)
   // draw your frame here
-  requestAnimationFrame(draw)
 }
-
-draw()
 ```
 
 ```js

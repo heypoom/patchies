@@ -26,26 +26,15 @@ Fullscreen interactive canvas overlay for live performance. Captures pointer/tou
 - Do NOT call setCanvasSize — the surface always fills the window.
 - Do NOT call noDrag/noPan/noWheel — the surface canvas is non-interactive by default.
 
-**Performance:**
-- setDrawMode('always') for animated sketches
-- setDrawMode('interact') for input-reactive sketches (no continuous rAF needed)
-- setDrawMode('manual') + redraw() for fully manual control
+**draw() function — how the render loop works:**
+Define a function named exactly \`draw\` and the surface drives it automatically based on the draw mode.
+No requestAnimationFrame call needed — the surface detects \`draw\` and wires it up.
 
-**CRITICAL — draw function registration:**
-You MUST call \`requestAnimationFrame(draw)\` to register the draw function — never call \`draw()\` directly.
-The surface intercepts requestAnimationFrame to set its internal draw callback (pausedCallback).
-Without it, triggerDraw() (called on pointer events in 'interact' mode) has nothing to invoke,
-so nothing ever renders.
+- setDrawMode('always') + function draw() {} → called every frame in a continuous loop
+- setDrawMode('interact') + function draw() {} → called on every pointer event
+- setDrawMode('manual') + function draw() {} → called only when redraw() is invoked
 
-\`\`\`javascript
-// WRONG — draw() runs once, surface never calls it again
-function draw() { ctx.clearRect(0, 0, width, height); }
-draw(); // ← not registered, pointer events do nothing
-
-// RIGHT — surface calls draw() on each frame/interaction
-function draw() { ctx.clearRect(0, 0, width, height); }
-requestAnimationFrame(draw); // ← registers as the active draw callback
-\`\`\`
+Do NOT call draw() directly or wrap it in requestAnimationFrame yourself.
 
 Example - Paint on touch/pointer:
 \`\`\`json
