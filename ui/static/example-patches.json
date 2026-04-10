@@ -1,6 +1,104 @@
 {
 	"patches": [
 		{
+			"id": "xzydes1peqmuum4",
+			"name": "Raymarch Masker",
+			"description": "Draw masks on top of raymarching shaders with GLSL and surface",
+			"category": "Visual",
+			"author": "@heypoom"
+		},
+		{
+			"id": "2rxzzhovb3nvhj2",
+			"name": "Reaction Diffusion Painter",
+			"description": "Paints with the Gray-Scott reaction-diffusion model with GLSL and surface",
+			"category": "Visual",
+			"author": "@heypoom"
+		},
+		{
+			"id": "ng7a8mcxobde7kv",
+			"name": "Random Walk World",
+			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
+			"category": "Visual",
+			"author": "@heypoom"
+		},
+		{
+			"id": "84et6trrsq2ouoc",
+			"name": "Random Walk Lullaby",
+			"description": "Combines the Random Walk World patch with the Orca Tones patch for a gentle chaos",
+			"category": "Visual",
+			"author": "@heypoom"
+		},
+		{
+			"id": "3k3qnwk022tfj7e",
+			"name": "Signed Distance Flowers",
+			"description": "GLSL shader from @dtinth's talk 'the power of signed distance functions'",
+			"category": "Visual",
+			"author": "@dtinth"
+		},
+		{
+			"id": "xy5663osmepg063",
+			"name": "X-Y Distance Flowers",
+			"description": "Adds an X-Y pad to adjust the pattern zoom and petal opacity of @dtinth's SDF shader",
+			"category": "Visual",
+			"author": "@dtinth"
+		},
+		{
+			"id": "1c484xkin7p7p2r",
+			"name": "Sleek Animated Torus",
+			"description": "Uses three.js with texture from hydra.js to create an animated torus knot",
+			"category": "Visual",
+			"author": "@heypoom"
+		},
+		{
+			"id": "9r2t5vizvv6xyou",
+			"name": "Patt Vira's P5.js Sketches",
+			"description": "Showcases two of @pattvira's P5.js sketches from her YouTube tutorials",
+			"category": "Visual",
+			"author": "@pattvira"
+		},
+		{
+			"id": "izs6hjxchit2zad",
+			"name": "Interactive Widget Playground",
+			"description": "Build your own mouse and keyboard interactive widgets using canvas.dom object and HTML5 canvas code",
+			"category": "Visual",
+			"author": "@heypoom"
+		},
+		{
+			"id": "3hd88qv62h4zltq",
+			"name": "Animated Wave Pattern",
+			"description": "Demo of textmode.js from 'animated wave pattern' sketch by @humanbydefinition",
+			"category": "Visual",
+			"author": "@humanbydefinition"
+		},
+		{
+			"id": "c6adsknw8iix3m2",
+			"name": "Plotting Equations",
+			"description": "Uses expr node to create mathematical plots",
+			"category": "Visual",
+			"author": "@heypoom"
+		},
+		{
+			"id": "08wca4jzuz5wpng",
+			"name": "Matter.js Physics Simulation",
+			"description": "Physics simulation ported from Daniel Shiffman's The Nature of Code",
+			"category": "Visual",
+			"author": "@heypoom"
+		},
+		{
+			"id": "wcpxcm5thb4h1nw",
+			"name": "Assembly Stack Machine",
+			"description": "Example assembly patch demonstrating the virtual stack machine with color-coded memory visualization",
+			"category": "Programming",
+			"author": "@heypoom"
+		},
+		{
+			"id": "z7rtmujmtvbv0e0",
+			"name": "Uxn Pong Game",
+			"description": "Pong game written in Uxntal assembly, code from @compudanzas' Uxn tutorial",
+			"category": "Programming",
+			"author": "@compudanzas"
+		},
+		{
 			"id": "w46um7gafe7hgle",
 			"name": "Drum Machine",
 			"description": "Build your own drum machine! Use the W A S D keys on your keyboard to play some drums 🥁",
@@ -139,90 +237,6 @@
 			"description": "Sample from your microphone and trigger samples with keyboard and MIDI inputs",
 			"category": "Audio",
 			"author": "@heypoom"
-		},
-		{
-			"id": "ng7a8mcxobde7kv",
-			"name": "Random Walk World",
-			"description": "Uses p5.js to create random walkers, and Hydra to mix them with a pink wobbly shader",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "84et6trrsq2ouoc",
-			"name": "Random Walk Lullaby",
-			"description": "Combines the Random Walk World patch with the Orca Tones patch for a gentle chaos",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "3k3qnwk022tfj7e",
-			"name": "Signed Distance Flowers",
-			"description": "GLSL shader from @dtinth's talk 'the power of signed distance functions'",
-			"category": "Visual",
-			"author": "@dtinth"
-		},
-		{
-			"id": "xy5663osmepg063",
-			"name": "X-Y Distance Flowers",
-			"description": "Adds an X-Y pad to adjust the pattern zoom and petal opacity of @dtinth's SDF shader",
-			"category": "Visual",
-			"author": "@dtinth"
-		},
-		{
-			"id": "1c484xkin7p7p2r",
-			"name": "Sleek Animated Torus",
-			"description": "Uses three.js with texture from hydra.js to create an animated torus knot",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "9r2t5vizvv6xyou",
-			"name": "Patt Vira's P5.js Sketches",
-			"description": "Showcases two of @pattvira's P5.js sketches from her YouTube tutorials",
-			"category": "Visual",
-			"author": "@pattvira"
-		},
-		{
-			"id": "izs6hjxchit2zad",
-			"name": "Interactive Widget Playground",
-			"description": "Build your own mouse and keyboard interactive widgets using canvas.dom object and HTML5 canvas code",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "3hd88qv62h4zltq",
-			"name": "Animated Wave Pattern",
-			"description": "Demo of textmode.js from 'animated wave pattern' sketch by @humanbydefinition",
-			"category": "Visual",
-			"author": "@humanbydefinition"
-		},
-		{
-			"id": "c6adsknw8iix3m2",
-			"name": "Plotting Equations",
-			"description": "Uses expr node to create mathematical plots",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "08wca4jzuz5wpng",
-			"name": "Matter.js Physics Simulation",
-			"description": "Physics simulation ported from Daniel Shiffman's The Nature of Code",
-			"category": "Visual",
-			"author": "@heypoom"
-		},
-		{
-			"id": "wcpxcm5thb4h1nw",
-			"name": "Assembly Stack Machine",
-			"description": "Example assembly patch demonstrating the virtual stack machine with color-coded memory visualization",
-			"category": "Programming",
-			"author": "@heypoom"
-		},
-		{
-			"id": "z7rtmujmtvbv0e0",
-			"name": "Uxn Pong Game",
-			"description": "Pong game written in Uxntal assembly, code from @compudanzas' Uxn tutorial",
-			"category": "Programming",
-			"author": "@compudanzas"
 		},
 		{
 			"id": "pdfb7c8skxk4w4s",
