@@ -19,24 +19,21 @@ export class SurfaceMouseForwarder {
   private clickX = 0;
   private clickY = 0;
 
-  constructor(
-    private getNodes: () => Node[],
-    private getOutputWidth: () => number,
-    private getOutputHeight: () => number
-  ) {}
+  constructor(private getNodes: () => Node[]) {}
 
   /**
    * Forward a normalized (0–1) pointer event to all render nodes.
    */
-  forward(x: number, y: number, buttons: number, type: string): void {
+  forward(x: number, y: number, _buttons: number, type: string): void {
     const renderNodes = this.getNodes().filter(
       (n) => SHADERTOY_TYPES.has(n.type ?? '') || SIMPLE_TYPES.has(n.type ?? '')
     );
 
     if (renderNodes.length === 0) return;
 
-    const w = this.getOutputWidth();
-    const h = this.getOutputHeight();
+    // Use the render pipeline's output size, not the surface canvas size.
+    // All render nodes share the same output dimensions from GLSystem.
+    const [w, h] = this.glSystem.outputSize;
 
     const xFB = x * w;
     const yFBSimple = y * h;
