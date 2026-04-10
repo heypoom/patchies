@@ -703,16 +703,14 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
         <div class="mb-5 flex items-center gap-4">
           <div class="flex-1">
             <h2 class="serif-italic text-xl text-zinc-200">Dream a build</h2>
-            <p class="mono mt-0.5 text-[11px] text-zinc-700">
-              AI-generated provocations — felt, not followed
-            </p>
+            <p class="mono mt-0.5 text-[11px] text-zinc-700">three what-ifs based on your picks</p>
           </div>
           <div class="flex items-center gap-2">
             <!-- Steer input -->
             <input
               type="text"
               bind:value={steerPrompt}
-              placeholder="steer it… darker, weirder, for a party"
+              placeholder="try: stranger, lo-fi, for a gallery opening"
               class="steer-input mono text-xs"
               onkeydown={(e) => e.key === 'Enter' && generateVisions()}
             />
@@ -984,9 +982,9 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 
         <!-- CTA pill row -->
         <div class="flip-ctas">
-          <button class="flip-cta mono cursor-not-allowed" disabled>⊞ scatter</button>
-          <button class="flip-cta mono cursor-not-allowed" disabled>✦ chat</button>
-          <button class="flip-cta mono cursor-not-allowed" disabled>⎘ copy</button>
+          <button class="flip-cta mono cursor-pointer">⊞ scatter</button>
+          <button class="flip-cta mono cursor-pointer">✦ chat</button>
+          <button class="flip-cta mono cursor-pointer">⎘ copy</button>
         </div>
       </div>
     </div>
@@ -1225,7 +1223,7 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     border-radius: 6px;
     padding: 6px 12px;
     color: #a1a1aa;
-    width: 260px;
+    width: 340px;
     outline: none;
     transition: border-color 0.15s;
   }
@@ -1597,11 +1595,18 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     border-radius: 6px;
     border: 1px solid rgba(255, 255, 255, 0.07);
     background: rgba(255, 255, 255, 0.02);
-    color: #3f3f46;
+    color: #52525b;
     font-size: 10px;
     letter-spacing: 0.04em;
-    opacity: 0.6;
-    transition: none;
+    transition:
+      border-color 0.15s,
+      background 0.15s,
+      color 0.15s;
+  }
+  .flip-cta:hover {
+    border-color: color-mix(in srgb, var(--card-accent) 30%, transparent);
+    background: color-mix(in srgb, var(--card-accent) 8%, transparent);
+    color: color-mix(in srgb, var(--card-accent) 80%, #a1a1aa);
   }
 
   .vision-idle-prompt {
