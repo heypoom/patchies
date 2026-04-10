@@ -486,6 +486,22 @@
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
+  function handleWindowResize() {
+    outputWidth = window.innerWidth;
+    outputHeight = window.innerHeight;
+
+    // Resize preview canvas to new dimensions
+    if (previewCanvas) {
+      previewCanvas.width = outputWidth;
+      previewCanvas.height = outputHeight;
+      previewCanvas.style.width = `${outputWidth / PREVIEW_SCALE_FACTOR}px`;
+      previewCanvas.style.height = `${outputHeight / PREVIEW_SCALE_FACTOR}px`;
+    }
+
+    // Re-run code so user code sees new width/height
+    runCode();
+  }
+
   onMount(() => {
     const messageContext = jsRunner.getMessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
@@ -499,6 +515,8 @@
       cleanupPreviewListeners = setupPointerListeners(previewCanvas);
     }
 
+    window.addEventListener('resize', handleWindowResize);
+
     setTimeout(() => {
       runCode();
       startThumbnailLoop();
@@ -510,6 +528,8 @@
     stopThumbnailLoop();
     cleanupPreviewListeners?.();
     cleanupOverlayListeners?.();
+
+    window.removeEventListener('resize', handleWindowResize);
 
     // Deactivate overlay if this node was active
     if (isFullscreen) SurfaceOverlay.getInstance().deactivate(nodeId);
