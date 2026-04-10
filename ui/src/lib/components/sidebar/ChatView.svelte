@@ -34,6 +34,7 @@
   import {
     getDraft,
     setDraft,
+    draftSignal,
     getStagedYouTubeUrls,
     setStagedYouTubeUrls
   } from '../../../stores/chat-sessions.store';
@@ -60,6 +61,15 @@
   const session = chatStreamStore.getSession(sessionId);
 
   let inputText = $state(getDraft(sessionId));
+
+  // React to drafts set externally (e.g. from /sparks page via localStorage handoff)
+  $effect(() => {
+    const signal = $draftSignal;
+    if (signal?.sessionId === sessionId) {
+      inputText = signal.text;
+      draftSignal.set(null);
+    }
+  });
 
   onMount(async () => {
     await chatStreamStore.init(sessionId);

@@ -591,7 +591,7 @@
     if (pendingChat) {
       localStorage.removeItem('patchies:sparks-pending-chat');
       const activeId = $chatSessionsStore.activeId;
-      setDraft(activeId, pendingChat);
+      setDraft(activeId, pendingChat, true);
       $isSidebarOpen = true;
       $sidebarView = 'chat';
     }
