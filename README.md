@@ -2,9 +2,9 @@
 
 <img src="./docs/images/patchies-v4-hero.webp" alt="Hero Image" width="700">
 
-Patchies is a patcher for audio, visual and computational things that runs on the web.
+Patchies is a code-first patcher for exploring computation through audio, visual, hardware and more.
 
-It's made for creative coding; patch objects and code snippets together to explore visualizations, soundscapes and computations 🎨
+It's made for creative coding: patch objects and code snippets together to explore visualizations, soundscapes and computations 🎨
 
 Try it out at [patchies.app](https://patchies.app) - it's open source and free to use 😎
 
