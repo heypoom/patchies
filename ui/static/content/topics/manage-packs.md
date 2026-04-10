@@ -1,6 +1,6 @@
 # Packs
 
-Patchies ships with a focused set of objects by default. Packs let you enable more — grouping related objects and presets by use case so you only see what's relevant to your work.
+Patchies starts with a few objects enabled by default. Packs let you enable more — grouping related objects and presets by use case so you only see what's relevant to your work.
 
 ![Object browser packs panel](/content/images/object-browser-packs.webp)
 
