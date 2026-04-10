@@ -12,9 +12,29 @@
     glowColor: string;
     textColor: string;
     onClose: () => void;
+    onScatter?: (nodeNames: string[]) => void;
+    onChat?: (prompt: string) => void;
   }
 
-  let { vision, index, accentColor, glowColor, textColor, onClose }: Props = $props();
+  let { vision, index, accentColor, glowColor, textColor, onClose, onScatter, onChat }: Props =
+    $props();
+
+  function handleCopy() {
+    navigator.clipboard.writeText(
+      `${vision.title}\n\n${vision.vision}\n\nObjects: ${vision.nodes.join(', ')}`
+    );
+  }
+
+  function handleChat() {
+    const prompt = `I want to build this: "${vision.title}"\n\n${vision.vision}\n\nSuggested objects: ${vision.nodes.join(', ')}\n\nHelp me get started.`;
+    onChat?.(prompt);
+    onClose();
+  }
+
+  function handleScatter() {
+    onScatter?.(vision.nodes);
+    onClose();
+  }
 
   const roman = $derived(ROMAN[index] ?? 'I');
 
@@ -79,23 +99,30 @@
     <div class="flip-ctas">
       <Tooltip.Root>
         <Tooltip.Trigger class="flex-1">
-          <button class="flip-cta sparks-mono w-full cursor-pointer"
-            ><LayoutGrid size={11} /> scatter</button
+          <button
+            class="flip-cta sparks-mono w-full cursor-pointer"
+            class:flip-cta--disabled={!onScatter}
+            disabled={!onScatter}
+            onclick={handleScatter}><LayoutGrid size={11} /> scatter</button
           >
         </Tooltip.Trigger>
         <Tooltip.Content class="z-[200]">Scatter nodes onto your board</Tooltip.Content>
       </Tooltip.Root>
       <Tooltip.Root>
         <Tooltip.Trigger class="flex-1">
-          <button class="flip-cta sparks-mono w-full cursor-pointer"
-            ><MessageSquare size={11} /> chat</button
+          <button
+            class="flip-cta sparks-mono w-full cursor-pointer"
+            class:flip-cta--disabled={!onChat}
+            disabled={!onChat}
+            onclick={handleChat}><MessageSquare size={11} /> chat</button
           >
         </Tooltip.Trigger>
         <Tooltip.Content class="z-[200]">Open this idea in AI chat</Tooltip.Content>
       </Tooltip.Root>
       <Tooltip.Root>
         <Tooltip.Trigger class="flex-1">
-          <button class="flip-cta sparks-mono w-full cursor-pointer"><Copy size={11} /> copy</button
+          <button class="flip-cta sparks-mono w-full cursor-pointer" onclick={handleCopy}
+            ><Copy size={11} /> copy</button
           >
         </Tooltip.Trigger>
         <Tooltip.Content class="z-[200]">Copy idea to clipboard</Tooltip.Content>
@@ -318,9 +345,13 @@
       background 0.15s,
       color 0.15s;
   }
-  .flip-cta:hover {
+  .flip-cta:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--card-accent) 30%, transparent);
     background: color-mix(in srgb, var(--card-accent) 8%, transparent);
     color: color-mix(in srgb, var(--card-accent) 80%, #a1a1aa);
+  }
+  .flip-cta--disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
   }
 </style>

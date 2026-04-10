@@ -74,6 +74,14 @@
         {accentColor}
         {glowColor}
         {textColor}
+        onScatter={(nodeNames) => {
+          localStorage.setItem('patchies:sparks-pending-scatter', JSON.stringify(nodeNames));
+          window.location.href = '/';
+        }}
+        onChat={(prompt) => {
+          localStorage.setItem('patchies:sparks-pending-chat', prompt);
+          window.location.href = '/';
+        }}
       />
     {/if}
 

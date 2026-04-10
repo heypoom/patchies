@@ -61,6 +61,7 @@
   import { useFocusNode, useNodeLabels } from '$lib/canvas/use-focus-node.svelte';
   import AIProviderSettingsDialog from './dialogs/AIProviderSettingsDialog.svelte';
   import { hasAIApiKey } from '../../stores/ai-settings.store';
+  import { chatSessionsStore, setDraft } from '../../stores/chat-sessions.store';
   import NewPatchDialog from './dialogs/NewPatchDialog.svelte';
   import SavePatchModal from './dialogs/SavePatchModal.svelte';
   import ExportPatchModal from './dialogs/ExportPatchModal.svelte';
@@ -573,6 +574,28 @@
 
     loadPatch();
 
+    // Handle pending Sparks actions (scatter/chat) from the standalone /sparks page
+    const pendingScatter = localStorage.getItem('patchies:sparks-pending-scatter');
+    if (pendingScatter) {
+      localStorage.removeItem('patchies:sparks-pending-scatter');
+      try {
+        const nodeNames = JSON.parse(pendingScatter) as string[];
+        // Defer until canvas is laid out
+        tick().then(() => eventBus.dispatch({ type: 'scatterNodes', nodeNames }));
+      } catch {
+        // ignore malformed data
+      }
+    }
+
+    const pendingChat = localStorage.getItem('patchies:sparks-pending-chat');
+    if (pendingChat) {
+      localStorage.removeItem('patchies:sparks-pending-chat');
+      const activeId = $chatSessionsStore.activeId;
+      setDraft(activeId, pendingChat);
+      $isSidebarOpen = true;
+      $sidebarView = 'chat';
+    }
+
     // Check if the user wants to see the startup modal on launch
     // Don't show if loading from URL params (src or id)
     const params = new URLSearchParams(window.location.search);
@@ -662,6 +685,7 @@
     eventBus.addEventListener('requestSaveSelectedAsPreset', handleRequestSaveSelectedAsPreset);
     eventBus.addEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.addEventListener('quickAddCancelled', handleQuickAddCancelled);
+    eventBus.addEventListener('scatterNodes', handleScatterNodes);
     eventBus.addEventListener('objectDataCommit', handleObjectDataCommit);
     eventBus.addEventListener('codeCommit', handleCodeCommit);
     eventBus.addEventListener('nodeDataCommit', handleNodeDataCommit);
@@ -692,6 +716,7 @@
     eventBus.removeEventListener('requestSaveSelectedAsPreset', handleRequestSaveSelectedAsPreset);
     eventBus.removeEventListener('quickAddConfirmed', handleQuickAddConfirmed);
     eventBus.removeEventListener('quickAddCancelled', handleQuickAddCancelled);
+    eventBus.removeEventListener('scatterNodes', handleScatterNodes);
     eventBus.removeEventListener('objectDataCommit', handleObjectDataCommit);
     eventBus.removeEventListener('codeCommit', handleCodeCommit);
     eventBus.removeEventListener('nodeDataCommit', handleNodeDataCommit);
@@ -781,6 +806,22 @@
     const viewportCenterY = window.innerHeight / 2;
 
     return screenToFlowPosition({ x: viewportCenterX, y: viewportCenterY });
+  }
+
+  // Handle scatter nodes event from Sparks
+  function handleScatterNodes(event: { type: 'scatterNodes'; nodeNames: string[] }) {
+    const center = getViewportCenter();
+    const cols = Math.ceil(Math.sqrt(event.nodeNames.length));
+    const spacing = 180;
+    event.nodeNames.forEach((name, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const position = {
+        x: center.x + (col - (cols - 1) / 2) * spacing,
+        y: center.y + (row - Math.floor((event.nodeNames.length - 1) / cols) / 2) * spacing
+      };
+      nodeOps.createNodeFromName(name, position);
+    });
   }
 
   // Handle insert VFS file event from mobile toolbar

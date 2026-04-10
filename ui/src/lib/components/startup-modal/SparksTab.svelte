@@ -5,8 +5,32 @@
   import VisionGenerator from '$routes/sparks/VisionGenerator.svelte';
   import { moods, outputs } from '$routes/sparks/data';
   import { sparksMoodTheme, sparksSelectedMoodId } from '../../../stores/sparks.store';
+  import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
+  import { chatSessionsStore, setDraft } from '../../../stores/chat-sessions.store';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+
+  interface Props {
+    closeModal: () => void;
+  }
+
+  let { closeModal }: Props = $props();
 
   let selectedOutputIds = new SvelteSet<string>();
+
+  const eventBus = PatchiesEventBus.getInstance();
+
+  function handleScatter(nodeNames: string[]) {
+    eventBus.dispatch({ type: 'scatterNodes', nodeNames });
+    closeModal();
+  }
+
+  function handleChat(prompt: string) {
+    const activeId = $chatSessionsStore.activeId;
+    setDraft(activeId, prompt);
+    $isSidebarOpen = true;
+    $sidebarView = 'chat';
+    closeModal();
+  }
 
   const selectedMood = $derived(moods.find((m) => m.id === $sparksSelectedMoodId) ?? null);
   const hasSelection = $derived($sparksSelectedMoodId !== null || selectedOutputIds.size > 0);
@@ -65,6 +89,8 @@
         {accentColor}
         {glowColor}
         {textColor}
+        onScatter={handleScatter}
+        onChat={handleChat}
       />
     </div>
   {/if}

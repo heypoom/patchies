@@ -39,7 +39,8 @@ export type PatchiesEvent =
   | NodeDataCommitEvent
   | ObjectDataCommitEvent
   | NodeSetPausedEvent
-  | IncludeProcessingEvent;
+  | IncludeProcessingEvent
+  | ScatterNodesEvent;
 
 export interface ConsoleOutputEvent {
   type: 'consoleOutput';
@@ -370,4 +371,10 @@ export interface IncludeProcessingEvent {
   type: 'includeProcessing';
   nodeId: string;
   active: boolean;
+}
+
+export interface ScatterNodesEvent {
+  type: 'scatterNodes';
+  /** Object/node names to scatter onto the canvas (e.g. ['osc~', 'gain~']) */
+  nodeNames: string[];
 }

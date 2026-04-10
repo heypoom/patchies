@@ -8,6 +8,7 @@
   import type { Mood, Output, Vision } from './types';
   import AIProviderSettingsDialog from '$lib/components/dialogs/AIProviderSettingsDialog.svelte';
   import { hasAIApiKey } from '../../stores/ai-settings.store';
+  import { sparksVisions } from '../../stores/sparks.store';
 
   interface Props {
     selectedMood: Mood | null;
@@ -16,13 +17,23 @@
     accentColor: string;
     glowColor: string;
     textColor: string;
+    onScatter?: (nodeNames: string[]) => void;
+    onChat?: (prompt: string) => void;
   }
 
-  let { selectedMood, selectedOutputIds, outputs, accentColor, glowColor, textColor }: Props =
-    $props();
+  let {
+    selectedMood,
+    selectedOutputIds,
+    outputs,
+    accentColor,
+    glowColor,
+    textColor,
+    onScatter,
+    onChat
+  }: Props = $props();
 
   // ── Generation state ──────────────────────────────────────────
-  let visions = $state<Vision[]>([]);
+  // visions persisted in store so they survive modal close/tab switches
   let isGenerating = $state(false);
   let steerPrompt = $state('');
   let generationError = $state<string | null>(null);
@@ -55,7 +66,7 @@
     }
 
     isGenerating = true;
-    visions = [];
+    sparksVisions.set([]);
     generationError = null;
     abortController = new AbortController();
 
@@ -134,7 +145,7 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
         }
       });
 
-      visions = JSON.parse(extractJson(accumulated.trim()));
+      sparksVisions.set(JSON.parse(extractJson(accumulated.trim())));
     } catch (e) {
       if ((e as Error)?.name !== 'AbortError') {
         generationError = e instanceof Error ? e.message : 'Generation failed';
@@ -172,7 +183,7 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
         >
           {#if isGenerating}
             <span class="generating-dot"></span> stop
-          {:else if visions.length > 0}
+          {:else if $sparksVisions.length > 0}
             ↺ again
           {:else}
             ✦ imagine
@@ -187,15 +198,15 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     {/if}
 
     <!-- Vision cards -->
-    {#if isGenerating && visions.length === 0}
+    {#if isGenerating && $sparksVisions.length === 0}
       <div class="visions-grid">
         {#each [0, 1, 2] as i (i)}
           <div class="vision-card vision-skeleton" style:animation-delay="{i * 120}ms"></div>
         {/each}
       </div>
-    {:else if visions.length > 0}
+    {:else if $sparksVisions.length > 0}
       <div class="visions-grid">
-        {#each visions as v, i (i)}
+        {#each $sparksVisions as v, i (i)}
           <button
             class="vision-card cursor-pointer text-left"
             style:--card-accent={accentColor}
@@ -252,6 +263,8 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
       {glowColor}
       {textColor}
       onClose={() => (flippedVision = null)}
+      {onScatter}
+      {onChat}
     />
   </div>
 {/if}

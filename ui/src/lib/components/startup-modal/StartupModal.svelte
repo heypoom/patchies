@@ -115,7 +115,7 @@
         {:else if activeTab === 'demos'}
           <ExamplesTab {onLoadPatch} />
         {:else if activeTab === 'sparks' && $isAiFeaturesVisible}
-          <SparksTab />
+          <SparksTab closeModal={handleClose} />
         {:else if activeTab === 'thanks'}
           <ThanksTab />
         {:else if activeTab === 'shortcuts'}
