@@ -34,6 +34,17 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 Use the `glsl>` preset from the **GLSL Operators** preset pack to quickly
 create a passthrough shader.
 
+## Built-in Uniforms
+
+| Uniform | Type | Description |
+|---------|------|-------------|
+| `iResolution` | vec3 | Viewport resolution (width, height, aspect) |
+| `iTime` | float | Shader playback time in seconds |
+| `iTimeDelta` | float | Time since last frame |
+| `iFrame` | int | Current frame number |
+| `iMouse` | vec4 | Mouse coordinates |
+| `iChannel0-3` | sampler2D | Video input textures |
+
 ## Dynamic Uniforms
 
 Define uniforms in your code to create dynamic inlets:
@@ -50,6 +61,34 @@ or `[0.0, 1.0]` to `iFoo`.
 
 **Default values**: Connect a `loadbang` → `msg` chain to set
 initial uniform values when the patch loads.
+
+## Presets
+
+- `glsl>` - pass through without changes
+- `red.gl` - solid red color
+- `mix.gl` - mix two video inputs
+- `overlay.gl` - overlay second input on first
+- `fft-freq.gl` - visualize frequency spectrum
+- `fft-waveform.gl` - visualize audio waveform
+- `switcher.gl` - switch between 6 inputs (send int 0-5)
+
+## GLSL Imports
+
+Import functions from [Lygia](https://lygia.xyz) and other
+GLSL shader libraries directly in your code:
+
+```glsl
+#include <lygia/color/space/rgb2hsv>
+#include <lygia/generative/snoise>
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec3 hsv = rgb2hsv(vec3(uv, 0.5));
+  fragColor = vec4(hsv, 1.0);
+}
+```
+
+See [GLSL Imports](/docs/glsl-imports) for how to import from
+NPM packages, Lygia, virtual filesystem and external URLs.
 
 ## Multi-Output (MRT)
 
@@ -140,26 +179,7 @@ is automatically enabled:
 
 When `iMouse` is detected, the node becomes interactive (drag is disabled to allow mouse input).
 
-## Built-in Uniforms
-
-| Uniform | Type | Description |
-|---------|------|-------------|
-| `iResolution` | vec3 | Viewport resolution (width, height, aspect) |
-| `iTime` | float | Shader playback time in seconds |
-| `iTimeDelta` | float | Time since last frame |
-| `iFrame` | int | Current frame number |
-| `iMouse` | vec4 | Mouse coordinates |
-| `iChannel0-3` | sampler2D | Video input textures |
-
-## Presets
-
-- `glsl>` - pass through without changes
-- `red.gl` - solid red color
-- `mix.gl` - mix two video inputs
-- `overlay.gl` - overlay second input on first
-- `fft-freq.gl` - visualize frequency spectrum
-- `fft-waveform.gl` - visualize audio waveform
-- `switcher.gl` - switch between 6 inputs (send int 0-5)
+---
 
 ## Resources
 
@@ -169,7 +189,8 @@ When `iMouse` is detected, the node becomes interactive (drag is disabled to all
 
 ## See Also
 
-- [GLSL Imports](/docs/glsl-imports) - import functions from lygia and other GLSL libraries
 - [hydra](/docs/objects/hydra) - live coding visuals
+- [regl](/docs/objects/regl) - Regl shaders with JavaScript control
 - [swgl](/docs/objects/swgl) - SwissGL shaders
+- [three](/docs/objects/three) - 3D graphics with Three.js
 - [p5](/docs/objects/p5) - creative coding with P5.js
