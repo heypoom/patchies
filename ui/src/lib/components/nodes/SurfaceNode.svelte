@@ -319,6 +319,7 @@
     if (keyboardListenerHandlers) {
       document.removeEventListener('keydown', keyboardListenerHandlers.keydown);
       document.removeEventListener('keyup', keyboardListenerHandlers.keyup);
+
       keyboardListenerHandlers = null;
     }
 
@@ -330,7 +331,10 @@
 
     // Swap pointer listeners
     overlayListeners.detach();
-    if (previewCanvas) previewListeners.attach(previewCanvas, listenerOpts());
+
+    if (previewCanvas) {
+      previewListeners.attach(previewCanvas, listenerOpts());
+    }
 
     // Re-run code with preview canvas
     runCode();
@@ -357,6 +361,7 @@
   function togglePlayback() {
     if (data.paused) {
       updateNodeData(nodeId, { paused: false });
+
       if (pausedCallback) {
         animationFrameId = requestAnimationFrame((time) => {
           pausedCallback!(time);
@@ -365,8 +370,10 @@
       }
     } else {
       updateNodeData(nodeId, { paused: true });
+
       if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
+
         animationFrameId = null;
       }
     }
@@ -383,7 +390,9 @@
     dragEnabled = false;
     panEnabled = true;
     wheelEnabled = true;
+
     updateNodeData(nodeId, { videoOutput: true });
+
     drawMode = 'always';
     pointerCallback = null;
     touchCallback = null;
@@ -391,6 +400,7 @@
 
     if (animationFrameId !== null) {
       cancelAnimationFrame(animationFrameId);
+
       animationFrameId = null;
     }
 
@@ -488,7 +498,10 @@
           },
           cancelAnimationFrame: (id: number) => {
             cancelAnimationFrame(id);
-            if (animationFrameId === id) animationFrameId = null;
+
+            if (animationFrameId === id) {
+              animationFrameId = null;
+            }
           }
         }
       });
@@ -537,21 +550,32 @@
   });
 
   onDestroy(() => {
-    if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+    }
+
     stopThumbnailLoop();
+
     previewListeners.detach();
     overlayListeners.detach();
 
     window.removeEventListener('resize', debouncedHandleWindowResize);
-    if (resizeDebounceTimer !== null) clearTimeout(resizeDebounceTimer);
+
+    if (resizeDebounceTimer !== null) {
+      clearTimeout(resizeDebounceTimer);
+    }
+
     if (keyboardListenerHandlers) {
       document.removeEventListener('keydown', keyboardListenerHandlers.keydown);
       document.removeEventListener('keyup', keyboardListenerHandlers.keyup);
+
       keyboardListenerHandlers = null;
     }
 
     // Deactivate overlay if this node was active
-    if (isFullscreen) SurfaceOverlay.getInstance().deactivate(nodeId);
+    if (isFullscreen) {
+      SurfaceOverlay.getInstance().deactivate(nodeId);
+    }
 
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
     glSystem?.removeNode(nodeId);
@@ -561,6 +585,7 @@
   const handleClass = $derived.by(() => {
     if (!data.hidePorts) return '';
     if (!selected && $shouldShowHandles) return 'z-1 transition-opacity';
+
     return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
   });
 </script>
