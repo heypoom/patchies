@@ -101,8 +101,6 @@
 {/if}
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;600;700;800&display=swap');
-
   .modal-root {
     position: fixed;
     inset: 0;
