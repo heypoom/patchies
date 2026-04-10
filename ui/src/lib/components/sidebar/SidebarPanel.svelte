@@ -65,12 +65,12 @@
     { id: 'files', icon: Folder, title: 'Files' },
     { id: 'presets', icon: Bookmark, title: 'Presets' },
     { id: 'saves', icon: Save, title: 'Saves' },
-    { id: 'packs', icon: Package, title: 'Packs' },
     { id: 'help', icon: CircleQuestionMark, title: 'Help' }
   ];
 
   // Expandable items (shown under chevron, promoted to top bar when active)
   const allExpandableItems = [
+    { id: 'packs', icon: Package, title: 'Packs' },
     { id: 'samples', icon: Music, title: 'Samples' },
     { id: 'chat', icon: MessageSquare, title: 'Chat', aiOnly: true },
     { id: 'preview', icon: AppWindow, title: 'Patch to App', aiOnly: true },
@@ -95,6 +95,7 @@
   // State for the expandable section
   let isExpanded = $state(false);
   // Tracks whether expandable views have been promoted to the top bar
+  let isPacksPromoted = $derived(view === 'packs');
   let isSamplesPromoted = $derived(view === 'samples');
   let isChatPromoted = $derived(view === 'chat' && showAiFeatures);
   let isProfilerPromoted = $derived(view === 'profiler');
@@ -191,6 +192,23 @@
             </Tooltip.Root>
           {/if}
 
+          <!-- Promoted packs button (when active) -->
+          {#if isPacksPromoted}
+            <Tooltip.Root delayDuration={300}>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1.5 transition-colors {view === 'packs'
+                    ? 'bg-zinc-700 text-zinc-200'
+                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+                  onclick={() => (view = 'packs')}
+                >
+                  <Package class="h-4 w-4" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content side="bottom">Packs</Tooltip.Content>
+            </Tooltip.Root>
+          {/if}
+
           <!-- Promoted samples button (when active) -->
           {#if isSamplesPromoted}
             <Tooltip.Root delayDuration={300}>
@@ -275,7 +293,7 @@
       {#if isExpanded}
         <div class="flex flex-wrap items-center gap-1 border-t border-zinc-800 px-2 py-1.5">
           {#each expandableItems as item (item.id)}
-            {#if (!previewTab.isPromoted || item.id !== 'preview') && (!isSamplesPromoted || item.id !== 'samples') && (!isChatPromoted || item.id !== 'chat') && (!isProfilerPromoted || item.id !== 'profiler')}
+            {#if (!isPacksPromoted || item.id !== 'packs') && (!previewTab.isPromoted || item.id !== 'preview') && (!isSamplesPromoted || item.id !== 'samples') && (!isChatPromoted || item.id !== 'chat') && (!isProfilerPromoted || item.id !== 'profiler')}
               <button
                 class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
                 onclick={() => handleExpandableItemClick(item.id as SidebarView)}
@@ -287,7 +305,7 @@
             {/if}
           {/each}
 
-          {#if expandableItems.every((item) => (item.id === 'preview' && previewTab.isPromoted) || (item.id === 'samples' && isSamplesPromoted) || (item.id === 'chat' && isChatPromoted) || (item.id === 'profiler' && isProfilerPromoted))}
+          {#if expandableItems.every((item) => (item.id === 'packs' && isPacksPromoted) || (item.id === 'preview' && previewTab.isPromoted) || (item.id === 'samples' && isSamplesPromoted) || (item.id === 'chat' && isChatPromoted) || (item.id === 'profiler' && isProfilerPromoted))}
             <span class="text-xs text-zinc-600 italic">No more items</span>
           {/if}
         </div>
