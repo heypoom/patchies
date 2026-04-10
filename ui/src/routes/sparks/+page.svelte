@@ -13,6 +13,7 @@
     Hand,
     Code,
     Cpu,
+    Activity,
     Lightbulb,
     Projector,
     Piano,
@@ -30,6 +31,7 @@
     gestures: Hand,
     code: Code,
     'low-level': Cpu,
+    dsp: Activity,
     lighting: Lightbulb,
     projection: Projector,
     midi: Piano,
@@ -185,7 +187,8 @@
       id: 'music',
       name: 'Music',
       description: 'Composition, patterns, sequencing',
-      packIds: ['music']
+      packIds: ['music'],
+      nodes: ['bytebeat~']
     },
     {
       id: 'gestures',
@@ -204,9 +207,15 @@
     {
       id: 'low-level',
       name: 'Low-Level',
-      description: 'VMs, assembly, DSP, bytecode',
+      description: 'VMs, assembly, bytecode',
       packIds: ['low-level'],
-      nodes: ['bytebeat~', 'dsp~', 'wgpu.compute']
+      nodes: ['wgpu.compute']
+    },
+    {
+      id: 'dsp',
+      name: 'DSP',
+      description: 'Custom signal processors & audio math',
+      packIds: ['signal-processors']
     },
     {
       id: 'lighting',
