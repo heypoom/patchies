@@ -7,16 +7,28 @@
   let bitmapContext: ImageBitmapRenderingContext;
   let glSystem = GLSystem.getInstance();
 
-  onMount(() => {
-    const [outputWidth, outputHeight] = glSystem.outputSize;
-    outputCanvasElement.width = outputWidth;
-    outputCanvasElement.height = outputHeight;
+  function setOutputToWindowSize() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
+    outputCanvasElement.width = width;
+    outputCanvasElement.height = height;
+
+    glSystem.setOutputSize(width, height);
+  }
+
+  onMount(() => {
     bitmapContext = outputCanvasElement.getContext('bitmaprenderer')!;
+
     glSystem.backgroundOutputCanvasContext = bitmapContext;
+    setOutputToWindowSize();
+
+    window.addEventListener('resize', setOutputToWindowSize);
   });
 
   onDestroy(() => {
+    window.removeEventListener('resize', setOutputToWindowSize);
+
     // Unregister the context if we are still using it.
     if (glSystem.backgroundOutputCanvasContext === bitmapContext) {
       glSystem.backgroundOutputCanvasContext = null;
@@ -30,9 +42,6 @@
   }`}
   style="contain: strict; isolation: isolate;"
 >
-  <canvas
-    bind:this={outputCanvasElement}
-    class="h-screen w-full object-cover"
-    style="will-change: contents;"
+  <canvas bind:this={outputCanvasElement} class="h-screen w-full" style="will-change: contents;"
   ></canvas>
 </div>
