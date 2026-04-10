@@ -12,7 +12,6 @@ The `#include` directive inlines GLSL source code at the include site before sha
 #include <lygia/generative/snoise>
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
   float n = snoise(vec3(uv * 4.0, iTime));
   fragColor = vec4(vec3(n), 1.0);
 }
@@ -119,7 +118,6 @@ The `glsl` tag and `processIncludes()` function are available in all JavaScript-
 #include <lygia/generative/snoise>
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
   float n = snoise(vec3(uv * 5.0, iTime * 0.5));
   fragColor = vec4(vec3(n * 0.5 + 0.5), 1.0);
 }
@@ -144,7 +142,6 @@ vec3 palette(float t) {
 #include "user://utils.glsl"
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
   fragColor = vec4(palette(uv.x + iTime * 0.2), 1.0);
 }
 ```

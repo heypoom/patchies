@@ -11,7 +11,6 @@ Write GLSL code directly in the editor. The shader runs as a fragment shader:
 
 ```glsl
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
   fragColor = vec4(uv, 0.5, 1.0);
 }
 ```
@@ -63,8 +62,6 @@ layout(location = 0) out vec4 albedo;
 layout(location = 1) out vec4 normals;
 
 void mainImage(vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
-
   albedo = vec4(uv, 0.5, 1.0);
   normals = vec4(normalize(vec3(uv - 0.5, 1.0)) * 0.5 + 0.5, 1.0);
 }
