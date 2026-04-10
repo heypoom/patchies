@@ -4,6 +4,7 @@
   import { getTextProvider } from '$lib/ai/providers';
   import { extractJson } from '$lib/ai/extract-json';
   import { OBJECT_TYPE_LIST } from '$lib/ai/object-descriptions-types';
+  import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
   import {
     Layers,
     Box,
@@ -23,7 +24,7 @@
 
   const outputIcons: Record<string, LucideComponent> = {
     '2d-visual': Layers,
-    '3d-visual': Box,
+    video: Box,
     sound: AudioLines,
     music: Music,
     gestures: Hand,
@@ -54,7 +55,15 @@
     id: string;
     name: string;
     description: string;
-    nodes: string[];
+    packIds?: string[]; // derive nodes from these packs
+    nodes?: string[]; // explicit nodes (used alone or to supplement packIds)
+  }
+
+  function resolveNodes(output: Output): string[] {
+    const fromPacks = (output.packIds ?? []).flatMap(
+      (packId) => BUILT_IN_PACKS.find((p) => p.id === packId)?.objects ?? []
+    );
+    return [...new Set([...fromPacks, ...(output.nodes ?? [])])];
   }
 
   interface Patch {
@@ -179,66 +188,69 @@
       id: '2d-visual',
       name: '2D Visual',
       description: 'Canvas, P5.js, generative graphics',
-      nodes: ['p5', 'canvas', 'canvas.dom', 'textmode']
+      packIds: ['2d']
     },
     {
-      id: '3d-visual',
-      name: '3D Visual',
-      description: 'Three.js, GLSL shaders, Hydra',
-      nodes: ['three', 'glsl', 'hydra', 'regl']
+      id: 'video',
+      name: 'Video',
+      description: 'Three.js, Hydra, shaders, projection',
+      packIds: ['video-synthesis']
     },
     {
       id: 'sound',
       name: 'Sound',
       description: 'Synthesis, effects, audio processing',
-      nodes: ['osc~', 'reverb~', 'delay~', 'gain~', 'lfo', 'noise~']
+      packIds: ['signal-generators', 'audio-effects']
     },
     {
       id: 'music',
       name: 'Music',
       description: 'Composition, patterns, sequencing',
-      nodes: ['strudel', 'orca', 'beat', 'sequencer', 'sonic~', 'chuck~']
+      packIds: ['music']
     },
     {
       id: 'gestures',
       name: 'Gestures',
       description: 'Webcam, body & hand tracking',
-      nodes: ['vision.hand', 'vision.body', 'vision.face', 'webcam']
+      packIds: ['vision'],
+      nodes: ['webcam']
     },
     {
       id: 'code',
       name: 'Code',
       description: 'JS runners, workers, scripting',
-      nodes: ['js', 'worker', 'python', 'ruby', 'expr']
+      packIds: ['scripting'],
+      nodes: ['js', 'worker']
     },
     {
       id: 'low-level',
       name: 'Low-Level',
       description: 'VMs, assembly, DSP, bytecode',
-      nodes: ['uxn', 'asm', 'bytebeat~', 'wgpu.compute', 'dsp~']
+      packIds: ['low-level'],
+      nodes: ['bytebeat~', 'dsp~', 'wgpu.compute']
     },
     {
       id: 'lighting',
       name: 'Lighting',
-      description: 'DMX lights & LED strips — needs DMX hardware',
-      nodes: ['serial.dmx', 'dmx']
+      description: 'DMX lights & LED strips',
+      nodes: ['serial.dmx']
     },
     {
       id: 'projection',
       name: 'Projection',
-      description: 'Projection mapping — needs a projector',
+      description: 'Projection mapping',
       nodes: ['projmap']
     },
     {
       id: 'midi',
       name: 'MIDI',
-      description: 'MIDI controllers & instruments — needs MIDI device',
-      nodes: ['midi.in', 'midi.out', 'webmidilink']
+      description: 'MIDI controllers & instruments',
+      packIds: ['midi']
     },
     {
       id: 'serial',
       name: 'Serial',
-      description: 'Arduino, sensors, physical I/O — needs USB device',
+      description: 'Arduino, sensors, physical I/O',
       nodes: ['serial', 'serial.term']
     }
   ];
@@ -278,7 +290,7 @@
       nodes: ['hydra', 'webcam', 'canvas'],
       difficulty: 'beginner',
       mood: ['glitchy', 'dreamy', 'meditative'],
-      outputs: ['3d-visual', 'gestures'],
+      outputs: ['video', 'gestures'],
       patches: [
         { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
         { title: 'Performance Build', type: 'showcase', url: '/sparks/submit', author: 'joey' }
@@ -301,7 +313,7 @@
       nodes: ['glsl', 'osc~', 'js'],
       difficulty: 'advanced',
       mood: ['dark', 'meditative', 'industrial'],
-      outputs: ['3d-visual', 'code'],
+      outputs: ['video', 'code'],
       patches: [
         { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
         { title: 'SDF Playground', type: 'template', url: '/sparks/submit' }
@@ -329,7 +341,7 @@
       nodes: ['webcam', 'glsl', 'js'],
       difficulty: 'intermediate',
       mood: ['glitchy', 'dark', 'chaotic'],
-      outputs: ['3d-visual', 'gestures', 'code'],
+      outputs: ['video', 'gestures', 'code'],
       patches: [
         { title: 'Starter Kit', type: 'starter', url: '/sparks/submit' },
         { title: 'VJ Set Build', type: 'template', url: '/sparks/submit' }
@@ -369,7 +381,7 @@
       nodes: ['bytebeat~', 'scope~', 'glsl'],
       difficulty: 'advanced',
       mood: ['glitchy', 'industrial', 'dark'],
-      outputs: ['low-level', 'sound', '3d-visual'],
+      outputs: ['low-level', 'sound', 'video'],
       patches: [{ title: 'Starter Kit', type: 'starter', url: '/sparks/submit' }]
     },
     {
@@ -424,9 +436,10 @@
   const suggestedNodes = $derived([
     ...new Set([
       ...(selectedMood?.nodes ?? []),
-      ...[...selectedOutputIds].flatMap(
-        (id) => outputs.find((o) => o.id === id)?.nodes.slice(0, 2) ?? []
-      )
+      ...[...selectedOutputIds].flatMap((id) => {
+        const o = outputs.find((out) => out.id === id);
+        return o ? resolveNodes(o).slice(0, 2) : [];
+      })
     ])
   ]);
 
@@ -462,7 +475,15 @@
 
     const outputContext =
       selectedOutputIds.size > 0
-        ? `OUTPUT FOCUS: ${[...selectedOutputIds].map((id) => outputs.find((o) => o.id === id)?.name).join(', ')}`
+        ? `OUTPUT FOCUS — each idea MUST use at least one object from these categories:\n${[
+            ...selectedOutputIds
+          ]
+            .map((id) => {
+              const o = outputs.find((out) => out.id === id);
+              return o ? `- ${o.name}: ${resolveNodes(o).join(', ')}` : '';
+            })
+            .filter(Boolean)
+            .join('\n')}`
         : '';
 
     const steerContext = steerPrompt.trim()
@@ -505,10 +526,11 @@ Rules:
 - Title must be a specific what-if you can immediately picture
 - Vision answers it with concrete specificity: what exactly happens
 - Never use words: patch, node, code, connect, map, route, signal
-- Nodes: 3–4 real objects from the list only
 - Vary scale: one intimate/personal, one performative, one unexpected
 - Avoid: "pulsing", "ethereal", "sonic journey", "immersive", "generative"
-- ${steerContext || 'Prioritise ideas that feel genuinely new and a little strange'}`;
+- Try cross-domain combinations that feel fresh, e.g. assembly + projection = ?
+- ${steerContext || 'Prioritise ideas that feel genuinely new and a little strange'}
+${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes" array MUST contain AT LEAST one object from the OUTPUT FOCUS list. This is a hard requirement. Do not suggest nodes outside that list unless supplementing it.` : ''}`;
 
     try {
       const provider = getTextProvider();

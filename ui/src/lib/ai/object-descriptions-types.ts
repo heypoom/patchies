@@ -80,8 +80,8 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - stack: LIFO stack — push messages to inlet 0, bang inlet 1 to pop; also accepts clear and size commands on inlet 1
 - queue: FIFO queue — push messages to inlet 0, bang inlet 1 to dequeue; also accepts clear and size commands on inlet 1
 - wgpu.compute: WebGPU compute shaders (WGSL) for parallel data processing
-- asm: Virtual stack machine assembly
-- uxn: Uxn virtual machine (Uxntal)
+- asm: Virtual stack machine assembly (can send/receive messages)
+- uxn: Uxn virtual machine (Uxntal, visual & interactive)
 
 ## Interface & Control Objects
 - button: Simple button (sends bang)
