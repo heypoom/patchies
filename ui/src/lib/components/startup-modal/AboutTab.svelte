@@ -39,7 +39,7 @@
       Patch the world together.
     </h1>
 
-    <p class="mb-5 font-[Syne] text-[0.82rem] leading-[0.7] text-zinc-600">
+    <p class="mb-5 font-[Syne] text-[0.82rem] leading-[1.6] text-zinc-600 sm:leading-[0.5]">
       Code-first patcher for exploring computation through audio and visual.
     </p>
 
