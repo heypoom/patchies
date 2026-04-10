@@ -33,7 +33,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
   * Timing: beat~ (fire on beat subdivisions), bang~ (convert signal bang to message bang)
   * Routing: send (send messages to a named channel), recv (receive messages from a named channel), send~, recv~ (wireless audio routing)
   * Utility: bang, float, metro, loadbang, samplerate~, mtof (message-rate)
-  * Analysis: fft~ (FFT spectrum analyzer)
+  * Analysis: fft~ (FFT spectrum analyzer), tap~ (capture trigger-synced audio frames as messages — pair with scope.canvas or scope-xy.canvas)
   * IMPORTANT: Use type "object" with data containing THREE fields: expr (full string), name (first word only), params (array of values matching arguments)
   * data format: { "expr": "name arg1 arg2", "name": "name", "params": [arg1, arg2] }
   * Examples:

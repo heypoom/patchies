@@ -8,7 +8,7 @@ import { hslaPickerPreset } from './hsla-picker';
 import { rgbaPickerPreset } from './rgba-picker';
 import { virtualMidiKeyboardPreset } from './virtual-midi-keyboard';
 import { scopeWaveformPreset } from './scope-waveform';
-import { lissajousPreset } from './lissajous';
+import { scopeXYPreset } from './scope-xy';
 
 export const CANVAS_PRESETS = {
   bitmaprenderer: bitmapRendererPreset,
@@ -21,5 +21,5 @@ export const CANVAS_PRESETS = {
   'rgba.picker': rgbaPickerPreset,
   'midi.keyboard': virtualMidiKeyboardPreset,
   'scope.canvas': scopeWaveformPreset,
-  'lissajous.canvas': lissajousPreset
+  'scope-xy.canvas': scopeXYPreset
 };

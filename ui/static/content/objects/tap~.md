@@ -24,7 +24,7 @@ panel and connect two signals:
 
 ```
 [osc~ 440] ─┐
-[osc~ 220] ─┘ [tap~ mode=xy] → [lissajous.canvas]
+[osc~ 220] ─┘ [tap~ mode=xy] → [scope-xy.canvas]
 ```
 
 ## Canvas Presets
@@ -32,7 +32,7 @@ panel and connect two signals:
 Two canvas presets work directly with `tap~` output:
 
 - **scope.canvas** — waveform display, accepts `Float32Array`
-- **lissajous.canvas** — XY plot, accepts `{ x, y }` pairs
+- **scope-xy.canvas** — XY plot, accepts `{ x, y }` pairs
 
 Both presets accept visual parameter messages on their inlet:
 `{ xScale }`, `{ yScale }`, `{ plotType }`, `{ decay }`.

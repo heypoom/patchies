@@ -90,7 +90,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Waveform and Lissajous visualizers for tap~',
     icon: 'AudioWaveform',
     requiredObjects: ['tap~', 'canvas.dom'],
-    presets: ['scope.canvas', 'lissajous.canvas']
+    presets: ['scope.canvas', 'scope-xy.canvas']
   },
   {
     id: 'fft-demos',

@@ -1,5 +1,5 @@
-export const LISSAJOUS_JS = `setPortCount(1, 0)
-setTitle('lissajous.canvas')
+export const SCOPE_XY_JS = `setPortCount(1, 0)
+setTitle('scope-xy.canvas')
 noDrag()
 
 await settings.define([
@@ -107,10 +107,10 @@ function draw() {
 
 draw()`;
 
-export const lissajousPreset = {
+export const scopeXYPreset = {
   type: 'canvas' as const,
   data: {
-    code: LISSAJOUS_JS,
+    code: SCOPE_XY_JS,
     inletCount: 1,
     outletCount: 0
   }
