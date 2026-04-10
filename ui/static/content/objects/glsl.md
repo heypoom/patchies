@@ -2,7 +2,8 @@ The `glsl` object creates a GLSL fragment shader for complex visual effects and 
 
 ![GLSL SDF shader](/content/images/patchies-glsl-sdf.png)
 
-> ✨ [Try this patch](/?id=3k3qnwk022tfj7e) featuring a shader from @dtinth's talk, [the power of signed distance functions](https://dt.in.th/SDFTalk)!
+> ✨ [Try this patch](/?id=3k3qnwk022tfj7e) featuring a shader from @dtinth's
+> talk, [the power of signed distance functions](https://dt.in.th/SDFTalk)!
 
 ## Getting Started
 
@@ -15,20 +16,24 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
-All shaders on [Shadertoy](https://www.shadertoy.com) are automatically compatible with `glsl`, as they use the same uniforms.
+All shaders on [Shadertoy](https://www.shadertoy.com) are automatically
+compatible with `glsl`, as they use the same uniforms.
 
 ## Video Chaining
 
-Connect any visual objects (`p5`, `hydra`, `glsl`, `swgl`, `canvas`, etc.) to the GLSL object via `sampler2D` video inlets:
+Connect any visual objects (`p5`, `hydra`, `glsl`, `swgl`, `canvas`, etc.)
+to the  GLSL object via `sampler2D` video inlets:
 
 ```glsl
-uniform sampler2D iChannel0;
+uniform sampler2D image;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 uv = fragCoord / iResolution.xy;
-  fragColor = texture(iChannel0, uv);
+  fragColor = texture(image, uv);
 }
 ```
+
+Use the `glsl>` preset from the **GLSL Operators** preset pack to quickly
+create a passthrough shader.
 
 ## Dynamic Uniforms
 
@@ -151,8 +156,8 @@ When `iMouse` is detected, the node becomes interactive (drag is disabled to all
 
 ## Presets
 
-- `red.gl` - solid red color
 - `glsl>` - pass through without changes
+- `red.gl` - solid red color
 - `mix.gl` - mix two video inputs
 - `overlay.gl` - overlay second input on first
 - `fft-freq.gl` - visualize frequency spectrum
