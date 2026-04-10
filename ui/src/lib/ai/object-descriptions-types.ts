@@ -80,8 +80,8 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - stack: LIFO stack — push messages to inlet 0, bang inlet 1 to pop; also accepts clear and size commands on inlet 1
 - queue: FIFO queue — push messages to inlet 0, bang inlet 1 to dequeue; also accepts clear and size commands on inlet 1
 - wgpu.compute: WebGPU compute shaders (WGSL) for parallel data processing
-- asm: Virtual stack machine assembly
-- uxn: Uxn virtual machine (Uxntal)
+- asm: Virtual stack machine assembly (can send/receive messages)
+- uxn: Uxn virtual machine (Uxntal, visual & interactive)
 
 ## Interface & Control Objects
 - button: Simple button (sends bang)
@@ -129,3 +129,112 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - vision.detect: Object detection with bounding boxes — emits { detections: [{label, score, boundingBox}], timestamp }
 - vision.gesture: Gesture recognition — emits { gestures: [{gesture, score, handedness, landmarks, worldLandmarks}], timestamp }
 - vision.classify: Image classification (EfficientNet Lite0, 1000 ImageNet classes) — emits { classifications: [{label, score}], timestamp }`;
+
+/**
+ * Compact object list for Sparks idea generation — names + brief purpose, no implementation detail.
+ */
+export const SPARKS_OBJECT_LIST = `## Visuals
+- p5: P5.js sketches — generative drawing, particle systems, interactive 2D graphics
+- canvas: High-performance HTML5 canvas (web worker) — great for heavy visual pipelines
+- surface: Fullscreen interactive canvas — capture mouse/touch across entire screen for drawing/painting
+- hydra: Live video synthesis — feedback loops, texture blending, webcam warping
+- glsl: GLSL fragment shaders — pixel-level visual effects, raymarching, procedural textures
+- three: Three.js 3D graphics (offscreen worker) — meshes, lighting, cameras, 3D scenes; for video chaining
+- three.dom: Three.js 3D graphics (main thread) — same as three but supports mouse/keyboard interaction
+- regl: Low-level GPU rendering — custom vertices, multi-pass, blend modes
+- canvas.dom: HTML5 Canvas (main thread) — supports mouse/keyboard, lower overhead than p5
+- projmap: Projection mapping — warp video onto surfaces with a built-in point editor
+- textmode: Text-based "shader" rendering — create visuals with ASCII characters
+- vue: Custom UI with Vue.js — reactive components, sliders, panels, dashboards
+- dom: Write raw HTML/CSS to a DOM element — flexible UI without a framework
+
+## Audio Synthesis
+- strudel: TidalCycles-style live coding — pattern-based music, polymeter, mini-notation
+- tone~: Tone.js — high-level synthesis, effects chains, scheduling, instruments
+- orca: Esoteric livecoding sequencer — 2D grid of operators that fire MIDI/messages
+- bytebeat~: One-expression algorithmic audio — t-based math formulas that generate sound
+- csound~: Csound — classic computer music language with thousands of opcodes
+- chuck~: ChucK — strongly-timed audio programming language
+- sonic~: SuperCollider-style synthesis — rich synthesis engine
+- osc~: Oscillator — sine, saw, square, triangle waves
+- noise~: White noise generator
+- phasor~: Ramp wave 0→1, useful for driving table lookups or LFOs
+
+## Signal Processors
+- dsp~: Custom DSP with AudioWorklet — write your own sample-level processing in JS
+- elem~: Functional reactive audio with Elementary Audio
+- expr~: Audio-rate mathematical expressions — inline formula on the signal path
+- snapshot~: Sample an audio signal on demand (bang → current value)
+- samphold~: Sample-and-hold — freeze a signal when triggered
+- env~: Envelope follower — tracks the amplitude of an audio signal
+- latch~: Hold a signal value until retriggered
+
+## Audio Processing
+- gain~, pan~: Volume and stereo panning
+- delay~: Echo and delay lines
+- convolver~: Convolution reverb
+- lowpass~, highpass~, bandpass~, vcf~: Filters
+- compressor~: Dynamic range compression
+- waveshaper~: Wavefold and distortion
+- comb~: Comb filter — metallic resonance, Karplus-Strong-style sounds
+- adsr~: Attack-decay-sustain-release envelope
+
+## Audio Analysis
+- fft~: FFT spectrum analyzer — frequency bands drive visuals or routing
+- scope~: Oscilloscope — visualise waveforms in real time
+- meter~: Audio level meter
+
+## Audio I/O
+- mic~: Microphone input
+- soundfile~: Load and play audio files
+- sampler~: Sample playback with pitch and trigger control
+- pads~: 16-pad drum sampler (GM drum map)
+
+## MIDI
+- midi.in, midi.out: MIDI controller input/output
+
+# Serial
+- serial: WebSerial — communicate with Arduino, sensors, any serial device
+- serial.term: Interactive serial terminal — scrollback, ANSI colors, command history
+- serial.dmx: DMX-512 lighting output — send up to 512 channel values to DMX fixtures
+
+## Network & Streaming
+- netsend, netrecv: WebRTC message send/receive between peers
+- vdo.ninja.pull: Receive audio from a VDO.Ninja stream (WebRTC)
+- vdo.ninja.push: Send audio to a VDO.Ninja stream (WebRTC)
+
+# Video Input
+- webcam: Live webcam video input
+- screen: Screen capture input
+
+## Vision
+- vision.hand: Real-time hand skeleton tracking (21 landmarks per hand)
+- vision.body: Full-body pose estimation (33 body landmarks)
+- vision.face: Facial landmark mesh (478 points, blend shapes)
+- vision.gesture: Gesture recognition (thumbs up, peace sign, etc.)
+- vision.detect: Object detection with bounding boxes (1000 classes)
+- vision.segment: Body segmentation — separate person from background as a mask
+- vision.classify: Image classification — 1000 ImageNet classes with confidence scores
+
+## Low-Level
+- asm: Virtual stack machine assembly — minimalist bytecode VM, send/receive messages
+- uxn: Uxn virtual machine — runs Uxntal programs, visual and interactive
+- wgpu.compute: WebGPU compute shaders (WGSL) — massively parallel data processing on GPU
+- uiua: UIUA stack based virtual machine
+
+## Scripting & Logic
+- js: JavaScript — full scripting, access to Patchies API (fft, send, recv, flash, etc.)
+- worker: JavaScript in a Web Worker — non-blocking heavy computation
+- ruby: Ruby scripting with ruby.wasm
+- python: Python scripting with Pyodide — numpy, scipy, ML libraries
+- expr: Mathematical expression evaluator — compact formula nodes
+- sequencer: Step sequencer synced to transport clock — drum machine style, one outlet per track
+- slider, button, toggle, keyboard, textbox, curve: UI controls and display widgets
+
+## Documentation & Embed
+- markdown: Render markdown text — patch notes, labels, instructions
+- iframe: Embed any web page or tool
+
+## AI & Speech
+- ai.stt: Speech-to-text via Gemini AI — send listen/stop to control
+- stt: Speech-to-text via browser Web Speech API — no API key needed`;

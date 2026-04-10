@@ -62,9 +62,11 @@
   {:else}
     {#each exampleCategories as category (category.name)}
       <div>
-        <h2 class="mb-3 text-lg font-semibold text-zinc-200">{category.name}</h2>
+        <h2 class="mb-3 font-mono text-[10px] tracking-[0.22em] text-zinc-600 uppercase">
+          {category.name}
+        </h2>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="examples-grid">
           {#each category.patches as patch (patch.id)}
             <ExampleCard {patch} onLoad={loadExample} />
           {/each}
@@ -73,3 +75,17 @@
     {/each}
   {/if}
 </div>
+
+<style>
+  .examples-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 460px) {
+    .examples-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

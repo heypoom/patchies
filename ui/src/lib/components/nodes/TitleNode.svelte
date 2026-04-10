@@ -36,7 +36,7 @@
       color?: string;
       fontSize?: number;
       bordered?: boolean;
-      font?: 'default' | 'mono';
+      font?: 'default' | 'mono' | 'serif' | 'syne';
     };
     selected: boolean;
     width?: number;
@@ -60,7 +60,13 @@
   const fontSize = $derived(node.data.fontSize ?? 28);
   const bordered = $derived(node.data.bordered ?? false);
   const font = $derived(node.data.font ?? 'default');
-  const fontFamily = $derived(font === 'mono' ? 'monospace' : 'inherit');
+  const fontFamily = $derived(
+    match(font)
+      .with('mono', () => "'IBM Plex Mono', monospace")
+      .with('serif', () => "'Instrument Serif', serif")
+      .with('syne', () => "'Syne', sans-serif")
+      .otherwise(() => 'inherit')
+  );
   const width = $derived(node.width ?? defaultWidth);
   const height = $derived(node.height ?? defaultHeight);
 
@@ -283,12 +289,12 @@
           <div>
             <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">Font</label>
-            <div class="flex gap-1">
-              {#each [{ label: 'Default', value: 'default' }, { label: 'Mono', value: 'mono' }] as opt}
+            <div class="flex flex-wrap gap-1">
+              {#each [{ label: 'Default', value: 'default' }, { label: 'Mono', value: 'mono' }, { label: 'Serif', value: 'serif' }, { label: 'Syne', value: 'syne' }] as opt}
                 <button
                   onclick={() => {
                     const old = font;
-                    updateConfig({ font: opt.value as 'default' | 'mono' });
+                    updateConfig({ font: opt.value as 'default' | 'mono' | 'serif' | 'syne' });
                     tracker.commit('font', old, opt.value);
                   }}
                   class={[

@@ -104,16 +104,9 @@
     --prose-h3: calc(0.9375rem * var(--prose-scale));
   }
 
-  .prose-markdown h1 {
-    font-family: 'Fraunces', serif;
-  }
-
-  .prose-markdown-app h1 {
-    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
-  }
-
   .prose-markdown h1,
   .prose-markdown-app h1 {
+    font-family: Syne, ui-sans-serif, sans-serif;
     font-size: calc(2rem * var(--prose-scale));
     font-weight: 700;
     color: #fafafa;

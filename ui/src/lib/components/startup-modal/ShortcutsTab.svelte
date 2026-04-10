@@ -18,124 +18,42 @@
   }
 
   const shortcuts: Shortcut[] = [
-    // Mouse shortcuts
-    {
-      keys: ['Click on object / title'],
-      description: 'Focus on the object',
-      category: 'mouse'
-    },
-    {
-      keys: ['Drag on object / title'],
-      description: 'Move the object around',
-      category: 'mouse'
-    },
-    {
-      keys: ['Scroll up'],
-      description: 'Zoom in',
-      category: 'mouse'
-    },
-    {
-      keys: ['Scroll down'],
-      description: 'Zoom out',
-      category: 'mouse'
-    },
-    {
-      keys: ['Drag on empty space'],
-      description: 'Pan the canvas',
-      category: 'mouse'
-    },
+    { keys: ['Click on object / title'], description: 'Focus on the object', category: 'mouse' },
+    { keys: ['Drag on object / title'], description: 'Move the object around', category: 'mouse' },
+    { keys: ['Scroll up'], description: 'Zoom in', category: 'mouse' },
+    { keys: ['Scroll down'], description: 'Zoom out', category: 'mouse' },
+    { keys: ['Drag on empty space'], description: 'Pan the canvas', category: 'mouse' },
     {
       keys: ['Shift', 'Drag on empty space'],
       description: 'Select multiple objects',
       category: 'mouse'
     },
-    // Keyboard shortcuts
-    {
-      keys: ['Enter'],
-      description: 'Create a new object at cursor position',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Ctrl', 'K'],
-      description: 'Open the command palette',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Ctrl', 'B'],
-      description: 'Toggle the left sidebar panel',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Ctrl', 'O'],
-      description: 'Browse all objects',
-      category: 'keyboard'
-    },
+    { keys: ['Enter'], description: 'Create a new object at cursor', category: 'keyboard' },
+    { keys: ['Ctrl', 'K'], description: 'Open the command palette', category: 'keyboard' },
+    { keys: ['Ctrl', 'B'], description: 'Toggle the left sidebar', category: 'keyboard' },
+    { keys: ['Ctrl', 'O'], description: 'Browse all objects', category: 'keyboard' },
     {
       keys: ['Ctrl', 'I'],
-      description: 'Insert or edit an object with AI',
+      description: 'Insert or edit object with AI',
       category: 'keyboard',
       requiresAi: true
     },
-    {
-      keys: ['Ctrl', 'S'],
-      description: 'Save the patch',
-      category: 'keyboard'
-    },
+    { keys: ['Ctrl', 'S'], description: 'Save the patch', category: 'keyboard' },
     {
       keys: ['Ctrl', 'Shift', 'S'],
-      description: 'Save the patch as a different save',
+      description: 'Save as a different patch',
       category: 'keyboard'
     },
-    {
-      keys: ['Ctrl', 'N'],
-      description: 'Create a new patch',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Shift', 'Enter'],
-      description: 'Run the code in the editor',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Delete'],
-      description: 'Delete the selected object',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Ctrl', 'C'],
-      description: 'Copy the selected object',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Ctrl', 'V'],
-      description: 'Paste the copied object',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Ctrl', 'Z'],
-      description: 'Undo the last action',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Ctrl', 'Shift', 'Z'],
-      description: 'Redo the last undone action',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Space'],
-      description: 'Toggle play/pause',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Shift', 'Space'],
-      description: 'Toggle the transport panel',
-      category: 'keyboard'
-    },
-    {
-      keys: ['Shift', 'P'],
-      description: 'Toggle all node previews on/off',
-      category: 'keyboard'
-    }
+    { keys: ['Ctrl', 'N'], description: 'Create a new patch', category: 'keyboard' },
+    { keys: ['Shift', 'Enter'], description: 'Run the code in the editor', category: 'keyboard' },
+    { keys: ['Delete'], description: 'Delete the selected object', category: 'keyboard' },
+    { keys: ['Ctrl', 'C'], description: 'Copy the selected object', category: 'keyboard' },
+    { keys: ['Ctrl', 'V'], description: 'Paste the copied object', category: 'keyboard' },
+    { keys: ['Ctrl', 'Z'], description: 'Undo', category: 'keyboard' },
+    { keys: ['Ctrl', 'Shift', 'Z'], description: 'Redo', category: 'keyboard' },
+    { keys: ['Space'], description: 'Toggle play / pause', category: 'keyboard' },
+    { keys: ['Shift', 'Space'], description: 'Toggle the transport panel', category: 'keyboard' },
+    { keys: ['Shift', 'P'], description: 'Toggle all node previews', category: 'keyboard' }
   ];
 
   const transformKey = (key: string) => (isMac && key === 'Ctrl' ? 'Cmd' : key);
@@ -149,32 +67,27 @@
   );
 </script>
 
-<div class="space-y-6">
+<div class="sc-root">
   <!-- Header -->
-  <div>
-    <h1 class="text-2xl font-bold text-zinc-100">Keyboard and Mouse Shortcuts</h1>
-    <p class="mt-1 text-sm text-zinc-400">
-      Quick reference for navigating and working with Patchies
-    </p>
+  <div class="sc-hero">
+    <p class="sc-eyebrow">patchies · shortcuts</p>
+    <h1 class="sc-headline">Keyboard & Mouse</h1>
+    <p class="sc-subhead">Quick reference for navigating and working with Patchies.</p>
   </div>
 
-  <!-- Mouse Shortcuts -->
-  <div class="space-y-3">
-    <h2 class="flex items-center gap-2 text-lg font-semibold text-zinc-200">
-      <MousePointer class="h-5 w-5 text-orange-500" />
-      Mouse Shortcuts
-    </h2>
-    <div class="space-y-2">
+  <!-- Mouse -->
+  <div class="sc-group">
+    <div class="sc-group-label">
+      <MousePointer class="sc-group-icon" />
+      mouse
+    </div>
+    <div class="sc-list">
       {#each mouseShortcuts as shortcut}
-        <div
-          class="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-3"
-        >
-          <span class="text-sm text-zinc-300">{shortcut.description}</span>
-          <div class="flex gap-1.5">
+        <div class="sc-row">
+          <span class="sc-desc">{shortcut.description}</span>
+          <div class="sc-keys">
             {#each shortcut.keys as key}
-              <kbd class="rounded bg-zinc-700 px-2 py-1 font-mono text-xs text-zinc-200"
-                >{transformKey(key)}</kbd
-              >
+              <kbd class="sc-key">{transformKey(key)}</kbd>
             {/each}
           </div>
         </div>
@@ -182,23 +95,19 @@
     </div>
   </div>
 
-  <!-- Keyboard Shortcuts -->
-  <div class="space-y-3">
-    <h2 class="flex items-center gap-2 text-lg font-semibold text-zinc-200">
-      <Keyboard class="h-5 w-5 text-orange-500" />
-      Keyboard Shortcuts
-    </h2>
-    <div class="space-y-2">
+  <!-- Keyboard -->
+  <div class="sc-group">
+    <div class="sc-group-label">
+      <Keyboard class="sc-group-icon" />
+      keyboard
+    </div>
+    <div class="sc-list">
       {#each keyboardShortcuts as shortcut}
-        <div
-          class="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-3"
-        >
-          <span class="text-sm text-zinc-300">{shortcut.description}</span>
-          <div class="flex gap-1.5">
+        <div class="sc-row">
+          <span class="sc-desc">{shortcut.description}</span>
+          <div class="sc-keys">
             {#each shortcut.keys as key}
-              <kbd class="rounded bg-zinc-700 px-2 py-1 font-mono text-xs text-zinc-200"
-                >{transformKey(key)}</kbd
-              >
+              <kbd class="sc-key">{transformKey(key)}</kbd>
             {/each}
           </div>
         </div>
@@ -206,3 +115,115 @@
     </div>
   </div>
 </div>
+
+<style>
+  .sc-root {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Hero */
+  .sc-hero {
+    padding-bottom: 4px;
+  }
+
+  .sc-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(249, 115, 22, 0.7);
+    margin-bottom: 14px;
+  }
+
+  .sc-headline {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: clamp(1.8rem, 5vw, 2.4rem);
+    line-height: 1.12;
+    color: #f4f4f5;
+    margin-bottom: 10px;
+  }
+
+  .sc-subhead {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    color: #52525b;
+    line-height: 1.6;
+  }
+
+  /* Group */
+  .sc-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sc-group-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #3f3f46;
+  }
+
+  :global(.sc-group-icon) {
+    width: 11px;
+    height: 11px;
+    color: rgba(249, 115, 22, 0.5);
+  }
+
+  /* Shortcut list */
+  .sc-list {
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .sc-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.12s;
+  }
+
+  .sc-row:last-child {
+    border-bottom: none;
+  }
+
+  .sc-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .sc-desc {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    color: #71717a;
+    flex: 1;
+  }
+
+  .sc-keys {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+
+  .sc-key {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: #71717a;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 2px 7px;
+    white-space: nowrap;
+  }
+</style>
