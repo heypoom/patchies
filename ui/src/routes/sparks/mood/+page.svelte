@@ -558,6 +558,21 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 
   const canGenerate = $derived(hasSelection);
 
+  // ── Flipped card ──────────────────────────────────────────────
+  let flippedVision = $state<Vision | null>(null);
+
+  function openVision(v: Vision) {
+    flippedVision = v;
+  }
+
+  function closeVision() {
+    flippedVision = null;
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') closeVision();
+  }
+
   function patchTypeIcon(t: PatchType): string {
     return match(t)
       .with('starter', () => '▸')
@@ -577,6 +592,8 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     rel="stylesheet"
   />
 </svelte:head>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div
   class="mood-page min-h-screen"
@@ -729,10 +746,12 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
         {:else if visions.length > 0}
           <div class="visions-grid">
             {#each visions as v, i (i)}
-              <article
-                class="vision-card"
+              <button
+                class="vision-card cursor-pointer text-left"
                 style:--card-accent={accentColor}
                 style:animation-delay="{i * 80}ms"
+                onclick={() => openVision(v)}
+                title="Click to explore this idea"
               >
                 <div class="vision-top-line"></div>
                 <h3 class="serif-italic vision-title" style:color={textColor}>{v.title}</h3>
@@ -742,7 +761,8 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
                     <span class="mono vision-node">{node}</span>
                   {/each}
                 </div>
-              </article>
+                <span class="vision-tap-hint mono">tap to explore →</span>
+              </button>
             {/each}
           </div>
         {:else}
@@ -901,6 +921,55 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
       <p class="mono text-center text-[11px] tracking-widest text-zinc-800">
         ↑ pick a mood, an output, or both
       </p>
+    </div>
+  {/if}
+
+  <!-- ── Flipped Vision Overlay ── -->
+  {#if flippedVision}
+    <div
+      class="flip-backdrop"
+      onclick={closeVision}
+      onkeydown={handleKeydown}
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+    >
+      <div
+        class="flip-card"
+        style:--card-accent={accentColor}
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={(e) => e.stopPropagation()}
+        role="presentation"
+      >
+        <div class="vision-top-line"></div>
+
+        <!-- Close -->
+        <button class="flip-close mono cursor-pointer" onclick={closeVision}>✕</button>
+
+        <h3 class="serif-italic vision-title flip-title" style:color={textColor}>
+          {flippedVision.title}
+        </h3>
+        <p class="vision-text flip-vision-text">{flippedVision.vision}</p>
+
+        <div class="flex flex-wrap gap-1 pt-2">
+          {#each flippedVision.nodes as node (node)}
+            <span class="mono vision-node">{node}</span>
+          {/each}
+        </div>
+
+        <!-- CTA buttons -->
+        <div class="flip-ctas">
+          <button class="flip-cta mono cursor-pointer" disabled>
+            <span class="flip-cta-icon">⊞</span> Scatter on board
+          </button>
+          <button class="flip-cta mono cursor-pointer" disabled>
+            <span class="flip-cta-icon">✦</span> Open in chat
+          </button>
+          <button class="flip-cta mono cursor-pointer" disabled>
+            <span class="flip-cta-icon">⎘</span> Copy idea
+          </button>
+        </div>
+      </div>
     </div>
   {/if}
 
@@ -1272,6 +1341,140 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     100% {
       background-position: -200% 0;
     }
+  }
+
+  /* ── Vision card hover & hint ── */
+  .vision-card:hover {
+    border-color: color-mix(in srgb, var(--card-accent) 30%, transparent);
+    box-shadow: 0 4px 24px color-mix(in srgb, var(--card-accent) 10%, transparent);
+    transform: translateY(-2px);
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s,
+      transform 0.15s;
+  }
+  .vision-card:hover .vision-top-line {
+    opacity: 1;
+  }
+
+  .vision-tap-hint {
+    font-size: 10px;
+    color: transparent;
+    transition: color 0.2s;
+    margin-top: 2px;
+    letter-spacing: 0.05em;
+  }
+  .vision-card:hover .vision-tap-hint {
+    color: color-mix(in srgb, var(--card-accent) 55%, transparent);
+  }
+
+  /* ── Flip overlay ── */
+  .flip-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 24px;
+    animation: fade-in 0.18s ease both;
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .flip-card {
+    position: relative;
+    background: #0e0e12;
+    border: 1px solid color-mix(in srgb, var(--card-accent) 35%, transparent);
+    border-radius: 14px;
+    padding: 28px 28px 24px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow:
+      0 0 60px color-mix(in srgb, var(--card-accent) 12%, transparent),
+      0 24px 48px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    animation: flip-in 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  @keyframes flip-in {
+    from {
+      opacity: 0;
+      transform: rotateY(-90deg) scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: rotateY(0deg) scale(1);
+    }
+  }
+
+  .flip-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-size: 12px;
+    color: #52525b;
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    transition: color 0.15s;
+    line-height: 1;
+  }
+  .flip-close:hover {
+    color: #a1a1aa;
+  }
+
+  .flip-title {
+    font-size: 1.35rem;
+    padding-right: 28px;
+  }
+
+  .flip-vision-text {
+    font-size: 0.875rem;
+    color: #71717a;
+    line-height: 1.7;
+  }
+
+  .flip-ctas {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .flip-cta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    color: #71717a;
+    font-size: 12px;
+    text-align: left;
+    transition:
+      border-color 0.15s,
+      background 0.15s,
+      color 0.15s;
+    opacity: 0.5;
+    cursor: not-allowed !important;
+  }
+
+  .flip-cta-icon {
+    opacity: 0.5;
+    font-size: 13px;
+    width: 16px;
+    text-align: center;
   }
 
   .vision-idle-prompt {
