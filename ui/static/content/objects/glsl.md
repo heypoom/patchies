@@ -31,7 +31,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
-## Presets
+## Basic Presets
 
 Enable the **GLSL Operators** preset pack for basic presets:
 
@@ -43,11 +43,6 @@ Enable the **GLSL Operators** preset pack for basic presets:
 
 The `glsl>` preset is the best starting point for building GLSL shaders
 that process video inputs.
-
-Enable the **FFT Demos** preset pack for audio-reactive examples:
-
-- `fft-freq.gl` - visualize frequency spectrum
-- `fft-waveform.gl` - visualize audio waveform
 
 ## Built-in Uniforms
 
@@ -129,6 +124,17 @@ the next run reverts to a single outlet.
 > **Note**: In MRT mode the `mainImage` signature changes — no
 > `out vec4 fragColor` parameter. Write directly to your named
 > output variables instead.
+
+## Audio Reactivity
+
+Enable the **FFT Demos** preset pack for audio-reactive examples:
+
+- `fft-freq.gl` - visualize frequency spectrum
+- `fft-waveform.gl` - visualize audio waveform
+
+See the [Audio Reactivity](/docs/audio-reactivity) guide for how to
+use waveform and time-domain audio data from [fft~](/docs/objects/fft~)
+in your shader.
 
 ## Metadata Directives
 
