@@ -38,8 +38,9 @@
     >
       Patch the world together.
     </h1>
-    <p class="mb-5 font-[Syne] text-[0.85rem] leading-[1.7] text-zinc-600">
-      Connect computational, audio and visual objects in real time - on the web.
+
+    <p class="mb-5 font-[Syne] text-[0.82rem] leading-[0.7] text-zinc-600">
+      Code-first patcher for exploring computation through audio and visual.
     </p>
 
     <!-- Tech node chips -->
