@@ -560,9 +560,13 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 
   // ── Flipped card ──────────────────────────────────────────────
   let flippedVision = $state<Vision | null>(null);
+  let flippedVisionIndex = $state(0);
 
-  function openVision(v: Vision) {
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+
+  function openVision(v: Vision, index: number) {
     flippedVision = v;
+    flippedVisionIndex = index;
   }
 
   function closeVision() {
@@ -750,7 +754,7 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
                 class="vision-card cursor-pointer text-left"
                 style:--card-accent={accentColor}
                 style:animation-delay="{i * 80}ms"
-                onclick={() => openVision(v)}
+                onclick={() => openVision(v, i)}
                 title="Click to explore this idea"
               >
                 <div class="vision-top-line"></div>
@@ -937,37 +941,52 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
       <div
         class="flip-card"
         style:--card-accent={accentColor}
+        style:--card-glow={glowColor}
         onclick={(e) => e.stopPropagation()}
         onkeydown={(e) => e.stopPropagation()}
         role="presentation"
       >
-        <div class="vision-top-line"></div>
+        <!-- Corner ornaments -->
+        <span class="fc fc-tl" aria-hidden="true"></span>
+        <span class="fc fc-tr" aria-hidden="true"></span>
+        <span class="fc fc-bl" aria-hidden="true"></span>
+        <span class="fc fc-br" aria-hidden="true"></span>
+
+        <!-- Roman numeral watermark -->
+        <span class="flip-roman mono" aria-hidden="true">{ROMAN[flippedVisionIndex] ?? 'I'}</span>
 
         <!-- Close -->
         <button class="flip-close mono cursor-pointer" onclick={closeVision}>✕</button>
 
-        <h3 class="serif-italic vision-title flip-title" style:color={textColor}>
-          {flippedVision.title}
-        </h3>
-        <p class="vision-text flip-vision-text">{flippedVision.vision}</p>
+        <!-- Accent glow -->
+        <div class="flip-glow" aria-hidden="true"></div>
 
-        <div class="flex flex-wrap gap-1 pt-2">
+        <!-- Content -->
+        <div class="flip-content">
+          <p class="flip-eyebrow mono">vision · {ROMAN[flippedVisionIndex] ?? 'I'}</p>
+          <h3 class="serif-italic flip-title" style:color={textColor}>{flippedVision.title}</h3>
+          <p class="flip-vision-text">{flippedVision.vision}</p>
+        </div>
+
+        <!-- Aspects divider -->
+        <div class="flip-divider" aria-hidden="true">
+          <span class="flip-divider-line"></span>
+          <span class="flip-divider-label mono">aspects</span>
+          <span class="flip-divider-line"></span>
+        </div>
+
+        <!-- Node chips -->
+        <div class="flip-nodes">
           {#each flippedVision.nodes as node (node)}
-            <span class="mono vision-node">{node}</span>
+            <span class="mono flip-node-chip">{node}</span>
           {/each}
         </div>
 
-        <!-- CTA buttons -->
+        <!-- CTA pill row -->
         <div class="flip-ctas">
-          <button class="flip-cta mono cursor-pointer" disabled>
-            <span class="flip-cta-icon">⊞</span> Scatter on board
-          </button>
-          <button class="flip-cta mono cursor-pointer" disabled>
-            <span class="flip-cta-icon">✦</span> Open in chat
-          </button>
-          <button class="flip-cta mono cursor-pointer" disabled>
-            <span class="flip-cta-icon">⎘</span> Copy idea
-          </button>
+          <button class="flip-cta mono cursor-not-allowed" disabled>⊞ scatter</button>
+          <button class="flip-cta mono cursor-not-allowed" disabled>✦ chat</button>
+          <button class="flip-cta mono cursor-not-allowed" disabled>⎘ copy</button>
         </div>
       </div>
     </div>
@@ -1372,14 +1391,15 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
   .flip-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(6px);
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 100;
     padding: 24px;
-    animation: fade-in 0.18s ease both;
+    animation: fade-in 0.2s ease both;
+    perspective: 1200px;
   }
   @keyframes fade-in {
     from {
@@ -1392,22 +1412,27 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 
   .flip-card {
     position: relative;
-    background: #0e0e12;
-    border: 1px solid color-mix(in srgb, var(--card-accent) 35%, transparent);
-    border-radius: 14px;
-    padding: 28px 28px 24px;
-    max-width: 440px;
-    width: 100%;
+    background: #0a0a0e;
+    /* Double-frame: outer accent border + inner inset shadow */
+    border: 1px solid color-mix(in srgb, var(--card-accent) 40%, transparent);
     box-shadow:
-      0 0 60px color-mix(in srgb, var(--card-accent) 12%, transparent),
-      0 24px 48px rgba(0, 0, 0, 0.6);
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+      0 0 80px color-mix(in srgb, var(--card-accent) 15%, transparent),
+      0 32px 64px rgba(0, 0, 0, 0.7);
+    border-radius: 12px;
+    padding: 32px 32px 24px;
+    max-width: 400px;
+    width: 100%;
     overflow: hidden;
-    animation: flip-in 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    animation: flip-in 0.38s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
   @keyframes flip-in {
     from {
       opacity: 0;
-      transform: rotateY(-90deg) scale(0.92);
+      transform: rotateY(-80deg) scale(0.9);
     }
     to {
       opacity: 1;
@@ -1415,66 +1440,168 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     }
   }
 
+  /* Corner bracket ornaments */
+  .fc {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  .fc-tl {
+    top: 10px;
+    left: 10px;
+    border-top: 1px solid var(--card-accent);
+    border-left: 1px solid var(--card-accent);
+  }
+  .fc-tr {
+    top: 10px;
+    right: 10px;
+    border-top: 1px solid var(--card-accent);
+    border-right: 1px solid var(--card-accent);
+  }
+  .fc-bl {
+    bottom: 10px;
+    left: 10px;
+    border-bottom: 1px solid var(--card-accent);
+    border-left: 1px solid var(--card-accent);
+  }
+  .fc-br {
+    bottom: 10px;
+    right: 10px;
+    border-bottom: 1px solid var(--card-accent);
+    border-right: 1px solid var(--card-accent);
+  }
+
+  /* Roman numeral watermark */
+  .flip-roman {
+    position: absolute;
+    top: 18px;
+    right: 40px;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: color-mix(in srgb, var(--card-accent) 20%, transparent);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* Accent glow behind title */
+  .flip-glow {
+    position: absolute;
+    top: -40px;
+    left: -40px;
+    right: -40px;
+    height: 220px;
+    background: radial-gradient(
+      ellipse 70% 60% at 50% 40%,
+      var(--card-glow, rgba(249, 115, 22, 0.08)),
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+
   .flip-close {
     position: absolute;
-    top: 14px;
-    right: 16px;
-    font-size: 12px;
-    color: #52525b;
+    top: 12px;
+    right: 12px;
+    font-size: 11px;
+    color: #3f3f46;
     background: none;
     border: none;
     padding: 4px 6px;
     transition: color 0.15s;
     line-height: 1;
+    z-index: 2;
   }
   .flip-close:hover {
-    color: #a1a1aa;
+    color: #71717a;
+  }
+
+  /* Content area */
+  .flip-content {
+    position: relative;
+    z-index: 1;
+    padding-bottom: 22px;
+  }
+
+  .flip-eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--card-accent) 50%, transparent);
+    margin-bottom: 12px;
   }
 
   .flip-title {
-    font-size: 1.35rem;
-    padding-right: 28px;
+    font-size: clamp(1.25rem, 3vw, 1.55rem);
+    line-height: 1.2;
+    margin-bottom: 14px;
+    padding-right: 12px;
   }
 
   .flip-vision-text {
-    font-size: 0.875rem;
-    color: #71717a;
-    line-height: 1.7;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    line-height: 1.75;
+    color: #52525b;
   }
 
-  .flip-ctas {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .flip-cta {
+  /* Aspects divider */
+  .flip-divider {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.02);
-    color: #71717a;
-    font-size: 12px;
-    text-align: left;
-    transition:
-      border-color 0.15s,
-      background 0.15s,
-      color 0.15s;
-    opacity: 0.5;
-    cursor: not-allowed !important;
+    margin-bottom: 14px;
+  }
+  .flip-divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07));
+  }
+  .flip-divider-line:first-child {
+    background: linear-gradient(270deg, transparent, rgba(255, 255, 255, 0.07));
+  }
+  .flip-divider-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #3f3f46;
   }
 
-  .flip-cta-icon {
-    opacity: 0.5;
-    font-size: 13px;
-    width: 16px;
-    text-align: center;
+  /* Node chips (accent-tinted) */
+  .flip-nodes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 22px;
+  }
+  .flip-node-chip {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid color-mix(in srgb, var(--card-accent) 22%, transparent);
+    background: color-mix(in srgb, var(--card-accent) 7%, transparent);
+    color: color-mix(in srgb, var(--card-accent) 70%, #71717a);
+  }
+
+  /* CTA pill row */
+  .flip-ctas {
+    display: flex;
+    gap: 6px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .flip-cta {
+    flex: 1;
+    padding: 7px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.02);
+    color: #3f3f46;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    opacity: 0.6;
+    transition: none;
   }
 
   .vision-idle-prompt {
