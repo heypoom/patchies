@@ -268,6 +268,7 @@
     display: flex;
     gap: 2px;
     overflow-x: auto;
+    overflow-y: hidden;
   }
 
   .modal-tab {
