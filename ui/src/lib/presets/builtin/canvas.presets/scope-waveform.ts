@@ -1,6 +1,5 @@
 export const SCOPE_WAVEFORM_JS = `setPortCount(1, 0)
 setTitle('scope.canvas')
-noDrag()
 
 await settings.define([
   { key: 'xScale', type: 'slider', label: 'X Scale', min: 0.5, max: 8, step: 0.1, default: 1 },
@@ -35,7 +34,9 @@ function sampleToY(sample, h) {
     const normalized = Math.max(0, Math.min(1, sample * yScale))
     return (1 - normalized) * h
   }
+
   const normalized = Math.max(-1, Math.min(1, sample * yScale))
+
   return ((1 - normalized) / 2) * h
 }
 
