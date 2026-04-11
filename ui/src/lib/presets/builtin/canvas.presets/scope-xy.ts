@@ -51,15 +51,6 @@ function draw() {
     ctx.fillRect(0, 0, w, h)
   }
 
-  ctx.strokeStyle = '#27272a'
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(0, h / 2)
-  ctx.lineTo(w, h / 2)
-  ctx.moveTo(w / 2, 0)
-  ctx.lineTo(w / 2, h)
-  ctx.stroke()
-
   if (!bufX || !bufY) {
     requestAnimationFrame(draw)
     return

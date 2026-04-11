@@ -55,14 +55,6 @@ function draw() {
     ctx.fillRect(0, 0, w, h)
   }
 
-  ctx.strokeStyle = '#27272a'
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  const refY = unipolar ? h - 0.5 : h / 2
-  ctx.moveTo(0, refY)
-  ctx.lineTo(w, refY)
-  ctx.stroke()
-
   if (!buffer) {
     requestAnimationFrame(draw)
     return
