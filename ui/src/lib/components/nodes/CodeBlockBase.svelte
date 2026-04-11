@@ -283,11 +283,19 @@
 
   let minContainerWidth = $derived.by(() => {
     const baseWidth = 70;
-    let inletWidth = 15;
+    const inletWidth = 15;
     const totalInlets = inletCount + videoInletCount;
 
     return baseWidth + Math.max(Math.max(totalInlets, 2), Math.max(outletCount, 2)) * inletWidth;
   });
+
+  const toggleCode = () => {
+    toggleEditor();
+
+    if (showEditor) {
+      showSettings = false;
+    }
+  };
 </script>
 
 <div class="relative flex gap-x-3">
@@ -313,12 +321,7 @@
                 {settingsSchema}
                 onConsoleToggle={handleConsoleToggle}
                 onSettingsToggle={handleSettingsToggle}
-                onCodeToggle={resolvedPrimary === 'code'
-                  ? undefined
-                  : () => {
-                      toggleEditor();
-                      if (showEditor) showSettings = false;
-                    }}
+                onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
               />
             {:else}
               <Tooltip.Root>
@@ -359,6 +362,7 @@
                   class="cursor-pointer rounded p-1 hover:bg-zinc-700"
                   onclick={() => {
                     toggleEditor();
+
                     if (showEditor) showSettings = false;
                   }}
                   aria-label="Edit code"

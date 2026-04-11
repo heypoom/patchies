@@ -19,7 +19,8 @@
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import type { ConsoleOutputEvent, PrimaryButton } from '$lib/eventbus/events';
+  import type { FBOFormat } from '$lib/rendering/types';
 
   let {
     id: nodeId,
@@ -164,18 +165,20 @@
     return max >= 0 ? max + 1 : 1;
   }
 
-  function detectFboFormat(code: string): 'rgba8' | 'rgba16f' | 'rgba32f' {
+  function detectFboFormat(code: string): FBOFormat {
     // Match // @format directive in single-line comments (don't strip comments first!)
     // Only skip directives inside block comments.
     const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
-    const m = withoutBlocks.match(/^\s*\/\/\s*@format\s+(rgba8|rgba16f|rgba32f)\s*$/m);
-    return (m?.[1] as 'rgba8' | 'rgba16f' | 'rgba32f') ?? 'rgba8';
+    const match = withoutBlocks.match(/^\s*\/\/\s*@format\s+(rgba8|rgba16f|rgba32f)\s*$/m);
+
+    return (match?.[1] as FBOFormat) ?? 'rgba8';
   }
 
-  function detectPrimaryButton(code: string): 'code' | 'settings' | 'run' {
+  function detectPrimaryButton(code: string): PrimaryButton {
     const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
-    const m = withoutBlocks.match(/^\s*\/\/\s*@primaryButton\s+(code|settings|run)\s*$/m);
-    return (m?.[1] as 'code' | 'settings' | 'run') ?? 'code';
+    const match = withoutBlocks.match(/^\s*\/\/\s*@primaryButton\s+(code|settings|run)\s*$/m);
+
+    return (match?.[1] as PrimaryButton) ?? 'code';
   }
 
   function updateShader() {
@@ -354,14 +357,14 @@
 
   {#snippet bottomHandle()}
     {#if (data.mrtCount ?? 1) > 1}
-      {#each Array(data.mrtCount ?? 1) as _, i}
+      {#each Array(data.mrtCount ?? 1) as _, index (index)}
         <StandardHandle
           port="outlet"
           type="video"
-          id={String(i)}
-          title={`Video output ${i}`}
+          id={String(index)}
+          title={`Video output ${index}`}
           total={data.mrtCount ?? 1}
-          index={i}
+          {index}
           {nodeId}
         />
       {/each}
