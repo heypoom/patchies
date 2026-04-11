@@ -2,12 +2,13 @@ export const SCOPE_WAVEFORM_JS = `setPortCount(1, 0)
 setTitle('scope.canvas')
 
 await settings.define([
-  { key: 'xScale', type: 'slider', label: 'X Scale', min: 0.5, max: 8, step: 0.1, default: 1 },
-  { key: 'yScale', type: 'slider', label: 'Y Scale', min: 0.1, max: 10, step: 0.1, default: 1 },
+  { key: 'xScale', type: 'slider', label: 'X Scale', min: 0.5, max: 5, step: 0.1, default: 1 },
+  { key: 'yScale', type: 'slider', label: 'Y Scale', min: 0.1, max: 5, step: 0.1, default: 1 },
   { key: 'plotType', type: 'select', label: 'Plot', default: 'line',
     options: ['line', 'point', 'bezier'] },
   { key: 'decay', type: 'slider', label: 'Decay', min: 0.01, max: 1, step: 0.01, default: 1 },
-  { key: 'unipolar', type: 'boolean', label: 'Unipolar', default: false }
+  { key: 'unipolar', type: 'boolean', label: 'Unipolar', default: false },
+  { key: 'lineWidth', type: 'slider', label: 'Line Width', min: 1, max: 20, step: 1, default: 6 }
 ])
 
 let xScale = settings.get('xScale')
@@ -15,6 +16,7 @@ let yScale = settings.get('yScale')
 let plotType = settings.get('plotType')
 let decay = settings.get('decay')
 let unipolar = settings.get('unipolar')
+let lineWidth = settings.get('lineWidth')
 let buffer = null
 
 settings.onChange((_, __, all) => {
@@ -23,6 +25,7 @@ settings.onChange((_, __, all) => {
   plotType = all.plotType
   decay = all.decay
   unipolar = all.unipolar
+  lineWidth = all.lineWidth
 })
 
 recv(m => {
@@ -72,7 +75,7 @@ function draw() {
   ctx.fillStyle = '#22c55e'
 
   if (plotType === 'line') {
-    ctx.lineWidth = 1.5
+    ctx.lineWidth = lineWidth
     ctx.beginPath()
     let x = 0
     for (let i = 0; i < samplesToShow; i++) {
@@ -83,7 +86,7 @@ function draw() {
     }
     ctx.stroke()
   } else if (plotType === 'point') {
-    const radius = Math.max(1, Math.min(2, sliceWidth * 0.4))
+    const radius = lineWidth
     let x = 0
     for (let i = 0; i < samplesToShow; i++) {
       const y = sampleToY(buffer[i], h)
@@ -91,7 +94,7 @@ function draw() {
       x += sliceWidth
     }
   } else if (plotType === 'bezier') {
-    ctx.lineWidth = 1.5
+    ctx.lineWidth = lineWidth
     ctx.beginPath()
     if (samplesToShow >= 2) {
       const y0 = sampleToY(buffer[0], h)

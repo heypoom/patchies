@@ -2,17 +2,19 @@ export const SCOPE_XY_JS = `setPortCount(1, 0)
 setTitle('scope-xy.canvas')
 
 await settings.define([
-  { key: 'xScale', type: 'slider', label: 'X Scale', min: 0.1, max: 10, step: 0.1, default: 1 },
-  { key: 'yScale', type: 'slider', label: 'Y Scale', min: 0.1, max: 10, step: 0.1, default: 1 },
+  { key: 'xScale', type: 'slider', label: 'X Scale', min: 0.1, max: 5, step: 0.1, default: 1 },
+  { key: 'yScale', type: 'slider', label: 'Y Scale', min: 0.1, max: 5, step: 0.1, default: 1 },
   { key: 'plotType', type: 'select', label: 'Plot', default: 'line',
     options: ['line', 'point', 'bezier'] },
-  { key: 'decay', type: 'slider', label: 'Decay', min: 0.01, max: 1, step: 0.01, default: 1 }
+  { key: 'decay', type: 'slider', label: 'Decay', min: 0.01, max: 1, step: 0.01, default: 1 },
+  { key: 'lineWidth', type: 'slider', label: 'Line Width', min: 1, max: 20, step: 1, default: 6 }
 ])
 
 let xScale = settings.get('xScale')
 let yScale = settings.get('yScale')
 let plotType = settings.get('plotType')
 let decay = settings.get('decay')
+let lineWidth = settings.get('lineWidth')
 let bufX = null
 let bufY = null
 
@@ -21,6 +23,7 @@ settings.onChange((_, __, all) => {
   yScale = all.yScale
   plotType = all.plotType
   decay = all.decay
+  lineWidth = all.lineWidth
 })
 
 recv(m => {
@@ -68,7 +71,7 @@ function draw() {
   ctx.fillStyle = '#22c55e'
 
   if (plotType === 'line') {
-    ctx.lineWidth = 1.5
+    ctx.lineWidth = lineWidth
     ctx.beginPath()
     for (let i = 0; i < samplesToShow; i++) {
       const [cx, cy] = xyToCanvas(bufX[i], bufY[i], w, h)
@@ -77,13 +80,13 @@ function draw() {
     }
     ctx.stroke()
   } else if (plotType === 'point') {
-    const radius = 1.5
+    const radius = lineWidth
     for (let i = 0; i < samplesToShow; i++) {
       const [cx, cy] = xyToCanvas(bufX[i], bufY[i], w, h)
       ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2)
     }
   } else if (plotType === 'bezier') {
-    ctx.lineWidth = 1.5
+    ctx.lineWidth = lineWidth
     ctx.beginPath()
     if (samplesToShow >= 2) {
       const [x0, y0] = xyToCanvas(bufX[0], bufY[0], w, h)
