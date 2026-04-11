@@ -233,7 +233,7 @@ The scatter node outputs a point cloud (topology: `'points'`, with `position` + 
 
 ## Staged Approach
 
-### Stage 1: Texture-Encoded Geometry (builds on specs 105+106)
+### Stage 1: Texture-Encoded Geometry (builds on specs 111+112)
 
 Encode geometry as float textures — position, normal, UV maps. No new wire type needed. A GLSL or SwissGL node outputs float32 textures (spec 112) via MRT (spec 111), and a downstream Three.js node reads them as vertex data.
 
