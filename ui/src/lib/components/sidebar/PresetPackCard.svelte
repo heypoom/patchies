@@ -236,6 +236,8 @@
     font-family: 'IBM Plex Mono', monospace;
     font-size: 9px;
     color: #3f3f46;
+    width: 18px;
+    text-align: right;
     flex-shrink: 0;
   }
 

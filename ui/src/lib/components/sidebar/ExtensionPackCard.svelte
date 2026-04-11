@@ -198,8 +198,9 @@
     font-family: 'IBM Plex Mono', monospace;
     font-size: 9px;
     color: #3f3f46;
-    min-width: 16px;
+    width: 18px;
     text-align: right;
+    flex-shrink: 0;
   }
 
   .pack-toggle {
