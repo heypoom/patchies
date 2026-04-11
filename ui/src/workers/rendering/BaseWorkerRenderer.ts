@@ -1,6 +1,7 @@
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
+import type { PrimaryButton } from '$lib/eventbus/events';
 import type { Message } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
@@ -179,6 +180,14 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
     });
   }
 
+  setPrimaryButton(primaryButton: PrimaryButton) {
+    self.postMessage({
+      type: 'setPrimaryButton',
+      nodeId: this.config.nodeId,
+      primaryButton
+    });
+  }
+
   // ── Mouse ──
 
   createMouseObject() {
@@ -257,6 +266,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
       noWheel: () => this.setInteraction('wheel', false),
       noInteract: () => this.setInteraction('interact', false),
       noOutput: () => this.setVideoOutputEnabled(false),
+      setPrimaryButton: this.setPrimaryButton.bind(this),
       clock: this.renderer.createWorkerClock(),
       settings: this.settingsProxy!.settings
     };

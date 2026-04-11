@@ -1,5 +1,14 @@
 <script lang="ts">
-  import { Code, Loader, Package, Pause, Play, Terminal, X } from '@lucide/svelte/icons';
+  import {
+    Code,
+    Loader,
+    Package,
+    Pause,
+    Play,
+    Settings as SettingsIcon,
+    Terminal,
+    X
+  } from '@lucide/svelte/icons';
   import CodeBlockOverflowMenu from './CodeBlockOverflowMenu.svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -7,7 +16,11 @@
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import type {
+    ConsoleOutputEvent,
+    NodePrimaryButtonUpdateEvent,
+    PrimaryButton
+  } from '$lib/eventbus/events';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
@@ -67,6 +80,7 @@
       executeCode?: number;
       consoleHeight?: number;
       consoleWidth?: number;
+      primaryButton?: PrimaryButton;
     };
     selected: boolean;
     onExecute: () => Promise<void>;
@@ -98,6 +112,27 @@
   let contentWidth = $state(100);
   let isFlashing = $state(false);
 
+  // Which button is rendered as the primary (rightmost) action.
+  // Source of truth is node.data.primaryButton — derived reactively so undo/redo
+  // and external mutations of node data flow through automatically.
+  // Set via setPrimaryButton('settings'|'code') from user code. 'run' is not
+  // a valid mode here because the entire body is already a giant Run/Stop button.
+  let primaryButton = $derived.by<PrimaryButton>(() => {
+    const v = data.primaryButton;
+    if (v === 'settings' || v === 'run' || v === 'code') return v;
+    return 'code';
+  });
+
+  // Resolved primary — falls back to 'code' if 'settings' is requested but no
+  // schema exists, or if 'run' is requested (not supported in CodeBlockBase).
+  let resolvedPrimary = $derived.by<'code' | 'settings'>(() => {
+    if (primaryButton === 'settings' && settingsSchema && settingsSchema.length > 0) {
+      return 'settings';
+    }
+
+    return 'code';
+  });
+
   const code = $derived(data.code || '');
   let previousExecuteCode = $state<number | undefined>(undefined);
 
@@ -115,10 +150,27 @@
     }
   }
 
+  // Listen for setPrimaryButton() calls from user code. Writes to node data;
+  // the local `primaryButton` is $derived from data and updates automatically.
+  function handlePrimaryButtonUpdate(event: NodePrimaryButtonUpdateEvent) {
+    if (event.nodeId !== nodeId) return;
+    // Defensive whitelist (event bus is loosely typed at runtime).
+    if (
+      event.primaryButton !== 'code' &&
+      event.primaryButton !== 'settings' &&
+      event.primaryButton !== 'run'
+    )
+      return;
+    if (event.primaryButton === primaryButton) return;
+
+    updateNodeData(nodeId, { primaryButton: event.primaryButton });
+  }
+
   // Watch for executeCode timestamp changes and re-run when it changes
   $effect(() => {
     if (data.executeCode && data.executeCode !== previousExecuteCode) {
       previousExecuteCode = data.executeCode;
+
       executeCode();
     }
   });
@@ -155,6 +207,7 @@
   onMount(() => {
     // Listen for console output events to capture lineErrors
     eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+    eventBus.addEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
 
     updateContentWidth();
 
@@ -174,6 +227,7 @@
 
   onDestroy(() => {
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+    eventBus.removeEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
   });
 
   async function executeCode() {
@@ -235,11 +289,19 @@
 
   let minContainerWidth = $derived.by(() => {
     const baseWidth = 70;
-    let inletWidth = 15;
+    const inletWidth = 15;
     const totalInlets = inletCount + videoInletCount;
 
     return baseWidth + Math.max(Math.max(totalInlets, 2), Math.max(outletCount, 2)) * inletWidth;
   });
+
+  const toggleCode = () => {
+    toggleEditor();
+
+    if (showEditor) {
+      showSettings = false;
+    }
+  };
 </script>
 
 <div class="relative flex gap-x-3">
@@ -265,6 +327,7 @@
                 {settingsSchema}
                 onConsoleToggle={handleConsoleToggle}
                 onSettingsToggle={handleSettingsToggle}
+                onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
               />
             {:else}
               <Tooltip.Root>
@@ -282,21 +345,41 @@
             {/if}
           {/if}
 
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                onclick={() => {
-                  toggleEditor();
-                  if (showEditor) showSettings = false;
-                }}
-                aria-label="Edit code"
-              >
-                <Code class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>Edit code</Tooltip.Content>
-          </Tooltip.Root>
+          {#if resolvedPrimary === 'settings'}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                  onclick={handleSettingsToggle}
+                  aria-label="Settings"
+                >
+                  <SettingsIcon class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+
+              <Tooltip.Content>
+                {showSettings ? 'Hide settings' : 'Show settings'}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          {:else}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                  onclick={() => {
+                    toggleEditor();
+
+                    if (showEditor) showSettings = false;
+                  }}
+                  aria-label="Edit code"
+                >
+                  <Code class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+
+              <Tooltip.Content>Edit code</Tooltip.Content>
+            </Tooltip.Root>
+          {/if}
         </div>
       </div>
 

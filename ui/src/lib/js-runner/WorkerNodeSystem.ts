@@ -1,4 +1,5 @@
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import type { PrimaryButton } from '$lib/eventbus/events';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { MessageSystem, type MessageCallbackFn, type Message } from '$lib/messages/MessageSystem';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
@@ -78,6 +79,7 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'sendMessage'; data: unknown; options?: SendMessageOptions }
   | { type: 'setPortCount'; inletCount: number; outletCount: number }
   | { type: 'setTitle'; title: string }
+  | { type: 'setPrimaryButton'; primaryButton: PrimaryButton }
   | { type: 'setRunOnMount'; runOnMount: boolean }
   | { type: 'callbackRegistered'; callbackType: 'message' | 'interval' | 'timeout' }
   | { type: 'flash' }
@@ -256,6 +258,15 @@ export class WorkerNodeSystem {
           type: 'nodeTitleUpdate',
           nodeId,
           title: event.title
+        });
+      })
+      .with({ type: 'setPrimaryButton' }, (event) => {
+        // 'run' is meaningless on worker nodes — the whole body is already a Run/Stop button
+        const primaryButton = event.primaryButton === 'run' ? 'code' : event.primaryButton;
+        this.eventBus.dispatch({
+          type: 'nodePrimaryButtonUpdate',
+          nodeId,
+          primaryButton
         });
       })
       .with({ type: 'setRunOnMount' }, (event) => {

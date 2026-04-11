@@ -5,6 +5,7 @@
 
 import { match } from 'ts-pattern';
 import type { WorkerMessage, WorkerResponse } from '$lib/js-runner/WorkerNodeSystem';
+import type { PrimaryButton } from '$lib/eventbus/events';
 import type { Message } from '$lib/messages/MessageSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
@@ -266,6 +267,10 @@ function createWorkerContext(nodeId: string) {
     postResponse({ type: 'setTitle', nodeId, title });
   };
 
+  const setPrimaryButton = (primaryButton: PrimaryButton) => {
+    postResponse({ type: 'setPrimaryButton', nodeId, primaryButton });
+  };
+
   const setRunOnMount = (runOnMount: boolean) => {
     postResponse({ type: 'setRunOnMount', nodeId, runOnMount });
   };
@@ -418,6 +423,7 @@ function createWorkerContext(nodeId: string) {
     onCleanup,
     setPortCount,
     setTitle,
+    setPrimaryButton,
     setRunOnMount,
     requestAnimationFrame,
     fft,
@@ -535,6 +541,7 @@ async function executeCode(nodeId: string, processedCode: string) {
     'setPortCount',
     'setRunOnMount',
     'setTitle',
+    'setPrimaryButton',
     'getVfsUrl',
     'flash',
     'setVideoCount',
@@ -559,6 +566,7 @@ async function executeCode(nodeId: string, processedCode: string) {
     ctx.setPortCount,
     ctx.setRunOnMount,
     ctx.setTitle,
+    ctx.setPrimaryButton,
     ctx.getVfsUrl,
     ctx.flash,
     ctx.setVideoCount,

@@ -346,6 +346,13 @@ export class GLSystem {
           videoOutputEnabled: data.videoOutputEnabled
         });
       })
+      .with({ type: 'setPrimaryButton' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'nodePrimaryButtonUpdate',
+          nodeId: data.nodeId,
+          primaryButton: data.primaryButton
+        });
+      })
       .with({ type: 'setMouseScope' }, (data) => {
         this.eventBus.dispatch({
           type: 'nodeMouseScopeUpdate',

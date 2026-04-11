@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code, Loader, Play, Terminal, X } from '@lucide/svelte/icons';
+  import { Code, Loader, Play, Settings as SettingsIcon, Terminal, X } from '@lucide/svelte/icons';
   import { onMount, type Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';
   import * as ContextMenu from './ui/context-menu';
@@ -16,6 +16,8 @@
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { useIncludeProcessing } from '$lib/canvas/use-include-processing.svelte';
+  import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import type { NodePrimaryButtonUpdateEvent, PrimaryButton } from '$lib/eventbus/events';
 
   let previewContainer: HTMLDivElement | null = null;
   const { getNode, updateNodeData } = useSvelteFlow();
@@ -87,6 +89,20 @@
   let showSettings = $state(false);
   let previewContainerWidth = $state(0);
 
+  // Which button is rendered as the primary (rightmost) action.
+  // Set via setPrimaryButton('settings'|'run'|'code') from worker code, or
+  // via // @primaryButton directive in GLSL. Persisted in node.data.primaryButton.
+  let primaryButton = $state<PrimaryButton>('code');
+
+  // Resolved primary — falls back to 'code' if the requested mode isn't usable
+  // (e.g. 'settings' selected but no schema yet, 'run' selected but no onrun).
+  let resolvedPrimary = $derived.by<PrimaryButton>(() => {
+    if (primaryButton === 'settings' && (!settingsSchema || settingsSchema.length === 0))
+      return 'code';
+    if (primaryButton === 'run' && !onrun) return 'code';
+    return primaryButton;
+  });
+
   function measureContainerWidth() {
     if (previewContainer) {
       previewContainerWidth = previewContainer.clientWidth;
@@ -125,6 +141,25 @@
 
   let resizeObserver: ResizeObserver | null = null;
 
+  // Listen for setPrimaryButton() calls from worker code or // @primaryButton from GLSL.
+  // Note: this only reflects code-driven updates. Undo/redo of changes that touch
+  // node.data.primaryButton from elsewhere won't sync into the local state — would
+  // require threading `data` as a prop through every node component using this layout.
+  function handlePrimaryButtonUpdate(e: NodePrimaryButtonUpdateEvent) {
+    if (e.nodeId !== nodeId) return;
+    // Defensive whitelist — TypeScript guarantees this at the type level, but the
+    // event bus is loosely typed at runtime so a buggy dispatcher could send anything.
+    if (e.primaryButton !== 'code' && e.primaryButton !== 'settings' && e.primaryButton !== 'run')
+      return;
+    if (e.primaryButton === primaryButton) return;
+
+    primaryButton = e.primaryButton;
+
+    if (nodeId) {
+      updateNodeData(nodeId, { primaryButton: e.primaryButton });
+    }
+  }
+
   onMount(() => {
     // Use ResizeObserver to re-measure width when container size changes
     if (previewWidth === undefined && previewContainer) {
@@ -135,8 +170,24 @@
       resizeObserver.observe(previewContainer);
     }
 
+    // Seed initial state from persisted node data (non-reactive lookup is fine here —
+    // future updates flow through the eventBus listener below).
+    if (nodeId) {
+      const node = getNode(nodeId);
+      const persisted = node?.data?.primaryButton as PrimaryButton | undefined;
+
+      if (persisted === 'settings' || persisted === 'run' || persisted === 'code') {
+        primaryButton = persisted;
+      }
+    }
+
+    const eventBus = PatchiesEventBus.getInstance();
+    eventBus.addEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
+
     return () => {
       resizeObserver?.disconnect();
+
+      eventBus.removeEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
     };
   });
 
@@ -152,10 +203,22 @@
 
   function handleBgOutputToggle() {
     if (!nodeId) return;
+
     const next = isOutputOverride ? null : nodeId;
     overrideOutputNodeId.set(next);
+
     GLSystem.getInstance().setOverrideOutputNode(next);
   }
+
+  const toggleCode = () => {
+    showEditor = !showEditor;
+
+    if (showEditor) {
+      showSettings = false;
+    }
+
+    measureContainerWidth();
+  };
 </script>
 
 <div class="relative flex gap-x-3">
@@ -185,27 +248,62 @@
                   showSettings = !showSettings;
                   if (showSettings) showEditor = false;
                 }}
+                onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
                 onBgOutputToggle={handleBgOutputToggle}
                 onPlaybackToggle={handlePlaybackToggle}
                 onOpenHelp={handleOpenHelp}
                 {extraMenuItems}
               />
 
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  <button
-                    class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                    onclick={() => {
-                      showEditor = !showEditor;
-                      if (showEditor) showSettings = false;
-                      measureContainerWidth();
-                    }}
+              {#if resolvedPrimary === 'code'}
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <button
+                      class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                      aria-label="Edit code"
+                      onclick={() => {
+                        showEditor = !showEditor;
+                        if (showEditor) showSettings = false;
+                        measureContainerWidth();
+                      }}
+                    >
+                      <Code class="h-4 w-4 text-zinc-300" />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>Edit Code</Tooltip.Content>
+                </Tooltip.Root>
+              {:else if resolvedPrimary === 'settings'}
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <button
+                      class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                      aria-label={showSettings ? 'Hide settings' : 'Show settings'}
+                      onclick={() => {
+                        showSettings = !showSettings;
+                        if (showSettings) showEditor = false;
+                      }}
+                    >
+                      <SettingsIcon class="h-4 w-4 text-zinc-300" />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content
+                    >{showSettings ? 'Hide settings' : 'Show settings'}</Tooltip.Content
                   >
-                    <Code class="h-4 w-4 text-zinc-300" />
-                  </button>
-                </Tooltip.Trigger>
-                <Tooltip.Content>Edit Code</Tooltip.Content>
-              </Tooltip.Root>
+                </Tooltip.Root>
+              {:else if resolvedPrimary === 'run'}
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <button
+                      class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                      aria-label="Run code (shift+enter)"
+                      onclick={handleRun}
+                    >
+                      <Play class="h-4 w-4 text-zinc-300" />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>Run (shift+enter)</Tooltip.Content>
+                </Tooltip.Root>
+              {/if}
             </div>
           </div>
 
@@ -244,6 +342,13 @@
         showSettings = !showSettings;
         if (showSettings) showEditor = false;
       }}
+      onCodeToggle={resolvedPrimary === 'code'
+        ? undefined
+        : () => {
+            showEditor = !showEditor;
+            if (showEditor) showSettings = false;
+            measureContainerWidth();
+          }}
       onBgOutputToggle={handleBgOutputToggle}
       onPlaybackToggle={handlePlaybackToggle}
       onOpenHelp={handleOpenHelp}
