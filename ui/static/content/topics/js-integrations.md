@@ -112,6 +112,29 @@ pauseObject('p5-1');
 unpauseObject('p5-1');
 ```
 
+## Primary Button
+
+Each visual object has a primary button next to its overflow menu; by default it's the `<code>` icon.
+
+For code-stable patches, you might prefer to surface the settings panel or a re-run button instead. Call `setPrimaryButton()` from your object's own code:
+
+```javascript
+setPrimaryButton('settings'); // gear icon — opens the settings panel
+setPrimaryButton('run');      // play icon — re-runs the code
+setPrimaryButton('code');     // default — opens the code editor
+```
+
+The displaced button moves into the overflow menu, so it's still one click away. The choice is saved with the patch.
+
+For `glsl` shaders, use the comment directive instead:
+
+```glsl
+// @primaryButton settings
+// @param speed slider 0..1 = 0.5
+```
+
+See [Object Settings](/docs/object-settings) for how to set up the settings panel.
+
 ## Float Texture Format
 
 Visual objects (`hydra`, `canvas`, `three`, `regl`, `swgl`, `textmode`) output 8-bit RGBA textures by default, clamping values to 0–1. Call `setTextureFormat()` to switch to float precision:

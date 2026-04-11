@@ -345,6 +345,20 @@ clock.every('4:0:0', () => {
 });
 ```
 
+## Make Settings the Primary Button
+
+Once you've defined a settings panel, the gear icon lives in the overflow menu by default — `<code>` is what sits in the rightmost slot.
+
+For code-stable patches where you mostly reach for the sliders and rarely the editor, swap them with `setPrimaryButton('settings')`.
+
+After this runs, the gear icon becomes the primary action and `Edit code` moves into the overflow menu. See [JS Integrations](/docs/js-integrations) for the full `setPrimaryButton()` reference.
+
+For `glsl`, use the comment directive instead:
+
+```glsl
+// @primaryButton settings
+```
+
 ## Notes
 
 - `define()` must be called at the **top level** of your code (not inside a callback or loop). Re-running the code resets the schema.
