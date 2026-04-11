@@ -343,7 +343,10 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
 
   /** Clean up JSRunner context. Subclasses should call super.destroy(). */
   destroy() {
-    this.renderer.unregisterSettingsProxy(this.config.nodeId);
+    if (this.settingsProxy) {
+      this.renderer.unregisterSettingsProxy(this.config.nodeId, this.settingsProxy);
+    }
+
     this.renderer.jsRunner.destroy(this.config.nodeId);
   }
 }

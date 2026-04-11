@@ -1704,8 +1704,15 @@ export class FBORenderer {
     this.settingsProxiesByNode.set(nodeId, proxy);
   }
 
-  unregisterSettingsProxy(nodeId: string) {
-    this.settingsProxiesByNode.delete(nodeId);
+  /**
+   * Only removes the registry entry if it still points to the given proxy.
+   * Prevents the deferred Hydra cleanup from clobbering a freshly-registered
+   * proxy belonging to the new renderer instance for the same nodeId.
+   */
+  unregisterSettingsProxy(nodeId: string, proxy: WorkerSettingsProxy) {
+    if (this.settingsProxiesByNode.get(nodeId) === proxy) {
+      this.settingsProxiesByNode.delete(nodeId);
+    }
   }
 
   private getSettingsProxy(nodeId: string): WorkerSettingsProxy | null {
