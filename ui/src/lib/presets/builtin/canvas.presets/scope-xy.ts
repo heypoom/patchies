@@ -1,5 +1,6 @@
 export const SCOPE_XY_JS = `setPortCount(1, 0)
 setTitle('scope-xy.canvas')
+setPrimaryButton('settings')
 
 await settings.define([
   { key: 'xScale', type: 'slider', label: 'X Scale', min: 0.1, max: 5, step: 0.1, default: 1 },

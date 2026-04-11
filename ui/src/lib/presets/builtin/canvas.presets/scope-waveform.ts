@@ -1,5 +1,6 @@
 export const SCOPE_WAVEFORM_JS = `setPortCount(1, 0)
 setTitle('scope.canvas')
+setPrimaryButton('settings')
 
 await settings.define([
   { key: 'xScale', type: 'slider', label: 'X Scale', min: 0.5, max: 5, step: 0.1, default: 1 },
