@@ -147,7 +147,9 @@
   function handlePrimaryButtonUpdate(event: NodePrimaryButtonUpdateEvent) {
     if (event.nodeId !== nodeId) return;
     if (event.primaryButton === primaryButton) return;
+
     primaryButton = event.primaryButton;
+
     updateNodeData(nodeId, { primaryButton: event.primaryButton });
   }
 
@@ -155,6 +157,7 @@
   $effect(() => {
     if (data.executeCode && data.executeCode !== previousExecuteCode) {
       previousExecuteCode = data.executeCode;
+
       executeCode();
     }
   });
