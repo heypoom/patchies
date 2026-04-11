@@ -204,6 +204,13 @@
               nodeId: id,
               paused: false
             }),
+          setPrimaryButton: (primaryButton: 'code' | 'settings' | 'run') => {
+            PatchiesEventBus.getInstance().dispatch({
+              type: 'nodePrimaryButtonUpdate',
+              nodeId,
+              primaryButton
+            });
+          },
           settings: settingsAPI
         },
         onSchedulerCallbackRegistered: () => {

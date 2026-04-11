@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     CircleHelp,
+    Code,
     Eye,
     EyeOff,
     Ellipsis,
@@ -36,6 +37,7 @@
     onPreviewToggle,
     previewVisible = true,
     onSettingsToggle,
+    onCodeToggle,
     onBgOutputToggle,
     onPlaybackToggle,
     onOpenHelp,
@@ -53,6 +55,8 @@
     onPreviewToggle?: () => void;
     previewVisible?: boolean;
     onSettingsToggle?: () => void;
+    /** Provided when code editor is NOT the primary button — adds an "Edit code" entry to the menu. */
+    onCodeToggle?: () => void;
     onBgOutputToggle?: () => void;
     onPlaybackToggle?: () => void;
     onOpenHelp: () => void;
@@ -79,6 +83,19 @@
           <Play class="h-4 w-4 text-zinc-300" />
 
           <span>Run</span>
+        </button>
+      </Popover.Close>
+    {/if}
+
+    {#if onCodeToggle}
+      <Popover.Close class="contents">
+        <button
+          class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
+          onclick={onCodeToggle}
+        >
+          <Code class="h-4 w-4 text-zinc-300" />
+
+          <span>Edit code</span>
         </button>
       </Popover.Close>
     {/if}

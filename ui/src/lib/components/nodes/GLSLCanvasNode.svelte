@@ -172,6 +172,12 @@
     return (m?.[1] as 'rgba8' | 'rgba16f' | 'rgba32f') ?? 'rgba8';
   }
 
+  function detectPrimaryButton(code: string): 'code' | 'settings' | 'run' {
+    const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
+    const m = withoutBlocks.match(/^\s*\/\/\s*@primaryButton\s+(code|settings|run)\s*$/m);
+    return (m?.[1] as 'code' | 'settings' | 'run') ?? 'code';
+  }
+
   function updateShader() {
     // Clear console on re-run
     consoleRef?.clearConsole();
@@ -199,12 +205,15 @@
 
     uniformValues = pruned;
 
+    const nextPrimaryButton = detectPrimaryButton(data.code);
+
     const nextData = {
       ...data,
       glUniformDefs: nextDefs,
       uniformValues: pruned,
       mrtCount: detectMrtCount(data.code),
       fboFormat: detectFboFormat(data.code),
+      primaryButton: nextPrimaryButton,
       _runRevision: Date.now()
     };
 
@@ -213,6 +222,13 @@
 
     updateNodeData(nodeId, nextData);
     glSystem.upsertNode(nodeId, 'glsl', nextData, { force: true }); // force rebuild even if code hasn't changed
+
+    // Notify the layout (and any other listeners) that the primary button changed
+    eventBus.dispatch({
+      type: 'nodePrimaryButtonUpdate',
+      nodeId,
+      primaryButton: nextPrimaryButton
+    });
 
     // Push uniform values (including @param defaults) to the GL system
     for (const [name, value] of Object.entries(pruned)) {

@@ -78,6 +78,7 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'sendMessage'; data: unknown; options?: SendMessageOptions }
   | { type: 'setPortCount'; inletCount: number; outletCount: number }
   | { type: 'setTitle'; title: string }
+  | { type: 'setPrimaryButton'; primaryButton: 'code' | 'settings' | 'run' }
   | { type: 'setRunOnMount'; runOnMount: boolean }
   | { type: 'callbackRegistered'; callbackType: 'message' | 'interval' | 'timeout' }
   | { type: 'flash' }
@@ -256,6 +257,13 @@ export class WorkerNodeSystem {
           type: 'nodeTitleUpdate',
           nodeId,
           title: event.title
+        });
+      })
+      .with({ type: 'setPrimaryButton' }, (event) => {
+        this.eventBus.dispatch({
+          type: 'nodePrimaryButtonUpdate',
+          nodeId,
+          primaryButton: event.primaryButton
         });
       })
       .with({ type: 'setRunOnMount' }, (event) => {

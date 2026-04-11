@@ -199,6 +199,7 @@ export type RenderWorkerMessage =
   | { type: 'setHidePorts'; nodeId: string; hidePorts: boolean }
   | { type: 'setDragEnabled'; nodeId: string; dragEnabled: boolean }
   | { type: 'setVideoOutputEnabled'; nodeId: string; videoOutputEnabled: boolean }
+  | { type: 'setPrimaryButton'; nodeId: string; primaryButton: 'code' | 'settings' | 'run' }
   | { type: 'setMouseScope'; nodeId: string; scope: MouseScope }
   | {
       type: 'setInteraction';

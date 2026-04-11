@@ -118,6 +118,13 @@ const patchiesAPICompletions: Completion[] = [
     info: 'Set output FBO texture format. Use rgba32f for unclamped float data (GPGPU, HDR).',
     apply: "setTextureFormat('rgba32f')"
   },
+  {
+    label: 'setPrimaryButton',
+    type: 'function',
+    detail: "('code' | 'settings' | 'run') => void",
+    info: 'Choose which button is shown as the primary action next to the overflow menu. Useful for code-stable nodes where settings or run is the action you reach for most.',
+    apply: "setPrimaryButton('settings')"
+  },
 
   // Timing Functions
   {
@@ -344,6 +351,7 @@ const topLevelOnlyFunctions = new Set([
   'setKeepAlive',
   'setMouseScope',
   'setPortCount',
+  'setPrimaryButton',
   'setRunOnMount',
   'setTextureFormat',
   'setVideoCount'
@@ -461,6 +469,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three.dom'
   ],
   setTextureFormat: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
+  setPrimaryButton: ['js', 'worker', 'p5', 'hydra', 'canvas', 'regl', 'swgl', 'textmode', 'three'],
   setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
   getTexture: ['hydra', 'regl', 'swgl', 'three'],
   onVideoFrame: ['worker'],

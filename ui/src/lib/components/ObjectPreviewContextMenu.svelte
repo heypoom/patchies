@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     CircleHelp,
+    Code,
     Eye,
     EyeOff,
     Monitor,
@@ -27,6 +28,7 @@
     settingsSchema,
     showSettings,
     onSettingsToggle,
+    onCodeToggle,
     onBgOutputToggle,
     onPlaybackToggle,
     onOpenHelp,
@@ -44,6 +46,8 @@
     settingsSchema?: SettingsSchema;
     showSettings: boolean;
     onSettingsToggle: () => void;
+    /** Provided when code editor is NOT the primary button — adds an "Edit code" entry. */
+    onCodeToggle?: () => void;
     onBgOutputToggle: () => void;
     onPlaybackToggle: () => void;
     onOpenHelp: () => void;
@@ -56,6 +60,13 @@
     <ContextMenu.Item onclick={onrun}>
       <Play class="mr-2 h-4 w-4" />
       Run
+    </ContextMenu.Item>
+  {/if}
+
+  {#if onCodeToggle}
+    <ContextMenu.Item onclick={onCodeToggle}>
+      <Code class="mr-2 h-4 w-4" />
+      Edit code
     </ContextMenu.Item>
   {/if}
 

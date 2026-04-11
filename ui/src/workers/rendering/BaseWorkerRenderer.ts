@@ -179,6 +179,14 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
     });
   }
 
+  setPrimaryButton(primaryButton: 'code' | 'settings' | 'run') {
+    self.postMessage({
+      type: 'setPrimaryButton',
+      nodeId: this.config.nodeId,
+      primaryButton
+    });
+  }
+
   // ── Mouse ──
 
   createMouseObject() {
@@ -257,6 +265,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
       noWheel: () => this.setInteraction('wheel', false),
       noInteract: () => this.setInteraction('interact', false),
       noOutput: () => this.setVideoOutputEnabled(false),
+      setPrimaryButton: this.setPrimaryButton.bind(this),
       clock: this.renderer.createWorkerClock(),
       settings: this.settingsProxy!.settings
     };

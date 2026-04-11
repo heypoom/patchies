@@ -12,6 +12,7 @@ export type PatchiesEvent =
   | NodeInteractionUpdateEvent
   | NodeVideoOutputEnabledUpdateEvent
   | NodeMouseScopeUpdateEvent
+  | NodePrimaryButtonUpdateEvent
   | NodeReplaceEvent
   | IframePostMessageEvent
   | FileRelinkedEvent
@@ -121,6 +122,14 @@ export interface NodeMouseScopeUpdateEvent {
   type: 'nodeMouseScopeUpdate';
   nodeId: string;
   scope: 'global' | 'local';
+}
+
+export type PrimaryButton = 'code' | 'settings' | 'run';
+
+export interface NodePrimaryButtonUpdateEvent {
+  type: 'nodePrimaryButtonUpdate';
+  nodeId: string;
+  primaryButton: PrimaryButton;
 }
 
 export interface NodeReplaceEvent {

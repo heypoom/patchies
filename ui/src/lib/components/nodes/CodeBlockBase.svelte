@@ -1,5 +1,14 @@
 <script lang="ts">
-  import { Code, Loader, Package, Pause, Play, Terminal, X } from '@lucide/svelte/icons';
+  import {
+    Code,
+    Loader,
+    Package,
+    Pause,
+    Play,
+    Settings as SettingsIcon,
+    Terminal,
+    X
+  } from '@lucide/svelte/icons';
   import CodeBlockOverflowMenu from './CodeBlockOverflowMenu.svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -7,7 +16,11 @@
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import type {
+    ConsoleOutputEvent,
+    NodePrimaryButtonUpdateEvent,
+    PrimaryButton
+  } from '$lib/eventbus/events';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
@@ -98,6 +111,21 @@
   let contentWidth = $state(100);
   let isFlashing = $state(false);
 
+  // Which button is rendered as the primary (rightmost) action.
+  // Set via setPrimaryButton('settings'|'code') from user code. 'run' is not
+  // a valid mode here because the entire body is already a giant Run/Stop button.
+  let primaryButton = $state<PrimaryButton>('code');
+
+  // Resolved primary — falls back to 'code' if 'settings' is requested but no
+  // schema exists, or if 'run' is requested (not supported in CodeBlockBase).
+  let resolvedPrimary = $derived.by<'code' | 'settings'>(() => {
+    if (primaryButton === 'settings' && settingsSchema && settingsSchema.length > 0) {
+      return 'settings';
+    }
+
+    return 'code';
+  });
+
   const code = $derived(data.code || '');
   let previousExecuteCode = $state<number | undefined>(undefined);
 
@@ -113,6 +141,14 @@
     if (event.messageType === 'error' && event.lineErrors) {
       lineErrors = event.lineErrors;
     }
+  }
+
+  // Listen for setPrimaryButton() calls from user code
+  function handlePrimaryButtonUpdate(event: NodePrimaryButtonUpdateEvent) {
+    if (event.nodeId !== nodeId) return;
+    if (event.primaryButton === primaryButton) return;
+    primaryButton = event.primaryButton;
+    updateNodeData(nodeId, { primaryButton: event.primaryButton });
   }
 
   // Watch for executeCode timestamp changes and re-run when it changes
@@ -155,6 +191,14 @@
   onMount(() => {
     // Listen for console output events to capture lineErrors
     eventBus.addEventListener('consoleOutput', handleConsoleOutput);
+    eventBus.addEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
+
+    // Seed initial state from persisted node data
+    const persisted = (data as { primaryButton?: PrimaryButton }).primaryButton;
+
+    if (persisted === 'settings' || persisted === 'code' || persisted === 'run') {
+      primaryButton = persisted;
+    }
 
     updateContentWidth();
 
@@ -174,6 +218,7 @@
 
   onDestroy(() => {
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+    eventBus.removeEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
   });
 
   async function executeCode() {
@@ -265,6 +310,12 @@
                 {settingsSchema}
                 onConsoleToggle={handleConsoleToggle}
                 onSettingsToggle={handleSettingsToggle}
+                onCodeToggle={resolvedPrimary === 'code'
+                  ? undefined
+                  : () => {
+                      toggleEditor();
+                      if (showEditor) showSettings = false;
+                    }}
               />
             {:else}
               <Tooltip.Root>
@@ -282,21 +333,40 @@
             {/if}
           {/if}
 
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              <button
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                onclick={() => {
-                  toggleEditor();
-                  if (showEditor) showSettings = false;
-                }}
-                aria-label="Edit code"
-              >
-                <Code class="h-4 w-4 text-zinc-300" />
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content>Edit code</Tooltip.Content>
-          </Tooltip.Root>
+          {#if resolvedPrimary === 'settings'}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                  onclick={handleSettingsToggle}
+                  aria-label="Settings"
+                >
+                  <SettingsIcon class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+
+              <Tooltip.Content>
+                {showSettings ? 'Hide settings' : 'Show settings'}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          {:else}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                  onclick={() => {
+                    toggleEditor();
+                    if (showEditor) showSettings = false;
+                  }}
+                  aria-label="Edit code"
+                >
+                  <Code class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+
+              <Tooltip.Content>Edit code</Tooltip.Content>
+            </Tooltip.Root>
+          {/if}
         </div>
       </div>
 
