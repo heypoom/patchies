@@ -124,7 +124,7 @@ setPrimaryButton('run');      // play icon — re-runs the code
 setPrimaryButton('code');     // default — opens the code editor
 ```
 
-The displaced button moves into the overflow menu, so it's still one click away. The choice is saved with the patch.
+The displaced button moves into the overflow menu, so it's still one click away. The choice is saved with the patch. See [Object Settings](/docs/object-settings) for how to set up the settings panel.
 
 For `glsl` shaders, use the comment directive instead:
 
@@ -132,8 +132,6 @@ For `glsl` shaders, use the comment directive instead:
 // @primaryButton settings
 // @param speed slider 0..1 = 0.5
 ```
-
-See [Object Settings](/docs/object-settings) for how to set up the settings panel.
 
 ## Float Texture Format
 
