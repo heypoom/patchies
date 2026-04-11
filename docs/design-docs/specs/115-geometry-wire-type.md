@@ -19,6 +19,7 @@ Consumer:  geometry inlet receives message → auto-caches it
 ```
 
 This means:
+
 - **No new evaluation model** — messages handle delivery, inlets handle persistence
 - **No GeometryStore** — the inlet itself is the cache
 - **Any node can produce geometry** — anything that can `send()` can output geometry
@@ -37,18 +38,18 @@ This gives us pull-like semantics (read when needed) with push-based transport (
 
 ```typescript
 interface GeometryAttribute {
-  data: Float32Array | Int32Array | Uint32Array;
-  itemSize: number;          // 1=scalar, 2=vec2, 3=vec3, 4=vec4
-  domain: 'point' | 'face';  // what each element corresponds to
+  data: Float32Array | Int32Array | Uint32Array
+  itemSize: number // 1=scalar, 2=vec2, 3=vec3, 4=vec4
+  domain: 'point' | 'face' // what each element corresponds to
 }
 
 interface GeometryData {
-  type: 'geometry';            // message type tag
-  vertexCount: number;
-  indices?: Uint32Array;
-  topology: 'triangles' | 'lines' | 'points';
-  attributes: Record<string, GeometryAttribute>;
-  bounds?: { min: [number, number, number]; max: [number, number, number] };
+  type: 'geometry' // message type tag
+  vertexCount: number
+  indices?: Uint32Array
+  topology: 'triangles' | 'lines' | 'points'
+  attributes: Record<string, GeometryAttribute>
+  bounds?: {min: [number, number, number]; max: [number, number, number]}
 }
 ```
 
@@ -56,15 +57,15 @@ interface GeometryData {
 
 **Convention**: Standard attribute names for interop:
 
-| Name | Item Size | Domain | Description |
-|------|-----------|--------|-------------|
-| `position` | 3 | point | Vertex positions (required) |
-| `normal` | 3 | point | Vertex normals |
-| `uv` | 2 | point | Texture coordinates |
-| `color` | 4 | point | Vertex colors (RGBA) |
-| `velocity` | 3 | point | Per-vertex velocity (particles/sim) |
-| `age` | 1 | point | Per-vertex age (particles) |
-| `selection` | 1 | point | Boolean mask (0 or 1) for selective operations |
+| Name        | Item Size | Domain | Description                                    |
+| ----------- | --------- | ------ | ---------------------------------------------- |
+| `position`  | 3         | point  | Vertex positions (required)                    |
+| `normal`    | 3         | point  | Vertex normals                                 |
+| `uv`        | 2         | point  | Texture coordinates                            |
+| `color`     | 4         | point  | Vertex colors (RGBA)                           |
+| `velocity`  | 3         | point  | Per-vertex velocity (particles/sim)            |
+| `age`       | 1         | point  | Per-vertex age (particles)                     |
+| `selection` | 1         | point  | Boolean mask (0 or 1) for selective operations |
 
 Nodes that produce/consume geometry should use these names when applicable so they interoperate. Custom attributes use any other name.
 
@@ -72,18 +73,20 @@ Nodes that produce/consume geometry should use these names when applicable so th
 
 ```typescript
 interface InstancedGeometryData {
-  type: 'geometry';
-  kind: 'instanced';
-  base: Omit<GeometryData, 'type'>;     // the mesh to instance
-  count: number;                          // number of instances
-  instanceAttributes: Record<string, GeometryAttribute>;  // per-instance data
+  type: 'geometry'
+  kind: 'instanced'
+  base: Omit<GeometryData, 'type'> // the mesh to instance
+  count: number // number of instances
+  instanceAttributes: Record<string, GeometryAttribute> // per-instance data
 }
 ```
 
 Required instance attributes:
+
 - `position` (vec3) — instance positions
 
 Optional:
+
 - `rotation` (vec4, quaternion) — per-instance rotation
 - `scale` (vec3 or scalar) — per-instance scale
 - Any custom attribute (color, age, etc.)
@@ -91,7 +94,7 @@ Optional:
 **Union type**:
 
 ```typescript
-type GeometryPayload = GeometryData | InstancedGeometryData;
+type GeometryPayload = GeometryData | InstancedGeometryData
 ```
 
 Consumer nodes check `kind` to determine how to render. `GeometryData` has implicit `kind: 'mesh'`.
@@ -103,6 +106,7 @@ Add `geometry` as a handle type alongside `video`, `audio`, `message`.
 **Handle colors**: Green (video=orange, audio=blue, message=gray, geometry=green)
 
 The handle type provides:
+
 - **Visual distinction** — green wires say "this is geometry" at a glance
 - **Connection validation** — prevent wiring geometry into a node that expects a string or bang
 - **Auto-caching behavior** — geometry inlets store the last received geometry message; regular message inlets don't
@@ -117,19 +121,19 @@ Under the hood, geometry edges use the message transport. The handle type is met
 
 ```javascript
 // Build a displaced sphere
-const count = 1000;
-const positions = new Float32Array(count * 3);
-const normals = new Float32Array(count * 3);
-const velocities = new Float32Array(count * 3);
+const count = 1000
+const positions = new Float32Array(count * 3)
+const normals = new Float32Array(count * 3)
+const velocities = new Float32Array(count * 3)
 
 for (let i = 0; i < count; i++) {
-  const theta = Math.acos(2 * Math.random() - 1);
-  const phi = Math.random() * Math.PI * 2;
-  const r = 1 + noise3D(theta, phi, time) * 0.3;
+  const theta = Math.acos(2 * Math.random() - 1)
+  const phi = Math.random() * Math.PI * 2
+  const r = 1 + noise3D(theta, phi, time) * 0.3
 
-  positions[i * 3]     = r * Math.sin(theta) * Math.cos(phi);
-  positions[i * 3 + 1] = r * Math.sin(theta) * Math.sin(phi);
-  positions[i * 3 + 2] = r * Math.cos(theta);
+  positions[i * 3] = r * Math.sin(theta) * Math.cos(phi)
+  positions[i * 3 + 1] = r * Math.sin(theta) * Math.sin(phi)
+  positions[i * 3 + 2] = r * Math.cos(theta)
   // ... normals, velocities
 }
 
@@ -138,11 +142,11 @@ send({
   vertexCount: count,
   topology: 'points',
   attributes: {
-    position: { data: positions, itemSize: 3, domain: 'point' },
-    normal:   { data: normals,   itemSize: 3, domain: 'point' },
-    velocity: { data: velocities, itemSize: 3, domain: 'point' },
-  }
-});
+    position: {data: positions, itemSize: 3, domain: 'point'},
+    normal: {data: normals, itemSize: 3, domain: 'point'},
+    velocity: {data: velocities, itemSize: 3, domain: 'point'},
+  },
+})
 ```
 
 ### From a `geo.*` preset
@@ -156,28 +160,28 @@ A transform node has both a geometry inlet and a geometry outlet. It reads from 
 ```javascript
 // geo.transform node (or a js node doing the same thing)
 onMessage((msg) => {
-  if (msg.type !== 'geometry') return;
+  if (msg.type !== 'geometry') return
 
-  const pos = msg.attributes.position.data;
-  const out = new Float32Array(pos.length);
+  const pos = msg.attributes.position.data
+  const out = new Float32Array(pos.length)
 
   for (let i = 0; i < msg.vertexCount; i++) {
     // displace along normals using noise
-    const n = msg.attributes.normal.data;
-    const d = noise3D(pos[i*3], pos[i*3+1], pos[i*3+2]) * 0.2;
-    out[i*3]     = pos[i*3]     + n[i*3]     * d;
-    out[i*3 + 1] = pos[i*3 + 1] + n[i*3 + 1] * d;
-    out[i*3 + 2] = pos[i*3 + 2] + n[i*3 + 2] * d;
+    const n = msg.attributes.normal.data
+    const d = noise3D(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]) * 0.2
+    out[i * 3] = pos[i * 3] + n[i * 3] * d
+    out[i * 3 + 1] = pos[i * 3 + 1] + n[i * 3 + 1] * d
+    out[i * 3 + 2] = pos[i * 3 + 2] + n[i * 3 + 2] * d
   }
 
   send({
     ...msg,
     attributes: {
       ...msg.attributes,
-      position: { data: out, itemSize: 3, domain: 'point' },
-    }
-  });
-});
+      position: {data: out, itemSize: 3, domain: 'point'},
+    },
+  })
+})
 ```
 
 ## Consuming Geometry
@@ -188,14 +192,15 @@ Render nodes (Three.js, REGL, etc.) read from the geometry inlet cache:
 
 ```javascript
 // In a Three.js node
-const geo = getGeometry(0);  // returns THREE.BufferGeometry from cached inlet data
+const geo = getGeometry(0) // returns THREE.BufferGeometry from cached inlet data
 if (geo) {
-  const mesh = new THREE.Mesh(geo, material);
-  scene.add(mesh);
+  const mesh = new THREE.Mesh(geo, material)
+  scene.add(mesh)
 }
 ```
 
 `getGeometry(index)` reads the cached `GeometryPayload` from the inlet, converts to the renderer's native format:
+
 - **Three.js**: `THREE.BufferGeometry` (or `THREE.InstancedMesh` for instanced data)
 - **REGL**: `{ attributes, elements, instances }` for draw commands
 - **GLSL/SwissGL**: vertex buffers for custom draw calls
@@ -205,6 +210,7 @@ The conversion result is cached and only rebuilt when a new geometry message arr
 ### Transfer to render worker
 
 When a Three.js or REGL node (running in the render worker) needs geometry:
+
 1. Main thread receives geometry message at the inlet cache
 2. TypedArrays are transferred to the render worker (transferable, zero-copy)
 3. Worker builds GPU buffers from the TypedArrays
@@ -234,6 +240,7 @@ Encode geometry as float textures — position, normal, UV maps. No new wire typ
 **What it covers**: Point clouds, particle systems, displacement-driven meshes — anything where vertex count maps to pixel count.
 
 **How it works**:
+
 - Generator node outputs via MRT: position texture (rgba32f) + normal texture (rgba32f) + UV texture (rgba16f)
 - Three.js render node reads input textures, creates `DataTexture`, samples in vertex shader or builds `BufferGeometry` from pixel readback
 - Convention: texture width × height = vertex count. Row-major layout.
@@ -251,41 +258,45 @@ All geometry operators are **`js` node presets**, not dedicated node types. They
 **Common pattern for geometry operator presets:**
 
 ```javascript
-let cachedInput = null;
+let cachedInput = null
 
 onMessage((msg) => {
   if (msg.type === 'geometry') {
-    cachedInput = msg;
-    reprocess();
+    cachedInput = msg
+    reprocess()
   }
-});
+})
 
 settings.onChange(() => {
-  if (cachedInput) reprocess();
-});
+  if (cachedInput) reprocess()
+})
 
 function reprocess() {
   // transform, merge, subdivide, etc.
-  send(processedGeometry);
+  send(processedGeometry)
 }
 ```
 
 **Generators** (no geometry inlet, output only):
+
 - `geo.box`, `geo.sphere`, `geo.plane`, `geo.torus` — parameter sliders via settings API, send on mount + change
 - `geo.import` — loads .glb/.obj via VFS, sends geometry
 - Any `js`/`worker` node can also produce geometry
 
 **Transforms** (geometry in → geometry out):
+
 - `geo.transform` — translate/rotate/scale
 - `geo.merge` — concatenate multiple geometries (multiple geometry inlets)
 - `geo.subdivide` — subdivision surface (wraps a library)
 - `geo.extrude` — extrude 2D path to 3D
 
 **Instancing**:
+
 - `geo.instance` — takes base geometry + point cloud, outputs instanced geometry
 - `geo.scatter` — distributes points on a surface
 
 **Consumers**:
+
 - Three.js / REGL nodes with geometry inlets — call `getGeometry()` to read cached geometry
 
 If a specific operator later needs custom UI beyond settings sliders (e.g. a visual path editor for extrude), promote that one to a dedicated node type. Until then, presets cover everything.
@@ -295,26 +306,32 @@ If a specific operator later needs custom UI beyond settings sliders (e.g. a vis
 No dedicated render node needed. A Three.js preset ("geometry viewer" or "3D preview") handles this in ~20 lines:
 
 ```javascript
-const { Scene, PerspectiveCamera, Mesh, MeshNormalMaterial,
-        DirectionalLight, AmbientLight } = THREE;
+const {
+  Scene,
+  PerspectiveCamera,
+  Mesh,
+  MeshNormalMaterial,
+  DirectionalLight,
+  AmbientLight,
+} = THREE
 
-const scene = new Scene();
-const camera = new PerspectiveCamera(45, width / height, 0.1, 100);
-camera.position.set(0, 2, 5);
-scene.add(new DirectionalLight(0xffffff, 1.5));
-scene.add(new AmbientLight(0x404040));
+const scene = new Scene()
+const camera = new PerspectiveCamera(45, width / height, 0.1, 100)
+camera.position.set(0, 2, 5)
+scene.add(new DirectionalLight(0xffffff, 1.5))
+scene.add(new AmbientLight(0x404040))
 
-const material = new MeshNormalMaterial();
-let mesh;
+const material = new MeshNormalMaterial()
+let mesh
 
 function draw(t) {
-  const geo = getGeometry(0);
+  const geo = getGeometry(0)
   if (geo && (!mesh || mesh.geometry !== geo)) {
-    if (mesh) scene.remove(mesh);
-    mesh = new Mesh(geo, material);
-    scene.add(mesh);
+    if (mesh) scene.remove(mesh)
+    mesh = new Mesh(geo, material)
+    scene.add(mesh)
   }
-  renderer.render(scene, camera);
+  renderer.render(scene, camera)
 }
 ```
 
