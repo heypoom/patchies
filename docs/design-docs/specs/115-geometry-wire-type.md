@@ -233,19 +233,26 @@ The scatter node outputs a point cloud (topology: `'points'`, with `position` + 
 
 ## Staged Approach
 
-### Stage 1: Texture-Encoded Geometry (builds on specs 111+112)
+### Stage 1: Texture-Encoded Geometry — Convention Only (no engine work)
 
-Encode geometry as float textures — position, normal, UV maps. No new wire type needed. A GLSL or SwissGL node outputs float32 textures (spec 112) via MRT (spec 111), and a downstream Three.js node reads them as vertex data.
+Encode geometry as float textures — position, normal, UV maps. **No new wire type, no new API, no engine changes.** This stage is purely a usage convention plus a preset, made possible by primitives already shipped:
+
+- MRT (spec 111) ✅
+- Float FBOs (spec 112) ✅
+- `getTexture(n)` already exists on video inlets ✅
+
+**How a user does this today**:
+
+1. GLSL/SwissGL node outputs via MRT: position texture (rgba32f) + normal texture (rgba32f) + optional UV (rgba16f)
+2. Three.js node calls `getTexture(0)` etc. to grab the float textures from its video inlets
+3. Wrap as `THREE.DataTexture` and sample in a vertex shader, OR pixel-read into a `BufferGeometry`
+4. Convention: texture width × height = vertex count, row-major layout
 
 **What it covers**: Point clouds, particle systems, displacement-driven meshes — anything where vertex count maps to pixel count.
 
-**How it works**:
+**What's left to do for this stage**: ship a `three.particles-from-texture` preset (or similar) demonstrating the pattern, and document the width×height=vertexCount convention. No code in the engine.
 
-- Generator node outputs via MRT: position texture (rgba32f) + normal texture (rgba32f) + UV texture (rgba16f)
-- Three.js render node reads input textures, creates `DataTexture`, samples in vertex shader or builds `BufferGeometry` from pixel readback
-- Convention: texture width × height = vertex count. Row-major layout.
-
-**Limitations**: No index buffers (no shared vertices), no topology (triangles must be implicit), texture size limits cap vertex count.
+**Limitations**: No index buffers (no shared vertices), no topology (triangles must be implicit), texture size limits cap vertex count. These are why Stage 2 exists.
 
 ### Stage 2: Geometry Handle + Auto-Caching Inlets
 
@@ -350,5 +357,5 @@ Users fork the preset for more control: swap in a PBR material with `@slot` text
 
 ## Dependencies
 
-- Stage 1 requires: spec 111 (MRT), spec 112 (float FBOs)
-- Stage 2-3 are independent of the FBO pipeline
+- Stage 1: dependencies (spec 111 MRT, spec 112 float FBOs, `getTexture()`) are all shipped. Only a preset + docs remain.
+- Stage 2-3 are independent of the FBO pipeline.
