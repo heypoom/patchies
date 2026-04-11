@@ -122,7 +122,7 @@ const patchiesAPICompletions: Completion[] = [
     label: 'setPrimaryButton',
     type: 'function',
     detail: "('code' | 'settings' | 'run') => void",
-    info: 'Choose which button is shown as the primary action next to the overflow menu. Useful for code-stable nodes where settings or run is the action you reach for most.',
+    info: "Choose which button is shown as the primary action next to the overflow menu. Useful for code-stable nodes where settings or run is the action you reach for most. Note: 'run' falls back to 'code' on js/worker nodes since the entire node body is already a Run/Stop button.",
     apply: "setPrimaryButton('settings')"
   },
 

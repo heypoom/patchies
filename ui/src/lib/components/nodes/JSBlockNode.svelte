@@ -205,10 +205,12 @@
               paused: false
             }),
           setPrimaryButton: (primaryButton: 'code' | 'settings' | 'run') => {
+            // 'run' is meaningless on js nodes — the whole body is already a Run/Stop button
+            const normalized = primaryButton === 'run' ? 'code' : primaryButton;
             PatchiesEventBus.getInstance().dispatch({
               type: 'nodePrimaryButtonUpdate',
               nodeId,
-              primaryButton
+              primaryButton: normalized
             });
           },
           settings: settingsAPI

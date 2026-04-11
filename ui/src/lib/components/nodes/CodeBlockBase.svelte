@@ -80,6 +80,7 @@
       executeCode?: number;
       consoleHeight?: number;
       consoleWidth?: number;
+      primaryButton?: PrimaryButton;
     };
     selected: boolean;
     onExecute: () => Promise<void>;
@@ -112,9 +113,15 @@
   let isFlashing = $state(false);
 
   // Which button is rendered as the primary (rightmost) action.
+  // Source of truth is node.data.primaryButton — derived reactively so undo/redo
+  // and external mutations of node data flow through automatically.
   // Set via setPrimaryButton('settings'|'code') from user code. 'run' is not
   // a valid mode here because the entire body is already a giant Run/Stop button.
-  let primaryButton = $state<PrimaryButton>('code');
+  let primaryButton = $derived.by<PrimaryButton>(() => {
+    const v = data.primaryButton;
+    if (v === 'settings' || v === 'run' || v === 'code') return v;
+    return 'code';
+  });
 
   // Resolved primary — falls back to 'code' if 'settings' is requested but no
   // schema exists, or if 'run' is requested (not supported in CodeBlockBase).
@@ -143,12 +150,18 @@
     }
   }
 
-  // Listen for setPrimaryButton() calls from user code
+  // Listen for setPrimaryButton() calls from user code. Writes to node data;
+  // the local `primaryButton` is $derived from data and updates automatically.
   function handlePrimaryButtonUpdate(event: NodePrimaryButtonUpdateEvent) {
     if (event.nodeId !== nodeId) return;
+    // Defensive whitelist (event bus is loosely typed at runtime).
+    if (
+      event.primaryButton !== 'code' &&
+      event.primaryButton !== 'settings' &&
+      event.primaryButton !== 'run'
+    )
+      return;
     if (event.primaryButton === primaryButton) return;
-
-    primaryButton = event.primaryButton;
 
     updateNodeData(nodeId, { primaryButton: event.primaryButton });
   }
@@ -195,13 +208,6 @@
     // Listen for console output events to capture lineErrors
     eventBus.addEventListener('consoleOutput', handleConsoleOutput);
     eventBus.addEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
-
-    // Seed initial state from persisted node data
-    const persisted = (data as { primaryButton?: PrimaryButton }).primaryButton;
-
-    if (persisted === 'settings' || persisted === 'code' || persisted === 'run') {
-      primaryButton = persisted;
-    }
 
     updateContentWidth();
 

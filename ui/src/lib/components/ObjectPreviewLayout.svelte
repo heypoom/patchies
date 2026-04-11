@@ -141,9 +141,16 @@
 
   let resizeObserver: ResizeObserver | null = null;
 
-  // Listen for setPrimaryButton() calls from worker code or // @primaryButton from GLSL
+  // Listen for setPrimaryButton() calls from worker code or // @primaryButton from GLSL.
+  // Note: this only reflects code-driven updates. Undo/redo of changes that touch
+  // node.data.primaryButton from elsewhere won't sync into the local state — would
+  // require threading `data` as a prop through every node component using this layout.
   function handlePrimaryButtonUpdate(e: NodePrimaryButtonUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+    // Defensive whitelist — TypeScript guarantees this at the type level, but the
+    // event bus is loosely typed at runtime so a buggy dispatcher could send anything.
+    if (e.primaryButton !== 'code' && e.primaryButton !== 'settings' && e.primaryButton !== 'run')
+      return;
     if (e.primaryButton === primaryButton) return;
 
     primaryButton = e.primaryButton;
@@ -253,6 +260,7 @@
                   <Tooltip.Trigger>
                     <button
                       class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                      aria-label="Edit code"
                       onclick={() => {
                         showEditor = !showEditor;
                         if (showEditor) showSettings = false;
@@ -269,6 +277,7 @@
                   <Tooltip.Trigger>
                     <button
                       class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                      aria-label={showSettings ? 'Hide settings' : 'Show settings'}
                       onclick={() => {
                         showSettings = !showSettings;
                         if (showSettings) showEditor = false;
@@ -286,6 +295,7 @@
                   <Tooltip.Trigger>
                     <button
                       class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                      aria-label="Run code (shift+enter)"
                       onclick={handleRun}
                     >
                       <Play class="h-4 w-4 text-zinc-300" />

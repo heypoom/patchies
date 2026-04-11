@@ -1,6 +1,7 @@
 import type regl from 'regl';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
+import type { PrimaryButton } from '$lib/eventbus/events';
 import type { Message } from '$lib/messages/MessageSystem';
 import type { AudioAnalysisPayloadWithType } from '$lib/audio/AudioAnalysisSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
@@ -179,7 +180,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
     });
   }
 
-  setPrimaryButton(primaryButton: 'code' | 'settings' | 'run') {
+  setPrimaryButton(primaryButton: PrimaryButton) {
     self.postMessage({
       type: 'setPrimaryButton',
       nodeId: this.config.nodeId,

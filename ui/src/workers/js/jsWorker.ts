@@ -5,6 +5,7 @@
 
 import { match } from 'ts-pattern';
 import type { WorkerMessage, WorkerResponse } from '$lib/js-runner/WorkerNodeSystem';
+import type { PrimaryButton } from '$lib/eventbus/events';
 import type { Message } from '$lib/messages/MessageSystem';
 import { FFTAnalysis } from '$lib/audio/FFTAnalysis';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
@@ -266,7 +267,7 @@ function createWorkerContext(nodeId: string) {
     postResponse({ type: 'setTitle', nodeId, title });
   };
 
-  const setPrimaryButton = (primaryButton: 'code' | 'settings' | 'run') => {
+  const setPrimaryButton = (primaryButton: PrimaryButton) => {
     postResponse({ type: 'setPrimaryButton', nodeId, primaryButton });
   };
 

@@ -1,6 +1,7 @@
 import type regl from 'regl';
 import type { ProfilerCategory, RenderFrameStats, TimingStats } from '$lib/profiler/types';
 import type { GLUniformDef } from '../../types/uniform-config';
+import type { PrimaryButton } from '$lib/eventbus/events';
 
 export type FBOFormat = 'rgba8' | 'rgba16f' | 'rgba32f';
 
@@ -199,7 +200,7 @@ export type RenderWorkerMessage =
   | { type: 'setHidePorts'; nodeId: string; hidePorts: boolean }
   | { type: 'setDragEnabled'; nodeId: string; dragEnabled: boolean }
   | { type: 'setVideoOutputEnabled'; nodeId: string; videoOutputEnabled: boolean }
-  | { type: 'setPrimaryButton'; nodeId: string; primaryButton: 'code' | 'settings' | 'run' }
+  | { type: 'setPrimaryButton'; nodeId: string; primaryButton: PrimaryButton }
   | { type: 'setMouseScope'; nodeId: string; scope: MouseScope }
   | {
       type: 'setInteraction';
