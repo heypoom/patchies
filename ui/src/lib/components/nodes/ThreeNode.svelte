@@ -86,8 +86,8 @@
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const [outputWidth, outputHeight] = glSystem.outputSize;
-  const [previewWidth, previewHeight] = glSystem.previewSize;
+  let previewWidth = $state(glSystem.previewSize[0]);
+  let previewHeight = $state(glSystem.previewSize[1]);
 
   let messageInletCount = $derived(data.messageInletCount ?? 1);
   let messageOutletCount = $derived(data.messageOutletCount ?? 0);
@@ -220,10 +220,24 @@
 
     glSystem.upsertNode(nodeId, 'three', { code: data.code });
 
+    const handleResize = () => {
+      // Debounce slightly to read after GLSystem.setOutputSize has updated previewSize
+      setTimeout(() => {
+        previewWidth = glSystem.previewSize[0];
+        previewHeight = glSystem.previewSize[1];
+      }, 200);
+    };
+
+    window.addEventListener('resize', handleResize);
+
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
       updateThree();
     }, 50);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   });
 
   onDestroy(() => {
@@ -283,9 +297,8 @@
   nodrag={!dragEnabled}
   nopan={!panEnabled}
   nowheel={!wheelEnabled}
-  width={outputWidth}
-  height={outputHeight}
-  style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
+  width={previewWidth}
+  height={previewHeight}
   {selected}
   {editorReady}
   hasError={lineErrors !== undefined}

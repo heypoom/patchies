@@ -1573,7 +1573,9 @@ export class FBORenderer {
   async setPreviewSize(width: number, height: number) {
     this.pixelReadbackService.setPreviewSize(width, height);
 
-    await this.buildFBOs(this.renderGraph!);
+    if (this.renderGraph) {
+      await this.buildFBOs(this.renderGraph);
+    }
   }
 
   setOutputSize(width: number, height: number) {
@@ -1589,6 +1591,11 @@ export class FBORenderer {
 
     // Update pixel readback service's output size reference
     this.pixelReadbackService.setOutputSize(this.outputSize);
+
+    // Update all Three.js renderers to match the new output size
+    for (const threeRenderer of this.threeByNode.values()) {
+      threeRenderer?.resize(width, height);
+    }
 
     // Update projection map render targets to match the new output size
     for (const projmap of this.projmapByNode.values()) {

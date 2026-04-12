@@ -67,6 +67,18 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     return instance;
   }
 
+  resize(width: number, height: number) {
+    if (!this.threeWebGLRenderer || !this.THREE) return;
+
+    this.threeWebGLRenderer.setSize(width, height, false);
+
+    this.renderTarget?.dispose();
+    this.renderTarget = new this.THREE.WebGLRenderTarget(width, height, {
+      format: this.THREE.RGBAFormat,
+      type: this.THREE.UnsignedByteType
+    });
+  }
+
   renderFrame(params: RenderParams) {
     if (!this.threeWebGLRenderer || !this.renderTarget || !this.userRenderFunc) return;
 
