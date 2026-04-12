@@ -10,6 +10,7 @@ import { createKVStore } from '$lib/storage';
 import { Transport } from '$lib/transport';
 import { LookaheadClockScheduler } from '$lib/transport/ClockScheduler';
 import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
+import type { FBOFormat } from '$lib/rendering/types';
 
 export interface JSRunnerOptions {
   customConsole?: {
@@ -21,7 +22,8 @@ export interface JSRunnerOptions {
   setPortCount?: (inletCount?: number, outletCount?: number) => void;
   setRunOnMount?: (runOnMount?: boolean) => void;
   setTitle?: (title: string) => void;
-  setTextureFormat?: (format: 'rgba8' | 'rgba16f' | 'rgba32f') => void;
+  setTextureFormat?: (format: FBOFormat) => void;
+  setResolution?: (widthOrPreset: number | string, height?: number) => void;
   setHidePorts?: (hidePorts: boolean) => void;
   extraContext?: Record<string, unknown>;
 
@@ -358,6 +360,7 @@ export class JSRunner {
       setRunOnMount = () => {},
       setTitle = () => {},
       setTextureFormat = () => {},
+      setResolution = () => {},
       setHidePorts = () => {},
       extraContext = {},
       skipMessageContext = false,
@@ -401,6 +404,7 @@ export class JSRunner {
       'setRunOnMount',
       'setTitle',
       'setTextureFormat',
+      'setResolution',
       'setHidePorts',
       'getVfsUrl',
       'clock',
@@ -488,6 +492,7 @@ export class JSRunner {
       setRunOnMount,
       setTitle,
       setTextureFormat,
+      setResolution,
       setHidePorts,
       createGetVfsUrl(nodeId),
       clock,

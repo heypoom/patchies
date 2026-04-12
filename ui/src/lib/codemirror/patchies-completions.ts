@@ -119,6 +119,13 @@ const patchiesAPICompletions: Completion[] = [
     apply: "setTextureFormat('rgba32f')"
   },
   {
+    label: 'setResolution',
+    type: 'function',
+    detail: '(widthOrPreset: number | string, height?: number) => void',
+    info: "Set output FBO resolution. Pass a number for square (256), two numbers for rectangular (512, 256), or a string fraction ('1/2', '1/4').",
+    apply: 'setResolution(256)'
+  },
+  {
     label: 'setPrimaryButton',
     type: 'function',
     detail: "('code' | 'settings' | 'run') => void",
@@ -352,6 +359,7 @@ const topLevelOnlyFunctions = new Set([
   'setMouseScope',
   'setPortCount',
   'setPrimaryButton',
+  'setResolution',
   'setRunOnMount',
   'setTextureFormat',
   'setVideoCount'
@@ -469,6 +477,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three.dom'
   ],
   setTextureFormat: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
+  setResolution: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
   setPrimaryButton: ['js', 'worker', 'p5', 'hydra', 'canvas', 'regl', 'swgl', 'textmode', 'three'],
   setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
   getTexture: ['hydra', 'regl', 'swgl', 'three'],

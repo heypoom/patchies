@@ -303,6 +303,7 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
       },
       setTitle: this.setTitle.bind(this),
       setTextureFormat: this.setTextureFormat.bind(this),
+      setResolution: this.setResolution.bind(this),
       setHidePorts: (hidePorts: boolean) =>
         self.postMessage({ type: 'setHidePorts', nodeId: this.config.nodeId, hidePorts }),
       extraContext
