@@ -8,7 +8,7 @@ import type { Preset, PresetFolder, LegacyPresetsRecord } from './types';
  * - "slider" folder for all slider presets
  * - etc.
  *
- * Preset names like "red.gl" become the preset name within the folder.
+ * Preset names like "solid.gl" become the preset name within the folder.
  */
 export function migrateLegacyPresets(legacy: LegacyPresetsRecord): PresetFolder {
   const result: PresetFolder = {};

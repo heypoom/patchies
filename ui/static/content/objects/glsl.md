@@ -36,7 +36,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 Enable the **GLSL Operators** preset pack for basic presets:
 
 - `glsl>` - a passthrough shader
-- `red.gl` - solid red color
+- `solid.gl` - solid color with color picker
 - `mix.gl` - mix two video inputs
 - `overlay.gl` - overlay second input on first
 - `switcher.gl` - switch between 6 inputs (send int 0-5)

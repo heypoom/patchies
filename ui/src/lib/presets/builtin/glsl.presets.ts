@@ -14,10 +14,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   );
 }`;
 
-const RED_GL = `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  fragColor = vec4(1.0, 0.0, 0.0, 1.0);
-}
-`;
+const SOLID_GL = `// @title Solid
+// @primaryButton settings
+// @param iColor color "Color"
+
+uniform vec3 iColor;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  fragColor = vec4(iColor, 1.0);
+}`;
 
 const PASSTHRU_GL = `uniform sampler2D image;
 
@@ -120,7 +125,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 export const GLSL_PRESETS: Record<string, { type: string; data: { code: string } }> = {
   'glsl>': { type: 'glsl', data: { code: PASSTHRU_GL.trim() } },
   'mix.gl': { type: 'glsl', data: { code: MIX_GL.trim() } },
-  'red.gl': { type: 'glsl', data: { code: RED_GL.trim() } },
+  'solid.gl': { type: 'glsl', data: { code: SOLID_GL.trim() } },
   'overlay.gl': { type: 'glsl', data: { code: OVERLAY_GL.trim() } },
   'fft-freq.gl': { type: 'glsl', data: { code: AUDIO_FFT_FREQ_GL.trim() } },
   'fft-waveform.gl': { type: 'glsl', data: { code: AUDIO_FFT_WAVEFORM_GL.trim() } },

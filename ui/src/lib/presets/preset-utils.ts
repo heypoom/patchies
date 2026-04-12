@@ -30,7 +30,7 @@ export function isFolder(entry: PresetFolderEntry): entry is PresetFolder {
 /**
  * Get a preset or folder by path within a library
  * @param library The library to search in
- * @param path Path segments after the library ID (e.g., ["glsl", "red.gl"])
+ * @param path Path segments after the library ID (e.g., ["glsl", "solid.gl"])
  * @returns The entry at that path, or undefined if not found
  */
 export function getEntryByPath(
@@ -113,7 +113,7 @@ function flattenFolder(
 
 /**
  * Format a preset path for display
- * e.g., ["built-in", "glsl", "red.gl"] -> "built-in > glsl > red.gl"
+ * e.g., ["built-in", "glsl", "solid.gl"] -> "built-in > glsl > solid.gl"
  */
 export function formatPresetPath(path: PresetPath, separator = ' > '): string {
   return path.join(separator);

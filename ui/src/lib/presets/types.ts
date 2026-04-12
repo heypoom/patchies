@@ -59,7 +59,7 @@ export interface PresetLibrary {
 
 /**
  * Path to address a preset within libraries
- * e.g. ["built-in", "glsl", "red.gl"]
+ * e.g. ["built-in", "glsl", "solid.gl"]
  */
 export type PresetPath = string[];
 
