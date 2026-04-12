@@ -75,6 +75,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const POSITION_FIELD_GL = `// @title Position Field
 // @format rgba32f
+// @resolution 256
 
 float hash(vec3 p) {
   p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
