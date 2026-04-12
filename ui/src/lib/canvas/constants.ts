@@ -14,14 +14,32 @@ export const DEFAULT_PREVIEW_SIZE: [number, number] = [
   Math.round(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
 ];
 
+/** DPR-aware output size based on screen dimensions. Used as default when no explicit size is saved. */
+export function getDefaultOutputSize(): [number, number] {
+  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : DEFAULT_OUTPUT_SIZE[0];
+  const windowHeight = typeof window !== 'undefined' ? window.innerHeight : DEFAULT_OUTPUT_SIZE[1];
+
+  return [
+    Math.max(1, Math.min(8192, Math.round(windowWidth * dpr))),
+    Math.max(1, Math.min(8192, Math.round(windowHeight * dpr)))
+  ];
+}
+
 /** Maximum preview dimensions. Previews are scaled down to fit within this box. */
 export const MAX_PREVIEW_SIZE: [number, number] = [252, 164];
 
 /** Constrain preview dimensions to fit within MAX_PREVIEW_SIZE, preserving aspect ratio. */
 export function capPreviewSize(width: number, height: number): [number, number] {
-  const [maxW, maxH] = MAX_PREVIEW_SIZE;
-  if (width <= maxW && height <= maxH) return [width, height];
-  const scale = Math.min(maxW / width, maxH / height);
+  const [maxWidth, maxHeight] = MAX_PREVIEW_SIZE;
+
+  if (width <= maxWidth && height <= maxHeight) {
+    return [width, height];
+  }
+
+  const scale = Math.min(maxWidth / width, maxHeight / height);
+
   return [Math.max(1, Math.floor(width * scale)), Math.max(1, Math.floor(height * scale))];
 }
 

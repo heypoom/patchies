@@ -17,6 +17,7 @@
   import { savePatchToLocalStorage, getUniquePatchName } from '$lib/save-load/save-local-storage';
   import { toast } from 'svelte-sonner';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { getDefaultOutputSize } from '$lib/canvas/constants';
   import { useWebCodecs, toggleWebCodecs, toggleVideoStats } from '../../stores/video.store';
   import { renderFpsCap, FPS_CAP_OPTIONS } from '../../stores/renderer.store';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -730,10 +731,9 @@
   function applyOutputSize() {
     const input = outputSizeInput.trim().toLowerCase();
 
-    // "auto" → use screen dimensions
+    // "auto" → DPR-aware screen dimensions
     if (input === 'auto') {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
+      const [width, height] = getDefaultOutputSize();
       GLSystem.getInstance().setOutputSize(width, height);
       toast.success(`Output size set to ${width}×${height} (auto)`);
       onCancel();
@@ -1030,9 +1030,8 @@
     {:else if stage === 'set-output-size'}
       <div class="px-3 py-2 text-xs text-zinc-400">
         {#if outputSizeInput.trim().toLowerCase() === 'auto'}
-          Output: <span class="font-mono text-green-300"
-            >auto ({window.innerWidth}×{window.innerHeight})</span
-          >
+          {@const [aw, ah] = getDefaultOutputSize()}
+          Output: <span class="font-mono text-green-300">auto ({aw}×{ah})</span>
         {:else if outputSizeInput
           .trim()
           .toLowerCase()
