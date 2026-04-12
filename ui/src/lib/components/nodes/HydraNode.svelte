@@ -60,6 +60,8 @@
   let mouseHandler: CanvasMouseHandler | null = null;
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewBitmapContext: ImageBitmapRenderingContext;
+  let previewWidth = $state(0);
+  let previewHeight = $state(0);
   let isPaused = $state(false);
   let editorReady = $state(false);
   let consoleRef: VirtualConsole | null = $state(null);
@@ -171,15 +173,11 @@
     eventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
     eventBus.addEventListener('nodeMouseScopeUpdate', handleMouseScopeUpdate);
 
+    previewWidth = glSystem.previewSize[0];
+    previewHeight = glSystem.previewSize[1];
+
     if (previewCanvas) {
       previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
-
-      const [previewWidth, previewHeight] = glSystem.previewSize;
-
-      previewCanvas.width = previewWidth;
-      previewCanvas.height = previewHeight;
-      previewCanvas.style.width = `${previewWidth}px`;
-      previewCanvas.style.height = `${previewHeight}px`;
     }
 
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
@@ -202,9 +200,22 @@
       videoOutletCount: data.videoOutletCount ?? 1
     });
 
+    const handleResize = () => {
+      setTimeout(() => {
+        previewWidth = glSystem.previewSize[0];
+        previewHeight = glSystem.previewSize[1];
+      }, 200);
+    };
+
+    window.addEventListener('resize', handleResize);
+
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
     }, 10);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   });
 
   onDestroy(() => {
@@ -305,6 +316,8 @@
   {selected}
   {editorReady}
   bind:previewCanvas
+  width={previewWidth}
+  height={previewHeight}
   hasError={errorLines !== undefined && errorLines.length > 0}
   settingsSchema={data.settingsSchema}
   settingsValues={data.settings ?? {}}

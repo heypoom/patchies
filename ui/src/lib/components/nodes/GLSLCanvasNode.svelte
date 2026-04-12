@@ -301,9 +301,22 @@
       glSystem.setUniformData(nodeId, name, value as UserUniformValue);
     }
 
+    const handleResize = () => {
+      setTimeout(() => {
+        width = glSystem.previewSize[0];
+        height = glSystem.previewSize[1];
+      }, 200);
+    };
+
+    window.addEventListener('resize', handleResize);
+
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
     }, 10);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   });
 
   onDestroy(() => {

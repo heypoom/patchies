@@ -13,12 +13,15 @@ export const DEFAULT_GLSL_CODE = `// uniforms: iResolution, iTime, iMouse
 // you can define your own uniforms!
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    vec2 p = uv - 0.5;
+    p.x *= iResolution.x / iResolution.y;
+
     vec3 color = vec3(0.0);
     float time = iTime * 0.5;
 
-    color.r = sin(uv.x * 10.0 + time) * 0.5 + 0.5;
-    color.g = sin(uv.y * 10.0 + time * 1.2) * 0.5 + 0.5;
-    color.b = sin((uv.x + uv.y) * 5.0 + time * 0.8) * 0.5 + 0.5;
+    color.r = sin(p.x * 10.0 + time) * 0.5 + 0.5;
+    color.g = sin(p.y * 10.0 + time * 1.2) * 0.5 + 0.5;
+    color.b = sin((p.x + p.y) * 5.0 + time * 0.8) * 0.5 + 0.5;
 
     float brightness = sin(time * 2.0) * 0.2 + 0.8;
     color *= brightness;
@@ -206,12 +209,16 @@ export const DEFAULT_REGL_CODE = `const draw = await regl({
     precision mediump float;
     varying vec2 uv;
     uniform float time;
+    uniform vec2 resolution;
 
     void main() {
+      vec2 p = uv - 0.5;
+      p.x *= resolution.x / resolution.y;
+
       gl_FragColor = vec4(
-        sin(uv.x * 6.28 + time) * 0.5 + 0.5,
-        sin(uv.y * 6.28 + time * 1.3) * 0.5 + 0.5,
-        sin((uv.x + uv.y) * 3.14 + time * 0.7) * 0.5 + 0.5,
+        sin(p.x * 6.28 + time) * 0.5 + 0.5,
+        sin(p.y * 6.28 + time * 1.3) * 0.5 + 0.5,
+        sin((p.x + p.y) * 3.14 + time * 0.7) * 0.5 + 0.5,
         1.0
       );
     }
@@ -221,6 +228,7 @@ export const DEFAULT_REGL_CODE = `const draw = await regl({
   },
   uniforms: {
     time: regl.prop('time'),
+    resolution: ({ viewportWidth, viewportHeight }) => [viewportWidth, viewportHeight],
   },
   count: 6,
   depth: { enable: false },
