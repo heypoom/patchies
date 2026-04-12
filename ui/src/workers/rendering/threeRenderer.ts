@@ -86,6 +86,12 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     // Update Three.js textures from regl textures
     this.updateThreeTextures();
 
+    // Reset Three.js internal GL state cache before rendering.
+    // Other nodes (GLSL, SwissGL) may have changed the viewport via regl
+    // to a different size (e.g. @resolution 100), and Three.js won't know
+    // unless we invalidate its cached state.
+    this.threeWebGLRenderer.resetState();
+
     // Render to Three.js's own render target
     this.threeWebGLRenderer.setRenderTarget(this.renderTarget);
 
@@ -98,8 +104,7 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     // Blit from Three.js render target to our regl FBO
     this.blitToReglFramebuffer();
 
-    // Refresh both the Three.js and REGL internal state.
-    this.threeWebGLRenderer.resetState();
+    // Refresh regl's internal state so it picks up GL changes made by Three.js.
     this.renderer.regl._refresh();
   }
 
@@ -212,8 +217,6 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   private updateThreeTextures() {
     if (!this.THREE || !this.threeWebGLRenderer) return;
 
-    const [width, height] = this.renderer.outputSize;
-
     for (let i = 0; i < this.inputTextures.length; i++) {
       const reglTex = this.inputTextures[i];
       if (!reglTex) continue;
@@ -237,7 +240,9 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         props.__webglTexture = webglTexture;
         props.__webglInit = true;
 
-        threeTex.image = { width, height };
+        // Use the actual regl texture dimensions, not the global output size.
+        // Input textures may be smaller when the source uses @resolution.
+        threeTex.image = { width: reglTex.width, height: reglTex.height };
         threeTex.needsUpdate = false;
       }
     }
