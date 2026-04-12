@@ -822,6 +822,16 @@ export class GLSystem {
   }
 
   /**
+   * Set the output (FBO) resolution for the patch.
+   * Affects all node FBOs (unless they have per-node @resolution overrides).
+   * Also updates the default preview size proportionally.
+   */
+  setOutputSize(width: number, height: number) {
+    this.outputSize = [width, height];
+    this.send('setOutputSize', { width, height });
+  }
+
+  /**
    * Set the background display size (viewport dimensions).
    * Only affects the background canvas blit target, not FBOs or node previews.
    */

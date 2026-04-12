@@ -16,6 +16,7 @@
   } from '../../stores/ui.store';
   import { savePatchToLocalStorage, getUniquePatchName } from '$lib/save-load/save-local-storage';
   import { toast } from 'svelte-sonner';
+  import { GLSystem } from '$lib/canvas/GLSystem';
   import { useWebCodecs, toggleWebCodecs, toggleVideoStats } from '../../stores/video.store';
   import { renderFpsCap, FPS_CAP_OPTIONS } from '../../stores/renderer.store';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -93,6 +94,7 @@
     | 'rename-list'
     | 'rename-name'
     | 'set-room'
+    | 'set-output-size'
     | 'offline-download';
 
   // Multi-stage state
@@ -102,6 +104,7 @@
   let savedPatches = $state<string[]>([]);
   let selectedPatchToRename = $state('');
   let roomName = $state('');
+  let outputSizeInput = $state('');
   let offlineProgress = $state<OfflineDownloadProgress>({
     current: 0,
     total: 0,
@@ -210,6 +213,11 @@
       description: 'Set a custom room ID for P2P communication between patches'
     },
     {
+      id: 'set-output-size',
+      name: 'Set Output Size',
+      description: 'Set the render resolution for this patch (e.g. 1920x1080)'
+    },
+    {
       id: 'generate-prompt',
       name: 'Patch to App',
       description: 'Generate an app from your patch or export as a specification',
@@ -307,7 +315,8 @@
       stage === 'rename-list' ||
       stage === 'rename-name' ||
       stage === 'commands' ||
-      stage === 'set-room'
+      stage === 'set-room' ||
+      stage === 'set-output-size'
     ) {
       setTimeout(() => {
         searchInput?.focus();
@@ -380,6 +389,8 @@
       renamePatch();
     } else if (stage === 'set-room' && roomName.trim()) {
       setRoom();
+    } else if (stage === 'set-output-size' && outputSizeInput.trim()) {
+      applyOutputSize();
     }
   }
 
@@ -532,6 +543,12 @@
       .with('set-room', () => {
         roomName = getSearchParam('room') || '';
         nextStage('set-room');
+      })
+      .with('set-output-size', () => {
+        const glSystem = GLSystem.getInstance();
+        const [w, h] = glSystem.outputSize;
+        outputSizeInput = `${w}x${h}`;
+        nextStage('set-output-size');
       })
       .with('prepare-offline', () => {
         nextStage('offline-download');
@@ -709,6 +726,28 @@
     }
   }
 
+  function applyOutputSize() {
+    const input = outputSizeInput.trim();
+    const match = input.match(/^(\d+)\s*[x×,]\s*(\d+)$/i);
+
+    if (!match) {
+      toast.error('Invalid format. Use WIDTHxHEIGHT (e.g. 1920x1080)');
+      return;
+    }
+
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+
+    if (width < 1 || height < 1 || width > 8192 || height > 8192) {
+      toast.error('Size must be between 1 and 8192');
+      return;
+    }
+
+    GLSystem.getInstance().setOutputSize(width, height);
+    toast.success(`Output size set to ${width}×${height}`);
+    onCancel();
+  }
+
   function setRoom() {
     if (!roomName.trim()) {
       onCancel();
@@ -868,6 +907,18 @@
         class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-400 outline-none"
       />
     </div>
+  {:else if stage === 'set-output-size'}
+    <div class="border-b border-zinc-700 p-3">
+      <div class="mb-2 text-xs text-zinc-400">Enter output resolution (WIDTHxHEIGHT):</div>
+      <input
+        bind:this={searchInput}
+        bind:value={outputSizeInput}
+        onkeydown={handleKeydown}
+        type="text"
+        placeholder="e.g. 1920x1080"
+        class="w-full bg-transparent font-mono text-sm text-zinc-100 placeholder-zinc-400 outline-none"
+      />
+    </div>
   {:else if stage === 'set-room'}
     <div class="border-b border-zinc-700 p-3">
       <div class="mb-2 text-xs text-zinc-400">Enter room ID for netsend/netrecv:</div>
@@ -949,6 +1000,16 @@
           >"
         </div>
       {/if}
+    {:else if stage === 'set-output-size'}
+      <div class="px-3 py-2 text-xs text-zinc-400">
+        {#if outputSizeInput.trim().match(/^(\d+)\s*[x×,]\s*(\d+)$/i)}
+          Output: <span class="font-mono text-green-300">{outputSizeInput.trim()}</span>
+        {:else if outputSizeInput.trim()}
+          <span class="text-red-400">Invalid format — use WIDTHxHEIGHT</span>
+        {:else}
+          Enter a resolution like 1920x1080, 1280x720, or 512x512
+        {/if}
+      </div>
     {:else if stage === 'set-room'}
       <!-- Show room info -->
       <div class="px-3 py-2 text-xs text-zinc-400">
@@ -1006,6 +1067,8 @@
       Enter Rename • Esc Back
     {:else if stage === 'set-room'}
       Enter Set Room • Esc Back
+    {:else if stage === 'set-output-size'}
+      Enter Apply • Esc Back
     {:else if stage === 'offline-download'}
       {#if offlineProgress.status === 'complete' || offlineProgress.status === 'error'}
         Esc Close

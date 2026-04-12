@@ -6,6 +6,7 @@ import type { VFSTree } from '$lib/vfs/types';
 import { VirtualFilesystem } from '$lib/vfs/VirtualFilesystem';
 import { currentPatchId, isCablesVisible } from '../../stores/ui.store';
 import { transportStore } from '../../stores/transport.store';
+import { GLSystem } from '$lib/canvas/GLSystem';
 
 export const PATCH_SAVE_VERSION = String(CURRENT_PATCH_VERSION);
 
@@ -13,6 +14,7 @@ export type PatchSettings = {
   cablesVisible?: boolean;
   bpm?: number;
   timeSignature?: [number, number];
+  outputSize?: [number, number];
 };
 
 export type PatchSaveFormat = {
@@ -45,7 +47,8 @@ export function serializePatch({
   const settings: PatchSettings = {
     cablesVisible: get(isCablesVisible),
     bpm: transport.bpm,
-    timeSignature: transport.timeSignature
+    timeSignature: transport.timeSignature,
+    outputSize: GLSystem.getInstance().outputSize
   };
 
   const patch: PatchSaveFormat = {

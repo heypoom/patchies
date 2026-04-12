@@ -16,6 +16,8 @@ import {
 import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
 import { transportStore } from '../../stores/transport.store';
 import { DEFAULT_BPM, DEFAULT_TIME_SIGNATURE } from '$lib/transport/constants';
+import { GLSystem } from '$lib/canvas/GLSystem';
+import { DEFAULT_OUTPUT_SIZE } from '$lib/canvas/constants';
 import { get } from 'svelte/store';
 import type { CanvasContext } from './CanvasContext';
 import { logger } from '$lib/utils/logger';
@@ -312,6 +314,15 @@ export class PatchManager {
 
         transportStore.setTimeSignature(numerator, denominator);
       }
+
+      const glSystem = GLSystem.getInstance();
+
+      if (migrated.settings.outputSize) {
+        const [w, h] = migrated.settings.outputSize;
+        glSystem.setOutputSize(w, h);
+      } else {
+        glSystem.setOutputSize(...DEFAULT_OUTPUT_SIZE);
+      }
     }
 
     // Immediately save migrated patch to autosave so reloads don't break
@@ -353,6 +364,7 @@ export class PatchManager {
     isCablesVisible.set(true);
     transportStore.setBpm(DEFAULT_BPM);
     transportStore.setTimeSignature(DEFAULT_TIME_SIGNATURE[0], DEFAULT_TIME_SIGNATURE[1]);
+    GLSystem.getInstance().setOutputSize(...DEFAULT_OUTPUT_SIZE);
 
     generateNewPatchId();
     deleteSearchParam('id');
