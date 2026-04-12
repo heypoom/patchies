@@ -8,6 +8,12 @@ export const DEFAULT_MAX_PREVIEWS_PER_FRAME_WITH_OUTPUT = 20;
 export const DEFAULT_MAX_PREVIEWS_PER_FRAME_NO_OUTPUT = 20;
 
 /**
+ * Min preview dimension (px) before switching to native
+ * FBO readback for crisp low-res previews
+ **/
+export const MIN_PREVIEW_SIZE_FOR_DOWNSCALE = 64;
+
+/**
  * Zoom-based preview LOD tiers.
  * Each tier defines a zoom threshold and a scale multiplier applied to the base preview scale factor.
  * Tiers are evaluated top-to-bottom; the first matching threshold is used.
