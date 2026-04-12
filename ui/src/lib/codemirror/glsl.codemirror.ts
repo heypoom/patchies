@@ -9,6 +9,12 @@ import {
 } from '@codemirror/language';
 import { ViewPlugin, EditorView, Decoration, type DecorationSet } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/state';
+import {
+  type Completion,
+  type CompletionContext,
+  snippetCompletion,
+  startCompletion
+} from '@codemirror/autocomplete';
 
 export const glslLanguage = LRLanguage.define({
   name: 'glsl',
@@ -175,11 +181,80 @@ function decorationPlugin(build: (view: EditorView) => DecorationSet) {
   );
 }
 
+/**
+ * Completions for GLSL metadata directives (// @title, // @param, etc.)
+ * Triggers when the cursor is after `// @` in a comment line.
+ */
+const directiveCompletions: Completion[] = [
+  snippetCompletion('@title ${name}', {
+    label: '@title',
+    type: 'keyword',
+    detail: 'Set node display title',
+    info: '// @title My Shader'
+  }),
+  snippetCompletion('@param ${name} ${default} ${min} ${max} "${description}"', {
+    label: '@param',
+    type: 'keyword',
+    detail: 'Enrich uniform with UI metadata',
+    info: '// @param strength 0.5 0.0 1.0 "Effect strength"'
+  }),
+  snippetCompletion('@format rgba32f', {
+    label: '@format',
+    type: 'keyword',
+    detail: 'Set FBO texture format',
+    info: '// @format rgba32f'
+  }),
+  snippetCompletion('@resolution 256', {
+    label: '@resolution',
+    type: 'keyword',
+    detail: 'Set FBO size (number, WxH, or 1/n)',
+    info: '// @resolution 256 or 256x128 or 1/2'
+  }),
+  snippetCompletion('@primaryButton settings', {
+    label: '@primaryButton',
+    type: 'keyword',
+    detail: 'Set primary action button',
+    info: '// @primaryButton settings'
+  })
+];
+
+export function glslDirectiveCompletions(context: CompletionContext) {
+  const match = context.matchBefore(/\/\/\s*@\w*/);
+  if (!match) return null;
+  if (match.from === match.to && !context.explicit) return null;
+
+  // `from` must point at `@` so CodeMirror filters labels against `@par...`, not `// @par...`
+  const atOffset = match.text.indexOf('@');
+
+  return {
+    from: match.from + atOffset,
+    options: directiveCompletions
+  };
+}
+
+/**
+ * Input handler that triggers autocompletion when `@` is typed inside a comment.
+ * Needed because CodeMirror's default activateOnTyping only fires for word characters.
+ */
+const triggerCompletionOnAt = EditorView.inputHandler.of((view, from, _to, text) => {
+  if (text !== '@') return false;
+
+  const line = view.state.doc.lineAt(from);
+  const textBefore = line.text.slice(0, from - line.from);
+
+  if (/^[ \t]*\/\/\s*$/.test(textBefore)) {
+    queueMicrotask(() => startCompletion(view));
+  }
+
+  return false;
+});
+
 export const glslIncludeHighlighter = [
   decorationPlugin(buildIncludeDecorations),
   decorationPlugin(buildFormatDecorations),
   decorationPlugin(buildMetadataDecorations),
   includeHighlightTheme,
   formatHighlightTheme,
-  metadataHighlightTheme
+  metadataHighlightTheme,
+  triggerCompletionOnAt
 ];
