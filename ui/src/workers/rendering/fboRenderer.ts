@@ -679,26 +679,19 @@ export class FBORenderer {
         const sourceFbo = this.fboNodes.get(inlet0.sourceNodeId);
         if (!sourceFbo) return;
 
-        // Blit input FBO to output framebuffer using source texture dimensions
-        const sourceWidth = sourceFbo.texture.width;
-        const sourceHeight = sourceFbo.texture.height;
+        // Blit input FBO to output framebuffer.
+        // Source and destination may differ when the source uses @resolution.
+        const srcW = sourceFbo.texture.width;
+        const srcH = sourceFbo.texture.height;
+        const dstFbo = this.fboNodes.get(node.id);
+        const dstW = dstFbo?.texture.width ?? srcW;
+        const dstH = dstFbo?.texture.height ?? srcH;
         const gl = this.gl;
 
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFbo.framebuffer));
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(framebuffer));
 
-        gl.blitFramebuffer(
-          0,
-          0,
-          sourceWidth,
-          sourceHeight,
-          0,
-          0,
-          sourceWidth,
-          sourceHeight,
-          gl.COLOR_BUFFER_BIT,
-          gl.NEAREST
-        );
+        gl.blitFramebuffer(0, 0, srcW, srcH, 0, 0, dstW, dstH, gl.COLOR_BUFFER_BIT, gl.LINEAR);
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       },

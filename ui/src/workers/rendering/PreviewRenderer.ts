@@ -268,6 +268,10 @@ export class PreviewRenderer {
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFBO);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, destFBO);
 
+    // Use NEAREST when the source is smaller than the preview so the preview
+    // accurately shows individual pixels (important for @resolution debugging).
+    const filter = sourceWidth < width || sourceHeight < height ? gl.NEAREST : gl.LINEAR;
+
     gl.blitFramebuffer(
       0,
       0,
@@ -278,7 +282,7 @@ export class PreviewRenderer {
       width,
       0,
       gl.COLOR_BUFFER_BIT,
-      gl.LINEAR
+      filter
     );
 
     // Setup PBO for async read
