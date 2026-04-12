@@ -64,6 +64,19 @@
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 
   const code = $derived(data.code || '');
+  const previewSize = $derived(getPreviewSizeForResolution(detectResolution(code)));
+
+  // Reactively update preview canvas dimensions when resolution changes
+  $effect(() => {
+    if (!previewCanvas) return;
+
+    const [previewWidth, previewHeight] = previewSize;
+
+    previewCanvas.width = previewWidth;
+    previewCanvas.height = previewHeight;
+    previewCanvas.style.width = `${previewWidth}px`;
+    previewCanvas.style.height = `${previewHeight}px`;
+  });
 
   let videoInletCount = $derived(data.videoInletCount ?? 0);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
@@ -144,12 +157,6 @@
 
     if (previewCanvas) {
       previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
-
-      const [previewWidth, previewHeight] = getPreviewSizeForResolution(detectResolution(code));
-      previewCanvas.width = previewWidth;
-      previewCanvas.height = previewHeight;
-      previewCanvas.style.width = `${previewWidth}px`;
-      previewCanvas.style.height = `${previewHeight}px`;
     }
 
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;

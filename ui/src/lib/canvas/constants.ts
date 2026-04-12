@@ -10,8 +10,8 @@ export const DEFAULT_OUTPUT_SIZE = [1008, 654] as [width: number, height: number
 export const PREVIEW_SCALE_FACTOR = 4;
 
 export const DEFAULT_PREVIEW_SIZE: [number, number] = [
-  Math.floor(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
-  Math.floor(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
+  Math.round(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
+  Math.round(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
 ];
 
 /**
@@ -23,16 +23,22 @@ export function getPreviewSizeForResolution(
 ): [number, number] {
   if (resolution == null) return DEFAULT_PREVIEW_SIZE;
 
-  const [outW, outH] = DEFAULT_OUTPUT_SIZE;
+  const [outputWidth, outputHeight] = DEFAULT_OUTPUT_SIZE;
 
   // Fractional: '1/2', '1/4', etc.
   if (typeof resolution === 'string') {
     const match = resolution.match(/^1\/(\d+)$/);
+
     if (match) {
       const divisor = Number(match[1]);
+
+      if (!Number.isFinite(divisor) || divisor <= 0) {
+        return DEFAULT_PREVIEW_SIZE;
+      }
+
       return [
-        Math.max(1, Math.floor(outW / divisor / PREVIEW_SCALE_FACTOR)),
-        Math.max(1, Math.floor(outH / divisor / PREVIEW_SCALE_FACTOR))
+        Math.max(1, Math.floor(outputWidth / divisor / PREVIEW_SCALE_FACTOR)),
+        Math.max(1, Math.floor(outputHeight / divisor / PREVIEW_SCALE_FACTOR))
       ];
     }
     return DEFAULT_PREVIEW_SIZE;
@@ -40,11 +46,25 @@ export function getPreviewSizeForResolution(
 
   // Square: 256 → 64x64
   if (typeof resolution === 'number') {
-    const s = Math.max(1, Math.floor(resolution / PREVIEW_SCALE_FACTOR));
-    return [s, s];
+    if (!Number.isFinite(resolution) || resolution <= 0) {
+      return DEFAULT_PREVIEW_SIZE;
+    }
+
+    const size = Math.max(1, Math.floor(resolution / PREVIEW_SCALE_FACTOR));
+
+    return [size, size];
   }
 
   // Explicit: [512, 256] → [128, 64]
+  if (
+    !Number.isFinite(resolution[0]) ||
+    !Number.isFinite(resolution[1]) ||
+    resolution[0] <= 0 ||
+    resolution[1] <= 0
+  ) {
+    return DEFAULT_PREVIEW_SIZE;
+  }
+
   return [
     Math.max(1, Math.floor(resolution[0] / PREVIEW_SCALE_FACTOR)),
     Math.max(1, Math.floor(resolution[1] / PREVIEW_SCALE_FACTOR))
