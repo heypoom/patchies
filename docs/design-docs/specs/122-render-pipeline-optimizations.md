@@ -221,7 +221,7 @@ Most of these are changes to `GLSystem.ts` and the preview rendering path, not t
 | -------------------------- | ------------------------------ | ------ | --------------------------------------------- |
 | Preview toggle (4b)        | Quick win                      | Tiny   | ✓ Done                                        |
 | Preview zoom LOD (4a)      | Moderate                       | Small  | ✓ Done                                        |
-| Per-node resolution (1)    | Large for heavy nodes          | Small  | Phase 2 — alongside 105/106 FBO changes       |
+| Per-node resolution (1)    | Large for heavy nodes          | Small  | ✓ Done                                        |
 | Cook-on-demand caching (2) | Large for static-heavy patches | Medium | Phase 2 — biggest architectural change        |
 | Preview frame rate (4c)    | Moderate                       | Small  | Phase 2                                       |
 | Channel format (3)         | Small-moderate                 | Small  | Phase 3 — advanced optimization, low priority |
