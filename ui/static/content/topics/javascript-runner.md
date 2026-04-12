@@ -197,8 +197,7 @@ upscaling is automatic. Combine with `setTextureFormat('rgba32f')` for
 GPGPU workflows like texture-encoded geometry.
 
 > **Note**: GLSL and SwissGL nodes use the `// @resolution 256`
-> directive instead of `setResolution()`. See
-> [glsl](/docs/objects/glsl#output-resolution).
+> directive instead of `setResolution()`, see [glsl](/docs/objects/glsl).
 
 ## See Also
 
