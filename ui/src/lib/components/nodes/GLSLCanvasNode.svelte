@@ -10,7 +10,6 @@
   import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
   import { toGLValue } from '$workers/rendering/glUniformUtils';
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
-  import { getPreviewSizeForResolution } from '$lib/canvas/constants';
   import {
     shaderCodeToUniformDefs,
     uniformDefsToSettingsSchema,
@@ -54,11 +53,8 @@
   let glSystem = GLSystem.getInstance();
   let mouseHandler: CanvasMouseHandler | null = null;
 
-  // Preview canvas display size — updates only on re-run (data.resolution is set by updateShader)
-  const previewSize = $derived(getPreviewSizeForResolution(data.resolution));
-
-  let width = $derived(previewSize[0]);
-  let height = $derived(previewSize[1]);
+  // Preview canvas display size — always uses default, independent of @resolution
+  const [width, height] = GLSystem.defaultPreviewSize;
 
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewBitmapContext: ImageBitmapRenderingContext;

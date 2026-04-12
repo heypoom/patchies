@@ -9,7 +9,6 @@
   import { removeExcessVideoOutletEdges } from './outlet-edges';
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem } from '$lib/canvas/GLSystem';
-  import { getPreviewSizeForResolution } from '$lib/canvas/constants';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import { SettingsManager } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
@@ -36,7 +35,6 @@
       videoOutletCount?: number;
       messageInletCount?: number;
       messageOutletCount?: number;
-      resolution?: number | [number, number] | string;
     };
     selected: boolean;
   } = $props();
@@ -65,19 +63,6 @@
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 
   const code = $derived(data.code || '');
-  const previewSize = $derived(getPreviewSizeForResolution(data.resolution));
-
-  // Reactively update preview canvas dimensions when resolution changes
-  $effect(() => {
-    if (!previewCanvas) return;
-
-    const [previewWidth, previewHeight] = previewSize;
-
-    previewCanvas.width = previewWidth;
-    previewCanvas.height = previewHeight;
-    previewCanvas.style.width = `${previewWidth}px`;
-    previewCanvas.style.height = `${previewHeight}px`;
-  });
 
   let videoInletCount = $derived(data.videoInletCount ?? 0);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
@@ -158,6 +143,12 @@
 
     if (previewCanvas) {
       previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
+
+      const [previewWidth, previewHeight] = GLSystem.defaultPreviewSize;
+      previewCanvas.width = previewWidth;
+      previewCanvas.height = previewHeight;
+      previewCanvas.style.width = `${previewWidth}px`;
+      previewCanvas.style.height = `${previewHeight}px`;
     }
 
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
