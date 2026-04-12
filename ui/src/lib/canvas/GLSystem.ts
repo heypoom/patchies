@@ -28,12 +28,7 @@ import {
   type AudioAnalysisPayloadWithType,
   type OnFFTReadyCallback
 } from '$lib/audio/AudioAnalysisSystem';
-import {
-  DEFAULT_OUTPUT_SIZE,
-  DEFAULT_PREVIEW_SIZE,
-  PREVIEW_SCALE_FACTOR,
-  capPreviewSize
-} from './constants';
+import { DEFAULT_OUTPUT_SIZE, DEFAULT_PREVIEW_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
 import { logger } from '$lib/utils/logger';
 import {
   outputSize as outputSizeStore,
@@ -844,19 +839,17 @@ export class GLSystem {
     this.outputSize = [outputWidth, outputHeight];
     outputSizeStore.set([outputWidth, outputHeight]);
 
-    previewSizeStore.set(
-      capPreviewSize(
-        Math.round(outputWidth / PREVIEW_SCALE_FACTOR),
-        Math.round(outputHeight / PREVIEW_SCALE_FACTOR)
-      )
-    );
+    previewSizeStore.set([
+      Math.round(outputWidth / PREVIEW_SCALE_FACTOR),
+      Math.round(outputHeight / PREVIEW_SCALE_FACTOR)
+    ]);
 
     this.send('setOutputSize', { width: outputWidth, height: outputHeight });
   }
 
   /**
    * Set the background display size (viewport dimensions).
-   * Only affects the cover-mode blit calculation, not FBOs or previews.
+   * Only affects the background canvas blit target, not FBOs or node previews.
    */
   setBackgroundSize(width: number, height: number) {
     this.send('setBackgroundSize', { width, height });
