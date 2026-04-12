@@ -14,6 +14,17 @@ export const DEFAULT_PREVIEW_SIZE: [number, number] = [
   Math.round(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
 ];
 
+/** Maximum preview dimensions. Previews are scaled down to fit within this box. */
+export const MAX_PREVIEW_SIZE: [number, number] = [252, 164];
+
+/** Constrain preview dimensions to fit within MAX_PREVIEW_SIZE, preserving aspect ratio. */
+export function capPreviewSize(width: number, height: number): [number, number] {
+  const [maxW, maxH] = MAX_PREVIEW_SIZE;
+  if (width <= maxW && height <= maxH) return [width, height];
+  const scale = Math.min(maxW / width, maxH / height);
+  return [Math.max(1, Math.floor(width * scale)), Math.max(1, Math.floor(height * scale))];
+}
+
 /**
  * Compute preview size from a per-node FBO resolution override.
  * Used by node components to derive their preview canvas dimensions.
@@ -36,10 +47,10 @@ export function getPreviewSizeForResolution(
         return DEFAULT_PREVIEW_SIZE;
       }
 
-      return [
+      return capPreviewSize(
         Math.max(1, Math.floor(outputWidth / divisor / PREVIEW_SCALE_FACTOR)),
         Math.max(1, Math.floor(outputHeight / divisor / PREVIEW_SCALE_FACTOR))
-      ];
+      );
     }
     return DEFAULT_PREVIEW_SIZE;
   }
@@ -52,7 +63,7 @@ export function getPreviewSizeForResolution(
 
     const size = Math.max(1, Math.floor(resolution / PREVIEW_SCALE_FACTOR));
 
-    return [size, size];
+    return capPreviewSize(size, size);
   }
 
   // Explicit: [512, 256] → [128, 64]
@@ -65,10 +76,10 @@ export function getPreviewSizeForResolution(
     return DEFAULT_PREVIEW_SIZE;
   }
 
-  return [
+  return capPreviewSize(
     Math.max(1, Math.floor(resolution[0] / PREVIEW_SCALE_FACTOR)),
     Math.max(1, Math.floor(resolution[1] / PREVIEW_SCALE_FACTOR))
-  ];
+  );
 }
 
 export const DEFAULT_GLSL_CODE = `// uniforms: iResolution, iTime, iMouse

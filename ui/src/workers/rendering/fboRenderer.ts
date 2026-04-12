@@ -14,7 +14,8 @@ import {
   DEFAULT_OUTPUT_SIZE,
   WEBGL_EXTENSIONS,
   WEBGL_OPTIONAL_EXTENSIONS,
-  PREVIEW_SCALE_FACTOR
+  PREVIEW_SCALE_FACTOR,
+  capPreviewSize
 } from '$lib/canvas/constants';
 import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
@@ -570,10 +571,10 @@ export class FBORenderer {
         nodeType: node.type,
         fboFormat,
         resolution,
-        previewSize: [
+        previewSize: capPreviewSize(
           Math.max(1, Math.floor(nodeSize[0] / previewScaleFactor)),
           Math.max(1, Math.floor(nodeSize[1] / previewScaleFactor))
-        ]
+        )
       };
 
       this.fboNodes.set(node.id, fboNode);
@@ -1433,7 +1434,7 @@ export class FBORenderer {
   }
 
   private renderNodeToMainOutput(node: FBONode): void {
-    const [backgroundWidth, backgroundHeight] = this.backgroundSize;
+    const [backgroundWidth, backgroundHeight] = this.outputSize;
 
     if (!this.isOutputEnabled) {
       return;
@@ -1592,6 +1593,10 @@ export class FBORenderer {
    */
   setOutputSize(width: number, height: number) {
     this.outputSize = [width, height] as [number, number];
+
+    // Resize the offscreen canvas to match the new output size
+    this.offscreenCanvas.width = width;
+    this.offscreenCanvas.height = height;
 
     // Update all hydra renderers to match the new output size
     for (const hydra of this.hydraByNode.values()) {
