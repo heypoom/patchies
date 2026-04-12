@@ -72,7 +72,6 @@
 
   // Lazy-loaded Three.js
   let THREE: typeof import('three') | null = null;
-  let threeLoaded = $state(false);
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -318,7 +317,6 @@
       if (!THREE) {
         THREE = await import('three');
         renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-        threeLoaded = true;
         customConsole.log('Three.js loaded!');
       }
 
