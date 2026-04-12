@@ -25,7 +25,9 @@ export interface ShaderDirectives {
 const DIRECTIVE_RE = /^[ \t]*\/\/\s*@(title|param)\s+(.+)$/gm;
 
 // @param name [default] [min] [max] ["description"]
-const PARAM_RE = /^(\w+)(?:\s+(-?[\w.]+))?(?:\s+(-?[\d.]+))?(?:\s+(-?[\d.]+))?(?:\s+"([^"]*)")?$/;
+// For color widgets: @param name color [#hex] ["description"]
+const PARAM_RE =
+  /^(\w+)(?:\s+(-?[\w.]+))?(?:\s+(-?[\d.]+|#[\da-fA-F]+))?(?:\s+(-?[\d.]+))?(?:\s+"([^"]*)")?$/;
 
 function parseParamDirective(value: string): ParamDirective | null {
   const match = PARAM_RE.exec(value);
@@ -36,11 +38,16 @@ function parseParamDirective(value: string): ParamDirective | null {
 
   if (defaultValue === 'color') {
     param.widget = 'color';
+
+    // Allow hex default after 'color': @param name color #ff6600 "desc"
+    if (minValue != null && minValue.startsWith('#')) {
+      param.default = minValue;
+    }
   } else if (defaultValue != null) {
     param.default = defaultValue;
   }
 
-  if (minValue != null) {
+  if (minValue != null && !minValue.startsWith('#')) {
     param.min = parseFloat(minValue);
   }
 
@@ -143,7 +150,9 @@ export function shaderCodeToUniformDefs(code: string): GLUniformDef[] {
         default:
           type === 'bool'
             ? param.default === 'true' || param.default === '1'
-            : parseFloat(param.default)
+            : param.default.startsWith('#')
+              ? param.default
+              : parseFloat(param.default)
       }),
       ...(param?.min != null && { min: param.min }),
       ...(param?.max != null && { max: param.max }),
@@ -237,7 +246,7 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
                 key: def.name,
                 label: def.description ?? def.name,
                 type: 'color' as const,
-                default: '#ffffff',
+                default: (def.default as string) ?? '#ffffff',
                 persistence: 'node' as const
               }
             ]

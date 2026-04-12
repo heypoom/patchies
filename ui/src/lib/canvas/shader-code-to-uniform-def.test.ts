@@ -102,6 +102,16 @@ describe('uniformDefsToSettingsSchema', () => {
     ]);
   });
 
+  it('generates color field with hex default for vec3 with color widget', () => {
+    const fields = uniformDefsToSettingsSchema([
+      { name: 'tint', type: 'vec3', widget: 'color', default: '#ff6600' }
+    ]);
+
+    expect(fields).toEqual([
+      { key: 'tint', label: 'tint', type: 'color', default: '#ff6600', persistence: 'node' }
+    ]);
+  });
+
   it('returns no field for vec3 without color widget', () => {
     expect(uniformDefsToSettingsSchema([{ name: 'pos', type: 'vec3' }])).toEqual([]);
   });
@@ -130,7 +140,7 @@ describe('uniformDefsToSettingsSchema', () => {
         default: 0.5,
         min: 0.0,
         max: 1.0,
-        step: 0.01,
+        step: 0.1,
         persistence: 'node'
       }
     ]);
@@ -227,6 +237,18 @@ uniform bool invert;
     expect(param).toEqual({ name: 'myColor', widget: 'color' });
   });
 
+  it('parses @param with color widget and hex default', () => {
+    const directives = parseShaderDirectives('// @param myColor color #ff6600 "Tint"');
+    const param = directives.params.get('myColor');
+
+    expect(param).toEqual({
+      name: 'myColor',
+      widget: 'color',
+      default: '#ff6600',
+      description: 'Tint'
+    });
+  });
+
   it('merges color widget into vec3 uniform def', () => {
     const code = `
 // @param tint color
@@ -235,6 +257,22 @@ uniform vec3 tint;
     const defs = shaderCodeToUniformDefs(code);
 
     expect(defs[0]).toMatchObject({ name: 'tint', type: 'vec3', widget: 'color' });
+  });
+
+  it('merges color widget with hex default into vec3 uniform def', () => {
+    const code = `
+// @param tint color #ff6600 "Tint color"
+uniform vec3 tint;
+`;
+    const defs = shaderCodeToUniformDefs(code);
+
+    expect(defs[0]).toMatchObject({
+      name: 'tint',
+      type: 'vec3',
+      widget: 'color',
+      default: '#ff6600',
+      description: 'Tint color'
+    });
   });
 
   it('merges @param metadata into uniform defs', () => {

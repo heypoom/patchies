@@ -194,7 +194,7 @@
       if (def.name in uniformValues) {
         pruned[def.name] = uniformValues[def.name];
       } else if (def.widget === 'color') {
-        pruned[def.name] = '#ffffff';
+        pruned[def.name] = (def.default as string) ?? '#ffffff';
       } else if (def.default != null) {
         pruned[def.name] = def.default;
       }

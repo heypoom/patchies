@@ -16,8 +16,8 @@ export interface GLUniformDef {
   type: GLUniformType;
   arraySize?: number;
 
-  /** From `// @param` directive */
-  default?: number | boolean;
+  /** From `// @param` directive — string for hex color defaults (e.g. '#ff6600') */
+  default?: number | boolean | string;
   min?: number;
   max?: number;
   description?: string;
