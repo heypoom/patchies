@@ -235,7 +235,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 Downstream nodes sample the texture with bilinear filtering — upscaling
 is automatic. Combine with `@format rgba32f` for GPGPU workflows like
-texture-encoded geometry (spec 115).
+texture-encoded geometry.
 
 ## Mouse Interaction
 
