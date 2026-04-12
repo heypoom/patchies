@@ -188,6 +188,35 @@ Downstream nodes sample float textures the same way — no code changes needed o
 the receiving end. The preview thumbnail clamps values for display, but the
 actual data on the wire stays float.
 
+## Output Resolution
+
+By default, the output FBO renders at full window resolution. For data
+textures, particle position maps, or any shader where you don't need
+millions of pixels, set a smaller resolution with the `@resolution`
+directive:
+
+```glsl
+// @resolution 256
+// @format rgba32f
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  fragColor = vec4(uv, sin(iTime), 1.0);  // 256×256 float texture
+}
+```
+
+| Value      | FBO size (at 1080p) | Use case                           |
+| ---------- | ------------------- | ---------------------------------- |
+| `256`      | 256×256             | Position maps, small data textures |
+| `512`      | 512×512             | Medium data textures               |
+| `256x128`  | 256×128             | Non-square data                    |
+| `1/2`      | 960×540             | Half resolution                    |
+| `1/4`      | 480×270             | Quarter resolution                 |
+| *(none)*   | 1920×1080           | Default. Full resolution           |
+
+Downstream nodes sample the texture with bilinear filtering — upscaling
+is automatic. Combine with `@format rgba32f` for GPGPU workflows like
+texture-encoded geometry (spec 115).
+
 ## Mouse Interaction
 
 If your shader uses the `iMouse` uniform (vec4), mouse interaction
@@ -198,7 +227,8 @@ is automatically enabled:
   - Positive when mouse down (ongoing drag)
   - Negative when mouse up (use `abs()` to get last position)
 
-When `iMouse` is detected, the node becomes interactive (drag is disabled to allow mouse input).
+When `iMouse` is detected, the node becomes interactive (drag is disabled to
+allow mouse input).
 
 ---
 

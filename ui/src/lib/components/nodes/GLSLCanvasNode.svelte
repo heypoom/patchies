@@ -174,6 +174,20 @@
     return (match?.[1] as FBOFormat) ?? 'rgba8';
   }
 
+  function detectResolution(code: string): number | [number, number] | '1/2' | '1/4' | undefined {
+    const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
+    const m = withoutBlocks.match(/^\s*\/\/\s*@resolution\s+(.+)$/m);
+    if (!m) return undefined;
+    const val = m[1].trim();
+    if (val === '1/2' || val === '1/4') return val;
+    if (val.includes('x')) {
+      const parts = val.split('x').map(Number);
+      if (parts.length === 2 && parts.every(Number.isFinite)) return parts as [number, number];
+    }
+    const n = Number(val);
+    return Number.isFinite(n) ? n : undefined;
+  }
+
   function detectPrimaryButton(code: string): PrimaryButton {
     const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
     const match = withoutBlocks.match(/^\s*\/\/\s*@primaryButton\s+(code|settings|run)\s*$/m);
@@ -216,6 +230,7 @@
       uniformValues: pruned,
       mrtCount: detectMrtCount(data.code),
       fboFormat: detectFboFormat(data.code),
+      resolution: detectResolution(data.code),
       primaryButton: nextPrimaryButton,
       _runRevision: Date.now()
     };

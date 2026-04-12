@@ -71,6 +71,20 @@
     return (m?.[1] as 'rgba8' | 'rgba16f' | 'rgba32f') ?? 'rgba8';
   }
 
+  function detectResolution(code: string): number | [number, number] | '1/2' | '1/4' | undefined {
+    const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
+    const m = withoutBlocks.match(/^\s*\/\/\s*@resolution\s+(.+)$/m);
+    if (!m) return undefined;
+    const val = m[1].trim();
+    if (val === '1/2' || val === '1/4') return val;
+    if (val.includes('x')) {
+      const parts = val.split('x').map(Number);
+      if (parts.length === 2 && parts.every(Number.isFinite)) return parts as [number, number];
+    }
+    const n = Number(val);
+    return Number.isFinite(n) ? n : undefined;
+  }
+
   let videoInletCount = $derived(data.videoInletCount ?? 0);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
   let messageInletCount = $derived(data.messageInletCount ?? 1);
@@ -177,7 +191,8 @@
     glSystem.upsertNode(nodeId, 'swgl', {
       code,
       mrtCount: data.videoOutletCount ?? 1,
-      fboFormat: detectFboFormat(code)
+      fboFormat: detectFboFormat(code),
+      resolution: detectResolution(code)
     });
 
     setTimeout(() => {
@@ -208,6 +223,7 @@
         code,
         mrtCount: data.videoOutletCount ?? 1,
         fboFormat: detectFboFormat(code),
+        resolution: detectResolution(code),
         _runRevision: Date.now()
       });
     } catch (error) {

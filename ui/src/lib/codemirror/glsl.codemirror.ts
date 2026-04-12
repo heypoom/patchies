@@ -84,7 +84,7 @@ const includeHighlightTheme = EditorView.baseTheme({
 /**
  * Highlights `// @title`, `// @param`, and `// @primaryButton` metadata directives (spec 125).
  */
-const METADATA_DIRECTIVE_RE = /^[ \t]*\/\/\s*(@(?:title|param|primaryButton))\s+(.+)$/gm;
+const METADATA_DIRECTIVE_RE = /^[ \t]*\/\/\s*(@(?:title|param|primaryButton|resolution))\s+(.+)$/gm;
 
 const metadataKeywordMark = Decoration.mark({ class: 'cm-glsl-metadata-keyword' });
 const metadataValueMark = Decoration.mark({ class: 'cm-glsl-metadata-value' });

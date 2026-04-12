@@ -151,7 +151,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'video-cube.three',
       'video-torus.three',
       'video-sphere.three',
-      'crate.three'
+      'crate.three',
+      'particles-from-texture.three'
     ]
   },
   {
