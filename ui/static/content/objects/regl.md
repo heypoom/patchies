@@ -249,6 +249,7 @@ setResolution(256)       // 256×256
 setResolution(512, 256)  // 512×256
 setResolution('1/2')     // half resolution
 setResolution('1/4')     // quarter resolution
+setResolution('1/8')     // any 1/n divisor works
 ```
 
 This reduces the FBO size so the GPU does less work per frame. Downstream

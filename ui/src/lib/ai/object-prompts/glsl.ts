@@ -23,6 +23,9 @@ CRITICAL RULES:
     requires \`uniform float strength;\`
     IMPORTANT: default value, then min and max!
 - \`// @format rgba32f\` (or \`rgba16f\`) — unclamped float output (default \`rgba8\`)
+- \`// @resolution 256\` — sets FBO size (256×256).
+    Also supports \`256x128\`, \`1/n\` (e.g. \`1/2\`, \`1/4\`, \`1/8\`).
+    Default is full window resolution.
 
 **FFT Audio Analysis (GLSL-specific):**
 - Create sampler2D uniform and connect fft~ object's purple "analyzer" outlet

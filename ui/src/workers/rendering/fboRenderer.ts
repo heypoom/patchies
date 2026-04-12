@@ -236,12 +236,14 @@ export class FBORenderer {
     let width: number;
     let height: number;
 
-    if (resolution === '1/2') {
-      width = Math.floor(outputWidth / 2);
-      height = Math.floor(outputHeight / 2);
-    } else if (resolution === '1/4') {
-      width = Math.floor(outputWidth / 4);
-      height = Math.floor(outputHeight / 4);
+    // Match 1/n fractional format (e.g. '1/2', '1/4', '1/8')
+    const fractionalMatch = typeof resolution === 'string' ? resolution.match(/^1\/(\d+)$/) : null;
+
+    if (fractionalMatch) {
+      const divisor = Number(fractionalMatch[1]);
+
+      width = Math.floor(outputWidth / divisor);
+      height = Math.floor(outputHeight / divisor);
     } else if (typeof resolution === 'number') {
       width = Math.floor(resolution);
       height = Math.floor(resolution);
@@ -403,12 +405,13 @@ export class FBORenderer {
       const nodeResolution = (node.data as Record<string, unknown>)?.resolution as
         | FBOResolution
         | undefined;
-      const [nodeW, nodeH] = this.resolveNodeSize(nodeResolution);
+
+      const [nodeWidth, nodeHeight] = this.resolveNodeSize(nodeResolution);
 
       const canReuseFbo =
         existingFbo &&
-        existingFbo.texture.width === nodeW &&
-        existingFbo.texture.height === nodeH &&
+        existingFbo.texture.width === nodeWidth &&
+        existingFbo.texture.height === nodeHeight &&
         existingFbo.colorAttachments.length === mrtCount &&
         (existingFbo.fboFormat ?? 'rgba8') === fboFormat;
 
@@ -475,7 +478,7 @@ export class FBORenderer {
 
         // Create color attachments — one for standard nodes, N for MRT GLSL nodes
         colorAttachments = Array.from({ length: mrtCount }, () =>
-          this.createFboTexture(nodeW, nodeH, fboFormat)
+          this.createFboTexture(nodeWidth, nodeHeight, fboFormat)
         );
 
         if (mrtCount > 1) {
@@ -601,10 +604,12 @@ export class FBORenderer {
       const feedbackData = feedbackNode?.data as Record<string, unknown> | undefined;
       const feedbackFormat: FBOFormat = (feedbackData?.fboFormat as FBOFormat) || 'rgba8';
       const feedbackResolution = feedbackData?.resolution as FBOResolution | undefined;
-      const [fbW, fbH] = this.resolveNodeSize(feedbackResolution);
+
+      const [feedbackTextureWidth, feedbackTextureHeight] =
+        this.resolveNodeSize(feedbackResolution);
 
       fboNode.prevTextures = fboNode.colorAttachments.map(() =>
-        this.createFboTexture(fbW, fbH, feedbackFormat)
+        this.createFboTexture(feedbackTextureWidth, feedbackTextureHeight, feedbackFormat)
       );
 
       fboNode.prevFramebuffers = fboNode.prevTextures.map((prevTexture) =>

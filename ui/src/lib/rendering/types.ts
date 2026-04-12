@@ -6,7 +6,7 @@ import type { PrimaryButton } from '$lib/eventbus/events';
 export type FBOFormat = 'rgba8' | 'rgba16f' | 'rgba32f';
 
 /** Per-node FBO resolution override. Default is full output size. */
-export type FBOResolution = number | [number, number] | '1/2' | '1/4';
+export type FBOResolution = number | [number, number] | string;
 
 export type RenderNode = {
   id: string;

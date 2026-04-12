@@ -211,6 +211,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 | `256x128`  | 256×128             | Non-square data                    |
 | `1/2`      | 960×540             | Half resolution                    |
 | `1/4`      | 480×270             | Quarter resolution                 |
+| `1/n`      | output ÷ n          | Any integer divisor (1/3, 1/8…)    |
 | *(none)*   | 1920×1080           | Default. Full resolution           |
 
 Downstream nodes sample the texture with bilinear filtering — upscaling

@@ -190,6 +190,7 @@ setResolution(256)       // 256×256
 setResolution(512, 256)  // 512 wide, 256 tall
 setResolution('1/2')     // half resolution
 setResolution('1/4')     // quarter resolution
+setResolution('1/8')     // any 1/n divisor works
 ```
 
 Downstream nodes sample the smaller texture with bilinear filtering —

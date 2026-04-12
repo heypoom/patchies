@@ -36,6 +36,7 @@ setResolution(256)       // fixed square: 256×256
 setResolution(512, 256)  // fixed rectangular: 512×256
 setResolution('1/2')     // relative to output: half in each dimension
 setResolution('1/4')     // quarter resolution
+setResolution('1/8')     // any 1/n divisor works
 // default (no call): full output resolution
 ```
 
@@ -46,6 +47,7 @@ Both mechanisms write to `node.data.resolution`, which the FBO pipeline reads.
 | full       | 1920×1080                  | 2.07M       | 1×            |
 | `'1/2'`    | 960×540                    | 0.52M       | 0.25×         |
 | `'1/4'`    | 480×270                    | 0.13M       | 0.06×         |
+| `'1/n'`    | output ÷ n                 | varies      | 1/n²×         |
 | `256`      | 256×256                    | 0.07M       | 0.03×         |
 | `512`      | 512×512                    | 0.26M       | 0.13×         |
 | `512, 256` | 512×256                    | 0.13M       | 0.06×         |

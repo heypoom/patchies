@@ -88,14 +88,20 @@ export function detectFboFormat(code: string): FBOFormat {
   return (match?.[1] as FBOFormat) ?? 'rgba8';
 }
 
-/** Parse `// @resolution 256` (or `256x128`, `1/2`, `1/4`) directive. */
+/** Parse `// @resolution 256` (or `256x128`, `1/n`) directive. */
 export function detectResolution(code: string): FBOResolution | undefined {
   const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
   const match = withoutBlocks.match(/^\s*\/\/\s*@resolution\s+(.+)$/m);
   if (!match) return undefined;
 
   const resolution = match[1].trim();
-  if (resolution === '1/2' || resolution === '1/4') return resolution;
+
+  // Match 1/n fractional format (e.g. 1/2, 1/4, 1/8, 1/16)
+  const fracMatch = resolution.match(/^1\/(\d+)$/);
+  if (fracMatch) {
+    const divisor = Number(fracMatch[1]);
+    if (divisor >= 2) return resolution;
+  }
 
   if (resolution.includes('x')) {
     const parts = resolution.split('x').map(Number);
