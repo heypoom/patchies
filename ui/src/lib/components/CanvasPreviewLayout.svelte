@@ -25,6 +25,7 @@
     width,
     height,
     style = '',
+    pixelated = false,
 
     topHandle,
     bottomHandle,
@@ -60,6 +61,7 @@
     width?: string | number;
     height?: string | number;
     style?: string;
+    pixelated?: boolean;
 
     topHandle?: Snippet;
     bottomHandle?: Snippet;
@@ -128,8 +130,8 @@
       width={typeof width === 'number' ? width : undefined}
       height={typeof height === 'number' ? height : undefined}
       style={typeof width === 'number' && typeof height === 'number'
-        ? `width:${width}px;height:${height}px;image-rendering:pixelated;${style}`
-        : `image-rendering:pixelated;${style}`}
+        ? `width:${width}px;height:${height}px;${pixelated ? 'image-rendering:pixelated;' : ''}${style}`
+        : `${pixelated ? 'image-rendering:pixelated;' : ''}${style}`}
     ></canvas>
   {/snippet}
 </ObjectPreviewLayout>

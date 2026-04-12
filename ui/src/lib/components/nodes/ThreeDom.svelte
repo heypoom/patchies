@@ -82,8 +82,17 @@
     createKVStore(nodeId)
   );
 
+  let hasCustomResolution = false;
   let outputWidth = $state($outputSize[0]);
   let outputHeight = $state($outputSize[1]);
+
+  // Sync from global output size unless node has a custom setResolution() override
+  $effect(() => {
+    if (hasCustomResolution) return;
+
+    outputWidth = $outputSize[0];
+    outputHeight = $outputSize[1];
+  });
 
   let previewWidth = $derived.by(() => outputWidth / PREVIEW_SCALE_FACTOR);
   let previewHeight = $derived.by(() => outputHeight / PREVIEW_SCALE_FACTOR);
@@ -277,6 +286,7 @@
       renderer.setSize(width, height);
     }
 
+    hasCustomResolution = true;
     outputWidth = width;
     outputHeight = height;
   }

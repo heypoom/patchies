@@ -831,13 +831,20 @@ export class GLSystem {
    * Also updates the default preview size proportionally.
    */
   setOutputSize(width: number, height: number) {
-    this.outputSize = [width, height];
-    outputSizeStore.set([width, height]);
+    const outputWidth = Math.max(1, Math.min(8192, Math.round(width)));
+    const outputHeight = Math.max(1, Math.min(8192, Math.round(height)));
+
+    if (!Number.isFinite(outputWidth) || !Number.isFinite(outputHeight)) return;
+
+    this.outputSize = [outputWidth, outputHeight];
+    outputSizeStore.set([outputWidth, outputHeight]);
+
     previewSizeStore.set([
-      Math.round(width / PREVIEW_SCALE_FACTOR),
-      Math.round(height / PREVIEW_SCALE_FACTOR)
+      Math.round(outputWidth / PREVIEW_SCALE_FACTOR),
+      Math.round(outputHeight / PREVIEW_SCALE_FACTOR)
     ]);
-    this.send('setOutputSize', { width, height });
+
+    this.send('setOutputSize', { width: outputWidth, height: outputHeight });
   }
 
   /**

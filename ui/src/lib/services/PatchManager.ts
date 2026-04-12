@@ -298,8 +298,10 @@ export class PatchManager {
     }
 
     // Restore patch settings
+    const glSystem = GLSystem.getInstance();
+
     if (migrated.settings) {
-      const { cablesVisible, bpm, timeSignature } = migrated.settings;
+      const { cablesVisible, bpm, timeSignature, outputSize } = migrated.settings;
 
       if (cablesVisible !== undefined) {
         isCablesVisible.set(cablesVisible);
@@ -315,14 +317,20 @@ export class PatchManager {
         transportStore.setTimeSignature(numerator, denominator);
       }
 
-      const glSystem = GLSystem.getInstance();
-
-      if (migrated.settings.outputSize) {
-        const [w, h] = migrated.settings.outputSize;
-        glSystem.setOutputSize(w, h);
+      if (
+        Array.isArray(outputSize) &&
+        outputSize.length === 2 &&
+        Number.isFinite(outputSize[0]) &&
+        Number.isFinite(outputSize[1]) &&
+        outputSize[0] > 0 &&
+        outputSize[1] > 0
+      ) {
+        glSystem.setOutputSize(outputSize[0], outputSize[1]);
       } else {
         glSystem.setOutputSize(...DEFAULT_OUTPUT_SIZE);
       }
+    } else {
+      glSystem.setOutputSize(...DEFAULT_OUTPUT_SIZE);
     }
 
     // Immediately save migrated patch to autosave so reloads don't break
