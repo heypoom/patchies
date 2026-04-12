@@ -98,7 +98,8 @@
         glSystem.upsertNode(nodeId, 'swgl', {
           code,
           mrtCount: m.outletCount,
-          fboFormat: runtimeFormat ?? detectFboFormat(code)
+          fboFormat: runtimeFormat ?? detectFboFormat(code),
+          resolution: detectResolution(code)
         });
       })
       .exhaustive();

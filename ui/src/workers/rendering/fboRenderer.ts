@@ -227,13 +227,32 @@ export class FBORenderer {
 
   /** Resolve per-node resolution override to [width, height]. */
   private resolveNodeSize(resolution: FBOResolution | undefined): [number, number] {
-    const [outW, outH] = this.outputSize;
-    if (resolution == null) return [outW, outH];
-    if (resolution === '1/2') return [Math.floor(outW / 2), Math.floor(outH / 2)];
-    if (resolution === '1/4') return [Math.floor(outW / 4), Math.floor(outH / 4)];
-    if (typeof resolution === 'number') return [resolution, resolution];
-    if (Array.isArray(resolution)) return [resolution[0], resolution[1]];
-    return [outW, outH];
+    const [outputWidth, outputHeight] = this.outputSize;
+
+    if (resolution == null) {
+      return [outputWidth, outputHeight];
+    }
+
+    let width: number;
+    let height: number;
+
+    if (resolution === '1/2') {
+      width = Math.floor(outputWidth / 2);
+      height = Math.floor(outputHeight / 2);
+    } else if (resolution === '1/4') {
+      width = Math.floor(outputWidth / 4);
+      height = Math.floor(outputHeight / 4);
+    } else if (typeof resolution === 'number') {
+      width = Math.floor(resolution);
+      height = Math.floor(resolution);
+    } else if (Array.isArray(resolution)) {
+      width = Math.floor(resolution[0]);
+      height = Math.floor(resolution[1]);
+    } else {
+      return [outputWidth, outputHeight];
+    }
+
+    return [Math.max(1, width), Math.max(1, height)];
   }
 
   /**
@@ -288,8 +307,6 @@ export class FBORenderer {
 
   /** Build FBOs for all nodes in the render graph */
   async buildFBOs(renderGraph: RenderGraph) {
-    const [width, height] = this.outputSize;
-
     // Get the set of node IDs that will exist in the new graph
     const newNodeIds = new Set(renderGraph.nodes.map((n) => n.id));
 
@@ -662,13 +679,27 @@ export class FBORenderer {
         const sourceFbo = this.fboNodes.get(inlet0.sourceNodeId);
         if (!sourceFbo) return;
 
-        // Blit input FBO to output framebuffer
-        const [w, h] = this.outputSize;
+        // Blit input FBO to output framebuffer using source texture dimensions
+        const sourceWidth = sourceFbo.texture.width;
+        const sourceHeight = sourceFbo.texture.height;
         const gl = this.gl;
 
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFbo.framebuffer));
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(framebuffer));
-        gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+
+        gl.blitFramebuffer(
+          0,
+          0,
+          sourceWidth,
+          sourceHeight,
+          0,
+          0,
+          sourceWidth,
+          sourceHeight,
+          gl.COLOR_BUFFER_BIT,
+          gl.NEAREST
+        );
+
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       },
       cleanup: () => {
@@ -923,7 +954,8 @@ export class FBORenderer {
   ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
     if (node.type !== 'glsl') return null;
 
-    const [width, height] = this.outputSize;
+    const nodeResolution = node.data.resolution;
+    const [width, height] = this.resolveNodeSize(nodeResolution);
 
     // Prepare uniform defaults to prevent crashes
     if (node.data.glUniformDefs) {
@@ -1220,7 +1252,8 @@ export class FBORenderer {
       const fboNode = this.fboNodes.get(nodeId);
       if (!fboNode?.prevFramebuffers?.length) continue;
 
-      const [w, h] = this.outputSize;
+      const width = fboNode.texture.width;
+      const height = fboNode.texture.height;
 
       const gl = this.gl;
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(fboNode.framebuffer));
@@ -1228,7 +1261,19 @@ export class FBORenderer {
       for (let i = 0; i < fboNode.prevFramebuffers.length; i++) {
         gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffers[i]));
-        gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+
+        gl.blitFramebuffer(
+          0,
+          0,
+          width,
+          height,
+          0,
+          0,
+          width,
+          height,
+          gl.COLOR_BUFFER_BIT,
+          gl.NEAREST
+        );
       }
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
