@@ -152,7 +152,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'video-torus.three',
       'video-sphere.three',
       'crate.three',
-      'particles-from-texture.three'
+      'point-cloud-from-texture.three'
     ]
   },
   {
