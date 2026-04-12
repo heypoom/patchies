@@ -86,7 +86,7 @@
   let statsIntervalId: ReturnType<typeof setInterval> | null = null;
 
   const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
-  const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
+  const [defaultPreviewWidth, defaultPreviewHeight] = GLSystem.defaultPreviewSize;
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)

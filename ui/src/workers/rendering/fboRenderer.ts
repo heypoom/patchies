@@ -49,6 +49,7 @@ import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
+  public backgroundSize: [number, number] = [...DEFAULT_OUTPUT_SIZE];
 
   public renderGraph: RenderGraph | null = null;
 
@@ -192,20 +193,8 @@ export class FBORenderer {
       data: new Uint8Array([0, 0, 0, 0])
     });
 
-    // Calculate preview size from output size
-    const previewSize: [number, number] = [
-      Math.floor(this.outputSize[0] / PREVIEW_SCALE_FACTOR),
-      Math.floor(this.outputSize[1] / PREVIEW_SCALE_FACTOR)
-    ];
-
     // Create shared pixel readback service
-    this.pixelReadbackService = new PixelReadbackService(
-      this.gl,
-      this.regl,
-      this.profiler,
-      this.outputSize,
-      previewSize
-    );
+    this.pixelReadbackService = new PixelReadbackService(this.gl, this.regl, this.profiler);
 
     // Create renderers that use the shared service
     this.previewRenderer = new PreviewRenderer(this.pixelReadbackService);
@@ -566,6 +555,10 @@ export class FBORenderer {
         continue;
       }
 
+      const nodeSize = this.resolveNodeSize(resolution);
+      // Canvas/textmode nodes use output/2 for sharper previews (vs output/4 for GL nodes)
+      const isCanvasNode = node.type === 'canvas' || node.type === 'textmode';
+      const previewScaleFactor = isCanvasNode ? PREVIEW_SCALE_FACTOR / 2 : PREVIEW_SCALE_FACTOR;
       const fboNode: FBONode = {
         id: node.id,
         framebuffer,
@@ -576,7 +569,11 @@ export class FBORenderer {
         dataFingerprint: fingerprint,
         nodeType: node.type,
         fboFormat,
-        resolution
+        resolution,
+        previewSize: [
+          Math.max(1, Math.floor(nodeSize[0] / previewScaleFactor)),
+          Math.max(1, Math.floor(nodeSize[1] / previewScaleFactor))
+        ]
       };
 
       this.fboNodes.set(node.id, fboNode);
@@ -1385,17 +1382,7 @@ export class FBORenderer {
    * This introduces 1 frame of latency but eliminates GPU stalls (~3ms per read).
    */
   renderPreviewBitmaps(): Map<string, ImageBitmap> {
-    return this.previewRenderer.renderPreviewBitmaps(
-      this.fboNodes,
-      this.isOutputEnabled,
-      (nodeId) => (this.canvasByNode.has(nodeId) ? this.canvasOutputSize : undefined)
-    );
-  }
-
-  // HACK: use a different preview size for canvas nodes
-  // this is to make the canvas preview looks sharper
-  get canvasOutputSize(): [number, number] {
-    return [this.outputSize[0] / 2, this.outputSize[1] / 2];
+    return this.previewRenderer.renderPreviewBitmaps(this.fboNodes, this.isOutputEnabled);
   }
 
   /** Set which nodes are visible in the viewport for preview culling */
@@ -1408,9 +1395,9 @@ export class FBORenderer {
     this.previewRenderer.setAllPreviewsDisabled(disabled);
   }
 
-  /** Update preview readback resolution. Called only when LOD tier changes. */
+  /** Update preview LOD multiplier. Called only when LOD tier changes. */
   setPreviewScaleMultiplier(multiplier: number) {
-    this.previewRenderer.setPreviewScaleMultiplier(multiplier, PREVIEW_SCALE_FACTOR);
+    this.previewRenderer.setPreviewScaleMultiplier(multiplier);
   }
 
   /** Enable/disable all profiling (per-node draw timing + frame stats). */
@@ -1446,7 +1433,7 @@ export class FBORenderer {
   }
 
   private renderNodeToMainOutput(node: FBONode): void {
-    const [renderWidth, renderHeight] = this.outputSize;
+    const [backgroundWidth, backgroundHeight] = this.backgroundSize;
 
     if (!this.isOutputEnabled) {
       return;
@@ -1458,13 +1445,16 @@ export class FBORenderer {
     }
 
     const gl = this.regl._gl as WebGL2RenderingContext;
+
     let framebuffer: regl.Framebuffer2D | null = null;
 
-    let sourceWidth = renderWidth;
-    let sourceHeight = renderHeight;
+    // Source size comes from the node's FBO (not the background)
+    let sourceWidth = node.texture.width;
+    let sourceHeight = node.texture.height;
 
     if (this.videoTextures.has(node.id)) {
       const tex = this.videoTextures.getDestinationTexture(node.id)!;
+
       // Use cached FBO instead of creating new one every frame (fixes massive leak)
       framebuffer = this.videoTextures.getDestinationFBO(node.id) || null;
       sourceWidth = tex.width;
@@ -1477,22 +1467,48 @@ export class FBORenderer {
       return;
     }
 
-    gl.viewport(0, 0, renderWidth, renderHeight);
+    gl.viewport(0, 0, backgroundWidth, backgroundHeight);
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(framebuffer));
     gl.readBuffer(gl.COLOR_ATTACHMENT0 + this.outputOutletIndex);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
+    // Cover-mode blit: crop the source to match the background's aspect ratio,
+    // so the output fills the screen without stretching (spec 128).
+    const sourceAspect = sourceWidth / sourceHeight;
+    const backgroundAspect = backgroundWidth / backgroundHeight;
+
+    let sourceX0 = 0;
+    let sourceY0 = 0;
+    let sourceX1 = sourceWidth;
+    let sourceY1 = sourceHeight;
+
+    if (sourceAspect > backgroundAspect) {
+      // Source is wider — crop sides
+      const cropWidth = sourceHeight * backgroundAspect;
+      const offset = (sourceWidth - cropWidth) / 2;
+
+      sourceX0 = Math.floor(offset);
+      sourceX1 = Math.floor(offset + cropWidth);
+    } else if (sourceAspect < backgroundAspect) {
+      // Source is taller — crop top/bottom
+      const cropHeight = sourceWidth / backgroundAspect;
+      const offset = (sourceHeight - cropHeight) / 2;
+
+      sourceY0 = Math.floor(offset);
+      sourceY1 = Math.floor(offset + cropHeight);
+    }
+
     gl.blitFramebuffer(
+      sourceX0,
+      sourceY0,
+      sourceX1,
+      sourceY1,
       0,
       0,
-      sourceWidth,
-      sourceHeight,
-      0,
-      0,
-      renderWidth,
-      renderHeight,
+      backgroundWidth,
+      backgroundHeight,
       gl.COLOR_BUFFER_BIT,
-      gl.NEAREST
+      gl.LINEAR
     );
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -1570,37 +1586,15 @@ export class FBORenderer {
     return textureMap;
   }
 
-  async setPreviewSize(width: number, height: number) {
-    this.pixelReadbackService.setPreviewSize(width, height);
-
-    await this.buildFBOs(this.renderGraph!);
-  }
-
-  setOutputSize(width: number, height: number) {
-    this.outputSize = [width, height] as [w: number, h: number];
-
-    // Update all hydra renderers to match the new output size
-    for (const hydra of this.hydraByNode.values()) {
-      hydra?.hydra?.setResolution(width, height);
-    }
-
+  /**
+   * Set the background display size (viewport dimensions).
+   * Only resizes the offscreen canvas used for final output blit.
+   * Does NOT affect FBO sizes or node preview sizes.
+   */
+  setBackgroundSize(width: number, height: number) {
+    this.backgroundSize = [width, height] as [number, number];
     this.offscreenCanvas.width = width;
     this.offscreenCanvas.height = height;
-
-    // Update pixel readback service's output size reference
-    this.pixelReadbackService.setOutputSize(this.outputSize);
-
-    // Update projection map render targets to match the new output size
-    for (const projmap of this.projmapByNode.values()) {
-      projmap?.resizeOutput(width, height);
-    }
-
-    // Rebuild FBOs at the new output dimensions so GLSL shaders render into
-    // correctly-sized framebuffers (old FBOs would leave stale pixels in the
-    // expanded area after a resize).
-    if (this.renderGraph) {
-      this.buildFBOs(this.renderGraph);
-    }
   }
 
   /**
@@ -1810,6 +1804,13 @@ export class FBORenderer {
    * This is a synchronous capture for on-demand use (export, Gemini, etc.)
    */
   capturePreviewBitmap(nodeId: string, customSize?: [number, number]): ImageBitmap | null {
+    const fboNode = this.fboNodes.get(nodeId);
+    const defaultPreview: [number, number] = [
+      Math.floor(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
+      Math.floor(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
+    ];
+    const fallbackSize = customSize ?? fboNode?.previewSize ?? defaultPreview;
+
     const externalTexture = this.videoTextures.getDestinationTexture(nodeId);
 
     if (externalTexture) {
@@ -1821,21 +1822,20 @@ export class FBORenderer {
           sourceFbo,
           externalTexture.width,
           externalTexture.height,
-          customSize
+          fallbackSize
         );
 
         return bitmap;
       }
     }
 
-    const fboNode = this.fboNodes.get(nodeId);
     if (!fboNode) return null;
 
     return this.captureRenderer.capturePreviewBitmapSync(
       fboNode.framebuffer,
       fboNode.texture.width,
       fboNode.texture.height,
-      customSize
+      fallbackSize
     );
   }
 

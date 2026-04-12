@@ -103,7 +103,7 @@
   let videoStats = $state<VideoStats | null>(null);
   let statsIntervalId: ReturnType<typeof setInterval> | null = null;
 
-  const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
+  const [defaultPreviewWidth, defaultPreviewHeight] = GLSystem.defaultPreviewSize;
   const [MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT] = glSystem.outputSize;
 
   // Initialize bitmaprenderer context when canvas is bound

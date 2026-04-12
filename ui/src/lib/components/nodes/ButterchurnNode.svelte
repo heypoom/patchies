@@ -63,7 +63,7 @@
     presets = butterchurnPresets.getPresets();
 
     if (canvasElement) {
-      const [previewWidth, previewHeight] = glSystem.previewSize;
+      const [previewWidth, previewHeight] = GLSystem.defaultPreviewSize;
       canvasElement.width = previewWidth;
       canvasElement.height = previewHeight;
 

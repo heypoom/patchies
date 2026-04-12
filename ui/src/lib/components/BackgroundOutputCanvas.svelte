@@ -17,7 +17,7 @@
 
     if (resizeTimer !== null) clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      glSystem.setOutputSize(width, height);
+      glSystem.setBackgroundSize(width, height);
       resizeTimer = null;
     }, 150);
   }
@@ -27,7 +27,7 @@
 
     glSystem.backgroundOutputCanvasContext = bitmapContext;
     // Call directly (no debounce) on mount so initial size is set immediately.
-    glSystem.setOutputSize(window.innerWidth, window.innerHeight);
+    glSystem.setBackgroundSize(window.innerWidth, window.innerHeight);
     outputCanvasElement.width = window.innerWidth;
     outputCanvasElement.height = window.innerHeight;
 

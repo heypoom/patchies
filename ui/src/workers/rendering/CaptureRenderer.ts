@@ -51,9 +51,9 @@ export class CaptureRenderer {
     framebuffer: regl.Framebuffer2D,
     sourceWidth: number,
     sourceHeight: number,
-    customSize?: [number, number]
+    customSize: [number, number]
   ): ImageBitmap {
-    const [pw, ph] = customSize ?? this.service.previewSize;
+    const [pw, ph] = customSize;
     const width = Math.floor(pw);
     const height = Math.floor(ph);
 
@@ -152,11 +152,12 @@ export class CaptureRenderer {
           const tempFbo = this.regl.framebuffer({ color: externalTexture });
           tempFbos.push(tempFbo);
 
+          const texSize: [number, number] = [externalTexture.width, externalTexture.height];
           const read = this.initiateVideoFrameRead(
             sourceId,
             tempFbo,
-            [externalTexture.width, externalTexture.height],
-            validResolution
+            texSize,
+            validResolution ?? texSize
           );
           if (read) {
             readCache.set(cacheKey, read);
@@ -173,7 +174,7 @@ export class CaptureRenderer {
           sourceId,
           fboNode.framebuffer,
           [fboNode.texture.width, fboNode.texture.height],
-          validResolution
+          validResolution ?? fboNode.previewSize
         );
 
         if (read) {
@@ -206,16 +207,16 @@ export class CaptureRenderer {
   private initiateVideoFrameRead(
     sourceNodeId: string,
     framebuffer: regl.Framebuffer2D,
-    customSourceSize?: [number, number],
-    customOutputSize?: [number, number]
+    customSourceSize: [number, number],
+    customOutputSize: [number, number]
   ): PendingVideoFrameRead | null {
-    const [pw, ph] = customOutputSize ?? this.service.previewSize;
+    const [pw, ph] = customOutputSize;
     const width = Math.floor(pw);
     const height = Math.floor(ph);
 
     if (width <= 0 || height <= 0) return null;
 
-    const [sourceWidth, sourceHeight] = customSourceSize ?? this.service.outputSize;
+    const [sourceWidth, sourceHeight] = customSourceSize;
     const gl = this.gl;
 
     this.service.ensureIntermediateFboSize(width, height);

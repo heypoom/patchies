@@ -9,6 +9,48 @@ export const WEBGL_OPTIONAL_EXTENSIONS = [
 export const DEFAULT_OUTPUT_SIZE = [1008, 654] as [width: number, height: number];
 export const PREVIEW_SCALE_FACTOR = 4;
 
+export const DEFAULT_PREVIEW_SIZE: [number, number] = [
+  Math.floor(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
+  Math.floor(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
+];
+
+/**
+ * Compute preview size from a per-node FBO resolution override.
+ * Used by node components to derive their preview canvas dimensions.
+ */
+export function getPreviewSizeForResolution(
+  resolution: number | [number, number] | string | undefined
+): [number, number] {
+  if (resolution == null) return DEFAULT_PREVIEW_SIZE;
+
+  const [outW, outH] = DEFAULT_OUTPUT_SIZE;
+
+  // Fractional: '1/2', '1/4', etc.
+  if (typeof resolution === 'string') {
+    const match = resolution.match(/^1\/(\d+)$/);
+    if (match) {
+      const divisor = Number(match[1]);
+      return [
+        Math.max(1, Math.floor(outW / divisor / PREVIEW_SCALE_FACTOR)),
+        Math.max(1, Math.floor(outH / divisor / PREVIEW_SCALE_FACTOR))
+      ];
+    }
+    return DEFAULT_PREVIEW_SIZE;
+  }
+
+  // Square: 256 → 64x64
+  if (typeof resolution === 'number') {
+    const s = Math.max(1, Math.floor(resolution / PREVIEW_SCALE_FACTOR));
+    return [s, s];
+  }
+
+  // Explicit: [512, 256] → [128, 64]
+  return [
+    Math.max(1, Math.floor(resolution[0] / PREVIEW_SCALE_FACTOR)),
+    Math.max(1, Math.floor(resolution[1] / PREVIEW_SCALE_FACTOR))
+  ];
+}
+
 export const DEFAULT_GLSL_CODE = `// uniforms: iResolution, iTime, iMouse
 // you can define your own uniforms!
 

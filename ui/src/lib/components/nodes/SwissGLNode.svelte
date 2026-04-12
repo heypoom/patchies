@@ -9,6 +9,7 @@
   import { removeExcessVideoOutletEdges } from './outlet-edges';
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { getPreviewSizeForResolution } from '$lib/canvas/constants';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import { SettingsManager } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
@@ -144,7 +145,7 @@
     if (previewCanvas) {
       previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 
-      const [previewWidth, previewHeight] = glSystem.previewSize;
+      const [previewWidth, previewHeight] = getPreviewSizeForResolution(detectResolution(code));
       previewCanvas.width = previewWidth;
       previewCanvas.height = previewHeight;
       previewCanvas.style.width = `${previewWidth}px`;

@@ -88,15 +88,12 @@ export class PreviewRenderer {
     this.allPreviewsDisabled = disabled;
   }
 
-  /** Update preview readback resolution. Called only when LOD tier changes (gated by sender). */
-  setPreviewScaleMultiplier(multiplier: number, baseScaleFactor: number): void {
-    const [outW, outH] = this.service.outputSize;
-    const scaleFactor = baseScaleFactor * multiplier || 1;
+  /** LOD scale multiplier applied to per-node preview sizes. 1 = full, 2 = half, etc. */
+  private previewScaleMultiplier = 1;
 
-    this.service.setPreviewSize(
-      Math.max(1, Math.floor(outW / scaleFactor)),
-      Math.max(1, Math.floor(outH / scaleFactor))
-    );
+  /** Update preview LOD multiplier. Called only when LOD tier changes (gated by sender). */
+  setPreviewScaleMultiplier(multiplier: number): void {
+    this.previewScaleMultiplier = multiplier;
   }
 
   removeNode(nodeId: string): void {
@@ -127,8 +124,7 @@ export class PreviewRenderer {
    */
   renderPreviewBitmaps(
     fboNodes: Map<string, FBONode>,
-    isOutputEnabled: boolean,
-    getCustomSize?: (nodeId: string) => [number, number] | undefined
+    isOutputEnabled: boolean
   ): Map<string, ImageBitmap> {
     const results = this.frameResults;
     results.clear();
@@ -165,9 +161,17 @@ export class PreviewRenderer {
       const fboNode = fboNodes.get(nodeId);
       if (!fboNode) continue;
 
-      const customSize = getCustomSize?.(nodeId);
+      // Use the node's own preview size, scaled by LOD multiplier
+      const [pw, ph] = fboNode.previewSize;
+      const previewSize: [number, number] =
+        this.previewScaleMultiplier > 1
+          ? [
+              Math.max(1, Math.floor(pw / this.previewScaleMultiplier)),
+              Math.max(1, Math.floor(ph / this.previewScaleMultiplier))
+            ]
+          : [pw, ph];
       const fboSize: [number, number] = [fboNode.texture.width, fboNode.texture.height];
-      this.initiateAsyncRead(nodeId, fboNode.framebuffer, customSize, fboSize);
+      this.initiateAsyncRead(nodeId, fboNode.framebuffer, previewSize, fboSize);
     }
 
     return results;
@@ -245,12 +249,10 @@ export class PreviewRenderer {
   private initiateAsyncRead(
     nodeId: string,
     framebuffer: regl.Framebuffer2D,
-    customSize?: [number, number],
-    sourceSize?: [number, number]
+    previewSize: [number, number],
+    sourceSize: [number, number]
   ): void {
-    const [pw, ph] = customSize ?? this.service.previewSize;
-    const width = Math.floor(pw);
-    const height = Math.floor(ph);
+    const [width, height] = previewSize;
 
     if (width <= 0 || height <= 0) return;
 
@@ -259,9 +261,7 @@ export class PreviewRenderer {
     this.service.ensureIntermediateFboSize(width, height);
 
     // Blit source to intermediate FBO with flip.
-    // Use the FBO's actual texture dimensions, not the global output size —
-    // per-node resolution (spec 122) may differ from the output size.
-    const [sourceWidth, sourceHeight] = sourceSize ?? this.service.outputSize;
+    const [sourceWidth, sourceHeight] = sourceSize;
     const sourceFBO = getFramebuffer(framebuffer);
     const destFBO = getFramebuffer(this.service.getIntermediateFbo());
 

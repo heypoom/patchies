@@ -28,7 +28,7 @@ import {
   type AudioAnalysisPayloadWithType,
   type OnFFTReadyCallback
 } from '$lib/audio/AudioAnalysisSystem';
-import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
+import { DEFAULT_OUTPUT_SIZE, DEFAULT_PREVIEW_SIZE } from './constants';
 import { logger } from '$lib/utils/logger';
 import { match, P } from 'ts-pattern';
 import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
@@ -118,10 +118,8 @@ export class GLSystem {
 
   public outputSize = DEFAULT_OUTPUT_SIZE;
 
-  public previewSize: [width: number, height: number] = [
-    this.outputSize[0] / PREVIEW_SCALE_FACTOR,
-    this.outputSize[1] / PREVIEW_SCALE_FACTOR
-  ];
+  /** Default preview size for nodes without a resolution override. */
+  public static defaultPreviewSize = DEFAULT_PREVIEW_SIZE;
 
   static getInstance() {
     if (!GLSystem.instance) {
@@ -823,32 +821,12 @@ export class GLSystem {
     return true;
   }
 
-  setPreviewSize(width: number, height: number) {
-    this.previewSize = [width, height];
-
-    for (const nodeId in this.previewCanvasContexts) {
-      const context = this.previewCanvasContexts[nodeId];
-
-      if (context) {
-        const canvas = context.canvas;
-        canvas.width = width;
-        canvas.height = height;
-
-        // re-create the context to accommodate the new size
-        delete this.previewCanvasContexts[nodeId];
-
-        this.previewCanvasContexts[nodeId] = canvas.getContext(
-          'bitmaprenderer'
-        ) as ImageBitmapRenderingContext;
-      }
-    }
-
-    this.send('setPreviewSize', { width, height });
-  }
-
-  setOutputSize(width: number, height: number) {
-    this.outputSize = [width, height];
-    this.send('setOutputSize', { width, height });
+  /**
+   * Set the background display size (viewport dimensions).
+   * Only affects the background canvas blit target, not FBOs or node previews.
+   */
+  setBackgroundSize(width: number, height: number) {
+    this.send('setBackgroundSize', { width, height });
   }
 
   setBitmapSource(nodeId: string, source: ImageBitmapSource) {

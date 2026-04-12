@@ -17,10 +17,6 @@ export class PixelReadbackService {
   public regl: regl.Regl;
   public profiler: RenderingProfiler;
 
-  // Size configuration
-  public outputSize: [number, number];
-  public previewSize: [number, number];
-
   // PBO pool for async reads
   private pboPool: WebGLBuffer[] = [];
 
@@ -34,23 +30,17 @@ export class PixelReadbackService {
   private intermediateFbo: regl.Framebuffer2D | null = null;
   private intermediateTexture: regl.Texture2D | null = null;
 
-  constructor(
-    gl: WebGL2RenderingContext,
-    reglInstance: regl.Regl,
-    profiler: RenderingProfiler,
-    outputSize: [number, number],
-    previewSize: [number, number]
-  ) {
+  constructor(gl: WebGL2RenderingContext, reglInstance: regl.Regl, profiler: RenderingProfiler) {
     this.gl = gl;
     this.regl = reglInstance;
     this.profiler = profiler;
-    this.outputSize = outputSize;
-    this.previewSize = previewSize;
     this.createIntermediateFbo();
   }
 
   private createIntermediateFbo(): void {
-    const [width, height] = this.previewSize;
+    // Start with a small 1x1 FBO — ensureIntermediateFboSize will resize as needed
+    const width = 1;
+    const height = 1;
 
     this.intermediateTexture = this.regl.texture({
       width,
@@ -66,17 +56,6 @@ export class PixelReadbackService {
   }
 
   // ===== Public API =====
-
-  setPreviewSize(width: number, height: number): void {
-    this.previewSize = [width, height];
-    this.intermediateFbo?.destroy();
-    this.intermediateTexture?.destroy();
-    this.createIntermediateFbo();
-  }
-
-  setOutputSize(outputSize: [number, number]): void {
-    this.outputSize = outputSize;
-  }
 
   // ===== PBO Pool =====
 
