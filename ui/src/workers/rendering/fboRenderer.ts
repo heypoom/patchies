@@ -45,7 +45,7 @@ import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 import type { RenderOp } from '$lib/profiler/types';
-import { defaultUniformValue, isValidUniformData } from './glUniformUtils';
+import { defaultUniformValue, isValidUniformData, toGLValue } from './glUniformUtils';
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
 export class FBORenderer {
@@ -953,15 +953,24 @@ export class FBORenderer {
     const nodeResolution = node.data.resolution;
     const [width, height] = this.resolveNodeSize(nodeResolution);
 
-    // Prepare uniform defaults to prevent crashes
+    // Prepare uniform defaults to prevent crashes.
+    // Use saved uniformValues from node data when available, so that persisted
+    // settings are applied immediately without waiting for setUniformData messages.
     if (node.data.glUniformDefs) {
       const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
+      const savedValues = node.data.uniformValues as Record<string, unknown> | undefined;
 
       for (const def of node.data.glUniformDefs) {
         const uniformFieldValue = uniformData.get(def.name);
 
         if (!isValidUniformData(def, uniformFieldValue)) {
-          uniformData.set(def.name, defaultUniformValue(def));
+          const savedValue = savedValues?.[def.name];
+
+          if (savedValue !== undefined) {
+            uniformData.set(def.name, toGLValue(def, savedValue));
+          } else {
+            uniformData.set(def.name, defaultUniformValue(def));
+          }
         }
       }
 

@@ -302,14 +302,6 @@
 
     updateShader();
 
-    // Restore persisted uniform values to the GL system
-    for (const [name, value] of Object.entries(uniformValues)) {
-      const uniformDef = data.glUniformDefs?.find((d) => d.name === name);
-      if (uniformDef === undefined) continue;
-
-      glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
-    }
-
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
     }, 10);
