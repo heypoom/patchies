@@ -44,11 +44,13 @@ export function serializePatch({
   const patchId = get(currentPatchId);
   const transport = get(transportStore);
 
+  const glSystem = GLSystem.getInstance();
+
   const settings: PatchSettings = {
     cablesVisible: get(isCablesVisible),
     bpm: transport.bpm,
     timeSignature: transport.timeSignature,
-    outputSize: GLSystem.getInstance().outputSize
+    ...(glSystem.hasExplicitOutputSize ? { outputSize: glSystem.outputSize } : {})
   };
 
   const patch: PatchSaveFormat = {

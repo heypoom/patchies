@@ -547,9 +547,11 @@
       })
       .with('set-output-size', () => {
         const glSystem = GLSystem.getInstance();
-        const [w, h] = glSystem.outputSize;
-        const [dw, dh] = getDefaultOutputSize();
-        outputSizeInput = w === dw && h === dh ? 'screen' : `${w}x${h}`;
+
+        outputSizeInput = glSystem.hasExplicitOutputSize
+          ? `${glSystem.outputSize[0]}x${glSystem.outputSize[1]}`
+          : 'screen';
+
         nextStage('set-output-size');
       })
       .with('prepare-offline', () => {
@@ -731,11 +733,25 @@
   function applyOutputSize() {
     const input = outputSizeInput.trim().toLowerCase();
 
+    // "clear" → remove explicit output size, adapt to screen on each load
+    if (input === 'clear') {
+      const glSystem = GLSystem.getInstance();
+      glSystem.clearOutputSize();
+
+      const [width, height] = glSystem.outputSize;
+      toast.success(`Output size cleared — using screen default (${width}×${height})`);
+
+      onCancel();
+      return;
+    }
+
     // "screen" → use this screen's DPR-aware dimensions (saved as fixed pixels)
     if (input === 'screen') {
       const [width, height] = getDefaultOutputSize();
+
       GLSystem.getInstance().setOutputSize(width, height);
       toast.success(`Output size set to ${width}×${height}`);
+
       onCancel();
       return;
     }
@@ -746,8 +762,10 @@
       const multiplier = Math.min(4, Math.max(0.5, Number(multiplierMatch[1])));
       const width = Math.min(8192, Math.round(window.innerWidth * multiplier));
       const height = Math.min(8192, Math.round(window.innerHeight * multiplier));
+
       GLSystem.getInstance().setOutputSize(width, height);
       toast.success(`Output size set to ${width}×${height} (${multiplier}x)`);
+
       onCancel();
       return;
     }
@@ -756,7 +774,7 @@
     const match = input.match(/^(\d+)\s*[x×,]\s*(\d+)$/i);
 
     if (!match) {
-      toast.error('Invalid format. Use WIDTHxHEIGHT, screen, or Nx (e.g. 2x)');
+      toast.error('Invalid format. Use WIDTHxHEIGHT, screen, Nx, or clear');
       return;
     }
 
@@ -935,14 +953,14 @@
   {:else if stage === 'set-output-size'}
     <div class="border-b border-zinc-700 p-3">
       <div class="mb-2 text-xs text-zinc-400">
-        Enter output resolution (WIDTHxHEIGHT, screen, or Nx):
+        Enter output resolution (WIDTHxHEIGHT, screen, Nx, or clear):
       </div>
       <input
         bind:this={searchInput}
         bind:value={outputSizeInput}
         onkeydown={handleKeydown}
         type="text"
-        placeholder="e.g. 1920x1080, screen, or 2x"
+        placeholder="e.g. 1920x1080, screen, 2x, or clear"
         class="w-full bg-transparent font-mono text-sm text-zinc-100 placeholder-zinc-400 outline-none"
       />
     </div>
@@ -1029,9 +1047,19 @@
       {/if}
     {:else if stage === 'set-output-size'}
       <div class="px-3 py-2 text-xs text-zinc-400">
-        {#if outputSizeInput.trim().toLowerCase() === 'screen'}
+        {#if outputSizeInput.trim().toLowerCase() === 'clear'}
+          {@const [cw, ch] = getDefaultOutputSize()}
+
+          Output: <span class="font-mono text-green-300">clear ({cw}×{ch})</span>
+
+          <div class="mt-1 text-zinc-500">
+            Removes saved size. Patch will adapt to each viewer's screen.
+          </div>
+        {:else if outputSizeInput.trim().toLowerCase() === 'screen'}
           {@const [sw, sh] = getDefaultOutputSize()}
+
           Output: <span class="font-mono text-green-300">screen ({sw}×{sh})</span>
+
           <div class="mt-1 text-zinc-500">
             Sets to your current screen size. This value is saved with the patch.
           </div>
@@ -1059,11 +1087,9 @@
         {:else if outputSizeInput.trim().match(/^(\d+)\s*[x×,]\s*(\d+)$/i)}
           Output: <span class="font-mono text-green-300">{outputSizeInput.trim()}</span>
         {:else if outputSizeInput.trim()}
-          <span class="text-red-400"
-            >Invalid format — use WIDTHxHEIGHT, screen, or Nx (e.g. 2x)</span
-          >
+          <span class="text-red-400">Invalid format — use WIDTHxHEIGHT, screen, Nx, or clear</span>
         {:else}
-          Enter a resolution: 1920x1080, screen, or 2x
+          Enter a resolution: 1920x1080, screen, 2x, or clear
         {/if}
       </div>
     {:else if stage === 'set-room'}

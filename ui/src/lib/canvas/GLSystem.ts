@@ -32,7 +32,8 @@ import {
   DEFAULT_OUTPUT_SIZE,
   DEFAULT_PREVIEW_SIZE,
   PREVIEW_SCALE_FACTOR,
-  capPreviewSize
+  capPreviewSize,
+  getDefaultOutputSize
 } from './constants';
 import { logger } from '$lib/utils/logger';
 import {
@@ -126,6 +127,7 @@ export class GLSystem {
   ]);
 
   public outputSize = DEFAULT_OUTPUT_SIZE;
+  public hasExplicitOutputSize = false;
 
   /** Default preview size for nodes without a resolution override. */
   public static defaultPreviewSize = DEFAULT_PREVIEW_SIZE;
@@ -842,6 +844,7 @@ export class GLSystem {
     if (!Number.isFinite(outputWidth) || !Number.isFinite(outputHeight)) return;
 
     this.outputSize = [outputWidth, outputHeight];
+    this.hasExplicitOutputSize = true;
     outputSizeStore.set([outputWidth, outputHeight]);
 
     previewSizeStore.set(
@@ -852,6 +855,19 @@ export class GLSystem {
     );
 
     this.send('setOutputSize', { width: outputWidth, height: outputHeight });
+  }
+
+  /**
+   * Clear the explicit output size. The patch will adapt to the screen on each load.
+   * Immediately applies DPR-aware screen dimensions for the current session.
+   */
+  clearOutputSize() {
+    this.hasExplicitOutputSize = false;
+
+    const [width, height] = getDefaultOutputSize();
+
+    this.setOutputSize(width, height);
+    this.hasExplicitOutputSize = false;
   }
 
   /**
