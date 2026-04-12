@@ -17,6 +17,7 @@
   import { savePatchToLocalStorage, getUniquePatchName } from '$lib/save-load/save-local-storage';
   import { toast } from 'svelte-sonner';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { DEFAULT_OUTPUT_SIZE } from '$lib/canvas/constants';
   import { useWebCodecs, toggleWebCodecs, toggleVideoStats } from '../../stores/video.store';
   import { renderFpsCap, FPS_CAP_OPTIONS } from '../../stores/renderer.store';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -546,8 +547,11 @@
       })
       .with('set-output-size', () => {
         const glSystem = GLSystem.getInstance();
-        const [w, h] = glSystem.outputSize;
-        outputSizeInput = `${w}x${h}`;
+        const [width, height] = glSystem.outputSize;
+
+        const isDefault = width === DEFAULT_OUTPUT_SIZE[0] && height === DEFAULT_OUTPUT_SIZE[1];
+        outputSizeInput = isDefault ? 'auto' : `${width}x${height}`;
+
         nextStage('set-output-size');
       })
       .with('prepare-offline', () => {
@@ -727,11 +731,19 @@
   }
 
   function applyOutputSize() {
-    const input = outputSizeInput.trim();
+    const input = outputSizeInput.trim().toLowerCase();
+
+    if (input === 'auto') {
+      GLSystem.getInstance().setOutputSize(window.innerWidth, window.innerHeight);
+      toast.success('Output size set to auto (matches screen)');
+      onCancel();
+      return;
+    }
+
     const match = input.match(/^(\d+)\s*[x×,]\s*(\d+)$/i);
 
     if (!match) {
-      toast.error('Invalid format. Use WIDTHxHEIGHT (e.g. 1920x1080)');
+      toast.error('Invalid format. Use WIDTHxHEIGHT or "auto"');
       return;
     }
 
@@ -909,13 +921,15 @@
     </div>
   {:else if stage === 'set-output-size'}
     <div class="border-b border-zinc-700 p-3">
-      <div class="mb-2 text-xs text-zinc-400">Enter output resolution (WIDTHxHEIGHT):</div>
+      <div class="mb-2 text-xs text-zinc-400">
+        Enter output resolution (WIDTHxHEIGHT or "auto"):
+      </div>
       <input
         bind:this={searchInput}
         bind:value={outputSizeInput}
         onkeydown={handleKeydown}
         type="text"
-        placeholder="e.g. 1920x1080"
+        placeholder="e.g. 1920x1080 or auto"
         class="w-full bg-transparent font-mono text-sm text-zinc-100 placeholder-zinc-400 outline-none"
       />
     </div>
@@ -1002,12 +1016,14 @@
       {/if}
     {:else if stage === 'set-output-size'}
       <div class="px-3 py-2 text-xs text-zinc-400">
-        {#if outputSizeInput.trim().match(/^(\d+)\s*[x×,]\s*(\d+)$/i)}
+        {#if outputSizeInput.trim().toLowerCase() === 'auto'}
+          Output: <span class="font-mono text-green-300">auto</span> (matches screen size)
+        {:else if outputSizeInput.trim().match(/^(\d+)\s*[x×,]\s*(\d+)$/i)}
           Output: <span class="font-mono text-green-300">{outputSizeInput.trim()}</span>
         {:else if outputSizeInput.trim()}
-          <span class="text-red-400">Invalid format — use WIDTHxHEIGHT</span>
+          <span class="text-red-400">Invalid format — use WIDTHxHEIGHT or "auto"</span>
         {:else}
-          Enter a resolution like 1920x1080, 1280x720, or 512x512
+          Enter a resolution like 1920x1080, 512x512, or "auto"
         {/if}
       </div>
     {:else if stage === 'set-room'}

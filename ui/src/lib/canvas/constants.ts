@@ -9,14 +9,37 @@ export const WEBGL_OPTIONAL_EXTENSIONS = [
 export const DEFAULT_OUTPUT_SIZE = [1008, 654] as [width: number, height: number];
 export const PREVIEW_SCALE_FACTOR = 4;
 
-export const DEFAULT_PREVIEW_SIZE: [number, number] = [
+/** Maximum preview thumbnail size — prevents huge previews on large screens. */
+export const MAX_PREVIEW_SIZE: [number, number] = [
   Math.round(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
   Math.round(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
 ];
 
+export const DEFAULT_PREVIEW_SIZE: [number, number] = [...MAX_PREVIEW_SIZE];
+
+/**
+ * Cap preview dimensions to fit within MAX_PREVIEW_SIZE while preserving aspect ratio.
+ * Previews smaller than the max pass through unchanged.
+ */
+export function capPreviewSize(width: number, height: number): [number, number] {
+  const [maxWidth, maxHeight] = MAX_PREVIEW_SIZE;
+
+  if (width <= maxWidth && height <= maxHeight) {
+    return [width, height];
+  }
+
+  const scaleFactor = Math.min(maxWidth / width, maxHeight / height);
+
+  return [
+    Math.max(1, Math.floor(width * scaleFactor)),
+    Math.max(1, Math.floor(height * scaleFactor))
+  ];
+}
+
 /**
  * Compute preview size from a per-node FBO resolution override.
  * Used by node components to derive their preview canvas dimensions.
+ * Result is capped to MAX_PREVIEW_SIZE so large resolutions don't create huge thumbnails.
  */
 export function getPreviewSizeForResolution(
   resolution: number | [number, number] | string | undefined
@@ -36,10 +59,10 @@ export function getPreviewSizeForResolution(
         return DEFAULT_PREVIEW_SIZE;
       }
 
-      return [
+      return capPreviewSize(
         Math.max(1, Math.floor(outputWidth / divisor / PREVIEW_SCALE_FACTOR)),
         Math.max(1, Math.floor(outputHeight / divisor / PREVIEW_SCALE_FACTOR))
-      ];
+      );
     }
     return DEFAULT_PREVIEW_SIZE;
   }
@@ -52,7 +75,7 @@ export function getPreviewSizeForResolution(
 
     const size = Math.max(1, Math.floor(resolution / PREVIEW_SCALE_FACTOR));
 
-    return [size, size];
+    return capPreviewSize(size, size);
   }
 
   // Explicit: [512, 256] → [128, 64]
@@ -65,10 +88,10 @@ export function getPreviewSizeForResolution(
     return DEFAULT_PREVIEW_SIZE;
   }
 
-  return [
+  return capPreviewSize(
     Math.max(1, Math.floor(resolution[0] / PREVIEW_SCALE_FACTOR)),
     Math.max(1, Math.floor(resolution[1] / PREVIEW_SCALE_FACTOR))
-  ];
+  );
 }
 
 export const DEFAULT_GLSL_CODE = `// uniforms: iResolution, iTime, iMouse

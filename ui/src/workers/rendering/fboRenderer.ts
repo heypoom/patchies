@@ -14,7 +14,8 @@ import {
   DEFAULT_OUTPUT_SIZE,
   WEBGL_EXTENSIONS,
   WEBGL_OPTIONAL_EXTENSIONS,
-  PREVIEW_SCALE_FACTOR
+  PREVIEW_SCALE_FACTOR,
+  capPreviewSize
 } from '$lib/canvas/constants';
 import { PixelReadbackService } from './PixelReadbackService';
 import { PreviewRenderer } from './PreviewRenderer';
@@ -555,10 +556,18 @@ export class FBORenderer {
         continue;
       }
 
-      const nodeSize = this.resolveNodeSize(resolution);
-      // Canvas/textmode nodes use output/2 for sharper previews (vs output/4 for GL nodes)
+      // Preview size derives from outputSize (stable default), not fboResolution (screen-matched).
+      // This keeps previews at ~252x164 regardless of screen resolution.
+      const previewBase = this.resolveNodeSize(resolution);
+
       const isCanvasNode = node.type === 'canvas' || node.type === 'textmode';
       const previewScaleFactor = isCanvasNode ? PREVIEW_SCALE_FACTOR / 2 : PREVIEW_SCALE_FACTOR;
+
+      const previewSize = capPreviewSize(
+        Math.max(1, Math.floor(previewBase[0] / previewScaleFactor)),
+        Math.max(1, Math.floor(previewBase[1] / previewScaleFactor))
+      );
+
       const fboNode: FBONode = {
         id: node.id,
         framebuffer,
@@ -570,10 +579,7 @@ export class FBORenderer {
         nodeType: node.type,
         fboFormat,
         resolution,
-        previewSize: [
-          Math.max(1, Math.floor(nodeSize[0] / previewScaleFactor)),
-          Math.max(1, Math.floor(nodeSize[1] / previewScaleFactor))
-        ]
+        previewSize
       };
 
       this.fboNodes.set(node.id, fboNode);
@@ -1433,7 +1439,7 @@ export class FBORenderer {
   }
 
   private renderNodeToMainOutput(node: FBONode): void {
-    const [backgroundWidth, backgroundHeight] = this.backgroundSize;
+    const [backgroundWidth, backgroundHeight] = this.outputSize;
 
     if (!this.isOutputEnabled) {
       return;
@@ -1588,17 +1594,22 @@ export class FBORenderer {
 
   /**
    * Set the output (FBO) resolution for the patch.
-   * Updates all node FBOs and Hydra renderers.
+   * Resizes offscreen canvas, updates Hydra renderers, and rebuilds FBOs.
    */
   setOutputSize(width: number, height: number) {
     this.outputSize = [width, height] as [number, number];
 
-    // Update all hydra renderers to match the new output size
+    this.offscreenCanvas.width = width;
+    this.offscreenCanvas.height = height;
+
     for (const hydra of this.hydraByNode.values()) {
       hydra?.hydra?.setResolution(width, height);
     }
 
-    // Rebuild FBOs at the new output dimensions
+    for (const projmap of this.projmapByNode.values()) {
+      projmap?.resizeOutput(width, height);
+    }
+
     if (this.renderGraph) {
       this.buildFBOs(this.renderGraph);
     }
@@ -1606,13 +1617,10 @@ export class FBORenderer {
 
   /**
    * Set the background display size (viewport dimensions).
-   * Only resizes the offscreen canvas used for final output blit.
-   * Does NOT affect FBO sizes or node preview sizes.
+   * Only updates backgroundSize for the cover-mode blit calculation.
    */
   setBackgroundSize(width: number, height: number) {
     this.backgroundSize = [width, height] as [number, number];
-    this.offscreenCanvas.width = width;
-    this.offscreenCanvas.height = height;
   }
 
   /**

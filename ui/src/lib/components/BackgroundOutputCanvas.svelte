@@ -17,7 +17,7 @@
 
     if (resizeTimer !== null) clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      glSystem.setBackgroundSize(width, height);
+      glSystem.setOutputSize(width, height);
       resizeTimer = null;
     }, 150);
   }
@@ -26,8 +26,7 @@
     bitmapContext = outputCanvasElement.getContext('bitmaprenderer')!;
 
     glSystem.backgroundOutputCanvasContext = bitmapContext;
-    // Call directly (no debounce) on mount so initial size is set immediately.
-    glSystem.setBackgroundSize(window.innerWidth, window.innerHeight);
+    glSystem.setOutputSize(window.innerWidth, window.innerHeight);
     outputCanvasElement.width = window.innerWidth;
     outputCanvasElement.height = window.innerHeight;
 
@@ -38,7 +37,6 @@
     window.removeEventListener('resize', setOutputToWindowSize);
     if (resizeTimer !== null) clearTimeout(resizeTimer);
 
-    // Unregister the context if we are still using it.
     if (glSystem.backgroundOutputCanvasContext === bitmapContext) {
       glSystem.backgroundOutputCanvasContext = null;
     }
