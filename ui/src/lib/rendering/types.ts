@@ -24,6 +24,7 @@ export type RenderNode = {
       data: {
         code: string;
         glUniformDefs: GLUniformDef[];
+        uniformValues?: Record<string, unknown>;
         mrtCount?: number;
         fboFormat?: FBOFormat;
         resolution?: FBOResolution;
