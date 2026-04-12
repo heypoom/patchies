@@ -128,8 +128,7 @@ override). They don't resize when the background changes.
 | `src/lib/components/nodes/GLSLCanvasNode.svelte`   | Derive preview size from node's resolution, not global                                                         |
 | `src/lib/components/nodes/HydraNode.svelte`        | Same                                                                                                           |
 | `src/lib/components/nodes/ThreeNode.svelte`        | Same                                                                                                           |
-| `src/lib/components/nodes/P5CanvasNode.svelte`     | May need adjustment (already has custom sizing)                                                                |
-| Other node components (Regl, SwissGL, etc.)        | Same pattern                                                                                                   |
+| Other GL node components (Regl, SwissGL, etc.)     | Same pattern                                                                                                   |
 
 ## What does NOT change
 
@@ -147,17 +146,17 @@ No user-facing migration needed. Patches load the same way. The only visible cha
 - Nodes with `@resolution 256` will preview as square (64×64) instead of the current global aspect ratio
 - Background output no longer distorts node previews on different screens
 
-## Open questions
+## Decisions
 
-1. **Fractional resolutions (`1/2`, `1/4`)** — these are relative to `outputSize`. With the decoupling,
-   should they be relative to `DEFAULT_OUTPUT_SIZE` (stable) or the background size (adaptive)?
-   Recommend: relative to `DEFAULT_OUTPUT_SIZE` for consistency.
+1. **Fractional resolutions (`1/2`, `1/4`)** are relative to `DEFAULT_OUTPUT_SIZE` —
+   stable and predictable across devices.
 
-2. **Canvas nodes** have a special `canvasOutputSize` hack (`outputSize / 2`) for sharper previews.
-   This should migrate to the per-node preview size system.
+2. **Canvas nodes** currently have a `canvasOutputSize` hack (`outputSize / 2`) for sharper
+   previews. Migrate this into the per-node preview size system so canvas nodes get sharper
+   previews through the same mechanism.
 
-3. **P5 nodes** measure their container width dynamically. This is orthogonal to the FBO
-   decoupling and can stay as-is.
+3. **Non-pipeline nodes are out of scope.** P5, canvas.dom, three.dom, textmode.dom etc.
+   are not part of the GL rendering pipeline — don't touch them.
 
-4. **`setPreviewSize()` on GLSystem** (line 826) — this method manually overrides all preview
-   sizes and is already rarely used. It should be removed or repurposed for per-node overrides.
+4. **Remove `setPreviewSize()` on GLSystem** (line 826) — unused after this change since
+   preview sizes are per-node.
