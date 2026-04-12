@@ -22,6 +22,9 @@ CRITICAL RULES:
     e.g. \`// @param strength 0.5 0.0 1.0 "Effect strength"\`
     requires \`uniform float strength;\`
     IMPORTANT: default value, then min and max!
+- \`// @param name color "description"\` — renders a vec3 uniform as a color picker.
+    Use \`color\` as the default value. Only works with \`vec3\` uniforms.
+    e.g. \`// @param tint color "Tint color"\` with \`uniform vec3 tint;\`
 - \`// @format rgba32f\` (or \`rgba16f\`) — unclamped float output (default \`rgba8\`)
 - \`// @resolution 256\` — sets FBO size (256×256).
     Also supports \`256x128\`, \`1/n\` (e.g. \`1/2\`, \`1/4\`, \`1/8\`).
