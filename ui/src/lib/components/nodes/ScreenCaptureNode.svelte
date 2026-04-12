@@ -1,9 +1,11 @@
 <script lang="ts">
   import { Monitor, Square } from '@lucide/svelte/icons';
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { screenSchema } from '$lib/objects/schemas/screen';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { outputWidth, outputHeight } from '../../../stores/renderer.store';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -22,8 +24,6 @@
   let resizerCanvas: OffscreenCanvas | null = null;
   let resizerCtx: OffscreenCanvasRenderingContext2D | null = null;
 
-  const [MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT] = glSystem.outputSize;
-
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
       .with(messages.bang, () => startCapture())
@@ -39,7 +39,9 @@
 
       if (videoElement) {
         videoElement.srcObject = stream;
+
         await videoElement.play();
+
         isCapturing = true;
         errorMessage = null;
 
@@ -77,9 +79,12 @@
       const videoHeight = videoElement.videoHeight;
 
       // Check if we need to resize (if video is larger than our max dimensions)
-      if (videoWidth > MAX_UPLOAD_WIDTH || videoHeight > MAX_UPLOAD_HEIGHT) {
+      const maxOutputWidth = get(outputWidth);
+      const maxOutputHeight = get(outputHeight);
+
+      if (videoWidth > maxOutputWidth || videoHeight > maxOutputHeight) {
         // Calculate scale to fit within max dimensions while preserving aspect ratio
-        const scale = Math.min(MAX_UPLOAD_WIDTH / videoWidth, MAX_UPLOAD_HEIGHT / videoHeight);
+        const scale = Math.min(maxOutputWidth / videoWidth, maxOutputHeight / videoHeight);
         const scaledWidth = Math.round(videoWidth * scale);
         const scaledHeight = Math.round(videoHeight * scale);
 

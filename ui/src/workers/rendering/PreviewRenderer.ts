@@ -5,7 +5,8 @@ import type { PixelReadbackService } from './PixelReadbackService';
 import {
   DEFAULT_PREVIEW_MAX_FPS_CAP,
   DEFAULT_MAX_PREVIEWS_PER_FRAME_NO_OUTPUT,
-  DEFAULT_MAX_PREVIEWS_PER_FRAME_WITH_OUTPUT
+  DEFAULT_MAX_PREVIEWS_PER_FRAME_WITH_OUTPUT,
+  MIN_PREVIEW_SIZE_FOR_DOWNSCALE
 } from './constants';
 
 interface PendingRead {
@@ -161,17 +162,27 @@ export class PreviewRenderer {
       const fboNode = fboNodes.get(nodeId);
       if (!fboNode) continue;
 
-      // Use the node's own preview size, scaled by LOD multiplier
-      const [pw, ph] = fboNode.previewSize;
-      const previewSize: [number, number] =
-        this.previewScaleMultiplier > 1
-          ? [
-              Math.max(1, Math.floor(pw / this.previewScaleMultiplier)),
-              Math.max(1, Math.floor(ph / this.previewScaleMultiplier))
-            ]
-          : [pw, ph];
+      // Use the node's own preview size, scaled by LOD multiplier.
+      // For low-res nodes where the computed preview would be tiny
+      // (e.g. @resolution 30 → 7px preview), read at FBO native size instead
+      // so the browser can upscale crisply via CSS image-rendering: pixelated.
+      const [previewWidth, previewHeight] = fboNode.previewSize;
       const fboSize: [number, number] = [fboNode.texture.width, fboNode.texture.height];
-      this.initiateAsyncRead(nodeId, fboNode.framebuffer, previewSize, fboSize);
+
+      const useNativeSize =
+        previewWidth < MIN_PREVIEW_SIZE_FOR_DOWNSCALE ||
+        previewHeight < MIN_PREVIEW_SIZE_FOR_DOWNSCALE;
+
+      const readbackSize: [number, number] = useNativeSize
+        ? fboSize
+        : this.previewScaleMultiplier > 1
+          ? [
+              Math.max(1, Math.floor(previewWidth / this.previewScaleMultiplier)),
+              Math.max(1, Math.floor(previewHeight / this.previewScaleMultiplier))
+            ]
+          : [previewWidth, previewHeight];
+
+      this.initiateAsyncRead(nodeId, fboNode.framebuffer, readbackSize, fboSize);
     }
 
     return results;

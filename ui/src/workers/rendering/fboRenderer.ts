@@ -1587,6 +1587,24 @@ export class FBORenderer {
   }
 
   /**
+   * Set the output (FBO) resolution for the patch.
+   * Updates all node FBOs and Hydra renderers.
+   */
+  setOutputSize(width: number, height: number) {
+    this.outputSize = [width, height] as [number, number];
+
+    // Update all hydra renderers to match the new output size
+    for (const hydra of this.hydraByNode.values()) {
+      hydra?.hydra?.setResolution(width, height);
+    }
+
+    // Rebuild FBOs at the new output dimensions
+    if (this.renderGraph) {
+      this.buildFBOs(this.renderGraph);
+    }
+  }
+
+  /**
    * Set the background display size (viewport dimensions).
    * Only resizes the offscreen canvas used for final output blit.
    * Does NOT affect FBO sizes or node preview sizes.

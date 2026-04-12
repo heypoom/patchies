@@ -28,8 +28,12 @@ import {
   type AudioAnalysisPayloadWithType,
   type OnFFTReadyCallback
 } from '$lib/audio/AudioAnalysisSystem';
-import { DEFAULT_OUTPUT_SIZE, DEFAULT_PREVIEW_SIZE } from './constants';
+import { DEFAULT_OUTPUT_SIZE, DEFAULT_PREVIEW_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
 import { logger } from '$lib/utils/logger';
+import {
+  outputSize as outputSizeStore,
+  previewSize as previewSizeStore
+} from '../../stores/renderer.store';
 import { match, P } from 'ts-pattern';
 import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
@@ -819,6 +823,28 @@ export class GLSystem {
 
     this.hashes[key] = hash;
     return true;
+  }
+
+  /**
+   * Set the output (FBO) resolution for the patch.
+   * Affects all node FBOs (unless they have per-node @resolution overrides).
+   * Also updates the default preview size proportionally.
+   */
+  setOutputSize(width: number, height: number) {
+    const outputWidth = Math.max(1, Math.min(8192, Math.round(width)));
+    const outputHeight = Math.max(1, Math.min(8192, Math.round(height)));
+
+    if (!Number.isFinite(outputWidth) || !Number.isFinite(outputHeight)) return;
+
+    this.outputSize = [outputWidth, outputHeight];
+    outputSizeStore.set([outputWidth, outputHeight]);
+
+    previewSizeStore.set([
+      Math.round(outputWidth / PREVIEW_SCALE_FACTOR),
+      Math.round(outputHeight / PREVIEW_SCALE_FACTOR)
+    ]);
+
+    this.send('setOutputSize', { width: outputWidth, height: outputHeight });
   }
 
   /**

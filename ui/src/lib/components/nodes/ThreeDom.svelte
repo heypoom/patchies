@@ -9,6 +9,7 @@
   import { messages } from '$lib/objects/schemas/common';
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { outputSize } from '../../../stores/renderer.store';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
@@ -71,7 +72,6 @@
 
   // Lazy-loaded Three.js
   let THREE: typeof import('three') | null = null;
-  let threeLoaded = $state(false);
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -82,10 +82,17 @@
     createKVStore(nodeId)
   );
 
-  const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
+  let hasCustomResolution = false;
+  let outputWidth = $state($outputSize[0]);
+  let outputHeight = $state($outputSize[1]);
 
-  let outputWidth = $state(defaultOutputWidth);
-  let outputHeight = $state(defaultOutputHeight);
+  // Sync from global output size unless node has a custom setResolution() override
+  $effect(() => {
+    if (hasCustomResolution) return;
+
+    outputWidth = $outputSize[0];
+    outputHeight = $outputSize[1];
+  });
 
   let previewWidth = $derived.by(() => outputWidth / PREVIEW_SCALE_FACTOR);
   let previewHeight = $derived.by(() => outputHeight / PREVIEW_SCALE_FACTOR);
@@ -279,6 +286,7 @@
       renderer.setSize(width, height);
     }
 
+    hasCustomResolution = true;
     outputWidth = width;
     outputHeight = height;
   }
@@ -319,7 +327,6 @@
       if (!THREE) {
         THREE = await import('three');
         renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-        threeLoaded = true;
         customConsole.log('Three.js loaded!');
       }
 

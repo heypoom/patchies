@@ -7,6 +7,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import { match, P } from 'ts-pattern';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { outputSize } from '../../../stores/renderer.store';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { VdoNinjaPushNode as VdoNinjaPushAudioNode } from '$lib/audio/v2/nodes/VdoNinjaPushNode';
   import { capturePreviewFrame } from '$lib/ai/google';
@@ -111,13 +112,17 @@
 
     // Create video canvas for frame capture
     videoCanvas = document.createElement('canvas');
-    const [width, height] = glSystem.outputSize;
-    videoCanvas.width = width;
-    videoCanvas.height = height;
+
+    const [outputWidth, outputHeight] = $outputSize;
+
+    videoCanvas.width = outputWidth;
+    videoCanvas.height = outputHeight;
+
     videoCtx = videoCanvas.getContext('2d');
 
     // Create audio node for capturing audio from the pipeline
     const node = await audioService.createNode(nodeId, 'vdo.ninja.push');
+
     if (node && node instanceof VdoNinjaPushAudioNode) {
       audioNode = node;
     }
@@ -126,7 +131,7 @@
     try {
       await loadVdoNinjaSdk();
       sdkLoaded = true;
-    } catch (err) {
+    } catch {
       connectionStatus = 'error';
       errorMessage = 'Failed to load VDO.Ninja SDK';
       messageContext.send({ type: 'error', message: errorMessage });
@@ -136,7 +141,9 @@
   onDestroy(() => {
     disconnect();
     stopStreaming();
+
     audioService.removeNodeById(nodeId);
+
     if (messageContext) {
       messageContext.queue.removeCallback(handleMessage);
       messageContext.destroy();
