@@ -55,6 +55,27 @@ Right-click any visual object (or use its **···** menu) and choose **Output t
 - Switching to a different object replaces the current output — only one at a time
 - This is great for live performance; it is not saved across sessions
 
+## Output Resolution
+
+By default, patches render at your screen's native resolution,
+including Retina scaling. You can change this with the
+**Set Output Size** command (`Cmd+K` → "Set Output Size"):
+
+| Input | What it does |
+| --- | --- |
+| `screen` | Use your current screen's native resolution |
+| `2x` | Multiply your screen size by 2 (or `0.5x`, `1.5x`, etc.) |
+| `1920x1080` | Set an explicit resolution |
+
+The resolution you choose is **saved with the patch**.
+If you type `screen` on a 1440×900 Retina display, it
+saves `2880×1800` — opening the patch on a different screen
+keeps that resolution. Type `screen` again to re-adapt to
+a new display.
+
+Higher resolutions produce sharper output but use more GPU
+memory. Use `0.5x` for better performance on complex patches.
+
 ## Wireless Video Routing
 
 Route video across the patch without cables using [`send.vdo <channel>`](/docs/objects/send.vdo) and [`recv.vdo <channel>`](/docs/objects/recv.vdo):
