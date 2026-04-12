@@ -16,30 +16,58 @@ A noise generator at 1080p produces 2 million pixels per frame. The noise is smo
 
 ### Solution
 
-A `resolution` setting per node: `full`, `1/2`, `1/4`, or a fixed size (`256`, `512`, `1024`). The FBO is created at that size. Downstream nodes read it via `texture(iChannel0, uv)` — WebGL's bilinear sampling upscales automatically, no extra code needed.
+Set FBO resolution from code — no UI dropdown. Two mechanisms depending on node type:
 
-### Settings UI
+**GLSL directive** (same pattern as `@format`):
 
-Add a "Resolution" dropdown to the node settings panel for all visual nodes. Default: `full` (current behavior, no change).
+```glsl
+// @resolution 256
+// @format rgba32f
 
-| Setting | FBO size (at 1080p output) | Pixel count | Relative cost |
-| ------- | -------------------------- | ----------- | ------------- |
-| Full    | 1920×1080                  | 2.07M       | 1×            |
-| 1/2     | 960×540                    | 0.52M       | 0.25×         |
-| 1/4     | 480×270                    | 0.13M       | 0.06×         |
-| 256     | 256×256                    | 0.07M       | 0.03×         |
-| 512     | 512×512                    | 0.26M       | 0.13×         |
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  fragColor = vec4(uv, 0.5, 1.0);
+}
+```
+
+**JS API** (for Three.js, REGL, P5, SwissGL, Canvas, etc.):
+
+```javascript
+setResolution(256)       // fixed square: 256×256
+setResolution(512, 256)  // fixed rectangular: 512×256
+setResolution('1/2')     // relative to output: half in each dimension
+setResolution('1/4')     // quarter resolution
+// default (no call): full output resolution
+```
+
+Both mechanisms write to `node.data.resolution`, which the FBO pipeline reads.
+
+| Resolution | FBO size (at 1080p output) | Pixel count | Relative cost |
+| ---------- | -------------------------- | ----------- | ------------- |
+| full       | 1920×1080                  | 2.07M       | 1×            |
+| `'1/2'`    | 960×540                    | 0.52M       | 0.25×         |
+| `'1/4'`    | 480×270                    | 0.13M       | 0.06×         |
+| `256`      | 256×256                    | 0.07M       | 0.03×         |
+| `512`      | 512×512                    | 0.26M       | 0.13×         |
+| `512, 256` | 512×256                    | 0.13M       | 0.06×         |
+
+Downstream nodes read the texture via `texture(iChannel0, uv)` — WebGL's bilinear sampling upscales automatically, no extra code needed.
 
 ### Implementation
 
-In `fboRenderer.ts`, read the resolution setting from node data when creating FBOs:
+**Directive parsing** (GLSL): parse `// @resolution <value>` alongside `@format`, store to `node.data.resolution`. Supports a single number (square) or `w x h`.
+
+**JS API**: `setResolution()` writes to `node.data.resolution` and signals the FBO pipeline to recreate.
+
+**FBO creation** in `fboRenderer.ts`:
 
 ```typescript
 const [width, height] = match(node.data.resolution ?? 'full')
   .with('full', () => [outputWidth, outputHeight])
   .with('1/2', () => [outputWidth / 2, outputHeight / 2])
   .with('1/4', () => [outputWidth / 4, outputHeight / 4])
+  .with(P.string, (s) => s.split('x').map(Number)) // e.g. '512x256'
   .with(P.number, (size) => [size, size])
+  .with(P.array(P.number), ([w, h]) => [w, h])
   .exhaustive()
 ```
 
