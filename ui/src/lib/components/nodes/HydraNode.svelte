@@ -174,7 +174,7 @@
     if (previewCanvas) {
       previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
 
-      const [previewWidth, previewHeight] = glSystem.previewSize;
+      const [previewWidth, previewHeight] = GLSystem.defaultPreviewSize;
 
       previewCanvas.width = previewWidth;
       previewCanvas.height = previewHeight;

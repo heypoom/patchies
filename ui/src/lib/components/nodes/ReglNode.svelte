@@ -85,7 +85,7 @@
   const updateNodeInternals = useUpdateNodeInternals();
 
   const [outputWidth, outputHeight] = glSystem.outputSize;
-  const [previewWidth, previewHeight] = glSystem.previewSize;
+  const [previewWidth, previewHeight] = GLSystem.defaultPreviewSize;
 
   let messageInletCount = $derived(data.messageInletCount ?? 1);
   let messageOutletCount = $derived(data.messageOutletCount ?? 0);

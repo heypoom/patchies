@@ -134,6 +134,9 @@ export interface FBONode {
   /** The per-node resolution this FBO was built with */
   resolution?: FBOResolution;
 
+  /** The preview readback size for this node (FBO size / PREVIEW_SCALE_FACTOR) */
+  previewSize: [number, number];
+
   /** Previous frame textures — one per color attachment, only allocated for nodes in feedback loops */
   prevTextures?: regl.Texture2D[];
 

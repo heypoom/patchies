@@ -9,6 +9,7 @@
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
+  import { getPreviewSizeForResolution } from '$lib/canvas/constants';
   import {
     shaderCodeToUniformDefs,
     uniformDefsToSettingsSchema,
@@ -50,9 +51,11 @@
   let glSystem = GLSystem.getInstance();
   let mouseHandler: CanvasMouseHandler | null = null;
 
-  // Preview canvas display size
-  let width = $state(glSystem.previewSize[0]);
-  let height = $state(glSystem.previewSize[1]);
+  // Preview canvas display size — derived from per-node resolution
+  const previewSize = $derived(getPreviewSizeForResolution(detectResolution(data.code)));
+
+  let width = $derived(previewSize[0]);
+  let height = $derived(previewSize[1]);
 
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewBitmapContext: ImageBitmapRenderingContext;

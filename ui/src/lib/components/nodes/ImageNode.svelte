@@ -34,7 +34,7 @@
   let canvasElement: HTMLCanvasElement | null = $state(null);
   let hasImage = $state(false);
 
-  const [defaultPreviewWidth, defaultPreviewHeight] = glSystem.previewSize;
+  const [defaultPreviewWidth, defaultPreviewHeight] = GLSystem.defaultPreviewSize;
   const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
 
   // Use VFS media composable for all file handling
