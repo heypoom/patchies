@@ -849,6 +849,12 @@ export class GLSystem {
   setOutputSize(width: number, height: number) {
     this.outputSize = [width, height];
     this.send('setOutputSize', { width, height });
+
+    // Recalculate preview size to match the new aspect ratio
+    this.setPreviewSize(
+      Math.floor(width / PREVIEW_SCALE_FACTOR),
+      Math.floor(height / PREVIEW_SCALE_FACTOR)
+    );
   }
 
   setBitmapSource(nodeId: string, source: ImageBitmapSource) {

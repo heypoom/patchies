@@ -204,7 +204,8 @@ export class FBORenderer {
       this.regl,
       this.profiler,
       this.outputSize,
-      previewSize
+      previewSize,
+      PREVIEW_SCALE_FACTOR
     );
 
     // Create renderers that use the shared service
@@ -1573,7 +1574,9 @@ export class FBORenderer {
   async setPreviewSize(width: number, height: number) {
     this.pixelReadbackService.setPreviewSize(width, height);
 
-    await this.buildFBOs(this.renderGraph!);
+    if (this.renderGraph) {
+      await this.buildFBOs(this.renderGraph);
+    }
   }
 
   setOutputSize(width: number, height: number) {

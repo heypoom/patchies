@@ -20,6 +20,7 @@ export class PixelReadbackService {
   // Size configuration
   public outputSize: [number, number];
   public previewSize: [number, number];
+  private previewScaleFactor = 1;
 
   // PBO pool for async reads
   private pboPool: WebGLBuffer[] = [];
@@ -39,13 +40,15 @@ export class PixelReadbackService {
     reglInstance: regl.Regl,
     profiler: RenderingProfiler,
     outputSize: [number, number],
-    previewSize: [number, number]
+    previewSize: [number, number],
+    initialScaleFactor = 1
   ) {
     this.gl = gl;
     this.regl = reglInstance;
     this.profiler = profiler;
     this.outputSize = outputSize;
     this.previewSize = previewSize;
+    this.previewScaleFactor = initialScaleFactor;
     this.createIntermediateFbo();
   }
 
@@ -74,8 +77,24 @@ export class PixelReadbackService {
     this.createIntermediateFbo();
   }
 
+  setPreviewScaleFactor(scaleFactor: number): void {
+    this.previewScaleFactor = scaleFactor || 1;
+    this.recalculatePreviewSize();
+  }
+
   setOutputSize(outputSize: [number, number]): void {
     this.outputSize = outputSize;
+    this.recalculatePreviewSize();
+  }
+
+  private recalculatePreviewSize(): void {
+    const [outW, outH] = this.outputSize;
+    const w = Math.max(1, Math.floor(outW / this.previewScaleFactor));
+    const h = Math.max(1, Math.floor(outH / this.previewScaleFactor));
+
+    if (w !== this.previewSize[0] || h !== this.previewSize[1]) {
+      this.setPreviewSize(w, h);
+    }
   }
 
   // ===== PBO Pool =====

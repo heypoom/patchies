@@ -90,13 +90,8 @@ export class PreviewRenderer {
 
   /** Update preview readback resolution. Called only when LOD tier changes (gated by sender). */
   setPreviewScaleMultiplier(multiplier: number, baseScaleFactor: number): void {
-    const [outW, outH] = this.service.outputSize;
     const scaleFactor = baseScaleFactor * multiplier || 1;
-
-    this.service.setPreviewSize(
-      Math.max(1, Math.floor(outW / scaleFactor)),
-      Math.max(1, Math.floor(outH / scaleFactor))
-    );
+    this.service.setPreviewScaleFactor(scaleFactor);
   }
 
   removeNode(nodeId: string): void {
