@@ -104,7 +104,8 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     // Blit from Three.js render target to our regl FBO
     this.blitToReglFramebuffer();
 
-    // Refresh regl's internal state so it picks up GL changes made by Three.js.
+    // Refresh Three.js and REGL states
+    this.threeWebGLRenderer.resetState();
     this.renderer.regl._refresh();
   }
 
