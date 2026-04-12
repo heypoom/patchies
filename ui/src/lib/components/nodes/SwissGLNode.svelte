@@ -36,6 +36,7 @@
       videoOutletCount?: number;
       messageInletCount?: number;
       messageOutletCount?: number;
+      resolution?: number | [number, number] | string;
     };
     selected: boolean;
   } = $props();
@@ -64,7 +65,7 @@
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 
   const code = $derived(data.code || '');
-  const previewSize = $derived(getPreviewSizeForResolution(detectResolution(code)));
+  const previewSize = $derived(getPreviewSizeForResolution(data.resolution));
 
   // Reactively update preview canvas dimensions when resolution changes
   $effect(() => {

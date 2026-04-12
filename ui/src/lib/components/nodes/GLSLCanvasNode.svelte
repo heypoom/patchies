@@ -24,6 +24,7 @@
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent, PrimaryButton } from '$lib/eventbus/events';
+  import type { FBOFormat, FBOResolution } from '$lib/rendering/types';
 
   let {
     id: nodeId,
@@ -38,9 +39,10 @@
       uniformValues?: Record<string, number | boolean | string>;
       executeCode?: number;
       showConsole?: boolean;
-      _runRevision?: number;
       mrtCount?: number;
-      fboFormat?: 'rgba8' | 'rgba16f' | 'rgba32f';
+      fboFormat?: FBOFormat;
+      resolution?: FBOResolution;
+      _runRevision?: number;
     };
     selected: boolean;
   } = $props();
@@ -52,8 +54,8 @@
   let glSystem = GLSystem.getInstance();
   let mouseHandler: CanvasMouseHandler | null = null;
 
-  // Preview canvas display size — derived from per-node resolution
-  const previewSize = $derived(getPreviewSizeForResolution(detectResolution(data.code)));
+  // Preview canvas display size — updates only on re-run (data.resolution is set by updateShader)
+  const previewSize = $derived(getPreviewSizeForResolution(data.resolution));
 
   let width = $derived(previewSize[0]);
   let height = $derived(previewSize[1]);
