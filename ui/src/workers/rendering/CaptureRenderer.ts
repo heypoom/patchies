@@ -172,9 +172,10 @@ export class CaptureRenderer {
         const read = this.initiateVideoFrameRead(
           sourceId,
           fboNode.framebuffer,
-          undefined,
+          [fboNode.texture.width, fboNode.texture.height],
           validResolution
         );
+
         if (read) {
           readCache.set(cacheKey, read);
           reads.push(read);

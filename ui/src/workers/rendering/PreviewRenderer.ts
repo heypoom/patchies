@@ -166,7 +166,8 @@ export class PreviewRenderer {
       if (!fboNode) continue;
 
       const customSize = getCustomSize?.(nodeId);
-      this.initiateAsyncRead(nodeId, fboNode.framebuffer, customSize);
+      const fboSize: [number, number] = [fboNode.texture.width, fboNode.texture.height];
+      this.initiateAsyncRead(nodeId, fboNode.framebuffer, customSize, fboSize);
     }
 
     return results;
@@ -244,7 +245,8 @@ export class PreviewRenderer {
   private initiateAsyncRead(
     nodeId: string,
     framebuffer: regl.Framebuffer2D,
-    customSize?: [number, number]
+    customSize?: [number, number],
+    sourceSize?: [number, number]
   ): void {
     const [pw, ph] = customSize ?? this.service.previewSize;
     const width = Math.floor(pw);
@@ -252,12 +254,14 @@ export class PreviewRenderer {
 
     if (width <= 0 || height <= 0) return;
 
-    const [sourceWidth, sourceHeight] = this.service.outputSize;
     const gl = this.gl;
 
     this.service.ensureIntermediateFboSize(width, height);
 
-    // Blit source to intermediate FBO with flip
+    // Blit source to intermediate FBO with flip.
+    // Use the FBO's actual texture dimensions, not the global output size —
+    // per-node resolution (spec 122) may differ from the output size.
+    const [sourceWidth, sourceHeight] = sourceSize ?? this.service.outputSize;
     const sourceFBO = getFramebuffer(framebuffer);
     const destFBO = getFramebuffer(this.service.getIntermediateFbo());
 
@@ -314,6 +318,7 @@ export class PreviewRenderer {
     }
 
     const selected: string[] = [];
+
     for (let i = 0; i < maxLimit; i++) {
       const idx = (this.previewRoundRobinIndex + i) % visibleEnabledPreviews.length;
       selected.push(visibleEnabledPreviews[idx]);

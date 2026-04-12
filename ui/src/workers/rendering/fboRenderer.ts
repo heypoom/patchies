@@ -1833,12 +1833,10 @@ export class FBORenderer {
     const fboNode = this.fboNodes.get(nodeId);
     if (!fboNode) return null;
 
-    const [sourceWidth, sourceHeight] = this.outputSize;
-
     return this.captureRenderer.capturePreviewBitmapSync(
       fboNode.framebuffer,
-      sourceWidth,
-      sourceHeight,
+      fboNode.texture.width,
+      fboNode.texture.height,
       customSize
     );
   }
