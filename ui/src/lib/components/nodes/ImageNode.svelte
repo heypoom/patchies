@@ -4,6 +4,12 @@
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import {
+    outputWidth,
+    outputHeight,
+    previewWidth,
+    previewHeight
+  } from '../../../stores/renderer.store';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
@@ -33,9 +39,6 @@
   let glSystem = GLSystem.getInstance();
   let canvasElement: HTMLCanvasElement | null = $state(null);
   let hasImage = $state(false);
-
-  const [defaultPreviewWidth, defaultPreviewHeight] = GLSystem.defaultPreviewSize;
-  const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
 
   // Use VFS media composable for all file handling
   const vfsMedia = useVfsMedia({
@@ -182,11 +185,11 @@
           {#if vfsMedia.hasVfsPath && hasImage}
             <canvas
               bind:this={canvasElement}
-              width={node.data.width ?? defaultOutputWidth}
-              height={node.data.height ?? defaultOutputHeight}
+              width={node.data.width ?? $outputWidth}
+              height={node.data.height ?? $outputHeight}
               class="rounded-md {vfsMedia.isDragging ? 'ring-2 ring-blue-400' : ''}"
-              style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
-                defaultPreviewHeight}px"
+              style="width: {node.width ?? $previewWidth}px; height: {node.height ??
+                $previewHeight}px"
               ondragover={vfsMedia.handleDragOver}
               ondragleave={vfsMedia.handleDragLeave}
               ondrop={vfsMedia.handleDrop}
@@ -197,8 +200,8 @@
               needsFolderRelink={vfsMedia.needsFolderRelink}
               linkedFolderName={vfsMedia.linkedFolderName}
               vfsPath={node.data.vfsPath}
-              width={node.width ?? defaultPreviewWidth}
-              height={node.height ?? defaultPreviewHeight}
+              width={node.width ?? $previewWidth}
+              height={node.height ?? $previewHeight}
               isDragging={vfsMedia.isDragging}
               onRequestPermission={vfsMedia.requestFilePermission}
               onDragOver={vfsMedia.handleDragOver}
@@ -208,8 +211,8 @@
           {:else if vfsMedia.isLoading}
             <div
               class="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-600 bg-zinc-900 px-1 py-3"
-              style="width: {node.width ?? defaultPreviewWidth}px; height: {node.height ??
-                defaultPreviewHeight}px"
+              style="width: {node.width ?? $previewWidth}px; height: {node.height ??
+                $previewHeight}px"
             >
               <div
                 class="h-4 w-4 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent"
@@ -220,8 +223,8 @@
             <VfsDropZone
               icon={ImageIcon}
               fileType="image"
-              width={node.width ?? defaultPreviewWidth}
-              height={node.height ?? defaultPreviewHeight}
+              width={node.width ?? $previewWidth}
+              height={node.height ?? $previewHeight}
               isDragging={vfsMedia.isDragging}
               onDoubleClick={vfsMedia.openFileDialog}
               onDragOver={vfsMedia.handleDragOver}

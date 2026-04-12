@@ -3,6 +3,7 @@
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
+  import { outputSize, previewSize } from '../../../stores/renderer.store';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -65,6 +66,18 @@
   let consoleRef: VirtualConsole | null = $state(null);
   let lineErrors: Record<number, string[]> | undefined = $state(undefined);
   let previousExecuteCode = $state<number | undefined>(undefined);
+
+  // Reactively update preview canvas dimensions when output size changes
+  $effect(() => {
+    if (!previewCanvas) return;
+
+    const [previewWidth, previewHeight] = $previewSize;
+
+    previewCanvas.width = previewWidth;
+    previewCanvas.height = previewHeight;
+    previewCanvas.style.width = `${previewWidth}px`;
+    previewCanvas.style.height = `${previewHeight}px`;
+  });
 
   const code = $derived(data.code || '');
   const errorLines = $derived(
@@ -173,13 +186,6 @@
 
     if (previewCanvas) {
       previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
-
-      const [previewWidth, previewHeight] = GLSystem.defaultPreviewSize;
-
-      previewCanvas.width = previewWidth;
-      previewCanvas.height = previewHeight;
-      previewCanvas.style.width = `${previewWidth}px`;
-      previewCanvas.style.height = `${previewHeight}px`;
     }
 
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
@@ -257,7 +263,7 @@
   $effect(() => {
     if (!usesMouseVariable || !previewCanvas || !glSystem) return;
 
-    const [outputWidth, outputHeight] = glSystem.outputSize;
+    const [outputWidth, outputHeight] = $outputSize;
 
     mouseHandler = new CanvasMouseHandler({
       type: 'simple',

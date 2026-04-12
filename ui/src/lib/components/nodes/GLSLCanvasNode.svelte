@@ -8,6 +8,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
+  import { outputSize, previewWidth, previewHeight } from '../../../stores/renderer.store';
   import { toGLValue } from '$workers/rendering/glUniformUtils';
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
   import {
@@ -52,9 +53,6 @@
   let eventBus = PatchiesEventBus.getInstance();
   let glSystem = GLSystem.getInstance();
   let mouseHandler: CanvasMouseHandler | null = null;
-
-  // Preview canvas display size — always uses default, independent of @resolution
-  const [width, height] = GLSystem.defaultPreviewSize;
 
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewBitmapContext: ImageBitmapRenderingContext;
@@ -259,7 +257,7 @@
   $effect(() => {
     if (!previewCanvas || !usesMouseUniform) return;
 
-    const [outputWidth, outputHeight] = glSystem.outputSize;
+    const [outputWidth, outputHeight] = $outputSize;
 
     mouseHandler = new CanvasMouseHandler({
       type: 'shadertoy',
@@ -336,8 +334,8 @@
   showPauseButton={true}
   nodrag={usesMouseUniform}
   bind:previewCanvas
-  {width}
-  {height}
+  width={$previewWidth}
+  height={$previewHeight}
   {selected}
   {editorReady}
   hasError={errorLines !== undefined && errorLines.length > 0}

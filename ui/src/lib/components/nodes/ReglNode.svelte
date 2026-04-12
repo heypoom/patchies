@@ -3,6 +3,12 @@
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
+  import {
+    outputWidth,
+    outputHeight,
+    previewWidth,
+    previewHeight
+  } from '../../../stores/renderer.store';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
@@ -83,9 +89,6 @@
 
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-
-  const [outputWidth, outputHeight] = glSystem.outputSize;
-  const [previewWidth, previewHeight] = GLSystem.defaultPreviewSize;
 
   let messageInletCount = $derived(data.messageInletCount ?? 1);
   let messageOutletCount = $derived(data.messageOutletCount ?? 0);
@@ -285,9 +288,9 @@
   nodrag={!dragEnabled}
   nopan={!panEnabled}
   nowheel={!wheelEnabled}
-  width={outputWidth}
-  height={outputHeight}
-  style={`width: ${previewWidth}px; height: ${previewHeight}px;`}
+  width={$outputWidth}
+  height={$outputHeight}
+  style={`width: ${$previewWidth}px; height: ${$previewHeight}px;`}
   {selected}
   {editorReady}
   hasError={lineErrors !== undefined}

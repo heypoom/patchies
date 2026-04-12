@@ -2,8 +2,15 @@
   import { Loader, OctagonX, Pause, Play, SkipBack, Upload, Video } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import {
+    outputWidth,
+    outputHeight,
+    previewWidth,
+    previewHeight
+  } from '../../../stores/renderer.store';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { AudioService } from '$lib/audio/v2/AudioService';
@@ -103,9 +110,6 @@
   let videoStats = $state<VideoStats | null>(null);
   let statsIntervalId: ReturnType<typeof setInterval> | null = null;
 
-  const [defaultPreviewWidth, defaultPreviewHeight] = GLSystem.defaultPreviewSize;
-  const [MAX_UPLOAD_WIDTH, MAX_UPLOAD_HEIGHT] = glSystem.outputSize;
-
   // Initialize bitmaprenderer context when canvas is bound
   $effect(() => {
     if (previewCanvas && !previewBitmapContext) {
@@ -174,17 +178,20 @@
           // Scale down for preview while maintaining aspect ratio
           const aspectRatio = videoWidth / videoHeight;
 
-          let previewWidth = defaultPreviewWidth;
-          let previewHeight = defaultPreviewWidth / aspectRatio;
+          const previewWidthValue = get(previewWidth);
+          const previewHeightValue = get(previewHeight);
 
-          if (previewHeight > defaultPreviewHeight) {
-            previewHeight = defaultPreviewHeight;
-            previewWidth = defaultPreviewHeight * aspectRatio;
+          let scaledW = previewWidthValue;
+          let scaledH = previewWidthValue / aspectRatio;
+
+          if (scaledH > previewHeightValue) {
+            scaledH = previewHeightValue;
+            scaledW = previewHeightValue * aspectRatio;
           }
 
           updateNode(nodeId, {
-            width: Math.round(previewWidth),
-            height: Math.round(previewHeight),
+            width: Math.round(scaledW),
+            height: Math.round(scaledH),
             data: {
               ...data,
               fileName: file.name,
@@ -517,9 +524,9 @@
     const videoHeight = videoElement.videoHeight;
 
     // Check if we need to resize (if video is larger than our max dimensions)
-    if (videoWidth > MAX_UPLOAD_WIDTH || videoHeight > MAX_UPLOAD_HEIGHT) {
+    if (videoWidth > $outputWidth || videoHeight > $outputHeight) {
       // Calculate scale to fit within max dimensions while preserving aspect ratio
-      const scale = Math.min(MAX_UPLOAD_WIDTH / videoWidth, MAX_UPLOAD_HEIGHT / videoHeight);
+      const scale = Math.min($outputWidth / videoWidth, $outputHeight / videoHeight);
       const scaledWidth = Math.round(videoWidth * scale);
       const scaledHeight = Math.round(videoHeight * scale);
 
@@ -747,15 +754,15 @@
               <!-- Canvas preview when MediaBunny is active (worker sends frames via bitmaprenderer) -->
               <canvas
                 bind:this={previewCanvas}
-                width={data.width || defaultPreviewWidth}
-                height={data.height || defaultPreviewHeight}
+                width={data.width || $previewWidth}
+                height={data.height || $previewHeight}
                 class="rounded-lg {vfsMedia.hasVfsPath &&
                 isVideoLoaded &&
                 webCodecsFirstFrameReceived
                   ? ''
                   : 'hidden'}"
-                style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||
-                  defaultPreviewHeight}px"
+                style="width: {nodeWidth || $previewWidth}px; height: {nodeHeight ||
+                  $previewHeight}px"
                 ondragover={vfsMedia.handleDragOver}
                 ondragleave={vfsMedia.handleDragLeave}
                 ondrop={vfsMedia.handleDrop}
@@ -769,8 +776,8 @@
                 !webCodecsFirstFrameReceived
                   ? ''
                   : 'hidden'}"
-                style="width: {nodeWidth || defaultPreviewWidth}px; height: {nodeHeight ||
-                  defaultPreviewHeight}px"
+                style="width: {nodeWidth || $previewWidth}px; height: {nodeHeight ||
+                  $previewHeight}px"
                 muted
                 loop={data.loop ?? true}
                 ondragover={vfsMedia.handleDragOver}
@@ -807,8 +814,8 @@
               needsFolderRelink={vfsMedia.needsFolderRelink}
               linkedFolderName={vfsMedia.linkedFolderName}
               vfsPath={data.vfsPath}
-              width={nodeWidth ?? defaultPreviewWidth}
-              height={nodeHeight ?? defaultPreviewHeight}
+              width={nodeWidth ?? $previewWidth}
+              height={nodeHeight ?? $previewHeight}
               isDragging={vfsMedia.isDragging}
               onRequestPermission={vfsMedia.requestFilePermission}
               onDragOver={vfsMedia.handleDragOver}
@@ -821,8 +828,8 @@
 							{vfsMedia.isDragging
                 ? 'border-blue-400 bg-blue-50/10'
                 : 'border-dashed border-zinc-600 bg-zinc-900'}"
-              style="width: {nodeWidth ?? defaultPreviewWidth}px; height: {nodeHeight ??
-                defaultPreviewHeight}px"
+              style="width: {nodeWidth ?? $previewWidth}px; height: {nodeHeight ??
+                $previewHeight}px"
             >
               <svelte:component
                 this={errorMessage ? OctagonX : Loader}
@@ -844,8 +851,8 @@
             <VfsDropZone
               icon={Video}
               fileType="video"
-              width={nodeWidth ?? defaultPreviewWidth}
-              height={nodeHeight ?? defaultPreviewHeight}
+              width={nodeWidth ?? $previewWidth}
+              height={nodeHeight ?? $previewHeight}
               isDragging={vfsMedia.isDragging}
               onDoubleClick={vfsMedia.openFileDialog}
               onDragOver={vfsMedia.handleDragOver}

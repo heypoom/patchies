@@ -28,8 +28,12 @@ import {
   type AudioAnalysisPayloadWithType,
   type OnFFTReadyCallback
 } from '$lib/audio/AudioAnalysisSystem';
-import { DEFAULT_OUTPUT_SIZE, DEFAULT_PREVIEW_SIZE } from './constants';
+import { DEFAULT_OUTPUT_SIZE, DEFAULT_PREVIEW_SIZE, PREVIEW_SCALE_FACTOR } from './constants';
 import { logger } from '$lib/utils/logger';
+import {
+  outputSize as outputSizeStore,
+  previewSize as previewSizeStore
+} from '../../stores/renderer.store';
 import { match, P } from 'ts-pattern';
 import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
@@ -828,6 +832,11 @@ export class GLSystem {
    */
   setOutputSize(width: number, height: number) {
     this.outputSize = [width, height];
+    outputSizeStore.set([width, height]);
+    previewSizeStore.set([
+      Math.round(width / PREVIEW_SCALE_FACTOR),
+      Math.round(height / PREVIEW_SCALE_FACTOR)
+    ]);
     this.send('setOutputSize', { width, height });
   }
 

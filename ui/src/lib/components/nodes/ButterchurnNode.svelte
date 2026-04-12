@@ -1,6 +1,7 @@
 <script lang="ts">
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
+  import { outputSize, previewSize } from '../../../stores/renderer.store';
 
   let butterchurn;
   let butterchurnPresets;
@@ -63,11 +64,12 @@
     presets = butterchurnPresets.getPresets();
 
     if (canvasElement) {
-      const [previewWidth, previewHeight] = GLSystem.defaultPreviewSize;
+      const [previewWidth, previewHeight] = $previewSize;
+
       canvasElement.width = previewWidth;
       canvasElement.height = previewHeight;
 
-      const [outputWidth, outputHeight] = glSystem.outputSize;
+      const [outputWidth, outputHeight] = $outputSize;
 
       visualizer = butterchurn.createVisualizer(audioService.getAudioContext(), canvasElement, {
         width: outputWidth / 2,

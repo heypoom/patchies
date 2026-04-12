@@ -4,6 +4,12 @@
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import {
+    outputWidth,
+    outputHeight,
+    previewWidth,
+    previewHeight
+  } from '../../../stores/renderer.store';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -85,9 +91,6 @@
   let videoStats = $state<VideoStats | null>(null);
   let statsIntervalId: ReturnType<typeof setInterval> | null = null;
 
-  const [defaultOutputWidth, defaultOutputHeight] = glSystem.outputSize;
-  const [defaultPreviewWidth, defaultPreviewHeight] = GLSystem.defaultPreviewSize;
-
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
       .with(webcamMessages.bang, () => startCapture())
@@ -102,8 +105,8 @@
     try {
       // Build video constraints with optional deviceId
       const videoConstraints: MediaTrackConstraints = {
-        width: { ideal: data.width ?? defaultOutputWidth },
-        height: { ideal: data.height ?? defaultOutputHeight }
+        width: { ideal: data.width ?? $outputWidth },
+        height: { ideal: data.height ?? $outputHeight }
       };
 
       // Use selected device if specified
@@ -119,8 +122,8 @@
       // Get actual video dimensions from the track
       const videoTrack = stream.getVideoTracks()[0];
       const settings = videoTrack.getSettings();
-      const actualWidth = settings.width ?? defaultOutputWidth;
-      const actualHeight = settings.height ?? defaultOutputHeight;
+      const actualWidth = settings.width ?? $outputWidth;
+      const actualHeight = settings.height ?? $outputHeight;
       const actualFrameRate = settings.frameRate ?? 30;
 
       // Reset profiler
@@ -390,13 +393,9 @@
     return `z-1 ${selected ? '' : 'opacity-40'}`;
   });
 
-  const canvasWidth = $derived(
-    data.width ? data.width / PREVIEW_SCALE_FACTOR : defaultPreviewWidth
-  );
+  const canvasWidth = $derived(data.width ? data.width / PREVIEW_SCALE_FACTOR : $previewWidth);
 
-  const canvasHeight = $derived(
-    data.height ? data.height / PREVIEW_SCALE_FACTOR : defaultPreviewHeight
-  );
+  const canvasHeight = $derived(data.height ? data.height / PREVIEW_SCALE_FACTOR : $previewHeight);
 </script>
 
 <div class="relative flex gap-x-3">
@@ -463,8 +462,8 @@
               muted
               autoplay
               playsinline
-              width={data.width ?? defaultOutputWidth}
-              height={data.height ?? defaultOutputHeight}
+              width={data.width ?? $outputWidth}
+              height={data.height ?? $outputHeight}
               style={`width: ${canvasWidth}px; height: ${canvasHeight}px;`}
             ></video>
 
