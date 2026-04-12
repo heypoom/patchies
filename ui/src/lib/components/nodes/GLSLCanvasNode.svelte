@@ -12,7 +12,9 @@
   import {
     shaderCodeToUniformDefs,
     uniformDefsToSettingsSchema,
-    parseShaderName
+    parseShaderName,
+    detectFboFormat,
+    detectResolution
   } from '$lib/canvas/shader-code-to-uniform-def';
   import { removeExcessVideoOutletEdges } from './outlet-edges';
   import type { GLUniformDef } from '../../../types/uniform-config';
@@ -20,7 +22,6 @@
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent, PrimaryButton } from '$lib/eventbus/events';
-  import type { FBOFormat } from '$lib/rendering/types';
 
   let {
     id: nodeId,
@@ -165,15 +166,6 @@
     return max >= 0 ? max + 1 : 1;
   }
 
-  function detectFboFormat(code: string): FBOFormat {
-    // Match // @format directive in single-line comments (don't strip comments first!)
-    // Only skip directives inside block comments.
-    const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
-    const match = withoutBlocks.match(/^\s*\/\/\s*@format\s+(rgba8|rgba16f|rgba32f)\s*$/m);
-
-    return (match?.[1] as FBOFormat) ?? 'rgba8';
-  }
-
   function detectPrimaryButton(code: string): PrimaryButton {
     const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
     const match = withoutBlocks.match(/^\s*\/\/\s*@primaryButton\s+(code|settings|run)\s*$/m);
@@ -216,6 +208,7 @@
       uniformValues: pruned,
       mrtCount: detectMrtCount(data.code),
       fboFormat: detectFboFormat(data.code),
+      resolution: detectResolution(data.code),
       primaryButton: nextPrimaryButton,
       _runRevision: Date.now()
     };

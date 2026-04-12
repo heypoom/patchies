@@ -5,6 +5,9 @@ import type { PrimaryButton } from '$lib/eventbus/events';
 
 export type FBOFormat = 'rgba8' | 'rgba16f' | 'rgba32f';
 
+/** Per-node FBO resolution override. Default is full output size. */
+export type FBOResolution = number | [number, number] | '1/2' | '1/4';
+
 export type RenderNode = {
   id: string;
   inputs: string[]; // IDs of input nodes
@@ -23,6 +26,7 @@ export type RenderNode = {
         glUniformDefs: GLUniformDef[];
         mrtCount?: number;
         fboFormat?: FBOFormat;
+        resolution?: FBOResolution;
       };
     }
   | {
@@ -32,13 +36,25 @@ export type RenderNode = {
         videoInletCount?: number;
         videoOutletCount?: number;
         fboFormat?: FBOFormat;
+        resolution?: FBOResolution;
       };
     }
-  | { type: 'swgl'; data: { code: string; mrtCount?: number; fboFormat?: FBOFormat } }
-  | { type: 'canvas'; data: { code: string; fboFormat?: FBOFormat } }
-  | { type: 'textmode'; data: { code: string; fboFormat?: FBOFormat } }
-  | { type: 'three'; data: { code: string; fboFormat?: FBOFormat } }
-  | { type: 'regl'; data: { code: string; videoOutletCount?: number; fboFormat?: FBOFormat } }
+  | {
+      type: 'swgl';
+      data: { code: string; mrtCount?: number; fboFormat?: FBOFormat; resolution?: FBOResolution };
+    }
+  | { type: 'canvas'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
+  | { type: 'textmode'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
+  | { type: 'three'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
+  | {
+      type: 'regl';
+      data: {
+        code: string;
+        videoOutletCount?: number;
+        fboFormat?: FBOFormat;
+        resolution?: FBOResolution;
+      };
+    }
   | { type: 'projmap'; data: { surfaces: import('$objects/projmap/types').ProjMapSurface[] } }
   | { type: 'img'; data: unknown }
   | { type: 'bg.out'; data: unknown }
@@ -114,6 +130,9 @@ export interface FBONode {
 
   /** The FBO texture format this node was built with */
   fboFormat?: FBOFormat;
+
+  /** The per-node resolution this FBO was built with */
+  resolution?: FBOResolution;
 
   /** Previous frame textures — one per color attachment, only allocated for nodes in feedback loops */
   prevTextures?: regl.Texture2D[];
@@ -276,7 +295,8 @@ export type RenderWorkerMessage =
   | { type: 'settingsDefine'; nodeId: string; requestId: string; schema: unknown[] }
   | { type: 'settingsClear'; nodeId: string }
   | { type: 'includeProcessing'; nodeId: string; active: boolean }
-  | { type: 'setTextureFormat'; nodeId: string; format: FBOFormat };
+  | { type: 'setTextureFormat'; nodeId: string; format: FBOFormat }
+  | { type: 'setResolution'; nodeId: string; resolution: FBOResolution };
 
 export type PreviewState = Record<string, boolean>;
 

@@ -163,6 +163,18 @@ export abstract class BaseWorkerRenderer<TConfig extends BaseRendererConfig = Ba
     });
   }
 
+  setResolution(widthOrPreset: number | '1/2' | '1/4', height?: number) {
+    const resolution =
+      typeof widthOrPreset === 'number' && typeof height === 'number'
+        ? [widthOrPreset, height]
+        : widthOrPreset;
+    self.postMessage({
+      type: 'setResolution',
+      nodeId: this.config.nodeId,
+      resolution
+    });
+  }
+
   setInteraction(mode: 'drag' | 'pan' | 'wheel' | 'interact', enabled: boolean) {
     self.postMessage({
       type: 'setInteraction',

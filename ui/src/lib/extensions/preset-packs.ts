@@ -145,13 +145,15 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     name: 'Three.js Demos',
     description: '3D graphics with Three.js',
     icon: 'Box',
-    requiredObjects: ['three'],
+    requiredObjects: ['three', 'glsl'],
     presets: [
       'three>',
       'video-cube.three',
       'video-torus.three',
       'video-sphere.three',
-      'crate.three'
+      'crate.three',
+      'point-cloud-from-texture.three',
+      'position-field.gl'
     ]
   },
   {

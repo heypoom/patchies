@@ -6,7 +6,8 @@ import type {
   FBONode,
   RenderFunction,
   UserParam,
-  FBOFormat
+  FBOFormat,
+  FBOResolution
 } from '../../lib/rendering/types';
 import type { ClockCommandMessage } from '$lib/transport/types';
 import {
@@ -224,6 +225,36 @@ export class FBORenderer {
     return JSON.stringify(node.data);
   }
 
+  /** Resolve per-node resolution override to [width, height]. */
+  private resolveNodeSize(resolution: FBOResolution | undefined): [number, number] {
+    const [outputWidth, outputHeight] = this.outputSize;
+
+    if (resolution == null) {
+      return [outputWidth, outputHeight];
+    }
+
+    let width: number;
+    let height: number;
+
+    if (resolution === '1/2') {
+      width = Math.floor(outputWidth / 2);
+      height = Math.floor(outputHeight / 2);
+    } else if (resolution === '1/4') {
+      width = Math.floor(outputWidth / 4);
+      height = Math.floor(outputHeight / 4);
+    } else if (typeof resolution === 'number') {
+      width = Math.floor(resolution);
+      height = Math.floor(resolution);
+    } else if (Array.isArray(resolution)) {
+      width = Math.floor(resolution[0]);
+      height = Math.floor(resolution[1]);
+    } else {
+      return [outputWidth, outputHeight];
+    }
+
+    return [Math.max(1, width), Math.max(1, height)];
+  }
+
   /**
    * Create a regl texture, then re-initialize it with the correct WebGL2
    * internal format if float. regl doesn't support WebGL2 sized internal
@@ -276,8 +307,6 @@ export class FBORenderer {
 
   /** Build FBOs for all nodes in the render graph */
   async buildFBOs(renderGraph: RenderGraph) {
-    const [width, height] = this.outputSize;
-
     // Get the set of node IDs that will exist in the new graph
     const newNodeIds = new Set(renderGraph.nodes.map((n) => n.id));
 
@@ -347,6 +376,7 @@ export class FBORenderer {
       framebuffer: regl.Framebuffer2D;
       fingerprint: string;
       fboFormat: FBOFormat;
+      resolution?: FBOResolution;
     };
 
     const pending: PendingNode[] = [];
@@ -369,10 +399,16 @@ export class FBORenderer {
       const fboFormat: FBOFormat =
         ((node.data as Record<string, unknown>)?.fboFormat as FBOFormat) || 'rgba8';
 
+      // Per-node resolution override (spec 122)
+      const nodeResolution = (node.data as Record<string, unknown>)?.resolution as
+        | FBOResolution
+        | undefined;
+      const [nodeW, nodeH] = this.resolveNodeSize(nodeResolution);
+
       const canReuseFbo =
         existingFbo &&
-        existingFbo.texture.width === width &&
-        existingFbo.texture.height === height &&
+        existingFbo.texture.width === nodeW &&
+        existingFbo.texture.height === nodeH &&
         existingFbo.colorAttachments.length === mrtCount &&
         (existingFbo.fboFormat ?? 'rgba8') === fboFormat;
 
@@ -439,7 +475,7 @@ export class FBORenderer {
 
         // Create color attachments — one for standard nodes, N for MRT GLSL nodes
         colorAttachments = Array.from({ length: mrtCount }, () =>
-          this.createFboTexture(width, height, fboFormat)
+          this.createFboTexture(nodeW, nodeH, fboFormat)
         );
 
         if (mrtCount > 1) {
@@ -474,7 +510,14 @@ export class FBORenderer {
         }
       }
 
-      pending.push({ node, colorAttachments, framebuffer, fingerprint, fboFormat });
+      pending.push({
+        node,
+        colorAttachments,
+        framebuffer,
+        fingerprint,
+        fboFormat,
+        resolution: nodeResolution
+      });
     }
 
     // Phase 2 (parallel): create all renderers concurrently
@@ -499,7 +542,8 @@ export class FBORenderer {
 
     // Phase 3: collect results into FBO map
     for (let i = 0; i < pending.length; i++) {
-      const { node, colorAttachments, framebuffer, fingerprint, fboFormat } = pending[i];
+      const { node, colorAttachments, framebuffer, fingerprint, fboFormat, resolution } =
+        pending[i];
       const renderer = results[i];
 
       // If the renderer function is null, we skip defining this node.
@@ -528,7 +572,8 @@ export class FBORenderer {
         cleanup: renderer.cleanup,
         dataFingerprint: fingerprint,
         nodeType: node.type,
-        fboFormat
+        fboFormat,
+        resolution
       };
 
       this.fboNodes.set(node.id, fboNode);
@@ -555,9 +600,11 @@ export class FBORenderer {
       const feedbackNode = renderGraph.nodes.find((n) => n.id === nodeId);
       const feedbackData = feedbackNode?.data as Record<string, unknown> | undefined;
       const feedbackFormat: FBOFormat = (feedbackData?.fboFormat as FBOFormat) || 'rgba8';
+      const feedbackResolution = feedbackData?.resolution as FBOResolution | undefined;
+      const [fbW, fbH] = this.resolveNodeSize(feedbackResolution);
 
       fboNode.prevTextures = fboNode.colorAttachments.map(() =>
-        this.createFboTexture(width, height, feedbackFormat)
+        this.createFboTexture(fbW, fbH, feedbackFormat)
       );
 
       fboNode.prevFramebuffers = fboNode.prevTextures.map((prevTexture) =>
@@ -632,13 +679,20 @@ export class FBORenderer {
         const sourceFbo = this.fboNodes.get(inlet0.sourceNodeId);
         if (!sourceFbo) return;
 
-        // Blit input FBO to output framebuffer
-        const [w, h] = this.outputSize;
+        // Blit input FBO to output framebuffer.
+        // Source and destination may differ when the source uses @resolution.
+        const srcW = sourceFbo.texture.width;
+        const srcH = sourceFbo.texture.height;
+        const dstFbo = this.fboNodes.get(node.id);
+        const dstW = dstFbo?.texture.width ?? srcW;
+        const dstH = dstFbo?.texture.height ?? srcH;
         const gl = this.gl;
 
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(sourceFbo.framebuffer));
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(framebuffer));
-        gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+
+        gl.blitFramebuffer(0, 0, srcW, srcH, 0, 0, dstW, dstH, gl.COLOR_BUFFER_BIT, gl.LINEAR);
+
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       },
       cleanup: () => {
@@ -893,7 +947,8 @@ export class FBORenderer {
   ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
     if (node.type !== 'glsl') return null;
 
-    const [width, height] = this.outputSize;
+    const nodeResolution = node.data.resolution;
+    const [width, height] = this.resolveNodeSize(nodeResolution);
 
     // Prepare uniform defaults to prevent crashes
     if (node.data.glUniformDefs) {
@@ -1190,7 +1245,8 @@ export class FBORenderer {
       const fboNode = this.fboNodes.get(nodeId);
       if (!fboNode?.prevFramebuffers?.length) continue;
 
-      const [w, h] = this.outputSize;
+      const width = fboNode.texture.width;
+      const height = fboNode.texture.height;
 
       const gl = this.gl;
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(fboNode.framebuffer));
@@ -1198,7 +1254,19 @@ export class FBORenderer {
       for (let i = 0; i < fboNode.prevFramebuffers.length; i++) {
         gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, getFramebuffer(fboNode.prevFramebuffers[i]));
-        gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+
+        gl.blitFramebuffer(
+          0,
+          0,
+          width,
+          height,
+          0,
+          0,
+          width,
+          height,
+          gl.COLOR_BUFFER_BIT,
+          gl.NEAREST
+        );
       }
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -1758,12 +1826,10 @@ export class FBORenderer {
     const fboNode = this.fboNodes.get(nodeId);
     if (!fboNode) return null;
 
-    const [sourceWidth, sourceHeight] = this.outputSize;
-
     return this.captureRenderer.capturePreviewBitmapSync(
       fboNode.framebuffer,
-      sourceWidth,
-      sourceHeight,
+      fboNode.texture.width,
+      fboNode.texture.height,
       customSize
     );
   }

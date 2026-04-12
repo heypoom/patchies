@@ -316,11 +316,27 @@ export class GLSystem {
       })
       .with({ type: 'setTextureFormat' }, (data) => {
         // Update internal node data and rebuild render graph so fboRenderer picks up the new format
-        const idx = this.nodes.findIndex((n) => n.id === data.nodeId);
-        if (idx !== -1) {
-          const node = this.nodes[idx];
+        const index = this.nodes.findIndex((node) => node.id === data.nodeId);
+
+        if (index !== -1) {
+          const node = this.nodes[index];
+
           if ((node.data as Record<string, unknown>).fboFormat === data.format) return;
-          this.nodes[idx] = { ...node, data: { ...node.data, fboFormat: data.format } };
+
+          this.nodes[index] = { ...node, data: { ...node.data, fboFormat: data.format } };
+          this.updateRenderGraph(true);
+        }
+      })
+      .with({ type: 'setResolution' }, (data) => {
+        const index = this.nodes.findIndex((node) => node.id === data.nodeId);
+
+        if (index !== -1) {
+          const node = this.nodes[index];
+          const current = (node.data as Record<string, unknown>).resolution;
+
+          if (JSON.stringify(current) === JSON.stringify(data.resolution)) return;
+
+          this.nodes[index] = { ...node, data: { ...node.data, resolution: data.resolution } };
           this.updateRenderGraph(true);
         }
       })

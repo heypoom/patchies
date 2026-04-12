@@ -18,6 +18,7 @@
   import type { ConsoleOutputEvent, NodePortCountUpdateEvent } from '$lib/eventbus/events';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import { logger } from '$lib/utils/logger';
+  import { detectFboFormat, detectResolution } from '$lib/canvas/shader-code-to-uniform-def';
 
   let {
     id: nodeId,
@@ -63,14 +64,6 @@
 
   const code = $derived(data.code || '');
 
-  function detectFboFormat(code: string): 'rgba8' | 'rgba16f' | 'rgba32f' {
-    // Match // @format directive in single-line comments (don't strip comments first!)
-    // Only skip directives inside block comments.
-    const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
-    const m = withoutBlocks.match(/^\s*\/\/\s*@format\s+(rgba8|rgba16f|rgba32f)\s*$/m);
-    return (m?.[1] as 'rgba8' | 'rgba16f' | 'rgba32f') ?? 'rgba8';
-  }
-
   let videoInletCount = $derived(data.videoInletCount ?? 0);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
   let messageInletCount = $derived(data.messageInletCount ?? 1);
@@ -105,7 +98,8 @@
         glSystem.upsertNode(nodeId, 'swgl', {
           code,
           mrtCount: m.outletCount,
-          fboFormat: runtimeFormat ?? detectFboFormat(code)
+          fboFormat: runtimeFormat ?? detectFboFormat(code),
+          resolution: detectResolution(code)
         });
       })
       .exhaustive();
@@ -177,7 +171,8 @@
     glSystem.upsertNode(nodeId, 'swgl', {
       code,
       mrtCount: data.videoOutletCount ?? 1,
-      fboFormat: detectFboFormat(code)
+      fboFormat: detectFboFormat(code),
+      resolution: detectResolution(code)
     });
 
     setTimeout(() => {
@@ -208,6 +203,7 @@
         code,
         mrtCount: data.videoOutletCount ?? 1,
         fboFormat: detectFboFormat(code),
+        resolution: detectResolution(code),
         _runRevision: Date.now()
       });
     } catch (error) {

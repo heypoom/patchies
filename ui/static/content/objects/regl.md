@@ -237,6 +237,22 @@ receives its own texture.
 
 - `getTexture(index)` — get video input as regl Texture2D
 - `setVideoCount(inlets, outlets)` — set number of video inlets/outlets
+- `setResolution(size)` — set output FBO resolution (see below)
+
+## Output Resolution
+
+By default, the output renders at full window resolution. For data-heavy
+rendering where you don't need full-res pixels, call `setResolution()`:
+
+```javascript
+setResolution(256)       // 256×256
+setResolution(512, 256)  // 512×256
+setResolution('1/2')     // half resolution
+setResolution('1/4')     // quarter resolution
+```
+
+This reduces the FBO size so the GPU does less work per frame. Downstream
+nodes sample the texture with bilinear filtering — upscaling is automatic.
 
 ## Common Functions
 
