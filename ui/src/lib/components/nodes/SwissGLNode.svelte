@@ -18,6 +18,7 @@
   import type { ConsoleOutputEvent, NodePortCountUpdateEvent } from '$lib/eventbus/events';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import { logger } from '$lib/utils/logger';
+  import { detectFboFormat, detectResolution } from '$lib/canvas/shader-code-to-uniform-def';
 
   let {
     id: nodeId,
@@ -62,28 +63,6 @@
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
 
   const code = $derived(data.code || '');
-
-  function detectFboFormat(code: string): 'rgba8' | 'rgba16f' | 'rgba32f' {
-    // Match // @format directive in single-line comments (don't strip comments first!)
-    // Only skip directives inside block comments.
-    const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
-    const m = withoutBlocks.match(/^\s*\/\/\s*@format\s+(rgba8|rgba16f|rgba32f)\s*$/m);
-    return (m?.[1] as 'rgba8' | 'rgba16f' | 'rgba32f') ?? 'rgba8';
-  }
-
-  function detectResolution(code: string): number | [number, number] | '1/2' | '1/4' | undefined {
-    const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
-    const m = withoutBlocks.match(/^\s*\/\/\s*@resolution\s+(.+)$/m);
-    if (!m) return undefined;
-    const val = m[1].trim();
-    if (val === '1/2' || val === '1/4') return val;
-    if (val.includes('x')) {
-      const parts = val.split('x').map(Number);
-      if (parts.length === 2 && parts.every(Number.isFinite)) return parts as [number, number];
-    }
-    const n = Number(val);
-    return Number.isFinite(n) ? n : undefined;
-  }
 
   let videoInletCount = $derived(data.videoInletCount ?? 0);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);

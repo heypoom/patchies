@@ -12,7 +12,9 @@
   import {
     shaderCodeToUniformDefs,
     uniformDefsToSettingsSchema,
-    parseShaderName
+    parseShaderName,
+    detectFboFormat,
+    detectResolution
   } from '$lib/canvas/shader-code-to-uniform-def';
   import { removeExcessVideoOutletEdges } from './outlet-edges';
   import type { GLUniformDef } from '../../../types/uniform-config';
@@ -20,7 +22,6 @@
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent, PrimaryButton } from '$lib/eventbus/events';
-  import type { FBOFormat } from '$lib/rendering/types';
 
   let {
     id: nodeId,
@@ -163,29 +164,6 @@
     }
 
     return max >= 0 ? max + 1 : 1;
-  }
-
-  function detectFboFormat(code: string): FBOFormat {
-    // Match // @format directive in single-line comments (don't strip comments first!)
-    // Only skip directives inside block comments.
-    const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
-    const match = withoutBlocks.match(/^\s*\/\/\s*@format\s+(rgba8|rgba16f|rgba32f)\s*$/m);
-
-    return (match?.[1] as FBOFormat) ?? 'rgba8';
-  }
-
-  function detectResolution(code: string): number | [number, number] | '1/2' | '1/4' | undefined {
-    const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
-    const m = withoutBlocks.match(/^\s*\/\/\s*@resolution\s+(.+)$/m);
-    if (!m) return undefined;
-    const val = m[1].trim();
-    if (val === '1/2' || val === '1/4') return val;
-    if (val.includes('x')) {
-      const parts = val.split('x').map(Number);
-      if (parts.length === 2 && parts.every(Number.isFinite)) return parts as [number, number];
-    }
-    const n = Number(val);
-    return Number.isFinite(n) ? n : undefined;
   }
 
   function detectPrimaryButton(code: string): PrimaryButton {

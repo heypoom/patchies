@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import type { GLUniformDef } from '../../types/uniform-config';
 import type { SettingsField } from '$lib/settings/types';
+import type { FBOFormat, FBOResolution } from '$lib/rendering/types';
 
 export interface ParamDirective {
   name: string;
@@ -74,9 +75,39 @@ export function parseShaderDirectives(code: string): ShaderDirectives {
 }
 
 export function parseShaderName(code: string): string | undefined {
-  const m = /^[ \t]*\/\/\s*@title\s+(.+)$/m.exec(code);
+  const match = /^[ \t]*\/\/\s*@title\s+(.+)$/m.exec(code);
 
-  return m ? m[1].trim() : undefined;
+  return match ? match[1].trim() : undefined;
+}
+
+/** Parse `// @format rgba32f` directive. Returns 'rgba8' if absent. */
+export function detectFboFormat(code: string): FBOFormat {
+  const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
+  const match = withoutBlocks.match(/^\s*\/\/\s*@format\s+(rgba8|rgba16f|rgba32f)\s*$/m);
+
+  return (match?.[1] as FBOFormat) ?? 'rgba8';
+}
+
+/** Parse `// @resolution 256` (or `256x128`, `1/2`, `1/4`) directive. */
+export function detectResolution(code: string): FBOResolution | undefined {
+  const withoutBlocks = code.replace(/\/\*[\s\S]*?\*\//g, '');
+  const match = withoutBlocks.match(/^\s*\/\/\s*@resolution\s+(.+)$/m);
+  if (!match) return undefined;
+
+  const resolution = match[1].trim();
+  if (resolution === '1/2' || resolution === '1/4') return resolution;
+
+  if (resolution.includes('x')) {
+    const parts = resolution.split('x').map(Number);
+
+    if (parts.length === 2 && parts.every(Number.isFinite)) {
+      return parts as [number, number];
+    }
+  }
+
+  const number = Number(resolution);
+
+  return Number.isFinite(number) ? number : undefined;
 }
 
 export function shaderCodeToUniformDefs(code: string): GLUniformDef[] {
