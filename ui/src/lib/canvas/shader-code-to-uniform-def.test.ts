@@ -94,6 +94,24 @@ describe('uniformDefsToSettingsSchema', () => {
     ]);
   });
 
+  it('generates color field for vec3 with color widget', () => {
+    const fields = uniformDefsToSettingsSchema([{ name: 'tint', type: 'vec3', widget: 'color' }]);
+
+    expect(fields).toEqual([
+      { key: 'tint', label: 'tint', type: 'color', default: '#ffffff', persistence: 'node' }
+    ]);
+  });
+
+  it('returns no field for vec3 without color widget', () => {
+    expect(uniformDefsToSettingsSchema([{ name: 'pos', type: 'vec3' }])).toEqual([]);
+  });
+
+  it('ignores color widget on non-vec3 types', () => {
+    expect(
+      uniformDefsToSettingsSchema([{ name: 'x', type: 'float', widget: 'color' }])
+    ).toMatchObject([{ type: 'number' }]);
+  });
+
   it('returns no field for unsupported types (vec2, sampler2D, etc.)', () => {
     expect(uniformDefsToSettingsSchema([{ name: 'u_points', type: 'vec2' }])).toEqual([]);
     expect(uniformDefsToSettingsSchema([{ name: 'u_tex', type: 'sampler2D' }])).toEqual([]);
@@ -200,6 +218,23 @@ uniform bool invert;
     expect(directives.params.size).toBe(2);
     expect(directives.params.get('x')?.description).toBe('X value');
     expect(directives.params.get('y')?.min).toBe(1);
+  });
+
+  it('parses @param with color widget', () => {
+    const directives = parseShaderDirectives('// @param myColor color');
+    const param = directives.params.get('myColor');
+
+    expect(param).toEqual({ name: 'myColor', widget: 'color' });
+  });
+
+  it('merges color widget into vec3 uniform def', () => {
+    const code = `
+// @param tint color
+uniform vec3 tint;
+`;
+    const defs = shaderCodeToUniformDefs(code);
+
+    expect(defs[0]).toMatchObject({ name: 'tint', type: 'vec3', widget: 'color' });
   });
 
   it('merges @param metadata into uniform defs', () => {

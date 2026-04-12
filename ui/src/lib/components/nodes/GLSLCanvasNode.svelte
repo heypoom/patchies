@@ -8,6 +8,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
+  import { toGLValue } from '$workers/rendering/glUniformUtils';
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
   import { getPreviewSizeForResolution } from '$lib/canvas/constants';
   import {
@@ -34,7 +35,7 @@
       title?: string;
       code: string;
       glUniformDefs: GLUniformDef[];
-      uniformValues?: Record<string, number | boolean>;
+      uniformValues?: Record<string, number | boolean | string>;
       executeCode?: number;
       showConsole?: boolean;
       _runRevision?: number;
@@ -63,7 +64,7 @@
 
   let isPaused = $state(false);
   let editorReady = $state(false);
-  let uniformValues = $state<Record<string, number | boolean>>(data.uniformValues ?? {});
+  let uniformValues = $state<Record<string, number | boolean | string>>(data.uniformValues ?? {});
   let consoleRef = $state<{ clearConsole: () => void } | null>(null);
   let shaderName = $state<string | undefined>(parseShaderName(data.code || ''));
   let lineErrors: Record<number, string[]> | undefined = $state(undefined);
@@ -187,15 +188,17 @@
     shaderName = parseShaderName(data.code);
 
     // Construct uniform definitions from the shader code.
-    const nextDefs = shaderCodeToUniformDefs(data.code);
+    const nextUniformDefs = shaderCodeToUniformDefs(data.code);
 
     // Prune saved uniform values for uniforms that no longer exist,
     // and seed missing values from @param defaults
-    const pruned: Record<string, number | boolean> = {};
+    const pruned: Record<string, number | boolean | string> = {};
 
-    for (const def of nextDefs) {
+    for (const def of nextUniformDefs) {
       if (def.name in uniformValues) {
         pruned[def.name] = uniformValues[def.name];
+      } else if (def.widget === 'color') {
+        pruned[def.name] = '#ffffff';
       } else if (def.default != null) {
         pruned[def.name] = def.default;
       }
@@ -207,7 +210,7 @@
 
     const nextData = {
       ...data,
-      glUniformDefs: nextDefs,
+      glUniformDefs: nextUniformDefs,
       uniformValues: pruned,
       mrtCount: detectMrtCount(data.code),
       fboFormat: detectFboFormat(data.code),
@@ -231,7 +234,9 @@
 
     // Push uniform values (including @param defaults) to the GL system
     for (const [name, value] of Object.entries(pruned)) {
-      glSystem.setUniformData(nodeId, name, value as UserUniformValue);
+      const uniformDef = nextUniformDefs.find((d) => d.name === name);
+
+      glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
     }
 
     // inform XYFlow that the handle has changed
@@ -239,9 +244,11 @@
   }
 
   function handleUniformValueChange(key: string, value: unknown) {
-    uniformValues = { ...uniformValues, [key]: value as number | boolean };
+    uniformValues = { ...uniformValues, [key]: value as number | boolean | string };
 
-    glSystem.setUniformData(nodeId, key, value as UserUniformValue);
+    const uniformDef = data.glUniformDefs.find((d) => d.name === key);
+
+    glSystem.setUniformData(nodeId, key, toGLValue(uniformDef, value));
     updateNodeData(nodeId, { uniformValues });
   }
 
@@ -301,7 +308,10 @@
 
     // Restore persisted uniform values to the GL system
     for (const [name, value] of Object.entries(uniformValues)) {
-      glSystem.setUniformData(nodeId, name, value as UserUniformValue);
+      const uniformDef = data.glUniformDefs?.find((d) => d.name === name);
+      if (uniformDef === undefined) continue;
+
+      glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
     }
 
     setTimeout(() => {

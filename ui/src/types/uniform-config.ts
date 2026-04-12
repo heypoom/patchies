@@ -21,4 +21,7 @@ export interface GLUniformDef {
   min?: number;
   max?: number;
   description?: string;
+
+  /** Widget override — e.g. 'color' renders a vec3 as a color picker */
+  widget?: 'color';
 }

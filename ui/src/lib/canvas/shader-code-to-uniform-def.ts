@@ -12,6 +12,9 @@ export interface ParamDirective {
   min?: number;
   max?: number;
   description?: string;
+
+  /** Widget override — e.g. 'color' renders a vec3 as a color picker */
+  widget?: 'color';
 }
 
 export interface ShaderDirectives {
@@ -31,7 +34,9 @@ function parseParamDirective(value: string): ParamDirective | null {
   const [, name, defaultValue, minValue, maxValue, description] = match;
   const param: ParamDirective = { name };
 
-  if (defaultValue != null) {
+  if (defaultValue === 'color') {
+    param.widget = 'color';
+  } else if (defaultValue != null) {
     param.default = defaultValue;
   }
 
@@ -142,7 +147,8 @@ export function shaderCodeToUniformDefs(code: string): GLUniformDef[] {
       }),
       ...(param?.min != null && { min: param.min }),
       ...(param?.max != null && { max: param.max }),
-      ...(param?.description != null && { description: param.description })
+      ...(param?.description != null && { description: param.description }),
+      ...(param?.widget != null && { widget: param.widget })
     });
   }
 
@@ -224,5 +230,18 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
           persistence: 'node' as const
         }
       ])
+      .with('vec3', () =>
+        def.widget === 'color'
+          ? [
+              {
+                key: def.name,
+                label: def.description ?? def.name,
+                type: 'color' as const,
+                default: '#ffffff',
+                persistence: 'node' as const
+              }
+            ]
+          : []
+      )
       .otherwise(() => [])
   );

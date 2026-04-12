@@ -1,4 +1,28 @@
 import { match } from 'ts-pattern';
+import type { GLUniformDef } from '../../types/uniform-config';
+
+/** Convert a hex color string (e.g. '#ff8800') to a normalized vec3 ([0-1, 0-1, 0-1]). */
+export function hexToVec3(hex: string): [number, number, number] {
+  const h = hex.replace('#', '');
+
+  return [
+    parseInt(h.slice(0, 2), 16) / 255,
+    parseInt(h.slice(2, 4), 16) / 255,
+    parseInt(h.slice(4, 6), 16) / 255
+  ];
+}
+
+/** Convert a settings value to its GL representation, applying widget transforms (e.g. hex → vec3). */
+export function toGLValue(
+  def: GLUniformDef | undefined,
+  value: unknown
+): number | boolean | number[] | number[][] {
+  if (def?.widget === 'color' && typeof value === 'string') {
+    return hexToVec3(value);
+  }
+
+  return value as number | boolean | number[] | number[][];
+}
 
 export const vecComponents = (type: string): number | null =>
   match(type)

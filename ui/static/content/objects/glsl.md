@@ -161,9 +161,28 @@ uniform bool invert;    // false
 
 Format: `// @param <name> [default] [min] [max] ["description"]`
 
-Each `@param` must have a matching `uniform` declaration — the type is inferred from it.
+Each `@param` must have a matching `uniform` declaration — the type is
+inferred from it.
 
-When `min` and `max` are provided, the settings panel shows a slider instead of a plain number input. The description replaces the uniform name as the label.
+When `min` and `max` are provided, the settings panel shows a slider instead of
+a plain number input. The description replaces the uniform name as the label.
+
+### `@param` — Color Picker
+
+Use `color` as the default value to render a `vec3` uniform as a color picker:
+
+```glsl
+// @param tint color
+// @param glow color "Glow color"
+
+uniform vec3 tint;
+uniform vec3 glow;
+```
+
+The color picker stores a hex string (e.g. `#ff8800`) and converts it
+to a normalized `vec3` (0–1 per channel) before sending to the shader.
+
+Only works with `vec3` uniforms — other types ignore the `color` keyword.
 
 ## Float Texture Format
 

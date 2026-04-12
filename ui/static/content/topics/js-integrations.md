@@ -130,7 +130,6 @@ For `glsl` shaders, use the comment directive instead:
 
 ```glsl
 // @primaryButton settings
-// @param speed slider 0..1 = 0.5
 ```
 
 ## Float Texture Format
