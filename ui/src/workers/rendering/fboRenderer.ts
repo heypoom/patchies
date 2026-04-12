@@ -1434,7 +1434,10 @@ export class FBORenderer {
   }
 
   private renderNodeToMainOutput(node: FBONode): void {
-    const [backgroundWidth, backgroundHeight] = this.outputSize;
+    // outputSize controls the offscreen canvas dimensions (blit destination).
+    // backgroundSize is used only for the cover-mode aspect ratio crop.
+    const [outputWidth, outputHeight] = this.outputSize;
+    const [backgroundWidth, backgroundHeight] = this.backgroundSize;
 
     if (!this.isOutputEnabled) {
       return;
@@ -1468,7 +1471,7 @@ export class FBORenderer {
       return;
     }
 
-    gl.viewport(0, 0, backgroundWidth, backgroundHeight);
+    gl.viewport(0, 0, outputWidth, outputHeight);
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(framebuffer));
     gl.readBuffer(gl.COLOR_ATTACHMENT0 + this.outputOutletIndex);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
@@ -1506,8 +1509,8 @@ export class FBORenderer {
       sourceY1,
       0,
       0,
-      backgroundWidth,
-      backgroundHeight,
+      outputWidth,
+      outputHeight,
       gl.COLOR_BUFFER_BIT,
       gl.LINEAR
     );
@@ -1611,13 +1614,11 @@ export class FBORenderer {
 
   /**
    * Set the background display size (viewport dimensions).
-   * Only resizes the offscreen canvas used for final output blit.
-   * Does NOT affect FBO sizes or node preview sizes.
+   * Only stores the value for cover-mode blit crop calculation.
+   * Does NOT resize the offscreen canvas, FBOs, or node previews.
    */
   setBackgroundSize(width: number, height: number) {
     this.backgroundSize = [width, height] as [number, number];
-    this.offscreenCanvas.width = width;
-    this.offscreenCanvas.height = height;
   }
 
   /**
