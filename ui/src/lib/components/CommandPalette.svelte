@@ -203,7 +203,8 @@
     {
       id: 'help-sparks',
       name: 'Getting Started: Sparks',
-      description: 'Open the Sparks tab for AI-generated patch ideas'
+      description: 'Open the Sparks tab for AI-generated patch ideas',
+      requiresAi: true
     },
     {
       id: 'help-shortcuts',
