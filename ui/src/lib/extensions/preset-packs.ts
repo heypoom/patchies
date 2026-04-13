@@ -163,7 +163,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'crate.three',
       'point-cloud-from-texture.three',
       'mesh-surface-from-texture.three',
-      'position-field.gl'
+      'position-field.gl',
+      'torus-position-field.gl'
     ]
   },
   {
