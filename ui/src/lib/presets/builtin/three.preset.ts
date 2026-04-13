@@ -270,6 +270,134 @@ function draw(t) {
   renderer.render(scene, camera)
 }`;
 
+const MESH_SURFACE_FROM_TEXTURE = `setTitle('Mesh Surface')
+
+const {
+  Scene, PerspectiveCamera, PlaneGeometry, Mesh,
+  ShaderMaterial, DoubleSide, Vector3
+} = THREE
+
+setVideoCount(1, 1)
+setPrimaryButton('settings')
+
+// --- Settings ---
+await settings.define([
+  { key: 'gridSize', type: 'slider', label: 'Grid Resolution', min: 4, max: 512, step: 1, default: 128 },
+  { key: 'wireframe', type: 'boolean', label: 'Wireframe', default: false },
+  { key: 'opacity', type: 'slider', label: 'Opacity', min: 0, max: 1, step: 0.01, default: 1.0 }
+])
+
+let gridSize = settings.get('gridSize')
+
+// --- Shaders ---
+const vertexShader = \`
+  uniform sampler2D positionMap;
+  varying vec3 vPos;
+  varying vec2 vUv;
+
+  void main() {
+    vUv = uv;
+    // Sample the RGB values from the input texture to use as XYZ coordinates
+    vec4 tex = texture2D(positionMap, uv);
+    vec3 p = tex.xyz;
+
+    vPos = p;
+
+    vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
+  }
+\`
+
+const fragmentShader = \`
+  varying vec3 vPos;
+  varying vec2 vUv;
+  uniform float uOpacity;
+
+  void main() {
+    // Calculate normals on the fly using screen-space derivatives
+    // This creates faceted shading based on the displaced geometry
+    vec3 fdx = dFdx(vPos);
+    vec3 fdy = dFdy(vPos);
+    vec3 normal = normalize(cross(fdx, fdy));
+
+    // Simple directional lighting
+    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+    float diffuse = max(dot(normal, lightDir), 0.0) * 0.5 + 0.5;
+
+    // Color based on position
+    vec3 color = 0.5 + 0.5 * normalize(vPos);
+
+    gl_FragColor = vec4(color * diffuse, uOpacity);
+  }
+\` // Note: Using standard GLSL derivatives for shading
+
+// --- Initialization ---
+const material = new ShaderMaterial({
+  uniforms: {
+    positionMap: { value: null },
+    uOpacity: { value: settings.get('opacity') }
+  },
+  vertexShader,
+  fragmentShader,
+  side: DoubleSide,
+  transparent: true,
+  wireframe: settings.get('wireframe'),
+  extensions: { derivatives: true }
+})
+
+const scene = new Scene()
+const camera = new PerspectiveCamera(60, width / height, 0.1, 1000)
+camera.position.set(0, 0, 3)
+
+let mesh = null
+
+function buildMesh(res) {
+  if (mesh) {
+    scene.remove(mesh)
+    mesh.geometry.dispose()
+  }
+
+  // Create a plane with segments matching our desired resolution
+  // Each vertex in this plane will be moved by the vertex shader
+  const geometry = new PlaneGeometry(1, 1, res, res)
+  mesh = new Mesh(geometry, material)
+  scene.add(mesh)
+  gridSize = res
+}
+
+buildMesh(gridSize)
+
+// --- Updates ---
+settings.onChange((key, value) => {
+  if (key === 'gridSize') {
+    buildMesh(value)
+  }
+
+  if (key === 'wireframe') {
+    material.wireframe = value
+  }
+
+  if (key === 'opacity') {
+    material.uniforms.uOpacity.value = value
+  }
+})
+
+function draw(t) {
+  const texture = getTexture(0)
+
+  if (texture) {
+    material.uniforms.positionMap.value = texture
+  }
+
+  if (mesh) {
+    // Slow rotation for presentation
+    mesh.rotation.y = t * 0.0002
+    mesh.rotation.x = Math.sin(t * 0.0001) * 0.2
+  }
+
+  renderer.render(scene, camera)
+}`;
+
 export const THREE_PRESETS: Record<string, { type: string; data: { code: string } }> = {
   'three>': { type: 'three', data: { code: PIPE_THREE.trim() } },
   'video-cube.three': { type: 'three', data: { code: VIDEO_CUBE_THREE.trim() } },
@@ -279,5 +407,9 @@ export const THREE_PRESETS: Record<string, { type: string; data: { code: string 
   'point-cloud-from-texture.three': {
     type: 'three',
     data: { code: POINT_CLOUD_FROM_TEXTURE.trim() }
+  },
+  'mesh-surface-from-texture.three': {
+    type: 'three',
+    data: { code: MESH_SURFACE_FROM_TEXTURE.trim() }
   }
 };

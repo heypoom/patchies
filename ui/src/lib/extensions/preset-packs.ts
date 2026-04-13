@@ -162,6 +162,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'video-sphere.three',
       'crate.three',
       'point-cloud-from-texture.three',
+      'mesh-surface-from-texture.three',
       'position-field.gl'
     ]
   },
