@@ -1,5 +1,6 @@
 import type { Edge, Node } from '@xyflow/svelte';
 import type { VFSTree } from '$lib/vfs/types';
+import type { PatchSettings } from '$lib/save-load/serialize-patch';
 
 /**
  * Raw patch data before migration (version may be missing or old)
@@ -11,6 +12,8 @@ export type RawPatchData = {
   nodes?: Node[];
   edges?: Edge[];
   files?: VFSTree;
+  patchId?: string;
+  settings?: PatchSettings;
 };
 
 /**

@@ -10,6 +10,7 @@ import { migration008 } from './migrations/008-asm-value-address-bounds';
 import { migration009 } from './migrations/009-asm-receive-to-recv';
 import { migration010 } from './migrations/010-table-to-visual-node';
 import { migration011 } from './migrations/011-fix-redundant-handle-ids';
+import { migration012 } from './migrations/012-default-output-size-for-old-patches';
 
 /**
  * All migrations in order. Each migration upgrades from version N-1 to N.
@@ -26,7 +27,8 @@ const migrations: Migration[] = [
   migration008,
   migration009,
   migration010,
-  migration011
+  migration011,
+  migration012
 ];
 
 /**
