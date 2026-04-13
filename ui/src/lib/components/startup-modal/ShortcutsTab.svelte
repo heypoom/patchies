@@ -28,6 +28,11 @@
       description: 'Select multiple objects',
       category: 'mouse'
     },
+    {
+      keys: ['Ctrl', 'Click on object / edge'],
+      description: 'Multi-select objects and edges',
+      category: 'mouse'
+    },
     { keys: ['Enter'], description: 'Create a new object at cursor', category: 'keyboard' },
     { keys: ['Ctrl', 'K'], description: 'Open the command palette', category: 'keyboard' },
     { keys: ['Ctrl', 'B'], description: 'Toggle the left sidebar', category: 'keyboard' },
