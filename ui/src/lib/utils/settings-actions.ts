@@ -35,7 +35,7 @@ export function applyOutputSize(input: string): boolean {
     const glSystem = GLSystem.getInstance();
     glSystem.clearOutputSize();
     const [w, h] = glSystem.outputSize;
-    toast.success(`Output size cleared — using screen default (${w}×${h})`);
+    toast.success(`Output size cleared — using default (${w}×${h})`);
     return true;
   }
 
