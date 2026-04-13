@@ -55,6 +55,23 @@ Right-click any visual object (or use its **···** menu) and choose **Output t
 - Switching to a different object replaces the current output — only one at a time
 - This is great for live performance; it is not saved across sessions
 
+## Output Screen
+
+Open a separate browser window that displays your visual output fullscreen — perfect for projectors, second monitors, or showing visuals to an audience.
+
+Open it from the command palette: `Cmd+K` → "Open Output Screen".
+
+The output screen stays connected even if you reload either window. Reload the output
+screen and it reconnects automatically. Reload the main patch and the output
+screen re-connects within a second.
+
+### Exercise — Dual-screen setup
+
+1. Open the output screen (`Cmd+K` → "Open Output Screen")
+2. Create a `hydra` object and write a pattern
+3. Right-click the hydra object → **Output to background**
+4. Drag the output window to a second monitor or projector — your audience sees clean visuals while you keep editing.
+
 ## Output Resolution
 
 By default, patches render at 1280×720. You can change this with
