@@ -10,7 +10,7 @@ import {
   feedbackEdgeIds
 } from '../../stores/renderer.store';
 import { get } from 'svelte/store';
-import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
+import { isBackgroundOutputCanvasEnabled, outputTarget } from '../../stores/canvas.store';
 import { currentPatchId } from '../../stores/ui.store';
 import { renderFpsCap } from '../../stores/renderer.store';
 import { IpcSystem } from './IpcSystem';
@@ -76,6 +76,9 @@ export class GLSystem {
 
   /** Tracks the current override output node for use in syncOutputEnabled */
   private overrideOutputNodeId: string | null = null;
+
+  /** Where to route rendered output: background canvas or secondary screen */
+  private _outputTarget: 'background' | 'screen' = 'background';
 
   /** Interval ID for transport time sync to worker */
   private transportSyncInterval: ReturnType<typeof setInterval> | null = null;
@@ -162,6 +165,12 @@ export class GLSystem {
     // Sync render FPS cap with render worker
     renderFpsCap.subscribe((fps) => {
       this.renderWorker.postMessage({ type: 'setRenderFpsCap', fps });
+    });
+
+    // Sync output target preference
+    outputTarget.subscribe((target) => {
+      this._outputTarget = target;
+      this.syncOutputEnabled();
     });
 
     // Invalidate shader nodes when VFS shader files are added, removed, or modified
@@ -261,10 +270,10 @@ export class GLSystem {
     if (data.type === 'animationFrame') {
       if (!data.outputBitmap) return;
 
-      if (this.ipcSystem.outputWindow === null) {
-        this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
-      } else {
+      if (this._outputTarget === 'screen' && this.ipcSystem.outputWindow !== null) {
         this.ipcSystem.sendRenderOutput(data.outputBitmap);
+      } else {
+        this.backgroundOutputCanvasContext?.transferFromImageBitmap(data.outputBitmap);
       }
 
       return;
@@ -689,9 +698,10 @@ export class GLSystem {
     const hasBgOutEdge = this.edges.some((edge) => edge.target.startsWith('bg.out'));
     const outputEnabled = this.overrideOutputNodeId !== null || hasBgOutEdge;
 
-    if (this.ipcSystem.outputWindow === null) {
-      isBackgroundOutputCanvasEnabled.set(outputEnabled);
-    }
+    const useBackground =
+      this._outputTarget === 'background' || this.ipcSystem.outputWindow === null;
+
+    isBackgroundOutputCanvasEnabled.set(useBackground && outputEnabled);
 
     this.setOutputEnabled(outputEnabled);
   }

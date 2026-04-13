@@ -5,6 +5,7 @@
   import { isFpsMonitorVisible } from '../../../../stores/ui.store';
   import { renderFpsCap, type FpsCap } from '../../../../stores/renderer.store';
   import { useWebCodecs, showVideoStats } from '../../../../stores/video.store';
+  import { outputTarget, type OutputTarget } from '../../../../stores/canvas.store';
 
   const fpsCapOptions = [
     { value: '0', label: 'Unlimited' },
@@ -17,6 +18,13 @@
   function handleFpsCapChange(value: string) {
     renderFpsCap.set(Number(value) as FpsCap);
   }
+
+  const outputTargetOptions = [
+    { value: 'background', label: 'Background' },
+    { value: 'screen', label: 'Output Screen' }
+  ];
+
+  const handleOutputTargetChange = (value: string) => outputTarget.set(value as OutputTarget);
 </script>
 
 <SettingRow title="Render FPS cap" description="Limit the rendering frame rate">
@@ -36,4 +44,12 @@
   description="Use WebCodecs for video decoding (Chrome/Edge recommended)"
 >
   <SettingToggle checked={$useWebCodecs} onchange={(v) => useWebCodecs.set(v)} />
+</SettingRow>
+
+<SettingRow title="Output target" description="Where to send rendered output">
+  <SettingDropdown
+    value={$outputTarget}
+    options={outputTargetOptions}
+    onchange={handleOutputTargetChange}
+  />
 </SettingRow>

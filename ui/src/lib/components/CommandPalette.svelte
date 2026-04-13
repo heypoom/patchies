@@ -23,7 +23,7 @@
   import { renderFpsCap, FPS_CAP_OPTIONS } from '../../stores/renderer.store';
   import type { Node, Edge } from '@xyflow/svelte';
   import { IpcSystem } from '$lib/canvas/IpcSystem';
-  import { isBackgroundOutputCanvasEnabled } from '../../stores/canvas.store';
+  import { outputTarget } from '../../stores/canvas.store';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
   import { createAndCopyShareLink } from '$lib/save-load/share';
@@ -168,6 +168,11 @@
       id: 'open-output-screen',
       name: 'Open Output Screen',
       description: 'Open a secondary output screen for live performances.'
+    },
+    {
+      id: 'toggle-output-target',
+      name: 'Toggle Output Target',
+      description: 'Switch between background canvas and output screen.'
     },
     {
       id: 'open-settings',
@@ -477,8 +482,20 @@
         onCancel();
       })
       .with('open-output-screen', () => {
-        isBackgroundOutputCanvasEnabled.set(false);
+        outputTarget.set('screen');
         ipcSystem.openOutputWindow();
+        onCancel();
+      })
+      .with('toggle-output-target', () => {
+        const current = get(outputTarget);
+        const next = current === 'background' ? 'screen' : 'background';
+
+        outputTarget.set(next);
+
+        toast.success(
+          `Output target: ${next === 'background' ? 'Background canvas' : 'Output screen'}`
+        );
+
         onCancel();
       })
       .with('enter-fullscreen', () => {
