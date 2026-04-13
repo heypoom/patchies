@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import { GLSystem } from '$lib/canvas/GLSystem';
+import { outputSize as outputSizeStore } from '../../stores/renderer.store';
 import { isSidebarOpen } from '../../stores/ui.store';
 
 /**
@@ -47,6 +48,7 @@ export class SurfaceOverlay {
     this._resize();
 
     window.addEventListener('resize', this._resize.bind(this));
+    outputSizeStore.subscribe(() => this._resize());
 
     this._onEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && e.shiftKey && this._activeNodeId) {

@@ -22,6 +22,7 @@
   };
 
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+  import { outputSize as outputSizeStore } from '../../../stores/renderer.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import { SurfaceListeners, type PointerEvent_ } from '$lib/canvas/SurfaceListeners';
@@ -171,6 +172,7 @@
   // Preview = window dimensions; fullscreen = output dimensions (matching cover blit)
   let outputWidth = $state(window.innerWidth);
   let outputHeight = $state(window.innerHeight);
+
   let previewWidth = $derived(outputWidth / PREVIEW_SCALE_FACTOR);
   let previewHeight = $derived(outputHeight / PREVIEW_SCALE_FACTOR);
 
@@ -178,6 +180,18 @@
     if (data.executeCode && data.executeCode !== previousExecuteCode) {
       previousExecuteCode = data.executeCode;
       runCode();
+    }
+  });
+
+  // Update surface dimensions when output size changes (e.g. via Set Output Size command)
+  $effect(() => {
+    const [_outputWidth, _outputHeight] = $outputSizeStore;
+
+    if (isFullscreen) {
+      outputWidth = _outputWidth;
+      outputHeight = _outputHeight;
+
+      setTimeout(() => runCode());
     }
   });
 
