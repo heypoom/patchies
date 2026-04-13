@@ -767,6 +767,24 @@
       return;
     }
 
+    // Resolution aliases (720p, 1080p, 2k, 4k)
+    const resolutionAliases: Record<string, [number, number]> = {
+      '720p': [1280, 720],
+      '1080p': [1920, 1080],
+      '2k': [2560, 1440],
+      '4k': [3840, 2160]
+    };
+
+    if (input in resolutionAliases) {
+      const [width, height] = resolutionAliases[input];
+
+      GLSystem.getInstance().setOutputSize(width, height);
+      toast.success(`Output size set to ${width}×${height} (${input})`);
+
+      onCancel();
+      return;
+    }
+
     // "Nx" multiplier → multiply screen dimensions (e.g. 2x, 0.5x)
     const multiplierMatch = input.match(/^(\d+\.?\d*)\s*x$/);
     if (multiplierMatch) {
@@ -1088,6 +1106,19 @@
           <div class="mt-1 text-zinc-500">
             Sets to screen size × device pixel ratio. More compute intensive.
           </div>
+        {:else if ['720p', '1080p', '2k', '4k'].includes(outputSizeInput.trim().toLowerCase())}
+          {@const aliases = {
+            '720p': [1280, 720],
+            '1080p': [1920, 1080],
+            '2k': [2560, 1440],
+            '4k': [3840, 2160]
+          } as Record<string, [number, number]>}
+          {@const [aw, ah] = aliases[outputSizeInput.trim().toLowerCase()]}
+
+          Output:
+          <span class="font-mono text-green-300"
+            >{outputSizeInput.trim().toLowerCase()} ({aw}×{ah})</span
+          >
         {:else if outputSizeInput
           .trim()
           .toLowerCase()
