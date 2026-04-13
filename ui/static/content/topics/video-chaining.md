@@ -63,6 +63,10 @@ By default, patches render at 1280×720. You can change this with
 | Input        | What it does                                               |
 | ------------ | ---------------------------------------------------------- |
 | `1920x1080`  | Set an explicit resolution                                 |
+| `720p`       | 1280×720                                                   |
+| `1080p`      | 1920×1080                                                  |
+| `2k`         | 2560×1440                                                  |
+| `4k`         | 3840×2160                                                  |
 | `screen`     | Match your current browser window size (without DPR)       |
 | `retina`     | Match your window size × device pixel ratio                |
 | `2x`         | Multiply your window size by 2 (or `0.5x`, `1.5x`, etc.)   |
