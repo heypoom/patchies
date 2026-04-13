@@ -8,17 +8,12 @@ export const DEFAULT_PREVIEW_SIZE: [number, number] = [
   Math.round(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
 ];
 
-/** DPR-aware output size based on screen dimensions. Used as default when no explicit size is saved. */
+/** Output size based on screen dimensions (without DPR). Used as default when no explicit size is saved. */
 export function getDefaultOutputSize(): [number, number] {
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-
   const windowWidth = typeof window !== 'undefined' ? window.innerWidth : DEFAULT_OUTPUT_SIZE[0];
   const windowHeight = typeof window !== 'undefined' ? window.innerHeight : DEFAULT_OUTPUT_SIZE[1];
 
-  return [
-    Math.max(1, Math.min(8192, Math.round(windowWidth * dpr))),
-    Math.max(1, Math.min(8192, Math.round(windowHeight * dpr)))
-  ];
+  return [Math.max(1, Math.min(8192, windowWidth)), Math.max(1, Math.min(8192, windowHeight))];
 }
 
 /** Maximum preview dimensions. Previews are scaled down to fit within this box. */

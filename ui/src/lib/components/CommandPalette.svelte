@@ -745,12 +745,25 @@
       return;
     }
 
-    // "screen" → use this screen's DPR-aware dimensions (saved as fixed pixels)
+    // "screen" → use screen dimensions without DPR
     if (input === 'screen') {
       const [width, height] = getDefaultOutputSize();
 
       GLSystem.getInstance().setOutputSize(width, height);
       toast.success(`Output size set to ${width}×${height}`);
+
+      onCancel();
+      return;
+    }
+
+    // "retina" → use screen dimensions × devicePixelRatio
+    if (input === 'retina') {
+      const dpr = window.devicePixelRatio || 1;
+      const width = Math.max(1, Math.min(8192, Math.round(window.innerWidth * dpr)));
+      const height = Math.max(1, Math.min(8192, Math.round(window.innerHeight * dpr)));
+
+      GLSystem.getInstance().setOutputSize(width, height);
+      toast.success(`Output size set to ${width}×${height} (${dpr}x DPR)`);
 
       onCancel();
       return;
@@ -774,7 +787,7 @@
     const match = input.match(/^(\d+)\s*[x×,]\s*(\d+)$/i);
 
     if (!match) {
-      toast.error('Invalid format. Use WIDTHxHEIGHT, screen, Nx, or clear');
+      toast.error('Invalid format. Use WIDTHxHEIGHT, screen, retina, Nx, or clear');
       return;
     }
 
@@ -899,7 +912,7 @@
 
 <div
   bind:this={paletteContainer}
-  class="absolute z-50 w-80 rounded-lg border border-zinc-600 bg-zinc-900/90 shadow-2xl backdrop-blur-xl"
+  class="absolute z-50 w-96 rounded-lg border border-zinc-600 bg-zinc-900/90 shadow-2xl backdrop-blur-xl"
   style="left: {position.x}px; top: {position.y}px;"
 >
   <!-- Search Input -->
@@ -953,14 +966,14 @@
   {:else if stage === 'set-output-size'}
     <div class="border-b border-zinc-700 p-3">
       <div class="mb-2 text-xs text-zinc-400">
-        Enter output resolution (WIDTHxHEIGHT, screen, Nx, or clear):
+        Output resolution (WxH, screen, retina, Nx, clear):
       </div>
       <input
         bind:this={searchInput}
         bind:value={outputSizeInput}
         onkeydown={handleKeydown}
         type="text"
-        placeholder="e.g. 1920x1080, screen, 2x, or clear"
+        placeholder="e.g. 1920x1080"
         class="w-full bg-transparent font-mono text-sm text-zinc-100 placeholder-zinc-400 outline-none"
       />
     </div>
@@ -1061,7 +1074,21 @@
           Output: <span class="font-mono text-green-300">screen ({sw}×{sh})</span>
 
           <div class="mt-1 text-zinc-500">
-            Sets to your current screen size. This value is saved with the patch.
+            Sets to your current screen size (without DPR). This value is saved with the patch.
+          </div>
+        {:else if outputSizeInput.trim().toLowerCase() === 'retina'}
+          {@const dpr = window.devicePixelRatio || 1}
+
+          Output:
+          <span class="font-mono text-green-300"
+            >retina ({Math.min(8192, Math.round(window.innerWidth * dpr))}×{Math.min(
+              8192,
+              Math.round(window.innerHeight * dpr)
+            )}, {dpr}x DPR)</span
+          >
+
+          <div class="mt-1 text-zinc-500">
+            Sets to screen size × device pixel ratio. More compute intensive.
           </div>
         {:else if outputSizeInput
           .trim()
@@ -1087,9 +1114,11 @@
         {:else if outputSizeInput.trim().match(/^(\d+)\s*[x×,]\s*(\d+)$/i)}
           Output: <span class="font-mono text-green-300">{outputSizeInput.trim()}</span>
         {:else if outputSizeInput.trim()}
-          <span class="text-red-400">Invalid format — use WIDTHxHEIGHT, screen, Nx, or clear</span>
+          <span class="text-red-400"
+            >Invalid format — use WIDTHxHEIGHT, screen, retina, Nx, or clear</span
+          >
         {:else}
-          Enter a resolution: 1920x1080, screen, 2x, or clear
+          Enter a resolution: 1920x1080, screen, retina, 2x, or clear
         {/if}
       </div>
     {:else if stage === 'set-room'}
