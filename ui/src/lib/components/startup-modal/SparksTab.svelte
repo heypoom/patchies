@@ -124,6 +124,11 @@
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
+  /* ── OutputGrid: force 4-col inside narrower modal ── */
+  :global(.sparks-tab .output-grid) {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
   /* ── VisionGenerator overrides for modal context ── */
   :global(.sparks-tab-generator .vision-section) {
     padding-left: 0 !important;

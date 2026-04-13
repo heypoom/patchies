@@ -103,25 +103,25 @@ export const outputs: Output[] = [
   {
     id: '2d-visual',
     name: '2D Visual',
-    description: 'Canvas, P5.js, generative graphics',
+    description: 'Canvas, P5.js, 2D graphics',
     packIds: ['2d']
   },
   {
     id: 'video',
     name: 'Video',
-    description: 'Three.js, Hydra, shaders, projection',
+    description: 'Three.js, Hydra, shaders',
     packIds: ['video-synthesis']
   },
   {
     id: 'sound',
     name: 'Sound',
-    description: 'Synthesis, effects, audio processing',
+    description: 'Synthesis and effects',
     packIds: ['signal-generators', 'audio-effects']
   },
   {
     id: 'music',
     name: 'Music',
-    description: 'Composition, patterns, sequencing',
+    description: 'Composition and sequencing',
     packIds: ['music'],
     nodes: ['bytebeat~']
   },
@@ -135,7 +135,7 @@ export const outputs: Output[] = [
   {
     id: 'code',
     name: 'Code',
-    description: 'JS runners, workers, scripting',
+    description: 'Scripting & workers',
     packIds: ['scripting'],
     nodes: ['js', 'worker']
   },
@@ -149,7 +149,7 @@ export const outputs: Output[] = [
   {
     id: 'dsp',
     name: 'DSP',
-    description: 'Custom signal processors & audio math',
+    description: 'Custom signal processors',
     packIds: ['signal-processors']
   },
   {
@@ -167,13 +167,39 @@ export const outputs: Output[] = [
   {
     id: 'midi',
     name: 'MIDI',
-    description: 'MIDI controllers & instruments',
+    description: 'MIDI controllers',
     packIds: ['midi']
   },
   {
     id: 'serial',
     name: 'Serial',
-    description: 'Arduino, sensors, physical I/O',
+    description: 'Sensors & physical I/O',
     nodes: ['serial', 'serial.term']
+  },
+  {
+    id: 'ai',
+    name: 'AI',
+    description: 'Text, sound and image gen',
+    packIds: ['ai']
+  },
+  {
+    id: 'sampling',
+    name: 'Sampling',
+    description: 'Samplers, pads, loops & tables',
+    packIds: ['audio-samples'],
+    nodes: ['soundfile~']
+  },
+  {
+    id: 'connections',
+    name: 'Connections',
+    description: 'Live Video, MQTT, RTC, I/O',
+    packIds: ['networking']
+  },
+  {
+    id: 'ui',
+    name: 'UI',
+    description: 'Custom controls & interfaces',
+    packIds: ['ui'],
+    nodes: ['canvas.dom', 'p5', 'keyboard']
   }
 ];

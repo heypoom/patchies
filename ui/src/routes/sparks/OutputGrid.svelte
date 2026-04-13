@@ -13,6 +13,10 @@
     Projector,
     Piano,
     Usb,
+    Sparkles,
+    Disc3,
+    Globe,
+    SlidersHorizontal,
     type Icon as LucideIcon
   } from '@lucide/svelte';
   import type { Output } from './types';
@@ -31,7 +35,11 @@
     lighting: Lightbulb,
     projection: Projector,
     midi: Piano,
-    serial: Usb
+    serial: Usb,
+    ai: Sparkles,
+    sampling: Disc3,
+    connections: Globe,
+    ui: SlidersHorizontal
   };
 
   interface Props {
@@ -58,7 +66,7 @@
     {/if}
   </div>
 
-  <div class="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
+  <div class="output-grid grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
     {#each outputs as output (output.id)}
       {@const active = selectedOutputIds.has(output.id)}
       {@const Icon = icons[output.id]}
