@@ -86,3 +86,50 @@ export function getPreviewSizeForResolution(
     Math.max(1, Math.floor(resolution[1] / PREVIEW_SCALE_FACTOR))
   );
 }
+
+/**
+ * Create a transform that maps window-space 0–1 coordinates to output UV space,
+ * accounting for the cover-mode blit crop. This is the inverse of the cover blit
+ * in fboRenderer.ts that crops the source FBO to fill the background canvas.
+ *
+ * When sourceAspect > windowAspect: source sides are cropped → X needs remapping
+ * When sourceAspect < windowAspect: source top/bottom are cropped → Y needs remapping
+ */
+export function createCoverBlitTransform(
+  sourceWidth: number,
+  sourceHeight: number,
+  windowWidth: number,
+  windowHeight: number
+): (x: number, y: number) => { x: number; y: number } {
+  const sourceAspect = sourceWidth / sourceHeight;
+  const windowAspect = windowWidth / windowHeight;
+
+  if (Math.abs(sourceAspect - windowAspect) < 0.001) {
+    // Aspects match — no transform needed
+    return (x, y) => ({ x, y });
+  }
+
+  if (sourceAspect > windowAspect) {
+    // Source is wider — sides are cropped
+    // Visible UV X range: [offsetU, offsetU + visibleU]
+    const cropWidth = sourceHeight * windowAspect;
+    const offsetU = (sourceWidth - cropWidth) / 2 / sourceWidth;
+    const visibleU = cropWidth / sourceWidth;
+
+    return (x, y) => ({
+      x: offsetU + x * visibleU,
+      y
+    });
+  }
+
+  // Source is taller — top/bottom are cropped
+  // Visible UV Y range: [offsetV, offsetV + visibleV]
+  const cropHeight = sourceWidth / windowAspect;
+  const offsetV = (sourceHeight - cropHeight) / 2 / sourceHeight;
+  const visibleV = cropHeight / sourceHeight;
+
+  return (x, y) => ({
+    x,
+    y: offsetV + y * visibleV
+  });
+}

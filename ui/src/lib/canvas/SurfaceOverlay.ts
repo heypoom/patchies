@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { GLSystem } from '$lib/canvas/GLSystem';
 import { isSidebarOpen } from '../../stores/ui.store';
 
 /**
@@ -38,7 +39,7 @@ export class SurfaceOverlay {
     this._canvas = document.createElement('canvas');
 
     this._canvas.style.cssText =
-      'position: fixed; inset: 0; display: none; z-index: 50; pointer-events: none;';
+      'position: fixed; inset: 0; display: none; z-index: 50; pointer-events: none; width: 100vw; height: 100vh; object-fit: cover;';
 
     document.body.appendChild(this._canvas);
 
@@ -77,11 +78,10 @@ export class SurfaceOverlay {
   }
 
   private _resize() {
-    this._canvas.width = window.innerWidth;
-    this._canvas.height = window.innerHeight;
+    const [outputWidth, outputHeight] = GLSystem.getInstance().outputSize;
 
-    this._canvas.style.width = '100vw';
-    this._canvas.style.height = '100vh';
+    this._canvas.width = outputWidth;
+    this._canvas.height = outputHeight;
   }
 
   /**

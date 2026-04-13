@@ -24,7 +24,7 @@
   import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
-  import { SurfaceListeners } from '$lib/canvas/SurfaceListeners';
+  import { SurfaceListeners, type PointerEvent_ } from '$lib/canvas/SurfaceListeners';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
@@ -168,7 +168,7 @@
   let outletCount = $derived(data.outletCount ?? 0);
   let previousExecuteCode = $state<number | undefined>(undefined);
 
-  // Canvas dimensions = always window dimensions
+  // Preview = window dimensions; fullscreen = output dimensions (matching cover blit)
   let outputWidth = $state(window.innerWidth);
   let outputHeight = $state(window.innerHeight);
   let previewWidth = $derived(outputWidth / PREVIEW_SCALE_FACTOR);
@@ -279,8 +279,7 @@
 
   function listenerOpts() {
     return {
-      onPointer: (e: import('$lib/canvas/SurfaceListeners').PointerEvent_) =>
-        dispatchPointer(e.x, e.y, e.buttons, e.type),
+      onPointer: (e: PointerEvent_) => dispatchPointer(e.x, e.y, e.buttons, e.type),
       get onTouch() {
         return touchCallback;
       },
@@ -304,6 +303,11 @@
 
     overlay.activate(nodeId, nodes, () => exitSurface());
     mouseForwarder.forceHydraScope('global');
+
+    // Switch to output dimensions (overlay canvas uses object-fit: cover)
+    const [_outputWidth, _outputHeight] = glSystem.outputSize;
+    outputWidth = _outputWidth;
+    outputHeight = _outputHeight;
 
     // Switch active canvas to overlay
     activeCanvas = overlay.canvas;
@@ -333,6 +337,10 @@
 
     SurfaceOverlay.getInstance().deactivate(nodeId);
     mouseForwarder.forceHydraScope('local');
+
+    // Restore window dimensions for preview mode
+    outputWidth = window.innerWidth;
+    outputHeight = window.innerHeight;
 
     // Remove keyboard listeners
     if (keyboardListenerHandlers) {
@@ -530,14 +538,21 @@
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
   function resizeCanvasToWindow() {
-    outputWidth = window.innerWidth;
-    outputHeight = window.innerHeight;
+    if (isFullscreen) {
+      // In fullscreen, match the output resolution (overlay handles CSS cover)
+      const [ow, oh] = glSystem.outputSize;
+      outputWidth = ow;
+      outputHeight = oh;
+    } else {
+      outputWidth = window.innerWidth;
+      outputHeight = window.innerHeight;
 
-    if (previewCanvas) {
-      previewCanvas.width = outputWidth;
-      previewCanvas.height = outputHeight;
-      previewCanvas.style.width = `${outputWidth / PREVIEW_SCALE_FACTOR}px`;
-      previewCanvas.style.height = `${outputHeight / PREVIEW_SCALE_FACTOR}px`;
+      if (previewCanvas) {
+        previewCanvas.width = outputWidth;
+        previewCanvas.height = outputHeight;
+        previewCanvas.style.width = `${outputWidth / PREVIEW_SCALE_FACTOR}px`;
+        previewCanvas.style.height = `${outputHeight / PREVIEW_SCALE_FACTOR}px`;
+      }
     }
   }
 

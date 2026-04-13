@@ -34,8 +34,33 @@ export class SurfaceListeners {
   attach(canvas: HTMLCanvasElement, opts: SurfaceListenersOptions): void {
     this.detach();
 
+    /**
+     * Compute the content rect for a canvas, accounting for object-fit: cover.
+     * For a cover-fit canvas, the content may overflow the CSS box.
+     * For a normal canvas, this returns the bounding rect as-is.
+     */
+    const getContentRect = () => {
+      const box = canvas.getBoundingClientRect();
+      const style = getComputedStyle(canvas);
+
+      if (style.objectFit !== 'cover') {
+        return { left: box.left, top: box.top, width: box.width, height: box.height };
+      }
+
+      const scale = Math.max(box.width / canvas.width, box.height / canvas.height);
+      const contentWidth = canvas.width * scale;
+      const contentHeight = canvas.height * scale;
+
+      return {
+        left: box.left + (box.width - contentWidth) / 2,
+        top: box.top + (box.height - contentHeight) / 2,
+        width: contentWidth,
+        height: contentHeight
+      };
+    };
+
     const normalize = (clientX: number, clientY: number) => {
-      const rect = canvas.getBoundingClientRect();
+      const rect = getContentRect();
       return {
         x: (clientX - rect.left) / rect.width,
         y: (clientY - rect.top) / rect.height
@@ -43,7 +68,7 @@ export class SurfaceListeners {
     };
 
     const normalizeTouches = (e: TouchEvent): TouchPoint[] => {
-      const rect = canvas.getBoundingClientRect();
+      const rect = getContentRect();
       return Array.from(e.touches).map((t) => ({
         id: t.identifier,
         x: (t.clientX - rect.left) / rect.width,
