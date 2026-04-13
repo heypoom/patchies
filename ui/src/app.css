@@ -92,6 +92,7 @@ body {
 
 @theme inline {
   --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', serif;
   --font-mono:
     'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
     'Courier New', monospace;

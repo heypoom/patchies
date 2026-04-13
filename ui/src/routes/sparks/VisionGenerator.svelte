@@ -162,27 +162,31 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
   }
 </script>
 
-<section class="vision-section px-8 pb-10">
+<section class="vision-section border-y border-white/5 bg-black/20 px-8 pt-8 pb-10">
   <div class="mx-auto max-w-4xl">
     <!-- Header row -->
-    <div class="vision-header mb-5">
+    <div
+      class="mb-5 flex flex-wrap items-center gap-4 max-[600px]:flex-col max-[600px]:items-stretch"
+    >
       <div class="flex-1">
-        <h2 class="sparks-serif text-xl text-zinc-200">Dream a build</h2>
-        <p class="sparks-mono mt-0.5 text-[11px] text-zinc-700">
-          three what-ifs based on your picks
-        </p>
+        <h2
+          class="sparks-heading font-serif text-[clamp(2rem,5vw,3.8rem)] leading-[1.1] text-zinc-200 italic"
+        >
+          Dream a build
+        </h2>
+        <p class="mt-0.5 font-mono text-[11px] text-zinc-700">three what-ifs based on your picks</p>
       </div>
-      <div class="vision-controls">
+      <div class="flex min-w-0 flex-1 items-center gap-2">
         <input
           type="text"
           bind:value={steerPrompt}
           placeholder="try: stranger, lo-fi, for a gallery opening"
-          class="steer-input sparks-mono text-xs"
+          class="steer-input max-w-[340px] min-w-0 flex-1 rounded-md border border-white/8 bg-white/3 px-3 py-1.5 font-mono text-xs text-zinc-400 transition-colors outline-none placeholder:text-zinc-700 focus:text-zinc-200"
           onkeydown={(e) => e.key === 'Enter' && generateVisions()}
         />
         <button
           onclick={generateVisions}
-          class="generate-btn sparks-mono cursor-pointer text-xs disabled:cursor-not-allowed disabled:opacity-40"
+          class="generate-btn flex cursor-pointer items-center gap-1.5 rounded-md border bg-transparent px-3.5 py-1.5 font-mono text-xs whitespace-nowrap transition-all disabled:cursor-not-allowed disabled:opacity-40"
           style:border-color="color-mix(in srgb, {accentColor} 35%, transparent)"
           style:color={isGenerating ? accentColor : undefined}
         >
@@ -199,7 +203,7 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 
     <!-- Error -->
     {#if generationError}
-      <p class="sparks-mono mb-4 text-xs text-red-500">{generationError}</p>
+      <p class="mb-4 font-mono text-xs text-red-500">{generationError}</p>
     {/if}
 
     <!-- Vision cards -->
@@ -219,26 +223,33 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
             onclick={() => openVision(v, i)}
           >
             <div class="vision-top-line"></div>
-            <h3 class="sparks-serif vision-title" style:color={textColor}>{v.title}</h3>
-            <p class="vision-text">{v.vision}</p>
+            <h3 class="font-serif text-[1.1rem] leading-[1.2] italic" style:color={textColor}>
+              {v.title}
+            </h3>
+            <p class="flex-1 text-[0.8rem] leading-[1.65] text-zinc-500">{v.vision}</p>
             <div class="mt-auto flex flex-wrap gap-1 pt-4">
               {#each v.nodes as node (node)}
-                <span class="sparks-mono vision-node">{node}</span>
+                <span
+                  class="rounded-[3px] border border-white/6 bg-white/4 px-1.5 py-0.5 font-mono text-[10px] text-zinc-600"
+                  >{node}</span
+                >
               {/each}
             </div>
-            <span class="sparks-mono vision-tap-hint">tap to explore →</span>
+            <span class="vision-tap-hint font-mono text-[10px] tracking-[0.05em]"
+              >tap to explore →</span
+            >
           </button>
         {/each}
       </div>
     {:else if !$hasAIApiKey}
       <div class="vision-idle-prompt w-full">
-        <p class="sparks-serif mb-3 text-2xl text-zinc-800">Generation needs an AI key</p>
-        <p class="sparks-mono mb-5 text-[11px] text-zinc-700">
+        <p class="mb-3 font-serif text-2xl text-zinc-800 italic">Generation needs an AI key</p>
+        <p class="mb-5 font-mono text-[11px] text-zinc-700">
           Sparks uses your own API key — nothing is shared with Patchies servers.
         </p>
         <button
           onclick={() => (aiSettingsOpen = true)}
-          class="sparks-mono cursor-pointer rounded-md border border-zinc-700 px-4 py-2 text-xs text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"
+          class="cursor-pointer rounded-md border border-zinc-700 px-4 py-2 font-mono text-xs text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-200"
         >
           Set up AI Provider →
         </button>
@@ -246,7 +257,7 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     {:else}
       <button onclick={generateVisions} class="vision-idle-prompt w-full cursor-pointer">
         <span
-          class="sparks-serif text-2xl text-zinc-800 transition-colors group-hover:text-zinc-600"
+          class="font-serif text-2xl text-zinc-800 italic transition-colors group-hover:text-zinc-600"
         >
           Click ✦ imagine to dream up ideas →
         </span>
@@ -277,71 +288,10 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
 {/if}
 
 <style>
-  .vision-section {
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    background: rgba(0, 0, 0, 0.2);
-    padding-top: 2rem;
-  }
-
-  .vision-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .vision-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  @media (max-width: 600px) {
-    .vision-header {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .vision-controls {
-      flex: unset;
-    }
-  }
-
-  .steer-input {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 6px;
-    padding: 6px 12px;
-    color: #a1a1aa;
-    flex: 1;
-    min-width: 0;
-    max-width: 340px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .steer-input::placeholder {
-    color: #3f3f46;
-  }
   .steer-input:focus {
     border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-    color: #e4e4e7;
   }
 
-  .generate-btn {
-    padding: 6px 14px;
-    border: 1px solid;
-    border-radius: 6px;
-    background: transparent;
-    transition:
-      background 0.15s,
-      opacity 0.15s;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
   .generate-btn:hover:not(:disabled) {
     background: color-mix(in srgb, var(--accent) 10%, transparent);
   }
@@ -371,8 +321,6 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
   }
-
-  /* On 2-col layouts, third card spans full width */
   @media (max-width: 768px) {
     .visions-grid {
       grid-template-columns: repeat(2, 1fr);
@@ -382,7 +330,6 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
       min-height: unset;
     }
   }
-
   @media (max-width: 480px) {
     .visions-grid {
       grid-template-columns: 1fr;
@@ -439,34 +386,10 @@ ${outputContext ? `\nCRITICAL — OUTPUT FOCUS ENFORCEMENT: Every idea's "nodes"
     transition: opacity 0.2s;
   }
 
-  .vision-title {
-    font-size: 1.1rem;
-    line-height: 1.2;
-  }
-
-  .vision-text {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.8rem;
-    line-height: 1.65;
-    color: #71717a;
-    flex: 1;
-  }
-
-  .vision-node {
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.04);
-    color: #52525b;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
   .vision-tap-hint {
-    font-size: 10px;
     color: transparent;
     transition: color 0.2s;
     margin-top: 2px;
-    letter-spacing: 0.05em;
   }
   .vision-card:hover .vision-tap-hint {
     color: color-mix(in srgb, var(--card-accent) 55%, transparent);

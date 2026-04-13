@@ -12,10 +12,13 @@
 
 <div>
   <div class="mb-4 flex items-baseline gap-3">
-    <span class="sparks-serif text-xl text-zinc-200">How should it feel?</span>
+    <span
+      class="sparks-heading font-serif text-[clamp(2rem,5vw,3.8rem)] leading-[1.1] text-zinc-100 italic"
+      >How should it feel?</span
+    >
     {#if selectedMoodId}
       <button
-        class="sparks-mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
+        class="cursor-pointer font-mono text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
         onclick={() => onSelect(null)}
       >
         ✕ clear
@@ -23,7 +26,7 @@
     {/if}
   </div>
 
-  <div class="mood-grid">
+  <div class="mood-grid grid grid-cols-2 gap-2 sm:grid-cols-4">
     {#each moods as mood (mood.id)}
       {@const active = selectedMoodId === mood.id}
       <button
@@ -34,26 +37,20 @@
         style:--tile-glow={mood.glowColor}
         onclick={() => onSelect(selectedMoodId === mood.id ? null : mood.id)}
       >
-        <span class="mood-name sparks-syne">{mood.name}</span>
-        <span class="mood-tagline sparks-mono">{mood.tagline}</span>
-        {#if active}<span class="mood-check">✦</span>{/if}
+        <span class="relative z-[1] text-[1.1rem] font-bold text-zinc-100">{mood.name}</span>
+        <span class="mood-tagline relative z-[1] font-mono text-[9px] leading-[1.4] text-white/28"
+          >{mood.tagline}</span
+        >
+        {#if active}<span
+            class="absolute top-2 right-2.5 z-[1] text-[11px]"
+            style:color="var(--tile-accent)">✦</span
+          >{/if}
       </button>
     {/each}
   </div>
 </div>
 
 <style>
-  .mood-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  @media (max-width: 640px) {
-    .mood-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
   .mood-tile {
     position: relative;
     border-radius: 8px;
@@ -93,29 +90,7 @@
     transform: translateY(-1px);
   }
 
-  .mood-name {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #f4f4f5;
-    position: relative;
-    z-index: 1;
-  }
-  .mood-tagline {
-    font-size: 9px;
-    color: rgba(255, 255, 255, 0.28);
-    position: relative;
-    z-index: 1;
-    line-height: 1.4;
-  }
   .mood-tile-active .mood-tagline {
     color: color-mix(in srgb, var(--tile-accent) 65%, rgba(255, 255, 255, 0.3));
-  }
-  .mood-check {
-    position: absolute;
-    top: 8px;
-    right: 10px;
-    font-size: 11px;
-    color: var(--tile-accent);
-    z-index: 1;
   }
 </style>

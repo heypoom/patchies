@@ -44,10 +44,13 @@
 
 <div>
   <div class="mb-4 flex items-baseline gap-3">
-    <span class="sparks-serif text-xl text-zinc-200">What do you want to make?</span>
+    <span
+      class="sparks-heading font-serif text-[clamp(2rem,5vw,3.8rem)] leading-[1.1] text-zinc-100 italic"
+      >What do you want to make?</span
+    >
     {#if selectedOutputIds.size > 0}
       <button
-        class="sparks-mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
+        class="cursor-pointer font-mono text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
         onclick={() => selectedOutputIds.clear()}
       >
         ✕ clear
@@ -55,7 +58,7 @@
     {/if}
   </div>
 
-  <div class="output-grid">
+  <div class="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
     {#each outputs as output (output.id)}
       {@const active = selectedOutputIds.has(output.id)}
       {@const Icon = icons[output.id]}
@@ -65,21 +68,21 @@
         onclick={() =>
           active ? selectedOutputIds.delete(output.id) : selectedOutputIds.add(output.id)}
       >
-        <span class="output-icon"><Icon size={18} /></span>
-        <span class="output-name sparks-syne">{output.name}</span>
-        <span class="output-desc sparks-mono">{output.description}</span>
+        <span class="output-icon text-[1.2rem] leading-none text-zinc-600 transition-colors"
+          ><Icon size={18} /></span
+        >
+        <span class="output-name text-xs font-semibold text-zinc-400 transition-colors"
+          >{output.name}</span
+        >
+        <span class="text-center font-mono text-[9px] leading-[1.3] text-zinc-700"
+          >{output.description}</span
+        >
       </button>
     {/each}
   </div>
 </div>
 
 <style>
-  .output-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 8px;
-  }
-
   .output-tile {
     border-radius: 8px;
     padding: 14px 10px;
@@ -105,31 +108,12 @@
     background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
   }
 
-  .output-icon {
-    font-size: 1.2rem;
-    line-height: 1;
-    color: #52525b;
-    transition: color 0.15s;
-  }
   .output-tile:hover .output-icon,
   .output-tile-active .output-icon {
     color: var(--accent);
   }
 
-  .output-name {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #a1a1aa;
-    transition: color 0.15s;
-  }
   .output-tile-active .output-name {
     color: var(--text-acc);
-  }
-
-  .output-desc {
-    font-size: 9px;
-    color: #3f3f46;
-    line-height: 1.3;
-    text-align: center;
   }
 </style>

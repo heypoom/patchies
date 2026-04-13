@@ -5,7 +5,6 @@
   import OutputGrid from './OutputGrid.svelte';
   import VisionGenerator from './VisionGenerator.svelte';
   import { moods, outputs } from './data';
-  import './sparks.css';
 
   // ── Selection state ───────────────────────────────────────────
   let selectedMoodId = $state<string | null>(null);
@@ -34,15 +33,15 @@
     <header class="px-8 pt-14 pb-8">
       <div class="mx-auto max-w-4xl">
         <p
-          class="sparks-mono mb-3 text-[11px] tracking-[0.25em] uppercase"
+          class="mb-3 font-mono text-[11px] tracking-[0.25em] uppercase"
           style:color="var(--accent)"
         >
           patchies ✦ sparks
         </p>
-        <h1 class="sparks-serif">
+        <h1 class="font-serif text-[clamp(2rem,5vw,3.8rem)] leading-[1.1] text-zinc-100 italic">
           What do you want<br />to make people feel?
         </h1>
-        <p class="sparks-syne mt-4 max-w-sm text-sm leading-relaxed text-zinc-600">
+        <p class="mt-4 max-w-sm text-sm leading-relaxed text-zinc-600">
           Two questions. Pick one or both to find your spark.
         </p>
       </div>
@@ -55,8 +54,7 @@
 
         <div class="flex items-center gap-4">
           <div class="h-px flex-1 bg-zinc-900"></div>
-          <span class="sparks-mono text-[10px] tracking-widest text-zinc-800 uppercase"
-            >and / or</span
+          <span class="font-mono text-[10px] tracking-widest text-zinc-800 uppercase">and / or</span
           >
           <div class="h-px flex-1 bg-zinc-900"></div>
         </div>
@@ -90,10 +88,10 @@
     <!-- ── Footer ── -->
     <div class="border-t border-zinc-900 px-8 py-5">
       <div class="mx-auto flex max-w-4xl items-center justify-between">
-        <p class="sparks-mono text-[11px] text-zinc-800">patchies · sparks</p>
+        <p class="font-mono text-[11px] text-zinc-800">patchies · sparks</p>
         <a
           href="/"
-          class="sparks-mono cursor-pointer text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
+          class="cursor-pointer font-mono text-[11px] text-zinc-700 transition-colors hover:text-zinc-400"
         >
           ← back to patchies
         </a>

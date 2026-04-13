@@ -66,32 +66,37 @@
     <span class="fc fc-br" aria-hidden="true"></span>
 
     <!-- Roman numeral watermark -->
-    <span class="flip-roman sparks-mono" aria-hidden="true">{roman}</span>
+    <span class="flip-roman font-mono" aria-hidden="true">{roman}</span>
 
     <!-- Close -->
-    <button class="flip-close sparks-mono cursor-pointer" onclick={onClose}>✕</button>
+    <button class="flip-close cursor-pointer font-mono" onclick={onClose}>✕</button>
 
     <!-- Accent glow -->
     <div class="flip-glow" aria-hidden="true"></div>
 
     <!-- Content -->
-    <div class="flip-content">
-      <p class="flip-eyebrow sparks-mono">vision · {roman}</p>
-      <h3 class="sparks-serif flip-title" style:color={textColor}>{vision.title}</h3>
-      <p class="flip-vision-text">{vision.vision}</p>
+    <div class="relative z-[1] pb-[22px]">
+      <p class="flip-eyebrow font-mono">vision · {roman}</p>
+      <h3
+        class="mb-3.5 pr-3 font-serif text-[clamp(1.25rem,3vw,1.55rem)] leading-[1.2] italic"
+        style:color={textColor}
+      >
+        {vision.title}
+      </h3>
+      <p class="text-[0.82rem] leading-[1.75] text-zinc-600">{vision.vision}</p>
     </div>
 
     <!-- Aspects divider -->
-    <div class="flip-divider" aria-hidden="true">
+    <div class="mb-3.5 flex items-center gap-2.5" aria-hidden="true">
       <span class="flip-divider-line"></span>
-      <span class="flip-divider-label sparks-mono">aspects</span>
+      <span class="font-mono text-[9px] tracking-[0.25em] text-zinc-700 uppercase">aspects</span>
       <span class="flip-divider-line"></span>
     </div>
 
     <!-- Node chips -->
-    <div class="flip-nodes">
+    <div class="mb-[22px] flex flex-wrap gap-1.5">
       {#each vision.nodes as node (node)}
-        <span class="sparks-mono flip-node-chip">{node}</span>
+        <span class="flip-node-chip font-mono text-[10px]">{node}</span>
       {/each}
     </div>
 
@@ -100,7 +105,7 @@
       <Tooltip.Root>
         <Tooltip.Trigger class="flex-1">
           <button
-            class="flip-cta sparks-mono w-full cursor-pointer"
+            class="flip-cta w-full cursor-pointer font-mono"
             class:flip-cta--disabled={!onScatter}
             disabled={!onScatter}
             onclick={handleScatter}><LayoutGrid size={11} /> scatter</button
@@ -111,7 +116,7 @@
       <Tooltip.Root>
         <Tooltip.Trigger class="flex-1">
           <button
-            class="flip-cta sparks-mono w-full cursor-pointer"
+            class="flip-cta w-full cursor-pointer font-mono"
             class:flip-cta--disabled={!onChat}
             disabled={!onChat}
             onclick={handleChat}><MessageSquare size={11} /> chat</button
@@ -121,7 +126,7 @@
       </Tooltip.Root>
       <Tooltip.Root>
         <Tooltip.Trigger class="flex-1">
-          <button class="flip-cta sparks-mono w-full cursor-pointer" onclick={handleCopy}
+          <button class="flip-cta w-full cursor-pointer font-mono" onclick={handleCopy}
             ><Copy size={11} /> copy</button
           >
         </Tooltip.Trigger>
@@ -170,7 +175,6 @@
     animation: flip-in 0.38s cubic-bezier(0.22, 0.61, 0.36, 1) both;
     display: flex;
     flex-direction: column;
-    gap: 0;
   }
   @keyframes flip-in {
     from {
@@ -183,6 +187,7 @@
     }
   }
 
+  /* Corner ornaments — need var(--card-accent) */
   .fc {
     position: absolute;
     width: 14px;
@@ -257,12 +262,6 @@
     color: #71717a;
   }
 
-  .flip-content {
-    position: relative;
-    z-index: 1;
-    padding-bottom: 22px;
-  }
-
   .flip-eyebrow {
     font-size: 9px;
     letter-spacing: 0.28em;
@@ -271,26 +270,6 @@
     margin-bottom: 12px;
   }
 
-  .flip-title {
-    font-size: clamp(1.25rem, 3vw, 1.55rem);
-    line-height: 1.2;
-    margin-bottom: 14px;
-    padding-right: 12px;
-  }
-
-  .flip-vision-text {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.82rem;
-    line-height: 1.75;
-    color: #52525b;
-  }
-
-  .flip-divider {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
   .flip-divider-line {
     flex: 1;
     height: 1px;
@@ -299,21 +278,8 @@
   .flip-divider-line:first-child {
     background: linear-gradient(270deg, transparent, rgba(255, 255, 255, 0.07));
   }
-  .flip-divider-label {
-    font-size: 9px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: #3f3f46;
-  }
 
-  .flip-nodes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 22px;
-  }
   .flip-node-chip {
-    font-size: 10px;
     padding: 3px 8px;
     border-radius: 3px;
     border: 1px solid color-mix(in srgb, var(--card-accent) 22%, transparent);
