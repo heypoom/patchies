@@ -1,8 +1,14 @@
 <script lang="ts">
   import SettingRow from '../SettingRow.svelte';
   import SettingToggle from '../SettingToggle.svelte';
+  import SettingDropdown from '../SettingDropdown.svelte';
   import { isCablesVisible } from '../../../../stores/ui.store';
   import { outputSize } from '../../../../stores/renderer.store';
+  import {
+    snapGridSize,
+    SNAP_GRID_OPTIONS,
+    type SnapGridSize
+  } from '../../../../stores/canvas.store';
   import { applyOutputSize } from '$lib/utils/settings-actions';
 
   const currentOutputSize = $derived(`${$outputSize[0]}x${$outputSize[1]}`);
@@ -20,6 +26,13 @@
     if (!input || input === currentOutputSize) return;
     applyOutputSize(input);
   }
+
+  const snapGridOptions = SNAP_GRID_OPTIONS.map((v) => ({
+    value: String(v),
+    label: v === 0 ? 'Off' : `${v}px`
+  }));
+
+  const handleSnapGridChange = (value: string) => snapGridSize.set(Number(value) as SnapGridSize);
 </script>
 
 <SettingRow title="Show cables" description="Toggle connection cable visibility">
@@ -50,4 +63,12 @@
       {currentOutputSize}
     </button>
   {/if}
+</SettingRow>
+
+<SettingRow title="Snap to grid" description="Snap node positions to a grid when dragging">
+  <SettingDropdown
+    value={String($snapGridSize)}
+    options={snapGridOptions}
+    onchange={handleSnapGridChange}
+  />
 </SettingRow>

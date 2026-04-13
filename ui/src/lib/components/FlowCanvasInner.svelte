@@ -49,7 +49,7 @@
   import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
-  import { hasSomeAudioNode } from '../../stores/canvas.store';
+  import { hasSomeAudioNode, snapGridSize } from '../../stores/canvas.store';
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
   import { deleteSearchParam } from '$lib/utils/search-params';
   import BackgroundPattern from './BackgroundPattern.svelte';
@@ -1238,7 +1238,7 @@
         {edgeTypes}
         fitView
         class="bg-zinc-900"
-        snapGrid={[5, 5]}
+        snapGrid={$snapGridSize > 0 ? [$snapGridSize, $snapGridSize] : undefined}
         proOptions={{ hideAttribution: true }}
         clickConnect={$isConnectionMode}
         {isValidConnection}
