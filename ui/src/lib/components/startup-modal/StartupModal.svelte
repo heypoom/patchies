@@ -286,8 +286,10 @@
     position: relative;
   }
 
-  .modal-tab:hover {
-    color: #71717a;
+  @media (pointer: fine) {
+    .modal-tab:not(.modal-tab--active):hover {
+      color: #71717a;
+    }
   }
 
   .modal-tab--active {
