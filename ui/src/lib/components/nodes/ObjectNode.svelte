@@ -319,7 +319,7 @@
   });
 
   // Sync AudioService when data changes externally (e.g., via undo/redo)
-  useAudioServiceSync(
+  const audioSync = useAudioServiceSync(
     () => ({ name: data.name, params: data.params }),
     (name, params) => {
       syncAudioService(name, params);
@@ -585,9 +585,15 @@
         (isAcceptsFloatSignal && typeof message === 'number') ||
         !inlet.type;
 
-      if (matchesBaseType) updateParamByIndex(meta.inlet, message);
+      if (matchesBaseType) {
+        // For audio objects, suppress the audio sync since the message is already
+        // being forwarded to the worklet directly via audioService.send below.
+        if (isAudioObject) audioSync.suppress();
+        updateParamByIndex(meta.inlet, message);
+      }
     } else if (isSetImmediate) {
       // Update parameters for a simple `set` message.
+      if (isAudioObject) audioSync.suppress();
       updateParamByIndex(meta.inlet, message.value);
     } else if (isScheduled) {
       // Mark parameter as being automated.
@@ -652,6 +658,10 @@
   }
 
   function syncAudioService(name: string, params: unknown[]) {
+    // Suppress the useAudioServiceSync effect — this direct call already handles recreation.
+    // Without this, the $effect would detect the params change and trigger a second recreation,
+    // causing a race between two async createNode calls (zombie processor leak).
+    audioSync.suppress();
     audioService.removeNodeById(nodeId);
     audioService.createNode(nodeId, name, params);
     audioService.updateEdges(getEdges());
