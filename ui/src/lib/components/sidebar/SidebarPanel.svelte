@@ -7,8 +7,7 @@
     Save,
     CircleQuestionMark,
     AppWindow,
-    ChevronDown,
-    ChevronUp,
+    Ellipsis,
     Music,
     MessageSquare,
     Activity
@@ -23,8 +22,9 @@
   import SampleSearchView from './SampleSearchView.svelte';
   import ChatSessionsPanel from './ChatSessionsPanel.svelte';
   import ProfilerView from './ProfilerView.svelte';
-  import { usePreviewTab } from './usePreviewTab.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import * as ContextMenu from '$lib/components/ui/context-menu';
+  import * as Popover from '$lib/components/ui/popover';
 
   import {
     sidebarWidth,
@@ -34,6 +34,11 @@
     isAiFeaturesVisible
   } from '../../../stores/ui.store';
   import { hasAppPreview } from '../../../stores/app-preview.store';
+  import {
+    sidebarVisibleTabs,
+    toggleSidebarTab,
+    showSidebarTab
+  } from '../../../stores/sidebar-visibility.store';
 
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import type { ChatNode, ChatGraphSummary } from '$lib/ai/chat/resolver';
@@ -60,16 +65,12 @@
     hasGeminiApiKey?: boolean;
   } = $props();
 
-  // Base views always shown
-  const baseViews: { id: SidebarView; icon: typeof Folder; title: string }[] = [
+  // All sidebar views
+  const allViews: { id: SidebarView; icon: typeof Folder; title: string; aiOnly?: boolean }[] = [
     { id: 'files', icon: Folder, title: 'Files' },
     { id: 'presets', icon: Bookmark, title: 'Presets' },
     { id: 'saves', icon: Save, title: 'Saves' },
-    { id: 'help', icon: CircleQuestionMark, title: 'Help' }
-  ];
-
-  // Expandable items (shown under chevron, promoted to top bar when active)
-  const allExpandableItems = [
+    { id: 'help', icon: CircleQuestionMark, title: 'Help' },
     { id: 'packs', icon: Package, title: 'Packs' },
     { id: 'samples', icon: Music, title: 'Samples' },
     { id: 'chat', icon: MessageSquare, title: 'Chat', aiOnly: true },
@@ -81,24 +82,16 @@
 
   let showAiFeatures = $derived($isAiFeaturesVisible && hasGeminiApiKey);
 
-  let expandableItems = $derived(
-    showAiFeatures ? allExpandableItems : allExpandableItems.filter((item) => !item.aiOnly)
+  // Views available (respecting AI feature toggle)
+  let availableViews = $derived(
+    showAiFeatures ? allViews : allViews.filter((item) => !item.aiOnly)
   );
 
-  // Preview tab promotion logic
-  const previewTab = usePreviewTab({
-    getView: () => view,
-    setView: (v) => (view = v),
-    getHasPreview: () => $hasAppPreview
-  });
+  // Views visible in the header bar
+  let visibleViews = $derived(availableViews.filter((v) => $sidebarVisibleTabs.has(v.id)));
 
-  // State for the expandable section
-  let isExpanded = $state(false);
-  // Tracks whether expandable views have been promoted to the top bar
-  let isPacksPromoted = $derived(view === 'packs');
-  let isSamplesPromoted = $derived(view === 'samples');
-  let isChatPromoted = $derived(view === 'chat' && showAiFeatures);
-  let isProfilerPromoted = $derived(view === 'profiler');
+  // Whether there are hidden tabs (to show the ellipsis button)
+  let hasHiddenTabs = $derived(visibleViews.length < availableViews.length);
 
   // Redirect away from AI views when AI features are hidden
   $effect(() => {
@@ -107,19 +100,51 @@
     }
   });
 
-  function handleExpandableItemClick(id: SidebarView) {
-    if (id === 'preview') {
-      previewTab.handleExpandableItemClick();
-    } else {
-      view = id;
+  // Auto-show the preview tab when there's an active app preview
+  $effect(() => {
+    if ($hasAppPreview && !$sidebarVisibleTabs.has('preview') && showAiFeatures) {
+      showSidebarTab('preview');
     }
-    isExpanded = false;
+  });
+
+  // If the active view gets hidden, switch to the first visible tab
+  $effect(() => {
+    const visible = visibleViews;
+    if (visible.length > 0 && !visible.some((v) => v.id === view)) {
+      view = visible[0].id;
+    }
+  });
+
+  function handleTabClick(id: SidebarView) {
+    view = id;
   }
 
-  function handleBaseViewClick(id: SidebarView) {
-    previewTab.handleBaseViewClick(id);
+  function handleContextMenuToggle(id: SidebarView) {
+    if (!$sidebarVisibleTabs.has(id)) {
+      // Show the tab and switch to it
+      showSidebarTab(id);
+      view = id;
+    } else {
+      toggleSidebarTab(id);
+    }
   }
 
+  // Track which tab was right-clicked for the "Hide" action
+  let contextMenuTargetTab = $state<SidebarView | null>(null);
+  // Block tooltips while context menu is open; reset key on close to clear stale focus
+  let tooltipsBlocked = $state(false);
+  let tooltipResetKey = $state(0);
+
+  function handleContextMenuOpenChange(open: boolean) {
+    if (open) {
+      tooltipsBlocked = true;
+    } else {
+      contextMenuTargetTab = null;
+      tooltipResetKey++;
+      tooltipsBlocked = false;
+    }
+  }
+  let popoverOpen = $state(false);
   let isDragging = $state(false);
 
   function handlePointerDown(e: PointerEvent) {
@@ -158,158 +183,95 @@
   >
     <!-- Header with view switcher -->
     <div class="pt-safe flex flex-col border-b border-zinc-700">
-      <div class="flex items-center justify-between px-2 py-1.5">
-        <!-- View switcher icons -->
-        <div class="flex items-center gap-0.5">
-          {#each baseViews as v}
-            <button
-              class="cursor-pointer rounded p-1.5 transition-colors {view === v.id
-                ? 'bg-zinc-700 text-zinc-200'
-                : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-              onclick={() => handleBaseViewClick(v.id)}
-              title={v.title}
-            >
-              <v.icon class="h-4 w-4" />
-            </button>
-          {/each}
+      <ContextMenu.Root onOpenChange={handleContextMenuOpenChange}>
+        <ContextMenu.Trigger class="flex items-center justify-between px-2 py-1.5">
+          <!-- View switcher icons -->
+          <div class="flex items-center gap-0.5">
+            {#key tooltipResetKey}
+              {#each visibleViews as v (v.id)}
+                <Tooltip.Root delayDuration={300}>
+                  <Tooltip.Trigger>
+                    <button
+                      class="cursor-pointer rounded p-1.5 transition-colors {view === v.id
+                        ? 'bg-zinc-700 text-zinc-200'
+                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
+                      onclick={() => handleTabClick(v.id)}
+                      oncontextmenu={() => (contextMenuTargetTab = v.id)}
+                    >
+                      <v.icon class="h-4 w-4" />
+                    </button>
+                  </Tooltip.Trigger>
+                  {#if !tooltipsBlocked}
+                    <Tooltip.Content side="bottom">
+                      {v.id === 'preview' && $hasAppPreview ? 'App Preview' : v.title}
+                    </Tooltip.Content>
+                  {/if}
+                </Tooltip.Root>
+              {/each}
+            {/key}
 
-          <!-- Promoted preview button (when active) -->
-          {#if previewTab.isPromoted && showAiFeatures}
-            <Tooltip.Root delayDuration={300}>
-              <Tooltip.Trigger>
-                <button
-                  class="cursor-pointer rounded p-1.5 transition-colors {view === 'preview'
-                    ? 'bg-zinc-700 text-zinc-200'
-                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-                  onclick={previewTab.handlePromotedClick}
-                >
-                  <AppWindow class="h-4 w-4" />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">
-                {$hasAppPreview ? 'App Preview' : 'Patch to App'}
-              </Tooltip.Content>
-            </Tooltip.Root>
-          {/if}
-
-          <!-- Promoted packs button (when active) -->
-          {#if isPacksPromoted}
-            <Tooltip.Root delayDuration={300}>
-              <Tooltip.Trigger>
-                <button
-                  class="cursor-pointer rounded p-1.5 transition-colors {view === 'packs'
-                    ? 'bg-zinc-700 text-zinc-200'
-                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-                  onclick={() => (view = 'packs')}
-                >
-                  <Package class="h-4 w-4" />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">Packs</Tooltip.Content>
-            </Tooltip.Root>
-          {/if}
-
-          <!-- Promoted samples button (when active) -->
-          {#if isSamplesPromoted}
-            <Tooltip.Root delayDuration={300}>
-              <Tooltip.Trigger>
-                <button
-                  class="cursor-pointer rounded p-1.5 transition-colors {view === 'samples'
-                    ? 'bg-zinc-700 text-zinc-200'
-                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-                  onclick={() => (view = 'samples')}
-                >
-                  <Music class="h-4 w-4" />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">Samples</Tooltip.Content>
-            </Tooltip.Root>
-          {/if}
-
-          <!-- Promoted chat button (when active) -->
-          {#if isChatPromoted}
-            <Tooltip.Root delayDuration={300}>
-              <Tooltip.Trigger>
-                <button
-                  class="cursor-pointer rounded p-1.5 transition-colors {view === 'chat'
-                    ? 'bg-zinc-700 text-zinc-200'
-                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-                  onclick={() => (view = 'chat')}
-                >
-                  <MessageSquare class="h-4 w-4" />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">Chat</Tooltip.Content>
-            </Tooltip.Root>
-          {/if}
-
-          <!-- Promoted profiler button (when active) -->
-          {#if isProfilerPromoted}
-            <Tooltip.Root delayDuration={300}>
-              <Tooltip.Trigger>
-                <button
-                  class="cursor-pointer rounded p-1.5 transition-colors {view === 'profiler'
-                    ? 'bg-zinc-700 text-zinc-200'
-                    : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}"
-                  onclick={() => (view = 'profiler')}
-                >
-                  <Activity class="h-4 w-4" />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">Profiler</Tooltip.Content>
-            </Tooltip.Root>
-          {/if}
-
-          <!-- Expand/collapse chevron -->
-          <Tooltip.Root delayDuration={300}>
-            <Tooltip.Trigger>
-              <button
-                class="cursor-pointer rounded p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
-                onclick={() => (isExpanded = !isExpanded)}
-              >
-                {#if isExpanded}
-                  <ChevronUp class="h-4 w-4" />
-                {:else}
-                  <ChevronDown class="h-4 w-4" />
-                {/if}
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Content side="bottom">
-              {isExpanded ? 'Collapse' : 'More options'}
-            </Tooltip.Content>
-          </Tooltip.Root>
-        </div>
-
-        <button
-          class="cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-          onclick={() => (open = false)}
-          title="Close sidebar"
-        >
-          <X class="h-4 w-4" />
-        </button>
-      </div>
-
-      <!-- Expanded section -->
-      {#if isExpanded}
-        <div class="flex flex-wrap items-center gap-1 border-t border-zinc-800 px-2 py-1.5">
-          {#each expandableItems as item (item.id)}
-            {#if (!isPacksPromoted || item.id !== 'packs') && (!previewTab.isPromoted || item.id !== 'preview') && (!isSamplesPromoted || item.id !== 'samples') && (!isChatPromoted || item.id !== 'chat') && (!isProfilerPromoted || item.id !== 'profiler')}
-              <button
-                class="flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
-                onclick={() => handleExpandableItemClick(item.id as SidebarView)}
-                title={item.title}
-              >
-                <item.icon class="h-3.5 w-3.5" />
-                <span>{item.title}</span>
-              </button>
+            <!-- Ellipsis button to show/hide tabs (visible when tabs are hidden) -->
+            {#if hasHiddenTabs}
+              <Popover.Root open={popoverOpen} onOpenChange={(o) => (popoverOpen = o)}>
+                <Popover.Trigger>
+                  <button
+                    class="cursor-pointer rounded p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+                  >
+                    <Ellipsis class="h-4 w-4" />
+                  </button>
+                </Popover.Trigger>
+                <Popover.Content side="bottom" align="start" class="w-auto min-w-[160px] p-1">
+                  {#each availableViews as v (v.id)}
+                    <button
+                      class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-zinc-200 transition-colors hover:bg-zinc-800"
+                      onclick={() => {
+                        handleContextMenuToggle(v.id);
+                        popoverOpen = false;
+                      }}
+                    >
+                      <span class="flex h-4 w-4 items-center justify-center text-zinc-400">
+                        {#if $sidebarVisibleTabs.has(v.id)}
+                          <span class="text-xs">&#10003;</span>
+                        {/if}
+                      </span>
+                      <v.icon class="h-3.5 w-3.5" />
+                      <span>{v.title}</span>
+                    </button>
+                  {/each}
+                </Popover.Content>
+              </Popover.Root>
             {/if}
-          {/each}
+          </div>
 
-          {#if expandableItems.every((item) => (item.id === 'packs' && isPacksPromoted) || (item.id === 'preview' && previewTab.isPromoted) || (item.id === 'samples' && isSamplesPromoted) || (item.id === 'chat' && isChatPromoted) || (item.id === 'profiler' && isProfilerPromoted))}
-            <span class="text-xs text-zinc-600 italic">No more items</span>
+          <button
+            class="cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+            onclick={() => (open = false)}
+            title="Close sidebar"
+          >
+            <X class="h-4 w-4" />
+          </button>
+        </ContextMenu.Trigger>
+
+        <ContextMenu.Content>
+          {#if contextMenuTargetTab}
+            {@const target = availableViews.find((v) => v.id === contextMenuTargetTab)}
+            {#if target}
+              <ContextMenu.Item onclick={() => toggleSidebarTab(target.id)}>
+                Hide {target.title}
+              </ContextMenu.Item>
+              <ContextMenu.Separator />
+            {/if}
           {/if}
-        </div>
-      {/if}
+          {#each availableViews as v (v.id)}
+            <ContextMenu.CheckboxItem
+              checked={$sidebarVisibleTabs.has(v.id)}
+              onCheckedChange={() => handleContextMenuToggle(v.id)}
+            >
+              {v.title}
+            </ContextMenu.CheckboxItem>
+          {/each}
+        </ContextMenu.Content>
+      </ContextMenu.Root>
     </div>
 
     <!-- Content -->
