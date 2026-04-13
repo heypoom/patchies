@@ -13,12 +13,15 @@ scene.add(cube)
 
 function draw(t) {
   const tex = getTexture(0)
+
   if (tex) {
     material.map = tex
     material.needsUpdate = true
   }
+
   cube.rotation.x += 0.01
   cube.rotation.y += 0.01
+
   renderer.render(scene, camera)
 }`;
 
@@ -37,12 +40,15 @@ scene.add(shape)
 
 function draw(t) {
   const tex = getTexture(0)
+
   if (tex) {
     material.map = tex
     material.needsUpdate = true
   }
+
   shape.rotation.x += 0.01
   shape.rotation.y += 0.015
+
   renderer.render(scene, camera)
 }`;
 
@@ -62,11 +68,14 @@ scene.add(sphere)
 
 function draw(t) {
   const tex = getTexture(0)
+
   if (tex) {
     material.map = tex
     material.needsUpdate = true
   }
+
   sphere.rotation.y = t * 0.001
+
   renderer.render(scene, camera)
 }`;
 
@@ -93,6 +102,7 @@ loader.load(url, (bitmap) => {
 function draw(t) {
   cube.rotation.x += 0.01
   cube.rotation.y += 0.01
+
   renderer.render(scene, camera)
 }`;
 
@@ -263,10 +273,6 @@ function draw(t) {
     material.uniforms.positionMap.value = texture
   }
 
-  if (points) {
-    points.rotation.y = t * 0.0003
-  }
-
   renderer.render(scene, camera)
 }`;
 
@@ -387,12 +393,6 @@ function draw(t) {
 
   if (texture) {
     material.uniforms.positionMap.value = texture
-  }
-
-  if (mesh) {
-    // Slow rotation for presentation
-    mesh.rotation.y = t * 0.0002
-    mesh.rotation.x = Math.sin(t * 0.0001) * 0.2
   }
 
   renderer.render(scene, camera)
