@@ -548,9 +548,7 @@
       .with('set-output-size', () => {
         const glSystem = GLSystem.getInstance();
 
-        outputSizeInput = glSystem.hasExplicitOutputSize
-          ? `${glSystem.outputSize[0]}x${glSystem.outputSize[1]}`
-          : 'screen';
+        outputSizeInput = `${glSystem.outputSize[0]}x${glSystem.outputSize[1]}`;
 
         nextStage('set-output-size');
       })
