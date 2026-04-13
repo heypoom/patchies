@@ -368,7 +368,7 @@
 
       <!-- Header -->
       <div
-        class="relative z-[1] flex shrink-0 items-center justify-between gap-3 border-b border-white/5 px-5 pt-4 pb-3 max-sm:flex-col max-sm:items-start sm:px-7 sm:pt-[18px] sm:pb-3.5"
+        class="relative z-[1] flex shrink-0 items-center justify-between gap-3 border-b border-white/5 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3 max-sm:flex-col max-sm:items-start sm:px-7 sm:pt-[max(18px,env(safe-area-inset-top))] sm:pb-3.5"
       >
         <span
           class="shrink-0 font-mono text-[10px] tracking-[0.18em] whitespace-nowrap text-zinc-700 uppercase"

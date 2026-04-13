@@ -259,7 +259,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px 0;
+    padding: max(16px, env(safe-area-inset-top)) 20px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     flex-shrink: 0;
   }
@@ -337,7 +337,7 @@
 
   @media (min-width: 640px) {
     .modal-tabbar {
-      padding: 18px 28px 0;
+      padding: max(18px, env(safe-area-inset-top)) 28px 0;
     }
     .modal-body {
       padding: 28px 28px max(24px, env(safe-area-inset-bottom));
