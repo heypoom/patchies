@@ -124,9 +124,19 @@
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
-  /* ── OutputGrid: force 4-col inside narrower modal ── */
+  /* ── OutputGrid: 2-col on narrow modal, 4-col when wider ── */
   :global(.sparks-tab .output-grid) {
-    grid-template-columns: repeat(4, 1fr) !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  :global(.sparks-tab .output-tile) {
+    aspect-ratio: 6 / 4;
+  }
+
+  @media (min-width: 480px) {
+    :global(.sparks-tab .output-grid) {
+      grid-template-columns: repeat(4, 1fr) !important;
+    }
   }
 
   /* ── VisionGenerator overrides for modal context ── */
