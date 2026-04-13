@@ -1,3 +1,5 @@
+const IPC_CHANNEL = 'patchies-ipc';
+
 export class IpcSystem {
   private static instance: IpcSystem;
 
@@ -15,12 +17,17 @@ export class IpcSystem {
   }
 
   constructor() {
-    // Listen for output window announcing itself (handles reloads)
+    // Listen for output window announcing itself (handles reloads on either side)
     window.addEventListener('message', (event) => {
       if (event.data.type === 'outputReady' && event.source) {
         this.outputWindow = event.source as Window;
       }
     });
+
+    // Ping any existing output windows to re-announce (handles main page reload)
+    const channel = new BroadcastChannel(IPC_CHANNEL);
+    channel.postMessage({ type: 'ping' });
+    channel.close();
   }
 
   sendRenderOutput(bitmap: ImageBitmap) {

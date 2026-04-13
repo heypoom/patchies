@@ -4,6 +4,10 @@
   let canvas: HTMLCanvasElement;
   let bitmapRendererContext: ImageBitmapRenderingContext;
 
+  function announceReady() {
+    window.opener?.postMessage({ type: 'outputReady' }, '*');
+  }
+
   onMount(() => {
     canvas.width = window.visualViewport?.width ?? window.innerWidth;
     canvas.height = window.visualViewport?.height ?? window.innerHeight;
@@ -21,7 +25,15 @@
     });
 
     // Announce to opener so it can re-capture the window reference after reloads
-    window.opener?.postMessage({ type: 'outputReady' }, '*');
+    announceReady();
+
+    // Listen for ping from main page (handles main page reload)
+    const channel = new BroadcastChannel('patchies-ipc');
+    channel.addEventListener('message', (event) => {
+      if (event.data.type === 'ping') announceReady();
+    });
+
+    return () => channel.close();
   });
 </script>
 
