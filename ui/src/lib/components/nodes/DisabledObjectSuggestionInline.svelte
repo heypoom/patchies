@@ -21,19 +21,19 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  class="mt-2 mb-1 min-w-64 rounded-md border border-dashed border-zinc-700 bg-zinc-900 p-3 shadow-xl"
+  class="mt-2 mb-1 min-w-64 rounded-md border border-white/6 bg-zinc-900 p-2.5 shadow-xl"
   onmousedown={(e) => e.preventDefault()}
 >
-  <p class="mb-2 text-xs text-zinc-400">
-    <span class="font-mono text-zinc-200">{name}</span>
+  <p class="mb-2 font-mono text-[10px] tracking-wide text-zinc-600">
+    <span class="text-zinc-200">{name}</span>
     is in the
-    <span class="text-zinc-200">{packName}</span> pack.
+    <span class="text-orange-500">{packName}</span> pack
   </p>
-  <div class="flex gap-2">
+  <div class="flex gap-1.5">
     <button
       type="button"
       onclick={onEnableAndAdd}
-      class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded bg-violet-600 px-2 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-violet-500"
+      class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded border border-orange-500/30 bg-orange-500/10 px-2 py-1.5 font-mono text-[10px] text-orange-500 transition-all hover:border-orange-500/50 hover:bg-orange-500/15 hover:text-orange-400"
     >
       <PackIcon class="h-3 w-3" />
       <span>Enable & Add</span>
@@ -41,7 +41,7 @@
     <button
       type="button"
       onclick={onBrowsePacks}
-      class="flex cursor-pointer items-center justify-center gap-1 rounded border border-zinc-600 px-2 py-1.5 text-[10px] text-zinc-300 transition-colors hover:bg-zinc-800"
+      class="flex cursor-pointer items-center justify-center gap-1 rounded border border-white/8 px-2 py-1.5 font-mono text-[10px] text-zinc-600 transition-all hover:border-white/14 hover:text-zinc-400"
     >
       <Package class="h-3 w-3" />
     </button>
