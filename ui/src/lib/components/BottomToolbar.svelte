@@ -15,7 +15,8 @@
     Trash2,
     Cable,
     ClipboardPaste,
-    Ellipsis
+    Ellipsis,
+    Settings
   } from '@lucide/svelte/icons';
   import type { Node, Edge } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
@@ -23,6 +24,7 @@
     isAiFeaturesVisible,
     isConnectionMode,
     isMobile,
+    isSettingsOpen,
     currentPatchName
   } from '../../stores/ui.store';
   import { aiButtonState } from '../../stores/ai-prompt.store';
@@ -416,6 +418,17 @@
               <button
                 class={menuItemClass}
                 onclick={() => {
+                  overflowOpen = false;
+                  setTimeout(() => isSettingsOpen.set(true), 0);
+                }}
+              >
+                <Settings class="h-5 w-5 text-zinc-400" />
+                <span>Settings</span>
+              </button>
+
+              <button
+                class={menuItemClass}
+                onclick={() => {
                   showStartupModal = true;
                   overflowOpen = false;
                 }}
@@ -527,6 +540,18 @@
               >
                 <FolderOpen class="h-4 w-4 text-zinc-400" />
                 <span>Load Patch</span>
+              </button>
+
+              <button
+                class="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                onclick={() => {
+                  overflowOpen = false;
+                  isSettingsOpen.set(true);
+                }}
+              >
+                <Settings class="h-4 w-4 text-zinc-400" />
+                <span>Settings</span>
+                <span class="ml-auto text-xs text-zinc-500">⌘,</span>
               </button>
 
               <button

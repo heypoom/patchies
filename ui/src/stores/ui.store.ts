@@ -67,6 +67,7 @@ if (typeof localStorage !== 'undefined') {
 export const isConnectionMode = writable(false);
 
 export const isObjectBrowserOpen = writable(false);
+export const isSettingsOpen = writable(false);
 
 // Sidebar state - persisted to localStorage
 const storedSidebarOpen =

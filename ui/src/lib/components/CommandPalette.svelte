@@ -12,7 +12,8 @@
     currentPatchId,
     currentPatchName as currentPatchNameStore,
     generateNewPatchId,
-    isCablesVisible
+    isCablesVisible,
+    isSettingsOpen
   } from '../../stores/ui.store';
   import { savePatchToLocalStorage, getUniquePatchName } from '$lib/save-load/save-local-storage';
   import { toast } from 'svelte-sonner';
@@ -26,7 +27,13 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
   import { createAndCopyShareLink } from '$lib/save-load/share';
-  import { getSearchParam, setSearchParam } from '$lib/utils/search-params';
+
+  import {
+    applyOutputSize as applyOutputSizeAction,
+    applyRoom as applyRoomAction,
+    toggleVimMode,
+    getRoom
+  } from '$lib/utils/settings-actions';
   import { migratePatch } from '$lib/migration';
   import {
     downloadForOffline,
@@ -161,6 +168,11 @@
       id: 'open-output-screen',
       name: 'Open Output Screen',
       description: 'Open a secondary output screen for live performances.'
+    },
+    {
+      id: 'open-settings',
+      name: 'Settings',
+      description: 'Open the settings modal (⌘,)'
     },
     {
       id: 'toggle-sidebar',
@@ -480,6 +492,10 @@
         onCancel();
         onNewPatch?.();
       })
+      .with('open-settings', () => {
+        onCancel();
+        isSettingsOpen.set(true);
+      })
       .with('toggle-sidebar', () => {
         onCancel();
         onToggleSidebar?.();
@@ -489,10 +505,9 @@
         onBrowseObjects?.();
       })
       .with('toggle-vim-mode', () => {
-        const current = localStorage.getItem('editor.vim') === 'true';
-        localStorage.setItem('editor.vim', String(!current));
-
+        toggleVimMode();
         onCancel();
+
         window.location.reload();
       })
       .with('toggle-connect-mode', () => {
@@ -500,11 +515,13 @@
           // Exit connection mode - clear all connection state
           isConnectionMode.set(false);
           isConnecting.set(false);
+
           connectingFromHandleId.set(null);
         } else {
           // Enter connection mode
           isConnectionMode.set(true);
         }
+
         onCancel();
       })
       .with('ai-insert-object', () => {
@@ -542,7 +559,7 @@
         window.open('/docs/adding-objects', '_blank');
       })
       .with('set-room', () => {
-        roomName = getSearchParam('room') || '';
+        roomName = getRoom();
         nextStage('set-room');
       })
       .with('set-output-size', () => {
@@ -729,106 +746,13 @@
   }
 
   function applyOutputSize() {
-    const input = outputSizeInput.trim().toLowerCase();
-
-    // "clear" → remove explicit output size, adapt to screen on each load
-    if (input === 'clear') {
-      const glSystem = GLSystem.getInstance();
-      glSystem.clearOutputSize();
-
-      const [width, height] = glSystem.outputSize;
-      toast.success(`Output size cleared — using screen default (${width}×${height})`);
-
-      onCancel();
-      return;
-    }
-
-    // "screen" → use screen dimensions without DPR
-    if (input === 'screen') {
-      const [width, height] = getScreenOutputSize();
-
-      GLSystem.getInstance().setOutputSize(width, height);
-      toast.success(`Output size set to ${width}×${height}`);
-
-      onCancel();
-      return;
-    }
-
-    // "retina" → use screen dimensions × devicePixelRatio
-    if (input === 'retina') {
-      const dpr = window.devicePixelRatio || 1;
-      const width = Math.max(1, Math.min(8192, Math.round(window.innerWidth * dpr)));
-      const height = Math.max(1, Math.min(8192, Math.round(window.innerHeight * dpr)));
-
-      GLSystem.getInstance().setOutputSize(width, height);
-      toast.success(`Output size set to ${width}×${height} (${dpr}x DPR)`);
-
-      onCancel();
-      return;
-    }
-
-    // Resolution aliases (720p, 1080p, 2k, 4k)
-    const resolutionAliases: Record<string, [number, number]> = {
-      '720p': [1280, 720],
-      '1080p': [1920, 1080],
-      '2k': [2560, 1440],
-      '4k': [3840, 2160]
-    };
-
-    if (input in resolutionAliases) {
-      const [width, height] = resolutionAliases[input];
-
-      GLSystem.getInstance().setOutputSize(width, height);
-      toast.success(`Output size set to ${width}×${height} (${input})`);
-
-      onCancel();
-      return;
-    }
-
-    // "Nx" multiplier → multiply screen dimensions (e.g. 2x, 0.5x)
-    const multiplierMatch = input.match(/^(\d+\.?\d*)\s*x$/);
-    if (multiplierMatch) {
-      const multiplier = Math.min(4, Math.max(0.5, Number(multiplierMatch[1])));
-      const width = Math.min(8192, Math.round(window.innerWidth * multiplier));
-      const height = Math.min(8192, Math.round(window.innerHeight * multiplier));
-
-      GLSystem.getInstance().setOutputSize(width, height);
-      toast.success(`Output size set to ${width}×${height} (${multiplier}x)`);
-
-      onCancel();
-      return;
-    }
-
-    // "WxH" explicit dimensions
-    const match = input.match(/^(\d+)\s*[x×,]\s*(\d+)$/i);
-
-    if (!match) {
-      toast.error('Invalid format. Use WIDTHxHEIGHT, screen, retina, Nx, or clear');
-      return;
-    }
-
-    const width = Number(match[1]);
-    const height = Number(match[2]);
-
-    if (width < 1 || height < 1 || width > 8192 || height > 8192) {
-      toast.error('Size must be between 1 and 8192');
-      return;
-    }
-
-    GLSystem.getInstance().setOutputSize(width, height);
-    toast.success(`Output size set to ${width}×${height}`);
+    applyOutputSizeAction(outputSizeInput);
     onCancel();
   }
 
   function setRoom() {
-    if (!roomName.trim()) {
-      onCancel();
-      return;
-    }
-
-    setSearchParam('room', roomName.trim());
+    applyRoomAction(roomName);
     onCancel();
-    window.location.reload();
   }
 
   async function clearCacheAndServiceWorker() {

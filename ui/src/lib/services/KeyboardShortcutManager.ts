@@ -56,6 +56,7 @@ export interface KeyboardShortcutActions {
   // UI toggles
   toggleSidebar: () => void;
   openObjectBrowser: () => void;
+  openSettings: () => void;
   openCommandPalette: () => void;
 
   // Transport
@@ -188,6 +189,14 @@ export class KeyboardShortcutManager {
     if (key === 'k' && isMod && !this.actions.isCommandPaletteOpen()) {
       event.preventDefault();
       this.actions.openCommandPalette();
+
+      return;
+    }
+
+    // CMD+,: Open settings
+    if (key === ',' && isMod && !isTyping) {
+      event.preventDefault();
+      this.actions.openSettings();
 
       return;
     }
