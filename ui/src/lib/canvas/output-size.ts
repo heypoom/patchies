@@ -9,7 +9,7 @@ export const DEFAULT_PREVIEW_SIZE: [number, number] = [
 ];
 
 /** Output size based on screen dimensions (without DPR). Used as default when no explicit size is saved. */
-export function getDefaultOutputSize(): [number, number] {
+export function getScreenOutputSize(): [number, number] {
   const windowWidth = typeof window !== 'undefined' ? window.innerWidth : DEFAULT_OUTPUT_SIZE[0];
   const windowHeight = typeof window !== 'undefined' ? window.innerHeight : DEFAULT_OUTPUT_SIZE[1];
 

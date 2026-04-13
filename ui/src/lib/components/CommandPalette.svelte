@@ -17,7 +17,7 @@
   import { savePatchToLocalStorage, getUniquePatchName } from '$lib/save-load/save-local-storage';
   import { toast } from 'svelte-sonner';
   import { GLSystem } from '$lib/canvas/GLSystem';
-  import { getDefaultOutputSize } from '$lib/canvas/constants';
+  import { DEFAULT_OUTPUT_SIZE, getScreenOutputSize } from '$lib/canvas/constants';
   import { useWebCodecs, toggleWebCodecs, toggleVideoStats } from '../../stores/video.store';
   import { renderFpsCap, FPS_CAP_OPTIONS } from '../../stores/renderer.store';
   import type { Node, Edge } from '@xyflow/svelte';
@@ -747,7 +747,7 @@
 
     // "screen" → use screen dimensions without DPR
     if (input === 'screen') {
-      const [width, height] = getDefaultOutputSize();
+      const [width, height] = getScreenOutputSize();
 
       GLSystem.getInstance().setOutputSize(width, height);
       toast.success(`Output size set to ${width}×${height}`);
@@ -1061,15 +1061,15 @@
     {:else if stage === 'set-output-size'}
       <div class="px-3 py-2 text-xs text-zinc-400">
         {#if outputSizeInput.trim().toLowerCase() === 'clear'}
-          {@const [cw, ch] = getDefaultOutputSize()}
-
-          Output: <span class="font-mono text-green-300">clear ({cw}×{ch})</span>
+          Output: <span class="font-mono text-green-300"
+            >clear ({DEFAULT_OUTPUT_SIZE[0]}×{DEFAULT_OUTPUT_SIZE[1]})</span
+          >
 
           <div class="mt-1 text-zinc-500">
-            Removes saved size. Patch will adapt to each viewer's screen.
+            Removes saved size. Resets to default {DEFAULT_OUTPUT_SIZE[0]}×{DEFAULT_OUTPUT_SIZE[1]}.
           </div>
         {:else if outputSizeInput.trim().toLowerCase() === 'screen'}
-          {@const [sw, sh] = getDefaultOutputSize()}
+          {@const [sw, sh] = getScreenOutputSize()}
 
           Output: <span class="font-mono text-green-300">screen ({sw}×{sh})</span>
 

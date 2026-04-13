@@ -32,8 +32,7 @@ import {
   DEFAULT_OUTPUT_SIZE,
   DEFAULT_PREVIEW_SIZE,
   PREVIEW_SCALE_FACTOR,
-  capPreviewSize,
-  getDefaultOutputSize
+  capPreviewSize
 } from './constants';
 import { logger } from '$lib/utils/logger';
 import {
@@ -858,13 +857,12 @@ export class GLSystem {
   }
 
   /**
-   * Clear the explicit output size. The patch will adapt to the screen on each load.
-   * Immediately applies DPR-aware screen dimensions for the current session.
+   * Clear the explicit output size. Falls back to the fixed default (1008×654).
    */
   clearOutputSize() {
     this.hasExplicitOutputSize = false;
 
-    const [width, height] = getDefaultOutputSize();
+    const [width, height] = DEFAULT_OUTPUT_SIZE;
 
     this.setOutputSize(width, height);
     this.hasExplicitOutputSize = false;

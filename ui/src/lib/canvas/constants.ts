@@ -12,7 +12,7 @@ export const PREVIEW_SCALE_FACTOR = 4;
 export {
   DEFAULT_PREVIEW_SIZE,
   MAX_PREVIEW_SIZE,
-  getDefaultOutputSize,
+  getScreenOutputSize,
   capPreviewSize,
   getPreviewSizeForResolution
 } from './output-size';
