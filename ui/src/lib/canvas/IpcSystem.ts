@@ -14,6 +14,15 @@ export class IpcSystem {
     return IpcSystem.instance;
   }
 
+  constructor() {
+    // Listen for output window announcing itself (handles reloads)
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'outputReady' && event.source) {
+        this.outputWindow = event.source as Window;
+      }
+    });
+  }
+
   sendRenderOutput(bitmap: ImageBitmap) {
     this.outputWindow?.postMessage(
       { type: 'renderOutput', bitmap },
@@ -23,9 +32,5 @@ export class IpcSystem {
 
   openOutputWindow() {
     this.outputWindow = window.open('/output', '_blank');
-
-    this.outputWindow?.addEventListener('close', () => {
-      this.outputWindow = null;
-    });
   }
 }

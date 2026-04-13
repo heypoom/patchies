@@ -19,6 +19,9 @@
         bitmapRendererContext.transferFromImageBitmap(event.data.bitmap);
       }
     });
+
+    // Announce to opener so it can re-capture the window reference after reloads
+    window.opener?.postMessage({ type: 'outputReady' }, '*');
   });
 </script>
 
