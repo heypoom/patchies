@@ -1,7 +1,5 @@
-// These are duplicated here (not imported from constants.ts) to avoid a circular dependency,
-// since constants.ts re-exports from this file.
-const DEFAULT_OUTPUT_SIZE: [number, number] = [1280, 720];
-const PREVIEW_SCALE_FACTOR = 4;
+export const DEFAULT_OUTPUT_SIZE: [number, number] = [1280, 720];
+export const PREVIEW_SCALE_FACTOR = 4;
 
 export const DEFAULT_PREVIEW_SIZE: [number, number] = [
   Math.round(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),

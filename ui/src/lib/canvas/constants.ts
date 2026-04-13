@@ -6,10 +6,9 @@ export const WEBGL_OPTIONAL_EXTENSIONS = [
   'OES_texture_half_float_linear'
 ];
 
-export const DEFAULT_OUTPUT_SIZE = [1280, 720] as [width: number, height: number];
-export const PREVIEW_SCALE_FACTOR = 4;
-
 export {
+  DEFAULT_OUTPUT_SIZE,
+  PREVIEW_SCALE_FACTOR,
   DEFAULT_PREVIEW_SIZE,
   MAX_PREVIEW_SIZE,
   getScreenOutputSize,
