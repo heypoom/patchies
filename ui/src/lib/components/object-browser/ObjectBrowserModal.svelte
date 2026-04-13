@@ -66,6 +66,7 @@
   let showPresets = $state(true);
   let hasInitialized = $state(false);
   let browserMode = $state<BrowserMode>('insert');
+  let expandedPackId = $state<string | null>(null);
 
   // Check if an object has help available
   function hasHelp(objectName: string): boolean {
@@ -233,6 +234,7 @@
     open = false;
     searchQuery = '';
     browserMode = 'insert';
+    expandedPackId = null;
   }
 
   function handleSelectObject(name: string) {
@@ -510,7 +512,18 @@
                   </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {#each filteredObjectPacks as pack (pack.id)}
+                  {#each filteredObjectPacks as pack, i (pack.id)}
+                    {@const expandedIdx = filteredObjectPacks.findIndex(
+                      (p) => p.id === expandedPackId
+                    )}
+                    {@const cols = 3}
+                    {@const isEndOfRow =
+                      (i + 1) % cols === 0 || i === filteredObjectPacks.length - 1}
+                    {@const expandedInThisRow =
+                      expandedIdx >= 0 && Math.floor(expandedIdx / cols) === Math.floor(i / cols)}
+                    {@const expandedPack = expandedInThisRow
+                      ? filteredObjectPacks[expandedIdx]
+                      : null}
                     <ExtensionPackCard
                       {pack}
                       enabled={isPackEnabled(pack.id, $enabledPackIds)}
@@ -518,7 +531,33 @@
                       {searchQuery}
                       locked={isPackLocked(pack.id)}
                       variant="tile"
+                      selected={expandedPackId === pack.id}
+                      onSelect={() =>
+                        (expandedPackId = expandedPackId === pack.id ? null : pack.id)}
                     />
+                    {#if isEndOfRow && expandedPack}
+                      <div
+                        class="col-span-full rounded-lg border border-orange-500/15 bg-orange-500/3 p-3"
+                      >
+                        <div class="flex flex-wrap gap-1">
+                          {#each expandedPack.objects as obj}
+                            {@const isMatch =
+                              searchQuery.trim() &&
+                              obj.toLowerCase().includes(searchQuery.toLowerCase())}
+                            <span
+                              class={[
+                                'rounded-[3px] px-1.5 py-0.5 font-mono text-[9px]',
+                                isMatch
+                                  ? 'bg-orange-500/15 text-orange-400'
+                                  : 'bg-white/4 text-zinc-500'
+                              ]}
+                            >
+                              {obj}
+                            </span>
+                          {/each}
+                        </div>
+                      </div>
+                    {/if}
                   {/each}
                 </div>
               </div>
@@ -552,7 +591,23 @@
                   </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {#each filteredPresetPacks as pack (pack.id)}
+                  {#each filteredPresetPacks as pack, i (pack.id)}
+                    {@const expandedIdx = filteredPresetPacks.findIndex(
+                      (p) => p.id === expandedPackId
+                    )}
+
+                    {@const cols = 3}
+
+                    {@const isEndOfRow =
+                      (i + 1) % cols === 0 || i === filteredPresetPacks.length - 1}
+
+                    {@const expandedInThisRow =
+                      expandedIdx >= 0 && Math.floor(expandedIdx / cols) === Math.floor(i / cols)}
+
+                    {@const expandedPack = expandedInThisRow
+                      ? filteredPresetPacks[expandedIdx]
+                      : null}
+
                     <PresetPackCard
                       {pack}
                       enabled={isPresetPackEnabled(pack.id, $enabledPresetPackIds)}
@@ -560,7 +615,35 @@
                       {searchQuery}
                       locked={isPresetPackLocked(pack.id)}
                       variant="tile"
+                      selected={expandedPackId === pack.id}
+                      onSelect={() =>
+                        (expandedPackId = expandedPackId === pack.id ? null : pack.id)}
                     />
+
+                    {#if isEndOfRow && expandedPack}
+                      <div
+                        class="col-span-full rounded-lg border border-orange-500/15 bg-orange-500/3 p-3"
+                      >
+                        <div class="flex flex-wrap gap-1">
+                          {#each expandedPack.presets as preset (preset)}
+                            {@const isMatch =
+                              searchQuery.trim() &&
+                              preset.toLowerCase().includes(searchQuery.toLowerCase())}
+
+                            <span
+                              class={[
+                                'rounded-[3px] px-1.5 py-0.5 font-mono text-[9px]',
+                                isMatch
+                                  ? 'bg-orange-500/15 text-orange-400'
+                                  : 'bg-white/4 text-zinc-500'
+                              ]}
+                            >
+                              {preset}
+                            </span>
+                          {/each}
+                        </div>
+                      </div>
+                    {/if}
                   {/each}
                 </div>
               </div>

@@ -8,7 +8,9 @@
     onToggle,
     searchQuery = '',
     locked = false,
-    variant = 'row' as 'row' | 'tile'
+    variant = 'row' as 'row' | 'tile',
+    selected = false,
+    onSelect
   }: {
     pack: ExtensionPack;
     enabled: boolean;
@@ -16,6 +18,8 @@
     searchQuery?: string;
     locked?: boolean;
     variant?: 'row' | 'tile';
+    selected?: boolean;
+    onSelect?: () => void;
   } = $props();
 </script>
 
@@ -29,4 +33,6 @@
   {searchQuery}
   {locked}
   {variant}
+  {selected}
+  {onSelect}
 />

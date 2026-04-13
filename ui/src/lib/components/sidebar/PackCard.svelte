@@ -15,6 +15,8 @@
     locked = false,
     unavailable = false,
     variant = 'row' as 'row' | 'tile',
+    selected = false,
+    onSelect,
     nameExtra,
     expandedHeader
   }: {
@@ -28,6 +30,8 @@
     locked?: boolean;
     unavailable?: boolean;
     variant?: 'row' | 'tile';
+    selected?: boolean;
+    onSelect?: () => void;
     nameExtra?: Snippet;
     expandedHeader?: Snippet;
   } = $props();
@@ -52,19 +56,19 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class={[
-      'flex flex-col rounded-lg border p-3 transition-all',
-      unavailable
-        ? 'cursor-default border-white/4 opacity-45'
-        : enabled
-          ? 'cursor-pointer border-orange-500/15 bg-orange-500/3 hover:border-orange-500/25'
-          : 'cursor-pointer border-white/6 bg-white/2 hover:border-white/10'
+      'flex cursor-pointer flex-col rounded-lg border p-3 transition-all',
+      selected
+        ? 'border-orange-500/30 bg-orange-500/5'
+        : unavailable
+          ? 'border-white/4 opacity-45'
+          : enabled
+            ? 'border-orange-500/15 bg-orange-500/3 hover:border-orange-500/25'
+            : 'border-white/6 bg-white/2 hover:border-white/10'
     ]}
-    onclick={() => {
-      if (!locked && !unavailable) onToggle();
-    }}
+    onclick={() => onSelect?.()}
   >
     <!-- Header: icon + name + toggle -->
-    <div class="mb-1.5 flex items-center gap-2">
+    <div class="mb-1 flex items-center gap-2">
       <div
         class={[
           'flex h-5 w-5 shrink-0 items-center justify-center rounded',
@@ -87,45 +91,33 @@
       {#if locked}
         <Lock class="h-3 w-3 shrink-0 text-zinc-700" />
       {:else}
-        <div
+        <button
+          onclick={(e) => {
+            e.stopPropagation();
+            if (!unavailable) onToggle();
+          }}
+          disabled={unavailable}
           class={[
             'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[3px] border transition-all',
             unavailable
-              ? 'border-zinc-700 text-zinc-600'
+              ? 'cursor-not-allowed border-zinc-700 text-zinc-600'
               : enabled
-                ? 'border-orange-500/50 bg-orange-500/12 text-orange-500'
-                : 'border-zinc-700 text-transparent'
+                ? 'cursor-pointer border-orange-500/50 bg-orange-500/12 text-orange-500 hover:bg-orange-500/20'
+                : 'cursor-pointer border-zinc-700 text-transparent hover:border-zinc-500'
           ]}
         >
           {#if enabled && !unavailable}
             <Check class="h-2 w-2" />
           {/if}
-        </div>
+        </button>
       {/if}
     </div>
 
     <!-- Description -->
-    <p class="mb-2 text-[10px] leading-[1.4] text-zinc-600">{description}</p>
+    <p class="text-[10px] leading-[1.4] text-zinc-600">{description}</p>
 
-    {#if expandedHeader}
-      {@render expandedHeader()}
-    {/if}
-
-    <!-- Objects (always visible) -->
-    <div class="flex flex-wrap gap-[3px]">
-      {#each items as item}
-        <span
-          class={[
-            'rounded-[3px] px-[5px] py-px font-mono text-[8px]',
-            matchingItems.has(item)
-              ? 'bg-orange-500/15 text-orange-400'
-              : 'bg-white/4 text-zinc-600'
-          ]}
-        >
-          {item}
-        </span>
-      {/each}
-    </div>
+    <!-- Item count -->
+    <p class="mt-auto pt-1.5 font-mono text-[9px] text-zinc-700">{items.length} items</p>
   </div>
 {:else}
   <!-- ── Row variant (sidebar list) ── -->

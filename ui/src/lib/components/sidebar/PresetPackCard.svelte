@@ -11,7 +11,9 @@
     onToggle,
     searchQuery = '',
     locked = false,
-    variant = 'row' as 'row' | 'tile'
+    variant = 'row' as 'row' | 'tile',
+    selected = false,
+    onSelect
   }: {
     pack: PresetPack;
     enabled: boolean;
@@ -19,6 +21,8 @@
     searchQuery?: string;
     locked?: boolean;
     variant?: 'row' | 'tile';
+    selected?: boolean;
+    onSelect?: () => void;
   } = $props();
 
   const hasAllRequiredObjects = $derived(
@@ -64,6 +68,8 @@
   {searchQuery}
   {locked}
   {variant}
+  {selected}
+  {onSelect}
   unavailable={isUnavailable}
 >
   {#snippet nameExtra()}
