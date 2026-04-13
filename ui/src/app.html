@@ -73,7 +73,7 @@
 
     <script>
       // Runs synchronously before body is parsed - no loader flash for docs
-      if (location.pathname.startsWith('/docs/')) {
+      if (location.pathname.startsWith('/docs/') || location.pathname === '/output') {
         document.documentElement.classList.add('no-loader');
       }
     </script>
