@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Package, Sparkle } from '@lucide/svelte/icons';
+  import { Package } from '@lucide/svelte/icons';
   import { getPackIcon } from '$lib/extensions/pack-icons';
 
   let {
@@ -19,27 +19,25 @@
   const PackIcon = $derived(getPackIcon(packIcon));
 </script>
 
-<div
-  class="mx-auto max-w-sm rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-4 sm:min-w-[500px]"
->
-  <p class="mb-3 text-sm text-zinc-400">
-    <span class="text-zinc-200 capitalize">{name}</span>
-    is included in the
-    <span class="text-zinc-200">{packName}</span> object pack. Enable now?
+<div class="mt-1 w-full max-w-[400px] rounded-lg border border-white/6 bg-white/2 p-3.5">
+  <p class="mb-3 font-mono text-[11px] tracking-wide text-zinc-600">
+    <span class="text-zinc-200">{name}</span>
+    is in the
+    <span class="text-orange-500">{packName}</span> pack
   </p>
-  <div class="flex flex-col gap-2 sm:flex-row">
+  <div class="flex gap-1.5">
     <button
       onclick={onEnableAndAdd}
-      class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500"
+      class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3.5 py-1.5 font-mono text-[11px] text-orange-500 transition-all hover:border-orange-500/50 hover:bg-orange-500/15 hover:text-orange-400"
     >
-      <PackIcon class="h-4 w-4" />
-      <span>Enable Pack & Add</span>
+      <PackIcon class="h-3.5 w-3.5" />
+      <span>Enable & Add</span>
     </button>
     <button
       onclick={onBrowsePacks}
-      class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-zinc-600 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800"
+      class="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-white/8 px-3.5 py-1.5 font-mono text-[11px] text-zinc-600 transition-all hover:border-white/14 hover:text-zinc-400"
     >
-      <Package class="h-4 w-4" />
+      <Package class="h-3.5 w-3.5" />
       <span>Browse Packs</span>
     </button>
   </div>
