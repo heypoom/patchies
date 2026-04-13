@@ -160,9 +160,19 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'video-cube.three',
       'video-torus.three',
       'video-sphere.three',
-      'crate.three',
+      'crate.three'
+    ]
+  },
+  {
+    id: 'gpu-geometry',
+    name: 'GPU Geometry',
+    description: 'Point clouds, meshes, and position fields from textures',
+    icon: 'Waypoints',
+    requiredObjects: ['three', 'glsl', 'regl'],
+    presets: [
       'point-cloud-from-texture.three',
       'mesh-surface-from-texture.three',
+      'point-cloud-from-texture.regl',
       'position-field.gl',
       'torus-position-field.gl'
     ]
