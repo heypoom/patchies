@@ -485,7 +485,7 @@
             <!-- Object Packs Section -->
             {#if filteredObjectPacks.length > 0}
               <div>
-                <div class="mb-1.5 flex items-center justify-between">
+                <div class="mb-2 flex items-center justify-between">
                   <span
                     class="font-mono text-[10px] font-medium tracking-[0.14em] text-zinc-600 uppercase"
                     >Object Packs</span
@@ -509,7 +509,7 @@
                     {/if}
                   </div>
                 </div>
-                <div>
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {#each filteredObjectPacks as pack (pack.id)}
                     <ExtensionPackCard
                       {pack}
@@ -517,6 +517,7 @@
                       onToggle={() => togglePack(pack.id)}
                       {searchQuery}
                       locked={isPackLocked(pack.id)}
+                      variant="tile"
                     />
                   {/each}
                 </div>
@@ -526,7 +527,7 @@
             <!-- Preset Packs Section -->
             {#if filteredPresetPacks.length > 0}
               <div>
-                <div class="mb-1.5 flex items-center justify-between">
+                <div class="mb-2 flex items-center justify-between">
                   <span
                     class="font-mono text-[10px] font-medium tracking-[0.14em] text-zinc-600 uppercase"
                     >Preset Packs</span
@@ -550,7 +551,7 @@
                     {/if}
                   </div>
                 </div>
-                <div>
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {#each filteredPresetPacks as pack (pack.id)}
                     <PresetPackCard
                       {pack}
@@ -558,6 +559,7 @@
                       onToggle={() => togglePresetPack(pack.id)}
                       {searchQuery}
                       locked={isPresetPackLocked(pack.id)}
+                      variant="tile"
                     />
                   {/each}
                 </div>
