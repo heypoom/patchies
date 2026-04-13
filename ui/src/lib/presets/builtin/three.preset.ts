@@ -141,7 +141,9 @@ function draw(t) {
 // vertex count, row-major. Wire a GLSL/SwissGL node that outputs an rgba32f
 // texture (e.g. via `// @format rgba32f`) into inlet 0. Geometry auto-resizes
 // to match the incoming texture's dimensions.
-const POINT_CLOUD_FROM_TEXTURE = `const {
+const POINT_CLOUD_FROM_TEXTURE = `setTitle('Point Cloud')
+
+const {
   Scene, PerspectiveCamera, BufferGeometry, BufferAttribute,
   Points, ShaderMaterial, AdditiveBlending, Sphere, Vector3
 } = THREE
