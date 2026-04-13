@@ -82,7 +82,7 @@
         <span class="output-name text-xs font-semibold text-zinc-400 transition-colors"
           >{output.name}</span
         >
-        <span class="text-center font-mono text-[9px] leading-[1.3] text-zinc-700"
+        <span class="mx-1.5 text-center font-mono text-[9px] leading-[1.3] text-zinc-700"
           >{output.description}</span
         >
       </button>
