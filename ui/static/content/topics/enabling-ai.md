@@ -4,9 +4,10 @@
 
 AI is optional with Patchies. By default, Patchies has no AI features enabled, and it has to be explicitly opted in.
 
-AI features are hidden unless an API key is present. You can also use `Ctrl/Cmd + K` then `Toggle AI Features` to hide all AI-based objects and AI generation features. It will stay hidden until you turn it back on.
+We believe in giving users the choice to use AI as a tool for code generation without forcing it on everyone. AI-enabled features are either hidden or disabled unless an API key is present.
 
-We believe in giving users the choice to use AI as a tool for code generation without forcing it on everyone.
+- You can toggle visibility in **Settings** (`Cmd/Ctrl + ,`) under **AI → Show AI features**.
+- You can also use the command palette (`Cmd/Ctrl + K` → `Toggle AI Features`) to quickly toggle AI features.
 
 ## Be mindful about API key security
 

@@ -13,6 +13,7 @@
   import { onDestroy, onMount, tick } from 'svelte';
   import CommandPalette from './CommandPalette.svelte';
   import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
+  import SettingsModal from './settings-modal/SettingsModal.svelte';
   import BottomToolbar from './BottomToolbar.svelte';
   import AiObjectPrompt from './AiObjectPrompt.svelte';
   import AiActivityTray from './AiActivityTray.svelte';
@@ -25,6 +26,7 @@
     connectingFromHandleId,
     isConnectionMode,
     isObjectBrowserOpen,
+    isSettingsOpen,
     isMobile,
     isSidebarOpen,
     sidebarWidth,
@@ -629,6 +631,7 @@
         if (!$isFullscreenActive) $isSidebarOpen = !$isSidebarOpen;
       },
       openObjectBrowser: () => ($isObjectBrowserOpen = true),
+      openSettings: () => ($isSettingsOpen = true),
       openCommandPalette: triggerCommandPalette,
       togglePlayPause: () => {
         if (Transport.isPlaying) {
@@ -1419,6 +1422,9 @@
       bind:open={$isObjectBrowserOpen}
       onSelectObject={handleObjectBrowserSelect}
     />
+
+    <!-- Settings Modal -->
+    <SettingsModal bind:open={$isSettingsOpen} />
 
     <!-- AI Object Prompt Dialogs — multiple concurrent instances supported -->
     {#each aiPromptInstances as instance (instance.id)}

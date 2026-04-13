@@ -98,7 +98,7 @@
     $isAiFeaturesVisible = false;
     open = false;
     toast.success(
-      'All AI features hidden. Use "Ctrl/Cmd + K > Toggle AI Features" to re-enable them.'
+      'All AI features hidden. Re-enable in Settings (⌘,) under AI → Show AI features.'
     );
   }
 
