@@ -606,7 +606,7 @@
     // Check for ?startup= param to force-open startup modal at a specific tab
     const startupParam = params.get('startup');
     if (startupParam) {
-      const validTabs = ['about', 'demos', 'shortcuts', 'thanks'] as const;
+      const validTabs = ['about', 'demos', 'sparks', 'shortcuts', 'thanks'] as const;
       if (validTabs.includes(startupParam as (typeof validTabs)[number])) {
         startupInitialTab = startupParam as (typeof validTabs)[number];
         showStartupModal = true;
