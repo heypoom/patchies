@@ -11,6 +11,7 @@ import { Transport } from '$lib/transport';
 import { LookaheadClockScheduler } from '$lib/transport/ClockScheduler';
 import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
 import type { FBOFormat } from '$lib/rendering/types';
+import { createEsm } from './local-esm';
 
 export interface JSRunnerOptions {
   customConsole?: {
@@ -408,6 +409,7 @@ export class JSRunner {
       'setHidePorts',
       'getVfsUrl',
       'clock',
+      'esm',
       ...Object.keys(extraContext)
     ];
 
@@ -496,13 +498,13 @@ export class JSRunner {
       setHidePorts,
       createGetVfsUrl(nodeId),
       clock,
+      createEsm(this.moduleProviderUrl),
       ...Object.values(extraContext)
     ];
 
     const codeWithWrapper = `
 			const inner = async () => {
 				var recv = onMessage; // alias
-				var esm = (name) => import('${this.moduleProviderUrl}' + name);
 
 				${code}
 			}

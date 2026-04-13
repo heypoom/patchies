@@ -164,6 +164,22 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     ]
   },
   {
+    id: 'cpu-geometry',
+    name: 'CPU Geometry',
+    description: 'Generate and render meshes via message passing',
+    icon: 'Box',
+    requiredObjects: ['js', 'three'],
+    presets: [
+      'geo.box',
+      'geo.sphere',
+      'geo.icosphere',
+      'geo.torus',
+      'geo.cylinder',
+      'geo.capsule',
+      'geo.render'
+    ]
+  },
+  {
     id: 'gpu-geometry',
     name: 'GPU Geometry',
     description: 'Point clouds, meshes, and position fields from textures',

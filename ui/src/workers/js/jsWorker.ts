@@ -18,6 +18,7 @@ import { PatchStorageService } from '$lib/storage/PatchStorageService';
 import { createKVStore } from '$lib/storage/KVStore';
 import { WorkerProfiler } from '../shared/WorkerProfiler';
 import { createWorkerSettingsProxy, type WorkerSettingsProxy } from '../shared/workerSettingsProxy';
+import { createEsm } from '$lib/js-runner/local-esm';
 
 // Module storage (synced from main thread)
 const modules = new Map<string, string>();
@@ -514,12 +515,9 @@ async function executeCode(nodeId: string, processedCode: string) {
   // Store code for error reporting with line numbers in recv() callbacks
   state.code = processedCode;
 
-  const moduleProviderUrl = 'https://esm.sh/';
-
   const codeWithWrapper = `
     const inner = async () => {
       var recv = onMessage;
-      var esm = (name) => import('${moduleProviderUrl}' + name);
 
       ${processedCode}
     }
@@ -549,7 +547,8 @@ async function executeCode(nodeId: string, processedCode: string) {
     'getVideoFrames',
     'kv',
     'settings',
-    'getSuperSonicChannel'
+    'getSuperSonicChannel',
+    'esm'
   ];
 
   const functionArgs = [
@@ -574,7 +573,8 @@ async function executeCode(nodeId: string, processedCode: string) {
     ctx.getVideoFrames,
     ctx.kv,
     ctx.settings,
-    ctx.getSuperSonicChannel
+    ctx.getSuperSonicChannel,
+    createEsm('https://esm.sh/')
   ];
 
   try {

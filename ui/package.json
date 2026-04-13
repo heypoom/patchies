@@ -142,6 +142,7 @@
     "overtype": "^1.1.1",
     "p5": "^2.0.0",
     "pocketbase": "^0.26.2",
+    "primitive-geometry": "^2.11.0",
     "pyodide": "^0.28.1",
     "regl": "^2.1.1",
     "stats.js": "^0.17.0",

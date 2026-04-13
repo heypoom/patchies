@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "patchies-web",
@@ -70,6 +69,7 @@
         "overtype": "^1.1.1",
         "p5": "^2.0.0",
         "pocketbase": "^0.26.2",
+        "primitive-geometry": "^2.11.0",
         "pyodide": "^0.28.1",
         "regl": "^2.1.1",
         "stats.js": "^0.17.0",
@@ -2286,6 +2286,8 @@
     "pretty-bytes": ["pretty-bytes@6.1.1", "", {}, "sha512-mQUvGU6aUFQ+rNvTIAcZuWGRT9a6f6Yrg9bHs4ImKF+HZCEK+plBvnAZYSIQztknZF2qnzNtr6F8s0+IuptdlQ=="],
 
     "pretty-format": ["pretty-format@27.5.1", "", { "dependencies": { "ansi-regex": "^5.0.1", "ansi-styles": "^5.0.0", "react-is": "^17.0.1" } }, "sha512-Qb1gy5OrP5+zDf2Bvnzdl3jsTf1qXVMazbvCoKhtKqVs4/YK4ozX4gKQJJVyNe+cajNPn0KoC0MC3FUmaHWEmQ=="],
+
+    "primitive-geometry": ["primitive-geometry@2.11.0", "", {}, "sha512-W/Kl9za7sIQWRWvY6Fvr/wnexhP6D3fBcPz4gZsE2aMiUgm0N8ZUCQiwG/h+r+P1qTKi2yEINF3x79WN6gJSXA=="],
 
     "process": ["process@0.11.10", "", {}, "sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A=="],
 
