@@ -156,9 +156,6 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - csound~: Csound — classic computer music language with thousands of opcodes
 - chuck~: ChucK — strongly-timed audio programming language
 - sonic~: SuperCollider-style synthesis — rich synthesis engine
-- osc~: Oscillator — sine, saw, square, triangle waves
-- noise~: White noise generator
-- phasor~: Ramp wave 0→1, useful for driving table lookups or LFOs
 
 ## Signal Processors
 - dsp~: Custom DSP with AudioWorklet — write your own sample-level processing in JS
