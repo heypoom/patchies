@@ -1,6 +1,6 @@
 <script lang="ts">
   let {
-    checked = $bindable(false),
+    checked = false,
     onchange
   }: {
     checked?: boolean;
@@ -8,8 +8,7 @@
   } = $props();
 
   function handleClick() {
-    checked = !checked;
-    onchange?.(checked);
+    onchange?.(!checked);
   }
 </script>
 

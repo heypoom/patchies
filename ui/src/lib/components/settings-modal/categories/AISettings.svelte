@@ -64,7 +64,7 @@
   );
 </script>
 
-<SettingRow title="Enable AI features" description="Show AI-powered tools and sparks">
+<SettingRow title="Show AI features" description="Show or hide AI-powered tools and sparks">
   <SettingToggle checked={$isAiFeaturesVisible} onchange={(v) => isAiFeaturesVisible.set(v)} />
 </SettingRow>
 
