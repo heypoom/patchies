@@ -66,7 +66,9 @@
     {/if}
   </div>
 
-  <div class="output-grid grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+  <div
+    class="output-grid grid auto-rows-[1fr] grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8"
+  >
     {#each outputs as output (output.id)}
       {@const active = selectedOutputIds.has(output.id)}
       {@const Icon = icons[output.id]}
@@ -125,11 +127,5 @@
 
   .output-tile-active .output-name {
     color: var(--text-acc);
-  }
-
-  @media (max-width: 639px) {
-    .output-tile {
-      aspect-ratio: 6 / 4;
-    }
   }
 </style>

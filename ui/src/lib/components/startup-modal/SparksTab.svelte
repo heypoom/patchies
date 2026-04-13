@@ -133,7 +133,13 @@
     aspect-ratio: 6 / 4;
   }
 
-  @media (min-width: 480px) {
+  @media (min-width: 500px) {
+    :global(.sparks-tab .output-grid) {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+  }
+
+  @media (min-width: 700px) {
     :global(.sparks-tab .output-grid) {
       grid-template-columns: repeat(4, 1fr) !important;
     }
