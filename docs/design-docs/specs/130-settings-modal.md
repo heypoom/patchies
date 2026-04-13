@@ -16,6 +16,7 @@ Add a settings modal with a categorized sidebar, surfacing all user-configurable
 ### Visual Style
 
 Reuses the same dark-card aesthetic as `StartupModal` and `ObjectBrowserModal`:
+
 - Dark background (`#09090b`), accent border, corner ornaments, radial glow
 - **Left sidebar** with category list (not top tabs — more categories than startup modal)
 - Right content pane with the settings for the selected category
@@ -48,6 +49,7 @@ Reuses the same dark-card aesthetic as `StartupModal` and `ObjectBrowserModal`:
 ```
 
 The sidebar has two labeled sections separated by a subtle divider:
+
 - **Per-User** — settings that persist globally across all patches
 - **Per-Patch** — settings scoped to the current patch
 
@@ -71,7 +73,6 @@ Each section header in the sidebar has a small label: `PER-USER` or `PER-PATCH` 
 | Show startup modal | Toggle | `patchies-show-startup-modal` | |
 | Sidebar default open | Toggle | `patchies-sidebar-open` | |
 | Show bottom bar | Toggle | `isBottomBarVisible` (ui.store) | |
-| Show cables | Toggle | `isCablesVisible` (ui.store) | |
 
 **Editor**
 | Setting | Control | Store | Notes |
@@ -127,16 +128,17 @@ Each section header in the sidebar has a small label: `PER-USER` or `PER-PATCH` 
 
 #### Per-Patch Settings
 
-**Transport**
-| Setting | Control | Store | Notes |
-|---------|---------|-------|-------|
-| BPM | Number input | `transport.store` | |
-| Time signature | Dual number input | `transport.store` | e.g. 4/4 |
-| Time display format | Dropdown | `transport.store` | seconds/bars/time |
-| DSP enabled | Toggle | `transport.store` | |
-| Volume | Slider | `transport.store` | |
+These are already serialized into `PatchSettings` in `serialize-patch.ts` and restored on patch load.
 
-> **Note**: Transport settings are currently stored globally but conceptually belong to the patch. This could be a future migration — for now, surface them under Per-Patch with a note that they currently persist globally.
+**Patch**
+| Setting | Control | Store | Serialized in PatchSettings |
+|---------|---------|-------|-----------------------------|
+| BPM | Number input | `transport.store` | `bpm` |
+| Time signature | Dual number input | `transport.store` | `timeSignature` |
+| Output size | Dual number input | `GLSystem` | `outputSize` |
+| Show cables | Toggle | `isCablesVisible` (ui.store) | `cablesVisible` |
+
+> **Note**: These settings also persist globally in their respective stores (for the "last used" state), but are saved/restored per-patch via `PatchSettings`. The settings modal should read/write the live stores — the serialization layer handles per-patch persistence automatically.
 
 ## Component Architecture
 
