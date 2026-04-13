@@ -124,7 +124,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const TORUS_POSITION_FIELD_GL = `// @title Torus Field
 // @format rgba32f
-// @resolution 1/4
+// @resolution 256
 
 // @param radiusMajor 2.0 0.1 5.0 "Torus Major Radius"
 // @param radiusMinor 0.6 0.05 2.0 "Torus Minor Radius"
