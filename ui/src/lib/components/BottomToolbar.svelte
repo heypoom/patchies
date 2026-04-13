@@ -147,7 +147,7 @@
 
   // Menu item for overflow/drawer menus
   const menuItemClass =
-    'flex items-center gap-3 w-full px-4 py-3 text-left text-sm text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700';
+    'flex cursor-pointer items-center gap-3 w-full px-4 py-3 text-left text-sm text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700';
 
   function handleDelete() {
     const ok = confirm('Delete this element?');

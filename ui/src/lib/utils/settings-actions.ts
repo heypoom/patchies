@@ -58,7 +58,7 @@ export function applyOutputSize(input: string): boolean {
   }
 
   // Resolution aliases (720p, 1080p, 2k, 4k)
-  if (trimmed in RESOLUTION_ALIASES) {
+  if (Object.hasOwn(RESOLUTION_ALIASES, trimmed)) {
     const [width, height] = RESOLUTION_ALIASES[trimmed];
     GLSystem.getInstance().setOutputSize(width, height);
     toast.success(`Output size set to ${width}×${height} (${trimmed})`);
@@ -129,7 +129,7 @@ export function applyRoom(roomName: string): boolean {
   if (!trimmed) {
     const url = new URL(window.location.href);
     url.searchParams.delete('room');
-    window.history.replaceState({}, '', url);
+    window.history.replaceState(window.history.state, '', url);
     toast.success('Room cleared');
     return true;
   }
