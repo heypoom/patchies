@@ -48,8 +48,6 @@
   import { objectSchemas } from '$lib/objects/schemas';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
-  import './object-browser.css';
-
   type BrowserMode = 'insert' | 'help' | 'packs';
 
   function openPacks() {
@@ -319,12 +317,12 @@
 </script>
 
 {#if open}
-  <div class="ob-root" role="presentation">
+  <div class="fixed inset-0 z-50 flex items-center justify-center" role="presentation">
     <!-- Backdrop -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="ob-backdrop"
+      class="fixed inset-0 animate-[ob-fade_0.2s_ease_both] bg-black/88 backdrop-blur-[12px]"
       role="button"
       tabindex="-1"
       onclick={handleClose}
@@ -335,7 +333,7 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="ob-card"
+      class="relative z-10 m-0 flex h-dvh w-full max-w-[860px] animate-[ob-card-in_0.35s_cubic-bezier(0.22,0.61,0.36,1)_both] flex-col overflow-hidden rounded-[14px] border border-orange-500/18 bg-[#09090b] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),0_0_80px_rgba(249,115,22,0.06),0_40px_80px_rgba(0,0,0,0.8)] sm:m-4 sm:h-[88vh] sm:max-h-[780px]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="ob-title"
@@ -343,25 +341,52 @@
       onclick={(e) => e.stopPropagation()}
     >
       <!-- Corner ornaments -->
-      <span class="oc oc-tl" aria-hidden="true"></span>
-      <span class="oc oc-tr" aria-hidden="true"></span>
-      <span class="oc oc-bl" aria-hidden="true"></span>
-      <span class="oc oc-br" aria-hidden="true"></span>
+      <span
+        class="pointer-events-none absolute top-3 left-3 z-[2] h-4 w-4 border-t border-l border-orange-500 opacity-40"
+        aria-hidden="true"
+      ></span>
+      <span
+        class="pointer-events-none absolute top-3 right-3 z-[2] h-4 w-4 border-t border-r border-orange-500 opacity-40"
+        aria-hidden="true"
+      ></span>
+      <span
+        class="pointer-events-none absolute bottom-3 left-3 z-[2] h-4 w-4 border-b border-l border-orange-500 opacity-40"
+        aria-hidden="true"
+      ></span>
+      <span
+        class="pointer-events-none absolute right-3 bottom-3 z-[2] h-4 w-4 border-r border-b border-orange-500 opacity-40"
+        aria-hidden="true"
+      ></span>
 
       <!-- Radial glow -->
-      <div class="ob-glow" aria-hidden="true"></div>
+      <div
+        class="pointer-events-none absolute -top-[60px] -right-[60px] -left-[60px] z-0 h-[240px] bg-[radial-gradient(ellipse_70%_60%_at_50%_35%,rgba(249,115,22,0.07),transparent_70%)]"
+        aria-hidden="true"
+      ></div>
 
       <!-- Header -->
-      <div class="ob-header">
-        <span class="ob-eyebrow">patchies · objects</span>
-        <div class="ob-header-right">
-          <div class="ob-filter-chips">
+      <div
+        class="relative z-[1] flex shrink-0 items-center justify-between gap-3 border-b border-white/5 px-5 pt-4 pb-3 max-sm:flex-col max-sm:items-start sm:px-7 sm:pt-[18px] sm:pb-3.5"
+      >
+        <span
+          class="shrink-0 font-mono text-[10px] tracking-[0.18em] whitespace-nowrap text-zinc-700 uppercase"
+          >patchies · objects</span
+        >
+        <div
+          class="flex items-center gap-2.5 max-sm:ml-0 max-sm:w-full max-sm:justify-between sm:ml-auto"
+        >
+          <div class="flex flex-wrap gap-1.5">
             <!-- Packs button -->
             <Tooltip.Root delayDuration={100}>
               <Tooltip.Trigger>
                 <button
                   onclick={() => (browserMode = browserMode === 'packs' ? 'insert' : 'packs')}
-                  class={['ob-chip', browserMode === 'packs' ? 'ob-chip-active' : 'ob-chip-action']}
+                  class={[
+                    'flex cursor-pointer items-center gap-[5px] rounded border px-2.5 py-1 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap lowercase transition-all',
+                    browserMode === 'packs'
+                      ? 'border-orange-500/30 bg-orange-500/6 text-orange-500'
+                      : 'border-white/8 bg-white/2 text-zinc-600 hover:border-white/14 hover:bg-white/4 hover:text-zinc-400'
+                  ]}
                 >
                   <Package class="h-3 w-3" />
                   <span>packs</span>
@@ -377,12 +402,12 @@
                   onclick={() => (showPresets = !showPresets)}
                   disabled={browserMode === 'help' || browserMode === 'packs'}
                   class={[
-                    'ob-chip',
+                    'flex cursor-pointer items-center gap-[5px] rounded border px-2.5 py-1 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap lowercase transition-all',
                     browserMode === 'help' || browserMode === 'packs'
-                      ? 'ob-chip-disabled'
+                      ? 'cursor-not-allowed border-white/4 text-zinc-700 opacity-50'
                       : showPresets
-                        ? 'ob-chip-active'
-                        : 'ob-chip-action'
+                        ? 'border-orange-500/30 bg-orange-500/6 text-orange-500'
+                        : 'border-white/8 bg-white/2 text-zinc-600 hover:border-white/14 hover:bg-white/4 hover:text-zinc-400'
                   ]}
                 >
                   <Bookmark class="h-3 w-3" />
@@ -403,7 +428,12 @@
               <Tooltip.Trigger>
                 <button
                   onclick={() => (browserMode = browserMode === 'help' ? 'insert' : 'help')}
-                  class={['ob-chip', browserMode === 'help' ? 'ob-chip-help' : 'ob-chip-action']}
+                  class={[
+                    'flex cursor-pointer items-center gap-[5px] rounded border px-2.5 py-1 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap lowercase transition-all',
+                    browserMode === 'help'
+                      ? 'border-blue-400/30 bg-blue-400/6 text-blue-400'
+                      : 'border-white/8 bg-white/2 text-zinc-600 hover:border-white/14 hover:bg-white/4 hover:text-zinc-400'
+                  ]}
                 >
                   <CircleQuestionMark class="h-3 w-3" />
                   <span>help</span>
@@ -414,26 +444,30 @@
               </Tooltip.Content>
             </Tooltip.Root>
           </div>
-          <button onclick={handleClose} class="ob-close" aria-label="Close modal">✕</button>
+          <button
+            onclick={handleClose}
+            class="shrink-0 cursor-pointer border-none bg-transparent p-1.5 font-mono text-[11px] leading-none text-zinc-700 transition-colors hover:text-zinc-500"
+            aria-label="Close modal">✕</button
+          >
         </div>
       </div>
 
       <!-- Search bar -->
-      <div class="ob-search-wrap">
-        <div class="ob-search-inner">
-          <Search class="ob-search-icon" />
+      <div class="relative z-[1] shrink-0 border-b border-white/4 px-5 py-2.5 sm:px-7 sm:py-3">
+        <div class="relative flex items-center">
+          <Search class="pointer-events-none absolute left-3 h-3.5 w-3.5 text-zinc-700" />
           <input
             type="text"
             bind:value={searchQuery}
             placeholder="search objects and presets..."
-            class="ob-search-input"
+            class="w-full rounded-md border border-white/6 bg-white/2 px-9 py-2 font-mono text-[13px] text-zinc-200 transition-colors outline-none placeholder:tracking-[0.04em] placeholder:text-zinc-700 focus:border-orange-500/25"
             id="ob-title"
           />
 
           {#if searchQuery}
             <button
               onclick={() => (searchQuery = '')}
-              class="ob-search-clear"
+              class="absolute right-2.5 cursor-pointer border-none bg-transparent p-0.5 text-zinc-600 transition-colors hover:text-zinc-400"
               aria-label="Clear search"
             >
               <X class="h-3.5 w-3.5" />
@@ -443,20 +477,35 @@
       </div>
 
       <!-- Object list / Packs panel -->
-      <div class="ob-body">
+      <div
+        class="ob-scroll relative z-[1] flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 sm:pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+      >
         {#if browserMode === 'packs'}
-          <div class="ob-packs-panel">
+          <div class="flex flex-col gap-5">
             <!-- Object Packs Section -->
             {#if filteredObjectPacks.length > 0}
               <div>
-                <div class="ob-packs-section-header">
-                  <span class="ob-packs-section-title">Object Packs</span>
-                  <div class="ob-packs-section-actions">
-                    <span class="ob-packs-section-count">{enabledCount}/{totalObjectCount}</span>
+                <div class="mb-1.5 flex items-center justify-between">
+                  <span
+                    class="font-mono text-[10px] font-medium tracking-[0.14em] text-zinc-600 uppercase"
+                    >Object Packs</span
+                  >
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-[10px] text-zinc-700"
+                      >{enabledCount}/{totalObjectCount}</span
+                    >
                     {#if allObjectPacksEnabled}
-                      <button onclick={disableAllPacks} class="ob-packs-reset-btn">Reset</button>
+                      <button
+                        onclick={disableAllPacks}
+                        class="cursor-pointer rounded border-none bg-transparent px-1.5 py-0.5 font-mono text-[10px] text-zinc-600 transition-all hover:bg-white/5 hover:text-zinc-400"
+                        >Reset</button
+                      >
                     {:else}
-                      <button onclick={enableAllPacks} class="ob-packs-all-btn">All</button>
+                      <button
+                        onclick={enableAllPacks}
+                        class="cursor-pointer rounded border-none bg-zinc-700 px-1.5 py-0.5 font-mono text-[10px] text-zinc-200 transition-all hover:bg-zinc-600"
+                        >All</button
+                      >
                     {/if}
                   </div>
                 </div>
@@ -477,18 +526,27 @@
             <!-- Preset Packs Section -->
             {#if filteredPresetPacks.length > 0}
               <div>
-                <div class="ob-packs-section-header">
-                  <span class="ob-packs-section-title">Preset Packs</span>
-                  <div class="ob-packs-section-actions">
-                    <span class="ob-packs-section-count"
+                <div class="mb-1.5 flex items-center justify-between">
+                  <span
+                    class="font-mono text-[10px] font-medium tracking-[0.14em] text-zinc-600 uppercase"
+                    >Preset Packs</span
+                  >
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-[10px] text-zinc-700"
                       >{$enabledPresetPackIds.length}/{BUILT_IN_PRESET_PACKS.length}</span
                     >
                     {#if allPresetPacksEnabled}
-                      <button onclick={disableAllPresetPacks} class="ob-packs-reset-btn"
+                      <button
+                        onclick={disableAllPresetPacks}
+                        class="cursor-pointer rounded border-none bg-transparent px-1.5 py-0.5 font-mono text-[10px] text-zinc-600 transition-all hover:bg-white/5 hover:text-zinc-400"
                         >Reset</button
                       >
                     {:else}
-                      <button onclick={enableAllPresetPacks} class="ob-packs-all-btn">All</button>
+                      <button
+                        onclick={enableAllPresetPacks}
+                        class="cursor-pointer rounded border-none bg-zinc-700 px-1.5 py-0.5 font-mono text-[10px] text-zinc-200 transition-all hover:bg-zinc-600"
+                        >All</button
+                      >
                     {/if}
                   </div>
                 </div>
@@ -508,16 +566,20 @@
 
             <!-- No results -->
             {#if filteredObjectPacks.length === 0 && filteredPresetPacks.length === 0}
-              <div class="ob-empty">
-                <SearchX class="ob-empty-icon" />
-                <p class="ob-empty-text">No packs match "{searchQuery}"</p>
+              <div class="flex h-full flex-col items-center justify-center gap-3 text-center">
+                <SearchX class="h-10 w-10 text-zinc-800" />
+                <p class="font-mono text-xs tracking-[0.04em] text-zinc-600">
+                  No packs match "{searchQuery}"
+                </p>
               </div>
             {/if}
           </div>
         {:else if filteredCategories.length === 0}
-          <div class="ob-empty">
-            <SearchX class="ob-empty-icon" />
-            <p class="ob-empty-text">No objects found for "{searchQuery}"</p>
+          <div class="flex h-full flex-col items-center justify-center gap-3 text-center">
+            <SearchX class="h-10 w-10 text-zinc-800" />
+            <p class="font-mono text-xs tracking-[0.04em] text-zinc-600">
+              No objects found for "{searchQuery}"
+            </p>
 
             {#if suggestedDisabledObject}
               <DisabledObjectSuggestion
@@ -530,33 +592,48 @@
                 }}
               />
             {:else}
-              <button onclick={openPacks} class="ob-empty-btn">
+              <button
+                onclick={openPacks}
+                class="flex cursor-pointer items-center gap-2 rounded-md border border-white/8 bg-transparent px-4 py-2 font-mono text-xs text-zinc-500 transition-all hover:border-orange-500/25 hover:text-zinc-400"
+              >
                 <Package class="h-4 w-4" />
                 <span>Browse Packs</span>
               </button>
             {/if}
           </div>
         {:else}
-          <div class="ob-categories">
+          <div class="flex flex-col gap-2">
             {#each filteredCategories as category (category.title)}
               {@const isCategoryPreset = category.title.includes(': ')}
               {@const IconComponent = getIconComponent(category.icon)}
 
-              <div class="ob-category">
+              <div>
                 <!-- Category header -->
-                <button onclick={() => toggleCategory(category.title)} class="ob-cat-header">
-                  <div class="ob-cat-header-left">
-                    <div class="ob-cat-icon">
+                <button
+                  onclick={() => toggleCategory(category.title)}
+                  class="mb-1 flex w-full cursor-pointer items-center justify-between rounded border-none bg-transparent px-1.5 py-[5px] transition-colors hover:bg-white/2"
+                >
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="flex h-[18px] w-[18px] shrink-0 items-center justify-center text-zinc-500"
+                    >
                       <IconComponent class="h-3 w-3" />
                     </div>
-                    <span class={['ob-cat-title', isCategoryPreset && 'ob-cat-title-preset']}>
+                    <span
+                      class={[
+                        'font-mono text-[10px] tracking-[0.14em] uppercase',
+                        isCategoryPreset ? 'text-zinc-600' : 'text-zinc-500'
+                      ]}
+                    >
                       {category.title}
                     </span>
-                    <span class="ob-cat-count">{category.objects.length}</span>
+                    <span class="font-mono text-[9px] tracking-[0.05em] text-zinc-600"
+                      >{category.objects.length}</span
+                    >
                   </div>
                   <ChevronDown
                     class={[
-                      'ob-cat-chevron',
+                      'h-3.5 w-3.5 text-zinc-600 transition-transform',
                       expandedCategories.has(category.title) ? '' : '-rotate-90'
                     ]}
                   />
@@ -564,7 +641,7 @@
 
                 <!-- Objects grid -->
                 {#if expandedCategories.has(category.title)}
-                  <div class="ob-grid">
+                  <div class="mb-1 grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4">
                     {#each category.objects as object (object.name)}
                       {@const isPreset = category.title.includes(': ')}
                       {@const isLowPriority = object.priority === 'low'}
@@ -583,18 +660,18 @@
                           }}
                           disabled={noHelpAvailable}
                           class={[
-                            'ob-obj',
+                            'flex h-full w-full cursor-pointer flex-col gap-1 rounded-md border px-2.5 py-2 text-left transition-all',
                             noHelpAvailable
-                              ? 'ob-obj-disabled'
+                              ? 'cursor-not-allowed border-white/2 bg-transparent opacity-30'
                               : browserMode === 'help'
-                                ? 'ob-obj-help'
+                                ? 'border-blue-400/15 bg-blue-400/3 hover:border-blue-400/30 hover:bg-blue-400/7'
                                 : isPreset
-                                  ? 'ob-obj-preset'
-                                  : 'ob-obj-default',
-                            isLowPriority && !noHelpAvailable && 'ob-obj-low'
+                                  ? 'border-white/7 bg-white/2 hover:border-white/12 hover:bg-white/4'
+                                  : 'border-white/7 bg-white/2 hover:border-orange-500/30 hover:bg-orange-500/5',
+                            isLowPriority && !noHelpAvailable && 'opacity-45'
                           ]}
                         >
-                          <div class="ob-obj-name-row">
+                          <div class="flex items-center gap-[5px]">
                             {#if browserMode === 'help'}
                               <CircleQuestionMark
                                 class={[
@@ -605,7 +682,7 @@
                             {/if}
                             <span
                               class={[
-                                'ob-obj-name',
+                                'font-mono text-xs leading-tight',
                                 noHelpAvailable
                                   ? 'text-zinc-600'
                                   : browserMode === 'help'
@@ -617,12 +694,19 @@
                             >
                           </div>
 
-                          <span class={['ob-obj-desc', noHelpAvailable && 'text-zinc-700']}>
+                          <span
+                            class={[
+                              'line-clamp-2 text-[11px] leading-[1.4] text-zinc-500',
+                              noHelpAvailable && 'text-zinc-700'
+                            ]}
+                          >
                             {object.description}
                           </span>
 
                           {#if isLowPriority && !noHelpAvailable}
-                            <span class="ob-obj-badge">disabled</span>
+                            <span class="font-mono text-[9px] tracking-[0.08em] text-zinc-600"
+                              >disabled</span
+                            >
                           {/if}
                         </button>
 
@@ -633,7 +717,7 @@
                               e.stopPropagation();
                               openHelp(object.name);
                             }}
-                            class="ob-help-hover hidden sm:block"
+                            class="absolute top-1.5 right-1.5 hidden cursor-pointer rounded border-none bg-transparent p-1 text-zinc-600 opacity-0 transition-all group-hover:opacity-100 hover:bg-white/6 hover:text-zinc-400 sm:block"
                             title="Open help for {object.name}"
                           >
                             <CircleQuestionMark class="h-3.5 w-3.5" />
@@ -647,7 +731,10 @@
             {/each}
 
             <!-- Enable more packs CTA -->
-            <button onclick={() => (browserMode = 'packs')} class="ob-packs-cta">
+            <button
+              onclick={() => (browserMode = 'packs')}
+              class="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-white/6 bg-transparent py-3.5 font-mono text-[10px] tracking-[0.12em] text-zinc-700 lowercase transition-all hover:border-orange-500/20 hover:text-zinc-500"
+            >
               <Package class="h-4 w-4" />
               <span>enable more object packs</span>
             </button>
@@ -657,3 +744,39 @@
     </div>
   </div>
 {/if}
+
+<style>
+  @keyframes ob-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes ob-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .ob-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+  .ob-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .ob-scroll::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 3px;
+  }
+  .ob-scroll::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+  }
+</style>
