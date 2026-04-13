@@ -116,8 +116,26 @@
     <!-- Description -->
     <p class="text-[10px] leading-[1.4] text-zinc-600">{description}</p>
 
-    <!-- Item count -->
-    <p class="mt-auto pt-1.5 font-mono text-[9px] text-zinc-700">{items.length} items</p>
+    {#if searchQuery.trim()}
+      <!-- Pills visible during search -->
+      <div class="mt-2 flex flex-wrap gap-[3px]">
+        {#each items as item}
+          <span
+            class={[
+              'rounded-[3px] px-[5px] py-px font-mono text-[8px]',
+              matchingItems.has(item)
+                ? 'bg-orange-500/15 text-orange-400'
+                : 'bg-white/4 text-zinc-600'
+            ]}
+          >
+            {item}
+          </span>
+        {/each}
+      </div>
+    {:else}
+      <!-- Item count when not searching -->
+      <p class="mt-auto pt-1.5 font-mono text-[9px] text-zinc-700">{items.length} items</p>
+    {/if}
   </div>
 {:else}
   <!-- ── Row variant (sidebar list) ── -->
