@@ -233,7 +233,7 @@ The scatter node outputs a point cloud (topology: `'points'`, with `position` + 
 
 ## Staged Approach
 
-### Stage 1: Texture-Encoded Geometry — Convention Only (no engine work)
+### Stage 1: Texture-Encoded Geometry — Convention Only (no engine work) ✅
 
 Encode geometry as float textures — position, normal, UV maps. **No new wire type, no new API, no engine changes.** This stage is purely a usage convention plus a preset, made possible by primitives already shipped:
 
@@ -249,8 +249,6 @@ Encode geometry as float textures — position, normal, UV maps. **No new wire t
 4. Convention: texture width × height = vertex count, row-major layout
 
 **What it covers**: Point clouds, particle systems, displacement-driven meshes — anything where vertex count maps to pixel count.
-
-**What's left to do for this stage**: ship a `three.particles-from-texture` preset (or similar) demonstrating the pattern, and document the width×height=vertexCount convention. No code in the engine.
 
 **Limitations**: No index buffers (no shared vertices), no topology (triangles must be implicit), texture size limits cap vertex count. These are why Stage 2 exists.
 
