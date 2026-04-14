@@ -15,6 +15,7 @@
   } from '$lib/utils/expr-parser';
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
+  import { removeExcessMessageOutletEdges } from './outlet-edges';
 
   let {
     id: nodeId,
@@ -26,7 +27,7 @@
     selected: boolean;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
 
   let isEditing = $state(!data.expr); // Start in editing mode if no expression
   let expr = $state(data.expr || ''); // Active expression being evaluated
@@ -52,6 +53,11 @@
   });
 
   const outletCount = $derived(parseOutletCount(expr));
+
+  // Remove stale edges when outlet count decreases
+  $effect(() => {
+    removeExcessMessageOutletEdges(nodeId, outletCount, getEdges, deleteElements);
+  });
 
   // Update eval result when expression changes
   $effect(() => {

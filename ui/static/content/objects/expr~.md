@@ -80,6 +80,26 @@ s1 * (abs(s2) > 0.1 ? 1 : 0)  // Gate (s2 gates s1)
 s1 * abs(s2)                // Vocoder-style envelope
 ```
 
+## Multiple Outlets
+
+Each non-assignment expression creates its own audio outlet.
+Separate expressions with semicolons or newlines:
+
+```js
+// 2 outlets: dry and wet
+s * 0.7
+s * 0.3
+```
+
+Use variable assignments to share intermediate values:
+
+```js
+a = s * $1
+a + sin(t * 440 * PI * 2) * 0.1
+a - sin(t * 440 * PI * 2) * 0.1
+// 2 outlets with shared variable
+```
+
 ## Dynamic Control Inlets
 
 Create `$1` to `$9` variables for control inlets. Example: `$1 * 440` creates

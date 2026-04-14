@@ -181,6 +181,7 @@ export function parseMultiOutletExpressions(expression: string): ParsedExpressio
  */
 export function parseOutletCount(expression: string): number {
   if (!expression.trim()) return 1;
+
   return parseMultiOutletExpressions(expression).outletCount;
 }
 
