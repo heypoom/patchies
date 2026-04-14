@@ -34,15 +34,11 @@ export class GifPlayer {
     this.stop();
     this.onFrame = onFrame;
 
-    // Ensure we have a plain ArrayBuffer (not SharedArrayBuffer)
-    const buffer = gifData.buffer.slice(
-      gifData.byteOffset,
-      gifData.byteOffset + gifData.byteLength
-    ) as ArrayBuffer;
+    // Keep an independent copy of raw bytes for fallback (not shared with decoder)
+    const rawCopy = new Uint8Array(gifData);
 
-    // Helper to create blob for fallback
     const createFallbackBitmap = async () => {
-      const blob = new Blob([buffer], { type: 'image/gif' });
+      const blob = new Blob([rawCopy], { type: 'image/gif' });
 
       return createImageBitmap(blob);
     };
@@ -58,23 +54,42 @@ export class GifPlayer {
     let decoder: ImageDecoder | null = null;
 
     try {
+      // Feed data via ReadableStream so Chrome correctly detects all GIF frames
+      // (Chrome reports frameCount=1 with a BufferSource for some GIFs)
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(rawCopy);
+          controller.close();
+        }
+      });
+
       decoder = new ImageDecoder({
-        data: buffer,
+        data: stream,
         type: 'image/gif'
       });
 
       await decoder.completed;
 
-      const frameCount = decoder.tracks.selectedTrack?.frameCount ?? 1;
+      const rawFrameCount = decoder.tracks.selectedTrack?.frameCount ?? 1;
+
+      // Guard against Infinity/NaN
+      const frameCount =
+        !Number.isFinite(rawFrameCount) || rawFrameCount < 1 ? 1 : Math.min(rawFrameCount, 10000);
 
       // Pre-decode all frames
       this.frames = [];
+
       for (let i = 0; i < frameCount; i++) {
         const result = await decoder.decode({ frameIndex: i });
-        const bitmap = await createImageBitmap(result.image);
         const duration = Math.max(10, (result.image.duration ?? 100000) / 1000);
-        result.image.close();
-        this.frames.push({ bitmap, duration });
+
+        try {
+          const bitmap = await createImageBitmap(result.image);
+
+          this.frames.push({ bitmap, duration });
+        } finally {
+          result.image.close();
+        }
       }
 
       // Close decoder - we don't need it anymore
@@ -84,8 +99,10 @@ export class GifPlayer {
       // Start playback loop
       this.isPlaying = true;
       this.playLoop(0);
-    } catch {
-      // Clean up decoder on error
+    } catch (err) {
+      console.warn('[GifPlayer] ImageDecoder failed, falling back to static frame:', err);
+
+      // Clean up decoder and any partially decoded frames
       if (decoder) {
         try {
           decoder.close();
@@ -93,9 +110,20 @@ export class GifPlayer {
           // Ignore
         }
       }
-      // Fallback to static frame
-      const bitmap = await createFallbackBitmap();
-      onFrame(bitmap);
+
+      for (const frame of this.frames) {
+        frame.bitmap.close();
+      }
+
+      this.frames = [];
+
+      // Fallback to static frame (wrapped to prevent unhandled rejection)
+      try {
+        const bitmap = await createFallbackBitmap();
+        onFrame(bitmap);
+      } catch (fallbackErr) {
+        console.warn('[GifPlayer] Fallback also failed:', fallbackErr);
+      }
     }
   }
 
@@ -121,7 +149,10 @@ export class GifPlayer {
 
     // Schedule next frame
     const nextIndex = (frameIndex + 1) % this.frames.length;
-    this.animationId = window.setTimeout(() => this.playLoop(nextIndex), frame?.duration ?? 0);
+
+    this.animationId = window.setTimeout(() => {
+      this.playLoop(nextIndex);
+    }, frame?.duration ?? 0);
   }
 
   /**
@@ -140,6 +171,7 @@ export class GifPlayer {
     for (const frame of this.frames) {
       frame.bitmap.close();
     }
+
     this.frames = [];
   }
 
