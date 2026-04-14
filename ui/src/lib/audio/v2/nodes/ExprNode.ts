@@ -1,6 +1,8 @@
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { logger } from '$lib/utils/logger';
+import { handleToPortIndex } from '$lib/utils/get-edge-types';
+import { parseMultiOutletExpressions } from '$lib/utils/expr-parser';
 import { match, P } from 'ts-pattern';
 import workletUrl from '../../../audio/expression-processor?worker&url';
 
@@ -9,6 +11,11 @@ const MAX_SIGNAL_INLETS = 9;
 /**
  * ExprNode implements the expr~ (expression evaluator) audio node.
  * Evaluates mathematical expressions on audio samples.
+ * Supports multiple outlets via semicolon-separated expressions.
+ *
+ * audioNode IS the AudioWorkletNode — no intermediate gain node.
+ * This ensures AudioService.updateEdges() properly disconnects all
+ * outgoing connections via audioNode.disconnect().
  */
 export class ExprNode implements AudioNodeV2 {
   static type = 'expr~';
@@ -35,20 +42,20 @@ export class ExprNode implements AudioNodeV2 {
     { name: 'out', type: 'signal', description: 'Expression result as audio output' }
   ];
 
-  // Output gain
-  audioNode: GainNode;
+  audioNode: AudioNode | null = null;
 
   readonly nodeId: string;
 
-  private workletNode: AudioWorkletNode | null = null;
   private audioContext: AudioContext;
+  private currentOutletCount: number = 1;
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
     this.audioContext = audioContext;
-    // Create gain node immediately for connections
-    this.audioNode = audioContext.createGain();
-    this.audioNode.gain.value = 1.0;
+  }
+
+  private get port(): MessagePort | undefined {
+    return (this.audioNode as AudioWorkletNode)?.port;
   }
 
   async create(params: unknown[]): Promise<void> {
@@ -56,16 +63,34 @@ export class ExprNode implements AudioNodeV2 {
 
     const [, expression] = params as [unknown, string];
 
-    try {
-      this.workletNode = new AudioWorkletNode(this.audioContext, 'expression-processor', {
-        numberOfInputs: MAX_SIGNAL_INLETS,
-        numberOfOutputs: 1
-      });
-      this.workletNode.connect(this.audioNode);
+    if (expression) {
+      const parsed = parseMultiOutletExpressions(expression);
 
-      if (expression) {
-        this.send('expression', expression);
-      }
+      await this.createWorklet(parsed.outletCount);
+
+      this.port?.postMessage({
+        type: 'set-expressions',
+        assignments: parsed.assignments,
+        outletExpressions: parsed.outletExpressions
+      });
+    } else {
+      await this.createWorklet(1);
+    }
+  }
+
+  private async createWorklet(outletCount: number): Promise<void> {
+    if (this.audioNode) {
+      this.audioNode.disconnect();
+      this.audioNode = null;
+    }
+
+    try {
+      this.audioNode = new AudioWorkletNode(this.audioContext, 'expression-processor', {
+        numberOfInputs: MAX_SIGNAL_INLETS,
+        numberOfOutputs: outletCount
+      });
+
+      this.currentOutletCount = outletCount;
     } catch (error) {
       logger.error('Failed to create expression node:', error);
     }
@@ -74,7 +99,7 @@ export class ExprNode implements AudioNodeV2 {
   async send(key: string, msg: unknown): Promise<void> {
     await this.ensureModule();
 
-    const port = this.workletNode?.port;
+    const port = this.port;
 
     if (!port) {
       logger.warn('cannot send message to expr~ as worklet port is missing', { key, msg, port });
@@ -85,9 +110,59 @@ export class ExprNode implements AudioNodeV2 {
       .with(['expression', P.string], ([, expression]) => {
         port.postMessage({ type: 'set-expression', expression });
       })
+      .with(['expressions', P.select()], (data) => {
+        const { assignments, outletExpressions, outletCount } = data as {
+          assignments: string[];
+          outletExpressions: string[];
+          outletCount: number;
+        };
+
+        // Recreate worklet if outlet count changed
+        if (outletCount !== this.currentOutletCount) {
+          this.createWorklet(outletCount).then(() => {
+            this.port?.postMessage({
+              type: 'set-expressions',
+              assignments,
+              outletExpressions
+            });
+          });
+        } else {
+          port.postMessage({ type: 'set-expressions', assignments, outletExpressions });
+        }
+      })
       .with(['inletValues', P.array(P.number)], ([, values]) => {
         port.postMessage({ type: 'set-inlet-values', values: Array.from(values) });
       });
+  }
+
+  /**
+   * Handle outgoing connections - route from correct worklet output based on source handle.
+   * Handles: audio-out-0, audio-out-1, etc.
+   */
+  connect(
+    target: AudioNodeV2,
+    _paramName?: string,
+    sourceHandle?: string,
+    targetHandle?: string
+  ): void {
+    if (!this.audioNode || !target.audioNode) return;
+
+    const outputIndexRaw = sourceHandle ? handleToPortIndex(sourceHandle) : null;
+    const outputIndex = outputIndexRaw !== null && !isNaN(outputIndexRaw) ? outputIndexRaw : 0;
+
+    // Skip if output index exceeds current outlet count (stale edge from before outlet reduction)
+    if (outputIndex >= this.currentOutletCount) return;
+
+    if (targetHandle) {
+      const inputIndex = handleToPortIndex(targetHandle);
+
+      if (inputIndex !== null && !isNaN(inputIndex)) {
+        this.audioNode.connect(target.audioNode, outputIndex, inputIndex);
+        return;
+      }
+    }
+
+    this.audioNode.connect(target.audioNode, outputIndex, 0);
   }
 
   /**
@@ -102,20 +177,21 @@ export class ExprNode implements AudioNodeV2 {
   ): Promise<void> {
     await this.ensureModule();
 
-    if (!this.workletNode || !source.audioNode) return;
+    if (!this.audioNode || !source.audioNode) return;
 
     // Parse input index from target handle (e.g., "audio-in-2" -> 2)
     let inputIndex = 0;
+
     if (targetHandle) {
       const indexMatch = targetHandle.match(/audio-in-(\d+)/);
+
       if (indexMatch) {
         inputIndex = parseInt(indexMatch[1], 10);
       }
     }
 
     // Connect source to the correct worklet input
-    // connect(destination, outputIndex, inputIndex)
-    source.audioNode.connect(this.workletNode, 0, inputIndex);
+    source.audioNode.connect(this.audioNode, 0, inputIndex);
   }
 
   async ensureModule(): Promise<void> {
@@ -123,8 +199,7 @@ export class ExprNode implements AudioNodeV2 {
   }
 
   destroy(): void {
-    this.workletNode?.disconnect();
-    this.audioNode.disconnect();
+    this.audioNode?.disconnect();
   }
 
   private static moduleReady = false;

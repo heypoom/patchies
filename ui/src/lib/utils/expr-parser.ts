@@ -141,11 +141,12 @@ export function isAssignment(statement: string): boolean {
 
 /**
  * Split an expression string into individual statements.
- * Splits on both semicolons and newlines, trims whitespace, and filters empty strings.
+ * Splits on semicolons only — newlines are preserved within expressions
+ * so multi-line expressions (e.g. ternaries) work correctly.
  */
 function splitStatements(expression: string): string[] {
   return expression
-    .split(/[;\n]/)
+    .split(';')
     .map((s) => s.trim())
     .filter(Boolean);
 }
@@ -181,6 +182,7 @@ export function parseMultiOutletExpressions(expression: string): ParsedExpressio
  */
 export function parseOutletCount(expression: string): number {
   if (!expression.trim()) return 1;
+
   return parseMultiOutletExpressions(expression).outletCount;
 }
 
@@ -208,7 +210,7 @@ export function createMultiOutletEvaluator(expression: string): MultiOutletEvalu
 
   try {
     const fns = exprs.map((outletExpr) => {
-      const fullExpr = prefix + outletExpr;
+      const fullExpr = (prefix + outletExpr).replace(/\n/g, ';');
       const renamedParam = fullExpr.replace(/\$(\d+)/g, 'x$1');
       const parsed = parser.parse(renamedParam);
 

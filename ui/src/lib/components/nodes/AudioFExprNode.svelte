@@ -6,8 +6,13 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match, P } from 'ts-pattern';
   import { AudioService } from '$lib/audio/v2/AudioService';
-  import { parseInletCount, parseFExprSignalInletCount } from '$lib/utils/expr-parser';
+  import {
+    parseInletCount,
+    parseFExprSignalInletCount,
+    parseMultiOutletExpressions
+  } from '$lib/utils/expr-parser';
   import CommonExprLayout from './CommonExprLayout.svelte';
+  import { removeExcessAudioOutletEdges } from './outlet-edges';
 
   let {
     id: nodeId,
@@ -26,7 +31,7 @@
   let audioService = AudioService.getInstance();
   let layoutRef = $state<any>();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
   // Control inlet count ($1, $2, etc.)
@@ -41,6 +46,18 @@
     if (!data.expr.trim()) return 1; // Default to 1 signal inlet
 
     return Math.max(1, parseFExprSignalInletCount(data.expr.trim()));
+  });
+
+  // Outlet count from multi-outlet expressions
+  const outletCount = $derived.by(() => {
+    if (!data.expr.trim()) return 1;
+
+    return parseMultiOutletExpressions(data.expr.trim()).outletCount;
+  });
+
+  // Remove stale edges when outlet count decreases
+  $effect(() => {
+    removeExcessAudioOutletEdges(nodeId, outletCount, getEdges, deleteElements);
   });
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
@@ -73,7 +90,14 @@
   }
 
   function handleRun() {
-    updateAudioExpression(data.expr);
+    const parsed = parseMultiOutletExpressions(data.expr || '');
+
+    // Send multi-outlet expressions to audio node (triggers worklet recreation if outlet count changed)
+    audioService.send(nodeId, 'expressions', {
+      assignments: parsed.assignments,
+      outletExpressions: parsed.outletExpressions,
+      outletCount: parsed.outletCount
+    });
 
     // Update control inlet count when expression changes
     const newControlInletCount = parseInletCount(data.expr || '');
@@ -89,7 +113,7 @@
       updateAudioInletValues(inletValues);
     }
 
-    // Notify xyflow about handle changes (signal inlets may have changed)
+    // Notify xyflow about handle changes (signal inlets or outlets may have changed)
     updateNodeInternals(nodeId);
   }
 
@@ -150,15 +174,16 @@
 {/snippet}
 
 {#snippet audioOutlets()}
-  <!-- Audio output -->
-  <TypedHandle
-    port="outlet"
-    spec={{ handleType: 'audio' }}
-    title="Audio Output"
-    total={1}
-    index={0}
-    {nodeId}
-  />
+  {#each Array.from({ length: outletCount }) as _, index}
+    <TypedHandle
+      port="outlet"
+      spec={{ handleType: 'audio', handleId: index }}
+      title={outletCount > 1 ? `Out ${index + 1}` : 'Audio Output'}
+      total={outletCount}
+      {index}
+      {nodeId}
+    />
+  {/each}
 {/snippet}
 
 <CommonExprLayout

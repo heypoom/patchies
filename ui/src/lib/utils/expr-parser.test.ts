@@ -41,15 +41,15 @@ describe('parseMultiOutletExpressions', () => {
     expect(result.outletExpressions).toEqual(['$1 + 1', '$1 * 2']);
   });
 
-  it('newline-separated expressions = multiple outlets', () => {
-    const result = parseMultiOutletExpressions('$1 + 1\n$1 * 2');
+  it('newline-only expressions stay as single outlet (newlines are not separators)', () => {
+    const result = parseMultiOutletExpressions('$1 > 20\n  ? "ok"\n  : "no"');
 
-    expect(result.outletCount).toBe(2);
-    expect(result.outletExpressions).toEqual(['$1 + 1', '$1 * 2']);
+    expect(result.outletCount).toBe(1);
+    expect(result.outletExpressions).toHaveLength(1);
   });
 
   it('assignments do not create outlets', () => {
-    const result = parseMultiOutletExpressions('a = $1 * 2\nb = $2 + 3\na + b');
+    const result = parseMultiOutletExpressions('a = $1 * 2; b = $2 + 3; a + b');
 
     expect(result.outletCount).toBe(1);
     expect(result.assignments).toEqual(['a = $1 * 2', 'b = $2 + 3']);

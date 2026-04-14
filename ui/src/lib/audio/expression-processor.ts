@@ -5,6 +5,12 @@ interface ExpressionMessage {
   expression: string;
 }
 
+interface MultiExpressionMessage {
+  type: 'set-expressions';
+  assignments: string[];
+  outletExpressions: string[];
+}
+
 interface InletValuesMessage {
   type: 'set-inlet-values';
   values: number[];
@@ -47,7 +53,7 @@ type ExprDspFn = (
 ) => number;
 
 class ExpressionProcessor extends AudioWorkletProcessor {
-  private evaluator: ExprDspFn | null = null;
+  private evaluators: ExprDspFn[] = [];
   private inletValues: number[] = new Array(10).fill(0);
 
   // Phasor state: up to 10 independent phasors per expression
@@ -65,9 +71,14 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
   constructor() {
     super();
-    this.port.onmessage = (event: MessageEvent<ExpressionMessage | InletValuesMessage>) => {
+
+    this.port.onmessage = (
+      event: MessageEvent<ExpressionMessage | MultiExpressionMessage | InletValuesMessage>
+    ) => {
       if (event.data.type === 'set-expression') {
         this.setExpression(event.data.expression);
+      } else if (event.data.type === 'set-expressions') {
+        this.setExpressions(event.data.assignments, event.data.outletExpressions);
       } else if (event.data.type === 'set-inlet-values') {
         this.setInletValues(event.data.values);
       }
@@ -118,17 +129,7 @@ class ExpressionProcessor extends AudioWorkletProcessor {
     return this.phasorPhases[idx];
   };
 
-  private setExpression(expressionString: string): void {
-    if (!expressionString || expressionString.trim() === '') {
-      this.evaluator = null;
-      return;
-    }
-
-    // Reset phasor state when expression changes
-    this.phasorPhases.fill(0);
-    this.phasorTriggerPrev.fill(0);
-    this.phasorIndex = 0;
-
+  private createParser(): Parser {
     const parser = new Parser({
       operators: {
         add: true,
@@ -147,43 +148,93 @@ class ExpressionProcessor extends AudioWorkletProcessor {
       }
     });
 
-    // Add phasor as a custom function
     parser.functions.phasor = this.phasor;
 
-    try {
-      // Replace $1, $2, etc. with x1, x2, etc. for expr-eval compatibility
-      const renamedExpression = expressionString.replace(/\$(\d+)/g, 'x$1');
+    return parser;
+  }
 
+  // Parameter names shared by all evaluators
+  private static parameterNames = [
+    // Signal inputs s1-s9 (1-indexed)
+    ...Array.from({ length: 9 }, (_, i) => `s${i + 1}`),
+
+    // Backwards compat: `s` is alias for s1
+    's',
+
+    // Other parameters
+    'i',
+    't',
+    'channel',
+    'bufferSize',
+    'samples',
+    'input',
+    'inputs',
+
+    // Inlet values x1-x9
+    ...Array.from({ length: 9 }, (_, i) => `x${i + 1}`)
+  ];
+
+  private compileExpression(expressionString: string): ExprDspFn | null {
+    try {
+      // Normalize newlines to spaces so multi-line expressions (e.g. ternaries) work
+      const renamedExpression = expressionString.replace(/\n/g, ' ').replace(/\$(\d+)/g, 'x$1');
+      const parser = this.createParser();
       const expr = parser.parse(renamedExpression);
 
-      // Create parameter names:
-      // s1-s9 (samples from each audio input, 1-indexed to match $1-$9), s (backwards compat alias for s1),
-      // i (sample index), t (time in seconds), channel, bufferSize,
-      // samples (current channel samples), input (first input), inputs (all inputs), x1-x9 (inlet values)
-      const parameterNames = [
-        // Signal inputs s1-s9 (1-indexed)
-        ...Array.from({ length: 9 }, (_, i) => `s${i + 1}`),
-
-        // Backwards compat: `s` is alias for s1
-        's',
-
-        // Other parameters
-        'i',
-        't',
-        'channel',
-        'bufferSize',
-        'samples',
-        'input',
-        'inputs',
-
-        // Inlet values x1-x9
-        ...Array.from({ length: 9 }, (_, i) => `x${i + 1}`)
-      ];
-
-      this.evaluator = expr.toJSFunction(parameterNames.join(',')) as ExprDspFn;
+      return expr.toJSFunction(ExpressionProcessor.parameterNames.join(',')) as ExprDspFn;
     } catch (error) {
       console.error('Failed to compile expression:', error);
+      return null;
     }
+  }
+
+  private resetPhasorState(): void {
+    this.phasorPhases.fill(0);
+    this.phasorTriggerPrev.fill(0);
+    this.phasorIndex = 0;
+  }
+
+  /**
+   * Set a single expression (backwards compat, single outlet).
+   * Newlines are converted to semicolons so expr-eval treats them
+   * as sequential statements (evaluates all, returns last value).
+   */
+  private setExpression(expressionString: string): void {
+    if (!expressionString || expressionString.trim() === '') {
+      this.evaluators = [];
+      return;
+    }
+
+    this.resetPhasorState();
+
+    const normalized = expressionString.replace(/\n/g, ';');
+    const fn = this.compileExpression(normalized);
+
+    this.evaluators = fn ? [fn] : [];
+  }
+
+  /**
+   * Set multiple outlet expressions with shared assignments.
+   */
+  private setExpressions(assignments: string[], outletExpressions: string[]): void {
+    this.resetPhasorState();
+
+    const prefix = assignments.length > 0 ? assignments.join(';') + ';' : '';
+    const fns: ExprDspFn[] = [];
+
+    for (const outletExpr of outletExpressions) {
+      const fn = this.compileExpression(prefix + outletExpr);
+
+      if (fn) {
+        fns.push(fn);
+      } else {
+        // If any expression fails, clear all
+        this.evaluators = [];
+        return;
+      }
+    }
+
+    this.evaluators = fns;
   }
 
   private setInletValues(values: number[]): void {
@@ -194,15 +245,14 @@ class ExpressionProcessor extends AudioWorkletProcessor {
   }
 
   process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
-    const input = inputs[0] || [];
-    const output = outputs[0] || [];
-
-    // Keep the expression node alive even without evaluator
-    if (!this.evaluator) {
-      // Pass through silence if no evaluator
-      for (let channel = 0; channel < output.length; channel++) {
-        if (output[channel]) {
-          output[channel].fill(0);
+    // Keep the expression node alive even without evaluators
+    if (this.evaluators.length === 0) {
+      // Pass through silence on all outputs
+      for (const output of outputs) {
+        for (let channel = 0; channel < output.length; channel++) {
+          if (output[channel]) {
+            output[channel].fill(0);
+          }
         }
       }
 
@@ -210,10 +260,11 @@ class ExpressionProcessor extends AudioWorkletProcessor {
     }
 
     try {
+      const input = inputs[0] || [];
       const bufferSize = input[0] ? input[0].length : 128;
 
       // Always process at least one channel, even without input
-      const channelCount = Math.max(output.length, 1);
+      const channelCount = Math.max(outputs[0]?.length ?? 0, 1);
 
       // Pre-allocate silent buffer once (reused for missing channels)
       if (!this.silentBuffer || this.silentBuffer.length !== bufferSize) {
@@ -222,23 +273,22 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
       // Snapshot inlet values once per process() call (not per sample)
       const args = this.inletArgs;
+
       for (let k = 0; k < 9; k++) {
         args[k] = this.inletValues[k];
       }
 
       // Sample-first loop so phasor state is consistent across channels
       for (let i = 0; i < bufferSize; i++) {
-        // Reset phasor index at start of each sample
+        // Reset phasor index at start of each sample (shared across all evaluators)
         this.phasorIndex = 0;
 
         const t = (currentFrame + i) / sampleRate;
 
         for (let channel = 0; channel < channelCount; channel++) {
           const samples = input[channel] || this.silentBuffer;
-          const outs = output[channel] || this.silentBuffer;
 
           // Extract sample from each input (s1-s9, 1-indexed)
-          // inputs[n][channel][i] = sample i from channel of input n
           const s1 = inputs[0]?.[channel]?.[i] ?? 0;
           const s2 = inputs[1]?.[channel]?.[i] ?? 0;
           const s3 = inputs[2]?.[channel]?.[i] ?? 0;
@@ -249,45 +299,44 @@ class ExpressionProcessor extends AudioWorkletProcessor {
           const s8 = inputs[7]?.[channel]?.[i] ?? 0;
           const s9 = inputs[8]?.[channel]?.[i] ?? 0;
 
-          try {
-            // Call evaluator with: s1-s9, s (alias for s1), i, t, channel, bufferSize, samples, input, inputs, x1-x9
-            const result = this.evaluator(
-              s1,
-              s2,
-              s3,
-              s4,
-              s5,
-              s6,
-              s7,
-              s8,
-              s9, // samples from each input (1-indexed)
-              s1, // backwards compat: `s` = s1
-              i, // sample index in buffer
-              t, // current time in seconds
-              channel, // current channel number
-              bufferSize, // buffer size
-              samples, // current channel samples array
-              input, // first input (all channels)
-              inputs, // all inputs
-              args[0],
-              args[1],
-              args[2],
-              args[3],
-              args[4],
-              args[5],
-              args[6],
-              args[7],
-              args[8]
-            );
+          // Evaluate each outlet expression and write to corresponding output
+          for (let outIdx = 0; outIdx < this.evaluators.length; outIdx++) {
+            const outs = outputs[outIdx]?.[channel] || this.silentBuffer;
 
-            if (typeof result !== 'number' || isNaN(result)) {
+            try {
+              const result = this.evaluators[outIdx](
+                s1,
+                s2,
+                s3,
+                s4,
+                s5,
+                s6,
+                s7,
+                s8,
+                s9,
+                s1, // backwards compat: `s` = s1
+                i,
+                t,
+                channel,
+                bufferSize,
+                samples,
+                input,
+                inputs,
+                args[0],
+                args[1],
+                args[2],
+                args[3],
+                args[4],
+                args[5],
+                args[6],
+                args[7],
+                args[8]
+              );
+
+              outs[i] = typeof result === 'number' && !isNaN(result) ? result : 0;
+            } catch {
               outs[i] = 0;
-              continue;
             }
-
-            outs[i] = result;
-          } catch {
-            outs[i] = 0;
           }
         }
       }

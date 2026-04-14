@@ -37,32 +37,29 @@ $1[5]
 ## Multiple Outlets
 
 Each non-assignment expression creates its own outlet. Separate expressions with
-semicolons or newlines:
+semicolons:
 
 ```js
 // 2 outlets: sum and product
-$1 + $2;
-$1 * $2
+$1 + $2; $1 * $2
 ```
 
 Use variable assignments to share intermediate values without creating extra
 outlets:
 
 ```js
-a = $1 * 2
-a + 1
-a - 1
-a * 3
 // 3 outlets, variable `a` is shared
+a = $1 * 2; a + 1; a - 1; a * 3
 ```
 
 ## Multi-line Expressions
 
-Create variables using `;` or newlines to separate statements:
+Use newlines for readability — they are treated as whitespace within a single
+expression. Use `;` to separate statements:
 
 ```js
-a = $1 * 2
-b = $2 + 3
+a = $1 * 2;
+b = $2 + 3;
 a + b
 ```
 
