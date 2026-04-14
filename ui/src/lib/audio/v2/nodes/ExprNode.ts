@@ -2,6 +2,7 @@ import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 import { logger } from '$lib/utils/logger';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
+import { parseMultiOutletExpressions } from '$lib/utils/expr-parser';
 import { match, P } from 'ts-pattern';
 import workletUrl from '../../../audio/expression-processor?worker&url';
 
@@ -59,10 +60,18 @@ export class ExprNode implements AudioNodeV2 {
 
     const [, expression] = params as [unknown, string];
 
-    await this.createWorklet(1);
-
     if (expression) {
-      this.send('expression', expression);
+      const parsed = parseMultiOutletExpressions(expression);
+
+      await this.createWorklet(parsed.outletCount);
+
+      this.workletNode?.port.postMessage({
+        type: 'set-expressions',
+        assignments: parsed.assignments,
+        outletExpressions: parsed.outletExpressions
+      });
+    } else {
+      await this.createWorklet(1);
     }
   }
 
