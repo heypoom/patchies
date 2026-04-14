@@ -177,10 +177,7 @@
   {#each Array.from({ length: outletCount }) as _, index}
     <TypedHandle
       port="outlet"
-      spec={{
-        handleType: 'audio',
-        handleId: outletCount === 1 && index === 0 ? undefined : index
-      }}
+      spec={{ handleType: 'audio', handleId: index }}
       title={outletCount > 1 ? `Out ${index + 1}` : 'Audio Output'}
       total={outletCount}
       {index}
