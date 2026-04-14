@@ -297,6 +297,7 @@ export type RenderWorkerMessage =
   | { type: 'subscribeChannel'; nodeId: string; channel: string }
   | { type: 'unsubscribeChannel'; nodeId: string; channel: string }
   | { type: 'settingsDefine'; nodeId: string; requestId: string; schema: unknown[] }
+  | { type: 'settingsSet'; nodeId: string; key: string; value: unknown }
   | { type: 'settingsClear'; nodeId: string }
   | { type: 'includeProcessing'; nodeId: string; active: boolean }
   | { type: 'setTextureFormat'; nodeId: string; format: FBOFormat }

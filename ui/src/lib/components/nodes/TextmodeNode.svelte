@@ -28,7 +28,7 @@
   import { logger } from '$lib/utils/logger';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import { SettingsManager } from '$lib/settings';
+  import { SettingsManager, createWorkerSettingsCallbacks } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
 
@@ -194,21 +194,12 @@
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 
     // Register settings callbacks — bridging worker settings.define() to main-thread SettingsManager
-    glSystem.registerSettingsCallbacks(nodeId, {
-      onDefine: (requestId, schema) => {
-        settingsManager
-          .define(schema as SettingsSchema)
-          .then(() => {
-            glSystem.sendSettingsValues(nodeId, requestId, settingsManager.getAll());
-          })
-          .catch((err) => {
-            logger.error(`[textmode] settings define error:`, err);
-          });
-      },
-      onClear: () => {
-        settingsManager.clear();
-      }
-    });
+    glSystem.registerSettingsCallbacks(
+      nodeId,
+      createWorkerSettingsCallbacks(settingsManager, (requestId, values) =>
+        glSystem.sendSettingsValues(nodeId, requestId, values)
+      )
+    );
 
     glSystem.upsertNode(nodeId, 'textmode', { code: data.code });
 
@@ -220,11 +211,13 @@
 
   onDestroy(() => {
     const glEventBus = glSystem?.eventBus;
+
     if (glEventBus) {
       glEventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
       glEventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
       glEventBus.removeEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
       glEventBus.removeEventListener('nodeInteractionUpdate', handleInteractionUpdate);
+
       glEventBus.removeEventListener(
         'nodeVideoOutputEnabledUpdate',
         handleVideoOutputEnabledUpdate

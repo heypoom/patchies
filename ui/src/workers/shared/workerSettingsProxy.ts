@@ -7,6 +7,7 @@ export interface WorkerSettingsProxy {
     define(schema: SettingsSchema): Promise<void>;
     get(key: string): unknown;
     getAll(): Record<string, unknown>;
+    set(key: string, value: unknown): void;
     onChange(callback: ChangeCallback): void;
     clear(): void;
   };
@@ -62,6 +63,11 @@ export function createWorkerSettingsProxy(
 
     getAll(): Record<string, unknown> {
       return { ...cachedValues };
+    },
+
+    set(key: string, value: unknown): void {
+      cachedValues[key] = value;
+      postMessage({ type: 'settingsSet', nodeId, key, value });
     },
 
     onChange(callback: ChangeCallback): void {

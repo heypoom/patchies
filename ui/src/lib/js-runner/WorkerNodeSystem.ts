@@ -98,6 +98,7 @@ export type WorkerResponse = { nodeId: string } & (
   | { type: 'unsubscribeChannel'; channel: string }
   // Settings API requests (worker → main)
   | { type: 'settingsDefine'; requestId: string; schema: unknown[] }
+  | { type: 'settingsSet'; key: string; value: unknown }
   | { type: 'settingsClear' }
   // SuperSonic OscChannel request (worker → main)
   | { type: 'requestSuperSonicChannel'; requestId: string }
@@ -110,6 +111,7 @@ interface WorkerInstance {
 
 export interface WorkerSettingsCallbacks {
   onDefine: (requestId: string, schema: unknown[]) => void;
+  onSet: (key: string, value: unknown) => void;
   onClear: () => void;
 }
 
@@ -330,6 +332,11 @@ export class WorkerNodeSystem {
         const callback = this.settingsCallbacks.get(nodeId);
 
         callback?.onDefine(event.requestId, event.schema);
+      })
+      .with({ type: 'settingsSet' }, (event) => {
+        const callback = this.settingsCallbacks.get(nodeId);
+
+        callback?.onSet(event.key, event.value);
       })
       .with({ type: 'settingsClear' }, () => {
         const callback = this.settingsCallbacks.get(nodeId);

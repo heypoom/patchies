@@ -20,7 +20,7 @@
   } from '$lib/eventbus/events';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import { SettingsManager } from '$lib/settings';
+  import { SettingsManager, createWorkerSettingsCallbacks } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
 
@@ -191,16 +191,12 @@
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 
     // Register settings callbacks — bridging worker settings.define() to main-thread SettingsManager
-    glSystem.registerSettingsCallbacks(nodeId, {
-      onDefine: async (requestId, schema) => {
-        await settingsManager.define(schema as SettingsSchema);
-
-        glSystem.sendSettingsValues(nodeId, requestId, settingsManager.getAll());
-      },
-      onClear: () => {
-        settingsManager.clear();
-      }
-    });
+    glSystem.registerSettingsCallbacks(
+      nodeId,
+      createWorkerSettingsCallbacks(settingsManager, (requestId, values) =>
+        glSystem.sendSettingsValues(nodeId, requestId, values)
+      )
+    );
 
     glSystem.upsertNode(nodeId, 'hydra', {
       code,

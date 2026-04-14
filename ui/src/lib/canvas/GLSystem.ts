@@ -109,6 +109,7 @@ export class GLSystem {
     string,
     {
       onDefine: (requestId: string, schema: unknown[], nodeId: string) => void;
+      onSet?: (key: string, value: unknown, nodeId: string) => void;
       onClear: (nodeId: string) => void;
     }
   >();
@@ -521,6 +522,10 @@ export class GLSystem {
         const callbacks = this.settingsCallbacks.get(data.nodeId);
         callbacks?.onDefine(data.requestId, data.schema as unknown[], data.nodeId);
       })
+      .with({ type: 'settingsSet' }, (data) => {
+        const callbacks = this.settingsCallbacks.get(data.nodeId);
+        callbacks?.onSet?.(data.key, data.value, data.nodeId);
+      })
       .with({ type: 'settingsClear' }, (data) => {
         const callbacks = this.settingsCallbacks.get(data.nodeId);
         callbacks?.onClear(data.nodeId);
@@ -594,6 +599,7 @@ export class GLSystem {
     nodeId: string,
     callbacks: {
       onDefine: (requestId: string, schema: unknown[], nodeId: string) => void;
+      onSet?: (key: string, value: unknown, nodeId: string) => void;
       onClear: (nodeId: string) => void;
     }
   ) {

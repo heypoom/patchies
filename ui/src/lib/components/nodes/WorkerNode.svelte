@@ -11,7 +11,7 @@
   } from '$lib/eventbus/events';
   import { match } from 'ts-pattern';
   import CodeBlockBase from './CodeBlockBase.svelte';
-  import { SettingsManager } from '$lib/settings';
+  import { SettingsManager, createWorkerSettingsCallbacks } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
@@ -119,16 +119,12 @@
     await workerSystem.create(nodeId);
 
     // Register settings callbacks — bridging worker settings.define() to main-thread SettingsManager
-    workerSystem.registerSettingsCallbacks(nodeId, {
-      onDefine: async (requestId, schema) => {
-        await settingsManager.define(schema as SettingsSchema);
-
-        workerSystem.sendSettingsValues(nodeId, requestId, settingsManager.getAll());
-      },
-      onClear: () => {
-        settingsManager.clear();
-      }
-    });
+    workerSystem.registerSettingsCallbacks(
+      nodeId,
+      createWorkerSettingsCallbacks(settingsManager, (requestId, values) =>
+        workerSystem.sendSettingsValues(nodeId, requestId, values)
+      )
+    );
 
     // Listen for EventBus events from the worker
     eventBus.addEventListener('nodePortCountUpdate', handlePortCountUpdate);
