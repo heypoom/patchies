@@ -209,6 +209,7 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
     const normalized = expressionString.replace(/\n/g, ';');
     const fn = this.compileExpression(normalized);
+
     this.evaluators = fn ? [fn] : [];
   }
 

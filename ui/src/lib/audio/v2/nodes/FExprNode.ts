@@ -13,6 +13,10 @@ const MAX_SIGNAL_INLETS = 9;
  * Evaluates mathematical expressions sample-by-sample with access to
  * previous input and output samples for building FIR/IIR filters.
  * Supports multiple outlets via semicolon-separated expressions.
+ *
+ * audioNode IS the AudioWorkletNode — no intermediate gain node.
+ * This ensures AudioService.updateEdges() properly disconnects all
+ * outgoing connections via audioNode.disconnect().
  */
 export class FExprNode implements AudioNodeV2 {
   static type = 'fexpr~';
@@ -32,21 +36,20 @@ export class FExprNode implements AudioNodeV2 {
     { name: 'out', type: 'signal', description: 'Expression result as audio output' }
   ];
 
-  // Output gain
-  audioNode: GainNode;
+  audioNode: AudioNode | null = null;
 
   readonly nodeId: string;
 
-  private workletNode: AudioWorkletNode | null = null;
   private audioContext: AudioContext;
   private currentOutletCount: number = 1;
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
     this.audioContext = audioContext;
-    // Create gain node immediately for connections
-    this.audioNode = audioContext.createGain();
-    this.audioNode.gain.value = 1.0;
+  }
+
+  private get port(): MessagePort | undefined {
+    return (this.audioNode as AudioWorkletNode)?.port;
   }
 
   async create(params: unknown[]): Promise<void> {
@@ -59,7 +62,7 @@ export class FExprNode implements AudioNodeV2 {
 
       await this.createWorklet(parsed.outletCount);
 
-      this.workletNode?.port.postMessage({
+      this.port?.postMessage({
         type: 'set-expressions',
         assignments: parsed.assignments,
         outletExpressions: parsed.outletExpressions
@@ -70,18 +73,17 @@ export class FExprNode implements AudioNodeV2 {
   }
 
   private async createWorklet(outletCount: number): Promise<void> {
-    if (this.workletNode) {
-      this.workletNode.disconnect();
-      this.workletNode = null;
+    if (this.audioNode) {
+      this.audioNode.disconnect();
+      this.audioNode = null;
     }
 
     try {
-      this.workletNode = new AudioWorkletNode(this.audioContext, 'fexpr-processor', {
+      this.audioNode = new AudioWorkletNode(this.audioContext, 'fexpr-processor', {
         numberOfInputs: MAX_SIGNAL_INLETS,
         numberOfOutputs: outletCount
       });
 
-      this.workletNode.connect(this.audioNode, 0);
       this.currentOutletCount = outletCount;
     } catch (error) {
       logger.error('Failed to create fexpr~ node:', error);
@@ -91,7 +93,7 @@ export class FExprNode implements AudioNodeV2 {
   async send(key: string, msg: unknown): Promise<void> {
     await this.ensureModule();
 
-    const port = this.workletNode?.port;
+    const port = this.port;
 
     if (!port) {
       logger.warn('cannot send message to fexpr~ as worklet port is missing', { key, msg, port });
@@ -111,7 +113,7 @@ export class FExprNode implements AudioNodeV2 {
 
         if (outletCount !== this.currentOutletCount) {
           this.createWorklet(outletCount).then(() => {
-            this.workletNode?.port.postMessage({
+            this.port?.postMessage({
               type: 'set-expressions',
               assignments,
               outletExpressions
@@ -135,7 +137,7 @@ export class FExprNode implements AudioNodeV2 {
     sourceHandle?: string,
     targetHandle?: string
   ): void {
-    if (!this.workletNode || !target.audioNode) return;
+    if (!this.audioNode || !target.audioNode) return;
 
     const outputIndexRaw = sourceHandle ? handleToPortIndex(sourceHandle) : null;
     const outputIndex = outputIndexRaw !== null && !isNaN(outputIndexRaw) ? outputIndexRaw : 0;
@@ -147,12 +149,12 @@ export class FExprNode implements AudioNodeV2 {
       const inputIndex = handleToPortIndex(targetHandle);
 
       if (inputIndex !== null && !isNaN(inputIndex)) {
-        this.workletNode.connect(target.audioNode, outputIndex, inputIndex);
+        this.audioNode.connect(target.audioNode, outputIndex, inputIndex);
         return;
       }
     }
 
-    this.workletNode.connect(target.audioNode, outputIndex, 0);
+    this.audioNode.connect(target.audioNode, outputIndex, 0);
   }
 
   /**
@@ -166,7 +168,7 @@ export class FExprNode implements AudioNodeV2 {
   ): Promise<void> {
     await this.ensureModule();
 
-    if (!this.workletNode || !source.audioNode) return;
+    if (!this.audioNode || !source.audioNode) return;
 
     let inputIndex = 0;
 
@@ -178,7 +180,7 @@ export class FExprNode implements AudioNodeV2 {
       }
     }
 
-    source.audioNode.connect(this.workletNode, 0, inputIndex);
+    source.audioNode.connect(this.audioNode, 0, inputIndex);
   }
 
   async ensureModule(): Promise<void> {
@@ -186,8 +188,7 @@ export class FExprNode implements AudioNodeV2 {
   }
 
   destroy(): void {
-    this.workletNode?.disconnect();
-    this.audioNode.disconnect();
+    this.audioNode?.disconnect();
   }
 
   private static moduleReady = false;
