@@ -177,6 +177,10 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
   async updateCode() {
     if (!this.hydra) return;
 
+    // Save state so we can restore on error (freeze frame instead of blackout)
+    const prevSourceToParamIndexMap = [...this.sourceToParamIndexMap];
+    const prevMouseScope = this.mouseScope;
+
     this.sourceToParamIndexMap = [null, null, null, null];
 
     this.resetState();
@@ -216,9 +220,6 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
 
       const { sources, outputs, hush, render } = this.hydra;
 
-      // Clear any existing patterns
-      this.stop();
-
       // Apply Hydra-specific code transformation (.out() -> .out(o0))
       const hydraCode = processCode(this.config.code);
 
@@ -250,8 +251,16 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
         setMouseScope: this.setMouseScope.bind(this)
       };
 
+      // Don't call this.stop() / hush() before executing new code.
+      // If the new code succeeds, its .out() calls replace the old draw functions.
+      // If it fails, the old draw functions stay intact = freeze frame on error,
+      // instead of blacking/whiting out during live performance.
       await this.executeUserCode(hydraCode, extraContext);
     } catch (error) {
+      // Restore previous state so the last good frame keeps rendering (freeze frame)
+      this.sourceToParamIndexMap = prevSourceToParamIndexMap;
+      this.mouseScope = prevMouseScope;
+
       this.handleCodeError(error, HYDRA_WRAPPER_OFFSET);
     }
   }

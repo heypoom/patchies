@@ -711,13 +711,39 @@ export class FBORenderer {
   ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
     if (node.type !== 'hydra') return null;
 
-    // Get synth time from old renderer (still alive since we skip cleanup for Hydra)
-    const oldRenderer = this.hydraByNode.get(node.id);
-    const previousSynthTime = oldRenderer?.hydra?.synth.time;
+    const existingRenderer = this.hydraByNode.get(node.id);
 
-    // Queue old renderer for deferred cleanup (runs on timer, not every frame)
-    if (oldRenderer) {
-      this.pendingHydraCleanup.push(oldRenderer);
+    // Reuse existing renderer when only code changed (preserves last frame on error).
+    // Must recreate if video port counts changed since Hydra needs new sources/outputs.
+    const canReuse =
+      existingRenderer?.hydra &&
+      existingRenderer.config.videoInletCount === (node.data.videoInletCount ?? 1) &&
+      existingRenderer.config.videoOutletCount === (node.data.videoOutletCount ?? 1);
+
+    if (canReuse) {
+      existingRenderer.framebuffer = framebuffer;
+
+      if (existingRenderer.config.code !== node.data.code) {
+        existingRenderer.config.code = node.data.code;
+
+        await existingRenderer.updateCode();
+      }
+
+      return {
+        render: existingRenderer.renderFrame.bind(existingRenderer),
+        cleanup: () => {
+          existingRenderer.destroy();
+          this.hydraByNode.delete(node.id);
+        }
+      };
+    }
+
+    // Full recreation needed (first run or video port count changed)
+    const previousSynthTime = existingRenderer?.hydra?.synth.time;
+
+    // Queue old renderer for deferred cleanup
+    if (existingRenderer) {
+      this.pendingHydraCleanup.push(existingRenderer);
       this.scheduleHydraCleanup();
     }
 

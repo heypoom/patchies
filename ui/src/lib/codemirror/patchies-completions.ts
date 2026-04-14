@@ -36,7 +36,7 @@ const patchiesAPICompletions: Completion[] = [
     type: 'function',
     detail: '(inlets: number, outlets: number) => void',
     info: 'Set the number of message inlets and outlets for this node',
-    apply: 'setPortCount(0, 1)'
+    apply: 'setPortCount(1, 0)'
   },
   {
     label: 'setAudioPortCount',
