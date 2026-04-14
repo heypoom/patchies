@@ -284,8 +284,11 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
 
   setVideoCount(inletCount = 1, outletCount = 1) {
     // cap to WebGL2's guaranteed MAX_COLOR_ATTACHMENTS / MAX_DRAW_BUFFERS
-    inletCount = Math.min(inletCount, 8);
-    outletCount = Math.min(outletCount, 8);
+    inletCount = Math.max(0, Math.min(inletCount, 8));
+
+    // There MUST always be at least 1 video outlet for output,
+    // otherwise Hydra crashes!!!
+    outletCount = Math.max(1, Math.min(outletCount, 8));
 
     self.postMessage({
       type: 'setPortCount',
@@ -296,6 +299,7 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
     });
 
     this.sourceToParamIndexMap = [null, null, null, null];
+
     for (let i = 0; i < inletCount; i++) {
       this.sourceToParamIndexMap[i] = i;
     }
