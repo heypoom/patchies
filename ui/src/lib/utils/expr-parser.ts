@@ -114,3 +114,111 @@ export function createExpressionEvaluator(expression: string): ExpressionEvaluat
     return { success: false, error: message };
   }
 }
+
+// --- Multi-outlet support ---
+
+export interface ParsedExpressions {
+  /** All statements in order, including assignments */
+  statements: string[];
+
+  /** Assignment statements (variable declarations) */
+  assignments: string[];
+
+  /** Non-assignment expressions that create outlets, in order */
+  outletExpressions: string[];
+
+  /** Number of outlets (= outletExpressions.length, minimum 1) */
+  outletCount: number;
+}
+
+/**
+ * Check if a statement is a variable assignment (e.g. `a = $1 * 2`).
+ * Excludes comparisons: ==, !=, <=, >=, =>
+ */
+export function isAssignment(statement: string): boolean {
+  return /^[a-zA-Z_]\w*\s*=[^=]/.test(statement.trim());
+}
+
+/**
+ * Split an expression string into individual statements.
+ * Splits on both semicolons and newlines, trims whitespace, and filters empty strings.
+ */
+function splitStatements(expression: string): string[] {
+  return expression
+    .split(/[;\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Parse a multi-outlet expression into assignments and outlet expressions.
+ * Statements with `=` (not ==, !=, <=, >=) are variable assignments.
+ * Everything else creates an outlet.
+ */
+export function parseMultiOutletExpressions(expression: string): ParsedExpressions {
+  const statements = splitStatements(expression);
+  const assignments: string[] = [];
+  const outletExpressions: string[] = [];
+
+  for (const stmt of statements) {
+    if (isAssignment(stmt)) {
+      assignments.push(stmt);
+    } else {
+      outletExpressions.push(stmt);
+    }
+  }
+
+  return {
+    statements,
+    assignments,
+    outletExpressions,
+    outletCount: Math.max(1, outletExpressions.length)
+  };
+}
+
+/**
+ * Count the number of outlets an expression produces.
+ */
+export function parseOutletCount(expression: string): number {
+  if (!expression.trim()) return 1;
+  return parseMultiOutletExpressions(expression).outletCount;
+}
+
+export type MultiOutletEvaluatorResult =
+  | { success: true; fns: Array<(...args: unknown[]) => unknown>; outletCount: number }
+  | { success: false; error: string };
+
+/**
+ * Create multiple evaluation functions — one per outlet expression.
+ * Assignments are prepended to each outlet expression so variables are in scope.
+ */
+export function createMultiOutletEvaluator(expression: string): MultiOutletEvaluatorResult {
+  if (!expression.trim()) {
+    return { success: true, fns: [() => 0], outletCount: 1 };
+  }
+
+  const { assignments, outletExpressions, outletCount } = parseMultiOutletExpressions(expression);
+
+  // If no outlet expressions (all assignments), treat last assignment as expression
+  const exprs =
+    outletExpressions.length > 0 ? outletExpressions : [assignments.pop() ?? '0'].filter(Boolean);
+
+  const parameterNames = [...Array(9)].map((_, i) => `x${i + 1}`);
+  const prefix = assignments.length > 0 ? assignments.join(';') + ';' : '';
+
+  try {
+    const fns = exprs.map((outletExpr) => {
+      const fullExpr = prefix + outletExpr;
+      const renamedParam = fullExpr.replace(/\$(\d+)/g, 'x$1');
+      const parsed = parser.parse(renamedParam);
+
+      return parsed.toJSFunction(parameterNames.join(',')) as (...args: unknown[]) => unknown;
+    });
+
+    return { success: true, fns, outletCount };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    return { success: false, error: message };
+  }
+}

@@ -9,8 +9,9 @@
   import { messages } from '$lib/objects/schemas';
   import {
     parseInletCount,
-    createExpressionEvaluator,
-    type ExpressionEvaluatorResult
+    createMultiOutletEvaluator,
+    parseOutletCount,
+    type MultiOutletEvaluatorResult
   } from '$lib/utils/expr-parser';
   import CommonExprLayout from './CommonExprLayout.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
@@ -35,7 +36,11 @@
 
   let layoutRef = $state<any>();
   let consoleRef: VirtualConsole | null = $state(null);
-  let evalResult = $state<ExpressionEvaluatorResult>({ success: true, fn: () => 0 });
+  let evalResult = $state<MultiOutletEvaluatorResult>({
+    success: true,
+    fns: [() => 0],
+    outletCount: 1
+  });
 
   const messageContext = new MessageContext(nodeId);
   const customConsole = createCustomConsole(nodeId);
@@ -46,9 +51,11 @@
     return Math.max(1, parseInletCount(expr.trim()));
   });
 
+  const outletCount = $derived(parseOutletCount(expr));
+
   // Update eval result when expression changes
   $effect(() => {
-    evalResult = createExpressionEvaluator(expr);
+    evalResult = createMultiOutletEvaluator(expr);
   });
 
   // Handle incoming messages
@@ -68,13 +75,15 @@
     // Only inlet 0 (hot) triggers output
     if (inlet !== 0) return;
 
-    // Evaluate expression and send result
+    // Evaluate each outlet expression and send results
     if (evalResult.success) {
       try {
         const args = [...Array(9)].map((_, i) => nextInletValues[i] ?? 0);
-        const result = evalResult.fn(...args);
 
-        messageContext.send(result);
+        for (let i = 0; i < evalResult.fns.length; i++) {
+          const result = evalResult.fns[i](...args);
+          messageContext.send(result, { to: i });
+        }
       } catch (error) {
         customConsole.error(error instanceof Error ? error.message : String(error));
       }
@@ -94,7 +103,7 @@
     expr = data.expr;
 
     // Re-evaluate and log any errors
-    const result = createExpressionEvaluator(expr);
+    const result = createMultiOutletEvaluator(expr);
     evalResult = result;
 
     if (!result.success) {
@@ -144,15 +153,16 @@
 {/snippet}
 
 {#snippet exprOutlets()}
-  <!-- Single outlet -->
-  <TypedHandle
-    port="outlet"
-    spec={{ handleType: 'message' }}
-    title="Result"
-    total={1}
-    index={0}
-    {nodeId}
-  />
+  {#each Array.from({ length: outletCount }) as _, index}
+    <TypedHandle
+      port="outlet"
+      spec={{ handleType: 'message', handleId: index }}
+      title={outletCount > 1 ? `Result ${index + 1}` : 'Result'}
+      total={outletCount}
+      {index}
+      {nodeId}
+    />
+  {/each}
 {/snippet}
 
 <div class="group relative flex flex-col gap-2">
