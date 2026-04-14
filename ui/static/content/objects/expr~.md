@@ -83,21 +83,18 @@ s1 * abs(s2)                // Vocoder-style envelope
 ## Multiple Outlets
 
 Each non-assignment expression creates its own audio outlet.
-Separate expressions with semicolons or newlines:
+Separate expressions with semicolons:
 
 ```js
 // 2 outlets: dry and wet
-s * 0.7
-s * 0.3
+s * 0.7; s * 0.3
 ```
 
 Use variable assignments to share intermediate values:
 
 ```js
-a = s * $1
-a + sin(t * 440 * PI * 2) * 0.1
-a - sin(t * 440 * PI * 2) * 0.1
 // 2 outlets with shared variable
+a = s * $1; a + sin(t * 440 * PI * 2) * 0.1; a - sin(t * 440 * PI * 2) * 0.1
 ```
 
 ## Dynamic Control Inlets

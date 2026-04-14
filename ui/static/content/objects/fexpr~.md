@@ -103,12 +103,11 @@ x1 + y1[-32] * $1
 
 Each non-assignment expression creates its own audio outlet
 with independent output history. Separate expressions with
-semicolons or newlines:
+semicolons:
 
 ```js
 // 2 outlets: lowpass and highpass from same input
-x1 * 0.1 + y1[-1] * 0.9
-x1 - x1[-1] + y2[-1] * 0.95
+x1 * 0.1 + y1[-1] * 0.9; x1 - x1[-1] + y2[-1] * 0.95
 ```
 
 Each outlet has its own `y` history: `y1[-1]` is outlet 1's

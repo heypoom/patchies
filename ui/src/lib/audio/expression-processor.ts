@@ -176,7 +176,8 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
   private compileExpression(expressionString: string): ExprDspFn | null {
     try {
-      const renamedExpression = expressionString.replace(/\$(\d+)/g, 'x$1');
+      // Normalize newlines to spaces so multi-line expressions (e.g. ternaries) work
+      const renamedExpression = expressionString.replace(/\n/g, ' ').replace(/\$(\d+)/g, 'x$1');
       const parser = this.createParser();
       const expr = parser.parse(renamedExpression);
 
@@ -195,6 +196,8 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
   /**
    * Set a single expression (backwards compat, single outlet).
+   * Newlines are converted to semicolons so expr-eval treats them
+   * as sequential statements (evaluates all, returns last value).
    */
   private setExpression(expressionString: string): void {
     if (!expressionString || expressionString.trim() === '') {
@@ -204,7 +207,8 @@ class ExpressionProcessor extends AudioWorkletProcessor {
 
     this.resetPhasorState();
 
-    const fn = this.compileExpression(expressionString);
+    const normalized = expressionString.replace(/\n/g, ';');
+    const fn = this.compileExpression(normalized);
     this.evaluators = fn ? [fn] : [];
   }
 

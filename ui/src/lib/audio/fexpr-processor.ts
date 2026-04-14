@@ -220,7 +220,9 @@ class FExprProcessor extends AudioWorkletProcessor {
 
   private compileExpression(expressionString: string): FExprDspFn | null {
     try {
-      const transformed = FExprProcessor.transformExpression(expressionString);
+      // Normalize newlines to spaces so multi-line expressions (e.g. ternaries) work
+      const normalized = expressionString.replace(/\n/g, ' ');
+      const transformed = FExprProcessor.transformExpression(normalized);
       const parser = this.createParser();
       const expr = parser.parse(transformed);
 
@@ -242,6 +244,8 @@ class FExprProcessor extends AudioWorkletProcessor {
 
   /**
    * Set a single expression (backwards compat, single outlet).
+   * Newlines are converted to semicolons so expr-eval treats them
+   * as sequential statements (evaluates all, returns last value).
    */
   private setExpression(expressionString: string): void {
     if (!expressionString || expressionString.trim() === '') {
@@ -251,7 +255,8 @@ class FExprProcessor extends AudioWorkletProcessor {
 
     this.resetHistory(1);
 
-    const fn = this.compileExpression(expressionString);
+    const normalized = expressionString.replace(/\n/g, ';');
+    const fn = this.compileExpression(normalized);
 
     this.evaluators = fn ? [fn] : [];
   }
