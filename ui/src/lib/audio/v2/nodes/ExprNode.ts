@@ -141,7 +141,8 @@ export class ExprNode implements AudioNodeV2 {
   ): void {
     if (!this.workletNode || !target.audioNode) return;
 
-    const outputIndex = sourceHandle ? (handleToPortIndex(sourceHandle) ?? 0) : 0;
+    const outputIndexRaw = sourceHandle ? handleToPortIndex(sourceHandle) : null;
+    const outputIndex = outputIndexRaw !== null && !isNaN(outputIndexRaw) ? outputIndexRaw : 0;
 
     // Skip if output index exceeds current outlet count (stale edge from before outlet reduction)
     if (outputIndex >= this.currentOutletCount) return;
