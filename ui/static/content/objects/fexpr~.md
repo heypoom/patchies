@@ -99,6 +99,23 @@ x1 + x1[-32] * $1
 x1 + y1[-32] * $1
 ```
 
+## Multiple Outlets
+
+Each non-assignment expression creates its own audio outlet
+with independent output history. Separate expressions with
+semicolons or newlines:
+
+```js
+// 2 outlets: lowpass and highpass from same input
+x1 * 0.1 + y1[-1] * 0.9
+x1 - x1[-1] + y2[-1] * 0.95
+```
+
+Each outlet has its own `y` history: `y1[-1]` is outlet 1's
+previous output, `y2[-1]` is outlet 2's, etc. All `y`
+accessors are available to all expressions,
+enabling cross-outlet feedback.
+
 ## Stability Warning
 
 IIR filters can become unstable if feedback coefficients are too high:

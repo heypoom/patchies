@@ -1,8 +1,15 @@
 import { Parser } from 'expr-eval';
+import { transformFExprExpression } from './fexpr-transform';
 
 interface ExpressionMessage {
   type: 'set-expression';
   expression: string;
+}
+
+interface MultiExpressionMessage {
+  type: 'set-expressions';
+  assignments: string[];
+  outletExpressions: string[];
 }
 
 interface InletValuesMessage {
@@ -35,8 +42,16 @@ type FExprDspFn = (
   s8: (offset?: number) => number,
   s9: (offset?: number) => number,
 
-  // y1 accessor function (output history, -1 = previous output, etc.)
+  // y1-y9 accessor functions (output history per outlet, -1 = previous output, etc.)
   y1: (offset: number) => number,
+  y2: (offset: number) => number,
+  y3: (offset: number) => number,
+  y4: (offset: number) => number,
+  y5: (offset: number) => number,
+  y6: (offset: number) => number,
+  y7: (offset: number) => number,
+  y8: (offset: number) => number,
+  y9: (offset: number) => number,
 
   // Other parameters
   i: number,
@@ -58,23 +73,28 @@ const HISTORY_SIZE = 128; // Web Audio block size
 const MAX_SIGNAL_INLETS = 9;
 
 class FExprProcessor extends AudioWorkletProcessor {
-  private evaluator: FExprDspFn | null = null;
+  private evaluators: FExprDspFn[] = [];
   private inletValues: number[] = new Array(10).fill(0);
 
   // History buffers for input samples (one per inlet)
   // Circular buffer: historyIndex points to current sample position
   private inputHistory: Float32Array[] = [];
-  private outputHistory: Float32Array = new Float32Array(HISTORY_SIZE);
-  private historyIndex = 0;
+
+  // Per-outlet output history buffers
+  private outputHistories: Float32Array[] = [new Float32Array(HISTORY_SIZE)];
 
   // Pre-allocated accessor functions to avoid allocation in hot path
   private inputAccessors: Array<(offset?: number) => number> = [];
-  private outputAccessor: (offset: number) => number;
+
+  // Per-outlet output accessors: y1, y2, etc.
+  private outputAccessors: Array<(offset: number) => number> = [];
 
   // Pre-extracted inlet values array
   private inletArgs: [number, number, number, number, number, number, number, number, number] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0
   ];
+
+  private historyIndex = 0;
 
   constructor() {
     super();
@@ -87,25 +107,46 @@ class FExprProcessor extends AudioWorkletProcessor {
     // Create accessor functions for each input
     for (let i = 0; i < MAX_SIGNAL_INLETS; i++) {
       const history = this.inputHistory[i];
+
       this.inputAccessors.push((offset: number = 0) => {
         return this.getHistorySample(history, offset);
       });
     }
 
-    // Create output accessor
-    this.outputAccessor = (offset: number) => {
-      // Output history only allows negative offsets (previous samples)
-      if (offset >= 0) return 0;
-      return this.getHistorySample(this.outputHistory, offset);
-    };
+    // Initialize with 1 output accessor
+    this.rebuildOutputAccessors(1);
 
-    this.port.onmessage = (event: MessageEvent<ExpressionMessage | InletValuesMessage>) => {
+    this.port.onmessage = (
+      event: MessageEvent<ExpressionMessage | MultiExpressionMessage | InletValuesMessage>
+    ) => {
       if (event.data.type === 'set-expression') {
         this.setExpression(event.data.expression);
+      } else if (event.data.type === 'set-expressions') {
+        this.setExpressions(event.data.assignments, event.data.outletExpressions);
       } else if (event.data.type === 'set-inlet-values') {
         this.setInletValues(event.data.values);
       }
     };
+  }
+
+  /**
+   * Rebuild output history buffers and accessor functions for a given outlet count.
+   */
+  private rebuildOutputAccessors(outletCount: number): void {
+    this.outputHistories = [];
+    this.outputAccessors = [];
+
+    for (let i = 0; i < outletCount; i++) {
+      const history = new Float32Array(HISTORY_SIZE);
+
+      this.outputHistories.push(history);
+
+      this.outputAccessors.push((offset: number) => {
+        if (offset >= 0) return 0;
+
+        return this.getHistorySample(history, offset);
+      });
+    }
   }
 
   /**
@@ -135,20 +176,8 @@ class FExprProcessor extends AudioWorkletProcessor {
     return s1 + (s2 - s1) * -frac;
   }
 
-  private setExpression(expressionString: string): void {
-    if (!expressionString || expressionString.trim() === '') {
-      this.evaluator = null;
-      return;
-    }
-
-    // Reset history when expression changes
-    for (const history of this.inputHistory) {
-      history.fill(0);
-    }
-    this.outputHistory.fill(0);
-    this.historyIndex = 0;
-
-    const parser = new Parser({
+  private createParser(): Parser {
+    return new Parser({
       operators: {
         add: true,
         concatenate: true,
@@ -165,51 +194,90 @@ class FExprProcessor extends AudioWorkletProcessor {
         assignment: true
       }
     });
+  }
 
+  // Parameter names matching FExprDspFn signature
+  private static parameterNames = [
+    // Input accessors x1-x9
+    ...Array.from({ length: 9 }, (_, i) => `x${i + 1}`),
+
+    // Aliases s1-s9
+    ...Array.from({ length: 9 }, (_, i) => `s${i + 1}`),
+
+    // Output accessors y1-y9
+    ...Array.from({ length: 9 }, (_, i) => `y${i + 1}`),
+
+    // Other params
+    'i',
+    't',
+
+    // Control values c1-c9
+    ...Array.from({ length: 9 }, (_, i) => `c${i + 1}`)
+  ];
+
+  // Uses the shared pure function below
+  private static transformExpression = transformFExprExpression;
+
+  private compileExpression(expressionString: string): FExprDspFn | null {
     try {
-      // Transform expression:
-      // 1. $1, $2, etc. -> c1, c2, etc. (control values)
-      // 2. x1[-1], s1[-2], etc. -> x1(-1), s1(-2) (function call syntax for history)
-      // 3. y1[-1] -> y1(-1)
-      // 4. bare x1, s1 (no brackets) -> x1(0), s1(0)
-      // 5. bare s[-1] -> x1(-1), bare s -> x1(0)
-      const transformed = expressionString
-        // Control values: $1 -> c1
-        .replace(/\$(\d+)/g, 'c$1')
-        // Bare s with history: s[-1] -> x1(-1) (must come before other s transformations)
-        .replace(/\bs\[(-?\d+(?:\.\d+)?)\]/g, 'x1($1)')
-        // Input history access: x1[-1] or s1[-1] -> x1(-1) or s1(-1)
-        .replace(/([xs])(\d+)\[(-?\d+(?:\.\d+)?)\]/g, '$1$2($3)')
-        // Output history access: y1[-1] -> y1(-1)
-        .replace(/y(\d+)\[(-?\d+(?:\.\d+)?)\]/g, 'y$1($2)')
-        // Bare x1, s1 without brackets -> x1(0), s1(0) (current sample)
-        // Use negative lookahead to avoid transforming already-converted x1(
-        .replace(/\b([xs])(\d+)\b(?!\s*\()/g, '$1$2(0)')
-        // Bare `s` (not followed by digit or bracket) -> x1(0) for backwards compat with expr~
-        .replace(/\bs\b(?![\d[])/g, 'x1(0)');
-
+      const transformed = FExprProcessor.transformExpression(expressionString);
+      const parser = this.createParser();
       const expr = parser.parse(transformed);
 
-      // Parameter names matching FExprDspFn signature
-      const parameterNames = [
-        // Input accessors x1-x9
-        ...Array.from({ length: 9 }, (_, i) => `x${i + 1}`),
-        // Aliases s1-s9
-        ...Array.from({ length: 9 }, (_, i) => `s${i + 1}`),
-        // Output accessor y1
-        'y1',
-        // Other params
-        'i',
-        't',
-        // Control values c1-c9
-        ...Array.from({ length: 9 }, (_, i) => `c${i + 1}`)
-      ];
-
-      this.evaluator = expr.toJSFunction(parameterNames.join(',')) as FExprDspFn;
+      return expr.toJSFunction(FExprProcessor.parameterNames.join(',')) as FExprDspFn;
     } catch (error) {
       console.error('Failed to compile fexpr~ expression:', error);
-      this.evaluator = null;
+      return null;
     }
+  }
+
+  private resetHistory(outletCount: number): void {
+    for (const history of this.inputHistory) {
+      history.fill(0);
+    }
+
+    this.historyIndex = 0;
+    this.rebuildOutputAccessors(outletCount);
+  }
+
+  /**
+   * Set a single expression (backwards compat, single outlet).
+   */
+  private setExpression(expressionString: string): void {
+    if (!expressionString || expressionString.trim() === '') {
+      this.evaluators = [];
+      return;
+    }
+
+    this.resetHistory(1);
+
+    const fn = this.compileExpression(expressionString);
+
+    this.evaluators = fn ? [fn] : [];
+  }
+
+  /**
+   * Set multiple outlet expressions with shared assignments.
+   */
+  private setExpressions(assignments: string[], outletExpressions: string[]): void {
+    const outletCount = Math.max(1, outletExpressions.length);
+    this.resetHistory(outletCount);
+
+    const prefix = assignments.length > 0 ? assignments.join(';') + ';' : '';
+    const fns: FExprDspFn[] = [];
+
+    for (const outletExpr of outletExpressions) {
+      const fn = this.compileExpression(prefix + outletExpr);
+
+      if (fn) {
+        fns.push(fn);
+      } else {
+        this.evaluators = [];
+        return;
+      }
+    }
+
+    this.evaluators = fns;
   }
 
   private setInletValues(values: number[]): void {
@@ -218,24 +286,40 @@ class FExprProcessor extends AudioWorkletProcessor {
     }
   }
 
-  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
-    const output = outputs[0]?.[0];
-    if (!output) return true;
+  // Dummy accessor that always returns 0 (for unused y slots)
+  private static zeroAccessor = () => 0;
 
-    // Keep alive even without evaluator
-    if (!this.evaluator) {
-      output.fill(0);
+  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+    // Keep alive even without evaluators
+    if (this.evaluators.length === 0) {
+      for (const output of outputs) {
+        if (output[0]) output[0].fill(0);
+      }
+
       return true;
     }
 
     try {
-      const bufferSize = output.length;
+      const bufferSize = outputs[0]?.[0]?.length ?? 128;
 
       // Snapshot control values once per block
       const args = this.inletArgs;
+
       for (let k = 0; k < 9; k++) {
         args[k] = this.inletValues[k];
       }
+
+      // Build y accessor array: real accessors for existing outlets, zero for the rest
+      const ya = this.outputAccessors;
+      const y1 = ya[0] ?? FExprProcessor.zeroAccessor;
+      const y2 = ya[1] ?? FExprProcessor.zeroAccessor;
+      const y3 = ya[2] ?? FExprProcessor.zeroAccessor;
+      const y4 = ya[3] ?? FExprProcessor.zeroAccessor;
+      const y5 = ya[4] ?? FExprProcessor.zeroAccessor;
+      const y6 = ya[5] ?? FExprProcessor.zeroAccessor;
+      const y7 = ya[6] ?? FExprProcessor.zeroAccessor;
+      const y8 = ya[7] ?? FExprProcessor.zeroAccessor;
+      const y9 = ya[8] ?? FExprProcessor.zeroAccessor;
 
       // Process sample by sample (required for feedback to work correctly)
       for (let i = 0; i < bufferSize; i++) {
@@ -244,67 +328,82 @@ class FExprProcessor extends AudioWorkletProcessor {
         // Store current input samples in history
         for (let inlet = 0; inlet < MAX_SIGNAL_INLETS; inlet++) {
           const sample = inputs[inlet]?.[0]?.[i] ?? 0;
+
           this.inputHistory[inlet][this.historyIndex] = sample;
         }
 
-        try {
-          // Call evaluator with all accessors and values
-          const result = this.evaluator(
-            // x1-x9 accessors
-            this.inputAccessors[0],
-            this.inputAccessors[1],
-            this.inputAccessors[2],
-            this.inputAccessors[3],
-            this.inputAccessors[4],
-            this.inputAccessors[5],
-            this.inputAccessors[6],
-            this.inputAccessors[7],
-            this.inputAccessors[8],
-            // s1-s9 accessors (same as x1-x9)
-            this.inputAccessors[0],
-            this.inputAccessors[1],
-            this.inputAccessors[2],
-            this.inputAccessors[3],
-            this.inputAccessors[4],
-            this.inputAccessors[5],
-            this.inputAccessors[6],
-            this.inputAccessors[7],
-            this.inputAccessors[8],
-            // y1 accessor
-            this.outputAccessor,
-            // i, t
-            i,
-            t,
-            // c1-c9 control values
-            args[0],
-            args[1],
-            args[2],
-            args[3],
-            args[4],
-            args[5],
-            args[6],
-            args[7],
-            args[8]
-          );
+        // Evaluate each outlet expression
+        for (let outIdx = 0; outIdx < this.evaluators.length; outIdx++) {
+          const outBuf = outputs[outIdx]?.[0];
+          if (!outBuf) continue;
 
-          if (typeof result !== 'number' || isNaN(result)) {
-            output[i] = 0;
-          } else {
-            output[i] = result;
+          try {
+            const result = this.evaluators[outIdx](
+              // x1-x9 accessors
+              this.inputAccessors[0],
+              this.inputAccessors[1],
+              this.inputAccessors[2],
+              this.inputAccessors[3],
+              this.inputAccessors[4],
+              this.inputAccessors[5],
+              this.inputAccessors[6],
+              this.inputAccessors[7],
+              this.inputAccessors[8],
+
+              // s1-s9 accessors (same as x1-x9)
+              this.inputAccessors[0],
+              this.inputAccessors[1],
+              this.inputAccessors[2],
+              this.inputAccessors[3],
+              this.inputAccessors[4],
+              this.inputAccessors[5],
+              this.inputAccessors[6],
+              this.inputAccessors[7],
+              this.inputAccessors[8],
+
+              // y1-y9 output history accessors
+              y1,
+              y2,
+              y3,
+              y4,
+              y5,
+              y6,
+              y7,
+              y8,
+              y9,
+
+              // i, t
+              i,
+              t,
+
+              // c1-c9 control values
+              args[0],
+              args[1],
+              args[2],
+              args[3],
+              args[4],
+              args[5],
+              args[6],
+              args[7],
+              args[8]
+            );
+
+            const value = typeof result === 'number' && !isNaN(result) ? result : 0;
+            outBuf[i] = value;
+
+            // Store in this outlet's history (for y access in next sample)
+            this.outputHistories[outIdx][this.historyIndex] = value;
+          } catch {
+            outBuf[i] = 0;
+            this.outputHistories[outIdx][this.historyIndex] = 0;
           }
-        } catch {
-          output[i] = 0;
         }
 
-        // Store output in history (for y1[-1] access in next sample)
-        this.outputHistory[this.historyIndex] = output[i];
-
-        // Advance history index
+        // Advance history index after all outlets are evaluated
         this.historyIndex = (this.historyIndex + 1) % HISTORY_SIZE;
       }
     } catch (error) {
       console.error('fexpr~ processing error:', error);
-      output.fill(0);
     }
 
     return true;

@@ -130,7 +130,7 @@ class ExpressionProcessor extends AudioWorkletProcessor {
   };
 
   private createParser(): Parser {
-    const p = new Parser({
+    const parser = new Parser({
       operators: {
         add: true,
         concatenate: true,
@@ -148,8 +148,9 @@ class ExpressionProcessor extends AudioWorkletProcessor {
       }
     });
 
-    p.functions.phasor = this.phasor;
-    return p;
+    parser.functions.phasor = this.phasor;
+
+    return parser;
   }
 
   // Parameter names shared by all evaluators
