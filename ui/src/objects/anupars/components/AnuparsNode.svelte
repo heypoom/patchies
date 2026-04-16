@@ -9,6 +9,8 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useViewport } from '@xyflow/svelte';
   import type { WorkerInMessage, WorkerOutMessage } from '../workers/anupars.worker';
+  import { profiler } from '$lib/profiler';
+  import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
 
   let {
     id: nodeId,
@@ -34,6 +36,7 @@
 
   let term: any = null;
   let worker: Worker | null = null;
+  let unsubProfiler: (() => void) | null = null;
   let initialized = false;
   let dragging = false;
   let dragButton = 0;
@@ -158,15 +161,16 @@
           initialized = true;
         })
         .with({ type: 'frame' }, ({ ansi, midi }) => {
-          // Route MIDI messages through Patchies message system
           for (const bytes of midi) {
             handleMidiBytes(bytes);
           }
 
-          // Write ANSI output to terminal
           if (ansi.length > 0 && term) {
             term.write(ansi);
           }
+        })
+        .with({ type: 'profilerStats' }, ({ nodeId: id, category, stats }) => {
+          ProfilerCoordinator.getInstance().recordWorkerStats(id, 'anupars', category, stats);
         })
         .with({ type: 'error' }, ({ message }) => {
           console.error('Anupars worker error:', message);
@@ -176,6 +180,13 @@
 
     // Initialize WASM in worker
     postWorker({ type: 'init', cols: term.cols, rows: term.rows });
+
+    // Send initial profiler state and subscribe to changes
+    postWorker({ type: 'profilerEnable', nodeId, enabled: profiler.enabled });
+
+    unsubProfiler = profiler.onEnableChange((enabled) => {
+      postWorker({ type: 'profilerEnable', nodeId, enabled });
+    });
 
     // Alt/Option key handler
     term.attachCustomKeyEventHandler((e: KeyboardEvent) => {
@@ -242,6 +253,10 @@
     messageContext.queue.removeCallback(handleMessage);
     window.removeEventListener('mouseup', handleGlobalMouseUp);
 
+    unsubProfiler?.();
+    unsubProfiler = null;
+
+    profiler.unregister(nodeId);
     worker?.terminate();
     worker = null;
 

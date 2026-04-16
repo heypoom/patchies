@@ -14,18 +14,34 @@ import initWasm, {
   wasm_take_midi_message
 } from '../wasm/anupars.js';
 
+import { WorkerProfiler } from '$workers/shared/WorkerProfiler';
+import type { ProfilerCategory, TimingStats } from '$lib/profiler/types';
+
 export type WorkerInMessage =
   | { type: 'init'; cols: number; rows: number }
   | { type: 'sendKey'; key: string }
   | { type: 'sendMouse'; kind: number; button: number; col: number; row: number }
-  | { type: 'resize'; cols: number; rows: number };
+  | { type: 'resize'; cols: number; rows: number }
+  | { type: 'profilerEnable'; nodeId: string; enabled: boolean };
 
 export type WorkerOutMessage =
   | { type: 'ready' }
   | { type: 'frame'; ansi: string; midi: number[][] }
+  | { type: 'profilerStats'; nodeId: string; category: ProfilerCategory; stats: TimingStats }
   | { type: 'error'; message: string };
 
 let initialized = false;
+let nodeId = '';
+
+// Profiler
+const workerProfiler = new WorkerProfiler((id, category, stats) => {
+  self.postMessage({
+    type: 'profilerStats',
+    nodeId: id,
+    category,
+    stats
+  } satisfies WorkerOutMessage);
+});
 
 // Frame loop runs inside the worker via setInterval
 let loopId: ReturnType<typeof setInterval> | null = null;
@@ -44,7 +60,9 @@ function tick() {
   lastTs = now;
 
   // Step the sequencer
-  wasm_step(elapsed);
+  workerProfiler.measure(nodeId, 'interval', () => {
+    wasm_step(elapsed);
+  });
 
   // Drain MIDI messages
   const midi: number[][] = [];
@@ -59,7 +77,10 @@ function tick() {
 
   if (now - lastRenderTs >= RENDER_INTERVAL_MS) {
     lastRenderTs = now;
-    ansi = wasm_render();
+
+    workerProfiler.measure(nodeId, 'draw', () => {
+      ansi = wasm_render();
+    });
   }
 
   // Only post if there's something to send
@@ -106,6 +127,12 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
 
     case 'resize': {
       if (initialized) wasm_resize(msg.cols, msg.rows);
+      break;
+    }
+
+    case 'profilerEnable': {
+      nodeId = msg.nodeId;
+      workerProfiler.setEnabled(msg.enabled);
       break;
     }
   }
