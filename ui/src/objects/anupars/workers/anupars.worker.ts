@@ -16,6 +16,7 @@ import initWasm, {
 
 import { WorkerProfiler } from '$workers/shared/WorkerProfiler';
 import type { ProfilerCategory, TimingStats } from '$lib/profiler/types';
+import { match } from 'ts-pattern';
 
 export type WorkerInMessage =
   | { type: 'init'; cols: number; rows: number }
@@ -73,7 +74,7 @@ function tick() {
   let msg: Uint8Array | undefined;
 
   while ((msg = wasm_take_midi_message()) !== undefined) {
-    midi.push([msg[0], msg[1], msg[2]]);
+    midi.push(Array.from(msg));
   }
 
   // Render ANSI output
@@ -91,15 +92,16 @@ function tick() {
 self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
   const msg = e.data;
 
-  switch (msg.type) {
-    case 'init': {
+  await match(msg)
+    .with({ type: 'init' }, async (m) => {
       try {
         await initWasm();
 
-        wasm_init(msg.cols, msg.rows);
+        wasm_init(m.cols, m.rows);
         initialized = true;
         lastTs = performance.now();
 
+        if (loopId !== null) clearInterval(loopId);
         loopId = setInterval(tick, tickIntervalMs);
 
         self.postMessage({ type: 'ready' } satisfies WorkerOutMessage);
@@ -109,36 +111,24 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
           message: String(err)
         } satisfies WorkerOutMessage);
       }
-
-      break;
-    }
-
-    case 'sendKey': {
-      if (initialized) wasm_send_key(msg.key);
-      break;
-    }
-
-    case 'sendMouse': {
-      if (initialized) wasm_send_mouse(msg.kind, msg.button, msg.col, msg.row);
-      break;
-    }
-
-    case 'resize': {
-      if (initialized) wasm_resize(msg.cols, msg.rows);
-      break;
-    }
-
-    case 'profilerEnable': {
-      nodeId = msg.nodeId;
-      workerProfiler.setEnabled(msg.enabled);
-      break;
-    }
-
-    case 'setFpsCap': {
+    })
+    .with({ type: 'sendKey' }, (m) => {
+      if (initialized) wasm_send_key(m.key);
+    })
+    .with({ type: 'sendMouse' }, (m) => {
+      if (initialized) wasm_send_mouse(m.kind, m.button, m.col, m.row);
+    })
+    .with({ type: 'resize' }, (m) => {
+      if (initialized) wasm_resize(m.cols, m.rows);
+    })
+    .with({ type: 'profilerEnable' }, (m) => {
+      nodeId = m.nodeId;
+      workerProfiler.setEnabled(m.enabled);
+    })
+    .with({ type: 'setFpsCap' }, (m) => {
       // 0 = unlimited → default 60fps
-      tickIntervalMs = 1000 / (msg.fpsCap || 60);
+      tickIntervalMs = 1000 / (m.fpsCap || 60);
       restartLoop();
-      break;
-    }
-  }
+    })
+    .exhaustive();
 };

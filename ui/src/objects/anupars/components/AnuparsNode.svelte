@@ -143,15 +143,8 @@
     term.open(terminalElement);
 
     // Measure actual cell dimensions and size container
-    const cellDims = fitAddon.proposeDimensions();
-
-    if (cellDims) {
-      const coreTerminal = (term as any)._core;
-      const cellWidth = coreTerminal._renderService.dimensions.css.cell.width;
-      const cellHeight = coreTerminal._renderService.dimensions.css.cell.height;
-
-      terminalElement.style.width = `${Math.ceil(cellWidth * cols)}px`;
-      terminalElement.style.height = `${Math.ceil(cellHeight * rows)}px`;
+    if (fitAddon.proposeDimensions()) {
+      measureTerminalSize();
     }
 
     // Spawn worker — WASM runs entirely off main thread
@@ -311,6 +304,37 @@
       previewContainerWidth = containerElement.clientWidth;
     }
   }
+
+  function measureTerminalSize() {
+    if (!term || !terminalElement) return;
+
+    const cell = (term as any)._core?._renderService?.dimensions?.css?.cell;
+    if (!cell) return;
+
+    terminalElement.style.width = `${Math.ceil(cell.width * cols)}px`;
+    terminalElement.style.height = `${Math.ceil(cell.height * rows)}px`;
+  }
+
+  $effect(() => {
+    const c = cols;
+    const r = rows;
+    const fs = fontSize;
+
+    if (!term || !worker) return;
+
+    if (term.options.fontSize !== fs) {
+      term.options.fontSize = fs;
+    }
+
+    if (term.cols !== c || term.rows !== r) {
+      term.resize(c, r);
+    }
+
+    postWorker({ type: 'resize', cols: c, rows: r });
+
+    measureTerminalSize();
+    measureWidth();
+  });
 </script>
 
 <div class="relative flex gap-x-3">
