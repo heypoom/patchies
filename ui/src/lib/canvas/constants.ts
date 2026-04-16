@@ -121,16 +121,48 @@ recv(freq => setRate({ value: freq }))
 
 core.render(el.cycle(rate), el.cycle(rate))`;
 
-export const DEFAULT_SONIC_CODE = `setPortCount(1)
+export const DEFAULT_SONIC_CODE = `setPortCount(1);
 
-await sonic.loadSynthDef('sonic-pi-prophet')
+const name = 'sonic-pi-beep';
+setTitle(name);
 
-// Trigger synth when receiving messages
+await sonic.loadSynthDef(name);
+
+const activeNotes = new Map();
+
 recv(msg => {
-  const note = typeof msg === 'number' ? msg : 60
+  if (!msg || typeof msg !== 'object') return;
 
-  sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', note, 'release', 2, 'out_bus', outBus)
-})`;
+  const { type, note, velocity } = msg;
+
+  if (type === 'noteOn') {
+    if (activeNotes.has(note)) {
+      sonic.send('/n_set', activeNotes.get(note), 'gate', 0);
+    }
+
+    const id = sonic.nextNodeId();
+    activeNotes.set(note, id);
+
+    sonic.send('/s_new', name, id, 0, 0,
+      'note', note,
+      'amp', (velocity || 127) / 127,
+      'gate', 1,
+      'out_bus', outBus
+    );
+  } else if (type === 'noteOff') {
+    const id = activeNotes.get(note);
+
+    if (id !== undefined) {
+      sonic.send('/n_set', id, 'gate', 0);
+      activeNotes.delete(note);
+    }
+  }
+});
+
+onCleanup(() => {
+  activeNotes.forEach(id => sonic.send('/n_free', id));
+  activeNotes.clear();
+});`;
 
 export const DEFAULT_CSOUND_CODE = `instr 1
   ioct = octcps(p4)
