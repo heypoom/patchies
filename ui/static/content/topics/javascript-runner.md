@@ -179,27 +179,6 @@ setInterval(() => {
 
 > **Tip**: For VFS, storage, audio reactivity, clock, AI, and presentation APIs, see [JS Integrations](/docs/js-integrations).
 
-### Output Resolution
-
-Visual objects (`three`, `regl`, `canvas`, `p5`, etc.) render at full
-window resolution by default. For data textures or lightweight renders,
-reduce the FBO size:
-
-```javascript
-setResolution(256)       // 256×256
-setResolution(512, 256)  // 512 wide, 256 tall
-setResolution('1/2')     // half resolution
-setResolution('1/4')     // quarter resolution
-setResolution('1/8')     // any 1/n divisor works
-```
-
-Downstream nodes sample the smaller texture with bilinear filtering —
-upscaling is automatic. Combine with `setTextureFormat('rgba32f')` for
-GPGPU workflows like texture-encoded geometry.
-
-> **Note**: GLSL and SwissGL nodes use the `// @resolution 256`
-> directive instead of `setResolution()`, see [glsl](/docs/objects/glsl).
-
 ## See Also
 
 - [JS Modules](/docs/js-modules) — Importing npm packages and sharing code between objects

@@ -223,15 +223,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
-| Value      | FBO size (at 1080p) | Use case                           |
-| ---------- | ------------------- | ---------------------------------- |
-| `256`      | 256×256             | Position maps, small data textures |
-| `512`      | 512×512             | Medium data textures               |
-| `256x128`  | 256×128             | Non-square data                    |
-| `1/2`      | 960×540             | Half resolution                    |
-| `1/4`      | 480×270             | Quarter resolution                 |
-| `1/n`      | output ÷ n          | Any integer divisor (1/3, 1/8…)    |
-| *(none)*   | 1920×1080           | Default. Full resolution           |
+| Value      | Node size (at 1080p) | Use case                           |
+| ---------- | -------------------- | ---------------------------------- |
+| `256`      | 256×256              | Position maps, small data textures |
+| `512`      | 512×512              | Medium data textures               |
+| `256x128`  | 256×128              | Non-square data                    |
+| `1/2`      | 960×540              | Half resolution                    |
+| `1/4`      | 480×270              | Quarter resolution                 |
+| `1/n`      | output ÷ n           | Any integer divisor (1/3, 1/8…)    |
+| *(none)*   | 1920×1080            | Default. Full resolution           |
 
 Downstream nodes sample the texture with bilinear filtering — upscaling
 is automatic. Combine with `@format rgba32f` for GPGPU workflows like

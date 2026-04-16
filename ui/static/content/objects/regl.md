@@ -252,7 +252,7 @@ setResolution('1/4')     // quarter resolution
 setResolution('1/8')     // any 1/n divisor works
 ```
 
-This reduces the FBO size so the GPU does less work per frame. Downstream
+This reduces the texture size so the GPU does less work per frame. Downstream
 nodes sample the texture with bilinear filtering — upscaling is automatic.
 
 ## Common Functions

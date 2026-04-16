@@ -132,6 +132,27 @@ For `glsl` shaders, use the comment directive instead:
 // @primaryButton settings
 ```
 
+### Output Resolution
+
+Visual objects (`three`, `regl`, `canvas`, `p5`, etc.) render at full
+window resolution by default. For data textures or lightweight renders,
+reduce the texture size:
+
+```javascript
+setResolution(256)       // 256×256
+setResolution(512, 256)  // 512 wide, 256 tall
+setResolution('1/2')     // half resolution
+setResolution('1/4')     // quarter resolution
+setResolution('1/8')     // any 1/n divisor works
+```
+
+Downstream nodes sample the smaller texture with bilinear filtering —
+upscaling is automatic. Combine with `setTextureFormat('rgba32f')` for
+GPGPU workflows like texture-encoded geometry.
+
+> **Note**: GLSL and SwissGL nodes use the `// @resolution 256`
+> directive instead of `setResolution()`, see [glsl](/docs/objects/glsl).
+
 ## Float Texture Format
 
 Visual objects (`hydra`, `canvas`, `three`, `regl`, `swgl`, `textmode`) output 8-bit RGBA textures by default, clamping values to 0–1. Call `setTextureFormat()` to switch to float precision:
