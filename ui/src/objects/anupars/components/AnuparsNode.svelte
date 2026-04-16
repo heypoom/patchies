@@ -8,9 +8,7 @@
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useViewport } from '@xyflow/svelte';
-  import { profiler } from '$lib/profiler';
-
-  // Heavy deps (xterm, wasm) are dynamically imported in onMount
+  import type { WorkerInMessage, WorkerOutMessage } from '../workers/anupars.worker';
 
   let {
     id: nodeId,
@@ -34,27 +32,21 @@
   let containerElement: HTMLDivElement | undefined = $state();
   let previewContainerWidth = $state(0);
 
-  // These are typed loosely since they come from dynamic imports
   let term: any = null;
-  let animationFrameId: number | null = null;
+  let worker: Worker | null = null;
   let initialized = false;
   let dragging = false;
   let dragButton = 0;
 
-  // WASM function references, populated after dynamic import
-  let wasm: {
-    wasm_send_key: (key: string) => void;
-    wasm_send_mouse: (kind: number, button: number, col: number, row: number) => void;
-    wasm_step: (elapsed_ms: number) => void;
-    wasm_render: () => string;
-    wasm_take_midi_message: () => Uint8Array | undefined;
-  } | null = null;
+  function postWorker(msg: WorkerInMessage) {
+    worker?.postMessage(msg);
+  }
 
   function handleGlobalMouseUp(e: MouseEvent) {
-    if (!dragging || !wasm) return;
+    if (!dragging || !worker) return;
     dragging = false;
     const { col, row } = cellPos(e);
-    wasm.wasm_send_mouse(2, e.button, col, row);
+    postWorker({ type: 'sendMouse', kind: 2, button: e.button, col, row });
   }
 
   const cols = $derived(data.cols ?? 80);
@@ -64,16 +56,12 @@
   function cellPos(e: MouseEvent): { col: number; row: number } {
     if (!term?.element) return { col: 0, row: 0 };
 
-    // Use .xterm-screen (the actual character grid area) rather than
-    // term.element (which may include padding/scrollbar space).
     const screen = term.element.querySelector('.xterm-screen');
     if (!screen) return { col: 0, row: 0 };
 
     const rect = screen.getBoundingClientRect();
     const zoom = viewport.current.zoom;
 
-    // Screen-space offset divided by zoom gives unscaled pixel position,
-    // then divide by unscaled cell size to get terminal coordinates.
     const x = (e.clientX - rect.left) / zoom;
     const y = (e.clientY - rect.top) / zoom;
     const cellW = rect.width / zoom / term.cols;
@@ -85,59 +73,44 @@
     };
   }
 
-  function parseMidiMessage(msg: Uint8Array): void {
-    if (msg.length < 3) return;
+  function handleMidiBytes(bytes: number[]): void {
+    if (bytes.length < 3) return;
 
-    const status = msg[0] & 0xf0;
-    const channel = (msg[0] & 0x0f) + 1;
+    const status = bytes[0] & 0xf0;
+    const channel = (bytes[0] & 0x0f) + 1;
 
     match(status)
       .with(0x90, () => {
-        if (msg[2] > 0) {
-          messageContext.send({ type: 'noteOn', note: msg[1], velocity: msg[2], channel });
+        if (bytes[2] > 0) {
+          messageContext.send({ type: 'noteOn', note: bytes[1], velocity: bytes[2], channel });
         } else {
-          messageContext.send({ type: 'noteOff', note: msg[1], channel });
+          messageContext.send({ type: 'noteOff', note: bytes[1], channel });
         }
       })
       .with(0x80, () => {
-        messageContext.send({ type: 'noteOff', note: msg[1], channel });
+        messageContext.send({ type: 'noteOff', note: bytes[1], channel });
       })
       .with(0xb0, () => {
         messageContext.send({
           type: 'controlChange',
-          control: msg[1],
-          value: msg[2],
+          control: bytes[1],
+          value: bytes[2],
           channel
         });
       })
-      .otherwise(() => {
-        // Ignore transport/clock messages (0xFA, 0xFB, 0xFC, 0xF8, etc.)
-      });
+      .otherwise(() => {});
   }
 
   onMount(async () => {
     if (!terminalElement) return;
 
-    // Lazy-load xterm.js and WASM — these are heavy deps (~654KB wasm + xterm)
-    const [{ Terminal }, { FitAddon }, wasmModule] = await Promise.all([
+    // Lazy-load xterm.js (WASM loads in the worker)
+    const [{ Terminal }, { FitAddon }] = await Promise.all([
       import('@xterm/xterm'),
-      import('@xterm/addon-fit'),
-      import('../wasm/anupars.js')
+      import('@xterm/addon-fit')
     ]);
 
-    // Load xterm CSS
     await import('@xterm/xterm/css/xterm.css');
-
-    // Initialize WASM module
-    await wasmModule.default();
-
-    wasm = {
-      wasm_send_key: wasmModule.wasm_send_key,
-      wasm_send_mouse: wasmModule.wasm_send_mouse,
-      wasm_step: wasmModule.wasm_step,
-      wasm_render: wasmModule.wasm_render,
-      wasm_take_midi_message: wasmModule.wasm_take_midi_message
-    };
 
     // Create xterm.js terminal
     term = new Terminal({
@@ -160,9 +133,7 @@
     term.loadAddon(fitAddon);
     term.open(terminalElement);
 
-    // After open(), measure xterm's actual cell dimensions and size the
-    // container to fit exactly. This avoids hardcoded pixel multipliers
-    // that may not match the font metrics.
+    // Measure actual cell dimensions and size container
     const cellDims = fitAddon.proposeDimensions();
 
     if (cellDims) {
@@ -174,9 +145,37 @@
       terminalElement.style.height = `${Math.ceil(cellHeight * rows)}px`;
     }
 
-    // Initialize WASM with terminal dimensions
-    wasmModule.wasm_init(term.cols, term.rows);
-    initialized = true;
+    // Spawn worker — WASM runs entirely off main thread
+    worker = new Worker(new URL('../workers/anupars.worker.ts', import.meta.url), {
+      type: 'module'
+    });
+
+    worker.onmessage = (e: MessageEvent<WorkerOutMessage>) => {
+      const msg = e.data;
+
+      match(msg)
+        .with({ type: 'ready' }, () => {
+          initialized = true;
+        })
+        .with({ type: 'frame' }, ({ ansi, midi }) => {
+          // Route MIDI messages through Patchies message system
+          for (const bytes of midi) {
+            handleMidiBytes(bytes);
+          }
+
+          // Write ANSI output to terminal
+          if (ansi.length > 0 && term) {
+            term.write(ansi);
+          }
+        })
+        .with({ type: 'error' }, ({ message }) => {
+          console.error('Anupars worker error:', message);
+        })
+        .exhaustive();
+    };
+
+    // Initialize WASM in worker
+    postWorker({ type: 'init', cols: term.cols, rows: term.rows });
 
     // Alt/Option key handler
     term.attachCustomKeyEventHandler((e: KeyboardEvent) => {
@@ -184,16 +183,16 @@
       if (!e.altKey || e.ctrlKey) return true;
       if (e.key.length !== 1) return true;
 
-      wasm?.wasm_send_key('\x1b' + e.key);
+      postWorker({ type: 'sendKey', key: '\x1b' + e.key });
 
       return false;
     });
 
-    // Forward keyboard input to WASM
+    // Forward keyboard input to worker
     term.onData((keyData: string) => {
       if (!initialized) return;
 
-      wasm?.wasm_send_key(keyData);
+      postWorker({ type: 'sendKey', key: keyData });
     });
 
     // Mouse handlers on the terminal element (capture mode)
@@ -208,7 +207,7 @@
 
           const { col, row } = cellPos(e);
 
-          wasm?.wasm_send_mouse(0, e.button, col, row);
+          postWorker({ type: 'sendMouse', kind: 0, button: e.button, col, row });
           term?.focus();
 
           e.preventDefault();
@@ -222,7 +221,7 @@
 
         const { col, row } = cellPos(e);
 
-        wasm?.wasm_send_mouse(1, dragButton, col, row);
+        postWorker({ type: 'sendMouse', kind: 1, button: dragButton, col, row });
       });
 
       _terminalElement.addEventListener('contextmenu', (e: Event) => e.preventDefault());
@@ -234,59 +233,20 @@
     // Message handler
     messageContext.queue.addCallback(handleMessage);
 
-    // Animation loop
-    let lastTs: number | null = null;
-
-    function frame(ts: number) {
-      if (!initialized || !wasm) return;
-
-      const elapsed = lastTs === null ? 16.0 : ts - lastTs;
-
-      lastTs = ts;
-
-      profiler.measure(nodeId, 'raf', () => {
-        wasm!.wasm_step(elapsed);
-
-        // Drain MIDI output queue
-        let midiMsg: Uint8Array | undefined;
-
-        while ((midiMsg = wasm!.wasm_take_midi_message()) !== undefined) {
-          parseMidiMessage(midiMsg);
-        }
-
-        // Render ANSI output
-        const ansi = wasm!.wasm_render();
-
-        if (ansi.length > 0 && term) {
-          term.write(ansi);
-        }
-      });
-
-      animationFrameId = requestAnimationFrame(frame);
-    }
-
-    animationFrameId = requestAnimationFrame(frame);
-
     measureWidth();
   });
 
   onDestroy(() => {
     initialized = false;
 
-    if (animationFrameId !== null) {
-      cancelAnimationFrame(animationFrameId);
-
-      animationFrameId = null;
-    }
-
     messageContext.queue.removeCallback(handleMessage);
     window.removeEventListener('mouseup', handleGlobalMouseUp);
 
-    profiler.unregister(nodeId);
-    term?.dispose();
+    worker?.terminate();
+    worker = null;
 
+    term?.dispose();
     term = null;
-    wasm = null;
 
     messageContext.destroy();
   });
@@ -295,13 +255,13 @@
     try {
       match(message)
         .with(anuparsMessages.bang, () => {
-          if (initialized) wasm?.wasm_send_key(' ');
+          if (initialized) postWorker({ type: 'sendKey', key: ' ' });
         })
         .with(anuparsMessages.play, () => {
-          if (initialized) wasm?.wasm_send_key(' ');
+          if (initialized) postWorker({ type: 'sendKey', key: ' ' });
         })
         .with(anuparsMessages.stop, () => {
-          if (initialized) wasm?.wasm_send_key(' ');
+          if (initialized) postWorker({ type: 'sendKey', key: ' ' });
         });
     } catch (error) {
       console.error('AnuparsNode handleMessage error:', error);
