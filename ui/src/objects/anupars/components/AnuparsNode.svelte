@@ -130,7 +130,7 @@
       cols,
       rows,
       theme: {
-        background: '#080809',
+        background: 'transparent',
         foreground: '#ffffff'
       },
       macOptionIsMeta: true,
