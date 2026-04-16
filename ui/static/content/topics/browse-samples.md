@@ -32,8 +32,13 @@ Click the filter icon in the bottom-right of the panel to toggle individual samp
 | AMG | Dough Amiga | Bubobubobubobubo |
 | DBB | Dough Samples (Bubo) | Bubobubobubobubo |
 | EF | Emptyflash Samples | emptyflash |
+| SCS | SuperSonic Samples | Sam Aaron |
+| SCD | SuperSonic SynthDefs | Sam Aaron |
+| FS | Freesound | community |
 
-All libraries are fetched from their public GitHub repositories.
+Most libraries are fetched from their public GitHub repositories.
+
+The freesound library is powered by the [Freesound API](https://freesound.org/docs/api/), so results are dynamic and may vary based on your search query and their current database.
 
 ## See Also
 
