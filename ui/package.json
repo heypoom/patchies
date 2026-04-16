@@ -111,6 +111,8 @@
     "@strudel/webaudio": "^1.2.6",
     "@sveltejs/adapter-static": "^3.0.8",
     "@uiw/codemirror-theme-tokyo-night": "^4.24.2",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "@xyflow/svelte": "^1.2.2",
     "butterchurn": "^2.6.7",
     "butterchurn-presets": "^2.4.7",

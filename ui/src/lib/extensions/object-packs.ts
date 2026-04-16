@@ -102,6 +102,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'sequencer',
       'strudel',
       'orca',
+      'anupars',
       'sonic~',
       'chuck~',
       'csound~',

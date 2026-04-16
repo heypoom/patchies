@@ -221,6 +221,11 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       playbackRate: 1,
       detune: 0
     }))
+    .with('anupars', () => ({
+      cols: 80,
+      rows: 24,
+      fontSize: 14
+    }))
     .with('orca', () => ({
       grid: new Array(DEFAULT_ORCA_WIDTH * DEFAULT_ORCA_HEIGHT).fill('.').join(''),
       width: DEFAULT_ORCA_WIDTH,
