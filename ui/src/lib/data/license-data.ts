@@ -377,6 +377,24 @@ export const dependencies: ProjectLicense[] = [
     url: 'https://npmjs.com/package/ts-pattern'
   },
   {
+    name: 'anupars (WASM)',
+    version: '0.3.0',
+    license: 'MIT',
+    url: 'https://github.com/karnpapon/anupars'
+  },
+  {
+    name: '@xterm/xterm',
+    version: '^6.0.0',
+    license: 'MIT',
+    url: 'https://npmjs.com/package/@xterm/xterm'
+  },
+  {
+    name: '@xterm/addon-fit',
+    version: '^0.11.0',
+    license: 'MIT',
+    url: 'https://npmjs.com/package/@xterm/addon-fit'
+  },
+  {
     name: 'uiua',
     version: '0.15.0-dev',
     license: 'MIT',
@@ -530,6 +548,17 @@ export const portedCode: PortedCode[] = [
     license: 'CC BY-SA 4.0',
     notes:
       'Tuning data is used under the Creative Commons Attribution-ShareAlike 4.0 license. Find the collective on Instagram at @elekhlekha.'
+  },
+  {
+    name: 'Anupars (WASM)',
+    description:
+      'The anupars node uses a pre-built WASM binary of Anupars, a regex-driven terminal-based musical sequencer.',
+    authors: 'Karnpapon Boonput (@karnpapon)',
+    repository: 'https://github.com/karnpapon/anupars',
+    license: 'MIT',
+    copyright: '© Karnpapon Boonput',
+    notes:
+      'The WASM binary is built from an unpublished branch and bundled as-is. No Rust source code was modified or ported. The node embeds xterm.js to render the terminal UI and converts raw MIDI output to Patchies messages.'
   }
 ];
 
@@ -782,5 +811,13 @@ export const supportLinks: SupportLink[] = [
     url: 'https://github.com/sponsors/kaikalii',
     type: 'github',
     projects: ['Uiua']
+  },
+  {
+    name: 'Karnpapon Boonput',
+    description: 'Creator of Anupars, a regex-driven terminal sequencer',
+    category: 'library',
+    url: 'https://github.com/karnpapon/anupars',
+    type: 'repo',
+    projects: ['Anupars']
   }
 ];
