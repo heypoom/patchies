@@ -128,7 +128,7 @@ osc(30).glitch(0.1).out()
 
 ### Using `#include` in Custom Functions
 
-The `glsl` field supports [`#include` directives](/docs/topics/glsl-imports), so
+The `glsl` field supports [`#include` directives](/docs/glsl-imports), so
 you can pull in functions from [lygia](https://lygia.xyz) or other sources:
 
 ```javascript
@@ -150,7 +150,7 @@ snoiseGen(6.0).kaleid(6).out()
 
 ### Sharing Custom Functions Across Nodes
 
-Use a [Shared Library](/docs/topics/javascript-runner#shared-libraries)
+Use a [Shared Library](/docs/javascript-runner)
 (`// @lib`) to define custom functions once and reuse them in multiple
 `hydra` objects.
 

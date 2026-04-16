@@ -20,6 +20,9 @@ Orca emits standard Patchies MIDI messages (`noteOn`, `noteOff`,
 
 - Connect to `midi.out` for hardware MIDI output
 - Try the `poly-synth-midi.tone` preset for a polyphonic synth
+- Try the [sonic~](/docs/objects/sonic~) object for SuperCollider-powered
+  synthesizers. Use the [Samples](/docs/browse-samples) panel for finding
+  SuperCollider synth definitions and samples.
 
 ## Transport Sync
 

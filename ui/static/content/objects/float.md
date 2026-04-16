@@ -17,4 +17,4 @@ _Inspired by [Pure Data](https://pd.iem.sh/objects/float)._
 
 - [int](/docs/objects/int) - integer accumulator
 - [expr](/docs/objects/expr) - expression evaluator
-- [Hot and Cold Inlets](/docs/topics/hot-cold-inlets)
+- [Hot and Cold Inlets](/docs/hot-cold-inlets)
