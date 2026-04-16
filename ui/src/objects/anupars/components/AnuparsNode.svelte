@@ -7,6 +7,7 @@
   import { anuparsMessages, anuparsSchema } from '../schema';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import { useViewport } from '@xyflow/svelte';
 
   // Heavy deps (xterm, wasm) are dynamically imported in onMount
 
@@ -25,6 +26,7 @@
   } = $props();
 
   const messageContext = new MessageContext(nodeId);
+  const viewport = useViewport();
 
   let terminalElement: HTMLDivElement | undefined = $state();
   let showSettings = $state(false);
@@ -61,16 +63,24 @@
   function cellPos(e: MouseEvent): { col: number; row: number } {
     if (!term?.element) return { col: 0, row: 0 };
 
-    const el = term.element;
-    const rect = el.getBoundingClientRect();
-    // getBoundingClientRect() and clientX/Y are both in screen space,
-    // so the zoom already cancels out — no manual zoom correction needed.
-    const col = Math.floor((e.clientX - rect.left) / (rect.width / term.cols));
-    const row = Math.floor((e.clientY - rect.top) / (rect.height / term.rows));
+    // Use .xterm-screen (the actual character grid area) rather than
+    // term.element (which may include padding/scrollbar space).
+    const screen = term.element.querySelector('.xterm-screen');
+    if (!screen) return { col: 0, row: 0 };
+
+    const rect = screen.getBoundingClientRect();
+    const zoom = viewport.current.zoom;
+
+    // Screen-space offset divided by zoom gives unscaled pixel position,
+    // then divide by unscaled cell size to get terminal coordinates.
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+    const cellW = rect.width / zoom / term.cols;
+    const cellH = rect.height / zoom / term.rows;
 
     return {
-      col: Math.max(0, Math.min(term.cols - 1, col)),
-      row: Math.max(0, Math.min(term.rows - 1, row))
+      col: Math.max(0, Math.min(term.cols - 1, Math.floor(x / cellW))),
+      row: Math.max(0, Math.min(term.rows - 1, Math.floor(y / cellH)))
     };
   }
 
@@ -132,7 +142,7 @@
     term = new Terminal({
       cursorBlink: false,
       allowProposedApi: true,
-      fontFamily: '"Cascadia Code", "Fira Code", "Source Code Pro", monospace',
+      fontFamily: '"IBM Plex Mono", monospace',
       fontSize,
       cols,
       rows,
