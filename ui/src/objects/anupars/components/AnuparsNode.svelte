@@ -159,6 +159,18 @@
     term.loadAddon(fitAddon);
     term.open(terminalElement);
 
+    // After open(), measure xterm's actual cell dimensions and size the
+    // container to fit exactly. This avoids hardcoded pixel multipliers
+    // that may not match the font metrics.
+    const cellDims = fitAddon.proposeDimensions();
+    if (cellDims) {
+      const coreTerminal = (term as any)._core;
+      const cellWidth = coreTerminal._renderService.dimensions.css.cell.width;
+      const cellHeight = coreTerminal._renderService.dimensions.css.cell.height;
+      terminalElement.style.width = `${Math.ceil(cellWidth * cols)}px`;
+      terminalElement.style.height = `${Math.ceil(cellHeight * rows)}px`;
+    }
+
     // Initialize WASM with terminal dimensions
     wasmModule.wasm_init(term.cols, term.rows);
     initialized = true;
@@ -329,7 +341,6 @@
                 ? 'shadow-glow-md border-zinc-400'
                 : 'hover:shadow-glow-sm border-transparent'
             ].join(' ')}
-            style="width: {cols * 9}px; height: {rows * 17}px;"
           ></div>
         </div>
         <TypedHandle
