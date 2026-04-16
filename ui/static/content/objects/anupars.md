@@ -1,4 +1,4 @@
-[Anupars](https://github.com/patchies/anupars) is a roguelike terminal-based
+[Anupars](https://github.com/karnpapon/anupars) is a roguelike terminal-based
 musical sequencer driven by regular expressions (RegExp), designed for
 resource-constrained devices and performance-oriented workflows.
 

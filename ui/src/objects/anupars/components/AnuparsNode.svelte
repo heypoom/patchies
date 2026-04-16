@@ -39,7 +39,9 @@
   let worker: Worker | null = null;
   let unsubProfiler: (() => void) | null = null;
   let unsubFpsCap: (() => void) | null = null;
+  let destroyed = false;
   let initialized = false;
+  let isPlaying = false;
   let dragging = false;
   let dragButton = 0;
 
@@ -116,6 +118,8 @@
     ]);
 
     await import('@xterm/xterm/css/xterm.css');
+
+    if (destroyed) return;
 
     // Create xterm.js terminal
     term = new Terminal({
@@ -255,6 +259,7 @@
   });
 
   onDestroy(() => {
+    destroyed = true;
     initialized = false;
 
     messageContext.queue.removeCallback(handleMessage);
@@ -279,13 +284,22 @@
     try {
       match(message)
         .with(anuparsMessages.bang, () => {
-          if (initialized) postWorker({ type: 'sendKey', key: ' ' });
+          if (!initialized) return;
+
+          postWorker({ type: 'sendKey', key: ' ' });
+          isPlaying = !isPlaying;
         })
         .with(anuparsMessages.play, () => {
-          if (initialized) postWorker({ type: 'sendKey', key: ' ' });
+          if (!initialized || isPlaying) return;
+
+          postWorker({ type: 'sendKey', key: ' ' });
+          isPlaying = true;
         })
         .with(anuparsMessages.stop, () => {
-          if (initialized) postWorker({ type: 'sendKey', key: ' ' });
+          if (!initialized || !isPlaying) return;
+
+          postWorker({ type: 'sendKey', key: ' ' });
+          isPlaying = false;
         });
     } catch (error) {
       console.error('AnuparsNode handleMessage error:', error);
