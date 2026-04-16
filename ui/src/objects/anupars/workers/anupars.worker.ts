@@ -24,7 +24,8 @@ export type WorkerInMessage =
   | { type: 'sendMouse'; kind: number; button: number; col: number; row: number }
   | { type: 'resize'; cols: number; rows: number }
   | { type: 'profilerEnable'; nodeId: string; enabled: boolean }
-  | { type: 'setFpsCap'; fpsCap: number };
+  | { type: 'setFpsCap'; fpsCap: number }
+  | { type: 'setFrozen'; frozen: boolean };
 
 export type WorkerOutMessage =
   | { type: 'ready' }
@@ -51,10 +52,14 @@ const workerProfiler = new WorkerProfiler((id, category, stats) => {
 let loopId: ReturnType<typeof setInterval> | null = null;
 let lastTs = performance.now();
 let tickIntervalMs = 1000 / 60;
+let frozen = false;
 
 function restartLoop() {
-  if (loopId !== null) clearInterval(loopId);
-  if (initialized) loopId = setInterval(tick, tickIntervalMs);
+  if (loopId !== null) {
+    clearInterval(loopId);
+    loopId = null;
+  }
+  if (initialized && !frozen) loopId = setInterval(tick, tickIntervalMs);
 }
 
 function tick() {
@@ -101,8 +106,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
         initialized = true;
         lastTs = performance.now();
 
-        if (loopId !== null) clearInterval(loopId);
-        loopId = setInterval(tick, tickIntervalMs);
+        restartLoop();
 
         self.postMessage({ type: 'ready' } satisfies WorkerOutMessage);
       } catch (err) {
@@ -128,6 +132,10 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
     .with({ type: 'setFpsCap' }, (m) => {
       // 0 = unlimited → default 60fps
       tickIntervalMs = 1000 / (m.fpsCap || 60);
+      restartLoop();
+    })
+    .with({ type: 'setFrozen' }, (m) => {
+      frozen = m.frozen;
       restartLoop();
     })
     .exhaustive();

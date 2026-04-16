@@ -38,6 +38,7 @@ Similar to Orca node:
 - xterm.js terminal canvas (nodrag area)
 - Message inlet for control (play/stop/bang)
 - Message outlet for MIDI output
+- Freeze button (pauses the worker step/render loop to free the CPU when idle)
 - Settings panel for terminal dimensions and font size
 
 ## Key Controls (handled by WASM)

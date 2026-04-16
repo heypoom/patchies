@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Settings, X } from '@lucide/svelte/icons';
+  import { Moon, Settings, X } from '@lucide/svelte/icons';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -32,6 +32,7 @@
 
   let terminalElement: HTMLDivElement | undefined = $state();
   let showSettings = $state(false);
+  let frozen = $state(false);
   let containerElement: HTMLDivElement | undefined = $state();
   let previewContainerWidth = $state(0);
 
@@ -337,7 +338,7 @@
   });
 </script>
 
-<div class="relative flex gap-x-3">
+<div class={['relative flex gap-x-3 transition-opacity', frozen && 'opacity-40'].join(' ')}>
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <!-- Draggable title header and controls -->
@@ -347,6 +348,24 @@
         </div>
 
         <div class="flex gap-1">
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class={[
+                  'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
+                  frozen ? 'opacity-100' : 'group-hover:opacity-100 sm:opacity-0'
+                ].join(' ')}
+                onclick={() => {
+                  frozen = !frozen;
+                  postWorker({ type: 'setFrozen', frozen });
+                }}
+              >
+                <Moon class={['h-4 w-4', frozen ? 'text-sky-400' : 'text-zinc-300'].join(' ')} />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>{frozen ? 'Wake node' : 'Sleep node'}</Tooltip.Content>
+          </Tooltip.Root>
+
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
