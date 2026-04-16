@@ -11,6 +11,7 @@
   import type { WorkerInMessage, WorkerOutMessage } from '../workers/anupars.worker';
   import { profiler } from '$lib/profiler';
   import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
+  import { renderFpsCap } from '../../../stores/renderer.store';
 
   let {
     id: nodeId,
@@ -37,6 +38,7 @@
   let term: any = null;
   let worker: Worker | null = null;
   let unsubProfiler: (() => void) | null = null;
+  let unsubFpsCap: (() => void) | null = null;
   let initialized = false;
   let dragging = false;
   let dragButton = 0;
@@ -188,6 +190,11 @@
       postWorker({ type: 'profilerEnable', nodeId, enabled });
     });
 
+    // Sync render FPS cap with worker
+    unsubFpsCap = renderFpsCap.subscribe((fpsCap) => {
+      postWorker({ type: 'setFpsCap', fpsCap });
+    });
+
     // Alt/Option key handler
     term.attachCustomKeyEventHandler((e: KeyboardEvent) => {
       if (e.type !== 'keydown') return true;
@@ -255,6 +262,8 @@
 
     unsubProfiler?.();
     unsubProfiler = null;
+    unsubFpsCap?.();
+    unsubFpsCap = null;
 
     profiler.unregister(nodeId);
     worker?.terminate();

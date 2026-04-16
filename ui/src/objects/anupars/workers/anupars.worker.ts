@@ -22,7 +22,8 @@ export type WorkerInMessage =
   | { type: 'sendKey'; key: string }
   | { type: 'sendMouse'; kind: number; button: number; col: number; row: number }
   | { type: 'resize'; cols: number; rows: number }
-  | { type: 'profilerEnable'; nodeId: string; enabled: boolean };
+  | { type: 'profilerEnable'; nodeId: string; enabled: boolean }
+  | { type: 'setFpsCap'; fpsCap: number };
 
 export type WorkerOutMessage =
   | { type: 'ready' }
@@ -43,13 +44,17 @@ const workerProfiler = new WorkerProfiler((id, category, stats) => {
   } satisfies WorkerOutMessage);
 });
 
-// Frame loop runs inside the worker via setInterval
+// Frame loop runs inside the worker via setInterval.
+// Step + render + MIDI drain all run at the same rate.
+// Draw is cheap (~0.02ms) so no need to throttle separately.
 let loopId: ReturnType<typeof setInterval> | null = null;
 let lastTs = performance.now();
+let tickIntervalMs = 1000 / 60;
 
-const STEP_INTERVAL_MS = 1000 / 60;
-const RENDER_INTERVAL_MS = 1000 / 30;
-let lastRenderTs = 0;
+function restartLoop() {
+  if (loopId !== null) clearInterval(loopId);
+  if (initialized) loopId = setInterval(tick, tickIntervalMs);
+}
 
 function tick() {
   if (!initialized) return;
@@ -59,7 +64,6 @@ function tick() {
 
   lastTs = now;
 
-  // Step the sequencer
   workerProfiler.measure(nodeId, 'interval', () => {
     wasm_step(elapsed);
   });
@@ -72,18 +76,13 @@ function tick() {
     midi.push([msg[0], msg[1], msg[2]]);
   }
 
-  // Throttle render to ~30fps
+  // Render ANSI output
   let ansi = '';
 
-  if (now - lastRenderTs >= RENDER_INTERVAL_MS) {
-    lastRenderTs = now;
+  workerProfiler.measure(nodeId, 'draw', () => {
+    ansi = wasm_render();
+  });
 
-    workerProfiler.measure(nodeId, 'draw', () => {
-      ansi = wasm_render();
-    });
-  }
-
-  // Only post if there's something to send
   if (midi.length > 0 || ansi.length > 0) {
     self.postMessage({ type: 'frame', ansi, midi } satisfies WorkerOutMessage);
   }
@@ -101,8 +100,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
         initialized = true;
         lastTs = performance.now();
 
-        // Run at ~60fps
-        loopId = setInterval(tick, STEP_INTERVAL_MS);
+        loopId = setInterval(tick, tickIntervalMs);
 
         self.postMessage({ type: 'ready' } satisfies WorkerOutMessage);
       } catch (err) {
@@ -133,6 +131,13 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
     case 'profilerEnable': {
       nodeId = msg.nodeId;
       workerProfiler.setEnabled(msg.enabled);
+      break;
+    }
+
+    case 'setFpsCap': {
+      // 0 = unlimited → default 60fps
+      tickIntervalMs = 1000 / (msg.fpsCap || 60);
+      restartLoop();
       break;
     }
   }
