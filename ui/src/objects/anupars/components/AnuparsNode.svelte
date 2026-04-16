@@ -8,6 +8,7 @@
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useViewport } from '@xyflow/svelte';
+  import { profiler } from '$lib/profiler';
 
   // Heavy deps (xterm, wasm) are dynamically imported in onMount
 
@@ -35,7 +36,7 @@
 
   // These are typed loosely since they come from dynamic imports
   let term: any = null;
-  let animFrameId: number | null = null;
+  let animationFrameId: number | null = null;
   let initialized = false;
   let dragging = false;
   let dragButton = 0;
@@ -147,7 +148,7 @@
       cols,
       rows,
       theme: {
-        background: '#000000',
+        background: '#080809',
         foreground: '#ffffff'
       },
       macOptionIsMeta: true,
@@ -163,10 +164,12 @@
     // container to fit exactly. This avoids hardcoded pixel multipliers
     // that may not match the font metrics.
     const cellDims = fitAddon.proposeDimensions();
+
     if (cellDims) {
       const coreTerminal = (term as any)._core;
       const cellWidth = coreTerminal._renderService.dimensions.css.cell.width;
       const cellHeight = coreTerminal._renderService.dimensions.css.cell.height;
+
       terminalElement.style.width = `${Math.ceil(cellWidth * cols)}px`;
       terminalElement.style.height = `${Math.ceil(cellHeight * rows)}px`;
     }
@@ -180,41 +183,50 @@
       if (e.type !== 'keydown') return true;
       if (!e.altKey || e.ctrlKey) return true;
       if (e.key.length !== 1) return true;
+
       wasm?.wasm_send_key('\x1b' + e.key);
+
       return false;
     });
 
     // Forward keyboard input to WASM
     term.onData((keyData: string) => {
       if (!initialized) return;
+
       wasm?.wasm_send_key(keyData);
     });
 
     // Mouse handlers on the terminal element (capture mode)
-    const el = term.element;
-    if (el) {
-      el.addEventListener(
+    const _terminalElement = term.element;
+
+    if (_terminalElement) {
+      _terminalElement.addEventListener(
         'mousedown',
         (e: MouseEvent) => {
           dragging = true;
           dragButton = e.button;
+
           const { col, row } = cellPos(e);
+
           wasm?.wasm_send_mouse(0, e.button, col, row);
           term?.focus();
+
           e.preventDefault();
           e.stopPropagation();
         },
         true
       );
 
-      el.addEventListener('mousemove', (e: MouseEvent) => {
+      _terminalElement.addEventListener('mousemove', (e: MouseEvent) => {
         if (!dragging) return;
+
         const { col, row } = cellPos(e);
+
         wasm?.wasm_send_mouse(1, dragButton, col, row);
       });
 
-      el.addEventListener('contextmenu', (e: Event) => e.preventDefault());
-      el.addEventListener('selectstart', (e: Event) => e.preventDefault());
+      _terminalElement.addEventListener('contextmenu', (e: Event) => e.preventDefault());
+      _terminalElement.addEventListener('selectstart', (e: Event) => e.preventDefault());
     }
 
     window.addEventListener('mouseup', handleGlobalMouseUp);
@@ -224,29 +236,36 @@
 
     // Animation loop
     let lastTs: number | null = null;
+
     function frame(ts: number) {
       if (!initialized || !wasm) return;
 
       const elapsed = lastTs === null ? 16.0 : ts - lastTs;
+
       lastTs = ts;
 
-      wasm.wasm_step(elapsed);
+      profiler.measure(nodeId, 'raf', () => {
+        wasm!.wasm_step(elapsed);
 
-      // Drain MIDI output queue
-      let midiMsg: Uint8Array | undefined;
-      while ((midiMsg = wasm.wasm_take_midi_message()) !== undefined) {
-        parseMidiMessage(midiMsg);
-      }
+        // Drain MIDI output queue
+        let midiMsg: Uint8Array | undefined;
 
-      // Render ANSI output
-      const ansi = wasm.wasm_render();
-      if (ansi.length > 0 && term) {
-        term.write(ansi);
-      }
+        while ((midiMsg = wasm!.wasm_take_midi_message()) !== undefined) {
+          parseMidiMessage(midiMsg);
+        }
 
-      animFrameId = requestAnimationFrame(frame);
+        // Render ANSI output
+        const ansi = wasm!.wasm_render();
+
+        if (ansi.length > 0 && term) {
+          term.write(ansi);
+        }
+      });
+
+      animationFrameId = requestAnimationFrame(frame);
     }
-    animFrameId = requestAnimationFrame(frame);
+
+    animationFrameId = requestAnimationFrame(frame);
 
     measureWidth();
   });
@@ -254,17 +273,21 @@
   onDestroy(() => {
     initialized = false;
 
-    if (animFrameId !== null) {
-      cancelAnimationFrame(animFrameId);
-      animFrameId = null;
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+
+      animationFrameId = null;
     }
 
     messageContext.queue.removeCallback(handleMessage);
     window.removeEventListener('mouseup', handleGlobalMouseUp);
 
+    profiler.unregister(nodeId);
     term?.dispose();
+
     term = null;
     wasm = null;
+
     messageContext.destroy();
   });
 
