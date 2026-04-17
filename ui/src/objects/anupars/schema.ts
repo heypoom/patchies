@@ -10,13 +10,15 @@ import { messages } from '$lib/objects/schemas/common';
 const Stop = sym('stop');
 const SetText = msg('setText', { value: Type.String() });
 const SetPattern = msg('setPattern', { value: Type.String() });
+const SetFrozen = msg('setFrozen', { value: Type.Boolean() });
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const anuparsMessages = {
   ...messages,
   stop: schema(Stop),
   setText: schema(SetText),
-  setPattern: schema(SetPattern)
+  setPattern: schema(SetPattern),
+  setFrozen: schema(SetFrozen)
 };
 
 /**
@@ -38,7 +40,8 @@ export const anuparsSchema: ObjectSchema = {
         { schema: Stop, description: 'Stop playback' },
         { schema: Type.String(), description: 'Load text content into grid editor' },
         { schema: SetText, description: 'Load text content into grid editor' },
-        { schema: SetPattern, description: 'Set regex pattern input' }
+        { schema: SetPattern, description: 'Set regex pattern input' },
+        { schema: SetFrozen, description: 'Freeze or unfreeze the node' }
       ]
     }
   ],

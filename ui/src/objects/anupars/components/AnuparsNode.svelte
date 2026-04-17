@@ -305,6 +305,10 @@
 
           postWorker({ type: 'setPattern', pattern: value });
         })
+        .with(anuparsMessages.setFrozen, ({ value }) => {
+          frozen = value;
+          postWorker({ type: 'setFrozen', frozen: value });
+        })
         .when(
           (m) => typeof m === 'string',
           (m) => {

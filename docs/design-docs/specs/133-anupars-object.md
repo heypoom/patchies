@@ -34,6 +34,7 @@ wasm_set_input(pattern)         // Set the regex input field and trigger pattern
 - `string` — load text content into the grid editor (`wasm_load_file`)
 - `{ type: 'setText', value: string }` — load text content into the grid editor (`wasm_load_file`)
 - `{ type: 'setPattern', value: string }` — set the regex input field (`wasm_set_input`)
+- `{ type: 'setFrozen', value: boolean }` — freeze or unfreeze the node (pauses/resumes the render loop)
 
 ## MIDI Output Mapping
 
