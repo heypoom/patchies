@@ -294,7 +294,25 @@
 
           postWorker({ type: 'sendKey', key: ' ' });
           isPlaying = false;
-        });
+        })
+        .with(anuparsMessages.setText, ({ value }) => {
+          if (!initialized) return;
+
+          postWorker({ type: 'loadFile', contents: value });
+        })
+        .with(anuparsMessages.setPattern, ({ value }) => {
+          if (!initialized) return;
+
+          postWorker({ type: 'setPattern', pattern: value });
+        })
+        .when(
+          (m) => typeof m === 'string',
+          (m) => {
+            if (!initialized) return;
+
+            postWorker({ type: 'loadFile', contents: m as string });
+          }
+        );
     } catch (error) {
       console.error('AnuparsNode handleMessage error:', error);
     }

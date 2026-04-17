@@ -11,6 +11,17 @@ export function wasm_init(cols, rows) {
 }
 
 /**
+ * Load text content into the grid editor (WASM file picker replacement).
+ * Call this from JS after reading a file with `showOpenFilePicker`.
+ * @param {string} contents
+ */
+export function wasm_load_file(contents) {
+  const ptr0 = passStringToWasm0(contents, wasm.__wbindgen_export3, wasm.__wbindgen_export4);
+  const len0 = WASM_VECTOR_LEN;
+  wasm.wasm_load_file(ptr0, len0);
+}
+
+/**
  * Returns the ANSI byte-string to write to `terminal.write()`.
  * Call after `wasm_step`.
  * @returns {string}
@@ -64,6 +75,17 @@ export function wasm_send_key(key) {
  */
 export function wasm_send_mouse(kind, button, col, row) {
   wasm.wasm_send_mouse(kind, button, col, row);
+}
+
+/**
+ * Set the regex input field and trigger pattern matching.
+ * Equivalent to the user typing into the "RGXP" input in the console.
+ * @param {string} pattern
+ */
+export function wasm_set_input(pattern) {
+  const ptr0 = passStringToWasm0(pattern, wasm.__wbindgen_export3, wasm.__wbindgen_export4);
+  const len0 = WASM_VECTOR_LEN;
+  wasm.wasm_set_input(ptr0, len0);
 }
 
 /**

@@ -11,7 +11,9 @@ import initWasm, {
   wasm_send_mouse,
   wasm_render,
   wasm_resize,
-  wasm_take_midi_message
+  wasm_take_midi_message,
+  wasm_load_file,
+  wasm_set_input
 } from '../wasm/anupars.js';
 
 import { WorkerProfiler } from '$workers/shared/WorkerProfiler';
@@ -25,7 +27,9 @@ export type WorkerInMessage =
   | { type: 'resize'; cols: number; rows: number }
   | { type: 'profilerEnable'; nodeId: string; enabled: boolean }
   | { type: 'setFpsCap'; fpsCap: number }
-  | { type: 'setFrozen'; frozen: boolean };
+  | { type: 'setFrozen'; frozen: boolean }
+  | { type: 'loadFile'; contents: string }
+  | { type: 'setPattern'; pattern: string };
 
 export type WorkerOutMessage =
   | { type: 'ready' }
@@ -137,6 +141,12 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
     .with({ type: 'setFrozen' }, (m) => {
       frozen = m.frozen;
       restartLoop();
+    })
+    .with({ type: 'loadFile' }, (m) => {
+      if (initialized) wasm_load_file(m.contents);
+    })
+    .with({ type: 'setPattern' }, (m) => {
+      if (initialized) wasm_set_input(m.pattern);
     })
     .exhaustive();
 };

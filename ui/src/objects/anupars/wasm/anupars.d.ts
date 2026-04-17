@@ -8,6 +8,12 @@
 export function wasm_init(cols: number, rows: number): void;
 
 /**
+ * Load text content into the grid editor (WASM file picker replacement).
+ * Call this from JS after reading a file with `showOpenFilePicker`.
+ */
+export function wasm_load_file(contents: string): void;
+
+/**
  * Returns the ANSI byte-string to write to `terminal.write()`.
  * Call after `wasm_step`.
  */
@@ -33,6 +39,12 @@ export function wasm_send_key(key: string): void;
 export function wasm_send_mouse(kind: number, button: number, col: number, row: number): void;
 
 /**
+ * Set the regex input field and trigger pattern matching.
+ * Equivalent to the user typing into the "RGXP" input in the console.
+ */
+export function wasm_set_input(pattern: string): void;
+
+/**
  * Advance one frame. Call at ~60 fps from `requestAnimationFrame`.
  * `elapsed_ms` - milliseconds since the previous call.
  */
@@ -50,10 +62,12 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly wasm_init: (a: number, b: number) => void;
+  readonly wasm_load_file: (a: number, b: number) => void;
   readonly wasm_render: (a: number) => void;
   readonly wasm_resize: (a: number, b: number) => void;
   readonly wasm_send_key: (a: number, b: number) => void;
   readonly wasm_send_mouse: (a: number, b: number, c: number, d: number) => void;
+  readonly wasm_set_input: (a: number, b: number) => void;
   readonly wasm_step: (a: number) => void;
   readonly wasm_take_midi_message: (a: number) => void;
   readonly __wbindgen_export: (a: number, b: number, c: number) => void;

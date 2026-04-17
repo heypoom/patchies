@@ -22,11 +22,23 @@ wasm_send_key(key)              // Forward keyboard input
 wasm_send_mouse(kind, btn, col, row)  // Forward mouse events
 wasm_resize(cols, rows)         // Handle resize
 wasm_take_midi_message() → Uint8Array | undefined  // Pop 3-byte MIDI
+wasm_load_file(contents)        // Load text content into the grid editor
+wasm_set_input(pattern)         // Set the regex input field and trigger pattern matching
 ```
+
+## Inlet Messages
+
+- `bang` — toggle play/pause (sends Space key)
+- `play` — start playback
+- `stop` — stop playback
+- `string` — load text content into the grid editor (`wasm_load_file`)
+- `{ type: 'setText', value: string }` — load text content into the grid editor (`wasm_load_file`)
+- `{ type: 'setPattern', value: string }` — set the regex input field (`wasm_set_input`)
 
 ## MIDI Output Mapping
 
 Raw MIDI bytes → Patchies messages:
+
 - `0x90` (Note On): `{ type: 'noteOn', note, velocity, channel }`
 - `0x80` (Note Off): `{ type: 'noteOff', note, channel }`
 - `0xB0` (CC): `{ type: 'controlChange', control, value, channel }`
@@ -34,9 +46,10 @@ Raw MIDI bytes → Patchies messages:
 ## UI
 
 Similar to Orca node:
+
 - Draggable title header
 - xterm.js terminal canvas (nodrag area)
-- Message inlet for control (play/stop/bang)
+- Message inlet for control (play/stop/bang/setText/setPattern)
 - Message outlet for MIDI output
 - Freeze button (pauses the worker step/render loop to free the CPU when idle)
 - Settings panel for terminal dimensions and font size

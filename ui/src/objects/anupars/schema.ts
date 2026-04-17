@@ -8,11 +8,15 @@ import { messages } from '$lib/objects/schemas/common';
 
 // Anupars-specific message schemas
 const Stop = sym('stop');
+const SetText = msg('setText', { value: Type.String() });
+const SetPattern = msg('setPattern', { value: Type.String() });
 
 /** Pre-wrapped matchers for use with ts-pattern */
 export const anuparsMessages = {
   ...messages,
-  stop: schema(Stop)
+  stop: schema(Stop),
+  setText: schema(SetText),
+  setPattern: schema(SetPattern)
 };
 
 /**
@@ -31,7 +35,10 @@ export const anuparsSchema: ObjectSchema = {
       messages: [
         { schema: Bang, description: 'Toggle play/pause' },
         { schema: Play, description: 'Start playback' },
-        { schema: Stop, description: 'Stop playback' }
+        { schema: Stop, description: 'Stop playback' },
+        { schema: Type.String(), description: 'Load text content into grid editor' },
+        { schema: SetText, description: 'Load text content into grid editor' },
+        { schema: SetPattern, description: 'Set regex pattern input' }
       ]
     }
   ],

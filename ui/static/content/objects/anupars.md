@@ -1,9 +1,10 @@
 [Anupars](https://github.com/karnpapon/anupars) is a roguelike terminal-based
-musical sequencer driven by regular expressions (RegExp), designed for
-resource-constrained devices and performance-oriented workflows.
+musical sequencer by [@karnpapon](https://github.com/karnpapon), driven by
+regular expressions (RegExp), designed for resource-constrained
+devices and performance-oriented workflows.
 
-Type a regex pattern, and every cell in the grid that matches will trigger MIDI
-notes as the playhead steps through them.
+Type a regex pattern, and every cell in the grid that matches will
+trigger MIDI notes as the playhead steps through them.
 
 ## Output
 
