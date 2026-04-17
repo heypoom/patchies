@@ -1,0 +1,24 @@
+{
+  "name": "anupars",
+  "type": "module",
+  "collaborators": [
+    "karnpapon <karnpapon@gmail.com>"
+  ],
+  "description": "a tiny backend-agnostic step-sequencer/live-coding environment that harnesses the power of RegEx.",
+  "version": "0.3.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/karnpapon/anupars"
+  },
+  "files": [
+    "anupars_bg.wasm",
+    "anupars.js",
+    "anupars.d.ts"
+  ],
+  "main": "anupars.js",
+  "types": "anupars.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

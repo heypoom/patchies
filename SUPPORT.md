@@ -163,6 +163,14 @@ Creator of Uiua, a stack-based array programming language with a rich Unicode sy
 **Support:** [GitHub Sponsors](https://github.com/sponsors/kaikalii)
 **Repository:** [github.com/uiua-lang/uiua](https://github.com/uiua-lang/uiua)
 
+### Karnpapon Boonput
+
+**Projects:** Anupars
+
+Creator of Anupars, a roguelike terminal-based musical sequencer driven by regular expressions.
+
+**Repository:** [github.com/karnpapon/anupars](https://github.com/karnpapon/anupars)
+
 ### Tailwind Labs
 
 **Projects:** Tailwind CSS, @tailwindcss/browser

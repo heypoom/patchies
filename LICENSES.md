@@ -79,12 +79,15 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | textmode.js                       | ^0.8.1       | MIT                    |
 | three                             | ^0.172.0     | MIT                    |
 | tone                              | ^15.1.22     | MIT                    |
+| anupars (WASM)                    | 0.3.0        | MIT                    |
 | uiua (WASM)                       | 0.15.0-dev   | MIT                    |
 | ts-pattern                        | ^5.8.0       | MIT                    |
 | uxn.wasm                          | ^0.9.0       | MIT                    |
 | vite-plugin-pwa                   | ^0.21.1      | MIT                    |
 | @vite-pwa/sveltekit               | ^1.1.0       | MIT                    |
 | vite-plugin-static-copy           | ^3.1.1       | MIT                    |
+| @xterm/xterm                      | ^6.0.0       | MIT                    |
+| @xterm/addon-fit                  | ^0.11.0      | MIT                    |
 | webchuck                          | ^1.2.10      | Apache-2.0             |
 | webmidi                           | ^3.1.12      | Apache-2.0             |
 
@@ -224,6 +227,18 @@ The `ngea` node uses tuning data from the [Network Gong Ensemble Archive](https:
 - **Collective**: <https://www.elekhlekha.xyz/>
 - **Instagram**: <https://www.instagram.com/elekhlekha/>
 - **License**: [CC Attribution-ShareAlike 4.0 (CC BY-SA 4.0)](https://creativecommons.org/licenses/by-sa/4.0/)
+
+#### Anupars (WASM)
+
+The `anupars` node uses a pre-built WASM binary of [Anupars](https://github.com/karnpapon/anupars), a regex-driven terminal-based musical sequencer.
+
+- **Original Project**: Anupars
+- **Author**: Karnpapon Boonput (@karnpapon)
+- **Repository**: <https://github.com/karnpapon/anupars>
+- **License**: MIT
+- **Copyright**: © Karnpapon Boonput
+
+The WASM binary is built from an unpublished branch and bundled as-is. No Rust source code was modified or ported. The node embeds xterm.js to render the terminal UI and converts raw MIDI output to Patchies messages.
 
 ## Licensing: Lygia Shader Library
 
