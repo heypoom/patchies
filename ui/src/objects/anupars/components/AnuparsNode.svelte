@@ -12,6 +12,7 @@
   import { profiler } from '$lib/profiler';
   import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
   import { renderFpsCap } from '../../../stores/renderer.store';
+  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
 
   let {
     id: nodeId,
@@ -33,6 +34,15 @@
   let terminalElement: HTMLDivElement | undefined = $state();
   let showSettings = $state(false);
   let frozen = $state(false);
+
+  function toggleFrozen() {
+    frozen = !frozen;
+
+    postWorker({ type: 'setFrozen', frozen });
+  }
+
+  useNodeSetPaused(nodeId, () => frozen, toggleFrozen);
+
   let containerElement: HTMLDivElement | undefined = $state();
   let previewContainerWidth = $state(0);
 
@@ -377,10 +387,7 @@
                   'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
                   frozen ? 'opacity-100' : 'group-hover:opacity-100 sm:opacity-0'
                 ].join(' ')}
-                onclick={() => {
-                  frozen = !frozen;
-                  postWorker({ type: 'setFrozen', frozen });
-                }}
+                onclick={toggleFrozen}
               >
                 <Moon class={['h-4 w-4', frozen ? 'text-sky-400' : 'text-zinc-300'].join(' ')} />
               </button>
