@@ -4,44 +4,6 @@ const defaultWidth = Math.round(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR);
 
 const defaultHeight = Math.round(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR);
 
-const SLIDER_P5 = `noDrag()
-noOutput()
-setHidePorts(true)
-setPortCount(0, 1)
-
-const [MIN, MAX] = [0, 100]
-const [W, H, XO] = [200, 50, 10]
-let slider
-let prev = 0
-
-function setup() {
-  createCanvas(W, H);
-  noDrag()
-  slider = createSlider(MIN, MAX);
-  slider.position(XO, (H/2)-XO);
-  slider.size(W - (XO*2));
-}
-
-function draw() {
-  const v = slider.value()
-  if (v !== prev) send(v)
-  prev = v
-}`;
-
-const CAM_P5 = `let video;
-
-function setup() {
-  createCanvas(200, 150);
-  video = createCapture(VIDEO);
-  video.size(640, 480);
-  video.hide();
-  pixelDensity(3)
-}
-
-function draw() {
-  image(video, 0, 0, width, height);
-}`;
-
 const TRAFFIC_LIGHT_P5 = `const OFF = '#95a5a6'
 const W = 80
 const states = ['red', 'yellow', 'green']
@@ -238,8 +200,6 @@ function draw() {
 }`;
 
 export const P5_PRESETS: Record<string, { type: string; data: { code: string } }> = {
-  'slider.p5': { type: 'p5', data: { code: SLIDER_P5.trim() } },
-  'cam.p5': { type: 'p5', data: { code: CAM_P5.trim() } },
   'traffic-light.p5': { type: 'p5', data: { code: TRAFFIC_LIGHT_P5.trim() } },
   'fft.p5': { type: 'p5', data: { code: AUDIO_FFT_FULL_P5.trim() } },
   'fft-sm.p5': { type: 'p5', data: { code: AUDIO_FFT_SMALL_P5.trim() } },

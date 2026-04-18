@@ -7,4 +7,4 @@ It should use the GLSystem's `setBitmap` or `setBitmapSource` method to upload, 
 ## Nodes
 
 - `screen` - captures video from the screen. should use `getDisplayMedia`.
-- `webcam` - captures video from the webcam. see `cam.p5` presets for reference.
+- `webcam` - captures video from the webcam.

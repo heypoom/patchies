@@ -91,7 +91,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Examples for using P5 for 2D graphics',
     icon: 'Palette',
     requiredObjects: ['p5'],
-    presets: ['bouncing-balls.p5', 'cam.p5', 'slider.p5', 'text-banner.p5', 'traffic-light.p5']
+    presets: ['bouncing-balls.p5', 'text-banner.p5', 'traffic-light.p5']
   },
   {
     id: 'scope-demos',
