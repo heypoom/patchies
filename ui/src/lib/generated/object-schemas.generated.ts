@@ -2344,7 +2344,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({
               type: Type.Literal('noteOn'),
               note: Type.Number(),
-              velocity: Type.Number()
+              velocity: Type.Number(),
+              channel: Type.Optional(Type.Number())
             }),
             description: 'Trigger pad by MIDI note'
           },
@@ -2352,7 +2353,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             schema: Type.Object({
               type: Type.Literal('noteOff'),
               note: Type.Number(),
-              velocity: Type.Number()
+              velocity: Type.Optional(Type.Number()),
+              channel: Type.Optional(Type.Number())
             }),
             description: 'Release pad'
           },
