@@ -50,24 +50,32 @@ const workerProfiler = new WorkerProfiler((id, category, stats) => {
   } satisfies WorkerOutMessage);
 });
 
-// Frame loop runs inside the worker via setInterval.
-// Step + render + MIDI drain all run at the same rate.
-// Draw is cheap (~0.02ms) so no need to throttle separately.
-let loopId: ReturnType<typeof setInterval> | null = null;
+// Frame loop uses recursive setTimeout to avoid tick stacking.
+// Unlike setInterval, this ensures the next tick is only scheduled
+// after the current one completes, preventing frame pile-ups.
+let loopId: ReturnType<typeof setTimeout> | null = null;
 let lastTs = performance.now();
 let tickIntervalMs = 1000 / 60;
 let frozen = false;
 
 function restartLoop() {
   if (loopId !== null) {
-    clearInterval(loopId);
+    clearTimeout(loopId);
     loopId = null;
   }
-  if (initialized && !frozen) loopId = setInterval(tick, tickIntervalMs);
+
+  if (initialized && !frozen) {
+    scheduleTick();
+  }
+}
+
+function scheduleTick() {
+  loopId = setTimeout(tick, tickIntervalMs);
 }
 
 function tick() {
-  if (!initialized) return;
+  loopId = null;
+  if (!initialized || frozen) return;
 
   const now = performance.now();
   const elapsed = now - lastTs;
@@ -96,6 +104,9 @@ function tick() {
   if (midi.length > 0 || ansi.length > 0) {
     self.postMessage({ type: 'frame', ansi, midi } satisfies WorkerOutMessage);
   }
+
+  // Schedule next tick after current one completes (avoids stacking)
+  scheduleTick();
 }
 
 self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {

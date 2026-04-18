@@ -56,6 +56,10 @@
   let dragging = false;
   let dragButton = 0;
 
+  // rAF batching: accumulate ANSI writes and flush once per animation frame
+  let pendingAnsi = '';
+  let rafId = 0;
+
   function postWorker(msg: WorkerInMessage) {
     worker?.postMessage(msg);
   }
@@ -153,6 +157,19 @@
     term.loadAddon(fitAddon);
     term.open(terminalElement);
 
+    // Use WebGL renderer for GPU-accelerated rendering (canvas fallback)
+    try {
+      const { WebglAddon } = await import('@xterm/addon-webgl');
+      term.loadAddon(new WebglAddon());
+    } catch {
+      try {
+        const { CanvasAddon } = await import('@xterm/addon-canvas');
+        term.loadAddon(new CanvasAddon());
+      } catch {
+        // Fall back to default DOM renderer
+      }
+    }
+
     // Measure actual cell dimensions and size container
     if (fitAddon.proposeDimensions()) {
       measureTerminalSize();
@@ -175,8 +192,20 @@
             handleMidiBytes(bytes);
           }
 
-          if (ansi.length > 0 && term) {
-            term.write(ansi);
+          if (ansi.length > 0) {
+            // Batch ANSI writes and flush once per animation frame
+            pendingAnsi += ansi;
+
+            if (!rafId) {
+              rafId = requestAnimationFrame(() => {
+                if (pendingAnsi && term) {
+                  term.write(pendingAnsi);
+                  pendingAnsi = '';
+                }
+
+                rafId = 0;
+              });
+            }
           }
         })
         .with({ type: 'profilerStats' }, ({ nodeId: id, category, stats }) => {
@@ -265,6 +294,11 @@
   onDestroy(() => {
     destroyed = true;
     initialized = false;
+
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
 
     messageContext.queue.removeCallback(handleMessage);
     window.removeEventListener('mouseup', handleGlobalMouseUp);
