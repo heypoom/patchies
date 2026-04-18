@@ -26,8 +26,18 @@ export const SetMax = msg('setMax', { value: Type.Number() });
 export const SetDefault = msg('setDefault', { value: Type.Number() });
 export const SetValue = msg('setValue', { value: Type.Number() });
 export const LoadBySrc = msg('load', { src: Type.String() });
-export const NoteOn = msg('noteOn', { note: Type.Number(), velocity: Type.Number() });
-export const NoteOff = msg('noteOff', { note: Type.Number(), velocity: Type.Number() });
+
+export const NoteOn = msg('noteOn', {
+  note: Type.Number(),
+  velocity: Type.Number(),
+  channel: Type.Optional(Type.Number())
+});
+
+export const NoteOff = msg('noteOff', {
+  note: Type.Number(),
+  velocity: Type.Number(),
+  channel: Type.Optional(Type.Number())
+});
 
 /** All common schemas as an array, for building the common message type map. */
 export const COMMON_SCHEMAS = [

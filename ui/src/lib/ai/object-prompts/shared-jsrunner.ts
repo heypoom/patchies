@@ -48,6 +48,7 @@ export const jsRunnerInstructions = `
 - Common MIDI messages:
   - {type: 'noteOn' | 'noteOff', note, velocity, channel}
   - {type: 'controlChange', control, value, channel}
+  - {type: 'pitchBend', value, channel} — value is -1.0 to 1.0 (±2 semitone range)
   - note and velocity is between 0-127
 
 **Named Channels (wireless messaging):**
