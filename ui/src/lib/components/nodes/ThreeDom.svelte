@@ -16,6 +16,7 @@
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import type { WebGLRenderer } from 'three';
   import { JSRunner } from '$lib/js-runner/JSRunner';
   import { THREE_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
@@ -38,6 +39,7 @@
       hidePorts?: boolean;
       executeCode?: number;
       showConsole?: boolean;
+      paused?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
     };
@@ -102,6 +104,9 @@
   let previousExecuteCode = $state<number | undefined>(undefined);
 
   let renderer = $state<WebGLRenderer | null>(null);
+
+  // Cached animation-loop callback so we can re-attach after unpausing.
+  let activeAnimationLoop: ((time: number) => void) | null = null;
 
   // Watch for executeCode timestamp changes and re-run when it changes
   $effect(() => {
@@ -291,6 +296,31 @@
     outputHeight = height;
   }
 
+  function togglePlayback() {
+    const wasPaused = !!data.paused;
+
+    if (wasPaused) {
+      updateNodeData(nodeId, { paused: false });
+
+      if (renderer && activeAnimationLoop) {
+        renderer.setAnimationLoop(activeAnimationLoop);
+      }
+    } else {
+      updateNodeData(nodeId, { paused: true });
+      renderer?.setAnimationLoop(null);
+    }
+
+    eventBus.dispatch({
+      type: 'nodeDataCommit',
+      nodeId,
+      dataKey: 'paused',
+      oldValue: wasPaused,
+      newValue: !wasPaused
+    });
+  }
+
+  useNodeSetPaused(nodeId, () => !!data.paused, togglePlayback);
+
   async function sendBitmap() {
     if (!canvas) return;
     if (!videoOutputEnabled) return;
@@ -389,7 +419,7 @@
 
       // Start animation loop if user defined a draw() function
       if (typeof userDraw === 'function') {
-        renderer!.setAnimationLoop((time: number) => {
+        const loopCallback = (time: number) => {
           profiler.measure(nodeId, 'draw', () => {
             try {
               userDraw(time);
@@ -399,7 +429,15 @@
               renderer?.setAnimationLoop(null);
             }
           });
-        });
+        };
+
+        activeAnimationLoop = loopCallback;
+
+        if (!data.paused) {
+          renderer!.setAnimationLoop(loopCallback);
+        }
+      } else {
+        activeAnimationLoop = null;
       }
     } catch (error) {
       handleCodeError(error, data.code, nodeId, customConsole, THREE_DOM_WRAPPER_OFFSET);
@@ -452,6 +490,9 @@
   objectType="three.dom"
   {nodeId}
   onrun={runCode}
+  onPlaybackToggle={togglePlayback}
+  paused={data.paused}
+  showPauseButton={true}
   bind:previewCanvas={canvas}
   nodrag={!dragEnabled}
   nopan={!panEnabled}

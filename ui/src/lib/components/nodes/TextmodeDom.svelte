@@ -194,10 +194,12 @@
 
     if (wasPaused) {
       updateNodeData(nodeId, { paused: false });
+
       tm?.loop();
       startBitmapLoop();
     } else {
       updateNodeData(nodeId, { paused: true });
+
       tm?.noLoop();
       stopBitmapLoop();
     }
