@@ -35,7 +35,7 @@ export const NoteOn = msg('noteOn', {
 
 export const NoteOff = msg('noteOff', {
   note: Type.Number(),
-  velocity: Type.Number(),
+  velocity: Type.Optional(Type.Number()),
   channel: Type.Optional(Type.Number())
 });
 

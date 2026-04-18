@@ -83,36 +83,42 @@
     );
   }
 
-  function sendMidiGong(note: number, velocity: number, channel = 0, isNoteOn?: boolean): void {
+  function sendMidiGong(note: number, velocity: number, channel: number, isNoteOn: boolean): void {
     if (!currentTuning) return;
 
-    const gongIndex = note % gongCount;
-    const gong = currentTuning.data[gongIndex];
-    if (!gong) return;
-
-    const freq = gong.freq;
-    const exactMidi = 69 + 12 * Math.log2(freq / 440);
-    const baseNote = Math.round(exactMidi);
-    const centsDeviation = (exactMidi - baseNote) * 100;
-    const bendValue = Math.max(-1, Math.min(1, centsDeviation / 200));
-
     if (isNoteOn) {
-      activeNotes.set(note, { baseNote, channel, frequency: freq });
+      const gongIndex = note % gongCount;
+      const gong = currentTuning.data[gongIndex];
+      if (!gong) return;
 
+      const freq = gong.freq;
+      const exactMidi = 69 + 12 * Math.log2(freq / 440);
+      const baseNote = Math.round(exactMidi);
+      const centsDeviation = (exactMidi - baseNote) * 100;
+      const bendValue = Math.max(-1, Math.min(1, centsDeviation / 200));
+
+      activeNotes.set(note, { baseNote, channel, frequency: freq });
       messageContext?.send(
         { type: 'pitchBend', value: bendValue, channel, frequency: freq },
         { to: 0 }
       );
-
       messageContext?.send(
         { type: 'noteOn', note: baseNote, velocity, channel, frequency: freq },
         { to: 0 }
       );
     } else {
-      activeNotes.delete(note);
+      const stored = activeNotes.get(note);
+      if (!stored) return;
 
+      activeNotes.delete(note);
       messageContext?.send(
-        { type: 'noteOff', note: baseNote, velocity, channel, frequency: freq },
+        {
+          type: 'noteOff',
+          note: stored.baseNote,
+          velocity,
+          channel: stored.channel,
+          frequency: stored.frequency
+        },
         { to: 0 }
       );
     }
