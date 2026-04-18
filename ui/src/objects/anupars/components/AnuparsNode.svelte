@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Moon, Settings, X } from '@lucide/svelte/icons';
+  import { Moon, CircleQuestionMark } from '@lucide/svelte/icons';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -13,6 +13,7 @@
   import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
   import { renderFpsCap } from '../../../stores/renderer.store';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
+  import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../../stores/ui.store';
 
   let {
     id: nodeId,
@@ -32,7 +33,6 @@
   const viewport = useViewport();
 
   let terminalElement: HTMLDivElement | undefined = $state();
-  let showSettings = $state(false);
   let frozen = $state(false);
 
   function toggleFrozen() {
@@ -42,9 +42,6 @@
   }
 
   useNodeSetPaused(nodeId, () => frozen, toggleFrozen);
-
-  let containerElement: HTMLDivElement | undefined = $state();
-  let previewContainerWidth = $state(0);
 
   let term: any = null;
   let worker: Worker | null = null;
@@ -317,8 +314,6 @@
 
     // Message handler
     messageContext.queue.addCallback(handleMessage);
-
-    measureWidth();
   });
 
   onDestroy(() => {
@@ -396,10 +391,10 @@
     }
   };
 
-  function measureWidth() {
-    if (containerElement) {
-      previewContainerWidth = containerElement.clientWidth;
-    }
+  function openHelp() {
+    isSidebarOpen.set(true);
+    sidebarView.set('help');
+    selectedNodeInfo.set({ type: 'anupars', id: nodeId });
   }
 
   function measureTerminalSize() {
@@ -430,7 +425,6 @@
     postWorker({ type: 'resize', cols: c, rows: r });
 
     measureTerminalSize();
-    measureWidth();
   });
 </script>
 
@@ -463,15 +457,12 @@
             <Tooltip.Trigger>
               <button
                 class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                onclick={() => {
-                  showSettings = !showSettings;
-                  measureWidth();
-                }}
+                onclick={openHelp}
               >
-                <Settings class="h-4 w-4 text-zinc-300" />
+                <CircleQuestionMark class="h-4 w-4 text-zinc-300" />
               </button>
             </Tooltip.Trigger>
-            <Tooltip.Content>Settings</Tooltip.Content>
+            <Tooltip.Content>Help</Tooltip.Content>
           </Tooltip.Root>
         </div>
       </div>
@@ -485,7 +476,7 @@
           index={0}
           {nodeId}
         />
-        <div class="relative" bind:this={containerElement}>
+        <div class="relative">
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
             bind:this={terminalElement}
@@ -511,33 +502,4 @@
       </div>
     </div>
   </div>
-
-  <!-- Settings Panel -->
-  {#if showSettings}
-    <div class="absolute" style="left: {previewContainerWidth + 10}px;">
-      <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button
-          class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-          onclick={() => (showSettings = false)}
-        >
-          <X class="h-4 w-4 text-zinc-300" />
-        </button>
-      </div>
-
-      <div
-        class="nodrag flex w-48 flex-col gap-3 rounded-lg border border-zinc-700 bg-zinc-800 p-3"
-      >
-        <div class="text-xs font-semibold text-zinc-300">Anupars Settings</div>
-
-        <div class="text-xs text-zinc-400">
-          All controls are handled by the terminal. Use Space to play/pause, h/j/k/l to move, Esc to
-          toggle regex mode.
-        </div>
-
-        <div class="text-xs text-zinc-500">
-          Cols: {cols} &times; Rows: {rows}
-        </div>
-      </div>
-    </div>
-  {/if}
 </div>
