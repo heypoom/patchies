@@ -170,7 +170,9 @@
     const p5 = p5Manager?.p5;
     if (!p5) return;
 
-    if (data.paused) {
+    const wasPaused = !!data.paused;
+
+    if (wasPaused) {
       // Unpause the sketch by restarting the animation loop
       p5.loop();
       updateNodeData(nodeId, { paused: false });
@@ -179,6 +181,14 @@
       p5.noLoop();
       updateNodeData(nodeId, { paused: true });
     }
+
+    eventBus.dispatch({
+      type: 'nodeDataCommit',
+      nodeId,
+      dataKey: 'paused',
+      oldValue: wasPaused,
+      newValue: !wasPaused
+    });
   }
 
   // Handle runtime errors (from draw(), setup(), etc.)

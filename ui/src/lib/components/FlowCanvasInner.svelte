@@ -60,6 +60,7 @@
     isValidConnectionBetweenHandles
   } from '$lib/utils/connection-validation';
   import { ViewportCullingManager } from '$lib/canvas/ViewportCullingManager';
+  import { CULLABLE_DOM_TYPES } from '$lib/rendering/types';
   import { useFocusNode, useNodeLabels } from '$lib/canvas/use-focus-node.svelte';
   import AIProviderSettingsDialog from './dialogs/AIProviderSettingsDialog.svelte';
   import { hasAIApiKey } from '../../stores/ai-settings.store';
@@ -171,6 +172,25 @@
     historyManager.record(
       new UpdateNodeDataCommand(e.nodeId, e.dataKey, e.oldValue, e.newValue, canvasAccessors)
     );
+
+    // Viewport-pause edge cases: keep pausedByViewport consistent when the user
+    // toggles pause on a DOM-backed node while it's offscreen.
+    if (e.dataKey !== 'paused') return;
+
+    const node = getNode(e.nodeId);
+    if (!node?.type || !cullableDomTypeSet.has(node.type)) return;
+
+    // Pause-while-offscreen: user takes ownership; drop our claim.
+    if (e.newValue === true && pausedByViewport.has(e.nodeId)) {
+      pausedByViewport.delete(e.nodeId);
+      return;
+    }
+
+    // Unpause-while-offscreen: re-pause ourselves so it doesn't waste CPU.
+    if (e.newValue === false && !prevVisibleDom.has(e.nodeId)) {
+      eventBus.dispatch({ type: 'nodeSetPaused', nodeId: e.nodeId, paused: true });
+      pausedByViewport.add(e.nodeId);
+    }
   };
 
   // Keyboard shortcut manager (created lazily in onMount to access component functions)
@@ -238,8 +258,44 @@
   const viewport = useViewport();
   const viewportCullingManager = new ViewportCullingManager();
 
-  viewportCullingManager.onVisibleNodesChange = (visibleNodes) => {
+  viewportCullingManager.onVisibleFboNodesChange = (visibleNodes) => {
     glSystem.setVisibleNodes(visibleNodes);
+  };
+
+  // DOM-backed renderers: track which nodes we've auto-paused so we can resume
+  // only those on re-entry (and leave user-paused nodes alone).
+  const cullableDomTypeSet = new Set(CULLABLE_DOM_TYPES);
+  let prevVisibleDom = new Set<string>();
+  const pausedByViewport = new Set<string>();
+
+  viewportCullingManager.onVisibleDomNodesChange = (visible, liveIds) => {
+    // Visible → hidden: auto-pause only if the user hasn't already paused.
+    for (const id of prevVisibleDom) {
+      if (visible.has(id)) continue;
+
+      const node = getNode(id);
+      if (!node) continue;
+      if ((node.data as { paused?: boolean } | undefined)?.paused) continue;
+
+      eventBus.dispatch({ type: 'nodeSetPaused', nodeId: id, paused: true });
+      pausedByViewport.add(id);
+    }
+
+    // Hidden → visible: only resume nodes we paused ourselves.
+    for (const id of visible) {
+      if (prevVisibleDom.has(id)) continue;
+      if (!pausedByViewport.has(id)) continue;
+
+      eventBus.dispatch({ type: 'nodeSetPaused', nodeId: id, paused: false });
+      pausedByViewport.delete(id);
+    }
+
+    // Prune stale entries for deleted nodes.
+    for (const id of pausedByViewport) {
+      if (!liveIds.has(id)) pausedByViewport.delete(id);
+    }
+
+    prevVisibleDom = visible;
   };
 
   // Autosave functionality

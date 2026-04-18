@@ -16,6 +16,7 @@
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import type { Textmodifier } from 'textmode.js';
   import { profiler } from '$lib/profiler';
@@ -39,6 +40,7 @@
       showConsole?: boolean;
       fontSize?: number;
       frameRate?: number;
+      paused?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
     };
@@ -187,6 +189,30 @@
     }
   }
 
+  function togglePlayback() {
+    const wasPaused = !!data.paused;
+
+    if (wasPaused) {
+      updateNodeData(nodeId, { paused: false });
+      tm?.loop();
+      startBitmapLoop();
+    } else {
+      updateNodeData(nodeId, { paused: true });
+      tm?.noLoop();
+      stopBitmapLoop();
+    }
+
+    eventBus.dispatch({
+      type: 'nodeDataCommit',
+      nodeId,
+      dataKey: 'paused',
+      oldValue: wasPaused,
+      newValue: !wasPaused
+    });
+  }
+
+  useNodeSetPaused(nodeId, () => !!data.paused, togglePlayback);
+
   async function runCode() {
     if (!canvas) return;
 
@@ -333,8 +359,13 @@
       });
 
       // No longer errored!
-      if (hadErrors && !tm.isLooping()) {
+      if (hadErrors && !tm.isLooping() && !data.paused) {
         tm?.loop();
+      }
+
+      // If user is pausing, keep loop off regardless of code state.
+      if (data.paused) {
+        tm?.noLoop();
       }
 
       // Start bitmap loop after code execution to send frames to GLSystem
@@ -390,6 +421,9 @@
   objectType="textmode.dom"
   {nodeId}
   onrun={runCode}
+  onPlaybackToggle={togglePlayback}
+  paused={data.paused}
+  showPauseButton={true}
   bind:previewCanvas={canvas}
   nodrag={!dragEnabled}
   nopan={!panEnabled}

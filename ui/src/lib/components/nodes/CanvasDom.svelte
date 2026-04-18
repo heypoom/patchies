@@ -16,6 +16,7 @@
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import { profiler } from '$lib/profiler';
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
@@ -312,7 +313,9 @@
   }
 
   function togglePlayback() {
-    if (data.paused) {
+    const wasPaused = !!data.paused;
+
+    if (wasPaused) {
       // Unpause - restart the animation loop with stored callback
       updateNodeData(nodeId, { paused: false });
 
@@ -331,7 +334,17 @@
         animationFrameId = null;
       }
     }
+
+    eventBus.dispatch({
+      type: 'nodeDataCommit',
+      nodeId,
+      dataKey: 'paused',
+      oldValue: wasPaused,
+      newValue: !wasPaused
+    });
   }
+
+  useNodeSetPaused(nodeId, () => !!data.paused, togglePlayback);
 
   async function runCode() {
     if (!canvas || !ctx) return;

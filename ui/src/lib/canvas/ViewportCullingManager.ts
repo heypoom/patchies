@@ -1,5 +1,5 @@
 import type { Node } from '@xyflow/svelte';
-import { FBO_COMPATIBLE_TYPES, type RenderNode } from '$lib/rendering/types';
+import { CULLABLE_DOM_TYPES, FBO_COMPATIBLE_TYPES, type RenderNode } from '$lib/rendering/types';
 
 export interface ViewportBounds {
   left: number;
@@ -9,8 +9,11 @@ export interface ViewportBounds {
 }
 
 export interface ViewportCullingConfig {
-  /** Extra padding in pixels around viewport to avoid flickering at edges */
-  margin: number;
+  /** Extra padding in pixels around viewport for FBO (worker) culling. */
+  fboMargin: number;
+
+  /** Extra padding in pixels around viewport for DOM (main-thread) culling. Larger to hide resume stutter. */
+  domMargin: number;
 
   /** Throttle interval in ms for viewport change updates */
   throttleMs: number;
@@ -23,21 +26,33 @@ export interface ViewportCullingConfig {
 }
 
 const DEFAULT_CONFIG: ViewportCullingConfig = {
-  margin: 100,
+  fboMargin: 100,
+  domMargin: 100,
   throttleMs: 100,
   defaultNodeWidth: 300,
   defaultNodeHeight: 200
 };
 
 const fboCompatibleTypes = new Set(FBO_COMPATIBLE_TYPES);
+const cullableDomTypes = new Set(CULLABLE_DOM_TYPES);
 
 export class ViewportCullingManager {
   private config: ViewportCullingConfig;
   private lastUpdateTime = 0;
   private lastViewport = { x: 0, y: 0, zoom: 1 };
-  private cachedVisibleNodes: Set<string> = new Set();
 
-  public onVisibleNodesChange?: (nodeIds: Set<string>) => void;
+  private cachedVisibleFboNodes: Set<string> = new Set();
+  private cachedVisibleDomNodes: Set<string> = new Set();
+
+  public onVisibleFboNodesChange?: (nodeIds: Set<string>) => void;
+
+  /**
+   * Fires when the set of visible DOM-backed nodes changes.
+   *
+   * @param visible    Node IDs currently inside the DOM-margin viewport.
+   * @param liveIds    All DOM-cullable node IDs currently in the graph (for pruning ledgers).
+   */
+  public onVisibleDomNodesChange?: (visible: Set<string>, liveIds: Set<string>) => void;
 
   constructor(config: Partial<ViewportCullingConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -49,10 +64,10 @@ export class ViewportCullingManager {
   calculateViewportBounds(
     viewport: { x: number; y: number; zoom: number },
     screenWidth: number,
-    screenHeight: number
+    screenHeight: number,
+    margin: number
   ): ViewportBounds {
     const { x, y, zoom } = viewport;
-    const { margin } = this.config;
 
     // Convert screen dimensions to flow coordinates and add margin
     const left = -x / zoom - margin / zoom;
@@ -91,7 +106,7 @@ export class ViewportCullingManager {
    * Update visible nodes based on current viewport and node positions.
    * Throttled to avoid excessive updates during pan/zoom.
    *
-   * @returns The set of visible nodes, or null if throttled (use cached)
+   * @returns The set of visible FBO nodes, or null if throttled (use cached)
    */
   updateVisibleNodes(
     viewport: { x: number; y: number; zoom: number },
@@ -114,27 +129,57 @@ export class ViewportCullingManager {
     this.lastUpdateTime = now;
     this.lastViewport = { x: viewport.x, y: viewport.y, zoom: viewport.zoom };
 
-    const bounds = this.calculateViewportBounds(viewport, screenWidth, screenHeight);
-    const visibleNodes = new Set<string>();
+    const fboBounds = this.calculateViewportBounds(
+      viewport,
+      screenWidth,
+      screenHeight,
+      this.config.fboMargin
+    );
+
+    const domBounds = this.calculateViewportBounds(
+      viewport,
+      screenWidth,
+      screenHeight,
+      this.config.domMargin
+    );
+
+    const visibleFboNodes = new Set<string>();
+    const visibleDomNodes = new Set<string>();
+    const liveDomIds = new Set<string>();
 
     for (const node of nodes) {
-      // Only consider FBO-compatible node types for culling
-      if (!node.type || !fboCompatibleTypes.has(node.type as RenderNode['type'])) {
-        continue;
+      const nodeType = node.type;
+      if (!nodeType) continue;
+
+      const isFbo = fboCompatibleTypes.has(nodeType as RenderNode['type']);
+      const isDom = cullableDomTypes.has(nodeType);
+
+      if (!isFbo && !isDom) continue;
+
+      if (isFbo && this.isNodeVisible(node, fboBounds)) {
+        visibleFboNodes.add(node.id);
       }
 
-      if (this.isNodeVisible(node, bounds)) {
-        visibleNodes.add(node.id);
+      if (isDom) {
+        liveDomIds.add(node.id);
+
+        if (this.isNodeVisible(node, domBounds)) {
+          visibleDomNodes.add(node.id);
+        }
       }
     }
 
-    // Check if visible nodes changed
-    if (!this.setsEqual(visibleNodes, this.cachedVisibleNodes)) {
-      this.cachedVisibleNodes = visibleNodes;
-      this.onVisibleNodesChange?.(visibleNodes);
+    if (!this.setsEqual(visibleFboNodes, this.cachedVisibleFboNodes)) {
+      this.cachedVisibleFboNodes = visibleFboNodes;
+      this.onVisibleFboNodesChange?.(visibleFboNodes);
     }
 
-    return visibleNodes;
+    if (!this.setsEqual(visibleDomNodes, this.cachedVisibleDomNodes)) {
+      this.cachedVisibleDomNodes = visibleDomNodes;
+      this.onVisibleDomNodesChange?.(visibleDomNodes, liveDomIds);
+    }
+
+    return visibleFboNodes;
   }
 
   private setsEqual(a: Set<string>, b: Set<string>): boolean {
@@ -160,11 +205,17 @@ export class ViewportCullingManager {
   }
 
   getVisibleNodes(): Set<string> {
-    return this.cachedVisibleNodes;
+    return this.cachedVisibleFboNodes;
+  }
+
+  getVisibleDomNodes(): Set<string> {
+    return this.cachedVisibleDomNodes;
   }
 
   destroy() {
-    this.onVisibleNodesChange = undefined;
-    this.cachedVisibleNodes.clear();
+    this.onVisibleFboNodesChange = undefined;
+    this.onVisibleDomNodesChange = undefined;
+    this.cachedVisibleFboNodes.clear();
+    this.cachedVisibleDomNodes.clear();
   }
 }

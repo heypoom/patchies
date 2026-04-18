@@ -321,3 +321,9 @@ export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = [
 
 export const isFBOCompatible = (nodeType?: string): nodeType is RenderNode['type'] =>
   FBO_COMPATIBLE_TYPES.includes(nodeType as RenderNode['type']);
+
+// DOM-backed main-thread renderers that should be auto-paused when offscreen.
+// Note: three.dom is listed but lacks a pause mechanism today — pausing it
+// requires wrapping the user's rAF loop (see CanvasDom.svelte pattern). Until
+// that's added, events for three.dom nodes are no-ops.
+export const CULLABLE_DOM_TYPES: string[] = ['p5', 'canvas.dom', 'textmode.dom', 'three.dom'];
