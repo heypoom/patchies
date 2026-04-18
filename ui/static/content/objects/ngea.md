@@ -23,17 +23,26 @@ Select a tuning from the dropdown. The outlet type mirrors what you send in.
 ## MIDI Microtuning
 
 Wire a [midi.in](/docs/objects/midi.in) node into ngea to retune a MIDI controller to any
-Southeast Asian gong ensemble tuning. Wire the output to [midi.out](/docs/objects/midi.out)
-to hear the result on a synth:
+Southeast Asian gong ensemble tuning.
+
+Each incoming MIDI note is mapped to a gong (`note % gongCount`), then
+a `pitchBend` message is emitted before the `noteOn` to bend to the exact
+microtonal frequency. The bend value is -1.0–1.0 assuming a ±2 semitone range.
+
+**To hear it in Patchies** — use the built-in **poly-synth-midi** preset
+(from [tone~](/docs/objects/tone~)). It handles `pitchBend` correctly and
+is the easiest way to audition any MIDI microtuning:
+
+```
+midi.in → ngea → tone~ (poly-synth-midi preset)
+```
+
+**To send to your DAW** — wire to [midi.out](/docs/objects/midi.out) instead.
+Set your synth's pitch bend range to ±2 semitones to match:
 
 ```
 midi.in → ngea → midi.out
 ```
-
-Each incoming MIDI note is mapped to a gong (`note % gongCount`), then
-a `pitchBend` message is emitted before the `noteOn` to bend the synth to
-the exact frequency. The bend value is normalized to -1.0–1.0 assuming a ±2
-semitone range — match this in your synth's pitch bend range setting.
 
 ## Strudel Integration
 

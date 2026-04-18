@@ -71,7 +71,7 @@ onCleanup(() => inputNode.disconnect(outputNode));
 
 ## Presets
 
-- `poly-synth.tone`: Polyphonic synthesizer with chord sequences
+- `poly-synth-midi.tone`: Polyphonic synthesizer with chord sequences
 - `lowpass.tone`: Low pass filter
 - `tone>`: Direct input to output
 
