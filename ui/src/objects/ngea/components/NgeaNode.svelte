@@ -130,10 +130,10 @@
         sendGong(currentIndex);
       })
       .with(messages.noteOn, ({ note, velocity, channel }) => {
-        sendMidiGong(note, velocity, channel, true);
+        sendMidiGong(note, velocity ?? 0, channel ?? 0, true);
       })
       .with(messages.noteOff, ({ note, velocity, channel }) => {
-        sendMidiGong(note, velocity, channel, false);
+        sendMidiGong(note, velocity ?? 0, channel ?? 0, false);
       })
       .with(P.number, (index) => {
         const normIndex = Math.max(0, Math.min(Math.floor(index), gongCount - 1));
