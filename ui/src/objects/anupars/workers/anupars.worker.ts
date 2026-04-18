@@ -145,8 +145,8 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
       workerProfiler.setEnabled(m.enabled);
     })
     .with({ type: 'setFpsCap' }, (m) => {
-      // 0 = unlimited → default 60fps
-      tickIntervalMs = 1000 / (m.fpsCap || 60);
+      // 0 = unlimited → default 120fps
+      tickIntervalMs = 1000 / (m.fpsCap || 120);
       restartLoop();
     })
     .with({ type: 'setFrozen' }, (m) => {
