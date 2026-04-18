@@ -41,7 +41,7 @@
 
 <SettingRow
   title="Output size"
-  description="Render resolution (e.g. 1920x1080, screen, retina, 2x, 4k, or 'clear')"
+  description="Render resolution (e.g. 1920x1080, 1080p, screen, 2x, 4k, or 'clear')"
 >
   {#if isEditingOutputSize}
     <input

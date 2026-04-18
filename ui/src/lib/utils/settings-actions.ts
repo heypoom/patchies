@@ -24,7 +24,7 @@ const RESOLUTION_ALIASES: Record<string, [number, number]> = {
 
 /**
  * Parse and apply an output size string.
- * Supports: WxH, clear, screen, retina, Nx multiplier, 720p/1080p/2k/4k.
+ * Supports: WxH, clear, screen, Nx multiplier, 720p/1080p/2k/4k.
  * Returns true if applied successfully.
  */
 export function applyOutputSize(input: string): boolean {
@@ -44,16 +44,6 @@ export function applyOutputSize(input: string): boolean {
     const [width, height] = getScreenOutputSize();
     GLSystem.getInstance().setOutputSize(width, height);
     toast.success(`Output size set to ${width}×${height}`);
-    return true;
-  }
-
-  // "retina" → use screen dimensions × devicePixelRatio
-  if (trimmed === 'retina') {
-    const dpr = window.devicePixelRatio || 1;
-    const width = Math.max(1, Math.min(8192, Math.round(window.innerWidth * dpr)));
-    const height = Math.max(1, Math.min(8192, Math.round(window.innerHeight * dpr)));
-    GLSystem.getInstance().setOutputSize(width, height);
-    toast.success(`Output size set to ${width}×${height} (${dpr}x DPR)`);
     return true;
   }
 
@@ -78,8 +68,9 @@ export function applyOutputSize(input: string): boolean {
 
   // "WxH" explicit dimensions
   const match = trimmed.match(/^(\d+)\s*[x×,]\s*(\d+)$/i);
+
   if (!match) {
-    toast.error('Invalid format. Use WIDTHxHEIGHT, screen, retina, Nx, or clear');
+    toast.error('Invalid format. Use WIDTHxHEIGHT, screen, Nx, or clear');
     return false;
   }
 

@@ -924,7 +924,7 @@
   {:else if stage === 'set-output-size'}
     <div class="border-b border-zinc-700 p-3">
       <div class="mb-2 text-xs text-zinc-400">
-        Output resolution (WxH, screen, retina, Nx, clear):
+        Output resolution (1920x1080, 720p, screen, 2x, clear):
       </div>
       <input
         bind:this={searchInput}
@@ -1034,20 +1034,6 @@
           <div class="mt-1 text-zinc-500">
             Sets to your current screen size (without DPR). This value is saved with the patch.
           </div>
-        {:else if outputSizeInput.trim().toLowerCase() === 'retina'}
-          {@const dpr = window.devicePixelRatio || 1}
-
-          Output:
-          <span class="font-mono text-green-300"
-            >retina ({Math.min(8192, Math.round(window.innerWidth * dpr))}×{Math.min(
-              8192,
-              Math.round(window.innerHeight * dpr)
-            )}, {dpr}x DPR)</span
-          >
-
-          <div class="mt-1 text-zinc-500">
-            Sets to screen size × device pixel ratio. More compute intensive.
-          </div>
         {:else if ['720p', '1080p', '2k', '4k'].includes(outputSizeInput.trim().toLowerCase())}
           {@const aliases = {
             '720p': [1280, 720],
@@ -1085,11 +1071,9 @@
         {:else if outputSizeInput.trim().match(/^(\d+)\s*[x×,]\s*(\d+)$/i)}
           Output: <span class="font-mono text-green-300">{outputSizeInput.trim()}</span>
         {:else if outputSizeInput.trim()}
-          <span class="text-red-400"
-            >Invalid format — use WIDTHxHEIGHT, screen, retina, Nx, or clear</span
-          >
+          <span class="text-red-400">Invalid format — use WIDTHxHEIGHT, screen, Nx, or clear</span>
         {:else}
-          Enter a resolution: 1920x1080, screen, retina, 2x, or clear
+          Enter a resolution e.g. 1920x1080, 1080p, screen, 2x, or clear
         {/if}
       </div>
     {:else if stage === 'set-room'}
