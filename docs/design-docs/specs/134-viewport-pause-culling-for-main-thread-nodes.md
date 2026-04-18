@@ -175,3 +175,198 @@ Manual:
 - `ui/src/lib/components/nodes/CanvasDom.svelte` — `useNodeSetPaused`
 - `ui/src/lib/components/nodes/TextmodeDom.svelte` — `useNodeSetPaused` + rAF start/stop
 - `ui/src/lib/components/nodes/HydraNode.svelte` — `useNodeSetPaused` on DOM-mode path
+
+---
+
+## Implementation Plan
+
+### Corrections against the Design section
+
+Grounded against the actual codebase, a few items in the Design section are slightly off and get corrected during implementation:
+
+1. **`hydra.dom` does not exist.** `ui/src/lib/nodes/node-types.ts:117` maps `hydra` to `HydraNode`, which is already worker-backed (uses `GLSystem`, receives bitmaps from the render worker). FBO culling already handles it. Drop `hydra.dom` from `CULLABLE_DOM_TYPES`; skip the HydraNode edit in the File Touch List.
+2. **Event bus API is `dispatch`, not `dispatchEvent`.** See `SurfaceOverlay.ts:113,148`. Use `eventBus.dispatch({ type: 'nodeSetPaused', ... })`.
+3. **`three.dom` has no pause path yet.** `ThreeDom.svelte` has no `data.paused`, no `togglePlayback`, and no intercept over the user's rAF loop (unlike `CanvasDom.svelte:410–426`). Including it in `CULLABLE_DOM_TYPES` is harmless (`useNodeSetPaused` just isn't wired, events no-op), but it won't actually pause until the CanvasDom-style rAF wrapping is added. Treat as a v1 follow-up — list it in cullable types, but do not attempt to wire pause in this pass. Add a TODO note at the declaration.
+4. **`TextmodeDom` has no `data.paused` field or toggle button today.** Both need to be added alongside the hook — it's not literally "just wire the hook."
+5. **No `nodeDelete` event exists.** Prune `pausedByViewport` lazily inside the cull callback by intersecting against the set of live node IDs the culler just iterated. No new event subscription needed.
+
+### Step 1 — `rendering/types.ts`
+
+Add after `FBO_COMPATIBLE_TYPES` (line 320):
+
+```ts
+// DOM-backed main-thread renderers that should be auto-paused when offscreen.
+// Note: three.dom is listed but lacks a pause mechanism today — pausing it
+// requires wrapping the user's rAF loop (see CanvasDom.svelte pattern). Until
+// that's added, events for three.dom nodes are no-ops.
+export const CULLABLE_DOM_TYPES: string[] = [
+  'p5',
+  'canvas.dom',
+  'textmode.dom',
+  'three.dom'
+];
+```
+
+### Step 2 — `ViewportCullingManager.ts`
+
+Minimal refactor keeping the single-pass iteration:
+
+- Rename config `margin` → `fboMargin`; add `domMargin` (default `300`). Keep `DEFAULT_CONFIG` sensible.
+- Add `CULLABLE_DOM_TYPES` import.
+- Add field `private cachedVisibleDomNodes: Set<string> = new Set();`
+- Add field `public onVisibleDomNodesChange?: (visible: Set<string>, liveIds: Set<string>) => void;` — the second arg lets the callback prune stale entries in its own ledger.
+- Rename existing `onVisibleNodesChange` → `onVisibleFboNodesChange`. Grep shows only one caller (`FlowCanvasInner.svelte:241`).
+- In `updateVisibleNodes`: compute two bounds (one per margin), build two `Set<string>`s in a single pass, diff each against its own cache, fire each callback independently.
+- In `destroy()`: clear both callbacks and both cached sets.
+
+Performance: per-cull-tick cost goes from O(N) to O(N) (same loop, two membership tests per node). Negligible.
+
+### Step 3 — `FlowCanvasInner.svelte`
+
+Alongside the existing FBO wiring (line 241), add the DOM wiring. Use `getNode` (already destructured at line 235) to read current pause state; use `PatchiesEventBus` (already imported at line 75).
+
+```ts
+let prevVisibleDom = new Set<string>();
+const pausedByViewport = new Set<string>();
+const eventBus = PatchiesEventBus.getInstance();
+
+viewportCullingManager.onVisibleDomNodesChange = (visible, liveIds) => {
+  // Visible → hidden: auto-pause only if user hasn't already paused.
+  for (const id of prevVisibleDom) {
+    if (visible.has(id)) continue;
+
+    const node = getNode(id);
+    if (!node) continue;
+    if (node.data?.paused) continue; // user-paused — leave alone
+
+    eventBus.dispatch({ type: 'nodeSetPaused', nodeId: id, paused: true });
+    pausedByViewport.add(id);
+  }
+
+  // Hidden → visible: only resume nodes we paused ourselves.
+  for (const id of visible) {
+    if (prevVisibleDom.has(id)) continue;
+    if (!pausedByViewport.has(id)) continue;
+
+    eventBus.dispatch({ type: 'nodeSetPaused', nodeId: id, paused: false });
+    pausedByViewport.delete(id);
+  }
+
+  // Prune stale entries for deleted nodes.
+  for (const id of pausedByViewport) {
+    if (!liveIds.has(id)) pausedByViewport.delete(id);
+  }
+
+  prevVisibleDom = visible;
+};
+```
+
+Handle the two edge cases from §6 by subscribing to `nodeDataCommit` (events.ts:353) for the `paused` key:
+
+```ts
+function handlePausedCommit(e: NodeDataCommitEvent) {
+  if (e.dataKey !== 'paused') return;
+
+  const node = getNode(e.nodeId);
+  if (!node || !node.type) return;
+  if (!CULLABLE_DOM_TYPES.includes(node.type)) return;
+
+  // Pause-while-offscreen: user takes ownership; drop our claim.
+  if (e.newValue === true && pausedByViewport.has(e.nodeId)) {
+    pausedByViewport.delete(e.nodeId);
+    return;
+  }
+
+  // Unpause-while-offscreen: if offscreen now, re-pause ourselves.
+  if (e.newValue === false && !prevVisibleDom.has(e.nodeId)) {
+    eventBus.dispatch({ type: 'nodeSetPaused', nodeId: e.nodeId, paused: true });
+    pausedByViewport.add(e.nodeId);
+  }
+}
+
+eventBus.addEventListener('nodeDataCommit', handlePausedCommit);
+// Unregister in destroy block (line ~734 alongside viewportCullingManager.destroy()).
+```
+
+Caveat: `nodeDataCommit` is fired by `useNodeDataTracker` only for changes the user makes through tracked components. A direct `updateNodeData({ paused: true })` call that doesn't go through the tracker won't fire the event. Today, P5CanvasNode.svelte:176,180 and CanvasDom.svelte:317,327 call `updateNodeData` directly for pause toggles, so the commit event is NOT currently fired on user pause clicks. That means the §6 edge case fixes won't trigger today.
+
+Two options:
+
+- **A. Fire the commit manually from the pause buttons** in P5CanvasNode and CanvasDom. One line each: `eventBus.dispatch({ type: 'nodeDataCommit', nodeId, dataKey: 'paused', oldValue: <prev>, newValue: <next> })`. Minimal, but spreads the contract across components.
+- **B. Subscribe to SvelteFlow node changes** via `onnodeschange` in FlowCanvasInner and derive the `paused` commit from the prev/next nodes snapshot. Centralizes the logic.
+
+Recommend **A** for v1 — two-line change, and it makes the pause buttons properly participate in the history/tracking bus if anything else wants to listen.
+
+### Step 4 — `CanvasDom.svelte`
+
+`data.paused` and `togglePlayback()` already exist (lines 39, 314). Add:
+
+```ts
+import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
+
+useNodeSetPaused(
+  nodeId,
+  () => !!data.paused,
+  togglePlayback
+);
+```
+
+Also implement Step 3 option A for both pause branches of `togglePlayback` (lines 317, 327): dispatch `nodeDataCommit` with `dataKey: 'paused'`, old/new boolean.
+
+### Step 5 — `TextmodeDom.svelte`
+
+Larger edit since no pause plumbing exists. Add `paused?: boolean` to the data type (line 32); add a `togglePlayback` that calls `tm?.noLoop()` / `tm?.loop()` and updates `data.paused`; start/stop bitmap loop accordingly; wire the `useNodeSetPaused` hook; pass `paused` and `onPlaybackToggle` and `showPauseButton={true}` to `CanvasPreviewLayout` (same props `CanvasDom.svelte:491–493` uses).
+
+```ts
+function togglePlayback() {
+  if (data.paused) {
+    updateNodeData(nodeId, { paused: false });
+    tm?.loop();
+    startBitmapLoop();
+  } else {
+    updateNodeData(nodeId, { paused: true });
+    tm?.noLoop();
+    stopBitmapLoop();
+  }
+  // Step 3 option A: dispatch nodeDataCommit for paused.
+}
+
+useNodeSetPaused(nodeId, () => !!data.paused, togglePlayback);
+```
+
+Edge case: if `tm` is not yet initialized when a pause event arrives (rare — only during startup race), the hook still flips `data.paused`. The bitmap loop check `if (tm?.isLooping) sendBitmap()` (line 175) keeps this safe; `runCode()` will consult `data.paused` on next call.
+
+One runCode() behavior to audit: lines 336–337 call `tm.loop()` to recover from errors. Guard that against `data.paused` so we don't silently un-pause on code re-run:
+
+```ts
+if (hadErrors && !tm.isLooping() && !data.paused) {
+  tm?.loop();
+}
+```
+
+### Step 6 — `ThreeDom.svelte` — skip in v1
+
+Listed in `CULLABLE_DOM_TYPES` for forward compat, but no wiring this pass. File removed from the File Touch List. Follow-up: mirror CanvasDom's rAF wrapper pattern (CanvasDom.svelte:410–426) to intercept `requestAnimationFrame` calls from user code and short-circuit when `data.paused`.
+
+### Step 7 — P5CanvasNode pause commit dispatch
+
+Add `nodeDataCommit` dispatch to the two `updateNodeData({ paused: ... })` calls at `P5CanvasNode.svelte:176,180` (per Step 3 option A). No hook change needed — it's already wired via `ObjectPreviewLayout.svelte:78–82`.
+
+### Revised File Touch List
+
+- `ui/src/lib/rendering/types.ts` — add `CULLABLE_DOM_TYPES`
+- `ui/src/lib/canvas/ViewportCullingManager.ts` — rename `margin`→`fboMargin`, add `domMargin`, second visible-set + callback, rename `onVisibleNodesChange`→`onVisibleFboNodesChange`
+- `ui/src/lib/components/FlowCanvasInner.svelte` — wire new DOM callback, `pausedByViewport` set, `nodeDataCommit` subscription, update callback rename
+- `ui/src/lib/components/nodes/CanvasDom.svelte` — wire `useNodeSetPaused`, dispatch `nodeDataCommit` in `togglePlayback`
+- `ui/src/lib/components/nodes/TextmodeDom.svelte` — add `paused` field, `togglePlayback`, pause button prop, wire `useNodeSetPaused`, guard `runCode` error-recovery path, dispatch `nodeDataCommit`
+- `ui/src/lib/components/nodes/P5CanvasNode.svelte` — dispatch `nodeDataCommit` in `togglePlayback`
+
+### Build & Verify
+
+Per CLAUDE.md: user starts `bun run dev`. Run `bun run check` and `bun run lint` after edits. Manual tests per Testing section. Do not run tests / commit without explicit user request.
+
+### Risks
+
+- **Cull tick starvation.** The culler only re-runs when the viewport changes (`FlowCanvasInner.svelte:381–398`). If the user drags a visible node offscreen by moving the *node* (not the viewport), visibility isn't re-evaluated — the node keeps running. Out of scope for this spec, but worth flagging.
+- **Initial load timing.** On patch load, the culler's first tick fires after the first viewport effect runs. Offscreen nodes run briefly before being paused. Acceptable; matches FBO behavior.
+- **P5 resume stutter.** The 300px DOM margin helps but doesn't eliminate. If perceptible, tune upward or investigate P5 warm-start behavior — not blocking.
