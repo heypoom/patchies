@@ -8,11 +8,41 @@ Licensed CC BY-SA 4.0.
 
 ## Usage
 
-Select a tuning from the dropdown.
+Select a tuning from the dropdown. The outlet type mirrors what you send in.
 
-Send a **number** (0-based gong index) to outlet 0 to get that gong's data.
+**bang** → `{type: 'gong', index, id, freq, cents, accumulate}`
 
-Send a **bang** to get the current gong. Outlet 1 emits the full scale when banged.
+**number** → same as bang, plus `scale: {name, location, freqs[], cents[]}` attached
+
+**string** → switches to the named tuning (partial, case-insensitive match), no output
+
+**noteOn** → emits `pitchBend` then `noteOn`, both with `frequency` field. Note is mapped to a gong via `note % gongCount`, then pitch-bent to the exact microtonal frequency (±2 semitone bend range).
+
+**noteOff** → emits `noteOff` with `frequency` field
+
+## MIDI Microtuning
+
+Wire a [midi.in](/docs/objects/midi.in) node into ngea to retune a MIDI controller to any
+Southeast Asian gong ensemble tuning.
+
+Each incoming MIDI note is mapped to a gong (`note % gongCount`), then
+a `pitchBend` message is emitted before the `noteOn` to bend to the exact
+microtonal frequency. The bend value is -1.0–1.0 assuming a ±2 semitone range.
+
+**To hear it in Patchies** — use the built-in **poly-synth-midi** preset
+(from [tone~](/docs/objects/tone~)). It handles `pitchBend` correctly and
+is the easiest way to audition any MIDI microtuning:
+
+```
+midi.in → ngea → tone~ (poly-synth-midi preset)
+```
+
+**To send to your DAW** — wire to [midi.out](/docs/objects/midi.out) instead.
+Set your synth's pitch bend range to ±2 semitones to match:
+
+```
+midi.in → ngea → midi.out
+```
 
 ## Strudel Integration
 
@@ -35,6 +65,8 @@ Names are partial, case-insensitive matches against the tuning title
 
 ## See Also
 
+- [midi.in](/docs/objects/midi.in) — source of MIDI notes to retune
+- [midi.out](/docs/objects/midi.out) — send retuned MIDI to a synth
 - [osc~](/docs/objects/osc~) — connect gong freqs to an oscillator
 - [strudel](/docs/objects/strudel) — sequence gongs with Strudel patterns
 - [metro](/docs/objects/metro) — clock to step through gong indices

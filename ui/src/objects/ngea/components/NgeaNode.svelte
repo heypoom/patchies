@@ -8,6 +8,8 @@
   import { ngeaSchema } from '../schema';
   import type { NgeaTuning } from '../data';
   import { ChevronDown, Info, X } from '@lucide/svelte/icons';
+  import { SvelteMap } from 'svelte/reactivity';
+  import { messages } from '$lib/objects/schemas';
 
   let {
     id: nodeId,
@@ -24,6 +26,20 @@
   let messageContext: MessageContext;
   let tunings = $state<NgeaTuning[]>([]);
 
+  type ActiveNote = { baseNote: number; channel: number; frequency: number };
+  const activeNotes = new SvelteMap<string, ActiveNote>();
+
+  function flushActiveNotes(): void {
+    for (const { baseNote, channel, frequency } of activeNotes.values()) {
+      messageContext?.send(
+        { type: 'noteOff', note: baseNote, velocity: 0, channel, frequency },
+        { to: 0 }
+      );
+    }
+
+    activeNotes.clear();
+  }
+
   const findTuning = (query: string) => {
     const q = query.toLowerCase();
     return tunings.find((t) => t.title.toLowerCase().includes(q));
@@ -36,34 +52,76 @@
   const currentTuning = $derived(findTuning(currentTuningTitle) ?? tunings[0]);
   const gongCount = $derived(currentTuning?.data.length ?? 0);
 
-  function sendGong(index: number): void {
+  function sendGong(index: number, includeScale = false): void {
     if (!currentTuning) return;
 
     const gong = currentTuning.data[index];
     if (!gong) return;
 
-    messageContext?.send(
-      {
-        type: 'gong',
-        index,
-        id: gong.id,
-        freq: gong.freq,
-        cents: gong.cents,
-        accumulate: gong.accumulate
-      },
-      { to: 0 }
-    );
+    const base = {
+      type: 'gong' as const,
+      index,
+      id: gong.id,
+      freq: gong.freq,
+      cents: gong.cents,
+      accumulate: gong.accumulate
+    };
 
     messageContext?.send(
-      {
-        type: 'scale',
-        name: currentTuning.title,
-        location: currentTuning.location,
-        freqs: currentTuning.data.map((g) => g.freq),
-        cents: currentTuning.data.map((g) => g.accumulate)
-      },
-      { to: 1 }
+      includeScale
+        ? {
+            ...base,
+            scale: {
+              name: currentTuning.title,
+              location: currentTuning.location,
+              freqs: currentTuning.data.map((g) => g.freq),
+              cents: currentTuning.data.map((g) => g.accumulate)
+            }
+          }
+        : base,
+      { to: 0 }
     );
+  }
+
+  function sendMidiGong(note: number, velocity: number, channel: number, isNoteOn: boolean): void {
+    if (!currentTuning) return;
+
+    if (isNoteOn) {
+      const gongIndex = note % gongCount;
+      const gong = currentTuning.data[gongIndex];
+      if (!gong) return;
+
+      const freq = gong.freq;
+      const exactMidi = 69 + 12 * Math.log2(freq / 440);
+      const baseNote = Math.round(exactMidi);
+      const centsDeviation = (exactMidi - baseNote) * 100;
+      const bendValue = Math.max(-1, Math.min(1, centsDeviation / 200));
+
+      activeNotes.set(`${channel}:${note}`, { baseNote, channel, frequency: freq });
+      messageContext?.send(
+        { type: 'pitchBend', value: bendValue, channel, frequency: freq },
+        { to: 0 }
+      );
+      messageContext?.send(
+        { type: 'noteOn', note: baseNote, velocity, channel, frequency: freq },
+        { to: 0 }
+      );
+    } else {
+      const stored = activeNotes.get(`${channel}:${note}`);
+      if (!stored) return;
+
+      activeNotes.delete(`${channel}:${note}`);
+      messageContext?.send(
+        {
+          type: 'noteOff',
+          note: stored.baseNote,
+          velocity,
+          channel: stored.channel,
+          frequency: stored.frequency
+        },
+        { to: 0 }
+      );
+    }
   }
 
   const handleMessage: MessageCallbackFn = (message) => {
@@ -71,16 +129,23 @@
       .with({ type: 'bang' }, () => {
         sendGong(currentIndex);
       })
+      .with(messages.noteOn, ({ note, velocity, channel }) => {
+        sendMidiGong(note, velocity ?? 64, channel ?? 0, true);
+      })
+      .with(messages.noteOff, ({ note, velocity, channel }) => {
+        sendMidiGong(note, velocity ?? 0, channel ?? 0, false);
+      })
       .with(P.number, (index) => {
         const normIndex = Math.max(0, Math.min(Math.floor(index), gongCount - 1));
 
         updateNodeData(nodeId, { ...data, index: normIndex });
-        sendGong(normIndex);
+        sendGong(normIndex, true);
       })
       .with(P.string, (value) => {
         const found = findTuning(value);
 
         if (found) {
+          flushActiveNotes();
           updateNodeData(nodeId, { ...data, tuning: found.title, index: 0 });
         }
       })
@@ -97,12 +162,14 @@
   });
 
   onDestroy(() => {
+    flushActiveNotes();
     messageContext?.queue.removeCallback(handleMessage);
     messageContext?.destroy();
   });
 
   function onTuningChange(e: Event) {
     const title = (e.target as HTMLSelectElement).value;
+    flushActiveNotes();
     updateNodeData(nodeId, { ...data, tuning: title, index: 0 });
   }
 
@@ -139,23 +206,13 @@
     {nodeId}
   />
 
-  <!-- Gong outlet -->
+  <!-- Output -->
   <TypedHandle
     port="outlet"
     spec={ngeaSchema.outlets[0].handle!}
-    title="gong data"
-    total={2}
+    title="gong / midi out"
+    total={1}
     index={0}
-    {nodeId}
-  />
-
-  <!-- Scale outlet -->
-  <TypedHandle
-    port="outlet"
-    spec={ngeaSchema.outlets[1].handle!}
-    title="scale"
-    total={2}
-    index={1}
     {nodeId}
   />
 

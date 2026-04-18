@@ -16,14 +16,20 @@ export const ngeaPrompt = `## ngea Object Instructions
 
 The ngea object provides real-world microtonal tuning data from the Network Gong Ensemble Archive (NGEA) — Southeast Asian gong ensembles from Thailand, Cambodia, Indonesia, Philippines, Myanmar, and Vietnam.
 
-**Outlets:**
-- Outlet 0 (gong): \`{ type: 'gong', index, id, freq, cents, accumulate }\` — triggered by index input
-- Outlet 1 (scale): \`{ type: 'scale', name, location, freqs[], cents[] }\` — triggered by bang
+**Single outlet — output type mirrors input type:**
 
-**Inlet messages:**
-- Number: output gong data at that index (0-based)
-- \`{ type: 'bang' }\`: output current gong data
-- String: switch to a named tuning (partial match, e.g. \`'Khong'\` matches \`'Khong Wong Yai'\`)
+- \`bang\` → \`{ type: 'gong', index, id, freq, cents, accumulate }\`
+- \`number\` → same as bang, plus \`scale: { name, location, freqs[], cents[] }\` attached
+- \`string\` → switches tuning (partial match, e.g. \`'Khong'\` matches \`'Khong Wong Yai'\`), no output
+- \`{ type: 'noteOn', note, velocity, channel }\` → emits \`{ type: 'pitchBend', value, channel, frequency }\` then \`{ type: 'noteOn', note, velocity, channel, frequency }\`
+- \`{ type: 'noteOff', note, velocity, channel }\` → emits \`{ type: 'noteOff', note, velocity, channel, frequency }\`
+
+MIDI note numbers are mapped to gongs via \`note % gongCount\`. The pitch bend value is -1.0 to 1.0 (±2 semitone range). Active notes are tracked — switching tunings sends noteOff for all held notes first.
+
+**MIDI microtuning example:**
+\`\`\`
+midi.in → ngea → midi.out
+\`\`\`
 
 **Strudel integration — use single quotes for the name:**
 
