@@ -448,7 +448,7 @@
           </div>
           <button
             onclick={handleClose}
-            class="shrink-0 cursor-pointer border-none bg-transparent p-1.5 font-mono text-[11px] leading-none text-zinc-700 transition-colors hover:text-zinc-500"
+            class="-my-2 -mr-1 shrink-0 cursor-pointer border-none bg-transparent p-3 font-mono text-base leading-none text-zinc-700 transition-colors hover:text-zinc-500"
             aria-label="Close modal">✕</button
           >
         </div>

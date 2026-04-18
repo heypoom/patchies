@@ -312,16 +312,16 @@
   /* Close button */
   .modal-close {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
+    font-size: 16px;
     color: #3f3f46;
     background: none;
     border: none;
-    padding: 6px 8px;
+    padding: 12px;
     cursor: pointer;
     transition: color 0.15s;
     line-height: 1;
     flex-shrink: 0;
-    margin-bottom: 8px;
+    margin: -6px -4px -6px 0;
   }
 
   .modal-close:hover {
