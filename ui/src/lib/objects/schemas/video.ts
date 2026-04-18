@@ -23,7 +23,8 @@ export const videoMessages = {
   loop: schema(Loop),
   loadUrl: schema(LoadUrl),
   loadPath: schema(LoadPath),
-  string: schema(Type.String())
+  string: schema(Type.String()),
+  number: schema(Type.Number())
 };
 
 /**
@@ -45,7 +46,8 @@ export const videoSchema: ObjectSchema = {
         { schema: Loop, description: 'Set loop mode (default: true)' },
         { schema: LoadUrl, description: 'Load video from URL' },
         { schema: LoadPath, description: 'Load video from file path' },
-        { schema: Type.String(), description: 'Load video from path' }
+        { schema: Type.String(), description: 'Load video from path' },
+        { schema: Type.Number(), description: 'Jump playhead to time in seconds' }
       ]
     }
   ],

@@ -151,8 +151,25 @@
       .with(videoMessages.string, (path) => vfsMedia.loadFromPath(path))
       .with(videoMessages.loadUrl, ({ url }) => vfsMedia.loadFromUrl(url))
       .with(videoMessages.loadPath, ({ path }) => vfsMedia.loadFromPath(path))
+      .with(videoMessages.number, (time) => seekToTime(time))
       .otherwise(() => {});
   };
+
+  function seekToTime(time: number) {
+    if (!isVideoLoaded) return;
+
+    const safeTime = Math.max(0, time);
+
+    lastRecordedMediaTime = -1;
+
+    if (webCodecsFirstFrameReceived) {
+      glSystem.mediaBunnySeek(nodeId, safeTime);
+    } else if (videoElement) {
+      videoElement.currentTime = safeTime;
+    }
+
+    audioService.send(nodeId, 'message', { type: 'seek', time: safeTime });
+  }
 
   /**
    * Called when VFS successfully loads a file.

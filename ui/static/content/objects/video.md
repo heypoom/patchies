@@ -6,6 +6,10 @@ Create a `video` object and send it a URL to load a video, e.g. `https://example
 
 Or use a file from the [virtual filesystem](/docs/manage-files) with the `user://` prefix.
 
+## Jumping the Playhead
+
+Send a number to seek the playhead to that time in seconds. For example, `2.5` jumps to 2.5 seconds from the start.
+
 ## Video and Audio Chaining
 
 The `video` object supports both video and audio chaining:

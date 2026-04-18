@@ -50,6 +50,9 @@ export class SoundfileNode implements AudioNodeV2 {
           .with({ type: 'stop' }, () => {
             element.pause();
             element.currentTime = 0;
+          })
+          .with({ type: 'seek', time: P.number }, ({ time }) => {
+            element.currentTime = Math.max(0, time);
           });
       })
       .with(['file', P.instanceOf(File)], ([, file]) => {
