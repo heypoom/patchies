@@ -27,7 +27,7 @@
   let tunings = $state<NgeaTuning[]>([]);
 
   type ActiveNote = { baseNote: number; channel: number; frequency: number };
-  const activeNotes = new SvelteMap<number, ActiveNote>();
+  const activeNotes = new SvelteMap<string, ActiveNote>();
 
   function flushActiveNotes(): void {
     for (const { baseNote, channel, frequency } of activeNotes.values()) {
@@ -97,7 +97,7 @@
       const centsDeviation = (exactMidi - baseNote) * 100;
       const bendValue = Math.max(-1, Math.min(1, centsDeviation / 200));
 
-      activeNotes.set(note, { baseNote, channel, frequency: freq });
+      activeNotes.set(`${channel}:${note}`, { baseNote, channel, frequency: freq });
       messageContext?.send(
         { type: 'pitchBend', value: bendValue, channel, frequency: freq },
         { to: 0 }
@@ -107,10 +107,10 @@
         { to: 0 }
       );
     } else {
-      const stored = activeNotes.get(note);
+      const stored = activeNotes.get(`${channel}:${note}`);
       if (!stored) return;
 
-      activeNotes.delete(note);
+      activeNotes.delete(`${channel}:${note}`);
       messageContext?.send(
         {
           type: 'noteOff',
@@ -130,7 +130,7 @@
         sendGong(currentIndex);
       })
       .with(messages.noteOn, ({ note, velocity, channel }) => {
-        sendMidiGong(note, velocity ?? 0, channel ?? 0, true);
+        sendMidiGong(note, velocity ?? 64, channel ?? 0, true);
       })
       .with(messages.noteOff, ({ note, velocity, channel }) => {
         sendMidiGong(note, velocity ?? 0, channel ?? 0, false);

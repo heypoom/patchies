@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 
 import type { ObjectSchema } from '$lib/objects/schemas/types';
-import { Bang } from '$lib/objects/schemas/common';
+import { Bang, NoteOn, NoteOff } from '$lib/objects/schemas/common';
 
 const ScaleField = Type.Object({
   name: Type.String(),
@@ -31,21 +31,11 @@ export const ngeaSchema: ObjectSchema = {
         { schema: Bang, description: 'Output gong at current index' },
         { schema: Type.String(), description: 'Switch to a named tuning (partial match)' },
         {
-          schema: Type.Object({
-            type: Type.Literal('noteOn'),
-            note: Type.Number(),
-            velocity: Type.Number(),
-            channel: Type.Number()
-          }),
+          schema: NoteOn,
           description: 'MIDI noteOn — maps note to gong, outputs pitchBend + noteOn'
         },
         {
-          schema: Type.Object({
-            type: Type.Literal('noteOff'),
-            note: Type.Number(),
-            velocity: Type.Number(),
-            channel: Type.Number()
-          }),
+          schema: NoteOff,
           description: 'MIDI noteOff — outputs tuned noteOff with frequency'
         }
       ]
