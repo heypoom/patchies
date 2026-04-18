@@ -26,7 +26,7 @@ export type WorkerInMessage =
   | { type: 'sendMouse'; kind: number; button: number; col: number; row: number }
   | { type: 'resize'; cols: number; rows: number }
   | { type: 'profilerEnable'; nodeId: string; enabled: boolean }
-  | { type: 'setFpsCap'; fpsCap: number }
+  | { type: 'setFpsCap'; fpsCap: number; screenHz: number }
   | { type: 'setFrozen'; frozen: boolean }
   | { type: 'loadFile'; contents: string }
   | { type: 'setPattern'; pattern: string };
@@ -145,8 +145,8 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
       workerProfiler.setEnabled(m.enabled);
     })
     .with({ type: 'setFpsCap' }, (m) => {
-      // 0 = unlimited → default 120fps
-      tickIntervalMs = 1000 / (m.fpsCap || 120);
+      // 0 = unlimited → use screen refresh rate
+      tickIntervalMs = 1000 / (m.fpsCap || m.screenHz || 60);
       restartLoop();
     })
     .with({ type: 'setFrozen' }, (m) => {

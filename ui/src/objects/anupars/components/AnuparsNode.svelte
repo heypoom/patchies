@@ -60,6 +60,34 @@
   let pendingAnsi = '';
   let rafId = 0;
 
+  // Measure screen refresh rate via rAF timing
+  let screenHz = 60;
+
+  function measureScreenHz(): Promise<number> {
+    return new Promise((resolve) => {
+      let prev = 0;
+      let count = 0;
+      let total = 0;
+
+      function sample(ts: number) {
+        if (prev > 0) {
+          total += ts - prev;
+          count++;
+        }
+
+        prev = ts;
+
+        if (count >= 10) {
+          resolve(Math.round(1000 / (total / count)));
+        } else {
+          requestAnimationFrame(sample);
+        }
+      }
+
+      requestAnimationFrame(sample);
+    });
+  }
+
   function postWorker(msg: WorkerInMessage) {
     worker?.postMessage(msg);
   }
@@ -227,9 +255,11 @@
       postWorker({ type: 'profilerEnable', nodeId, enabled });
     });
 
-    // Sync render FPS cap with worker
+    // Measure screen refresh rate, then sync FPS cap with worker
+    screenHz = await measureScreenHz();
+
     unsubFpsCap = renderFpsCap.subscribe((fpsCap) => {
-      postWorker({ type: 'setFpsCap', fpsCap });
+      postWorker({ type: 'setFpsCap', fpsCap, screenHz });
     });
 
     // Alt/Option key handler
