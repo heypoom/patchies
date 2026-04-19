@@ -11,6 +11,7 @@ import { migration009 } from './migrations/009-asm-receive-to-recv';
 import { migration010 } from './migrations/010-table-to-visual-node';
 import { migration011 } from './migrations/011-fix-redundant-handle-ids';
 import { migration012 } from './migrations/012-default-output-size-for-old-patches';
+import { migration013 } from './migrations/013-expr-multi-outlet-handles';
 
 /**
  * All migrations in order. Each migration upgrades from version N-1 to N.
@@ -28,7 +29,8 @@ const migrations: Migration[] = [
   migration009,
   migration010,
   migration011,
-  migration012
+  migration012,
+  migration013
 ];
 
 /**
