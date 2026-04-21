@@ -713,7 +713,11 @@ export class GLSystem {
   }
 
   send<T>(type: string, data?: T) {
-    this.renderWorker.postMessage({ type, ...data });
+    try {
+      this.renderWorker.postMessage({ type, ...data });
+    } catch (error) {
+      console.log('Error sending message to render worker:', error);
+    }
   }
 
   upsertNode(
