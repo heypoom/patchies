@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Patchies 2026 Wrapped</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Syne:wght@400;600;700;800&display=swap');
+
+    :root {
+      color-scheme: dark;
+      --ink: #f7f2ea;
+      --muted: #b8b2a8;
+      --soft: rgba(247, 242, 234, 0.72);
+      --line: rgba(255, 255, 255, 0.14);
+      --panel: rgba(15, 17, 22, 0.72);
+      --panel-strong: rgba(24, 27, 34, 0.92);
+      --amber: #ffcc66;
+      --coral: #ff6b6b;
+      --mint: #68f6c1;
+      --cyan: #6ad7ff;
+      --blue: #7aa7ff;
+      --pink: #ff82c8;
+      --violet: #a78bfa;
+      --green: #9cff7a;
+      --shadow: 0 26px 80px rgba(0, 0, 0, 0.42);
+      --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+      --font-display: 'Syne', ui-sans-serif, system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', serif;
+      --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+      font-family: var(--font-sans);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: #08090d;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(255, 204, 102, 0.18), transparent 28%),
+        radial-gradient(circle at 85% 12%, rgba(106, 215, 255, 0.16), transparent 30%),
+        radial-gradient(circle at 50% 92%, rgba(255, 107, 107, 0.14), transparent 32%),
+        linear-gradient(145deg, #090a10 0%, #101017 44%, #0b0e13 100%);
+    }
+
+    canvas#constellation {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.68;
+      pointer-events: none;
+    }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.06;
+      background-image:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.4) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(to bottom, black, transparent 86%);
+    }
+
+    .progress {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 20;
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .progress span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--amber), var(--coral), var(--cyan), var(--mint));
+      box-shadow: 0 0 24px rgba(106, 215, 255, 0.6);
+    }
+
+    main {
+      position: relative;
+      z-index: 2;
+    }
+
+    section {
+      min-height: 100vh;
+      display: grid;
+      align-items: center;
+      padding: 96px 24px;
+    }
+
+    .wrap {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+    }
+
+    .hero {
+      min-height: 100svh;
+      padding-top: 84px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 34px;
+      height: 2px;
+      background: var(--mint);
+      box-shadow: 0 0 18px var(--mint);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      max-width: 980px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(58px, 12vw, 152px);
+      line-height: 0.9;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .gradient-text {
+      color: transparent;
+      background: linear-gradient(110deg, var(--amber), var(--coral), var(--cyan), var(--mint));
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    .lede {
+      max-width: 760px;
+      margin-top: 30px;
+      color: var(--soft);
+      font-size: clamp(20px, 3vw, 32px);
+      line-height: 1.28;
+    }
+
+    .hero-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 42px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 16px;
+      color: var(--soft);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(18px);
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 18px currentColor;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 44px;
+    }
+
+    .stat,
+    .card,
+    .track,
+    .month,
+    .quote,
+    .speaker-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+    }
+
+    .stat {
+      min-height: 150px;
+      padding: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .stat::after {
+      content: "";
+      position: absolute;
+      inset: auto 16px 14px 16px;
+      height: 5px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+
+    .stat strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 6vw, 64px);
+      line-height: 0.95;
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    h2 {
+      max-width: 900px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(42px, 8vw, 92px);
+      line-height: 0.95;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .section-copy {
+      max-width: 740px;
+      margin-top: 24px;
+      color: var(--soft);
+      font-size: clamp(18px, 2.4vw, 25px);
+      line-height: 1.36;
+    }
+
+    .album {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
+      gap: 28px;
+      align-items: stretch;
+      margin-top: 46px;
+    }
+
+    .cover {
+      min-height: 470px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(135deg, rgba(255, 204, 102, 0.16), transparent 30%),
+        linear-gradient(45deg, rgba(106, 215, 255, 0.18), transparent 36%),
+        rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .cover svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .cover-label {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      right: 22px;
+      z-index: 2;
+    }
+
+    .cover-label b {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .cover-label span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+    }
+
+    .tracks {
+      display: grid;
+      gap: 12px;
+    }
+
+    .track {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 16px;
+      align-items: center;
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.055);
+    }
+
+    .rank {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #05070a;
+      background: var(--accent);
+      font-family: var(--font-mono);
+      font-weight: 900;
+    }
+
+    .track h3 {
+      font-family: var(--font-display);
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .track p {
+      margin-top: 6px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .meter {
+      width: 96px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+    }
+
+    .meter span {
+      display: block;
+      width: var(--value);
+      height: 100%;
+      background: var(--accent);
+    }
+
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 44px;
+      align-items: end;
+    }
+
+    .month {
+      padding: 18px;
+      min-height: 360px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      background: rgba(255, 255, 255, 0.055);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: var(--height);
+      background: linear-gradient(to top, var(--accent), transparent);
+      opacity: 0.5;
+    }
+
+    .month-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .month strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 46px;
+      line-height: 1;
+    }
+
+    .month span {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .month p {
+      margin-top: 14px;
+      color: var(--soft);
+      line-height: 1.35;
+    }
+
+    .object-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 42px;
+    }
+
+    .object-cloud span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      border-radius: 999px;
+      padding: 10px 16px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.065);
+      color: var(--soft);
+      font-family: var(--font-mono);
+      font-weight: 800;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    .two-up {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 46px;
+    }
+
+    .card {
+      padding: 28px;
+      min-height: 310px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.058);
+    }
+
+    .card small {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-weight: 900;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+    }
+
+    .card h3 {
+      margin-top: 18px;
+      font-family: var(--font-display);
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 0.98;
+    }
+
+    .card p {
+      margin-top: 20px;
+      color: var(--soft);
+      font-size: 18px;
+      line-height: 1.42;
+    }
+
+    .mini-bars {
+      display: grid;
+      gap: 9px;
+      margin-top: 28px;
+    }
+
+    .mini-bars div {
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), rgba(255, 255, 255, 0.07) var(--w));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .quote {
+      margin-top: 48px;
+      padding: clamp(28px, 6vw, 64px);
+      background: var(--panel-strong);
+    }
+
+    .quote p {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: clamp(30px, 6vw, 70px);
+      line-height: 1;
+      text-wrap: balance;
+    }
+
+    .quote span {
+      display: block;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.4;
+    }
+
+    .speaker-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 44px;
+    }
+
+    .speaker-card {
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.055);
+    }
+
+    .speaker-card b {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 21px;
+      line-height: 1.15;
+    }
+
+    .speaker-card p {
+      margin-top: 12px;
+      color: var(--muted);
+      line-height: 1.42;
+    }
+
+    .final {
+      text-align: center;
+    }
+
+    .final .wrap {
+      display: grid;
+      place-items: center;
+    }
+
+    .final h2 {
+      margin: 0 auto;
+    }
+
+    .final .section-copy {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .final-badge {
+      margin-top: 42px;
+      width: min(420px, 90vw);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background:
+        conic-gradient(from 20deg, var(--amber), var(--coral), var(--cyan), var(--mint), var(--amber));
+      box-shadow: 0 30px 120px rgba(106, 215, 255, 0.28);
+      padding: 16px;
+    }
+
+    .final-badge-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #08090d;
+      padding: 36px;
+    }
+
+    .final-badge-inner strong {
+      font-family: var(--font-display);
+      font-size: clamp(54px, 12vw, 110px);
+      line-height: 0.9;
+    }
+
+    .final-badge-inner span {
+      color: var(--muted);
+      margin-top: 8px;
+      display: block;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity 700ms ease, transform 700ms ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 860px) {
+      section {
+        padding: 78px 18px;
+      }
+
+      .stat-grid,
+      .month-grid,
+      .speaker-grid,
+      .two-up,
+      .album {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-grid {
+        gap: 12px;
+      }
+
+      .cover {
+        min-height: 360px;
+      }
+
+      .month {
+        min-height: 260px;
+      }
+
+      .track {
+        grid-template-columns: auto 1fr;
+      }
+
+      .meter {
+        grid-column: 2;
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      .reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="constellation" aria-hidden="true"></canvas>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="progress" aria-hidden="true"><span></span></div>
+
+  <main>
+    <section class="hero">
+      <div class="wrap reveal">
+        <p class="eyebrow">Patchies Wrapped / 2026 so far</p>
+        <h1>you built a <span class="gradient-text">live creative instrument</span> in the browser</h1>
+        <p class="lede">A year of turning nodes, code, sound, video, AI, sensors, sequencers, shaders, and tiny weird machines into one patchable playground.</p>
+        <div class="hero-footer" aria-label="Highlights">
+          <span class="pill"><i class="dot" style="color: var(--mint)"></i>3,540 commits</span>
+          <span class="pill"><i class="dot" style="color: var(--amber)"></i>Jan-Apr 2026</span>
+          <span class="pill"><i class="dot" style="color: var(--cyan)"></i>audio + visuals + AI</span>
+        </div>
+        <div class="stat-grid">
+          <article class="stat" style="--accent: var(--amber)">
+            <strong>3,540</strong>
+            <span>commits since January 1</span>
+          </article>
+          <article class="stat" style="--accent: var(--coral)">
+            <strong>127</strong>
+            <span>PR numbers crossed, from #31 to #157</span>
+          </article>
+          <article class="stat" style="--accent: var(--cyan)">
+            <strong>424</strong>
+            <span>docs-scoped commits, because the instrument learned to explain itself</span>
+          </article>
+          <article class="stat" style="--accent: var(--mint)">
+            <strong>148</strong>
+            <span>AI-scoped commits, from object creation to Sparks</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap reveal">
+        <p class="eyebrow">Top tracks</p>
+        <h2>Your most played systems</h2>
+        <p class="section-copy">The year was not one feature. It was several deep systems learning how to cooperate in real time.</p>
+        <div class="album">
+          <div class="cover" aria-label="Abstract node graph album cover">
+            <svg viewBox="0 0 600 600" role="img">
+              <defs>
+                <linearGradient id="wire" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0" stop-color="#ffcc66" />
+                  <stop offset="0.45" stop-color="#6ad7ff" />
+                  <stop offset="1" stop-color="#68f6c1" />
+                </linearGradient>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <rect width="600" height="600" fill="rgba(255,255,255,0.02)" />
+              <g stroke="url(#wire)" stroke-width="3" opacity="0.7" filter="url(#glow)">
+                <path d="M86 134 C210 60 320 178 472 88" fill="none" />
+                <path d="M110 310 C220 210 390 420 520 275" fill="none" />
+                <path d="M72 460 C180 540 365 420 520 505" fill="none" />
+                <path d="M190 120 C260 240 228 350 320 492" fill="none" />
+                <path d="M415 95 C390 210 470 328 410 500" fill="none" />
+              </g>
+              <g>
+                <circle cx="86" cy="134" r="24" fill="#ffcc66" />
+                <circle cx="472" cy="88" r="34" fill="#ff6b6b" />
+                <circle cx="110" cy="310" r="38" fill="#6ad7ff" />
+                <circle cx="520" cy="275" r="26" fill="#68f6c1" />
+                <circle cx="72" cy="460" r="30" fill="#a78bfa" />
+                <circle cx="520" cy="505" r="42" fill="#ff82c8" />
+                <circle cx="320" cy="492" r="22" fill="#9cff7a" />
+                <circle cx="190" cy="120" r="18" fill="#f7f2ea" />
+                <circle cx="410" cy="500" r="18" fill="#f7f2ea" />
+              </g>
+            </svg>
+            <div class="cover-label">
+              <b>Patchies 2026</b>
+              <span>nodes as instruments, code as cables</span>
+            </div>
+          </div>
+          <div class="tracks">
+            <article class="track" style="--accent: var(--amber); --value: 98%">
+              <span class="rank">1</span>
+              <div>
+                <h3>Audio Engine V2</h3>
+                <p>audio objects became a proper registry/service/worklet architecture</p>
+              </div>
+              <div class="meter"><span></span></div>
+            </article>
+            <article class="track" style="--accent: var(--cyan); --value: 92%">
+              <span class="rank">2</span>
+              <div>
+                <h3>Rendering Pipeline</h3>
+                <p>FBOs, GLSL directives, output sizing, feedback, float textures, previews</p>
+              </div>
+              <div class="meter"><span></span></div>
+            </article>
+            <article class="track" style="--accent: var(--pink); --value: 84%">
+              <span class="rank">3</span>
+              <div>
+                <h3>Object Cosmos</h3>
+                <p>Orca, Uxn, Uiua, Surface, MediaPipe, Serial, NGEA, Anupars, pads</p>
+              </div>
+              <div class="meter"><span></span></div>
+            </article>
+            <article class="track" style="--accent: var(--mint); --value: 74%">
+              <span class="rank">4</span>
+              <div>
+                <h3>AI Co-Patching</h3>
+                <p>object insertion, edit flows, chat tools, OpenRouter, Sparks, prompts</p>
+              </div>
+              <div class="meter"><span></span></div>
+            </article>
+            <article class="track" style="--accent: var(--violet); --value: 70%">
+              <span class="rank">5</span>
+              <div>
+                <h3>Performance Stagecraft</h3>
+                <p>workers, culling, WebCodecs, profiler, offscreen pausing, 120fps paths</p>
+              </div>
+              <div class="meter"><span></span></div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap reveal">
+        <p class="eyebrow">Monthly energy</p>
+        <h2>The build tempo was intense</h2>
+        <p class="section-copy">January and February were architecture months. March opened the doors to new interfaces. April tightened the live visual instrument.</p>
+        <div class="month-grid">
+          <article class="month" style="--accent: var(--amber); --height: 100%">
+            <div class="bar"></div>
+            <div class="month-content">
+              <span>January</span>
+              <strong>1,233</strong>
+              <p>Audio V2, Orca, Uxn, canvas.dom, Supersonic, AI insertion, object browser, demos.</p>
+            </div>
+          </article>
+          <article class="month" style="--accent: var(--coral); --height: 93%">
+            <div class="bar"></div>
+            <div class="month-content">
+              <span>February</span>
+              <strong>1,145</strong>
+              <p>Workers, Ruby, WebCodecs, VFS, offline saves, native DSP, named channels, transport.</p>
+            </div>
+          </article>
+          <article class="month" style="--accent: var(--cyan); --height: 51%">
+            <div class="bar"></div>
+            <div class="month-content">
+              <span>March</span>
+              <strong>631</strong>
+              <p>Sequencer, curve editor, samples, scsynth, tables, serial, MediaPipe, projection mapping.</p>
+            </div>
+          </article>
+          <article class="month" style="--accent: var(--mint); --height: 43%">
+            <div class="bar"></div>
+            <div class="month-content">
+              <span>April</span>
+              <strong>531</strong>
+              <p>Render graph work, Surface, Sparks, settings, output sizing, Anupars, expression outlets.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap reveal">
+        <p class="eyebrow">The object roster</p>
+        <h2>You made the browser host many tiny creative worlds</h2>
+        <p class="section-copy">Patchies became a place where livecoding, audio DSP, shaders, visual tools, sensors, files, and AI can all speak through the same patching language.</p>
+        <div class="object-cloud" aria-label="Objects and integrations built or matured in 2026">
+          <span>Audio V2</span><span>native DSP</span><span>Orca</span><span>Uxn</span><span>canvas.dom</span>
+          <span>Supersonic</span><span>Worker</span><span>Ruby</span><span>MQTT</span><span>VDO.Ninja</span>
+          <span>bytebeat</span><span>Uiua</span><span>WebSerial</span><span>pads</span><span>table</span>
+          <span>curve</span><span>scsynth</span><span>MediaPipe</span><span>projection mapping</span><span>NGEA</span>
+          <span>Anupars</span><span>Surface</span><span>regl</span><span>SwissGL</span><span>Sparks</span>
+          <span>tap~</span><span>expr multi-outlet</span><span>global transport</span><span>Freesound</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap reveal">
+        <p class="eyebrow">What changed</p>
+        <h2>From node editor to live workstation</h2>
+        <div class="two-up">
+          <article class="card" style="--accent: var(--cyan)">
+            <div>
+              <small>before</small>
+              <h3>a canvas full of powerful experiments</h3>
+              <p>Lots of expressive pieces existed, but the project still needed stronger foundations for scale, performance, output, and explanation.</p>
+            </div>
+            <div class="mini-bars">
+              <div style="--w: 44%"></div>
+              <div style="--w: 58%"></div>
+              <div style="--w: 36%"></div>
+            </div>
+          </article>
+          <article class="card" style="--accent: var(--mint)">
+            <div>
+              <small>after</small>
+              <h3>a browser-native creative instrument</h3>
+              <p>Audio, visuals, AI, code, files, sensors, demos, docs, and performance systems all started snapping into one product shape.</p>
+            </div>
+            <div class="mini-bars">
+              <div style="--w: 86%"></div>
+              <div style="--w: 78%"></div>
+              <div style="--w: 91%"></div>
+            </div>
+          </article>
+        </div>
+        <div class="quote">
+          <p>Patchies is becoming a place where ideas can be wired together before they have names.</p>
+          <span>A short explanation for friends: it is like Ableton, TouchDesigner, Max/MSP, livecoding, and a creative AI notebook sharing one messy, magical table.</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap reveal">
+        <p class="eyebrow">Friend mode</p>
+        <h2>How to explain it without opening the codebase</h2>
+        <p class="section-copy">Use these as quick voiceover notes while scrolling.</p>
+        <div class="speaker-grid">
+          <article class="speaker-card">
+            <b>It is a patching canvas.</b>
+            <p>You connect boxes together. Some make sound, some make images, some run code, some listen to devices, some ask AI for help.</p>
+          </article>
+          <article class="speaker-card">
+            <b>It is live.</b>
+            <p>The patch keeps running while you edit it, so it behaves more like an instrument than a document.</p>
+          </article>
+          <article class="speaker-card">
+            <b>It is intentionally weird.</b>
+            <p>Orca, Uxn, shaders, MIDI, speech, sensors, workers, samples, and visual pipelines can all meet in the same room.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap reveal">
+        <p class="eyebrow">Your 2026 headline</p>
+        <h2>You built the infrastructure for creative chaos to become playable.</h2>
+        <p class="section-copy">Not just more features. A stronger engine, a bigger vocabulary, a better stage, and a clearer way for other people to understand the thing you are making.</p>
+        <div class="final-badge" aria-label="Patchies 2026 badge">
+          <div class="final-badge-inner">
+            <div>
+              <strong>2026</strong>
+              <span>Patchies became an instrument</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const progress = document.querySelector(".progress span");
+    const revealEls = [...document.querySelectorAll(".reveal")];
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function updateProgress() {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = max > 0 ? (window.scrollY / max) * 100 : 0;
+      progress.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add("visible");
+        });
+      },
+      { threshold: 0.18 }
+    );
+
+    revealEls.forEach((el) => observer.observe(el));
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+
+    const canvas = document.getElementById("constellation");
+    const ctx = canvas.getContext("2d");
+    const colors = ["#ffcc66", "#ff6b6b", "#6ad7ff", "#68f6c1", "#ff82c8", "#a78bfa"];
+    let points = [];
+    let dpr = 1;
+
+    function resizeCanvas() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(window.innerWidth * dpr);
+      canvas.height = Math.floor(window.innerHeight * dpr);
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const count = Math.max(36, Math.min(82, Math.floor(window.innerWidth / 18)));
+      points = Array.from({ length: count }, (_, index) => ({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        vx: (Math.random() - 0.5) * 0.24,
+        vy: (Math.random() - 0.5) * 0.24,
+        r: 1.6 + Math.random() * 3.8,
+        color: colors[index % colors.length]
+      }));
+    }
+
+    function drawConstellation() {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i < points.length; i += 1) {
+        const a = points[i];
+        if (!prefersReducedMotion) {
+          a.x += a.vx;
+          a.y += a.vy;
+          if (a.x < -20) a.x = window.innerWidth + 20;
+          if (a.x > window.innerWidth + 20) a.x = -20;
+          if (a.y < -20) a.y = window.innerHeight + 20;
+          if (a.y > window.innerHeight + 20) a.y = -20;
+        }
+
+        for (let j = i + 1; j < points.length; j += 1) {
+          const b = points[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 138) {
+            ctx.globalAlpha = (1 - dist / 138) * 0.22;
+            ctx.strokeStyle = a.color;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+
+        ctx.globalAlpha = 0.82;
+        ctx.fillStyle = a.color;
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(drawConstellation);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    drawConstellation();
+  </script>
+</body>
+</html>
