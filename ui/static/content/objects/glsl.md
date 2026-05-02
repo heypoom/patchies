@@ -41,6 +41,8 @@ Enable the texture preset packs for basic operators:
 - **Texture Composite**: `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`,
   `Composite`, `Over`, `Under`, `Switcher`
 - **Texture Color**: `Level`, `Reorder`
+- **Texture Masks & Keys**: `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`,
+  `Matte`
 - **Texture Transform**: `Transform`, `Crop`, `Displace`, `Noise Displace`
 - **Texture Filters**: `Blur`, `Edge`
 - **Texture Feedback & Data**: `Feedback`

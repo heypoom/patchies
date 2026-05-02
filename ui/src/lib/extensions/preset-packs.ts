@@ -79,6 +79,14 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presets: ['Level', 'Reorder']
   },
   {
+    id: 'texture-masks-keys',
+    name: 'Texture Masks & Keys',
+    description: 'Build and apply alpha and matte textures',
+    icon: 'Eye',
+    requiredObjects: ['glsl'],
+    presets: ['Threshold', 'Chroma Key', 'RGB Key', 'Luma Key', 'Matte']
+  },
+  {
     id: 'texture-transform',
     name: 'Texture Transform',
     description: 'Move, crop, tile, and warp textures',

@@ -26,6 +26,11 @@ import { preset as preset24 } from './difference';
 import { preset as preset25 } from './composite';
 import { preset as preset26 } from './over';
 import { preset as preset27 } from './under';
+import { preset as preset28 } from './threshold';
+import { preset as preset29 } from './chroma-key';
+import { preset as preset30 } from './rgb-key';
+import { preset as preset31 } from './luma-key';
+import { preset as preset32 } from './matte';
 import type { GLSLPreset } from './types';
 
 export const GLSL_PRESETS: Record<string, GLSLPreset> = {
@@ -56,7 +61,12 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
   Difference: preset24,
   Composite: preset25,
   Over: preset26,
-  Under: preset27
+  Under: preset27,
+  Threshold: preset28,
+  'Chroma Key': preset29,
+  'RGB Key': preset30,
+  'Luma Key': preset31,
+  Matte: preset32
 };
 
 export type { GLSLPreset } from './types';
