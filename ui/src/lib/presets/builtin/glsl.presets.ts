@@ -14,19 +14,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   );
 }`;
 
-const RAMP_GL = `// @title Ramp
+const LINEAR_RAMP_GL = `// @title Linear Ramp
 // @primaryButton settings
-// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"
 // @param angle 0.0 -3.1416 3.1416 0.001 "Angle"
 // @param offset 0.0 -1.0 1.0 0.001 "Offset"
-// @param radius 0.5 0.01 1.5 0.001 "Radius"
 // @param colorA color #000000 "Color A"
 // @param colorB color #ffffff "Color B"
 
-uniform float mode;
 uniform float angle;
 uniform float offset;
-uniform float radius;
 uniform vec3 colorA;
 uniform vec3 colorB;
 
@@ -34,13 +30,54 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 p = uv - 0.5;
   float c = cos(angle);
   float s = sin(angle);
-  float linearRamp = dot(p, vec2(c, s)) + 0.5 + offset;
-  float radialRamp = length(p) / max(radius, 0.001) + offset;
-  float circularRamp = atan(p.y, p.x) / 6.28318530718 + 0.5 + offset;
+  float value = dot(p, vec2(c, s)) + 0.5 + offset;
 
-  float value = linearRamp;
-  if (mode > 0.5) value = radialRamp;
-  if (mode > 1.5) value = circularRamp;
+  fragColor = vec4(mix(colorA, colorB, clamp(value, 0.0, 1.0)), 1.0);
+}`;
+
+const RADIAL_RAMP_GL = `// @title Radial Ramp
+// @primaryButton settings
+// @param centerX 0.5 0.0 1.0 0.001 "Center X"
+// @param centerY 0.5 0.0 1.0 0.001 "Center Y"
+// @param radius 0.5 0.01 1.5 0.001 "Radius"
+// @param offset 0.0 -1.0 1.0 0.001 "Offset"
+// @param colorA color #000000 "Color A"
+// @param colorB color #ffffff "Color B"
+
+uniform float centerX;
+uniform float centerY;
+uniform float radius;
+uniform float offset;
+uniform vec3 colorA;
+uniform vec3 colorB;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 center = vec2(centerX, centerY);
+  float value = distance(uv, center) / max(radius, 0.001) + offset;
+
+  fragColor = vec4(mix(colorA, colorB, clamp(value, 0.0, 1.0)), 1.0);
+}`;
+
+const CIRCULAR_RAMP_GL = `// @title Circular Ramp
+// @primaryButton settings
+// @param centerX 0.5 0.0 1.0 0.001 "Center X"
+// @param centerY 0.5 0.0 1.0 0.001 "Center Y"
+// @param angle 0.0 -3.1416 3.1416 0.001 "Angle"
+// @param offset 0.0 -1.0 1.0 0.001 "Offset"
+// @param colorA color #000000 "Color A"
+// @param colorB color #ffffff "Color B"
+
+uniform float centerX;
+uniform float centerY;
+uniform float angle;
+uniform float offset;
+uniform vec3 colorA;
+uniform vec3 colorB;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 p = uv - vec2(centerX, centerY);
+  float value = atan(p.y, p.x) / 6.28318530718 + 0.5 + angle / 6.28318530718 + offset;
+  value = fract(value);
 
   fragColor = vec4(mix(colorA, colorB, clamp(value, 0.0, 1.0)), 1.0);
 }`;
@@ -561,10 +598,20 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
     description: 'Generate a solid color with a color picker.',
     data: { code: SOLID_GL.trim() }
   },
-  Ramp: {
+  'Linear Ramp': {
     type: 'glsl',
-    description: 'Generate linear, radial, and circular color ramps.',
-    data: { code: RAMP_GL.trim() }
+    description: 'Generate a directional linear color ramp.',
+    data: { code: LINEAR_RAMP_GL.trim() }
+  },
+  'Radial Ramp': {
+    type: 'glsl',
+    description: 'Generate a radial color ramp from a center point.',
+    data: { code: RADIAL_RAMP_GL.trim() }
+  },
+  'Circular Ramp': {
+    type: 'glsl',
+    description: 'Generate an angular color ramp around a center point.',
+    data: { code: CIRCULAR_RAMP_GL.trim() }
   },
   Level: {
     type: 'glsl',

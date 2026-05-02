@@ -40,7 +40,9 @@ Enable the **GLSL Operators** preset pack for basic presets:
 - `Mix` - mix two video inputs
 - `Overlay` - overlay a foreground input on a background input
 - `Switcher` - switch between 6 inputs
-- `Ramp` - generate linear, radial, and circular ramps
+- `Linear Ramp` - generate a directional linear ramp
+- `Radial Ramp` - generate a radial ramp from a center point
+- `Circular Ramp` - generate an angular ramp around a center point
 - `Level` - adjust black, white, gamma, brightness, contrast, and opacity
 - `Transform` - translate, scale, rotate, and tile an input texture
 - `Multiply` - multiply two input textures
