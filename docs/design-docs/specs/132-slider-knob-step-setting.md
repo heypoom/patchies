@@ -12,6 +12,7 @@
 - Changing min/max keeps the current value in bounds and snapped.
 - Changing `step` records undo/redo history like min/max/default changes.
 - Shorthands accept an optional fourth numeric argument: `[min] <max> [default] [step]`.
+- Vertical slider shorthands (`vslider`, `vfslider`) use the same range track/thumb styling as horizontal sliders, with only the orientation and dimensions changing.
 
 ## Examples
 
