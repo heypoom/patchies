@@ -33,32 +33,21 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 ## Basic Presets
 
-Enable the **GLSL Operators** preset pack for basic presets:
+Enable the texture preset packs for basic operators:
 
-- `glsl>` - a passthrough shader
-- `Constant` - constant color and alpha
-- `Mix` - mix two video inputs
-- `Overlay` - overlay a foreground input on a background input
-- `Switcher` - switch between 6 inputs
-- `Linear Ramp` - generate a directional linear ramp
-- `Radial Ramp` - generate a radial ramp from a center point
-- `Circular Ramp` - generate an angular ramp around a center point
-- `Level` - adjust black, white, gamma, brightness, contrast, and opacity
-- `Transform` - translate, scale, rotate, and tile an input texture
-- `Multiply` - multiply two input textures
-- `Blur` - single-pass 2D blur
-- `Crop` - crop an input texture with optional feathering
-- `Reorder` - swizzle color and alpha channels
-- `Displace` - warp an input using a displacement texture
-- `Edge` - Sobel-style edge detection
-- `Noise` - animated procedural noise
-- `Noise Displace` - warp an input using procedural noise
-- `Feedback` - accumulate an input with a manually wired feedback inlet
+- **Visual Shader Starters**: `glsl>` passthrough shader
+- **Texture Generators**: `Constant`, `Linear Ramp`, `Radial Ramp`,
+  `Circular Ramp`, `Noise`
+- **Texture Composite**: `Mix`, `Overlay`, `Multiply`, `Switcher`
+- **Texture Color**: `Level`, `Reorder`
+- **Texture Transform**: `Transform`, `Crop`, `Displace`, `Noise Displace`
+- **Texture Filters**: `Blur`, `Edge`
+- **Texture Feedback & Data**: `Feedback`
 
 The `glsl>` preset is the best starting point for building GLSL shaders
 that process video inputs.
 
-The GLSL Operators presets are inspired by
+The texture operator presets are inspired by
 [TouchDesigner](https://derivative.ca/) Texture Operators (TOPs) by Derivative
 Inc. Patchies does not include or port TouchDesigner source code, shaders,
 assets, documentation, or proprietary implementations; the presets are

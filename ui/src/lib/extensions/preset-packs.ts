@@ -29,6 +29,14 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     ]
   },
   {
+    id: 'visual-starters',
+    name: 'Visual Starters',
+    description: 'Starter templates for GPU visual nodes',
+    icon: 'Code',
+    requiredObjects: ['hydra>', 'glsl', 'regl', 'swgl', 'three'],
+    presets: ['hydra>', 'glsl>', 'regl>', 'swgl>', 'three>']
+  },
+  {
     id: 'hydra-operators',
     name: 'Hydra Operators',
     description: 'Video operators built with Hydra',
@@ -37,35 +45,52 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presets: ['hydra>', 'add.hydra', 'diff.hydra', 'sub.hydra', 'blend.hydra', 'mask.hydra']
   },
   {
-    id: 'glsl-presets',
-    name: 'GLSL Operators',
-    description: 'Video operators built with GLSL',
+    id: 'texture-generators',
+    name: 'Texture Generators',
+    description: 'Procedural sources for starting visual chains',
     icon: 'Shapes',
-    requiredObjects: ['glsl', 'regl', 'swgl', 'three'],
-    presets: [
-      'glsl>',
-      'Mix',
-      'Overlay',
-      'Switcher',
-      'Constant',
-      'Linear Ramp',
-      'Radial Ramp',
-      'Circular Ramp',
-      'Level',
-      'Transform',
-      'Multiply',
-      'Blur',
-      'Crop',
-      'Reorder',
-      'Displace',
-      'Edge',
-      'Noise',
-      'Noise Displace',
-      'Feedback',
-      'regl>',
-      'swgl>',
-      'three>'
-    ]
+    requiredObjects: ['glsl'],
+    presets: ['Constant', 'Linear Ramp', 'Radial Ramp', 'Circular Ramp', 'Noise']
+  },
+  {
+    id: 'texture-composite',
+    name: 'Texture Composite',
+    description: 'Combine and switch between multiple textures',
+    icon: 'ArrowRightLeft',
+    requiredObjects: ['glsl'],
+    presets: ['Mix', 'Overlay', 'Multiply', 'Switcher']
+  },
+  {
+    id: 'texture-color',
+    name: 'Texture Color',
+    description: 'Color correction and channel utilities',
+    icon: 'Palette',
+    requiredObjects: ['glsl'],
+    presets: ['Level', 'Reorder']
+  },
+  {
+    id: 'texture-transform',
+    name: 'Texture Transform',
+    description: 'Move, crop, tile, and warp textures',
+    icon: 'Route',
+    requiredObjects: ['glsl'],
+    presets: ['Transform', 'Crop', 'Displace', 'Noise Displace']
+  },
+  {
+    id: 'texture-filters',
+    name: 'Texture Filters',
+    description: 'Image-processing effects for texture chains',
+    icon: 'SlidersHorizontal',
+    requiredObjects: ['glsl'],
+    presets: ['Blur', 'Edge']
+  },
+  {
+    id: 'texture-feedback-data',
+    name: 'Texture Feedback & Data',
+    description: 'Feedback and data-texture visual workflows',
+    icon: 'GitBranch',
+    requiredObjects: ['glsl'],
+    presets: ['Feedback']
   },
   {
     id: 'scripting-demos',
