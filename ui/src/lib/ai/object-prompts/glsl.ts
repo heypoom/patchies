@@ -22,9 +22,14 @@ CRITICAL RULES:
     e.g. \`// @param strength 0.5 0.0 1.0 "Effect strength"\`
     requires \`uniform float strength;\`
     IMPORTANT: default value, then min and max!
-- \`// @param name color "description"\` — renders a vec3 uniform as a color picker.
-    Use \`color\` as the default value. Only works with \`vec3\` uniforms.
-    e.g. \`// @param tint color "Tint color"\` with \`uniform vec3 tint;\`
+- \`// @param name color [#hex] ["title"]\` — renders a vec3 uniform as a color picker.
+    Use \`color\` as the default value. Add an optional hex default, then an optional quoted title.
+    The quoted title becomes the settings label.
+    Only works with \`vec3\` uniforms.
+    e.g. \`// @param tint color #ff8800 "Tint Color"\` with \`uniform vec3 tint;\`
+- \`// @param name default (value: Label, value: Label) "title"\` — renders a numeric uniform as select buttons.
+    Use this for discrete modes instead of sliders.
+    e.g. \`// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"\` with \`uniform float mode;\`
 - \`// @format rgba32f\` (or \`rgba16f\`) — unclamped float output (default \`rgba8\`)
 - \`// @resolution 256\` — sets FBO size (256×256).
     Also supports \`256x128\`, \`1/n\` (e.g. \`1/2\`, \`1/4\`, \`1/8\`).

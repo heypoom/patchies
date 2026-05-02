@@ -16,12 +16,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const RAMP_GL = `// @title Ramp
 // @primaryButton settings
-// @param mode 0.0 0.0 2.0 "Mode"
+// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"
 // @param angle 0.0 -3.1416 3.1416 "Angle"
 // @param offset 0.0 -1.0 1.0 "Offset"
 // @param radius 0.5 0.01 1.5 "Radius"
-// @param colorA color "Color A"
-// @param colorB color "Color B"
+// @param colorA color #000000 "Color A"
+// @param colorB color #ffffff "Color B"
 
 uniform float mode;
 uniform float angle;
@@ -309,8 +309,8 @@ const NOISE_GL = `// @title Noise
 // @param scale 8.0 0.1 64.0 "Scale"
 // @param speed 0.15 -2.0 2.0 "Speed"
 // @param contrast 1.0 0.1 4.0 "Contrast"
-// @param colorA color "Color A"
-// @param colorB color "Color B"
+// @param colorA color #000000 "Color A"
+// @param colorB color #ffffff "Color B"
 
 uniform float scale;
 uniform float speed;

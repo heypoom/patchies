@@ -29,6 +29,10 @@ export function toGLValue(
     return hexToVec3(value);
   }
 
+  if (def?.widget === 'select' && typeof value === 'string') {
+    return def.type === 'int' ? parseInt(value, 10) : parseFloat(value);
+  }
+
   return value as number | boolean | number[] | number[][];
 }
 

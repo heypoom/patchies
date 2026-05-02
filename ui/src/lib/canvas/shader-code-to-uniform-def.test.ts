@@ -275,6 +275,46 @@ uniform vec3 tint;
     });
   });
 
+  it('parses @param with select options', () => {
+    const directives = parseShaderDirectives(
+      '// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"'
+    );
+    const param = directives.params.get('mode');
+
+    expect(param).toEqual({
+      name: 'mode',
+      default: '0',
+      widget: 'select',
+      options: [
+        { value: '0', label: 'Linear' },
+        { value: '1', label: 'Radial' },
+        { value: '2', label: 'Circular' }
+      ],
+      description: 'Mode'
+    });
+  });
+
+  it('merges select options into numeric uniform def', () => {
+    const code = `
+// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"
+uniform float mode;
+`;
+    const defs = shaderCodeToUniformDefs(code);
+
+    expect(defs[0]).toMatchObject({
+      name: 'mode',
+      type: 'float',
+      widget: 'select',
+      default: 0,
+      options: [
+        { value: '0', label: 'Linear' },
+        { value: '1', label: 'Radial' },
+        { value: '2', label: 'Circular' }
+      ],
+      description: 'Mode'
+    });
+  });
+
   it('merges @param metadata into uniform defs', () => {
     const code = `
 // @param strength 0.01 0.0 0.1 "Aberration strength"

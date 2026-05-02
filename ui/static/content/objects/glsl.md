@@ -184,20 +184,42 @@ a plain number input. The description replaces the uniform name as the label.
 
 ### `@param` — Color Picker
 
-Use `color` as the default value to render a `vec3` uniform as a color picker:
+Use `color` as the default value to render a `vec3` uniform as a color picker.
+You can also provide a default hex color and a quoted title:
 
 ```glsl
 // @param tint color
 // @param glow color "Glow color"
+// @param shadow color #111827 "Shadow color"
 
 uniform vec3 tint;
 uniform vec3 glow;
+uniform vec3 shadow;
 ```
+
+Format: `// @param <name> color [#hex] ["title"]`
 
 The color picker stores a hex string (e.g. `#ff8800`) and converts it
 to a normalized `vec3` (0–1 per channel) before sending to the shader.
 
+The optional hex value sets the picker default. The optional quoted title
+replaces the uniform name as the label in settings.
+
 Only works with `vec3` uniforms — other types ignore the `color` keyword.
+
+### `@param` — Select Options
+
+Add parenthesized `value: label` pairs after the default value to render a
+numeric uniform as select buttons:
+
+```glsl
+// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"
+uniform float mode;
+```
+
+The setting stores the selected option, then sends the numeric value to the
+shader uniform. This is useful for discrete modes where a slider would be
+confusing.
 
 ## Float Texture Format
 

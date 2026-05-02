@@ -22,6 +22,9 @@ export interface GLUniformDef {
   max?: number;
   description?: string;
 
+  /** Select options for enum-like numeric uniforms. Values are sent to GL as numbers. */
+  options?: { label: string; value: string }[];
+
   /** Widget override — e.g. 'color' renders a vec3 as a color picker */
-  widget?: 'color';
+  widget?: 'color' | 'select';
 }
