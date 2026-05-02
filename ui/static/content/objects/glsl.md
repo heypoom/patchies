@@ -33,29 +33,22 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 ## Basic Presets
 
-Enable the texture preset packs for basic operators:
+The `glsl>` preset is enabled by default and gives you a passthrough shader for
+processing video inputs. Enable the texture preset packs when you want
+ready-made TOP-style operators.
 
-- Enabled by default: `glsl>` passthrough shader
-- **Texture Generators**: `Constant`, `Linear Ramp`, `Radial Ramp`,
-  `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross`
-- **Texture Composite**: `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`,
-  `Math`, `Composite`, `Over`, `Under`, `Layout`, `Layer`, `Switcher`
-- **Texture Time**: `Feedback`, `Cache`, `Time Scrub`, `Time Machine`
-- **Texture Color**: `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`,
-  `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`,
-  `Tone Map`, `Reorder`
-- **Texture Masks & Keys**: `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`,
-  `Matte`
-- **Texture Transform**: `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`,
-  `Lens Distort`, `Displace`, `Noise Displace`
-- **Texture Filters**: `Blur`, `Luma Blur`, `Chromatic Aberration`, `Convolve`,
-  `Edge`, `Anti Alias`, `Emboss`, `Slope`, `Normal Map`
+| Pack | Use It For | Presets |
+| ---- | ---------- | ------- |
+| **Texture Generators** | Starting a texture chain | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross` |
+| **Texture Composite** | Combining and arranging textures | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Layout`, `Layer`, `Switcher` |
+| **Texture Time** | Feedback and frame history | `Feedback`, `Cache`, `Time Scrub`, `Time Machine` |
+| **Texture Color** | Color correction and channel utilities | `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder` |
+| **Texture Masks & Keys** | Creating and applying mattes | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte` |
+| **Texture Transform** | Moving, fitting, repeating, and distorting | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace` |
+| **Texture Filters** | Image-processing effects | `Blur`, `Luma Blur`, `Bloom`, `Motion Flow`, `Chromatic Aberration`, `Convolve`, `Edge`, `Anti Alias`, `Emboss`, `Slope`, `Normal Map` |
 
-Texture preset packs can also include REGL-backed presets such as `Bloom`,
-`Motion Flow`, `Layout`, `Layer`, `Cache`, `Time Scrub`, and `Time Machine`.
-
-The `glsl>` preset is the best starting point for building GLSL shaders
-that process video inputs.
+Some texture presets are backed by `regl` instead of `glsl` when they need
+multiple passes, frame history, multiple outputs, or custom draw commands.
 
 The texture operator presets are inspired by
 [TouchDesigner](https://derivative.ca/) Texture Operators (TOPs) by Derivative

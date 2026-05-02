@@ -171,25 +171,21 @@ function render(time) {
 
 ## Basic Presets
 
-Enable **Texture Filters** for REGL-backed image-processing presets:
+Enable the texture preset packs when you want ready-made operators that use
+`regl` for frame history, multiple passes, multiple outputs, or custom draw
+commands.
 
-- `Bloom` - multipass threshold, blur, tint, and composite bloom.
-- `Motion Flow` - estimates creative frame-to-frame motion. Outlet 0 is a color
-  visualization; outlet 1 is encoded vector data.
+| Pack | Preset | What It Does |
+| ---- | ------ | ------------ |
+| **Texture Filters** | `Bloom` | Multipass threshold, blur, tint, and composite bloom. |
+| **Texture Filters** | `Motion Flow` | Creative frame-to-frame motion estimate. Outlet 0 is a color visualization; outlet 1 is encoded vector data. |
+| **Texture Composite** | `Layout` | Arranges up to four video inputs into a grid, row, or column. |
+| **Texture Composite** | `Layer` | Stacks up to four video inputs with per-layer opacity. |
+| **Texture Time** | `Cache` | Records recent frames into an internal ring buffer and outputs a delayed frame. |
+| **Texture Time** | `Time Scrub` | Records frame history and manually scrubs through it with a position control. |
+| **Texture Time** | `Time Machine` | Records a longer frame history and plays it back with speed and mix controls. |
 
-Enable **Texture Composite** for REGL-backed multi-input composition presets:
-
-- `Layout` - arranges up to four video inputs into a grid, row, or column.
-- `Layer` - stacks up to four video inputs with per-layer opacity.
-
-Enable **Texture Time** for REGL-backed temporal presets:
-
-- `Cache` - records recent frames into an internal ring buffer and outputs a
-  delayed frame.
-- `Time Scrub` - records frame history and manually scrubs through it with a
-  position control.
-- `Time Machine` - records a longer frame history and plays it back with
-  speed and mix controls.
+The regular `regl>` preset stays available as a blank low-level starting point.
 
 ## Multiple Video Outputs (MRT)
 
