@@ -145,17 +145,21 @@ export async function handleMultiObjectInsert(
         const uniformDefs = targetNode.data.glUniformDefs as Array<{
           name: string;
           type: string;
+          hideInlet?: boolean;
         }>;
+        const visibleUniformDefs = uniformDefs.filter((def) => !def.hideInlet);
 
         // Match by connection order: first edge -> first uniform, second -> second, etc.
         // Filter edges targeting the same node to find which uniform this should connect to
         const edgesToThisTarget = simplifiedEdges.filter((e) => e.target === edge.target);
         const indexInTarget = edgesToThisTarget.indexOf(edge);
 
-        if (indexInTarget >= 0 && indexInTarget < uniformDefs.length) {
-          const uniformDef = uniformDefs[indexInTarget];
+        if (indexInTarget >= 0 && indexInTarget < visibleUniformDefs.length) {
+          const uniformDef = visibleUniformDefs[indexInTarget];
+          const uniformIndex = uniformDefs.indexOf(uniformDef);
           const handleType = uniformDef.type === 'sampler2D' ? 'video' : 'message';
-          targetHandle = `${handleType}-in-${indexInTarget}-${uniformDef.name}-${uniformDef.type}`;
+
+          targetHandle = `${handleType}-in-${uniformIndex}-${uniformDef.name}-${uniformDef.type}`;
         }
       }
 

@@ -88,9 +88,11 @@ const includeHighlightTheme = EditorView.baseTheme({
 });
 
 /**
- * Highlights `// @title`, `// @param`, and `// @primaryButton` metadata directives (spec 125).
+ * Highlights `// @title`, `// @param`, `// @noinlet`, and `// @primaryButton`
+ * metadata directives (spec 125).
  */
-const METADATA_DIRECTIVE_RE = /^[ \t]*\/\/\s*(@(?:title|param|primaryButton|resolution))\s+(.+)$/gm;
+const METADATA_DIRECTIVE_RE =
+  /^[ \t]*\/\/\s*(@(?:title|param|noinlet|primaryButton|resolution))\s+(.+)$/gm;
 
 const metadataKeywordMark = Decoration.mark({ class: 'cm-glsl-metadata-keyword' });
 const metadataValueMark = Decoration.mark({ class: 'cm-glsl-metadata-value' });
@@ -197,6 +199,12 @@ const directiveCompletions: Completion[] = [
     type: 'keyword',
     detail: 'Enrich uniform with UI metadata',
     info: '// @param strength 0.5 0.0 1.0 "Effect strength"'
+  }),
+  snippetCompletion('@noinlet ${name}', {
+    label: '@noinlet',
+    type: 'keyword',
+    detail: 'Hide uniform inlet and keep settings UI control',
+    info: '// @noinlet mode'
   }),
   snippetCompletion('@format rgba32f', {
     label: '@format',

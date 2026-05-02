@@ -31,6 +31,9 @@ CRITICAL RULES:
 - \`// @param name default (value: Label, value: Label) "title"\` — renders a numeric uniform as select buttons.
     Use this for discrete modes instead of sliders.
     e.g. \`// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"\` with \`uniform float mode;\`
+- \`// @noinlet name[, otherName]\` — hides matching uniform inlet handles while keeping ObjectSettings UI control.
+    Use this when a uniform should be changed only from settings, not patch cables.
+    e.g. \`// @noinlet mode\` with \`uniform int mode;\`
 - \`// @format rgba32f\` (or \`rgba16f\`) — unclamped float output (default \`rgba8\`)
 - \`// @resolution 256\` — sets FBO size (256×256).
     Also supports \`256x128\`, \`1/n\` (e.g. \`1/2\`, \`1/4\`, \`1/8\`).

@@ -4,7 +4,8 @@ import {
   uniformDefsToSettingsSchema,
   parseShaderDirectives,
   parseShaderName,
-  settingsSchemaToDefaultValues
+  settingsSchemaToDefaultValues,
+  visibleUniformInletDefs
 } from './shader-code-to-uniform-def';
 
 describe('shaderCodeToUniformDefs', () => {
@@ -194,6 +195,22 @@ describe('settingsSchemaToDefaultValues', () => {
   });
 });
 
+describe('visibleUniformInletDefs', () => {
+  it('filters hidden uniform inlets and preserves original uniform indexes', () => {
+    const defs = shaderCodeToUniformDefs(`
+// @noinlet mode
+uniform sampler2D iChannel0;
+uniform int mode;
+uniform float amount;
+`);
+
+    expect(visibleUniformInletDefs(defs)).toEqual([
+      { def: { name: 'iChannel0', type: 'sampler2D' }, uniformIndex: 0 },
+      { def: { name: 'amount', type: 'float' }, uniformIndex: 2 }
+    ]);
+  });
+});
+
 describe('parseShaderName', () => {
   it('parses @title directive', () => {
     expect(parseShaderName('// @title Chromatic Aberration\nuniform float x;')).toBe(
@@ -261,6 +278,7 @@ uniform bool invert;
 // @title My Shader
 // @param x 0.5 0.0 1.0 "X value"
 // @param y 5 1 10 "Y value"
+// @noinlet y
 `;
     const directives = parseShaderDirectives(code);
 
@@ -268,6 +286,27 @@ uniform bool invert;
     expect(directives.params.size).toBe(2);
     expect(directives.params.get('x')?.description).toBe('X value');
     expect(directives.params.get('y')?.min).toBe(1);
+    expect(directives.noInlets).toEqual(new Set(['y']));
+  });
+
+  it('parses @noinlet with comma-separated uniform names', () => {
+    const directives = parseShaderDirectives('// @noinlet mode, seed, amount');
+
+    expect(directives.noInlets).toEqual(new Set(['mode', 'seed', 'amount']));
+  });
+
+  it('merges @noinlet metadata into matching uniform defs', () => {
+    const code = `
+// @noinlet mode, missingUniform
+uniform int mode;
+uniform float amount;
+`;
+    const defs = shaderCodeToUniformDefs(code);
+
+    expect(defs).toEqual([
+      { name: 'mode', type: 'int', hideInlet: true },
+      { name: 'amount', type: 'float' }
+    ]);
   });
 
   it('parses @param with color widget', () => {

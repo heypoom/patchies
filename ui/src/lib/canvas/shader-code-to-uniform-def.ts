@@ -24,9 +24,10 @@ export interface ParamDirective {
 export interface ShaderDirectives {
   name?: string;
   params: Map<string, ParamDirective>;
+  noInlets: Set<string>;
 }
 
-const DIRECTIVE_RE = /^[ \t]*\/\/\s*@(title|param)\s+(.+)$/gm;
+const DIRECTIVE_RE = /^[ \t]*\/\/\s*@(title|param|noinlet)\s+(.+)$/gm;
 
 // @param name [default] [min] [max] [step] ["description"]
 // For color widgets: @param name color [#hex] ["description"]
@@ -123,8 +124,15 @@ function parseParamDirective(value: string): ParamDirective | null {
   return param;
 }
 
+function parseNoInletDirective(value: string): string[] {
+  return value
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
 export function parseShaderDirectives(code: string): ShaderDirectives {
-  const result: ShaderDirectives = { params: new Map() };
+  const result: ShaderDirectives = { params: new Map(), noInlets: new Set() };
 
   let match;
 
@@ -141,6 +149,10 @@ export function parseShaderDirectives(code: string): ShaderDirectives {
       if (!param) continue;
 
       result.params.set(param.name, param);
+    } else if (directive === 'noinlet') {
+      for (const name of parseNoInletDirective(value)) {
+        result.noInlets.add(name);
+      }
     }
   }
 
@@ -220,7 +232,8 @@ export function shaderCodeToUniformDefs(code: string): GLUniformDef[] {
       ...(param?.step != null && { step: param.step }),
       ...(param?.description != null && { description: param.description }),
       ...(param?.widget != null && { widget: param.widget }),
-      ...(param?.options != null && { options: param.options })
+      ...(param?.options != null && { options: param.options }),
+      ...(directives.noInlets.has(name) && { hideInlet: true })
     });
   }
 
@@ -352,4 +365,12 @@ export function settingsSchemaToDefaultValues(schema: SettingsField[]): Record<s
       .filter((field) => 'default' in field && field.default !== undefined)
       .map((field) => [field.key, field.default])
   );
+}
+
+export function visibleUniformInletDefs(
+  defs: GLUniformDef[]
+): { def: GLUniformDef; uniformIndex: number }[] {
+  return defs
+    .map((def, uniformIndex) => ({ def, uniformIndex }))
+    .filter(({ def }) => !def.hideInlet);
 }

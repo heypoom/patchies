@@ -6,7 +6,7 @@ GLSL nodes always display "glsl" as their title — you can't tell what a node d
 
 ## Solution
 
-Parse `// @title` and `// @param` comment directives from shader code. Use `@title` to set the node title. Use `@param` to enrich uniform sliders with min/max/step and descriptions. These directives are already part of the shader effect format (spec 123) but are independently useful for any GLSL node right now.
+Parse `// @title`, `// @param`, and `// @noinlet` comment directives from shader code. Use `@title` to set the node title. Use `@param` to enrich uniform sliders with min/max/step and descriptions. Use `@noinlet` to keep selected uniforms configurable through the settings UI only, without exposing node inlet handles. These directives are already part of the shader effect format (spec 123) but are independently useful for any GLSL node right now.
 
 ## Directives
 
@@ -60,6 +60,25 @@ When `min` and `max` are both present for a numeric uniform, the settings panel 
 
 `@param` directives that don't match any uniform declaration are ignored.
 
+### `@noinlet`
+
+Hides one or more uniform inlet handles while keeping the uniforms in the settings UI.
+
+```glsl
+// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"
+// @noinlet mode
+
+uniform int mode;
+```
+
+`mode` still appears in `<ObjectSettings>` and is sent to the renderer from `node.data.uniformValues`, but no `message-in-*-mode-int` handle is rendered on the node.
+
+**Format**: `// @noinlet <name>[, <name>...]`
+
+Names can be comma-separated and may include whitespace. Multiple `@noinlet` directives are merged.
+
+`@noinlet` directives that don't match any uniform declaration are ignored.
+
 ### `@format` (existing)
 
 Already implemented — sets FBO texture format (`rgba8`, `rgba16f`, `rgba32f`).
@@ -73,7 +92,7 @@ Already implemented — sets FBO texture format (`rgba8`, `rgba16f`, `rgba32f`).
 Directives are parsed from single-line comments only (`//`), not block comments. They can appear anywhere in the file but conventionally go at the top.
 
 ```
-DIRECTIVE_RE = /^[ \t]*\/\/\s*@(name|param)\s+(.+)$/gm
+DIRECTIVE_RE = /^[ \t]*\/\/\s*@(title|param|noinlet)\s+(.+)$/gm
 ```
 
 **`@title`**: captures everything after `@title` as the title string, trimmed.
@@ -82,6 +101,12 @@ DIRECTIVE_RE = /^[ \t]*\/\/\s*@(name|param)\s+(.+)$/gm
 
 ```
 @param <type> <name> [<default>] [<min>] [<max>] ["<description>"]
+```
+
+**`@noinlet`**: parsed as a comma-separated list of uniform names:
+
+```
+@noinlet mode, seed
 ```
 
 ## Implementation
@@ -94,6 +119,7 @@ Add `parseShaderDirectives()` to `shader-code-to-uniform-def.ts` (or a new `shad
 interface ShaderDirectives {
   name?: string;
   params: Map<string, ParamDirective>;
+  noInlets: Set<string>;
 }
 
 interface ParamDirective {
@@ -120,6 +146,7 @@ export interface GLUniformDef {
   max?: number;
   step?: number;
   description?: string;
+  hideInlet?: boolean;
 }
 ```
 
@@ -154,7 +181,27 @@ The GLSL reset handler should:
 2. Store it in local `uniformValues` and `node.data.uniformValues`.
 3. Push each reset value through `glSystem.setUniformData()` with `toGLValue()` so the running renderer updates immediately.
 
-### 6. Wire `@title` into node title
+### 6. Hide `@noinlet` handles
+
+In `GLSLCanvasNode.svelte`, render top handles from visible uniforms only:
+
+```svelte
+{#each visibleUniformDefs as { def, uniformIndex }, visibleIndex}
+  <StandardHandle
+    port="inlet"
+    type={def.type === 'sampler2D' ? 'video' : 'message'}
+    id={`${uniformIndex}-${def.name}-${def.type}`}
+    total={visibleUniformDefs.length}
+    index={visibleIndex}
+  />
+{/each}
+```
+
+The handle ID keeps the original uniform index so renderer inlet mapping remains stable. The visual `index` uses the compact visible index so handles are evenly spaced.
+
+When shader code is rerun, remove any existing edges targeting hidden uniform handles.
+
+### 7. Wire `@title` into node title
 
 In `GLSLCanvasNode.svelte`, parse `@title` from the shader code and pass it to `CanvasPreviewLayout`:
 
@@ -164,9 +211,9 @@ const shaderName = $derived(parseShaderName(data.code));
 <CanvasPreviewLayout title={shaderName ?? data.title ?? 'glsl'} ... />
 ```
 
-### 7. Syntax highlighting
+### 8. Syntax highlighting
 
-Extend the existing directive highlighting in `glsl.codemirror.ts` (which already highlights `@format`) to also highlight `@title` and `@param` directives with the same muted style.
+Extend the existing directive highlighting in `glsl.codemirror.ts` (which already highlights `@format`) to also highlight `@title`, `@param`, and `@noinlet` directives with the same muted style.
 
 ## Examples
 

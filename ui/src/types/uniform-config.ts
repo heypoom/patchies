@@ -23,6 +23,9 @@ export interface GLUniformDef {
   step?: number;
   description?: string;
 
+  /** Hide this uniform's node inlet handle while keeping settings UI control. */
+  hideInlet?: boolean;
+
   /** Select options for enum-like numeric uniforms. Values are sent to GL as numbers. */
   options?: { label: string; value: string }[];
 

@@ -15,6 +15,7 @@
     shaderCodeToUniformDefs,
     uniformDefsToSettingsSchema,
     settingsSchemaToDefaultValues,
+    visibleUniformInletDefs,
     parseShaderName,
     detectFboFormat,
     detectResolution
@@ -68,6 +69,7 @@
 
   const code = $derived(data.code || '');
   const uniformsSchema = $derived(uniformDefsToSettingsSchema(data.glUniformDefs ?? []));
+  const visibleUniformInlets = $derived(visibleUniformInletDefs(data.glUniformDefs ?? []));
 
   const errorLines = $derived(
     lineErrors
@@ -129,17 +131,32 @@
     }
   };
 
-  function removeInvalidEdges(uniformDefs: GLUniformDef[], mrtCount: number) {
-    const textureUniforms = new Set(
-      uniformDefs.filter((def) => def.type === 'sampler2D').map((def) => def.name)
-    );
+  function getUniformNameFromHandle(targetHandle: string | null | undefined): string | undefined {
+    if (!targetHandle?.startsWith('video-in-') && !targetHandle?.startsWith('message-in-')) {
+      return undefined;
+    }
 
-    // Remove inlet edges whose uniform no longer exists
+    const handleParts = targetHandle.split('-');
+    return handleParts.length > 3 ? handleParts[3] : undefined;
+  }
+
+  function getUniformHandleType(def: GLUniformDef): 'video' | 'message' {
+    return def.type === 'sampler2D' ? 'video' : 'message';
+  }
+
+  function removeInvalidEdges(uniformDefs: GLUniformDef[], mrtCount: number) {
     const invalidInlets = getEdges().filter((edge) => {
-      if (edge.target !== nodeId || !edge.targetHandle?.startsWith('video-in-')) return false;
-      // Parse the uniform name: video-in-0-uniformName-sampler2D
-      const handleParts = edge.targetHandle.split('-');
-      return handleParts.length > 3 && !textureUniforms.has(handleParts[3]);
+      if (edge.target !== nodeId) return false;
+
+      const uniformName = getUniformNameFromHandle(edge.targetHandle);
+      if (!uniformName) return false;
+
+      const uniformDef = uniformDefs.find((def) => def.name === uniformName);
+      if (!uniformDef || uniformDef.hideInlet) return true;
+
+      const handleType = edge.targetHandle?.startsWith('video-in-') ? 'video' : 'message';
+
+      return handleType !== getUniformHandleType(uniformDef);
     });
 
     if (invalidInlets.length > 0) {
@@ -354,14 +371,14 @@
   onSettingsRevertAll={handleUniformRevertAll}
 >
   {#snippet topHandle()}
-    {#each data.glUniformDefs as def, defIndex (defIndex)}
+    {#each visibleUniformInlets as { def, uniformIndex }, visibleIndex (uniformIndex)}
       <StandardHandle
         port="inlet"
         type={def.type === 'sampler2D' ? 'video' : 'message'}
-        id={`${defIndex}-${def.name}-${def.type}`}
+        id={`${uniformIndex}-${def.name}-${def.type}`}
         title={`${def.name} (${def.type})`}
-        total={data.glUniformDefs.length}
-        index={defIndex}
+        total={visibleUniformInlets.length}
+        index={visibleIndex}
         {nodeId}
       />
     {/each}
