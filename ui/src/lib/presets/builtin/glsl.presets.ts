@@ -684,12 +684,12 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
     description: 'Accumulate an input with a manually wired feedback inlet.',
     data: { code: FEEDBACK_GL.trim() }
   },
-  'fft-freq.gl': {
+  'FFT Frequency GL': {
     type: 'glsl',
     description: 'Visualize FFT frequency data from an audio analysis texture.',
     data: { code: AUDIO_FFT_FREQ_GL.trim() }
   },
-  'fft-waveform.gl': {
+  'FFT Waveform GL': {
     type: 'glsl',
     description: 'Visualize waveform data from an audio analysis texture.',
     data: { code: AUDIO_FFT_WAVEFORM_GL.trim() }
@@ -699,12 +699,12 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
     description: 'Select one of six video inputs.',
     data: { code: SWITCHER_GL.trim() }
   },
-  'position-field.gl': {
+  'Position Field': {
     type: 'glsl',
     description: 'Generate a float position field for GPU geometry workflows.',
     data: { code: POSITION_FIELD_GL.trim() }
   },
-  'torus-position-field.gl': {
+  'Torus Position Field': {
     type: 'glsl',
     description: 'Generate a float torus position field for GPU geometry workflows.',
     data: { code: TORUS_POSITION_FIELD_GL.trim() }

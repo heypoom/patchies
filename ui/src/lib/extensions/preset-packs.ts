@@ -128,8 +128,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'fft-sm.p5',
       'rms.p5',
       'rms-wide.p5',
-      'fft-freq.gl',
-      'fft-waveform.gl',
+      'FFT Frequency GL',
+      'FFT Waveform GL',
       'fft.js'
     ]
   },
@@ -187,8 +187,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'point-cloud-from-texture.three',
       'mesh-surface-from-texture.three',
       'point-cloud-from-texture.regl',
-      'position-field.gl',
-      'torus-position-field.gl'
+      'Position Field',
+      'Torus Position Field'
     ]
   },
   {

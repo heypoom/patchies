@@ -168,8 +168,8 @@ Leave starter presets that end with `>` unchanged:
 - `swgl>`
 - `three>`
 
-Existing non-operator demo presets such as `fft-freq.gl`, `fft-waveform.gl`,
-`position-field.gl`, and `torus-position-field.gl` can keep their current names
+Existing non-operator demo presets such as `FFT Frequency GL`, `FFT Waveform GL`,
+`Position Field`, and `Torus Position Field` can keep their current names
 unless they are moved into a separate cleanup pass.
 
 ## Implementation Plan

@@ -145,8 +145,8 @@ the next run reverts to a single outlet.
 
 Enable the **FFT Demos** preset pack for audio-reactive examples:
 
-- `fft-freq.gl` - visualize frequency spectrum
-- `fft-waveform.gl` - visualize audio waveform
+- `FFT Frequency GL` - visualize frequency spectrum
+- `FFT Waveform GL` - visualize audio waveform
 
 See the [Audio Reactivity](/docs/audio-reactivity) guide for how to
 use waveform and time-domain audio data from [fft~](/docs/objects/fft~)
