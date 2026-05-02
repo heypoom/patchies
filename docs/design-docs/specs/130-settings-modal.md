@@ -83,6 +83,7 @@ Each section header in the sidebar has a small label: `PER-USER` or `PER-PATCH` 
 | Setting | Control | Store | Notes |
 |---------|---------|-------|-------|
 | Render FPS cap | Dropdown (Unlimited/30/60) | `renderFpsCap` (renderer.store) | |
+| Preview background | Color + transparent option | `previewBackgroundColor` (renderer.store) | Per-user; transparent by default; applied as CSS behind preview canvases |
 | Show FPS monitor | Toggle | `isFpsMonitorVisible` (ui.store) | |
 | Show video stats | Toggle | `showVideoStats` (video.store) | |
 | MediaBunny (WebCodecs) | Toggle | `useWebCodecs` (video.store) | Shows browser support note |

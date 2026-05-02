@@ -12,7 +12,7 @@
   import { transportStore } from '../../stores/transport.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
-  import { overrideOutputNodeId } from '../../stores/renderer.store';
+  import { overrideOutputNodeId, previewBackgroundColor } from '../../stores/renderer.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { useIncludeProcessing } from '$lib/canvas/use-include-processing.svelte';
@@ -309,7 +309,11 @@
 
           <div class="relative">
             {@render topHandle?.()}
-            <div bind:this={previewContainer} class="relative">
+            <div
+              bind:this={previewContainer}
+              class="relative rounded-md"
+              style:background-color={$previewBackgroundColor}
+            >
               {@render preview?.()}
 
               {#if includeState.loading}

@@ -3,6 +3,7 @@
   import ObjectPreviewLayout from './ObjectPreviewLayout.svelte';
   import type { SettingsSchema } from '$lib/settings';
   import type { ExtraMenuItem } from './ObjectPreviewOverflowMenu.svelte';
+  import { previewBackgroundColor } from '../../stores/renderer.store';
 
   let {
     title,
@@ -130,8 +131,8 @@
       width={typeof width === 'number' ? width : undefined}
       height={typeof height === 'number' ? height : undefined}
       style={typeof width === 'number' && typeof height === 'number'
-        ? `width:${width}px;height:${height}px;${pixelated ? 'image-rendering:pixelated;' : ''}${style}`
-        : `${pixelated ? 'image-rendering:pixelated;' : ''}${style}`}
+        ? `width:${width}px;height:${height}px;background-color:${$previewBackgroundColor};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`
+        : `background-color:${$previewBackgroundColor};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`}
     ></canvas>
   {/snippet}
 </ObjectPreviewLayout>
