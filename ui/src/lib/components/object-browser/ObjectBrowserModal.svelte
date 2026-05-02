@@ -38,6 +38,7 @@
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../../stores/ui.store';
   import { getPackIcon } from '$lib/extensions/pack-icons';
+  import { getBuiltInPresetPackByPresetName } from '$lib/extensions/preset-pack-index';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
   import DisabledObjectSuggestion from './DisabledObjectSuggestion.svelte';
   import ExtensionPackCard from '../sidebar/ExtensionPackCard.svelte';
@@ -109,14 +110,18 @@
         continue;
       }
 
+      const presetPack =
+        libraryName === 'Built-in' ? getBuiltInPresetPackByPresetName(preset.name) : undefined;
       const typeFolder = path.length > 2 ? path[1] : preset.type;
       const categoryKey =
-        libraryName === 'Built-in' ? typeFolder : formatPresetLocation(flatPreset);
+        libraryName === 'Built-in'
+          ? (presetPack?.name ?? typeFolder)
+          : formatPresetLocation(flatPreset);
 
       if (!presetsByCategory.has(categoryKey)) {
         presetsByCategory.set(categoryKey, []);
         const pack = BUILT_IN_PACKS.find((p) => p.objects.includes(preset.type));
-        categoryIconMap.set(categoryKey, pack?.icon || 'Package');
+        categoryIconMap.set(categoryKey, presetPack?.icon ?? pack?.icon ?? 'Package');
       }
 
       presetsByCategory.get(categoryKey)!.push({
@@ -131,7 +136,15 @@
       presets.sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    const sortedCategories = Array.from(presetsByCategory.keys()).sort();
+    const presetPackOrder = new Map(BUILT_IN_PRESET_PACKS.map((pack, index) => [pack.name, index]));
+    const sortedCategories = Array.from(presetsByCategory.keys()).sort((a, b) => {
+      const aOrder = presetPackOrder.get(a) ?? Number.MAX_SAFE_INTEGER;
+      const bOrder = presetPackOrder.get(b) ?? Number.MAX_SAFE_INTEGER;
+
+      if (aOrder !== bOrder) return aOrder - bOrder;
+
+      return a.localeCompare(b);
+    });
 
     return sortedCategories.map((category) => ({
       title: category,

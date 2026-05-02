@@ -81,7 +81,11 @@ send(curve)`;
 
 export const JS_PRESETS: Record<
   string,
-  { type: string; data: { code: string; showConsole?: boolean; runOnMount?: boolean } }
+  {
+    type: string;
+    description?: string;
+    data: { code: string; showConsole?: boolean; runOnMount?: boolean };
+  }
 > = {
   'logger.js': {
     type: 'js',
@@ -117,6 +121,7 @@ export const JS_PRESETS: Record<
   },
   'js>': {
     type: 'js',
+    description: 'Pipe messages through JavaScript',
     data: { code: PIPE_MESSAGE_JS, showConsole: false, runOnMount: true }
   }
 };

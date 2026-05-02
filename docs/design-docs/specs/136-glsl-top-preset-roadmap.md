@@ -35,7 +35,6 @@ The current GLSL Operators pack already covers:
 
 - `Constant`
 - `Mix`
-- `Overlay`
 - `Switcher`
 - `Linear Ramp`
 - `Radial Ramp`
@@ -64,15 +63,14 @@ mix `glsl`, `regl`, `swgl`, or `three` presets when that gives the best result.
 
 Recommended user-facing packs:
 
-| Pack                        | Purpose                                      | Likely Presets                                                        |
-| --------------------------- | -------------------------------------------- | --------------------------------------------------------------------- |
-| **Texture Generators**      | Start a visual chain from procedural content | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`    |
-| **Texture Composite**       | Combine multiple textures                    | `Mix`, `Overlay`, `Multiply`, `Add`, `Subtract`, `Difference`, `Over` |
-| **Texture Color**           | Color correction and color-space utilities   | `Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Remap`           |
-| **Texture Masks & Keys**    | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`             |
-| **Texture Transform**       | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`  |
-| **Texture Filters**         | Image-processing effects                     | `Blur`, `Edge`, `Emboss`, `Slope`, `Normal Map`, `Tone Map`           |
-| **Texture Feedback & Data** | Feedback, history, and render-pipeline tools | `Feedback`, future `regl` presets such as `Bloom`, `Cache`            |
+| Pack                     | Purpose                                      | Likely Presets                                                                      |
+| ------------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Texture Generators**   | Start a visual chain from procedural content | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`                  |
+| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Composite`, `Over`, `Feedback` |
+| **Texture Color**        | Color correction and color-space utilities   | `Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Remap`                         |
+| **Texture Masks & Keys** | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`                           |
+| **Texture Transform**    | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`                |
+| **Texture Filters**      | Image-processing effects                     | `Blur`, `Edge`, `Emboss`, `Slope`, `Normal Map`, `Tone Map`                         |
 
 The existing **GLSL Operators** pack can remain during the first migration, but
 new work should move toward these task-based packs. Presets should still be
@@ -138,6 +136,33 @@ more niche, overlapping, or awkward to expose through compact settings.
 | `Select`        | multiple textures | Numeric selector over sampler inputs         | Mostly covered by `Switcher`.                               |
 | `Switch`        | multiple textures | Same as `Select` with a different name       | Existing `Switcher` already handles the common case.        |
 
+### GLSL Possible Implementation Order
+
+Work through these one-by-one so each preset gets a compact, tested UX before
+moving on.
+
+1. `Anti Alias`: add to **Texture Filters** as a mask/edge cleanup filter for
+   generated shapes and threshold-style alpha textures. Keep the scope narrow:
+   it smooths a selected channel into alpha and is not a replacement for true
+   multisample anti-aliasing.
+2. `Luma Blur`: add to **Texture Filters** as a single-pass blur whose blend
+   amount is gated by source luminance. Let users target bright or dark regions
+   so the preset can produce glow-like smearing without requiring a multi-pass
+   bloom pipeline.
+3. `Luma Level`: add to **Texture Color** as a luminance-only level utility.
+   Adjust the source luma curve and reapply it to RGB as a ratio so hue is
+   mostly preserved.
+4. `Pack`: add to **Texture Color** as a channel-packing utility with four
+   named texture inputs: `redSource`, `greenSource`, `blueSource`, and
+   `alphaSource`. Each output channel gets a selector for Luma/R/G/B/A from its
+   matching input.
+5. `Convolve`: add to **Texture Filters** with named 3x3 kernels instead of
+   editable matrix fields. Expose practical kernels such as sharpen, edge,
+   outline, box blur, and gaussian-ish blur, plus strength and bias controls.
+6. `Math`: add to **Texture Composite** as a compact two-input arithmetic
+   utility. Keep explicit `Add`, `Subtract`, and `Difference` presets for common
+   cases, but offer `Math` for selectable per-pixel operations.
+
 ## Better With REGL
 
 These are possible in Patchies, but `regl` is the better target because it gives
@@ -187,7 +212,7 @@ Presets:
 Pack target: **Texture Composite**.
 
 This group gives users clearer texture-combination tools and avoids forcing all
-blend workflows through `Mix`, `Overlay`, or `Multiply`.
+blend workflows through `Mix` or `Multiply`.
 
 ### Group 2 — Keying And Masks
 

@@ -15,7 +15,7 @@ import {
   getPresetByPath,
   isPreset
 } from '$lib/presets/preset-utils';
-import { migrateLegacyPresets } from '$lib/presets/migrate-legacy';
+import { buildBuiltInPresetPackFolders } from '$lib/extensions/preset-pack-index';
 import { PRESETS } from '$lib/presets/presets';
 
 const STORAGE_KEY = 'patchies:preset-libraries';
@@ -31,7 +31,7 @@ function createBuiltinLibrary(): PresetLibrary {
     name: 'Built-in',
     description: 'Default presets included with Patchies',
     readonly: true,
-    presets: migrateLegacyPresets(PRESETS)
+    presets: buildBuiltInPresetPackFolders(PRESETS)
   };
 }
 

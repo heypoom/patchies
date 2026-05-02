@@ -8,6 +8,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 export const preset: GLSLPreset = {
   type: 'glsl',
-  description: 'Passthrough shader for processing a video input.',
+  description: 'Pipe video through GLSL shader',
   data: { code: code.trim() }
 };

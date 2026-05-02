@@ -1,5 +1,7 @@
 import type { PresetPack } from '../../stores/extensions.store';
 
+export const OBJECT_PIPE_PRESETS = ['js>', 'hydra>', 'glsl>', 'regl>', 'swgl>', 'three>', 'tone>'];
+
 /**
  * Built-in preset packs organized by use-case
  * Each preset belongs to exactly one pack (mutually exclusive)
@@ -10,8 +12,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     name: 'Starter Presets',
     description: 'Essentials for getting started',
     icon: 'Boxes',
-    requiredObjects: ['js'],
-    presets: ['logger.js']
+    requiredObjects: [],
+    presets: ['logger.js', ...OBJECT_PIPE_PRESETS]
   },
   {
     id: 'canvas-widgets',
@@ -25,7 +27,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'rgba.picker',
       'plotter.canvas',
       'particle.canvas',
-      'midi.keyboard'
+      'midi.keyboard',
+      'fractal-tree.canvas'
     ]
   },
   {
@@ -34,37 +37,108 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Video operators built with Hydra',
     icon: 'Palette',
     requiredObjects: ['hydra'],
-    presets: ['hydra>', 'add.hydra', 'diff.hydra', 'sub.hydra', 'blend.hydra', 'mask.hydra']
+    presets: ['add.hydra', 'diff.hydra', 'sub.hydra', 'blend.hydra', 'mask.hydra']
   },
   {
-    id: 'glsl-presets',
-    name: 'GLSL Operators',
-    description: 'Video operators built with GLSL',
+    id: 'texture-generators',
+    name: 'Texture Generators',
+    description: 'Procedural sources for starting visual chains',
     icon: 'Shapes',
-    requiredObjects: ['glsl', 'regl', 'swgl', 'three'],
+    requiredObjects: ['glsl'],
     presets: [
-      'glsl>',
-      'Mix',
-      'Overlay',
-      'Switcher',
       'Constant',
       'Linear Ramp',
       'Radial Ramp',
       'Circular Ramp',
-      'Level',
-      'Transform',
-      'Multiply',
-      'Blur',
-      'Crop',
-      'Reorder',
-      'Displace',
-      'Edge',
       'Noise',
-      'Noise Displace',
+      'Circle',
+      'Rectangle',
+      'Cross'
+    ]
+  },
+  {
+    id: 'texture-composite',
+    name: 'Texture Composite',
+    description: 'Combine and switch between multiple textures',
+    icon: 'ArrowRightLeft',
+    requiredObjects: ['glsl'],
+    presets: [
+      'Mix',
+      'Multiply',
+      'Add',
+      'Subtract',
+      'Difference',
+      'Math',
+      'Composite',
+      'Over',
+      'Under',
       'Feedback',
-      'regl>',
-      'swgl>',
-      'three>'
+      'Switcher'
+    ]
+  },
+  {
+    id: 'texture-color',
+    name: 'Texture Color',
+    description: 'Color correction and channel utilities',
+    icon: 'Palette',
+    requiredObjects: ['glsl'],
+    presets: [
+      'Level',
+      'Luma Level',
+      'HSV Adjust',
+      'Monochrome',
+      'Channel Mix',
+      'Pack',
+      'Limit',
+      'Remap',
+      'Lookup',
+      'RGB to HSV',
+      'HSV to RGB',
+      'Tone Map',
+      'Reorder'
+    ]
+  },
+  {
+    id: 'texture-masks-keys',
+    name: 'Texture Masks & Keys',
+    description: 'Build and apply alpha and matte textures',
+    icon: 'Eye',
+    requiredObjects: ['glsl'],
+    presets: ['Threshold', 'Chroma Key', 'RGB Key', 'Luma Key', 'Matte']
+  },
+  {
+    id: 'texture-transform',
+    name: 'Texture Transform',
+    description: 'Move, crop, tile, and warp textures',
+    icon: 'Route',
+    requiredObjects: ['glsl'],
+    presets: [
+      'Transform',
+      'Crop',
+      'Fit',
+      'Flip',
+      'Mirror',
+      'Tile',
+      'Lens Distort',
+      'Displace',
+      'Noise Displace'
+    ]
+  },
+  {
+    id: 'texture-filters',
+    name: 'Texture Filters',
+    description: 'Image-processing effects for texture chains',
+    icon: 'SlidersHorizontal',
+    requiredObjects: ['glsl'],
+    presets: [
+      'Blur',
+      'Luma Blur',
+      'Convolve',
+      'Edge',
+      'Anti Alias',
+      'Emboss',
+      'Slope',
+      'Normal Map'
     ]
   },
   {
@@ -73,15 +147,15 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'JS scripts for control flow',
     icon: 'Code',
     requiredObjects: ['js'],
-    presets: ['js>', 'delay.js']
+    presets: ['delay.js']
   },
   {
     id: 'iframe-widgets',
     name: 'Iframe Widgets',
     description: 'Useful widgets made with iframes',
     icon: 'Layout',
-    requiredObjects: ['iframe'],
-    presets: ['youtube.iframe']
+    requiredObjects: ['iframe', 'dom'],
+    presets: ['youtube.iframe', 'bitmaprenderer']
   },
   {
     id: 'midi',
@@ -129,8 +203,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'rms.p5',
       'rms-wide.p5',
       'FFT Frequency GL',
-      'FFT Waveform GL',
-      'fft.js'
+      'FFT Waveform GL'
     ]
   },
   {
@@ -169,13 +242,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: '3D graphics with Three.js',
     icon: 'Box',
     requiredObjects: ['three', 'glsl'],
-    presets: [
-      'three>',
-      'video-cube.three',
-      'video-torus.three',
-      'video-sphere.three',
-      'crate.three'
-    ]
+    presets: ['video-cube.three', 'video-torus.three', 'video-sphere.three', 'crate.three']
   },
   {
     id: 'gpu-geometry',
@@ -197,7 +264,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Audio synthesis with Tone.js',
     icon: 'AudioLines',
     requiredObjects: ['tone~'],
-    presets: ['poly-synth-midi.tone', 'tone>', 'reverb.tone', 'lowpass.tone']
+    presets: ['poly-synth-midi.tone', 'reverb.tone', 'lowpass.tone']
   },
   {
     id: 'asm-examples',
@@ -288,5 +355,13 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'floatbeat.beat',
       'ice-age.beat'
     ]
+  },
+  {
+    id: 'ai-prompt-presets',
+    name: 'AI Prompt Presets',
+    description: 'Prompt templates for AI objects',
+    icon: 'Brain',
+    requiredObjects: ['ai.txt'],
+    presets: ['music-from-image.prompt']
   }
 ];

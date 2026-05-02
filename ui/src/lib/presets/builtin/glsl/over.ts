@@ -1,6 +1,6 @@
 import type { GLSLPreset } from './types';
 
-const code = `// @title Overlay
+const code = `// @title Over
 // @primaryButton settings
 // @param opacity 1.0 0.0 1.0 0.001 "Opacity"
 
@@ -9,19 +9,17 @@ uniform sampler2D foreground;
 uniform float opacity;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec4 fg = texture(foreground, uv);
   vec4 bg = texture(background, uv);
-  float alpha = fg.a * opacity;
+  vec4 fg = texture(foreground, uv);
+  float alpha = clamp(fg.a * opacity, 0.0, 1.0);
+  float outAlpha = alpha + bg.a * (1.0 - alpha);
+  vec3 rgb = (fg.rgb * alpha + bg.rgb * bg.a * (1.0 - alpha)) / max(outAlpha, 0.0001);
 
-  fragColor = mix(
-    bg,
-    fg,
-    alpha
-  );
+  fragColor = vec4(rgb, outAlpha);
 }`;
 
 export const preset: GLSLPreset = {
   type: 'glsl',
-  description: 'Alpha-composite a foreground input over a background input.',
+  description: 'Place a foreground texture over a background using alpha.',
   data: { code: code.trim() }
 };

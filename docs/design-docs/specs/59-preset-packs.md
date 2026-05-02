@@ -19,6 +19,10 @@ Key principles:
 - Preset packs are **mutually exclusive** - each preset belongs to one pack
 - Preset packs depend on Object Packs - only visible if required objects are enabled
 - "Starter Presets" enabled by default for new users
+- Some presets are **object companions** - lightweight starter presets that appear automatically
+  when their object is enabled because the locked Starter Presets pack is enabled by default
+- Built-in preset browsers group presets by preset pack name, not by object type. For example,
+  **Texture Generators** contains `Circle` and `Radial Ramp`.
 
 ## Data Model
 
@@ -27,12 +31,12 @@ Key principles:
 ```ts
 // Add to src/stores/extensions.store.ts
 interface PresetPack {
-  id: string;                    // 'starter', 'midi', 'audio-synthesis'
-  name: string;                  // 'Starter Presets'
-  description: string;           // 'Essential presets for getting started'
-  icon: string;                  // Lucide icon name
-  requiredObjects: string[];     // Object types needed (filters pack visibility)
-  presets: string[];             // Preset names to enable (e.g., 'logger.js', 'add.hydra')
+  id: string; // 'starter', 'midi', 'audio-synthesis'
+  name: string; // 'Starter Presets'
+  description: string; // 'Essential presets for getting started'
+  icon: string; // Lucide icon name
+  requiredObjects: string[]; // Object types needed (filters pack visibility)
+  presets: string[]; // Preset names to enable (e.g., 'logger.js', 'add.hydra')
 }
 ```
 
@@ -40,10 +44,12 @@ interface PresetPack {
 
 ```ts
 // Extend extensions.store.ts
-const PRESET_STORAGE_KEY = 'patchies:enabled-preset-packs';
-const DEFAULT_ENABLED_PRESET_PACKS = ['starter'];
+const PRESET_STORAGE_KEY = "patchies:enabled-preset-packs";
+const DEFAULT_ENABLED_PRESET_PACKS = ["starter"];
 
-export const enabledPresetPackIds = writable<string[]>(getInitialEnabledPresetPacks());
+export const enabledPresetPackIds = writable<string[]>(
+  getInitialEnabledPresetPacks(),
+);
 
 // Derived: visible presets based on enabled preset packs + enabled objects
 export const enabledPresets = derived(
@@ -52,11 +58,15 @@ export const enabledPresets = derived(
     const presets = new Set<string>();
 
     for (const packId of $enabledPresetPackIds) {
-      const pack = BUILT_IN_PRESET_PACKS.find(p => p.id === packId);
+      const pack = BUILT_IN_PRESET_PACKS.find((p) => p.id === packId);
       if (!pack) continue;
 
-      // Only include if required objects are enabled
-      const hasRequiredObjects = pack.requiredObjects.every(obj => $enabledObjects.has(obj));
+      // Packs without requirements are always active.
+      // Otherwise include if at least one required object is enabled.
+      // Individual preset UI still filters by each preset's object type.
+      const hasRequiredObjects =
+        pack.requiredObjects.length === 0 ||
+        pack.requiredObjects.some((obj) => $enabledObjects.has(obj));
       if (!hasRequiredObjects) continue;
 
       for (const preset of pack.presets) {
@@ -65,30 +75,45 @@ export const enabledPresets = derived(
     }
 
     return presets;
-  }
+  },
 );
 ```
 
 ## Proposed Built-in Preset Packs
 
-| Pack | Description | Required Objects | Presets |
-|------|-------------|------------------|---------|
-| **Starter Presets** | Essential presets for getting started | js, hydra | logger.js, add.hydra, add-fft.hydra |
-| **MIDI Presets** | MIDI routing and control | js, midi.in | midi-adsr.js, midi-control-router.js, virtual-midi-keyboard.canvas |
-| **Audio Synthesis** | Sound design utilities | js, osc~ | sawtooth-harmonics.js, waveshaper-distortion.js |
-| **Animation** | Frame-based animation helpers | js, p5 | bang-every-frame.js, frame-counter.js, interval.js |
-| **Livecoding Examples** | Example patches for livecoding | strudel, hydra, orca | (various strudel/orca presets) |
-| **Canvas Widgets** | Interactive canvas components | canvas.dom | xy-pad.canvas, hsla-picker.canvas, rgba-picker.canvas, plotter.canvas |
+| Pack                    | Description                             | Required Objects     | Presets                                                               |
+| ----------------------- | --------------------------------------- | -------------------- | --------------------------------------------------------------------- |
+| **Starter Presets**     | Essential presets and object companions | none                 | logger.js, glsl>, hydra>, regl>, swgl>, three>                        |
+| **MIDI Presets**        | MIDI routing and control                | js, midi.in          | midi-adsr.js, midi-control-router.js, virtual-midi-keyboard.canvas    |
+| **Audio Synthesis**     | Sound design utilities                  | js, osc~             | sawtooth-harmonics.js, waveshaper-distortion.js                       |
+| **Animation**           | Frame-based animation helpers           | js, p5               | bang-every-frame.js, frame-counter.js, interval.js                    |
+| **Livecoding Examples** | Example patches for livecoding          | strudel, hydra, orca | (various strudel/orca presets)                                        |
+| **Canvas Widgets**      | Interactive canvas components           | canvas.dom           | xy-pad.canvas, hsla-picker.canvas, rgba-picker.canvas, plotter.canvas |
 
 ### Preset Assignment (Draft)
 
 **Starter Presets:**
 
 - logger.js (debugging)
-- add.hydra (common pattern)
-- add-fft.hydra (audio-reactive)
-- pipe-msg.js (utility)
-- delay.js (utility)
+- glsl> (object companion preset for `glsl`)
+- hydra> (object companion preset for `hydra`)
+- regl> (object companion preset for `regl`)
+- swgl> (object companion preset for `swgl`)
+- three> (object companion preset for `three`)
+
+Object companion presets belong only to Starter Presets. They are visible when both of these are
+true:
+
+1. Starter Presets is enabled, which it is by default and locked for baseline visibility
+2. The companion preset's object type is enabled by an object pack
+
+Starter Presets has no pack-level object requirements so it never shows a "Requires ..." warning.
+Availability is decided per preset when object browser/autocomplete surfaces filter by each preset's
+object type.
+
+For example, enabling the Video Synths object pack makes `glsl>`, `hydra>`, `regl>`, `swgl>`, and
+`three>` visible without requiring the user to also enable a GLSL, Hydra, REGL, SwissGL, or Three.js
+preset pack. Larger visual effect libraries remain in their own opt-in preset packs.
 
 **MIDI Presets:**
 
@@ -134,6 +159,20 @@ When an Object Pack is disabled after a Preset Pack is installed:
 3. Show preset pack in Packs UI with note: "Some presets unavailable - requires [Pack Name]"
 
 This is consistent with how object filtering already works and avoids surprising the user.
+
+## Browser Grouping
+
+Built-in presets should use preset pack names as their visible folders/categories:
+
+- Sidebar Preset Tree: `Built-in > Texture Generators > Circle`
+- Object Browser preset categories: `Texture Generators`, `Texture Composite`, `Canvas Widgets`, etc.
+- Search result locations and autocomplete descriptions should use the same pack folder path
+
+User libraries keep their manually-created folder paths. Only the readonly built-in catalog is
+derived from `BUILT_IN_PRESET_PACKS`.
+
+Every built-in preset must be assigned to exactly one preset pack. Pack definitions must not point
+at missing preset names.
 
 ## UI Design
 
@@ -186,6 +225,7 @@ This is consistent with how object filtering already works and avoids surprising
 1. Update `ObjectBrowserModal.svelte` - filter presets by `enabledPresets`
 2. Update `QuickInsertObjectMenu.svelte` - filter preset suggestions
 3. Update `PresetTreeView.svelte` - filter visible presets in sidebar
+4. Group built-in preset folders/categories by preset pack name instead of preset object type
 
 ### Phase 3: UI Updates
 
@@ -204,13 +244,15 @@ This is consistent with how object filtering already works and avoids surprising
 
 ## Key Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/stores/extensions.store.ts` | Add PresetPack interface, BUILT_IN_PRESET_PACKS, stores |
-| `src/lib/components/sidebar/ExtensionsView.svelte` | Add Preset Packs section |
-| `src/lib/components/object-browser/ObjectBrowserModal.svelte` | Filter presets by enabledPresets |
-| `src/lib/components/insert-object/QuickInsertObjectMenu.svelte` | Filter preset suggestions |
-| `src/lib/components/sidebar/PresetTreeView.svelte` | Filter visible presets |
+| File                                                            | Changes                                                  |
+| --------------------------------------------------------------- | -------------------------------------------------------- |
+| `src/stores/extensions.store.ts`                                | Add PresetPack interface, BUILT_IN_PRESET_PACKS, stores  |
+| `src/lib/components/sidebar/ExtensionsView.svelte`              | Add Preset Packs section                                 |
+| `src/lib/components/object-browser/ObjectBrowserModal.svelte`   | Filter presets by enabledPresets                         |
+| `src/lib/components/insert-object/QuickInsertObjectMenu.svelte` | Filter preset suggestions                                |
+| `src/lib/components/sidebar/PresetTreeView.svelte`              | Filter visible presets                                   |
+| `src/stores/preset-library.store.ts`                            | Build readonly built-in library from preset pack folders |
+| `src/lib/extensions/preset-pack-index.ts`                       | Map built-in presets to their preset pack metadata       |
 
 ## Verification Plan
 
@@ -220,6 +262,7 @@ This is consistent with how object filtering already works and avoids surprising
 4. Refresh page → verify settings persist
 5. Quick Insert (Enter) → verify only enabled presets appear
 6. Sidebar Preset Tree → verify filtering works
+7. Built-in preset tree → verify `Circle` appears under `Texture Generators`, not `glsl`
 
 ## Future Considerations
 

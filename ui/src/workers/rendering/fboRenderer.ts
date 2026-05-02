@@ -53,6 +53,12 @@ import {
 } from './glUniformUtils';
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
+export const FBO_RENDERER_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
+  alpha: true,
+  antialias: false,
+  premultipliedAlpha: false
+};
+
 export class FBORenderer {
   public outputSize = DEFAULT_OUTPUT_SIZE;
   public backgroundSize: [number, number] = [...DEFAULT_OUTPUT_SIZE];
@@ -177,7 +183,7 @@ export class FBORenderer {
     const [width, height] = this.outputSize;
 
     this.offscreenCanvas = new OffscreenCanvas(width, height);
-    this.gl = this.offscreenCanvas.getContext('webgl2', { antialias: false })!;
+    this.gl = this.offscreenCanvas.getContext('webgl2', FBO_RENDERER_CONTEXT_ATTRIBUTES)!;
 
     // Float textures are created via raw WebGL2 in createFboTexture(), bypassing
     // regl entirely. No need to request float extensions through regl — doing so
