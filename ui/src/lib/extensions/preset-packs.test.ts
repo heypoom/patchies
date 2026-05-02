@@ -2,7 +2,10 @@ import { describe, expect, test } from 'vitest';
 
 import { BUILT_IN_PACKS } from './object-packs';
 import { isPresetPackAvailableForObjects } from './preset-pack-availability';
+import { buildBuiltInPresetPackFolders } from './preset-pack-index';
 import { BUILT_IN_PRESET_PACKS, OBJECT_PIPE_PRESETS } from './preset-packs';
+import { BUILTIN_PRESETS } from '$lib/presets/builtin';
+import { isPreset } from '$lib/presets/preset-utils';
 
 describe('built-in preset packs', () => {
   test('keeps object companion presets in the locked starter pack', () => {
@@ -53,5 +56,43 @@ describe('built-in preset packs', () => {
     );
 
     expect(emptyPackIds).toEqual([]);
+  });
+
+  test('assigns every built-in preset to exactly one preset pack', () => {
+    const assignmentCounts = new Map<string, number>();
+
+    for (const pack of BUILT_IN_PRESET_PACKS) {
+      for (const presetName of pack.presets) {
+        assignmentCounts.set(presetName, (assignmentCounts.get(presetName) ?? 0) + 1);
+      }
+    }
+
+    const unassignedPresetNames = Object.keys(BUILTIN_PRESETS).filter(
+      (presetName) => !assignmentCounts.has(presetName)
+    );
+    const duplicatePresetNames = Array.from(assignmentCounts.entries())
+      .filter(([, count]) => count !== 1)
+      .map(([presetName]) => presetName);
+    const missingPresetNames = Array.from(assignmentCounts.keys()).filter(
+      (presetName) => !(presetName in BUILTIN_PRESETS)
+    );
+
+    expect(unassignedPresetNames).toEqual([]);
+    expect(duplicatePresetNames).toEqual([]);
+    expect(missingPresetNames).toEqual([]);
+  });
+
+  test('groups built-in preset folders by preset pack name', () => {
+    const folders = buildBuiltInPresetPackFolders(BUILTIN_PRESETS);
+    const textureGenerators = folders['Texture Generators'];
+
+    expect(textureGenerators).toBeDefined();
+    if (!textureGenerators || isPreset(textureGenerators)) {
+      throw new Error('Expected Texture Generators to be a preset folder');
+    }
+
+    expect(isPreset(textureGenerators['Circle'])).toBe(true);
+    expect(isPreset(textureGenerators['Radial Ramp'])).toBe(true);
+    expect(folders.glsl).toBeUndefined();
   });
 });

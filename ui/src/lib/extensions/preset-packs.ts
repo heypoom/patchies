@@ -27,7 +27,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'rgba.picker',
       'plotter.canvas',
       'particle.canvas',
-      'midi.keyboard'
+      'midi.keyboard',
+      'fractal-tree.canvas'
     ]
   },
   {
@@ -126,7 +127,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Image-processing effects for texture chains',
     icon: 'SlidersHorizontal',
     requiredObjects: ['glsl'],
-    presets: ['Blur', 'Edge', 'Emboss', 'Slope', 'Normal Map']
+    presets: ['Blur', 'Edge', 'Anti Alias', 'Emboss', 'Slope', 'Normal Map']
   },
   {
     id: 'scripting-demos',
@@ -141,8 +142,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     name: 'Iframe Widgets',
     description: 'Useful widgets made with iframes',
     icon: 'Layout',
-    requiredObjects: ['iframe'],
-    presets: ['youtube.iframe']
+    requiredObjects: ['iframe', 'dom'],
+    presets: ['youtube.iframe', 'bitmaprenderer']
   },
   {
     id: 'midi',
@@ -190,8 +191,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'rms.p5',
       'rms-wide.p5',
       'FFT Frequency GL',
-      'FFT Waveform GL',
-      'fft.js'
+      'FFT Waveform GL'
     ]
   },
   {
@@ -343,5 +343,13 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'floatbeat.beat',
       'ice-age.beat'
     ]
+  },
+  {
+    id: 'ai-prompt-presets',
+    name: 'AI Prompt Presets',
+    description: 'Prompt templates for AI objects',
+    icon: 'Brain',
+    requiredObjects: ['ai.txt'],
+    presets: ['music-from-image.prompt']
   }
 ];
