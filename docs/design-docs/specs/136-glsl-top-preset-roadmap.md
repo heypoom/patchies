@@ -77,15 +77,15 @@ mix `glsl`, `regl`, `swgl`, or `three` presets when that gives the best result.
 
 Recommended user-facing packs:
 
-| Pack                     | Purpose                                      | Current Presets                                                                                                                                         | Status  |
-| ------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| **Texture Generators**   | Start a visual chain from procedural content | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross`                                                      | Added   |
-| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Layout`, `Layer`, `Switcher`                                 | Added   |
-| **Texture Time**         | Feedback and frame-history utilities         | `Feedback`, `Cache`, `Time Scrub`, `Time Machine`                                                                                                       | Added   |
-| **Texture Color**        | Color correction and color-space utilities   | `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder` | Added   |
-| **Texture Masks & Keys** | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`, `Blob Detect`                                                                                | Planned |
-| **Texture Transform**    | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace`                                                      | Added   |
-| **Texture Filters**      | Image-processing effects                     | `Blur`, `Luma Blur`, `Chromatic Aberration`, `Convolve`, `Edge`, `Anti Alias`, `Emboss`, `Slope`, `Normal Map`, `Bloom`, `Motion Flow`                  | Added   |
+| Pack                     | Purpose                                      | Current Presets                                                                                                                                         | Status |
+| ------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| **Texture Generators**   | Start a visual chain from procedural content | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross`                                                      | Added  |
+| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Layout`, `Layer`, `Switcher`                                 | Added  |
+| **Texture Time**         | Feedback and frame-history utilities         | `Feedback`, `Cache`, `Time Scrub`, `Time Machine`                                                                                                       | Added  |
+| **Texture Color**        | Color correction and color-space utilities   | `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder` | Added  |
+| **Texture Masks & Keys** | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`, `Blob Detect`                                                                                | Added  |
+| **Texture Transform**    | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace`                                                      | Added  |
+| **Texture Filters**      | Image-processing effects                     | `Blur`, `Luma Blur`, `Chromatic Aberration`, `Convolve`, `Edge`, `Anti Alias`, `Emboss`, `Slope`, `Normal Map`, `Bloom`, `Motion Flow`                  | Added  |
 
 The existing **GLSL Operators** pack can remain during the first migration, but
 new work should move toward these task-based packs. Presets should still be
@@ -144,7 +144,7 @@ more niche, overlapping, or awkward to expose through compact settings.
 | Preset          | Status | Pack / Next Home     | Inputs            | Why It Is Possible                           | Caveat / Note                                                |
 | --------------- | ------ | -------------------- | ----------------- | -------------------------------------------- | ------------------------------------------------------------ |
 | `Anti Alias`    | Added  | Texture Filters      | `source`          | Smoothstep-based cleanup for generated masks | Implemented as selected-channel alpha smoothing.             |
-| `Blob Detect`   | Plan   | Texture Masks & Keys | `source`          | Single-frame mask/visualization via MRT      | Planned as dual-output detection, not full blob tracking.    |
+| `Blob Detect`   | Added  | Texture Masks & Keys | `source`          | Single-frame mask/visualization via MRT      | Dual-output detection, not full blob tracking.               |
 | `Convolve`      | Added  | Texture Filters      | `source`          | Fixed 3x3 convolution kernels                | Implemented with named kernels, not arbitrary matrix UI.     |
 | `Function`      | Defer  | Texture Generators   | none              | Procedural math/pattern generation           | Too broad; split into specific generators before building.   |
 | `Layer Mix`     | Defer  | Texture Composite    | multiple textures | Blend several layers by opacity/mode         | Overlaps `Composite`, `Over`, `Under`, and `Switcher`.       |
@@ -184,13 +184,13 @@ moving on.
    utility. Keep explicit `Add`, `Subtract`, and `Difference` presets for common
    cases, but offer `Math` for selectable per-pixel operations.
 
-Status: items 1-6 are **Added**. `Blob Detect` is **Plan**.
-`Resolution`, `Select`, and `Switch` are **Skip**. `Function`, `Layer Mix`, and
-`PreFilter Map` are **Defer** pending a clearer product shape.
+Status: items 1-6 and `Blob Detect` are **Added**. `Resolution`, `Select`, and
+`Switch` are **Skip**. `Function`, `Layer Mix`, and `PreFilter Map` are
+**Defer** pending a clearer product shape.
 
 ### Blob Detect Plan
 
-`Blob Detect` should be a GLSL-backed **Texture Masks & Keys** preset for
+`Blob Detect` is a GLSL-backed **Texture Masks & Keys** preset for
 single-frame region detection. It is intentionally not full blob tracking:
 there are no connected-component IDs, persistent identities, centroids, object
 lists, or CPU readback in v1.

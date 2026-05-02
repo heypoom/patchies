@@ -113,7 +113,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Build and apply alpha and matte textures',
     icon: 'Eye',
     requiredObjects: ['glsl'],
-    presets: ['Threshold', 'Chroma Key', 'RGB Key', 'Luma Key', 'Matte']
+    presets: ['Threshold', 'Chroma Key', 'RGB Key', 'Luma Key', 'Matte', 'Blob Detect']
   },
   {
     id: 'texture-transform',

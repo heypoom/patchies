@@ -58,6 +58,7 @@ import { preset as preset56 } from './pack';
 import { preset as preset57 } from './convolve';
 import { preset as preset58 } from './math';
 import { preset as preset59 } from './chromatic-aberration';
+import { preset as preset60 } from './blob-detect';
 import type { GLSLPreset } from './types';
 
 export const GLSL_PRESETS: Record<string, GLSLPreset> = {
@@ -120,7 +121,8 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
   Pack: preset56,
   Convolve: preset57,
   Math: preset58,
-  'Chromatic Aberration': preset59
+  'Chromatic Aberration': preset59,
+  'Blob Detect': preset60
 };
 
 export type { GLSLPreset } from './types';
