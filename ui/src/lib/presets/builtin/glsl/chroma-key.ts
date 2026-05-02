@@ -16,7 +16,9 @@ uniform float spill;
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec4 color = texture(source, uv);
   float distanceToKey = distance(color.rgb, keyColor);
-  float alpha = smoothstep(tolerance, tolerance + softness, distanceToKey);
+  float alpha = softness <= 0.0
+    ? step(tolerance, distanceToKey)
+    : smoothstep(tolerance, tolerance + softness, distanceToKey);
 
   vec3 keyAxis = normalize(max(keyColor, vec3(0.001)));
   float keyAmount = dot(color.rgb, keyAxis);

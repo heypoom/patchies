@@ -17,8 +17,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec4 color = texture(source, uv);
   vec3 lo = min(minColor, maxColor);
   vec3 hi = max(minColor, maxColor);
-  vec3 insideLow = smoothstep(lo - softness, lo + softness, color.rgb);
-  vec3 insideHigh = 1.0 - smoothstep(hi - softness, hi + softness, color.rgb);
+  vec3 insideLow = softness <= 0.0
+    ? step(lo, color.rgb)
+    : smoothstep(lo - softness, lo + softness, color.rgb);
+  vec3 insideHigh = softness <= 0.0
+    ? 1.0 - step(hi, color.rgb)
+    : 1.0 - smoothstep(hi - softness, hi + softness, color.rgb);
   float mask = min(min(insideLow.r * insideHigh.r, insideLow.g * insideHigh.g), insideLow.b * insideHigh.b);
   if (invert) mask = 1.0 - mask;
 

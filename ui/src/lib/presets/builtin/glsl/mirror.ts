@@ -12,7 +12,7 @@ uniform float center;
 uniform float blend;
 
 float mirroredCoordinate(float value, float c) {
-  return c - abs(value - c);
+  return 2.0 * c - value;
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {

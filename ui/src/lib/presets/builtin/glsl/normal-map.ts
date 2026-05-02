@@ -21,6 +21,7 @@ float sampleHeight(vec2 p) {
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec4 color = texture(source, uv);
   vec2 px = 1.0 / iResolution.xy;
   float left = sampleHeight(uv - vec2(px.x, 0.0));
   float right = sampleHeight(uv + vec2(px.x, 0.0));
@@ -29,7 +30,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float ySign = invertY ? -1.0 : 1.0;
   vec3 normal = normalize(vec3((left - right) * strength, (down - up) * strength * ySign, 1.0));
 
-  fragColor = vec4(normal * 0.5 + 0.5, 1.0);
+  fragColor = vec4(normal * 0.5 + 0.5, color.a);
 }`;
 
 export const preset: GLSLPreset = {

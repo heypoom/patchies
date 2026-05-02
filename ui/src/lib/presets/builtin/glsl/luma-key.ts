@@ -14,7 +14,9 @@ uniform bool invert;
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec4 color = texture(source, uv);
   float luma = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-  float mask = smoothstep(threshold - softness, threshold + softness, luma);
+  float mask = softness <= 0.0
+    ? step(threshold, luma)
+    : smoothstep(threshold - softness, threshold + softness, luma);
   if (invert) mask = 1.0 - mask;
 
   fragColor = vec4(color.rgb, color.a * mask);

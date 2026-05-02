@@ -17,7 +17,7 @@ vec3 blendOverlay(vec3 bg, vec3 fg) {
 }
 
 vec4 over(vec4 bg, vec4 fg) {
-  float alpha = clamp(fg.a * opacity, 0.0, 1.0);
+  float alpha = clamp(fg.a, 0.0, 1.0);
   float outAlpha = alpha + bg.a * (1.0 - alpha);
   vec3 rgb = (fg.rgb * alpha + bg.rgb * bg.a * (1.0 - alpha)) / max(outAlpha, 0.0001);
   return vec4(rgb, outAlpha);
@@ -34,9 +34,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   if (mode >= 3.5 && mode < 4.5) blended = abs(bg.rgb - fg.rgb);
   if (mode >= 4.5) blended = blendOverlay(bg.rgb, fg.rgb);
 
-  vec4 composite = vec4(clamp(blended, 0.0, 1.0), max(bg.a, fg.a * opacity));
-  vec4 blendedComposite = mix(bg, composite, fg.a * opacity);
-  fragColor = mode < 0.5 ? over(bg, fg) : blendedComposite;
+  vec4 foregroundWithOpacity = vec4(fg.rgb, fg.a * opacity);
+  vec4 blendedForeground = vec4(clamp(blended, 0.0, 1.0), fg.a * opacity);
+  vec4 blendedComposite = over(bg, blendedForeground);
+  fragColor = mode < 0.5 ? over(bg, foregroundWithOpacity) : blendedComposite;
 }`;
 
 export const preset: GLSLPreset = {
