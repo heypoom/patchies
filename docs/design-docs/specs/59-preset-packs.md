@@ -150,6 +150,18 @@ preset pack. Larger visual effect libraries remain in their own opt-in preset pa
 - various glsl presets
 - three.js presets
 
+**Hydra Demos:**
+
+- Community Hydra sketches live in the **Hydra Demos** preset pack.
+- Each sketch is a separate builtin preset file under `ui/src/lib/presets/builtin/hydra/`, matching
+  the `glsl/` and `regl/` preset directory pattern.
+- Sketch code keeps the original attribution comments intact.
+- User-facing preset names use the artist-provided sketch title when present. If a sketch has no
+  title, use the artist name for a single anonymous sketch by that artist, or a short descriptive
+  name when the same artist has multiple untitled sketches.
+- Imported legacy Hydra audio-reactive snippets must use Patchies FFT access (`fft().a`,
+  `fft().f`, `fft().getEnergy(...)`) instead of Hydra's `a.fft`.
+
 ## Dependency Handling
 
 When an Object Pack is disabled after a Preset Pack is installed:

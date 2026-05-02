@@ -1,4 +1,5 @@
 import type { PresetPack } from '../../stores/extensions.store';
+import { HYDRA_DEMO_PRESET_KEYS } from '../presets/builtin/hydra';
 
 export const OBJECT_PIPE_PRESETS = ['js>', 'hydra>', 'glsl>', 'regl>', 'swgl>', 'three>', 'tone>'];
 
@@ -224,7 +225,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Example video synths made with Hydra',
     icon: 'Palette',
     requiredObjects: ['hydra'],
-    presets: ['beans.hydra', 'filet-mignon.hydra']
+    presets: [...HYDRA_DEMO_PRESET_KEYS]
   },
   {
     id: 'demo-compositions',

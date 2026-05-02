@@ -66,13 +66,15 @@ feed different Hydra chains into different parts of your patch simultaneously.
 
 ## Presets
 
-Enable the "Hydra Operators" preset packs to use these features:
+Enable the "Hydra Operators" preset pack to use these features:
 
 - `hydra>` - passes the image through without any changes
 - `diff.hydra`, `add.hydra`, `sub.hydra`, `blend.hydra`, `mask.hydra`:
   perform image operations on two video inputs
-- `filet-mignon.hydra` - demo code from [AFALFL](https://www.instagram.com/a_f_alfl) (CC BY-NC-SA 4.0)
 - `fft.hydra` - audio-reactive visualization
+
+Enable the "Hydra Demos" preset pack for community sketches such as
+`trying to get closer`, `Velvet Pool`, and `filet mignon`.
 
 ## Custom Functions
 

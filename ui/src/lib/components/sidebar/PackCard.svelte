@@ -5,6 +5,8 @@
   import type { Snippet } from 'svelte';
   import { canManuallyExpandPackContents, canTogglePack } from './pack-card-behavior';
 
+  const SEARCH_TILE_ITEM_LIMIT = 12;
+
   let {
     name,
     description,
@@ -46,6 +48,14 @@
   const hasMatches = $derived(matchingItems.size > 0);
   const toggleAllowed = $derived(canTogglePack({ locked, unavailable }));
   const manualExpansionAllowed = $derived(canManuallyExpandPackContents({ searchQuery }));
+  const searchTileItems = $derived.by(() => {
+    if (variant !== 'tile' || !searchQuery.trim()) return items;
+
+    const matches = items.filter((item) => matchingItems.has(item));
+    const nonMatches = items.filter((item) => !matchingItems.has(item));
+    return [...matches, ...nonMatches].slice(0, SEARCH_TILE_ITEM_LIMIT);
+  });
+  const hiddenSearchTileItemCount = $derived(items.length - searchTileItems.length);
 
   let manualExpanded = $state(false);
   const expanded = $derived(hasMatches || manualExpanded);
@@ -159,7 +169,7 @@
     {#if searchQuery.trim()}
       <!-- Pills visible during search -->
       <div class="mt-2 flex flex-wrap gap-[3px]">
-        {#each items as item}
+        {#each searchTileItems as item (item)}
           <span
             class={[
               'rounded-[3px] px-[5px] py-px font-mono text-[8px]',
@@ -171,6 +181,11 @@
             {item}
           </span>
         {/each}
+        {#if hiddenSearchTileItemCount > 0}
+          <span class="rounded-[3px] bg-white/4 px-[5px] py-px font-mono text-[8px] text-zinc-600">
+            +{hiddenSearchTileItemCount} more
+          </span>
+        {/if}
       </div>
     {:else}
       <!-- Item count when not searching -->
@@ -285,7 +300,7 @@
         {@render expandedHeader()}
       {/if}
       <div class="flex flex-wrap gap-[3px] rounded border border-white/4 bg-white/2 px-2 py-1.5">
-        {#each items as item}
+        {#each items as item (item)}
           <span
             class={[
               'rounded-[3px] px-[5px] py-px font-mono text-[9px]',

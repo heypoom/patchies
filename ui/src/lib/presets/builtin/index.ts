@@ -2,7 +2,7 @@
  * Built-in presets - pre-configured nodes included with Patchies
  */
 import { GLSL_PRESETS } from './glsl';
-import { HYDRA_PRESETS } from './hydra.presets';
+import { HYDRA_PRESETS } from './hydra';
 import { P5_PRESETS } from './p5.presets';
 import { JS_PRESETS } from './js.presets';
 import { SLIDER_PRESETS } from './slider.presets';
