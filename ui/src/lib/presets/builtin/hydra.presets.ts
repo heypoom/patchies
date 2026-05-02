@@ -91,9 +91,13 @@ const defaultsOneVideoIn: HydraNodeData = {
 
 const defaultsTwoVideoIn: HydraNodeData = { ...defaultsOneVideoIn, videoInletCount: 2 };
 
-export const HYDRA_PRESETS: Record<string, { type: string; data: HydraNodeData }> = {
+export const HYDRA_PRESETS: Record<
+  string,
+  { type: string; description?: string; data: HydraNodeData }
+> = {
   'hydra>': {
     type: 'hydra',
+    description: 'Pipe video through Hydra',
     data: { ...defaultsOneVideoIn, code: PIPE.trim() }
   },
   'add.hydra': {
