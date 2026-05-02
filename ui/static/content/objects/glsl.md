@@ -36,13 +36,28 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 Enable the **GLSL Operators** preset pack for basic presets:
 
 - `glsl>` - a passthrough shader
-- `solid.gl` - solid color with color picker
-- `mix.gl` - mix two video inputs
-- `overlay.gl` - overlay second input on first
-- `switcher.gl` - switch between 6 inputs (send int 0-5)
+- `Solid` - solid color with color picker
+- `Mix` - mix two video inputs
+- `Overlay` - overlay a foreground input on a background input
+- `Switcher` - switch between 6 inputs
+- `Ramp` - generate linear, radial, and circular ramps
+- `Level` - adjust black, white, gamma, brightness, contrast, and opacity
+- `Transform` - translate, scale, rotate, and tile an input texture
+- `Multiply` - multiply two input textures
+- `Blur` - single-pass directional blur
+- `Crop` - crop an input texture with optional feathering
+- `Reorder` - swizzle color and alpha channels
+- `Displace` - warp an input using a displacement texture
+- `Edge` - Sobel-style edge detection
+- `Noise` - animated procedural noise
+- `Noise Displace` - warp an input using procedural noise
+- `Feedback` - accumulate an input with a manually wired feedback inlet
 
 The `glsl>` preset is the best starting point for building GLSL shaders
 that process video inputs.
+
+For `Feedback`, connect the node's video output back into its `feedback` inlet.
+Patchies treats that cable as a one-frame-delayed feedback loop.
 
 ## Built-in Uniforms
 

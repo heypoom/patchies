@@ -14,6 +14,107 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   );
 }`;
 
+const RAMP_GL = `// @title Ramp
+// @primaryButton settings
+// @param mode 0.0 0.0 2.0 "Mode"
+// @param angle 0.0 -3.1416 3.1416 "Angle"
+// @param offset 0.0 -1.0 1.0 "Offset"
+// @param radius 0.5 0.01 1.5 "Radius"
+// @param colorA color "Color A"
+// @param colorB color "Color B"
+
+uniform float mode;
+uniform float angle;
+uniform float offset;
+uniform float radius;
+uniform vec3 colorA;
+uniform vec3 colorB;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 p = uv - 0.5;
+  float c = cos(angle);
+  float s = sin(angle);
+  float linearRamp = dot(p, vec2(c, s)) + 0.5 + offset;
+  float radialRamp = length(p) / max(radius, 0.001) + offset;
+  float circularRamp = atan(p.y, p.x) / 6.28318530718 + 0.5 + offset;
+
+  float value = linearRamp;
+  if (mode > 0.5) value = radialRamp;
+  if (mode > 1.5) value = circularRamp;
+
+  fragColor = vec4(mix(colorA, colorB, clamp(value, 0.0, 1.0)), 1.0);
+}`;
+
+const LEVEL_GL = `// @title Level
+// @primaryButton settings
+// @param black 0.0 0.0 1.0 "Black"
+// @param white 1.0 0.0 1.0 "White"
+// @param gamma 1.0 0.1 4.0 "Gamma"
+// @param brightness 0.0 -1.0 1.0 "Brightness"
+// @param contrast 1.0 0.0 4.0 "Contrast"
+// @param opacity 1.0 0.0 1.0 "Opacity"
+
+uniform sampler2D source;
+uniform float black;
+uniform float white;
+uniform float gamma;
+uniform float brightness;
+uniform float contrast;
+uniform float opacity;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec4 color = texture(source, uv);
+  float range = max(white - black, 0.0001);
+  color.rgb = clamp((color.rgb - black) / range, 0.0, 1.0);
+  color.rgb = pow(color.rgb, vec3(1.0 / max(gamma, 0.0001)));
+  color.rgb = (color.rgb - 0.5) * contrast + 0.5 + brightness;
+  color.a *= opacity;
+  fragColor = color;
+}`;
+
+const TRANSFORM_GL = `// @title Transform
+// @primaryButton settings
+// @param translateX 0.0 -1.0 1.0 "Translate X"
+// @param translateY 0.0 -1.0 1.0 "Translate Y"
+// @param scale 1.0 0.05 4.0 "Scale"
+// @param rotation 0.0 -3.1416 3.1416 "Rotation"
+// @param repeatMode 0.0 0.0 2.0 "Repeat Mode"
+
+uniform sampler2D source;
+uniform float translateX;
+uniform float translateY;
+uniform float scale;
+uniform float rotation;
+uniform float repeatMode;
+
+vec2 mirrorRepeat(vec2 p) {
+  vec2 f = fract(p);
+  vec2 tile = mod(floor(p), 2.0);
+  return mix(f, 1.0 - f, tile);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 p = uv - 0.5;
+  float c = cos(rotation);
+  float s = sin(rotation);
+  p = mat2(c, -s, s, c) * p;
+  p = p / max(scale, 0.0001);
+  p += 0.5 - vec2(translateX, translateY);
+
+  vec2 sampleUv = p;
+  float alpha = 1.0;
+  if (repeatMode > 1.5) {
+    sampleUv = mirrorRepeat(p);
+  } else if (repeatMode > 0.5) {
+    sampleUv = fract(p);
+  } else {
+    alpha = step(0.0, p.x) * step(0.0, p.y) * step(p.x, 1.0) * step(p.y, 1.0);
+  }
+
+  vec4 color = texture(source, sampleUv);
+  fragColor = vec4(color.rgb, color.a * alpha);
+}`;
+
 const SOLID_GL = `// @title Solid
 // @primaryButton settings
 // @param iColor color "Color"
@@ -30,17 +131,276 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   fragColor = texture(image, uv);
 }`;
 
-const OVERLAY_GL = `uniform sampler2D backdrop;
-uniform sampler2D overlay;
+const OVERLAY_GL = `// @title Overlay
+// @primaryButton settings
+// @param opacity 1.0 0.0 1.0 "Opacity"
+
+uniform sampler2D background;
+uniform sampler2D foreground;
+uniform float opacity;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec4 o = texture(overlay, uv);
+  vec4 fg = texture(foreground, uv);
+  vec4 bg = texture(background, uv);
+  float alpha = fg.a * opacity;
 
   fragColor = mix(
-    texture(backdrop, uv),
-    o,
-    o.a
+    bg,
+    fg,
+    alpha
   );
+}`;
+
+const MULTIPLY_GL = `// @title Multiply
+// @primaryButton settings
+// @param opacity 1.0 0.0 1.0 "Opacity"
+
+uniform sampler2D a;
+uniform sampler2D b;
+uniform float opacity;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec4 ca = texture(a, uv);
+  vec4 cb = texture(b, uv);
+  vec4 multiplied = vec4(ca.rgb * cb.rgb, ca.a * cb.a);
+  fragColor = mix(ca, multiplied, opacity);
+}`;
+
+const BLUR_GL = `// @title Blur
+// @primaryButton settings
+// @param radius 4.0 0.0 24.0 "Radius"
+// @param direction 0.0 0.0 3.1416 "Direction"
+
+uniform sampler2D source;
+uniform float radius;
+uniform float direction;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 texel = 1.0 / iResolution.xy;
+  vec2 axis = vec2(cos(direction), sin(direction)) * texel * radius;
+  vec4 color = texture(source, uv) * 0.227027;
+  color += texture(source, uv + axis * 0.384615) * 0.316216;
+  color += texture(source, uv - axis * 0.384615) * 0.316216;
+  color += texture(source, uv + axis * 1.230769) * 0.070270;
+  color += texture(source, uv - axis * 1.230769) * 0.070270;
+  fragColor = color;
+}`;
+
+const CROP_GL = `// @title Crop
+// @primaryButton settings
+// @param minX 0.0 0.0 1.0 "Min X"
+// @param minY 0.0 0.0 1.0 "Min Y"
+// @param maxX 1.0 0.0 1.0 "Max X"
+// @param maxY 1.0 0.0 1.0 "Max Y"
+// @param feather 0.0 0.0 0.25 "Feather"
+
+uniform sampler2D source;
+uniform float minX;
+uniform float minY;
+uniform float maxX;
+uniform float maxY;
+uniform float feather;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 lo = min(vec2(minX, minY), vec2(maxX, maxY));
+  vec2 hi = max(vec2(minX, minY), vec2(maxX, maxY));
+  vec2 size = max(hi - lo, vec2(0.0001));
+  vec2 sampleUv = (uv - lo) / size;
+  vec2 edgeIn = smoothstep(lo, lo + feather, uv);
+  vec2 edgeOut = 1.0 - smoothstep(hi - feather, hi, uv);
+  float mask = edgeIn.x * edgeIn.y * edgeOut.x * edgeOut.y;
+  fragColor = texture(source, sampleUv) * mask;
+}`;
+
+const REORDER_GL = `// @title Reorder
+// @primaryButton settings
+// @param red 0.0 0.0 4.0 "Red Source"
+// @param green 1.0 0.0 4.0 "Green Source"
+// @param blue 2.0 0.0 4.0 "Blue Source"
+// @param alpha 3.0 0.0 4.0 "Alpha Source"
+// @param invertAlpha false "Invert Alpha"
+
+uniform sampler2D source;
+uniform float red;
+uniform float green;
+uniform float blue;
+uniform float alpha;
+uniform bool invertAlpha;
+
+float channel(vec4 color, float source) {
+  if (source < 0.5) return color.r;
+  if (source < 1.5) return color.g;
+  if (source < 2.5) return color.b;
+  if (source < 3.5) return color.a;
+  return dot(color.rgb, vec3(0.299, 0.587, 0.114));
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec4 color = texture(source, uv);
+  float a = channel(color, alpha);
+  if (invertAlpha) a = 1.0 - a;
+  fragColor = vec4(
+    channel(color, red),
+    channel(color, green),
+    channel(color, blue),
+    a
+  );
+}`;
+
+const DISPLACE_GL = `// @title Displace
+// @primaryButton settings
+// @param amount 0.05 -0.5 0.5 "Amount"
+// @param center 0.5 0.0 1.0 "Center"
+// @param useLuma false "Use Luma"
+
+uniform sampler2D source;
+uniform sampler2D displacement;
+uniform float amount;
+uniform float center;
+uniform bool useLuma;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec4 disp = texture(displacement, uv);
+  vec2 offset = disp.rg - center;
+  if (useLuma) {
+    float luma = dot(disp.rgb, vec3(0.299, 0.587, 0.114)) - center;
+    offset = vec2(luma);
+  }
+  fragColor = texture(source, uv + offset * amount);
+}`;
+
+const EDGE_GL = `// @title Edge
+// @primaryButton settings
+// @param strength 1.0 0.0 5.0 "Strength"
+// @param threshold 0.05 0.0 1.0 "Threshold"
+// @param monochrome true "Monochrome"
+
+uniform sampler2D source;
+uniform float strength;
+uniform float threshold;
+uniform bool monochrome;
+
+float luma(vec3 color) {
+  return dot(color, vec3(0.299, 0.587, 0.114));
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 px = 1.0 / iResolution.xy;
+  float tl = luma(texture(source, uv + px * vec2(-1.0,  1.0)).rgb);
+  float tc = luma(texture(source, uv + px * vec2( 0.0,  1.0)).rgb);
+  float tr = luma(texture(source, uv + px * vec2( 1.0,  1.0)).rgb);
+  float ml = luma(texture(source, uv + px * vec2(-1.0,  0.0)).rgb);
+  float mr = luma(texture(source, uv + px * vec2( 1.0,  0.0)).rgb);
+  float bl = luma(texture(source, uv + px * vec2(-1.0, -1.0)).rgb);
+  float bc = luma(texture(source, uv + px * vec2( 0.0, -1.0)).rgb);
+  float br = luma(texture(source, uv + px * vec2( 1.0, -1.0)).rgb);
+
+  float gx = -tl - 2.0 * ml - bl + tr + 2.0 * mr + br;
+  float gy = -bl - 2.0 * bc - br + tl + 2.0 * tc + tr;
+  float edge = smoothstep(threshold, 1.0, length(vec2(gx, gy)) * strength);
+  vec4 sourceColor = texture(source, uv);
+  fragColor = monochrome
+    ? vec4(vec3(edge), sourceColor.a)
+    : vec4(sourceColor.rgb * edge, sourceColor.a);
+}`;
+
+const NOISE_GL = `// @title Noise
+// @primaryButton settings
+// @param scale 8.0 0.1 64.0 "Scale"
+// @param speed 0.15 -2.0 2.0 "Speed"
+// @param contrast 1.0 0.1 4.0 "Contrast"
+// @param colorA color "Color A"
+// @param colorB color "Color B"
+
+uniform float scale;
+uniform float speed;
+uniform float contrast;
+uniform vec3 colorA;
+uniform vec3 colorB;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
+    f.y
+  );
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  float n = noise(uv * scale + iTime * speed);
+  n = clamp((n - 0.5) * contrast + 0.5, 0.0, 1.0);
+  fragColor = vec4(mix(colorA, colorB, n), 1.0);
+}`;
+
+const NOISE_DISPLACE_GL = `// @title Noise Displace
+// @primaryButton settings
+// @param scale 8.0 0.1 64.0 "Scale"
+// @param speed 0.15 -2.0 2.0 "Speed"
+// @param amount 0.05 -0.5 0.5 "Amount"
+// @param direction 0.0 0.0 3.1416 "Direction"
+
+uniform sampler2D source;
+uniform float scale;
+uniform float speed;
+uniform float amount;
+uniform float direction;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
+    f.y
+  );
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 p = uv * scale + iTime * speed;
+  vec2 n = vec2(noise(p), noise(p + 13.37)) - 0.5;
+  vec2 axis = vec2(cos(direction), sin(direction));
+  vec2 offset = mix(n, axis * n.x, 0.5) * amount;
+  fragColor = texture(source, uv + offset);
+}`;
+
+const FEEDBACK_GL = `// @title Feedback
+// @primaryButton settings
+// @param feedbackAmount 0.9 0.0 0.999 "Feedback"
+// @param inputAmount 1.0 0.0 1.0 "Input"
+// @param decay 0.98 0.0 1.0 "Decay"
+// @param zoom 1.0 0.8 1.2 "Zoom"
+// @param rotation 0.0 -0.2 0.2 "Rotation"
+
+uniform sampler2D source;
+uniform sampler2D feedback;
+uniform float feedbackAmount;
+uniform float inputAmount;
+uniform float decay;
+uniform float zoom;
+uniform float rotation;
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 p = uv - 0.5;
+  float c = cos(rotation);
+  float s = sin(rotation);
+  p = mat2(c, -s, s, c) * p;
+  p = p / max(zoom, 0.0001) + 0.5;
+
+  vec4 current = texture(source, uv) * inputAmount;
+  vec4 previous = texture(feedback, p) * decay * feedbackAmount;
+  fragColor = max(current, previous);
 }`;
 
 const AUDIO_FFT_FREQ_GL = `uniform sampler2D freqTexture;
@@ -57,23 +417,27 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   fragColor = vec4(0.1, wave, 1. - wave, 0.9);
 }`;
 
-const SWITCHER_GL = `uniform sampler2D a;
+const SWITCHER_GL = `// @title Switcher
+// @primaryButton settings
+// @param id 0.0 0.0 5.0 "Input"
+
+uniform sampler2D a;
 uniform sampler2D b;
 uniform sampler2D c;
 uniform sampler2D d;
 uniform sampler2D e;
 uniform sampler2D f;
-uniform int id;
+uniform float id;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec4 o;
 
-  if (id == 0) o = texture(a, uv);
-  if (id == 1) o = texture(b, uv);
-  if (id == 2) o = texture(c, uv);
-  if (id == 3) o = texture(d, uv);
-  if (id == 4) o = texture(e, uv);
-  if (id == 5) o = texture(f, uv);
+  if (id < 0.5) o = texture(a, uv);
+  if (id >= 0.5 && id < 1.5) o = texture(b, uv);
+  if (id >= 1.5 && id < 2.5) o = texture(c, uv);
+  if (id >= 2.5 && id < 3.5) o = texture(d, uv);
+  if (id >= 3.5 && id < 4.5) o = texture(e, uv);
+  if (id >= 4.5) o = texture(f, uv);
 
   fragColor = o;
 }`;
@@ -179,14 +543,112 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     fragColor = vec4(p, 1.0);
 }`;
 
-export const GLSL_PRESETS: Record<string, { type: string; data: { code: string } }> = {
-  'glsl>': { type: 'glsl', data: { code: PASSTHRU_GL.trim() } },
-  'mix.gl': { type: 'glsl', data: { code: MIX_GL.trim() } },
-  'solid.gl': { type: 'glsl', data: { code: SOLID_GL.trim() } },
-  'overlay.gl': { type: 'glsl', data: { code: OVERLAY_GL.trim() } },
-  'fft-freq.gl': { type: 'glsl', data: { code: AUDIO_FFT_FREQ_GL.trim() } },
-  'fft-waveform.gl': { type: 'glsl', data: { code: AUDIO_FFT_WAVEFORM_GL.trim() } },
-  'switcher.gl': { type: 'glsl', data: { code: SWITCHER_GL.trim() } },
-  'position-field.gl': { type: 'glsl', data: { code: POSITION_FIELD_GL.trim() } },
-  'torus-position-field.gl': { type: 'glsl', data: { code: TORUS_POSITION_FIELD_GL.trim() } }
+type GLSLPreset = { type: 'glsl'; description?: string; data: { code: string } };
+
+export const GLSL_PRESETS: Record<string, GLSLPreset> = {
+  'glsl>': {
+    type: 'glsl',
+    description: 'Passthrough shader for processing a video input.',
+    data: { code: PASSTHRU_GL.trim() }
+  },
+  Mix: {
+    type: 'glsl',
+    description: 'Crossfade between two video inputs.',
+    data: { code: MIX_GL.trim() }
+  },
+  Solid: {
+    type: 'glsl',
+    description: 'Generate a solid color with a color picker.',
+    data: { code: SOLID_GL.trim() }
+  },
+  Ramp: {
+    type: 'glsl',
+    description: 'Generate linear, radial, and circular color ramps.',
+    data: { code: RAMP_GL.trim() }
+  },
+  Level: {
+    type: 'glsl',
+    description: 'Adjust black, white, gamma, brightness, contrast, and opacity.',
+    data: { code: LEVEL_GL.trim() }
+  },
+  Transform: {
+    type: 'glsl',
+    description: 'Translate, scale, rotate, and tile an input texture.',
+    data: { code: TRANSFORM_GL.trim() }
+  },
+  Overlay: {
+    type: 'glsl',
+    description: 'Alpha-composite a foreground input over a background input.',
+    data: { code: OVERLAY_GL.trim() }
+  },
+  Multiply: {
+    type: 'glsl',
+    description: 'Multiply two video inputs with an opacity control.',
+    data: { code: MULTIPLY_GL.trim() }
+  },
+  Blur: {
+    type: 'glsl',
+    description: 'Apply a practical single-pass directional blur.',
+    data: { code: BLUR_GL.trim() }
+  },
+  Crop: {
+    type: 'glsl',
+    description: 'Crop an input texture with optional feathering.',
+    data: { code: CROP_GL.trim() }
+  },
+  Reorder: {
+    type: 'glsl',
+    description: 'Swizzle color and alpha channels.',
+    data: { code: REORDER_GL.trim() }
+  },
+  Displace: {
+    type: 'glsl',
+    description: 'Warp an input texture using a displacement texture.',
+    data: { code: DISPLACE_GL.trim() }
+  },
+  Edge: {
+    type: 'glsl',
+    description: 'Detect image edges with a Sobel-style filter.',
+    data: { code: EDGE_GL.trim() }
+  },
+  Noise: {
+    type: 'glsl',
+    description: 'Generate animated procedural noise.',
+    data: { code: NOISE_GL.trim() }
+  },
+  'Noise Displace': {
+    type: 'glsl',
+    description: 'Warp an input texture using animated procedural noise.',
+    data: { code: NOISE_DISPLACE_GL.trim() }
+  },
+  Feedback: {
+    type: 'glsl',
+    description: 'Accumulate an input with a manually wired feedback inlet.',
+    data: { code: FEEDBACK_GL.trim() }
+  },
+  'fft-freq.gl': {
+    type: 'glsl',
+    description: 'Visualize FFT frequency data from an audio analysis texture.',
+    data: { code: AUDIO_FFT_FREQ_GL.trim() }
+  },
+  'fft-waveform.gl': {
+    type: 'glsl',
+    description: 'Visualize waveform data from an audio analysis texture.',
+    data: { code: AUDIO_FFT_WAVEFORM_GL.trim() }
+  },
+  Switcher: {
+    type: 'glsl',
+    description: 'Select one of six video inputs.',
+    data: { code: SWITCHER_GL.trim() }
+  },
+  'position-field.gl': {
+    type: 'glsl',
+    description: 'Generate a float position field for GPU geometry workflows.',
+    data: { code: POSITION_FIELD_GL.trim() }
+  },
+  'torus-position-field.gl': {
+    type: 'glsl',
+    description: 'Generate a float torus position field for GPU geometry workflows.',
+    data: { code: TORUS_POSITION_FIELD_GL.trim() }
+  }
 };

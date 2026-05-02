@@ -33,7 +33,7 @@
     Preset,
     PresetPath
   } from '$lib/presets/types';
-  import { isPreset } from '$lib/presets/preset-utils';
+  import { formatPresetLocation, isPreset } from '$lib/presets/preset-utils';
   import { isMobile, isSidebarOpen, selectedNodeInfo } from '../../../stores/ui.store';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
@@ -981,9 +981,10 @@
             <Blocks class="h-3.5 w-3.5 shrink-0 {typeIcon.color}" />
             <span class="truncate font-mono text-zinc-300">{result.name}</span>
             <span class="ml-auto truncate pr-2 text-[10px] text-zinc-600">
-              {result.library.name}{result.path.length > 1
-                ? '/' + result.path.slice(0, -1).join('/')
-                : ''}
+              {formatPresetLocation({
+                libraryName: result.library.name,
+                path: [result.libraryId, ...result.path]
+              })}
             </span>
           </button>
         {/each}

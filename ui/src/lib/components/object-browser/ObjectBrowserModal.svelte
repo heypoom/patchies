@@ -38,6 +38,7 @@
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../../stores/ui.store';
   import { getPackIcon } from '$lib/extensions/pack-icons';
+  import { formatPresetLocation } from '$lib/presets/preset-utils';
   import DisabledObjectSuggestion from './DisabledObjectSuggestion.svelte';
   import ExtensionPackCard from '../sidebar/ExtensionPackCard.svelte';
   import PresetPackCard from '../sidebar/PresetPackCard.svelte';
@@ -109,7 +110,8 @@
       }
 
       const typeFolder = path.length > 2 ? path[1] : preset.type;
-      const categoryKey = `${libraryName}: ${typeFolder}`;
+      const categoryKey =
+        libraryName === 'Built-in' ? typeFolder : formatPresetLocation(flatPreset);
 
       if (!presetsByCategory.has(categoryKey)) {
         presetsByCategory.set(categoryKey, []);
@@ -134,6 +136,7 @@
     return sortedCategories.map((category) => ({
       title: category,
       icon: categoryIconMap.get(category) || 'Package',
+      isPresetCategory: true,
       objects: presetsByCategory.get(category)!
     }));
   });
@@ -151,7 +154,7 @@
         cat.objects.map((obj) => ({
           ...obj,
           categoryTitle: cat.title,
-          isPreset: cat.title.includes(': ')
+          isPreset: cat.isPresetCategory === true
         }))
       ),
       {
@@ -689,7 +692,7 @@
         {:else}
           <div class="flex flex-col gap-2">
             {#each filteredCategories as category (category.title)}
-              {@const isCategoryPreset = category.title.includes(': ')}
+              {@const isCategoryPreset = category.isPresetCategory === true}
               {@const IconComponent = getIconComponent(category.icon)}
 
               <div>
@@ -728,7 +731,7 @@
                 {#if expandedCategories.has(category.title)}
                   <div class="mb-1 grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4">
                     {#each category.objects as object (object.name)}
-                      {@const isPreset = category.title.includes(': ')}
+                      {@const isPreset = category.isPresetCategory === true}
                       {@const isLowPriority = object.priority === 'low'}
                       {@const objectHasHelp = hasHelp(object.name)}
                       {@const noHelpAvailable = browserMode === 'help' && !objectHasHelp}

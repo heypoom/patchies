@@ -41,6 +41,7 @@
   } from '../../../stores/extensions.store';
   import { Search } from '@lucide/svelte/icons';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
+  import { formatPresetLocation } from '$lib/presets/preset-utils';
   import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import { useAudioServiceSync } from '$lib/composables/useAudioServiceSync.svelte';
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
@@ -963,10 +964,11 @@
       const flatPreset = presetLookup.get(current.name);
       if (!flatPreset) return null;
 
-      const { preset, libraryName } = flatPreset;
+      const { preset } = flatPreset;
       const desc = preset.description || `using ${preset.type}`;
+      const location = formatPresetLocation(flatPreset);
 
-      return `${libraryName} > ${current.name}: ${desc}`;
+      return `${location ? `${location} > ` : ''}${current.name}: ${desc}`;
     }
 
     if (current.type === 'object') {

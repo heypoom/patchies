@@ -57,20 +57,23 @@ renamed to title-case names, except starter presets that end with `>`.
 
 | Preset           | Inputs                     | Parameters                                         | Notes                                                                   |
 | ---------------- | -------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- |
-| `Ramp`           | none                       | mode, colors, angle, center, radius, offset        | Generator for linear, radial, and circular ramps.                       |
-| `Level`          | `input`                    | black, white, gamma, brightness, contrast, opacity | Color correction and range remapping.                                   |
-| `Transform`      | `input`                    | translate, scale, rotate, repeat mode              | UV-space transform for image placement and tiling.                      |
+| `Linear Ramp`    | none                       | colors, angle, offset                              | Directional linear color ramp.                                          |
+| `Radial Ramp`    | none                       | colors, center, radius, offset                     | Radial color ramp from a center point.                                  |
+| `Circular Ramp`  | none                       | colors, center, angle, offset                      | Angular color ramp around a center point.                               |
+| `Constant`       | none                       | color, alpha                                       | Constant color generator.                                               |
+| `Level`          | `source`                   | black, white, gamma, brightness, contrast, opacity | Color correction and range remapping.                                   |
+| `Transform`      | `source`                   | translate, scale, rotate, repeat mode              | UV-space transform for image placement and tiling.                      |
 | `Overlay`        | `background`, `foreground` | opacity                                            | Alpha-composite foreground over background.                             |
 | `Mix`            | `a`, `b`                   | mix                                                | Crossfade between two inputs.                                           |
 | `Multiply`       | `a`, `b`                   | opacity                                            | Dedicated common composite mode.                                        |
-| `Blur`           | `input`                    | radius, direction                                  | Single-pass practical blur; avoid expensive large kernels.              |
-| `Crop`           | `input`                    | min, max, feather                                  | Window/crop the input and output transparent pixels outside the region. |
-| `Reorder`        | `input`                    | channel selectors, invert alpha                    | Channel swizzle and alpha/luma utility.                                 |
-| `Displace`       | `input`, `displacement`    | amount, center, channels                           | Warp one texture with another texture.                                  |
-| `Edge`           | `input`                    | strength, threshold, mode                          | Sobel-style edge detection.                                             |
+| `Blur`           | `source`                   | radius                                             | Single-pass practical 2D blur; avoid expensive large kernels.           |
+| `Crop`           | `source`                   | min, max, feather                                  | Window/crop the input and output transparent pixels outside the region. |
+| `Reorder`        | `source`                   | channel selectors, invert alpha                    | Channel swizzle and alpha/luma utility.                                 |
+| `Displace`       | `source`, `displacement`   | amount, center, channels                           | Warp one texture with another texture.                                  |
+| `Edge`           | `source`                   | strength, threshold, mode                          | Sobel-style edge detection.                                             |
 | `Noise`          | none                       | scale, speed, contrast, colors                     | Procedural animated noise generator.                                    |
-| `Noise Displace` | `input`                    | scale, speed, amount, direction                    | Uses procedural noise to warp an input texture.                         |
-| `Feedback`       | `input`, `feedback`        | feedback amount, decay, blend, transform           | Accumulate current input with manually wired previous-frame feedback.   |
+| `Noise Displace` | `source`                   | scale, speed, amount, direction                    | Uses procedural noise to warp an input texture.                         |
+| `Feedback`       | `source`, `feedback`       | feedback amount, decay, blend, transform           | Accumulate current input with manually wired previous-frame feedback.   |
 
 ### Out of Scope Sweet 16 Items
 
@@ -91,7 +94,7 @@ Feedback presets remain single GLSL nodes. They should expose a normal sampler
 inlet named `feedback`:
 
 ```glsl
-uniform sampler2D input;
+uniform sampler2D source;
 uniform sampler2D feedback;
 ```
 
@@ -99,7 +102,7 @@ Users create feedback by wiring the GLSL node's output back into its own
 `feedback` inlet. The graph-level feedback system detects that back-edge and
 routes the previous frame's texture through the inlet.
 
-The `Feedback` preset should also work when only `input` is connected. The first
+The `Feedback` preset should also work when only `source` is connected. The first
 frame and any missing feedback texture should produce a stable, visible output
 instead of black surprise where practical.
 
@@ -124,7 +127,7 @@ supported by the GLSL object.
 ### Noise Displace
 
 `Noise Displace` processes an input texture. It samples procedural noise, turns
-that noise into a UV offset, and samples `input` at the warped coordinates.
+that noise into a UV offset, and samples `source` at the warped coordinates.
 
 Recommended controls:
 
@@ -151,11 +154,11 @@ clean title-case names.
 
 Rename existing GLSL operator presets to title-case keys:
 
-| Current key | New key |
-| ----------- | ------- |
-| `mix.gl` | `Mix` |
-| `overlay.gl` | `Overlay` |
-| `solid.gl` | `Solid` |
+| Current key   | New key    |
+| ------------- | ---------- |
+| `mix.gl`      | `Mix`      |
+| `overlay.gl`  | `Overlay`  |
+| `solid.gl`    | `Constant` |
 | `switcher.gl` | `Switcher` |
 
 Leave starter presets that end with `>` unchanged:
@@ -176,7 +179,7 @@ unless they are moved into a separate cleanup pass.
    clean title-case keys.
 3. Update the **GLSL Operators** pack in `ui/src/lib/extensions/preset-packs.ts`.
 4. Rename existing GLSL operator keys: `mix.gl` to `Mix`, `overlay.gl` to
-   `Overlay`, `solid.gl` to `Solid`, and `switcher.gl` to `Switcher`.
+   `Overlay`, `solid.gl` to `Constant`, and `switcher.gl` to `Switcher`.
 5. Leave `glsl>`, `regl>`, `swgl>`, and `three>` unchanged.
 6. Use clean preset keys and `@title` directives for TOP-style names.
 7. Update `ui/static/content/objects/glsl.md` to mention the expanded TOP-style
@@ -188,7 +191,7 @@ unless they are moved into a separate cleanup pass.
 - Add or update unit tests only if preset registration has existing coverage.
 - Manually inspect the preset list to confirm names appear in **GLSL Operators**.
 - Smoke-test at least:
-  - `Ramp` renders without inputs.
+  - `Linear Ramp`, `Radial Ramp`, and `Circular Ramp` render without inputs.
   - `Level` passes and modifies an input.
   - `Noise` renders without inputs.
   - `Noise Displace` modifies an input.
@@ -197,8 +200,6 @@ unless they are moved into a separate cleanup pass.
 
 ## Follow-Ups
 
-- Add a `Constant` preset if we want closer parity with TouchDesigner's Constant
-  TOP.
 - Add simulation-style feedback presets such as `Reaction Diffusion` and
   `Game of Life` after the basic `Feedback` preset lands.
 - Consider grouping GLSL presets inside the pack by generator, processor,

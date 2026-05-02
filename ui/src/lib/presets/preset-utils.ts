@@ -120,6 +120,25 @@ export function formatPresetPath(path: PresetPath, separator = ' > '): string {
 }
 
 /**
+ * Format where a preset comes from without repeating the built-in library prefix.
+ *
+ * Built-in presets are the default catalog, so "Built-in > glsl" is noisy.
+ * User libraries keep their library name for provenance.
+ */
+export function formatPresetLocation(
+  preset: Pick<FlattenedPreset, 'libraryName' | 'path'>,
+  separator = ' > '
+): string {
+  const folderPath = preset.path.slice(1, -1);
+
+  if (preset.libraryName === 'Built-in' || preset.path[0] === 'built-in') {
+    return folderPath.join(separator);
+  }
+
+  return [preset.libraryName, ...folderPath].filter(Boolean).join(separator);
+}
+
+/**
  * Generate a unique ID for a new library
  */
 export function generateLibraryId(): string {
