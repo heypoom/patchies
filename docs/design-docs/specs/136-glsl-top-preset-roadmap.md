@@ -18,8 +18,9 @@ operators, and render-pipeline ideas that fit Patchies' visual node model.
 - Separate straightforward GLSL presets from more advanced candidates.
 - Call out presets that are better suited to `regl` because they need multipass
   rendering, custom geometry, frame history, buffers, or multiple render targets.
-- Keep names object-like and discoverable in the existing **GLSL Operators**
-  preset pack.
+- Keep names object-like and discoverable in user-facing operator preset packs.
+- Organize presets by what users are trying to do, not by whether the underlying
+  implementation happens to be `glsl` or `regl`.
 
 ## Non-Goals
 
@@ -54,6 +55,29 @@ The current GLSL Operators pack already covers:
 The next presets should expand mask-building, keying, color utilities,
 compositing, and practical image-processing tools before moving into heavier
 render-pipeline work.
+
+## Preset Pack Strategy
+
+Do not keep growing one huge **GLSL Operators** pack. The implementation detail
+is less important than the creative task the user is doing, and future packs may
+mix `glsl`, `regl`, `swgl`, or `three` presets when that gives the best result.
+
+Recommended user-facing packs:
+
+| Pack                        | Purpose                                      | Likely Presets                                                        |
+| --------------------------- | -------------------------------------------- | --------------------------------------------------------------------- |
+| **Texture Generators**      | Start a visual chain from procedural content | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`    |
+| **Texture Composite**       | Combine multiple textures                    | `Mix`, `Overlay`, `Multiply`, `Add`, `Subtract`, `Difference`, `Over` |
+| **Texture Color**           | Color correction and color-space utilities   | `Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Remap`           |
+| **Texture Masks & Keys**    | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`             |
+| **Texture Transform**       | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`  |
+| **Texture Filters**         | Image-processing effects                     | `Blur`, `Edge`, `Emboss`, `Slope`, `Normal Map`, `Tone Map`           |
+| **Texture Feedback & Data** | Feedback, history, and render-pipeline tools | `Feedback`, future `regl` presets such as `Bloom`, `Cache`            |
+
+The existing **GLSL Operators** pack can remain during the first migration, but
+new work should move toward these task-based packs. Presets should still be
+implemented as one file per preset under the appropriate built-in preset module;
+pack membership is just how they are exposed to users.
 
 ## Best Next GLSL Presets
 
@@ -143,21 +167,94 @@ buffers, and explicit texture/resource management.
 | `Point Transform` | Point/geometry transforms need buffers and vertex shaders.      | `regl` point buffer transform/render preset.                 |
 | `POP to`          | Geometry/data pipeline conversion needs structured buffers.     | Future geometry bridge, not a plain GLSL preset.             |
 
-## Recommended Next Batch
+## Implementation Groups
 
-The next implementation pass should prioritize presets that unlock common visual
-patching workflows while staying simple:
+Implement the **Best Next GLSL Presets** section in five small groups. Each group
+should land with registry updates, pack membership, documentation, and focused
+verification before starting the next one.
 
-1. Compositing math: `Add`, `Subtract`, `Difference`, `Composite`, `Over`,
-   `Under`.
-2. Keying and masks: `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`.
-3. Color utilities: `HSV Adjust`, `Monochrome`, `Channel Mix`, `Remap`.
-4. Shape utilities: `Circle`, `Rectangle`, `Cross`.
-5. Texture utilities: `Flip`, `Mirror`, `Tile`, `Fit`.
+### Group 1 — Compositing
 
-This batch would make Patchies much better at building masks, combining textures,
-and preparing visuals for feedback chains without requiring a new rendering
-architecture.
+Presets:
+
+- `Add`
+- `Subtract`
+- `Difference`
+- `Composite`
+- `Over`
+- `Under`
+
+Pack target: **Texture Composite**.
+
+This group gives users clearer texture-combination tools and avoids forcing all
+blend workflows through `Mix`, `Overlay`, or `Multiply`.
+
+### Group 2 — Keying And Masks
+
+Presets:
+
+- `Threshold`
+- `Chroma Key`
+- `RGB Key`
+- `Luma Key`
+- `Matte`
+
+Pack target: **Texture Masks & Keys**.
+
+This group unlocks alpha/matte workflows for camera input, video clips,
+procedural textures, and feedback chains.
+
+### Group 3 — Color Utilities
+
+Presets:
+
+- `HSV Adjust`
+- `Monochrome`
+- `Channel Mix`
+- `Limit`
+- `Remap`
+- `Lookup`
+- `RGB to HSV`
+- `HSV to RGB`
+- `Tone Map`
+
+Pack target: **Texture Color**.
+
+This group focuses on color correction, color-space conversion, and data-range
+utilities. `Lookup` should define a clear 1D LUT texture contract before
+implementation.
+
+### Group 4 — Texture Transform Utilities
+
+Presets:
+
+- `Fit`
+- `Flip`
+- `Mirror`
+- `Tile`
+- `Lens Distort`
+
+Pack target: **Texture Transform**.
+
+This group turns common transform modes into discoverable one-purpose presets
+instead of requiring users to configure a mode-heavy `Transform` preset.
+
+### Group 5 — Shape And Image Filters
+
+Presets:
+
+- `Circle`
+- `Rectangle`
+- `Cross`
+- `Emboss`
+- `Slope`
+- `Normal Map`
+
+Pack targets: **Texture Generators** for shape generators and **Texture Filters**
+for image filters.
+
+This group adds mask-generation primitives and useful image-analysis/filtering
+tools. Shape presets should output useful alpha by default.
 
 ## Implementation Notes
 
@@ -175,7 +272,7 @@ architecture.
 ## Testing
 
 - Run the GLSL directive parser tests after adding or changing preset directives.
-- Add a registry check that every name in the **GLSL Operators** preset pack
+- Add a registry check that every name in the relevant texture preset packs
   exists in the built-in preset map.
 - Smoke-test each generator without inputs.
 - Smoke-test each processor with a connected `source` input.
