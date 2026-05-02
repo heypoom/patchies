@@ -35,7 +35,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 The `glsl>` preset is enabled by default and gives you a passthrough shader for
 processing video inputs. Enable the texture preset packs when you want
-ready-made TOP-style operators.
+ready-made [TOP-style](https://docs.derivative.ca/TOP) operators.
 
 | Pack | Use It For | Presets |
 | ---- | ---------- | ------- |
