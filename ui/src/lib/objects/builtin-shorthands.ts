@@ -176,11 +176,11 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     nodeType: 'slider',
     description: 'Integer slider. Format: slider [min] <max> [default]',
     transform: (expr, name) => {
-      const [min, max, defaultValue] = parseSliderExpr(expr, name, 100);
+      const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 100);
 
       return {
         nodeType: 'slider',
-        data: { min, max, defaultValue, isFloat: false }
+        data: { min, max, defaultValue, step, isFloat: false }
       };
     }
   },
@@ -189,11 +189,11 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     nodeType: 'slider',
     description: 'Float slider. Format: fslider [min] <max> [default]',
     transform: (expr, name) => {
-      const [min, max, defaultValue] = parseSliderExpr(expr, name, 1);
+      const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 1);
 
       return {
         nodeType: 'slider',
-        data: { min, max, defaultValue, isFloat: true }
+        data: { min, max, defaultValue, step, isFloat: true }
       };
     }
   },
@@ -202,11 +202,11 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     nodeType: 'knob',
     description: 'Integer knob. Format: knob [min] <max> [default]',
     transform: (expr, name) => {
-      const [min, max, defaultValue] = parseSliderExpr(expr, name, 100);
+      const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 100);
 
       return {
         nodeType: 'knob',
-        data: { min, max, defaultValue, isFloat: false }
+        data: { min, max, defaultValue, step, isFloat: false }
       };
     }
   },
@@ -215,11 +215,11 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     nodeType: 'knob',
     description: 'Float knob. Format: fknob [min] <max> [default]',
     transform: (expr, name) => {
-      const [min, max, defaultValue] = parseSliderExpr(expr, name, 1);
+      const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 1);
 
       return {
         nodeType: 'knob',
-        data: { min, max, defaultValue, isFloat: true }
+        data: { min, max, defaultValue, step, isFloat: true }
       };
     }
   },
@@ -228,11 +228,11 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     nodeType: 'slider',
     description: 'Vertical integer slider. Format: vslider [min] <max> [default]',
     transform: (expr, name) => {
-      const [min, max, defaultValue] = parseSliderExpr(expr, name, 100);
+      const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 100);
 
       return {
         nodeType: 'slider',
-        data: { min, max, defaultValue, isFloat: false, vertical: true }
+        data: { min, max, defaultValue, step, isFloat: false, vertical: true }
       };
     }
   },
@@ -241,10 +241,10 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     nodeType: 'slider',
     description: 'Vertical float slider. Format: vfslider [min] <max> [default]',
     transform: (expr, name) => {
-      const [min, max, defaultValue] = parseSliderExpr(expr, name, 1);
+      const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 1);
       return {
         nodeType: 'slider',
-        data: { min, max, defaultValue, isFloat: true, vertical: true }
+        data: { min, max, defaultValue, step, isFloat: true, vertical: true }
       };
     }
   },
@@ -315,9 +315,13 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
 ];
 
 /**
- * Parse slider expression: "slider min max [default]"
+ * Parse slider expression: "slider min max [default] [step]"
  */
-function parseSliderExpr(expr: string, name: string, defaultMax: number): [number, number, number] {
+function parseSliderExpr(
+  expr: string,
+  name: string,
+  defaultMax: number
+): { min: number; max: number; defaultValue: number; step?: number } {
   const parts = expr
     .replace(name, '')
     .trim()
@@ -328,6 +332,7 @@ function parseSliderExpr(expr: string, name: string, defaultMax: number): [numbe
   let min: number;
   let max: number;
   let defaultValue: number;
+  let step: number | undefined;
 
   if (parts.length === 0) {
     min = 0;
@@ -346,7 +351,8 @@ function parseSliderExpr(expr: string, name: string, defaultMax: number): [numbe
     min = parts[0];
     max = parts[1];
     defaultValue = parts[2];
+    step = parts[3];
   }
 
-  return [min, max, defaultValue];
+  return { min, max, defaultValue, step };
 }

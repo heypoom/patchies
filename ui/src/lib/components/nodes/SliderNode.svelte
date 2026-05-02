@@ -19,6 +19,7 @@
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SliderSettings from '$lib/components/settings/SliderSettings.svelte';
+  import { getControlDecimals, getControlStep, snapControlValue } from '$lib/utils/stepped-control';
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {
@@ -26,6 +27,7 @@
     data: {
       min?: number;
       max?: number;
+      step?: number;
       defaultValue?: number;
       isFloat?: boolean;
       value?: number;
@@ -58,6 +60,7 @@
   // Configuration values with defaults
   const min = $derived(node.data.min ?? 0);
   const max = $derived(node.data.max ?? (node.data.isFloat ? 1 : 100));
+  const step = $derived(getControlStep(node.data));
   const defaultValue = $derived(node.data.defaultValue ?? min);
   const isFloat = $derived(node.data.isFloat ?? false);
   const currentValue = $derived(node.data.value ?? defaultValue);
@@ -72,14 +75,16 @@
   const settingsLeftOffset = $derived(node.data.vertical ? 40 : sliderWidth + 10);
 
   // For display formatting
-  const displayValue = $derived(
-    isFloat ? Number(currentValue).toFixed(2) : Math.round(currentValue).toString()
-  );
+  const displayValue = $derived(Number(currentValue).toFixed(getControlDecimals(step)));
+
+  function snapValue(value: number): number {
+    return snapControlValue(value, { min, max, step, isFloat });
+  }
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
       .with(P.number, (value) => {
-        const newValue = Math.min(Math.max(value, min), max);
+        const newValue = snapValue(value);
 
         updateNodeData(node.id, { ...node.data, value: newValue });
         messageContext.send(newValue);
@@ -96,12 +101,12 @@
         messageContext.send(currentValue);
       })
       .with(messages.setMin, ({ value }) => {
-        const clampedValue = Math.min(Math.max(currentValue, value), max);
+        const clampedValue = snapControlValue(currentValue, { min: value, max, step, isFloat });
 
         updateNodeData(node.id, { ...node.data, min: value, value: clampedValue });
       })
       .with(messages.setMax, ({ value }) => {
-        const clampedValue = Math.min(Math.max(currentValue, min), value);
+        const clampedValue = snapControlValue(currentValue, { min, max: value, step, isFloat });
 
         updateNodeData(node.id, { ...node.data, max: value, value: clampedValue });
       })
@@ -109,8 +114,7 @@
         updateNodeData(node.id, { ...node.data, defaultValue: value });
       })
       .with(messages.setValue, ({ value }) => {
-        const newValue = isFloat ? Math.round(value * 100) / 100 : Math.round(value);
-        const clamped = Math.min(Math.max(newValue, min), max);
+        const clamped = snapValue(value);
 
         updateNodeData(node.id, { ...node.data, value: clamped });
 
@@ -122,8 +126,7 @@
     const target = event.target as HTMLInputElement;
     const rawValue = parseFloat(target.value);
 
-    // Apply proper precision based on mode
-    const newValue = isFloat ? rawValue : Math.round(rawValue);
+    const newValue = snapValue(rawValue);
 
     if (newValue !== currentValue) {
       updateNodeData(node.id, { ...node.data, value: newValue });
@@ -135,10 +138,19 @@
     const newData = { ...node.data, ...updates };
 
     // Ensure value is within new bounds
-    if ('min' in updates || 'max' in updates) {
+    if ('min' in updates || 'max' in updates || 'step' in updates || 'isFloat' in updates) {
       const newMin = updates.min ?? min;
       const newMax = updates.max ?? max;
-      const clampedValue = Math.min(Math.max(currentValue, newMin), newMax);
+      const newStep = getControlStep({
+        step: updates.step ?? node.data.step,
+        isFloat: updates.isFloat ?? isFloat
+      });
+      const clampedValue = snapControlValue(currentValue, {
+        min: newMin,
+        max: newMax,
+        step: newStep,
+        isFloat: updates.isFloat ?? isFloat
+      });
       if (clampedValue !== currentValue) {
         newData.value = clampedValue;
       }
@@ -291,7 +303,7 @@
               type="range"
               {min}
               {max}
-              step={isFloat ? 0.01 : 1}
+              {step}
               value={currentValue}
               oninput={handleSliderChange}
               onpointerdown={valueTracker.onFocus}

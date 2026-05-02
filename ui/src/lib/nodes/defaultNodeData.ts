@@ -62,12 +62,14 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       min: 0,
       max: 100,
       defaultValue: 50,
+      step: 1,
       isFloat: false
     }))
     .with('knob', () => ({
       min: 0,
       max: 1,
       defaultValue: 0,
+      step: 0.01,
       isFloat: true,
       size: 50
     }))

@@ -1,10 +1,12 @@
 <script lang="ts">
   import { RotateCcw } from '@lucide/svelte/icons';
   import type { NodeDataTracker } from '$lib/history';
+  import { getControlStep } from '$lib/utils/stepped-control';
 
   type SliderData = {
     min?: number;
     max?: number;
+    step?: number;
     defaultValue?: number;
     isFloat?: boolean;
     value?: number;
@@ -31,6 +33,7 @@
   // Derived values with defaults
   const min = $derived(data.min ?? 0);
   const max = $derived(data.max ?? (data.isFloat ? 1 : 100));
+  const step = $derived(getControlStep(data));
   const defaultValue = $derived(data.defaultValue ?? min);
   const isFloat = $derived(data.isFloat ?? false);
   const isResizable = $derived(data.resizable ?? false);
@@ -115,11 +118,33 @@
 
     <div>
       <!-- svelte-ignore a11y_label_has_associated_control -->
+      <label class="mb-2 block text-xs font-medium text-zinc-300">Step</label>
+
+      <input
+        type="number"
+        step={isFloat ? 0.001 : 1}
+        min={0}
+        value={step}
+        onchange={(e) => {
+          const oldStep = step;
+          const newStep = parseFloat((e.target as HTMLInputElement).value);
+
+          if (!Number.isFinite(newStep) || newStep <= 0) return;
+
+          onUpdate({ step: newStep });
+          tracker.commit('step', oldStep, newStep);
+        }}
+        class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+      />
+    </div>
+
+    <div>
+      <!-- svelte-ignore a11y_label_has_associated_control -->
       <label class="mb-2 block text-xs font-medium text-zinc-300">Default Value</label>
 
       <input
         type="number"
-        step={isFloat ? 0.01 : 1}
+        {step}
         value={defaultValue}
         {min}
         {max}

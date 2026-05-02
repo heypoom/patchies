@@ -13,6 +13,7 @@
   import { useSvelteFlow, useStore, useEdges } from '@xyflow/svelte';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import { getControlDecimals, getControlStep, snapControlValue } from '$lib/utils/stepped-control';
 
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
@@ -21,6 +22,7 @@
     data: {
       min?: number;
       max?: number;
+      step?: number;
       defaultValue?: number;
       isFloat?: boolean;
       value?: number;
@@ -53,6 +55,7 @@
   // Configuration values with defaults
   const min = $derived(node.data.min ?? 0);
   const max = $derived(node.data.max ?? (node.data.isFloat ? 1 : 100));
+  const step = $derived(getControlStep(node.data));
   const defaultValue = $derived(node.data.defaultValue ?? min);
   const isFloat = $derived(node.data.isFloat ?? false);
   const currentValue = $derived(node.data.value ?? defaultValue);
@@ -105,19 +108,16 @@
   );
 
   // Display formatting based on mode
-  const displayValue = $derived(
-    isFloat ? Number(currentValue).toFixed(2) : Math.round(currentValue).toString()
-  );
+  const displayValue = $derived(Number(currentValue).toFixed(getControlDecimals(step)));
 
-  // Apply precision based on mode (2 decimal places for float, integer for int)
-  function applyPrecision(value: number): number {
-    return isFloat ? Math.round(value * 100) / 100 : Math.round(value);
+  function snapValue(value: number): number {
+    return snapControlValue(value, { min, max, step, isFloat });
   }
 
   const handleMessage: MessageCallbackFn = (message) => {
     match(message)
       .with(P.number, (value) => {
-        const newValue = applyPrecision(Math.min(Math.max(value, min), max));
+        const newValue = snapValue(value);
         updateNodeData(node.id, { ...node.data, value: newValue });
         messageContext.send(newValue);
       })
@@ -129,18 +129,18 @@
         messageContext.send(currentValue);
       })
       .with(messages.setMin, ({ value }) => {
-        const clampedValue = Math.min(Math.max(currentValue, value), max);
+        const clampedValue = snapControlValue(currentValue, { min: value, max, step, isFloat });
         updateNodeData(node.id, { ...node.data, min: value, value: clampedValue });
       })
       .with(messages.setMax, ({ value }) => {
-        const clampedValue = Math.min(Math.max(currentValue, min), value);
+        const clampedValue = snapControlValue(currentValue, { min, max: value, step, isFloat });
         updateNodeData(node.id, { ...node.data, max: value, value: clampedValue });
       })
       .with(messages.setDefault, ({ value }) => {
         updateNodeData(node.id, { ...node.data, defaultValue: value });
       })
       .with(messages.setValue, ({ value }) => {
-        const newValue = applyPrecision(Math.min(Math.max(value, min), max));
+        const newValue = snapValue(value);
         updateNodeData(node.id, { ...node.data, value: newValue });
       });
   };
@@ -163,7 +163,7 @@
     const sensitivity = 0.005; // Adjust for smoother/faster control
     const deltaValue = deltaY * sensitivity * (max - min);
     const rawValue = Math.min(Math.max(dragStartValue + deltaValue, min), max);
-    const newValue = applyPrecision(rawValue);
+    const newValue = snapValue(rawValue);
 
     if (newValue !== currentValue) {
       updateNodeData(node.id, { ...node.data, value: newValue });
@@ -182,10 +182,19 @@
     const newData = { ...node.data, ...updates };
 
     // Ensure value is within new bounds
-    if ('min' in updates || 'max' in updates) {
+    if ('min' in updates || 'max' in updates || 'step' in updates || 'isFloat' in updates) {
       const newMin = updates.min ?? min;
       const newMax = updates.max ?? max;
-      const clampedValue = Math.min(Math.max(currentValue, newMin), newMax);
+      const newStep = getControlStep({
+        step: updates.step ?? node.data.step,
+        isFloat: updates.isFloat ?? isFloat
+      });
+      const clampedValue = snapControlValue(currentValue, {
+        min: newMin,
+        max: newMax,
+        step: newStep,
+        isFloat: updates.isFloat ?? isFloat
+      });
 
       if (clampedValue !== currentValue) {
         newData.value = clampedValue;

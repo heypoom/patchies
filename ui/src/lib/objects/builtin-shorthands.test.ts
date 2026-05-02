@@ -26,4 +26,17 @@ describe('slider/knob shorthand parsing', () => {
 
     expect(result.data).toMatchObject({ min: 0, max: 1, defaultValue: 0.25, isFloat: true });
   });
+
+  it('parses fourth arg as step', () => {
+    const { transform } = findShorthand('fknob');
+    const result = transform('fknob 0 1 0.25 0.001', 'fknob');
+
+    expect(result.data).toMatchObject({
+      min: 0,
+      max: 1,
+      defaultValue: 0.25,
+      step: 0.001,
+      isFloat: true
+    });
+  });
 });

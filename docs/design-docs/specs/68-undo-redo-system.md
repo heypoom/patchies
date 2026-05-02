@@ -613,7 +613,7 @@ const textTracker = tracker.track('text', () => node.data.text ?? '');
 Priority 1 - UI Controls (user directly manipulates):
 
 - [x] `note` - text, color, fontSize, locked
-- [x] `slider` - min, max, defaultValue, isFloat, vertical, resizable
+- [x] `slider` - min, max, defaultValue, step, isFloat, vertical, resizable
 - [x] `markdown` - markdown content (OverType editor)
 
 Priority 2 - Settings panels with discrete options:
