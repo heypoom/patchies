@@ -11,10 +11,14 @@ export interface ParamDirective {
 
   min?: number;
   max?: number;
+  step?: number;
   description?: string;
 
   /** Widget override — e.g. 'color' renders a vec3 as a color picker */
-  widget?: 'color';
+  widget?: 'color' | 'select';
+
+  /** Select options for enum-like numeric uniforms. Values are sent to GL as numbers. */
+  options?: { label: string; value: string }[];
 }
 
 export interface ShaderDirectives {
@@ -24,16 +28,64 @@ export interface ShaderDirectives {
 
 const DIRECTIVE_RE = /^[ \t]*\/\/\s*@(title|param)\s+(.+)$/gm;
 
-// @param name [default] [min] [max] ["description"]
+// @param name [default] [min] [max] [step] ["description"]
 // For color widgets: @param name color [#hex] ["description"]
+// For select widgets: @param name default (value: Label, value: Label) ["description"]
 const PARAM_RE =
-  /^(\w+)(?:\s+(-?[\w.]+))?(?:\s+(-?[\d.]+|#[\da-fA-F]+))?(?:\s+(-?[\d.]+))?(?:\s+"([^"]*)")?$/;
+  /^(\w+)(?:\s+(-?[\w.]+))?(?:\s+(-?[\d.]+|#[\da-fA-F]+))?(?:\s+(-?[\d.]+))?(?:\s+(-?[\d.]+))?$/;
+
+function extractQuotedDescription(value: string): { body: string; description?: string } {
+  const match = value.match(/\s+"([^"]*)"\s*$/);
+
+  if (!match) {
+    return { body: value.trim() };
+  }
+
+  return {
+    body: value.slice(0, match.index).trim(),
+    description: match[1]
+  };
+}
+
+function parseSelectOptions(value: string): {
+  body: string;
+  options?: { label: string; value: string }[];
+} {
+  const match = value.match(/\s*\(([^)]*:[^)]*)\)\s*$/);
+
+  if (!match) {
+    return { body: value.trim() };
+  }
+
+  const options = match[1]
+    .split(',')
+    .map((part) => {
+      const colonIndex = part.indexOf(':');
+      const rawValue = colonIndex >= 0 ? part.slice(0, colonIndex).trim() : '';
+      const rawLabel = colonIndex >= 0 ? part.slice(colonIndex + 1).trim() : '';
+
+      if (!rawValue || !rawLabel) {
+        return null;
+      }
+
+      return { value: rawValue, label: rawLabel };
+    })
+    .filter((option): option is { label: string; value: string } => option !== null);
+
+  return {
+    body: value.slice(0, match.index).trim(),
+    options: options.length > 0 ? options : undefined
+  };
+}
 
 function parseParamDirective(value: string): ParamDirective | null {
-  const match = PARAM_RE.exec(value);
+  const { body: withoutDescription, description } = extractQuotedDescription(value);
+  const { body, options } = parseSelectOptions(withoutDescription);
+
+  const match = PARAM_RE.exec(body);
   if (!match) return null;
 
-  const [, name, defaultValue, minValue, maxValue, description] = match;
+  const [, name, defaultValue, minValue, maxValue, stepValue] = match;
   const param: ParamDirective = { name };
 
   if (defaultValue === 'color') {
@@ -55,8 +107,17 @@ function parseParamDirective(value: string): ParamDirective | null {
     param.max = parseFloat(maxValue);
   }
 
+  if (stepValue != null) {
+    param.step = parseFloat(stepValue);
+  }
+
   if (description != null) {
     param.description = description;
+  }
+
+  if (options != null) {
+    param.widget = 'select';
+    param.options = options;
   }
 
   return param;
@@ -156,8 +217,10 @@ export function shaderCodeToUniformDefs(code: string): GLUniformDef[] {
       }),
       ...(param?.min != null && { min: param.min }),
       ...(param?.max != null && { max: param.max }),
+      ...(param?.step != null && { step: param.step }),
       ...(param?.description != null && { description: param.description }),
-      ...(param?.widget != null && { widget: param.widget })
+      ...(param?.widget != null && { widget: param.widget }),
+      ...(param?.options != null && { options: param.options })
     });
   }
 
@@ -185,7 +248,20 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
   defs.flatMap((def) =>
     match<string, SettingsField[]>(def.type)
       .with('float', () => {
-        const step = deriveFloatStep(def.default as number, def.min, def.max);
+        const step = def.step ?? deriveFloatStep(def.default as number, def.min, def.max);
+
+        if (def.widget === 'select' && def.options != null) {
+          return [
+            {
+              key: def.name,
+              label: def.description ?? def.name,
+              type: 'select' as const,
+              default: String((def.default as number) ?? def.options[0]?.value ?? '0'),
+              options: def.options,
+              persistence: 'node' as const
+            }
+          ];
+        }
 
         return [
           def.min != null && def.max != null
@@ -209,27 +285,42 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
               }
         ];
       })
-      .with('int', () => [
-        def.min != null && def.max != null
-          ? {
+      .with('int', () => {
+        if (def.widget === 'select' && def.options != null) {
+          return [
+            {
               key: def.name,
               label: def.description ?? def.name,
-              type: 'slider' as const,
-              default: (def.default as number) ?? 0,
-              min: def.min,
-              max: def.max,
-              step: 1,
+              type: 'select' as const,
+              default: String((def.default as number) ?? def.options[0]?.value ?? '0'),
+              options: def.options,
               persistence: 'node' as const
             }
-          : {
-              key: def.name,
-              label: def.description ?? def.name,
-              type: 'number' as const,
-              default: (def.default as number) ?? 0,
-              step: 1,
-              persistence: 'node' as const
-            }
-      ])
+          ];
+        }
+
+        return [
+          def.min != null && def.max != null
+            ? {
+                key: def.name,
+                label: def.description ?? def.name,
+                type: 'slider' as const,
+                default: (def.default as number) ?? 0,
+                min: def.min,
+                max: def.max,
+                step: 1,
+                persistence: 'node' as const
+              }
+            : {
+                key: def.name,
+                label: def.description ?? def.name,
+                type: 'number' as const,
+                default: (def.default as number) ?? 0,
+                step: 1,
+                persistence: 'node' as const
+              }
+        ];
+      })
       .with('bool', () => [
         {
           key: def.name,

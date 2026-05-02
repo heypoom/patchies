@@ -13,7 +13,7 @@ import type { Preset, PresetFolder, LegacyPresetsRecord } from './types';
 export function migrateLegacyPresets(legacy: LegacyPresetsRecord): PresetFolder {
   const result: PresetFolder = {};
 
-  for (const [presetName, { type, data }] of Object.entries(legacy)) {
+  for (const [presetName, { type, data, description }] of Object.entries(legacy)) {
     // Get or create the folder for this type
     if (!(type in result)) {
       result[type] = {};
@@ -23,6 +23,7 @@ export function migrateLegacyPresets(legacy: LegacyPresetsRecord): PresetFolder 
     // Create the preset
     const preset: Preset = {
       name: presetName,
+      description,
       type,
       data
     };

@@ -200,6 +200,21 @@ describe('parseShaderDirectives', () => {
     });
   });
 
+  it('parses @param with explicit slider step', () => {
+    const code = '// @param strength 0.01 0.0 0.1 0.001 "Aberration strength"';
+    const directives = parseShaderDirectives(code);
+    const param = directives.params.get('strength');
+
+    expect(param).toEqual({
+      name: 'strength',
+      default: '0.01',
+      min: 0.0,
+      max: 0.1,
+      step: 0.001,
+      description: 'Aberration strength'
+    });
+  });
+
   it('parses @param with only name', () => {
     const directives = parseShaderDirectives('// @param gain');
 
@@ -275,6 +290,46 @@ uniform vec3 tint;
     });
   });
 
+  it('parses @param with select options', () => {
+    const directives = parseShaderDirectives(
+      '// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"'
+    );
+    const param = directives.params.get('mode');
+
+    expect(param).toEqual({
+      name: 'mode',
+      default: '0',
+      widget: 'select',
+      options: [
+        { value: '0', label: 'Linear' },
+        { value: '1', label: 'Radial' },
+        { value: '2', label: 'Circular' }
+      ],
+      description: 'Mode'
+    });
+  });
+
+  it('merges select options into numeric uniform def', () => {
+    const code = `
+// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"
+uniform float mode;
+`;
+    const defs = shaderCodeToUniformDefs(code);
+
+    expect(defs[0]).toMatchObject({
+      name: 'mode',
+      type: 'float',
+      widget: 'select',
+      default: 0,
+      options: [
+        { value: '0', label: 'Linear' },
+        { value: '1', label: 'Radial' },
+        { value: '2', label: 'Circular' }
+      ],
+      description: 'Mode'
+    });
+  });
+
   it('merges @param metadata into uniform defs', () => {
     const code = `
 // @param strength 0.01 0.0 0.1 "Aberration strength"
@@ -292,5 +347,29 @@ uniform float other; // 1.0
     });
 
     expect(defs[1]).toEqual({ name: 'other', type: 'float' });
+  });
+
+  it('uses explicit @param step in generated slider field', () => {
+    const code = `
+// @param strength 0.01 0.0 0.1 0.001 "Aberration strength"
+uniform float strength;
+`;
+    const defs = shaderCodeToUniformDefs(code);
+    const fields = uniformDefsToSettingsSchema(defs);
+
+    expect(defs[0]).toMatchObject({
+      name: 'strength',
+      default: 0.01,
+      min: 0,
+      max: 0.1,
+      step: 0.001,
+      description: 'Aberration strength'
+    });
+
+    expect(fields[0]).toMatchObject({
+      key: 'strength',
+      type: 'slider',
+      step: 0.001
+    });
   });
 });

@@ -58,7 +58,10 @@ export {
  * All built-in presets combined into a single record.
  * When a preset is selected, it creates a node of the specified type with the given data.
  */
-export const BUILTIN_PRESETS: Record<string, { type: string; data: unknown }> = {
+export const BUILTIN_PRESETS: Record<
+  string,
+  { type: string; description?: string; data: unknown }
+> = {
   ...GLSL_PRESETS,
   ...P5_PRESETS,
   ...HYDRA_PRESETS,

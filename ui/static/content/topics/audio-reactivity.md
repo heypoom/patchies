@@ -17,7 +17,7 @@ Supported objects: `glsl` and any objects using the [JavaScript Runner](/docs/ja
 
 1. Create a `sampler2D` GLSL uniform inlet
 2. Connect the purple "analyzer" outlet of `fft~` to it
-3. Try the `fft-freq.gl` and `fft-waveform.gl` presets
+3. Try the `FFT Frequency GL` and `FFT Waveform GL` presets
 
 For waveform (time-domain) instead of frequency analysis, name the uniform exactly `uniform sampler2D waveTexture;`.
 

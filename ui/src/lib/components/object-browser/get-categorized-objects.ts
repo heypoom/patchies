@@ -15,6 +15,7 @@ export interface CategoryGroup {
   title: string;
   icon: string; // lucide icon name
   objects: ObjectItem[];
+  isPresetCategory?: boolean;
 }
 
 /**

@@ -68,6 +68,7 @@ export type PresetPath = string[];
  */
 export interface LegacyPreset {
   type: string;
+  description?: string;
   data: unknown;
 }
 

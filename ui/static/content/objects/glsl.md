@@ -36,13 +36,30 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 Enable the **GLSL Operators** preset pack for basic presets:
 
 - `glsl>` - a passthrough shader
-- `solid.gl` - solid color with color picker
-- `mix.gl` - mix two video inputs
-- `overlay.gl` - overlay second input on first
-- `switcher.gl` - switch between 6 inputs (send int 0-5)
+- `Constant` - constant color and alpha
+- `Mix` - mix two video inputs
+- `Overlay` - overlay a foreground input on a background input
+- `Switcher` - switch between 6 inputs
+- `Linear Ramp` - generate a directional linear ramp
+- `Radial Ramp` - generate a radial ramp from a center point
+- `Circular Ramp` - generate an angular ramp around a center point
+- `Level` - adjust black, white, gamma, brightness, contrast, and opacity
+- `Transform` - translate, scale, rotate, and tile an input texture
+- `Multiply` - multiply two input textures
+- `Blur` - single-pass 2D blur
+- `Crop` - crop an input texture with optional feathering
+- `Reorder` - swizzle color and alpha channels
+- `Displace` - warp an input using a displacement texture
+- `Edge` - Sobel-style edge detection
+- `Noise` - animated procedural noise
+- `Noise Displace` - warp an input using procedural noise
+- `Feedback` - accumulate an input with a manually wired feedback inlet
 
 The `glsl>` preset is the best starting point for building GLSL shaders
 that process video inputs.
+
+For `Feedback`, connect the node's video output back into its `feedback` inlet.
+Patchies treats that cable as a one-frame-delayed feedback loop.
 
 ## Built-in Uniforms
 
@@ -128,8 +145,8 @@ the next run reverts to a single outlet.
 
 Enable the **FFT Demos** preset pack for audio-reactive examples:
 
-- `fft-freq.gl` - visualize frequency spectrum
-- `fft-waveform.gl` - visualize audio waveform
+- `FFT Frequency GL` - visualize frequency spectrum
+- `FFT Waveform GL` - visualize audio waveform
 
 See the [Audio Reactivity](/docs/audio-reactivity) guide for how to
 use waveform and time-domain audio data from [fft~](/docs/objects/fft~)
@@ -151,38 +168,63 @@ Sets the node's display title instead of the default "glsl".
 
 ```glsl
 // @param strength 0.01 0.0 0.1 "Aberration strength"
+// @param fine 0.5 0.0 1.0 0.001 "Fine control"
 // @param samples 8.0 2.0 32.0 "Sample count"
 // @param invert false "Invert output"
 
 uniform float strength; // 0.01
+uniform float fine;     // 0.5
 uniform float samples;  // 8.0
 uniform bool invert;    // false
 ```
 
-Format: `// @param <name> [default] [min] [max] ["description"]`
+Format: `// @param <name> [default] [min] [max] [step] ["description"]`
 
 Each `@param` must have a matching `uniform` declaration — the type is
 inferred from it.
 
 When `min` and `max` are provided, the settings panel shows a slider instead of
 a plain number input. The description replaces the uniform name as the label.
+Add `step` after `max` when you need finer or coarser slider increments.
 
 ### `@param` — Color Picker
 
-Use `color` as the default value to render a `vec3` uniform as a color picker:
+Use `color` as the default value to render a `vec3` uniform as a color picker.
+You can also provide a default hex color and a quoted title:
 
 ```glsl
 // @param tint color
 // @param glow color "Glow color"
+// @param shadow color #111827 "Shadow color"
 
 uniform vec3 tint;
 uniform vec3 glow;
+uniform vec3 shadow;
 ```
+
+Format: `// @param <name> color [#hex] ["title"]`
 
 The color picker stores a hex string (e.g. `#ff8800`) and converts it
 to a normalized `vec3` (0–1 per channel) before sending to the shader.
 
+The optional hex value sets the picker default. The optional quoted title
+replaces the uniform name as the label in settings.
+
 Only works with `vec3` uniforms — other types ignore the `color` keyword.
+
+### `@param` — Select Options
+
+Add parenthesized `value: label` pairs after the default value to render a
+numeric uniform as select buttons:
+
+```glsl
+// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"
+uniform float mode;
+```
+
+The setting stores the selected option, then sends the numeric value to the
+shader uniform. This is useful for discrete modes where a slider would be
+confusing.
 
 ## Float Texture Format
 
