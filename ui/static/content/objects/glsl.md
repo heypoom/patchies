@@ -35,11 +35,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 Enable the texture preset packs for basic operators:
 
-- **Visual Shader Starters**: `glsl>` passthrough shader
+- Enabled by default: `glsl>` passthrough shader
 - **Texture Generators**: `Constant`, `Linear Ramp`, `Radial Ramp`,
   `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross`
 - **Texture Composite**: `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`,
-  `Math`, `Composite`, `Over`, `Under`, `Feedback`, `Cache`, `Switcher`
+  `Math`, `Composite`, `Over`, `Under`, `Feedback`, `Cache`, `Time Scrub`,
+  `Time Machine`, `Switcher`
 - **Texture Color**: `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`,
   `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`,
   `Tone Map`, `Reorder`
@@ -50,8 +51,8 @@ Enable the texture preset packs for basic operators:
 - **Texture Filters**: `Blur`, `Luma Blur`, `Convolve`, `Edge`, `Anti Alias`,
   `Emboss`, `Slope`, `Normal Map`
 
-Texture preset packs can also include REGL-backed presets such as `Bloom` and
-`Cache`.
+Texture preset packs can also include REGL-backed presets such as `Bloom`,
+`Cache`, `Time Scrub`, and `Time Machine`.
 
 The `glsl>` preset is the best starting point for building GLSL shaders
 that process video inputs.

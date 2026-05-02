@@ -74,6 +74,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'Under',
       'Feedback',
       'Cache',
+      'Time Scrub',
+      'Time Machine',
       'Switcher'
     ]
   },

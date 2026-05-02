@@ -179,6 +179,10 @@ Enable **Texture Composite** for REGL-backed temporal presets:
 
 - `Cache` - records recent frames into an internal ring buffer and outputs a
   delayed frame.
+- `Time Scrub` - records frame history and manually scrubs through it with a
+  position control.
+- `Time Machine` - records a longer frame history and plays it back with
+  speed and mix controls.
 
 ## Multiple Video Outputs (MRT)
 

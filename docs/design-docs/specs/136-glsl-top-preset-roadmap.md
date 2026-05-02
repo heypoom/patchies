@@ -79,7 +79,7 @@ Recommended user-facing packs:
 | Pack                     | Purpose                                      | Current Presets                                                                                                                                         | Status |
 | ------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | **Texture Generators**   | Start a visual chain from procedural content | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross`                                                      | Added  |
-| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Feedback`, `Cache`, `Switcher`                               | Added  |
+| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Feedback`, `Cache`, `Time Scrub`, `Time Machine`, `Switcher` | Added  |
 | **Texture Color**        | Color correction and color-space utilities   | `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder` | Added  |
 | **Texture Masks & Keys** | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`                                                                                               | Added  |
 | **Texture Transform**    | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace`                                                      | Added  |
@@ -91,8 +91,9 @@ implemented as one file per preset under the appropriate built-in preset module;
 pack membership is just how they are exposed to users.
 
 Defer a dedicated **Texture Time** pack until there are at least four temporal
-presets. Likely candidates are `Feedback`, `Cache`, `Cache Select`, and
-`Time Machine`.
+presets. Likely candidates are `Feedback`, `Cache`, `Time Scrub`,
+`Time Machine`, and a future real `Cache Select` once shared cache resources
+exist.
 
 ## Best Next GLSL Presets
 
@@ -190,28 +191,29 @@ These are possible in Patchies, but `regl` is the better target because it gives
 full draw-command control, custom geometry, multiple passes, render targets,
 buffers, and explicit texture/resource management.
 
-| Preset            | Status | Why `regl` Fits Better                                       | Possible Patchies Shape                                      |
-| ----------------- | ------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| `Bloom`           | Added  | Real bloom wants downsample, blur, and upsample passes.      | A `regl` preset with internal framebuffers and controls.     |
-| `Cache`           | Added  | Requires frame history beyond one previous feedback input.   | Ring buffer of textures managed inside a `regl` preset.      |
-| `Cache Select`    | REGL   | Requires indexed lookup into cached frame history.           | Companion to `Cache`, or a combined cache/select preset.     |
-| `Time Machine`    | REGL   | Temporal lookup and interpolation over many frames.          | `regl` history buffer with index/speed controls.             |
-| `Optical Flow`    | REGL   | Needs multi-pass analysis and previous-frame state.          | Ping-pong framebuffers plus vector output or visualization.  |
-| `Blob Track`      | REGL   | Needs analysis/state and possibly readback/CPU logic.        | `regl` preprocessing plus future analysis/readback support.  |
-| `Layout`          | REGL   | Better as geometry/layout over multiple textured quads.      | Draw multiple input textures into positioned rectangles.     |
-| `Layer`           | REGL   | Layer stack compositing maps naturally to draw order.        | `regl` preset that draws N textured quads with blend state.  |
-| `Cube Map`        | REGL   | Needs non-2D texture targets and specialized sampling.       | Future advanced `regl`/WebGL texture preset.                 |
-| `Texture 3D`      | REGL   | Needs 3D texture allocation/sampling control.                | Future `regl` preset if WebGL2 texture support is exposed.   |
-| `Depth`           | REGL   | Depth buffers are render-pipeline state, not GLSL output.    | `regl` render preset with depth attachment or depth texture. |
-| `SSAO`            | REGL   | Screen-space AO is a multipass depth/normal post-process.    | REGL pipeline using depth/normal inputs or MRT outputs.      |
-| `Render`          | REGL   | Scene rendering requires geometry, cameras, and draw calls.  | Already closer to `three`, `regl`, or `swgl` nodes.          |
-| `Render Pass`     | REGL   | Render-pass selection is a pipeline/MRT workflow concern.    | Preset around existing MRT support and named attachments.    |
-| `Render Select`   | REGL   | Selecting render outputs requires pipeline-level routing UX. | Could be a `regl` preset or graph-level convenience.         |
-| `Render Simple`   | REGL   | Still a scene-rendering concept, not a fullscreen shader.    | Prefer `regl` or `three` presets.                            |
-| `Projection`      | REGL   | Projection mapping wants custom mesh/UV geometry.            | Better handled by `projmap` or a `regl` mesh preset.         |
-| `GLSL Multi`      | Defer  | MRT already exists in visual nodes; preset shape is unclear. | Maybe example presets/docs, not a new operator preset.       |
-| `Point Transform` | REGL   | Point/geometry transforms need buffers and vertex shaders.   | `regl` point buffer transform/render preset.                 |
-| `POP to`          | REGL   | Geometry/data pipeline conversion needs structured buffers.  | Future geometry bridge, not a plain GLSL preset.             |
+| Preset            | Status | Why `regl` Fits Better                                        | Possible Patchies Shape                                         |
+| ----------------- | ------ | ------------------------------------------------------------- | --------------------------------------------------------------- |
+| `Bloom`           | Added  | Real bloom wants downsample, blur, and upsample passes.       | A `regl` preset with internal framebuffers and controls.        |
+| `Cache`           | Added  | Requires frame history beyond one previous feedback input.    | Ring buffer of textures managed inside a `regl` preset.         |
+| `Cache Select`    | Defer  | Requires indexed lookup into cached frame history.            | Needs shared cache resources or a combined cache/select design. |
+| `Time Scrub`      | Added  | Manual temporal lookup needs frame history and interpolation. | `regl` history buffer with an always-active position control.   |
+| `Time Machine`    | Added  | Temporal lookup and interpolation over many frames.           | `regl` history buffer with index/speed controls.                |
+| `Optical Flow`    | REGL   | Needs multi-pass analysis and previous-frame state.           | Ping-pong framebuffers plus vector output or visualization.     |
+| `Blob Track`      | REGL   | Needs analysis/state and possibly readback/CPU logic.         | `regl` preprocessing plus future analysis/readback support.     |
+| `Layout`          | REGL   | Better as geometry/layout over multiple textured quads.       | Draw multiple input textures into positioned rectangles.        |
+| `Layer`           | REGL   | Layer stack compositing maps naturally to draw order.         | `regl` preset that draws N textured quads with blend state.     |
+| `Cube Map`        | REGL   | Needs non-2D texture targets and specialized sampling.        | Future advanced `regl`/WebGL texture preset.                    |
+| `Texture 3D`      | REGL   | Needs 3D texture allocation/sampling control.                 | Future `regl` preset if WebGL2 texture support is exposed.      |
+| `Depth`           | REGL   | Depth buffers are render-pipeline state, not GLSL output.     | `regl` render preset with depth attachment or depth texture.    |
+| `SSAO`            | REGL   | Screen-space AO is a multipass depth/normal post-process.     | REGL pipeline using depth/normal inputs or MRT outputs.         |
+| `Render`          | REGL   | Scene rendering requires geometry, cameras, and draw calls.   | Already closer to `three`, `regl`, or `swgl` nodes.             |
+| `Render Pass`     | REGL   | Render-pass selection is a pipeline/MRT workflow concern.     | Preset around existing MRT support and named attachments.       |
+| `Render Select`   | REGL   | Selecting render outputs requires pipeline-level routing UX.  | Could be a `regl` preset or graph-level convenience.            |
+| `Render Simple`   | REGL   | Still a scene-rendering concept, not a fullscreen shader.     | Prefer `regl` or `three` presets.                               |
+| `Projection`      | REGL   | Projection mapping wants custom mesh/UV geometry.             | Better handled by `projmap` or a `regl` mesh preset.            |
+| `GLSL Multi`      | Defer  | MRT already exists in visual nodes; preset shape is unclear.  | Maybe example presets/docs, not a new operator preset.          |
+| `Point Transform` | REGL   | Point/geometry transforms need buffers and vertex shaders.    | `regl` point buffer transform/render preset.                    |
+| `POP to`          | REGL   | Geometry/data pipeline conversion needs structured buffers.   | Future geometry bridge, not a plain GLSL preset.                |
 
 ### REGL Implementation Priority
 
