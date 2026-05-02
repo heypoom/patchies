@@ -58,6 +58,12 @@ Enable the **GLSL Operators** preset pack for basic presets:
 The `glsl>` preset is the best starting point for building GLSL shaders
 that process video inputs.
 
+The GLSL Operators presets are inspired by
+[TouchDesigner](https://derivative.ca/) Texture Operators (TOPs) by Derivative
+Inc. Patchies does not include or port TouchDesigner source code, shaders,
+assets, documentation, or proprietary implementations; the presets are
+independently reimplemented for Patchies.
+
 For `Feedback`, connect the node's video output back into its `feedback` inlet.
 Patchies treats that cable as a one-frame-delayed feedback loop.
 

@@ -520,6 +520,17 @@ export const portedCode: PortedCode[] = [
       "Patchies reimplements Pd's object designs using Web Audio API and AudioWorklets — no code was directly ported. The tilde (~) naming convention, inlet/outlet paradigm, hot/cold inlet semantics, and message-passing architecture all originate from Miller Puckette's work on Pure Data and its predecessor Max."
   },
   {
+    name: 'TouchDesigner',
+    description:
+      "Patchies' GLSL Operators preset pack is inspired by TouchDesigner's Texture Operators (TOPs), including operator names and comparable texture-processing functionality.",
+    authors: 'Derivative Inc.',
+    repository: 'https://derivative.ca/',
+    license: 'Proprietary',
+    copyright: '© Derivative Inc.',
+    notes:
+      'Patchies does not include or port TouchDesigner source code, shaders, assets, documentation, or proprietary implementations. The attribution is included because several GLSL presets intentionally follow TouchDesigner TOP naming and behavior patterns, reimplemented independently for Patchies.'
+  },
+  {
     name: 'Array Box (Uiua WASM)',
     description:
       'The Uiua node uses a WASM build approach adapted from Array Box, an interactive playground for array programming languages.',

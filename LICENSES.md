@@ -136,6 +136,18 @@ The Hydra node in Patchies contains a local fork of [hydra-ts](https://github.co
 
 The local fork modifies the error handling to integrate with Patchies' error reporting system instead of using console.log. The AGPL-3.0 license is preserved in the source files.
 
+#### TouchDesigner
+
+Patchies' GLSL Operators preset pack is inspired by [TouchDesigner](https://derivative.ca/) Texture Operators (TOPs) by Derivative Inc.
+
+- **Original Project**: TouchDesigner
+- **Authors**: Derivative Inc.
+- **Website**: <https://derivative.ca/>
+- **License**: Proprietary
+- **Copyright**: © Derivative Inc.
+
+Patchies does not include or port TouchDesigner source code, shaders, assets, documentation, or proprietary implementations. This attribution is included because several GLSL presets intentionally follow TouchDesigner TOP naming and behavior patterns, reimplemented independently for Patchies.
+
 #### Superdough (Package Patch)
 
 Patchies uses a patched version of [Superdough](https://codeberg.org/uzu/strudel), which is part of the Strudel ecosystem.
