@@ -152,14 +152,6 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     ]
   },
   {
-    id: 'scripting-demos',
-    name: 'Scripting Demos',
-    description: 'JS scripts for control flow',
-    icon: 'Code',
-    requiredObjects: ['js'],
-    presets: ['delay.js']
-  },
-  {
     id: 'iframe-widgets',
     name: 'Iframe Widgets',
     description: 'Useful widgets made with iframes',
@@ -373,5 +365,13 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     icon: 'Brain',
     requiredObjects: ['ai.txt'],
     presets: ['music-from-image.prompt']
+  },
+  {
+    id: 'scripting-demos',
+    name: 'Scripting Demos',
+    description: 'JS scripts for control flow',
+    icon: 'Code',
+    requiredObjects: ['js'],
+    presets: ['delay.js']
   }
 ];
