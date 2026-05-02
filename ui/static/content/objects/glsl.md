@@ -38,7 +38,8 @@ Enable the texture preset packs for basic operators:
 - **Visual Shader Starters**: `glsl>` passthrough shader
 - **Texture Generators**: `Constant`, `Linear Ramp`, `Radial Ramp`,
   `Circular Ramp`, `Noise`
-- **Texture Composite**: `Mix`, `Overlay`, `Multiply`, `Switcher`
+- **Texture Composite**: `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`,
+  `Composite`, `Over`, `Under`, `Switcher`
 - **Texture Color**: `Level`, `Reorder`
 - **Texture Transform**: `Transform`, `Crop`, `Displace`, `Noise Displace`
 - **Texture Filters**: `Blur`, `Edge`

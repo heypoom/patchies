@@ -58,7 +58,17 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Combine and switch between multiple textures',
     icon: 'ArrowRightLeft',
     requiredObjects: ['glsl'],
-    presets: ['Mix', 'Overlay', 'Multiply', 'Switcher']
+    presets: [
+      'Mix',
+      'Multiply',
+      'Add',
+      'Subtract',
+      'Difference',
+      'Composite',
+      'Over',
+      'Under',
+      'Switcher'
+    ]
   },
   {
     id: 'texture-color',
