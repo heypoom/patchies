@@ -39,8 +39,7 @@ Enable the texture preset packs for basic operators:
 - **Texture Generators**: `Constant`, `Linear Ramp`, `Radial Ramp`,
   `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross`
 - **Texture Composite**: `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`,
-  `Math`, `Composite`, `Over`, `Under`, `Switcher`
-- **Texture Time**: `Feedback`
+  `Math`, `Composite`, `Over`, `Under`, `Feedback`, `Cache`, `Switcher`
 - **Texture Color**: `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`,
   `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`,
   `Tone Map`, `Reorder`

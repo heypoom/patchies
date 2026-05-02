@@ -72,16 +72,10 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'Composite',
       'Over',
       'Under',
+      'Feedback',
+      'Cache',
       'Switcher'
     ]
-  },
-  {
-    id: 'texture-time',
-    name: 'Texture Time',
-    description: 'Feedback and frame-history utilities',
-    icon: 'Clock',
-    requiredObjects: ['glsl', 'regl'],
-    presets: ['Feedback', 'Cache']
   },
   {
     id: 'texture-color',
