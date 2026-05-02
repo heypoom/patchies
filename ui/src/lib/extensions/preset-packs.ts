@@ -127,7 +127,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Image-processing effects for texture chains',
     icon: 'SlidersHorizontal',
     requiredObjects: ['glsl'],
-    presets: ['Blur', 'Edge', 'Anti Alias', 'Emboss', 'Slope', 'Normal Map']
+    presets: ['Blur', 'Luma Blur', 'Edge', 'Anti Alias', 'Emboss', 'Slope', 'Normal Map']
   },
   {
     id: 'scripting-demos',

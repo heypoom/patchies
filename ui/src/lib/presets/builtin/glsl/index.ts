@@ -52,6 +52,7 @@ import { preset as preset50 } from './emboss';
 import { preset as preset51 } from './slope';
 import { preset as preset52 } from './normal-map';
 import { preset as preset53 } from './anti-alias';
+import { preset as preset54 } from './luma-blur';
 import type { GLSLPreset } from './types';
 
 export const GLSL_PRESETS: Record<string, GLSLPreset> = {
@@ -108,7 +109,8 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
   Emboss: preset50,
   Slope: preset51,
   'Normal Map': preset52,
-  'Anti Alias': preset53
+  'Anti Alias': preset53,
+  'Luma Blur': preset54
 };
 
 export type { GLSLPreset } from './types';

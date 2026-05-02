@@ -145,6 +145,10 @@ moving on.
    generated shapes and threshold-style alpha textures. Keep the scope narrow:
    it smooths a selected channel into alpha and is not a replacement for true
    multisample anti-aliasing.
+2. `Luma Blur`: add to **Texture Filters** as a single-pass blur whose blend
+   amount is gated by source luminance. Let users target bright or dark regions
+   so the preset can produce glow-like smearing without requiring a multi-pass
+   bloom pipeline.
 
 ## Better With REGL
 
