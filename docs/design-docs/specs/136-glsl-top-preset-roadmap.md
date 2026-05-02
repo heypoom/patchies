@@ -149,6 +149,9 @@ moving on.
    amount is gated by source luminance. Let users target bright or dark regions
    so the preset can produce glow-like smearing without requiring a multi-pass
    bloom pipeline.
+3. `Luma Level`: add to **Texture Color** as a luminance-only level utility.
+   Adjust the source luma curve and reapply it to RGB as a ratio so hue is
+   mostly preserved.
 
 ## Better With REGL
 

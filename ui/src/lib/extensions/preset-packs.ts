@@ -83,6 +83,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     requiredObjects: ['glsl'],
     presets: [
       'Level',
+      'Luma Level',
       'HSV Adjust',
       'Monochrome',
       'Channel Mix',
