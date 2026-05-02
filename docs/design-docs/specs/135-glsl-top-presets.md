@@ -174,8 +174,8 @@ unless they are moved into a separate cleanup pass.
 
 ## Implementation Plan
 
-1. Add GLSL shader constants for the new presets.
-2. Register the presets in `ui/src/lib/presets/builtin/glsl.presets.ts` using
+1. Add one file per GLSL preset under `ui/src/lib/presets/builtin/glsl/`.
+2. Register the presets from `ui/src/lib/presets/builtin/glsl/index.ts` using
    clean title-case keys.
 3. Update the **GLSL Operators** pack in `ui/src/lib/extensions/preset-packs.ts`.
 4. Rename existing GLSL operator keys: `mix.gl` to `Mix`, `overlay.gl` to
