@@ -79,7 +79,8 @@ Recommended user-facing packs:
 | Pack                     | Purpose                                      | Current Presets                                                                                                                                         | Status |
 | ------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | **Texture Generators**   | Start a visual chain from procedural content | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross`                                                      | Added  |
-| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Feedback`, `Switcher`                                        | Added  |
+| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Switcher`                                                    | Added  |
+| **Texture Time**         | Feedback and frame-history utilities         | `Feedback`, `Cache`                                                                                                                                     | Added  |
 | **Texture Color**        | Color correction and color-space utilities   | `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder` | Added  |
 | **Texture Masks & Keys** | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`                                                                                               | Added  |
 | **Texture Transform**    | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace`                                                      | Added  |
@@ -189,7 +190,7 @@ buffers, and explicit texture/resource management.
 | Preset            | Status | Why `regl` Fits Better                                       | Possible Patchies Shape                                      |
 | ----------------- | ------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | `Bloom`           | Added  | Real bloom wants downsample, blur, and upsample passes.      | A `regl` preset with internal framebuffers and controls.     |
-| `Cache`           | REGL   | Requires frame history beyond one previous feedback input.   | Ring buffer of textures managed inside a `regl` preset.      |
+| `Cache`           | Added  | Requires frame history beyond one previous feedback input.   | Ring buffer of textures managed inside a `regl` preset.      |
 | `Cache Select`    | REGL   | Requires indexed lookup into cached frame history.           | Companion to `Cache`, or a combined cache/select preset.     |
 | `Time Machine`    | REGL   | Temporal lookup and interpolation over many frames.          | `regl` history buffer with index/speed controls.             |
 | `Optical Flow`    | REGL   | Needs multi-pass analysis and previous-frame state.          | Ping-pong framebuffers plus vector output or visualization.  |

@@ -175,6 +175,11 @@ Enable **Texture Filters** for REGL-backed image-processing presets:
 
 - `Bloom` - multipass threshold, blur, tint, and composite bloom.
 
+Enable **Texture Time** for REGL-backed frame-history presets:
+
+- `Cache` - records recent frames into an internal ring buffer and outputs a
+  delayed frame.
+
 ## Multiple Video Outputs (MRT)
 
 A single regl draw call can write to multiple video outlets at once using

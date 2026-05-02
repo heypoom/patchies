@@ -39,7 +39,8 @@ Enable the texture preset packs for basic operators:
 - **Texture Generators**: `Constant`, `Linear Ramp`, `Radial Ramp`,
   `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross`
 - **Texture Composite**: `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`,
-  `Math`, `Composite`, `Over`, `Under`, `Feedback`, `Switcher`
+  `Math`, `Composite`, `Over`, `Under`, `Switcher`
+- **Texture Time**: `Feedback`
 - **Texture Color**: `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`,
   `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`,
   `Tone Map`, `Reorder`
@@ -50,7 +51,8 @@ Enable the texture preset packs for basic operators:
 - **Texture Filters**: `Blur`, `Luma Blur`, `Convolve`, `Edge`, `Anti Alias`,
   `Emboss`, `Slope`, `Normal Map`
 
-The Texture Filters pack also includes REGL-backed presets such as `Bloom`.
+Texture preset packs can also include REGL-backed presets such as `Bloom` and
+`Cache`.
 
 The `glsl>` preset is the best starting point for building GLSL shaders
 that process video inputs.
