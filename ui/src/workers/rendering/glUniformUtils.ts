@@ -1,6 +1,14 @@
 import { match } from 'ts-pattern';
 import type { GLUniformDef } from '../../types/uniform-config';
 
+type BuildGlslUserParamsOptions = {
+  uniformDefs: GLUniformDef[];
+  uniformData: Map<string, unknown>;
+  inputTextureMap: Map<number, unknown>;
+  fallbackTexture: unknown;
+  resolveSamplerTexture?: (def: GLUniformDef, uniformIndex: number) => unknown | undefined;
+};
+
 /** Convert a hex color string (e.g. '#ff8800') to a normalized vec3 ([0-1, 0-1, 0-1]). */
 export function hexToVec3(hex: string): [number, number, number] {
   const h = hex.replace('#', '');
@@ -103,4 +111,26 @@ export function isValidUniformData(
     })
     .with('sampler2D', () => data === null)
     .otherwise(() => false);
+}
+
+export function buildGlslUserParams({
+  uniformDefs,
+  uniformData,
+  inputTextureMap,
+  fallbackTexture,
+  resolveSamplerTexture
+}: BuildGlslUserParamsOptions): unknown[] {
+  return uniformDefs.map((def, uniformIndex) => {
+    if (def.type === 'sampler2D') {
+      return (
+        resolveSamplerTexture?.(def, uniformIndex) ??
+        inputTextureMap.get(uniformIndex) ??
+        fallbackTexture
+      );
+    }
+
+    const value = uniformData.get(def.name);
+
+    return value !== undefined && value !== null ? value : defaultUniformValue(def);
+  });
 }

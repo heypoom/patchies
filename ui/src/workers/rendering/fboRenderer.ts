@@ -45,7 +45,12 @@ import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
 import { PollingClockScheduler, type ClockState } from '../../lib/transport/ClockScheduler.js';
 import type { RenderOp } from '$lib/profiler/types';
-import { defaultUniformValue, isValidUniformData, toGLValue } from './glUniformUtils';
+import {
+  buildGlslUserParams,
+  defaultUniformValue,
+  isValidUniformData,
+  toGLValue
+} from './glUniformUtils';
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 
 export class FBORenderer {
@@ -1332,40 +1337,22 @@ export class FBORenderer {
       // If this is a GLSL node with FFT inlet, use the FFT texture
       const fftInlet = this.fftInletsByGlslNode.get(node.id);
 
-      let textureSlotIndex = 0;
-
-      // Define input parameters
-      for (const n of uniformDefs) {
-        if (n.type === 'sampler2D') {
+      userUniformParams = buildGlslUserParams({
+        uniformDefs,
+        uniformData,
+        inputTextureMap,
+        fallbackTexture: this.fallbackTexture,
+        resolveSamplerTexture: (def) => {
           // If FFT analysis is enabled.
-          if (fftInlet?.uniformName === n.name) {
-            const fftTex = this.fftTexturesByAnalyzer
+          if (fftInlet?.uniformName === def.name) {
+            return this.fftTexturesByAnalyzer
               .get(fftInlet.analyzerNodeId)
               ?.get(fftInlet.analysisType);
-
-            if (fftTex) {
-              userUniformParams.push(fftTex);
-              continue;
-            }
           }
 
-          // Use texture from specific inlet slot, fallback to default texture
-          const texture = inputTextureMap.get(textureSlotIndex) ?? this.fallbackTexture;
-
-          userUniformParams.push(texture);
-          textureSlotIndex++;
-        } else {
-          const value = uniformData.get(n.name);
-
-          if (value !== undefined && value !== null) {
-            userUniformParams.push(value);
-          } else {
-            // Push a zero default so indices stay aligned with uniformDefs indices.
-            // Without this, a missing uniform causes all subsequent params to shift.
-            userUniformParams.push(defaultUniformValue(n));
-          }
+          return undefined;
         }
-      }
+      });
     }
 
     // Convert texture map to array.
