@@ -239,6 +239,8 @@
     return searchDisabledObject(searchQuery);
   });
 
+  const isSearching = $derived(searchQuery.trim().length > 0);
+
   function enablePackAndSelect(packId: string, objectName: string) {
     togglePack(packId);
     setTimeout(() => {
@@ -268,6 +270,11 @@
     expandedCategories = newExpanded;
   }
 
+  function togglePackExpansion(packId: string) {
+    if (isSearching) return;
+    expandedPackId = expandedPackId === packId ? null : packId;
+  }
+
   $effect(() => {
     if (open && !hasInitialized) {
       expandedCategories = new Set(allCategoriesWithPresets.map((cat) => cat.title));
@@ -280,6 +287,12 @@
   $effect(() => {
     if (searchQuery.trim() && filteredCategories.length > 0) {
       expandedCategories = new Set(filteredCategories.map((cat) => cat.title));
+    }
+  });
+
+  $effect(() => {
+    if (isSearching) {
+      expandedPackId = null;
     }
   });
 
@@ -529,9 +542,9 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {#each filteredObjectPacks as pack, i (pack.id)}
-                    {@const expandedIdx = filteredObjectPacks.findIndex(
-                      (p) => p.id === expandedPackId
-                    )}
+                    {@const expandedIdx = isSearching
+                      ? -1
+                      : filteredObjectPacks.findIndex((p) => p.id === expandedPackId)}
                     {@const cols = 3}
                     {@const isEndOfRow =
                       (i + 1) % cols === 0 || i === filteredObjectPacks.length - 1}
@@ -547,9 +560,8 @@
                       {searchQuery}
                       locked={isPackLocked(pack.id)}
                       variant="tile"
-                      selected={expandedPackId === pack.id}
-                      onSelect={() =>
-                        (expandedPackId = expandedPackId === pack.id ? null : pack.id)}
+                      selected={!isSearching && expandedPackId === pack.id}
+                      onSelect={() => togglePackExpansion(pack.id)}
                     />
                     {#if isEndOfRow && expandedPack}
                       <div
@@ -608,9 +620,9 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {#each filteredPresetPacks as pack, i (pack.id)}
-                    {@const expandedIdx = filteredPresetPacks.findIndex(
-                      (p) => p.id === expandedPackId
-                    )}
+                    {@const expandedIdx = isSearching
+                      ? -1
+                      : filteredPresetPacks.findIndex((p) => p.id === expandedPackId)}
 
                     {@const cols = 3}
 
@@ -631,9 +643,8 @@
                       {searchQuery}
                       locked={isPresetPackLocked(pack.id)}
                       variant="tile"
-                      selected={expandedPackId === pack.id}
-                      onSelect={() =>
-                        (expandedPackId = expandedPackId === pack.id ? null : pack.id)}
+                      selected={!isSearching && expandedPackId === pack.id}
+                      onSelect={() => togglePackExpansion(pack.id)}
                     />
 
                     {#if isEndOfRow && expandedPack}

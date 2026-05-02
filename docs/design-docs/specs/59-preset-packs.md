@@ -223,6 +223,7 @@ at missing preset names.
 ### Phase 2: Filtering Integration
 
 1. Update `ObjectBrowserModal.svelte` - filter presets by `enabledPresets`
+   - In Packs mode search, object/preset pack cards list their matching contents inline and do not open the expanded detail drawer on card click.
 2. Update `QuickInsertObjectMenu.svelte` - filter preset suggestions
 3. Update `PresetTreeView.svelte` - filter visible presets in sidebar
 4. Group built-in preset folders/categories by preset pack name instead of preset object type
