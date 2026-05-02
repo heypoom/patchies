@@ -45,9 +45,12 @@ Enable the texture preset packs for basic operators:
   `Tone Map`, `Reorder`
 - **Texture Masks & Keys**: `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`,
   `Matte`
-- **Texture Transform**: `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace`
-- **Texture Filters**: `Blur`, `Luma Blur`, `Bloom`, `Convolve`, `Edge`,
-  `Anti Alias`, `Emboss`, `Slope`, `Normal Map`
+- **Texture Transform**: `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`,
+  `Lens Distort`, `Displace`, `Noise Displace`
+- **Texture Filters**: `Blur`, `Luma Blur`, `Convolve`, `Edge`, `Anti Alias`,
+  `Emboss`, `Slope`, `Normal Map`
+
+The Texture Filters pack also includes REGL-backed presets such as `Bloom`.
 
 The `glsl>` preset is the best starting point for building GLSL shaders
 that process video inputs.
