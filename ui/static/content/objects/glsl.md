@@ -224,6 +224,27 @@ The setting stores the selected option, then sends the numeric value to the
 shader uniform. This is useful for discrete modes where a slider would be
 confusing.
 
+### `@noinlet` — Hide Uniform Inlets
+
+By default, every supported `uniform` creates a message inlet. Use `@noinlet`
+when a uniform should stay internal to the settings panel instead of appearing
+as a patch cable input:
+
+```glsl
+// @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"
+// @param seed 1.0 0.0 100.0 1.0 "Seed"
+// @noinlet mode, seed
+
+uniform float mode;
+uniform float seed;
+```
+
+Format: `// @noinlet <name>[, <name>...]`
+
+The directive accepts one or more comma-separated uniform names. It only hides
+the inlet; the uniform still works normally and can still be controlled by an
+`@param` setting.
+
 ## Float Texture Format
 
 By default, the output texture uses 8-bit RGBA (values clamped to 0–1).
