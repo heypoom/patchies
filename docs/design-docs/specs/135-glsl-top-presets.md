@@ -19,6 +19,7 @@ presets without adding new node types.
 - Keep each preset as a single `glsl` node with editable shader code.
 - Use user-facing preset names like `Level`, `Feedback`, and `Noise` instead of
   filename-style names like `level.gl`.
+- Rename existing GLSL operator presets to the same title-case convention.
 - Include both procedural `Noise` and an input-processing noise variation.
 - Make feedback possible through a normal video inlet that users wire manually.
 - Prefer approachable parameter sets over exhaustive TouchDesigner parity.
@@ -45,11 +46,10 @@ Each preset should include:
 - Named sampler uniforms that create understandable video inlets.
 - Conservative defaults that produce a visible result immediately.
 
-Use clean preset keys for the new TOP-style presets. The built-in preset
-migration currently uses the key as the display name, so the new keys should be
-`Level`, `Feedback`, `Noise Displace`, etc. Existing filename-style keys stay in
-place for compatibility, but new TOP-style presets should not add `.gl` suffixes
-unless the preset system gains separate display names later.
+Use clean preset keys for the TOP-style presets. The built-in preset migration
+currently uses the key as the display name, so keys should be `Level`,
+`Feedback`, `Noise Displace`, etc. Filename-style GLSL operator keys should be
+renamed to title-case names, except starter presets that end with `>`.
 
 ## Preset Set
 
@@ -60,8 +60,8 @@ unless the preset system gains separate display names later.
 | `Ramp`           | none                       | mode, colors, angle, center, radius, offset        | Generator for linear, radial, and circular ramps.                       |
 | `Level`          | `input`                    | black, white, gamma, brightness, contrast, opacity | Color correction and range remapping.                                   |
 | `Transform`      | `input`                    | translate, scale, rotate, repeat mode              | UV-space transform for image placement and tiling.                      |
-| `Over`           | `background`, `foreground` | opacity                                            | Alpha-composite foreground over background.                             |
-| `Cross`          | `a`, `b`                   | mix                                                | Crossfade between two inputs; replaces the need to discover `mix.gl`.   |
+| `Overlay`        | `background`, `foreground` | opacity                                            | Alpha-composite foreground over background.                             |
+| `Mix`            | `a`, `b`                   | mix                                                | Crossfade between two inputs.                                           |
 | `Multiply`       | `a`, `b`                   | opacity                                            | Dedicated common composite mode.                                        |
 | `Blur`           | `input`                    | radius, direction                                  | Single-pass practical blur; avoid expensive large kernels.              |
 | `Crop`           | `input`                    | min, max, feather                                  | Window/crop the input and output transparent pixels outside the region. |
@@ -149,13 +149,25 @@ Avoid exposing `.gl` suffixes in places where users browse presets. For the
 current built-in preset map, this means the new preset keys themselves should be
 clean title-case names.
 
-Existing presets can remain for compatibility:
+Rename existing GLSL operator presets to title-case keys:
 
-- `mix.gl` can continue to exist, with `Cross` added as the clearer TOP-style
-  preset.
-- `overlay.gl` can continue to exist, with `Over` added or aliased.
-- `solid.gl` can remain as a utility, but it is not part of this TOP-focused
-  batch unless we later add a `Constant` preset.
+| Current key | New key |
+| ----------- | ------- |
+| `mix.gl` | `Mix` |
+| `overlay.gl` | `Overlay` |
+| `solid.gl` | `Solid` |
+| `switcher.gl` | `Switcher` |
+
+Leave starter presets that end with `>` unchanged:
+
+- `glsl>`
+- `regl>`
+- `swgl>`
+- `three>`
+
+Existing non-operator demo presets such as `fft-freq.gl`, `fft-waveform.gl`,
+`position-field.gl`, and `torus-position-field.gl` can keep their current names
+unless they are moved into a separate cleanup pass.
 
 ## Implementation Plan
 
@@ -163,9 +175,11 @@ Existing presets can remain for compatibility:
 2. Register the presets in `ui/src/lib/presets/builtin/glsl.presets.ts` using
    clean title-case keys.
 3. Update the **GLSL Operators** pack in `ui/src/lib/extensions/preset-packs.ts`.
-4. Preserve existing preset keys for backward compatibility.
-5. Use clean preset keys and `@title` directives for TOP-style names.
-6. Update `ui/static/content/objects/glsl.md` to mention the expanded TOP-style
+4. Rename existing GLSL operator keys: `mix.gl` to `Mix`, `overlay.gl` to
+   `Overlay`, `solid.gl` to `Solid`, and `switcher.gl` to `Switcher`.
+5. Leave `glsl>`, `regl>`, `swgl>`, and `three>` unchanged.
+6. Use clean preset keys and `@title` directives for TOP-style names.
+7. Update `ui/static/content/objects/glsl.md` to mention the expanded TOP-style
    preset set.
 
 ## Testing
