@@ -83,7 +83,7 @@ Recommended user-facing packs:
 | **Texture Color**        | Color correction and color-space utilities   | `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder` | Added  |
 | **Texture Masks & Keys** | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`                                                                                               | Added  |
 | **Texture Transform**    | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace`                                                      | Added  |
-| **Texture Filters**      | Image-processing effects                     | `Blur`, `Luma Blur`, `Convolve`, `Edge`, `Anti Alias`, `Emboss`, `Slope`, `Normal Map`                                                                  | Added  |
+| **Texture Filters**      | Image-processing effects                     | `Blur`, `Luma Blur`, `Convolve`, `Edge`, `Anti Alias`, `Emboss`, `Slope`, `Normal Map`, `Bloom`                                                         | Added  |
 
 The existing **GLSL Operators** pack can remain during the first migration, but
 new work should move toward these task-based packs. Presets should still be
@@ -188,7 +188,7 @@ buffers, and explicit texture/resource management.
 
 | Preset            | Status | Why `regl` Fits Better                                       | Possible Patchies Shape                                      |
 | ----------------- | ------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| `Bloom`           | REGL   | Real bloom wants downsample, blur, and upsample passes.      | A `regl` preset with internal framebuffers and controls.     |
+| `Bloom`           | Added  | Real bloom wants downsample, blur, and upsample passes.      | A `regl` preset with internal framebuffers and controls.     |
 | `Cache`           | REGL   | Requires frame history beyond one previous feedback input.   | Ring buffer of textures managed inside a `regl` preset.      |
 | `Cache Select`    | REGL   | Requires indexed lookup into cached frame history.           | Companion to `Cache`, or a combined cache/select preset.     |
 | `Time Machine`    | REGL   | Temporal lookup and interpolation over many frames.          | `regl` history buffer with index/speed controls.             |

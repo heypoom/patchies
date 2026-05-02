@@ -129,10 +129,11 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     name: 'Texture Filters',
     description: 'Image-processing effects for texture chains',
     icon: 'SlidersHorizontal',
-    requiredObjects: ['glsl'],
+    requiredObjects: ['glsl', 'regl'],
     presets: [
       'Blur',
       'Luma Blur',
+      'Bloom',
       'Convolve',
       'Edge',
       'Anti Alias',

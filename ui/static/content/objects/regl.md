@@ -169,6 +169,12 @@ function render(time) {
 
 `getTexture()` returns a regl `Texture2D` directly — no conversion or copying.
 
+## Basic Presets
+
+Enable **Texture Filters** for REGL-backed image-processing presets:
+
+- `Bloom` - multipass threshold, blur, tint, and composite bloom.
+
 ## Multiple Video Outputs (MRT)
 
 A single regl draw call can write to multiple video outlets at once using
