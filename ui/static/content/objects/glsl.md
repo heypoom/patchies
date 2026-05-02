@@ -44,7 +44,7 @@ Enable the texture preset packs for basic operators:
   `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder`
 - **Texture Masks & Keys**: `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`,
   `Matte`
-- **Texture Transform**: `Transform`, `Crop`, `Displace`, `Noise Displace`
+- **Texture Transform**: `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace`
 - **Texture Filters**: `Blur`, `Edge`
 - **Texture Feedback & Data**: `Feedback`
 

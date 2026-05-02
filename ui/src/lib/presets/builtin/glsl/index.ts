@@ -40,6 +40,11 @@ import { preset as preset38 } from './lookup';
 import { preset as preset39 } from './rgb-to-hsv';
 import { preset as preset40 } from './hsv-to-rgb';
 import { preset as preset41 } from './tone-map';
+import { preset as preset42 } from './fit';
+import { preset as preset43 } from './flip';
+import { preset as preset44 } from './mirror';
+import { preset as preset45 } from './tile';
+import { preset as preset46 } from './lens-distort';
 import type { GLSLPreset } from './types';
 
 export const GLSL_PRESETS: Record<string, GLSLPreset> = {
@@ -84,7 +89,12 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
   Lookup: preset38,
   'RGB to HSV': preset39,
   'HSV to RGB': preset40,
-  'Tone Map': preset41
+  'Tone Map': preset41,
+  Fit: preset42,
+  Flip: preset43,
+  Mirror: preset44,
+  Tile: preset45,
+  'Lens Distort': preset46
 };
 
 export type { GLSLPreset } from './types';

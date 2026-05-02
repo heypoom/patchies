@@ -104,7 +104,17 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Move, crop, tile, and warp textures',
     icon: 'Route',
     requiredObjects: ['glsl'],
-    presets: ['Transform', 'Crop', 'Displace', 'Noise Displace']
+    presets: [
+      'Transform',
+      'Crop',
+      'Fit',
+      'Flip',
+      'Mirror',
+      'Tile',
+      'Lens Distort',
+      'Displace',
+      'Noise Displace'
+    ]
   },
   {
     id: 'texture-filters',
