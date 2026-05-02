@@ -74,6 +74,22 @@ renamed to title-case names, except starter presets that end with `>`.
 | `Noise Displace` | `source`                 | scale, speed, amount, direction                    | Uses procedural noise to warp an input texture.                         |
 | `Feedback`       | `source`, `feedback`     | feedback amount, decay, blend, transform           | Accumulate current input with manually wired previous-frame feedback.   |
 
+### Composite Preset Inlet Convention
+
+Single-purpose composite presets should keep consistent sampler inlet order so
+the same visible cabling means the same texture roles across presets:
+
+```glsl
+uniform sampler2D background;
+uniform sampler2D foreground;
+```
+
+`Over` and `Under` both use `background` as the first inlet and `foreground` as
+the second inlet. `Over` composites the foreground over the background. `Under`
+composites the foreground under the background, so swapping between the two
+presets changes the layer relationship without requiring users to rewire
+identical-looking patches.
+
 ### Out of Scope Sweet 16 Items
 
 | TouchDesigner TOP | Reason                                                                     |

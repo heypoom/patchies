@@ -7,6 +7,12 @@ import { BUILT_IN_PRESET_PACKS, OBJECT_PIPE_PRESETS } from './preset-packs';
 import { BUILTIN_PRESETS } from '$lib/presets/builtin';
 import { isPreset } from '$lib/presets/preset-utils';
 
+function getSamplerUniformNames(code: string): string[] {
+  return Array.from(code.matchAll(/uniform\s+sampler2D\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/g)).map(
+    (match) => match[1]
+  );
+}
+
 describe('built-in preset packs', () => {
   test('keeps object companion presets in the locked starter pack', () => {
     const starterPack = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'starters');
@@ -104,5 +110,13 @@ describe('built-in preset packs', () => {
     expect(preset?.type).toBe('glsl');
     expect(presetData?.code).toContain('@title Chromatic Aberration');
     expect(textureFilters?.presets).toContain('Chromatic Aberration');
+  });
+
+  test('keeps Over and Under inlet order consistent', () => {
+    const overData = BUILTIN_PRESETS.Over?.data as { code?: string } | undefined;
+    const underData = BUILTIN_PRESETS.Under?.data as { code?: string } | undefined;
+
+    expect(getSamplerUniformNames(overData?.code ?? '')).toEqual(['background', 'foreground']);
+    expect(getSamplerUniformNames(underData?.code ?? '')).toEqual(['background', 'foreground']);
   });
 });
