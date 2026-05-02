@@ -223,12 +223,13 @@ render-pipeline capability before the next phase depends on it.
 1. `Bloom`: first REGL preset candidate. It is visually obvious and proves
    internal framebuffers, multipass rendering, blur/downsample passes, and final
    compositing.
-2. `Cache`, `Cache Select`, `Time Machine`: frame-history presets. Build after
-   Bloom proves internal texture lifecycle and reload cleanup, because these
-   need persistent ring buffers and indexed temporal sampling.
-3. `Layout`, `Layer`: multi-texture draw-order and quad-layout presets. These
-   are practical composition tools and should establish how REGL presets expose
-   multiple video inputs and per-layer transform/blend controls.
+2. `Cache`, `Time Scrub`, `Time Machine`: frame-history presets. Added after
+   Bloom proved internal texture lifecycle and reload cleanup. `Cache Select`
+   stays deferred until Patchies has shared cache resources or a clearer
+   combined cache/select design.
+3. `Layout`, `Layer`: multi-texture draw-order and quad-layout presets. Added
+   to establish how REGL presets expose multiple video inputs and per-layer
+   transform/blend controls.
 4. `Render Pass`, `Render Select`, and any `GLSL Multi` follow-up: MRT already
    exists in `glsl` and `regl`, so the remaining work is UX, examples, naming,
    and graph routing conventions rather than core multi-output support. Spec
