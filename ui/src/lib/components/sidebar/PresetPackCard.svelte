@@ -76,7 +76,10 @@
     {#if isPartial && enabled && missingPacks.length > 0}
       <Tooltip.Root disableHoverableContent={false} delayDuration={100}>
         <Tooltip.Trigger>
-          <TriangleAlert class="h-3 w-3 cursor-pointer text-amber-500" />
+          <TriangleAlert
+            class="h-3 w-3 cursor-pointer text-amber-500"
+            onclick={(e) => e.stopPropagation()}
+          />
         </Tooltip.Trigger>
         <Tooltip.Content side="top" class="p-2">
           <div class="flex flex-col gap-1.5">

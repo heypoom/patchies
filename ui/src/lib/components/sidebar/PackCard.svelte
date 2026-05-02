@@ -3,6 +3,7 @@
   import { getPackIcon } from '$lib/extensions/pack-icons';
   import * as Tooltip from '../ui/tooltip';
   import type { Snippet } from 'svelte';
+  import { canManuallyExpandPackContents, canTogglePack } from './pack-card-behavior';
 
   let {
     name,
@@ -43,11 +44,29 @@
   });
 
   const hasMatches = $derived(matchingItems.size > 0);
+  const toggleAllowed = $derived(canTogglePack({ locked, unavailable }));
+  const manualExpansionAllowed = $derived(canManuallyExpandPackContents({ searchQuery }));
 
   let manualExpanded = $state(false);
   const expanded = $derived(hasMatches || manualExpanded);
 
   const IconComponent = $derived(getPackIcon(icon));
+
+  function handleTogglePack() {
+    if (!toggleAllowed) return;
+    onToggle();
+  }
+
+  function handleToggleManualExpansion() {
+    if (!manualExpansionAllowed) return;
+
+    if (variant === 'tile') {
+      onSelect?.();
+      return;
+    }
+
+    manualExpanded = !manualExpanded;
+  }
 </script>
 
 {#if variant === 'tile'}
@@ -56,7 +75,8 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class={[
-      'flex cursor-pointer flex-col rounded-lg border p-3 transition-all',
+      'flex flex-col rounded-lg border p-3 transition-all',
+      toggleAllowed ? 'cursor-pointer' : 'cursor-not-allowed',
       selected
         ? 'border-orange-500/30 bg-orange-500/5'
         : unavailable
@@ -65,7 +85,7 @@
             ? 'border-orange-500/15 bg-orange-500/3 hover:border-orange-500/25'
             : 'border-white/6 bg-white/2 hover:border-white/10'
     ]}
-    onclick={() => onSelect?.()}
+    onclick={handleTogglePack}
   >
     <!-- Header: icon + name + toggle -->
     <div class="mb-1 flex items-center gap-2">
@@ -88,28 +108,48 @@
       {#if nameExtra}
         {@render nameExtra()}
       {/if}
+      <Tooltip.Root delayDuration={100}>
+        <Tooltip.Trigger>
+          <button
+            onclick={(e) => {
+              e.stopPropagation();
+              handleToggleManualExpansion();
+            }}
+            disabled={!manualExpansionAllowed}
+            class={[
+              'flex h-5 w-5 shrink-0 items-center justify-center rounded-[3px] border transition-all',
+              manualExpansionAllowed
+                ? 'cursor-pointer border-white/8 text-zinc-600 hover:border-orange-500/25 hover:text-orange-400'
+                : 'cursor-not-allowed border-white/4 text-zinc-800',
+              selected && 'border-orange-500/30 text-orange-400'
+            ]}
+            aria-label={selected ? 'Hide pack contents' : 'Show pack contents'}
+          >
+            <ChevronDown class={['h-3 w-3 transition-transform', selected && 'rotate-180']} />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          {manualExpansionAllowed ? 'Show Contents' : 'Contents listed in search'}
+        </Tooltip.Content>
+      </Tooltip.Root>
       {#if locked}
         <Lock class="h-3 w-3 shrink-0 text-zinc-700" />
       {:else}
-        <button
-          onclick={(e) => {
-            e.stopPropagation();
-            if (!unavailable) onToggle();
-          }}
-          disabled={unavailable}
+        <div
           class={[
             'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[3px] border transition-all',
             unavailable
-              ? 'cursor-not-allowed border-zinc-700 text-zinc-600'
+              ? 'border-zinc-700 text-zinc-600'
               : enabled
-                ? 'cursor-pointer border-orange-500/50 bg-orange-500/12 text-orange-500 hover:bg-orange-500/20'
-                : 'cursor-pointer border-zinc-700 text-transparent hover:border-zinc-500'
+                ? 'border-orange-500/50 bg-orange-500/12 text-orange-500'
+                : 'border-zinc-700 text-transparent'
           ]}
+          aria-hidden="true"
         >
           {#if enabled && !unavailable}
             <Check class="h-2 w-2" />
           {/if}
-        </button>
+        </div>
       {/if}
     </div>
 
@@ -143,10 +183,11 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class={[
-      'flex cursor-pointer items-center rounded transition-colors hover:bg-white/2',
+      'flex items-center rounded transition-colors hover:bg-white/2',
+      toggleAllowed ? 'cursor-pointer' : 'cursor-not-allowed',
       unavailable && 'opacity-45'
     ]}
-    onclick={() => (manualExpanded = !manualExpanded)}
+    onclick={handleTogglePack}
   >
     <!-- Left: icon + name + description -->
     <div class="flex min-w-0 flex-1 items-center gap-2 py-[5px] pr-1 pl-2">
@@ -194,33 +235,37 @@
           </Tooltip.Content>
         </Tooltip.Root>
       {:else}
-        <button
-          onclick={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
-          disabled={unavailable}
+        <div
           class={[
             'flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border transition-all',
             unavailable
-              ? 'cursor-not-allowed border-zinc-700 bg-transparent text-zinc-600'
+              ? 'border-zinc-700 bg-transparent text-zinc-600'
               : enabled
-                ? 'cursor-pointer border-orange-500/50 bg-orange-500/12 text-orange-500 hover:bg-orange-500/20'
-                : 'cursor-pointer border-zinc-700 bg-transparent text-transparent hover:border-zinc-500'
+                ? 'border-orange-500/50 bg-orange-500/12 text-orange-500'
+                : 'border-zinc-700 bg-transparent text-transparent'
           ]}
-          title={unavailable
-            ? 'Enable required object packs first'
-            : enabled
-              ? 'Disable pack'
-              : 'Enable pack'}
+          aria-hidden="true"
         >
           {#if enabled && !unavailable}
             <Check class="h-2.5 w-2.5" />
           {/if}
-        </button>
+        </div>
       {/if}
 
-      <div class="flex items-center gap-1">
+      <button
+        onclick={(e) => {
+          e.stopPropagation();
+          handleToggleManualExpansion();
+        }}
+        disabled={!manualExpansionAllowed}
+        class={[
+          'flex shrink-0 items-center gap-1 rounded-[3px] px-1 py-0.5 transition-colors',
+          manualExpansionAllowed
+            ? 'cursor-pointer hover:bg-white/5'
+            : 'cursor-not-allowed opacity-50'
+        ]}
+        aria-label={expanded ? 'Hide pack contents' : 'Show pack contents'}
+      >
         <span class="w-[18px] shrink-0 text-right font-mono text-[9px] text-zinc-700"
           >{items.length}</span
         >
@@ -230,7 +275,7 @@
             expanded && 'rotate-180'
           ]}
         />
-      </div>
+      </button>
     </div>
   </div>
 

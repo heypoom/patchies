@@ -233,6 +233,9 @@ at missing preset names.
 1. Update `ExtensionsView.svelte`:
    - Add "Preset Packs" section below "Object Packs"
    - Reuse existing card component with preset pack data
+   - In tile/grid pack cards, clicking the card body toggles enablement because pack availability is the primary action.
+   - Expand/collapse moves to a dedicated chevron/details control so inspecting pack contents is secondary.
+   - Locked or unavailable packs do not toggle from the card body; their lock/warning affordances explain the blocked state.
    - Add visual distinction for unavailable packs
 2. Update pack card to show availability warnings
 
