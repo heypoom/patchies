@@ -46,7 +46,7 @@ Enable the **GLSL Operators** preset pack for basic presets:
 - `Level` - adjust black, white, gamma, brightness, contrast, and opacity
 - `Transform` - translate, scale, rotate, and tile an input texture
 - `Multiply` - multiply two input textures
-- `Blur` - single-pass directional blur
+- `Blur` - single-pass 2D blur
 - `Crop` - crop an input texture with optional feathering
 - `Reorder` - swizzle color and alpha channels
 - `Displace` - warp an input using a displacement texture
