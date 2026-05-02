@@ -174,7 +174,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   {
     names: ['slider'],
     nodeType: 'slider',
-    description: 'Integer slider. Format: slider [min] <max> [default]',
+    description: 'Integer slider. Format: slider [min] <max> [default] [step]',
     transform: (expr, name) => {
       const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 100);
 
@@ -187,7 +187,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   {
     names: ['fslider'],
     nodeType: 'slider',
-    description: 'Float slider. Format: fslider [min] <max> [default]',
+    description: 'Float slider. Format: fslider [min] <max> [default] [step]',
     transform: (expr, name) => {
       const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 1);
 
@@ -200,7 +200,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   {
     names: ['knob'],
     nodeType: 'knob',
-    description: 'Integer knob. Format: knob [min] <max> [default]',
+    description: 'Integer knob. Format: knob [min] <max> [default] [step]',
     transform: (expr, name) => {
       const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 100);
 
@@ -213,7 +213,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   {
     names: ['fknob'],
     nodeType: 'knob',
-    description: 'Float knob. Format: fknob [min] <max> [default]',
+    description: 'Float knob. Format: fknob [min] <max> [default] [step]',
     transform: (expr, name) => {
       const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 1);
 
@@ -226,7 +226,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   {
     names: ['vslider'],
     nodeType: 'slider',
-    description: 'Vertical integer slider. Format: vslider [min] <max> [default]',
+    description: 'Vertical integer slider. Format: vslider [min] <max> [default] [step]',
     transform: (expr, name) => {
       const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 100);
 
@@ -239,7 +239,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
   {
     names: ['vfslider'],
     nodeType: 'slider',
-    description: 'Vertical float slider. Format: vfslider [min] <max> [default]',
+    description: 'Vertical float slider. Format: vfslider [min] <max> [default] [step]',
     transform: (expr, name) => {
       const { min, max, defaultValue, step } = parseSliderExpr(expr, name, 1);
       return {
