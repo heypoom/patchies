@@ -79,7 +79,7 @@ Recommended user-facing packs:
 | Pack                     | Purpose                                      | Current Presets                                                                                                                                         | Status |
 | ------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | **Texture Generators**   | Start a visual chain from procedural content | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross`                                                      | Added  |
-| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Switcher`                                                    | Added  |
+| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Layout`, `Layer`, `Switcher`                                 | Added  |
 | **Texture Time**         | Feedback and frame-history utilities         | `Feedback`, `Cache`, `Time Scrub`, `Time Machine`                                                                                                       | Added  |
 | **Texture Color**        | Color correction and color-space utilities   | `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder` | Added  |
 | **Texture Masks & Keys** | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`                                                                                               | Added  |
@@ -200,8 +200,8 @@ buffers, and explicit texture/resource management.
 | `Time Machine`    | Added  | Temporal lookup and interpolation over many frames.           | `regl` history buffer with index/speed controls.                |
 | `Optical Flow`    | REGL   | Needs multi-pass analysis and previous-frame state.           | Ping-pong framebuffers plus vector output or visualization.     |
 | `Blob Track`      | REGL   | Needs analysis/state and possibly readback/CPU logic.         | `regl` preprocessing plus future analysis/readback support.     |
-| `Layout`          | REGL   | Better as geometry/layout over multiple textured quads.       | Draw multiple input textures into positioned rectangles.        |
-| `Layer`           | REGL   | Layer stack compositing maps naturally to draw order.         | `regl` preset that draws N textured quads with blend state.     |
+| `Layout`          | Added  | Better as geometry/layout over multiple textured quads.       | Draw multiple input textures into positioned rectangles.        |
+| `Layer`           | Added  | Layer stack compositing maps naturally to draw order.         | `regl` preset that draws N textured quads with blend state.     |
 | `Cube Map`        | REGL   | Needs non-2D texture targets and specialized sampling.        | Future advanced `regl`/WebGL texture preset.                    |
 | `Texture 3D`      | REGL   | Needs 3D texture allocation/sampling control.                 | Future `regl` preset if WebGL2 texture support is exposed.      |
 | `Depth`           | REGL   | Depth buffers are render-pipeline state, not GLSL output.     | `regl` render preset with depth attachment or depth texture.    |

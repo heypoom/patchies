@@ -175,6 +175,11 @@ Enable **Texture Filters** for REGL-backed image-processing presets:
 
 - `Bloom` - multipass threshold, blur, tint, and composite bloom.
 
+Enable **Texture Composite** for REGL-backed multi-input composition presets:
+
+- `Layout` - arranges up to four video inputs into a grid, row, or column.
+- `Layer` - stacks up to four video inputs with per-layer opacity.
+
 Enable **Texture Time** for REGL-backed temporal presets:
 
 - `Cache` - records recent frames into an internal ring buffer and outputs a

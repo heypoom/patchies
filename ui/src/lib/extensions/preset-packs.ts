@@ -61,7 +61,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     name: 'Texture Composite',
     description: 'Combine and switch between multiple textures',
     icon: 'ArrowRightLeft',
-    requiredObjects: ['glsl'],
+    requiredObjects: ['glsl', 'regl'],
     presets: [
       'Mix',
       'Multiply',
@@ -72,6 +72,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'Composite',
       'Over',
       'Under',
+      'Layout',
+      'Layer',
       'Switcher'
     ]
   },

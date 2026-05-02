@@ -919,6 +919,208 @@ function render(time) {
 }
 `;
 
+const LAYOUT_REGL = `
+setTitle('Layout');
+setVideoCount(4, 1);
+setPrimaryButton('settings');
+
+await settings.define([
+  {
+    key: 'mode',
+    type: 'select',
+    label: 'Mode',
+    default: 'grid',
+    options: [
+      { label: 'Grid', value: 'grid' },
+      { label: 'Row', value: 'row' },
+      { label: 'Column', value: 'column' }
+    ]
+  },
+  { key: 'gap', type: 'slider', label: 'Gap', min: 0, max: 64, step: 1, default: 8 },
+  { key: 'count', type: 'slider', label: 'Count', min: 1, max: 4, step: 1, default: 4 },
+  { key: 'background', type: 'color', label: 'Background', default: '#000000' }
+]);
+
+const quad = [[-1, -1], [1, -1], [-1, 1], [-1, 1], [1, -1], [1, 1]];
+
+function hexToRgb(hex) {
+  const normalized = String(hex || '#000000').replace('#', '');
+  const value = Number.parseInt(normalized.length === 3
+    ? normalized.split('').map((ch) => ch + ch).join('')
+    : normalized.padEnd(6, '0').slice(0, 6), 16);
+
+  return [
+    ((value >> 16) & 255) / 255,
+    ((value >> 8) & 255) / 255,
+    (value & 255) / 255
+  ];
+}
+
+const drawTile = regl({
+  vert: \`
+    precision mediump float;
+    attribute vec2 position;
+    varying vec2 uv;
+
+    void main() {
+      uv = position * 0.5 + 0.5;
+      gl_Position = vec4(position, 0.0, 1.0);
+    }
+  \`,
+  frag: \`
+    precision mediump float;
+    varying vec2 uv;
+    uniform sampler2D source;
+
+    void main() {
+      gl_FragColor = texture2D(source, uv);
+    }
+  \`,
+  attributes: { position: quad },
+  uniforms: {
+    source: regl.prop('source')
+  },
+  viewport: regl.prop('viewport'),
+  count: 6,
+  depth: { enable: false }
+});
+
+function getViewport(index, mode, gap, count, outputWidth, outputHeight) {
+  if (mode === 'row') {
+    const tileWidth = (outputWidth - gap * (count - 1)) / count;
+    return {
+      x: Math.round(index * (tileWidth + gap)),
+      y: 0,
+      width: Math.max(1, Math.round(tileWidth)),
+      height: outputHeight
+    };
+  }
+
+  if (mode === 'column') {
+    const tileHeight = (outputHeight - gap * (count - 1)) / count;
+    const row = count - 1 - index;
+    return {
+      x: 0,
+      y: Math.round(row * (tileHeight + gap)),
+      width: outputWidth,
+      height: Math.max(1, Math.round(tileHeight))
+    };
+  }
+
+  const cols = count <= 1 ? 1 : 2;
+  const rows = Math.ceil(count / cols);
+  const col = index % cols;
+  const row = rows - 1 - Math.floor(index / cols);
+  const tileWidth = (outputWidth - gap * (cols - 1)) / cols;
+  const tileHeight = (outputHeight - gap * (rows - 1)) / rows;
+
+  return {
+    x: Math.round(col * (tileWidth + gap)),
+    y: Math.round(row * (tileHeight + gap)),
+    width: Math.max(1, Math.round(tileWidth)),
+    height: Math.max(1, Math.round(tileHeight))
+  };
+}
+
+function render(time) {
+  const bg = hexToRgb(settings.get('background'));
+  const gap = Math.max(0, Number(settings.get('gap')) || 0);
+  const count = Math.max(1, Math.min(4, Math.floor(Number(settings.get('count')) || 4)));
+  const mode = settings.get('mode') || 'grid';
+
+  regl.clear({ color: [bg[0], bg[1], bg[2], 1] });
+
+  for (let i = 0; i < count; i++) {
+    drawTile({
+      source: getTexture(i),
+      viewport: getViewport(i, mode, gap, count, width, height)
+    });
+  }
+}
+`;
+
+const LAYER_REGL = `
+setTitle('Layer');
+setVideoCount(4, 1);
+setPrimaryButton('settings');
+
+await settings.define([
+  { key: 'opacity0', type: 'slider', label: 'Layer 1', min: 0, max: 1, step: 0.001, default: 1 },
+  { key: 'opacity1', type: 'slider', label: 'Layer 2', min: 0, max: 1, step: 0.001, default: 1 },
+  { key: 'opacity2', type: 'slider', label: 'Layer 3', min: 0, max: 1, step: 0.001, default: 1 },
+  { key: 'opacity3', type: 'slider', label: 'Layer 4', min: 0, max: 1, step: 0.001, default: 1 },
+  { key: 'background', type: 'color', label: 'Background', default: '#000000' }
+]);
+
+const quad = [[-1, -1], [1, -1], [-1, 1], [-1, 1], [1, -1], [1, 1]];
+
+function hexToRgb(hex) {
+  const normalized = String(hex || '#000000').replace('#', '');
+  const value = Number.parseInt(normalized.length === 3
+    ? normalized.split('').map((ch) => ch + ch).join('')
+    : normalized.padEnd(6, '0').slice(0, 6), 16);
+
+  return [
+    ((value >> 16) & 255) / 255,
+    ((value >> 8) & 255) / 255,
+    (value & 255) / 255
+  ];
+}
+
+const drawLayer = regl({
+  vert: \`
+    precision mediump float;
+    attribute vec2 position;
+    varying vec2 uv;
+
+    void main() {
+      uv = position * 0.5 + 0.5;
+      gl_Position = vec4(position, 0.0, 1.0);
+    }
+  \`,
+  frag: \`
+    precision mediump float;
+    varying vec2 uv;
+    uniform sampler2D source;
+    uniform float opacity;
+
+    void main() {
+      vec4 color = texture2D(source, uv);
+      gl_FragColor = vec4(color.rgb, color.a * opacity);
+    }
+  \`,
+  attributes: { position: quad },
+  uniforms: {
+    source: regl.prop('source'),
+    opacity: regl.prop('opacity')
+  },
+  blend: {
+    enable: true,
+    func: {
+      srcRGB: 'src alpha',
+      srcAlpha: 'one',
+      dstRGB: 'one minus src alpha',
+      dstAlpha: 'one minus src alpha'
+    }
+  },
+  count: 6,
+  depth: { enable: false }
+});
+
+function render(time) {
+  const bg = hexToRgb(settings.get('background'));
+
+  regl.clear({ color: [bg[0], bg[1], bg[2], 1] });
+
+  for (let i = 0; i < 4; i++) {
+    drawLayer({
+      source: getTexture(i),
+      opacity: Number(settings.get('opacity' + i)) || 0
+    });
+  }
+}
+`;
+
 export const REGL_PRESETS: Record<
   string,
   { type: string; description?: string; data: { code: string } }
@@ -950,5 +1152,15 @@ export const REGL_PRESETS: Record<
     type: 'regl',
     description: 'Record frame history and play it back with a moving temporal playhead.',
     data: { code: TIME_MACHINE_REGL.trim() }
+  },
+  Layout: {
+    type: 'regl',
+    description: 'Arrange up to four video inputs into a grid, row, or column.',
+    data: { code: LAYOUT_REGL.trim() }
+  },
+  Layer: {
+    type: 'regl',
+    description: 'Stack up to four video inputs with per-layer opacity.',
+    data: { code: LAYER_REGL.trim() }
   }
 };
