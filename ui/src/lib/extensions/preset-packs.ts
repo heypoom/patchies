@@ -1,5 +1,7 @@
 import type { PresetPack } from '../../stores/extensions.store';
 
+export const OBJECT_PIPE_PRESETS = ['js>', 'hydra>', 'glsl>', 'regl>', 'swgl>', 'three>', 'tone>'];
+
 /**
  * Built-in preset packs organized by use-case
  * Each preset belongs to exactly one pack (mutually exclusive)
@@ -11,7 +13,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Essentials for getting started',
     icon: 'Boxes',
     requiredObjects: [],
-    presets: ['logger.js', 'glsl>', 'hydra>', 'regl>', 'swgl>', 'three>']
+    presets: ['logger.js', ...OBJECT_PIPE_PRESETS]
   },
   {
     id: 'canvas-widgets',
@@ -132,7 +134,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'JS scripts for control flow',
     icon: 'Code',
     requiredObjects: ['js'],
-    presets: ['js>', 'delay.js']
+    presets: ['delay.js']
   },
   {
     id: 'iframe-widgets',
@@ -250,7 +252,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Audio synthesis with Tone.js',
     icon: 'AudioLines',
     requiredObjects: ['tone~'],
-    presets: ['poly-synth-midi.tone', 'tone>', 'reverb.tone', 'lowpass.tone']
+    presets: ['poly-synth-midi.tone', 'reverb.tone', 'lowpass.tone']
   },
   {
     id: 'asm-examples',

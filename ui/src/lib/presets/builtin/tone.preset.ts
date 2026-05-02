@@ -71,6 +71,7 @@ export const TONE_JS_PRESETS = {
   },
   'tone>': {
     type: 'tone~',
+    description: 'Pipe audio through Tone.js',
     data: { code: PIPE_JS, messageInletCount: 0 }
   },
   'reverb.tone': {

@@ -2,15 +2,13 @@ import { describe, expect, test } from 'vitest';
 
 import { BUILT_IN_PACKS } from './object-packs';
 import { isPresetPackAvailableForObjects } from './preset-pack-availability';
-import { BUILT_IN_PRESET_PACKS } from './preset-packs';
-
-const companionPresetNames = ['glsl>', 'hydra>', 'regl>', 'swgl>', 'three>'];
+import { BUILT_IN_PRESET_PACKS, OBJECT_PIPE_PRESETS } from './preset-packs';
 
 describe('built-in preset packs', () => {
   test('keeps object companion presets in the locked starter pack', () => {
     const starterPack = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'starters');
 
-    expect(starterPack?.presets).toEqual(expect.arrayContaining(companionPresetNames));
+    expect(starterPack?.presets).toEqual(expect.arrayContaining(OBJECT_PIPE_PRESETS));
   });
 
   test('does not require objects for the starter preset pack', () => {
@@ -37,7 +35,7 @@ describe('built-in preset packs', () => {
   });
 
   test('assigns each companion preset to exactly one pack', () => {
-    const assignments = companionPresetNames.map((presetName) => ({
+    const assignments = OBJECT_PIPE_PRESETS.map((presetName) => ({
       presetName,
       packIds: BUILT_IN_PRESET_PACKS.filter((pack) => pack.presets.includes(presetName)).map(
         (pack) => pack.id
@@ -45,7 +43,7 @@ describe('built-in preset packs', () => {
     }));
 
     expect(assignments).toEqual(
-      companionPresetNames.map((presetName) => ({ presetName, packIds: ['starters'] }))
+      OBJECT_PIPE_PRESETS.map((presetName) => ({ presetName, packIds: ['starters'] }))
     );
   });
 
