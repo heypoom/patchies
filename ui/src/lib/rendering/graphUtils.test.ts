@@ -86,13 +86,14 @@ describe('Graph Utils', () => {
     // Render order: DFS from A visits B (via A's input C... wait)
     // Simpler: A produces for B, B produces for A (cycle)
     // A.inputs=['B'], B.inputs=['A']
-    // A.inletMap={0: 'B'}, B.inletMap={0: 'A'}
+    // A.inletMap={0: { sourceNodeId: 'B', outletIndex: 0 }}
+    // B.inletMap={0: { sourceNodeId: 'A', outletIndex: 0 }}
     const nodeA: RenderNode = {
       id: 'A',
       type: 'glsl',
       inputs: ['B'],
       outputs: ['B'],
-      inletMap: new Map([[0, 'B']]),
+      inletMap: new Map([[0, { sourceNodeId: 'B', outletIndex: 0 }]]),
       backEdgeInlets: new Set(),
       data: { code: '', glUniformDefs: [] }
     };
@@ -102,7 +103,7 @@ describe('Graph Utils', () => {
       type: 'glsl',
       inputs: ['A'],
       outputs: ['A'],
-      inletMap: new Map([[0, 'A']]),
+      inletMap: new Map([[0, { sourceNodeId: 'A', outletIndex: 0 }]]),
       backEdgeInlets: new Set(),
       data: { code: '', glUniformDefs: [] }
     };

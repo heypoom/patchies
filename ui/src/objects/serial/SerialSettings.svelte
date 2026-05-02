@@ -53,7 +53,7 @@
         baudRate,
         dataBits: dataBits as 7 | 8,
         stopBits: stopBits as 1 | 2,
-        parity: parity as 'none' | 'even' | 'odd' | 'mark' | 'space'
+        parity
       });
       const oldPortId = portId;
       updateNodeData(nodeId, { portId: newPortId });

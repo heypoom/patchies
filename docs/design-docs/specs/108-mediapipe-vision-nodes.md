@@ -202,6 +202,10 @@ Encapsulated entirely in `MediaPipeWorkerBase.init()`.
 
 Pin `@0.10.0` (version validated in prototype). Install: `bun add @mediapipe/tasks-vision`.
 
+### TypeScript Resolution
+
+The installed package is currently pinned to `@mediapipe/tasks-vision@0.10.33`, and the worker WASM CDN path must match that package version. If TypeScript cannot resolve the package's declarations through its export map, keep runtime imports as `@mediapipe/tasks-vision` and add a local ambient declaration that re-exports `node_modules/@mediapipe/tasks-vision/vision.d.ts`; do not rewrite runtime imports to an internal bundle file.
+
 ---
 
 ## Frame Pipeline

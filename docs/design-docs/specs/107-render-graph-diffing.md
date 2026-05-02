@@ -49,3 +49,5 @@ For stateful renderers (canvas, three, regl, swgl, hydra), also update the `fram
 When only edges change (not node data), existing renderers read their inputs dynamically from `this.fboNodes` via `node.inletMap` at render time. The `inletMap` is set during graph construction in `buildRenderGraph()`, so the render graph nodes carry updated connection info. We need to update the stored render graph but can skip renderer recreation.
 
 For passthrough nodes (send.vdo, recv.vdo) that close over `node.inletMap`, we must recreate them since they capture the inletMap in their closure.
+
+`RenderNode.inletMap` values include both the source node ID and the source outlet index: `{ sourceNodeId, outletIndex }`. Tests and graph fixtures should use this shape so feedback/back-edge annotations cover multi-output render nodes.

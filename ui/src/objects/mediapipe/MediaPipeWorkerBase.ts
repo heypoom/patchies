@@ -98,11 +98,13 @@ export abstract class MediaPipeWorkerBase<TTask extends AnyTask, TResult> {
     // in module workers. Eval the loader manually, then hide the path so
     // MediaPipe won't attempt importScripts().
     try {
-      const loaderCode = await fetch(vision.wasmLoaderPath).then((r) => r.text());
+      const visionWithLoader = vision as typeof vision & { wasmLoaderPath?: string };
+      if (!visionWithLoader.wasmLoaderPath) return;
+
+      const loaderCode = await fetch(visionWithLoader.wasmLoaderPath).then((r) => r.text());
 
       (0, eval)(loaderCode);
-      // @ts-expect-error — delete non-standard property
-      delete vision.wasmLoaderPath;
+      Reflect.deleteProperty(visionWithLoader, 'wasmLoaderPath');
     } catch {
       // Some environments don't need this workaround; proceed without it
     }

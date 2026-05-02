@@ -47,6 +47,10 @@ A WebSerial integration for Patchies, enabling bidirectional communication with 
 
 Located at `ui/src/lib/canvas/SerialSystem.ts`. Follows the `MIDISystem` pattern.
 
+### Serial Option Types
+
+Patchies exposes the WebSerial parity values supported by the current UI: `none`, `even`, and `odd`. Keep `SerialParity`, `PARITY_OPTIONS`, and `SerialSystem.requestPort()` aligned so the settings panel can pass parity through without widening to unsupported browser values.
+
 ### Port Sharing Model
 
 WebSerial allows only one `ReadableStream` reader at a time. To share a port across multiple nodes:
