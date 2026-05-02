@@ -55,6 +55,7 @@ import { preset as preset53 } from './anti-alias';
 import { preset as preset54 } from './luma-blur';
 import { preset as preset55 } from './luma-level';
 import { preset as preset56 } from './pack';
+import { preset as preset57 } from './convolve';
 import type { GLSLPreset } from './types';
 
 export const GLSL_PRESETS: Record<string, GLSLPreset> = {
@@ -114,7 +115,8 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
   'Anti Alias': preset53,
   'Luma Blur': preset54,
   'Luma Level': preset55,
-  Pack: preset56
+  Pack: preset56,
+  Convolve: preset57
 };
 
 export type { GLSLPreset } from './types';

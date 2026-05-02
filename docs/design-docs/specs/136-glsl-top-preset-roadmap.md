@@ -156,6 +156,9 @@ moving on.
    named texture inputs: `redSource`, `greenSource`, `blueSource`, and
    `alphaSource`. Each output channel gets a selector for Luma/R/G/B/A from its
    matching input.
+5. `Convolve`: add to **Texture Filters** with named 3x3 kernels instead of
+   editable matrix fields. Expose practical kernels such as sharpen, edge,
+   outline, box blur, and gaussian-ish blur, plus strength and bias controls.
 
 ## Better With REGL
 
