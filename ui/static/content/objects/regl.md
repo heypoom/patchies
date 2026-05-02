@@ -174,6 +174,8 @@ function render(time) {
 Enable **Texture Filters** for REGL-backed image-processing presets:
 
 - `Bloom` - multipass threshold, blur, tint, and composite bloom.
+- `Motion Flow` - estimates creative frame-to-frame motion. Outlet 0 is a color
+  visualization; outlet 1 is encoded vector data.
 
 Enable **Texture Composite** for REGL-backed multi-input composition presets:
 

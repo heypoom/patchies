@@ -95,4 +95,14 @@ describe('built-in preset packs', () => {
     expect(isPreset(textureGenerators['Radial Ramp'])).toBe(true);
     expect(folders.glsl).toBeUndefined();
   });
+
+  test('registers Chromatic Aberration as a GLSL texture filter preset', () => {
+    const preset = BUILTIN_PRESETS['Chromatic Aberration'];
+    const textureFilters = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'texture-filters');
+    const presetData = preset?.data as { code?: string } | undefined;
+
+    expect(preset?.type).toBe('glsl');
+    expect(presetData?.code).toContain('@title Chromatic Aberration');
+    expect(textureFilters?.presets).toContain('Chromatic Aberration');
+  });
 });

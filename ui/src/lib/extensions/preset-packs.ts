@@ -142,7 +142,9 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presets: [
       'Blur',
       'Luma Blur',
+      'Chromatic Aberration',
       'Bloom',
+      'Motion Flow',
       'Convolve',
       'Edge',
       'Anti Alias',

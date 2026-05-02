@@ -62,6 +62,7 @@ The built-in GLSL preset set already covers:
 - `Noise`
 - `Noise Displace`
 - `Feedback`
+- `Chromatic Aberration`
 - all presets marked **Added** in the tables below
 
 The next presets should expand mask-building, keying, color utilities,
@@ -84,7 +85,7 @@ Recommended user-facing packs:
 | **Texture Color**        | Color correction and color-space utilities   | `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder` | Added  |
 | **Texture Masks & Keys** | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`                                                                                               | Added  |
 | **Texture Transform**    | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace`                                                      | Added  |
-| **Texture Filters**      | Image-processing effects                     | `Blur`, `Luma Blur`, `Convolve`, `Edge`, `Anti Alias`, `Emboss`, `Slope`, `Normal Map`, `Bloom`                                                         | Added  |
+| **Texture Filters**      | Image-processing effects                     | `Blur`, `Luma Blur`, `Chromatic Aberration`, `Convolve`, `Edge`, `Anti Alias`, `Emboss`, `Slope`, `Normal Map`, `Bloom`, `Motion Flow`                  | Added  |
 
 The existing **GLSL Operators** pack can remain during the first migration, but
 new work should move toward these task-based packs. Presets should still be
@@ -100,39 +101,40 @@ trail/echo or stutter-style frame-history presets.
 These are high-value, single-node, and realistic inside the current `glsl`
 object.
 
-| Preset         | Status | Pack                 | Inputs                     | Parameters                                  | Notes                                                       |
-| -------------- | ------ | -------------------- | -------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
-| `Add`          | Added  | Texture Composite    | `a`, `b`                   | opacity, clamp                              | Basic additive composite. Useful for feedback and masks.    |
-| `Subtract`     | Added  | Texture Composite    | `a`, `b`                   | opacity, clamp                              | Difference-style utility for matte and signal workflows.    |
-| `Difference`   | Added  | Texture Composite    | `a`, `b`                   | opacity, monochrome                         | Absolute difference between two images.                     |
-| `Composite`    | Added  | Texture Composite    | `background`, `foreground` | mode, opacity                               | A grouped alpha composite preset with common blend modes.   |
-| `Over`         | Added  | Texture Composite    | `background`, `foreground` | opacity                                     | Standard source-over alpha composite.                       |
-| `Under`        | Added  | Texture Composite    | `foreground`, `background` | opacity                                     | Source-under variant for explicit layer ordering.           |
-| `Channel Mix`  | Added  | Texture Color        | `source`                   | RGB matrix rows, opacity                    | Matrix-style channel remapping and color transformation.    |
-| `HSV Adjust`   | Added  | Texture Color        | `source`                   | hue, saturation, value, mix                 | Practical color grading utility.                            |
-| `RGB to HSV`   | Added  | Texture Color        | `source`                   | none or normalize                           | Utility conversion preset for shader workflows.             |
-| `HSV to RGB`   | Added  | Texture Color        | `source`                   | none or normalize                           | Companion conversion preset.                                |
-| `Chroma Key`   | Added  | Texture Masks & Keys | `source`                   | key color, tolerance, softness, spill       | Webcam/video keying, useful with camera and video nodes.    |
-| `RGB Key`      | Added  | Texture Masks & Keys | `source`                   | min/max color, softness, invert             | Color-range matte generator.                                |
-| `Luma Key`     | Added  | Texture Masks & Keys | `source`                   | threshold, softness, invert                 | Luminance matte generator.                                  |
-| `Matte`        | Added  | Texture Masks & Keys | `source`, `matte`          | premultiply, invert, opacity                | Apply an alpha matte texture to a source.                   |
-| `Threshold`    | Added  | Texture Masks & Keys | `source`                   | threshold, softness, channel, invert        | General mask generation.                                    |
-| `Monochrome`   | Added  | Texture Color        | `source`                   | channel, weights, tint                      | Grayscale or tinted monochrome conversion.                  |
-| `Limit`        | Added  | Texture Color        | `source`                   | min, max, mode                              | Clamp, wrap, or normalize color ranges.                     |
-| `Remap`        | Added  | Texture Color        | `source`                   | in min/max, out min/max, clamp              | Range remapping for color or data textures.                 |
-| `Lookup`       | Added  | Texture Color        | `source`, `lookup`         | amount, channel                             | 1D LUT-like lookup using a texture input.                   |
-| `Fit`          | Added  | Texture Transform    | `source`                   | mode, background color                      | Fit/contain/cover an input while preserving aspect ratio.   |
-| `Flip`         | Added  | Texture Transform    | `source`                   | horizontal, vertical                        | Simple image orientation utility.                           |
-| `Mirror`       | Added  | Texture Transform    | `source`                   | axis, center, blend                         | Reflect texture coordinates around an axis.                 |
-| `Tile`         | Added  | Texture Transform    | `source`                   | repeat X/Y, offset, mirror                  | Dedicated tiling preset, easier than full `Transform`.      |
-| `Circle`       | Added  | Texture Generators   | none                       | center, radius, feather, fill color, alpha  | Shape/matte generator.                                      |
-| `Rectangle`    | Added  | Texture Generators   | none                       | center, size, rotation, feather, fill color | Shape/matte generator.                                      |
-| `Cross`        | Added  | Texture Generators   | none                       | center, size, thickness, feather, color     | Utility shape generator for masks and calibration visuals.  |
-| `Emboss`       | Added  | Texture Filters      | `source`                   | strength, direction, bias                   | Classic image filter from neighboring samples.              |
-| `Slope`        | Added  | Texture Filters      | `source`                   | strength, channel, mode                     | Gradient/slope visualization, useful before normal maps.    |
-| `Normal Map`   | Added  | Texture Filters      | `source`                   | strength, channel, invert Y                 | Generate approximate normals from height/luma.              |
-| `Lens Distort` | Added  | Texture Transform    | `source`                   | amount, center, chromatic aberration, scale | Barrel/pincushion and optional RGB channel offset.          |
-| `Tone Map`     | Added  | Texture Color        | `source`                   | exposure, gamma, operator, white point      | Useful with float/HDR textures and bright feedback patches. |
+| Preset                 | Status | Pack                 | Inputs                     | Parameters                                  | Notes                                                       |
+| ---------------------- | ------ | -------------------- | -------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
+| `Add`                  | Added  | Texture Composite    | `a`, `b`                   | opacity, clamp                              | Basic additive composite. Useful for feedback and masks.    |
+| `Subtract`             | Added  | Texture Composite    | `a`, `b`                   | opacity, clamp                              | Difference-style utility for matte and signal workflows.    |
+| `Difference`           | Added  | Texture Composite    | `a`, `b`                   | opacity, monochrome                         | Absolute difference between two images.                     |
+| `Composite`            | Added  | Texture Composite    | `background`, `foreground` | mode, opacity                               | A grouped alpha composite preset with common blend modes.   |
+| `Over`                 | Added  | Texture Composite    | `background`, `foreground` | opacity                                     | Standard source-over alpha composite.                       |
+| `Under`                | Added  | Texture Composite    | `foreground`, `background` | opacity                                     | Source-under variant for explicit layer ordering.           |
+| `Channel Mix`          | Added  | Texture Color        | `source`                   | RGB matrix rows, opacity                    | Matrix-style channel remapping and color transformation.    |
+| `HSV Adjust`           | Added  | Texture Color        | `source`                   | hue, saturation, value, mix                 | Practical color grading utility.                            |
+| `RGB to HSV`           | Added  | Texture Color        | `source`                   | none or normalize                           | Utility conversion preset for shader workflows.             |
+| `HSV to RGB`           | Added  | Texture Color        | `source`                   | none or normalize                           | Companion conversion preset.                                |
+| `Chroma Key`           | Added  | Texture Masks & Keys | `source`                   | key color, tolerance, softness, spill       | Webcam/video keying, useful with camera and video nodes.    |
+| `RGB Key`              | Added  | Texture Masks & Keys | `source`                   | min/max color, softness, invert             | Color-range matte generator.                                |
+| `Luma Key`             | Added  | Texture Masks & Keys | `source`                   | threshold, softness, invert                 | Luminance matte generator.                                  |
+| `Matte`                | Added  | Texture Masks & Keys | `source`, `matte`          | premultiply, invert, opacity                | Apply an alpha matte texture to a source.                   |
+| `Threshold`            | Added  | Texture Masks & Keys | `source`                   | threshold, softness, channel, invert        | General mask generation.                                    |
+| `Monochrome`           | Added  | Texture Color        | `source`                   | channel, weights, tint                      | Grayscale or tinted monochrome conversion.                  |
+| `Limit`                | Added  | Texture Color        | `source`                   | min, max, mode                              | Clamp, wrap, or normalize color ranges.                     |
+| `Remap`                | Added  | Texture Color        | `source`                   | in min/max, out min/max, clamp              | Range remapping for color or data textures.                 |
+| `Lookup`               | Added  | Texture Color        | `source`, `lookup`         | amount, channel                             | 1D LUT-like lookup using a texture input.                   |
+| `Fit`                  | Added  | Texture Transform    | `source`                   | mode, background color                      | Fit/contain/cover an input while preserving aspect ratio.   |
+| `Flip`                 | Added  | Texture Transform    | `source`                   | horizontal, vertical                        | Simple image orientation utility.                           |
+| `Mirror`               | Added  | Texture Transform    | `source`                   | axis, center, blend                         | Reflect texture coordinates around an axis.                 |
+| `Tile`                 | Added  | Texture Transform    | `source`                   | repeat X/Y, offset, mirror                  | Dedicated tiling preset, easier than full `Transform`.      |
+| `Circle`               | Added  | Texture Generators   | none                       | center, radius, feather, fill color, alpha  | Shape/matte generator.                                      |
+| `Rectangle`            | Added  | Texture Generators   | none                       | center, size, rotation, feather, fill color | Shape/matte generator.                                      |
+| `Cross`                | Added  | Texture Generators   | none                       | center, size, thickness, feather, color     | Utility shape generator for masks and calibration visuals.  |
+| `Emboss`               | Added  | Texture Filters      | `source`                   | strength, direction, bias                   | Classic image filter from neighboring samples.              |
+| `Slope`                | Added  | Texture Filters      | `source`                   | strength, channel, mode                     | Gradient/slope visualization, useful before normal maps.    |
+| `Normal Map`           | Added  | Texture Filters      | `source`                   | strength, channel, invert Y                 | Generate approximate normals from height/luma.              |
+| `Lens Distort`         | Added  | Texture Transform    | `source`                   | amount, center, chromatic aberration, scale | Barrel/pincushion and optional RGB channel offset.          |
+| `Chromatic Aberration` | Added  | Texture Filters      | `source`                   | amount, direction, center, falloff, mix     | Dedicated RGB channel separation without lens warping.      |
+| `Tone Map`             | Added  | Texture Color        | `source`                   | exposure, gamma, operator, white point      | Useful with float/HDR textures and bright feedback patches. |
 
 ## GLSL Possible
 
@@ -191,29 +193,30 @@ These are possible in Patchies, but `regl` is the better target because it gives
 full draw-command control, custom geometry, multiple passes, render targets,
 buffers, and explicit texture/resource management.
 
-| Preset            | Status | Why `regl` Fits Better                                        | Possible Patchies Shape                                         |
-| ----------------- | ------ | ------------------------------------------------------------- | --------------------------------------------------------------- |
-| `Bloom`           | Added  | Real bloom wants downsample, blur, and upsample passes.       | A `regl` preset with internal framebuffers and controls.        |
-| `Cache`           | Added  | Requires frame history beyond one previous feedback input.    | Ring buffer of textures managed inside a `regl` preset.         |
-| `Cache Select`    | Defer  | Requires indexed lookup into cached frame history.            | Needs shared cache resources or a combined cache/select design. |
-| `Time Scrub`      | Added  | Manual temporal lookup needs frame history and interpolation. | `regl` history buffer with an always-active position control.   |
-| `Time Machine`    | Added  | Temporal lookup and interpolation over many frames.           | `regl` history buffer with index/speed controls.                |
-| `Optical Flow`    | REGL   | Needs multi-pass analysis and previous-frame state.           | Ping-pong framebuffers plus vector output or visualization.     |
-| `Blob Track`      | REGL   | Needs analysis/state and possibly readback/CPU logic.         | `regl` preprocessing plus future analysis/readback support.     |
-| `Layout`          | Added  | Better as geometry/layout over multiple textured quads.       | Draw multiple input textures into positioned rectangles.        |
-| `Layer`           | Added  | Layer stack compositing maps naturally to draw order.         | `regl` preset that draws N textured quads with blend state.     |
-| `Cube Map`        | REGL   | Needs non-2D texture targets and specialized sampling.        | Future advanced `regl`/WebGL texture preset.                    |
-| `Texture 3D`      | REGL   | Needs 3D texture allocation/sampling control.                 | Future `regl` preset if WebGL2 texture support is exposed.      |
-| `Depth`           | REGL   | Depth buffers are render-pipeline state, not GLSL output.     | `regl` render preset with depth attachment or depth texture.    |
-| `SSAO`            | REGL   | Screen-space AO is a multipass depth/normal post-process.     | REGL pipeline using depth/normal inputs or MRT outputs.         |
-| `Render`          | REGL   | Scene rendering requires geometry, cameras, and draw calls.   | Already closer to `three`, `regl`, or `swgl` nodes.             |
-| `Render Pass`     | REGL   | Render-pass selection is a pipeline/MRT workflow concern.     | Preset around existing MRT support and named attachments.       |
-| `Render Select`   | REGL   | Selecting render outputs requires pipeline-level routing UX.  | Could be a `regl` preset or graph-level convenience.            |
-| `Render Simple`   | REGL   | Still a scene-rendering concept, not a fullscreen shader.     | Prefer `regl` or `three` presets.                               |
-| `Projection`      | REGL   | Projection mapping wants custom mesh/UV geometry.             | Better handled by `projmap` or a `regl` mesh preset.            |
-| `GLSL Multi`      | Defer  | MRT already exists in visual nodes; preset shape is unclear.  | Maybe example presets/docs, not a new operator preset.          |
-| `Point Transform` | REGL   | Point/geometry transforms need buffers and vertex shaders.    | `regl` point buffer transform/render preset.                    |
-| `POP to`          | REGL   | Geometry/data pipeline conversion needs structured buffers.   | Future geometry bridge, not a plain GLSL preset.                |
+| Preset            | Status | Why `regl` Fits Better                                         | Possible Patchies Shape                                         |
+| ----------------- | ------ | -------------------------------------------------------------- | --------------------------------------------------------------- |
+| `Bloom`           | Added  | Real bloom wants downsample, blur, and upsample passes.        | A `regl` preset with internal framebuffers and controls.        |
+| `Cache`           | Added  | Requires frame history beyond one previous feedback input.     | Ring buffer of textures managed inside a `regl` preset.         |
+| `Cache Select`    | Defer  | Requires indexed lookup into cached frame history.             | Needs shared cache resources or a combined cache/select design. |
+| `Time Scrub`      | Added  | Manual temporal lookup needs frame history and interpolation.  | `regl` history buffer with an always-active position control.   |
+| `Time Machine`    | Added  | Temporal lookup and interpolation over many frames.            | `regl` history buffer with index/speed controls.                |
+| `Motion Flow`     | Added  | Needs previous-frame state and dual visualization/data output. | Creative flow approximation with visualization and vector data. |
+| `Optical Flow`    | Defer  | Accurate optical flow needs multi-pass analysis and tuning.    | Future heavier preset if creative `Motion Flow` is not enough.  |
+| `Blob Track`      | REGL   | Needs analysis/state and possibly readback/CPU logic.          | `regl` preprocessing plus future analysis/readback support.     |
+| `Layout`          | Added  | Better as geometry/layout over multiple textured quads.        | Draw multiple input textures into positioned rectangles.        |
+| `Layer`           | Added  | Layer stack compositing maps naturally to draw order.          | `regl` preset that draws N textured quads with blend state.     |
+| `Cube Map`        | REGL   | Needs non-2D texture targets and specialized sampling.         | Future advanced `regl`/WebGL texture preset.                    |
+| `Texture 3D`      | REGL   | Needs 3D texture allocation/sampling control.                  | Future `regl` preset if WebGL2 texture support is exposed.      |
+| `Depth`           | REGL   | Depth buffers are render-pipeline state, not GLSL output.      | `regl` render preset with depth attachment or depth texture.    |
+| `SSAO`            | REGL   | Screen-space AO is a multipass depth/normal post-process.      | REGL pipeline using depth/normal inputs or MRT outputs.         |
+| `Render`          | REGL   | Scene rendering requires geometry, cameras, and draw calls.    | Already closer to `three`, `regl`, or `swgl` nodes.             |
+| `Render Pass`     | REGL   | Render-pass selection is a pipeline/MRT workflow concern.      | Preset around existing MRT support and named attachments.       |
+| `Render Select`   | REGL   | Selecting render outputs requires pipeline-level routing UX.   | Could be a `regl` preset or graph-level convenience.            |
+| `Render Simple`   | REGL   | Still a scene-rendering concept, not a fullscreen shader.      | Prefer `regl` or `three` presets.                               |
+| `Projection`      | REGL   | Projection mapping wants custom mesh/UV geometry.              | Better handled by `projmap` or a `regl` mesh preset.            |
+| `GLSL Multi`      | Defer  | MRT already exists in visual nodes; preset shape is unclear.   | Maybe example presets/docs, not a new operator preset.          |
+| `Point Transform` | REGL   | Point/geometry transforms need buffers and vertex shaders.     | `regl` point buffer transform/render preset.                    |
+| `POP to`          | REGL   | Geometry/data pipeline conversion needs structured buffers.    | Future geometry bridge, not a plain GLSL preset.                |
 
 ### REGL Implementation Priority
 
@@ -235,9 +238,11 @@ render-pipeline capability before the next phase depends on it.
    and graph routing conventions rather than core multi-output support. Spec
    this before implementation because it may affect preset metadata and texture
    attachment naming.
-5. `Optical Flow`, `Blob Track`, `SSAO`: later analysis/post-process work. These
-   need multi-pass state, careful defaults, and likely more verification than
-   the utility presets above.
+5. `Motion Flow` is the first added analysis-style preset, using a creative
+   previous-frame approximation with visualization and vector outputs. Accurate
+   `Optical Flow`, plus `Blob Track` and `SSAO`, remain later analysis work
+   because they need multi-pass state, careful defaults, and more verification
+   than the utility presets above.
 6. `Cube Map`, `Texture 3D`, `Depth`, `Point Transform`, `POP to`: advanced
    resource/geometry features. Keep these parked until the REGL preset API has
    stable support for the required texture targets, buffers, and geometry data.

@@ -57,6 +57,7 @@ import { preset as preset55 } from './luma-level';
 import { preset as preset56 } from './pack';
 import { preset as preset57 } from './convolve';
 import { preset as preset58 } from './math';
+import { preset as preset59 } from './chromatic-aberration';
 import type { GLSLPreset } from './types';
 
 export const GLSL_PRESETS: Record<string, GLSLPreset> = {
@@ -118,7 +119,8 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
   'Luma Level': preset55,
   Pack: preset56,
   Convolve: preset57,
-  Math: preset58
+  Math: preset58,
+  'Chromatic Aberration': preset59
 };
 
 export type { GLSLPreset } from './types';

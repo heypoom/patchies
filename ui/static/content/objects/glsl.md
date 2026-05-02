@@ -48,11 +48,11 @@ Enable the texture preset packs for basic operators:
   `Matte`
 - **Texture Transform**: `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`,
   `Lens Distort`, `Displace`, `Noise Displace`
-- **Texture Filters**: `Blur`, `Luma Blur`, `Convolve`, `Edge`, `Anti Alias`,
-  `Emboss`, `Slope`, `Normal Map`
+- **Texture Filters**: `Blur`, `Luma Blur`, `Chromatic Aberration`, `Convolve`,
+  `Edge`, `Anti Alias`, `Emboss`, `Slope`, `Normal Map`
 
 Texture preset packs can also include REGL-backed presets such as `Bloom`,
-`Layout`, `Layer`, `Cache`, `Time Scrub`, and `Time Machine`.
+`Motion Flow`, `Layout`, `Layer`, `Cache`, `Time Scrub`, and `Time Machine`.
 
 The `glsl>` preset is the best starting point for building GLSL shaders
 that process video inputs.
