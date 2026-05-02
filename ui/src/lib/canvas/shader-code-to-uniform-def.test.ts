@@ -200,6 +200,21 @@ describe('parseShaderDirectives', () => {
     });
   });
 
+  it('parses @param with explicit slider step', () => {
+    const code = '// @param strength 0.01 0.0 0.1 0.001 "Aberration strength"';
+    const directives = parseShaderDirectives(code);
+    const param = directives.params.get('strength');
+
+    expect(param).toEqual({
+      name: 'strength',
+      default: '0.01',
+      min: 0.0,
+      max: 0.1,
+      step: 0.001,
+      description: 'Aberration strength'
+    });
+  });
+
   it('parses @param with only name', () => {
     const directives = parseShaderDirectives('// @param gain');
 
@@ -332,5 +347,29 @@ uniform float other; // 1.0
     });
 
     expect(defs[1]).toEqual({ name: 'other', type: 'float' });
+  });
+
+  it('uses explicit @param step in generated slider field', () => {
+    const code = `
+// @param strength 0.01 0.0 0.1 0.001 "Aberration strength"
+uniform float strength;
+`;
+    const defs = shaderCodeToUniformDefs(code);
+    const fields = uniformDefsToSettingsSchema(defs);
+
+    expect(defs[0]).toMatchObject({
+      name: 'strength',
+      default: 0.01,
+      min: 0,
+      max: 0.1,
+      step: 0.001,
+      description: 'Aberration strength'
+    });
+
+    expect(fields[0]).toMatchObject({
+      key: 'strength',
+      type: 'slider',
+      step: 0.001
+    });
   });
 });

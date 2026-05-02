@@ -20,6 +20,7 @@ export interface GLUniformDef {
   default?: number | boolean | string;
   min?: number;
   max?: number;
+  step?: number;
   description?: string;
 
   /** Select options for enum-like numeric uniforms. Values are sent to GL as numbers. */

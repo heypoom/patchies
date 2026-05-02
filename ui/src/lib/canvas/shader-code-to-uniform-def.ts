@@ -11,6 +11,7 @@ export interface ParamDirective {
 
   min?: number;
   max?: number;
+  step?: number;
   description?: string;
 
   /** Widget override — e.g. 'color' renders a vec3 as a color picker */
@@ -27,10 +28,11 @@ export interface ShaderDirectives {
 
 const DIRECTIVE_RE = /^[ \t]*\/\/\s*@(title|param)\s+(.+)$/gm;
 
-// @param name [default] [min] [max] ["description"]
+// @param name [default] [min] [max] [step] ["description"]
 // For color widgets: @param name color [#hex] ["description"]
 // For select widgets: @param name default (value: Label, value: Label) ["description"]
-const PARAM_RE = /^(\w+)(?:\s+(-?[\w.]+))?(?:\s+(-?[\d.]+|#[\da-fA-F]+))?(?:\s+(-?[\d.]+))?$/;
+const PARAM_RE =
+  /^(\w+)(?:\s+(-?[\w.]+))?(?:\s+(-?[\d.]+|#[\da-fA-F]+))?(?:\s+(-?[\d.]+))?(?:\s+(-?[\d.]+))?$/;
 
 function extractQuotedDescription(value: string): { body: string; description?: string } {
   const match = value.match(/\s+"([^"]*)"\s*$/);
@@ -83,7 +85,7 @@ function parseParamDirective(value: string): ParamDirective | null {
   const match = PARAM_RE.exec(body);
   if (!match) return null;
 
-  const [, name, defaultValue, minValue, maxValue] = match;
+  const [, name, defaultValue, minValue, maxValue, stepValue] = match;
   const param: ParamDirective = { name };
 
   if (defaultValue === 'color') {
@@ -103,6 +105,10 @@ function parseParamDirective(value: string): ParamDirective | null {
 
   if (maxValue != null) {
     param.max = parseFloat(maxValue);
+  }
+
+  if (stepValue != null) {
+    param.step = parseFloat(stepValue);
   }
 
   if (description != null) {
@@ -211,6 +217,7 @@ export function shaderCodeToUniformDefs(code: string): GLUniformDef[] {
       }),
       ...(param?.min != null && { min: param.min }),
       ...(param?.max != null && { max: param.max }),
+      ...(param?.step != null && { step: param.step }),
       ...(param?.description != null && { description: param.description }),
       ...(param?.widget != null && { widget: param.widget }),
       ...(param?.options != null && { options: param.options })
@@ -241,7 +248,7 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
   defs.flatMap((def) =>
     match<string, SettingsField[]>(def.type)
       .with('float', () => {
-        const step = deriveFloatStep(def.default as number, def.min, def.max);
+        const step = def.step ?? deriveFloatStep(def.default as number, def.min, def.max);
 
         if (def.widget === 'select' && def.options != null) {
           return [

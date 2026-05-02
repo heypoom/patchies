@@ -1,6 +1,6 @@
 const MIX_GL = `// @title Mix
 // @primaryButton settings
-// @param iMix 0.5 0.0 1.0 "Mix"
+// @param iMix 0.5 0.0 1.0 0.001 "Mix"
 
 uniform sampler2D iChannel0;
 uniform sampler2D iChannel1;
@@ -17,9 +17,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 const RAMP_GL = `// @title Ramp
 // @primaryButton settings
 // @param mode 0 (0: Linear, 1: Radial, 2: Circular) "Mode"
-// @param angle 0.0 -3.1416 3.1416 "Angle"
-// @param offset 0.0 -1.0 1.0 "Offset"
-// @param radius 0.5 0.01 1.5 "Radius"
+// @param angle 0.0 -3.1416 3.1416 0.001 "Angle"
+// @param offset 0.0 -1.0 1.0 0.001 "Offset"
+// @param radius 0.5 0.01 1.5 0.001 "Radius"
 // @param colorA color #000000 "Color A"
 // @param colorB color #ffffff "Color B"
 
@@ -47,12 +47,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const LEVEL_GL = `// @title Level
 // @primaryButton settings
-// @param black 0.0 0.0 1.0 "Black"
-// @param white 1.0 0.0 1.0 "White"
-// @param gamma 1.0 0.1 4.0 "Gamma"
-// @param brightness 0.0 -1.0 1.0 "Brightness"
-// @param contrast 1.0 0.0 4.0 "Contrast"
-// @param opacity 1.0 0.0 1.0 "Opacity"
+// @param black 0.0 0.0 1.0 0.001 "Black"
+// @param white 1.0 0.0 1.0 0.001 "White"
+// @param gamma 1.0 0.1 4.0 0.001 "Gamma"
+// @param brightness 0.0 -1.0 1.0 0.001 "Brightness"
+// @param contrast 1.0 0.0 4.0 0.001 "Contrast"
+// @param opacity 1.0 0.0 1.0 0.001 "Opacity"
 
 uniform sampler2D source;
 uniform float black;
@@ -74,11 +74,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const TRANSFORM_GL = `// @title Transform
 // @primaryButton settings
-// @param translateX 0.0 -1.0 1.0 "Translate X"
-// @param translateY 0.0 -1.0 1.0 "Translate Y"
-// @param scale 1.0 0.05 4.0 "Scale"
-// @param rotation 0.0 -3.1416 3.1416 "Rotation"
-// @param repeatMode 0.0 0.0 2.0 "Repeat Mode"
+// @param translateX 0.0 -1.0 1.0 0.001 "Translate X"
+// @param translateY 0.0 -1.0 1.0 0.001 "Translate Y"
+// @param scale 1.0 0.05 4.0 0.001 "Scale"
+// @param rotation 0.0 -3.1416 3.1416 0.001 "Rotation"
+// @param repeatMode 0 (0: Clamp, 1: Repeat, 2: Mirror) "Repeat Mode"
 
 uniform sampler2D source;
 uniform float translateX;
@@ -133,7 +133,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const OVERLAY_GL = `// @title Overlay
 // @primaryButton settings
-// @param opacity 1.0 0.0 1.0 "Opacity"
+// @param opacity 1.0 0.0 1.0 0.001 "Opacity"
 
 uniform sampler2D background;
 uniform sampler2D foreground;
@@ -153,7 +153,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const MULTIPLY_GL = `// @title Multiply
 // @primaryButton settings
-// @param opacity 1.0 0.0 1.0 "Opacity"
+// @param opacity 1.0 0.0 1.0 0.001 "Opacity"
 
 uniform sampler2D a;
 uniform sampler2D b;
@@ -168,8 +168,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const BLUR_GL = `// @title Blur
 // @primaryButton settings
-// @param radius 4.0 0.0 24.0 "Radius"
-// @param direction 0.0 0.0 3.1416 "Direction"
+// @param radius 4.0 0.0 24.0 0.001 "Radius"
+// @param direction 0.0 0.0 3.1416 0.001 "Direction"
 
 uniform sampler2D source;
 uniform float radius;
@@ -188,11 +188,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const CROP_GL = `// @title Crop
 // @primaryButton settings
-// @param minX 0.0 0.0 1.0 "Min X"
-// @param minY 0.0 0.0 1.0 "Min Y"
-// @param maxX 1.0 0.0 1.0 "Max X"
-// @param maxY 1.0 0.0 1.0 "Max Y"
-// @param feather 0.0 0.0 0.25 "Feather"
+// @param minX 0.0 0.0 1.0 0.001 "Min X"
+// @param minY 0.0 0.0 1.0 0.001 "Min Y"
+// @param maxX 1.0 0.0 1.0 0.001 "Max X"
+// @param maxY 1.0 0.0 1.0 0.001 "Max Y"
+// @param feather 0.0 0.0 0.25 0.001 "Feather"
 
 uniform sampler2D source;
 uniform float minX;
@@ -214,10 +214,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const REORDER_GL = `// @title Reorder
 // @primaryButton settings
-// @param red 0.0 0.0 4.0 "Red Source"
-// @param green 1.0 0.0 4.0 "Green Source"
-// @param blue 2.0 0.0 4.0 "Blue Source"
-// @param alpha 3.0 0.0 4.0 "Alpha Source"
+// @param red 0 (0: Red, 1: Green, 2: Blue, 3: Alpha, 4: Luma) "Red Source"
+// @param green 1 (0: Red, 1: Green, 2: Blue, 3: Alpha, 4: Luma) "Green Source"
+// @param blue 2 (0: Red, 1: Green, 2: Blue, 3: Alpha, 4: Luma) "Blue Source"
+// @param alpha 3 (0: Red, 1: Green, 2: Blue, 3: Alpha, 4: Luma) "Alpha Source"
 // @param invertAlpha false "Invert Alpha"
 
 uniform sampler2D source;
@@ -249,8 +249,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const DISPLACE_GL = `// @title Displace
 // @primaryButton settings
-// @param amount 0.05 -0.5 0.5 "Amount"
-// @param center 0.5 0.0 1.0 "Center"
+// @param amount 0.05 -0.5 0.5 0.001 "Amount"
+// @param center 0.5 0.0 1.0 0.001 "Center"
 // @param useLuma false "Use Luma"
 
 uniform sampler2D source;
@@ -271,8 +271,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const EDGE_GL = `// @title Edge
 // @primaryButton settings
-// @param strength 1.0 0.0 5.0 "Strength"
-// @param threshold 0.05 0.0 1.0 "Threshold"
+// @param strength 1.0 0.0 5.0 0.001 "Strength"
+// @param threshold 0.05 0.0 1.0 0.001 "Threshold"
 // @param monochrome true "Monochrome"
 
 uniform sampler2D source;
@@ -306,9 +306,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const NOISE_GL = `// @title Noise
 // @primaryButton settings
-// @param scale 8.0 0.1 64.0 "Scale"
-// @param speed 0.15 -2.0 2.0 "Speed"
-// @param contrast 1.0 0.1 4.0 "Contrast"
+// @param scale 8.0 0.1 64.0 0.001 "Scale"
+// @param speed 0.15 -2.0 2.0 0.001 "Speed"
+// @param contrast 1.0 0.1 4.0 0.001 "Contrast"
 // @param colorA color #000000 "Color A"
 // @param colorB color #ffffff "Color B"
 
@@ -341,10 +341,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const NOISE_DISPLACE_GL = `// @title Noise Displace
 // @primaryButton settings
-// @param scale 8.0 0.1 64.0 "Scale"
-// @param speed 0.15 -2.0 2.0 "Speed"
-// @param amount 0.05 -0.5 0.5 "Amount"
-// @param direction 0.0 0.0 3.1416 "Direction"
+// @param scale 8.0 0.1 64.0 0.001 "Scale"
+// @param speed 0.15 -2.0 2.0 0.001 "Speed"
+// @param amount 0.05 -0.5 0.5 0.001 "Amount"
+// @param direction 0.0 0.0 3.1416 0.001 "Direction"
 
 uniform sampler2D source;
 uniform float scale;
@@ -377,11 +377,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const FEEDBACK_GL = `// @title Feedback
 // @primaryButton settings
-// @param feedbackAmount 0.9 0.0 0.999 "Feedback"
-// @param inputAmount 1.0 0.0 1.0 "Input"
-// @param decay 0.98 0.0 1.0 "Decay"
-// @param zoom 1.0 0.8 1.2 "Zoom"
-// @param rotation 0.0 -0.2 0.2 "Rotation"
+// @param feedbackAmount 0.9 0.0 0.999 0.001 "Feedback"
+// @param inputAmount 1.0 0.0 1.0 0.001 "Input"
+// @param decay 0.98 0.0 1.0 0.001 "Decay"
+// @param zoom 1.0 0.8 1.2 0.001 "Zoom"
+// @param rotation 0.0 -0.2 0.2 0.0001 "Rotation"
 
 uniform sampler2D source;
 uniform sampler2D feedback;
@@ -419,7 +419,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
 const SWITCHER_GL = `// @title Switcher
 // @primaryButton settings
-// @param id 0.0 0.0 5.0 "Input"
+// @param id 0 (0: A, 1: B, 2: C, 3: D, 4: E, 5: F) "Input"
 
 uniform sampler2D a;
 uniform sampler2D b;
@@ -490,10 +490,10 @@ const TORUS_POSITION_FIELD_GL = `// @title Torus Field
 // @format rgba32f
 // @resolution 256
 
-// @param radiusMajor 2.0 0.1 5.0 "Torus Major Radius"
-// @param radiusMinor 0.6 0.05 2.0 "Torus Minor Radius"
-// @param speed 0.5 0.0 2.0 "Rotation Speed"
-// @param noiseInfluence 0.3 0.0 2.0 "Noise Warp"
+// @param radiusMajor 2.0 0.1 5.0 0.001 "Torus Major Radius"
+// @param radiusMinor 0.6 0.05 2.0 0.001 "Torus Minor Radius"
+// @param speed 0.5 0.0 2.0 0.001 "Rotation Speed"
+// @param noiseInfluence 0.3 0.0 2.0 0.001 "Noise Warp"
 // @primaryButton settings
 
 #include <lygia/generative/snoise>

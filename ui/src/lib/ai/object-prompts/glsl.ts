@@ -17,11 +17,12 @@ CRITICAL RULES:
 
 **Metadata directives** (comment-based):
 - \`// @title My Shader\` — sets node display title
-- \`// @param name default min max "description"\` — adds ranged slider for a uniform.
+- \`// @param name default min max [step] "description"\` — adds ranged slider for a uniform.
     Each @param MUST have a matching \`uniform\` declaration
     e.g. \`// @param strength 0.5 0.0 1.0 "Effect strength"\`
+    e.g. \`// @param fine 0.5 0.0 1.0 0.001 "Fine control"\`
     requires \`uniform float strength;\`
-    IMPORTANT: default value, then min and max!
+    IMPORTANT: default value, then min, max, and optional step!
 - \`// @param name color [#hex] ["title"]\` — renders a vec3 uniform as a color picker.
     Use \`color\` as the default value. Add an optional hex default, then an optional quoted title.
     The quoted title becomes the settings label.

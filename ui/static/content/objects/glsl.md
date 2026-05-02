@@ -166,21 +166,24 @@ Sets the node's display title instead of the default "glsl".
 
 ```glsl
 // @param strength 0.01 0.0 0.1 "Aberration strength"
+// @param fine 0.5 0.0 1.0 0.001 "Fine control"
 // @param samples 8.0 2.0 32.0 "Sample count"
 // @param invert false "Invert output"
 
 uniform float strength; // 0.01
+uniform float fine;     // 0.5
 uniform float samples;  // 8.0
 uniform bool invert;    // false
 ```
 
-Format: `// @param <name> [default] [min] [max] ["description"]`
+Format: `// @param <name> [default] [min] [max] [step] ["description"]`
 
 Each `@param` must have a matching `uniform` declaration — the type is
 inferred from it.
 
 When `min` and `max` are provided, the settings panel shows a slider instead of
 a plain number input. The description replaces the uniform name as the label.
+Add `step` after `max` when you need finer or coarser slider increments.
 
 ### `@param` — Color Picker
 
