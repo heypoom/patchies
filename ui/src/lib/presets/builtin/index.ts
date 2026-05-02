@@ -23,7 +23,7 @@ import { IFRAME_PRESETS } from './iframe.presets';
 import { ASM_PRESETS } from './asm.presets';
 import { UIUA_PRESETS } from './uiua.presets';
 import { BYTEBEAT_PRESETS } from './bytebeat';
-import { REGL_PRESETS } from './regl.presets';
+import { REGL_PRESETS } from './regl';
 import { SWGL_PRESETS } from './swgl.presets';
 
 // Re-export individual preset collections
