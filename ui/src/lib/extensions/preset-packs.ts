@@ -50,7 +50,16 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Procedural sources for starting visual chains',
     icon: 'Shapes',
     requiredObjects: ['glsl'],
-    presets: ['Constant', 'Linear Ramp', 'Radial Ramp', 'Circular Ramp', 'Noise']
+    presets: [
+      'Constant',
+      'Linear Ramp',
+      'Radial Ramp',
+      'Circular Ramp',
+      'Noise',
+      'Circle',
+      'Rectangle',
+      'Cross'
+    ]
   },
   {
     id: 'texture-composite',
@@ -122,7 +131,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Image-processing effects for texture chains',
     icon: 'SlidersHorizontal',
     requiredObjects: ['glsl'],
-    presets: ['Blur', 'Edge']
+    presets: ['Blur', 'Edge', 'Emboss', 'Slope', 'Normal Map']
   },
   {
     id: 'texture-feedback-data',

@@ -37,7 +37,7 @@ Enable the texture preset packs for basic operators:
 
 - **Visual Shader Starters**: `glsl>` passthrough shader
 - **Texture Generators**: `Constant`, `Linear Ramp`, `Radial Ramp`,
-  `Circular Ramp`, `Noise`
+  `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross`
 - **Texture Composite**: `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`,
   `Composite`, `Over`, `Under`, `Switcher`
 - **Texture Color**: `Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`,
@@ -45,7 +45,7 @@ Enable the texture preset packs for basic operators:
 - **Texture Masks & Keys**: `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`,
   `Matte`
 - **Texture Transform**: `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace`
-- **Texture Filters**: `Blur`, `Edge`
+- **Texture Filters**: `Blur`, `Edge`, `Emboss`, `Slope`, `Normal Map`
 - **Texture Feedback & Data**: `Feedback`
 
 The `glsl>` preset is the best starting point for building GLSL shaders
