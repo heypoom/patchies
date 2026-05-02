@@ -56,6 +56,7 @@ import { preset as preset54 } from './luma-blur';
 import { preset as preset55 } from './luma-level';
 import { preset as preset56 } from './pack';
 import { preset as preset57 } from './convolve';
+import { preset as preset58 } from './math';
 import type { GLSLPreset } from './types';
 
 export const GLSL_PRESETS: Record<string, GLSLPreset> = {
@@ -116,7 +117,8 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
   'Luma Blur': preset54,
   'Luma Level': preset55,
   Pack: preset56,
-  Convolve: preset57
+  Convolve: preset57,
+  Math: preset58
 };
 
 export type { GLSLPreset } from './types';

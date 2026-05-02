@@ -159,6 +159,9 @@ moving on.
 5. `Convolve`: add to **Texture Filters** with named 3x3 kernels instead of
    editable matrix fields. Expose practical kernels such as sharpen, edge,
    outline, box blur, and gaussian-ish blur, plus strength and bias controls.
+6. `Math`: add to **Texture Composite** as a compact two-input arithmetic
+   utility. Keep explicit `Add`, `Subtract`, and `Difference` presets for common
+   cases, but offer `Math` for selectable per-pixel operations.
 
 ## Better With REGL
 

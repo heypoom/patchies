@@ -68,6 +68,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'Add',
       'Subtract',
       'Difference',
+      'Math',
       'Composite',
       'Over',
       'Under',
