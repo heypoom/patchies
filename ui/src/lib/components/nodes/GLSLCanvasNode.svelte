@@ -14,6 +14,7 @@
   import {
     shaderCodeToUniformDefs,
     uniformDefsToSettingsSchema,
+    settingsSchemaToDefaultValues,
     parseShaderName,
     detectFboFormat,
     detectResolution
@@ -248,6 +249,22 @@
     updateNodeData(nodeId, { uniformValues });
   }
 
+  function handleUniformRevertAll() {
+    const nextUniformValues = settingsSchemaToDefaultValues(uniformsSchema) as Record<
+      string,
+      number | boolean | string
+    >;
+
+    uniformValues = nextUniformValues;
+    updateNodeData(nodeId, { uniformValues: nextUniformValues });
+
+    for (const [key, value] of Object.entries(nextUniformValues)) {
+      const uniformDef = data.glUniformDefs.find((d) => d.name === key);
+
+      glSystem.setUniformData(nodeId, key, toGLValue(uniformDef, value));
+    }
+  }
+
   function togglePause() {
     isPaused = !isPaused;
     glSystem.toggleNodePause(nodeId);
@@ -334,6 +351,7 @@
   settingsSchema={uniformsSchema}
   settingsValues={uniformValues}
   onSettingsValueChange={handleUniformValueChange}
+  onSettingsRevertAll={handleUniformRevertAll}
 >
   {#snippet topHandle()}
     {#each data.glUniformDefs as def, defIndex (defIndex)}

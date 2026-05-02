@@ -345,3 +345,11 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
       )
       .otherwise(() => [])
   );
+
+export function settingsSchemaToDefaultValues(schema: SettingsField[]): Record<string, unknown> {
+  return Object.fromEntries(
+    schema
+      .filter((field) => 'default' in field && field.default !== undefined)
+      .map((field) => [field.key, field.default])
+  );
+}

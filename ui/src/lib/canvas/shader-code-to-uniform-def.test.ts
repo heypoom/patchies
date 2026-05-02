@@ -3,7 +3,8 @@ import {
   shaderCodeToUniformDefs,
   uniformDefsToSettingsSchema,
   parseShaderDirectives,
-  parseShaderName
+  parseShaderName,
+  settingsSchemaToDefaultValues
 } from './shader-code-to-uniform-def';
 
 describe('shaderCodeToUniformDefs', () => {
@@ -166,6 +167,30 @@ describe('uniformDefsToSettingsSchema', () => {
     ]);
 
     expect(fields[0].label).toBe('Invert output');
+  });
+});
+
+describe('settingsSchemaToDefaultValues', () => {
+  it('returns defaults keyed by setting name for GLSL reset', () => {
+    const schema = uniformDefsToSettingsSchema([
+      { name: 'amount', type: 'float', default: 0.25, min: 0, max: 1 },
+      {
+        name: 'mode',
+        type: 'int',
+        default: 2,
+        widget: 'select',
+        options: [{ label: 'Two', value: '2' }]
+      },
+      { name: 'enabled', type: 'bool', default: true },
+      { name: 'tint', type: 'vec3', widget: 'color', default: '#ff6600' }
+    ]);
+
+    expect(settingsSchemaToDefaultValues(schema)).toEqual({
+      amount: 0.25,
+      mode: '2',
+      enabled: true,
+      tint: '#ff6600'
+    });
   });
 });
 
