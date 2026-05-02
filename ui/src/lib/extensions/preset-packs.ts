@@ -47,7 +47,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'Mix',
       'Overlay',
       'Switcher',
-      'Solid',
+      'Constant',
       'Linear Ramp',
       'Radial Ramp',
       'Circular Ramp',

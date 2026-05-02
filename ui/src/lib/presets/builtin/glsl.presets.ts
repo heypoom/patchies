@@ -152,14 +152,16 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   fragColor = vec4(color.rgb, color.a * alpha);
 }`;
 
-const SOLID_GL = `// @title Solid
+const CONSTANT_GL = `// @title Constant
 // @primaryButton settings
 // @param iColor color "Color"
+// @param alpha 1.0 0.0 1.0 0.001 "Alpha"
 
 uniform vec3 iColor;
+uniform float alpha;
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  fragColor = vec4(iColor, 1.0);
+  fragColor = vec4(iColor, alpha);
 }`;
 
 const PASSTHRU_GL = `uniform sampler2D image;
@@ -593,10 +595,10 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
     description: 'Crossfade between two video inputs.',
     data: { code: MIX_GL.trim() }
   },
-  Solid: {
+  Constant: {
     type: 'glsl',
-    description: 'Generate a solid color with a color picker.',
-    data: { code: SOLID_GL.trim() }
+    description: 'Generate a constant color and alpha.',
+    data: { code: CONSTANT_GL.trim() }
   },
   'Linear Ramp': {
     type: 'glsl',
