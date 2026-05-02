@@ -51,6 +51,7 @@ import { preset as preset49 } from './cross';
 import { preset as preset50 } from './emboss';
 import { preset as preset51 } from './slope';
 import { preset as preset52 } from './normal-map';
+import { preset as preset53 } from './anti-alias';
 import type { GLSLPreset } from './types';
 
 export const GLSL_PRESETS: Record<string, GLSLPreset> = {
@@ -106,7 +107,8 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
   Cross: preset49,
   Emboss: preset50,
   Slope: preset51,
-  'Normal Map': preset52
+  'Normal Map': preset52,
+  'Anti Alias': preset53
 };
 
 export type { GLSLPreset } from './types';

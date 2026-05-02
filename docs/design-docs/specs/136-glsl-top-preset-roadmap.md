@@ -136,6 +136,16 @@ more niche, overlapping, or awkward to expose through compact settings.
 | `Select`        | multiple textures | Numeric selector over sampler inputs         | Mostly covered by `Switcher`.                               |
 | `Switch`        | multiple textures | Same as `Select` with a different name       | Existing `Switcher` already handles the common case.        |
 
+### GLSL Possible Implementation Order
+
+Work through these one-by-one so each preset gets a compact, tested UX before
+moving on.
+
+1. `Anti Alias`: add to **Texture Filters** as a mask/edge cleanup filter for
+   generated shapes and threshold-style alpha textures. Keep the scope narrow:
+   it smooths a selected channel into alpha and is not a replacement for true
+   multisample anti-aliasing.
+
 ## Better With REGL
 
 These are possible in Patchies, but `regl` is the better target because it gives

@@ -45,7 +45,8 @@ Enable the texture preset packs for basic operators:
 - **Texture Masks & Keys**: `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`,
   `Matte`
 - **Texture Transform**: `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace`
-- **Texture Filters**: `Blur`, `Edge`, `Emboss`, `Slope`, `Normal Map`
+- **Texture Filters**: `Blur`, `Edge`, `Anti Alias`, `Emboss`, `Slope`,
+  `Normal Map`
 
 The `glsl>` preset is the best starting point for building GLSL shaders
 that process video inputs.
