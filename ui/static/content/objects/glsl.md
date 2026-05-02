@@ -40,7 +40,8 @@ Enable the texture preset packs for basic operators:
   `Circular Ramp`, `Noise`
 - **Texture Composite**: `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`,
   `Composite`, `Over`, `Under`, `Switcher`
-- **Texture Color**: `Level`, `Reorder`
+- **Texture Color**: `Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`,
+  `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder`
 - **Texture Masks & Keys**: `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`,
   `Matte`
 - **Texture Transform**: `Transform`, `Crop`, `Displace`, `Noise Displace`

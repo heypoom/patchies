@@ -76,7 +76,19 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Color correction and channel utilities',
     icon: 'Palette',
     requiredObjects: ['glsl'],
-    presets: ['Level', 'Reorder']
+    presets: [
+      'Level',
+      'HSV Adjust',
+      'Monochrome',
+      'Channel Mix',
+      'Limit',
+      'Remap',
+      'Lookup',
+      'RGB to HSV',
+      'HSV to RGB',
+      'Tone Map',
+      'Reorder'
+    ]
   },
   {
     id: 'texture-masks-keys',

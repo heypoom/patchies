@@ -31,6 +31,15 @@ import { preset as preset29 } from './chroma-key';
 import { preset as preset30 } from './rgb-key';
 import { preset as preset31 } from './luma-key';
 import { preset as preset32 } from './matte';
+import { preset as preset33 } from './hsv-adjust';
+import { preset as preset34 } from './monochrome';
+import { preset as preset35 } from './channel-mix';
+import { preset as preset36 } from './limit';
+import { preset as preset37 } from './remap';
+import { preset as preset38 } from './lookup';
+import { preset as preset39 } from './rgb-to-hsv';
+import { preset as preset40 } from './hsv-to-rgb';
+import { preset as preset41 } from './tone-map';
 import type { GLSLPreset } from './types';
 
 export const GLSL_PRESETS: Record<string, GLSLPreset> = {
@@ -66,7 +75,16 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
   'Chroma Key': preset29,
   'RGB Key': preset30,
   'Luma Key': preset31,
-  Matte: preset32
+  Matte: preset32,
+  'HSV Adjust': preset33,
+  Monochrome: preset34,
+  'Channel Mix': preset35,
+  Limit: preset36,
+  Remap: preset37,
+  Lookup: preset38,
+  'RGB to HSV': preset39,
+  'HSV to RGB': preset40,
+  'Tone Map': preset41
 };
 
 export type { GLSLPreset } from './types';
