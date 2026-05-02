@@ -87,6 +87,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'HSV Adjust',
       'Monochrome',
       'Channel Mix',
+      'Pack',
       'Limit',
       'Remap',
       'Lookup',

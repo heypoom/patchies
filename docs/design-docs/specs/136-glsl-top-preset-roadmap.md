@@ -152,6 +152,10 @@ moving on.
 3. `Luma Level`: add to **Texture Color** as a luminance-only level utility.
    Adjust the source luma curve and reapply it to RGB as a ratio so hue is
    mostly preserved.
+4. `Pack`: add to **Texture Color** as a channel-packing utility with four
+   named texture inputs: `redSource`, `greenSource`, `blueSource`, and
+   `alphaSource`. Each output channel gets a selector for Luma/R/G/B/A from its
+   matching input.
 
 ## Better With REGL
 

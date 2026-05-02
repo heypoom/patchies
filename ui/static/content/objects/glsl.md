@@ -41,7 +41,7 @@ Enable the texture preset packs for basic operators:
 - **Texture Composite**: `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`,
   `Composite`, `Over`, `Under`, `Feedback`, `Switcher`
 - **Texture Color**: `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`,
-  `Channel Mix`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`,
+  `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`,
   `Tone Map`, `Reorder`
 - **Texture Masks & Keys**: `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`,
   `Matte`
