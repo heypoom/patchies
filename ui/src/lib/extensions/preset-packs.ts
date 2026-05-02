@@ -10,8 +10,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     name: 'Starter Presets',
     description: 'Essentials for getting started',
     icon: 'Boxes',
-    requiredObjects: ['js'],
-    presets: ['logger.js']
+    requiredObjects: [],
+    presets: ['logger.js', 'glsl>', 'hydra>', 'regl>', 'swgl>', 'three>']
   },
   {
     id: 'canvas-widgets',
@@ -29,20 +29,12 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     ]
   },
   {
-    id: 'visual-starters',
-    name: 'Visual Starters',
-    description: 'Starter templates for GPU visual nodes',
-    icon: 'Code',
-    requiredObjects: ['hydra>', 'glsl', 'regl', 'swgl', 'three'],
-    presets: ['hydra>', 'glsl>', 'regl>', 'swgl>', 'three>']
-  },
-  {
     id: 'hydra-operators',
     name: 'Hydra Operators',
     description: 'Video operators built with Hydra',
     icon: 'Palette',
     requiredObjects: ['hydra'],
-    presets: ['hydra>', 'add.hydra', 'diff.hydra', 'sub.hydra', 'blend.hydra', 'mask.hydra']
+    presets: ['add.hydra', 'diff.hydra', 'sub.hydra', 'blend.hydra', 'mask.hydra']
   },
   {
     id: 'texture-generators',
@@ -76,6 +68,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'Composite',
       'Over',
       'Under',
+      'Feedback',
       'Switcher'
     ]
   },
@@ -132,14 +125,6 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     icon: 'SlidersHorizontal',
     requiredObjects: ['glsl'],
     presets: ['Blur', 'Edge', 'Emboss', 'Slope', 'Normal Map']
-  },
-  {
-    id: 'texture-feedback-data',
-    name: 'Texture Feedback & Data',
-    description: 'Feedback and data-texture visual workflows',
-    icon: 'GitBranch',
-    requiredObjects: ['glsl'],
-    presets: ['Feedback']
   },
   {
     id: 'scripting-demos',
@@ -243,13 +228,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: '3D graphics with Three.js',
     icon: 'Box',
     requiredObjects: ['three', 'glsl'],
-    presets: [
-      'three>',
-      'video-cube.three',
-      'video-torus.three',
-      'video-sphere.three',
-      'crate.three'
-    ]
+    presets: ['video-cube.three', 'video-torus.three', 'video-sphere.three', 'crate.three']
   },
   {
     id: 'gpu-geometry',

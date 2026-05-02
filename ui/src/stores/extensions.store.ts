@@ -24,6 +24,7 @@ export { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
 
 // Import for internal use
 import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
+import { isPresetPackAvailableForObjects } from '$lib/extensions/preset-pack-availability';
 import { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
 import { getObjectAliases } from '$lib/objects/object-definitions';
 
@@ -188,10 +189,9 @@ export const enabledPresets = derived(
       const pack = BUILT_IN_PRESET_PACKS.find((p) => p.id === packId);
       if (!pack) continue;
 
-      // Only include presets if at least one required object is enabled
-      // (partial availability - we filter unavailable, don't block entirely)
-      const hasAnyRequiredObject = pack.requiredObjects.some((obj) => $enabledObjects.has(obj));
-      if (!hasAnyRequiredObject) continue;
+      // Packs without requirements are always active. Otherwise, include the pack if at
+      // least one required object is enabled; individual preset UI filters by preset type.
+      if (!isPresetPackAvailableForObjects(pack.requiredObjects, $enabledObjects)) continue;
 
       for (const preset of pack.presets) {
         presets.add(preset);

@@ -63,15 +63,14 @@ mix `glsl`, `regl`, `swgl`, or `three` presets when that gives the best result.
 
 Recommended user-facing packs:
 
-| Pack                        | Purpose                                      | Likely Presets                                                          |
-| --------------------------- | -------------------------------------------- | ----------------------------------------------------------------------- |
-| **Texture Generators**      | Start a visual chain from procedural content | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`      |
-| **Texture Composite**       | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Composite`, `Over` |
-| **Texture Color**           | Color correction and color-space utilities   | `Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Remap`             |
-| **Texture Masks & Keys**    | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`               |
-| **Texture Transform**       | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`    |
-| **Texture Filters**         | Image-processing effects                     | `Blur`, `Edge`, `Emboss`, `Slope`, `Normal Map`, `Tone Map`             |
-| **Texture Feedback & Data** | Feedback, history, and render-pipeline tools | `Feedback`, future `regl` presets such as `Bloom`, `Cache`              |
+| Pack                     | Purpose                                      | Likely Presets                                                                      |
+| ------------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Texture Generators**   | Start a visual chain from procedural content | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`                  |
+| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Composite`, `Over`, `Feedback` |
+| **Texture Color**        | Color correction and color-space utilities   | `Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Remap`                         |
+| **Texture Masks & Keys** | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`                           |
+| **Texture Transform**    | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`                |
+| **Texture Filters**      | Image-processing effects                     | `Blur`, `Edge`, `Emboss`, `Slope`, `Normal Map`, `Tone Map`                         |
 
 The existing **GLSL Operators** pack can remain during the first migration, but
 new work should move toward these task-based packs. Presets should still be
