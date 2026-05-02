@@ -79,7 +79,8 @@ Recommended user-facing packs:
 | Pack                     | Purpose                                      | Current Presets                                                                                                                                         | Status |
 | ------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | **Texture Generators**   | Start a visual chain from procedural content | `Constant`, `Linear Ramp`, `Radial Ramp`, `Circular Ramp`, `Noise`, `Circle`, `Rectangle`, `Cross`                                                      | Added  |
-| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Feedback`, `Cache`, `Time Scrub`, `Time Machine`, `Switcher` | Added  |
+| **Texture Composite**    | Combine multiple textures                    | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Switcher`                                                    | Added  |
+| **Texture Time**         | Feedback and frame-history utilities         | `Feedback`, `Cache`, `Time Scrub`, `Time Machine`                                                                                                       | Added  |
 | **Texture Color**        | Color correction and color-space utilities   | `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder` | Added  |
 | **Texture Masks & Keys** | Build and apply alpha/matte textures         | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`                                                                                               | Added  |
 | **Texture Transform**    | Move, fit, repeat, and distort textures      | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace`                                                      | Added  |
@@ -90,10 +91,9 @@ new work should move toward these task-based packs. Presets should still be
 implemented as one file per preset under the appropriate built-in preset module;
 pack membership is just how they are exposed to users.
 
-Defer a dedicated **Texture Time** pack until there are at least four temporal
-presets. Likely candidates are `Feedback`, `Cache`, `Time Scrub`,
-`Time Machine`, and a future real `Cache Select` once shared cache resources
-exist.
+Keep **Texture Time** focused on temporal texture utilities. Future candidates
+include a real `Cache Select` once shared cache resources exist, plus possible
+trail/echo or stutter-style frame-history presets.
 
 ## Best Next GLSL Presets
 

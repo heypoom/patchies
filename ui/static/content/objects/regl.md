@@ -175,7 +175,7 @@ Enable **Texture Filters** for REGL-backed image-processing presets:
 
 - `Bloom` - multipass threshold, blur, tint, and composite bloom.
 
-Enable **Texture Composite** for REGL-backed temporal presets:
+Enable **Texture Time** for REGL-backed temporal presets:
 
 - `Cache` - records recent frames into an internal ring buffer and outputs a
   delayed frame.
