@@ -71,6 +71,7 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
     .with('list_packs', () => 'Listing packs')
     .with('enable_pack', () => `${args.enable ? 'Enabling' : 'Disabling'} ${args.packId ?? 'pack'}`)
     .with('generate_object_data', () => `Generating ${args.type ?? 'object'} data`)
+    .with('generate_object_graph', () => 'Generating object graph')
     .with('rewrite_object_data', () => `Rewriting ${args.type ?? 'object'} data`)
     .with('insert_object', () => `Adding ${args.type ?? 'object'}`)
     .with('insert_objects', () => 'Adding objects')

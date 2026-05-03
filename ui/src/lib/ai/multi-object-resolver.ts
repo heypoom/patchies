@@ -267,11 +267,12 @@ Response:
 User: "808 drum machine with kick and snare"
 Response:
 {
-  "objectTypes": ["button", "button", "tone~", "tone~", "object"],
-  "structure": "Two buttons trigger two tone~ drum sounds (kick and snare), both connect to object (out~) for speaker output"
+  "objectTypes": ["button", "button", "tone~", "tone~", "out~"],
+  "structure": "Two buttons trigger two tone~ drum sounds (kick and snare), both connect to out~ for speaker output"
 }
 
-IMPORTANT: For audio output to speakers, use "object" type (which will create out~), NOT "out~" as a direct type.
+IMPORTANT: For audio output to speakers, use the dedicated "out~" type, NOT the generic "object" meta type.
+Use the generic "object" type only for text-style audio/control objects that are not dedicated node types, such as osc~, gain~, delay~, fft~, send, recv, pack, and queue.
 
 CHOOSING BETWEEN p5 / canvas / canvas.dom for visuals:
 - p5: shorter, readable programs where code clarity matters; great for interactive sketches using p5's own mouse/keyboard helpers

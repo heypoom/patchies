@@ -93,7 +93,7 @@ export function generateHandleDocs(types: string[]): string {
   // Always include "object" type guidance since it's the meta-type for audio objects
   if (types.includes('object') || types.some((t) => t.endsWith('~'))) {
     docs.push(
-      `object (ONLY for nodes with type: "object", e.g. osc~, gain~, delay~, out~, fft~):\n` +
+      `object (ONLY for nodes with type: "object", e.g. osc~, gain~, delay~, fft~):\n` +
         `  These nodes use indexed handles. Do NOT use this pattern for non-"object" node types like strudel, expr~, sampler~, etc.\n` +
         `  signal inlets → "audio-in-{index}" (e.g. audio-in-0, audio-in-1)\n` +
         `  message inlets → "message-in-{index}" (e.g. message-in-0, message-in-1)\n` +
@@ -101,7 +101,7 @@ export function generateHandleDocs(types: string[]): string {
         `  message outlets → "message-out-{index}" (e.g. message-out-0)\n` +
         `  analysis outlets → "analysis-out-{index}" (e.g. analysis-out-0) — used by fft~ to output frequency data\n` +
         `  IMPORTANT: fft~ has ONE analysis outlet "analysis-out-0", NOT "message-out-0". Connect it to hydra/glsl message inlets for audio-reactive visuals.\n` +
-        `  out~ has ONE audio inlet: "audio-in-0" — multiple sources connect to the SAME inlet (Web Audio auto-mixes)`
+        `  IMPORTANT: out~ is a dedicated node type, not a generic "object" node.`
     );
   }
 

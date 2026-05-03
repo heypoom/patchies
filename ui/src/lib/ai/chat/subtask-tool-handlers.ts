@@ -5,10 +5,12 @@
  * ActionCards or mutate the canvas directly.
  */
 
-import { objectSchemas } from '$lib/objects/schemas';
 import { editObjectFromPrompt } from '../edit-object-resolver';
+import { resolveMultipleObjectsFromPrompt } from '../multi-object-resolver';
 import { getTextProvider } from '../providers';
 import { generateObjectConfigForType, resolveObjectFromPrompt } from '../single-object-resolver';
+import type { AiObjectNode, SimplifiedEdge } from '../types';
+import { assertKnownCanvasObjectType } from './object-type-validation';
 
 function assertRecord(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -16,18 +18,6 @@ function assertRecord(value: unknown, label: string): Record<string, unknown> {
   }
 
   return value as Record<string, unknown>;
-}
-
-function assertKnownObjectType(type: unknown): string {
-  if (typeof type !== 'string' || !type.trim()) {
-    throw new Error('Object type must be a non-empty string');
-  }
-
-  if (!objectSchemas[type]) {
-    throw new Error(`Unknown object type "${type}"`);
-  }
-
-  return type;
 }
 
 function assertPrompt(prompt: unknown): string {
@@ -50,7 +40,7 @@ export async function resolveGenerateObjectDataSubtask(
     ? await generateObjectConfigForType(
         getTextProvider(),
         prompt,
-        assertKnownObjectType(type),
+        assertKnownCanvasObjectType(type),
         signal,
         onThinking
       )
@@ -61,8 +51,26 @@ export async function resolveGenerateObjectDataSubtask(
   }
 
   return {
-    type: assertKnownObjectType(result.type),
+    type: assertKnownCanvasObjectType(result.type),
     data: result.data as Record<string, unknown>
+  };
+}
+
+export async function resolveGenerateObjectGraphSubtask(
+  args: Record<string, unknown>,
+  signal: AbortSignal | undefined,
+  onThinking: (thought: string) => void
+): Promise<{ nodes: AiObjectNode[]; edges: SimplifiedEdge[] }> {
+  const prompt = assertPrompt(args.prompt);
+  const result = await resolveMultipleObjectsFromPrompt(prompt, undefined, signal, onThinking);
+
+  if (!result || result.nodes.length === 0) {
+    throw new Error('Could not generate object graph');
+  }
+
+  return {
+    nodes: result.nodes,
+    edges: result.edges
   };
 }
 
@@ -71,7 +79,7 @@ export async function resolveRewriteObjectDataSubtask(
   signal: AbortSignal | undefined,
   onThinking: (thought: string) => void
 ): Promise<{ type: string; data: Record<string, unknown> }> {
-  const type = assertKnownObjectType(args.type);
+  const type = assertKnownCanvasObjectType(args.type);
   const existingData = assertRecord(args.existingData, 'existingData');
   const prompt = assertPrompt(args.prompt);
   const errors = Array.isArray(args.errors)
@@ -90,7 +98,7 @@ export async function resolveRewriteObjectDataSubtask(
   }
 
   return {
-    type: assertKnownObjectType(result.type),
+    type: assertKnownCanvasObjectType(result.type),
     data: result.data as Record<string, unknown>
   };
 }

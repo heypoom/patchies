@@ -4,7 +4,7 @@ import { logger, getNodeErrors } from '$lib/utils/logger';
 import { getTextProvider } from '../providers';
 import type { ChatTurnMessage, ToolCall, ToolResult, ToolDeclaration } from '../providers/types';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from '../object-prompts/shared-jsrunner';
-import { buildCanvasToolDeclarations, toolNameToMode } from './canvas-tools';
+import { toolNameToMode } from './canvas-tools';
 import { runModeResolver } from '../modes/run-resolver';
 import { getModeDescriptor, modeDescriptors } from '../modes/descriptors';
 import type { AiModeContext, AiPromptMode, AiModeDescriptor, AiModeResult } from '../modes/types';
@@ -21,6 +21,7 @@ import {
   resolveUpdateObjectData
 } from './direct-tool-handlers';
 import {
+  resolveGenerateObjectGraphSubtask,
   resolveGenerateObjectDataSubtask,
   resolveRewriteObjectDataSubtask
 } from './subtask-tool-handlers';
@@ -30,6 +31,7 @@ import {
   SUBTASK_TOOL_NAMES,
   CONNECT_EDGES,
   DISCONNECT_EDGES,
+  GENERATE_OBJECT_GRAPH,
   GENERATE_OBJECT_DATA,
   INSERT_OBJECT,
   INSERT_OBJECTS,
@@ -195,14 +197,12 @@ export async function streamChatMessage(
     youtubeUrls: msg.youtubeUrls
   }));
 
-  const canvasDeclarations = onAction ? buildCanvasToolDeclarations(nodeContext) : [];
   const allCanvasDeclarations = onAction
     ? [
         insertObjectDeclaration,
         insertObjectsDeclaration,
         updateObjectDataDeclaration,
         replaceObjectDeclaration,
-        ...canvasDeclarations,
         connectEdgesDeclaration,
         disconnectEdgesDeclaration
       ]
@@ -514,6 +514,13 @@ export async function streamChatMessage(
           .with(GENERATE_OBJECT_DATA, async () =>
             respond(
               await resolveGenerateObjectDataSubtask(args, signal, (thought) =>
+                onSubagentThinking?.(outputIndex, thought)
+              )
+            )
+          )
+          .with(GENERATE_OBJECT_GRAPH, async () =>
+            respond(
+              await resolveGenerateObjectGraphSubtask(args, signal, (thought) =>
                 onSubagentThinking?.(outputIndex, thought)
               )
             )

@@ -10,8 +10,12 @@
   references, and compact schema context first.
 - Done: added LLM-backed subtask tools for `generate_object_data` and `rewrite_object_data`; these
   should return structured data to the chat loop, not queue canvas actions directly.
-- Next: remove legacy resolver-backed ChatView tools except `multi`, then consider whether
-  `plan_object_graph` should replace `multi`.
+- Done: added `generate_object_graph` as a graph-generation subtask.
+- Done: removed legacy resolver-backed ChatView tools; `AiObjectPrompt` still uses mode resolvers
+  directly.
+- Done: direct chat validation accepts the generic `object` node type for text-style objects, while
+  graph routing uses dedicated `out~` for speaker output.
+- Next: test graph generation through `generate_object_graph` + `insert_objects`.
 
 ## Summary
 
@@ -248,18 +252,16 @@ rewrite_object_data({
 Uses the existing edit/fix resolver behavior and returns proposed `data`.
 
 ```ts
-plan_object_graph({
-  prompt: string,
+generate_object_graph({
+  prompt: string;
 });
 ```
 
-Returns planned nodes and edges without queuing an action. The chat model can inspect the result and
-then call `insert_objects` with final args.
+Returns generated nodes and edges without queuing an action. The chat model can inspect the result
+and then call `insert_objects` with final args.
 
-The current `multi` tool can remain as a temporary compatibility wrapper for graph-level generation.
-Other legacy resolver-backed chat tools (`insert`, `edit`, `turn_into`, `fix_error`, `split`, and
-`fork`) should be removed from ChatView because their behavior can be expressed as context/subtask
-tools followed by direct canvas tools.
+Legacy resolver-backed chat tools should be removed from ChatView. Their behavior can be expressed
+as context/subtask tools followed by direct canvas tools.
 
 ## Expected Flows
 
@@ -297,13 +299,13 @@ assistant -> "Queued a p5 sketch for you to apply."
 
 The main chat model writes the object data after fetching the object prompt.
 
-### Subtask Then Direct Create
+### Graph Subtask Then Direct Create
 
 User: "Make a connected kick and snare patch."
 
 ```text
-assistant -> plan_object_graph({ prompt: "connected kick and snare patch" })
-tool      -> { nodes, edges, notes }
+assistant -> generate_object_graph({ prompt: "connected kick and snare patch" })
+tool      -> { nodes, edges }
 assistant -> get_object_instructions({ type: "tone~" })
 assistant -> get_object_instructions({ type: "button" })
 assistant -> insert_objects({ nodes, edges })
@@ -311,7 +313,7 @@ tool      -> { status: "queued", actionId }
 assistant -> "Queued the drum patch with buttons connected to drum voices and output."
 ```
 
-The subtask handles planning or generation, but the final canvas mutation is still a direct tool.
+The subtask handles graph generation, but the final canvas mutation is still a direct tool.
 
 ### Error Fix
 
@@ -382,7 +384,7 @@ Update the chat system prompt with the new tool-selection policy:
    instructions are already present in the current conversation/tool loop.
 4. Use subtask tools only when a generation/rewrite/planning step is required.
 5. After a subtask returns structured output, call a direct tool to queue the actual canvas mutation.
-6. Do not call compatibility resolver tools for simple direct edits.
+6. Do not call resolver-backed mode tools from ChatView.
 
 ## Implementation Plan
 
@@ -390,7 +392,7 @@ Update the chat system prompt with the new tool-selection policy:
 
 - Add tool category metadata to chat tool declarations: `context`, `direct`, or `subtask`.
 - Rename UI labels from "subagent" to "subtask" for LLM-backed tools.
-- Keep existing mode tools available as compatibility tools.
+- Keep existing mode resolvers available to `AiObjectPrompt`.
 - Update system prompt language to explain the new categories.
 
 ### Phase 2: Direct Object Mutation Tools
@@ -405,8 +407,8 @@ Update the chat system prompt with the new tool-selection policy:
 
 ### Phase 3: Subtask Tool Wrappers
 
-- Add `generate_object_data`, `rewrite_object_data`, and `plan_object_graph` as context-like tools
-  that return structured data to the main chat loop.
+- Add `generate_object_data`, `rewrite_object_data`, and `generate_object_graph` as context-like
+  tools that return structured data to the main chat loop.
 - Internally reuse existing single/edit/multi resolvers.
 - Make their tool results visible in the expanded tool-call UI.
 
@@ -423,11 +425,9 @@ Update the chat system prompt with the new tool-selection policy:
 
 ### Phase 5: Compatibility Migration
 
-- Remove legacy resolver-backed mode tools from ChatView except `multi`.
+- Remove legacy resolver-backed mode tools from ChatView.
 - Keep current resolver-backed mode tools for `AiObjectPrompt`.
 - Prefer direct tools in the system prompt and evals.
-- Keep `multi` as the temporary graph-level generation fallback until a direct/subtask replacement
-  exists.
 - Re-express removed chat tools as context/subtask/direct sequences:
   - `insert` → `get_object_instructions` + optional `generate_object_data` + `insert_object`
   - `edit` / `fix_error` → `get_object_data` / `get_object_errors` + optional
@@ -436,6 +436,7 @@ Update the chat system prompt with the new tool-selection policy:
     `replace_object`
   - `split` / `fork` → `get_object_data` + optional generation/rewrite + `insert_object` or
     `insert_objects`
+  - `multi` → `generate_object_graph` + `insert_objects`
 
 ## Open Questions
 
@@ -443,8 +444,8 @@ Update the chat system prompt with the new tool-selection policy:
   once object data schemas are stronger?
 - Should direct object creation auto-fetch instructions at the resolver layer when the model skipped
   `get_object_instructions`, or should that be enforced only by prompt/evals?
-- Should `generate_object_data` be exposed to the model as a tool, or should it remain an internal
-  implementation detail behind compatibility tools?
+- Should `generate_object_data` stay model-visible long term, or should some flows wrap it behind
+  higher-level orchestration?
 - Should `update_object_data` support JSON Patch operations for nested edits, or is shallow merge
   enough for v1?
 - Should auto-approve ever apply direct tools immediately, or should all direct tools remain

@@ -6,9 +6,9 @@
  */
 
 import { getModeDescriptor } from '../modes/descriptors';
-import { objectSchemas } from '$lib/objects/schemas';
 import type { AiModeResult, AiPromptMode } from '../modes/types';
 import type { AiObjectNode, SimplifiedEdge } from '../types';
+import { assertKnownCanvasObjectType } from './object-type-validation';
 import type { ChatAction, ChatNode } from './resolver';
 
 interface DirectToolDeps {
@@ -23,18 +23,6 @@ function assertRecord(value: unknown, label: string): Record<string, unknown> {
   }
 
   return value as Record<string, unknown>;
-}
-
-function assertKnownObjectType(type: unknown): string {
-  if (typeof type !== 'string' || !type.trim()) {
-    throw new Error('Object type must be a non-empty string');
-  }
-
-  if (!objectSchemas[type]) {
-    throw new Error(`Unknown object type "${type}"`);
-  }
-
-  return type;
 }
 
 function assertJsonSerializable(value: unknown, label: string): void {
@@ -73,7 +61,7 @@ function pendingAction(
 }
 
 export function resolveInsertObject(args: Record<string, unknown>): ChatAction {
-  const type = assertKnownObjectType(args.type);
+  const type = assertKnownCanvasObjectType(args.type);
   const data = sanitizeData(assertRecord(args.data, 'data'));
 
   assertJsonSerializable(data, 'data');
@@ -94,7 +82,7 @@ export function resolveInsertObjects(args: Record<string, unknown>): ChatAction 
 
   const nodes: AiObjectNode[] = rawNodes.map((rawNode, index) => {
     const node = assertRecord(rawNode, `nodes[${index}]`);
-    const type = assertKnownObjectType(node.type);
+    const type = assertKnownCanvasObjectType(node.type);
     const data = sanitizeData(assertRecord(node.data, `nodes[${index}].data`));
     const position =
       node.position && typeof node.position === 'object' && !Array.isArray(node.position)
@@ -170,7 +158,7 @@ export function resolveReplaceObject(
     throw new Error(`Node "${nodeId}" not found`);
   }
 
-  const newType = assertKnownObjectType(args.type);
+  const newType = assertKnownCanvasObjectType(args.type);
   const newData = sanitizeData(assertRecord(args.data, 'data'));
 
   assertJsonSerializable(newData, 'data');
