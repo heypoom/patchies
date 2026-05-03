@@ -40,7 +40,10 @@ value is the top of the stack.
 | `div` | `( a b -- a/b )` | Integer division |
 | `mod` | `( a b -- a%b )` | Modulo |
 | `inc` | `( a -- a+1 )` | Increment by 1 |
-| `dec` | `( a -- a-1 )` | Decrement by 1 (min 0) |
+| `dec` | `( a -- a-1 )` | Decrement by 1 |
+
+All numbers are 16-bit unsigned values (`0` to `65535`). Arithmetic wraps
+around modulo `65536`: `65535 inc` becomes `0`, and `0 dec` becomes `65535`.
 
 ### COMPARISON
 

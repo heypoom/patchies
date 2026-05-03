@@ -64,6 +64,9 @@ same 0x200-cell stride.
 - User data (load/store) should use HIGH addresses (e.g., 0xF00+)
 - User is responsible for not overflowing stack into their data
 - Call stack has a hard limit - errors on overflow rather than corrupting memory
+- Arithmetic uses 16-bit wrapping semantics. `add`, `sub`, `mul`, `inc`, and
+  `dec` wrap modulo 65536 instead of halting the VM on integer overflow or
+  underflow.
 
 **Bad Apple support**: 32×24 = 768 pixels. At 1 bit/pixel packed into u16 = 48 u16 per frame. RAM of 3264 can hold ~68 frames or use 768 for frame buffer + 2496 for working memory.
 

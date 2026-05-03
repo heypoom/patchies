@@ -8,7 +8,7 @@ use crate::mem::WithStringManager;
 use crate::machine::{Action, Actor};
 use crate::machine::virtual_mem::VirtualMemory;
 use crate::runtime_error::{IndexOutOfBoundsSnafu, NotEnoughValuesSnafu};
-use crate::RuntimeError::{CallStackExceeded, CannotDivideByZero, CannotLoadFromMemory, IntegerOverflow, IntegerUnderflow, MissingMessageBody, MissingReturnAddress, MissingValueToStore};
+use crate::RuntimeError::{CallStackExceeded, CannotDivideByZero, CannotLoadFromMemory, MissingMessageBody, MissingReturnAddress, MissingValueToStore};
 
 type Errorable = Result<(), RuntimeError>;
 
@@ -89,15 +89,15 @@ impl Execute for Machine {
             }
 
             // Addition, subtraction, multiplication, division and modulo.
-            Op::Add => s.apply_two(|a, b| a.checked_add(b).ok_or(IntegerOverflow))?,
-            Op::Sub => s.apply_two(|a, b| a.checked_sub(b).ok_or(IntegerUnderflow))?,
-            Op::Mul => s.apply_two(|a, b| a.checked_mul(b).ok_or(IntegerOverflow))?,
+            Op::Add => s.apply_two(|a, b| Ok(a.wrapping_add(b)))?,
+            Op::Sub => s.apply_two(|a, b| Ok(a.wrapping_sub(b)))?,
+            Op::Mul => s.apply_two(|a, b| Ok(a.wrapping_mul(b)))?,
             Op::Div => s.apply_two(|a, b| a.checked_div(b).ok_or(CannotDivideByZero))?,
             Op::Mod => s.apply_two(|a, b| Ok(a % b))?,
 
             // Increment and decrement.
-            Op::Inc => s.apply(|v| v.checked_add(1).ok_or(IntegerOverflow))?,
-            Op::Dec => s.apply(|v| Ok(v.checked_sub(1).unwrap_or(0)))?,
+            Op::Inc => s.apply(|v| Ok(v.wrapping_add(1)))?,
+            Op::Dec => s.apply(|v| Ok(v.wrapping_sub(1)))?,
 
             // Equality and comparison operations.
             Op::Equal => s.apply_two(|a, b| Ok((a == b).into()))?,

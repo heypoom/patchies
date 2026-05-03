@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use machine::{Execute, Machine as M, Op, RuntimeError};
-    use machine::RuntimeError::{CannotDivideByZero, IntegerOverflow};
+    use machine::RuntimeError::CannotDivideByZero;
 
     type Errorable = Result<(), RuntimeError>;
 
@@ -36,9 +36,26 @@ mod tests {
     }
 
     #[test]
-    fn test_add_overflow() -> Errorable {
+    fn test_arithmetic_wraps_on_overflow_and_underflow() -> Errorable {
         let mut m: M = vec![Op::Push(u16::MAX), Op::Push(u16::MAX), Op::Add].into();
-        assert_eq!(m.run(), Err(IntegerOverflow));
+        m.run()?;
+        assert_eq!(m.stack().peek(), u16::MAX - 1);
+
+        let mut m: M = vec![Op::Push(0), Op::Push(1), Op::Sub].into();
+        m.run()?;
+        assert_eq!(m.stack().peek(), u16::MAX);
+
+        let mut m: M = vec![Op::Push(u16::MAX), Op::Push(2), Op::Mul].into();
+        m.run()?;
+        assert_eq!(m.stack().peek(), u16::MAX - 1);
+
+        let mut m: M = vec![Op::Push(u16::MAX), Op::Inc].into();
+        m.run()?;
+        assert_eq!(m.stack().peek(), 0);
+
+        let mut m: M = vec![Op::Push(0), Op::Dec].into();
+        m.run()?;
+        assert_eq!(m.stack().peek(), u16::MAX);
 
         Ok(())
     }
