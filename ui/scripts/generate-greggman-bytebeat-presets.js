@@ -43,13 +43,51 @@ function slugify(value) {
   return slug || 'untitled';
 }
 
+function trimSlug(slug, maxLength) {
+  if (slug.length <= maxLength) return slug;
+
+  const trimmed = slug.slice(0, maxLength).replace(/-[^-]*$/, '');
+  return trimmed || slug.slice(0, maxLength).replace(/-+$/, '');
+}
+
+function getArchiveAuthor(title) {
+  return title.match(/\(by\s+([^)]+)\)\s*$/i)?.[1]?.trim();
+}
+
+function getConciseTitle(title) {
+  const withoutAuthor = title.replace(/\s*\(by\s+[^)]+\)\s*$/i, '').trim();
+  const quotedPhrases = Array.from(withoutAuthor.matchAll(/["“”]([^"“”]{2,60})["“”]/g)).map(
+    (match) => match[1].trim()
+  );
+
+  if (quotedPhrases.length > 0) {
+    return quotedPhrases.at(-1);
+  }
+
+  const beforeFormula = withoutAuthor.split(/\s+t[*/&|^<>=]/)[0]?.trim();
+  if (beforeFormula && beforeFormula.length >= 3 && beforeFormula.length <= 60) {
+    return beforeFormula;
+  }
+
+  const beforeSeparator = withoutAuthor.split(/\s[-–—:]\s|:\s/)[0]?.trim();
+  if (beforeSeparator && beforeSeparator.length >= 3 && beforeSeparator.length <= 60) {
+    return beforeSeparator;
+  }
+
+  return withoutAuthor.split(/\s+/).slice(0, 6).join(' ');
+}
+
 function makeUniqueKey(title, seenKeys) {
-  const baseKey = `${slugify(title)}.greggman.beat`;
+  const author = getArchiveAuthor(title);
+  const nameParts = [getConciseTitle(title), author ? `by ${author}` : undefined].filter(Boolean);
+  const baseSlug = trimSlug(slugify(nameParts.join(' ')), 64);
+  const baseKey = `${baseSlug}.beat`;
   let key = baseKey;
   let duplicateIndex = 2;
 
   while (seenKeys.has(key)) {
-    key = `${baseKey.replace(/\.greggman\.beat$/, '')}-${duplicateIndex}.greggman.beat`;
+    const duplicateSlug = trimSlug(baseSlug, 60 - String(duplicateIndex).length);
+    key = `${duplicateSlug}-${duplicateIndex}.beat`;
     duplicateIndex += 1;
   }
 
@@ -115,7 +153,7 @@ async function main() {
 
       presets[key] = {
         type: 'bytebeat~',
-        description: `${song.title} by ${author}`,
+        description: song.title,
         data: {
           expr,
           type,

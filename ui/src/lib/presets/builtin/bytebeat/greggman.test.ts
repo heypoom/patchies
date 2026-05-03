@@ -10,11 +10,11 @@ describe('Greggman HTML5 bytebeat archive presets', () => {
     expect(GREGGMAN_BYTEBEAT_PRESET_KEYS).toHaveLength(504);
     expect(Object.keys(GREGGMAN_BYTEBEAT_PRESETS)).toHaveLength(504);
 
-    const preset = GREGGMAN_BYTEBEAT_PRESETS['a-new-industrial-chiptune-by-ryg.greggman.beat'];
+    const preset = GREGGMAN_BYTEBEAT_PRESETS['a-new-industrial-chiptune-by-ryg.beat'];
 
     expect(preset).toMatchObject({
       type: 'bytebeat~',
-      description: 'a new industrial chiptune by ryg by greggman'
+      description: 'a new industrial chiptune by ryg'
     });
     expect(preset.data).toMatchObject({
       type: 'bytebeat',
@@ -25,6 +25,17 @@ describe('Greggman HTML5 bytebeat archive presets', () => {
     expect(preset.data.expr).toContain('// a new industrial chiptune');
     expect(preset.data.expr).toContain('// by ryg');
     expect(preset.data.expr).toContain('t*(1+');
+  });
+
+  test('keeps generated preset names short enough for browser UI', () => {
+    const presetNames = Object.keys(GREGGMAN_BYTEBEAT_PRESETS);
+    const longPresetNames = presetNames.filter((presetName) => presetName.length > 80);
+
+    expect(longPresetNames).toEqual([]);
+    expect(presetNames).toContain('boss-level-by-sthephanshi.beat');
+    expect(presetNames).not.toContain(
+      'game-levels-series-of-formulas-discovered-by-experimenting-with-running-man-t-3-1-5-t-10-5-3-t-14-3-t-8-allows-to-get-different-interesting-chiptune-sounds-boss-level-slow-down-t-2-rhythm-to-t-3-sounds-dangerous-by-sthephanshi.beat'
+    );
   });
 
   test('registers the archive in size-based preset pack subfolders', () => {

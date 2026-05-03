@@ -121,9 +121,7 @@ describe('built-in preset packs', () => {
       throw new Error('Expected archive size buckets to be preset folders');
     }
 
-    expect(isPreset((tiny as PresetFolder)['a-new-industrial-chiptune-by-ryg.greggman.beat'])).toBe(
-      true
-    );
+    expect(isPreset((tiny as PresetFolder)['a-new-industrial-chiptune-by-ryg.beat'])).toBe(true);
   });
 
   test('registers Chromatic Aberration as a GLSL texture filter preset', () => {
