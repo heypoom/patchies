@@ -4,6 +4,7 @@ const code = `// @title Add
 // @primaryButton settings
 // @param opacity 1.0 0.0 1.0 0.001 "Opacity"
 // @param clampOutput true "Clamp Output"
+// @noinlet clampOutput
 
 uniform sampler2D a;
 uniform sampler2D b;

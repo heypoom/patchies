@@ -7,6 +7,7 @@ const code = `// @title Remap
 // @param outMin 0.0 -2.0 2.0 0.001 "Output Min"
 // @param outMax 1.0 -2.0 2.0 0.001 "Output Max"
 // @param clampOutput true "Clamp Output"
+// @noinlet clampOutput
 
 uniform sampler2D source;
 uniform float inMin;

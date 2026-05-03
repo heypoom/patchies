@@ -7,6 +7,7 @@ const code = `// @title Math
 // @param offset 0.0 -1.0 1.0 0.001 "Offset"
 // @param scale 1.0 -4.0 4.0 0.001 "Scale"
 // @param clampOutput true "Clamp Output"
+// @noinlet clampOutput
 
 uniform sampler2D a;
 uniform sampler2D b;

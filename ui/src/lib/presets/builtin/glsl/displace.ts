@@ -5,6 +5,7 @@ const code = `// @title Displace
 // @param amount 0.05 -0.5 0.5 0.001 "Amount"
 // @param center 0.5 0.0 1.0 0.001 "Center"
 // @param useLuma false "Use Luma"
+// @noinlet useLuma
 
 uniform sampler2D source;
 uniform sampler2D displacement;
