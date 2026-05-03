@@ -140,17 +140,22 @@ describe('built-in preset packs', () => {
     const demoCompositions = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'demo-compositions');
     const chuckDemos = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'chuck-demos');
     const chuckPresetNames = [
-      'bell.chuck',
-      'fm-siren.chuck',
-      'shepard-riser.chuck',
-      'mand-o-matic.chuck',
-      'resonant-noise.chuck',
-      'dtmf-dialer.chuck',
-      'chorus-pad.chuck',
-      'modal-mallets.chuck',
-      'moog-bass.chuck',
-      'chant-voice.chuck',
-      'wind-texture.chuck'
+      'bell.ck',
+      'fm-siren.ck',
+      'shepard-riser.ck',
+      'mand-o-matic.ck',
+      'resonant-noise.ck',
+      'dtmf-dialer.ck',
+      'chorus-pad.ck',
+      'modal-mallets.ck',
+      'moog-bass.ck',
+      'chant-voice.ck',
+      'wind-texture.ck',
+      'adsr-notes.ck',
+      'chirp-sweeps.ck',
+      'stereo-noise-pan.ck',
+      'oscillator-cloud.ck',
+      'rhodey-echo.ck'
     ];
 
     expect(chuckDemos?.requiredObjects).toEqual(['chuck~']);
@@ -168,6 +173,8 @@ describe('built-in preset packs', () => {
       expect(preset?.type).toBe('chuck~');
       expect(presetData?.expr?.length).toBeGreaterThan(0);
     }
+
+    expect(chuckPresetNames.every((presetName) => presetName.endsWith('.ck'))).toBe(true);
   });
 
   test('keeps Over and Under inlet order consistent', () => {

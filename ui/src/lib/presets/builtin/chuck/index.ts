@@ -9,21 +9,31 @@ import { preset as preset7 } from './modal-mallets';
 import { preset as preset8 } from './moog-bass';
 import { preset as preset9 } from './chant-voice';
 import { preset as preset10 } from './wind-texture';
+import { preset as preset11 } from './adsr-notes';
+import { preset as preset12 } from './chirp-sweeps';
+import { preset as preset13 } from './stereo-noise-pan';
+import { preset as preset14 } from './oscillator-cloud';
+import { preset as preset15 } from './rhodey-echo';
 
 import type { ChuckPreset } from './types';
 
 export const CHUCK_DEMO_PRESETS: Record<string, ChuckPreset> = {
-  'bell.chuck': preset0,
-  'fm-siren.chuck': preset1,
-  'shepard-riser.chuck': preset2,
-  'mand-o-matic.chuck': preset3,
-  'resonant-noise.chuck': preset4,
-  'dtmf-dialer.chuck': preset5,
-  'chorus-pad.chuck': preset6,
-  'modal-mallets.chuck': preset7,
-  'moog-bass.chuck': preset8,
-  'chant-voice.chuck': preset9,
-  'wind-texture.chuck': preset10
+  'bell.ck': preset0,
+  'fm-siren.ck': preset1,
+  'shepard-riser.ck': preset2,
+  'mand-o-matic.ck': preset3,
+  'resonant-noise.ck': preset4,
+  'dtmf-dialer.ck': preset5,
+  'chorus-pad.ck': preset6,
+  'modal-mallets.ck': preset7,
+  'moog-bass.ck': preset8,
+  'chant-voice.ck': preset9,
+  'wind-texture.ck': preset10,
+  'adsr-notes.ck': preset11,
+  'chirp-sweeps.ck': preset12,
+  'stereo-noise-pan.ck': preset13,
+  'oscillator-cloud.ck': preset14,
+  'rhodey-echo.ck': preset15
 };
 
 export const CHUCK_DEMO_PRESET_KEYS = Object.keys(CHUCK_DEMO_PRESETS);

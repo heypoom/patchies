@@ -135,6 +135,7 @@ preset pack. Larger visual effect libraries remain in their own opt-in preset pa
 **ChucK Demos:**
 
 - ChucK presets should be curated adaptations of upstream ChucK examples, not bulk imports.
+- ChucK preset names should use the `.ck` extension, matching standard ChucK files.
 - Each preset should sound useful immediately with no external patching.
 - Store ChucK presets as one preset per file under `ui/src/lib/presets/builtin/chuck/`,
   matching the GLSL and REGL preset module pattern.
@@ -156,6 +157,11 @@ preset pack. Larger visual effect libraries remain in their own opt-in preset pa
   - `stk/moog.ck` for generative Moog-style synth lines
   - `deep/chant.ck` for source-filter vocal synthesis
   - `basic/wind2.ck` for wind-like noise textures
+  - `basic/adsr.ck` for envelope-shaped note starters
+  - `basic/chirp.ck` for pitch-sweep gestures
+  - `stereo/stereo-noise.ck` for stereo motion
+  - `basic/oscillatronx.ck` for mixed oscillator textures
+  - `stk/rhodey.ck` for echoing electric-piano fragments
 
 **Greggman Bytebeat Archive:**
 
