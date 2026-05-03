@@ -23,6 +23,12 @@ import {
   resolveUpdateObjectData
 } from './direct-tool-handlers';
 import {
+  getPresetContent,
+  resolveInsertPreset,
+  searchAvailablePresets,
+  type AvailablePreset
+} from './preset-tool-handlers';
+import {
   resolveGenerateObjectGraphSubtask,
   resolveGenerateObjectDataSubtask,
   resolveRewriteObjectDataSubtask
@@ -38,6 +44,7 @@ import {
   GENERATE_OBJECT_GRAPH,
   GENERATE_OBJECT_DATA,
   INSERT_OBJECT,
+  INSERT_PRESET,
   INSERT_OBJECTS,
   REPLACE_OBJECT,
   REWRITE_OBJECT_DATA,
@@ -48,8 +55,11 @@ import {
   GET_OBJECT_ERRORS,
   SEARCH_DOCS,
   GET_DOC_CONTENT,
-  LIST_PACKS,
+  GET_PRESET_CONTENT,
+  LIST_OBJECT_PACKS,
+  LIST_PRESET_PACKS,
   ENABLE_PACK,
+  SEARCH_PRESETS,
   SEARCH_SAMPLES,
   SEARCH_FREESOUND,
   contextToolDeclarations,
@@ -57,6 +67,7 @@ import {
   deleteObjectsDeclaration,
   disconnectEdgesDeclaration,
   insertObjectDeclaration,
+  insertPresetDeclaration,
   insertObjectsDeclaration,
   moveObjectsDeclaration,
   replaceObjectDeclaration,
@@ -160,6 +171,7 @@ export async function streamChatMessage(
     kind: 'object' | 'preset',
     enable: boolean
   ) => { success: boolean; error?: string },
+  getAvailablePresets?: () => AvailablePreset[],
   onToolCallOutput?: (callIndex: number, output: unknown) => void,
   onSubagentThinking?: (callIndex: number, thought: string) => void
 ): Promise<string> {
@@ -207,6 +219,7 @@ export async function streamChatMessage(
   const allCanvasDeclarations = onAction
     ? [
         insertObjectDeclaration,
+        insertPresetDeclaration,
         insertObjectsDeclaration,
         updateObjectDataDeclaration,
         replaceObjectDeclaration,
@@ -295,6 +308,8 @@ export async function streamChatMessage(
           onAction(resolveDisconnectEdges(args, { getNodeById, getGraphSummary }));
         } else if (toolName === INSERT_OBJECT) {
           onAction(resolveInsertObject(args));
+        } else if (toolName === INSERT_PRESET) {
+          onAction(resolveInsertPreset(args, { presets: getAvailablePresets?.() ?? [] }));
         } else if (toolName === INSERT_OBJECTS) {
           onAction(resolveInsertObjects(args));
         } else if (toolName === UPDATE_OBJECT_DATA) {
@@ -493,8 +508,17 @@ export async function streamChatMessage(
                 : { error: `No documentation found for object "${slug}"` }
             );
           })
-          .with(LIST_PACKS, async () =>
-            respond(getPacksState?.() ?? { objectPacks: [], presetPacks: [] })
+          .with(LIST_OBJECT_PACKS, async () =>
+            respond({ objectPacks: getPacksState?.().objectPacks ?? [] })
+          )
+          .with(LIST_PRESET_PACKS, async () =>
+            respond({ presetPacks: getPacksState?.().presetPacks ?? [] })
+          )
+          .with(SEARCH_PRESETS, async () =>
+            respond(searchAvailablePresets(args, getAvailablePresets?.() ?? []))
+          )
+          .with(GET_PRESET_CONTENT, async () =>
+            respond(getPresetContent(args, getAvailablePresets?.() ?? []))
           )
           .with(SEARCH_SAMPLES, async () => {
             const result = await resolveSearchSamples(args);
@@ -626,6 +650,7 @@ export async function streamChatMessage(
 function modeForToolName(name: string): AiPromptMode {
   return match(name)
     .with(INSERT_OBJECT, () => 'insert' as const)
+    .with(INSERT_PRESET, () => 'insert' as const)
     .with(INSERT_OBJECTS, () => 'multi' as const)
     .with(UPDATE_OBJECT_DATA, () => 'edit' as const)
     .with(REPLACE_OBJECT, () => 'turn-into' as const)

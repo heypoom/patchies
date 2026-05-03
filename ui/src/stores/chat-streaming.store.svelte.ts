@@ -22,6 +22,7 @@ import { toolNameToMode } from '$lib/ai/chat/canvas-tools';
 import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
 import type { ThreadMessage, ThreadActionRef, ThreadToolCall } from '$lib/ai/chat/types';
 import { saveChatMessages, loadChatMessages, deleteChatMessages } from './chat-history.store';
+import { flattenedPresets } from './preset-library.store';
 import {
   BUILT_IN_PACKS,
   BUILT_IN_PRESET_PACKS,
@@ -32,6 +33,7 @@ import {
   isPackLocked,
   isPresetPackLocked
 } from './extensions.store';
+import { getBuiltInPresetPackByPresetName } from '$lib/extensions/preset-pack-index';
 
 class SessionState {
   messages = $state<ThreadMessage[]>([]);
@@ -69,11 +71,16 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
     .with('search_docs', () => `Searching: "${args.query ?? ''}"`)
     .with('get_doc_content', () => `Fetching ${args.kind ?? 'doc'}: ${args.slug ?? ''}`)
     .with('list_packs', () => 'Listing packs')
+    .with('list_object_packs', () => 'Listing object packs')
+    .with('list_preset_packs', () => 'Listing preset packs')
     .with('enable_pack', () => `${args.enable ? 'Enabling' : 'Disabling'} ${args.packId ?? 'pack'}`)
+    .with('search_presets', () => `Searching presets: "${args.query ?? ''}"`)
+    .with('get_preset_content', () => `Reading preset ${args.presetName ?? ''}`)
     .with('generate_object_data', () => `Generating ${args.type ?? 'object'} data`)
     .with('generate_object_graph', () => 'Generating object graph')
     .with('rewrite_object_data', () => `Rewriting ${args.type ?? 'object'} data`)
     .with('insert_object', () => `Adding ${args.type ?? 'object'}`)
+    .with('insert_preset', () => `Adding preset ${args.presetName ?? ''}`)
     .with('insert_objects', () => 'Adding objects')
     .with('update_object_data', () => `Updating ${args.nodeId ?? 'object'}`)
     .with('replace_object', () => `Replacing ${args.nodeId ?? 'object'}`)
@@ -167,6 +174,22 @@ function buildOnEnablePack() {
   };
 }
 
+function buildGetAvailablePresets() {
+  return () =>
+    get(flattenedPresets).map((entry) => {
+      const pack =
+        entry.libraryId === 'built-in' ? getBuiltInPresetPackByPresetName(entry.preset.name) : null;
+
+      return {
+        path: entry.path,
+        preset: entry.preset,
+        libraryId: entry.libraryId,
+        libraryName: entry.libraryName,
+        ...(pack ? { pack: { id: pack.id, name: pack.name } } : {})
+      };
+    });
+}
+
 export const chatStreamStore = {
   getSession(sessionId: string): SessionState {
     return getOrCreateSession(sessionId);
@@ -247,6 +270,7 @@ export const chatStreamStore = {
         },
         buildGetPacksState(),
         buildOnEnablePack(),
+        buildGetAvailablePresets(),
         (callIndex, output) => {
           session.streamingToolCalls = session.streamingToolCalls.map((c, i) =>
             i === callIndex ? { ...c, output } : c
@@ -423,6 +447,7 @@ export const chatStreamStore = {
         },
         buildGetPacksState(),
         buildOnEnablePack(),
+        buildGetAvailablePresets(),
         (callIndex, output) => {
           session.streamingToolCalls = session.streamingToolCalls.map((c, i) =>
             i === callIndex ? { ...c, output } : c

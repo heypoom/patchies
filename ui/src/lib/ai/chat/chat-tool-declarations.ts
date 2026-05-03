@@ -24,8 +24,8 @@ You can suggest simulation or visualization ideas in your text response, but wai
 
 ## Tool Categories
 
-- **Context tools** read the patch, logs, docs, object instructions, samples, or packs. They do not queue canvas changes.
-- **Direct canvas tools** queue concrete mutations from final structured arguments: insert_object, insert_objects, update_object_data, replace_object, delete_objects, move_objects, connect_edges, disconnect_edges.
+- **Context tools** read the patch, logs, docs, object instructions, samples, presets, or packs. They do not queue canvas changes.
+- **Direct canvas tools** queue concrete mutations from final structured arguments: insert_object, insert_preset, insert_objects, update_object_data, replace_object, delete_objects, move_objects, connect_edges, disconnect_edges.
 - **Subtask tools** call an LLM internally and return generated data to you. They do not queue canvas changes. Use generate_object_data, rewrite_object_data, and generate_object_graph when you need generated data before calling a direct canvas tool.
 
 For non-trivial object creation or code/data rewriting, call **get_object_instructions** for the relevant object type before using a direct canvas tool. Use the returned instructions, schema, and handle reference to produce final object data or handle IDs.
@@ -39,10 +39,11 @@ When the user asks you to act on the canvas, always prefer the **simplest direct
 2b. **disconnect_edges** — If the user wants to remove a connection between objects, use this. Call get_graph_nodes first to find edge IDs or source/target pairs.
 2c. **delete_objects** — If the user explicitly asks to delete/remove objects, call get_graph_nodes first to find object IDs, then delete only the requested objects.
 2d. **move_objects** — If the user asks to move or lay out existing objects, call get_graph_nodes first to get current positions, then provide final absolute positions.
-3. **insert_object + connect_edges** — If the user needs a new object that should connect to existing objects, use **insert_object** to create ONLY the missing object, then use **connect_edges** to wire it to the existing object(s). Do NOT use insert_objects when some objects already exist.
+3. **insert_object/insert_preset + connect_edges** — If the user needs a new object or preset that should connect to existing objects, use **insert_object** or **insert_preset** to create ONLY the missing object, then use **connect_edges** to wire it to the existing object(s). Do NOT use insert_objects when some objects already exist.
 4. **insert_object** — If the user needs ONE new standalone object and you can provide final data, use insert_object. Call get_object_instructions first for non-trivial object data.
-5. **insert_objects** — ONLY use this when the user explicitly asks for multiple connected objects AND none of them exist on the canvas yet, and you can provide final node data and edges.
-6. **Subtask + direct tool** — If a direct tool is not enough because you need generated object data, a rewrite, or a generated graph, call generate_object_data, rewrite_object_data, or generate_object_graph first, then call insert_object/update_object_data/replace_object/insert_objects with the returned data.
+5. **search_presets + insert_preset** — If the user asks for a saved preset, call search_presets unless they provide an exact preset name, then use insert_preset with the chosen preset name.
+6. **insert_objects** — ONLY use this when the user explicitly asks for multiple connected objects AND none of them exist on the canvas yet, and you can provide final node data and edges.
+7. **Subtask + direct tool** — If a direct tool is not enough because you need generated object data, a rewrite, or a generated graph, call generate_object_data, rewrite_object_data, or generate_object_graph first, then call insert_object/update_object_data/replace_object/insert_objects with the returned data.
 
 Common mistakes to avoid:
 - Do NOT use insert_objects to create a single object. Even complex objects (e.g. "a synthesizer with LFO modulation") should use insert_object if it's one object.
@@ -80,14 +81,18 @@ export const GET_OBJECT_LOGS = 'get_object_logs';
 export const GET_OBJECT_ERRORS = 'get_object_errors';
 export const SEARCH_DOCS = 'search_docs';
 export const GET_DOC_CONTENT = 'get_doc_content';
-export const LIST_PACKS = 'list_packs';
+export const LIST_OBJECT_PACKS = 'list_object_packs';
+export const LIST_PRESET_PACKS = 'list_preset_packs';
 export const ENABLE_PACK = 'enable_pack';
+export const SEARCH_PRESETS = 'search_presets';
+export const GET_PRESET_CONTENT = 'get_preset_content';
 export const SEARCH_SAMPLES = 'search_samples';
 export const SEARCH_FREESOUND = 'search_freesound';
 export const GENERATE_OBJECT_DATA = 'generate_object_data';
 export const REWRITE_OBJECT_DATA = 'rewrite_object_data';
 export const GENERATE_OBJECT_GRAPH = 'generate_object_graph';
 export const INSERT_OBJECT = 'insert_object';
+export const INSERT_PRESET = 'insert_preset';
 export const INSERT_OBJECTS = 'insert_objects';
 export const UPDATE_OBJECT_DATA = 'update_object_data';
 export const REPLACE_OBJECT = 'replace_object';
@@ -104,8 +109,11 @@ export const CONTEXT_TOOL_NAMES = new Set([
   GET_OBJECT_ERRORS,
   SEARCH_DOCS,
   GET_DOC_CONTENT,
-  LIST_PACKS,
+  LIST_OBJECT_PACKS,
+  LIST_PRESET_PACKS,
   ENABLE_PACK,
+  SEARCH_PRESETS,
+  GET_PRESET_CONTENT,
   SEARCH_SAMPLES,
   SEARCH_FREESOUND
 ]);
@@ -118,6 +126,7 @@ export const SUBTASK_TOOL_NAMES = new Set([
 
 export const DIRECT_CANVAS_TOOL_NAMES = new Set([
   INSERT_OBJECT,
+  INSERT_PRESET,
   INSERT_OBJECTS,
   UPDATE_OBJECT_DATA,
   REPLACE_OBJECT,
@@ -232,10 +241,51 @@ export const contextToolDeclarations = [
     }
   },
   {
-    name: LIST_PACKS,
+    name: LIST_OBJECT_PACKS,
     description:
-      'List all available object packs and preset packs, including which ones are currently enabled. Use this to answer questions about what objects or presets are available, or before enabling/disabling packs.',
+      'List all available object packs, including which ones are currently enabled. Use this to answer questions about what objects are available, or before enabling/disabling object packs.',
     parametersJsonSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: LIST_PRESET_PACKS,
+    description:
+      'List all available preset packs, including which ones are currently enabled. Use this to answer questions about preset groups, or before enabling/disabling preset packs.',
+    parametersJsonSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: SEARCH_PRESETS,
+    description:
+      'Search available presets by preset name, preset pack name, folder path, library name, description, or object type. Call this before get_preset_content or insert_preset when the user gives an ambiguous preset name or asks for presets from a pack/category.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description:
+            'Search query — matches preset names, preset pack names, folders, libraries, descriptions, and object types'
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of results to return (default 10, max 50)'
+        }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: GET_PRESET_CONTENT,
+    description:
+      'Fetch the full content/data for an existing preset by exact preset name. Use this before forking, remixing, or making a new object based on a preset. Call search_presets first if the name is ambiguous.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        presetName: {
+          type: 'string',
+          description: 'Exact preset name to fetch, e.g. "Noise", "Blur", or "midi.slider"'
+        }
+      },
+      required: ['presetName']
+    }
   },
   {
     name: SEARCH_SAMPLES,
@@ -285,7 +335,7 @@ export const contextToolDeclarations = [
   {
     name: ENABLE_PACK,
     description:
-      'Enable or disable an object pack or preset pack. Call list_packs first to see pack IDs and current state. Locked packs (e.g. "starters") cannot be disabled.',
+      'Enable or disable an object pack or preset pack. Call list_object_packs or list_preset_packs first to see pack IDs and current state. Locked packs (e.g. "starters") cannot be disabled.',
     parametersJsonSchema: {
       type: 'object',
       properties: {
@@ -395,6 +445,22 @@ export const insertObjectDeclaration = {
       }
     },
     required: ['type', 'data']
+  }
+};
+
+export const insertPresetDeclaration = {
+  name: INSERT_PRESET,
+  description:
+    'Directly create one new object on the canvas from an existing preset by exact preset name. Call search_presets first when the user did not provide an exact preset name or when several presets might match.',
+  parametersJsonSchema: {
+    type: 'object',
+    properties: {
+      presetName: {
+        type: 'string',
+        description: 'Exact preset name to insert, e.g. "Noise", "Blur", or "midi.slider"'
+      }
+    },
+    required: ['presetName']
   }
 };
 

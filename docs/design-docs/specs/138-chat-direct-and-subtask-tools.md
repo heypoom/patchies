@@ -18,6 +18,11 @@
 - Done: removed stale ChatView tool metadata from mode descriptors.
 - Done: added direct `delete_objects` as a reviewed, undoable canvas action.
 - Done: added direct `move_objects` as a reviewed, undoable canvas action.
+- Done: split pack listing into explicit `list_object_packs` and `list_preset_packs`.
+- Done: added chat preset tools for searching presets by preset name or preset pack and
+  inserting a preset by exact preset name.
+- Done: added `get_preset_content` for reading preset data before remixing/forking, and defaulted
+  `search_presets` to 10 results with an explicit `limit`.
 
 ## Summary
 
@@ -134,6 +139,7 @@ Existing examples:
 - `get_object_data`
 - `get_object_errors`
 - `get_object_instructions`
+- `search_presets`
 - `search_docs`
 - `get_doc_content`
 - `search_samples`
@@ -222,6 +228,55 @@ move_objects({
 ```
 
 Moves objects using undoable move commands. Useful for layout cleanup without regenerating nodes.
+
+```ts
+insert_preset({
+  presetName: string;
+})
+```
+
+Creates one object from a saved preset by exact preset name. The chat model should call
+`search_presets` first when the name is ambiguous or when the user asks for a preset by pack/category
+rather than by exact title. Duplicate names prefer user libraries over built-in libraries, matching
+the insert palette lookup behavior.
+
+### Pack and Preset Discovery Tools
+
+`list_packs` is renamed to `list_object_packs` so the tool name matches its return value.
+
+```ts
+list_object_packs({});
+```
+
+Returns built-in object packs with `{ id, name, description, enabled, locked }`.
+
+```ts
+list_preset_packs({});
+```
+
+Returns built-in preset packs with `{ id, name, description, enabled, locked }`.
+
+```ts
+search_presets({
+  query: string;
+  limit?: number;
+})
+```
+
+Searches available presets by preset name, library name, folder path, or preset pack name. Results
+include the preset name, object type, description, library, path, and built-in preset pack metadata
+when available. Defaults to 10 results and caps at 50. This is a context tool and never queues a
+canvas action by itself.
+
+```ts
+get_preset_content({
+  presetName: string;
+})
+```
+
+Returns the full preset content for an exact preset name: name, object type, description, full data,
+library, path, and built-in preset pack metadata when available. This lets the chat model fork,
+remix, or generate related object data from an existing preset without inserting it first.
 
 ### Subtask Tools
 
