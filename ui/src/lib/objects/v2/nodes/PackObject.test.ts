@@ -159,7 +159,17 @@ describe('PackObject', () => {
     expect(inlets[1].formatter?.('')).toBe('s');
     expect(inlets[1].formatter?.('kick')).toBe('kick');
     expect(inlets[2].formatter?.(null)).toBe('a');
-    expect(inlets[2].formatter?.({ nested: true })).toBe(null);
+    expect(inlets[2].formatter?.({ nested: true })).toBe('a');
+    expect(stringifyParamByType(inlets[2], null, 2)).toBe('a');
+  });
+
+  it('does not notify the UI with arbitrary any values', () => {
+    const { object, setParamOptions } = createPack(['a']);
+    const value = () => 'not serializable';
+
+    object.onMessage(value, meta(0));
+
+    expect(setParamOptions[0]).toEqual({ notifyUI: false });
   });
 
   it('does not crash display formatting if stale params have the wrong type', () => {

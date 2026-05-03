@@ -241,7 +241,7 @@
           ({ value, index }) =>
             (!isUnmodifiableType(inlets[index]?.type) || inlets[index]?.acceptsFloat) &&
             !inlets[index]?.hideTextParam &&
-            value != null
+            (value != null || !!inlets[index]?.formatter)
         )
         .map(({ value, index }) => stringifyParamByType(inlets[index], value, index))
         .join(' ');
@@ -338,8 +338,16 @@
       message.type === 'bang';
 
     const isAcceptsFloatSignal = inlet.type === 'signal' && inlet.acceptsFloat;
+    const shouldStoreDisplayValue = match([data.name, inlet.type])
+      .with(['pack', 'any'], () => false)
+      .otherwise(() => true);
 
-    if ((!isUnmodifiableType(inlet.type) || isAcceptsFloatSignal) && !isScheduled && !isBang) {
+    if (
+      (!isUnmodifiableType(inlet.type) || isAcceptsFloatSignal) &&
+      !isScheduled &&
+      !isBang &&
+      shouldStoreDisplayValue
+    ) {
       // Do not update parameter if it is a unmodifiable type or a scheduled message.
       // For typed inlets with message schemas (e.g., string inlet that also accepts bang/stop),
       // only update the displayed param when the value matches the base type.
@@ -921,7 +929,7 @@
                           {/if}
                         </Tooltip.Content>
                       </Tooltip.Root>
-                    {:else if (!isUnmodifiableType(inlets[index]?.type) || inlets[index]?.acceptsFloat) && !inlets[index]?.hideTextParam && param != null && param !== ''}
+                    {:else if (!isUnmodifiableType(inlets[index]?.type) || inlets[index]?.acceptsFloat) && !inlets[index]?.hideTextParam && (param != null || inlets[index]?.formatter) && (param !== '' || inlets[index]?.formatter)}
                       <Tooltip.Root>
                         <Tooltip.Trigger>
                           <span

@@ -46,7 +46,7 @@ const isValidValue = (slot: PackSlot, data: unknown) =>
 const formatPackValue = (slot: PackSlot, value: unknown): string | null =>
   match(slot.type)
     .with('symbol', () => (value === '' ? 's' : String(value)))
-    .with('any', () => (value === null ? 'a' : null))
+    .with('any', () => 'a')
     .otherwise(() => null);
 
 const createSlot = (param: unknown): PackSlot | null =>
@@ -139,7 +139,7 @@ export class PackObject implements TextObjectV2 {
     if (value === undefined) return;
 
     slot.value = value;
-    this.context.setParam(inlet, value, { notifyUI: true });
+    this.context.setParam(inlet, value, { notifyUI: slot.type !== 'any' });
 
     if (inlet === 0) {
       this.output();
