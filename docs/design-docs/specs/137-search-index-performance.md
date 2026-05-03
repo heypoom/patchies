@@ -92,7 +92,7 @@ presetLibraryStore + extension stores + object metadata
 
 ```ts
 interface PresetSearchRecord {
-  kind: 'preset';
+  kind: "preset";
   name: string;
   nameLower: string;
   description: string;
@@ -112,12 +112,12 @@ interface PresetSearchRecord {
 
 ```ts
 interface ObjectSearchRecord {
-  kind: 'object';
+  kind: "object";
   name: string;
   nameLower: string;
   description: string;
   descriptionLower: string;
-  priority: 'normal' | 'low';
+  priority: "normal" | "low";
   objectPriority: number;
 }
 ```
@@ -155,9 +155,15 @@ interface SearchOptions {
   fuzzy?: boolean;
 }
 
-function searchPresets(query: string, options?: SearchOptions): PresetSearchRecord[];
+function searchPresets(
+  query: string,
+  options?: SearchOptions,
+): PresetSearchRecord[];
 
-function searchObjectSuggestions(query: string, options?: SearchOptions): SearchRecord[];
+function searchObjectSuggestions(
+  query: string,
+  options?: SearchOptions,
+): SearchRecord[];
 
 function getDefaultObjectSuggestions(options?: SearchOptions): SearchRecord[];
 
@@ -193,11 +199,11 @@ Keep existing user-facing ranking:
 
 All search surfaces should cap results before rendering:
 
-| Surface | Suggested Limit | Reason |
-| ------- | --------------- | ------ |
-| ObjectNode autocomplete | 50 | Dropdown should stay small and fast |
-| Object Browser search | 100 | Modal has more room but should remain responsive |
-| Preset sidebar search | 100 | Prevent huge flat result lists from causing DOM churn |
+| Surface                 | Suggested Limit | Reason                                                |
+| ----------------------- | --------------- | ----------------------------------------------------- |
+| ObjectNode autocomplete | 50              | Dropdown should stay small and fast                   |
+| Object Browser search   | 100             | Modal has more room but should remain responsive      |
+| Preset sidebar search   | 100             | Prevent huge flat result lists from causing DOM churn |
 
 Fuse supports a search limit via `fuse.search(query, { limit })`; use it when fuzzy search runs.
 

@@ -25,7 +25,11 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as Popover from '$lib/components/ui/popover';
   import { toast } from 'svelte-sonner';
-  import { presetLibraryStore, editableLibraries } from '../../../stores/preset-library.store';
+  import {
+    presetLibraryStore,
+    editableLibraries,
+    flattenedPresets
+  } from '../../../stores/preset-library.store';
   import type {
     PresetLibrary,
     PresetFolder,
@@ -33,7 +37,12 @@
     Preset,
     PresetPath
   } from '$lib/presets/types';
-  import { formatPresetLocation, isPreset } from '$lib/presets/preset-utils';
+  import {
+    createPresetSearchRecords,
+    isPreset,
+    searchPresetRecords,
+    type PresetSearchRecord
+  } from '$lib/presets/preset-utils';
   import { isMobile, isSidebarOpen, selectedNodeInfo } from '../../../stores/ui.store';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
@@ -57,58 +66,19 @@
   let expandedPaths = $state(loadExpandedPaths());
   let searchQuery = $state('');
 
-  // Search result type for flat display
-  type SearchResult = {
-    libraryId: string;
-    library: PresetLibrary;
-    path: PresetPath;
-    name: string;
-    preset: Preset;
-  };
+  const presetSearchRecords = $derived(
+    createPresetSearchRecords($flattenedPresets, $presetLibraryStore)
+  );
 
-  // Flatten and filter presets for search
-  const searchResults = $derived.by((): SearchResult[] => {
+  // Filter pre-flattened presets for flat search mode.
+  const searchResults = $derived.by((): PresetSearchRecord[] => {
     if (!searchQuery.trim()) return [];
-    const query = searchQuery.toLowerCase();
-
-    const results: SearchResult[] = [];
-
-    function collectPresets(
-      libraryId: string,
-      library: PresetLibrary,
-      folder: PresetFolder,
-      currentPath: PresetPath
-    ) {
-      for (const [name, entry] of Object.entries(folder)) {
-        if (isPreset(entry)) {
-          // It's a preset - check if name matches
-          if (name.toLowerCase().includes(query)) {
-            results.push({
-              libraryId,
-              library,
-              path: [...currentPath, name],
-              name,
-              preset: entry
-            });
-          }
-        } else {
-          // It's a folder - recurse
-          collectPresets(libraryId, library, entry as PresetFolder, [...currentPath, name]);
-        }
-      }
-    }
-
-    for (const library of $presetLibraryStore) {
-      collectPresets(library.id, library, library.presets, []);
-    }
-
-    // Sort: user libraries first (readonly=false), built-in last (readonly=true)
-    return results.sort((a, b) => {
-      if (a.library.readonly === b.library.readonly) return 0;
-
-      return a.library.readonly ? 1 : -1;
-    });
+    return searchPresetRecords(presetSearchRecords, searchQuery, { limit: 100 });
   });
+
+  function getRelativePresetPath(record: PresetSearchRecord): PresetPath {
+    return record.path.slice(1);
+  }
 
   // Persist expanded paths changes
   $effect(() => {
@@ -948,10 +918,11 @@
         </div>
       {:else}
         {#each searchResults as result}
+          {@const relativePath = getRelativePresetPath(result)}
           {@const isSelected =
             selectedPresetPath &&
             selectedPresetPath.libraryId === result.libraryId &&
-            selectedPresetPath.path.join('/') === result.path.join('/')}
+            selectedPresetPath.path.join('/') === relativePath.join('/')}
 
           {@const typeIcon = getPresetTypeIcon(result.preset.type)}
 
@@ -964,27 +935,24 @@
               handleEntryDragStart(
                 e,
                 result.libraryId,
-                result.path,
+                relativePath,
                 result.preset,
                 false,
-                !result.library.readonly
+                !result.readonly
               )}
             ondragend={handleDragEnd}
             onclick={() => {
               if (isSelected) {
                 selectedPresetPath = null;
               } else {
-                selectPreset(result.libraryId, result.path, result.preset);
+                selectPreset(result.libraryId, relativePath, result.preset);
               }
             }}
           >
             <Blocks class="h-3.5 w-3.5 shrink-0 {typeIcon.color}" />
             <span class="truncate font-mono text-zinc-300">{result.name}</span>
             <span class="ml-auto truncate pr-2 text-[10px] text-zinc-600">
-              {formatPresetLocation({
-                libraryName: result.library.name,
-                path: [result.libraryId, ...result.path]
-              })}
+              {result.location}
             </span>
           </button>
         {/each}

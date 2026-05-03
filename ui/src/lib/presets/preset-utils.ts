@@ -138,6 +138,62 @@ export function formatPresetLocation(
   return [preset.libraryName, ...folderPath].filter(Boolean).join(separator);
 }
 
+export interface PresetSearchRecord extends FlattenedPreset {
+  name: string;
+  nameLower: string;
+  description: string;
+  descriptionLower: string;
+  readonly: boolean;
+  location: string;
+  locationLower: string;
+}
+
+export function createPresetSearchRecords(
+  presets: FlattenedPreset[],
+  libraries: Pick<PresetLibrary, 'id' | 'readonly'>[]
+): PresetSearchRecord[] {
+  const readonlyByLibraryId = new Map(libraries.map((library) => [library.id, library.readonly]));
+
+  return presets.map((flatPreset) => {
+    const description = flatPreset.preset.description ?? '';
+    const location = formatPresetLocation(flatPreset);
+
+    return {
+      ...flatPreset,
+      name: flatPreset.preset.name,
+      nameLower: flatPreset.preset.name.toLowerCase(),
+      description,
+      descriptionLower: description.toLowerCase(),
+      readonly: readonlyByLibraryId.get(flatPreset.libraryId) ?? false,
+      location,
+      locationLower: location.toLowerCase()
+    };
+  });
+}
+
+export function searchPresetRecords(
+  records: PresetSearchRecord[],
+  query: string,
+  options: { limit?: number } = {}
+): PresetSearchRecord[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return [];
+
+  const matches = records.filter(
+    (record) =>
+      record.nameLower.includes(normalizedQuery) ||
+      record.descriptionLower.includes(normalizedQuery) ||
+      record.locationLower.includes(normalizedQuery)
+  );
+
+  const sorted = matches.toSorted((a, b) => {
+    if (a.readonly !== b.readonly) return a.readonly ? 1 : -1;
+    return 0;
+  });
+
+  return sorted.slice(0, options.limit ?? sorted.length);
+}
+
 /**
  * Generate a unique ID for a new library
  */
