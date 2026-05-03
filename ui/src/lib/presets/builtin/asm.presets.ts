@@ -120,41 +120,44 @@ send 0 1
 store 0xF00
 jump loop`;
 
-export const ASM_PRESETS: Record<string, { type: string; data: { code: string } }> = {
+export const ASM_PRESETS: Record<
+  string,
+  { type: string; data: { code: string; outletCount: number } }
+> = {
   'echo.asm': {
     type: 'asm',
-    data: { code: ECHO_ASM.trim() }
+    data: { code: ECHO_ASM.trim(), outletCount: 1 }
   },
   'accumulator.asm': {
     type: 'asm',
-    data: { code: ACCUMULATOR_ASM.trim() }
+    data: { code: ACCUMULATOR_ASM.trim(), outletCount: 1 }
   },
   'double.asm': {
     type: 'asm',
-    data: { code: DOUBLE_ASM.trim() }
+    data: { code: DOUBLE_ASM.trim(), outletCount: 1 }
   },
   'threshold-gate.asm': {
     type: 'asm',
-    data: { code: THRESHOLD_GATE_ASM.trim() }
+    data: { code: THRESHOLD_GATE_ASM.trim(), outletCount: 1 }
   },
   'running-average.asm': {
     type: 'asm',
-    data: { code: RUNNING_AVERAGE_ASM.trim() }
+    data: { code: RUNNING_AVERAGE_ASM.trim(), outletCount: 1 }
   },
   'fibonacci.asm': {
     type: 'asm',
-    data: { code: FIBONACCI_ASM.trim() }
+    data: { code: FIBONACCI_ASM.trim(), outletCount: 1 }
   },
   'clamp.asm': {
     type: 'asm',
-    data: { code: CLAMP_ASM.trim() }
+    data: { code: CLAMP_ASM.trim(), outletCount: 1 }
   },
   'modulo-counter.asm': {
     type: 'asm',
-    data: { code: MODULO_COUNTER_ASM.trim() }
+    data: { code: MODULO_COUNTER_ASM.trim(), outletCount: 1 }
   },
   'delta.asm': {
     type: 'asm',
-    data: { code: DELTA_ASM.trim() }
+    data: { code: DELTA_ASM.trim(), outletCount: 1 }
   }
 };

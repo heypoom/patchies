@@ -26,7 +26,7 @@ export const ASM_DEFAULT_STEP_BY = 1;
 
 // Node port defaults
 export const ASM_DEFAULT_INLET_COUNT = 1;
-export const ASM_DEFAULT_OUTLET_COUNT = 3;
+export const ASM_DEFAULT_OUTLET_COUNT = 1;
 
 /**
  * Maximum number of outlets allowed for an asm node.
