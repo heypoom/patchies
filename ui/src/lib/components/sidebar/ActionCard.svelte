@@ -45,6 +45,10 @@
             { kind: 'delete-objects' },
             (r) => `Delete ${r.nodeIds.length} object${r.nodeIds.length === 1 ? '' : 's'}`
           )
+          .with(
+            { kind: 'move-objects' },
+            (r) => `Move ${r.positions.length} object${r.positions.length === 1 ? '' : 's'}`
+          )
           .exhaustive()
       : (action.error ?? 'Action failed')
   );
@@ -183,6 +187,12 @@
       return result.nodeIds.join('\n');
     }
 
+    if (result.kind === 'move-objects') {
+      return result.positions
+        .map(({ nodeId, position }) => `${nodeId} -> (${position.x}, ${position.y})`)
+        .join('\n');
+    }
+
     return null;
   }
 
@@ -210,6 +220,9 @@
       })
       .with({ kind: 'delete-objects' }, (r) => {
         callbacks.onDeleteObjects(r.nodeIds);
+      })
+      .with({ kind: 'move-objects' }, (r) => {
+        callbacks.onMoveObjects(r.positions);
       })
       .exhaustive();
 

@@ -16,7 +16,8 @@ export type AiPromptMode =
   | 'fork' // Create a new object derived from an existing one
   | 'connect-edges' // Connect existing nodes with edges
   | 'disconnect-edges' // Remove edges between nodes
-  | 'delete-objects'; // Delete existing nodes
+  | 'delete-objects' // Delete existing nodes
+  | 'move-objects'; // Move existing nodes
 
 export interface AiModeContext {
   /** The node being edited/replaced/decomposed */
@@ -62,7 +63,11 @@ export type AiModeResult =
   | { kind: 'replace'; nodeId: string; newType: string; newData: Record<string, unknown> }
   | { kind: 'connect-edges'; edges: Edge[]; invalidEdges?: { reason: string }[] }
   | { kind: 'disconnect-edges'; edgeIds: string[] }
-  | { kind: 'delete-objects'; nodeIds: string[] };
+  | { kind: 'delete-objects'; nodeIds: string[] }
+  | {
+      kind: 'move-objects';
+      positions: Array<{ nodeId: string; position: { x: number; y: number } }>;
+    };
 
 export type ModeResolver = (
   prompt: string,

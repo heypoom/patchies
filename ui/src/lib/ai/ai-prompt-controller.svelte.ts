@@ -23,6 +23,7 @@ export interface AiPromptCallbacks {
   onConnectEdges: (edges: Edge[]) => void;
   onDisconnectEdges: (edgeIds: string[]) => void;
   onDeleteObjects: (nodeIds: string[]) => void;
+  onMoveObjects: (positions: Array<{ nodeId: string; position: { x: number; y: number } }>) => void;
 }
 
 export function createAiPromptController(callbacks: AiPromptCallbacks) {
@@ -107,6 +108,15 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
         if (result.nodeIds.length > 0) {
           toast.success(
             `Deleted ${result.nodeIds.length} object${result.nodeIds.length === 1 ? '' : 's'}`
+          );
+        }
+        break;
+      case 'move-objects':
+        callbacks.onMoveObjects(result.positions);
+
+        if (result.positions.length > 0) {
+          toast.success(
+            `Moved ${result.positions.length} object${result.positions.length === 1 ? '' : 's'}`
           );
         }
         break;

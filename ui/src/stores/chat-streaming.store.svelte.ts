@@ -78,6 +78,7 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
     .with('update_object_data', () => `Updating ${args.nodeId ?? 'object'}`)
     .with('replace_object', () => `Replacing ${args.nodeId ?? 'object'}`)
     .with('delete_objects', () => 'Deleting objects')
+    .with('move_objects', () => 'Moving objects')
     .with('connect_edges', () => 'Connecting edges')
     .with('disconnect_edges', () => 'Disconnecting edges')
     .with('search_samples', () => `Searching samples: "${args.query ?? ''}"`)
@@ -104,6 +105,9 @@ const applyActionToCallbacks = (action: ChatAction, aiCallbacks: AiPromptCallbac
     })
     .with({ kind: 'delete-objects' }, (r) => {
       aiCallbacks.onDeleteObjects(r.nodeIds);
+    })
+    .with({ kind: 'move-objects' }, (r) => {
+      aiCallbacks.onMoveObjects(r.positions);
     })
     .exhaustive();
 };
@@ -279,6 +283,10 @@ export const chatStreamStore = {
               .with(
                 { kind: 'delete-objects' },
                 (r) => `Deleted ${r.nodeIds.length} object${r.nodeIds.length === 1 ? '' : 's'}`
+              )
+              .with(
+                { kind: 'move-objects' },
+                (r) => `Moved ${r.positions.length} object${r.positions.length === 1 ? '' : 's'}`
               )
               .exhaustive()
           : undefined;

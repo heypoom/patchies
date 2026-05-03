@@ -48,7 +48,8 @@
     onReplaceObject: onReplaceObject ?? (() => {}),
     onConnectEdges: () => {},
     onDisconnectEdges: () => {},
-    onDeleteObjects: () => {}
+    onDeleteObjects: () => {},
+    onMoveObjects: () => {}
   });
 
   // ── UI-only state ─────────────────────────────────────────────────────────

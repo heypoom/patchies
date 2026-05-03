@@ -10,7 +10,8 @@ import {
   GitFork,
   Cable,
   Unplug,
-  Trash2
+  Trash2,
+  Move
 } from '@lucide/svelte/icons';
 import { match } from 'ts-pattern';
 import type { AiModeDescriptor, AiModeContext, AiPromptMode, AiPromptColor } from './types';
@@ -194,6 +195,20 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     generatingLabel: () => 'Deleting',
     color: 'red',
     icon: Trash2,
+    isMulti: false,
+    requiresNode: false
+  },
+
+  'move-objects': {
+    id: 'move-objects',
+    label: 'Move Objects',
+    shortLabel: 'Move',
+    description: () => 'Move existing objects',
+    placeholder: () => 'e.g., "move the sequencer left"',
+    loadingLabel: 'Moving',
+    generatingLabel: () => 'Moving',
+    color: 'green',
+    icon: Move,
     isMulti: false,
     requiresNode: false
   }

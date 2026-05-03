@@ -586,6 +586,12 @@
     aiOps.deleteObjects(nodeIds);
   }
 
+  function handleAiMoveObjects(
+    positions: Array<{ nodeId: string; position: { x: number; y: number } }>
+  ) {
+    aiOps.moveObjects(positions);
+  }
+
   function getNodeById(nodeId: string) {
     const node = getNode(nodeId);
     if (!node) return undefined;
@@ -597,7 +603,8 @@
       nodes: nodes.map((n) => ({
         id: n.id,
         type: n.type,
-        name: (n.data as Record<string, unknown>)?.name as string | undefined
+        name: (n.data as Record<string, unknown>)?.name as string | undefined,
+        position: n.position
       })),
       edges: edges.map((e) => ({
         id: e.id,
@@ -616,7 +623,8 @@
     onReplaceObject: handleAiObjectReplace,
     onConnectEdges: handleAiConnectEdges,
     onDisconnectEdges: handleAiDisconnectEdges,
-    onDeleteObjects: handleAiDeleteObjects
+    onDeleteObjects: handleAiDeleteObjects,
+    onMoveObjects: handleAiMoveObjects
   };
 
   onMount(() => {

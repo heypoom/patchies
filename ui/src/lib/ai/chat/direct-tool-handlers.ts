@@ -33,6 +33,23 @@ function assertJsonSerializable(value: unknown, label: string): void {
   }
 }
 
+function assertPosition(value: unknown, label: string): { x: number; y: number } {
+  const position = assertRecord(value, label);
+  const x = position.x;
+  const y = position.y;
+
+  if (
+    typeof x !== 'number' ||
+    typeof y !== 'number' ||
+    !Number.isFinite(x) ||
+    !Number.isFinite(y)
+  ) {
+    throw new Error(`${label}.x and ${label}.y must be finite numbers`);
+  }
+
+  return { x, y };
+}
+
 function sanitizeData(
   data: Record<string, unknown>,
   options: { preserveInternalName?: boolean } = {}
@@ -186,6 +203,7 @@ export function resolveDeleteObjects(
   }
 
   const seen = new Set<string>();
+
   const nodeIds = rawNodeIds.map((rawNodeId, index) => {
     if (typeof rawNodeId !== 'string' || !rawNodeId.trim()) {
       throw new Error(`nodeIds[${index}] must be a non-empty string`);
@@ -206,5 +224,47 @@ export function resolveDeleteObjects(
   return pendingAction('delete-objects', {
     kind: 'delete-objects',
     nodeIds
+  });
+}
+
+export function resolveMoveObjects(
+  args: Record<string, unknown>,
+  deps: DirectToolDeps
+): ChatAction {
+  const rawPositions = args.positions;
+
+  if (!Array.isArray(rawPositions) || rawPositions.length === 0) {
+    throw new Error('move_objects requires a non-empty positions array');
+  }
+
+  const seen = new Set<string>();
+
+  const positions = rawPositions.map((rawPosition, index) => {
+    const entry = assertRecord(rawPosition, `positions[${index}]`);
+    const nodeId = entry.nodeId;
+
+    if (typeof nodeId !== 'string' || !nodeId.trim()) {
+      throw new Error(`positions[${index}].nodeId must be a non-empty string`);
+    }
+
+    if (!deps.getNodeById?.(nodeId)) {
+      throw new Error(`Node "${nodeId}" not found`);
+    }
+
+    if (seen.has(nodeId)) {
+      throw new Error(`Duplicate node ID "${nodeId}"`);
+    }
+
+    seen.add(nodeId);
+
+    return {
+      nodeId,
+      position: assertPosition(entry.position, `positions[${index}].position`)
+    };
+  });
+
+  return pendingAction('move-objects', {
+    kind: 'move-objects',
+    positions
   });
 }

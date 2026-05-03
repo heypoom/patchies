@@ -10,6 +10,7 @@ import {
   AddEdgesCommand,
   DeleteEdgesCommand,
   DeleteNodesCommand,
+  MoveNodesCommand,
   BatchCommand,
   ReplaceNodeDataCommand
 } from '$lib/history/commands';
@@ -237,6 +238,30 @@ export class AiOperationsService {
 
     this.ctx.historyManager.execute(
       new DeleteNodesCommand(nodesToRemove, this.ctx.canvasAccessors)
+    );
+  }
+
+  /**
+   * Move objects to absolute canvas positions.
+   */
+  moveObjects(positions: Array<{ nodeId: string; position: { x: number; y: number } }>): void {
+    if (positions.length === 0) return;
+
+    const positionById = new Map(positions.map(({ nodeId, position }) => [nodeId, position]));
+    const nodesToMove = this.ctx.nodes.filter((n) => positionById.has(n.id));
+    if (nodesToMove.length === 0) return;
+
+    const oldPositions = new Map(nodesToMove.map((n) => [n.id, { ...n.position }]));
+    const newPositions = new Map(nodesToMove.map((n) => [n.id, positionById.get(n.id)!]));
+    const hasChanged = nodesToMove.some((n) => {
+      const next = positionById.get(n.id);
+      return next && (next.x !== n.position.x || next.y !== n.position.y);
+    });
+
+    if (!hasChanged) return;
+
+    this.ctx.historyManager.execute(
+      new MoveNodesCommand(oldPositions, newPositions, this.ctx.canvasAccessors)
     );
   }
 

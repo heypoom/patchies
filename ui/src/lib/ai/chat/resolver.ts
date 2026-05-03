@@ -18,6 +18,7 @@ import {
   resolveDeleteObjects,
   resolveInsertObject,
   resolveInsertObjects,
+  resolveMoveObjects,
   resolveReplaceObject,
   resolveUpdateObjectData
 } from './direct-tool-handlers';
@@ -33,6 +34,7 @@ import {
   CONNECT_EDGES,
   DELETE_OBJECTS,
   DISCONNECT_EDGES,
+  MOVE_OBJECTS,
   GENERATE_OBJECT_GRAPH,
   GENERATE_OBJECT_DATA,
   INSERT_OBJECT,
@@ -56,6 +58,7 @@ import {
   disconnectEdgesDeclaration,
   insertObjectDeclaration,
   insertObjectsDeclaration,
+  moveObjectsDeclaration,
   replaceObjectDeclaration,
   subtaskToolDeclarations,
   updateObjectDataDeclaration
@@ -99,6 +102,7 @@ export interface ChatNodeSummary {
   id: string;
   type?: string;
   name?: string;
+  position?: { x: number; y: number };
 }
 
 /** Lightweight edge summary for graph-level context */
@@ -207,6 +211,7 @@ export async function streamChatMessage(
         updateObjectDataDeclaration,
         replaceObjectDeclaration,
         deleteObjectsDeclaration,
+        moveObjectsDeclaration,
         connectEdgesDeclaration,
         disconnectEdgesDeclaration
       ]
@@ -298,6 +303,8 @@ export async function streamChatMessage(
           onAction(resolveReplaceObject(args, { getNodeById }));
         } else if (toolName === DELETE_OBJECTS) {
           onAction(resolveDeleteObjects(args, { getNodeById }));
+        } else if (toolName === MOVE_OBJECTS) {
+          onAction(resolveMoveObjects(args, { getNodeById }));
         } else {
           const mode = toolNameToMode(toolName);
           const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
@@ -372,6 +379,7 @@ export async function streamChatMessage(
 
         const respond = (response: unknown): ToolResult => {
           onToolCallOutput?.(outputIndex, response);
+
           return { callId: tc.id, name, result: response };
         };
 
@@ -381,18 +389,22 @@ export async function streamChatMessage(
           )
           .with(GET_OBJECT_DATA, async () => {
             const nodeId = (args.objectId as string) ?? '';
+
             const node = getNodeById?.(nodeId);
             if (!node) return respond({ error: `Node "${nodeId}" not found` });
+
             const graph = getGraphSummary?.() ?? { nodes: [], edges: [] };
             const connectedEdges = graph.edges.filter(
               (e) => e.source === nodeId || e.target === nodeId
             );
+
             return respond({ id: node.id, type: node.type, data: node.data, connectedEdges });
           })
           .with(GET_OBJECT_LOGS, async () => {
             const nodeId = (args.objectId as string) ?? '';
             const count = Math.min(Math.max((args.count as number) ?? 10, 1), 50);
             const seen = new Set<string>();
+
             const logs = logger
               .getNodeLogs(nodeId)
               .filter((e) => e.level === 'error' || e.level === 'warn')
@@ -408,20 +420,27 @@ export async function streamChatMessage(
                 message: e.message,
                 timestamp: e.timestamp.toISOString()
               }));
+
             return respond({ nodeId, errors: logs, total: logs.length });
           })
           .with(GET_OBJECT_ERRORS, async () => {
             const nodeIds = (args.objectIds as string[]) ?? [];
             const result: Record<string, string[]> = {};
+
             for (const id of nodeIds) {
               const errors = getNodeErrors(id);
-              if (errors.length > 0) result[id] = errors;
+
+              if (errors.length > 0) {
+                result[id] = errors;
+              }
             }
+
             return respond(result);
           })
           .with(SEARCH_DOCS, async () => {
             const query = ((args.query as string) ?? '').toLowerCase().trim();
             if (!query) return respond({ results: [], total: 0 });
+
             const matchingTopics = topicMetas
               .filter(
                 (t) =>
@@ -430,6 +449,7 @@ export async function streamChatMessage(
                   t.category.toLowerCase().includes(query)
               )
               .map((t) => ({ kind: 'topic', slug: t.slug, title: t.title, category: t.category }));
+
             const matchingObjects = Object.values(objectSchemas)
               .filter(
                 (s) =>
@@ -445,6 +465,7 @@ export async function streamChatMessage(
                 category: s.category,
                 description: s.description
               }));
+
             return respond({
               results: [...matchingTopics, ...matchingObjects],
               total: matchingTopics.length + matchingObjects.length
@@ -453,15 +474,19 @@ export async function streamChatMessage(
           .with(GET_DOC_CONTENT, async () => {
             const kind = (args.kind as string) ?? '';
             const slug = (args.slug as string) ?? '';
+
             if (kind === 'topic') {
               const content = await fetchTopicHelp(slug);
+
               return respond(
                 content.markdown
                   ? { kind: 'topic', slug, markdown: content.markdown }
                   : { error: `No documentation found for topic "${slug}"` }
               );
             }
+
             const content = await fetchObjectHelp(slug);
+
             return respond(
               content.markdown
                 ? { kind: 'object', slug, markdown: content.markdown }
@@ -605,6 +630,7 @@ function modeForToolName(name: string): AiPromptMode {
     .with(UPDATE_OBJECT_DATA, () => 'edit' as const)
     .with(REPLACE_OBJECT, () => 'turn-into' as const)
     .with(DELETE_OBJECTS, () => 'delete-objects' as const)
+    .with(MOVE_OBJECTS, () => 'move-objects' as const)
     .otherwise(() => toolNameToMode(name));
 }
 
