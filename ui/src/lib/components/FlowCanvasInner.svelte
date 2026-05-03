@@ -542,9 +542,13 @@
     ];
   }
 
-  function handleAiObjectInsert(type: string, data: Record<string, unknown>) {
-    const position = screenToFlowPosition(lastMousePosition);
-    aiOps.insertSingleObject(type, data, position);
+  function handleAiObjectInsert(
+    type: string,
+    data: Record<string, unknown>,
+    position?: { x: number; y: number }
+  ) {
+    const insertPosition = position ?? screenToFlowPosition(lastMousePosition);
+    aiOps.insertSingleObject(type, data, insertPosition);
   }
 
   async function handleAiMultipleObjectsInsert(

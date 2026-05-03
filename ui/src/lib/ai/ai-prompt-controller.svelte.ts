@@ -16,7 +16,11 @@ import { getModeDescriptor } from './modes/descriptors';
 import { runModeResolver } from './modes/run-resolver';
 
 export interface AiPromptCallbacks {
-  onInsertObject: (type: string, data: Record<string, unknown>) => void;
+  onInsertObject: (
+    type: string,
+    data: Record<string, unknown>,
+    position?: { x: number; y: number }
+  ) => void;
   onInsertMultipleObjects: (nodes: AiObjectNode[], edges: SimplifiedEdge[]) => void;
   onEditObject: (nodeId: string, data: Record<string, unknown>) => void;
   onReplaceObject: (nodeId: string, newType: string, newData: Record<string, unknown>) => void;
@@ -64,7 +68,7 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
   function applyResult(result: AiModeResult) {
     switch (result.kind) {
       case 'single':
-        callbacks.onInsertObject(result.type, result.data);
+        callbacks.onInsertObject(result.type, result.data, result.position);
         toast.success(`Created ${result.type}`);
         break;
       case 'multi':

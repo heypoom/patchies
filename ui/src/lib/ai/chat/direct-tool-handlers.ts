@@ -80,13 +80,15 @@ function pendingAction(
 export function resolveInsertObject(args: Record<string, unknown>): ChatAction {
   const type = assertKnownCanvasObjectType(args.type);
   const data = sanitizeData(assertRecord(args.data, 'data'));
+  const position = args.position ? assertPosition(args.position, 'position') : undefined;
 
   assertJsonSerializable(data, 'data');
 
   return pendingAction('insert', {
     kind: 'single',
     type,
-    data
+    data,
+    ...(position ? { position } : {})
   });
 }
 

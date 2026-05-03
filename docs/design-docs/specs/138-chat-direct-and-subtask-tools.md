@@ -163,12 +163,13 @@ Implemented direct tools:
 insert_object({
   type: string,
   data: Record<string, unknown>,
+  position?: { x: number; y: number },
 });
 ```
 
 Creates one object. The model is responsible for supplying final object data. If it needs object API
-details first, it should call `get_object_instructions`. Current implementation uses the standard AI
-insert positioning path; explicit placement for a single inserted object is a remaining gap.
+details first, it should call `get_object_instructions`. If `position` is omitted, the normal AI
+insert positioning path is used.
 
 ```ts
 insert_objects({
@@ -198,8 +199,8 @@ update_object_data({
 ```
 
 Updates an existing node's `data` by shallow-merging `patch` into current data using the same
-preservation rules as `AiOperationsService.editNode()`. This intentionally protects internal fields
-and does not currently rename nodes.
+preservation rules as `AiOperationsService.editNode()`. Object titles are usually code-driven with
+APIs like `setTitle`, so title changes should be made by editing the relevant object code/data.
 
 ```ts
 replace_object({
@@ -279,30 +280,9 @@ remix, or generate related object data from an existing preset without inserting
 
 ### Known Canvas Tool Gaps
 
-The current tool surface covers the common canvas mutation loop: inspect, create, create from preset,
-update, replace, delete, move, connect, disconnect, and subtask-assisted generation/rewrite. These
-gaps are the next small surface-area improvements:
-
-```ts
-insert_object({
-  type: string;
-  data: Record<string, unknown>;
-  position?: { x: number; y: number };
-})
-```
-
-Add optional explicit placement for one-object inserts, matching the existing `insert_objects`
-per-node `position` support.
-
-```ts
-rename_object({
-  nodeId: string;
-  name: string;
-})
-```
-
-Rename an existing canvas object without overloading `update_object_data`. This keeps internal `name`
-preservation rules intact while supporting requests like "rename this node to bass."
+The current tool surface covers the common canvas mutation loop: inspect, create, place, create from
+preset, update, replace, delete, move, connect, disconnect, and subtask-assisted generation/rewrite.
+These gaps are the next small surface-area improvements:
 
 ```ts
 update_object_data({
@@ -522,7 +502,6 @@ Update the chat system prompt with the new tool-selection policy:
   enough for v1?
 - Should auto-approve ever apply direct tools immediately, or should all direct tools remain
   reviewed because they mutate the canvas?
-- Should `rename_object` update only the SvelteFlow node label/title, object data, or both?
 - Should `duplicate_objects` preserve external edges, internal edges only, or make that explicit with
   an `edgeMode` argument?
 

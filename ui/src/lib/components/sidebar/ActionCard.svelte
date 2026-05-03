@@ -199,7 +199,7 @@
   function apply() {
     if (!action.result) return;
     match(action.result)
-      .with({ kind: 'single' }, (r) => callbacks.onInsertObject(r.type, r.data))
+      .with({ kind: 'single' }, (r) => callbacks.onInsertObject(r.type, r.data, r.position))
       .with({ kind: 'multi' }, (r) => callbacks.onInsertMultipleObjects(r.nodes, r.edges))
       .with({ kind: 'edit' }, (r) => callbacks.onEditObject(r.nodeId, r.data))
       .with({ kind: 'replace' }, (r) => callbacks.onReplaceObject(r.nodeId, r.newType, r.newData))

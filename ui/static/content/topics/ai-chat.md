@@ -119,8 +119,7 @@ Connect the slider to the oscillator frequency.
 
 Chat is strongest when you ask for concrete, reviewable changes. A few operations are still easier to do manually or with a follow-up prompt:
 
-- Renaming objects is not yet a dedicated chat action
-- Single-object insertions use the default AI insert position
+- Object titles are usually set through object code, such as `setTitle`
 - Deep nested settings edits are handled as normal object data edits
 - Duplicating objects can be approximated, but there is no dedicated duplicate action yet
 

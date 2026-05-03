@@ -100,7 +100,7 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
 const applyActionToCallbacks = (action: ChatAction, aiCallbacks: AiPromptCallbacks): void => {
   if (!action.result) return;
   match(action.result)
-    .with({ kind: 'single' }, (r) => aiCallbacks.onInsertObject(r.type, r.data))
+    .with({ kind: 'single' }, (r) => aiCallbacks.onInsertObject(r.type, r.data, r.position))
     .with({ kind: 'multi' }, (r) => aiCallbacks.onInsertMultipleObjects(r.nodes, r.edges))
     .with({ kind: 'edit' }, (r) => aiCallbacks.onEditObject(r.nodeId, r.data))
     .with({ kind: 'replace' }, (r) => aiCallbacks.onReplaceObject(r.nodeId, r.newType, r.newData))

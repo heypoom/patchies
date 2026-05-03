@@ -57,7 +57,12 @@ export interface AiModeDescriptor {
 }
 
 export type AiModeResult =
-  | { kind: 'single'; type: string; data: Record<string, unknown> }
+  | {
+      kind: 'single';
+      type: string;
+      data: Record<string, unknown>;
+      position?: { x: number; y: number };
+    }
   | { kind: 'multi'; nodes: AiObjectNode[]; edges: SimplifiedEdge[] }
   | { kind: 'edit'; nodeId: string; data: Record<string, unknown> }
   | { kind: 'replace'; nodeId: string; newType: string; newData: Record<string, unknown> }

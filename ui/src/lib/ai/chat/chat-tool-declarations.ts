@@ -442,6 +442,15 @@ export const insertObjectDeclaration = {
       data: {
         type: 'object',
         description: 'Final object data/configuration for the new object'
+      },
+      position: {
+        type: 'object',
+        description: 'Optional absolute canvas position for the new object',
+        properties: {
+          x: { type: 'number' },
+          y: { type: 'number' }
+        },
+        required: ['x', 'y']
       }
     },
     required: ['type', 'data']
