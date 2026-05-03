@@ -10,7 +10,6 @@ We want to create a system for audio analysis, for two reasons:
 - Create an audio analysis system that integrates with the `AudioSystem.ts` that we have.
 - We should be able to have multiple `AudioAnalyser` within the same node.
 - Users should be able to place **analyzer objects** anywhere in the graph.
-
   - The object is called `fft` and lives in `object-definitions.ts`
   - In the `AudioSystem`, this creates a new `fft` audio node.
   - This lets them create custom audio visualizations by using the data from audio analyzed in real-time.
@@ -41,3 +40,7 @@ We want to create a system for audio analysis, for two reasons:
     - If an `analysis` marker outlet is connected to the `sampler2D` inlet of the GLSL node, we invoke the `AudioAnalysisManager` at slightly lower than the rendering rate (maybe 24 times per second), then set it via `GLSLManager.setBitmapSource`. This will pass the FFT array onto GLSL.
       - We need to add an exception to the connection validation logic, as we are technically connecting a marker outlet to a video inlet which is prohibited.
     - We must not create a new texture on every render. Only create the texture ONCE.
+
+## Meter Handle Visibility
+
+`MeterNode` wraps an internal `fft~` analyser and should keep its audio inlet visible whenever an edge is connected to that inlet, even when the node is not selected and global handle visibility is off. This follows the same smart-handle visibility pattern used by control nodes such as `SliderNode` and `KnobNode`: read the current xyflow edges, derive audio inlet/outlet connection state, and only apply the hidden handle class when the relevant handle is unconnected.

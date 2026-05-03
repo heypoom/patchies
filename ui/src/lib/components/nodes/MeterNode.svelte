@@ -7,6 +7,11 @@
   import { match } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
   import { getObjectType } from '$lib/objects/get-type';
+  import { useEdges } from '@xyflow/svelte';
+  import { checkAudioConnections } from '$lib/composables/checkHandleConnections';
+  import { shouldShowHandles } from '../../../stores/ui.store';
+
+  const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let node: {
     id: string;
@@ -22,11 +27,13 @@
   let messageContext: MessageContext;
   let animationId: number;
   let audioService = AudioService.getInstance();
+  const edges = useEdges();
 
   // Meter state
   let currentLevel = $state(0);
   let peakLevel = $state(0);
   let peakHoldTime = $state(0);
+  const connections = $derived(checkAudioConnections(edges.current, node.id));
 
   // Configuration
   const smoothing = $derived(node.data.smoothing ?? 0.8);
@@ -172,6 +179,10 @@
     // Clean up fft~ node
     audioService.removeNodeById(node.id);
   });
+
+  const handleInletClass = $derived(
+    node.selected || $shouldShowHandles || connections.hasInlet ? '' : HIDDEN_HANDLE_CLASS
+  );
 </script>
 
 <div class="group relative">
@@ -182,7 +193,7 @@
       total={1}
       index={0}
       title="Audio input"
-      class={`${node.selected ? '' : 'opacity-30 group-hover:opacity-100 sm:opacity-0'}`}
+      class={handleInletClass}
       nodeId={node.id}
     />
 
