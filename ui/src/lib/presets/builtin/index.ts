@@ -7,7 +7,7 @@ import { P5_PRESETS } from './p5.presets';
 import { JS_PRESETS } from './js.presets';
 import { SLIDER_PRESETS } from './slider.presets';
 import { EXPR_DSP_PRESETS } from './expr-dsp.presets';
-import { CHUCK_DEMO_PRESETS } from './chuck.preset';
+import { CHUCK_DEMO_PRESETS } from './chuck';
 import { AI_TXT_PRESETS } from './ai-txt.preset';
 import { TONE_JS_PRESETS } from './tone.preset';
 import { SONIC_PRESETS } from './sonic.preset';

@@ -130,8 +130,23 @@ preset pack. Larger visual effect libraries remain in their own opt-in preset pa
 
 - sawtooth-harmonics.js
 - waveshaper-distortion.js
-- (chuck presets)
 - (elementary presets)
+
+**ChucK Demo Compositions:**
+
+- ChucK presets should be curated adaptations of upstream ChucK examples, not bulk imports.
+- Each preset should sound useful immediately with no external patching.
+- Store ChucK presets as one preset per file under `ui/src/lib/presets/builtin/chuck/`,
+  matching the GLSL and REGL preset module pattern.
+- When a preset has natural live controls, expose them with `global` variables so Patchies
+  messages can optionally set values without editing code.
+- Keep source inspiration comments where useful, but prefer Patchies-friendly names and defaults.
+- Initial candidates are adapted from `ccrma/chuck` examples:
+  - `basic/fm.ck` for compact FM synthesis
+  - `deep/shepard.ck` for a continuous Shepard-Risset tone
+  - `stk/mand-o-matic-simple.ck` for generative plucked strings
+  - `filter/resonz.ck` for a resonant noise sweep
+  - `deep/dtmf.ck` for dual-tone telephone patterns
 
 **Greggman Bytebeat Archive:**
 

@@ -239,6 +239,11 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'traffic-flam.strudel',
       'funk-42.strudel',
       'bell.chuck',
+      'fm-siren.chuck',
+      'shepard-riser.chuck',
+      'mand-o-matic.chuck',
+      'resonant-noise.chuck',
+      'dtmf-dialer.chuck',
       'orca.hello'
     ]
   },

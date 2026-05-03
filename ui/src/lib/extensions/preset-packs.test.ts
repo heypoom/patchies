@@ -136,6 +136,29 @@ describe('built-in preset packs', () => {
     );
   });
 
+  test('registers curated ChucK examples as demo compositions', () => {
+    const demoCompositions = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'demo-compositions');
+    const chuckPresetNames = [
+      'fm-siren.chuck',
+      'shepard-riser.chuck',
+      'mand-o-matic.chuck',
+      'resonant-noise.chuck',
+      'dtmf-dialer.chuck'
+    ];
+
+    expect(demoCompositions && getPresetPackPresetNames(demoCompositions)).toEqual(
+      expect.arrayContaining(chuckPresetNames)
+    );
+
+    for (const presetName of chuckPresetNames) {
+      const preset = BUILTIN_PRESETS[presetName];
+      const presetData = preset?.data as { expr?: string } | undefined;
+
+      expect(preset?.type).toBe('chuck~');
+      expect(presetData?.expr).toContain('global');
+    }
+  });
+
   test('keeps Over and Under inlet order consistent', () => {
     const overData = BUILTIN_PRESETS.Over?.data as { code?: string } | undefined;
     const underData = BUILTIN_PRESETS.Under?.data as { code?: string } | undefined;
