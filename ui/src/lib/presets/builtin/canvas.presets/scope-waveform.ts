@@ -9,7 +9,9 @@ await settings.define([
     options: ['line', 'point', 'bezier'] },
   { key: 'decay', type: 'slider', label: 'Decay', min: 0.01, max: 1, step: 0.01, default: 1 },
   { key: 'unipolar', type: 'boolean', label: 'Unipolar', default: false },
-  { key: 'lineWidth', type: 'slider', label: 'Line Width', min: 1, max: 20, step: 1, default: 6 }
+  { key: 'lineWidth', type: 'slider', label: 'Line Width', min: 1, max: 20, step: 1, default: 6 },
+  { key: 'foregroundColor', type: 'color', label: 'Foreground', default: '#22c55e' },
+  { key: 'backgroundColor', type: 'color', label: 'Background', default: '#080809' }
 ])
 
 let xScale = settings.get('xScale')
@@ -18,6 +20,8 @@ let plotType = settings.get('plotType')
 let decay = settings.get('decay')
 let unipolar = settings.get('unipolar')
 let lineWidth = settings.get('lineWidth')
+let foregroundColor = settings.get('foregroundColor')
+let backgroundColor = settings.get('backgroundColor')
 let buffer = null
 
 settings.onChange((_, __, all) => {
@@ -27,6 +31,8 @@ settings.onChange((_, __, all) => {
   decay = all.decay
   unipolar = all.unipolar
   lineWidth = all.lineWidth
+  foregroundColor = all.foregroundColor
+  backgroundColor = all.backgroundColor
 })
 
 recv(m => {
@@ -48,13 +54,10 @@ function draw() {
   const w = width
   const h = height
 
-  if (decay >= 1) {
-    ctx.fillStyle = '#080809'
-    ctx.fillRect(0, 0, w, h)
-  } else {
-    ctx.fillStyle = \`rgba(8, 8, 9, \${decay})\`
-    ctx.fillRect(0, 0, w, h)
-  }
+  ctx.globalAlpha = decay >= 1 ? 1 : decay
+  ctx.fillStyle = backgroundColor
+  ctx.fillRect(0, 0, w, h)
+  ctx.globalAlpha = 1
 
   if (!buffer) {
     requestAnimationFrame(draw)
@@ -64,8 +67,8 @@ function draw() {
   const samplesToShow = Math.min(buffer.length, Math.max(1, Math.floor(buffer.length / xScale)))
   const sliceWidth = w / samplesToShow
 
-  ctx.strokeStyle = '#22c55e'
-  ctx.fillStyle = '#22c55e'
+  ctx.strokeStyle = foregroundColor
+  ctx.fillStyle = foregroundColor
 
   if (plotType === 'line') {
     ctx.lineWidth = lineWidth

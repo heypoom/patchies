@@ -75,19 +75,22 @@ accept the buffer messages from `tap~` and render them.
 
 Renders a triggered waveform. Equivalent to `scope~` in waveform mode.
 
-**Inlets (via `recv`):**
+**Input (via `recv`):**
 
-| Message  | Type                            | Description                                      |
-| -------- | ------------------------------- | ------------------------------------------------ |
-| buffer   | `Float32Array`                  | Waveform data from `tap~`                        |
-| xScale   | number                          | Horizontal zoom (default 1)                      |
-| yScale   | number                          | Vertical zoom (default 1)                        |
-| plotType | `'line'`\|`'point'`\|`'bezier'` | Drawing style (default `'line'`)                 |
-| decay    | number 0.01–1                   | Phosphor persistence (1 = off, default 1)        |
-| unipolar | boolean                         | Map range to 0–1 instead of -1–1 (default false) |
+The waveform buffer is detected by `ArrayBuffer.isView(m)` and expects a
+`Float32Array` from `tap~`.
 
-Parameters arrive as keyed messages: `{ xScale: 2 }`, `{ plotType: 'bezier' }`, etc.
-The waveform buffer is detected by `ArrayBuffer.isView(m)`.
+**Settings:**
+
+| Setting         | Type                            | Description                                      |
+| --------------- | ------------------------------- | ------------------------------------------------ |
+| xScale          | number                          | Horizontal zoom (default 1)                      |
+| yScale          | number                          | Vertical zoom (default 1)                        |
+| plotType        | `'line'`\|`'point'`\|`'bezier'` | Drawing style (default `'line'`)                 |
+| decay           | number 0.01–1                   | Phosphor persistence (1 = off, default 1)        |
+| unipolar        | boolean                         | Map range to 0–1 instead of -1–1 (default false) |
+| foregroundColor | CSS color                       | Waveform color (default `#22c55e`)               |
+| backgroundColor | CSS color                       | Clear/fade color (default `#080809`)             |
 
 **No outlets.**
 
@@ -97,15 +100,21 @@ Drawing code is lifted directly from `ScopeNode.svelte:148–217` (`drawWaveform
 
 Renders an XY/Lissajous plot. Equivalent to `scope~` in XY mode.
 
-**Inlets (via `recv`):**
+**Input (via `recv`):**
 
-| Message  | Type                                   | Description                      |
-| -------- | -------------------------------------- | -------------------------------- |
-| data     | `{ x: Float32Array, y: Float32Array }` | XY pair from `tap~` in XY mode   |
-| xScale   | number                                 | Horizontal zoom (default 1)      |
-| yScale   | number                                 | Vertical zoom (default 1)        |
-| plotType | `'line'`\|`'point'`\|`'bezier'`        | Drawing style (default `'line'`) |
-| decay    | number 0.01–1                          | Phosphor persistence (default 1) |
+The XY data expects a `{ type: 'xy', x: Float32Array, y: Float32Array }` message
+from `tap~` in XY mode.
+
+**Settings:**
+
+| Setting         | Type                            | Description                            |
+| --------------- | ------------------------------- | -------------------------------------- |
+| xScale          | number                          | Horizontal zoom (default 1)            |
+| yScale          | number                          | Vertical zoom (default 1)              |
+| plotType        | `'line'`\|`'point'`\|`'bezier'` | Drawing style (default `'line'`)       |
+| decay           | number 0.01–1                   | Phosphor persistence (default 1)       |
+| foregroundColor | CSS color                       | Plot color (default `#22c55e`)         |
+| backgroundColor | CSS color                       | Clear/fade color (default `#080809`)   |
 
 Drawing code is lifted directly from `ScopeNode.svelte:219–287` (`drawLissajous`).
 
