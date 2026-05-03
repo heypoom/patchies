@@ -9,7 +9,8 @@ import {
   Scissors,
   GitFork,
   Cable,
-  Unplug
+  Unplug,
+  Trash2
 } from '@lucide/svelte/icons';
 import { match } from 'ts-pattern';
 import type { AiModeDescriptor, AiModeContext, AiPromptMode, AiPromptColor } from './types';
@@ -37,16 +38,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     color: 'purple',
     icon: Sparkles,
     isMulti: false,
-    requiresNode: false,
-    availableInChat: true,
-    toolCallLabel: 'Adding object',
-    chatToolDescription:
-      'Create a single new object on the canvas. Preferred over multi when only one object is needed, even for complex objects.',
-    chatToolSchema: {
-      type: 'object',
-      properties: { prompt: { type: 'string', description: 'What to create' } },
-      required: ['prompt']
-    }
+    requiresNode: false
   },
 
   multi: {
@@ -60,16 +52,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     color: 'blue',
     icon: Network,
     isMulti: true,
-    requiresNode: false,
-    availableInChat: true,
-    toolCallLabel: 'Adding multiple objects',
-    chatToolDescription:
-      'Create multiple connected objects on the canvas. Only use when the task fundamentally requires more than one node wired together. Do NOT use for single objects.',
-    chatToolSchema: {
-      type: 'object',
-      properties: { prompt: { type: 'string', description: 'What to create' } },
-      required: ['prompt']
-    }
+    requiresNode: false
   },
 
   edit: {
@@ -83,19 +66,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     color: 'amber',
     icon: PenLine,
     isMulti: false,
-    requiresNode: true,
-    availableInChat: true,
-    toolCallLabel: 'Editing object',
-    chatToolDescription:
-      'Edit an existing object on the canvas. Always prefer this over creating a new object when the node already exists.',
-    chatToolSchema: {
-      type: 'object',
-      properties: {
-        nodeId: { type: 'string', description: 'ID of the node to edit' },
-        prompt: { type: 'string', description: 'What to change' }
-      },
-      required: ['nodeId', 'prompt']
-    }
+    requiresNode: true
   },
 
   'turn-into': {
@@ -109,18 +80,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     color: 'amber',
     icon: Replace,
     isMulti: false,
-    requiresNode: true,
-    availableInChat: true,
-    toolCallLabel: 'Replacing object',
-    chatToolDescription: 'Replace an existing object with a different type',
-    chatToolSchema: {
-      type: 'object',
-      properties: {
-        nodeId: { type: 'string', description: 'ID of the node to replace' },
-        prompt: { type: 'string', description: 'What to replace it with' }
-      },
-      required: ['nodeId', 'prompt']
-    }
+    requiresNode: true
   },
 
   'fix-error': {
@@ -135,19 +95,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     icon: Wrench,
     isMulti: false,
     requiresNode: true,
-    promptOptional: true,
-    availableInChat: true,
-    toolCallLabel: 'Fixing error',
-    chatToolDescription: 'Fix a code error in an existing object',
-    chatToolSchema: {
-      type: 'object',
-      properties: {
-        nodeId: { type: 'string', description: 'ID of the node with errors' },
-        errors: { type: 'array', items: { type: 'string' }, description: 'Error messages' },
-        prompt: { type: 'string', description: 'Additional instructions (optional)' }
-      },
-      required: ['nodeId', 'errors']
-    }
+    promptOptional: true
   },
 
   'make-consumer': {
@@ -162,8 +110,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     icon: ArrowRight,
     isMulti: false,
     requiresNode: true,
-    promptOptional: true,
-    availableInChat: false
+    promptOptional: true
   },
 
   'make-producer': {
@@ -178,8 +125,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     icon: ArrowLeft,
     isMulti: false,
     requiresNode: true,
-    promptOptional: true,
-    availableInChat: false
+    promptOptional: true
   },
 
   split: {
@@ -193,18 +139,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     color: 'blue',
     icon: Scissors,
     isMulti: true,
-    requiresNode: true,
-    availableInChat: true,
-    toolCallLabel: 'Splitting object',
-    chatToolDescription: 'Split a complex object into multiple focused connected objects',
-    chatToolSchema: {
-      type: 'object',
-      properties: {
-        nodeId: { type: 'string', description: 'ID of the node to decompose' },
-        prompt: { type: 'string', description: 'How to split it' }
-      },
-      required: ['nodeId', 'prompt']
-    }
+    requiresNode: true
   },
 
   fork: {
@@ -218,23 +153,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     color: 'purple',
     icon: GitFork,
     isMulti: false,
-    requiresNode: true,
-    availableInChat: true,
-    toolCallLabel: 'Forking object',
-    chatToolDescription:
-      'Create a new standalone object derived from an existing one — can stay the same type or become a different type based on the prompt',
-    chatToolSchema: {
-      type: 'object',
-      properties: {
-        nodeId: { type: 'string', description: 'ID of the source node to fork from' },
-        prompt: {
-          type: 'string',
-          description:
-            'What to change or what type to fork into (e.g. "as a canvas node", "draw triangles instead")'
-        }
-      },
-      required: ['nodeId', 'prompt']
-    }
+    requiresNode: true
   },
 
   'connect-edges': {
@@ -248,8 +167,7 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     color: 'green',
     icon: Cable,
     isMulti: false,
-    requiresNode: false,
-    availableInChat: false // handled as a special tool, not via mode descriptors
+    requiresNode: false
   },
 
   'disconnect-edges': {
@@ -263,8 +181,21 @@ export const modeDescriptors: Record<string, AiModeDescriptor> = {
     color: 'red',
     icon: Unplug,
     isMulti: false,
-    requiresNode: false,
-    availableInChat: false // handled as a special tool, not via mode descriptors
+    requiresNode: false
+  },
+
+  'delete-objects': {
+    id: 'delete-objects',
+    label: 'Delete Objects',
+    shortLabel: 'Delete',
+    description: () => 'Delete existing objects',
+    placeholder: () => 'e.g., "delete the unused oscillator"',
+    loadingLabel: 'Deleting',
+    generatingLabel: () => 'Deleting',
+    color: 'red',
+    icon: Trash2,
+    isMulti: false,
+    requiresNode: false
   }
 } satisfies Record<string, AiModeDescriptor>;
 

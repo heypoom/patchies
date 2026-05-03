@@ -22,6 +22,7 @@ export interface AiPromptCallbacks {
   onReplaceObject: (nodeId: string, newType: string, newData: Record<string, unknown>) => void;
   onConnectEdges: (edges: Edge[]) => void;
   onDisconnectEdges: (edgeIds: string[]) => void;
+  onDeleteObjects: (nodeIds: string[]) => void;
 }
 
 export function createAiPromptController(callbacks: AiPromptCallbacks) {
@@ -97,6 +98,15 @@ export function createAiPromptController(callbacks: AiPromptCallbacks) {
         if (result.edgeIds.length > 0) {
           toast.success(
             `Disconnected ${result.edgeIds.length} edge${result.edgeIds.length === 1 ? '' : 's'}`
+          );
+        }
+        break;
+      case 'delete-objects':
+        callbacks.onDeleteObjects(result.nodeIds);
+
+        if (result.nodeIds.length > 0) {
+          toast.success(
+            `Deleted ${result.nodeIds.length} object${result.nodeIds.length === 1 ? '' : 's'}`
           );
         }
         break;

@@ -77,6 +77,7 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
     .with('insert_objects', () => 'Adding objects')
     .with('update_object_data', () => `Updating ${args.nodeId ?? 'object'}`)
     .with('replace_object', () => `Replacing ${args.nodeId ?? 'object'}`)
+    .with('delete_objects', () => 'Deleting objects')
     .with('connect_edges', () => 'Connecting edges')
     .with('disconnect_edges', () => 'Disconnecting edges')
     .with('search_samples', () => `Searching samples: "${args.query ?? ''}"`)
@@ -85,7 +86,7 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
     .otherwise(() => {
       const mode = modeDescriptors[toolNameToMode(name)];
 
-      return mode?.toolCallLabel ?? mode?.label ?? name;
+      return mode?.label ?? name;
     });
 
 const applyActionToCallbacks = (action: ChatAction, aiCallbacks: AiPromptCallbacks): void => {
@@ -100,6 +101,9 @@ const applyActionToCallbacks = (action: ChatAction, aiCallbacks: AiPromptCallbac
     })
     .with({ kind: 'disconnect-edges' }, (r) => {
       aiCallbacks.onDisconnectEdges(r.edgeIds);
+    })
+    .with({ kind: 'delete-objects' }, (r) => {
+      aiCallbacks.onDeleteObjects(r.nodeIds);
     })
     .exhaustive();
 };
@@ -271,6 +275,10 @@ export const chatStreamStore = {
               .with(
                 { kind: 'disconnect-edges' },
                 (r) => `Disconnected ${r.edgeIds.length} edge${r.edgeIds.length === 1 ? '' : 's'}`
+              )
+              .with(
+                { kind: 'delete-objects' },
+                (r) => `Deleted ${r.nodeIds.length} object${r.nodeIds.length === 1 ? '' : 's'}`
               )
               .exhaustive()
           : undefined;

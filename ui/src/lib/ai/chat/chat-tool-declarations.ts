@@ -25,7 +25,7 @@ You can suggest simulation or visualization ideas in your text response, but wai
 ## Tool Categories
 
 - **Context tools** read the patch, logs, docs, object instructions, samples, or packs. They do not queue canvas changes.
-- **Direct canvas tools** queue concrete mutations from final structured arguments: insert_object, insert_objects, update_object_data, replace_object, connect_edges, disconnect_edges.
+- **Direct canvas tools** queue concrete mutations from final structured arguments: insert_object, insert_objects, update_object_data, replace_object, delete_objects, connect_edges, disconnect_edges.
 - **Subtask tools** call an LLM internally and return generated data to you. They do not queue canvas changes. Use generate_object_data, rewrite_object_data, and generate_object_graph when you need generated data before calling a direct canvas tool.
 
 For non-trivial object creation or code/data rewriting, call **get_object_instructions** for the relevant object type before using a direct canvas tool. Use the returned instructions, schema, and handle reference to produce final object data or handle IDs.
@@ -37,6 +37,7 @@ When the user asks you to act on the canvas, always prefer the **simplest direct
 1. **update_object_data** — If an object already exists and the user wants concrete data/property/code changes, use this. Never recreate an object that already exists.
 2. **connect_edges** — If the objects the user wants connected already exist on the canvas, just connect them with edges. Do NOT recreate objects that are already there.
 2b. **disconnect_edges** — If the user wants to remove a connection between objects, use this. Call get_graph_nodes first to find edge IDs or source/target pairs.
+2c. **delete_objects** — If the user explicitly asks to delete/remove objects, call get_graph_nodes first to find object IDs, then delete only the requested objects.
 3. **insert_object + connect_edges** — If the user needs a new object that should connect to existing objects, use **insert_object** to create ONLY the missing object, then use **connect_edges** to wire it to the existing object(s). Do NOT use insert_objects when some objects already exist.
 4. **insert_object** — If the user needs ONE new standalone object and you can provide final data, use insert_object. Call get_object_instructions first for non-trivial object data.
 5. **insert_objects** — ONLY use this when the user explicitly asks for multiple connected objects AND none of them exist on the canvas yet, and you can provide final node data and edges.
@@ -89,6 +90,7 @@ export const INSERT_OBJECT = 'insert_object';
 export const INSERT_OBJECTS = 'insert_objects';
 export const UPDATE_OBJECT_DATA = 'update_object_data';
 export const REPLACE_OBJECT = 'replace_object';
+export const DELETE_OBJECTS = 'delete_objects';
 export const CONNECT_EDGES = 'connect_edges';
 export const DISCONNECT_EDGES = 'disconnect_edges';
 
@@ -117,6 +119,7 @@ export const DIRECT_CANVAS_TOOL_NAMES = new Set([
   INSERT_OBJECTS,
   UPDATE_OBJECT_DATA,
   REPLACE_OBJECT,
+  DELETE_OBJECTS,
   CONNECT_EDGES,
   DISCONNECT_EDGES
 ]);
@@ -468,6 +471,23 @@ export const replaceObjectDeclaration = {
       data: { type: 'object', description: 'Final data/configuration for the replacement object' }
     },
     required: ['nodeId', 'type', 'data']
+  }
+};
+
+export const deleteObjectsDeclaration = {
+  name: DELETE_OBJECTS,
+  description:
+    'Directly delete existing objects from the canvas. Use get_graph_nodes first to find exact object IDs. This queues a reviewed, undoable delete action.',
+  parametersJsonSchema: {
+    type: 'object',
+    properties: {
+      nodeIds: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'IDs of objects to delete'
+      }
+    },
+    required: ['nodeIds']
   }
 };
 

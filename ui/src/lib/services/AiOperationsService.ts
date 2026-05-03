@@ -225,6 +225,22 @@ export class AiOperationsService {
   }
 
   /**
+   * Delete objects from the canvas.
+   * Connected edges are captured by DeleteNodesCommand and restored on undo.
+   */
+  deleteObjects(nodeIds: string[]): void {
+    if (nodeIds.length === 0) return;
+
+    const idSet = new Set(nodeIds);
+    const nodesToRemove = this.ctx.nodes.filter((n) => idSet.has(n.id));
+    if (nodesToRemove.length === 0) return;
+
+    this.ctx.historyManager.execute(
+      new DeleteNodesCommand(nodesToRemove, this.ctx.canvasAccessors)
+    );
+  }
+
+  /**
    * Check if an AI provider API key is configured.
    */
   hasApiKey(): boolean {

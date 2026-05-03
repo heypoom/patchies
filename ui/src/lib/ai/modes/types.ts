@@ -4,15 +4,6 @@ import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
 
 export type AiPromptColor = 'purple' | 'blue' | 'amber' | 'green' | 'red';
 
-export interface ChatToolSchema {
-  type: string;
-  properties?: Record<
-    string,
-    { type: string; description?: string; enum?: string[]; items?: unknown }
-  >;
-  required?: string[];
-}
-
 export type AiPromptMode =
   | 'insert' // Create one object
   | 'multi' // Create multiple connected objects
@@ -24,7 +15,8 @@ export type AiPromptMode =
   | 'split' // Split object into multiple
   | 'fork' // Create a new object derived from an existing one
   | 'connect-edges' // Connect existing nodes with edges
-  | 'disconnect-edges'; // Remove edges between nodes
+  | 'disconnect-edges' // Remove edges between nodes
+  | 'delete-objects'; // Delete existing nodes
 
 export interface AiModeContext {
   /** The node being edited/replaced/decomposed */
@@ -61,18 +53,6 @@ export interface AiModeDescriptor {
 
   /** Label shown when generating object config; receives resolved type e.g. "p5" */
   generatingLabel: (resolvedType: string) => string;
-
-  /** Whether this mode is available as a chat tool */
-  availableInChat?: boolean;
-
-  /** Present-tense label shown in the tool call visualization, e.g. "Adding multiple objects" */
-  toolCallLabel?: string;
-
-  /** One-line description for the LLM tool definition */
-  chatToolDescription?: string;
-
-  /** JSON Schema for the tool's input parameters */
-  chatToolSchema?: ChatToolSchema;
 }
 
 export type AiModeResult =
@@ -81,7 +61,8 @@ export type AiModeResult =
   | { kind: 'edit'; nodeId: string; data: Record<string, unknown> }
   | { kind: 'replace'; nodeId: string; newType: string; newData: Record<string, unknown> }
   | { kind: 'connect-edges'; edges: Edge[]; invalidEdges?: { reason: string }[] }
-  | { kind: 'disconnect-edges'; edgeIds: string[] };
+  | { kind: 'disconnect-edges'; edgeIds: string[] }
+  | { kind: 'delete-objects'; nodeIds: string[] };
 
 export type ModeResolver = (
   prompt: string,

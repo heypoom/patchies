@@ -1,6 +1,6 @@
 # 138. Chat Direct and Subtask Tools
 
-**Status**: Proposed
+**Status**: Implemented
 
 ## Progress
 
@@ -15,7 +15,9 @@
   directly.
 - Done: direct chat validation accepts the generic `object` node type for text-style objects, while
   graph routing uses dedicated `out~` for speaker output.
-- Next: test graph generation through `generate_object_graph` + `insert_objects`.
+- Done: removed stale ChatView tool metadata from mode descriptors.
+- Done: added direct `delete_objects` as a reviewed, undoable canvas action.
+- Follow-up: add direct `move_objects`.
 
 ## Summary
 
@@ -67,12 +69,12 @@ Chat tool calling already works through `streamChatMessage()`:
 4. `ActionCard` lets the user apply or dismiss the pending action.
 5. Applying an action calls `AiPromptCallbacks`, which route to `AiOperationsService`.
 
-Important current files:
+Important implementation files:
 
 - `ui/src/lib/ai/chat/resolver.ts`
   - owns the multi-turn tool loop
   - separates context tools from canvas tools
-  - currently calls `runModeResolver()` for most canvas tools
+  - executes context/subtask tools and queues direct canvas tools
 - `ui/src/lib/ai/chat/chat-tool-declarations.ts`
   - declares context tools and direct edge tools
   - already includes `get_object_instructions`
@@ -149,7 +151,7 @@ Existing examples:
 - `connect_edges`
 - `disconnect_edges`
 
-Proposed direct tools:
+Implemented direct tools:
 
 ```ts
 insert_object({
@@ -207,19 +209,11 @@ Replaces one node with another type and data, using the existing reconnect/undo 
 
 ```ts
 delete_objects({
-  nodeIds: string[]
-})
-```
-
-Deletes existing objects using undoable delete commands. This should be a reviewed action.
-
-```ts
-move_objects({
-  positions: Array<{ nodeId: string; position: { x: number; y: number } }>,
+  nodeIds: string[];
 });
 ```
 
-Moves objects using undoable move commands. Useful for layout cleanup without regenerating nodes.
+Deletes existing objects using undoable delete commands. This is a reviewed action.
 
 ### Subtask Tools
 
@@ -437,6 +431,16 @@ Update the chat system prompt with the new tool-selection policy:
   - `split` / `fork` → `get_object_data` + optional generation/rewrite + `insert_object` or
     `insert_objects`
   - `multi` → `generate_object_graph` + `insert_objects`
+
+## Follow-up Tools
+
+```ts
+move_objects({
+  positions: Array<{ nodeId: string; position: { x: number; y: number } }>;
+});
+```
+
+Moves objects using undoable move commands. Useful for layout cleanup without regenerating nodes.
 
 ## Open Questions
 

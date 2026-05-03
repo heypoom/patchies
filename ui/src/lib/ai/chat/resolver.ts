@@ -15,6 +15,7 @@ import { fetchObjectHelp } from '$lib/objects/fetch-object-help';
 import { generateHandleDocs } from '../generate-handle-docs';
 import { resolveConnectEdges, resolveDisconnectEdges } from './edge-tool-handlers';
 import {
+  resolveDeleteObjects,
   resolveInsertObject,
   resolveInsertObjects,
   resolveReplaceObject,
@@ -30,6 +31,7 @@ import {
   CONTEXT_TOOL_NAMES,
   SUBTASK_TOOL_NAMES,
   CONNECT_EDGES,
+  DELETE_OBJECTS,
   DISCONNECT_EDGES,
   GENERATE_OBJECT_GRAPH,
   GENERATE_OBJECT_DATA,
@@ -50,6 +52,7 @@ import {
   SEARCH_FREESOUND,
   contextToolDeclarations,
   connectEdgesDeclaration,
+  deleteObjectsDeclaration,
   disconnectEdgesDeclaration,
   insertObjectDeclaration,
   insertObjectsDeclaration,
@@ -203,6 +206,7 @@ export async function streamChatMessage(
         insertObjectsDeclaration,
         updateObjectDataDeclaration,
         replaceObjectDeclaration,
+        deleteObjectsDeclaration,
         connectEdgesDeclaration,
         disconnectEdgesDeclaration
       ]
@@ -292,6 +296,8 @@ export async function streamChatMessage(
           onAction(resolveUpdateObjectData(args, { getNodeById }));
         } else if (toolName === REPLACE_OBJECT) {
           onAction(resolveReplaceObject(args, { getNodeById }));
+        } else if (toolName === DELETE_OBJECTS) {
+          onAction(resolveDeleteObjects(args, { getNodeById }));
         } else {
           const mode = toolNameToMode(toolName);
           const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
@@ -598,6 +604,7 @@ function modeForToolName(name: string): AiPromptMode {
     .with(INSERT_OBJECTS, () => 'multi' as const)
     .with(UPDATE_OBJECT_DATA, () => 'edit' as const)
     .with(REPLACE_OBJECT, () => 'turn-into' as const)
+    .with(DELETE_OBJECTS, () => 'delete-objects' as const)
     .otherwise(() => toolNameToMode(name));
 }
 

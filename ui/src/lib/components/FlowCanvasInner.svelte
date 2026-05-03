@@ -266,7 +266,7 @@
   // only those on re-entry (and leave user-paused nodes alone).
   const cullableDomTypeSet = new Set(CULLABLE_DOM_TYPES);
   let prevVisibleDom = new Set<string>();
-  const pausedByViewport = new Set<string>();
+  const pausedByViewport = new SvelteSet<string>();
 
   viewportCullingManager.onVisibleDomNodesChange = (visible, liveIds) => {
     // Visible → hidden: auto-pause only if the user hasn't already paused.
@@ -542,7 +542,7 @@
     ];
   }
 
-  function handleAiObjectInsert(type: string, data: any) {
+  function handleAiObjectInsert(type: string, data: Record<string, unknown>) {
     const position = screenToFlowPosition(lastMousePosition);
     aiOps.insertSingleObject(type, data, position);
   }
@@ -562,7 +562,7 @@
     );
   }
 
-  function handleAiObjectEdit(nodeId: string, data: any) {
+  function handleAiObjectEdit(nodeId: string, data: Record<string, unknown>) {
     aiOps.editNode(nodeId, data);
   }
 
@@ -580,6 +580,10 @@
 
   function handleAiDisconnectEdges(edgeIds: string[]) {
     aiOps.disconnectEdges(edgeIds);
+  }
+
+  function handleAiDeleteObjects(nodeIds: string[]) {
+    aiOps.deleteObjects(nodeIds);
   }
 
   function getNodeById(nodeId: string) {
@@ -611,7 +615,8 @@
     onEditObject: handleAiObjectEdit,
     onReplaceObject: handleAiObjectReplace,
     onConnectEdges: handleAiConnectEdges,
-    onDisconnectEdges: handleAiDisconnectEdges
+    onDisconnectEdges: handleAiDisconnectEdges,
+    onDeleteObjects: handleAiDeleteObjects
   };
 
   onMount(() => {

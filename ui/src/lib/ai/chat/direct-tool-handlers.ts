@@ -174,3 +174,37 @@ export function resolveReplaceObject(
     'turn-into'
   );
 }
+
+export function resolveDeleteObjects(
+  args: Record<string, unknown>,
+  deps: DirectToolDeps
+): ChatAction {
+  const rawNodeIds = args.nodeIds;
+
+  if (!Array.isArray(rawNodeIds) || rawNodeIds.length === 0) {
+    throw new Error('delete_objects requires a non-empty nodeIds array');
+  }
+
+  const seen = new Set<string>();
+  const nodeIds = rawNodeIds.map((rawNodeId, index) => {
+    if (typeof rawNodeId !== 'string' || !rawNodeId.trim()) {
+      throw new Error(`nodeIds[${index}] must be a non-empty string`);
+    }
+
+    if (!deps.getNodeById?.(rawNodeId)) {
+      throw new Error(`Node "${rawNodeId}" not found`);
+    }
+
+    if (seen.has(rawNodeId)) {
+      throw new Error(`Duplicate node ID "${rawNodeId}"`);
+    }
+
+    seen.add(rawNodeId);
+    return rawNodeId;
+  });
+
+  return pendingAction('delete-objects', {
+    kind: 'delete-objects',
+    nodeIds
+  });
+}

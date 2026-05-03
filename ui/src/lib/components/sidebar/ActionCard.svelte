@@ -41,6 +41,10 @@
             { kind: 'disconnect-edges' },
             (r) => `Disconnect ${r.edgeIds.length} edge${r.edgeIds.length === 1 ? '' : 's'}`
           )
+          .with(
+            { kind: 'delete-objects' },
+            (r) => `Delete ${r.nodeIds.length} object${r.nodeIds.length === 1 ? '' : 's'}`
+          )
           .exhaustive()
       : (action.error ?? 'Action failed')
   );
@@ -175,6 +179,10 @@
       return result.edgeIds.join('\n');
     }
 
+    if (result.kind === 'delete-objects') {
+      return result.nodeIds.join('\n');
+    }
+
     return null;
   }
 
@@ -199,6 +207,9 @@
       })
       .with({ kind: 'disconnect-edges' }, (r) => {
         callbacks.onDisconnectEdges(r.edgeIds);
+      })
+      .with({ kind: 'delete-objects' }, (r) => {
+        callbacks.onDeleteObjects(r.nodeIds);
       })
       .exhaustive();
 
