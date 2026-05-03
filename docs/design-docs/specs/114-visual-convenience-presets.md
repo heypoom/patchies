@@ -114,6 +114,10 @@ Add to existing preset directories:
 
 Follow existing preset format (see `src/lib/presets/builtin/`).
 
+Keep per-frame `render()` work lean. Derived values from rarely changed settings
+(for example parsed color strings) should be cached and recomputed only when the
+setting value changes.
+
 #### Preset Packs
 
 Register in `src/lib/extensions/preset-packs.ts`. Suggested packs:

@@ -28,6 +28,22 @@ function hexToRgb(hex) {
   ];
 }
 
+let backgroundHex = null;
+const clearColor = [0, 0, 0, 1];
+
+function getClearColor() {
+  const nextHex = settings.get('background') || '#000000';
+  if (nextHex !== backgroundHex) {
+    backgroundHex = nextHex;
+    const bg = hexToRgb(nextHex);
+    clearColor[0] = bg[0];
+    clearColor[1] = bg[1];
+    clearColor[2] = bg[2];
+  }
+
+  return clearColor;
+}
+
 const drawLayer = regl({
   vert: \`
     precision mediump float;
@@ -69,9 +85,7 @@ const drawLayer = regl({
 });
 
 function render(time) {
-  const bg = hexToRgb(settings.get('background'));
-
-  regl.clear({ color: [bg[0], bg[1], bg[2], 1] });
+  regl.clear({ color: getClearColor() });
 
   for (let i = 0; i < 4; i++) {
     drawLayer({
