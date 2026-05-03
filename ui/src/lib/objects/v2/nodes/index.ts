@@ -13,6 +13,7 @@ import { KVObject } from './KVObject';
 import { LoadbangObject } from './LoadbangObject';
 import { MetroObject } from './MetroObject';
 import { MtofObject } from './MtofObject';
+import { PackObject } from './PackObject';
 import { SelectObject } from './SelectObject';
 import { SpigotObject } from './SpigotObject';
 import { ThrottleObject } from './ThrottleObject';
@@ -41,6 +42,7 @@ export const TEXT_OBJECTS = [
   LoadbangObject,
   MetroObject,
   MtofObject,
+  PackObject,
   SelectObject,
   SpigotObject,
   ThrottleObject,

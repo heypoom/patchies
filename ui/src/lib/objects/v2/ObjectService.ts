@@ -144,13 +144,18 @@ export class ObjectService {
    * Validates the message against inlet specifications.
    */
   private dispatchMessage(object: TextObjectV2, data: unknown, meta: MessageMeta): void {
-    const inletName = object.context.getInletName(meta.inlet);
     const type = getObjectType(object);
     const objectClass = this.registry.get(type);
+    const objectInlets = object.getInlets?.() ?? objectClass?.inlets;
+
+    const dynamicInletName =
+      meta.inlet === undefined ? undefined : objectInlets?.[meta.inlet]?.name;
+
+    const inletName = dynamicInletName ?? object.context.getInletName(meta.inlet) ?? meta.inletName;
 
     // Validate message type against inlet specification if inlets are defined
-    if (objectClass?.inlets && meta.inlet !== undefined) {
-      const inlet = objectClass?.inlets[meta.inlet];
+    if (objectInlets && meta.inlet !== undefined) {
+      const inlet = objectInlets[meta.inlet];
 
       if (inlet && !validateMessageToObject(data, inlet)) {
         logger.warn(
