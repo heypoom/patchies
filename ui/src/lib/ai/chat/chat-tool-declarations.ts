@@ -33,6 +33,7 @@ For non-trivial object creation or code/data rewriting, call **get_object_instru
 ## Tool Selection Priority
 
 When the user asks you to act on the canvas, always prefer the **simplest direct tool** that accomplishes the task. Before creating anything, call **get_graph_nodes** to check what already exists on the canvas. If the user reports errors or unexpected behaviour, call **get_object_errors** with the relevant object IDs to read their error logs before attempting a fix.
+If the user refers to the current view, asks to place something "here", "nearby", or in the visible canvas area, call **get_viewport** before choosing positions. Use viewport center/bounds to provide absolute canvas positions only when placement matters.
 
 1. **update_object_data** — If an object already exists and the user wants concrete data/property/code changes, use this. Never recreate an object that already exists.
 2. **connect_edges** — If the objects the user wants connected already exist on the canvas, just connect them with edges. Do NOT recreate objects that are already there.
@@ -76,6 +77,7 @@ ${OBJECT_TYPE_LIST}`;
 
 export const GET_OBJECT_INSTRUCTIONS = 'get_object_instructions';
 export const GET_GRAPH_NODES = 'get_graph_nodes';
+export const GET_VIEWPORT = 'get_viewport';
 export const GET_OBJECT_DATA = 'get_object_data';
 export const GET_OBJECT_LOGS = 'get_object_logs';
 export const GET_OBJECT_ERRORS = 'get_object_errors';
@@ -104,6 +106,7 @@ export const DISCONNECT_EDGES = 'disconnect_edges';
 export const CONTEXT_TOOL_NAMES = new Set([
   GET_OBJECT_INSTRUCTIONS,
   GET_GRAPH_NODES,
+  GET_VIEWPORT,
   GET_OBJECT_DATA,
   GET_OBJECT_LOGS,
   GET_OBJECT_ERRORS,
@@ -158,6 +161,12 @@ export const contextToolDeclarations = [
     name: GET_GRAPH_NODES,
     description:
       'List all nodes AND edges currently on the canvas. Returns { nodes: [{id, type, name, position}], edges: [{id, source, target, sourceHandle, targetHandle}] }. Use this to discover what exists, positions for move_objects, and what is already connected before creating or connecting anything.',
+    parametersJsonSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: GET_VIEWPORT,
+    description:
+      'Read the current canvas viewport and zoom. Returns viewport transform plus visible bounds and center in flow/canvas coordinates. Use this before placing new objects near the current view, visible area, or where the user is looking.',
     parametersJsonSchema: { type: 'object', properties: {} }
   },
   {

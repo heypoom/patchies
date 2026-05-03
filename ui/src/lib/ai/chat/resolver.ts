@@ -50,6 +50,7 @@ import {
   REWRITE_OBJECT_DATA,
   UPDATE_OBJECT_DATA,
   GET_GRAPH_NODES,
+  GET_VIEWPORT,
   GET_OBJECT_DATA,
   GET_OBJECT_LOGS,
   GET_OBJECT_ERRORS,
@@ -75,6 +76,9 @@ import {
   updateObjectDataDeclaration
 } from './chat-tool-declarations';
 import { resolveSearchSamples, resolveSearchFreesound } from './sample-tool-handlers';
+import type { ChatViewportSummary } from './viewport-summary';
+
+export type { ChatViewportSummary } from './viewport-summary';
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -136,7 +140,8 @@ export interface ChatGraphSummary {
  * onAction when a canvas tool call has been resolved (ready to apply/dismiss).
  *
  * @param getNodeById  - Looks up a node by ID for tool context (required for edit/replace/fix modes)
- * @param getAllNodes  - Returns all nodes in the graph (used for the get_graph_nodes context tool)
+ * @param getGraphSummary  - Returns nodes and edges for the get_graph_nodes context tool
+ * @param getViewportSummary  - Returns current viewport details for the get_viewport context tool
  * @param onAction    - Fired when a tool resolver completes with a pending ChatAction
  */
 export interface PackInfo {
@@ -163,6 +168,7 @@ export async function streamChatMessage(
   getNodeById?: (nodeId: string) => ChatNode | undefined,
   onAction?: (action: ChatAction) => void,
   getGraphSummary?: () => ChatGraphSummary,
+  getViewportSummary?: () => ChatViewportSummary,
   persona?: string,
   onToolCall?: (name: string, args: Record<string, unknown>) => void,
   getPacksState?: () => PacksState,
@@ -401,6 +407,9 @@ export async function streamChatMessage(
         return await match(name)
           .with(GET_GRAPH_NODES, async () =>
             respond(getGraphSummary?.() ?? { nodes: [], edges: [] })
+          )
+          .with(GET_VIEWPORT, async () =>
+            respond(getViewportSummary?.() ?? { error: 'Viewport is not available.' })
           )
           .with(GET_OBJECT_DATA, async () => {
             const nodeId = (args.objectId as string) ?? '';

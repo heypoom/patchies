@@ -115,6 +115,8 @@
   import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
   import { SvelteSet } from 'svelte/reactivity';
   import type { AiPromptMode, AiModeContext } from '$lib/ai/modes/types';
+  import type { ChatViewportSummary } from '$lib/ai/chat/resolver';
+  import { buildChatViewportSummary } from '$lib/ai/chat/viewport-summary';
 
   const AUTOSAVE_INTERVAL = 2500;
 
@@ -618,6 +620,15 @@
         targetHandle: e.targetHandle
       }))
     };
+  }
+
+  function getViewportSummary(): ChatViewportSummary {
+    return buildChatViewportSummary({
+      viewport: getViewport(),
+      screenRect: flowContainer?.getBoundingClientRect(),
+      fallbackScreen: { width: window.innerWidth, height: window.innerHeight },
+      screenToFlowPosition
+    });
   }
 
   const aiCallbacks = {
@@ -1163,6 +1174,7 @@
     {aiCallbacks}
     {getNodeById}
     {getGraphSummary}
+    {getViewportSummary}
     {hasGeminiApiKey}
   />
 

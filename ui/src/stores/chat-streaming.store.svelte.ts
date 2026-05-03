@@ -10,6 +10,7 @@ import {
   type ChatAction,
   type ChatNode,
   type ChatGraphSummary,
+  type ChatViewportSummary,
   type ChatNodeContext
 } from '$lib/ai/chat/resolver';
 import {
@@ -65,6 +66,7 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
   match(name)
     .with('get_object_instructions', () => `Looking up ${args.type ?? 'object'} docs`)
     .with('get_graph_nodes', () => 'Reading patch graph')
+    .with('get_viewport', () => 'Reading viewport')
     .with('get_object_data', () => `Reading object data`)
     .with('get_object_logs', () => `Checking object logs`)
     .with('get_object_errors', () => 'Checking object errors')
@@ -124,6 +126,7 @@ export interface StartStreamParams {
   nodeContext: ChatNodeContext | null;
   getNodeById?: (nodeId: string) => ChatNode | undefined;
   getGraphSummary?: () => ChatGraphSummary;
+  getViewportSummary?: () => ChatViewportSummary;
   activePersonaPrompt?: string;
   aiCallbacks?: AiPromptCallbacks;
   autoApprove: boolean;
@@ -254,6 +257,7 @@ export const chatStreamStore = {
             }
           : undefined,
         params.getGraphSummary,
+        params.getViewportSummary,
         params.activePersonaPrompt,
         (name, args) => {
           session.streamingToolCalls = [
@@ -435,6 +439,7 @@ export const chatStreamStore = {
         (thought) => {
           session.thinkingText += thought;
         },
+        undefined,
         undefined,
         undefined,
         undefined,

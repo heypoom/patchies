@@ -20,7 +20,11 @@
   import { getNodeErrors } from '$lib/utils/logger';
   import { onMount, onDestroy } from 'svelte';
   import { selectedNodeInfo } from '../../../stores/ui.store';
-  import { type ChatNode, type ChatGraphSummary } from '$lib/ai/chat/resolver';
+  import {
+    type ChatNode,
+    type ChatGraphSummary,
+    type ChatViewportSummary
+  } from '$lib/ai/chat/resolver';
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import MarkdownContent from '$lib/components/MarkdownContent.svelte';
   import ActionCard from './ActionCard.svelte';
@@ -47,12 +51,14 @@
     aiCallbacks,
     getNodeById,
     getGraphSummary,
+    getViewportSummary,
     onRename
   }: {
     sessionId: string;
     aiCallbacks?: AiPromptCallbacks;
     getNodeById?: (nodeId: string) => ChatNode | undefined;
     getGraphSummary?: () => ChatGraphSummary;
+    getViewportSummary?: () => ChatViewportSummary;
     onRename?: (name: string) => void;
   } = $props();
 
@@ -264,6 +270,7 @@
       nodeContext,
       getNodeById,
       getGraphSummary,
+      getViewportSummary,
       activePersonaPrompt: activePersona?.prompt || undefined,
       aiCallbacks,
       autoApprove,

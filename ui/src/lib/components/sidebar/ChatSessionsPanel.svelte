@@ -5,16 +5,18 @@
   import { chatStreamStore } from '../../../stores/chat-streaming.store.svelte';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
-  import type { ChatNode, ChatGraphSummary } from '$lib/ai/chat/resolver';
+  import type { ChatNode, ChatGraphSummary, ChatViewportSummary } from '$lib/ai/chat/resolver';
 
   let {
     aiCallbacks,
     getNodeById,
-    getGraphSummary
+    getGraphSummary,
+    getViewportSummary
   }: {
     aiCallbacks?: AiPromptCallbacks;
     getNodeById?: (nodeId: string) => ChatNode | undefined;
     getGraphSummary?: () => ChatGraphSummary;
+    getViewportSummary?: () => ChatViewportSummary;
   } = $props();
 
   let renamingId = $state<string | null>(null);
@@ -162,6 +164,7 @@
         {aiCallbacks}
         {getNodeById}
         {getGraphSummary}
+        {getViewportSummary}
         onRename={(name) => chatSessionsStore.renameSession(session.id, name)}
       />
     </div>

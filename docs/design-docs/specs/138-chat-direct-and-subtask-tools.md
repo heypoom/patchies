@@ -23,6 +23,8 @@
   inserting a preset by exact preset name.
 - Done: added `get_preset_content` for reading preset data before remixing/forking, and defaulted
   `search_presets` to 10 results with an explicit `limit`.
+- Done: added `get_viewport` so Chat can read the current canvas viewport, zoom, visible bounds,
+  and center before placing objects in the user's current view.
 
 ## Summary
 
@@ -136,6 +138,7 @@ Context tools read state or documentation and return data to the model. They nev
 Existing examples:
 
 - `get_graph_nodes`
+- `get_viewport`
 - `get_object_data`
 - `get_object_errors`
 - `get_object_instructions`
@@ -147,6 +150,45 @@ Existing examples:
 `get_object_instructions` should be documented in the system prompt as the required step before
 directly creating or rewriting object data for a type the model has not already inspected in the
 current tool loop.
+
+```ts
+get_viewport({});
+```
+
+Returns the current canvas viewport, zoom, visible bounds, and center in flow coordinates:
+
+```ts
+{
+  viewport: {
+    x: number;
+    y: number;
+    zoom: number;
+  }
+  center: {
+    x: number;
+    y: number;
+  }
+  bounds: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    width: number;
+    height: number;
+  }
+  screen: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }
+}
+```
+
+Chat should call this before inserting or laying out objects when the user refers to the current
+view, asks to place something nearby, or otherwise expects new objects to appear where they are
+looking. The tool is intentionally fetched on demand instead of injected into every prompt so the
+coordinates stay fresh and ordinary questions do not carry extra context.
 
 ### Direct Tools
 

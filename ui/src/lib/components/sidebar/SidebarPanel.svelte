@@ -41,7 +41,7 @@
   } from '../../../stores/sidebar-visibility.store';
 
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
-  import type { ChatNode, ChatGraphSummary } from '$lib/ai/chat/resolver';
+  import type { ChatNode, ChatGraphSummary, ChatViewportSummary } from '$lib/ai/chat/resolver';
 
   let {
     open = $bindable(false),
@@ -52,6 +52,7 @@
     aiCallbacks,
     getNodeById,
     getGraphSummary,
+    getViewportSummary,
     hasGeminiApiKey = false
   }: {
     open: boolean;
@@ -62,6 +63,7 @@
     aiCallbacks?: AiPromptCallbacks;
     getNodeById?: (nodeId: string) => ChatNode | undefined;
     getGraphSummary?: () => ChatGraphSummary;
+    getViewportSummary?: () => ChatViewportSummary;
     hasGeminiApiKey?: boolean;
   } = $props();
 
@@ -277,7 +279,7 @@
     <!-- Content -->
     <!-- Chat sessions panel is always mounted to preserve state across tab switches -->
     <div class="min-h-0 flex-1 {view === 'chat' ? '' : 'hidden'}">
-      <ChatSessionsPanel {aiCallbacks} {getNodeById} {getGraphSummary} />
+      <ChatSessionsPanel {aiCallbacks} {getNodeById} {getGraphSummary} {getViewportSummary} />
     </div>
 
     <!-- Profiler is always mounted to preserve recording state across tab switches -->

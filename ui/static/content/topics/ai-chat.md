@@ -42,7 +42,7 @@ Ask:
 Find texture presets that would work well for a soft background.
 ```
 
-Chat can search built-in and user presets, read the full contents of a preset, and insert a preset by name. If you ask for a specific spot, Chat can place the preset there.
+Chat can search built-in and user presets, read the full contents of a preset, and insert a preset by name. If you ask for something in the current view, Chat can read your viewport and place the preset where you are looking.
 
 ## What Chat Can Do
 
@@ -65,6 +65,7 @@ For bigger creative requests, Chat may use a generation step first, then queue t
 Chat can use context tools behind the scenes:
 
 - The current canvas objects and edges
+- Your current viewport, zoom level, visible bounds, and canvas center
 - A specific object's full data and connected edges
 - Recent object errors and warnings
 - Object-specific instructions, handles, inlets, and outlets
@@ -105,6 +106,10 @@ Search for presets in the Texture Filters pack.
 
 ```text
 Insert the Blur preset.
+```
+
+```text
+Insert the Blur preset in the current view.
 ```
 
 ```text
