@@ -1,4 +1,5 @@
 import type { PresetPack } from '../../stores/extensions.store';
+import { GREGGMAN_BYTEBEAT_PRESET_FOLDERS } from '../presets/builtin/bytebeat/greggman';
 import { HYDRA_DEMO_PRESET_KEYS } from '../presets/builtin/hydra';
 
 export const OBJECT_PIPE_PRESETS = ['js>', 'hydra>', 'glsl>', 'regl>', 'swgl>', 'three>', 'tone>'];
@@ -348,18 +349,13 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     ]
   },
   {
-    id: 'bytebeat-demos',
-    name: 'Bytebeat Demos',
-    description: 'Classic bytebeat formulas and demos',
+    id: 'greggman-bytebeat',
+    name: 'Greggman Bytebeat Archive',
+    description: 'HTML5 Bytebeat archive formulas grouped by source size',
     icon: 'AudioWaveform',
     requiredObjects: ['bytebeat~'],
-    presets: [
-      'sine-power.beat',
-      'explosive.beat',
-      'rickroll.beat',
-      'floatbeat.beat',
-      'ice-age.beat'
-    ]
+    presets: [],
+    presetFolders: GREGGMAN_BYTEBEAT_PRESET_FOLDERS
   },
   {
     id: 'ai-prompt-presets',

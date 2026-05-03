@@ -550,7 +550,7 @@
   }
 </script>
 
-{#snippet presetEntry(
+{#snippet presetEntryRow(
   libraryId: string,
   library: PresetLibrary,
   entryPath: PresetPath,
@@ -563,7 +563,6 @@
   {@const isExpanded = expandedPaths.has(fullPathStr)}
   {@const paddingLeft = depth * 12 + 8}
   {@const isRenaming = renamingPath === fullPathStr}
-  {@const isCreatingFolder = creatingFolderIn === fullPathStr}
   {@const canEdit = !library.readonly}
   {@const isDraggable = isFolder ? canEdit : true}
   {@const isCurrentDropTarget = isDropTarget(fullPathStr)}
@@ -573,102 +572,120 @@
     selectedPresetPath.libraryId === libraryId &&
     selectedPresetPath.path.join('/') === entryPath.join('/')}
 
-  <ContextMenu.Root>
-    <ContextMenu.Trigger disabled={!canEdit} class="block w-full">
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="group flex w-full items-center text-left text-xs {isCurrentDropTarget
-          ? 'bg-blue-600/30'
-          : isSelectedPreset
-            ? 'bg-blue-900/40 hover:bg-blue-900/50'
-            : 'hover:bg-zinc-800'}"
-        ondragover={(e) => isFolder && handleFolderDragOver(e, fullPathStr, canEdit)}
-        ondragleave={handleFolderDragLeave}
-        ondrop={(e) => isFolder && handleFolderDrop(e, libraryId, entryPath)}
-      >
-        <button
-          class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
-          style="padding-left: {paddingLeft}px"
-          draggable={isDraggable ? 'true' : 'false'}
-          ondragstart={(e) =>
-            isDraggable && handleEntryDragStart(e, libraryId, entryPath, entry, isFolder, canEdit)}
-          ondragend={handleDragEnd}
-          onclick={() => {
-            if (isRenaming) return;
-            if (isFolder) {
-              toggleExpanded(fullPathStr);
-            } else {
-              // Select preset (toggle if already selected)
-              const preset = entry as Preset;
-              if (isSelectedPreset) {
-                selectedPresetPath = null;
-              } else {
-                selectPreset(libraryId, entryPath, preset);
-              }
-            }
-          }}
-        >
-          {#if isFolder}
-            {#if isExpanded}
-              <ChevronDown class="h-3 w-3 shrink-0 text-zinc-500" />
-              <FolderOpen class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-            {:else}
-              <ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
-              <Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-            {/if}
-          {:else}
-            {@const preset = entry as Preset}
-            {@const typeIcon = getPresetTypeIcon(preset.type)}
-            <span class="w-3"></span>
-            <Blocks class="h-3.5 w-3.5 shrink-0 {typeIcon.color}" />
-          {/if}
-
-          {#if isRenaming}
-            <!-- svelte-ignore a11y_autofocus -->
-            <input
-              type="text"
-              class="flex-1 truncate rounded bg-transparent px-1 font-mono text-zinc-300 ring-1 ring-blue-500 outline-none"
-              bind:value={renameInputValue}
-              onkeydown={(e) => handleRenameKeydown(e, libraryId, entryPath)}
-              onclick={(e) => e.stopPropagation()}
-              autofocus
-            />
-          {:else}
-            <span class="truncate font-mono text-zinc-300" title={name}>
-              {name}
-            </span>
-            {#if !isFolder}
-              {@const preset = entry as Preset}
-              <span class="ml-auto pr-2 text-zinc-600">{preset.type}</span>
-            {/if}
-          {/if}
-        </button>
-
-        {#if isFolder && canEdit}
-          <div
-            class="flex shrink-0 items-center gap-0.5 pr-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-          >
-            <Tooltip.Root>
-              <Tooltip.Trigger>
-                <button
-                  class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    startFolderCreation(fullPathStr);
-                  }}
-                  title="New folder"
-                >
-                  <FolderPlus class="h-3.5 w-3.5" />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Content side="bottom">New folder</Tooltip.Content>
-            </Tooltip.Root>
-          </div>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="group flex w-full items-center text-left text-xs {isCurrentDropTarget
+      ? 'bg-blue-600/30'
+      : isSelectedPreset
+        ? 'bg-blue-900/40 hover:bg-blue-900/50'
+        : 'hover:bg-zinc-800'}"
+    ondragover={(e) => isFolder && handleFolderDragOver(e, fullPathStr, canEdit)}
+    ondragleave={handleFolderDragLeave}
+    ondrop={(e) => isFolder && handleFolderDrop(e, libraryId, entryPath)}
+  >
+    <button
+      class="flex flex-1 cursor-pointer items-center gap-1.5 py-1"
+      style="padding-left: {paddingLeft}px"
+      draggable={isDraggable ? 'true' : 'false'}
+      ondragstart={(e) =>
+        isDraggable && handleEntryDragStart(e, libraryId, entryPath, entry, isFolder, canEdit)}
+      ondragend={handleDragEnd}
+      onclick={() => {
+        if (isRenaming) return;
+        if (isFolder) {
+          toggleExpanded(fullPathStr);
+        } else {
+          // Select preset (toggle if already selected)
+          const preset = entry as Preset;
+          if (isSelectedPreset) {
+            selectedPresetPath = null;
+          } else {
+            selectPreset(libraryId, entryPath, preset);
+          }
+        }
+      }}
+    >
+      {#if isFolder}
+        {#if isExpanded}
+          <ChevronDown class="h-3 w-3 shrink-0 text-zinc-500" />
+          <FolderOpen class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
+        {:else}
+          <ChevronRight class="h-3 w-3 shrink-0 text-zinc-500" />
+          <Folder class="h-3.5 w-3.5 shrink-0 text-yellow-500" />
         {/if}
-      </div>
-    </ContextMenu.Trigger>
+      {:else}
+        {@const preset = entry as Preset}
+        {@const typeIcon = getPresetTypeIcon(preset.type)}
+        <span class="w-3"></span>
+        <Blocks class="h-3.5 w-3.5 shrink-0 {typeIcon.color}" />
+      {/if}
 
-    {#if canEdit}
+      {#if isRenaming}
+        <!-- svelte-ignore a11y_autofocus -->
+        <input
+          type="text"
+          class="flex-1 truncate rounded bg-transparent px-1 font-mono text-zinc-300 ring-1 ring-blue-500 outline-none"
+          bind:value={renameInputValue}
+          onkeydown={(e) => handleRenameKeydown(e, libraryId, entryPath)}
+          onclick={(e) => e.stopPropagation()}
+          autofocus
+        />
+      {:else}
+        <span class="truncate font-mono text-zinc-300" title={name}>
+          {name}
+        </span>
+        {#if !isFolder}
+          {@const preset = entry as Preset}
+          <span class="ml-auto pr-2 text-zinc-600">{preset.type}</span>
+        {/if}
+      {/if}
+    </button>
+
+    {#if isFolder && canEdit}
+      <div
+        class="flex shrink-0 items-center gap-0.5 pr-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+      >
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="rounded p-0.5 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+              onclick={(e) => {
+                e.stopPropagation();
+                startFolderCreation(fullPathStr);
+              }}
+              title="New folder"
+            >
+              <FolderPlus class="h-3.5 w-3.5" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content side="bottom">New folder</Tooltip.Content>
+        </Tooltip.Root>
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet presetEntry(
+  libraryId: string,
+  library: PresetLibrary,
+  entryPath: PresetPath,
+  name: string,
+  entry: PresetFolderEntry,
+  depth: number
+)}
+  {@const isFolder = !isPreset(entry)}
+  {@const fullPathStr = pathToString([libraryId, ...entryPath])}
+  {@const isExpanded = expandedPaths.has(fullPathStr)}
+  {@const paddingLeft = depth * 12 + 8}
+  {@const isCreatingFolder = creatingFolderIn === fullPathStr}
+  {@const canEdit = !library.readonly}
+
+  {#if canEdit}
+    <ContextMenu.Root>
+      <ContextMenu.Trigger class="block w-full">
+        {@render presetEntryRow(libraryId, library, entryPath, name, entry, depth)}
+      </ContextMenu.Trigger>
+
       <ContextMenu.Content class="w-48">
         {#if isFolder}
           <ContextMenu.Item onclick={() => startFolderCreation(fullPathStr)}>
@@ -689,8 +706,10 @@
           Delete
         </ContextMenu.Item>
       </ContextMenu.Content>
-    {/if}
-  </ContextMenu.Root>
+    </ContextMenu.Root>
+  {:else}
+    {@render presetEntryRow(libraryId, library, entryPath, name, entry, depth)}
+  {/if}
 
   <!-- New folder input -->
   {#if isCreatingFolder && isFolder}

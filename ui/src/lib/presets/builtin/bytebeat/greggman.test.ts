@@ -42,12 +42,13 @@ describe('Greggman HTML5 bytebeat archive presets', () => {
     const pack = BUILT_IN_PRESET_PACKS.find((candidate) => candidate.id === 'greggman-bytebeat');
 
     expect(pack?.presets).toEqual([]);
-    expect(pack?.presetFolders).toMatchObject({
-      'Tiny (<80 chars)': expect.any(Array),
-      'Small (80-199 chars)': expect.any(Array),
-      'Medium (200-999 chars)': expect.any(Array),
-      'Long (1000+ chars)': expect.any(Array)
-    });
+    expect(Object.keys(pack?.presetFolders ?? {})).toEqual([
+      'Tiny (<80 chars)',
+      'Small (80-199 chars)',
+      'Medium (200-999 chars)',
+      'Long (1000+ chars)'
+    ]);
+    expect(Object.values(pack?.presetFolders ?? {}).every(Array.isArray)).toBe(true);
     expect(pack && getPresetPackPresetNames(pack)).toEqual(GREGGMAN_BYTEBEAT_PRESET_KEYS);
   });
 });

@@ -38,7 +38,10 @@
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../../stores/ui.store';
   import { getPackIcon } from '$lib/extensions/pack-icons';
-  import { getBuiltInPresetPackByPresetName } from '$lib/extensions/preset-pack-index';
+  import {
+    getBuiltInPresetPackByPresetName,
+    getPresetPackPresetNames
+  } from '$lib/extensions/preset-pack-index';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
   import DisabledObjectSuggestion from './DisabledObjectSuggestion.svelte';
   import ExtensionPackCard from '../sidebar/ExtensionPackCard.svelte';
@@ -328,7 +331,7 @@
       (pack) =>
         pack.name.toLowerCase().includes(query) ||
         pack.description.toLowerCase().includes(query) ||
-        pack.presets.some((preset) => preset.toLowerCase().includes(query))
+        getPresetPackPresetNames(pack).some((preset) => preset.toLowerCase().includes(query))
     );
   });
 
