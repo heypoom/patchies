@@ -636,7 +636,7 @@
         </span>
         {#if !isFolder}
           {@const preset = entry as Preset}
-          <span class="ml-auto pr-2 text-zinc-600">{preset.type}</span>
+          <span class="ml-auto pr-2 text-[10px] text-zinc-700">{preset.type}</span>
         {/if}
       {/if}
     </button>
