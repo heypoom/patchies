@@ -29,6 +29,28 @@ function normalize(value: string): string {
   return value.toLowerCase().trim();
 }
 
+function splitSearchTerms(query: string): string[] {
+  const normalized = normalize(query);
+  if (!normalized) return [];
+
+  const hasExplicitSeparators = /[,;\n]+/.test(normalized);
+  const phrases = normalized
+    .split(/[,;\n]+/)
+    .map((term) => term.trim())
+    .filter(Boolean);
+  const words = normalized.split(/\s+/).filter(Boolean);
+
+  if (hasExplicitSeparators) {
+    return [...new Set([normalized, ...phrases])];
+  }
+
+  if (words.length > 2) {
+    return [...new Set([normalized, ...words])];
+  }
+
+  return [normalized];
+}
+
 function searchableText(preset: AvailablePreset): string {
   return [
     preset.preset.name,
@@ -43,7 +65,7 @@ function searchableText(preset: AvailablePreset): string {
     .toLowerCase();
 }
 
-function scorePreset(preset: AvailablePreset, query: string): number {
+function scorePresetForTerm(preset: AvailablePreset, query: string): number {
   const name = normalize(preset.preset.name);
   const packName = normalize(preset.pack?.name ?? '');
   const packId = normalize(preset.pack?.id ?? '');
@@ -58,6 +80,10 @@ function scorePreset(preset: AvailablePreset, query: string): number {
   if (text.includes(query)) return 5;
 
   return 10;
+}
+
+function scorePreset(preset: AvailablePreset, terms: string[]): number {
+  return Math.min(...terms.map((term) => scorePresetForTerm(preset, term)));
 }
 
 function preferUserLibraries(a: AvailablePreset, b: AvailablePreset): number {
@@ -80,6 +106,7 @@ function findPresetByExactName(
 
 export function searchAvailablePresets(args: SearchPresetsArgs, presets: AvailablePreset[]) {
   const query = normalize(typeof args.query === 'string' ? args.query : '');
+  const searchTerms = splitSearchTerms(query);
   const rawLimit =
     typeof args.limit === 'number'
       ? args.limit
@@ -88,14 +115,18 @@ export function searchAvailablePresets(args: SearchPresetsArgs, presets: Availab
         : 10;
   const limit = Math.min(Math.max(rawLimit, 1), 50);
 
-  if (!query) {
+  if (searchTerms.length === 0) {
     return { results: [], total: 0 };
   }
 
   const matches = presets
-    .filter((preset) => searchableText(preset).includes(query))
+    .filter((preset) => {
+      const text = searchableText(preset);
+
+      return searchTerms.some((term) => text.includes(term));
+    })
     .sort((a, b) => {
-      const scoreDiff = scorePreset(a, query) - scorePreset(b, query);
+      const scoreDiff = scorePreset(a, searchTerms) - scorePreset(b, searchTerms);
       if (scoreDiff !== 0) return scoreDiff;
 
       const libraryDiff = preferUserLibraries(a, b);

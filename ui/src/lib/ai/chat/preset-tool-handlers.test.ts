@@ -48,15 +48,69 @@ const presets: AvailablePreset[] = [
       id: 'texture-filters',
       name: 'Texture Filters'
     }
+  },
+  {
+    path: ['built-in', 'Texture Filters', 'Edge Detect'],
+    libraryId: 'built-in',
+    libraryName: 'Built-in',
+    preset: {
+      name: 'Edge Detect',
+      description: 'Finds strong texture edges',
+      type: 'glsl',
+      data: { code: 'edgeDetect();' }
+    },
+    pack: {
+      id: 'texture-filters',
+      name: 'Texture Filters'
+    }
+  },
+  {
+    path: ['built-in', 'Texture Filters', 'Hue Saturation'],
+    libraryId: 'built-in',
+    libraryName: 'Built-in',
+    preset: {
+      name: 'Hue Saturation',
+      description: 'Adjust color intensity',
+      type: 'glsl',
+      data: { code: 'hueSaturation();' }
+    },
+    pack: {
+      id: 'texture-filters',
+      name: 'Texture Filters'
+    }
   }
 ];
 
 describe('chat preset tools', () => {
   test('searches presets by preset pack name', () => {
     expect(searchAvailablePresets({ query: 'texture filters' }, presets)).toMatchObject({
-      total: 1,
-      results: [{ name: 'Blur', pack: { id: 'texture-filters', name: 'Texture Filters' } }]
+      total: 3,
+      results: [
+        { name: 'Blur', pack: { id: 'texture-filters', name: 'Texture Filters' } },
+        { name: 'Edge Detect', pack: { id: 'texture-filters', name: 'Texture Filters' } },
+        { name: 'Hue Saturation', pack: { id: 'texture-filters', name: 'Texture Filters' } }
+      ]
     });
+  });
+
+  test('searches comma-separated preset candidates', () => {
+    const result = searchAvailablePresets({ query: 'Noise, Edge Detect', limit: 10 }, presets);
+
+    expect(result.total).toBe(3);
+    expect(result.results.map((preset) => preset.name)).toEqual(
+      expect.arrayContaining(['Noise', 'Edge Detect'])
+    );
+  });
+
+  test('searches bundled space-separated preset candidates', () => {
+    const result = searchAvailablePresets(
+      { query: 'Noise Mirror Edge Detect Hue Saturation Feedback', limit: 10 },
+      presets
+    );
+
+    expect(result.results.map((preset) => preset.name)).toEqual(
+      expect.arrayContaining(['Noise', 'Edge Detect', 'Hue Saturation'])
+    );
   });
 
   test('limits preset search results to 10 by default and accepts limit', () => {

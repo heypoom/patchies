@@ -307,10 +307,13 @@ search_presets({
 })
 ```
 
-Searches available presets by preset name, library name, folder path, or preset pack name. Results
-include the preset name, object type, description, library, path, and built-in preset pack metadata
-when available. Defaults to 10 results and caps at 50. This is a context tool and never queues a
-canvas action by itself.
+Searches available presets by preset name, library name, folder path, or preset pack name. The query
+may be one phrase (`"Texture Filters"`), comma-separated candidates (`"Noise, Mirror, Edge Detect"`),
+or space-separated candidate terms (`"Noise Mirror Edge Detect Hue Saturation Feedback"`). The
+resolver matches any candidate term and ranks exact/phrase matches first. Results include the preset
+name, object type, description, library, path, and built-in preset pack metadata when available.
+Defaults to 10 results and caps at 50. This is a context tool and never queues a canvas action by
+itself.
 
 ```ts
 get_preset_content({

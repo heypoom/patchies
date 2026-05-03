@@ -264,14 +264,14 @@ export const contextToolDeclarations = [
   {
     name: SEARCH_PRESETS,
     description:
-      'Search available presets by preset name, preset pack name, folder path, library name, description, or object type. Call this before get_preset_content or insert_preset when the user gives an ambiguous preset name or asks for presets from a pack/category.',
+      'Search available presets by preset name, preset pack name, folder path, library name, description, or object type. Call this before get_preset_content or insert_preset when the user gives an ambiguous preset name or asks for presets from a pack/category. For several candidate names, either call search_presets multiple times or pass a comma-separated query like "Noise, Mirror, Edge Detect"; bundled space-separated terms are also supported.',
     parametersJsonSchema: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
           description:
-            'Search query — matches preset names, preset pack names, folders, libraries, descriptions, and object types'
+            'Search query — matches preset names, preset pack names, folders, libraries, descriptions, and object types. Supports one phrase, comma-separated candidates, or bundled space-separated candidate terms.'
         },
         limit: {
           type: 'number',
