@@ -1,6 +1,16 @@
 # 137. Search Index Performance
 
-**Status**: Draft
+**Status**: In Progress
+
+## Progress
+
+- Done: preset sidebar search now uses `flattenedPresets`, precomputed
+  `PresetSearchRecord`s, and a 100-result cap.
+- Done: large readonly built-in preset folders no longer mount disabled context-menu machinery for
+  every row in `PresetTreeView.svelte`. This fixed the Greggman archive crash when expanding the
+  built-in preset library.
+- Next: move ObjectNode autocomplete indexing into a shared store/module and cap ObjectNode
+  suggestions at 50 results.
 
 ## Problem
 
@@ -14,7 +24,7 @@ The same preset/object data is currently searched or indexed in multiple UI surf
 
 The current approach is still simple enough to understand, but it does too much repeated work:
 
-- The preset sidebar recursively walks nested preset folders on every search keystroke.
+- The preset sidebar previously recursively walked nested preset folders on every search keystroke.
 - ObjectNode builds searchable object/preset items and a Fuse index per ObjectNode instance.
 - Object Browser builds its own preset categories and Fuse index separately.
 - Search results are not consistently capped before rendering.
@@ -43,7 +53,7 @@ archives.
 
 ### Preset Sidebar
 
-`PresetTreeView.svelte` searches by recursively walking every library and folder:
+Done. `PresetTreeView.svelte` used to search by recursively walking every library and folder:
 
 ```ts
 for (const library of $presetLibraryStore) {
@@ -51,10 +61,18 @@ for (const library of $presetLibraryStore) {
 }
 ```
 
-This runs inside a reactive search result calculation, so each keystroke traverses the nested preset
-tree again.
+That traversal has been replaced with the `flattenedPresets` derived store plus precomputed
+`PresetSearchRecord`s in `preset-utils.ts`. Sidebar search now scans pre-normalized fields and caps
+flat search results at 100.
+
+The Greggman bytebeat archive also exposed a related rendering bottleneck: expanding a large readonly
+built-in folder mounted disabled `ContextMenu.Root` / `ContextMenu.Trigger` instances for every
+preset row. Readonly rows now render without context-menu wrappers; editable user-library rows keep
+the context menu.
 
 ### ObjectNode Autocomplete
+
+Still open.
 
 Each `ObjectNode.svelte` instance derives:
 
@@ -67,6 +85,8 @@ with many ObjectNodes pay the indexing cost many times even though autocomplete 
 the current extension state.
 
 ### Object Browser
+
+Still open.
 
 `ObjectBrowserModal.svelte` builds preset categories, flattens categories into Fuse items, and
 creates another Fuse index. This is less frequent than ObjectNode autocomplete, but it still repeats
@@ -211,6 +231,9 @@ Fuse supports a search limit via `fuse.search(query, { limit })`; use it when fu
 
 ### Phase 1: Measure
 
+Partially done through manual debugging around the Greggman archive. Add scoped timing before larger
+search refactors when useful.
+
 Add temporary debug timing around current search paths:
 
 - Preset sidebar search calculation
@@ -225,6 +248,8 @@ large preset pack enabled.
 
 ### Phase 2: Optimize Preset Sidebar
 
+Complete.
+
 Replace recursive per-query traversal with the existing `flattenedPresets` derived store.
 
 Add a derived `presetSearchRecords` list that precomputes:
@@ -236,9 +261,15 @@ Add a derived `presetSearchRecords` list that precomputes:
 
 Search `presetSearchRecords` directly and cap results before rendering.
 
-This is the smallest high-confidence improvement.
+This was the smallest high-confidence improvement and has landed.
+
+Additional fix from this phase: do not mount disabled context-menu wrappers for readonly preset tree
+rows. This prevents large generated preset folders from creating hundreds of unnecessary Svelte/Bits
+UI effects when expanded.
 
 ### Phase 3: Share ObjectNode Search Index
+
+Next.
 
 Move ObjectNode's global autocomplete data out of each node instance.
 
@@ -255,7 +286,33 @@ The shared index should derive from:
 ObjectNode should keep node-local state (`expr`, `isEditing`) but call shared query helpers for
 suggestions.
 
+Recommended first API:
+
+```ts
+export const objectPresetSearchIndex = derived(
+  [
+    flattenedPresets,
+    enabledObjects,
+    enabledPresets,
+    patchObjectTypes,
+    isAiFeaturesVisible
+  ],
+  (...) => ({
+    presetLookup,
+    defaultSuggestions,
+    fuse,
+    searchObjectSuggestions(query, { limit: 50 }),
+    getPresetByName(name)
+  })
+);
+```
+
+The first pass can preserve the current Fuse-based ranking and only deduplicate index creation plus
+add limits. Tiered prefix/substring/fuzzy search can follow once the shared index exists.
+
 ### Phase 4: Reuse In Object Browser
+
+Open.
 
 Adapt Object Browser to consume the same shared records.
 
@@ -263,6 +320,8 @@ Object Browser can still group results into categories for display, but filterin
 come from shared search helpers instead of a modal-local index.
 
 ### Phase 5: Optional Fuse Index Improvements
+
+Open.
 
 If profiling still shows Fuse index creation as expensive:
 
@@ -279,22 +338,26 @@ Manual checks:
 
 1. Enable large preset packs.
 2. Type in `Search presets...` and verify keystrokes stay responsive.
-3. Type object names and preset names into ObjectNode autocomplete.
-4. Verify disabled objects are still suggested only when no enabled result matches.
-5. Verify built-in presets still respect enabled preset packs.
-6. Verify user presets still appear and take precedence where duplicate names exist.
-7. Verify Object Browser search still finds objects by name, description, and category.
+3. Expand `Built-in` in the preset sidebar with the Greggman archive present and verify there is no
+   Svelte update-depth crash.
+4. Type object names and preset names into ObjectNode autocomplete.
+5. Verify disabled objects are still suggested only when no enabled result matches.
+6. Verify built-in presets still respect enabled preset packs.
+7. Verify user presets still appear and take precedence where duplicate names exist.
+8. Verify Object Browser search still finds objects by name, description, and category.
 
 Automated checks:
 
+- Unit test preset sidebar search records and 100-result limiting.
 - Unit test ranking helpers with prefix, substring, fuzzy, boosted preset, and low-priority cases.
 - Unit test preset visibility for enabled/disabled object and preset packs.
 - Unit test duplicate preset names so user libraries retain precedence.
 
 ## Success Criteria
 
-- Preset sidebar search no longer walks nested preset folders per keystroke.
-- ObjectNode no longer creates a Fuse index per node instance.
-- Search result rendering is capped in all three surfaces.
+- Done: preset sidebar search no longer walks nested preset folders per keystroke.
+- Done: large readonly preset folders can be expanded without mounting per-row context menus.
+- Open: ObjectNode no longer creates a Fuse index per node instance.
+- Open: search result rendering is capped in ObjectNode and Object Browser.
 - Existing search behavior is preserved or intentionally documented where changed.
 - Measured search/index timings improve with large preset packs enabled.
