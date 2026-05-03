@@ -6,7 +6,7 @@ const code = `// @title Lens Distort
 // @param centerX 0.5 0.0 1.0 0.001 "Center X"
 // @param centerY 0.5 0.0 1.0 0.001 "Center Y"
 // @param scale 1.0 0.1 2.0 0.001 "Scale"
-// @param chromatic 0.01 0.0 0.5 0.0001 "Chromatic"
+// @param chromatic 0.01 0.0 0.3 0.0001 "Chromatic"
 
 uniform sampler2D source;
 uniform float amount;
