@@ -1,38 +1,132 @@
 # Chat
 
-Open the sidebar and switch to the **Chat** tab to chat with an AI assistant about your patch.
+Chat is an AI assistant that can read your patch, explain what is happening, and queue safe canvas changes for you to review.
 
-- Ask questions about Patchies, get help debugging, or brainstorm ideas
-- When a object is selected, its type and data are automatically included as context so the AI understands what you're working on
-- Press `Enter` to send, `Shift+Enter` for a newline
-- Use the trash icon to clear the conversation history
+Open the sidebar and switch to **Chat**. Ask a question, describe a change, or ask it to build something on the canvas.
 
-## Canvas Tools
+## How It Works
 
-The assistant can act on your canvas directly when you ask it to. It will present proposed changes as action cards that you can **apply** or **dismiss** before anything is modified.
+Chat works like a collaborator sitting next to your patch. It can inspect the canvas, read selected object data, check object errors, search the docs, and look up object-specific instructions before it suggests a change.
 
-- **Insert**: Create new objects on the canvas
-- **Edit**: Modify an existing object's code or settings
-- **Turn Into**: Replace an object with a different type
-- **Fix**: Fix errors using console output
-- **Split**: Break an object into multiple connected objects
-- **Fork**: Derive a new object from an existing one
-- **Connect**: Wire objects together with edges
-- **Disconnect**: Remove edges between objects
+When you ask Chat to modify the canvas, it creates an action card. Nothing changes until you choose **Apply**. If the suggestion is not right, choose **Dismiss** and ask for a different version.
 
-## Context Tools
+## Try It
 
-The assistant automatically uses these behind the scenes to understand your patch before acting:
+### Ask About The Selected Object
 
-- **Get Graph Objects** — Lists all objects and edges on the canvas so it knows what exists and how things are connected
-- **Get Object Data** — Fetches the full data of a specific object (code, settings, connected edges)
-- **Get Object Instructions** — Looks up the API reference for a specific object type (e.g., handle IDs, inlet/outlet specs)
-- **Search Docs** — Searches topic guides and object reference pages by keyword
-- **Get Object Errors** — Fetches recent error and warning logs for any object, useful for diagnosing issues across the patch
-- **Get Doc Content** — Fetches the full content of a documentation page
+1. Select an object on the canvas
+2. Open **Chat**
+3. Ask:
+
+```text
+What does this object do?
+```
+
+Chat includes the selected object's type, data, and recent errors as context.
+
+### Make A Small Edit
+
+Select a code object and ask:
+
+```text
+Make this animation slower and use warmer colors.
+```
+
+Chat can read the current object data, rewrite the relevant fields, and queue an edit card for you to apply.
+
+### Build From A Preset
+
+Ask:
+
+```text
+Find texture presets that would work well for a soft background.
+```
+
+Chat can search built-in and user presets, read the full contents of a preset, and insert a preset by name.
+
+## What Chat Can Do
+
+Chat can queue these canvas actions:
+
+- Create one object from generated data
+- Create multiple connected objects
+- Insert an existing preset
+- Edit an object's data or code
+- Replace an object with another type
+- Delete objects
+- Move objects around the canvas
+- Connect objects with edges
+- Disconnect existing edges
+
+For bigger creative requests, Chat may use a generation step first, then queue the final canvas change. For example, "make a kick and snare patch" can become a generated object graph, followed by one action card that inserts the objects and connections.
+
+## What Chat Can Read
+
+Chat can use context tools behind the scenes:
+
+- The current canvas objects and edges
+- A specific object's full data and connected edges
+- Recent object errors and warnings
+- Object-specific instructions, handles, inlets, and outlets
+- Topic docs and object reference pages
+- Built-in object packs and preset packs
+- Preset search results and full preset contents
+- Built-in sample libraries, plus Freesound when configured
+
+This context helps Chat avoid guessing. If something is failing, ask it to check the errors before changing the patch.
+
+## Working With Action Cards
+
+Action cards are proposed changes.
+
+- **Apply** runs the change on your canvas
+- **Dismiss** leaves your patch unchanged
+- Applied actions use Patchies history, so you can undo them
+
+You can also enable auto-approve in the chat controls when you want faster iteration. Keep it off when you are asking for broad changes or working in a patch you care about.
+
+## Useful Prompts
+
+```text
+What objects are on this canvas, and how are they connected?
+```
+
+```text
+Fix the selected shader error.
+```
+
+```text
+Create a p5 object that draws bouncing circles.
+```
+
+```text
+Search for presets in the Texture Filters pack.
+```
+
+```text
+Insert the Blur preset.
+```
+
+```text
+Move these three objects into a cleaner layout.
+```
+
+```text
+Connect the slider to the oscillator frequency.
+```
+
+## Current Limits
+
+Chat is strongest when you ask for concrete, reviewable changes. A few operations are still easier to do manually or with a follow-up prompt:
+
+- Renaming objects is not yet a dedicated chat action
+- Single-object insertions use the default AI insert position
+- Deep nested settings edits are handled as normal object data edits
+- Duplicating objects can be approximated, but there is no dedicated duplicate action yet
 
 ## See Also
 
-- [Enabling AI](/docs/enabling-ai)
-- [AI Edits](/docs/ai-edits)
-- [Patch to App](/docs/ai-patch-to-app)
+- [Enabling AI](/docs/enabling-ai) — Turn AI features on and set up an API key
+- [AI Edits](/docs/ai-edits) — Use the inline AI prompt to create or edit objects
+- [Presets](/docs/manage-presets) — Save and browse reusable object configurations
+- [Patch to App](/docs/ai-patch-to-app) — Turn a patch into a standalone web app
