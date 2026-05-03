@@ -31,34 +31,35 @@ import { preset as preset29 } from './chroma-key';
 import { preset as preset30 } from './rgb-key';
 import { preset as preset31 } from './luma-key';
 import { preset as preset32 } from './matte';
-import { preset as preset33 } from './hsv-adjust';
-import { preset as preset34 } from './monochrome';
-import { preset as preset35 } from './channel-mix';
-import { preset as preset36 } from './limit';
-import { preset as preset37 } from './remap';
-import { preset as preset38 } from './lookup';
-import { preset as preset39 } from './rgb-to-hsv';
-import { preset as preset40 } from './hsv-to-rgb';
-import { preset as preset41 } from './tone-map';
-import { preset as preset42 } from './fit';
-import { preset as preset43 } from './flip';
-import { preset as preset44 } from './mirror';
-import { preset as preset45 } from './tile';
-import { preset as preset46 } from './lens-distort';
-import { preset as preset47 } from './circle';
-import { preset as preset48 } from './rectangle';
-import { preset as preset49 } from './cross';
-import { preset as preset50 } from './emboss';
-import { preset as preset51 } from './slope';
-import { preset as preset52 } from './normal-map';
-import { preset as preset53 } from './anti-alias';
-import { preset as preset54 } from './luma-blur';
-import { preset as preset55 } from './luma-level';
-import { preset as preset56 } from './pack';
-import { preset as preset57 } from './convolve';
-import { preset as preset58 } from './math';
-import { preset as preset59 } from './chromatic-aberration';
-import { preset as preset60 } from './blob-detect';
+import { preset as preset33 } from './mask';
+import { preset as preset34 } from './hsv-adjust';
+import { preset as preset35 } from './monochrome';
+import { preset as preset36 } from './channel-mix';
+import { preset as preset37 } from './limit';
+import { preset as preset38 } from './remap';
+import { preset as preset39 } from './lookup';
+import { preset as preset40 } from './rgb-to-hsv';
+import { preset as preset41 } from './hsv-to-rgb';
+import { preset as preset42 } from './tone-map';
+import { preset as preset43 } from './fit';
+import { preset as preset44 } from './flip';
+import { preset as preset45 } from './mirror';
+import { preset as preset46 } from './tile';
+import { preset as preset47 } from './lens-distort';
+import { preset as preset48 } from './circle';
+import { preset as preset49 } from './rectangle';
+import { preset as preset50 } from './cross';
+import { preset as preset51 } from './emboss';
+import { preset as preset52 } from './slope';
+import { preset as preset53 } from './normal-map';
+import { preset as preset54 } from './anti-alias';
+import { preset as preset55 } from './luma-blur';
+import { preset as preset56 } from './luma-level';
+import { preset as preset57 } from './pack';
+import { preset as preset58 } from './convolve';
+import { preset as preset59 } from './math';
+import { preset as preset60 } from './chromatic-aberration';
+import { preset as preset61 } from './blob-detect';
 import type { GLSLPreset } from './types';
 
 export const GLSL_PRESETS: Record<string, GLSLPreset> = {
@@ -95,34 +96,35 @@ export const GLSL_PRESETS: Record<string, GLSLPreset> = {
   'RGB Key': preset30,
   'Luma Key': preset31,
   Matte: preset32,
-  'HSV Adjust': preset33,
-  Monochrome: preset34,
-  'Channel Mix': preset35,
-  Limit: preset36,
-  Remap: preset37,
-  Lookup: preset38,
-  'RGB to HSV': preset39,
-  'HSV to RGB': preset40,
-  'Tone Map': preset41,
-  Fit: preset42,
-  Flip: preset43,
-  Mirror: preset44,
-  Tile: preset45,
-  'Lens Distort': preset46,
-  Circle: preset47,
-  Rectangle: preset48,
-  Cross: preset49,
-  Emboss: preset50,
-  Slope: preset51,
-  'Normal Map': preset52,
-  'Anti Alias': preset53,
-  'Luma Blur': preset54,
-  'Luma Level': preset55,
-  Pack: preset56,
-  Convolve: preset57,
-  Math: preset58,
-  'Chromatic Aberration': preset59,
-  'Blob Detect': preset60
+  Mask: preset33,
+  'HSV Adjust': preset34,
+  Monochrome: preset35,
+  'Channel Mix': preset36,
+  Limit: preset37,
+  Remap: preset38,
+  Lookup: preset39,
+  'RGB to HSV': preset40,
+  'HSV to RGB': preset41,
+  'Tone Map': preset42,
+  Fit: preset43,
+  Flip: preset44,
+  Mirror: preset45,
+  Tile: preset46,
+  'Lens Distort': preset47,
+  Circle: preset48,
+  Rectangle: preset49,
+  Cross: preset50,
+  Emboss: preset51,
+  Slope: preset52,
+  'Normal Map': preset53,
+  'Anti Alias': preset54,
+  'Luma Blur': preset55,
+  'Luma Level': preset56,
+  Pack: preset57,
+  Convolve: preset58,
+  Math: preset59,
+  'Chromatic Aberration': preset60,
+  'Blob Detect': preset61
 };
 
 export type { GLSLPreset } from './types';

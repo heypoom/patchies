@@ -57,6 +57,7 @@ Take one or more input textures and transform them:
 | `edge-detect` | texture | `<lygia/filter/edge>` | Sobel operator |
 | `blur` | texture | `<lygia/filter/gaussianBlur>` | Gaussian blur |
 | `displacement` | texture + disp map | (simple) | UV offset from displacement |
+| `mask` | source + mask | (simple) | Clip source alpha by another texture's alpha, useful with shape presets |
 | `sharpen` | texture | `<lygia/filter/sharpen>` | Unsharp mask |
 
 #### PBR / Lighting (Three.js presets)
