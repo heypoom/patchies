@@ -1,4 +1,6 @@
-import { match, P } from 'ts-pattern';
+import { Type } from '@sinclair/typebox';
+import { match } from 'ts-pattern';
+import { schema } from '$lib/objects/schemas/types';
 
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
@@ -17,11 +19,21 @@ const isBang = (data: unknown) =>
   'type' in data &&
   (data as Record<string, unknown>).type === 'bang';
 
+const matchers = {
+  number: schema(Type.Number()),
+  string: schema(Type.String()),
+  symbol: schema(Type.Symbol()),
+  typedMessage: schema(Type.Object({ type: Type.String() })),
+  floatArg: schema(Type.Union([Type.Literal('float'), Type.Literal('f')])),
+  symbolArg: schema(Type.Union([Type.Literal('symbol'), Type.Literal('s')])),
+  anyArg: schema(Type.Union([Type.Literal('any'), Type.Literal('a')]))
+};
+
 const toSymbol = (data: unknown): string | symbol | undefined =>
   match(data)
-    .with(P.string, (value) => value)
-    .with(P.symbol, (value) => value)
-    .with({ type: P.string }, (value) => value.type)
+    .with(matchers.string, (value) => value)
+    .with(matchers.symbol, (value) => value)
+    .with(matchers.typedMessage, (value) => value.type)
     .otherwise((value) => String(value));
 
 const isValidValue = (slot: PackSlot, data: unknown) =>
@@ -39,14 +51,14 @@ const formatPackValue = (slot: PackSlot, value: unknown): string | null =>
 
 const createSlot = (param: unknown): PackSlot | null =>
   match(param)
-    .with(P.number, (value) => ({ type: 'float' as const, value }))
-    .with(P.string, (value) => {
+    .with(matchers.number, (value) => ({ type: 'float' as const, value }))
+    .with(matchers.string, (value) => {
       const normalized = value.toLowerCase();
 
       return match(normalized)
-        .with(P.union('float', 'f'), () => ({ type: 'float' as const, value: 0 }))
-        .with(P.union('symbol', 's'), () => ({ type: 'symbol' as const, value: '' }))
-        .with(P.union('any', 'a'), () => ({ type: 'any' as const, value: null }))
+        .with(matchers.floatArg, () => ({ type: 'float' as const, value: 0 }))
+        .with(matchers.symbolArg, () => ({ type: 'symbol' as const, value: '' }))
+        .with(matchers.anyArg, () => ({ type: 'any' as const, value: null }))
         .otherwise(() => {
           const numericValue = Number(value);
 
@@ -105,6 +117,8 @@ export class PackObject implements TextObjectV2 {
       this.slots = slots.length > 0 ? slots : this.slots;
     }
 
+    this.context.truncateParams(this.slots.length);
+
     this.slots.forEach((slot, index) => {
       this.context.setParam(index, slot.value);
     });
@@ -125,7 +139,7 @@ export class PackObject implements TextObjectV2 {
     if (value === undefined) return;
 
     slot.value = value;
-    this.context.setParam(inlet, value);
+    this.context.setParam(inlet, value, { notifyUI: true });
 
     if (inlet === 0) {
       this.output();
@@ -141,7 +155,10 @@ export class PackObject implements TextObjectV2 {
       hot: index === 0,
       formatter:
         slot.type === 'float' ? undefined : (value: unknown) => formatPackValue(slot, value),
-      validator: index === 0 ? (data) => isBang(data) || isValidValue(slot, data) : undefined
+      validator:
+        index === 0 || slot.type === 'symbol'
+          ? (data) => isBang(data) || isValidValue(slot, data)
+          : undefined
     }));
   }
 

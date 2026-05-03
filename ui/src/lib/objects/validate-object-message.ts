@@ -1,7 +1,9 @@
 import { match, P } from 'ts-pattern';
+import { Type } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
 import { isScheduledMessage } from '$lib/audio/time-scheduling-types';
 import { matchesMessageType } from '$lib/messages/message-types';
+import { schema } from '$lib/objects/schemas/types';
 
 import { ALWAYS_VALID } from './parse-object-param';
 
@@ -12,6 +14,8 @@ const FLOAT_ARRAY_CONSTRUCTORS = [
   globalThis.Float32Array,
   globalThis.Float64Array
 ].filter((constructor): constructor is Float32ArrayConstructor => constructor !== undefined);
+
+const anyValue = schema(Type.Any());
 
 // Helper function to validate inlet/outlet types
 export const validateMessageToObject = (value: unknown, inlet: ObjectInlet): boolean => {
@@ -29,7 +33,7 @@ export const validateMessageToObject = (value: unknown, inlet: ObjectInlet): boo
     .with([P.number, 'float'], () => true)
     .with([P.number, 'int'], ([n]) => Number.isInteger(n))
     .with([P.string, 'string'], () => true)
-    .with([P.any, 'symbol'], ([message]) => matchesMessageType('symbol', message))
+    .with([anyValue, 'symbol'], ([message]) => matchesMessageType('symbol', message))
     .with([P.boolean, 'bool'], () => true)
     .with([P.array(P.number), 'int[]'], ([arr]) => arr.every(Number.isInteger))
     .with([P.array(P.number), 'float[]'], () => true)

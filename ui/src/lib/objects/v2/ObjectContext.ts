@@ -102,6 +102,13 @@ export class ObjectContext {
   }
 
   /**
+   * Remove parameters beyond the current inlet count.
+   */
+  truncateParams(length: number): void {
+    this.params = this.params.slice(0, length);
+  }
+
+  /**
    * Get all parameters.
    */
   getParams(): unknown[] {

@@ -12,28 +12,34 @@ type SentMessage = {
   options: unknown;
 };
 
-function createPack(params: unknown[] = []) {
+function createPack(params: unknown[] = [], initialValues: unknown[] = []) {
   const sent: SentMessage[] = [];
-  const values: unknown[] = [];
+  const values: unknown[] = [...initialValues];
+  const setParamOptions: unknown[] = [];
 
   const context = {
     send(data: unknown, options?: unknown) {
       sent.push({ data, options });
     },
-    setParam(indexOrName: number | string, value: unknown) {
+    setParam(indexOrName: number | string, value: unknown, options?: unknown) {
       const index = typeof indexOrName === 'number' ? indexOrName : Number(indexOrName);
       values[index] = value;
+      setParamOptions[index] = options;
     },
     getParam(indexOrName: number | string) {
       const index = typeof indexOrName === 'number' ? indexOrName : Number(indexOrName);
       return values[index];
+    },
+    truncateParams(length: number) {
+      values.length = length;
+      setParamOptions.length = length;
     }
   } as ObjectContext;
 
   const object = new PackObject('pack-1', context);
   object.create(params);
 
-  return { object, sent, values };
+  return { object, sent, values, setParamOptions };
 }
 
 function meta(inlet: number): MessageMeta {
@@ -71,14 +77,16 @@ describe('PackObject', () => {
   });
 
   it('updates cold inlets without output and emits the full list from the hot inlet', () => {
-    const { object, sent } = createPack(['f', 's']);
+    const { object, sent, setParamOptions } = createPack(['f', 's']);
 
     object.onMessage('kick', meta(1));
     expect(sent).toEqual([]);
+    expect(setParamOptions[1]).toEqual({ notifyUI: true });
 
     object.onMessage(12, meta(0));
 
     expect(sent).toEqual([{ data: [12, 'kick'], options: undefined }]);
+    expect(setParamOptions[0]).toEqual({ notifyUI: true });
   });
 
   it('treats numeric arguments as initialized float inlets', () => {
@@ -96,6 +104,12 @@ describe('PackObject', () => {
     expect(sent).toEqual([{ data: [440, '', 0], options: undefined }]);
   });
 
+  it('truncates stale params when created with fewer dynamic slots', () => {
+    const { values } = createPack(['f', 's'], [1, 2, 3, 4]);
+
+    expect(values).toEqual([0, '']);
+  });
+
   it('coerces anything messages to symbols on the hot symbol inlet', () => {
     const { object, sent } = createPack(['s', 'f']);
 
@@ -111,6 +125,17 @@ describe('PackObject', () => {
     expect(validateMessageToObject({ type: 'bang' }, hotFloat)).toBe(true);
     expect(validateMessageToObject(20, hotFloat)).toBe(true);
     expect(validateMessageToObject('label', coldSymbol)).toBe(true);
+  });
+
+  it('allows cold symbol inlets to coerce non-string messages', () => {
+    const { object, values } = createPack(['f', 's']);
+    const [, coldSymbol] = object.getInlets();
+
+    expect(validateMessageToObject({ type: 'note' }, coldSymbol)).toBe(true);
+
+    object.onMessage({ type: 'note' }, meta(1));
+
+    expect(values).toEqual([0, 'note']);
   });
 
   it('supports any slots for arbitrary messages', () => {
