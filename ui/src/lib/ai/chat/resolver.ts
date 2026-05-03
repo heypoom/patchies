@@ -21,13 +21,20 @@ import {
   resolveUpdateObjectData
 } from './direct-tool-handlers';
 import {
+  resolveGenerateObjectDataSubtask,
+  resolveRewriteObjectDataSubtask
+} from './subtask-tool-handlers';
+import {
   SYSTEM_PROMPT,
   CONTEXT_TOOL_NAMES,
+  SUBTASK_TOOL_NAMES,
   CONNECT_EDGES,
   DISCONNECT_EDGES,
+  GENERATE_OBJECT_DATA,
   INSERT_OBJECT,
   INSERT_OBJECTS,
   REPLACE_OBJECT,
+  REWRITE_OBJECT_DATA,
   UPDATE_OBJECT_DATA,
   GET_GRAPH_NODES,
   GET_OBJECT_DATA,
@@ -45,6 +52,7 @@ import {
   insertObjectDeclaration,
   insertObjectsDeclaration,
   replaceObjectDeclaration,
+  subtaskToolDeclarations,
   updateObjectDataDeclaration
 } from './chat-tool-declarations';
 import { resolveSearchSamples, resolveSearchFreesound } from './sample-tool-handlers';
@@ -199,7 +207,11 @@ export async function streamChatMessage(
         disconnectEdgesDeclaration
       ]
     : [];
-  const tools = [...contextToolDeclarations, ...allCanvasDeclarations] as ToolDeclaration[];
+  const tools = [
+    ...contextToolDeclarations,
+    ...subtaskToolDeclarations,
+    ...allCanvasDeclarations
+  ] as ToolDeclaration[];
 
   let fullText = '';
   let globalCallIndex = 0;
@@ -238,8 +250,12 @@ export async function streamChatMessage(
       _raw: _rawModelTurn
     });
 
-    const contextCalls = toolCalls.filter((tc) => CONTEXT_TOOL_NAMES.has(tc.name));
-    const canvasCalls = toolCalls.filter((tc) => !CONTEXT_TOOL_NAMES.has(tc.name));
+    const resultToolCalls = toolCalls.filter(
+      (tc) => CONTEXT_TOOL_NAMES.has(tc.name) || SUBTASK_TOOL_NAMES.has(tc.name)
+    );
+    const canvasCalls = toolCalls.filter(
+      (tc) => !CONTEXT_TOOL_NAMES.has(tc.name) && !SUBTASK_TOOL_NAMES.has(tc.name)
+    );
 
     // Assign global indices
     const callIndexMap = new Map<ToolCall, number>();
@@ -344,7 +360,7 @@ export async function streamChatMessage(
 
     // Resolve context tool calls
     const settledContextResults = await Promise.allSettled(
-      contextCalls.map(async (tc) => {
+      resultToolCalls.map(async (tc) => {
         const { name, args } = tc;
         const outputIndex = callIndexMap.get(tc) ?? -1;
 
@@ -495,6 +511,20 @@ export async function streamChatMessage(
               });
             return respond(onEnablePack(packId, kind as 'object' | 'preset', enable));
           })
+          .with(GENERATE_OBJECT_DATA, async () =>
+            respond(
+              await resolveGenerateObjectDataSubtask(args, signal, (thought) =>
+                onSubagentThinking?.(outputIndex, thought)
+              )
+            )
+          )
+          .with(REWRITE_OBJECT_DATA, async () =>
+            respond(
+              await resolveRewriteObjectDataSubtask(args, signal, (thought) =>
+                onSubagentThinking?.(outputIndex, thought)
+              )
+            )
+          )
           .otherwise(async () => {
             // GET_OBJECT_INSTRUCTIONS
             const type = (args.type as string) ?? '';
@@ -526,7 +556,7 @@ export async function streamChatMessage(
 
     const contextResults: ToolResult[] = settledContextResults.map((result, i) => {
       if (result.status === 'fulfilled') return result.value;
-      const tc = contextCalls[i];
+      const tc = resultToolCalls[i];
       const outputIndex = callIndexMap.get(tc) ?? -1;
       const errorMsg =
         result.reason instanceof Error ? result.reason.message : String(result.reason);

@@ -2,6 +2,16 @@
 
 **Status**: Proposed
 
+## Progress
+
+- Done: added direct chat canvas tools for `insert_object`, `insert_objects`,
+  `update_object_data`, and `replace_object`.
+- Done: strengthened `get_object_instructions` so direct tools can fetch object prompts, handle
+  references, and compact schema context first.
+- Done: added LLM-backed subtask tools for `generate_object_data` and `rewrite_object_data`; these
+  should return structured data to the chat loop, not queue canvas actions directly.
+- Next: test the subtask + direct-tool sequence in ChatView, then consider `plan_object_graph`.
+
 ## Summary
 
 Split Chat AI canvas tools into two explicit categories:
@@ -184,7 +194,7 @@ replace_object({
   nodeId: string,
   type: string,
   data: Record<string, unknown>,
-})
+});
 ```
 
 Replaces one node with another type and data, using the existing reconnect/undo semantics in
@@ -200,8 +210,8 @@ Deletes existing objects using undoable delete commands. This should be a review
 
 ```ts
 move_objects({
-  positions: Array<{nodeId: string; position: {x: number; y: number}}>,
-})
+  positions: Array<{ nodeId: string; position: { x: number; y: number } }>,
+});
 ```
 
 Moves objects using undoable move commands. Useful for layout cleanup without regenerating nodes.
@@ -239,7 +249,7 @@ Uses the existing edit/fix resolver behavior and returns proposed `data`.
 ```ts
 plan_object_graph({
   prompt: string,
-})
+});
 ```
 
 Returns planned nodes and edges without queuing an action. The chat model can inspect the result and

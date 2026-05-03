@@ -53,7 +53,13 @@ export async function resolveObjectFromPrompt(
   onRouterComplete?.(objectType);
 
   // Call 2: Generate object config (targeted)
-  const config = await generateObjectConfig(provider, prompt, objectType, signal, onThinking);
+  const config = await generateObjectConfigForType(
+    provider,
+    prompt,
+    objectType,
+    signal,
+    onThinking
+  );
 
   return config;
 }
@@ -84,7 +90,7 @@ async function routeToObjectType(
  * Call 2: Generates the full object configuration for the chosen object type.
  * This is a targeted call that includes only the relevant system prompt and API docs.
  */
-async function generateObjectConfig(
+export async function generateObjectConfigForType(
   provider: LLMProvider,
   prompt: string,
   objectType: string,

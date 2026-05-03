@@ -12,7 +12,11 @@ import {
   type ChatGraphSummary,
   type ChatNodeContext
 } from '$lib/ai/chat/resolver';
-import { CONTEXT_TOOL_NAMES } from '$lib/ai/chat/chat-tool-declarations';
+import {
+  CONTEXT_TOOL_NAMES,
+  DIRECT_CANVAS_TOOL_NAMES,
+  SUBTASK_TOOL_NAMES
+} from '$lib/ai/chat/chat-tool-declarations';
 import { modeDescriptors } from '$lib/ai/modes/descriptors';
 import { toolNameToMode } from '$lib/ai/chat/canvas-tools';
 import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
@@ -66,6 +70,8 @@ const getToolCallLabel = (name: string, args: Record<string, unknown>): string =
     .with('get_doc_content', () => `Fetching ${args.kind ?? 'doc'}: ${args.slug ?? ''}`)
     .with('list_packs', () => 'Listing packs')
     .with('enable_pack', () => `${args.enable ? 'Enabling' : 'Disabling'} ${args.packId ?? 'pack'}`)
+    .with('generate_object_data', () => `Generating ${args.type ?? 'object'} data`)
+    .with('rewrite_object_data', () => `Rewriting ${args.type ?? 'object'} data`)
     .with('insert_object', () => `Adding ${args.type ?? 'object'}`)
     .with('insert_objects', () => 'Adding objects')
     .with('update_object_data', () => `Updating ${args.nodeId ?? 'object'}`)
@@ -224,7 +230,9 @@ export const chatStreamStore = {
               name,
               label: getToolCallLabel(name, args),
               args,
-              isSubagent: !CONTEXT_TOOL_NAMES.has(name)
+              isSubagent:
+                SUBTASK_TOOL_NAMES.has(name) ||
+                (!DIRECT_CANVAS_TOOL_NAMES.has(name) && !CONTEXT_TOOL_NAMES.has(name))
             }
           ];
         },

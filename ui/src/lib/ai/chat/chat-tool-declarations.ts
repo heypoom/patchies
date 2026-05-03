@@ -26,7 +26,8 @@ You can suggest simulation or visualization ideas in your text response, but wai
 
 - **Context tools** read the patch, logs, docs, object instructions, samples, or packs. They do not queue canvas changes.
 - **Direct canvas tools** queue concrete mutations from final structured arguments: insert_object, insert_objects, update_object_data, replace_object, connect_edges, disconnect_edges.
-- **Resolver tools** such as insert, multi, edit, turn_into, fix_error, split, and fork run an extra LLM-backed resolver. Use them only when you need a generation/rewrite/planning subtask and cannot provide final structured arguments directly.
+- **Subtask tools** call an LLM internally and return generated data to you. They do not queue canvas changes. Use generate_object_data and rewrite_object_data when you need generated object data before calling a direct canvas tool.
+- **Legacy resolver tools** such as insert, multi, edit, turn_into, fix_error, split, and fork run an extra LLM-backed resolver and queue a canvas action directly. Use them only as fallback.
 
 For non-trivial object creation or code/data rewriting, call **get_object_instructions** for the relevant object type before using a direct canvas tool. Use the returned instructions, schema, and handle reference to produce final object data or handle IDs.
 
@@ -40,17 +41,19 @@ When the user asks you to act on the canvas, always prefer the **simplest direct
 3. **insert_object + connect_edges** — If the user needs a new object that should connect to existing objects, use **insert_object** to create ONLY the missing object, then use **connect_edges** to wire it to the existing object(s). Do NOT use multi/insert_objects when some objects already exist.
 4. **insert_object** — If the user needs ONE new standalone object and you can provide final data, use insert_object. Call get_object_instructions first for non-trivial object data.
 5. **insert_objects** — ONLY use this when the user explicitly asks for multiple connected objects AND none of them exist on the canvas yet, and you can provide final node data and edges.
-6. **Resolver tools** — Use insert/multi/edit/fix_error/etc. only when a direct tool is not enough because you need an LLM-backed generation or rewrite subtask.
+6. **Subtask + direct tool** — If a direct tool is not enough because you need generated object data or a rewrite, call generate_object_data or rewrite_object_data first, then call insert_object/update_object_data/replace_object with the returned data.
+7. **Legacy resolver tools** — Use insert/multi/edit/fix_error/etc. only as fallback when the subtask + direct-tool path is not enough.
 
 Common mistakes to avoid:
 - Do NOT use multi/insert_objects to create a single object. Even complex objects (e.g. "a synthesizer with LFO modulation") should use insert_object if it's one object.
 - Do NOT recreate objects that already exist on the canvas. Use update_object_data or fix_error instead.
 - Do NOT use multi/insert_objects when some objects already exist — use insert_object for the new object + connect_edges to wire it to existing ones.
 - When the user says "make X" or "create X" (singular), default to insert_object unless they clearly need multiple objects.
+- Do NOT call generate_object_data or rewrite_object_data more than once for the same object/request unless the previous subtask failed, produced unusable data, or the user explicitly asked for alternatives.
 
 ## Batching Multiple Actions
 
-When a task requires multiple operations (e.g., create an object AND connect it), call all required tools **in a single response** — do not wait between calls. For example, after get_graph_nodes, call insert and connect_edges together in the same turn.
+When a task requires multiple operations (e.g., create an object AND connect it), call all required tools **in a single response** — do not wait between calls. For example, after get_graph_nodes, call insert_object and connect_edges together in the same turn.
 
 After your actions are queued, always follow up with a short message describing what you did and letting the user know they can apply the changes.
 
@@ -60,7 +63,7 @@ Keep answers concise and practical. Format code for the relevant object type.
 
 When users ask for audio samples, drum sounds, or soundfiles:
 1. **ALWAYS call search_samples first** to find real samples — NEVER guess sample names or URLs
-2. After searching, just call insert with a descriptive prompt — sample URLs from the search are automatically attached to pads~ and soundfile~ objects
+2. After searching, generate final object data if needed, then call insert_object — sample URLs from the search are automatically attached to pads~ and soundfile~ objects
 3. For strudel objects, include the strudel name (e.g. \`s("bd:0")\`) directly in the prompt
 4. For sonic~ objects, include the sample or synthdef name in the prompt
 
@@ -81,6 +84,8 @@ export const LIST_PACKS = 'list_packs';
 export const ENABLE_PACK = 'enable_pack';
 export const SEARCH_SAMPLES = 'search_samples';
 export const SEARCH_FREESOUND = 'search_freesound';
+export const GENERATE_OBJECT_DATA = 'generate_object_data';
+export const REWRITE_OBJECT_DATA = 'rewrite_object_data';
 export const INSERT_OBJECT = 'insert_object';
 export const INSERT_OBJECTS = 'insert_objects';
 export const UPDATE_OBJECT_DATA = 'update_object_data';
@@ -100,6 +105,17 @@ export const CONTEXT_TOOL_NAMES = new Set([
   ENABLE_PACK,
   SEARCH_SAMPLES,
   SEARCH_FREESOUND
+]);
+
+export const SUBTASK_TOOL_NAMES = new Set([GENERATE_OBJECT_DATA, REWRITE_OBJECT_DATA]);
+
+export const DIRECT_CANVAS_TOOL_NAMES = new Set([
+  INSERT_OBJECT,
+  INSERT_OBJECTS,
+  UPDATE_OBJECT_DATA,
+  REPLACE_OBJECT,
+  CONNECT_EDGES,
+  DISCONNECT_EDGES
 ]);
 
 // ── Context tool declarations ─────────────────────────────────────────────────
@@ -279,6 +295,59 @@ export const contextToolDeclarations = [
         }
       },
       required: ['packId', 'kind', 'enable']
+    }
+  }
+];
+
+// ── Subtask tool declarations ────────────────────────────────────────────────
+
+export const subtaskToolDeclarations = [
+  {
+    name: GENERATE_OBJECT_DATA,
+    description:
+      'LLM-backed subtask that generates final object data from a prompt. Returns { type, data }. This does NOT queue a canvas action; after receiving the result, call insert_object or replace_object with the returned data.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          description:
+            'Optional object type to generate. If provided, generation skips object routing. If omitted, the subtask chooses the best object type.'
+        },
+        prompt: {
+          type: 'string',
+          description: 'What object data/code/configuration to generate'
+        }
+      },
+      required: ['prompt']
+    }
+  },
+  {
+    name: REWRITE_OBJECT_DATA,
+    description:
+      'LLM-backed subtask that rewrites existing object data for a known type. Returns { type, data }. This does NOT queue a canvas action; after receiving the result, call update_object_data or replace_object with the returned data.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          description: 'Object type being rewritten, e.g. "p5", "glsl", "strudel"'
+        },
+        existingData: {
+          type: 'object',
+          description: 'Current object data to rewrite'
+        },
+        prompt: {
+          type: 'string',
+          description: 'Rewrite instructions'
+        },
+        errors: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional error messages to fix'
+        }
+      },
+      required: ['type', 'existingData', 'prompt']
     }
   }
 ];
