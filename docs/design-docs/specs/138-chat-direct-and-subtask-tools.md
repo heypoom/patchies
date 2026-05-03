@@ -163,12 +163,12 @@ Implemented direct tools:
 insert_object({
   type: string,
   data: Record<string, unknown>,
-  position?: { x: number; y: number }
-})
+});
 ```
 
 Creates one object. The model is responsible for supplying final object data. If it needs object API
-details first, it should call `get_object_instructions`.
+details first, it should call `get_object_instructions`. Current implementation uses the standard AI
+insert positioning path; explicit placement for a single inserted object is a remaining gap.
 
 ```ts
 insert_objects({
@@ -194,13 +194,12 @@ multi-object insert path.
 update_object_data({
   nodeId: string,
   patch: Record<string, unknown>,
-  replace?: boolean
-})
+});
 ```
 
-Updates an existing node's `data`. By default, merge `patch` into existing data using the same
-preservation rules as `AiOperationsService.editNode()`. If `replace` is true, replace user-facing
-data while still preserving internal fields.
+Updates an existing node's `data` by shallow-merging `patch` into current data using the same
+preservation rules as `AiOperationsService.editNode()`. This intentionally protects internal fields
+and does not currently rename nodes.
 
 ```ts
 replace_object({
@@ -277,6 +276,56 @@ get_preset_content({
 Returns the full preset content for an exact preset name: name, object type, description, full data,
 library, path, and built-in preset pack metadata when available. This lets the chat model fork,
 remix, or generate related object data from an existing preset without inserting it first.
+
+### Known Canvas Tool Gaps
+
+The current tool surface covers the common canvas mutation loop: inspect, create, create from preset,
+update, replace, delete, move, connect, disconnect, and subtask-assisted generation/rewrite. These
+gaps are the next small surface-area improvements:
+
+```ts
+insert_object({
+  type: string;
+  data: Record<string, unknown>;
+  position?: { x: number; y: number };
+})
+```
+
+Add optional explicit placement for one-object inserts, matching the existing `insert_objects`
+per-node `position` support.
+
+```ts
+rename_object({
+  nodeId: string;
+  name: string;
+})
+```
+
+Rename an existing canvas object without overloading `update_object_data`. This keeps internal `name`
+preservation rules intact while supporting requests like "rename this node to bass."
+
+```ts
+update_object_data({
+  nodeId: string;
+  patch: Record<string, unknown>;
+  operations?: JsonPatchOperation[];
+})
+```
+
+Support precise nested edits when shallow merge is too blunt. This can stay out of v1 unless chat
+edits start frequently touching nested settings.
+
+```ts
+duplicate_objects({
+  nodeIds: string[];
+  includeEdges?: boolean;
+  offset?: { x: number; y: number };
+})
+```
+
+Duplicate or fork existing canvas objects while preserving data and optionally internal edges. Today
+the model can approximate this with `get_object_data` plus `insert_object` or `insert_objects`, but a
+direct tool would make the trace clearer and keep positioning/edges consistent.
 
 ### Subtask Tools
 
@@ -443,57 +492,23 @@ Update the chat system prompt with the new tool-selection policy:
 5. After a subtask returns structured output, call a direct tool to queue the actual canvas mutation.
 6. Do not call resolver-backed mode tools from ChatView.
 
-## Implementation Plan
+## Completed Implementation Notes
 
-### Phase 1: Tool Taxonomy and Names
-
-- Add tool category metadata to chat tool declarations: `context`, `direct`, or `subtask`.
-- Rename UI labels from "subagent" to "subtask" for LLM-backed tools.
-- Keep existing mode resolvers available to `AiObjectPrompt`.
-- Update system prompt language to explain the new categories.
-
-### Phase 2: Direct Object Mutation Tools
-
-- Add direct declarations for `insert_object`, `insert_objects`, `update_object_data`, and
-  `replace_object`.
-- Add resolver handlers that validate args and emit `ChatAction` results without calling
-  `runModeResolver()`.
-- Extend `AiModeResult` or introduce a parallel `ChatDirectActionResult` if mode terminology starts
-  fighting the design.
-- Reuse `AiOperationsService` for apply behavior and undo/redo.
-
-### Phase 3: Subtask Tool Wrappers
-
-- Add `generate_object_data`, `rewrite_object_data`, and `generate_object_graph` as context-like
-  tools that return structured data to the main chat loop.
-- Internally reuse existing single/edit/multi resolvers.
-- Make their tool results visible in the expanded tool-call UI.
-
-### Phase 4: Prompt Fetch First
-
-- Strengthen `get_object_instructions`:
-  - return `type`
-  - return `instructions`
-  - return `handleReference`
-  - optionally return schema summary from `objectSchemas[type]`
-- Update tool descriptions so direct object creation/editing references this tool.
-- Add tests or eval cases where the model creates a p5/glsl/strudel object only after fetching
-  instructions.
-
-### Phase 5: Compatibility Migration
-
-- Remove legacy resolver-backed mode tools from ChatView.
-- Keep current resolver-backed mode tools for `AiObjectPrompt`.
-- Prefer direct tools in the system prompt and evals.
-- Re-express removed chat tools as context/subtask/direct sequences:
-  - `insert` → `get_object_instructions` + optional `generate_object_data` + `insert_object`
-  - `edit` / `fix_error` → `get_object_data` / `get_object_errors` + optional
+- Chat tools are grouped into context, direct canvas, and subtask tool sets.
+- Direct handlers emit pending `ChatAction`s without calling `runModeResolver()`.
+- `AiOperationsService` still owns apply behavior and undo/redo.
+- `AiObjectPrompt` continues to use the existing resolver-backed mode flow.
+- `get_object_instructions` returns object instructions, handle reference, and schema summary when
+  available.
+- Former chat mode flows can be expressed as context/subtask/direct sequences:
+  - `insert` -> `get_object_instructions` + optional `generate_object_data` + `insert_object`
+  - `edit` / `fix_error` -> `get_object_data` / `get_object_errors` + optional
     `rewrite_object_data` + `update_object_data`
-  - `turn_into` → `get_object_data` + optional `generate_object_data` / `rewrite_object_data` +
+  - `turn_into` -> `get_object_data` + optional `generate_object_data` / `rewrite_object_data` +
     `replace_object`
-  - `split` / `fork` → `get_object_data` + optional generation/rewrite + `insert_object` or
+  - `split` / `fork` -> `get_object_data` + optional generation/rewrite + `insert_object` or
     `insert_objects`
-  - `multi` → `generate_object_graph` + `insert_objects`
+  - `multi` -> `generate_object_graph` + `insert_objects`
 
 ## Open Questions
 
@@ -507,6 +522,9 @@ Update the chat system prompt with the new tool-selection policy:
   enough for v1?
 - Should auto-approve ever apply direct tools immediately, or should all direct tools remain
   reviewed because they mutate the canvas?
+- Should `rename_object` update only the SvelteFlow node label/title, object data, or both?
+- Should `duplicate_objects` preserve external edges, internal edges only, or make that explicit with
+  an `edgeMode` argument?
 
 ## Success Criteria
 
