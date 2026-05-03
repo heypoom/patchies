@@ -148,9 +148,11 @@ export class ObjectService {
     const type = getObjectType(object);
     const objectClass = this.registry.get(type);
 
+    const objectInlets = object.getInlets?.() ?? objectClass?.inlets;
+
     // Validate message type against inlet specification if inlets are defined
-    if (objectClass?.inlets && meta.inlet !== undefined) {
-      const inlet = objectClass?.inlets[meta.inlet];
+    if (objectInlets && meta.inlet !== undefined) {
+      const inlet = objectInlets[meta.inlet];
 
       if (inlet && !validateMessageToObject(data, inlet)) {
         logger.warn(

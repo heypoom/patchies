@@ -77,6 +77,8 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - python: Python code with Pyodide
 - expr: Mathematical expression evaluator
 - clip: Clamp a number to a min/max range (clip min max)
+- pack: Collect float, symbol, and any inlet values into one list (pack f s a, pack 0 symbol any)
+- unpack: Split an array into individual element outlets
 - stack: LIFO stack — push messages to inlet 0, bang inlet 1 to pop; also accepts clear and size commands on inlet 1
 - queue: FIFO queue — push messages to inlet 0, bang inlet 1 to dequeue; also accepts clear and size commands on inlet 1
 - wgpu.compute: WebGPU compute shaders (WGSL) for parallel data processing

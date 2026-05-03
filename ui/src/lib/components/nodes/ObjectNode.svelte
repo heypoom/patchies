@@ -37,6 +37,7 @@
   import { getIconById } from '$lib/components/icons';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useObjectDataTracker } from '$lib/history';
+  import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
 
   let {
     id: nodeId,
@@ -102,7 +103,15 @@
 
   // Dynamic inlets based on object definition
   const inlets = $derived.by(() => {
+    void objectInstanceVersion;
+
     if (!objectMeta) return [];
+
+    const objectInstance = objectService.getObjectById(nodeId);
+
+    if (objectInstance?.getInlets) {
+      return objectInstance.getInlets();
+    }
 
     return objectMeta.inlets || [];
   });
@@ -299,9 +308,9 @@
   }
 
   const handleObjectMessage: MessageCallbackFn = (message, meta) => {
-    if (!objectMeta || !objectMeta.inlets || meta?.inlet === undefined) return;
+    if (!objectMeta || meta?.inlet === undefined) return;
 
-    const inlet = objectMeta.inlets[meta.inlet];
+    const inlet = inlets[meta.inlet];
     if (!inlet) return;
 
     const isAudioObject = hasSignalPorts(objectMeta);
@@ -387,10 +396,23 @@
     if (objectService.isV2ObjectType(name)) {
       objectService.removeObjectById(nodeId);
 
-      objectService.createObject(nodeId, name, messageContext, params, rawParams).then(() => {
+      objectService.createObject(nodeId, name, messageContext, params, rawParams).then((object) => {
+        syncObjectParamsFromInstance(object);
         objectInstanceVersion++;
         updateNodeInternals(nodeId);
       });
+    }
+  }
+
+  function syncObjectParamsFromInstance(object: TextObjectV2 | null): void {
+    const objectParams = object?.context.getParams() ?? [];
+
+    const hasParamChanges =
+      objectParams.length !== data.params.length ||
+      objectParams.some((param, index) => !Object.is(param, data.params[index]));
+
+    if (hasParamChanges) {
+      updateNodeData(nodeId, { params: objectParams });
     }
   }
 
@@ -616,7 +638,9 @@
 
       objectService
         .createObject(nodeId, data.name, messageContext, parsedParams, rawParams)
-        .then(() => {
+        .then((object) => {
+          syncObjectParamsFromInstance(object);
+
           // Trigger re-evaluation of outlets after object is created
           objectInstanceVersion++;
 

@@ -46,6 +46,13 @@ export interface TextObjectV2 {
    * If not defined, static `outlets` from the class is used.
    */
   getOutlets?(): ObjectOutlet[];
+
+  /**
+   * Get dynamic inlets for this instance.
+   * Use this when inlet count or inlet types depend on runtime state or creation params.
+   * If not defined, static `inlets` from the class is used.
+   */
+  getInlets?(): ObjectInlet[];
 }
 
 /**
