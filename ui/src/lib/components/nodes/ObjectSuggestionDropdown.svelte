@@ -5,6 +5,7 @@
     name: string;
     type: 'object' | 'preset';
     priority: 'normal' | 'low';
+    description?: string;
   };
 
   let {
@@ -28,7 +29,7 @@
   <div class="mt-1 w-full min-w-48 rounded-md border border-zinc-800 bg-zinc-900 shadow-xl">
     <!-- Results List -->
     <div bind:this={resultsContainerRef} class="max-h-60 overflow-y-auto rounded-t-md">
-      {#each suggestions as suggestion, index}
+      {#each suggestions as suggestion, index (`${suggestion.type}-${suggestion.name}-${index}`)}
         <button
           type="button"
           onclick={() => onSelect(suggestion)}

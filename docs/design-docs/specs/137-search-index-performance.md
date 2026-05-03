@@ -9,8 +9,9 @@
 - Done: large readonly built-in preset folders no longer mount disabled context-menu machinery for
   every row in `PresetTreeView.svelte`. This fixed the Greggman archive crash when expanding the
   built-in preset library.
-- Next: move ObjectNode autocomplete indexing into a shared store/module and cap ObjectNode
-  suggestions at 50 results.
+- Done: ObjectNode autocomplete indexing now uses a shared store/module and caps ObjectNode
+  suggestions at 100 results by default.
+- Next: adapt Object Browser search to reuse the shared object/preset search layer.
 
 ## Problem
 
@@ -72,17 +73,18 @@ the context menu.
 
 ### ObjectNode Autocomplete
 
-Still open.
+Done.
 
-Each `ObjectNode.svelte` instance derives:
+`ObjectNode.svelte` used to derive these global autocomplete structures in every node instance:
 
 - `presetLookup`
 - `allSearchableItems`
 - `allItemsFuse`
 
-This duplicates the same object/preset index work for every ObjectNode in the patch. Large patches
-with many ObjectNodes pay the indexing cost many times even though autocomplete data is global for
-the current extension state.
+That work now lives in `objectPresetSearchIndex`, backed by the pure
+`object-preset-search.ts` helper. ObjectNode keeps node-local edit state and calls shared helpers for
+default suggestions, fuzzy suggestions, and preset lookup. Default and fuzzy suggestions are capped
+at 100 results.
 
 ### Object Browser
 
@@ -221,7 +223,7 @@ All search surfaces should cap results before rendering:
 
 | Surface                 | Suggested Limit | Reason                                                |
 | ----------------------- | --------------- | ----------------------------------------------------- |
-| ObjectNode autocomplete | 50              | Dropdown should stay small and fast                   |
+| ObjectNode autocomplete | 100             | Enough room for discovery while preventing DOM churn  |
 | Object Browser search   | 100             | Modal has more room but should remain responsive      |
 | Preset sidebar search   | 100             | Prevent huge flat result lists from causing DOM churn |
 
@@ -269,9 +271,9 @@ UI effects when expanded.
 
 ### Phase 3: Share ObjectNode Search Index
 
-Next.
+Complete.
 
-Move ObjectNode's global autocomplete data out of each node instance.
+ObjectNode's global autocomplete data has moved out of each node instance.
 
 The shared index should derive from:
 
@@ -283,10 +285,10 @@ The shared index should derive from:
 - patch object types
 - AI feature visibility
 
-ObjectNode should keep node-local state (`expr`, `isEditing`) but call shared query helpers for
-suggestions.
+ObjectNode keeps node-local state (`expr`, `isEditing`) but calls shared query helpers for
+suggestions and preset lookup.
 
-Recommended first API:
+Implemented first API:
 
 ```ts
 export const objectPresetSearchIndex = derived(
@@ -299,16 +301,16 @@ export const objectPresetSearchIndex = derived(
   ],
   (...) => ({
     presetLookup,
-    defaultSuggestions,
     fuse,
-    searchObjectSuggestions(query, { limit: 50 }),
+    getDefaultObjectSuggestions({ limit: 100 }),
+    searchObjectSuggestions(query, { limit: 100 }),
     getPresetByName(name)
   })
 );
 ```
 
-The first pass can preserve the current Fuse-based ranking and only deduplicate index creation plus
-add limits. Tiered prefix/substring/fuzzy search can follow once the shared index exists.
+This first pass preserves the current Fuse-based ranking while deduplicating index creation and
+adding limits. Tiered prefix/substring/fuzzy search can follow if profiling still shows query cost.
 
 ### Phase 4: Reuse In Object Browser
 
@@ -349,6 +351,7 @@ Manual checks:
 Automated checks:
 
 - Unit test preset sidebar search records and 100-result limiting.
+- Unit test ObjectNode shared search 100-result limiting.
 - Unit test ranking helpers with prefix, substring, fuzzy, boosted preset, and low-priority cases.
 - Unit test preset visibility for enabled/disabled object and preset packs.
 - Unit test duplicate preset names so user libraries retain precedence.
@@ -357,7 +360,8 @@ Automated checks:
 
 - Done: preset sidebar search no longer walks nested preset folders per keystroke.
 - Done: large readonly preset folders can be expanded without mounting per-row context menus.
-- Open: ObjectNode no longer creates a Fuse index per node instance.
-- Open: search result rendering is capped in ObjectNode and Object Browser.
+- Done: ObjectNode no longer creates a Fuse index per node instance.
+- Done: search result rendering is capped in ObjectNode.
+- Open: Object Browser search reuses the shared search layer and caps rendering.
 - Existing search behavior is preserved or intentionally documented where changed.
 - Measured search/index timings improve with large preset packs enabled.

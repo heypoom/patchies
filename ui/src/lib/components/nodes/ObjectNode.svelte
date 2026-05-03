@@ -2,16 +2,12 @@
   import { useEdges, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onDestroy, onMount } from 'svelte';
   import StandardHandle from '$lib/components/StandardHandle.svelte';
-  import { nodeNames } from '$lib/nodes/node-types';
-  import { getObjectNames, getObjectNameFromExpr } from '$lib/objects/object-definitions';
+  import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { ObjectService } from '$lib/objects/v2/ObjectService';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
-  import { flattenedPresets } from '../../../stores/preset-library.store';
-  import type { FlattenedPreset } from '$lib/presets/types';
-  import Fuse from 'fuse.js';
   import * as Tooltip from '../ui/tooltip';
   import {
     isUnmodifiableType,
@@ -28,20 +24,11 @@
   import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
   import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
   import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
-  import {
-    isAiFeaturesVisible,
-    isObjectBrowserOpen,
-    patchObjectTypes
-  } from '../../../stores/ui.store';
-  import {
-    enabledObjects,
-    enabledPresets,
-    enabledPackIds,
-    togglePack
-  } from '../../../stores/extensions.store';
+  import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
+  import { enabledPackIds, togglePack } from '../../../stores/extensions.store';
   import { Search } from '@lucide/svelte/icons';
-  import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
+  import { objectPresetSearchIndex } from '../../../stores/object-preset-search.store';
   import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import { useAudioServiceSync } from '$lib/composables/useAudioServiceSync.svelte';
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
@@ -50,61 +37,6 @@
   import { getIconById } from '$lib/components/icons';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useObjectDataTracker } from '$lib/history';
-
-  // Common objects that should appear first in autocomplete
-  // Ordered by general usage frequency
-  const PRIORITY_OBJECTS = new Set([
-    // UI objects - most common entry points
-    'button',
-    'toggle',
-    'slider',
-    'textbox',
-    'msg',
-    'peek',
-    'label',
-
-    // Code objects
-    'js',
-    'expr',
-    'map',
-    'filter',
-    'tap',
-    'worker',
-
-    // UI objects
-    'keyboard',
-    'markdown',
-
-    // Control objects
-    'send',
-    'recv',
-    'delay',
-    'metro',
-    'counter',
-
-    // Video objects
-    'p5',
-    'hydra',
-    'canvas',
-    'glsl',
-
-    // Audio objects
-    'out~',
-    'osc~',
-    'gain~',
-    'adc~'
-  ]);
-
-  // Get priority index (lower = higher priority)
-  function getObjectPriority(name: string): number {
-    if (PRIORITY_OBJECTS.has(name)) {
-      // Return index within priority set (convert Set to array for indexOf)
-      const priorityArray = Array.from(PRIORITY_OBJECTS);
-      return priorityArray.indexOf(name);
-    }
-
-    return 1000; // Non-priority objects come last
-  }
 
   let {
     id: nodeId,
@@ -154,115 +86,6 @@
   let objectService = ObjectService.getInstance();
   const eventBus = PatchiesEventBus.getInstance();
   const messageContext = new MessageContext(nodeId);
-
-  // Create a lookup map for presets by name (includes library info for disambiguation)
-  const presetLookup = $derived.by(() => {
-    const lookup = new Map<string, FlattenedPreset>();
-
-    for (const fp of $flattenedPresets) {
-      // Use preset name as key - if duplicate names exist, later ones override
-      // This is acceptable since user presets should take precedence
-      lookup.set(fp.preset.name, fp);
-    }
-
-    return lookup;
-  });
-
-  // Combine all searchable items (objects + shorthands + presets) with metadata
-  // Objects in the current patch but not enabled are included as low priority
-  const allSearchableItems = $derived.by(() => {
-    const objectDefNames = getObjectNames();
-    const visualNodeList = nodeNames.filter((name) => name !== 'object' && name !== 'asm.value');
-    const combinedObjectNames = new Set([...visualNodeList, ...objectDefNames]);
-
-    const items: Array<{
-      name: string;
-      type: 'object' | 'preset';
-      libraryName?: string;
-      priority: 'normal' | 'low';
-      description?: string;
-    }> = [];
-
-    const addedNames = new Set<string>();
-
-    // Add regular objects, filtering by AI features and enabled extensions
-    // Objects in the current patch are included even if not enabled (as low priority)
-    Array.from(combinedObjectNames).forEach((name) => {
-      // Filter out AI objects if AI features are disabled
-      if (!$isAiFeaturesVisible && name.startsWith('ai.')) {
-        return;
-      }
-
-      const isEnabled = $enabledObjects.has(name);
-      const isInPatch = $patchObjectTypes.has(name);
-
-      // Skip if not enabled AND not in current patch
-      if (!isEnabled && !isInPatch) {
-        return;
-      }
-
-      items.push({
-        name,
-        type: 'object',
-        priority: isEnabled ? 'normal' : 'low'
-      });
-      addedNames.add(name);
-    });
-
-    // Add shorthands (filtered by whether target nodeType is enabled or in patch)
-    const shorthandRegistry = ObjectShorthandRegistry.getInstance();
-    for (const shorthand of shorthandRegistry.getShorthandsWithMetadata()) {
-      // Skip if already added as a regular object
-      if (addedNames.has(shorthand.name)) continue;
-
-      const isEnabled = $enabledObjects.has(shorthand.nodeType);
-      const isInPatch = $patchObjectTypes.has(shorthand.nodeType);
-
-      // Skip if not enabled AND not in current patch
-      if (!isEnabled && !isInPatch) continue;
-
-      items.push({
-        name: shorthand.name,
-        type: 'object',
-        priority: isEnabled ? 'normal' : 'low',
-        description: shorthand.description
-      });
-      addedNames.add(shorthand.name);
-    }
-
-    // Add presets from all libraries
-    // Presets are ONLY visible if their object type is enabled AND (for built-in) the preset pack is enabled
-    for (const fp of $flattenedPresets) {
-      // Always require the object type to be enabled
-      if (!$enabledObjects.has(fp.preset.type)) {
-        continue;
-      }
-
-      // For built-in presets: also require the preset to be in an enabled preset pack
-      if (fp.libraryName === 'Built-in' && !$enabledPresets.has(fp.preset.name)) {
-        continue;
-      }
-
-      items.push({
-        name: fp.preset.name,
-        type: 'preset',
-        libraryName: fp.libraryName,
-        priority: 'normal'
-      });
-    }
-
-    return items;
-  });
-
-  // Create single Fuse instance for all items
-  const allItemsFuse = $derived.by(() => {
-    return new Fuse(allSearchableItems, {
-      keys: ['name'],
-      threshold: 0.2,
-      includeScore: true,
-      minMatchCharLength: 1
-    });
-  });
 
   // Composable for searching disabled objects
   const { searchDisabledObject } = useDisabledObjectSuggestion(
@@ -352,83 +175,11 @@
     // Don't show autocomplete if there's a space (user is typing parameters)
     if (expr.includes(' ')) return [];
 
-    // Show all items if input is empty, with objects first
     if (!expr.trim()) {
-      const objects = allSearchableItems
-        .filter((item) => item.type === 'object')
-        .map((item) => ({
-          name: item.name,
-          type: item.type,
-          priority: item.priority,
-          description: item.description
-        }));
-      const presets = allSearchableItems
-        .filter((item) => item.type === 'preset')
-        .map((item) => ({
-          name: item.name,
-          type: item.type,
-          priority: item.priority,
-          description: item.description
-        }));
-
-      // Sort: normal priority first, then by object priority, then alphabetically
-      const sortItems = (
-        items: Array<{
-          name: string;
-          type: 'object' | 'preset';
-          priority: 'normal' | 'low';
-          description?: string;
-        }>
-      ) =>
-        items.sort((a, b) => {
-          // Low priority items always come last
-          if (a.priority !== b.priority) {
-            return a.priority === 'normal' ? -1 : 1;
-          }
-          const priorityDiff = getObjectPriority(a.name) - getObjectPriority(b.name);
-          if (priorityDiff !== 0) return priorityDiff;
-          return a.name.localeCompare(b.name);
-        });
-
-      return [...sortItems(objects), ...sortItems(presets)];
+      return $objectPresetSearchIndex.getDefaultObjectSuggestions();
     }
 
-    // Fuzzy search all items (only the first word/object name)
-    const results = allItemsFuse.search(expr);
-
-    // Sort results with custom scoring: prefix matches first, then objects over presets
-    const sortedResults = sortFuseResultsWithPrefixPriority(
-      results,
-      expr,
-      (item) => item.name,
-      (a, b) => {
-        // Low priority items always come last
-        if (a.item.priority !== b.item.priority) {
-          return a.item.priority === 'normal' ? -1 : 1;
-        }
-
-        // Then sort by type (objects first)
-        if (a.item.type !== b.item.type) {
-          return a.item.type === 'object' ? -1 : 1;
-        }
-
-        // For similar Fuse scores (within 0.1), prioritize common objects
-        const scoreDiff = (a.score || 0) - (b.score || 0);
-        if (Math.abs(scoreDiff) < 0.1 && a.item.type === 'object') {
-          const priorityDiff = getObjectPriority(a.item.name) - getObjectPriority(b.item.name);
-          if (priorityDiff !== 0) return priorityDiff;
-        }
-
-        return 0; // Let default Fuse score sorting handle the rest
-      }
-    );
-
-    return sortedResults.map((result) => ({
-      name: result.item.name,
-      type: result.item.type,
-      priority: result.item.priority,
-      description: result.item.description
-    }));
+    return $objectPresetSearchIndex.searchObjectSuggestions(expr);
   });
 
   // Find matching disabled objects when autocomplete has no results
@@ -647,7 +398,7 @@
     if (!expr.trim()) return false;
 
     // Check if the expression exactly matches a preset name
-    const flatPreset = presetLookup.get(expr.trim());
+    const flatPreset = $objectPresetSearchIndex.getPresetByName(expr.trim());
 
     if (!flatPreset) {
       return false; // Not a preset
@@ -961,7 +712,7 @@
     if (!current) return null;
 
     if (current.type === 'preset') {
-      const flatPreset = presetLookup.get(current.name);
+      const flatPreset = $objectPresetSearchIndex.getPresetByName(current.name);
       if (!flatPreset) return null;
 
       const { preset } = flatPreset;
@@ -1021,7 +772,7 @@
       <div class="relative">
         <!-- Dynamic inlets (excludes hidden inlets) -->
         {#if visibleInlets.length > 0}
-          {#each visibleInlets as { inlet, originalIndex }, visibleIndex}
+          {#each visibleInlets as { inlet, originalIndex }, visibleIndex (originalIndex)}
             <StandardHandle
               port="inlet"
               type={getPortType(inlet)}
@@ -1063,7 +814,7 @@
                   <ObjectSuggestionDropdown
                     suggestions={filteredSuggestions}
                     bind:selectedIndex={selectedSuggestion}
-                    {presetLookup}
+                    presetLookup={$objectPresetSearchIndex.presetLookup}
                     description={selectedDescription}
                     onSelect={selectSuggestion}
                     bind:resultsContainerRef={resultsContainer}
@@ -1115,7 +866,7 @@
                   <!-- For objects with dynamic outlets, show the raw params from expr -->
                   <span class="text-zinc-400">{rawParamsFromExpr}</span>
                 {:else}
-                  {#each data.params as param, index}
+                  {#each data.params as param, index (index)}
                     {#if index === iconParamIndex && dynamicIconComponent}
                       <!-- Render icon in place of the param text -->
                       {@const IconComponent = dynamicIconComponent}
