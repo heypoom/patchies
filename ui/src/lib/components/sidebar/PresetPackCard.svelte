@@ -1,6 +1,5 @@
 <script lang="ts">
   import { TriangleAlert } from '@lucide/svelte/icons';
-  import { getPresetPackDisplayItems } from '$lib/extensions/preset-pack-index';
   import type { PresetPack } from '../../../stores/extensions.store';
   import { enabledObjects, enabledPackIds, BUILT_IN_PACKS } from '../../../stores/extensions.store';
   import * as Tooltip from '../ui/tooltip';
@@ -57,14 +56,13 @@
 
   const isUnavailable = $derived(!hasAnyRequiredObjects && pack.requiredObjects.length > 0);
   const isPartial = $derived(hasAnyRequiredObjects && !hasAllRequiredObjects);
-  const displayItems = $derived(getPresetPackDisplayItems(pack));
 </script>
 
 <PackCard
   name={pack.name}
   description={pack.description}
   icon={pack.icon}
-  items={displayItems}
+  items={pack.presets}
   {enabled}
   {onToggle}
   {searchQuery}
