@@ -10,7 +10,8 @@
   references, and compact schema context first.
 - Done: added LLM-backed subtask tools for `generate_object_data` and `rewrite_object_data`; these
   should return structured data to the chat loop, not queue canvas actions directly.
-- Next: test the subtask + direct-tool sequence in ChatView, then consider `plan_object_graph`.
+- Next: remove legacy resolver-backed ChatView tools except `multi`, then consider whether
+  `plan_object_graph` should replace `multi`.
 
 ## Summary
 
@@ -255,9 +256,10 @@ plan_object_graph({
 Returns planned nodes and edges without queuing an action. The chat model can inspect the result and
 then call `insert_objects` with final args.
 
-The current `insert`, `multi`, `edit`, `turn_into`, `fix_error`, `split`, and `fork` tools can remain
-as compatibility wrappers during migration. Over time, they should become subtask-plus-direct
-orchestrations rather than opaque canvas tools.
+The current `multi` tool can remain as a temporary compatibility wrapper for graph-level generation.
+Other legacy resolver-backed chat tools (`insert`, `edit`, `turn_into`, `fix_error`, `split`, and
+`fork`) should be removed from ChatView because their behavior can be expressed as context/subtask
+tools followed by direct canvas tools.
 
 ## Expected Flows
 
@@ -421,16 +423,19 @@ Update the chat system prompt with the new tool-selection policy:
 
 ### Phase 5: Compatibility Migration
 
-- Keep current resolver-backed mode tools for workflows that still need them.
+- Remove legacy resolver-backed mode tools from ChatView except `multi`.
+- Keep current resolver-backed mode tools for `AiObjectPrompt`.
 - Prefer direct tools in the system prompt and evals.
-- Eventually mark legacy mode canvas tools as internal or fallback-only:
-  - `insert`
-  - `multi`
-  - `edit`
-  - `turn_into`
-  - `fix_error`
-  - `split`
-  - `fork`
+- Keep `multi` as the temporary graph-level generation fallback until a direct/subtask replacement
+  exists.
+- Re-express removed chat tools as context/subtask/direct sequences:
+  - `insert` → `get_object_instructions` + optional `generate_object_data` + `insert_object`
+  - `edit` / `fix_error` → `get_object_data` / `get_object_errors` + optional
+    `rewrite_object_data` + `update_object_data`
+  - `turn_into` → `get_object_data` + optional `generate_object_data` / `rewrite_object_data` +
+    `replace_object`
+  - `split` / `fork` → `get_object_data` + optional generation/rewrite + `insert_object` or
+    `insert_objects`
 
 ## Open Questions
 

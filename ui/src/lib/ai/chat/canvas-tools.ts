@@ -7,6 +7,8 @@ import { modeDescriptors } from '../modes/descriptors';
 import type { AiPromptMode } from '../modes/types';
 import type { ChatNodeContext } from './resolver';
 
+const CHAT_LEGACY_RESOLVER_MODES = new Set(['multi']);
+
 /** Convert mode id (e.g. "fix-error") → Gemini tool name (e.g. "fix_error") */
 export const modeToToolName = (mode: string): string => mode.replace(/-/g, '_');
 
@@ -22,7 +24,13 @@ export const toolNameToMode = (name: string): AiPromptMode =>
  */
 export const buildCanvasToolDeclarations = (nodeContext?: ChatNodeContext | null) =>
   Object.values(modeDescriptors)
-    .filter((d) => d.availableInChat && d.chatToolDescription && d.chatToolSchema)
+    .filter(
+      (d) =>
+        CHAT_LEGACY_RESOLVER_MODES.has(d.id) &&
+        d.availableInChat &&
+        d.chatToolDescription &&
+        d.chatToolSchema
+    )
     .map((d) => {
       let parameters = d.chatToolSchema!;
 
