@@ -2,9 +2,10 @@ import { describe, expect, test } from 'vitest';
 
 import { BUILT_IN_PACKS } from './object-packs';
 import { isPresetPackAvailableForObjects } from './preset-pack-availability';
-import { buildBuiltInPresetPackFolders } from './preset-pack-index';
+import { buildBuiltInPresetPackFolders, getPresetPackPresetNames } from './preset-pack-index';
 import { BUILT_IN_PRESET_PACKS, OBJECT_PIPE_PRESETS } from './preset-packs';
 import { BUILTIN_PRESETS } from '$lib/presets/builtin';
+import type { PresetFolder } from '$lib/presets/types';
 import { isPreset } from '$lib/presets/preset-utils';
 
 function getSamplerUniformNames(code: string): string[] {
@@ -46,9 +47,9 @@ describe('built-in preset packs', () => {
   test('assigns each companion preset to exactly one pack', () => {
     const assignments = OBJECT_PIPE_PRESETS.map((presetName) => ({
       presetName,
-      packIds: BUILT_IN_PRESET_PACKS.filter((pack) => pack.presets.includes(presetName)).map(
-        (pack) => pack.id
-      )
+      packIds: BUILT_IN_PRESET_PACKS.filter((pack) =>
+        getPresetPackPresetNames(pack).includes(presetName)
+      ).map((pack) => pack.id)
     }));
 
     expect(assignments).toEqual(
@@ -57,9 +58,9 @@ describe('built-in preset packs', () => {
   });
 
   test('does not include empty preset packs', () => {
-    const emptyPackIds = BUILT_IN_PRESET_PACKS.filter((pack) => pack.presets.length === 0).map(
-      (pack) => pack.id
-    );
+    const emptyPackIds = BUILT_IN_PRESET_PACKS.filter(
+      (pack) => getPresetPackPresetNames(pack).length === 0
+    ).map((pack) => pack.id);
 
     expect(emptyPackIds).toEqual([]);
   });
@@ -68,7 +69,7 @@ describe('built-in preset packs', () => {
     const assignmentCounts = new Map<string, number>();
 
     for (const pack of BUILT_IN_PRESET_PACKS) {
-      for (const presetName of pack.presets) {
+      for (const presetName of getPresetPackPresetNames(pack)) {
         assignmentCounts.set(presetName, (assignmentCounts.get(presetName) ?? 0) + 1);
       }
     }
@@ -102,6 +103,29 @@ describe('built-in preset packs', () => {
     expect(folders.glsl).toBeUndefined();
   });
 
+  test('supports preset pack subfolders in the built-in preset tree', () => {
+    const folders = buildBuiltInPresetPackFolders(BUILTIN_PRESETS);
+    const archive = folders['Greggman Bytebeat Archive'];
+
+    expect(archive).toBeDefined();
+    if (!archive || isPreset(archive)) {
+      throw new Error('Expected Greggman Bytebeat Archive to be a preset folder');
+    }
+
+    const tiny = archive['Tiny (<80 chars)'];
+    const long = archive['Long (1000+ chars)'];
+
+    expect(tiny).toBeDefined();
+    expect(long).toBeDefined();
+    if (!tiny || isPreset(tiny) || !long || isPreset(long)) {
+      throw new Error('Expected archive size buckets to be preset folders');
+    }
+
+    expect(isPreset((tiny as PresetFolder)['a-new-industrial-chiptune-by-ryg.greggman.beat'])).toBe(
+      true
+    );
+  });
+
   test('registers Chromatic Aberration as a GLSL texture filter preset', () => {
     const preset = BUILTIN_PRESETS['Chromatic Aberration'];
     const textureFilters = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'texture-filters');
@@ -109,7 +133,9 @@ describe('built-in preset packs', () => {
 
     expect(preset?.type).toBe('glsl');
     expect(presetData?.code).toContain('@title Chromatic Aberration');
-    expect(textureFilters?.presets).toContain('Chromatic Aberration');
+    expect(textureFilters && getPresetPackPresetNames(textureFilters)).toContain(
+      'Chromatic Aberration'
+    );
   });
 
   test('keeps Over and Under inlet order consistent', () => {

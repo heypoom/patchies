@@ -16,6 +16,7 @@ export interface PresetPack {
   icon: string; // lucide icon name
   requiredObjects: string[]; // Object types needed (filters pack visibility)
   presets: string[]; // Preset names to enable
+  presetFolders?: Readonly<Record<string, readonly string[]>>; // Optional built-in subfolders
 }
 
 // Re-export pack definitions from extracted files
@@ -25,6 +26,7 @@ export { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
 // Import for internal use
 import { BUILT_IN_PACKS } from '$lib/extensions/object-packs';
 import { isPresetPackAvailableForObjects } from '$lib/extensions/preset-pack-availability';
+import { getPresetPackPresetNames } from '$lib/extensions/preset-pack-index';
 import { BUILT_IN_PRESET_PACKS } from '$lib/extensions/preset-packs';
 import { getObjectAliases } from '$lib/objects/object-definitions';
 
@@ -193,7 +195,7 @@ export const enabledPresets = derived(
       // least one required object is enabled; individual preset UI filters by preset type.
       if (!isPresetPackAvailableForObjects(pack.requiredObjects, $enabledObjects)) continue;
 
-      for (const preset of pack.presets) {
+      for (const preset of getPresetPackPresetNames(pack)) {
         presets.add(preset);
       }
     }

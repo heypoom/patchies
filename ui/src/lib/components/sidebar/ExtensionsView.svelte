@@ -2,6 +2,7 @@
   import ExtensionPackCard from './ExtensionPackCard.svelte';
   import SearchBar from './SearchBar.svelte';
   import PresetPackCard from './PresetPackCard.svelte';
+  import { getPresetPackPresetNames } from '$lib/extensions/preset-pack-index';
   import {
     BUILT_IN_PACKS,
     BUILT_IN_PRESET_PACKS,
@@ -43,7 +44,7 @@
       (pack) =>
         pack.name.toLowerCase().includes(query) ||
         pack.description.toLowerCase().includes(query) ||
-        pack.presets.some((preset) => preset.toLowerCase().includes(query))
+        getPresetPackPresetNames(pack).some((preset) => preset.toLowerCase().includes(query))
     );
   });
 
