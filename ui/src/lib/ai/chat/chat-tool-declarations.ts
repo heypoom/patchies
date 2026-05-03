@@ -22,22 +22,31 @@ If the user is just asking a question, exploring ideas, or having a conversation
 Do not proactively create objects or visualizations.
 You can suggest simulation or visualization ideas in your text response, but wait until user has consented to it.
 
+## Tool Categories
+
+- **Context tools** read the patch, logs, docs, object instructions, samples, or packs. They do not queue canvas changes.
+- **Direct canvas tools** queue concrete mutations from final structured arguments: insert_object, insert_objects, update_object_data, replace_object, connect_edges, disconnect_edges.
+- **Resolver tools** such as insert, multi, edit, turn_into, fix_error, split, and fork run an extra LLM-backed resolver. Use them only when you need a generation/rewrite/planning subtask and cannot provide final structured arguments directly.
+
+For non-trivial object creation or code/data rewriting, call **get_object_instructions** for the relevant object type before using a direct canvas tool. Use the returned instructions, schema, and handle reference to produce final object data or handle IDs.
+
 ## Tool Selection Priority
 
-When the user asks you to act on the canvas, always prefer the **simplest** tool that accomplishes the task. Before creating anything, call **get_graph_nodes** to check what already exists on the canvas. If the user reports errors or unexpected behaviour, call **get_object_errors** with the relevant object IDs to read their error logs before attempting a fix.
+When the user asks you to act on the canvas, always prefer the **simplest direct tool** that accomplishes the task. Before creating anything, call **get_graph_nodes** to check what already exists on the canvas. If the user reports errors or unexpected behaviour, call **get_object_errors** with the relevant object IDs to read their error logs before attempting a fix.
 
-1. **edit** — If an object already exists and the user wants changes, ALWAYS use edit. Never recreate an object that already exists.
+1. **update_object_data** — If an object already exists and the user wants concrete data/property/code changes, use this. Never recreate an object that already exists.
 2. **connect_edges** — If the objects the user wants connected already exist on the canvas, just connect them with edges. Do NOT recreate objects that are already there.
 2b. **disconnect_edges** — If the user wants to remove a connection between objects, use this. Call get_graph_nodes first to find edge IDs or source/target pairs.
-3. **insert + connect_edges** — If the user needs a new object that should connect to existing objects, use **insert** to create ONLY the missing object, then use **connect_edges** to wire it to the existing object(s). Do NOT use multi when some objects already exist.
-4. **insert** (single create) — If the user needs ONE new standalone object, use insert. Do NOT use multi just because a description is detailed.
-5. **multi** (multi create) — ONLY use this when the user explicitly asks for multiple connected objects AND none of them exist on the canvas yet.
+3. **insert_object + connect_edges** — If the user needs a new object that should connect to existing objects, use **insert_object** to create ONLY the missing object, then use **connect_edges** to wire it to the existing object(s). Do NOT use multi/insert_objects when some objects already exist.
+4. **insert_object** — If the user needs ONE new standalone object and you can provide final data, use insert_object. Call get_object_instructions first for non-trivial object data.
+5. **insert_objects** — ONLY use this when the user explicitly asks for multiple connected objects AND none of them exist on the canvas yet, and you can provide final node data and edges.
+6. **Resolver tools** — Use insert/multi/edit/fix_error/etc. only when a direct tool is not enough because you need an LLM-backed generation or rewrite subtask.
 
 Common mistakes to avoid:
-- Do NOT use multi to create a single object. Even complex objects (e.g. "a synthesizer with LFO modulation") should use insert if it's one object.
-- Do NOT recreate objects that already exist on the canvas. Use edit or fix_error instead.
-- Do NOT use multi when some objects already exist — use insert for the new object + connect_edges to wire it to existing ones.
-- When the user says "make X" or "create X" (singular), default to insert unless they clearly need multiple objects.
+- Do NOT use multi/insert_objects to create a single object. Even complex objects (e.g. "a synthesizer with LFO modulation") should use insert_object if it's one object.
+- Do NOT recreate objects that already exist on the canvas. Use update_object_data or fix_error instead.
+- Do NOT use multi/insert_objects when some objects already exist — use insert_object for the new object + connect_edges to wire it to existing ones.
+- When the user says "make X" or "create X" (singular), default to insert_object unless they clearly need multiple objects.
 
 ## Batching Multiple Actions
 
@@ -72,6 +81,10 @@ export const LIST_PACKS = 'list_packs';
 export const ENABLE_PACK = 'enable_pack';
 export const SEARCH_SAMPLES = 'search_samples';
 export const SEARCH_FREESOUND = 'search_freesound';
+export const INSERT_OBJECT = 'insert_object';
+export const INSERT_OBJECTS = 'insert_objects';
+export const UPDATE_OBJECT_DATA = 'update_object_data';
+export const REPLACE_OBJECT = 'replace_object';
 export const CONNECT_EDGES = 'connect_edges';
 export const DISCONNECT_EDGES = 'disconnect_edges';
 
@@ -269,6 +282,107 @@ export const contextToolDeclarations = [
     }
   }
 ];
+
+// ── Direct canvas action declarations ────────────────────────────────────────
+
+export const insertObjectDeclaration = {
+  name: INSERT_OBJECT,
+  description:
+    'Directly create one new object on the canvas from final structured object data. For non-trivial object data, call get_object_instructions for this type first, then use the returned instructions to fill data.',
+  parametersJsonSchema: {
+    type: 'object',
+    properties: {
+      type: {
+        type: 'string',
+        description: 'Object type to create, e.g. "p5", "slider", "glsl", "strudel"'
+      },
+      data: {
+        type: 'object',
+        description: 'Final object data/configuration for the new object'
+      }
+    },
+    required: ['type', 'data']
+  }
+};
+
+export const insertObjectsDeclaration = {
+  name: INSERT_OBJECTS,
+  description:
+    'Directly create multiple new objects and optional edges from final structured data. Use this only when final object data is already known; otherwise use a subtask/generation tool first.',
+  parametersJsonSchema: {
+    type: 'object',
+    properties: {
+      nodes: {
+        type: 'array',
+        description: 'Objects to create',
+        items: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', description: 'Object type to create' },
+            data: { type: 'object', description: 'Final object data/configuration' },
+            position: {
+              type: 'object',
+              description: 'Optional relative position for layout',
+              properties: {
+                x: { type: 'number' },
+                y: { type: 'number' }
+              }
+            }
+          },
+          required: ['type', 'data']
+        }
+      },
+      edges: {
+        type: 'array',
+        description: 'Optional edges between new objects by node index',
+        items: {
+          type: 'object',
+          properties: {
+            source: { type: 'number', description: 'Source node index in nodes array' },
+            target: { type: 'number', description: 'Target node index in nodes array' },
+            sourceHandle: { type: 'string', description: 'Optional source handle ID' },
+            targetHandle: { type: 'string', description: 'Optional target handle ID' }
+          },
+          required: ['source', 'target']
+        }
+      }
+    },
+    required: ['nodes']
+  }
+};
+
+export const updateObjectDataDeclaration = {
+  name: UPDATE_OBJECT_DATA,
+  description:
+    'Directly update an existing object data/configuration by merging a patch into current data. Use get_object_data first unless the current data is already present in context. For non-trivial code rewrites, call get_object_instructions for the object type first.',
+  parametersJsonSchema: {
+    type: 'object',
+    properties: {
+      nodeId: { type: 'string', description: 'ID of the object to update' },
+      patch: {
+        type: 'object',
+        description:
+          'Data fields to merge into the object. Do not include internal fields like executeCode or __private fields.'
+      }
+    },
+    required: ['nodeId', 'patch']
+  }
+};
+
+export const replaceObjectDeclaration = {
+  name: REPLACE_OBJECT,
+  description:
+    'Directly replace an existing object with a new type and final structured data. For non-trivial object data, call get_object_instructions for the new type first.',
+  parametersJsonSchema: {
+    type: 'object',
+    properties: {
+      nodeId: { type: 'string', description: 'ID of the object to replace' },
+      type: { type: 'string', description: 'New object type' },
+      data: { type: 'object', description: 'Final data/configuration for the replacement object' }
+    },
+    required: ['nodeId', 'type', 'data']
+  }
+};
 
 // ── Connect edges declaration ─────────────────────────────────────────────────
 

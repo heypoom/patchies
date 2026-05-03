@@ -15,10 +15,20 @@ import { fetchObjectHelp } from '$lib/objects/fetch-object-help';
 import { generateHandleDocs } from '../generate-handle-docs';
 import { resolveConnectEdges, resolveDisconnectEdges } from './edge-tool-handlers';
 import {
+  resolveInsertObject,
+  resolveInsertObjects,
+  resolveReplaceObject,
+  resolveUpdateObjectData
+} from './direct-tool-handlers';
+import {
   SYSTEM_PROMPT,
   CONTEXT_TOOL_NAMES,
   CONNECT_EDGES,
   DISCONNECT_EDGES,
+  INSERT_OBJECT,
+  INSERT_OBJECTS,
+  REPLACE_OBJECT,
+  UPDATE_OBJECT_DATA,
   GET_GRAPH_NODES,
   GET_OBJECT_DATA,
   GET_OBJECT_LOGS,
@@ -31,7 +41,11 @@ import {
   SEARCH_FREESOUND,
   contextToolDeclarations,
   connectEdgesDeclaration,
-  disconnectEdgesDeclaration
+  disconnectEdgesDeclaration,
+  insertObjectDeclaration,
+  insertObjectsDeclaration,
+  replaceObjectDeclaration,
+  updateObjectDataDeclaration
 } from './chat-tool-declarations';
 import { resolveSearchSamples, resolveSearchFreesound } from './sample-tool-handlers';
 
@@ -175,7 +189,15 @@ export async function streamChatMessage(
 
   const canvasDeclarations = onAction ? buildCanvasToolDeclarations(nodeContext) : [];
   const allCanvasDeclarations = onAction
-    ? [...canvasDeclarations, connectEdgesDeclaration, disconnectEdgesDeclaration]
+    ? [
+        insertObjectDeclaration,
+        insertObjectsDeclaration,
+        updateObjectDataDeclaration,
+        replaceObjectDeclaration,
+        ...canvasDeclarations,
+        connectEdgesDeclaration,
+        disconnectEdgesDeclaration
+      ]
     : [];
   const tools = [...contextToolDeclarations, ...allCanvasDeclarations] as ToolDeclaration[];
 
@@ -246,6 +268,14 @@ export async function streamChatMessage(
           onAction(resolveConnectEdges(args, { getNodeById, getGraphSummary }));
         } else if (toolName === DISCONNECT_EDGES) {
           onAction(resolveDisconnectEdges(args, { getNodeById, getGraphSummary }));
+        } else if (toolName === INSERT_OBJECT) {
+          onAction(resolveInsertObject(args));
+        } else if (toolName === INSERT_OBJECTS) {
+          onAction(resolveInsertObjects(args));
+        } else if (toolName === UPDATE_OBJECT_DATA) {
+          onAction(resolveUpdateObjectData(args, { getNodeById }));
+        } else if (toolName === REPLACE_OBJECT) {
+          onAction(resolveReplaceObject(args, { getNodeById }));
         } else {
           const mode = toolNameToMode(toolName);
           const context = buildContextFromArgs(mode, args, getNodeById, nodeContext);
@@ -294,7 +324,7 @@ export async function streamChatMessage(
         let failMode: AiPromptMode;
         let failDescriptor: AiModeDescriptor;
         try {
-          failMode = toolNameToMode(toolName);
+          failMode = modeForToolName(toolName);
           failDescriptor = getModeDescriptor(failMode);
         } catch {
           const fallbackMode = Object.keys(modeDescriptors)[0] as AiPromptMode;
@@ -472,8 +502,22 @@ export async function streamChatMessage(
               getObjectSpecificInstructions(type) ||
               `No specific instructions found for "${type}".`;
             const handleDocs = generateHandleDocs([type]);
+            const objectSchema = objectSchemas[type];
             return respond({
+              type,
               instructions,
+              ...(objectSchema
+                ? {
+                    schema: {
+                      type: objectSchema.type,
+                      description: objectSchema.description,
+                      category: objectSchema.category,
+                      inlets: objectSchema.inlets,
+                      outlets: objectSchema.outlets,
+                      tags: objectSchema.tags
+                    }
+                  }
+                : {}),
               ...(handleDocs ? { handleReference: handleDocs } : {})
             });
           });
@@ -509,6 +553,15 @@ export async function streamChatMessage(
   }
 
   return fullText;
+}
+
+function modeForToolName(name: string): AiPromptMode {
+  return match(name)
+    .with(INSERT_OBJECT, () => 'insert' as const)
+    .with(INSERT_OBJECTS, () => 'multi' as const)
+    .with(UPDATE_OBJECT_DATA, () => 'edit' as const)
+    .with(REPLACE_OBJECT, () => 'turn-into' as const)
+    .otherwise(() => toolNameToMode(name));
 }
 
 const NODE_SCOPED_MODES = new Set<AiPromptMode>([
