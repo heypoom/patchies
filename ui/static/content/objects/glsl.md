@@ -43,7 +43,7 @@ ready-made [TOP-style](https://docs.derivative.ca/TOP) operators.
 | **Texture Composite** | Combining and arranging textures | `Mix`, `Multiply`, `Add`, `Subtract`, `Difference`, `Math`, `Composite`, `Over`, `Under`, `Layout`, `Layer`, `Switcher` |
 | **Texture Time** | Feedback and frame history | `Feedback`, `Cache`, `Time Scrub`, `Time Machine` |
 | **Texture Color** | Color correction and channel utilities | `Level`, `Luma Level`, `HSV Adjust`, `Monochrome`, `Channel Mix`, `Pack`, `Limit`, `Remap`, `Lookup`, `RGB to HSV`, `HSV to RGB`, `Tone Map`, `Reorder` |
-| **Texture Masks & Keys** | Creating and applying mattes | `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`, `Blob Detect` |
+| **Texture Masks & Keys** | Creating and applying mattes | `Mask`, `Threshold`, `Chroma Key`, `RGB Key`, `Luma Key`, `Matte`, `Blob Detect` |
 | **Texture Transform** | Moving, fitting, repeating, and distorting | `Transform`, `Crop`, `Fit`, `Flip`, `Mirror`, `Tile`, `Lens Distort`, `Displace`, `Noise Displace` |
 | **Texture Filters** | Image-processing effects | `Blur`, `Luma Blur`, `Bloom`, `Motion Flow`, `Chromatic Aberration`, `Convolve`, `Edge`, `Anti Alias`, `Emboss`, `Slope`, `Normal Map` |
 
