@@ -232,13 +232,15 @@ Moves objects using undoable move commands. Useful for layout cleanup without re
 ```ts
 insert_preset({
   presetName: string;
+  position?: { x: number; y: number };
 })
 ```
 
 Creates one object from a saved preset by exact preset name. The chat model should call
 `search_presets` first when the name is ambiguous or when the user asks for a preset by pack/category
 rather than by exact title. Duplicate names prefer user libraries over built-in libraries, matching
-the insert palette lookup behavior.
+the insert palette lookup behavior. If `position` is omitted, the normal AI insert positioning path
+is used.
 
 ### Pack and Preset Discovery Tools
 

@@ -467,6 +467,15 @@ export const insertPresetDeclaration = {
       presetName: {
         type: 'string',
         description: 'Exact preset name to insert, e.g. "Noise", "Blur", or "midi.slider"'
+      },
+      position: {
+        type: 'object',
+        description: 'Optional absolute canvas position for the new object created from the preset',
+        properties: {
+          x: { type: 'number' },
+          y: { type: 'number' }
+        },
+        required: ['x', 'y']
       }
     },
     required: ['presetName']

@@ -99,4 +99,28 @@ describe('chat preset tools', () => {
       data: { code: 'drawNoise();' }
     });
   });
+
+  test('does not add a position when insert_preset omits it', () => {
+    const action = resolveInsertPreset({ presetName: 'Blur' }, { presets });
+
+    expect(action.result).toEqual({
+      kind: 'single',
+      type: 'glsl',
+      data: { code: 'blur();' }
+    });
+  });
+
+  test('preserves optional position for insert_preset', () => {
+    const action = resolveInsertPreset(
+      { presetName: 'Blur', position: { x: 320, y: 160 } },
+      { presets }
+    );
+
+    expect(action.result).toEqual({
+      kind: 'single',
+      type: 'glsl',
+      data: { code: 'blur();' },
+      position: { x: 320, y: 160 }
+    });
+  });
 });

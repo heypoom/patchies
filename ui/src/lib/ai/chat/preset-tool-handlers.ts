@@ -22,6 +22,7 @@ interface SearchPresetsArgs {
 
 interface InsertPresetArgs {
   presetName?: unknown;
+  position?: unknown;
 }
 
 function normalize(value: string): string {
@@ -160,6 +161,7 @@ export function resolveInsertPreset(
 
   return resolveInsertObject({
     type: match.preset.type,
-    data: match.preset.data
+    data: match.preset.data,
+    ...(args.position ? { position: args.position } : {})
   });
 }

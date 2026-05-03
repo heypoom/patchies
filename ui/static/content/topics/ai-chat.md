@@ -42,7 +42,7 @@ Ask:
 Find texture presets that would work well for a soft background.
 ```
 
-Chat can search built-in and user presets, read the full contents of a preset, and insert a preset by name.
+Chat can search built-in and user presets, read the full contents of a preset, and insert a preset by name. If you ask for a specific spot, Chat can place the preset there.
 
 ## What Chat Can Do
 
