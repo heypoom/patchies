@@ -136,17 +136,28 @@ describe('built-in preset packs', () => {
     );
   });
 
-  test('registers curated ChucK examples as demo compositions', () => {
+  test('registers curated ChucK examples in their own preset pack', () => {
     const demoCompositions = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'demo-compositions');
+    const chuckDemos = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'chuck-demos');
     const chuckPresetNames = [
+      'bell.chuck',
       'fm-siren.chuck',
       'shepard-riser.chuck',
       'mand-o-matic.chuck',
       'resonant-noise.chuck',
-      'dtmf-dialer.chuck'
+      'dtmf-dialer.chuck',
+      'chorus-pad.chuck',
+      'modal-mallets.chuck',
+      'moog-bass.chuck',
+      'chant-voice.chuck',
+      'wind-texture.chuck'
     ];
 
-    expect(demoCompositions && getPresetPackPresetNames(demoCompositions)).toEqual(
+    expect(chuckDemos?.requiredObjects).toEqual(['chuck~']);
+    expect(chuckDemos && getPresetPackPresetNames(chuckDemos)).toEqual(
+      expect.arrayContaining(chuckPresetNames)
+    );
+    expect(demoCompositions && getPresetPackPresetNames(demoCompositions)).not.toEqual(
       expect.arrayContaining(chuckPresetNames)
     );
 
@@ -155,7 +166,7 @@ describe('built-in preset packs', () => {
       const presetData = preset?.data as { expr?: string } | undefined;
 
       expect(preset?.type).toBe('chuck~');
-      expect(presetData?.expr).toContain('global');
+      expect(presetData?.expr?.length).toBeGreaterThan(0);
     }
   });
 

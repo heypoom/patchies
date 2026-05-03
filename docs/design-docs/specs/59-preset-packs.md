@@ -132,21 +132,30 @@ preset pack. Larger visual effect libraries remain in their own opt-in preset pa
 - waveshaper-distortion.js
 - (elementary presets)
 
-**ChucK Demo Compositions:**
+**ChucK Demos:**
 
 - ChucK presets should be curated adaptations of upstream ChucK examples, not bulk imports.
 - Each preset should sound useful immediately with no external patching.
 - Store ChucK presets as one preset per file under `ui/src/lib/presets/builtin/chuck/`,
   matching the GLSL and REGL preset module pattern.
-- When a preset has natural live controls, expose them with `global` variables so Patchies
-  messages can optionally set values without editing code.
+- Prefer presets that are fun to play with, sound good, or make a good starting point. Patchies
+  message controls are a nice-to-have when a preset has natural live controls, not a requirement.
+- When adding live controls, expose them with `global` variables so Patchies messages can optionally
+  set values without editing code.
 - Keep source inspiration comments where useful, but prefer Patchies-friendly names and defaults.
+- ChucK presets live in their own **ChucK Demos** preset pack instead of Demo Compositions, so the
+  mixed composition pack does not become dominated by one language.
 - Initial candidates are adapted from `ccrma/chuck` examples:
   - `basic/fm.ck` for compact FM synthesis
   - `deep/shepard.ck` for a continuous Shepard-Risset tone
   - `stk/mand-o-matic-simple.ck` for generative plucked strings
   - `filter/resonz.ck` for a resonant noise sweep
   - `deep/dtmf.ck` for dual-tone telephone patterns
+  - `effects/chorus.ck` for a warm chorus pad
+  - `stk/modalbar.ck` for metallic modal percussion
+  - `stk/moog.ck` for generative Moog-style synth lines
+  - `deep/chant.ck` for source-filter vocal synthesis
+  - `basic/wind2.ck` for wind-like noise textures
 
 **Greggman Bytebeat Archive:**
 

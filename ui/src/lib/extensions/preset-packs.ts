@@ -1,5 +1,6 @@
 import type { PresetPack } from '../../stores/extensions.store';
 import { GREGGMAN_BYTEBEAT_PRESET_FOLDERS } from '../presets/builtin/bytebeat/greggman';
+import { CHUCK_DEMO_PRESET_KEYS } from '../presets/builtin/chuck';
 import { HYDRA_DEMO_PRESET_KEYS } from '../presets/builtin/hydra';
 
 export const OBJECT_PIPE_PRESETS = ['js>', 'hydra>', 'glsl>', 'regl>', 'swgl>', 'three>', 'tone>'];
@@ -229,23 +230,20 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presets: [...HYDRA_DEMO_PRESET_KEYS]
   },
   {
+    id: 'chuck-demos',
+    name: 'ChucK Demos',
+    description: 'Curated sound demos adapted from ChucK examples',
+    icon: 'Music',
+    requiredObjects: ['chuck~'],
+    presets: [...CHUCK_DEMO_PRESET_KEYS]
+  },
+  {
     id: 'demo-compositions',
     name: 'Demo Compositions',
     description: 'Example music compositions from code',
     icon: 'Music',
-    requiredObjects: ['strudel', 'chuck~', 'orca'],
-    presets: [
-      'bump-street.strudel',
-      'traffic-flam.strudel',
-      'funk-42.strudel',
-      'bell.chuck',
-      'fm-siren.chuck',
-      'shepard-riser.chuck',
-      'mand-o-matic.chuck',
-      'resonant-noise.chuck',
-      'dtmf-dialer.chuck',
-      'orca.hello'
-    ]
+    requiredObjects: ['strudel', 'orca'],
+    presets: ['bump-street.strudel', 'traffic-flam.strudel', 'funk-42.strudel', 'orca.hello']
   },
   {
     id: 'three-demos',

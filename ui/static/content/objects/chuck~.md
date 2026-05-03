@@ -9,6 +9,13 @@ real-time sound synthesis and music creation.
 Great for algorithmic composition and sound design. Runs via
 [WebChucK](https://chuck.cs.princeton.edu/webchuck/).
 
+## Presets
+
+Enable the **ChucK Demos** preset pack to browse curated ChucK examples.
+The pack includes playable starting points for FM tones, Shepard tones,
+plucked strings, modal mallets, chorus pads, vocal synthesis, and noise
+textures.
+
 ## Actions
 
 - **Replace Shred** (`Ctrl/Cmd + Enter`): replaces the most recent shred
