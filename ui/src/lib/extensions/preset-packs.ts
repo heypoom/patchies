@@ -23,7 +23,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     name: 'Canvas Widgets',
     description: 'Interactive widgets you can play with',
     icon: 'Layout',
-    requiredObjects: ['canvas.dom'],
+    requiredObjects: ['canvas.dom', 'dom'],
     presets: [
       'xy-pad.canvas',
       'hsla.picker',
@@ -31,7 +31,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'plotter.canvas',
       'particle.canvas',
       'midi.keyboard',
-      'fractal-tree.canvas'
+      'fractal-tree.canvas',
+      'bitmaprenderer'
     ]
   },
   {
@@ -161,8 +162,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     name: 'Iframe Widgets',
     description: 'Useful widgets made with iframes',
     icon: 'Layout',
-    requiredObjects: ['iframe', 'dom'],
-    presets: ['youtube.iframe', 'bitmaprenderer']
+    requiredObjects: ['iframe'],
+    presets: ['youtube.iframe']
   },
   {
     id: 'midi',

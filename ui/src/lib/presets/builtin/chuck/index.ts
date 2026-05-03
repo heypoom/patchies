@@ -12,20 +12,6 @@ import { preset as preset10 } from './wind-texture';
 
 import type { ChuckPreset } from './types';
 
-export const CHUCK_DEMO_PRESET_KEYS = [
-  'bell.chuck',
-  'fm-siren.chuck',
-  'shepard-riser.chuck',
-  'mand-o-matic.chuck',
-  'resonant-noise.chuck',
-  'dtmf-dialer.chuck',
-  'chorus-pad.chuck',
-  'modal-mallets.chuck',
-  'moog-bass.chuck',
-  'chant-voice.chuck',
-  'wind-texture.chuck'
-];
-
 export const CHUCK_DEMO_PRESETS: Record<string, ChuckPreset> = {
   'bell.chuck': preset0,
   'fm-siren.chuck': preset1,
@@ -39,5 +25,7 @@ export const CHUCK_DEMO_PRESETS: Record<string, ChuckPreset> = {
   'chant-voice.chuck': preset9,
   'wind-texture.chuck': preset10
 };
+
+export const CHUCK_DEMO_PRESET_KEYS = Object.keys(CHUCK_DEMO_PRESETS);
 
 export type { ChuckPreset } from './types';
