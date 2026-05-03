@@ -162,6 +162,16 @@ preset pack. Larger visual effect libraries remain in their own opt-in preset pa
   - `stereo/stereo-noise.ck` for stereo motion
   - `basic/oscillatronx.ck` for mixed oscillator textures
   - `stk/rhodey.ck` for echoing electric-piano fragments
+  - `effects/Bitcrusher.ck` for crushed delay textures
+  - `effects/pitch-shift.ck` for pitch-shifted saw sweeps
+  - `deep/ks-chord.ck` for Karplus-Strong resonant chords
+  - `stk/shake-o-matic.ck` for shaker percussion grooves
+  - `stk/sitar.ck` for bright plucked sitar patterns
+  - `stk/bowed.ck` for bowed-string physical modeling
+  - `stk/brass.ck` for brass physical modeling
+  - `stk/flute.ck` for breathy flute physical modeling
+  - `stk/wurley.ck` for drifting electric-piano tones
+  - `stk/tubebell-algo5.ck` for round-robin FM tube bells
 
 **Greggman Bytebeat Archive:**
 

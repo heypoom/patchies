@@ -155,7 +155,17 @@ describe('built-in preset packs', () => {
       'chirp-sweeps.ck',
       'stereo-noise-pan.ck',
       'oscillator-cloud.ck',
-      'rhodey-echo.ck'
+      'rhodey-echo.ck',
+      'bitcrusher-delay.ck',
+      'pitch-shift-saw.ck',
+      'karplus-chord.ck',
+      'shakers-groove.ck',
+      'sitar-pattern.ck',
+      'bowed-strings.ck',
+      'brass-phrase.ck',
+      'flute-phrase.ck',
+      'wurley-drift.ck',
+      'tube-bells.ck'
     ];
 
     expect(chuckDemos?.requiredObjects).toEqual(['chuck~']);
