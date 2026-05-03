@@ -38,6 +38,7 @@ export type RenderNode = {
         videoOutletCount?: number;
         fboFormat?: FBOFormat;
         resolution?: FBOResolution;
+        _runRevision?: number;
       };
     }
   | {

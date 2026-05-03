@@ -18,6 +18,7 @@ import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRendere
 export interface HydraRendererConfig extends BaseRendererConfig {
   videoInletCount?: number;
   videoOutletCount?: number;
+  runRevision?: number;
 }
 
 export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {

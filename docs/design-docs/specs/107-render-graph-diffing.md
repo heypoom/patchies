@@ -25,6 +25,8 @@ Store a fingerprint of each node's data alongside the FBONode. On rebuild, compa
 
 **Key change in `buildFBOs`**: After confirming `canReuseFbo`, also check if node data changed. If both FBO and data are unchanged, skip the node entirely — don't call cleanup or create a new renderer.
 
+Explicit code execution requests may add a `_runRevision` to node data. That revision is part of the fingerprint and must be treated as an execution invalidation even when the code string itself is unchanged. Stateful renderers that reuse their instance, such as Hydra, should call their code update path when the run revision changes.
+
 For stateful renderers (canvas, three, regl, swgl, hydra), also update the `framebuffer` reference and `inletMap`/`inputs`/`outputs` on the existing render graph node without recreating the renderer.
 
 ### Node types and their reuse strategy
@@ -32,7 +34,7 @@ For stateful renderers (canvas, three, regl, swgl, hydra), also update the `fram
 | Type | Stateful? | Reuse strategy |
 |------|-----------|----------------|
 | glsl | No (stateless shader) | Skip if code + uniforms unchanged |
-| hydra | Yes | Skip if code unchanged (already has deferred cleanup) |
+| hydra | Yes | Reuse instance when port counts match; re-run code when code or `_runRevision` changes |
 | canvas | Yes | Skip if code unchanged |
 | three | Yes | Skip if code unchanged |
 | regl | Yes | Skip if code unchanged |

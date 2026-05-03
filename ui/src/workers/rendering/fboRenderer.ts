@@ -724,8 +724,8 @@ export class FBORenderer {
 
     const existingRenderer = this.hydraByNode.get(node.id);
 
-    // Reuse existing renderer when only code changed (preserves last frame on error).
-    // Must recreate if video port counts changed since Hydra needs new sources/outputs.
+    // Reuse existing renderer when the Hydra source/output counts are unchanged.
+    // Same-code Run still needs to execute user code, so also watch the run revision.
     const canReuse =
       existingRenderer?.hydra &&
       existingRenderer.config.videoInletCount === (node.data.videoInletCount ?? 1) &&
@@ -734,8 +734,14 @@ export class FBORenderer {
     if (canReuse) {
       existingRenderer.framebuffer = framebuffer;
 
-      if (existingRenderer.config.code !== node.data.code) {
+      const runRevision = node.data._runRevision;
+      const shouldUpdateCode =
+        existingRenderer.config.code !== node.data.code ||
+        existingRenderer.config.runRevision !== runRevision;
+
+      if (shouldUpdateCode) {
         existingRenderer.config.code = node.data.code;
+        existingRenderer.config.runRevision = runRevision;
 
         await existingRenderer.updateCode();
       }
@@ -763,7 +769,8 @@ export class FBORenderer {
         code: node.data.code,
         nodeId: node.id,
         videoInletCount: node.data.videoInletCount ?? 1,
-        videoOutletCount: node.data.videoOutletCount ?? 1
+        videoOutletCount: node.data.videoOutletCount ?? 1,
+        runRevision: node.data._runRevision
       },
       framebuffer,
       this
