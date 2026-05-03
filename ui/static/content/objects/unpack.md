@@ -36,6 +36,8 @@ has more elements than `count`, sending the leftover slice.
 If the input is not an array, it is treated as a single-element array — outlet 0
 gets the value, remaining named outlets get `null`.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/unpack)._
+
 ## See Also
 
 - [trigger](/docs/objects/trigger) - fan out a single message to multiple outlets

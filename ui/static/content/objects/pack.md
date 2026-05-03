@@ -38,6 +38,8 @@ array.
 
 `pack f a` can combine a number with any stored message, such as `[7, { nested: true }]`.
 
+_Inspired by [Pure Data](https://pd.iem.sh/objects/pack)._
+
 ## See Also
 
 - [unpack](/docs/objects/unpack) - split an array into separate outlets
