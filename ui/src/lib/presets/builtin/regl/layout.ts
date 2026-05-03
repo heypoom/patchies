@@ -37,6 +37,22 @@ function hexToRgb(hex) {
   ];
 }
 
+let backgroundHex = null;
+const clearColor = [0, 0, 0, 1];
+
+function getClearColor() {
+  const nextHex = settings.get('background') || '#000000';
+  if (nextHex !== backgroundHex) {
+    backgroundHex = nextHex;
+    const bg = hexToRgb(nextHex);
+    clearColor[0] = bg[0];
+    clearColor[1] = bg[1];
+    clearColor[2] = bg[2];
+  }
+
+  return clearColor;
+}
+
 const drawTile = regl({
   vert: \`
     precision mediump float;
@@ -104,12 +120,11 @@ function getViewport(index, mode, gap, count, outputWidth, outputHeight) {
 }
 
 function render(time) {
-  const bg = hexToRgb(settings.get('background'));
   const gap = Math.max(0, Number(settings.get('gap')) || 0);
   const count = Math.max(1, Math.min(4, Math.floor(Number(settings.get('count')) || 4)));
   const mode = settings.get('mode') || 'grid';
 
-  regl.clear({ color: [bg[0], bg[1], bg[2], 1] });
+  regl.clear({ color: getClearColor() });
 
   for (let i = 0; i < count; i++) {
     drawTile({
