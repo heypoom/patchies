@@ -4,13 +4,13 @@
 
 const ECHO_ASM = `; Echo - receives input and sends it back
 loop:
-receive
+recv
 send 0 1
 jump loop`;
 
 const ACCUMULATOR_ASM = `; Accumulator - running sum stored at address 0xF00
 loop:
-receive
+recv
 load 0xF00
 add
 dup
@@ -20,7 +20,7 @@ jump loop`;
 
 const DOUBLE_ASM = `; Double - multiplies input by 2
 loop:
-receive
+recv
 push 2
 mul
 send 0 1
@@ -28,7 +28,7 @@ jump loop`;
 
 const THRESHOLD_GATE_ASM = `; Threshold Gate - only outputs if value > 50
 loop:
-receive
+recv
 dup
 push 50
 greater_than
@@ -42,7 +42,7 @@ jump loop`;
 
 const RUNNING_AVERAGE_ASM = `; Running Average - sum at 0xF00, count at 0xF01
 loop:
-receive
+recv
 load 0xF00
 add
 store 0xF00
@@ -76,7 +76,7 @@ jump loop`;
 
 const CLAMP_ASM = `; Clamp - clamps input to range 0-100
 loop:
-receive
+recv
 dup
 push 0
 less_than
@@ -112,7 +112,7 @@ jump loop`;
 const DELTA_ASM = `; Delta - outputs difference from previous input
 ; Previous value at address 0xF00
 loop:
-receive
+recv
 dup
 load 0xF00
 sub

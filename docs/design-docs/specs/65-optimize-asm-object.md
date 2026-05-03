@@ -50,10 +50,13 @@ Reduce from 65535 to **4096 u16** (8KB) - a 16x reduction.
 
 **MAPPED outlets** (virtual addresses for asm.mem):
 
-- Outlet 0: 0x1000 - 0x1FFF
-- Outlet 1: 0x2000 - 0x2FFF
-- Outlet 2: 0x3000 - 0x3FFF
-- Outlet 3: 0x4000 - 0x4FFF
+- Outlet 0: 0x1000 - 0x11FF
+- Outlet 1: 0x1200 - 0x13FF
+- Outlet 2: 0x1400 - 0x15FF
+- Outlet 3: 0x1600 - 0x17FF
+
+Each configured outlet owns 512 cells (0x200). Additional outlets continue the
+same 0x200-cell stride.
 
 **Philosophy: "Memory is just memory"** (Forth-style)
 
@@ -121,14 +124,24 @@ Track which memory addresses changed since last read, only return changed cells.
 ### External Memory (asm.mem) - Breaking Change
 
 MAPPED addresses now start at **0x1000** (was 0x2000) to eliminate the gap after internal memory.
+Each outlet range is now 512 cells (0x200), matching `asm.md` and `asm.mem.md`.
 
 Old → New outlet mapping:
 
 | Outlet | Old Range     | New Range     |
 | ------ | ------------- | ------------- |
-| 0      | 0x2000-0x2FFF | 0x1000-0x1FFF |
-| 1      | 0x3000-0x3FFF | 0x2000-0x2FFF |
-| 2      | 0x4000-0x4FFF | 0x3000-0x3FFF |
-| 3      | 0x5000-0x5FFF | 0x4000-0x4FFF |
+| 0      | 0x2000-0x2FFF | 0x1000-0x11FF |
+| 1      | 0x3000-0x3FFF | 0x1200-0x13FF |
+| 2      | 0x4000-0x4FFF | 0x1400-0x15FF |
+| 3      | 0x5000-0x5FFF | 0x1600-0x17FF |
 
 Update `ui/static/content/objects/asm.mem.md` with new addresses.
+
+## Preset Sync
+
+Built-in examples in `ui/src/lib/presets/builtin/asm.presets.ts` should mirror
+the current syntax in `ui/static/content/objects/asm.md`.
+
+- Use `recv` for input, not the deprecated `receive` spelling.
+- Keep user RAM examples on high internal addresses such as `0xF00` and `0xF01`.
+- Keep external-memory examples on the 0x1000+ virtual address ranges above.

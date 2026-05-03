@@ -130,7 +130,7 @@ impl Sequencer {
                 return Err(ExecutionFailed { id, error: error.into() });
             }
 
-            // If the last instruction is a `receive`,
+            // If the last instruction is a `recv`,
             // we suspend the machine's execution until subsequent cycles,
             // until the machine receives a message.
             if machine.expected_receives > 0 {
