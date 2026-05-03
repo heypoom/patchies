@@ -120,24 +120,28 @@ export const stringifyParamByType = (
       return `[${(value as number[]).join(',')}]`;
     })
     .with('float', () => {
+      if (typeof value !== 'number') return String(value);
+
       // always use n floating point
       if (inlet.precision !== undefined) {
-        return applySignPadding((value as number)?.toFixed(inlet.precision));
+        return applySignPadding(value.toFixed(inlet.precision));
       }
 
       // If sticky precision is set, pad to that precision
       if (stickyPrecision !== undefined && stickyPrecision > 0) {
-        return applySignPadding((value as number)?.toFixed(stickyPrecision));
+        return applySignPadding(value.toFixed(stickyPrecision));
       }
 
       // allow up to n floating point
       if (inlet.maxPrecision !== undefined) {
-        return applySignPadding(String(formatFloatingPoint(value as number, inlet.maxPrecision)));
+        return applySignPadding(String(formatFloatingPoint(value, inlet.maxPrecision)));
       }
 
       return applySignPadding(String(value));
     })
-    .with('int', () => applySignPadding(String(value)))
+    .with('int', () =>
+      typeof value === 'number' ? applySignPadding(String(value)) : String(value)
+    )
     .otherwise(() => String(value));
 };
 

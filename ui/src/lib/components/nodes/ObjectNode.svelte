@@ -331,8 +331,15 @@
     const isScheduled = isScheduledMessage(message);
     const isSetImmediate = isScheduled && message.type === 'set' && message.time === undefined;
 
+    const isBang =
+      typeof message === 'object' &&
+      message !== null &&
+      'type' in message &&
+      message.type === 'bang';
+
     const isAcceptsFloatSignal = inlet.type === 'signal' && inlet.acceptsFloat;
-    if ((!isUnmodifiableType(inlet.type) || isAcceptsFloatSignal) && !isScheduled) {
+
+    if ((!isUnmodifiableType(inlet.type) || isAcceptsFloatSignal) && !isScheduled && !isBang) {
       // Do not update parameter if it is a unmodifiable type or a scheduled message.
       // For typed inlets with message schemas (e.g., string inlet that also accepts bang/stop),
       // only update the displayed param when the value matches the base type.
@@ -350,11 +357,13 @@
         // For audio objects, suppress the audio sync since the message is already
         // being forwarded to the worklet directly via audioService.send below.
         if (isAudioObject) audioSync.suppress();
+
         updateParamByIndex(meta.inlet, message);
       }
     } else if (isSetImmediate) {
       // Update parameters for a simple `set` message.
       if (isAudioObject) audioSync.suppress();
+
       updateParamByIndex(meta.inlet, message.value);
     } else if (isScheduled) {
       // Mark parameter as being automated.
