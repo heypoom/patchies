@@ -35,6 +35,22 @@ recv((data) => {
 // tom is auto-disposed when the node is destroyed or code changes
 ```
 
+## Built-in presets
+
+The `tone>` starter preset should be more than a direct Web Audio passthrough. It
+routes incoming audio through a simple Tone.js `Gain` node before `outputNode`:
+
+```js
+const gain = new Tone.Gain(1);
+
+inputNode.connect(gain.input);
+gain.connect(outputNode);
+```
+
+This keeps the preset as a minimal working audio pipe while making the Tone.js
+processing stage obvious and easy to swap with effects such as `Tone.Reverb`,
+`Tone.PitchShift`, or `Tone.Filter`.
+
 ## Other nodes of similar nature
 
 Take a look at these to see how they are implemented:

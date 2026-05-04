@@ -29,7 +29,7 @@ constructors are not tracked and won't be auto-disposed.
 ## Manual Cleanup
 
 Manual cleanup is still needed for **non-Tone resources** such as
-`inputNode.disconnect(outputNode)`, `Tone.getTransport().stop()`,
+`inputNode.disconnect(effect.input)`, `Tone.getTransport().stop()`,
 or Web Audio API nodes created without `new Tone.`.
 
 Use `return { cleanup: () => { ... } }` or `onCleanup(() => { ... })`
@@ -58,22 +58,30 @@ reverb.connect(outputNode);
 reverb.generate();
 ```
 
-### Passthrough
+### Gain pipe
 
-Passes audio straight through. Needs manual cleanup since
-no `new Tone.` objects are created.
+Passes audio through a Tone.js gain stage. This is a useful starting point for
+swapping in effects like `Tone.Reverb`, `Tone.PitchShift`, or `Tone.Filter`.
+The `Tone.Gain` instance is auto-disposed, but the external `inputNode`
+connection still needs manual cleanup.
 
 ```js
-inputNode.connect(outputNode);
+const gain = new Tone.Gain(1);
 
-onCleanup(() => inputNode.disconnect(outputNode));
+inputNode.connect(gain.input);
+gain.connect(outputNode);
+
+onCleanup(() => {
+  inputNode.disconnect(gain.input);
+  gain.disconnect(outputNode);
+});
 ```
 
 ## Presets
 
 - `poly-synth-midi.tone`: Polyphonic synthesizer with chord sequences
 - `lowpass.tone`: Low pass filter
-- `tone>`: Direct input to output
+- `tone>`: Input through a Tone.js gain stage to output
 
 Please consider supporting
 [Yotam Mann on GitHub Sponsors](https://github.com/sponsors/tambien)!

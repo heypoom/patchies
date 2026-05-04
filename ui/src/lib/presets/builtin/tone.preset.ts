@@ -37,9 +37,15 @@ recv(m => {
   }
 })`;
 
-const PIPE_JS = `inputNode.connect(outputNode)
+const PIPE_JS = `const gain = new Tone.Gain(1)
 
-onCleanup(() => inputNode.disconnect(outputNode))`;
+inputNode.connect(gain.input)
+gain.connect(outputNode)
+
+onCleanup(() => {
+  inputNode.disconnect(gain.input)
+  gain.disconnect(outputNode)
+})`;
 
 const REVERB_JS = `setPortCount(0)
 setTitle('reverb~')
