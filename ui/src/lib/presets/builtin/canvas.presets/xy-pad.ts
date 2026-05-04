@@ -3,7 +3,7 @@ export const XY_PAD_JS = `let [width, height] = [800, 800]
 noDrag()
 noOutput()
 setPortCount(1, 1)
-setTitle('xy.pad')
+setTitle('XY Pad')
 setCanvasSize(width, height)
 
 let padX = width / 2
