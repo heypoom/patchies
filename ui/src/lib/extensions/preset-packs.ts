@@ -274,7 +274,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Audio synthesis with Tone.js',
     icon: 'AudioLines',
     requiredObjects: ['tone~'],
-    presets: ['poly-synth-midi.tone', 'reverb.tone', 'lowpass.tone']
+    presets: ['poly-synth-midi.tone', 'reverb.tone', 'lowpass.tone', 'pitch-shifter.tone']
   },
   {
     id: 'asm-examples',

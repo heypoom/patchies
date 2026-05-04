@@ -70,6 +70,26 @@ recv(m => {
   filter.frequency.value = m;
 })`;
 
+const PITCH_SHIFTER_JS = `setPortCount(1)
+setTitle('pitch-shifter~')
+
+const pitchShift = new Tone.PitchShift({
+  pitch: 7,
+  wet: 0.5
+})
+
+inputNode.connect(pitchShift.input.input)
+pitchShift.connect(outputNode)
+
+recv(m => {
+  pitchShift.pitch = m
+})
+
+onCleanup(() => {
+  inputNode.disconnect(pitchShift.input.input)
+  pitchShift.disconnect(outputNode)
+})`;
+
 export const TONE_JS_PRESETS = {
   'poly-synth-midi.tone': {
     type: 'tone~',
@@ -87,5 +107,9 @@ export const TONE_JS_PRESETS = {
   'lowpass.tone': {
     type: 'tone~',
     data: { code: LOWPASS_JS, messageInletCount: 1, title: 'lowpass~' }
+  },
+  'pitch-shifter.tone': {
+    type: 'tone~',
+    data: { code: PITCH_SHIFTER_JS, messageInletCount: 1, title: 'pitch-shifter~' }
   }
 };

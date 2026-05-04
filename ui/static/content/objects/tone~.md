@@ -58,6 +58,30 @@ reverb.connect(outputNode);
 reverb.generate();
 ```
 
+### Pitch shifter
+
+Shifts incoming audio by semitones. Send a number to the message inlet to change
+the pitch while it runs.
+
+```js
+const pitchShift = new Tone.PitchShift({
+  pitch: 7,
+  wet: 0.5
+});
+
+inputNode.connect(pitchShift.input.input);
+pitchShift.connect(outputNode);
+
+recv((m) => {
+  pitchShift.pitch = m;
+});
+
+onCleanup(() => {
+  inputNode.disconnect(pitchShift.input.input);
+  pitchShift.disconnect(outputNode);
+});
+```
+
 ### Gain pipe
 
 Passes audio through a Tone.js gain stage. This is a useful starting point for
@@ -81,6 +105,7 @@ onCleanup(() => {
 
 - `poly-synth-midi.tone`: Polyphonic synthesizer with chord sequences
 - `lowpass.tone`: Low pass filter
+- `pitch-shifter.tone`: Pitch shift effect
 - `tone>`: Input through a Tone.js gain stage to output
 
 Please consider supporting

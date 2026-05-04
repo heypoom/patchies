@@ -51,6 +51,26 @@ This keeps the preset as a minimal working audio pipe while making the Tone.js
 processing stage obvious and easy to swap with effects such as `Tone.Reverb`,
 `Tone.PitchShift`, or `Tone.Filter`.
 
+The `pitch-shifter.tone` preset should provide a ready-made Tone.js effect pipe:
+
+```js
+setPortCount(1);
+setTitle("pitch-shifter~");
+
+const pitchShift = new Tone.PitchShift({
+  pitch: 7,
+  wet: 0.5,
+});
+
+inputNode.connect(pitchShift.input.input);
+pitchShift.connect(outputNode);
+```
+
+It should keep the `PitchShift` instance in a `const` created with
+`new Tone.PitchShift(...)` so automatic Tone cleanup can track it. Because the
+incoming `inputNode` is a native Web Audio node, the preset still needs manual
+cleanup for the external connection.
+
 ## Other nodes of similar nature
 
 Take a look at these to see how they are implemented:
