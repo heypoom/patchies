@@ -5,7 +5,7 @@ import { plotterPreset } from './plotter';
 import { paintPreset } from './paint';
 import { xyPadPreset } from './xy-pad';
 import { hslaPickerPreset } from './hsla-picker';
-import { rgbaPickerPreset } from './rgba-picker';
+import { rgbPickerPreset } from './rgb-picker';
 import { virtualMidiKeyboardPreset } from './virtual-midi-keyboard';
 import { scopeWaveformPreset } from './scope-waveform';
 import { scopeXYPreset } from './scope-xy';
@@ -18,7 +18,7 @@ export const CANVAS_PRESETS = {
   'particle.canvas': paintPreset,
   'xy-pad.canvas': xyPadPreset,
   'hsla.picker': hslaPickerPreset,
-  'rgba.picker': rgbaPickerPreset,
+  'rgb.picker': rgbPickerPreset,
   'midi.keyboard': virtualMidiKeyboardPreset,
   'scope.canvas': scopeWaveformPreset,
   'scope-xy.canvas': scopeXYPreset

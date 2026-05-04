@@ -27,7 +27,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presets: [
       'xy-pad.canvas',
       'hsla.picker',
-      'rgba.picker',
+      'rgb.picker',
       'plotter.canvas',
       'particle.canvas',
       'midi.keyboard',

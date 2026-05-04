@@ -100,6 +100,16 @@ JS node presets that produce/transform geometry via `send()`:
 | `geo.scatter` | Distribute points on a surface |
 | `geo.instance` | Instance geometry at point positions |
 
+#### Canvas Widgets
+
+Canvas DOM presets provide small interactive controls for patching:
+
+| Preset | Output | Notes |
+|--------|--------|-------|
+| `xy-pad.canvas` | `[x, y]` normalized to `0.0`-`1.0` | Mouse-driven coordinate pad |
+| `rgb.picker` | `[r, g, b]` normalized to `0.0`-`1.0` | Standard hue strip plus saturation/value picker |
+| `hsla.picker` | `[h, s, l, a]` | Existing HSLA picker |
+
 ### Implementation
 
 #### Preset Files
