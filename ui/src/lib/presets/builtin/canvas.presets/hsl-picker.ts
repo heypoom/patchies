@@ -4,7 +4,7 @@ noDrag();
 noOutput();
 setCanvasSize(width, height);
 setPortCount(1, 1);
-setTitle('hsl.picker');
+setTitle('HSL Picker');
 
 const hueWidth = width;
 const hueHeight = 72;

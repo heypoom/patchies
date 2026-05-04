@@ -16,14 +16,14 @@ No new node types. Presets are code templates.
 
 GLSL node presets that `#include` lygia generators with key parameters exposed as uniform sliders:
 
-| Preset | lygia include | Uniforms | Notes |
-|--------|--------------|----------|-------|
-| `simplex-noise` | `<lygia/generative/snoise>` | scale, speed | 2D/3D simplex noise |
-| `voronoi` | `<lygia/generative/worley>` | scale, jitter, speed | Worley noise variants |
-| `fbm` | `<lygia/generative/fbm>` | scale, octaves, lacunarity, gain | Fractal Brownian motion |
-| `gradient` | (simple, no lygia needed) | direction, color stops | Linear/radial/angular |
-| `checkerboard` | (simple, no lygia needed) | scale, color1, color2 | Basic pattern |
-| `perlin-warp` | `<lygia/generative/snoise>` | scale, warp amount, octaves | Domain warping |
+| Preset          | lygia include               | Uniforms                         | Notes                   |
+| --------------- | --------------------------- | -------------------------------- | ----------------------- |
+| `simplex-noise` | `<lygia/generative/snoise>` | scale, speed                     | 2D/3D simplex noise     |
+| `voronoi`       | `<lygia/generative/worley>` | scale, jitter, speed             | Worley noise variants   |
+| `fbm`           | `<lygia/generative/fbm>`    | scale, octaves, lacunarity, gain | Fractal Brownian motion |
+| `gradient`      | (simple, no lygia needed)   | direction, color stops           | Linear/radial/angular   |
+| `checkerboard`  | (simple, no lygia needed)   | scale, color1, color2            | Basic pattern           |
+| `perlin-warp`   | `<lygia/generative/snoise>` | scale, warp amount, octaves      | Domain warping          |
 
 **Example preset** — `fbm` generator:
 
@@ -47,29 +47,29 @@ Hydra already has `noise()` and `voronoi()` — these GLSL presets offer more co
 
 Take one or more input textures and transform them:
 
-| Preset | Inputs | lygia include | Notes |
-|--------|--------|--------------|-------|
-| `normal-from-height` | height map | `<lygia/filter/normalMap>` | Height → normal map |
-| `channel-split` | RGBA texture | (simple) | R, G, B, A separate. Needs MRT (spec 111) |
-| `channel-merge` | up to 4 textures | (simple) | Combine separate channels |
-| `blend-modes` | 2 textures | `<lygia/color/blend>` | Multiply, screen, overlay, etc. |
-| `levels` | texture | `<lygia/color/levels>` | Black point, white point, gamma |
-| `edge-detect` | texture | `<lygia/filter/edge>` | Sobel operator |
-| `blur` | texture | `<lygia/filter/gaussianBlur>` | Gaussian blur |
-| `displacement` | texture + disp map | (simple) | UV offset from displacement |
-| `mask` | source + mask | (simple) | Clip source alpha by another texture's alpha, useful with shape presets |
-| `sharpen` | texture | `<lygia/filter/sharpen>` | Unsharp mask |
+| Preset               | Inputs             | lygia include                 | Notes                                                                   |
+| -------------------- | ------------------ | ----------------------------- | ----------------------------------------------------------------------- |
+| `normal-from-height` | height map         | `<lygia/filter/normalMap>`    | Height → normal map                                                     |
+| `channel-split`      | RGBA texture       | (simple)                      | R, G, B, A separate. Needs MRT (spec 111)                               |
+| `channel-merge`      | up to 4 textures   | (simple)                      | Combine separate channels                                               |
+| `blend-modes`        | 2 textures         | `<lygia/color/blend>`         | Multiply, screen, overlay, etc.                                         |
+| `levels`             | texture            | `<lygia/color/levels>`        | Black point, white point, gamma                                         |
+| `edge-detect`        | texture            | `<lygia/filter/edge>`         | Sobel operator                                                          |
+| `blur`               | texture            | `<lygia/filter/gaussianBlur>` | Gaussian blur                                                           |
+| `displacement`       | texture + disp map | (simple)                      | UV offset from displacement                                             |
+| `mask`               | source + mask      | (simple)                      | Clip source alpha by another texture's alpha, useful with shape presets |
+| `sharpen`            | texture            | `<lygia/filter/sharpen>`      | Unsharp mask                                                            |
 
 #### PBR / Lighting (Three.js presets)
 
 Three.js presets that take texture inputs and render lit geometry:
 
-| Preset | Inputs | Description |
-|--------|--------|-------------|
-| `pbr-sphere` | albedo, normal, roughness, metallic | Lit sphere preview (Substance-style) |
-| `pbr-plane` | same | Lit plane for texture preview |
-| `material-preview` | N inputs via `@slot` metadata | Generic material previewer (spec 123) |
-| `geometry-viewer` | geometry inlet | 3D preview of geometry data (spec 115) |
+| Preset             | Inputs                              | Description                            |
+| ------------------ | ----------------------------------- | -------------------------------------- |
+| `pbr-sphere`       | albedo, normal, roughness, metallic | Lit sphere preview (Substance-style)   |
+| `pbr-plane`        | same                                | Lit plane for texture preview          |
+| `material-preview` | N inputs via `@slot` metadata       | Generic material previewer (spec 123)  |
+| `geometry-viewer`  | geometry inlet                      | 3D preview of geometry data (spec 115) |
 
 These become much more useful once MRT (spec 111) lets a single GLSL node output albedo + normal + roughness as separate wires.
 
@@ -77,38 +77,38 @@ These become much more useful once MRT (spec 111) lets a single GLSL node output
 
 Ready-made feedback patterns (useful now within single nodes, more powerful with spec 113):
 
-| Preset | Description |
-|--------|-------------|
-| `trail` | Fade accumulation (classic feedback trail) |
-| `reaction-diffusion` | Gray-Scott model |
-| `fluid-sim` | Navier-Stokes step |
-| `game-of-life` | Cellular automaton |
-| `particle-sim` | Position + velocity ping-pong |
+| Preset               | Description                                |
+| -------------------- | ------------------------------------------ |
+| `trail`              | Fade accumulation (classic feedback trail) |
+| `reaction-diffusion` | Gray-Scott model                           |
+| `fluid-sim`          | Navier-Stokes step                         |
+| `game-of-life`       | Cellular automaton                         |
+| `particle-sim`       | Position + velocity ping-pong              |
 
 #### Geometry (JS presets, spec 115)
 
 JS node presets that produce/transform geometry via `send()`:
 
-| Preset | Description |
-|--------|-------------|
-| `geo.sphere` | Sphere generator with radius/segments sliders |
-| `geo.box` | Box generator with width/height/depth sliders |
-| `geo.plane` | Plane generator with size/segments sliders |
-| `geo.torus` | Torus generator with radius/tube/segments sliders |
-| `geo.transform` | Translate/rotate/scale with sliders |
-| `geo.merge` | Combine multiple geometry inputs |
-| `geo.scatter` | Distribute points on a surface |
-| `geo.instance` | Instance geometry at point positions |
+| Preset          | Description                                       |
+| --------------- | ------------------------------------------------- |
+| `geo.sphere`    | Sphere generator with radius/segments sliders     |
+| `geo.box`       | Box generator with width/height/depth sliders     |
+| `geo.plane`     | Plane generator with size/segments sliders        |
+| `geo.torus`     | Torus generator with radius/tube/segments sliders |
+| `geo.transform` | Translate/rotate/scale with sliders               |
+| `geo.merge`     | Combine multiple geometry inputs                  |
+| `geo.scatter`   | Distribute points on a surface                    |
+| `geo.instance`  | Instance geometry at point positions              |
 
 #### Canvas Widgets
 
 Canvas DOM presets provide small interactive controls for patching:
 
-| Preset | Output | Notes |
-|--------|--------|-------|
-| `xy-pad.canvas` | `[x, y]` normalized to `0.0`-`1.0` | Mouse-driven coordinate pad |
-| `rgb.picker` | `[r, g, b]` normalized to `0.0`-`1.0` | Standard hue strip plus saturation/value picker |
-| `hsl.picker` | `[h, s, l]` normalized to `0.0`-`1.0` | Standard hue strip plus saturation/lightness picker |
+| Preset       | Output                                | Notes                                               |
+| ------------ | ------------------------------------- | --------------------------------------------------- |
+| `XY Pad`     | `[x, y]` normalized to `0.0`-`1.0`    | Mouse-driven coordinate pad                         |
+| `RGB Picker` | `[r, g, b]` normalized to `0.0`-`1.0` | Standard hue strip plus saturation/value picker     |
+| `HSL Picker` | `[h, s, l]` normalized to `0.0`-`1.0` | Standard hue strip plus saturation/lightness picker |
 
 ### Implementation
 

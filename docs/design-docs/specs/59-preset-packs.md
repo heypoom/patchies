@@ -31,13 +31,13 @@ Key principles:
 ```ts
 // Add to src/stores/extensions.store.ts
 interface PresetPack {
-  id: string; // 'starter', 'midi', 'audio-synthesis'
-  name: string; // 'Starter Presets'
-  description: string; // 'Essential presets for getting started'
-  icon: string; // Lucide icon name
-  requiredObjects: string[]; // Object types needed (filters pack visibility)
-  presets: string[]; // Preset names to enable (e.g., 'logger.js', 'add.hydra')
-  presetFolders?: Record<string, string[]>; // Optional built-in subfolders within this pack
+  id: string // 'starter', 'midi', 'audio-synthesis'
+  name: string // 'Starter Presets'
+  description: string // 'Essential presets for getting started'
+  icon: string // Lucide icon name
+  requiredObjects: string[] // Object types needed (filters pack visibility)
+  presets: string[] // Preset names to enable (e.g., 'logger.js', 'add.hydra')
+  presetFolders?: Record<string, string[]> // Optional built-in subfolders within this pack
 }
 ```
 
@@ -49,51 +49,51 @@ when deciding which preset names are enabled.
 
 ```ts
 // Extend extensions.store.ts
-const PRESET_STORAGE_KEY = "patchies:enabled-preset-packs";
-const DEFAULT_ENABLED_PRESET_PACKS = ["starter"];
+const PRESET_STORAGE_KEY = 'patchies:enabled-preset-packs'
+const DEFAULT_ENABLED_PRESET_PACKS = ['starter']
 
 export const enabledPresetPackIds = writable<string[]>(
   getInitialEnabledPresetPacks(),
-);
+)
 
 // Derived: visible presets based on enabled preset packs + enabled objects
 export const enabledPresets = derived(
   [enabledPresetPackIds, enabledObjects],
   ([$enabledPresetPackIds, $enabledObjects]) => {
-    const presets = new Set<string>();
+    const presets = new Set<string>()
 
     for (const packId of $enabledPresetPackIds) {
-      const pack = BUILT_IN_PRESET_PACKS.find((p) => p.id === packId);
-      if (!pack) continue;
+      const pack = BUILT_IN_PRESET_PACKS.find((p) => p.id === packId)
+      if (!pack) continue
 
       // Packs without requirements are always active.
       // Otherwise include if at least one required object is enabled.
       // Individual preset UI still filters by each preset's object type.
       const hasRequiredObjects =
         pack.requiredObjects.length === 0 ||
-        pack.requiredObjects.some((obj) => $enabledObjects.has(obj));
-      if (!hasRequiredObjects) continue;
+        pack.requiredObjects.some((obj) => $enabledObjects.has(obj))
+      if (!hasRequiredObjects) continue
 
       for (const preset of pack.presets) {
-        presets.add(preset);
+        presets.add(preset)
       }
     }
 
-    return presets;
+    return presets
   },
-);
+)
 ```
 
 ## Proposed Built-in Preset Packs
 
-| Pack                    | Description                             | Required Objects     | Presets                                                               |
-| ----------------------- | --------------------------------------- | -------------------- | --------------------------------------------------------------------- |
-| **Starter Presets**     | Essential presets and object companions | none                 | logger.js, glsl>, hydra>, regl>, swgl>, three>                        |
-| **MIDI Presets**        | MIDI routing and control                | js, midi.in          | midi-adsr.js, midi-control-router.js, virtual-midi-keyboard.canvas    |
-| **Audio Synthesis**     | Sound design utilities                  | js, osc~             | sawtooth-harmonics.js, waveshaper-distortion.js                       |
-| **Animation**           | Frame-based animation helpers           | js, p5               | bang-every-frame.js, frame-counter.js, interval.js                    |
-| **Livecoding Examples** | Example patches for livecoding          | strudel, hydra, orca | (various strudel/orca presets)                                        |
-| **Canvas Widgets**      | Interactive canvas components           | canvas.dom           | xy-pad.canvas, hsla-picker.canvas, rgba-picker.canvas, plotter.canvas |
+| Pack                    | Description                             | Required Objects     | Presets                                                            |
+| ----------------------- | --------------------------------------- | -------------------- | ------------------------------------------------------------------ |
+| **Starter Presets**     | Essential presets and object companions | none                 | logger.js, glsl>, hydra>, regl>, swgl>, three>                     |
+| **MIDI Presets**        | MIDI routing and control                | js, midi.in          | midi-adsr.js, midi-control-router.js, virtual-midi-keyboard.canvas |
+| **Audio Synthesis**     | Sound design utilities                  | js, osc~             | sawtooth-harmonics.js, waveshaper-distortion.js                    |
+| **Animation**           | Frame-based animation helpers           | js, p5               | bang-every-frame.js, frame-counter.js, interval.js                 |
+| **Livecoding Examples** | Example patches for livecoding          | strudel, hydra, orca | (various strudel/orca presets)                                     |
+| **Canvas Widgets**      | Interactive canvas components           | canvas.dom           | XY Pad, hsla-picker.canvas, rgba-picker.canvas, plotter.canvas     |
 
 ### Preset Assignment (Draft)
 
@@ -194,7 +194,7 @@ preset pack. Larger visual effect libraries remain in their own opt-in preset pa
 
 **Canvas Widgets:**
 
-- xy-pad.canvas
+- XY Pad
 - hsla-picker.canvas
 - rgba-picker.canvas
 - plotter.canvas

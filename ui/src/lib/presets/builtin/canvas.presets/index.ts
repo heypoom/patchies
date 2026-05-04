@@ -16,9 +16,9 @@ export const CANVAS_PRESETS = {
   'fractal-tree.canvas': fractalTreePreset,
   'plotter.canvas': plotterPreset,
   'particle.canvas': paintPreset,
-  'xy-pad.canvas': xyPadPreset,
-  'hsl.picker': hslPickerPreset,
-  'rgb.picker': rgbPickerPreset,
+  'XY Pad': xyPadPreset,
+  'HSL Picker': hslPickerPreset,
+  'RGB Picker': rgbPickerPreset,
   'midi.keyboard': virtualMidiKeyboardPreset,
   'scope.canvas': scopeWaveformPreset,
   'scope-xy.canvas': scopeXYPreset

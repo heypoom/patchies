@@ -25,9 +25,9 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     icon: 'Layout',
     requiredObjects: ['canvas.dom', 'dom'],
     presets: [
-      'xy-pad.canvas',
-      'hsl.picker',
-      'rgb.picker',
+      'XY Pad',
+      'HSL Picker',
+      'RGB Picker',
       'plotter.canvas',
       'particle.canvas',
       'midi.keyboard',
