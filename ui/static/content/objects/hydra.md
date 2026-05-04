@@ -19,8 +19,8 @@ osc(10, 0.1, 1.5)
 
 See the [Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use
 Hydra. Try out the standalone editor at [hydra.ojack.xyz](https://hydra.ojack.xyz)
-to see how Hydra works - use the "shuffle" button to get code samples you can copy
-into Patchies.
+to see how Hydra works. Code examples in the editor will work in Patchies too,
+and you can find those community-submitted sketches in the "Hydra Demos" pack.
 
 ## Special Functions
 
