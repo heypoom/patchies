@@ -8,10 +8,10 @@ await settings.define([
   { key: 'plotType', type: 'select', label: 'Plot', default: 'line',
     options: ['line', 'point', 'bezier'] },
   { key: 'decay', type: 'slider', label: 'Decay', min: 0.01, max: 1, step: 0.01, default: 1 },
-  { key: 'unipolar', type: 'boolean', label: 'Unipolar', default: false },
   { key: 'lineWidth', type: 'slider', label: 'Line Width', min: 1, max: 20, step: 1, default: 6 },
   { key: 'foregroundColor', type: 'color', label: 'Foreground', default: '#22c55e' },
-  { key: 'backgroundColor', type: 'color', label: 'Background', default: '#080809' }
+  { key: 'backgroundColor', type: 'color', label: 'Background', default: '#080809' },
+  { key: 'unipolar', type: 'boolean', label: 'Unipolar', default: false },
 ])
 
 let xScale = settings.get('xScale')
