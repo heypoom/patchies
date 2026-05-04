@@ -76,7 +76,7 @@ All [Patchies JavaScript Runner](/docs/javascript-runner) functions are availabl
 - `particle.canvas` - particle system reacting to mouse
 - `xy-pad.canvas` - X-Y coordinate pad
 - `rgb.picker` - color picker widget that outputs normalized `[r, g, b]`
-- `hsla.picker` - color picker widget that outputs `[h, s, l, a]`
+- `hsl.picker` - color picker widget that outputs normalized `[h, s, l]`
 - `keyboard.example` - keyboard event demo
 - `fft.canvas` - fast FFT visualization
 

@@ -108,7 +108,7 @@ Canvas DOM presets provide small interactive controls for patching:
 |--------|--------|-------|
 | `xy-pad.canvas` | `[x, y]` normalized to `0.0`-`1.0` | Mouse-driven coordinate pad |
 | `rgb.picker` | `[r, g, b]` normalized to `0.0`-`1.0` | Standard hue strip plus saturation/value picker |
-| `hsla.picker` | `[h, s, l, a]` | Existing HSLA picker |
+| `hsl.picker` | `[h, s, l]` normalized to `0.0`-`1.0` | Standard hue strip plus saturation/lightness picker |
 
 ### Implementation
 
