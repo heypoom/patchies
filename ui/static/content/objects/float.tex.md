@@ -17,7 +17,7 @@ send({
   data: rgba,
   width,
   height,
-  format: "rgba",
+  type: "rgba",
 })
 ```
 
@@ -88,7 +88,7 @@ send({
   data: rgba,
   width,
   height,
-  format: "rgba",
+  type: "rgba",
 })
 ```
 

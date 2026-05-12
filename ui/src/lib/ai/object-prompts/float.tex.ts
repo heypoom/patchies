@@ -12,4 +12,4 @@ Data:
 - A single Float32Array becomes one row of red channel data.
 - Float32Array[] is interpreted by channel order, not names.
 - Data format is inferred from channel count: [r] -> r, [r, g] -> rg, [r, g, b] -> rgb, [r, g, b, a] and longer arrays -> rgba.
-- Already-interleaved RGBA pixel data can be sent as { data: Float32Array, width, height, format: "rgba" }; data.length must equal width * height * 4 and skips repacking.`;
+- Already-interleaved RGBA pixel data can be sent as { data: Float32Array, width, height, type: "rgba" }; data.length must equal width * height * 4 and skips repacking.`;

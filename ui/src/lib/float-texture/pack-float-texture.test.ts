@@ -81,7 +81,7 @@ describe('packFloatTexture', () => {
 
   it('uses explicit RGBA pixel data without repacking', () => {
     const data = new Float32Array([1, 0, 0, 1, 0, 0, 1, 1]);
-    const result = packFloatTexture({ data, width: 2, height: 1, format: 'rgba' });
+    const result = packFloatTexture({ data, width: 2, height: 1, type: 'rgba' });
 
     expect(result.width).toBe(2);
     expect(result.height).toBe(1);
@@ -94,7 +94,7 @@ describe('packFloatTexture', () => {
         data: new Float32Array([1, 0, 0, 1]),
         width: 2,
         height: 1,
-        format: 'rgba'
+        type: 'rgba'
       })
     ).toThrow('Expected RGBA data length 8, received 4');
   });

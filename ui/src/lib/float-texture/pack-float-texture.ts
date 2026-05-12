@@ -4,7 +4,7 @@ export type FloatTextureInterleavedSource = {
   data: Float32Array;
   width: number;
   height: number;
-  format: 'rgba';
+  type: 'rgba';
 };
 
 export type FloatTextureSource = Float32Array | Float32Array[] | FloatTextureInterleavedSource;
@@ -41,7 +41,7 @@ export function isFloatTextureInterleavedSource(
     value.data instanceof Float32Array &&
     typeof value.width === 'number' &&
     typeof value.height === 'number' &&
-    value.format === 'rgba'
+    value.type === 'rgba'
   );
 }
 

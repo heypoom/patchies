@@ -8,7 +8,7 @@ export const floatTexSchema: ObjectSchema = {
   inlets: [
     {
       id: 'data',
-      description: 'Float32Array or Float32Array[] channel data',
+      description: 'Float32Array channel data or explicit RGBA texture data',
       handle: { handleType: 'message', handleId: '0' },
       messages: [
         {
@@ -18,6 +18,15 @@ export const floatTexSchema: ObjectSchema = {
         {
           schema: Type.Array(Type.Unsafe<Float32Array>({ type: 'Float32Array' })),
           description: 'Ordered channel rows'
+        },
+        {
+          schema: Type.Object({
+            type: Type.Literal('rgba'),
+            data: Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
+            width: Type.Number(),
+            height: Type.Number()
+          }),
+          description: 'Interleaved RGBA pixels'
         }
       ]
     }

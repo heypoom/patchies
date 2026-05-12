@@ -16,7 +16,7 @@ The first target workflow is:
 - The inlet accepts:
   - `Float32Array` as a single red channel row.
   - `Float32Array[]` as ordered channel data.
-  - `{ data: Float32Array, width, height, format: 'rgba' }` as already-interleaved RGBA pixel data.
+  - `{ data: Float32Array, width, height, type: 'rgba' }` as already-interleaved RGBA pixel data.
 - The MVP packs samples into an `RGBA32F` texture.
 - Missing channels are filled with `(0, 0, 0, 1)`.
 - The output texture uses nearest filtering and clamp wrapping.
@@ -44,7 +44,7 @@ When no explicit format is provided by code, `float.tex` infers the format from 
 - `[r, g, b]` → `rgb`
 - `[r, g, b, a]` and longer channel arrays → `rgba`
 
-Object-shaped messages with `format: 'rgba'` and explicit `width`/`height` skip repacking. The `data` length must equal `width * height * 4`.
+Object-shaped messages with `type: 'rgba'` and explicit `width`/`height` skip repacking. The `data` length must equal `width * height * 4`.
 
 For longer channel arrays, `rgba` creates additional rows per group of four channels.
 
