@@ -10,6 +10,7 @@
     type FloatTextureDataFormat,
     type FloatTextureSource
   } from '$lib/float-texture/pack-float-texture';
+  import { FloatTextureFrameUploadScheduler } from '$lib/float-texture/frame-upload-scheduler';
 
   let {
     id: nodeId,
@@ -29,6 +30,13 @@
   let height = $state(0);
   let hasTexture = $state(false);
   let packBuffer: Float32Array | undefined;
+  let uploadScheduler = new FloatTextureFrameUploadScheduler<{
+    width: number;
+    height: number;
+    data: Float32Array;
+  }>((upload) => {
+    glSystem.setFloatTexture(nodeId, upload.width, upload.height, upload.data);
+  });
 
   let dataFormat = $state<FloatTextureDataFormat>(data.dataFormat ?? 'r');
   const containerClass = $derived(
@@ -73,7 +81,11 @@
     dataFormat = resolvedDataFormat;
     hasTexture = true;
 
-    glSystem.setFloatTexture(nodeId, packed.width, packed.height, packed.data);
+    uploadScheduler.queue({
+      width: packed.width,
+      height: packed.height,
+      data: packed.data
+    });
   };
 
   onMount(() => {
@@ -85,6 +97,7 @@
   onDestroy(() => {
     messageContext?.queue.removeCallback(handleMessage);
     messageContext?.destroy();
+    uploadScheduler.cancel();
     glSystem.removeBitmap(nodeId);
     glSystem.removeNode(nodeId);
   });

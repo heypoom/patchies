@@ -23,6 +23,7 @@ The first target workflow is:
 - Same-size updates should reuse the existing GPU texture and update its pixels; resizing reallocates the texture and framebuffer.
 - The packer may reuse an internal output buffer, but upload transfer should use an owned copy so user-provided input arrays and the reusable pack buffer are not detached.
 - Upload transfer buffers should be returned from the render worker after the WebGL upload and reused by `GLSystem` for later same-size uploads.
+- Multiple incoming messages in the same animation frame should coalesce into one upload; only the latest packed texture is flushed to the render worker.
 
 ## Initial Packing Contract
 
