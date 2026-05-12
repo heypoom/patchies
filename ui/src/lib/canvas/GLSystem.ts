@@ -926,6 +926,18 @@ export class GLSystem {
   }
 
   setFloatTexture(nodeId: string, width: number, height: number, data: Float32Array) {
+    if (data.buffer instanceof SharedArrayBuffer) {
+      this.renderWorker.postMessage({
+        type: 'setFloatTexture',
+        nodeId,
+        width,
+        height,
+        data
+      });
+
+      return;
+    }
+
     const uploadData = this.floatTextureUploadBuffers.acquire(data);
 
     this.renderWorker.postMessage(

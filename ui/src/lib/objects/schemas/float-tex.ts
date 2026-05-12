@@ -27,6 +27,16 @@ export const floatTexSchema: ObjectSchema = {
             height: Type.Number()
           }),
           description: 'Interleaved RGBA pixels'
+        },
+        {
+          schema: Type.Object({
+            type: Type.Literal('rgba'),
+            buffer: Type.Unsafe<SharedArrayBuffer>({ type: 'SharedArrayBuffer' }),
+            width: Type.Number(),
+            height: Type.Number(),
+            version: Type.Number()
+          }),
+          description: 'Shared interleaved RGBA pixels'
         }
       ]
     }

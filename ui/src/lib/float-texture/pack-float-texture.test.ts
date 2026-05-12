@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { inferFloatTextureDataFormat, packFloatTexture } from './pack-float-texture';
+import {
+  inferFloatTextureDataFormat,
+  isFloatTextureSharedSource,
+  packFloatTexture
+} from './pack-float-texture';
 
 describe('packFloatTexture', () => {
   it('packs a Float32Array as one row of red channel data', () => {
@@ -97,5 +101,43 @@ describe('packFloatTexture', () => {
         type: 'rgba'
       })
     ).toThrow('Expected RGBA data length 8, received 4');
+  });
+
+  it('uses explicit SharedArrayBuffer RGBA pixel data without copying', () => {
+    const buffer = new SharedArrayBuffer(2 * 1 * 4 * Float32Array.BYTES_PER_ELEMENT);
+    const pixels = new Float32Array(buffer);
+
+    pixels.set([1, 0, 0, 1, 0, 0, 1, 1]);
+
+    const result = packFloatTexture({ buffer, width: 2, height: 1, type: 'rgba', version: 1 });
+
+    expect(result.width).toBe(2);
+    expect(result.height).toBe(1);
+    expect(result.data.buffer).toBe(buffer);
+    expect(Array.from(result.data)).toEqual([1, 0, 0, 1, 0, 0, 1, 1]);
+  });
+
+  it('rejects SharedArrayBuffer RGBA pixel data with the wrong byte length', () => {
+    expect(() =>
+      packFloatTexture({
+        buffer: new SharedArrayBuffer(4 * Float32Array.BYTES_PER_ELEMENT),
+        width: 2,
+        height: 1,
+        type: 'rgba',
+        version: 1
+      })
+    ).toThrow('Expected RGBA buffer byteLength 32, received 16');
+  });
+
+  it('detects SharedArrayBuffer RGBA sources', () => {
+    const source = {
+      buffer: new SharedArrayBuffer(4 * Float32Array.BYTES_PER_ELEMENT),
+      width: 1,
+      height: 1,
+      type: 'rgba',
+      version: 1
+    };
+
+    expect(isFloatTextureSharedSource(source)).toBe(true);
   });
 });

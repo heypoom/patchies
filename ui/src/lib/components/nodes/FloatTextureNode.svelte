@@ -7,11 +7,13 @@
   import {
     inferFloatTextureDataFormat,
     isFloatTextureInterleavedSource,
+    isFloatTextureSharedSource,
     packFloatTexture,
     type FloatTextureDataFormat,
     type FloatTextureSource
   } from '$lib/float-texture/pack-float-texture';
   import { FloatTextureFrameUploadScheduler } from '$lib/float-texture/frame-upload-scheduler';
+  import { FloatTextureSharedVersionTracker } from '$lib/float-texture/shared-version-tracker';
 
   let {
     id: nodeId,
@@ -31,6 +33,7 @@
   let height = $state(0);
   let hasTexture = $state(false);
   let packBuffer: Float32Array | undefined;
+  let sharedVersionTracker = new FloatTextureSharedVersionTracker();
   let uploadScheduler = new FloatTextureFrameUploadScheduler<{
     width: number;
     height: number;
@@ -65,12 +68,17 @@
       return { source: message };
     }
 
+    if (isFloatTextureSharedSource(message)) {
+      return { source: message };
+    }
+
     return null;
   }
 
   const handleMessage: MessageCallbackFn = (message) => {
     const input = readFloatTextureSource(message);
     if (!input) return;
+    if (!sharedVersionTracker.shouldUpload(input.source)) return;
 
     const resolvedDataFormat = inferFloatTextureDataFormat(input.source);
 
@@ -79,7 +87,10 @@
       target: packBuffer
     });
 
-    if (!isFloatTextureInterleavedSource(input.source)) {
+    if (
+      !isFloatTextureInterleavedSource(input.source) &&
+      !isFloatTextureSharedSource(input.source)
+    ) {
       packBuffer = packed.data;
     }
 

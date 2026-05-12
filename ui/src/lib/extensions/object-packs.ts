@@ -93,7 +93,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
   {
     id: '2d',
     name: '2D Graphics',
-    description: 'Interactive 2D canvas objects',
+    description: '2D canvas and interactive widgets',
     icon: 'Palette',
     objects: ['p5', 'canvas', 'canvas.dom', 'surface', 'textmode', 'textmode.dom']
   },
@@ -105,11 +105,11 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: [
       'hydra',
       'glsl',
-      'float.tex',
-      'shaderpark',
       'three',
       'three.dom',
       'projmap',
+      'shaderpark',
+      'float.tex',
       'regl',
       'swgl'
     ]

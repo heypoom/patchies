@@ -7,7 +7,19 @@ export type FloatTextureInterleavedSource = {
   type: 'rgba';
 };
 
-export type FloatTextureSource = Float32Array | Float32Array[] | FloatTextureInterleavedSource;
+export type FloatTextureSharedSource = {
+  buffer: SharedArrayBuffer;
+  width: number;
+  height: number;
+  type: 'rgba';
+  version: number;
+};
+
+export type FloatTextureSource =
+  | Float32Array
+  | Float32Array[]
+  | FloatTextureInterleavedSource
+  | FloatTextureSharedSource;
 
 export interface PackedFloatTexture {
   width: number;
@@ -45,11 +57,33 @@ export function isFloatTextureInterleavedSource(
   );
 }
 
+export function isFloatTextureSharedSource(source: unknown): source is FloatTextureSharedSource {
+  if (!source || typeof source !== 'object' || typeof SharedArrayBuffer === 'undefined') {
+    return false;
+  }
+
+  const value = source as Partial<FloatTextureSharedSource>;
+
+  return (
+    value.buffer instanceof SharedArrayBuffer &&
+    typeof value.width === 'number' &&
+    typeof value.height === 'number' &&
+    value.type === 'rgba' &&
+    typeof value.version === 'number'
+  );
+}
+
 export const normalizeFloatTextureSource = (source: FloatTextureSource): Float32Array[] =>
-  source instanceof Float32Array ? [source] : Array.isArray(source) ? source : [source.data];
+  source instanceof Float32Array
+    ? [source]
+    : Array.isArray(source)
+      ? source
+      : isFloatTextureSharedSource(source)
+        ? [new Float32Array(source.buffer)]
+        : [source.data];
 
 export function inferFloatTextureDataFormat(source: FloatTextureSource): FloatTextureDataFormat {
-  if (isFloatTextureInterleavedSource(source)) return 'rgba';
+  if (isFloatTextureInterleavedSource(source) || isFloatTextureSharedSource(source)) return 'rgba';
 
   const channels = normalizeFloatTextureSource(source);
 
@@ -76,6 +110,20 @@ export function packFloatTexture(
     }
 
     return { width, height, data: source.data };
+  }
+
+  if (isFloatTextureSharedSource(source)) {
+    const width = Math.max(1, Math.round(source.width));
+    const height = Math.max(1, Math.round(source.height));
+    const expectedByteLength = width * height * 4 * Float32Array.BYTES_PER_ELEMENT;
+
+    if (source.buffer.byteLength !== expectedByteLength) {
+      throw new Error(
+        `Expected RGBA buffer byteLength ${expectedByteLength}, received ${source.buffer.byteLength}`
+      );
+    }
+
+    return { width, height, data: new Float32Array(source.buffer) };
   }
 
   const channels = normalizeFloatTextureSource(source);

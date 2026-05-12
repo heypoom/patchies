@@ -24,6 +24,21 @@ send({
 In that form, `rgba.length` must be `width * height * 4`, and `float.tex`
 uploads it without repacking.
 
+For shared RGBA data, send a `SharedArrayBuffer` and bump `version` whenever
+the producer has finished writing a new frame:
+
+```js
+send({
+  buffer,
+  width,
+  height,
+  type: "rgba",
+  version,
+})
+```
+
+`float.tex` skips repeated messages for the same shared buffer and version.
+
 Stores data as `rgba32f`, uses nearest filtering and fills missing
 channels with `(0, 0, 0, 1)`.
 
@@ -90,6 +105,42 @@ send({
   height,
   type: "rgba",
 })
+```
+
+## Shared RGBA Buffer
+
+```js
+setRunOnMount(true)
+
+let width = 50
+let height = 50
+let buffer = new SharedArrayBuffer(width * height * 4 * Float32Array.BYTES_PER_ELEMENT)
+let rgba = new Float32Array(buffer)
+let version = 0
+
+function produce() {
+  version++
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let i = (y * width + x) * 4
+      let u = x / (width - 1)
+      let v = y / (height - 1)
+      let pulse = (Math.sin(version * 0.08) + 1) * 0.5
+
+      rgba[i + 0] = u
+      rgba[i + 1] = v
+      rgba[i + 2] = pulse
+      rgba[i + 3] = 1
+    }
+  }
+
+  send({ buffer, width, height, type: "rgba", version })
+}
+
+setInterval(() => {
+  produce()
+}, 1000 / 24)
 ```
 
 ## See also

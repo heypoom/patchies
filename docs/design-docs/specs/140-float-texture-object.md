@@ -17,6 +17,7 @@ The first target workflow is:
   - `Float32Array` as a single red channel row.
   - `Float32Array[]` as ordered channel data.
   - `{ data: Float32Array, width, height, type: 'rgba' }` as already-interleaved RGBA pixel data.
+  - `{ buffer: SharedArrayBuffer, width, height, type: 'rgba', version }` as shared already-interleaved RGBA pixel data.
 - The MVP packs samples into an `RGBA32F` texture.
 - Missing channels are filled with `(0, 0, 0, 1)`.
 - The output texture uses nearest filtering and clamp wrapping.
@@ -44,7 +45,7 @@ When no explicit format is provided by code, `float.tex` infers the format from 
 - `[r, g, b]` → `rgb`
 - `[r, g, b, a]` and longer channel arrays → `rgba`
 
-Object-shaped messages with `type: 'rgba'` and explicit `width`/`height` skip repacking. The `data` length must equal `width * height * 4`.
+Object-shaped messages with `type: 'rgba'` and explicit `width`/`height` skip repacking. `data.length` must equal `width * height * 4`. Shared-buffer messages use the same pixel layout, require `buffer.byteLength === width * height * 4 * 4`, and only upload when `version` changes for that buffer.
 
 For longer channel arrays, `rgba` creates additional rows per group of four channels.
 

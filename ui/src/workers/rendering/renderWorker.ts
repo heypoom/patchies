@@ -51,6 +51,11 @@ self.onmessage = (event) => {
     .with('setFloatTexture', () => {
       const buffer = data.data.buffer;
 
+      if (buffer instanceof SharedArrayBuffer) {
+        fboRenderer.setFloatTexture(data.nodeId, data.width, data.height, data.data);
+        return;
+      }
+
       try {
         fboRenderer.setFloatTexture(data.nodeId, data.width, data.height, data.data);
       } finally {
