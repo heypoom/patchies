@@ -12,7 +12,9 @@ Data:
 - A single Float32Array becomes one row of red channel data.
 - Float32Array[] is interpreted by channel order, not names.
 - Data format is inferred from channel count: [r] -> r, [r, g] -> rg, [r, g, b] -> rgb, [r, g, b, a] and longer arrays -> rgba.
-- Wrapped channel rows can be sent as { type: "wrapped", channels: Float32Array | Float32Array[], width, format? }; each channel group starts on a new row and wraps by width.
-- Square channel textures can be sent as { type: "square", channels: Float32Array | Float32Array[], format? }; channel groups append into an approximately square texture.
+- Wrapped Float32Array channel rows can be sent as { type: "wrapped", channels: Float32Array | Float32Array[], width, format? }; each channel group starts on a new row and wraps by width.
+- Wrapped SharedArrayBuffer channel rows can be sent as { type: "wrapped", channels: SharedArrayBuffer | SharedArrayBuffer[], width, version, format? }; bump version after writing new samples so repeated messages can be skipped.
+- Square Float32Array channel textures can be sent as { type: "square", channels: Float32Array | Float32Array[], format? }; channel groups append into an approximately square texture.
+- Square SharedArrayBuffer channel textures can be sent as { type: "square", channels: SharedArrayBuffer | SharedArrayBuffer[], version, format? }; bump version after writing new samples so repeated messages can be skipped.
 - Already-interleaved RGBA pixel data can be sent as { data: Float32Array, width, height, type: "rgba" }; data.length must equal width * height * 4 and skips repacking.
 - Shared RGBA pixel data can be sent as { buffer: SharedArrayBuffer, width, height, type: "rgba", version }; buffer.byteLength must equal width * height * 4 * 4 and repeated messages with the same buffer/version are skipped.`;

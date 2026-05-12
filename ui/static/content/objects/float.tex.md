@@ -4,10 +4,14 @@ Inspired by TouchDesigner's CHOP to TOP operator, adapted for Patchies' message
 and video-texture graph.
 
 Send a single `Float32Array` to create one red-channel row, or send `Float32Array[]`
-to treat each array as ordered channel data.
+to treat each array as ordered channel data. The format is inferred from channel
+count: `[r]`, `[r, g]`, `[r, g, b]`, and `[r, g, b, a]` map to `r`, `rg`,
+`rgb`, and `rgba`.
 
-The format is inferred from channel count: `[r]`, `[r, g]`, `[r, g, b]`,
-and `[r, g, b, a]` map to `r`, `rg`, `rgb`, and `rgba`.
+Wrapped and square channel layouts can read channels from `Float32Array`,
+`Float32Array[]`, `SharedArrayBuffer`, or `SharedArrayBuffer[]`. When a layout
+uses shared channels, send `version` and bump it after writing new samples to
+skip repeated uploads for the same buffer contents.
 
 For long channel rows, use `type: "wrapped"` to continue samples on additional
 rows:

@@ -1,6 +1,23 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 
+const formatSchema = Type.Union([
+  Type.Literal('r'),
+  Type.Literal('rg'),
+  Type.Literal('rgb'),
+  Type.Literal('rgba')
+]);
+
+const float32ChannelSchema = Type.Union([
+  Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
+  Type.Array(Type.Unsafe<Float32Array>({ type: 'Float32Array' }))
+]);
+
+const sharedChannelSchema = Type.Union([
+  Type.Unsafe<SharedArrayBuffer>({ type: 'SharedArrayBuffer' }),
+  Type.Array(Type.Unsafe<SharedArrayBuffer>({ type: 'SharedArrayBuffer' }))
+]);
+
 export const floatTexSchema: ObjectSchema = {
   type: 'float.tex',
   category: 'video',
@@ -22,39 +39,38 @@ export const floatTexSchema: ObjectSchema = {
         {
           schema: Type.Object({
             type: Type.Literal('wrapped'),
-            channels: Type.Union([
-              Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
-              Type.Array(Type.Unsafe<Float32Array>({ type: 'Float32Array' }))
-            ]),
+            channels: float32ChannelSchema,
             width: Type.Number(),
-            format: Type.Optional(
-              Type.Union([
-                Type.Literal('r'),
-                Type.Literal('rg'),
-                Type.Literal('rgb'),
-                Type.Literal('rgba')
-              ])
-            )
+            format: Type.Optional(formatSchema)
           }),
           description: 'Wrapped channel rows'
         },
         {
           schema: Type.Object({
+            type: Type.Literal('wrapped'),
+            channels: sharedChannelSchema,
+            width: Type.Number(),
+            version: Type.Number(),
+            format: Type.Optional(formatSchema)
+          }),
+          description: 'Shared wrapped channel rows'
+        },
+        {
+          schema: Type.Object({
             type: Type.Literal('square'),
-            channels: Type.Union([
-              Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
-              Type.Array(Type.Unsafe<Float32Array>({ type: 'Float32Array' }))
-            ]),
-            format: Type.Optional(
-              Type.Union([
-                Type.Literal('r'),
-                Type.Literal('rg'),
-                Type.Literal('rgb'),
-                Type.Literal('rgba')
-              ])
-            )
+            channels: float32ChannelSchema,
+            format: Type.Optional(formatSchema)
           }),
           description: 'Square channel texture'
+        },
+        {
+          schema: Type.Object({
+            type: Type.Literal('square'),
+            channels: sharedChannelSchema,
+            version: Type.Number(),
+            format: Type.Optional(formatSchema)
+          }),
+          description: 'Shared square channel texture'
         },
         {
           schema: Type.Object({

@@ -16,10 +16,13 @@ The first target workflow is:
 - The inlet accepts:
   - `Float32Array` as a single red channel row.
   - `Float32Array[]` as ordered channel data.
-  - `{ type: 'wrapped', channels, width, format? }` as wrapped channel packing.
-  - `{ type: 'square', channels, format? }` as square channel packing.
+  - `{ type: 'wrapped', channels: Float32Array | Float32Array[], width, format? }` as wrapped channel packing.
+  - `{ type: 'wrapped', channels: SharedArrayBuffer | SharedArrayBuffer[], width, version, format? }` as shared wrapped channel packing.
+  - `{ type: 'square', channels: Float32Array | Float32Array[], format? }` as square channel packing.
+  - `{ type: 'square', channels: SharedArrayBuffer | SharedArrayBuffer[], version, format? }` as shared square channel packing.
   - `{ data: Float32Array, width, height, type: 'rgba' }` as already-interleaved RGBA pixel data.
   - `{ buffer: SharedArrayBuffer, width, height, type: 'rgba', version }` as shared already-interleaved RGBA pixel data.
+- Shared wrapped and square channel messages require `version`; repeated messages for the same shared buffers and version should be skipped.
 - The MVP packs samples into an `RGBA32F` texture.
 - Missing channels are filled with `(0, 0, 0, 1)`.
 - The output texture uses nearest filtering and clamp wrapping.
@@ -88,9 +91,9 @@ Channel packing supports three layouts:
 
 `rows` is selected by plain `Float32Array` and `Float32Array[]` input.
 
-`wrapped` is selected with `{ type: 'wrapped', channels, width }`. `channels` is a `Float32Array` or `Float32Array[]`. `width` is required and becomes the output texture width.
+`wrapped` is selected with `{ type: 'wrapped', channels, width }`. `channels` is a `Float32Array`, `Float32Array[]`, `SharedArrayBuffer`, or `SharedArrayBuffer[]`. `width` is required and becomes the output texture width. SharedArrayBuffer channel messages require `version` for dirty checks.
 
-`square` is selected with `{ type: 'square', channels }`. It computes `size = ceil(sqrt(totalPixels))`, where `totalPixels` is the sum of sample counts across channel groups. The output texture is `size x size`, and unused pixels at the end are filled with the extra pixel value.
+`square` is selected with `{ type: 'square', channels }`. `channels` accepts the same Float32Array or SharedArrayBuffer forms as wrapped layout. SharedArrayBuffer channel messages require `version` for dirty checks. It computes `size = ceil(sqrt(totalPixels))`, where `totalPixels` is the sum of sample counts across channel groups. The output texture is `size x size`, and unused pixels at the end are filled with the extra pixel value.
 
 ## Recommended Sequence
 

@@ -1,19 +1,37 @@
 export type FloatTextureDataFormat = 'r' | 'rg' | 'rgb' | 'rgba';
 export type FloatTextureChannelLayout = 'rows' | 'wrapped' | 'square';
-export type FloatTextureChannelSource = Float32Array | Float32Array[];
+export type FloatTextureChannel = Float32Array | SharedArrayBuffer;
+export type FloatTextureFloatChannelSource = Float32Array | Float32Array[];
+export type FloatTextureSharedChannelSource = SharedArrayBuffer | SharedArrayBuffer[];
+export type FloatTextureChannelSource = FloatTextureChannel | FloatTextureChannel[];
 
-export type FloatTextureWrappedSource = {
-  type: 'wrapped';
-  channels: FloatTextureChannelSource;
-  width: number;
-  format?: FloatTextureDataFormat;
-};
+export type FloatTextureWrappedSource =
+  | {
+      type: 'wrapped';
+      channels: FloatTextureFloatChannelSource;
+      width: number;
+      format?: FloatTextureDataFormat;
+    }
+  | {
+      type: 'wrapped';
+      channels: FloatTextureSharedChannelSource;
+      width: number;
+      version: number;
+      format?: FloatTextureDataFormat;
+    };
 
-export type FloatTextureSquareSource = {
-  type: 'square';
-  channels: FloatTextureChannelSource;
-  format?: FloatTextureDataFormat;
-};
+export type FloatTextureSquareSource =
+  | {
+      type: 'square';
+      channels: FloatTextureFloatChannelSource;
+      format?: FloatTextureDataFormat;
+    }
+  | {
+      type: 'square';
+      channels: FloatTextureSharedChannelSource;
+      version: number;
+      format?: FloatTextureDataFormat;
+    };
 
 export type FloatTextureInterleavedSource = {
   data: Float32Array;
@@ -59,8 +77,25 @@ const CHANNELS_PER_FORMAT: Record<FloatTextureDataFormat, number> = {
 
 const DEFAULT_EXTRA_PIXEL_VALUE: [number, number, number, number] = [0, 0, 0, 1];
 
+const isSharedArrayBuffer = (value: unknown): value is SharedArrayBuffer =>
+  typeof SharedArrayBuffer !== 'undefined' && value instanceof SharedArrayBuffer;
+
+const isFloatTextureChannel = (value: unknown): value is FloatTextureChannel =>
+  value instanceof Float32Array || isSharedArrayBuffer(value);
+
+const isFloat32ChannelSource = (value: unknown): value is FloatTextureFloatChannelSource =>
+  value instanceof Float32Array ||
+  (Array.isArray(value) && value.every((channel) => channel instanceof Float32Array));
+
+const isSharedChannelSource = (value: unknown): value is FloatTextureSharedChannelSource =>
+  isSharedArrayBuffer(value) ||
+  (Array.isArray(value) && value.every((channel) => isSharedArrayBuffer(channel)));
+
+const normalizeChannel = (channel: FloatTextureChannel): Float32Array =>
+  channel instanceof Float32Array ? channel : new Float32Array(channel);
+
 const normalizeChannelSource = (source: FloatTextureChannelSource): Float32Array[] =>
-  source instanceof Float32Array ? [source] : source;
+  isFloatTextureChannel(source) ? [normalizeChannel(source)] : source.map(normalizeChannel);
 
 export function isFloatTextureInterleavedSource(
   source: unknown
@@ -97,13 +132,15 @@ export function isFloatTextureWrappedSource(source: unknown): source is FloatTex
   if (!source || typeof source !== 'object') return false;
 
   const value = source as Partial<FloatTextureWrappedSource>;
+  const version = (value as { version?: unknown }).version;
+  const hasValidChannels =
+    isFloat32ChannelSource(value.channels) ||
+    (isSharedChannelSource(value.channels) && typeof version === 'number');
 
   return (
     value.type === 'wrapped' &&
     value.channels !== undefined &&
-    (value.channels instanceof Float32Array ||
-      (Array.isArray(value.channels) &&
-        value.channels.every((channel) => channel instanceof Float32Array))) &&
+    hasValidChannels &&
     typeof value.width === 'number'
   );
 }
@@ -112,14 +149,12 @@ export function isFloatTextureSquareSource(source: unknown): source is FloatText
   if (!source || typeof source !== 'object') return false;
 
   const value = source as Partial<FloatTextureSquareSource>;
+  const version = (value as { version?: unknown }).version;
+  const hasValidChannels =
+    isFloat32ChannelSource(value.channels) ||
+    (isSharedChannelSource(value.channels) && typeof version === 'number');
 
-  return (
-    value.type === 'square' &&
-    value.channels !== undefined &&
-    (value.channels instanceof Float32Array ||
-      (Array.isArray(value.channels) &&
-        value.channels.every((channel) => channel instanceof Float32Array)))
-  );
+  return value.type === 'square' && value.channels !== undefined && hasValidChannels;
 }
 
 export const normalizeFloatTextureSource = (source: FloatTextureSource): Float32Array[] =>

@@ -184,4 +184,44 @@ describe('packFloatTexture', () => {
       1, 0, 0, 0, 1
     ]);
   });
+
+  it('wraps SharedArrayBuffer channel rows by the requested width', () => {
+    const buffer = new SharedArrayBuffer(5 * Float32Array.BYTES_PER_ELEMENT);
+    new Float32Array(buffer).set([1, 2, 3, 4, 5]);
+
+    const result = packFloatTexture({
+      type: 'wrapped',
+      channels: buffer,
+      width: 2,
+      version: 1
+    });
+
+    expect(result.width).toBe(2);
+    expect(result.height).toBe(3);
+    expect(Array.from(result.data)).toEqual([
+      1, 0, 0, 1, 2, 0, 0, 1, 3, 0, 0, 1, 4, 0, 0, 1, 5, 0, 0, 1, 0, 0, 0, 1
+    ]);
+  });
+
+  it('packs SharedArrayBuffer channel groups into a square texture', () => {
+    const x = new SharedArrayBuffer(3 * Float32Array.BYTES_PER_ELEMENT);
+    const y = new SharedArrayBuffer(2 * Float32Array.BYTES_PER_ELEMENT);
+
+    new Float32Array(x).set([1, 2, 3]);
+    new Float32Array(y).set([4, 5]);
+
+    const result = packFloatTexture({
+      type: 'square',
+      channels: [x, y],
+      format: 'r',
+      version: 1
+    });
+
+    expect(result.width).toBe(3);
+    expect(result.height).toBe(3);
+    expect(Array.from(result.data)).toEqual([
+      1, 0, 0, 1, 2, 0, 0, 1, 3, 0, 0, 1, 4, 0, 0, 1, 5, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0,
+      1, 0, 0, 0, 1
+    ]);
+  });
 });
