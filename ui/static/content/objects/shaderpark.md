@@ -45,6 +45,20 @@ move(offset.x, offset.y, 0);
 The generated message inlets can also receive `run` and `setCode` control
 messages, so Shader Park does not expose a separate control inlet.
 
+## Directives
+
+Use comment directives at the top of the code to set Patchies node metadata:
+
+```javascript
+// @title Noise Sphere
+// @primaryButton settings
+
+let radius = input(0.7, 0.1, 1.2);
+sphere(radius);
+```
+
+`@primaryButton` accepts `code`, `settings`, or `run`.
+
 ## Mouse
 
 Code that references `mouse` or `mouseIntersection()` receives normalized Shader

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  detectShaderParkPrimaryButton,
   extractShaderParkVideoUniformIndices,
+  parseShaderParkTitle,
   shaderParkUniformsToDefs,
   usesShaderParkMouse
 } from './uniforms';
@@ -70,5 +72,28 @@ describe('usesShaderParkMouse', () => {
         sphere(0.35);
       `)
     ).toBe(false);
+  });
+});
+
+describe('parseShaderParkTitle', () => {
+  it('parses the first @title directive', () => {
+    expect(parseShaderParkTitle('// @title Noise Sphere\nsphere(0.7);')).toBe('Noise Sphere');
+  });
+
+  it('ignores @title directives inside block comments', () => {
+    expect(parseShaderParkTitle('/*\n// @title Hidden\n*/\nsphere(0.7);')).toBeUndefined();
+  });
+});
+
+describe('detectShaderParkPrimaryButton', () => {
+  it('parses supported @primaryButton directives', () => {
+    expect(detectShaderParkPrimaryButton('// @primaryButton settings\nsphere(0.7);')).toBe(
+      'settings'
+    );
+  });
+
+  it('falls back to code for missing or unsupported directives', () => {
+    expect(detectShaderParkPrimaryButton('sphere(0.7);')).toBe('code');
+    expect(detectShaderParkPrimaryButton('// @primaryButton nope\nsphere(0.7);')).toBe('code');
   });
 });

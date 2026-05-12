@@ -1,4 +1,7 @@
-const NOISE_SPHERE_SHADERPARK = `let radius = input(0.7, 0.1, 1.2);
+const NOISE_SPHERE_SHADERPARK = `// @title Noise Sphere
+// @primaryButton settings
+
+let radius = input(0.7, 0.1, 1.2);
 let scale = 2.0;
 let s = getSpace();
 let n = 0.1 * noise(scale * s + time);
@@ -6,6 +9,8 @@ sphere(radius + n);`;
 
 const SQUARE_SYMMETRY_SHADERPARK = `// https://shaderpark.com/sculpture/-OsK9Xs40PPK4VdLRyrp
 // by https://shaderpark.com/user/jsqvlC
+// @title Square Symmetry
+// @primaryButton settings
 
 let s = getSpace();
 
@@ -67,7 +72,9 @@ const v = palette(
 color(v);
 box(vec3(5.0, 2.0, 0.01));`;
 
-const MOUSE_FOLLOWER_SHADERPARK = `let s = getSpace();
+const MOUSE_FOLLOWER_SHADERPARK = `// @title Mouse Follower
+
+let s = getSpace();
 
 let cursor = vec2(mouse.x, mouse.y);
 let d = length(vec2(s.x, s.y) - cursor);

@@ -1,4 +1,5 @@
 import type { GLUniformDef, GLUniformType, GLUniformVec2 } from '../../types/uniform-config';
+import type { PrimaryButton } from '$lib/eventbus/events';
 
 export type ShaderParkGeneratedUniform = {
   name: string;
@@ -17,6 +18,7 @@ type ShaderParkCore = typeof import('shader-park-core');
 const BUILT_IN_UNIFORMS = new Set(['time', 'opacity', '_scale', 'mouse', 'stepSize', 'resolution']);
 
 const SUPPORTED_INPUT_TYPES = new Set(['float', 'vec2', 'vec3', 'vec4']);
+const PRIMARY_BUTTONS = new Set<PrimaryButton>(['code', 'settings', 'run']);
 
 let shaderParkCorePromise: Promise<ShaderParkCore> | null = null;
 
@@ -117,6 +119,21 @@ export function usesShaderParkMouse(source: string): boolean {
   const uncommented = removeShaderParkComments(source);
 
   return /\bmouse\b|\bmouseIntersection\b/.test(uncommented);
+}
+
+export function parseShaderParkTitle(source: string): string | undefined {
+  const withoutBlocks = source.replace(/\/\*[\s\S]*?\*\//g, '');
+  const match = withoutBlocks.match(/^\s*\/\/\s*@title\s+(.+)$/m);
+
+  return match?.[1]?.trim() || undefined;
+}
+
+export function detectShaderParkPrimaryButton(source: string): PrimaryButton {
+  const withoutBlocks = source.replace(/\/\*[\s\S]*?\*\//g, '');
+  const match = withoutBlocks.match(/^\s*\/\/\s*@primaryButton\s+(\S+)\s*$/m);
+  const primaryButton = match?.[1] as PrimaryButton | undefined;
+
+  return primaryButton && PRIMARY_BUTTONS.has(primaryButton) ? primaryButton : 'code';
 }
 
 function isShaderParkGeneratedSource(value: unknown): value is ShaderParkGeneratedSource {

@@ -22,12 +22,16 @@ Settings:
 - input() and input2D() create persistent settings and matching message inlets.
 - Those generated message inlets also accept run and setCode control messages; shaderpark has no separate control inlet.
 
+Directives:
+- Use // @title Name to set the displayed node title.
+- Use // @primaryButton code|settings|run to choose the primary node action.
+
 Example - Simple Sphere:
 \`\`\`json
 {
   "type": "shaderpark",
   "data": {
-    "code": "sphere(0.35);\\ncolor(vec3(0.2, 0.6, 1.0));\\nshine(0.6);\\nrotateY(time * 0.5);"
+    "code": "// @title Simple Sphere\\nsphere(0.35);\\ncolor(vec3(0.2, 0.6, 1.0));\\nshine(0.6);\\nrotateY(time * 0.5);"
   }
 }
 \`\`\`

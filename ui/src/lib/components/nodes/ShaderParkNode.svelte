@@ -23,6 +23,7 @@
     ConsoleOutputEvent,
     NodeHidePortsUpdateEvent,
     NodePortCountUpdateEvent,
+    PrimaryButton,
     NodeTitleUpdateEvent,
     NodeVideoOutputEnabledUpdateEvent
   } from '$lib/eventbus/events';
@@ -34,7 +35,9 @@
   import {
     extractShaderParkVideoUniformIndices,
     extractShaderParkUniformDefs,
+    detectShaderParkPrimaryButton,
     normalizeShaderParkUniformValue,
+    parseShaderParkTitle,
     usesShaderParkMouse
   } from '$lib/shaderpark/uniforms';
   import { toGLValue } from '$workers/rendering/glUniformUtils';
@@ -64,6 +67,7 @@
       uniformValues?: Record<string, unknown>;
       fboFormat?: FBOFormat;
       resolution?: FBOResolution;
+      primaryButton?: PrimaryButton;
     };
     selected?: boolean;
     class?: string;
@@ -81,6 +85,7 @@
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
   let uniformValues = $state<Record<string, unknown>>(data.uniformValues ?? {});
+  let shaderParkTitle = $state<string | undefined>(parseShaderParkTitle(data.code) ?? data.title);
 
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -337,6 +342,8 @@
       audioAnalysisSystem?.disableFFT(nodeId);
 
       const code = codeOverride ?? data.code;
+      const nextTitle = parseShaderParkTitle(code);
+      const nextPrimaryButton = detectShaderParkPrimaryButton(code);
       const nextUniformDefs = await extractShaderParkUniformDefs(code);
       const nextVideoUniformIndices = extractShaderParkVideoUniformIndices(code);
       const defaultValues = settingsSchemaToDefaultValues(
@@ -359,9 +366,11 @@
       }
 
       uniformValues = pruned;
+      shaderParkTitle = nextTitle ?? data.title;
 
       const nextData = {
         code,
+        ...(nextTitle !== undefined ? { title: nextTitle } : {}),
         videoInletCount: data.videoInletCount ?? 4,
         videoOutletCount: data.videoOutletCount ?? 1,
         shaderParkVideoUniformIndices: nextVideoUniformIndices,
@@ -369,6 +378,7 @@
         uniformValues: pruned,
         fboFormat: data.fboFormat,
         resolution: data.resolution,
+        primaryButton: nextPrimaryButton,
         _runRevision: Date.now()
       };
 
@@ -377,6 +387,12 @@
 
       glSystem.upsertNode(nodeId, 'shaderpark', {
         ...nextData
+      });
+
+      eventBus.dispatch({
+        type: 'nodePrimaryButtonUpdate',
+        nodeId,
+        primaryButton: nextPrimaryButton
       });
 
       for (const [name, value] of Object.entries(pruned)) {
@@ -433,7 +449,7 @@
 </script>
 
 <CanvasPreviewLayout
-  title={data.title ?? 'shaderpark'}
+  title={shaderParkTitle ?? data.title ?? 'shaderpark'}
   objectType="shaderpark"
   {nodeId}
   onrun={updateShaderPark}

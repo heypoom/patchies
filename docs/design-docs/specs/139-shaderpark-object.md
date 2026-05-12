@@ -28,6 +28,7 @@ Use the published `shader-park-core@0.2.8` package as a compiler/codegen depende
 - `input2D()` generates a persistent two-axis vector setting and a matching message inlet.
 - Generated message uniform inlets also accept `setCode` and `run` control messages, so the object does not need a separate control inlet.
 - The default code should stay lightweight for live coding while exercising at least one persistent `input()` setting.
+- Shader Park code supports comment metadata directives matching GLSL: `// @title ...` and `// @primaryButton code|settings|run`.
 - Object documentation should link to Shader Park's main site, JS reference docs, community examples, about page, and `shader-park-core` repository.
 - Code that references `mouse` or `mouseIntersection()` should receive normalized Shader Park mouse coordinates from the node preview and the shared surface mouse forwarder.
 
