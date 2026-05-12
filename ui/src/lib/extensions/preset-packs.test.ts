@@ -123,6 +123,24 @@ describe('built-in preset packs', () => {
     expect(isPreset((tiny as PresetFolder)['a-new-industrial-chiptune-by-ryg.beat'])).toBe(true);
   });
 
+  test('registers lightweight float texture JS generators in their own preset pack', () => {
+    const pack = BUILT_IN_PRESET_PACKS.find((presetPack) => presetPack.id === 'float-texture-data');
+    const preset = BUILTIN_PRESETS['rgba-scan.float.js'];
+    const presetData = preset?.data as { code?: string } | undefined;
+
+    expect(pack?.requiredObjects).toEqual(['js', 'float.tex']);
+    expect(pack && getPresetPackPresetNames(pack)).toEqual([
+      'rgba-grid.float.js',
+      'rgba-scan.float.js',
+      'wrapped-wave.float.js'
+    ]);
+    expect(preset?.type).toBe('js');
+    expect(presetData?.code).toContain('new SharedArrayBuffer(W * H * 4');
+    expect(presetData?.code).toContain("type: 'rgba'");
+    expect(presetData?.code).toContain('setInterval(frame, 1000 / 24)');
+    expect(presetData?.code).toContain('version');
+  });
+
   test('registers curated ChucK examples in their own preset pack', () => {
     const demoCompositions = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'demo-compositions');
     const chuckDemos = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'chuck-demos');

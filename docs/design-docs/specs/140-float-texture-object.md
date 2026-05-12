@@ -127,8 +127,8 @@ Channel packing supports three layouts:
 
 5. Add examples and presets.
    - Create a dedicated Float Texture Data preset pack for JS generators that feed `float.tex`.
-   - Include a GLSL preview preset for square-packed field data so users do not have to interpret raw data textures directly.
-   - Make the square field generator animated at 24 fps with SharedArrayBuffer channels and a bumped `version` per frame.
+   - Keep CPU-side JS generators lightweight; geometry position-field generators belong in the GPU Geometry pack.
+   - Include a 24 fps SharedArrayBuffer RGBA animation with a bumped `version` per frame.
    - Include `js -> float.tex -> glsl` 2D gradient.
    - Include `tap~ -> float.tex -> glsl` raw audio visualization.
    - Include a particle or point-cloud texture example once square layout exists.

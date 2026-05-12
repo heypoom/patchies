@@ -83,25 +83,18 @@ Enable the **Float Texture Data** preset pack for ready-made JS generators that
 send texture data into `float.tex`:
 
 - `rgba-grid.float.js` — 50×50 interleaved RGBA pixel data.
-- `square-field.float.js` — animated square-packed XYZW point-field data.
+- `rgba-scan.float.js` — animated SharedArrayBuffer RGBA pixel data at 24 fps.
 - `wrapped-wave.float.js` — wrapped RGBA channel rows.
-- `Square Field Preview` — GLSL preview for `square-field.float.js`.
 
 Create one of those presets, connect it to `float.tex`, then connect `float.tex`
 to `glsl>` to inspect the texture.
 
-For `square-field.float.js`, the raw texture is data storage, not the final
-image. Patch it like this:
+`rgba-scan.float.js` reuses one shared interleaved RGBA buffer and bumps
+`version` every frame:
 
 ```text
-[square-field.float.js] → [float.tex] → [Square Field Preview]
+[rgba-scan.float.js] → [float.tex] → [glsl>]
 ```
-
-The JS preset stores each point as `x`, `y`, `z`, `w` channels. The preview
-shader reads those channels as positions and draws the field as points.
-It uses `SharedArrayBuffer` channels and bumps `version` every animation frame,
-so `float.tex` can reuse the same buffers and upload only fresh frames. It runs
-at 24 fps with `setInterval`.
 
 ## Planar RGBA Channels
 
