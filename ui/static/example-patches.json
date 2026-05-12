@@ -43,6 +43,13 @@
 			"author": "@dtinth"
 		},
 		{
+			"id": "miuavskza1gydmy",
+			"name": "Symmetry and Sphere",
+			"description": "Uses shaderpark to create a symmetrical pattern and a raymarched sphere",
+			"category": "Visual",
+			"author": "@jsqvlC + @heypoom"
+		},
+		{
 			"id": "1c484xkin7p7p2r",
 			"name": "Sleek Animated Torus",
 			"description": "Uses three.js with texture from hydra.js to create an animated torus knot",
