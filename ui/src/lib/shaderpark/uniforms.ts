@@ -87,6 +87,19 @@ export function shaderParkUniformsToDefs(uniforms: ShaderParkGeneratedUniform[])
     });
 }
 
+export function extractShaderParkVideoUniformIndices(source: string): number[] {
+  const uncommented = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  const indices = new Set<number>();
+  const channelRegex = /\biChannel([0-3])\b/g;
+
+  let match: RegExpExecArray | null;
+  while ((match = channelRegex.exec(uncommented)) !== null) {
+    indices.add(Number(match[1]));
+  }
+
+  return [...indices].sort((a, b) => a - b);
+}
+
 export function extractShaderParkUniformDefs(source: string): GLUniformDef[] {
   const generated = sculptToGLSL(source) as ShaderParkGeneratedSource;
 

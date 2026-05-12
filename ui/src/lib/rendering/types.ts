@@ -54,6 +54,7 @@ export type RenderNode = {
         code: string;
         videoInletCount?: number;
         videoOutletCount?: number;
+        shaderParkVideoUniformIndices?: number[];
         shaderParkUniformDefs?: GLUniformDef[];
         uniformValues?: Record<string, unknown>;
         fboFormat?: FBOFormat;

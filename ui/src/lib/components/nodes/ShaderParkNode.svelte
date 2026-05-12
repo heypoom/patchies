@@ -31,6 +31,7 @@
   import type { FBOFormat, FBOResolution } from '$lib/rendering/types';
   import type { GLUniformDef } from '../../../types/uniform-config';
   import {
+    extractShaderParkVideoUniformIndices,
     extractShaderParkUniformDefs,
     normalizeShaderParkUniformValue
   } from '$lib/shaderpark/uniforms';
@@ -54,6 +55,7 @@
       messageOutletCount?: number;
       videoInletCount?: number;
       videoOutletCount?: number;
+      shaderParkVideoUniformIndices?: number[];
       hidePorts?: boolean;
       executeCode?: number;
       showConsole?: boolean;
@@ -82,9 +84,11 @@
 
   let messageInletCount = $derived(data.messageInletCount ?? 1);
   let messageOutletCount = $derived(data.messageOutletCount ?? 0);
-  let videoInletCount = $derived(data.videoInletCount ?? 4);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
   let previousExecuteCode = $state<number | undefined>(undefined);
+  const shaderParkVideoUniformIndices = $derived(
+    data.shaderParkVideoUniformIndices ?? extractShaderParkVideoUniformIndices(data.code)
+  );
   const shaderParkUniformDefs = $derived(data.shaderParkUniformDefs ?? []);
   const uniformsSchema = $derived(uniformDefsToSettingsSchema(shaderParkUniformDefs));
   const visibleUniformInlets = $derived(visibleUniformInletDefs(shaderParkUniformDefs));
@@ -176,6 +180,23 @@
     return handleParts.length > 3 && /^\d+$/.test(uniformIndex) ? handleParts[3] : undefined;
   }
 
+  function removeInvalidVideoEdges(videoUniformIndices: number[]) {
+    const visibleVideoInlets = new Set(videoUniformIndices);
+    const invalidVideoEdges = getEdges().filter((edge) => {
+      if (edge.target !== nodeId) return false;
+      if (!edge.targetHandle?.startsWith('video-in-')) return false;
+
+      const inletMatch = edge.targetHandle.match(/video-in-(\d+)/);
+      if (!inletMatch) return true;
+
+      return !visibleVideoInlets.has(Number(inletMatch[1]));
+    });
+
+    if (invalidVideoEdges.length > 0) {
+      deleteElements({ edges: invalidVideoEdges });
+    }
+  }
+
   const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
       const uniformName = getUniformNameFromHandle(meta.inletKey);
@@ -233,6 +254,8 @@
       code: data.code,
       videoInletCount: data.videoInletCount ?? 4,
       videoOutletCount: data.videoOutletCount ?? 1,
+      shaderParkVideoUniformIndices:
+        data.shaderParkVideoUniformIndices ?? extractShaderParkVideoUniformIndices(data.code),
       shaderParkUniformDefs: data.shaderParkUniformDefs ?? [],
       uniformValues: initialUniformValues,
       fboFormat: data.fboFormat,
@@ -283,6 +306,7 @@
       audioAnalysisSystem?.disableFFT(nodeId);
 
       const nextUniformDefs = extractShaderParkUniformDefs(data.code);
+      const nextVideoUniformIndices = extractShaderParkVideoUniformIndices(data.code);
       const defaultValues = settingsSchemaToDefaultValues(
         uniformDefsToSettingsSchema(nextUniformDefs)
       );
@@ -308,6 +332,7 @@
         code: data.code,
         videoInletCount: data.videoInletCount ?? 4,
         videoOutletCount: data.videoOutletCount ?? 1,
+        shaderParkVideoUniformIndices: nextVideoUniformIndices,
         shaderParkUniformDefs: nextUniformDefs,
         uniformValues: pruned,
         fboFormat: data.fboFormat,
@@ -315,6 +340,7 @@
         _runRevision: Date.now()
       };
 
+      removeInvalidVideoEdges(nextVideoUniformIndices);
       updateNodeData(nodeId, nextData);
 
       glSystem.upsertNode(nodeId, 'shaderpark', {
@@ -382,13 +408,15 @@
   onSettingsRevertAll={handleUniformRevertAll}
 >
   {#snippet topHandle()}
-    {#each Array.from({ length: videoInletCount }) as _, index (index)}
+    {#each shaderParkVideoUniformIndices as channelIndex, visibleIndex (channelIndex)}
       <TypedHandle
         port="inlet"
-        spec={{ handleType: 'video', handleId: index.toString() }}
-        title={`iChannel${index}`}
-        total={messageInletCount + videoInletCount + visibleUniformInlets.length}
-        {index}
+        spec={{ handleType: 'video', handleId: channelIndex.toString() }}
+        title={`iChannel${channelIndex}`}
+        total={messageInletCount +
+          shaderParkVideoUniformIndices.length +
+          visibleUniformInlets.length}
+        index={visibleIndex}
         class={handleClass}
         {nodeId}
       />
@@ -399,8 +427,10 @@
         port="inlet"
         spec={{ handleType: 'message', handleId: `${uniformIndex}-${def.name}-${def.type}` }}
         title={`${def.name} (${def.type})`}
-        total={messageInletCount + videoInletCount + visibleUniformInlets.length}
-        index={videoInletCount + visibleIndex}
+        total={messageInletCount +
+          shaderParkVideoUniformIndices.length +
+          visibleUniformInlets.length}
+        index={shaderParkVideoUniformIndices.length + visibleIndex}
         class={handleClass}
         {nodeId}
       />
@@ -411,8 +441,10 @@
         port="inlet"
         spec={{ handleType: 'message', handleId: `control-${index}` }}
         title={`Message Inlet ${index}`}
-        total={messageInletCount + videoInletCount + visibleUniformInlets.length}
-        index={index + videoInletCount + visibleUniformInlets.length}
+        total={messageInletCount +
+          shaderParkVideoUniformIndices.length +
+          visibleUniformInlets.length}
+        index={index + shaderParkVideoUniformIndices.length + visibleUniformInlets.length}
         class={handleClass}
         {nodeId}
       />
