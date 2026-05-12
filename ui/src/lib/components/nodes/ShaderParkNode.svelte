@@ -183,6 +183,24 @@
     return Array.isArray(normalized) ? [...normalized] : normalized;
   }
 
+  function cloneUniformConfigValue<T>(value: T): T {
+    return (Array.isArray(value) ? [...value] : value) as T;
+  }
+
+  function cloneUniformDef(def: GLUniformDef): GLUniformDef {
+    return {
+      ...def,
+      default: cloneUniformConfigValue(def.default),
+      min: cloneUniformConfigValue(def.min),
+      max: cloneUniformConfigValue(def.max),
+      options: def.options?.map((option) => ({ ...option }))
+    };
+  }
+
+  function cloneUniformDefs(defs: GLUniformDef[] | undefined): GLUniformDef[] {
+    return (defs ?? []).map(cloneUniformDef);
+  }
+
   function cloneableUniformValues(
     defs: GLUniformDef[],
     values: Record<string, unknown>
@@ -280,8 +298,12 @@
       delete glSystem.previewCanvasContexts[nodeId];
     }
 
+    const initialUniformDefs = cloneUniformDefs(data.shaderParkUniformDefs);
+    const initialVideoUniformIndices = [
+      ...(data.shaderParkVideoUniformIndices ?? extractShaderParkVideoUniformIndices(data.code))
+    ];
     const initialUniformValues = cloneableUniformValues(
-      data.shaderParkUniformDefs ?? [],
+      initialUniformDefs,
       data.uniformValues ?? {}
     );
 
@@ -289,9 +311,8 @@
       code: data.code,
       videoInletCount: data.videoInletCount ?? 4,
       videoOutletCount: data.videoOutletCount ?? 1,
-      shaderParkVideoUniformIndices:
-        data.shaderParkVideoUniformIndices ?? extractShaderParkVideoUniformIndices(data.code),
-      shaderParkUniformDefs: data.shaderParkUniformDefs ?? [],
+      shaderParkVideoUniformIndices: initialVideoUniformIndices,
+      shaderParkUniformDefs: initialUniformDefs,
       uniformValues: initialUniformValues,
       fboFormat: data.fboFormat,
       resolution: data.resolution
@@ -344,8 +365,8 @@
       const code = codeOverride ?? data.code;
       const nextTitle = parseShaderParkTitle(code);
       const nextPrimaryButton = detectShaderParkPrimaryButton(code);
-      const nextUniformDefs = await extractShaderParkUniformDefs(code);
-      const nextVideoUniformIndices = extractShaderParkVideoUniformIndices(code);
+      const nextUniformDefs = cloneUniformDefs(await extractShaderParkUniformDefs(code));
+      const nextVideoUniformIndices = [...extractShaderParkVideoUniformIndices(code)];
       const defaultValues = settingsSchemaToDefaultValues(
         uniformDefsToSettingsSchema(nextUniformDefs)
       );
@@ -365,7 +386,9 @@
         pruned[def.name] = toCloneableUniformValue(def, nextValue);
       }
 
-      uniformValues = pruned;
+      const cloneablePruned = { ...pruned };
+
+      uniformValues = cloneablePruned;
       shaderParkTitle = nextTitle ?? data.title;
 
       const nextData = {
@@ -375,7 +398,7 @@
         videoOutletCount: data.videoOutletCount ?? 1,
         shaderParkVideoUniformIndices: nextVideoUniformIndices,
         shaderParkUniformDefs: nextUniformDefs,
-        uniformValues: pruned,
+        uniformValues: cloneablePruned,
         fboFormat: data.fboFormat,
         resolution: data.resolution,
         primaryButton: nextPrimaryButton,
@@ -386,7 +409,10 @@
       updateNodeData(nodeId, nextData);
 
       glSystem.upsertNode(nodeId, 'shaderpark', {
-        ...nextData
+        ...nextData,
+        shaderParkVideoUniformIndices: [...nextVideoUniformIndices],
+        shaderParkUniformDefs: cloneUniformDefs(nextUniformDefs),
+        uniformValues: { ...cloneablePruned }
       });
 
       eventBus.dispatch({
@@ -395,7 +421,7 @@
         primaryButton: nextPrimaryButton
       });
 
-      for (const [name, value] of Object.entries(pruned)) {
+      for (const [name, value] of Object.entries(cloneablePruned)) {
         const uniformDef = nextUniformDefs.find((def) => def.name === name);
 
         if (!uniformDef) continue;

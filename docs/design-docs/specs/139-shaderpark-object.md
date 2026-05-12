@@ -10,6 +10,8 @@ Use the published `shader-park-core@0.2.8` package as a compiler/codegen depende
 
 `shader-park-core` should be loaded lazily from Shader Park compile/extraction paths so the package does not add weight to the initial Patchies UI bundle.
 
+Because `shader-park-core` evaluates user Sculpt code against locally scoped DSL functions (`color`, `sphere`, `input`, `shine`, etc.), production builds must preserve function names. Minifying those bindings breaks the evaluated source at runtime.
+
 ## Pipeline Integration
 
 - The Svelte node uses `CanvasPreviewLayout`, like `hydra`, `glsl`, `three`, `regl`, and `textmode`.

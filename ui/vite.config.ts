@@ -16,6 +16,7 @@ import { helpPatchesManifest } from './vite-plugin-help-patches-manifest';
 import { topicTitlesManifest } from './vite-plugin-topic-titles-manifest';
 import { objectSchemasPlugin } from './vite-plugin-object-schemas';
 import { glslModulesDev, glslModulesCopy } from './vite-plugin-glsl-modules';
+import { minifyExceptShaderParkCore } from './vite-plugin-minify-except-shader-park';
 
 const PYODIDE_EXCLUDE = ['!**/*.{md,html}', '!**/*.d.ts', '!**/*.whl', '!**/node_modules'];
 
@@ -63,6 +64,7 @@ export default defineConfig(() => ({
     devtoolsJson(),
     viteStaticCopyPyodide(),
     glslModulesCopy(),
+    minifyExceptShaderParkCore(),
     SvelteKitPWA({
       // HOTFIX: Self-destroying SW to clean up aggressive caching issues
       // This generates a SW that unregisters itself and clears all caches
@@ -288,11 +290,14 @@ export default defineConfig(() => ({
     }
   },
   build: {
+    minify: false,
     rollupOptions: {
       output: {
         manualChunks: (id: string) => {
           // Skip chunking for worker files
           if (id.includes('/workers/')) return;
+
+          if (id.includes('node_modules/shader-park-core')) return 'shader-park-core';
 
           // Heavy audio dependencies - chunk separately
           if (id.includes('@csound/browser')) return 'csound';
@@ -320,7 +325,7 @@ export default defineConfig(() => ({
   },
   worker: {
     format: 'es' as const,
-    plugins: () => [wasm(), topLevelAwait()],
+    plugins: () => [wasm(), topLevelAwait(), minifyExceptShaderParkCore()],
     rollupOptions: {
       // Exclude heavy dependencies from worker bundle
       external: [

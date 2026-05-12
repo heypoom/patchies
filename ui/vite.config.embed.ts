@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import bundleAudioWorkletPlugin from 'vite-plugin-bundle-audioworklet';
+import { minifyExceptShaderParkCore } from './vite-plugin-minify-except-shader-park';
 
 const PYODIDE_EXCLUDE = ['!**/*.{md,html}', '!**/*.d.ts', '!**/*.whl', '!**/node_modules'];
 
@@ -34,7 +35,8 @@ export default defineConfig({
         customElement: true
       }
     }),
-    viteStaticCopyPyodide()
+    viteStaticCopyPyodide(),
+    minifyExceptShaderParkCore()
   ],
   optimizeDeps: {
     exclude: [
@@ -53,6 +55,7 @@ export default defineConfig({
     ]
   },
   build: {
+    minify: false,
     outDir: 'dist-embed',
     lib: {
       entry: 'src/lib/embed/index.ts',
@@ -62,6 +65,13 @@ export default defineConfig({
     },
     commonjsOptions: {
       include: [/trystero/, /node_modules/]
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: (id: string) => {
+          if (id.includes('node_modules/shader-park-core')) return 'shader-park-core';
+        }
+      }
     }
   },
   ssr: {
@@ -75,7 +85,7 @@ export default defineConfig({
   },
   worker: {
     format: 'es',
-    plugins: () => [wasm(), topLevelAwait()],
+    plugins: () => [wasm(), topLevelAwait(), minifyExceptShaderParkCore()],
     rollupOptions: {
       external: [
         '@csound/browser',
