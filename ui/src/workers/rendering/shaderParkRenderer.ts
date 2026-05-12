@@ -63,7 +63,7 @@ const vectorDefault = (value: unknown, fallback: number[]) => {
   return fallback;
 };
 
-const uniformDefault = (uniform: ShaderParkUniform) => {
+const uniformDefault = (uniform: ShaderParkUniform, width: number, height: number) => {
   return match(uniform)
     .with({ name: 'time' }, () => (_: regl.DefaultContext, props: Props) => props.transportTime)
     .with({ name: 'opacity' }, () => 1)
@@ -74,8 +74,8 @@ const uniformDefault = (uniform: ShaderParkUniform) => {
       props.userParams[VIDEO_UNIFORM_COUNT + 1]
     ])
     .with({ name: 'mouse' }, () => (_: regl.DefaultContext, props: Props) => [
-      props.mouseX,
-      props.mouseY,
+      width > 0 ? (2 * props.mouseX) / width - 1 : 0,
+      height > 0 ? 2 * (1 - props.mouseY / height) - 1 : 0,
       props.mouseZ || -0.5
     ])
     .with({ type: 'float' }, ({ value }) => scalarDefault(value, 0))
@@ -176,7 +176,7 @@ export function createShaderParkDrawCommand({
 
   for (const uniform of shaderParkSource.uniforms) {
     uniforms[uniform.name] = isShaderParkBuiltInUniform(uniform.name)
-      ? uniformDefault(uniform)
+      ? uniformDefault(uniform, width, height)
       : userUniformValue(uniform);
   }
 

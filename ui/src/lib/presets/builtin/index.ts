@@ -25,6 +25,7 @@ import { UIUA_PRESETS } from './uiua.presets';
 import { BYTEBEAT_PRESETS } from './bytebeat';
 import { REGL_PRESETS } from './regl';
 import { SWGL_PRESETS } from './swgl.presets';
+import { SHADERPARK_PRESETS } from './shaderpark.presets';
 
 // Re-export individual preset collections
 export {
@@ -51,7 +52,8 @@ export {
   UIUA_PRESETS,
   BYTEBEAT_PRESETS,
   REGL_PRESETS,
-  SWGL_PRESETS
+  SWGL_PRESETS,
+  SHADERPARK_PRESETS
 };
 
 /**
@@ -85,5 +87,6 @@ export const BUILTIN_PRESETS: Record<
   ...UIUA_PRESETS,
   ...BYTEBEAT_PRESETS,
   ...REGL_PRESETS,
-  ...SWGL_PRESETS
+  ...SWGL_PRESETS,
+  ...SHADERPARK_PRESETS
 };

@@ -26,6 +26,20 @@ Use the published `shader-park-core@0.2.8` package as a compiler/codegen depende
 - `input2D()` generates a persistent two-axis vector setting and a matching message inlet.
 - The default code should exercise persistent settings with a Shader Park sculpture example.
 - Object documentation should link to Shader Park's main site, JS reference docs, community examples, about page, and `shader-park-core` repository.
+- Code that references `mouse` or `mouseIntersection()` should receive normalized Shader Park mouse coordinates from the node preview and the shared surface mouse forwarder.
+
+## Built-in Presets
+
+- Add a `Noise Sphere` preset that creates a white SDF sphere with subtle animated noise displacement:
+
+  ```js
+  let scale = 2.0
+  let s = getSpace()
+  let n = 0.1 * noise(scale * s + time)
+  sphere(0.7 + n)
+  ```
+
+- Register shaderpark visual presets in their own preset pack so users can enable them alongside the `shaderpark` object without mixing them into GLSL or Hydra packs.
 
 ## Notes
 

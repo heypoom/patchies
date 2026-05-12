@@ -136,6 +136,22 @@ describe('built-in preset packs', () => {
     );
   });
 
+  test('registers Noise Sphere as a Shader Park visual preset', () => {
+    const preset = BUILTIN_PRESETS['Noise Sphere'];
+    const shaderParkVisuals = BUILT_IN_PRESET_PACKS.find(
+      (pack) => pack.id === 'shaderpark-visuals'
+    );
+    const presetData = preset?.data as { code?: string; videoOutletCount?: number } | undefined;
+
+    expect(preset?.type).toBe('shaderpark');
+    expect(presetData?.code).toContain('sphere(0.7 + n)');
+    expect(presetData?.videoOutletCount).toBe(1);
+    expect(shaderParkVisuals?.requiredObjects).toEqual(['shaderpark']);
+    expect(shaderParkVisuals && getPresetPackPresetNames(shaderParkVisuals)).toContain(
+      'Noise Sphere'
+    );
+  });
+
   test('registers curated ChucK examples in their own preset pack', () => {
     const demoCompositions = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'demo-compositions');
     const chuckDemos = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'chuck-demos');

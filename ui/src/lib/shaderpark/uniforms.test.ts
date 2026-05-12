@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { extractShaderParkVideoUniformIndices, shaderParkUniformsToDefs } from './uniforms';
+import {
+  extractShaderParkVideoUniformIndices,
+  shaderParkUniformsToDefs,
+  usesShaderParkMouse
+} from './uniforms';
 
 describe('shaderParkUniformsToDefs', () => {
   it('preserves input2D defaults and bounds as vec2 arrays', () => {
@@ -44,5 +48,27 @@ describe('extractShaderParkVideoUniformIndices', () => {
         let again = iChannel3;
       `)
     ).toEqual([1, 3]);
+  });
+});
+
+describe('usesShaderParkMouse', () => {
+  it('detects direct mouse usage', () => {
+    expect(usesShaderParkMouse('color(vec3(mouse.x, mouse.y, 0.0));')).toBe(true);
+  });
+
+  it('detects mouseIntersection usage', () => {
+    expect(usesShaderParkMouse('let p = mouseIntersection(); sphere(length(p) * 0.1);')).toBe(true);
+  });
+
+  it('ignores mouse references in comments', () => {
+    expect(
+      usesShaderParkMouse(`
+        // mouse should not count here
+        /*
+          mouseIntersection should not count either
+        */
+        sphere(0.35);
+      `)
+    ).toBe(false);
   });
 });

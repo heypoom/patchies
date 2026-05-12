@@ -11,6 +11,7 @@
   } from '../../../stores/renderer.store';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -33,7 +34,8 @@
   import {
     extractShaderParkVideoUniformIndices,
     extractShaderParkUniformDefs,
-    normalizeShaderParkUniformValue
+    normalizeShaderParkUniformValue,
+    usesShaderParkMouse
   } from '$lib/shaderpark/uniforms';
   import { toGLValue } from '$workers/rendering/glUniformUtils';
   import {
@@ -73,6 +75,7 @@
   let glSystem = GLSystem.getInstance();
   let audioAnalysisSystem: AudioAnalysisSystem;
   let messageContext: MessageContext;
+  let mouseHandler: CanvasMouseHandler | null = null;
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewBitmapContext: ImageBitmapRenderingContext;
   let videoOutputEnabled = $state(true);
@@ -92,6 +95,7 @@
   const shaderParkUniformDefs = $derived(data.shaderParkUniformDefs ?? []);
   const uniformsSchema = $derived(uniformDefsToSettingsSchema(shaderParkUniformDefs));
   const visibleUniformInlets = $derived(visibleUniformInletDefs(shaderParkUniformDefs));
+  const usesMouseInput = $derived(usesShaderParkMouse(data.code));
 
   $effect(() => {
     removeExcessVideoOutletEdges(nodeId, videoOutletCount, getEdges, deleteElements);
@@ -102,6 +106,25 @@
       previousExecuteCode = data.executeCode;
       updateShaderPark();
     }
+  });
+
+  $effect(() => {
+    if (!previewCanvas || !usesMouseInput) return;
+
+    mouseHandler = new CanvasMouseHandler({
+      type: 'simple',
+      nodeId,
+      canvas: previewCanvas,
+      outputWidth: $outputWidth,
+      outputHeight: $outputHeight,
+      scope: 'local'
+    });
+
+    mouseHandler.attach();
+
+    return () => {
+      mouseHandler?.detach();
+    };
   });
 
   function handlePortCountUpdate(e: NodePortCountUpdateEvent) {
@@ -283,6 +306,7 @@
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 
     audioAnalysisSystem?.disableFFT(nodeId);
+    mouseHandler?.detach();
     glSystem?.removeNode(nodeId);
     messageContext?.destroy();
   });
@@ -406,6 +430,9 @@
   settingsValues={uniformValues}
   onSettingsValueChange={handleUniformValueChange}
   onSettingsRevertAll={handleUniformRevertAll}
+  nodrag={usesMouseInput}
+  nopan={usesMouseInput}
+  nowheel={usesMouseInput}
 >
   {#snippet topHandle()}
     {#each shaderParkVideoUniformIndices as channelIndex, visibleIndex (channelIndex)}

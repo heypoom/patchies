@@ -17,6 +17,10 @@ const BUILT_IN_UNIFORMS = new Set(['time', 'opacity', '_scale', 'mouse', 'stepSi
 
 const SUPPORTED_INPUT_TYPES = new Set(['float', 'vec2', 'vec3', 'vec4']);
 
+function removeShaderParkComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+}
+
 export function isShaderParkBuiltInUniform(name: string) {
   return BUILT_IN_UNIFORMS.has(name);
 }
@@ -88,7 +92,7 @@ export function shaderParkUniformsToDefs(uniforms: ShaderParkGeneratedUniform[])
 }
 
 export function extractShaderParkVideoUniformIndices(source: string): number[] {
-  const uncommented = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  const uncommented = removeShaderParkComments(source);
   const indices = new Set<number>();
   const channelRegex = /\biChannel([0-3])\b/g;
 
@@ -98,6 +102,12 @@ export function extractShaderParkVideoUniformIndices(source: string): number[] {
   }
 
   return [...indices].sort((a, b) => a - b);
+}
+
+export function usesShaderParkMouse(source: string): boolean {
+  const uncommented = removeShaderParkComments(source);
+
+  return /\bmouse\b|\bmouseIntersection\b/.test(uncommented);
 }
 
 export function extractShaderParkUniformDefs(source: string): GLUniformDef[] {

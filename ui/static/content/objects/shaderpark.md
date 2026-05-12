@@ -42,6 +42,11 @@ sphere(radius);
 move(offset.x, offset.y, 0);
 ```
 
+## Mouse
+
+Code that references `mouse` or `mouseIntersection()` receives normalized Shader
+Park mouse coordinates from the node preview and the shared surface preview.
+
 ## Resources
 
 - [Shader Park](https://shaderpark.com)
