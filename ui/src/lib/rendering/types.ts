@@ -54,6 +54,8 @@ export type RenderNode = {
         code: string;
         videoInletCount?: number;
         videoOutletCount?: number;
+        shaderParkUniformDefs?: GLUniformDef[];
+        uniformValues?: Record<string, unknown>;
         fboFormat?: FBOFormat;
         resolution?: FBOResolution;
       };
@@ -102,7 +104,13 @@ export interface RenderGraph {
   feedbackNodes: Set<string>;
 }
 
-export type UserParam = number | boolean | regl.Texture2D | regl.Framebuffer;
+export type UserParam =
+  | number
+  | boolean
+  | regl.Texture2D
+  | regl.Framebuffer
+  | Record<string, unknown>
+  | undefined;
 
 export interface RenderParams {
   /** Previous frame's transport time for delta computation */

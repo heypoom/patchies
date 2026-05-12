@@ -12,6 +12,10 @@ import {
 } from 'shader-park-core';
 import { validateShader, type LineErrors } from '$lib/canvas/shader-validator';
 import type { RenderParams } from '$lib/rendering/types';
+import {
+  isShaderParkBuiltInUniform,
+  normalizeShaderParkUniformValue
+} from '$lib/shaderpark/uniforms';
 
 type ShaderParkUniform = {
   name: string;
@@ -31,6 +35,7 @@ type ShaderParkGLSL = {
 type Props = RenderParams;
 
 const VIDEO_UNIFORM_COUNT = 4;
+const UNIFORM_OVERRIDES_INDEX = VIDEO_UNIFORM_COUNT;
 const VIDEO_UNIFORMS = Array.from(
   { length: VIDEO_UNIFORM_COUNT },
   (_, index) => `uniform sampler2D iChannel${index};`
@@ -78,6 +83,15 @@ const uniformDefault = (uniform: ShaderParkUniform) => {
     .with({ type: 'vec3' }, ({ value }) => vectorDefault(value, [0, 0, 0]))
     .with({ type: 'vec4' }, ({ value }) => vectorDefault(value, [0, 0, 0, 0]))
     .otherwise(({ value }) => value ?? 0);
+};
+
+const userUniformValue = (uniform: ShaderParkUniform) => (_: regl.DefaultContext, props: Props) => {
+  const overrides = props.userParams[UNIFORM_OVERRIDES_INDEX] as
+    | Record<string, unknown>
+    | undefined;
+  const override = overrides?.[uniform.name];
+
+  return normalizeShaderParkUniformValue(override ?? uniform.value, uniform.type);
 };
 
 export function buildShaderParkFragment(source: string) {
@@ -161,7 +175,9 @@ export function createShaderParkDrawCommand({
   const uniforms: Record<string, unknown> = {};
 
   for (const uniform of shaderParkSource.uniforms) {
-    uniforms[uniform.name] = uniformDefault(uniform);
+    uniforms[uniform.name] = isShaderParkBuiltInUniform(uniform.name)
+      ? uniformDefault(uniform)
+      : userUniformValue(uniform);
   }
 
   for (let index = 0; index < VIDEO_UNIFORM_COUNT; index++) {

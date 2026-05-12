@@ -1084,6 +1084,30 @@ export class FBORenderer {
     const nodeResolution = node.data.resolution;
     const [width, height] = this.resolveNodeSize(nodeResolution);
 
+    if (node.data.shaderParkUniformDefs) {
+      const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
+      const savedValues = node.data.uniformValues;
+
+      for (const def of node.data.shaderParkUniformDefs) {
+        const uniformFieldValue = uniformData.get(def.name);
+
+        if (!isValidUniformData(def, uniformFieldValue)) {
+          const savedValue = savedValues?.[def.name];
+
+          if (savedValue !== undefined) {
+            uniformData.set(def.name, toGLValue(def, savedValue));
+          } else {
+            uniformData.set(
+              def.name,
+              (def as { default?: unknown }).default ?? defaultUniformValue(def)
+            );
+          }
+        }
+      }
+
+      this.uniformDataByNode.set(node.id, uniformData);
+    }
+
     const renderCommand = createShaderParkDrawCommand({
       width,
       height,
@@ -1412,12 +1436,25 @@ export class FBORenderer {
       });
     }
 
+    if (node.type === 'shaderpark') {
+      const inletCount = node.data.videoInletCount ?? 4;
+      const textureArray: (regl.Texture2D | undefined)[] = [];
+
+      for (let i = 0; i < inletCount; i++) {
+        textureArray[i] = inputTextureMap.get(i);
+      }
+
+      userUniformParams = [
+        ...textureArray,
+        Object.fromEntries(this.uniformDataByNode.get(node.id)?.entries() ?? [])
+      ];
+    }
+
     // Convert texture map to array.
     // Preserves gaps for unused video inlets.
     if (
       node.type === 'hydra' ||
       node.type === 'three' ||
-      node.type === 'shaderpark' ||
       node.type === 'regl' ||
       node.type === 'swgl' ||
       node.type === 'projmap'

@@ -1,0 +1,78 @@
+import { sculptToGLSL } from 'shader-park-core';
+import type { GLUniformDef, GLUniformType } from '../../types/uniform-config';
+
+export type ShaderParkGeneratedUniform = {
+  name: string;
+  type: string;
+  value?: unknown;
+  min?: unknown;
+  max?: unknown;
+};
+
+type ShaderParkGeneratedSource = {
+  uniforms: ShaderParkGeneratedUniform[];
+};
+
+const BUILT_IN_UNIFORMS = new Set(['time', 'opacity', '_scale', 'mouse', 'stepSize', 'resolution']);
+
+const SUPPORTED_INPUT_TYPES = new Set(['float', 'vec2', 'vec3', 'vec4']);
+
+export function isShaderParkBuiltInUniform(name: string) {
+  return BUILT_IN_UNIFORMS.has(name);
+}
+
+export function normalizeShaderParkUniformValue(value: unknown, type: string): unknown {
+  if (type === 'float') {
+    return typeof value === 'number' ? value : 0;
+  }
+
+  const dimensions = type === 'vec2' ? 2 : type === 'vec3' ? 3 : type === 'vec4' ? 4 : 0;
+  if (dimensions === 0) return undefined;
+
+  if (Array.isArray(value)) {
+    return Array.from({ length: dimensions }, (_, index) =>
+      typeof value[index] === 'number' ? value[index] : 0
+    );
+  }
+
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const keys = ['x', 'y', 'z', 'w'];
+
+    if (keys.slice(0, dimensions).some((key) => typeof record[key] === 'number')) {
+      return keys
+        .slice(0, dimensions)
+        .map((key) => (typeof record[key] === 'number' ? record[key] : 0));
+    }
+  }
+
+  return new Array(dimensions).fill(0);
+}
+
+function numberOrUndefined(value: unknown) {
+  return typeof value === 'number' ? value : undefined;
+}
+
+export function shaderParkUniformsToDefs(uniforms: ShaderParkGeneratedUniform[]): GLUniformDef[] {
+  return uniforms
+    .filter((uniform) => !isShaderParkBuiltInUniform(uniform.name))
+    .filter((uniform) => SUPPORTED_INPUT_TYPES.has(uniform.type))
+    .map((uniform) => {
+      const normalizedDefault = normalizeShaderParkUniformValue(uniform.value, uniform.type);
+
+      return {
+        name: uniform.name,
+        type: uniform.type as GLUniformType,
+        default: normalizedDefault as GLUniformDef['default'],
+        min: numberOrUndefined(uniform.min),
+        max: numberOrUndefined(uniform.max),
+        description: uniform.name
+      };
+    });
+}
+
+export function extractShaderParkUniformDefs(source: string): GLUniformDef[] {
+  const generated = sculptToGLSL(source) as ShaderParkGeneratedSource;
+
+  return shaderParkUniformsToDefs(generated.uniforms ?? []);
+}

@@ -29,6 +29,17 @@
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { FBOFormat, FBOResolution } from '$lib/rendering/types';
+  import type { GLUniformDef } from '../../../types/uniform-config';
+  import {
+    extractShaderParkUniformDefs,
+    normalizeShaderParkUniformValue
+  } from '$lib/shaderpark/uniforms';
+  import { toGLValue } from '$workers/rendering/glUniformUtils';
+  import {
+    uniformDefsToSettingsSchema,
+    settingsSchemaToDefaultValues,
+    visibleUniformInletDefs
+  } from '$lib/canvas/shader-code-to-uniform-def';
 
   let {
     id: nodeId,
@@ -46,6 +57,8 @@
       hidePorts?: boolean;
       executeCode?: number;
       showConsole?: boolean;
+      shaderParkUniformDefs?: GLUniformDef[];
+      uniformValues?: Record<string, unknown>;
       fboFormat?: FBOFormat;
       resolution?: FBOResolution;
     };
@@ -62,6 +75,7 @@
   let previewBitmapContext: ImageBitmapRenderingContext;
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
+  let uniformValues = $state<Record<string, unknown>>(data.uniformValues ?? {});
 
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -71,6 +85,9 @@
   let videoInletCount = $derived(data.videoInletCount ?? 4);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
   let previousExecuteCode = $state<number | undefined>(undefined);
+  const shaderParkUniformDefs = $derived(data.shaderParkUniformDefs ?? []);
+  const uniformsSchema = $derived(uniformDefsToSettingsSchema(shaderParkUniformDefs));
+  const visibleUniformInlets = $derived(visibleUniformInletDefs(shaderParkUniformDefs));
 
   $effect(() => {
     removeExcessVideoOutletEdges(nodeId, videoOutletCount, getEdges, deleteElements);
@@ -133,8 +150,30 @@
     setTimeout(() => updateShaderPark());
   };
 
-  const handleMessage: MessageCallbackFn = (message) => {
+  function getUniformNameFromHandle(targetHandle: string | null | undefined): string | undefined {
+    if (!targetHandle?.startsWith('message-in-')) return undefined;
+
+    const handleParts = targetHandle.split('-');
+    const uniformIndex = handleParts[2];
+
+    return handleParts.length > 3 && /^\d+$/.test(uniformIndex) ? handleParts[3] : undefined;
+  }
+
+  const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
+      const uniformName = getUniformNameFromHandle(meta.inletKey);
+
+      if (uniformName) {
+        const uniformDef = shaderParkUniformDefs.find((def) => def.name === uniformName);
+        const uniformValue = toGLValue(uniformDef, message);
+
+        glSystem.setUniformData(nodeId, uniformName, uniformValue);
+        uniformValues = { ...uniformValues, [uniformName]: message };
+        updateNodeData(nodeId, { uniformValues });
+
+        return;
+      }
+
       match(message)
         .with(messages.setCode, ({ value }) => {
           setCodeAndUpdate(value);
@@ -171,6 +210,8 @@
       code: data.code,
       videoInletCount: data.videoInletCount ?? 4,
       videoOutletCount: data.videoOutletCount ?? 1,
+      shaderParkUniformDefs: data.shaderParkUniformDefs ?? [],
+      uniformValues: data.uniformValues ?? {},
       fboFormat: data.fboFormat,
       resolution: data.resolution
     });
@@ -218,16 +259,79 @@
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
 
-      glSystem.upsertNode(nodeId, 'shaderpark', {
+      const nextUniformDefs = extractShaderParkUniformDefs(data.code);
+      const defaultValues = settingsSchemaToDefaultValues(
+        uniformDefsToSettingsSchema(nextUniformDefs)
+      );
+      const pruned: Record<string, unknown> = {};
+
+      for (const def of nextUniformDefs) {
+        if (def.name in uniformValues) {
+          pruned[def.name] = uniformValues[def.name];
+        } else if (def.name in defaultValues) {
+          pruned[def.name] = defaultValues[def.name];
+        } else {
+          pruned[def.name] = normalizeShaderParkUniformValue(
+            (def as { default?: unknown }).default,
+            def.type
+          );
+        }
+      }
+
+      uniformValues = pruned;
+
+      const nextData = {
         code: data.code,
         videoInletCount: data.videoInletCount ?? 4,
         videoOutletCount: data.videoOutletCount ?? 1,
+        shaderParkUniformDefs: nextUniformDefs,
+        uniformValues: pruned,
         fboFormat: data.fboFormat,
         resolution: data.resolution,
         _runRevision: Date.now()
+      };
+
+      updateNodeData(nodeId, nextData);
+
+      glSystem.upsertNode(nodeId, 'shaderpark', {
+        ...nextData
       });
+
+      for (const [name, value] of Object.entries(pruned)) {
+        const uniformDef = nextUniformDefs.find((def) => def.name === name);
+
+        glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
+      }
+
+      updateNodeInternals(nodeId);
     } catch (error) {
+      logger.nodeError(
+        nodeId,
+        'Shader Park compilation failed:',
+        error instanceof Error ? error.message : String(error)
+      );
       logger.error('[shaderpark] update error:', error);
+    }
+  }
+
+  function handleUniformValueChange(key: string, value: unknown) {
+    const uniformDef = shaderParkUniformDefs.find((def) => def.name === key);
+
+    uniformValues = { ...uniformValues, [key]: value };
+    updateNodeData(nodeId, { uniformValues });
+    glSystem.setUniformData(nodeId, key, toGLValue(uniformDef, value));
+  }
+
+  function handleUniformRevertAll() {
+    const defaults = settingsSchemaToDefaultValues(uniformsSchema);
+
+    uniformValues = defaults;
+    updateNodeData(nodeId, { uniformValues: defaults });
+
+    for (const [name, value] of Object.entries(defaults)) {
+      const uniformDef = shaderParkUniformDefs.find((def) => def.name === name);
+
+      glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
     }
   }
 </script>
@@ -244,6 +348,10 @@
   {selected}
   {editorReady}
   hasError={lineErrors !== undefined}
+  settingsSchema={uniformsSchema}
+  settingsValues={uniformValues}
+  onSettingsValueChange={handleUniformValueChange}
+  onSettingsRevertAll={handleUniformRevertAll}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: videoInletCount }) as _, index (index)}
@@ -251,8 +359,20 @@
         port="inlet"
         spec={{ handleType: 'video', handleId: index.toString() }}
         title={`iChannel${index}`}
-        total={messageInletCount + videoInletCount}
+        total={messageInletCount + videoInletCount + visibleUniformInlets.length}
         {index}
+        class={handleClass}
+        {nodeId}
+      />
+    {/each}
+
+    {#each visibleUniformInlets as { def, uniformIndex }, visibleIndex (uniformIndex)}
+      <TypedHandle
+        port="inlet"
+        spec={{ handleType: 'message', handleId: `${uniformIndex}-${def.name}-${def.type}` }}
+        title={`${def.name} (${def.type})`}
+        total={messageInletCount + videoInletCount + visibleUniformInlets.length}
+        index={videoInletCount + visibleIndex}
         class={handleClass}
         {nodeId}
       />
@@ -261,10 +381,10 @@
     {#each Array.from({ length: messageInletCount }) as _, index (index)}
       <TypedHandle
         port="inlet"
-        spec={{ handleType: 'message', handleId: index }}
+        spec={{ handleType: 'message', handleId: `control-${index}` }}
         title={`Message Inlet ${index}`}
-        total={messageInletCount + videoInletCount}
-        index={index + videoInletCount}
+        total={messageInletCount + videoInletCount + visibleUniformInlets.length}
+        index={index + videoInletCount + visibleUniformInlets.length}
         class={handleClass}
         {nodeId}
       />

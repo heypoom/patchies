@@ -766,7 +766,7 @@ export class GLSystem {
     }
 
     // Cleanup persistent uniform data for GLSL nodes.
-    if (node.type === 'glsl') {
+    if (node.type === 'glsl' || node.type === 'shaderpark') {
       this.removeUniformData(nodeId);
     }
 
