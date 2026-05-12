@@ -119,8 +119,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     }))
     .with('shaderpark', () => ({
       code: DEFAULT_SHADERPARK_CODE,
-      messageInletCount: 1,
-      messageOutletCount: 0,
       videoInletCount: 4,
       videoOutletCount: 1
     }))

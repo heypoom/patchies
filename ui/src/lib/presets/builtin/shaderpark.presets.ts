@@ -86,8 +86,6 @@ metal(0.15);`;
 type ShaderParkPresetData = {
   code: string;
   title?: string;
-  messageInletCount?: number;
-  messageOutletCount?: number;
   videoInletCount?: number;
   videoOutletCount?: number;
 };
@@ -102,8 +100,6 @@ export const SHADERPARK_PRESETS: Record<
     data: {
       title: 'Noise Sphere',
       code: NOISE_SPHERE_SHADERPARK,
-      messageInletCount: 1,
-      messageOutletCount: 0,
       videoInletCount: 0,
       videoOutletCount: 1
     }
@@ -114,8 +110,6 @@ export const SHADERPARK_PRESETS: Record<
     data: {
       title: 'Square Symmetry',
       code: SQUARE_SYMMETRY_SHADERPARK,
-      messageInletCount: 1,
-      messageOutletCount: 0,
       videoInletCount: 0,
       videoOutletCount: 1
     }
@@ -126,8 +120,6 @@ export const SHADERPARK_PRESETS: Record<
     data: {
       title: 'Mouse Follower',
       code: MOUSE_FOLLOWER_SHADERPARK,
-      messageInletCount: 1,
-      messageOutletCount: 0,
       videoInletCount: 0,
       videoOutletCount: 1
     }

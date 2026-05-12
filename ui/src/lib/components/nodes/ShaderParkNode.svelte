@@ -53,8 +53,6 @@
     data: {
       title?: string;
       code: string;
-      messageInletCount?: number;
-      messageOutletCount?: number;
       videoInletCount?: number;
       videoOutletCount?: number;
       shaderParkVideoUniformIndices?: number[];
@@ -85,8 +83,6 @@
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
 
-  let messageInletCount = $derived(data.messageInletCount ?? 1);
-  let messageOutletCount = $derived(data.messageOutletCount ?? 0);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
   let previousExecuteCode = $state<number | undefined>(undefined);
   const shaderParkVideoUniformIndices = $derived(
@@ -131,12 +127,7 @@
     if (e.nodeId !== nodeId) return;
 
     match(e)
-      .with({ portType: 'message' }, (m) => {
-        updateNodeData(nodeId, {
-          messageInletCount: m.inletCount,
-          messageOutletCount: m.outletCount
-        });
-      })
+      .with({ portType: 'message' }, () => {})
       .with({ portType: 'video' }, (m) => {
         updateNodeData(nodeId, {
           videoInletCount: m.inletCount,
@@ -222,6 +213,19 @@
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
+      const isControlMessage = match(message)
+        .with(messages.setCode, ({ value }) => {
+          setCodeAndUpdate(value);
+          return true;
+        })
+        .with(messages.run, () => {
+          updateShaderPark();
+          return true;
+        })
+        .otherwise(() => false);
+
+      if (isControlMessage) return;
+
       const uniformName = getUniformNameFromHandle(meta.inletKey);
 
       if (uniformName) {
@@ -235,15 +239,6 @@
 
         return;
       }
-
-      match(message)
-        .with(messages.setCode, ({ value }) => {
-          setCodeAndUpdate(value);
-        })
-        .with(messages.run, () => {
-          updateShaderPark();
-        })
-        .otherwise(() => {});
     } catch (error) {
       logger.error('[shaderpark] message handling error:', error);
     }
@@ -440,9 +435,7 @@
         port="inlet"
         spec={{ handleType: 'video', handleId: channelIndex.toString() }}
         title={`iChannel${channelIndex}`}
-        total={messageInletCount +
-          shaderParkVideoUniformIndices.length +
-          visibleUniformInlets.length}
+        total={shaderParkVideoUniformIndices.length + visibleUniformInlets.length}
         index={visibleIndex}
         class={handleClass}
         {nodeId}
@@ -454,24 +447,8 @@
         port="inlet"
         spec={{ handleType: 'message', handleId: `${uniformIndex}-${def.name}-${def.type}` }}
         title={`${def.name} (${def.type})`}
-        total={messageInletCount +
-          shaderParkVideoUniformIndices.length +
-          visibleUniformInlets.length}
+        total={shaderParkVideoUniformIndices.length + visibleUniformInlets.length}
         index={shaderParkVideoUniformIndices.length + visibleIndex}
-        class={handleClass}
-        {nodeId}
-      />
-    {/each}
-
-    {#each Array.from({ length: messageInletCount }) as _, index (index)}
-      <TypedHandle
-        port="inlet"
-        spec={{ handleType: 'message', handleId: `control-${index}` }}
-        title={`Message Inlet ${index}`}
-        total={messageInletCount +
-          shaderParkVideoUniformIndices.length +
-          visibleUniformInlets.length}
-        index={index + shaderParkVideoUniformIndices.length + visibleUniformInlets.length}
         class={handleClass}
         {nodeId}
       />
@@ -485,25 +462,13 @@
           port="outlet"
           spec={{ handleType: 'video', handleId: index.toString() }}
           title={`Video Outlet ${index}`}
-          total={messageOutletCount + videoOutletCount}
+          total={videoOutletCount}
           {index}
           class={handleClass}
           {nodeId}
         />
       {/each}
     {/if}
-
-    {#each Array.from({ length: messageOutletCount }) as _, index (index)}
-      <TypedHandle
-        port="outlet"
-        spec={{ handleType: 'message', handleId: index }}
-        title={`Message Outlet ${index}`}
-        total={messageOutletCount + videoOutletCount}
-        index={index + videoOutletCount}
-        class={handleClass}
-        {nodeId}
-      />
-    {/each}
   {/snippet}
 
   {#snippet codeEditor()}

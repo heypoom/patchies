@@ -18,6 +18,10 @@ Video inputs:
 - Patchies binds video inlets as sampler2D uniforms named iChannel0, iChannel1, iChannel2, iChannel3.
 - To sample video, define a GLSL helper with glslFunc/glslFuncES3 that references iChannel0, then use the helper in Shader Park code.
 
+Settings:
+- input() and input2D() create persistent settings and matching message inlets.
+- Those generated message inlets also accept run and setCode control messages; shaderpark has no separate control inlet.
+
 Example - Simple Sphere:
 \`\`\`json
 {

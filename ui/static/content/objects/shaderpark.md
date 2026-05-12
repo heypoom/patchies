@@ -42,6 +42,9 @@ sphere(radius);
 move(offset.x, offset.y, 0);
 ```
 
+The generated message inlets can also receive `run` and `setCode` control
+messages, so Shader Park does not expose a separate control inlet.
+
 ## Mouse
 
 Code that references `mouse` or `mouseIntersection()` receives normalized Shader

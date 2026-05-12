@@ -1,5 +1,4 @@
 import type { ObjectSchema } from './types';
-import { Run, SetCode } from './common';
 
 /**
  * Schema for the shaderpark object.
@@ -8,16 +7,7 @@ export const shaderparkSchema: ObjectSchema = {
   type: 'shaderpark',
   category: 'video',
   description: 'Creates Shader Park/Sculpt raymarched visuals for the render pipeline',
-  inlets: [
-    {
-      id: 'message',
-      description: 'Control messages',
-      messages: [
-        { schema: SetCode, description: 'Set the code in the editor' },
-        { schema: Run, description: 'Evaluate code and update visuals' }
-      ]
-    }
-  ],
+  inlets: [],
   outlets: [],
   tags: ['shader', 'shaderpark', 'sdf', 'raymarching', 'visual', 'graphics', 'generative'],
   hasDynamicOutlets: true,
@@ -26,7 +16,7 @@ export const shaderparkSchema: ObjectSchema = {
       template: 'video-in-{index}',
       handleType: 'video',
       description:
-        'Video inlets are bound as sampler2D uniforms iChannel0, iChannel1, iChannel2, iChannel3'
+        'Video inlets are shown for referenced sampler uniforms; message inlets are generated from input()/input2D() settings and also accept setCode/run control messages'
     },
     outlet: {
       template: 'video-out-{index}',
