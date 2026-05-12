@@ -21,6 +21,43 @@ export const floatTexSchema: ObjectSchema = {
         },
         {
           schema: Type.Object({
+            type: Type.Literal('wrapped'),
+            channels: Type.Union([
+              Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
+              Type.Array(Type.Unsafe<Float32Array>({ type: 'Float32Array' }))
+            ]),
+            width: Type.Number(),
+            format: Type.Optional(
+              Type.Union([
+                Type.Literal('r'),
+                Type.Literal('rg'),
+                Type.Literal('rgb'),
+                Type.Literal('rgba')
+              ])
+            )
+          }),
+          description: 'Wrapped channel rows'
+        },
+        {
+          schema: Type.Object({
+            type: Type.Literal('square'),
+            channels: Type.Union([
+              Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
+              Type.Array(Type.Unsafe<Float32Array>({ type: 'Float32Array' }))
+            ]),
+            format: Type.Optional(
+              Type.Union([
+                Type.Literal('r'),
+                Type.Literal('rg'),
+                Type.Literal('rgb'),
+                Type.Literal('rgba')
+              ])
+            )
+          }),
+          description: 'Square channel texture'
+        },
+        {
+          schema: Type.Object({
             type: Type.Literal('rgba'),
             data: Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
             width: Type.Number(),

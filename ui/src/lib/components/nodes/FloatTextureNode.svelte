@@ -8,6 +8,8 @@
     inferFloatTextureDataFormat,
     isFloatTextureInterleavedSource,
     isFloatTextureSharedSource,
+    isFloatTextureSquareSource,
+    isFloatTextureWrappedSource,
     packFloatTexture,
     type FloatTextureDataFormat,
     type FloatTextureSource
@@ -69,6 +71,10 @@
     }
 
     if (isFloatTextureSharedSource(message)) {
+      return { source: message };
+    }
+
+    if (isFloatTextureWrappedSource(message) || isFloatTextureSquareSource(message)) {
       return { source: message };
     }
 

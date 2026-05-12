@@ -140,4 +140,48 @@ describe('packFloatTexture', () => {
 
     expect(isFloatTextureSharedSource(source)).toBe(true);
   });
+
+  it('wraps long channel rows by the requested width', () => {
+    const result = packFloatTexture({
+      type: 'wrapped',
+      channels: new Float32Array([1, 2, 3, 4, 5]),
+      width: 2
+    });
+
+    expect(result.width).toBe(2);
+    expect(result.height).toBe(3);
+    expect(Array.from(result.data)).toEqual([
+      1, 0, 0, 1, 2, 0, 0, 1, 3, 0, 0, 1, 4, 0, 0, 1, 5, 0, 0, 1, 0, 0, 0, 1
+    ]);
+  });
+
+  it('starts each channel group on a new row in wrapped layout', () => {
+    const result = packFloatTexture({
+      type: 'wrapped',
+      channels: [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6])],
+      format: 'r',
+      width: 2
+    });
+
+    expect(result.width).toBe(2);
+    expect(result.height).toBe(4);
+    expect(Array.from(result.data)).toEqual([
+      1, 0, 0, 1, 2, 0, 0, 1, 3, 0, 0, 1, 0, 0, 0, 1, 4, 0, 0, 1, 5, 0, 0, 1, 6, 0, 0, 1, 0, 0, 0, 1
+    ]);
+  });
+
+  it('packs channel groups into a square texture', () => {
+    const result = packFloatTexture({
+      type: 'square',
+      channels: [new Float32Array([1, 2, 3]), new Float32Array([4, 5])],
+      format: 'r'
+    });
+
+    expect(result.width).toBe(3);
+    expect(result.height).toBe(3);
+    expect(Array.from(result.data)).toEqual([
+      1, 0, 0, 1, 2, 0, 0, 1, 3, 0, 0, 1, 4, 0, 0, 1, 5, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0,
+      1, 0, 0, 0, 1
+    ]);
+  });
 });

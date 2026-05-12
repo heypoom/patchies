@@ -16,6 +16,8 @@ The first target workflow is:
 - The inlet accepts:
   - `Float32Array` as a single red channel row.
   - `Float32Array[]` as ordered channel data.
+  - `{ type: 'wrapped', channels, width, format? }` as wrapped channel packing.
+  - `{ type: 'square', channels, format? }` as square channel packing.
   - `{ data: Float32Array, width, height, type: 'rgba' }` as already-interleaved RGBA pixel data.
   - `{ buffer: SharedArrayBuffer, width, height, type: 'rgba', version }` as shared already-interleaved RGBA pixel data.
 - The MVP packs samples into an `RGBA32F` texture.
@@ -73,6 +75,22 @@ For each pixel:
 - Pixel `y` uses channel group `y`.
 - Channels missing from an incomplete group are filled from the extra pixel value.
 - Rows use the longest channel length in that group; shorter channels are padded with the extra pixel value.
+
+## Layout Contract
+
+Channel packing supports three layouts:
+
+| Layout    | Meaning                                                                 |
+| --------- | ----------------------------------------------------------------------- |
+| `rows`    | Default. Each channel group becomes one texture row.                    |
+| `wrapped` | Each channel group starts on a new row, but long rows wrap by `width`.  |
+| `square`  | Channel groups are appended into an approximately square texture.       |
+
+`rows` is selected by plain `Float32Array` and `Float32Array[]` input.
+
+`wrapped` is selected with `{ type: 'wrapped', channels, width }`. `channels` is a `Float32Array` or `Float32Array[]`. `width` is required and becomes the output texture width.
+
+`square` is selected with `{ type: 'square', channels }`. It computes `size = ceil(sqrt(totalPixels))`, where `totalPixels` is the sum of sample counts across channel groups. The output texture is `size x size`, and unused pixels at the end are filled with the extra pixel value.
 
 ## Recommended Sequence
 

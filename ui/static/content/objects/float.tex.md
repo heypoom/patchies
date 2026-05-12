@@ -9,6 +9,27 @@ to treat each array as ordered channel data.
 The format is inferred from channel count: `[r]`, `[r, g]`, `[r, g, b]`,
 and `[r, g, b, a]` map to `r`, `rg`, `rgb`, and `rgba`.
 
+For long channel rows, use `type: "wrapped"` to continue samples on additional
+rows:
+
+```js
+send({
+  type: "wrapped",
+  channels: [r, g, b, a],
+  width: 256,
+})
+```
+
+For point-cloud or particle-style data, use `type: "square"` to pack channel
+groups into an approximately square texture:
+
+```js
+send({
+  type: "square",
+  channels: [x, y, z, w],
+})
+```
+
 If you already have interleaved RGBA pixel data, send an object with explicit
 dimensions:
 
@@ -73,6 +94,60 @@ produce(10)
 
 recv((data, meta) => {
   produce(data)
+})
+```
+
+## Wrapped Rows
+
+```js
+setRunOnMount(true)
+
+let S = 1024
+let r = new Float32Array(S)
+let g = new Float32Array(S)
+let b = new Float32Array(S)
+let a = new Float32Array(S)
+
+for (let i = 0; i < S; i++) {
+  let t = i / (S - 1)
+
+  r[i] = t
+  g[i] = 0
+  b[i] = 1 - t
+  a[i] = 1
+}
+
+send({
+  type: "wrapped",
+  channels: [r, g, b, a],
+  width: 128,
+})
+```
+
+## Square Channels
+
+```js
+setRunOnMount(true)
+
+let S = 40 ** 2
+let x = new Float32Array(S)
+let y = new Float32Array(S)
+let z = new Float32Array(S)
+let w = new Float32Array(S)
+
+for (let i = 0; i < S; i++) {
+  let t = i / S
+  let angle = t * Math.PI * 2 * 12
+
+  x[i] = Math.cos(angle) * t
+  y[i] = Math.sin(angle) * t
+  z[i] = t
+  w[i] = 1
+}
+
+send({
+  type: "square",
+  channels: [x, y, z, w],
 })
 ```
 
