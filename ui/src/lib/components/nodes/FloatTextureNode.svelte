@@ -6,6 +6,7 @@
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import {
     inferFloatTextureDataFormat,
+    isFloatTextureInterleavedSource,
     packFloatTexture,
     type FloatTextureDataFormat,
     type FloatTextureSource
@@ -60,6 +61,10 @@
       return { source: message };
     }
 
+    if (isFloatTextureInterleavedSource(message)) {
+      return { source: message };
+    }
+
     return null;
   }
 
@@ -74,7 +79,9 @@
       target: packBuffer
     });
 
-    packBuffer = packed.data;
+    if (!isFloatTextureInterleavedSource(input.source)) {
+      packBuffer = packed.data;
+    }
 
     width = packed.width;
     height = packed.height;
@@ -112,7 +119,7 @@
     port="inlet"
     type="message"
     id="0"
-    title="Float32Array or Float32Array[] input"
+    title="Float32Array, Float32Array[], or RGBA texture object input"
     total={1}
     index={0}
     {nodeId}

@@ -1,6 +1,13 @@
 export type FloatTextureDataFormat = 'r' | 'rg' | 'rgb' | 'rgba';
 
-export type FloatTextureSource = Float32Array | Float32Array[];
+export type FloatTextureInterleavedSource = {
+  data: Float32Array;
+  width: number;
+  height: number;
+  format: 'rgba';
+};
+
+export type FloatTextureSource = Float32Array | Float32Array[] | FloatTextureInterleavedSource;
 
 export interface PackedFloatTexture {
   width: number;
@@ -23,10 +30,27 @@ const CHANNELS_PER_FORMAT: Record<FloatTextureDataFormat, number> = {
 
 const DEFAULT_EXTRA_PIXEL_VALUE: [number, number, number, number] = [0, 0, 0, 1];
 
+export function isFloatTextureInterleavedSource(
+  source: unknown
+): source is FloatTextureInterleavedSource {
+  if (!source || typeof source !== 'object') return false;
+
+  const value = source as Partial<FloatTextureInterleavedSource>;
+
+  return (
+    value.data instanceof Float32Array &&
+    typeof value.width === 'number' &&
+    typeof value.height === 'number' &&
+    value.format === 'rgba'
+  );
+}
+
 export const normalizeFloatTextureSource = (source: FloatTextureSource): Float32Array[] =>
-  source instanceof Float32Array ? [source] : source;
+  source instanceof Float32Array ? [source] : Array.isArray(source) ? source : [source.data];
 
 export function inferFloatTextureDataFormat(source: FloatTextureSource): FloatTextureDataFormat {
+  if (isFloatTextureInterleavedSource(source)) return 'rgba';
+
   const channels = normalizeFloatTextureSource(source);
 
   if (channels.length <= 1) return 'r';
@@ -40,6 +64,20 @@ export function packFloatTexture(
   source: FloatTextureSource,
   { dataFormat, extraPixelValue = DEFAULT_EXTRA_PIXEL_VALUE, target }: PackFloatTextureOptions = {}
 ): PackedFloatTexture {
+  if (isFloatTextureInterleavedSource(source)) {
+    const width = Math.max(1, Math.round(source.width));
+    const height = Math.max(1, Math.round(source.height));
+    const expectedLength = width * height * 4;
+
+    if (source.data.length !== expectedLength) {
+      throw new Error(
+        `Expected RGBA data length ${expectedLength}, received ${source.data.length}`
+      );
+    }
+
+    return { width, height, data: source.data };
+  }
+
   const channels = normalizeFloatTextureSource(source);
   const resolvedDataFormat = dataFormat ?? inferFloatTextureDataFormat(source);
   const channelsPerRow = CHANNELS_PER_FORMAT[resolvedDataFormat];

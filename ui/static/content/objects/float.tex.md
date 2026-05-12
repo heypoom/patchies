@@ -9,6 +9,21 @@ to treat each array as ordered channel data.
 The format is inferred from channel count: `[r]`, `[r, g]`, `[r, g, b]`,
 and `[r, g, b, a]` map to `r`, `rg`, `rgb`, and `rgba`.
 
+If you already have interleaved RGBA pixel data, send an object with explicit
+dimensions:
+
+```js
+send({
+  data: rgba,
+  width,
+  height,
+  format: "rgba",
+})
+```
+
+In that form, `rgba.length` must be `width * height * 4`, and `float.tex`
+uploads it without repacking.
+
 Stores data as `rgba32f`, uses nearest filtering and fills missing
 channels with `(0, 0, 0, 1)`.
 
@@ -17,7 +32,7 @@ To view it, connect the video outlet to `glsl>` or `hydra>`.
 You can also connect `tap~` into `float.tex` to turn raw audio buffers into a
 texture for waveform and audio-reactive shader experiments.
 
-## Example
+## Planar RGBA Channels
 
 ```js
 setRunOnMount(true)
@@ -43,6 +58,37 @@ produce(10)
 
 recv((data, meta) => {
   produce(data)
+})
+```
+
+## Interleaved RGBA
+
+```js
+setRunOnMount(true)
+
+let width = 50
+let height = 50
+let rgba = new Float32Array(width * height * 4)
+
+for (let y = 0; y < height; y++) {
+  for (let x = 0; x < width; x++) {
+    let i = (y * width + x) * 4
+
+    let u = x / (width - 1)
+    let v = y / (height - 1)
+
+    rgba[i + 0] = u
+    rgba[i + 1] = v
+    rgba[i + 2] = 1 - u
+    rgba[i + 3] = 1
+  }
+}
+
+send({
+  data: rgba,
+  width,
+  height,
+  format: "rgba",
 })
 ```
 
