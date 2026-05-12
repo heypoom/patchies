@@ -6,10 +6,14 @@ pipeline. It is useful for concise SDF and raymarched procedural 3D visuals.
 Write Shader Park statements directly in the editor:
 
 ```javascript
-sphere(0.35);
-color(vec3(0.2, 0.6, 1.0));
-shine(0.6);
-rotateY(time * 0.5);
+// @title Noise Sphere
+// @primaryButton settings
+
+let radius = input(0.7, 0.1, 1.2);
+let scale = 2.0;
+let s = getSpace();
+let n = 0.1 * noise(scale * s + time);
+sphere(radius + n);
 ```
 
 The object compiles that code to GLSL with `shader-park-core`, then renders it
