@@ -16,6 +16,7 @@ Use the published `shader-park-core@0.2.8` package as a compiler/codegen depende
 - The render worker owns compilation and drawing.
 - The renderer allocates no separate canvas and creates no independent `requestAnimationFrame` loop.
 - Upstream video textures are passed as uniforms (`iChannel0`, `iChannel1`, `iChannel2`, `iChannel3`) so texture routing stays zero-copy inside the shared WebGL2 context.
+- The renderer always reserves those four Shader Park sampler slots internally, even when the UI hides unreferenced video inlets. User `input()`/`input2D()` overrides are passed after the fixed sampler slots.
 - The output is the node's normal FBO texture, so downstream render objects consume it like any other video source.
 
 ## Initial Scope

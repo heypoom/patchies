@@ -28,7 +28,7 @@ import { TextmodeRenderer } from './textmodeRenderer';
 import { ThreeRenderer } from './threeRenderer';
 import { ReglRenderer } from './reglRenderer';
 import { SwissGLRenderer } from './swglRenderer';
-import { createShaderParkDrawCommand } from './shaderParkRenderer';
+import { createShaderParkDrawCommand, SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
 import { ProjectionMapRenderer } from '$objects/projmap/ProjectionMapRenderer';
 import { getFramebuffer, getRawTexture } from './utils';
 import { isExternalTextureNode } from '$lib/canvas/node-types';
@@ -1440,10 +1440,11 @@ export class FBORenderer {
     }
 
     if (node.type === 'shaderpark') {
-      const inletCount = node.data.videoInletCount ?? 4;
       const textureArray: (regl.Texture2D | undefined)[] = [];
 
-      for (let i = 0; i < inletCount; i++) {
+      // Shader Park has fixed sampler slots (iChannel0..3). The UI can hide
+      // unused handles, but uniform overrides must stay after those slots.
+      for (let i = 0; i < SHADERPARK_VIDEO_UNIFORM_COUNT; i++) {
         textureArray[i] = inputTextureMap.get(i);
       }
 

@@ -25,7 +25,8 @@ type ShaderParkGLSL = {
 type Props = RenderParams;
 type ShaderParkCore = typeof import('shader-park-core');
 
-const VIDEO_UNIFORM_COUNT = 4;
+export const SHADERPARK_VIDEO_UNIFORM_COUNT = 4;
+const VIDEO_UNIFORM_COUNT = SHADERPARK_VIDEO_UNIFORM_COUNT;
 const UNIFORM_OVERRIDES_INDEX = VIDEO_UNIFORM_COUNT;
 const VIDEO_UNIFORMS = Array.from(
   { length: VIDEO_UNIFORM_COUNT },
