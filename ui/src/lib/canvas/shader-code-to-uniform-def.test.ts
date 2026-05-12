@@ -124,8 +124,33 @@ describe('uniformDefsToSettingsSchema', () => {
     ).toMatchObject([{ type: 'number' }]);
   });
 
-  it('returns no field for unsupported types (vec2, sampler2D, etc.)', () => {
-    expect(uniformDefsToSettingsSchema([{ name: 'u_points', type: 'vec2' }])).toEqual([]);
+  it('generates vector2 field for vec2', () => {
+    const fields = uniformDefsToSettingsSchema([
+      {
+        name: 'offset',
+        type: 'vec2',
+        default: [0.25, -0.5],
+        min: [-1, -1],
+        max: [1, 1],
+        description: 'Offset'
+      }
+    ]);
+
+    expect(fields).toEqual([
+      {
+        key: 'offset',
+        label: 'Offset',
+        type: 'vec2',
+        default: [0.25, -0.5],
+        min: [-1, -1],
+        max: [1, 1],
+        step: 0.01,
+        persistence: 'node'
+      }
+    ]);
+  });
+
+  it('returns no field for unsupported types (sampler2D, etc.)', () => {
     expect(uniformDefsToSettingsSchema([{ name: 'u_tex', type: 'sampler2D' }])).toEqual([]);
   });
 
@@ -183,14 +208,16 @@ describe('settingsSchemaToDefaultValues', () => {
         options: [{ label: 'Two', value: '2' }]
       },
       { name: 'enabled', type: 'bool', default: true },
-      { name: 'tint', type: 'vec3', widget: 'color', default: '#ff6600' }
+      { name: 'tint', type: 'vec3', widget: 'color', default: '#ff6600' },
+      { name: 'offset', type: 'vec2', default: [0.25, -0.5] }
     ]);
 
     expect(settingsSchemaToDefaultValues(schema)).toEqual({
       amount: 0.25,
       mode: '2',
       enabled: true,
-      tint: '#ff6600'
+      tint: '#ff6600',
+      offset: [0.25, -0.5]
     });
   });
 });

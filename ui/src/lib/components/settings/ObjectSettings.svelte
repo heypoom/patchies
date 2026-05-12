@@ -26,6 +26,7 @@
     settingsPrefix?: string;
   } = $props();
 
+  const VECTOR_AXES = ['x', 'y'] as const;
   const tracker = useNodeDataTracker(nodeId);
 
   function trackingKey(key: string): string {
@@ -41,11 +42,22 @@
   function hasDirtyValues(): boolean {
     return schema.some((field) => {
       if (!('default' in field) || field.default === undefined) return false;
-      return getCurrentValue(field) !== field.default;
+      return !settingsValueEquals(getCurrentValue(field), field.default);
     });
   }
 
   const isDirty = $derived(hasDirtyValues());
+
+  function settingsValueEquals(left: unknown, right: unknown): boolean {
+    if (Array.isArray(left) && Array.isArray(right)) {
+      return (
+        left.length === right.length &&
+        left.every((value, index) => settingsValueEquals(value, right[index]))
+      );
+    }
+
+    return left === right;
+  }
 
   function handleDiscreteChange(field: SettingsField, newValue: unknown) {
     const oldValue = getCurrentValue(field);
@@ -74,6 +86,36 @@
     }
 
     return tracker.track(trackingKey(field.key), () => getCurrentValue(field));
+  }
+
+  function toVec2(value: unknown, fallback: [number, number] = [0, 0]): [number, number] {
+    if (Array.isArray(value)) {
+      const x = typeof value[0] === 'number' ? value[0] : fallback[0];
+      const y = typeof value[1] === 'number' ? value[1] : fallback[1];
+
+      return [x, y];
+    }
+
+    if (value && typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      const x = typeof record.x === 'number' ? record.x : fallback[0];
+      const y = typeof record.y === 'number' ? record.y : fallback[1];
+
+      return [x, y];
+    }
+
+    return fallback;
+  }
+
+  function handleVec2Input(field: SettingsField, axis: number, raw: string) {
+    if (raw === '' || raw === '-') return;
+
+    const parsed = parseFloat(raw);
+    if (!Number.isFinite(parsed)) return;
+
+    const next = toVec2(getCurrentValue(field));
+    next[axis] = parsed;
+    onValueChange(field.key, next);
   }
 
   // Sync reactive value to a number input only when it's not focused,
@@ -358,6 +400,49 @@
               <span class="text-xs text-zinc-400">{(getCurrentValue(field) as string) ?? ''}</span>
             </label>
           {/if}
+        </div>
+      {:else if field.type === 'vec2'}
+        {@const vecTracker = makeTracker(field)}
+        {@const currentVec = toVec2(getCurrentValue(field), field.default ?? [0, 0])}
+        {@const minVec = toVec2(field.min, [-Infinity, -Infinity])}
+        {@const maxVec = toVec2(field.max, [Infinity, Infinity])}
+
+        <div>
+          {#if field.description}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <span class="mb-1 block cursor-default text-xs font-medium text-zinc-300"
+                  >{field.label}</span
+                >
+              </Tooltip.Trigger>
+              <Tooltip.Content>{field.description}</Tooltip.Content>
+            </Tooltip.Root>
+          {:else}
+            <span class="mb-1 block text-xs font-medium text-zinc-300">{field.label}</span>
+          {/if}
+
+          <div class="grid grid-cols-2 gap-2">
+            {#each VECTOR_AXES as axisLabel, axis (axisLabel)}
+              <label class="min-w-0">
+                <span class="mb-1 block text-[10px] font-medium text-zinc-500 uppercase"
+                  >{axisLabel}</span
+                >
+                <input
+                  id="setting-{field.key}-{axisLabel}"
+                  type="number"
+                  use:syncNumberValue={() => currentVec[axis]}
+                  min={Number.isFinite(minVec[axis]) ? minVec[axis] : undefined}
+                  max={Number.isFinite(maxVec[axis]) ? maxVec[axis] : undefined}
+                  step={field.step}
+                  class="nodrag w-full min-w-0 rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-500"
+                  onfocus={vecTracker.onFocus}
+                  onblur={vecTracker.onBlur}
+                  oninput={(e) =>
+                    handleVec2Input(field, axis, (e.target as HTMLInputElement).value)}
+                />
+              </label>
+            {/each}
+          </div>
         </div>
       {/if}
     {/each}

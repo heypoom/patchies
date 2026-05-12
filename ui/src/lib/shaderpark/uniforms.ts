@@ -1,5 +1,5 @@
 import { sculptToGLSL } from 'shader-park-core';
-import type { GLUniformDef, GLUniformType } from '../../types/uniform-config';
+import type { GLUniformDef, GLUniformType, GLUniformVec2 } from '../../types/uniform-config';
 
 export type ShaderParkGeneratedUniform = {
   name: string;
@@ -49,8 +49,24 @@ export function normalizeShaderParkUniformValue(value: unknown, type: string): u
   return new Array(dimensions).fill(0);
 }
 
-function numberOrUndefined(value: unknown) {
+function numberOrUndefined(value: unknown): number | undefined {
   return typeof value === 'number' ? value : undefined;
+}
+
+function uniformLimitOrUndefined(value: unknown, type: string): number | GLUniformVec2 | undefined {
+  if (type === 'float') {
+    return numberOrUndefined(value);
+  }
+
+  if (type !== 'vec2') {
+    return undefined;
+  }
+
+  const normalized = normalizeShaderParkUniformValue(value, type);
+
+  return Array.isArray(normalized) && normalized.length === 2
+    ? (normalized as GLUniformVec2)
+    : undefined;
 }
 
 export function shaderParkUniformsToDefs(uniforms: ShaderParkGeneratedUniform[]): GLUniformDef[] {
@@ -64,8 +80,8 @@ export function shaderParkUniformsToDefs(uniforms: ShaderParkGeneratedUniform[])
         name: uniform.name,
         type: uniform.type as GLUniformType,
         default: normalizedDefault as GLUniformDef['default'],
-        min: numberOrUndefined(uniform.min),
-        max: numberOrUndefined(uniform.max),
+        min: uniformLimitOrUndefined(uniform.min, uniform.type),
+        max: uniformLimitOrUndefined(uniform.max, uniform.type),
         description: uniform.name
       };
     });

@@ -257,11 +257,25 @@ function deriveFloatStep(...values: (number | undefined)[]): number {
   return maxDecimals === 0 ? 0.01 : Math.pow(10, -maxDecimals);
 }
 
+function numberOrUndefined(value: unknown): number | undefined {
+  return typeof value === 'number' ? value : undefined;
+}
+
+function vec2OrUndefined(value: unknown): [number, number] | undefined {
+  if (!Array.isArray(value) || value.length < 2) return undefined;
+
+  const [x, y] = value;
+
+  return typeof x === 'number' && typeof y === 'number' ? [x, y] : undefined;
+}
+
 export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField[] =>
   defs.flatMap((def) =>
     match<string, SettingsField[]>(def.type)
       .with('float', () => {
-        const step = def.step ?? deriveFloatStep(def.default as number, def.min, def.max);
+        const minValue = numberOrUndefined(def.min);
+        const maxValue = numberOrUndefined(def.max);
+        const step = def.step ?? deriveFloatStep(def.default as number, minValue, maxValue);
 
         if (def.widget === 'select' && def.options != null) {
           return [
@@ -277,14 +291,14 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
         }
 
         return [
-          def.min != null && def.max != null
+          minValue != null && maxValue != null
             ? {
                 key: def.name,
                 label: def.description ?? def.name,
                 type: 'slider' as const,
                 default: (def.default as number) ?? 0,
-                min: def.min,
-                max: def.max,
+                min: minValue,
+                max: maxValue,
                 step,
                 persistence: 'node' as const
               }
@@ -299,6 +313,9 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
         ];
       })
       .with('int', () => {
+        const minValue = numberOrUndefined(def.min);
+        const maxValue = numberOrUndefined(def.max);
+
         if (def.widget === 'select' && def.options != null) {
           return [
             {
@@ -313,14 +330,14 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
         }
 
         return [
-          def.min != null && def.max != null
+          minValue != null && maxValue != null
             ? {
                 key: def.name,
                 label: def.description ?? def.name,
                 type: 'slider' as const,
                 default: (def.default as number) ?? 0,
-                min: def.min,
-                max: def.max,
+                min: minValue,
+                max: maxValue,
                 step: 1,
                 persistence: 'node' as const
               }
@@ -356,6 +373,26 @@ export const uniformDefsToSettingsSchema = (defs: GLUniformDef[]): SettingsField
             ]
           : []
       )
+      .with('vec2', () => {
+        const defaultValue = vec2OrUndefined(def.default) ?? [0, 0];
+        const minValue = vec2OrUndefined(def.min);
+        const maxValue = vec2OrUndefined(def.max);
+        const step =
+          def.step ?? deriveFloatStep(...defaultValue, ...(minValue ?? []), ...(maxValue ?? []));
+
+        return [
+          {
+            key: def.name,
+            label: def.description ?? def.name,
+            type: 'vec2' as const,
+            default: defaultValue,
+            ...(minValue != null && { min: minValue }),
+            ...(maxValue != null && { max: maxValue }),
+            step,
+            persistence: 'node' as const
+          }
+        ];
+      })
       .otherwise(() => [])
   );
 

@@ -5,7 +5,8 @@ export type {
   BooleanField,
   SelectField,
   ColorField,
-  SliderField
+  SliderField,
+  Vec2Field
 } from './types';
 export { SettingsManager } from './SettingsManager';
 export { createSettingsAPI } from './create-settings-api';
