@@ -27,6 +27,24 @@ The first target workflow is:
 - Upload transfer buffers should be returned from the render worker after the WebGL upload and reused by `GLSystem` for later same-size uploads.
 - Multiple incoming messages in the same animation frame should coalesce into one upload; only the latest packed texture is flushed to the render worker.
 
+## Session Summary
+
+Implemented the MVP `float.tex` object and iterated it from a basic `Float32Array[]` packer into a practical data-texture bridge:
+
+- Added `float.tex` as a message-in, video-out object that uploads packed float data as an `RGBA32F` texture.
+- Added TouchDesigner CHOP to TOP attribution in the public docs.
+- Added channel-count inference: `Float32Array`/`[r]` → `r`, `[r, g]` → `rg`, `[r, g, b]` → `rgb`, and four or more channels → `rgba`.
+- Fixed the initial black-texture bug by restoring raw WebGL texture, active texture, and framebuffer state after manual uploads.
+- Changed same-size GPU updates to use `texSubImage2D`; resizing now reallocates the destination texture and framebuffer.
+- Added packer buffer reuse for planar inputs, plus a pooled upload-buffer path in `GLSystem`.
+- Added render-worker buffer return after upload so transfer buffers can be reused instead of allocated every send.
+- Fixed resize uploads by ensuring the previous destination framebuffer is destroyed only once before replacement.
+- Added frame-level upload coalescing in `FloatTextureNode`; multiple messages in the same animation frame upload only the latest texture.
+- Added explicit already-interleaved RGBA input: `{ type: 'rgba', data: Float32Array, width, height }`, which skips repacking.
+- Added SharedArrayBuffer RGBA input: `{ type: 'rgba', buffer: SharedArrayBuffer, width, height, version }`, with a per-buffer version dirty check.
+- Updated the manual object schema, AI prompt, object docs, and design spec to cover planar channels, interleaved RGBA, and shared RGBA buffers.
+- Added focused tests for packing, same-size/resize texture updates, upload-buffer pooling, frame upload coalescing, and shared-buffer version tracking.
+
 ## Initial Packing Contract
 
 The MVP supports the TouchDesigner-inspired channel grouping modes:
@@ -56,10 +74,31 @@ For each pixel:
 - Channels missing from an incomplete group are filled from the extra pixel value.
 - Rows use the longest channel length in that group; shorter channels are padded with the extra pixel value.
 
+## Recommended Sequence
+
+1. Add wrapped and square layouts.
+   - Wrapped rows should continue long channel data onto additional rows when the sample count exceeds the chosen width.
+   - Square layout should pack data into an approximately square texture for point-cloud or particle-style use where pixel order is storage, not display.
+
+2. Add texture format options.
+   - Keep `rgba32f` as the default.
+   - Consider `rgba16f` and `rgba8` first, then narrower float formats if the renderer path supports them cleanly.
+
+3. Add explicit `r`, `rg`, and `rgb` interleaved object inputs.
+   - This should follow texture format work so narrower inputs can eventually map to leaner storage instead of always expanding to RGBA.
+
+4. Add validation and logging in the node UI.
+   - Surface dimension and length mismatches near the node instead of relying only on thrown errors or console output.
+   - Add small, targeted validation as new layout/format options land.
+
+5. Add examples and presets.
+   - Include `js -> float.tex -> glsl` 2D gradient.
+   - Include `tap~ -> float.tex -> glsl` raw audio visualization.
+   - Include a particle or point-cloud texture example once square layout exists.
+
 ## Deferred
 
-- Wrapped rows for arrays longer than max texture width.
-- Fit-to-square layout for point-cloud style data.
+- SAB double-buffer mode for producer/consumer-safe shared texture frames.
+- SAB ring-buffer mode for audio-ish continuous histories.
 - Custom extra pixel values in the node UI.
-- Half-float / byte output modes.
 - Shared named data texture resources.
