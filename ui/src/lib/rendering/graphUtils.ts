@@ -35,17 +35,19 @@ export function filterFBOCompatibleGraph(
   // Filter to only GLSL nodes for now
   const compatibleNodes = nodes
     .filter((node) => isFBOCompatible(node.type))
-    .map(
-      (node): RenderNode => ({
+    .map((node) => {
+      const renderNode = {
         id: node.id,
-        type: node.type as 'img',
+        type: node.type as RenderNode['type'],
         inputs: [],
         outputs: [],
         inletMap: new Map(),
         data: node.data,
         backEdgeInlets: new Set()
-      })
-    );
+      };
+
+      return renderNode as RenderNode;
+    });
 
   const nodeIds = new Set(compatibleNodes.map((n) => n.id));
 

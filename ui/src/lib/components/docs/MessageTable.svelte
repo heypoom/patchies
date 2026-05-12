@@ -5,7 +5,8 @@
     schemaToHtml,
     schemaToString,
     isComplexSchema,
-    getSchemaTypeName
+    getSchemaTypeName,
+    getSchemaTypeNameHtml
   } from '$lib/objects/schemas/utils';
   import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
   import { SvelteSet } from 'svelte/reactivity';
@@ -47,6 +48,7 @@
       {#each showAll ? messages : messages.slice(0, SHOW_LIMIT) as msg, index (index)}
         {@const isComplex = isComplexSchema(msg.schema)}
         {@const typeName = getSchemaTypeName(msg.schema)}
+        {@const typeNameHtml = getSchemaTypeNameHtml(msg.schema)}
         {@const isExpanded = expanded.has(index)}
 
         <tr>
@@ -60,7 +62,8 @@
                   class={['h-3 w-3 text-zinc-500 transition-transform', isExpanded && 'rotate-90']}
                 />
                 <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs whitespace-nowrap">
-                  <span>{typeName}</span>
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -- schema formatter returns trusted docs markup -->
+                  {@html typeNameHtml ?? typeName}
                 </code>
               </button>
             {:else if isAudioParam}
@@ -81,6 +84,7 @@
               </Tooltip>
             {:else}
               <code class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs whitespace-nowrap">
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -- schema formatter returns trusted docs markup -->
                 {@html schemaToHtml(msg.schema)}
               </code>
             {/if}
@@ -95,6 +99,7 @@
           <tr>
             <td colspan="2" class="pt-2 pb-2">
               <code class="ml-4 rounded bg-zinc-800 px-1.5 py-0.5 text-xs whitespace-nowrap">
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -- schema formatter returns trusted docs markup -->
                 {@html schemaToHtml(msg.schema)}
               </code>
             </td>

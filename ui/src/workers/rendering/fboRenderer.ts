@@ -540,6 +540,7 @@ export class FBORenderer {
           .with({ type: 'regl' }, (node) => this.createReglRenderer(node, framebuffer))
           .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
           .with({ type: 'img' }, () => this.createEmptyRenderer())
+          .with({ type: 'float.tex' }, () => this.createEmptyRenderer())
           .with({ type: 'bg.out' }, () => this.createEmptyRenderer())
           .with({ type: 'send.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
           .with({ type: 'recv.vdo' }, (node) => this.createPassthroughRenderer(node, framebuffer))
@@ -1756,6 +1757,16 @@ export class FBORenderer {
     this.videoTextures.setBitmap(nodeId, bitmap);
   }
 
+  setFloatTexture(
+    nodeId: string,
+    width: number,
+    height: number,
+    data: Float32Array,
+    textureFormat: FBOFormat = 'rgba32f'
+  ) {
+    this.videoTextures.setFloatTexture(nodeId, width, height, data, textureFormat);
+  }
+
   /**
    * Removes a persistent bitmap image.
    *
@@ -1881,7 +1892,16 @@ export class FBORenderer {
         reglRenderer.handleMessage(message);
       })
       .with(
-        P.union('glsl', 'shaderpark', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'),
+        P.union(
+          'glsl',
+          'shaderpark',
+          'img',
+          'float.tex',
+          'bg.out',
+          'send.vdo',
+          'recv.vdo',
+          'projmap'
+        ),
         () => {}
       )
       .exhaustive();
@@ -1912,7 +1932,16 @@ export class FBORenderer {
         this.swglByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
       })
       .with(
-        P.union('glsl', 'shaderpark', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'),
+        P.union(
+          'glsl',
+          'shaderpark',
+          'img',
+          'float.tex',
+          'bg.out',
+          'send.vdo',
+          'recv.vdo',
+          'projmap'
+        ),
         () => {}
       )
       .exhaustive();

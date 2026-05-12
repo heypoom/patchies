@@ -9,6 +9,7 @@ export * from './glsl';
 export * from './canvas';
 export * from './surface';
 export * from './shaderpark';
+export * from './float-tex';
 export * from './swgl';
 export * from './textmode';
 export * from './three';
@@ -104,6 +105,7 @@ import { glslSchema } from './glsl';
 import { canvasSchema, canvasDomSchema } from './canvas';
 import { surfaceSchema } from './surface';
 import { shaderparkSchema } from './shaderpark';
+import { floatTexSchema } from './float-tex';
 import { swglSchema } from './swgl';
 import { textmodeSchema, textmodeDomSchema } from './textmode';
 import { threeSchema, threeDomSchema } from './three';
@@ -216,6 +218,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'canvas.dom': canvasDomSchema,
   surface: surfaceSchema,
   shaderpark: shaderparkSchema,
+  'float.tex': floatTexSchema,
   swgl: swglSchema,
   textmode: textmodeSchema,
   'textmode.dom': textmodeDomSchema,

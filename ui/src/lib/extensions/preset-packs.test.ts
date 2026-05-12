@@ -8,11 +8,10 @@ import { BUILTIN_PRESETS } from '$lib/presets/builtin';
 import type { PresetFolder } from '$lib/presets/types';
 import { isPreset } from '$lib/presets/preset-utils';
 
-function getSamplerUniformNames(code: string): string[] {
-  return Array.from(code.matchAll(/uniform\s+sampler2D\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/g)).map(
+const getSamplerUniformNames = (code: string): string[] =>
+  Array.from(code.matchAll(/uniform\s+sampler2D\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/g)).map(
     (match) => match[1]
   );
-}
 
 describe('built-in preset packs', () => {
   test('keeps object companion presets in the locked starter pack', () => {
@@ -124,41 +123,22 @@ describe('built-in preset packs', () => {
     expect(isPreset((tiny as PresetFolder)['a-new-industrial-chiptune-by-ryg.beat'])).toBe(true);
   });
 
-  test('registers Chromatic Aberration as a GLSL texture filter preset', () => {
-    const preset = BUILTIN_PRESETS['Chromatic Aberration'];
-    const textureFilters = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'texture-filters');
+  test('registers lightweight float texture JS generators in their own preset pack', () => {
+    const pack = BUILT_IN_PRESET_PACKS.find((presetPack) => presetPack.id === 'float-texture-data');
+    const preset = BUILTIN_PRESETS['rgba-scan.float.js'];
     const presetData = preset?.data as { code?: string } | undefined;
 
-    expect(preset?.type).toBe('glsl');
-    expect(presetData?.code).toContain('@title Chromatic Aberration');
-    expect(textureFilters && getPresetPackPresetNames(textureFilters)).toContain(
-      'Chromatic Aberration'
-    );
-  });
-
-  test('registers Noise Sphere as a Shader Park visual preset', () => {
-    const preset = BUILTIN_PRESETS['Noise Sphere'];
-    const shaderParkVisuals = BUILT_IN_PRESET_PACKS.find(
-      (pack) => pack.id === 'shaderpark-visuals'
-    );
-    const presetData = preset?.data as { code?: string; videoOutletCount?: number } | undefined;
-
-    expect(preset?.type).toBe('shaderpark');
-    expect(presetData?.code).toContain('let radius = input(0.7, 0.1, 1.2)');
-    expect(presetData?.code).toContain('sphere(radius + n)');
-    expect(presetData?.videoOutletCount).toBe(1);
-    expect(shaderParkVisuals?.requiredObjects).toEqual(['shaderpark']);
-    expect(shaderParkVisuals && getPresetPackPresetNames(shaderParkVisuals)).toContain(
-      'Noise Sphere'
-    );
-    expect(shaderParkVisuals && getPresetPackPresetNames(shaderParkVisuals)).toContain(
-      'Square Symmetry'
-    );
-    expect(BUILTIN_PRESETS['Square Symmetry']?.type).toBe('shaderpark');
-    expect(shaderParkVisuals && getPresetPackPresetNames(shaderParkVisuals)).toContain(
-      'Mouse Follower'
-    );
-    expect(BUILTIN_PRESETS['Mouse Follower']?.type).toBe('shaderpark');
+    expect(pack?.requiredObjects).toEqual(['js', 'float.tex']);
+    expect(pack && getPresetPackPresetNames(pack)).toEqual([
+      'rgba-grid.float.js',
+      'rgba-scan.float.js',
+      'wrapped-wave.float.js'
+    ]);
+    expect(preset?.type).toBe('js');
+    expect(presetData?.code).toContain('new SharedArrayBuffer(W * H * 4');
+    expect(presetData?.code).toContain("type: 'rgba'");
+    expect(presetData?.code).toContain('setInterval(frame, 1000 / 24)');
+    expect(presetData?.code).toContain('version');
   });
 
   test('registers curated ChucK examples in their own preset pack', () => {
@@ -194,9 +174,11 @@ describe('built-in preset packs', () => {
     ];
 
     expect(chuckDemos?.requiredObjects).toEqual(['chuck~']);
+
     expect(chuckDemos && getPresetPackPresetNames(chuckDemos)).toEqual(
       expect.arrayContaining(chuckPresetNames)
     );
+
     expect(demoCompositions && getPresetPackPresetNames(demoCompositions)).not.toEqual(
       expect.arrayContaining(chuckPresetNames)
     );

@@ -48,6 +48,47 @@ self.onmessage = (event) => {
     .with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height))
     .with('setBackgroundSize', () => fboRenderer.setBackgroundSize(data.width, data.height))
     .with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))
+    .with('setFloatTexture', () => {
+      const textureData = data.data;
+
+      if (!(textureData instanceof Float32Array)) {
+        console.warn('[renderWorker] Invalid setFloatTexture payload: data must be Float32Array');
+        return;
+      }
+
+      const buffer = textureData.buffer;
+      const textureFormat = data.textureFormat ?? 'rgba32f';
+
+      if (buffer instanceof SharedArrayBuffer) {
+        fboRenderer.setFloatTexture(
+          data.nodeId,
+          data.width,
+          data.height,
+          textureData,
+          textureFormat
+        );
+        return;
+      }
+
+      try {
+        fboRenderer.setFloatTexture(
+          data.nodeId,
+          data.width,
+          data.height,
+          textureData,
+          textureFormat
+        );
+      } finally {
+        self.postMessage(
+          {
+            type: 'floatTextureBufferReleased',
+            nodeId: data.nodeId,
+            buffer
+          },
+          { transfer: [buffer] }
+        );
+      }
+    })
     .with('removeBitmap', () => fboRenderer.removeBitmap(data.nodeId))
     .with('removeUniformData', () => fboRenderer.removeUniformData(data.nodeId))
     .with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))
