@@ -98,6 +98,16 @@ Creator of Hydra, the live-codeable video synthesizer that brings shader program
 
 **Website:** [ojack.xyz](https://ojack.xyz/)
 
+### Peter Whidden & Torin Blankensmith
+
+**Projects:** Shader Park, shader-park-core
+
+Co-authors of Shader Park and the MIT-licensed `shader-park-core` package used by the `shaderpark` node to compile sculpture code into GLSL.
+
+**Peter:** [github.com/PWhiddy](https://github.com/PWhiddy)
+**Torin:** [github.com/torinmb](https://github.com/torinmb)
+**Repository:** [github.com/shader-park/shader-park-core](https://github.com/shader-park/shader-park-core)
+
 ### Patricio Gonzalez Vivo
 
 **Projects:** lygia, The Book of Shaders, GlslViewer
