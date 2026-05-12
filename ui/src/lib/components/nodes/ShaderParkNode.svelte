@@ -150,6 +150,23 @@
     setTimeout(() => updateShaderPark());
   };
 
+  function toCloneableUniformValue(def: GLUniformDef | undefined, value: unknown): unknown {
+    if (!def) return value;
+
+    const normalized = normalizeShaderParkUniformValue(value, def.type);
+
+    return Array.isArray(normalized) ? [...normalized] : normalized;
+  }
+
+  function cloneableUniformValues(
+    defs: GLUniformDef[],
+    values: Record<string, unknown>
+  ): Record<string, unknown> {
+    return Object.fromEntries(
+      defs.map((def) => [def.name, toCloneableUniformValue(def, values[def.name])])
+    );
+  }
+
   function getUniformNameFromHandle(targetHandle: string | null | undefined): string | undefined {
     if (!targetHandle?.startsWith('message-in-')) return undefined;
 
@@ -165,10 +182,11 @@
 
       if (uniformName) {
         const uniformDef = shaderParkUniformDefs.find((def) => def.name === uniformName);
-        const uniformValue = toGLValue(uniformDef, message);
+        const cloneableValue = toCloneableUniformValue(uniformDef, message);
+        const uniformValue = toGLValue(uniformDef, cloneableValue);
 
         glSystem.setUniformData(nodeId, uniformName, uniformValue);
-        uniformValues = { ...uniformValues, [uniformName]: message };
+        uniformValues = { ...uniformValues, [uniformName]: cloneableValue };
         updateNodeData(nodeId, { uniformValues });
 
         return;
@@ -206,12 +224,17 @@
 
     glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
 
+    const initialUniformValues = cloneableUniformValues(
+      data.shaderParkUniformDefs ?? [],
+      data.uniformValues ?? {}
+    );
+
     glSystem.upsertNode(nodeId, 'shaderpark', {
       code: data.code,
       videoInletCount: data.videoInletCount ?? 4,
       videoOutletCount: data.videoOutletCount ?? 1,
       shaderParkUniformDefs: data.shaderParkUniformDefs ?? [],
-      uniformValues: data.uniformValues ?? {},
+      uniformValues: initialUniformValues,
       fboFormat: data.fboFormat,
       resolution: data.resolution
     });
@@ -266,16 +289,17 @@
       const pruned: Record<string, unknown> = {};
 
       for (const def of nextUniformDefs) {
+        let nextValue: unknown;
+
         if (def.name in uniformValues) {
-          pruned[def.name] = uniformValues[def.name];
+          nextValue = uniformValues[def.name];
         } else if (def.name in defaultValues) {
-          pruned[def.name] = defaultValues[def.name];
+          nextValue = defaultValues[def.name];
         } else {
-          pruned[def.name] = normalizeShaderParkUniformValue(
-            (def as { default?: unknown }).default,
-            def.type
-          );
+          nextValue = (def as { default?: unknown }).default;
         }
+
+        pruned[def.name] = toCloneableUniformValue(def, nextValue);
       }
 
       uniformValues = pruned;
@@ -316,14 +340,18 @@
 
   function handleUniformValueChange(key: string, value: unknown) {
     const uniformDef = shaderParkUniformDefs.find((def) => def.name === key);
+    const cloneableValue = toCloneableUniformValue(uniformDef, value);
 
-    uniformValues = { ...uniformValues, [key]: value };
+    uniformValues = { ...uniformValues, [key]: cloneableValue };
     updateNodeData(nodeId, { uniformValues });
-    glSystem.setUniformData(nodeId, key, toGLValue(uniformDef, value));
+    glSystem.setUniformData(nodeId, key, toGLValue(uniformDef, cloneableValue));
   }
 
   function handleUniformRevertAll() {
-    const defaults = settingsSchemaToDefaultValues(uniformsSchema);
+    const defaults = cloneableUniformValues(
+      shaderParkUniformDefs,
+      settingsSchemaToDefaultValues(uniformsSchema)
+    );
 
     uniformValues = defaults;
     updateNodeData(nodeId, { uniformValues: defaults });
