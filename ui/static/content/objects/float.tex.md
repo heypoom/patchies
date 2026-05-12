@@ -1,5 +1,8 @@
 Pack `Float32Array` channel data into a live 32-bit float texture.
 
+Inspired by TouchDesigner's CHOP to TOP operator, adapted for Patchies' message
+and video-texture graph.
+
 Send a single `Float32Array` to create one red-channel row, or send `Float32Array[]`
 to treat each array as ordered channel data.
 
