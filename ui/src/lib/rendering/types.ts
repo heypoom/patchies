@@ -267,6 +267,7 @@ export type RenderWorkerMessage =
   | { type: 'error'; message: string }
   | { type: 'resolveVfsUrl'; requestId: string; nodeId: string; path: string }
   | { type: 'resolveVfsText'; requestId: string; nodeId: string; path: string }
+  | { type: 'floatTextureBufferReleased'; nodeId: string; buffer: ArrayBuffer }
   | {
       type: 'workerVideoFramesCaptured';
       targetNodeId: string;

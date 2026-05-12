@@ -43,6 +43,7 @@ import { match, P } from 'ts-pattern';
 import { profiler, ProfilerCoordinator, typeFromNodeId } from '$lib/profiler';
 import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 import { Transport, type TransportState } from '$lib/transport';
+import { FloatTextureUploadBufferPool } from '$lib/float-texture/upload-buffer-pool';
 
 export type UserUniformValue = number | boolean | number[] | number[][];
 
@@ -86,6 +87,7 @@ export class GLSystem {
   /** Tracks channel subscriptions made on behalf of render worker nodes */
   private renderWorkerChannelSubscriptions = new Map<string, Set<string>>();
   private channelRegistry = MessageChannelRegistry.getInstance();
+  private floatTextureUploadBuffers = new FloatTextureUploadBufferPool();
 
   /** Cached singleton references to avoid repeated dynamic imports on hot paths */
   private workerNodeSystem: null | {
@@ -407,6 +409,9 @@ export class GLSystem {
       })
       .with({ type: 'resolveVfsText' }, async (data) => {
         this.handleVfsTextResolution(data.requestId, data.nodeId, data.path);
+      })
+      .with({ type: 'floatTextureBufferReleased' }, (data) => {
+        this.floatTextureUploadBuffers.release(data.buffer);
       })
       .with({ type: 'workerVideoFramesCaptured' }, async (data) => {
         const sys = this.workerNodeSystem ?? (await this.workerNodeSystemReady);
@@ -921,15 +926,17 @@ export class GLSystem {
   }
 
   setFloatTexture(nodeId: string, width: number, height: number, data: Float32Array) {
+    const uploadData = this.floatTextureUploadBuffers.acquire(data);
+
     this.renderWorker.postMessage(
       {
         type: 'setFloatTexture',
         nodeId,
         width,
         height,
-        data
+        data: uploadData
       },
-      { transfer: [data.buffer] }
+      { transfer: [uploadData.buffer] }
     );
   }
 

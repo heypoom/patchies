@@ -73,7 +73,7 @@
     dataFormat = resolvedDataFormat;
     hasTexture = true;
 
-    glSystem.setFloatTexture(nodeId, packed.width, packed.height, new Float32Array(packed.data));
+    glSystem.setFloatTexture(nodeId, packed.width, packed.height, packed.data);
   };
 
   onMount(() => {

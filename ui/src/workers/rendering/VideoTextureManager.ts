@@ -148,6 +148,7 @@ export class VideoTextureManager {
 
     const existingDestTexture = this.destinationTextures.get(nodeId);
     const existingDestFBO = this.destinationFBOs.get(nodeId);
+    let destFBO = existingDestFBO;
 
     const needsResize =
       !existingDestTexture ||
@@ -157,7 +158,8 @@ export class VideoTextureManager {
     let destTexture = existingDestTexture;
 
     if (needsResize) {
-      existingDestFBO?.destroy();
+      destFBO?.destroy();
+      destFBO = undefined;
       existingDestTexture?.destroy();
 
       destTexture = this.regl.texture({
@@ -205,10 +207,8 @@ export class VideoTextureManager {
     gl.activeTexture(previousActiveTexture);
     gl.bindFramebuffer(gl.FRAMEBUFFER, previousFramebuffer);
 
-    if (needsResize || !existingDestFBO) {
-      existingDestFBO?.destroy();
-
-      const destFBO = this.regl.framebuffer({ color: destTexture });
+    if (!destFBO) {
+      destFBO = this.regl.framebuffer({ color: destTexture });
       this.destinationFBOs.set(nodeId, destFBO);
     }
   }
