@@ -26,6 +26,7 @@ import { BYTEBEAT_PRESETS } from './bytebeat';
 import { REGL_PRESETS } from './regl';
 import { SWGL_PRESETS } from './swgl.presets';
 import { SHADERPARK_PRESETS } from './shaderpark.presets';
+import { FLOAT_TEXTURE_PRESETS } from './float-texture.presets';
 
 // Re-export individual preset collections
 export {
@@ -53,7 +54,8 @@ export {
   BYTEBEAT_PRESETS,
   REGL_PRESETS,
   SWGL_PRESETS,
-  SHADERPARK_PRESETS
+  SHADERPARK_PRESETS,
+  FLOAT_TEXTURE_PRESETS
 };
 
 /**
@@ -88,5 +90,6 @@ export const BUILTIN_PRESETS: Record<
   ...BYTEBEAT_PRESETS,
   ...REGL_PRESETS,
   ...SWGL_PRESETS,
-  ...SHADERPARK_PRESETS
+  ...SHADERPARK_PRESETS,
+  ...FLOAT_TEXTURE_PRESETS
 };

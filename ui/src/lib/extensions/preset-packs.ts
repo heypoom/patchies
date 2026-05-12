@@ -215,6 +215,19 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     ]
   },
   {
+    id: 'float-texture-data',
+    name: 'Float Texture Data',
+    description: 'Generators and previews for Float32Array texture data',
+    icon: 'Grid3x3',
+    requiredObjects: ['js', 'float.tex', 'glsl'],
+    presets: [
+      'rgba-grid.float.js',
+      'square-field.float.js',
+      'wrapped-wave.float.js',
+      'Square Field Preview'
+    ]
+  },
+  {
     id: 'audio-synthesis',
     name: 'Synthesis Scripts',
     description: 'JS scripts to control synth operators',

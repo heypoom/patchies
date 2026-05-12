@@ -77,6 +77,29 @@ To view it, connect the video outlet to `glsl>` or `hydra>`.
 You can also connect `tap~` into `float.tex` to turn raw audio buffers into a
 texture for waveform and audio-reactive shader experiments.
 
+## Preset Pack
+
+Enable the **Float Texture Data** preset pack for ready-made JS generators that
+send texture data into `float.tex`:
+
+- `rgba-grid.float.js` — 50×50 interleaved RGBA pixel data.
+- `square-field.float.js` — square-packed XYZW point-field data.
+- `wrapped-wave.float.js` — wrapped RGBA channel rows.
+- `Square Field Preview` — GLSL preview for `square-field.float.js`.
+
+Create one of those presets, connect it to `float.tex`, then connect `float.tex`
+to `glsl>` to inspect the texture.
+
+For `square-field.float.js`, the raw texture is data storage, not the final
+image. Patch it like this:
+
+```text
+[square-field.float.js] → [float.tex] → [Square Field Preview]
+```
+
+The JS preset stores each point as `x`, `y`, `z`, `w` channels. The preview
+shader reads those channels as positions and draws the field as points.
+
 ## Planar RGBA Channels
 
 ```js

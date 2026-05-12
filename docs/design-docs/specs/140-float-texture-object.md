@@ -125,6 +125,8 @@ Channel packing supports three layouts:
    - Log packing validation failures with `logger.nodeError()` and avoid repeatedly logging the same message while the input remains unchanged.
 
 5. Add examples and presets.
+   - Create a dedicated Float Texture Data preset pack for JS generators that feed `float.tex`.
+   - Include a GLSL preview preset for square-packed field data so users do not have to interpret raw data textures directly.
    - Include `js -> float.tex -> glsl` 2D gradient.
    - Include `tap~ -> float.tex -> glsl` raw audio visualization.
    - Include a particle or point-cloud texture example once square layout exists.
