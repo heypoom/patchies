@@ -1,4 +1,3 @@
-import { sculptToGLSL } from 'shader-park-core';
 import type { GLUniformDef, GLUniformType, GLUniformVec2 } from '../../types/uniform-config';
 
 export type ShaderParkGeneratedUniform = {
@@ -13,9 +12,19 @@ type ShaderParkGeneratedSource = {
   uniforms: ShaderParkGeneratedUniform[];
 };
 
+type ShaderParkCore = typeof import('shader-park-core');
+
 const BUILT_IN_UNIFORMS = new Set(['time', 'opacity', '_scale', 'mouse', 'stepSize', 'resolution']);
 
 const SUPPORTED_INPUT_TYPES = new Set(['float', 'vec2', 'vec3', 'vec4']);
+
+let shaderParkCorePromise: Promise<ShaderParkCore> | null = null;
+
+function loadShaderParkCore(): Promise<ShaderParkCore> {
+  shaderParkCorePromise ??= import('shader-park-core');
+
+  return shaderParkCorePromise;
+}
 
 function removeShaderParkComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
@@ -110,7 +119,8 @@ export function usesShaderParkMouse(source: string): boolean {
   return /\bmouse\b|\bmouseIntersection\b/.test(uncommented);
 }
 
-export function extractShaderParkUniformDefs(source: string): GLUniformDef[] {
+export async function extractShaderParkUniformDefs(source: string): Promise<GLUniformDef[]> {
+  const { sculptToGLSL } = await loadShaderParkCore();
   const generated = sculptToGLSL(source) as ShaderParkGeneratedSource;
 
   return shaderParkUniformsToDefs(generated.uniforms ?? []);

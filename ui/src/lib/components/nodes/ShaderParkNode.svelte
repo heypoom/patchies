@@ -321,7 +321,7 @@
     return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
   });
 
-  function updateShaderPark() {
+  async function updateShaderPark() {
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
@@ -329,7 +329,7 @@
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
 
-      const nextUniformDefs = extractShaderParkUniformDefs(data.code);
+      const nextUniformDefs = await extractShaderParkUniformDefs(data.code);
       const nextVideoUniformIndices = extractShaderParkVideoUniformIndices(data.code);
       const defaultValues = settingsSchemaToDefaultValues(
         uniformDefsToSettingsSchema(nextUniformDefs)

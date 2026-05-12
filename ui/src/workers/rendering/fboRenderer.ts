@@ -1108,7 +1108,7 @@ export class FBORenderer {
       this.uniformDataByNode.set(node.id, uniformData);
     }
 
-    const renderCommand = createShaderParkDrawCommand({
+    const renderCommand = await createShaderParkDrawCommand({
       width,
       height,
       framebuffer,

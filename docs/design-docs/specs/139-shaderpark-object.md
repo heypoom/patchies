@@ -8,6 +8,8 @@ Add a `shaderpark` render-pipeline object that runs Shader Park/Sculpt code and 
 
 Use the published `shader-park-core@0.2.8` package as a compiler/codegen dependency. The object should not use Shader Park's standalone canvas render loop. Instead, Patchies compiles Shader Park code to GLSL and renders the resulting fragment shader into the node's FBO through the existing worker renderer.
 
+`shader-park-core` should be loaded lazily from Shader Park compile/extraction paths so the package does not add weight to the initial Patchies UI bundle.
+
 ## Pipeline Integration
 
 - The Svelte node uses `CanvasPreviewLayout`, like `hydra`, `glsl`, `three`, `regl`, and `textmode`.

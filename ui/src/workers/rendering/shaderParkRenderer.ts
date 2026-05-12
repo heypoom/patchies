@@ -1,15 +1,5 @@
 import type regl from 'regl';
 import { match } from 'ts-pattern';
-import {
-  fragFooter,
-  minimalHeader,
-  minimalVertexSource,
-  sculptToGLSL,
-  sculptureStarterCode,
-  uniformsToGLSL,
-  useHemisphereLight,
-  usePBRHeader
-} from 'shader-park-core';
 import { validateShader, type LineErrors } from '$lib/canvas/shader-validator';
 import type { RenderParams } from '$lib/rendering/types';
 import {
@@ -33,6 +23,7 @@ type ShaderParkGLSL = {
 };
 
 type Props = RenderParams;
+type ShaderParkCore = typeof import('shader-park-core');
 
 const VIDEO_UNIFORM_COUNT = 4;
 const UNIFORM_OVERRIDES_INDEX = VIDEO_UNIFORM_COUNT;
@@ -43,6 +34,14 @@ const VIDEO_UNIFORMS = Array.from(
 
 const scalarDefault = (value: unknown, fallback: number) =>
   typeof value === 'number' ? value : fallback;
+
+let shaderParkCorePromise: Promise<ShaderParkCore> | null = null;
+
+function loadShaderParkCore(): Promise<ShaderParkCore> {
+  shaderParkCorePromise ??= import('shader-park-core');
+
+  return shaderParkCorePromise;
+}
 
 const vectorDefault = (value: unknown, fallback: number[]) => {
   if (Array.isArray(value)) return value;
@@ -94,7 +93,16 @@ const userUniformValue = (uniform: ShaderParkUniform) => (_: regl.DefaultContext
   return normalizeShaderParkUniformValue(override ?? uniform.value, uniform.type);
 };
 
-export function buildShaderParkFragment(source: string) {
+export async function buildShaderParkFragment(source: string) {
+  const {
+    fragFooter,
+    minimalHeader,
+    sculptToGLSL,
+    sculptureStarterCode,
+    uniformsToGLSL,
+    useHemisphereLight,
+    usePBRHeader
+  } = await loadShaderParkCore();
   const generated = sculptToGLSL(source) as ShaderParkGLSL;
 
   return {
@@ -123,7 +131,7 @@ export function buildShaderParkFragment(source: string) {
   };
 }
 
-export function createShaderParkDrawCommand({
+export async function createShaderParkDrawCommand({
   code,
   regl,
   gl,
@@ -141,11 +149,12 @@ export function createShaderParkDrawCommand({
   framebuffer: regl.Framebuffer2D | null;
   fallbackTexture: regl.Texture2D;
   onError?: (error: Error & { lineErrors?: LineErrors }) => void;
-}): regl.DrawCommand | null {
-  let shaderParkSource: ReturnType<typeof buildShaderParkFragment>;
+}): Promise<regl.DrawCommand | null> {
+  const { minimalVertexSource } = await loadShaderParkCore();
+  let shaderParkSource: Awaited<ReturnType<typeof buildShaderParkFragment>>;
 
   try {
-    shaderParkSource = buildShaderParkFragment(code);
+    shaderParkSource = await buildShaderParkFragment(code);
   } catch (error) {
     onError?.(error instanceof Error ? error : new Error(String(error)));
     return null;
