@@ -5,6 +5,7 @@ import type {
   RenderNode,
   FBONode,
   RenderFunction,
+  RenderParams,
   UserParam,
   FBOFormat,
   FBOResolution
@@ -27,6 +28,7 @@ import { TextmodeRenderer } from './textmodeRenderer';
 import { ThreeRenderer } from './threeRenderer';
 import { ReglRenderer } from './reglRenderer';
 import { SwissGLRenderer } from './swglRenderer';
+import { createShaderParkDrawCommand } from './shaderParkRenderer';
 import { ProjectionMapRenderer } from '$objects/projmap/ProjectionMapRenderer';
 import { getFramebuffer, getRawTexture } from './utils';
 import { isExternalTextureNode } from '$lib/canvas/node-types';
@@ -387,14 +389,14 @@ export class FBORenderer {
     for (const node of renderGraph.nodes) {
       const existingFbo = this.fboNodes.get(node.id);
 
-      // MRT count: GLSL, REGL, SwissGL, and Hydra nodes can request multiple color attachments.
+      // MRT count: GLSL, REGL, SwissGL, Hydra, and Shader Park nodes can request multiple color attachments.
       // REGL/Hydra store outlet count as `videoOutletCount`; GLSL/SwissGL use `mrtCount`.
       const mrtCount =
         node.type === 'glsl'
           ? (node.data.mrtCount ?? 1)
           : node.type === 'swgl'
             ? (node.data.mrtCount ?? 1)
-            : node.type === 'regl' || node.type === 'hydra'
+            : node.type === 'regl' || node.type === 'hydra' || node.type === 'shaderpark'
               ? (node.data.videoOutletCount ?? 1)
               : 1;
 
@@ -534,6 +536,7 @@ export class FBORenderer {
           .with({ type: 'canvas' }, (node) => this.createCanvasRenderer(node, framebuffer))
           .with({ type: 'textmode' }, (node) => this.createTextmodeRenderer(node, framebuffer))
           .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
+          .with({ type: 'shaderpark' }, (node) => this.createShaderParkRenderer(node, framebuffer))
           .with({ type: 'regl' }, (node) => this.createReglRenderer(node, framebuffer))
           .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
           .with({ type: 'img' }, () => this.createEmptyRenderer())
@@ -1072,6 +1075,47 @@ export class FBORenderer {
     };
   }
 
+  async createShaderParkRenderer(
+    node: RenderNode,
+    framebuffer: regl.Framebuffer2D
+  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
+    if (node.type !== 'shaderpark') return null;
+
+    const nodeResolution = node.data.resolution;
+    const [width, height] = this.resolveNodeSize(nodeResolution);
+
+    const renderCommand = createShaderParkDrawCommand({
+      width,
+      height,
+      framebuffer,
+      regl: this.regl,
+      gl: this.gl!,
+      code: node.data.code,
+      fallbackTexture: this.fallbackTexture,
+      onError: (error: Error & { lineErrors?: Record<number, string[]> }) => {
+        self.postMessage({
+          type: 'shaderError',
+          nodeId: node.id,
+          error: error.message,
+          stack: error.stack,
+          lineErrors: error.lineErrors
+        });
+      }
+    });
+
+    if (!renderCommand) return null;
+
+    return {
+      render: (params: RenderParams) => {
+        this.regl.clear({ color: [0, 0, 0, 0] });
+        renderCommand(params);
+      },
+      cleanup: () => {
+        (renderCommand as regl.DrawCommand & { destroy?: () => void }).destroy?.();
+      }
+    };
+  }
+
   async createSwglRenderer(
     node: RenderNode,
     framebuffer: regl.Framebuffer2D
@@ -1373,6 +1417,7 @@ export class FBORenderer {
     if (
       node.type === 'hydra' ||
       node.type === 'three' ||
+      node.type === 'shaderpark' ||
       node.type === 'regl' ||
       node.type === 'swgl' ||
       node.type === 'projmap'
@@ -1794,7 +1839,10 @@ export class FBORenderer {
 
         reglRenderer.handleMessage(message);
       })
-      .with(P.union('glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'), () => {})
+      .with(
+        P.union('glsl', 'shaderpark', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'),
+        () => {}
+      )
       .exhaustive();
   }
 
@@ -1822,7 +1870,10 @@ export class FBORenderer {
       .with('swgl', () => {
         this.swglByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
       })
-      .with(P.union('glsl', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'), () => {})
+      .with(
+        P.union('glsl', 'shaderpark', 'img', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap'),
+        () => {}
+      )
       .exhaustive();
   }
 

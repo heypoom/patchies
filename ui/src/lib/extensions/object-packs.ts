@@ -102,7 +102,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'Video Synths',
     description: 'Hydra, shaders and 3D graphics',
     icon: 'Shapes',
-    objects: ['hydra', 'glsl', 'three', 'three.dom', 'projmap', 'regl', 'swgl']
+    objects: ['hydra', 'glsl', 'shaderpark', 'three', 'three.dom', 'projmap', 'regl', 'swgl']
   },
   {
     id: 'music',

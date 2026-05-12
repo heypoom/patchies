@@ -148,6 +148,7 @@
     "pocketbase": "^0.26.2",
     "pyodide": "^0.28.1",
     "regl": "^2.1.1",
+    "shader-park-core": "0.2.8",
     "stats.js": "^0.17.0",
     "supersonic-scsynth": "^0.66.0",
     "textmode.filters.js": "^1.1.1",

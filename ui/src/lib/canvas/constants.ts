@@ -270,6 +270,16 @@ function render(time) {
   draw({ time })
 }`;
 
+export const DEFAULT_SHADERPARK_CODE = `sphere(0.35);
+
+let p = getSpace();
+let glow = 0.5 + 0.5 * sin(time + p.x * 6.0);
+
+color(vec3(0.2 + glow * 0.8, 0.45, 1.0));
+shine(0.65);
+metal(0.15);
+rotateY(time * 0.4);`;
+
 export const DEFAULT_TEXTMODE_CODE = `t.setup(() => {
   t.fontSize(32)
   t.frameRate(60)

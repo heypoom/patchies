@@ -49,6 +49,16 @@ export type RenderNode = {
   | { type: 'textmode'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
   | { type: 'three'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
   | {
+      type: 'shaderpark';
+      data: {
+        code: string;
+        videoInletCount?: number;
+        videoOutletCount?: number;
+        fboFormat?: FBOFormat;
+        resolution?: FBOResolution;
+      };
+    }
+  | {
       type: 'regl';
       data: {
         code: string;
@@ -313,6 +323,7 @@ export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = [
   'canvas',
   'textmode',
   'three',
+  'shaderpark',
   'regl',
   'projmap',
   'img',

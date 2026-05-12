@@ -50,6 +50,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - canvas: HTML5 Canvas on web worker. no mouse/keyboard, highest performance. can chain into the rendering pipeline at high speed (e.g. video texture for glsl/hydra)
 - hydra: Live coding video synthesis with Hydra
 - glsl: GLSL fragment shaders for visual effects
+- shaderpark: Shader Park/Sculpt SDF raymarching visuals for the video pipeline
 - three: Three.js 3D graphics (offscreen worker, for video chaining)
 - regl: GPU renderer with regl draw commands (custom vertices, buffers, multi-pass, blend modes)
 - three.dom: Three.js 3D graphics (main thread, for mouse/keyboard interaction)
@@ -141,6 +142,7 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - surface: Fullscreen interactive canvas — capture mouse/touch across entire screen for drawing/painting
 - hydra: Live video synthesis — feedback loops, texture blending, webcam warping
 - glsl: GLSL fragment shaders — pixel-level visual effects, raymarching, procedural textures
+- shaderpark: Shader Park/Sculpt — concise SDF/raymarched procedural 3D visuals
 - three: Three.js 3D graphics (offscreen worker) — meshes, lighting, cameras, 3D scenes; for video chaining
 - three.dom: Three.js 3D graphics (main thread) — same as three but supports mouse/keyboard interaction
 - regl: Low-level GPU rendering — custom vertices, multi-pass, blend modes
