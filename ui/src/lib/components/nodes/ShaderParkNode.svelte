@@ -47,7 +47,8 @@
   let {
     id: nodeId,
     data,
-    selected
+    selected,
+    class: className = ''
   }: {
     id: string;
     data: {
@@ -65,6 +66,7 @@
       resolution?: FBOResolution;
     };
     selected?: boolean;
+    class?: string;
   } = $props();
 
   let consoleRef: VirtualConsole | null = $state(null);
@@ -75,7 +77,7 @@
   let messageContext: MessageContext;
   let mouseHandler: CanvasMouseHandler | null = null;
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
-  let previewBitmapContext: ImageBitmapRenderingContext;
+  let previewBitmapContext: ImageBitmapRenderingContext | null = null;
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
   let uniformValues = $state<Record<string, unknown>>(data.uniformValues ?? {});
@@ -165,7 +167,7 @@
 
   const setCodeAndUpdate = (newCode: string) => {
     updateNodeData(nodeId, { code: newCode });
-    setTimeout(() => updateShaderPark());
+    updateShaderPark(newCode);
   };
 
   function toCloneableUniformValue(def: GLUniformDef | undefined, value: unknown): unknown {
@@ -230,6 +232,12 @@
 
       if (uniformName) {
         const uniformDef = shaderParkUniformDefs.find((def) => def.name === uniformName);
+
+        if (!uniformDef) {
+          logger.warn(`[shaderpark] ignoring message for unknown uniform "${uniformName}"`);
+          return;
+        }
+
         const cloneableValue = toCloneableUniformValue(uniformDef, message);
         const uniformValue = toGLValue(uniformDef, cloneableValue);
 
@@ -258,10 +266,14 @@
     eventBus.addEventListener('consoleOutput', handleConsoleOutput);
 
     if (previewCanvas) {
-      previewBitmapContext = previewCanvas.getContext('bitmaprenderer')!;
+      previewBitmapContext = previewCanvas.getContext('bitmaprenderer');
     }
 
-    glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
+    if (previewBitmapContext) {
+      glSystem.previewCanvasContexts[nodeId] = previewBitmapContext;
+    } else {
+      delete glSystem.previewCanvasContexts[nodeId];
+    }
 
     const initialUniformValues = cloneableUniformValues(
       data.shaderParkUniformDefs ?? [],
@@ -316,7 +328,7 @@
     return `z-1 transition-opacity ${selected ? '' : 'sm:opacity-0 opacity-30 group-hover:opacity-100'}`;
   });
 
-  async function updateShaderPark() {
+  async function updateShaderPark(codeOverride?: string) {
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
@@ -324,8 +336,9 @@
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
 
-      const nextUniformDefs = await extractShaderParkUniformDefs(data.code);
-      const nextVideoUniformIndices = extractShaderParkVideoUniformIndices(data.code);
+      const code = codeOverride ?? data.code;
+      const nextUniformDefs = await extractShaderParkUniformDefs(code);
+      const nextVideoUniformIndices = extractShaderParkVideoUniformIndices(code);
       const defaultValues = settingsSchemaToDefaultValues(
         uniformDefsToSettingsSchema(nextUniformDefs)
       );
@@ -348,7 +361,7 @@
       uniformValues = pruned;
 
       const nextData = {
-        code: data.code,
+        code,
         videoInletCount: data.videoInletCount ?? 4,
         videoOutletCount: data.videoOutletCount ?? 1,
         shaderParkVideoUniformIndices: nextVideoUniformIndices,
@@ -368,6 +381,8 @@
 
       for (const [name, value] of Object.entries(pruned)) {
         const uniformDef = nextUniformDefs.find((def) => def.name === name);
+
+        if (!uniformDef) continue;
 
         glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
       }
@@ -389,6 +404,12 @@
 
     uniformValues = { ...uniformValues, [key]: cloneableValue };
     updateNodeData(nodeId, { uniformValues });
+
+    if (!uniformDef) {
+      logger.warn(`[shaderpark] skipping update for unknown uniform "${key}"`);
+      return;
+    }
+
     glSystem.setUniformData(nodeId, key, toGLValue(uniformDef, cloneableValue));
   }
 
@@ -403,6 +424,8 @@
 
     for (const [name, value] of Object.entries(defaults)) {
       const uniformDef = shaderParkUniformDefs.find((def) => def.name === name);
+
+      if (!uniformDef) continue;
 
       glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
     }
@@ -428,6 +451,7 @@
   nodrag={usesMouseInput}
   nopan={usesMouseInput}
   nowheel={usesMouseInput}
+  class={className}
 >
   {#snippet topHandle()}
     {#each shaderParkVideoUniformIndices as channelIndex, visibleIndex (channelIndex)}

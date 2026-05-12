@@ -119,9 +119,32 @@ export function usesShaderParkMouse(source: string): boolean {
   return /\bmouse\b|\bmouseIntersection\b/.test(uncommented);
 }
 
+function isShaderParkGeneratedSource(value: unknown): value is ShaderParkGeneratedSource {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    Array.isArray((value as Partial<ShaderParkGeneratedSource>).uniforms)
+  );
+}
+
 export async function extractShaderParkUniformDefs(source: string): Promise<GLUniformDef[]> {
   const { sculptToGLSL } = await loadShaderParkCore();
-  const generated = sculptToGLSL(source) as ShaderParkGeneratedSource;
+  let generated: unknown;
 
-  return shaderParkUniformsToDefs(generated.uniforms ?? []);
+  try {
+    generated = sculptToGLSL(source);
+  } catch (error) {
+    throw new Error(
+      `Shader Park uniform extraction failed for source (${source.length} chars): ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+      { cause: error }
+    );
+  }
+
+  if (!isShaderParkGeneratedSource(generated)) {
+    return [];
+  }
+
+  return shaderParkUniformsToDefs(generated.uniforms);
 }
