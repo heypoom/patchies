@@ -1,7 +1,8 @@
-const NOISE_SPHERE_SHADERPARK = `let scale = 2.0;
+const NOISE_SPHERE_SHADERPARK = `let radius = input(0.7, 0.1, 1.2);
+let scale = 2.0;
 let s = getSpace();
 let n = 0.1 * noise(scale * s + time);
-sphere(0.7 + n);`;
+sphere(radius + n);`;
 
 const SQUARE_SYMMETRY_SHADERPARK = `// https://shaderpark.com/sculpture/-OsK9Xs40PPK4VdLRyrp
 // by https://shaderpark.com/user/jsqvlC

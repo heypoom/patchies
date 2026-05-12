@@ -144,7 +144,8 @@ describe('built-in preset packs', () => {
     const presetData = preset?.data as { code?: string; videoOutletCount?: number } | undefined;
 
     expect(preset?.type).toBe('shaderpark');
-    expect(presetData?.code).toContain('sphere(0.7 + n)');
+    expect(presetData?.code).toContain('let radius = input(0.7, 0.1, 1.2)');
+    expect(presetData?.code).toContain('sphere(radius + n)');
     expect(presetData?.videoOutletCount).toBe(1);
     expect(shaderParkVisuals?.requiredObjects).toEqual(['shaderpark']);
     expect(shaderParkVisuals && getPresetPackPresetNames(shaderParkVisuals)).toContain(

@@ -36,10 +36,11 @@ Use the published `shader-park-core@0.2.8` package as a compiler/codegen depende
 - Add a `Noise Sphere` preset that creates a white SDF sphere with subtle animated noise displacement:
 
   ```js
+  let radius = input(0.7, 0.1, 1.2)
   let scale = 2.0
   let s = getSpace()
   let n = 0.1 * noise(scale * s + time)
-  sphere(0.7 + n)
+  sphere(radius + n)
   ```
 
 - Register shaderpark visual presets in their own preset pack so users can enable them alongside the `shaderpark` object without mixing them into GLSL or Hydra packs.
