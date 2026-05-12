@@ -270,15 +270,68 @@ function render(time) {
   draw({ time })
 }`;
 
-export const DEFAULT_SHADERPARK_CODE = `sphere(0.35);
+export const DEFAULT_SHADERPARK_CODE = `// https://shaderpark.com/sculpture/-OsK9Xs40PPK4VdLRyrp
+// by https://shaderpark.com/user/jsqvlC
 
-let p = getSpace();
-let glow = 0.5 + 0.5 * sin(time + p.x * 6.0);
+let s = getSpace();
 
-color(vec3(0.2 + glow * 0.8, 0.45, 1.0));
-shine(0.65);
-metal(0.15);
-rotateY(time * 0.4);`;
+let sizeBase = input(0.5, 0.1, 1.2);
+let sizeAmp = input(0.2, 0, 0.6);
+let spacing = input(0.22, 0.05, 0.5);
+let strength = input(5, 0, 12);
+let drift = input2D(0, 0);
+
+const lineCount = 6.0;
+
+s.x += drift.x * 0.2;
+s.y += drift.y * 0.2;
+
+const sz = sizeBase + nsin(time) * sizeAmp;
+
+const complexDiv = (a, b) => {
+  const dm = 1.0 / (b.x * b.x + b.y * b.y);
+  return dm * vec2(
+    a.x * b.x + a.y * b.y,
+    a.y * b.x - a.x * b.y
+  );
+};
+
+function palette(t, a, b, c, d) {
+  return a + b * cos(c * t + d);
+}
+
+let phi = 0.0;
+
+for (let i = 0.0; i < lineCount; i += 1.0) {
+  const xoff = (i - (lineCount - 1.0) * 0.5) * spacing;
+  const a = vec2(s.x - xoff, s.y - sz);
+  const b = vec2(s.x - xoff, s.y + sz);
+  const q = complexDiv(a, b);
+  phi += strength * atan(q.y, q.x) + 0.35 * i * sin(time * 0.9);
+}
+
+for (let i = 0.0; i < lineCount; i += 1.0) {
+  const yoff = (i - (lineCount - 1.0) * 0.5) * spacing;
+  const a = vec2(s.y - yoff, s.x - sz);
+  const b = vec2(s.y - yoff, s.x + sz);
+  const q = complexDiv(a, b);
+  phi += strength * atan(q.y, q.x) + 0.35 * i * sin(time * 0.9);
+}
+
+phi = phi / (lineCount * 2.0);
+
+const angle = sin(time * 0.84) * phi + 3.0 * sin(time);
+
+const v = palette(
+  angle,
+  vec3(1, 0.1, 0.3),
+  vec3(0.46, 0.22, 0.35),
+  vec3(0.82, 0.84, 0.65),
+  vec3(0.53, 0.23, 0.22)
+);
+
+color(v);
+box(vec3(5.0, 2.0, 0.01));`;
 
 export const DEFAULT_TEXTMODE_CODE = `t.setup(() => {
   t.fontSize(32)
