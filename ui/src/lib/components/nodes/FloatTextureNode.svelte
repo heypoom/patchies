@@ -27,8 +27,8 @@
   let messageContext: MessageContext;
   let width = $state(0);
   let height = $state(0);
-  let channelCount = $state(0);
   let hasTexture = $state(false);
+  let packBuffer: Float32Array | undefined;
 
   let dataFormat = $state<FloatTextureDataFormat>(data.dataFormat ?? 'r');
   const containerClass = $derived(
@@ -60,15 +60,20 @@
     if (!input) return;
 
     const resolvedDataFormat = inferFloatTextureDataFormat(input.source);
-    const packed = packFloatTexture(input.source, { dataFormat: resolvedDataFormat });
+
+    const packed = packFloatTexture(input.source, {
+      dataFormat: resolvedDataFormat,
+      target: packBuffer
+    });
+
+    packBuffer = packed.data;
 
     width = packed.width;
     height = packed.height;
-    channelCount = input.source instanceof Float32Array ? 1 : input.source.length;
     dataFormat = resolvedDataFormat;
     hasTexture = true;
 
-    glSystem.setFloatTexture(nodeId, packed.width, packed.height, packed.data);
+    glSystem.setFloatTexture(nodeId, packed.width, packed.height, new Float32Array(packed.data));
   };
 
   onMount(() => {

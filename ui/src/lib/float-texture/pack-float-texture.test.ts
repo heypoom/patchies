@@ -62,4 +62,20 @@ describe('packFloatTexture', () => {
       ])
     ).toBe('rgba');
   });
+
+  it('reuses the target buffer when it has the expected size', () => {
+    const target = new Float32Array(8);
+    const result = packFloatTexture(new Float32Array([0.25, 0.5]), { target });
+
+    expect(result.data).toBe(target);
+    expect(Array.from(target)).toEqual([0.25, 0, 0, 1, 0.5, 0, 0, 1]);
+  });
+
+  it('allocates a new target buffer when the provided target has the wrong size', () => {
+    const target = new Float32Array(4);
+    const result = packFloatTexture(new Float32Array([0.25, 0.5]), { target });
+
+    expect(result.data).not.toBe(target);
+    expect(result.data.length).toBe(8);
+  });
 });

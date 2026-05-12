@@ -20,6 +20,8 @@ The first target workflow is:
 - Missing channels are filled with `(0, 0, 0, 1)`.
 - The output texture uses nearest filtering and clamp wrapping.
 - Channel names are ignored; order controls packing.
+- Same-size updates should reuse the existing GPU texture and update its pixels; resizing reallocates the texture and framebuffer.
+- The packer may reuse an internal output buffer, but upload transfer should use an owned copy so user-provided input arrays and the reusable pack buffer are not detached.
 
 ## Initial Packing Contract
 

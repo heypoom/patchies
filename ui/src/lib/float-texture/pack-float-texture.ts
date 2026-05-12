@@ -11,6 +11,7 @@ export interface PackedFloatTexture {
 interface PackFloatTextureOptions {
   dataFormat?: FloatTextureDataFormat;
   extraPixelValue?: [number, number, number, number];
+  target?: Float32Array;
 }
 
 const CHANNELS_PER_FORMAT: Record<FloatTextureDataFormat, number> = {
@@ -37,7 +38,7 @@ export function inferFloatTextureDataFormat(source: FloatTextureSource): FloatTe
 
 export function packFloatTexture(
   source: FloatTextureSource,
-  { dataFormat, extraPixelValue = DEFAULT_EXTRA_PIXEL_VALUE }: PackFloatTextureOptions = {}
+  { dataFormat, extraPixelValue = DEFAULT_EXTRA_PIXEL_VALUE, target }: PackFloatTextureOptions = {}
 ): PackedFloatTexture {
   const channels = normalizeFloatTextureSource(source);
   const resolvedDataFormat = dataFormat ?? inferFloatTextureDataFormat(source);
@@ -53,7 +54,9 @@ export function packFloatTexture(
 
   const width = Math.max(...rowWidths);
   const height = rowCount;
-  const data = new Float32Array(width * height * 4);
+  const expectedLength = width * height * 4;
+
+  const data = target?.length === expectedLength ? target : new Float32Array(expectedLength);
 
   for (let row = 0; row < height; row++) {
     const channelStart = row * channelsPerRow;

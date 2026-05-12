@@ -149,19 +149,30 @@ export class VideoTextureManager {
     const existingDestTexture = this.destinationTextures.get(nodeId);
     const existingDestFBO = this.destinationFBOs.get(nodeId);
 
-    existingDestFBO?.destroy();
-    existingDestTexture?.destroy();
+    const needsResize =
+      !existingDestTexture ||
+      existingDestTexture.width !== safeWidth ||
+      existingDestTexture.height !== safeHeight;
 
-    const destTexture = this.regl.texture({
-      width: safeWidth,
-      height: safeHeight,
-      wrapS: 'clamp',
-      wrapT: 'clamp'
-    });
-    this.destinationTextures.set(nodeId, destTexture);
+    let destTexture = existingDestTexture;
+
+    if (needsResize) {
+      existingDestFBO?.destroy();
+      existingDestTexture?.destroy();
+
+      destTexture = this.regl.texture({
+        width: safeWidth,
+        height: safeHeight,
+        wrapS: 'clamp',
+        wrapT: 'clamp'
+      });
+
+      this.destinationTextures.set(nodeId, destTexture);
+    }
 
     const rawTexture = getRawTexture(destTexture);
     const gl = this.gl;
+
     const previousTexture = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;
     const previousActiveTexture = gl.getParameter(gl.ACTIVE_TEXTURE) as number;
     const previousFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
@@ -169,21 +180,37 @@ export class VideoTextureManager {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, rawTexture);
 
-    // Recreate the float texture on every upload. Same-size updates can go
-    // stale in the worker/regl mixed state path, while resize-triggered
-    // recreation is reliable; keep the MVP deterministic and simple.
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, safeWidth, safeHeight, 0, gl.RGBA, gl.FLOAT, data);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    if (needsResize) {
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA32F,
+        safeWidth,
+        safeHeight,
+        0,
+        gl.RGBA,
+        gl.FLOAT,
+        data
+      );
+
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    } else {
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, safeWidth, safeHeight, gl.RGBA, gl.FLOAT, data);
+    }
 
     gl.bindTexture(gl.TEXTURE_2D, previousTexture);
     gl.activeTexture(previousActiveTexture);
     gl.bindFramebuffer(gl.FRAMEBUFFER, previousFramebuffer);
 
-    const destFBO = this.regl.framebuffer({ color: destTexture });
-    this.destinationFBOs.set(nodeId, destFBO);
+    if (needsResize || !existingDestFBO) {
+      existingDestFBO?.destroy();
+
+      const destFBO = this.regl.framebuffer({ color: destTexture });
+      this.destinationFBOs.set(nodeId, destFBO);
+    }
   }
 
   /**
