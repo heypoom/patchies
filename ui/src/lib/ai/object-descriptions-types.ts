@@ -51,7 +51,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - hydra: Live coding video synthesis with Hydra
 - glsl: GLSL fragment shaders for visual effects
 - float.tex: Convert Float32Array or Float32Array[] channel data into a 32-bit float video texture for shaders
-- shaderpark: Shader Park/Sculpt SDF raymarching visuals for the video pipeline
+- shaderpark: Shader Park SDF raymarching visuals for the video pipeline
 - three: Three.js 3D graphics (offscreen worker, for video chaining)
 - regl: GPU renderer with regl draw commands (custom vertices, buffers, multi-pass, blend modes)
 - three.dom: Three.js 3D graphics (main thread, for mouse/keyboard interaction)
@@ -143,7 +143,7 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - surface: Fullscreen interactive canvas — capture mouse/touch across entire screen for drawing/painting
 - hydra: Live video synthesis — feedback loops, texture blending, webcam warping
 - glsl: GLSL fragment shaders — pixel-level visual effects, raymarching, procedural textures
-- shaderpark: Shader Park/Sculpt — concise SDF/raymarched procedural 3D visuals
+- shaderpark: Shader Park — concise SDF/raymarched procedural 3D visuals
 - three: Three.js 3D graphics (offscreen worker) — meshes, lighting, cameras, 3D scenes; for video chaining
 - three.dom: Three.js 3D graphics (main thread) — same as three but supports mouse/keyboard interaction
 - regl: Low-level GPU rendering — custom vertices, multi-pass, blend modes

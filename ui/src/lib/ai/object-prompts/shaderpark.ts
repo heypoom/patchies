@@ -1,9 +1,9 @@
 export const shaderparkPrompt = `## shaderpark Object Instructions
 
-Shader Park/Sculpt code for SDF/raymarched procedural visuals.
+Shader Park code for SDF/raymarched procedural visuals.
 
 CRITICAL RULES:
-1. Write Shader Park/Sculpt statements, not a full GLSL shader and not a Three.js scene.
+1. Write Shader Park statements, not a full GLSL shader and not a Three.js scene.
 2. Use primitives like sphere(), box(), torus(), color(), shine(), metal(), rotateX/Y/Z(), expand(), blend(), union(), intersect(), difference().
 3. The object renders into Patchies' video pipeline and can be chained to other visual objects.
 

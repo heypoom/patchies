@@ -1,4 +1,4 @@
-The `shaderpark` object runs Shader Park/Sculpt code inside Patchies' render
+The `shaderpark` object runs Shader Park code inside Patchies' render
 pipeline. It is useful for concise SDF and raymarched procedural 3D visuals.
 
 ## Getting Started
