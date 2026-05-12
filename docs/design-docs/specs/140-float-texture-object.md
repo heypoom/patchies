@@ -33,6 +33,7 @@ The first target workflow is:
 - Upload transfer buffers should be returned from the render worker after the WebGL upload and reused by `GLSystem` for later same-size uploads.
 - Multiple incoming messages in the same animation frame should coalesce into one upload; only the latest packed texture is flushed to the render worker.
 - Packing validation errors should be shown on the `float.tex` node and logged through the node-scoped console. A later successful upload clears the visible error.
+- The render-worker upload path should reject malformed float texture messages and mismatched packed pixel lengths before touching WebGL.
 
 ## Session Summary
 
@@ -93,11 +94,11 @@ For each pixel:
 
 Channel packing supports three layouts:
 
-| Layout    | Meaning                                                                 |
-| --------- | ----------------------------------------------------------------------- |
-| `rows`    | Default. Each channel group becomes one texture row.                    |
-| `wrapped` | Each channel group starts on a new row, but long rows wrap by `width`.  |
-| `square`  | Channel groups are appended into an approximately square texture.       |
+| Layout    | Meaning                                                                |
+| --------- | ---------------------------------------------------------------------- |
+| `rows`    | Default. Each channel group becomes one texture row.                   |
+| `wrapped` | Each channel group starts on a new row, but long rows wrap by `width`. |
+| `square`  | Channel groups are appended into an approximately square texture.      |
 
 `rows` is selected by plain `Float32Array` and `Float32Array[]` input.
 

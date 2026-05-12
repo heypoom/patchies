@@ -49,16 +49,35 @@ self.onmessage = (event) => {
     .with('setBackgroundSize', () => fboRenderer.setBackgroundSize(data.width, data.height))
     .with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))
     .with('setFloatTexture', () => {
-      const buffer = data.data.buffer;
+      const textureData = data.data;
+
+      if (!(textureData instanceof Float32Array)) {
+        console.warn('[renderWorker] Invalid setFloatTexture payload: data must be Float32Array');
+        return;
+      }
+
+      const buffer = textureData.buffer;
       const textureFormat = data.textureFormat ?? 'rgba32f';
 
       if (buffer instanceof SharedArrayBuffer) {
-        fboRenderer.setFloatTexture(data.nodeId, data.width, data.height, data.data, textureFormat);
+        fboRenderer.setFloatTexture(
+          data.nodeId,
+          data.width,
+          data.height,
+          textureData,
+          textureFormat
+        );
         return;
       }
 
       try {
-        fboRenderer.setFloatTexture(data.nodeId, data.width, data.height, data.data, textureFormat);
+        fboRenderer.setFloatTexture(
+          data.nodeId,
+          data.width,
+          data.height,
+          textureData,
+          textureFormat
+        );
       } finally {
         self.postMessage(
           {

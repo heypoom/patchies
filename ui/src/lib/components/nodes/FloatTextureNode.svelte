@@ -24,7 +24,8 @@
   let {
     id: nodeId,
     data,
-    selected
+    selected,
+    class: className = ''
   }: {
     id: string;
     data: {
@@ -32,6 +33,7 @@
       textureFormat?: FBOFormat;
     };
     selected: boolean;
+    class?: string;
   } = $props();
 
   let glSystem = GLSystem.getInstance();
@@ -163,22 +165,10 @@
     glSystem.removeBitmap(nodeId);
     glSystem.removeNode(nodeId);
   });
-
-  $effect(() => {
-    glSystem.upsertNode(nodeId, 'float.tex', {});
-  });
 </script>
 
-<div class="relative">
-  <StandardHandle
-    port="inlet"
-    type="message"
-    id="0"
-    title="Float32Array, Float32Array[], or RGBA texture object input"
-    total={1}
-    index={0}
-    {nodeId}
-  />
+<div class={['relative', className]}>
+  <StandardHandle port="inlet" type="message" id="0" total={1} index={0} {nodeId} />
 
   <div class={['min-w-[132px] rounded-lg border px-3 py-2', containerClass]}>
     <div class="font-mono text-xs text-zinc-200">
@@ -201,13 +191,5 @@
     {/if}
   </div>
 
-  <StandardHandle
-    port="outlet"
-    type="video"
-    id="0"
-    title="Float texture output"
-    total={1}
-    index={0}
-    {nodeId}
-  />
+  <StandardHandle port="outlet" type="video" id="0" total={1} index={0} {nodeId} />
 </div>

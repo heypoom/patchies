@@ -138,6 +138,15 @@ export class VideoTextureManager {
   ): void {
     const safeWidth = Math.max(1, Math.round(width));
     const safeHeight = Math.max(1, Math.round(height));
+    const expectedLength = safeWidth * safeHeight * 4;
+
+    if (data.length !== expectedLength) {
+      console.warn(
+        `[float.tex] Expected RGBA data length ${expectedLength}, received ${data.length}; skipping upload`
+      );
+      return;
+    }
+
     const uploadFormat = this.resolveFloatTextureFormat(format);
 
     const pendingBitmap = this.pendingBitmaps.get(nodeId);
@@ -196,6 +205,10 @@ export class VideoTextureManager {
     gl.bindTexture(gl.TEXTURE_2D, rawTexture);
 
     if (needsResize) {
+      // TODO(float-texture-upload): this raw WebGL reinitialization keeps regl's
+      // texture object in sync with WebGL2-sized float storage after resize or
+      // format changes. Revisit with a more direct texture allocation path if
+      // upload performance becomes a bottleneck.
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,

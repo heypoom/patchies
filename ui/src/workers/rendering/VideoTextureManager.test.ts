@@ -116,4 +116,21 @@ describe('VideoTextureManager', () => {
     expect(texImageArgs[7]).toBe(gl.UNSIGNED_BYTE);
     expect(Array.from(texImageArgs[8] as Uint8Array)).toEqual([0, 128, 255, 255]);
   });
+
+  it('skips float texture uploads when the data length does not match dimensions', () => {
+    const { regl } = createMockRegl();
+    const gl = createMockGl();
+    const manager = new VideoTextureManager(regl as never, gl as never);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    manager.setFloatTexture('float-1', 2, 2, new Float32Array(4));
+
+    expect(gl.texImage2D).not.toHaveBeenCalled();
+    expect(regl.texture).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      '[float.tex] Expected RGBA data length 16, received 4; skipping upload'
+    );
+
+    warn.mockRestore();
+  });
 });
