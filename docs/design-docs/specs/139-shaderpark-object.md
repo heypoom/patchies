@@ -47,7 +47,7 @@ Because `shader-park-core` evaluates user Sculpt code against locally scoped DSL
   sphere(radius + n)
   ```
 
-- Register shaderpark visual presets in their own preset pack so users can enable them alongside the `shaderpark` object without mixing them into GLSL or Hydra packs.
+- Register shaderpark visual presets in the **Shader Park Visuals** preset pack so users can enable them alongside the `shaderpark` object without mixing them into GLSL or Hydra packs.
 - Move richer Shader Park examples out of the default code and into the Shader Park visual preset pack.
 
 ## Notes

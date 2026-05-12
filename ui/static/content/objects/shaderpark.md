@@ -68,6 +68,11 @@ sphere(radius);
 Code that references `mouse` or `mouseIntersection()` receives normalized Shader
 Park mouse coordinates from the node preview and the shared surface preview.
 
+## Presets
+
+Enable the "Shader Park Visuals" preset pack to use ready-made Shader Park
+examples. It includes `Noise Sphere`, `Square Symmetry`, and `Mouse Follower`.
+
 ## Resources
 
 - [Shader Park](https://shaderpark.com)
