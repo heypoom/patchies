@@ -31,6 +31,7 @@ Because `shader-park-core` evaluates user Sculpt code against locally scoped DSL
 - Generated message uniform inlets also accept `setCode` and `run` control messages, so the object does not need a separate control inlet.
 - The default code should stay lightweight for live coding while exercising at least one persistent `input()` setting.
 - Shader Park code supports comment metadata directives matching GLSL: `// @title ...` and `// @primaryButton code|settings|run`.
+- The code editor should use JavaScript syntax highlighting only. It must not offer Patchies execution-environment completions such as `send()`, `recv()`, `settings`, `clock`, or `setTitle()` because Shader Park code runs in Shader Park's scoped DSL evaluation context, not the Patchies JS runtime.
 - Object documentation should link to Shader Park's main site, JS reference docs, community examples, about page, and `shader-park-core` repository.
 - Code that references `mouse` or `mouseIntersection()` should receive normalized Shader Park mouse coordinates from the node preview and the shared surface mouse forwarder.
 

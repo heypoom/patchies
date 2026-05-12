@@ -802,6 +802,14 @@ export interface PatchiesContext {
   nodeType?: string;
 }
 
+const PATCHIES_COMPLETION_DISABLED_NODE_TYPES = new Set(['shaderpark']);
+
+export function shouldShowPatchiesCompletions(context?: PatchiesContext): boolean {
+  if (!context?.nodeType) return true;
+
+  return !PATCHIES_COMPLETION_DISABLED_NODE_TYPES.has(context.nodeType);
+}
+
 /**
  * Check if cursor is inside a function body by counting braces
  */
@@ -839,8 +847,10 @@ function isInsideFunctionBody(text: string): boolean {
 /**
  * Custom completion source for Patchies API functions
  */
-function createPatchiesCompletionSource(patchiesContext?: PatchiesContext) {
+export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext) {
   return (context: CMCompletionContext) => {
+    if (!shouldShowPatchiesCompletions(patchiesContext)) return null;
+
     // Skip completions for non-JS nodes (expressions are pure, messages are JSON5)
     if (patchiesContext?.nodeType === 'expr') return null;
     if (patchiesContext?.nodeType === 'msg') return null;
