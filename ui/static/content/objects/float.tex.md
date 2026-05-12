@@ -14,6 +14,38 @@ channels with `(0, 0, 0, 1)`.
 
 To view it, connect the video outlet to `glsl>` or `hydra>`.
 
+You can also connect `tap~` into `float.tex` to turn raw audio buffers into a
+texture for waveform and audio-reactive shader experiments.
+
+## Example
+
+```js
+setRunOnMount(true)
+
+function produce(S) {
+  let r = new Float32Array(S)
+  let g = new Float32Array(S)
+  let b = new Float32Array(S)
+  let a = new Float32Array(S)
+
+  for (let i = 0; i < S; i++) {
+    let t = i / (S - 1)
+    r[i] = t
+    g[i] = 0
+    b[i] = 1 - t
+    a[i] = 1
+  }
+
+  send([r, g, b, a])
+}
+
+produce(10)
+
+recv((data, meta) => {
+  produce(data)
+})
+```
+
 ## See also
 
 - [tap~](/docs/objects/tap~)
