@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  getFloatTextureTextureFormat,
   inferFloatTextureDataFormat,
   isFloatTextureSharedSource,
   packFloatTexture
@@ -139,6 +140,27 @@ describe('packFloatTexture', () => {
     };
 
     expect(isFloatTextureSharedSource(source)).toBe(true);
+  });
+
+  it('reads texture format from object-shaped texture sources', () => {
+    expect(
+      getFloatTextureTextureFormat({
+        data: new Float32Array([1, 0, 0, 1]),
+        width: 1,
+        height: 1,
+        type: 'rgba',
+        textureFormat: 'rgba8'
+      })
+    ).toBe('rgba8');
+
+    expect(
+      getFloatTextureTextureFormat({
+        type: 'wrapped',
+        channels: new Float32Array([1]),
+        width: 1,
+        textureFormat: 'rgba16f'
+      })
+    ).toBe('rgba16f');
   });
 
   it('wraps long channel rows by the requested width', () => {

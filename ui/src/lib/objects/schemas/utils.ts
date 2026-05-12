@@ -1,5 +1,5 @@
 import type { TSchema } from '@sinclair/typebox';
-import { Kind } from '@sinclair/typebox';
+import { Kind, OptionalKind } from '@sinclair/typebox';
 
 import type { ObjectSchemaRegistry } from './types';
 
@@ -14,6 +14,14 @@ const hl = {
 
 // Discriminator fields used for message routing.
 const DISCRIMINATOR_FIELDS = ['type'] as const;
+
+function isOptionalSchema(schema: TSchema): boolean {
+  return Boolean((schema as TSchema & { [OptionalKind]?: unknown })[OptionalKind]);
+}
+
+function formatObjectKey(key: string, requiredFields: Set<string> | null): string {
+  return requiredFields?.has(key) === false ? `${key}?` : key;
+}
 
 /**
  * Get the discriminator field and value from a schema.
@@ -34,76 +42,86 @@ function getDiscriminator(props: Record<string, TSchema>): { field: string; valu
  * Used for displaying message types in docs and tooltips.
  */
 export function schemaToString(schema: TSchema): string {
+  return schemaToStringInternal(schema, true);
+}
+
+function schemaToStringInternal(schema: TSchema, showOptionalSuffix: boolean): string {
+  const optionalSuffix = showOptionalSuffix && isOptionalSchema(schema) ? '?' : '';
+
   switch (schema[Kind]) {
     case 'Literal':
-      return typeof schema.const === 'string' ? `'${schema.const}'` : String(schema.const);
+      return `${typeof schema.const === 'string' ? `'${schema.const}'` : String(schema.const)}${optionalSuffix}`;
 
     case 'String':
-      return 'string';
+      return `string${optionalSuffix}`;
 
     case 'Number':
-      return 'number';
+      return `number${optionalSuffix}`;
 
     case 'Integer':
-      return 'integer';
+      return `integer${optionalSuffix}`;
 
     case 'Boolean':
-      return 'boolean';
+      return `boolean${optionalSuffix}`;
 
     case 'Object': {
       const props = schema.properties as Record<string, TSchema>;
       const keys = Object.keys(props);
       const disc = getDiscriminator(props);
+      const requiredFields = Array.isArray(schema.required)
+        ? new Set(schema.required as string[])
+        : null;
 
       // Symbol shorthand: { type: 'bang' } or { op: 'get' } → bang / get
       if (keys.length === 1 && disc) {
-        return disc.value;
+        return `${disc.value}${optionalSuffix}`;
       }
 
       const parts = Object.entries(props).map(([key, value]) => {
-        const valueStr = schemaToString(value);
+        const valueStr = schemaToStringInternal(value, requiredFields?.has(key) !== false);
 
-        return `${key}: ${valueStr}`;
+        return `${formatObjectKey(key, requiredFields)}: ${valueStr}`;
       });
 
-      return `{${parts.join(', ')}}`;
+      return `{${parts.join(', ')}}${optionalSuffix}`;
     }
 
     case 'Array': {
       const itemSchema = schema.items as TSchema;
 
-      return `${schemaToString(itemSchema)}[]`;
+      return `${schemaToString(itemSchema)}[]${optionalSuffix}`;
     }
 
     case 'Union': {
       const anyOf = schema.anyOf as TSchema[];
 
-      return anyOf.map(schemaToString).join(' | ');
+      return `${anyOf.map(schemaToString).join(' | ')}${optionalSuffix}`;
     }
 
     case 'Unknown':
-      return 'any';
+      return `any${optionalSuffix}`;
 
     case 'Any':
-      return 'any';
+      return `any${optionalSuffix}`;
 
     case 'Tuple': {
       const items = schema.items as TSchema[];
 
-      return `[${items.map(schemaToString).join(', ')}]`;
+      return `[${items.map(schemaToString).join(', ')}]${optionalSuffix}`;
     }
 
     case 'Unsafe':
       // Type.Unsafe<T>({ type: 'TypeName' }) - use the type property
-      return schema.type ?? 'unknown';
+      return `${schema.type ?? 'unknown'}${optionalSuffix}`;
 
     default:
-      return 'unknown';
+      return `unknown${optionalSuffix}`;
   }
 }
 
 interface SchemaToHtmlOptions {
   compact?: boolean;
+  showOptionalSuffix?: boolean;
 }
 
 /**
@@ -138,72 +156,81 @@ export function getSchemaTypeName(schema: TSchema): string | null {
  * @param compact - If true, shows shortened version for complex objects (e.g., `size{...}`)
  */
 export function schemaToHtml(schema: TSchema, options: SchemaToHtmlOptions = {}): string {
-  const { compact = false } = options;
+  const { compact = false, showOptionalSuffix = true } = options;
+  const optionalSuffix =
+    showOptionalSuffix && isOptionalSchema(schema) ? `<span class="${hl.punct}">?</span>` : '';
 
   switch (schema[Kind]) {
     case 'Literal': {
       if (typeof schema.const === 'string') {
-        return `<span class="${hl.string}">'${schema.const}'</span>`;
+        return `<span class="${hl.string}">'${schema.const}'</span>${optionalSuffix}`;
       }
 
-      return `<span class="${hl.type}">${String(schema.const)}</span>`;
+      return `<span class="${hl.type}">${String(schema.const)}</span>${optionalSuffix}`;
     }
 
     case 'String':
-      return `<span class="${hl.type}">string</span>`;
+      return `<span class="${hl.type}">string</span>${optionalSuffix}`;
 
     case 'Number':
-      return `<span class="${hl.type}">number</span>`;
+      return `<span class="${hl.type}">number</span>${optionalSuffix}`;
 
     case 'Integer':
-      return `<span class="${hl.type}">integer</span>`;
+      return `<span class="${hl.type}">integer</span>${optionalSuffix}`;
 
     case 'Boolean':
-      return `<span class="${hl.type}">boolean</span>`;
+      return `<span class="${hl.type}">boolean</span>${optionalSuffix}`;
 
     case 'Object': {
       const props = schema.properties as Record<string, TSchema>;
       const keys = Object.keys(props);
       const disc = getDiscriminator(props);
+      const requiredFields = Array.isArray(schema.required)
+        ? new Set(schema.required as string[])
+        : null;
 
       // Symbol shorthand: { type: 'bang' } or { op: 'get' } → bang / get
       if (keys.length === 1 && disc) {
-        return `<span>${disc.value}</span>`;
+        return `<span>${disc.value}</span>${optionalSuffix}`;
       }
 
       // Compact mode: show discriminator name for complex objects
       if (compact && disc) {
-        return `<span>${disc.value}</span><span class="${hl.punct}">{...}</span>`;
+        return `<span>${disc.value}</span><span class="${hl.punct}">{...}</span>${optionalSuffix}`;
       }
 
       const parts = Object.entries(props).map(([key, value]) => {
-        const valueHtml = schemaToHtml(value, options);
+        const valueHtml = schemaToHtml(value, {
+          ...options,
+          showOptionalSuffix: requiredFields?.has(key) !== false
+        });
+        const keyLabel = formatObjectKey(key, requiredFields);
 
-        return `<span>${key}</span><span class="${hl.punct}">:</span> ${valueHtml}`;
+        return `<span>${keyLabel}</span><span class="${hl.punct}">:</span> ${valueHtml}`;
       });
 
-      return `<span class="${hl.punct}">{</span>${parts.join(`<span class="${hl.punct}">,</span> `)}<span class="${hl.punct}">}</span>`;
+      return `<span class="${hl.punct}">{</span>${parts.join(`<span class="${hl.punct}">,</span> `)}<span class="${hl.punct}">}</span>${optionalSuffix}`;
     }
 
     case 'Array': {
       const itemSchema = schema.items as TSchema;
 
-      return `${schemaToHtml(itemSchema, options)}<span class="${hl.punct}">[]</span>`;
+      return `${schemaToHtml(itemSchema, options)}<span class="${hl.punct}">[]</span>${optionalSuffix}`;
     }
 
     case 'Union': {
       const anyOf = schema.anyOf as TSchema[];
 
-      return anyOf
+      return `${anyOf
         .map((s) => schemaToHtml(s, options))
-        .join(`<span class="${hl.punct}"> | </span>`);
+        .join(`<span class="${hl.punct}"> | </span>`)}${optionalSuffix}`;
     }
 
     case 'Unknown':
-      return `<span class="${hl.type}">any</span>`;
+      return `<span class="${hl.type}">any</span>${optionalSuffix}`;
 
     case 'Any':
-      return `<span class="${hl.type}">any</span>`;
+      return `<span class="${hl.type}">any</span>${optionalSuffix}`;
 
     case 'Tuple': {
       const items = schema.items as TSchema[];
@@ -211,15 +238,15 @@ export function schemaToHtml(schema: TSchema, options: SchemaToHtmlOptions = {})
         .map((s) => schemaToHtml(s, options))
         .join(`<span class="${hl.punct}">, </span>`);
 
-      return `<span class="${hl.punct}">[</span>${itemsHtml}<span class="${hl.punct}">]</span>`;
+      return `<span class="${hl.punct}">[</span>${itemsHtml}<span class="${hl.punct}">]</span>${optionalSuffix}`;
     }
 
     case 'Unsafe':
       // Type.Unsafe<T>({ type: 'TypeName' }) - use the type property
-      return `<span class="${hl.type}">${schema.type ?? 'unknown'}</span>`;
+      return `<span class="${hl.type}">${schema.type ?? 'unknown'}</span>${optionalSuffix}`;
 
     default:
-      return `<span class="${hl.type}">unknown</span>`;
+      return `<span class="${hl.type}">unknown</span>${optionalSuffix}`;
   }
 }
 

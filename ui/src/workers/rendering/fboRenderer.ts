@@ -1757,8 +1757,14 @@ export class FBORenderer {
     this.videoTextures.setBitmap(nodeId, bitmap);
   }
 
-  setFloatTexture(nodeId: string, width: number, height: number, data: Float32Array) {
-    this.videoTextures.setFloatTexture(nodeId, width, height, data);
+  setFloatTexture(
+    nodeId: string,
+    width: number,
+    height: number,
+    data: Float32Array,
+    textureFormat: FBOFormat = 'rgba32f'
+  ) {
+    this.videoTextures.setFloatTexture(nodeId, width, height, data, textureFormat);
   }
 
   /**

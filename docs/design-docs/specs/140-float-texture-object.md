@@ -16,13 +16,14 @@ The first target workflow is:
 - The inlet accepts:
   - `Float32Array` as a single red channel row.
   - `Float32Array[]` as ordered channel data.
-  - `{ type: 'wrapped', channels: Float32Array | Float32Array[], width, format? }` as wrapped channel packing.
-  - `{ type: 'wrapped', channels: SharedArrayBuffer | SharedArrayBuffer[], width, version, format? }` as shared wrapped channel packing.
-  - `{ type: 'square', channels: Float32Array | Float32Array[], format? }` as square channel packing.
-  - `{ type: 'square', channels: SharedArrayBuffer | SharedArrayBuffer[], version, format? }` as shared square channel packing.
-  - `{ data: Float32Array, width, height, type: 'rgba' }` as already-interleaved RGBA pixel data.
-  - `{ buffer: SharedArrayBuffer, width, height, type: 'rgba', version }` as shared already-interleaved RGBA pixel data.
+  - `{ type: 'wrapped', channels: Float32Array | Float32Array[], width, format?, textureFormat? }` as wrapped channel packing.
+  - `{ type: 'wrapped', channels: SharedArrayBuffer | SharedArrayBuffer[], width, version, format?, textureFormat? }` as shared wrapped channel packing.
+  - `{ type: 'square', channels: Float32Array | Float32Array[], format?, textureFormat? }` as square channel packing.
+  - `{ type: 'square', channels: SharedArrayBuffer | SharedArrayBuffer[], version, format?, textureFormat? }` as shared square channel packing.
+  - `{ data: Float32Array, width, height, type: 'rgba', textureFormat? }` as already-interleaved RGBA pixel data.
+  - `{ buffer: SharedArrayBuffer, width, height, type: 'rgba', version, textureFormat? }` as shared already-interleaved RGBA pixel data.
 - Shared wrapped and square channel messages require `version`; repeated messages for the same shared buffers and version should be skipped.
+- `textureFormat` may be `'rgba32f'`, `'rgba16f'`, or `'rgba8'`; default is `'rgba32f'`.
 - The MVP packs samples into an `RGBA32F` texture.
 - Missing channels are filled with `(0, 0, 0, 1)`.
 - The output texture uses nearest filtering and clamp wrapping.
@@ -69,6 +70,14 @@ When no explicit format is provided by code, `float.tex` infers the format from 
 - `[r, g, b, a]` and longer channel arrays → `rgba`
 
 Object-shaped messages with `type: 'rgba'` and explicit `width`/`height` skip repacking. `data.length` must equal `width * height * 4`. Shared-buffer messages use the same pixel layout, require `buffer.byteLength === width * height * 4 * 4`, and only upload when `version` changes for that buffer.
+
+Object-shaped inputs may set `textureFormat` to choose output texture storage:
+
+| Texture format | Meaning                                      |
+| -------------- | -------------------------------------------- |
+| `rgba32f`      | Default. Full 32-bit float storage.          |
+| `rgba16f`      | Half-float storage for lower memory use.     |
+| `rgba8`        | 8-bit normalized storage, clamped to `0..1`. |
 
 For longer channel arrays, `rgba` creates additional rows per group of four channels.
 

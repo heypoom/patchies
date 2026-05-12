@@ -8,6 +8,12 @@ const formatSchema = Type.Union([
   Type.Literal('rgba')
 ]);
 
+const textureFormatSchema = Type.Union([
+  Type.Literal('rgba8'),
+  Type.Literal('rgba16f'),
+  Type.Literal('rgba32f')
+]);
+
 const float32ChannelSchema = Type.Union([
   Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
   Type.Array(Type.Unsafe<Float32Array>({ type: 'Float32Array' }))
@@ -41,7 +47,8 @@ export const floatTexSchema: ObjectSchema = {
             type: Type.Literal('wrapped'),
             channels: float32ChannelSchema,
             width: Type.Number(),
-            format: Type.Optional(formatSchema)
+            format: Type.Optional(formatSchema),
+            textureFormat: Type.Optional(textureFormatSchema)
           }),
           description: 'Wrapped channel rows'
         },
@@ -51,7 +58,8 @@ export const floatTexSchema: ObjectSchema = {
             channels: sharedChannelSchema,
             width: Type.Number(),
             version: Type.Number(),
-            format: Type.Optional(formatSchema)
+            format: Type.Optional(formatSchema),
+            textureFormat: Type.Optional(textureFormatSchema)
           }),
           description: 'Shared wrapped channel rows'
         },
@@ -59,7 +67,8 @@ export const floatTexSchema: ObjectSchema = {
           schema: Type.Object({
             type: Type.Literal('square'),
             channels: float32ChannelSchema,
-            format: Type.Optional(formatSchema)
+            format: Type.Optional(formatSchema),
+            textureFormat: Type.Optional(textureFormatSchema)
           }),
           description: 'Square channel texture'
         },
@@ -68,7 +77,8 @@ export const floatTexSchema: ObjectSchema = {
             type: Type.Literal('square'),
             channels: sharedChannelSchema,
             version: Type.Number(),
-            format: Type.Optional(formatSchema)
+            format: Type.Optional(formatSchema),
+            textureFormat: Type.Optional(textureFormatSchema)
           }),
           description: 'Shared square channel texture'
         },
@@ -77,7 +87,8 @@ export const floatTexSchema: ObjectSchema = {
             type: Type.Literal('rgba'),
             data: Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
             width: Type.Number(),
-            height: Type.Number()
+            height: Type.Number(),
+            textureFormat: Type.Optional(textureFormatSchema)
           }),
           description: 'Interleaved RGBA pixels'
         },
@@ -87,7 +98,8 @@ export const floatTexSchema: ObjectSchema = {
             buffer: Type.Unsafe<SharedArrayBuffer>({ type: 'SharedArrayBuffer' }),
             width: Type.Number(),
             height: Type.Number(),
-            version: Type.Number()
+            version: Type.Number(),
+            textureFormat: Type.Optional(textureFormatSchema)
           }),
           description: 'Shared interleaved RGBA pixels'
         }

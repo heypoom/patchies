@@ -1,4 +1,5 @@
 import type regl from 'regl';
+import type { FBOFormat } from '$lib/rendering/types';
 import { getFramebuffer, getRawTexture } from './utils';
 
 /**
@@ -17,6 +18,9 @@ export class VideoTextureManager {
 
   /** Destination textures (flipped to match GL coordinates) - PUBLIC for renderNodeToMainOutput */
   public destinationTextures: Map<string, regl.Texture2D> = new Map();
+
+  /** Texture storage format for float texture destinations */
+  private destinationTextureFormats: Map<string, FBOFormat> = new Map();
 
   /** Source textures (raw bitmap, not flipped) */
   private sourceTextures: Map<string, regl.Texture2D> = new Map();
@@ -125,13 +129,16 @@ export class VideoTextureManager {
    * Upload packed RGBA float data as an external texture.
    * Used by data-texture nodes that already provide GPU-ready pixel rows.
    */
-  setFloatTexture(nodeId: string, width: number, height: number, data: Float32Array): void {
+  setFloatTexture(
+    nodeId: string,
+    width: number,
+    height: number,
+    data: Float32Array,
+    format: FBOFormat = 'rgba32f'
+  ): void {
     const safeWidth = Math.max(1, Math.round(width));
     const safeHeight = Math.max(1, Math.round(height));
-
-    if (!this.colorBufferFloatSupported) {
-      console.warn('[float.tex] EXT_color_buffer_float not supported; texture may not render');
-    }
+    const uploadFormat = this.resolveFloatTextureFormat(format);
 
     const pendingBitmap = this.pendingBitmaps.get(nodeId);
 
@@ -141,6 +148,7 @@ export class VideoTextureManager {
     }
 
     const sourceTexture = this.sourceTextures.get(nodeId);
+
     if (sourceTexture) {
       sourceTexture.destroy();
       this.sourceTextures.delete(nodeId);
@@ -148,12 +156,15 @@ export class VideoTextureManager {
 
     const existingDestTexture = this.destinationTextures.get(nodeId);
     const existingDestFBO = this.destinationFBOs.get(nodeId);
+    const existingFormat = this.destinationTextureFormats.get(nodeId);
+
     let destFBO = existingDestFBO;
 
     const needsResize =
       !existingDestTexture ||
       existingDestTexture.width !== safeWidth ||
-      existingDestTexture.height !== safeHeight;
+      existingDestTexture.height !== safeHeight ||
+      existingFormat !== uploadFormat;
 
     let destTexture = existingDestTexture;
 
@@ -170,10 +181,12 @@ export class VideoTextureManager {
       });
 
       this.destinationTextures.set(nodeId, destTexture);
+      this.destinationTextureFormats.set(nodeId, uploadFormat);
     }
 
     const rawTexture = getRawTexture(destTexture);
     const gl = this.gl;
+    const upload = this.createFloatTextureUpload(data, uploadFormat);
 
     const previousTexture = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;
     const previousActiveTexture = gl.getParameter(gl.ACTIVE_TEXTURE) as number;
@@ -186,13 +199,13 @@ export class VideoTextureManager {
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
-        gl.RGBA32F,
+        upload.internalFormat,
         safeWidth,
         safeHeight,
         0,
         gl.RGBA,
-        gl.FLOAT,
-        data
+        upload.type,
+        upload.data
       );
 
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -200,7 +213,17 @@ export class VideoTextureManager {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     } else {
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, safeWidth, safeHeight, gl.RGBA, gl.FLOAT, data);
+      gl.texSubImage2D(
+        gl.TEXTURE_2D,
+        0,
+        0,
+        0,
+        safeWidth,
+        safeHeight,
+        gl.RGBA,
+        upload.type,
+        upload.data
+      );
     }
 
     gl.bindTexture(gl.TEXTURE_2D, previousTexture);
@@ -225,6 +248,8 @@ export class VideoTextureManager {
       destTexture.destroy();
       this.destinationTextures.delete(nodeId);
     }
+
+    this.destinationTextureFormats.delete(nodeId);
 
     // Clean up destination FBO
     const destFBO = this.destinationFBOs.get(nodeId);
@@ -272,6 +297,31 @@ export class VideoTextureManager {
     return this.destinationTextures.has(nodeId);
   }
 
+  private resolveFloatTextureFormat(format: FBOFormat): FBOFormat {
+    if (format === 'rgba8' || this.colorBufferFloatSupported) {
+      return format;
+    }
+
+    console.warn(
+      `[float.tex] EXT_color_buffer_float not supported, falling back to rgba8 for ${format}`
+    );
+
+    return 'rgba8';
+  }
+
+  private createFloatTextureUpload(data: Float32Array, format: FBOFormat) {
+    const gl = this.gl;
+
+    switch (format) {
+      case 'rgba8':
+        return { internalFormat: gl.RGBA8, type: gl.UNSIGNED_BYTE, data: toUint8ClampedData(data) };
+      case 'rgba16f':
+        return { internalFormat: gl.RGBA16F, type: gl.FLOAT, data };
+      case 'rgba32f':
+        return { internalFormat: gl.RGBA32F, type: gl.FLOAT, data };
+    }
+  }
+
   /**
    * Cleanup all resources.
    */
@@ -289,6 +339,7 @@ export class VideoTextureManager {
     }
 
     this.destinationTextures.clear();
+    this.destinationTextureFormats.clear();
 
     for (const texture of this.sourceTextures.values()) {
       texture.destroy();
@@ -303,4 +354,14 @@ export class VideoTextureManager {
 
     this.destinationFBOs.clear();
   }
+}
+
+function toUint8ClampedData(data: Float32Array): Uint8Array {
+  const bytes = new Uint8Array(data.length);
+
+  for (let index = 0; index < data.length; index++) {
+    bytes[index] = Math.round(Math.min(1, Math.max(0, data[index])) * 255);
+  }
+
+  return bytes;
 }

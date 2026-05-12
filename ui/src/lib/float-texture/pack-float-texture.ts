@@ -1,3 +1,5 @@
+import type { FBOFormat } from '$lib/rendering/types';
+
 export type FloatTextureDataFormat = 'r' | 'rg' | 'rgb' | 'rgba';
 export type FloatTextureChannelLayout = 'rows' | 'wrapped' | 'square';
 export type FloatTextureChannel = Float32Array | SharedArrayBuffer;
@@ -11,6 +13,7 @@ export type FloatTextureWrappedSource =
       channels: FloatTextureFloatChannelSource;
       width: number;
       format?: FloatTextureDataFormat;
+      textureFormat?: FBOFormat;
     }
   | {
       type: 'wrapped';
@@ -18,6 +21,7 @@ export type FloatTextureWrappedSource =
       width: number;
       version: number;
       format?: FloatTextureDataFormat;
+      textureFormat?: FBOFormat;
     };
 
 export type FloatTextureSquareSource =
@@ -25,12 +29,14 @@ export type FloatTextureSquareSource =
       type: 'square';
       channels: FloatTextureFloatChannelSource;
       format?: FloatTextureDataFormat;
+      textureFormat?: FBOFormat;
     }
   | {
       type: 'square';
       channels: FloatTextureSharedChannelSource;
       version: number;
       format?: FloatTextureDataFormat;
+      textureFormat?: FBOFormat;
     };
 
 export type FloatTextureInterleavedSource = {
@@ -38,6 +44,7 @@ export type FloatTextureInterleavedSource = {
   width: number;
   height: number;
   type: 'rgba';
+  textureFormat?: FBOFormat;
 };
 
 export type FloatTextureSharedSource = {
@@ -46,6 +53,7 @@ export type FloatTextureSharedSource = {
   height: number;
   type: 'rgba';
   version: number;
+  textureFormat?: FBOFormat;
 };
 
 export type FloatTextureSource =
@@ -76,6 +84,13 @@ const CHANNELS_PER_FORMAT: Record<FloatTextureDataFormat, number> = {
 };
 
 const DEFAULT_EXTRA_PIXEL_VALUE: [number, number, number, number] = [0, 0, 0, 1];
+const TEXTURE_FORMATS = new Set<FBOFormat>(['rgba8', 'rgba16f', 'rgba32f']);
+
+const isFloatTextureTextureFormat = (value: unknown): value is FBOFormat =>
+  typeof value === 'string' && TEXTURE_FORMATS.has(value as FBOFormat);
+
+const hasValidTextureFormat = (value: { textureFormat?: unknown }) =>
+  value.textureFormat === undefined || isFloatTextureTextureFormat(value.textureFormat);
 
 const isSharedArrayBuffer = (value: unknown): value is SharedArrayBuffer =>
   typeof SharedArrayBuffer !== 'undefined' && value instanceof SharedArrayBuffer;
@@ -108,7 +123,8 @@ export function isFloatTextureInterleavedSource(
     value.data instanceof Float32Array &&
     typeof value.width === 'number' &&
     typeof value.height === 'number' &&
-    value.type === 'rgba'
+    value.type === 'rgba' &&
+    hasValidTextureFormat(value)
   );
 }
 
@@ -124,7 +140,8 @@ export function isFloatTextureSharedSource(source: unknown): source is FloatText
     typeof value.width === 'number' &&
     typeof value.height === 'number' &&
     value.type === 'rgba' &&
-    typeof value.version === 'number'
+    typeof value.version === 'number' &&
+    hasValidTextureFormat(value)
   );
 }
 
@@ -141,7 +158,8 @@ export function isFloatTextureWrappedSource(source: unknown): source is FloatTex
     value.type === 'wrapped' &&
     value.channels !== undefined &&
     hasValidChannels &&
-    typeof value.width === 'number'
+    typeof value.width === 'number' &&
+    hasValidTextureFormat(value)
   );
 }
 
@@ -154,7 +172,18 @@ export function isFloatTextureSquareSource(source: unknown): source is FloatText
     isFloat32ChannelSource(value.channels) ||
     (isSharedChannelSource(value.channels) && typeof version === 'number');
 
-  return value.type === 'square' && value.channels !== undefined && hasValidChannels;
+  return (
+    value.type === 'square' &&
+    value.channels !== undefined &&
+    hasValidChannels &&
+    hasValidTextureFormat(value)
+  );
+}
+
+export function getFloatTextureTextureFormat(source: FloatTextureSource): FBOFormat | undefined {
+  if (source instanceof Float32Array || Array.isArray(source)) return undefined;
+
+  return source.textureFormat;
 }
 
 export const normalizeFloatTextureSource = (source: FloatTextureSource): Float32Array[] =>

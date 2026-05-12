@@ -5,6 +5,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import {
+    getFloatTextureTextureFormat,
     inferFloatTextureDataFormat,
     isFloatTextureInterleavedSource,
     isFloatTextureSharedSource,
@@ -16,6 +17,7 @@
   } from '$lib/float-texture/pack-float-texture';
   import { FloatTextureFrameUploadScheduler } from '$lib/float-texture/frame-upload-scheduler';
   import { FloatTextureSharedVersionTracker } from '$lib/float-texture/shared-version-tracker';
+  import type { FBOFormat } from '$lib/rendering/types';
 
   let {
     id: nodeId,
@@ -25,6 +27,7 @@
     id: string;
     data: {
       dataFormat?: FloatTextureDataFormat;
+      textureFormat?: FBOFormat;
     };
     selected: boolean;
   } = $props();
@@ -40,11 +43,19 @@
     width: number;
     height: number;
     data: Float32Array;
+    textureFormat: FBOFormat;
   }>((upload) => {
-    glSystem.setFloatTexture(nodeId, upload.width, upload.height, upload.data);
+    glSystem.setFloatTexture(
+      nodeId,
+      upload.width,
+      upload.height,
+      upload.data,
+      upload.textureFormat
+    );
   });
 
   let dataFormat = $state<FloatTextureDataFormat>(data.dataFormat ?? 'r');
+  let textureFormat = $state<FBOFormat>(data.textureFormat ?? 'rgba32f');
   const containerClass = $derived(
     selected
       ? 'border-zinc-400/80 bg-zinc-900/90 shadow-glow-md'
@@ -87,6 +98,8 @@
     if (!sharedVersionTracker.shouldUpload(input.source)) return;
 
     const resolvedDataFormat = inferFloatTextureDataFormat(input.source);
+    const resolvedTextureFormat =
+      getFloatTextureTextureFormat(input.source) ?? data.textureFormat ?? 'rgba32f';
 
     const packed = packFloatTexture(input.source, {
       dataFormat: resolvedDataFormat,
@@ -103,12 +116,14 @@
     width = packed.width;
     height = packed.height;
     dataFormat = resolvedDataFormat;
+    textureFormat = resolvedTextureFormat;
     hasTexture = true;
 
     uploadScheduler.queue({
       width: packed.width,
       height: packed.height,
-      data: packed.data
+      data: packed.data,
+      textureFormat: resolvedTextureFormat
     });
   };
 
@@ -148,9 +163,11 @@
 
       <span class="font-mono text-zinc-500">
         {#if hasTexture}
-          {width}x{height} {dataFormat}
+          {width}x{height}
+          {dataFormat}
+          · {textureFormat}
         {:else}
-          0x0 {dataFormat}
+          0x0 {dataFormat} · {textureFormat}
         {/if}
       </span>
     </div>

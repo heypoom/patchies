@@ -13,6 +13,10 @@ Wrapped and square channel layouts can read channels from `Float32Array`,
 uses shared channels, send `version` and bump it after writing new samples to
 skip repeated uploads for the same buffer contents.
 
+Object-shaped messages can set `textureFormat` to choose the output texture
+storage: `"rgba32f"` by default, `"rgba16f"` for half-float storage, or
+`"rgba8"` for clamped 8-bit storage.
+
 For long channel rows, use `type: "wrapped"` to continue samples on additional
 rows:
 
@@ -125,6 +129,7 @@ send({
   type: "wrapped",
   channels: [r, g, b, a],
   width: 128,
+  textureFormat: "rgba16f",
 })
 ```
 
@@ -183,6 +188,7 @@ send({
   width,
   height,
   type: "rgba",
+  textureFormat: "rgba8",
 })
 ```
 

@@ -50,14 +50,15 @@ self.onmessage = (event) => {
     .with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))
     .with('setFloatTexture', () => {
       const buffer = data.data.buffer;
+      const textureFormat = data.textureFormat ?? 'rgba32f';
 
       if (buffer instanceof SharedArrayBuffer) {
-        fboRenderer.setFloatTexture(data.nodeId, data.width, data.height, data.data);
+        fboRenderer.setFloatTexture(data.nodeId, data.width, data.height, data.data, textureFormat);
         return;
       }
 
       try {
-        fboRenderer.setFloatTexture(data.nodeId, data.width, data.height, data.data);
+        fboRenderer.setFloatTexture(data.nodeId, data.width, data.height, data.data, textureFormat);
       } finally {
         self.postMessage(
           {

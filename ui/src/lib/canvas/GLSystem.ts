@@ -1,5 +1,5 @@
 import { buildRenderGraph, type REdge, type RNode } from '$lib/rendering/graphUtils';
-import type { RenderGraph, RenderNode, RenderWorkerMessage } from '$lib/rendering/types';
+import type { FBOFormat, RenderGraph, RenderNode, RenderWorkerMessage } from '$lib/rendering/types';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
 
 import * as ohash from 'ohash';
@@ -925,14 +925,21 @@ export class GLSystem {
     );
   }
 
-  setFloatTexture(nodeId: string, width: number, height: number, data: Float32Array) {
+  setFloatTexture(
+    nodeId: string,
+    width: number,
+    height: number,
+    data: Float32Array,
+    textureFormat: FBOFormat = 'rgba32f'
+  ) {
     if (data.buffer instanceof SharedArrayBuffer) {
       this.renderWorker.postMessage({
         type: 'setFloatTexture',
         nodeId,
         width,
         height,
-        data
+        data,
+        textureFormat
       });
 
       return;
@@ -946,7 +953,8 @@ export class GLSystem {
         nodeId,
         width,
         height,
-        data: uploadData
+        data: uploadData,
+        textureFormat
       },
       { transfer: [uploadData.buffer] }
     );
