@@ -1202,12 +1202,16 @@ export class FBORenderer {
   setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {
     const renderNode = this.renderGraph?.nodes.find((n) => n.id === nodeId);
 
-    // You cannot set uniform data for non-GLSL nodes yet.
-    if (renderNode?.type !== 'glsl') {
+    const uniformDefs = match(renderNode)
+      .with({ type: 'glsl' }, (node) => node.data.glUniformDefs)
+      .with({ type: 'shaderpark' }, (node) => node.data.shaderParkUniformDefs)
+      .otherwise(() => undefined);
+
+    if (!uniformDefs) {
       return;
     }
 
-    const uniformDef = renderNode?.data.glUniformDefs.find((u) => u.name === uniformName);
+    const uniformDef = uniformDefs.find((u) => u.name === uniformName);
 
     // Uniform does not exist in the node's uniform definitions.
     if (!uniformDef) {
@@ -1219,8 +1223,7 @@ export class FBORenderer {
       return;
     }
 
-    // Float and int uniforms must be numbers.
-    if (['float', 'int'].includes(uniformDef.type) && typeof uniformValue !== 'number') {
+    if (!isValidUniformData(uniformDef, uniformValue)) {
       return;
     }
 
