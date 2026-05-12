@@ -46,7 +46,8 @@
     settingsValues = {},
     onSettingsValueChange = undefined,
     onSettingsRevertAll = undefined,
-    extraMenuItems = undefined
+    extraMenuItems = undefined,
+    class: className = ''
   }: {
     title: string;
     nodeId?: string;
@@ -73,6 +74,7 @@
     onSettingsValueChange?: (key: string, value: unknown) => void;
     onSettingsRevertAll?: () => void;
     extraMenuItems?: ExtraMenuItem[];
+    class?: string;
   } = $props();
 
   useNodeSetPaused(
@@ -221,7 +223,7 @@
   };
 </script>
 
-<div class="relative flex gap-x-3">
+<div class={['relative flex gap-x-3', className]}>
   <ContextMenu.Root>
     <ContextMenu.Trigger>
       <div class="group relative">

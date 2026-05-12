@@ -8,6 +8,7 @@ export * from './hydra';
 export * from './glsl';
 export * from './canvas';
 export * from './surface';
+export * from './shaderpark';
 export * from './swgl';
 export * from './textmode';
 export * from './three';
@@ -102,6 +103,7 @@ import { hydraSchema } from './hydra';
 import { glslSchema } from './glsl';
 import { canvasSchema, canvasDomSchema } from './canvas';
 import { surfaceSchema } from './surface';
+import { shaderparkSchema } from './shaderpark';
 import { swglSchema } from './swgl';
 import { textmodeSchema, textmodeDomSchema } from './textmode';
 import { threeSchema, threeDomSchema } from './three';
@@ -213,6 +215,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   canvas: canvasSchema,
   'canvas.dom': canvasDomSchema,
   surface: surfaceSchema,
+  shaderpark: shaderparkSchema,
   swgl: swglSchema,
   textmode: textmodeSchema,
   'textmode.dom': textmodeDomSchema,

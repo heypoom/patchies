@@ -231,6 +231,14 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     presets: [...HYDRA_DEMO_PRESET_KEYS]
   },
   {
+    id: 'shaderpark-visuals',
+    name: 'Shader Park Visuals',
+    description: 'SDF raymarched visual presets made with Shader Park',
+    icon: 'Shapes',
+    requiredObjects: ['shaderpark'],
+    presets: ['Noise Sphere', 'Square Symmetry', 'Mouse Follower']
+  },
+  {
     id: 'chuck-demos',
     name: 'ChucK Demos',
     description: 'Curated sound demos adapted from ChucK examples',

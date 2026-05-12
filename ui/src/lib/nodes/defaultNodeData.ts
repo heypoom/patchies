@@ -17,6 +17,7 @@ import {
   DEFAULT_TEXTMODE_CODE,
   DEFAULT_THREE_CODE,
   DEFAULT_REGL_CODE,
+  DEFAULT_SHADERPARK_CODE,
   DEFAULT_SURFACE_CODE
 } from '$lib/canvas/constants';
 import { DEFAULT_P5_CODE } from '$lib/p5/constants';
@@ -114,6 +115,11 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       messageInletCount: 1,
       messageOutletCount: 0,
       videoInletCount: 1,
+      videoOutletCount: 1
+    }))
+    .with('shaderpark', () => ({
+      code: DEFAULT_SHADERPARK_CODE,
+      videoInletCount: 4,
       videoOutletCount: 1
     }))
     .with('ai.music', () => ({}))

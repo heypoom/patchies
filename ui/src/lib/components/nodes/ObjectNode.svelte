@@ -29,6 +29,7 @@
   import { Search } from '@lucide/svelte/icons';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
   import { objectPresetSearchIndex } from '../../../stores/object-preset-search.store';
+  import { getObjectAutocompleteQuery } from '$lib/search/object-autocomplete-query';
   import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import { useAudioServiceSync } from '$lib/composables/useAudioServiceSync.svelte';
   import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
@@ -181,31 +182,28 @@
   const filteredSuggestions = $derived.by(() => {
     if (!isEditing) return [];
 
-    // Don't show autocomplete if there's a space (user is typing parameters)
-    if (expr.includes(' ')) return [];
+    const query = getObjectAutocompleteQuery(expr);
 
-    if (!expr.trim()) {
+    if (!query) {
       return $objectPresetSearchIndex.getDefaultObjectSuggestions();
     }
 
-    return $objectPresetSearchIndex.searchObjectSuggestions(expr);
+    return $objectPresetSearchIndex.searchObjectSuggestions(query);
   });
 
   // Find matching disabled objects when autocomplete has no results
   // Requires at least 3 characters to avoid noisy suggestions
   const suggestedDisabledObject = $derived.by(() => {
     if (!isEditing) return null;
-    if (!expr.trim()) return null;
-
-    const trimmed = expr.trim();
+    const query = getObjectAutocompleteQuery(expr);
+    if (!query) return null;
 
     // Allow short signal operators like +~, *~, etc. but require 3 chars for general queries
-    if (trimmed.length < 3 && !trimmed.endsWith('~')) return null;
+    if (query.length < 3 && !query.endsWith('~')) return null;
 
-    if (expr.includes(' ')) return null; // User is typing parameters
     if (filteredSuggestions.length > 0) return null;
 
-    return searchDisabledObject(expr);
+    return searchDisabledObject(query);
   });
 
   function enablePackFromSuggestion(packId: string, objectName: string) {

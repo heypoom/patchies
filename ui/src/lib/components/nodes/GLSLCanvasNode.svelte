@@ -38,7 +38,7 @@
       title?: string;
       code: string;
       glUniformDefs: GLUniformDef[];
-      uniformValues?: Record<string, number | boolean | string>;
+      uniformValues?: Record<string, unknown>;
       executeCode?: number;
       showConsole?: boolean;
       mrtCount?: number;
@@ -62,7 +62,7 @@
 
   let isPaused = $state(false);
   let editorReady = $state(false);
-  let uniformValues = $state<Record<string, number | boolean | string>>(data.uniformValues ?? {});
+  let uniformValues = $state<Record<string, unknown>>(data.uniformValues ?? {});
   let consoleRef = $state<{ clearConsole: () => void } | null>(null);
   let shaderName = $state<string | undefined>(parseShaderName(data.code || ''));
   let lineErrors: Record<number, string[]> | undefined = $state(undefined);
@@ -206,7 +206,7 @@
 
     // Prune saved uniform values for uniforms that no longer exist,
     // and seed missing values from @param defaults
-    const pruned: Record<string, number | boolean | string> = {};
+    const pruned: Record<string, unknown> = {};
 
     for (const def of nextUniformDefs) {
       if (def.name in uniformValues) {
@@ -258,7 +258,7 @@
   }
 
   function handleUniformValueChange(key: string, value: unknown) {
-    uniformValues = { ...uniformValues, [key]: value as number | boolean | string };
+    uniformValues = { ...uniformValues, [key]: value };
 
     const uniformDef = data.glUniformDefs.find((d) => d.name === key);
 
@@ -267,10 +267,7 @@
   }
 
   function handleUniformRevertAll() {
-    const nextUniformValues = settingsSchemaToDefaultValues(uniformsSchema) as Record<
-      string,
-      number | boolean | string
-    >;
+    const nextUniformValues = settingsSchemaToDefaultValues(uniformsSchema);
 
     uniformValues = nextUniformValues;
     updateNodeData(nodeId, { uniformValues: nextUniformValues });

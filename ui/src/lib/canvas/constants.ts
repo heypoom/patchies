@@ -270,6 +270,13 @@ function render(time) {
   draw({ time })
 }`;
 
+export const DEFAULT_SHADERPARK_CODE = `let sizeBase = input(0.5, 0.1, 1.2);
+let pulse = 0.08 * nsin(time * 2.0);
+
+color(vec3(0.2, 0.7, 1.0));
+sphere(sizeBase + pulse);
+shine(0.7);`;
+
 export const DEFAULT_TEXTMODE_CODE = `t.setup(() => {
   t.fontSize(32)
   t.frameRate(60)

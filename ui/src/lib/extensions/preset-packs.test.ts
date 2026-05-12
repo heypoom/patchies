@@ -136,6 +136,31 @@ describe('built-in preset packs', () => {
     );
   });
 
+  test('registers Noise Sphere as a Shader Park visual preset', () => {
+    const preset = BUILTIN_PRESETS['Noise Sphere'];
+    const shaderParkVisuals = BUILT_IN_PRESET_PACKS.find(
+      (pack) => pack.id === 'shaderpark-visuals'
+    );
+    const presetData = preset?.data as { code?: string; videoOutletCount?: number } | undefined;
+
+    expect(preset?.type).toBe('shaderpark');
+    expect(presetData?.code).toContain('let radius = input(0.7, 0.1, 1.2)');
+    expect(presetData?.code).toContain('sphere(radius + n)');
+    expect(presetData?.videoOutletCount).toBe(1);
+    expect(shaderParkVisuals?.requiredObjects).toEqual(['shaderpark']);
+    expect(shaderParkVisuals && getPresetPackPresetNames(shaderParkVisuals)).toContain(
+      'Noise Sphere'
+    );
+    expect(shaderParkVisuals && getPresetPackPresetNames(shaderParkVisuals)).toContain(
+      'Square Symmetry'
+    );
+    expect(BUILTIN_PRESETS['Square Symmetry']?.type).toBe('shaderpark');
+    expect(shaderParkVisuals && getPresetPackPresetNames(shaderParkVisuals)).toContain(
+      'Mouse Follower'
+    );
+    expect(BUILTIN_PRESETS['Mouse Follower']?.type).toBe('shaderpark');
+  });
+
   test('registers curated ChucK examples in their own preset pack', () => {
     const demoCompositions = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'demo-compositions');
     const chuckDemos = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'chuck-demos');

@@ -72,6 +72,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | pocketbase                        | ^0.26.2      | MIT                    |
 | pyodide                           | ^0.28.1      | Apache-2.0             |
 | regl                              | ^2.1.1       | MIT                    |
+| shader-park-core                  | 0.2.8        | MIT                    |
 | stats.js                          | ^0.17.0      | MIT                    |
 | supersonic-scsynth                | ^0.25.5      | Tiered (MIT + GPL-3.0) |
 | tailwindcss                       | ^4.0.0       | MIT                    |

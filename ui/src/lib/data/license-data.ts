@@ -339,6 +339,12 @@ export const dependencies: ProjectLicense[] = [
   { name: 'pyodide', version: '^0.28.1', license: 'MIT', url: 'https://npmjs.com/package/pyodide' },
   { name: 'regl', version: '^2.1.1', license: 'MIT', url: 'https://npmjs.com/package/regl' },
   {
+    name: 'shader-park-core',
+    version: '0.2.8',
+    license: 'MIT',
+    url: 'https://npmjs.com/package/shader-park-core'
+  },
+  {
     name: 'stats.js',
     version: '^0.17.0',
     license: 'MIT',
@@ -662,6 +668,14 @@ export const supportLinks: SupportLink[] = [
     url: 'https://ojack.xyz/',
     type: 'website',
     projects: ['Hydra']
+  },
+  {
+    name: 'Peter Whidden & Torin Blankensmith',
+    description: 'Co-authors of Shader Park and shader-park-core',
+    category: 'library',
+    url: 'https://github.com/shader-park/shader-park-core',
+    type: 'repo',
+    projects: ['Shader Park', 'shader-park-core']
   },
   {
     name: 'Patricio Gonzalez Vivo',

@@ -288,6 +288,10 @@ The shared index should derive from:
 ObjectNode keeps node-local state (`expr`, `isEditing`) but calls shared query helpers for
 suggestions and preset lookup.
 
+Autocomplete queries must pass the full trimmed input to the shared index, including spaces. Object
+parameters are still parsed on commit, but autocomplete cannot assume that the first space starts an
+argument list because presets such as `Square Symmetry` use multi-word names.
+
 Implemented first API:
 
 ```ts

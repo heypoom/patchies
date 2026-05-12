@@ -30,6 +30,7 @@ import { recvVdoPrompt } from './recv.vdo';
 import { rubyPrompt } from './ruby';
 import { sendPrompt } from './send';
 import { sendVdoPrompt } from './send.vdo';
+import { shaderparkPrompt } from './shaderpark';
 import { samplerPrompt } from './sampler~';
 import { padsPrompt } from '$objects/pads/prompt';
 import { projmapPrompt } from '$objects/projmap/prompt';
@@ -80,6 +81,7 @@ export const objectPrompts: Record<string, string> = {
   p5: p5Prompt,
   hydra: hydraPrompt,
   glsl: glslPrompt,
+  shaderpark: shaderparkPrompt,
   'canvas.dom': canvasDomPrompt,
   dom: domPrompt,
   vue: vuePrompt,

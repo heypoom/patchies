@@ -11,15 +11,17 @@ export type GLUniformType =
   | 'mat3'
   | 'mat4';
 
+export type GLUniformVec2 = [number, number];
+
 export interface GLUniformDef {
   name: string;
   type: GLUniformType;
   arraySize?: number;
 
   /** From `// @param` directive — string for hex color defaults (e.g. '#ff6600') */
-  default?: number | boolean | string;
-  min?: number;
-  max?: number;
+  default?: number | boolean | string | GLUniformVec2;
+  min?: number | GLUniformVec2;
+  max?: number | GLUniformVec2;
   step?: number;
   description?: string;
 

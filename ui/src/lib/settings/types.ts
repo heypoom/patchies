@@ -46,13 +46,22 @@ export interface SliderField extends SettingsFieldBase {
   step?: number;
 }
 
+export interface Vec2Field extends SettingsFieldBase {
+  type: 'vec2';
+  default?: [number, number];
+  min?: [number, number];
+  max?: [number, number];
+  step?: number;
+}
+
 export type SettingsField =
   | NumberField
   | StringField
   | BooleanField
   | SelectField
   | ColorField
-  | SliderField;
+  | SliderField
+  | Vec2Field;
 
 export type SettingsSchema = SettingsField[];
 

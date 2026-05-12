@@ -49,6 +49,19 @@ export type RenderNode = {
   | { type: 'textmode'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
   | { type: 'three'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
   | {
+      type: 'shaderpark';
+      data: {
+        code: string;
+        videoInletCount?: number;
+        videoOutletCount?: number;
+        shaderParkVideoUniformIndices?: number[];
+        shaderParkUniformDefs?: GLUniformDef[];
+        uniformValues?: Record<string, unknown>;
+        fboFormat?: FBOFormat;
+        resolution?: FBOResolution;
+      };
+    }
+  | {
       type: 'regl';
       data: {
         code: string;
@@ -92,7 +105,13 @@ export interface RenderGraph {
   feedbackNodes: Set<string>;
 }
 
-export type UserParam = number | boolean | regl.Texture2D | regl.Framebuffer;
+export type UserParam =
+  | number
+  | boolean
+  | regl.Texture2D
+  | regl.Framebuffer
+  | Record<string, unknown>
+  | undefined;
 
 export interface RenderParams {
   /** Previous frame's transport time for delta computation */
@@ -313,6 +332,7 @@ export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = [
   'canvas',
   'textmode',
   'three',
+  'shaderpark',
   'regl',
   'projmap',
   'img',

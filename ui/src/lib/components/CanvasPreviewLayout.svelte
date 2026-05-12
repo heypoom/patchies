@@ -40,7 +40,8 @@
     onSettingsValueChange = undefined,
     onSettingsRevertAll = undefined,
     extraMenuItems = undefined,
-    showBgOutputOption = true
+    showBgOutputOption = true,
+    class: className = ''
   }: {
     title: string;
     nodeId?: string;
@@ -77,6 +78,7 @@
     onSettingsRevertAll?: () => void;
     extraMenuItems?: ExtraMenuItem[];
     showBgOutputOption?: boolean;
+    class?: string;
   } = $props();
 
   // Build the interaction class string based on individual flags
@@ -114,6 +116,7 @@
   {onSettingsValueChange}
   {onSettingsRevertAll}
   {extraMenuItems}
+  class={className}
 >
   {#snippet preview()}
     <canvas
