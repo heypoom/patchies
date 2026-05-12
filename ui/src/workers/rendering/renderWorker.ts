@@ -48,6 +48,9 @@ self.onmessage = (event) => {
     .with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height))
     .with('setBackgroundSize', () => fboRenderer.setBackgroundSize(data.width, data.height))
     .with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))
+    .with('setFloatTexture', () =>
+      fboRenderer.setFloatTexture(data.nodeId, data.width, data.height, data.data)
+    )
     .with('removeBitmap', () => fboRenderer.removeBitmap(data.nodeId))
     .with('removeUniformData', () => fboRenderer.removeUniformData(data.nodeId))
     .with('sendMessageToNode', () => fboRenderer.sendMessageToNode(data.nodeId, data.message))

@@ -72,6 +72,7 @@ export type RenderNode = {
     }
   | { type: 'projmap'; data: { surfaces: import('$objects/projmap/types').ProjMapSurface[] } }
   | { type: 'img'; data: unknown }
+  | { type: 'float.tex'; data: unknown }
   | { type: 'bg.out'; data: unknown }
   | { type: 'send.vdo'; data: { channel: string } }
   | { type: 'recv.vdo'; data: { channel: string } }
@@ -336,6 +337,7 @@ export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = [
   'regl',
   'projmap',
   'img',
+  'float.tex',
   'send.vdo',
   'recv.vdo'
 ];

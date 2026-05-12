@@ -122,6 +122,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       videoInletCount: 4,
       videoOutletCount: 1
     }))
+    .with('float.tex', () => ({}))
     .with('ai.music', () => ({}))
     .with('ai.tts', () => ({}))
     .with('ai.stt', () => ({}))

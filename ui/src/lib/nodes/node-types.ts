@@ -11,6 +11,7 @@ import GLSLCanvasNode from '$lib/components/nodes/GLSLCanvasNode.svelte';
 import SwissGLNode from '$lib/components/nodes/SwissGLNode.svelte';
 import ReglNode from '$lib/components/nodes/ReglNode.svelte';
 import ShaderParkNode from '$lib/components/nodes/ShaderParkNode.svelte';
+import FloatTextureNode from '$lib/components/nodes/FloatTextureNode.svelte';
 import StrudelNode from '$lib/components/nodes/StrudelNode.svelte';
 import ButterchurnNode from '$lib/components/nodes/ButterchurnNode.svelte';
 import AiImageNode from '$lib/components/nodes/AiImageNode.svelte';
@@ -127,6 +128,7 @@ export const nodeTypes: Record<string, any> = {
   vue: VueNode,
   regl: ReglNode,
   shaderpark: ShaderParkNode,
+  'float.tex': FloatTextureNode,
   glsl: GLSLCanvasNode,
   strudel: StrudelNode,
   bchrn: ButterchurnNode,

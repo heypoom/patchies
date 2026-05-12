@@ -920,6 +920,19 @@ export class GLSystem {
     );
   }
 
+  setFloatTexture(nodeId: string, width: number, height: number, data: Float32Array) {
+    this.renderWorker.postMessage(
+      {
+        type: 'setFloatTexture',
+        nodeId,
+        width,
+        height,
+        data
+      },
+      { transfer: [data.buffer] }
+    );
+  }
+
   removeBitmap(nodeId: string) {
     this.send('removeBitmap', { nodeId });
   }

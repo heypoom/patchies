@@ -50,6 +50,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - canvas: HTML5 Canvas on web worker. no mouse/keyboard, highest performance. can chain into the rendering pipeline at high speed (e.g. video texture for glsl/hydra)
 - hydra: Live coding video synthesis with Hydra
 - glsl: GLSL fragment shaders for visual effects
+- float.tex: Convert Float32Array or Float32Array[] channel data into a 32-bit float video texture for shaders
 - shaderpark: Shader Park/Sculpt SDF raymarching visuals for the video pipeline
 - three: Three.js 3D graphics (offscreen worker, for video chaining)
 - regl: GPU renderer with regl draw commands (custom vertices, buffers, multi-pass, blend modes)
