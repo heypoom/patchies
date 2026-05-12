@@ -150,6 +150,14 @@ describe('built-in preset packs', () => {
     expect(shaderParkVisuals && getPresetPackPresetNames(shaderParkVisuals)).toContain(
       'Noise Sphere'
     );
+    expect(shaderParkVisuals && getPresetPackPresetNames(shaderParkVisuals)).toContain(
+      'Square Symmetry'
+    );
+    expect(BUILTIN_PRESETS['Square Symmetry']?.type).toBe('shaderpark');
+    expect(shaderParkVisuals && getPresetPackPresetNames(shaderParkVisuals)).toContain(
+      'Mouse Follower'
+    );
+    expect(BUILTIN_PRESETS['Mouse Follower']?.type).toBe('shaderpark');
   });
 
   test('registers curated ChucK examples in their own preset pack', () => {

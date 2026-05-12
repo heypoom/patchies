@@ -236,7 +236,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'SDF raymarched visual presets made with Shader Park',
     icon: 'Shapes',
     requiredObjects: ['shaderpark'],
-    presets: ['Noise Sphere']
+    presets: ['Noise Sphere', 'Square Symmetry', 'Mouse Follower']
   },
   {
     id: 'chuck-demos',
