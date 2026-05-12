@@ -17,7 +17,9 @@
   } from '$lib/float-texture/pack-float-texture';
   import { FloatTextureFrameUploadScheduler } from '$lib/float-texture/frame-upload-scheduler';
   import { FloatTextureSharedVersionTracker } from '$lib/float-texture/shared-version-tracker';
+  import { getFloatTextureValidationErrorMessage } from '$lib/float-texture/validation-error';
   import type { FBOFormat } from '$lib/rendering/types';
+  import { logger } from '$lib/utils/logger';
 
   let {
     id: nodeId,
@@ -37,6 +39,8 @@
   let width = $state(0);
   let height = $state(0);
   let hasTexture = $state(false);
+  let errorMessage = $state<string | null>(null);
+  let lastLoggedErrorMessage: string | null = null;
   let packBuffer: Float32Array | undefined;
   let sharedVersionTracker = new FloatTextureSharedVersionTracker();
   let uploadScheduler = new FloatTextureFrameUploadScheduler<{
@@ -57,9 +61,11 @@
   let dataFormat = $state<FloatTextureDataFormat>(data.dataFormat ?? 'r');
 
   const containerClass = $derived(
-    selected
-      ? 'border-zinc-400/80 bg-zinc-900/90 shadow-glow-md'
-      : 'border-zinc-700 bg-zinc-900/80 hover:shadow-glow-sm'
+    errorMessage
+      ? 'border-red-500/70 bg-red-950/30 shadow-[0_0_12px_rgba(239,68,68,0.18)]'
+      : selected
+        ? 'border-zinc-400/80 bg-zinc-900/90 shadow-glow-md'
+        : 'border-zinc-700 bg-zinc-900/80 hover:shadow-glow-sm'
   );
 
   function isFloatChannelArray(value: unknown): value is Float32Array[] {
@@ -101,10 +107,25 @@
     const resolvedTextureFormat =
       getFloatTextureTextureFormat(input.source) ?? data.textureFormat ?? 'rgba32f';
 
-    const packed = packFloatTexture(input.source, {
-      dataFormat: resolvedDataFormat,
-      target: packBuffer
-    });
+    let packed: ReturnType<typeof packFloatTexture>;
+
+    try {
+      packed = packFloatTexture(input.source, {
+        dataFormat: resolvedDataFormat,
+        target: packBuffer
+      });
+    } catch (error) {
+      const message = getFloatTextureValidationErrorMessage(error);
+
+      errorMessage = message;
+
+      if (message !== lastLoggedErrorMessage) {
+        logger.nodeError(nodeId, `[float.tex] ${message}`);
+        lastLoggedErrorMessage = message;
+      }
+
+      return;
+    }
 
     if (
       !isFloatTextureInterleavedSource(input.source) &&
@@ -116,6 +137,8 @@
     width = packed.width;
     height = packed.height;
     dataFormat = resolvedDataFormat;
+    errorMessage = null;
+    lastLoggedErrorMessage = null;
 
     hasTexture = true;
 
@@ -170,6 +193,12 @@
         {/if}
       </span>
     </div>
+
+    {#if errorMessage}
+      <div class="mt-1 max-w-[220px] font-mono text-[10px] leading-tight break-words text-red-300">
+        {errorMessage}
+      </div>
+    {/if}
   </div>
 
   <StandardHandle

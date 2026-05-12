@@ -46,6 +46,33 @@ describe('packFloatTexture', () => {
     expect(Array.from(result.data)).toEqual([1, 0.5, 0.25, 1]);
   });
 
+  it('rejects channel groups with mismatched sample lengths', () => {
+    expect(() =>
+      packFloatTexture([
+        new Float32Array(10),
+        new Float32Array(8),
+        new Float32Array(10),
+        new Float32Array(10)
+      ])
+    ).toThrow('Expected matching RGBA channel lengths in group 1, received 10, 8, 10, 10');
+  });
+
+  it('allows incomplete trailing channel groups', () => {
+    const result = packFloatTexture(
+      [
+        new Float32Array([1, 2]),
+        new Float32Array([3, 4]),
+        new Float32Array([5, 6]),
+        new Float32Array([7, 8]),
+        new Float32Array([9])
+      ],
+      { dataFormat: 'rgba' }
+    );
+
+    expect(result.width).toBe(2);
+    expect(result.height).toBe(2);
+  });
+
   it('infers data format from Float32Array channel count', () => {
     expect(inferFloatTextureDataFormat(new Float32Array([1]))).toBe('r');
     expect(inferFloatTextureDataFormat([new Float32Array([1])])).toBe('r');
@@ -244,6 +271,16 @@ describe('packFloatTexture', () => {
     ]);
   });
 
+  it('rejects wrapped channel groups with mismatched sample lengths', () => {
+    expect(() =>
+      packFloatTexture({
+        type: 'wrapped',
+        channels: [new Float32Array(3), new Float32Array(2)],
+        width: 2
+      })
+    ).toThrow('Expected matching RG channel lengths in group 1, received 3, 2');
+  });
+
   it('packs channel groups into a square texture', () => {
     const result = packFloatTexture({
       type: 'square',
@@ -257,6 +294,15 @@ describe('packFloatTexture', () => {
       1, 0, 0, 1, 2, 0, 0, 1, 3, 0, 0, 1, 4, 0, 0, 1, 5, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0,
       1, 0, 0, 0, 1
     ]);
+  });
+
+  it('rejects square channel groups with mismatched sample lengths', () => {
+    expect(() =>
+      packFloatTexture({
+        type: 'square',
+        channels: [new Float32Array(3), new Float32Array(2)]
+      })
+    ).toThrow('Expected matching RG channel lengths in group 1, received 3, 2');
   });
 
   it('wraps SharedArrayBuffer channel rows by the requested width', () => {

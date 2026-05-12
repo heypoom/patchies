@@ -32,6 +32,7 @@ The first target workflow is:
 - The packer may reuse an internal output buffer, but upload transfer should use an owned copy so user-provided input arrays and the reusable pack buffer are not detached.
 - Upload transfer buffers should be returned from the render worker after the WebGL upload and reused by `GLSystem` for later same-size uploads.
 - Multiple incoming messages in the same animation frame should coalesce into one upload; only the latest packed texture is flushed to the render worker.
+- Packing validation errors should be shown on the `float.tex` node and logged through the node-scoped console. A later successful upload clears the visible error.
 
 ## Session Summary
 
@@ -86,7 +87,7 @@ For each pixel:
 - Pixel `x` uses sample index `x`.
 - Pixel `y` uses channel group `y`.
 - Channels missing from an incomplete group are filled from the extra pixel value.
-- Rows use the longest channel length in that group; shorter channels are padded with the extra pixel value.
+- Channels inside a group must have the same sample count; mismatches are validation errors shown on the node.
 
 ## Layout Contract
 
@@ -121,6 +122,7 @@ Channel packing supports three layouts:
 4. Add validation and logging in the node UI.
    - Surface dimension and length mismatches near the node instead of relying only on thrown errors or console output.
    - Add small, targeted validation as new layout/format options land.
+   - Log packing validation failures with `logger.nodeError()` and avoid repeatedly logging the same message while the input remains unchanged.
 
 5. Add examples and presets.
    - Include `js -> float.tex -> glsl` 2D gradient.

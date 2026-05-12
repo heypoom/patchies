@@ -245,6 +245,24 @@ function createChannelGroups(channels: Float32Array[], dataFormat: FloatTextureD
   });
 }
 
+function validateChannelGroupLengths(
+  groups: ReturnType<typeof createChannelGroups>,
+  dataFormat: FloatTextureDataFormat
+) {
+  for (const [groupIndex, { group }] of groups.entries()) {
+    if (group.length <= 1) continue;
+
+    const lengths = group.map((channel) => channel.length);
+    const expectedLength = lengths[0];
+
+    if (lengths.some((length) => length !== expectedLength)) {
+      throw new Error(
+        `Expected matching ${dataFormat.toUpperCase()} channel lengths in group ${groupIndex + 1}, received ${lengths.join(', ')}`
+      );
+    }
+  }
+}
+
 function fillPixel(
   data: Float32Array,
   pixelIndex: number,
@@ -386,6 +404,7 @@ export function packFloatTexture(
     const resolvedDataFormat = source.format ?? dataFormat ?? inferFloatTextureDataFormat(channels);
     const channelsPerRow = CHANNELS_PER_FORMAT[resolvedDataFormat];
     const groups = createChannelGroups(channels, resolvedDataFormat);
+    validateChannelGroupLengths(groups, resolvedDataFormat);
 
     if (isFloatTextureWrappedSource(source)) {
       const width = Math.max(1, Math.round(source.width));
@@ -442,6 +461,7 @@ export function packFloatTexture(
   const resolvedDataFormat = dataFormat ?? inferFloatTextureDataFormat(source);
   const channelsPerRow = CHANNELS_PER_FORMAT[resolvedDataFormat];
   const groups = createChannelGroups(channels, resolvedDataFormat);
+  validateChannelGroupLengths(groups, resolvedDataFormat);
   const width = Math.max(...groups.map((group) => group.width));
   const height = groups.length;
   const expectedLength = width * height * 4;
