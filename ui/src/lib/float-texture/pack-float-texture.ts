@@ -43,7 +43,7 @@ export type FloatTextureInterleavedSource = {
   data: Float32Array;
   width: number;
   height: number;
-  type: 'rgba';
+  type: FloatTextureDataFormat;
   textureFormat?: FBOFormat;
 };
 
@@ -51,7 +51,7 @@ export type FloatTextureSharedSource = {
   buffer: SharedArrayBuffer;
   width: number;
   height: number;
-  type: 'rgba';
+  type: FloatTextureDataFormat;
   version: number;
   textureFormat?: FBOFormat;
 };
@@ -85,12 +85,16 @@ const CHANNELS_PER_FORMAT: Record<FloatTextureDataFormat, number> = {
 
 const DEFAULT_EXTRA_PIXEL_VALUE: [number, number, number, number] = [0, 0, 0, 1];
 const TEXTURE_FORMATS = new Set<FBOFormat>(['rgba8', 'rgba16f', 'rgba32f']);
+const DATA_FORMATS = new Set<FloatTextureDataFormat>(['r', 'rg', 'rgb', 'rgba']);
 
 const isFloatTextureTextureFormat = (value: unknown): value is FBOFormat =>
   typeof value === 'string' && TEXTURE_FORMATS.has(value as FBOFormat);
 
 const hasValidTextureFormat = (value: { textureFormat?: unknown }) =>
   value.textureFormat === undefined || isFloatTextureTextureFormat(value.textureFormat);
+
+const isFloatTextureDataFormat = (value: unknown): value is FloatTextureDataFormat =>
+  typeof value === 'string' && DATA_FORMATS.has(value as FloatTextureDataFormat);
 
 const isSharedArrayBuffer = (value: unknown): value is SharedArrayBuffer =>
   typeof SharedArrayBuffer !== 'undefined' && value instanceof SharedArrayBuffer;
@@ -123,7 +127,7 @@ export function isFloatTextureInterleavedSource(
     value.data instanceof Float32Array &&
     typeof value.width === 'number' &&
     typeof value.height === 'number' &&
-    value.type === 'rgba' &&
+    isFloatTextureDataFormat(value.type) &&
     hasValidTextureFormat(value)
   );
 }
@@ -139,7 +143,7 @@ export function isFloatTextureSharedSource(source: unknown): source is FloatText
     value.buffer instanceof SharedArrayBuffer &&
     typeof value.width === 'number' &&
     typeof value.height === 'number' &&
-    value.type === 'rgba' &&
+    isFloatTextureDataFormat(value.type) &&
     typeof value.version === 'number' &&
     hasValidTextureFormat(value)
   );
@@ -150,6 +154,7 @@ export function isFloatTextureWrappedSource(source: unknown): source is FloatTex
 
   const value = source as Partial<FloatTextureWrappedSource>;
   const version = (value as { version?: unknown }).version;
+
   const hasValidChannels =
     isFloat32ChannelSource(value.channels) ||
     (isSharedChannelSource(value.channels) && typeof version === 'number');
@@ -168,6 +173,7 @@ export function isFloatTextureSquareSource(source: unknown): source is FloatText
 
   const value = source as Partial<FloatTextureSquareSource>;
   const version = (value as { version?: unknown }).version;
+
   const hasValidChannels =
     isFloat32ChannelSource(value.channels) ||
     (isSharedChannelSource(value.channels) && typeof version === 'number');
@@ -181,24 +187,38 @@ export function isFloatTextureSquareSource(source: unknown): source is FloatText
 }
 
 export function getFloatTextureTextureFormat(source: FloatTextureSource): FBOFormat | undefined {
-  if (source instanceof Float32Array || Array.isArray(source)) return undefined;
+  if (source instanceof Float32Array || Array.isArray(source)) {
+    return undefined;
+  }
 
   return source.textureFormat;
 }
 
-export const normalizeFloatTextureSource = (source: FloatTextureSource): Float32Array[] =>
-  source instanceof Float32Array
-    ? [source]
-    : Array.isArray(source)
-      ? source
-      : isFloatTextureWrappedSource(source) || isFloatTextureSquareSource(source)
-        ? normalizeChannelSource(source.channels)
-        : isFloatTextureSharedSource(source)
-          ? [new Float32Array(source.buffer)]
-          : [source.data];
+export function normalizeFloatTextureSource(source: FloatTextureSource): Float32Array[] {
+  if (source instanceof Float32Array) {
+    return [source];
+  }
+
+  if (Array.isArray(source)) {
+    return source;
+  }
+
+  if (isFloatTextureWrappedSource(source) || isFloatTextureSquareSource(source)) {
+    return normalizeChannelSource(source.channels);
+  }
+
+  if (isFloatTextureSharedSource(source)) {
+    return [new Float32Array(source.buffer)];
+  }
+
+  return [source.data];
+}
 
 export function inferFloatTextureDataFormat(source: FloatTextureSource): FloatTextureDataFormat {
-  if (isFloatTextureInterleavedSource(source) || isFloatTextureSharedSource(source)) return 'rgba';
+  if (isFloatTextureInterleavedSource(source) || isFloatTextureSharedSource(source)) {
+    return source.type;
+  }
+
   if (isFloatTextureWrappedSource(source) || isFloatTextureSquareSource(source)) {
     return source.format ?? inferFloatTextureDataFormat(normalizeChannelSource(source.channels));
   }
@@ -255,6 +275,65 @@ function fillExtraPixel(
   data[offset + 3] = extraPixelValue[3];
 }
 
+function validateInterleavedLength(
+  dataLength: number,
+  width: number,
+  height: number,
+  dataFormat: FloatTextureDataFormat
+) {
+  const components = CHANNELS_PER_FORMAT[dataFormat];
+  const expectedLength = width * height * components;
+
+  if (dataLength !== expectedLength) {
+    throw new Error(
+      `Expected ${dataFormat.toUpperCase()} data length ${expectedLength}, received ${dataLength}`
+    );
+  }
+}
+
+function validateInterleavedByteLength(
+  byteLength: number,
+  width: number,
+  height: number,
+  dataFormat: FloatTextureDataFormat
+) {
+  const components = CHANNELS_PER_FORMAT[dataFormat];
+  const expectedByteLength = width * height * components * Float32Array.BYTES_PER_ELEMENT;
+
+  if (byteLength !== expectedByteLength) {
+    throw new Error(
+      `Expected ${dataFormat.toUpperCase()} buffer byteLength ${expectedByteLength}, received ${byteLength}`
+    );
+  }
+}
+
+function expandInterleavedData(
+  source: Float32Array,
+  width: number,
+  height: number,
+  dataFormat: FloatTextureDataFormat,
+  extraPixelValue: [number, number, number, number],
+  target?: Float32Array
+) {
+  const components = CHANNELS_PER_FORMAT[dataFormat];
+  const expectedLength = width * height * 4;
+  const data = target?.length === expectedLength ? target : new Float32Array(expectedLength);
+
+  for (let pixelIndex = 0; pixelIndex < width * height; pixelIndex++) {
+    const sourceOffset = pixelIndex * components;
+    const targetOffset = pixelIndex * 4;
+
+    for (let componentIndex = 0; componentIndex < 4; componentIndex++) {
+      data[targetOffset + componentIndex] =
+        componentIndex < components
+          ? source[sourceOffset + componentIndex]
+          : extraPixelValue[componentIndex];
+    }
+  }
+
+  return data;
+}
+
 export function packFloatTexture(
   source: FloatTextureSource,
   { dataFormat, extraPixelValue = DEFAULT_EXTRA_PIXEL_VALUE, target }: PackFloatTextureOptions = {}
@@ -262,29 +341,44 @@ export function packFloatTexture(
   if (isFloatTextureInterleavedSource(source)) {
     const width = Math.max(1, Math.round(source.width));
     const height = Math.max(1, Math.round(source.height));
-    const expectedLength = width * height * 4;
+    const sourceDataFormat = source.type;
 
-    if (source.data.length !== expectedLength) {
-      throw new Error(
-        `Expected RGBA data length ${expectedLength}, received ${source.data.length}`
-      );
+    validateInterleavedLength(source.data.length, width, height, sourceDataFormat);
+
+    if (sourceDataFormat === 'rgba') {
+      return { width, height, data: source.data };
     }
 
-    return { width, height, data: source.data };
+    return {
+      width,
+      height,
+      data: expandInterleavedData(
+        source.data,
+        width,
+        height,
+        sourceDataFormat,
+        extraPixelValue,
+        target
+      )
+    };
   }
 
   if (isFloatTextureSharedSource(source)) {
     const width = Math.max(1, Math.round(source.width));
     const height = Math.max(1, Math.round(source.height));
-    const expectedByteLength = width * height * 4 * Float32Array.BYTES_PER_ELEMENT;
+    const sourceDataFormat = source.type;
 
-    if (source.buffer.byteLength !== expectedByteLength) {
-      throw new Error(
-        `Expected RGBA buffer byteLength ${expectedByteLength}, received ${source.buffer.byteLength}`
-      );
-    }
+    validateInterleavedByteLength(source.buffer.byteLength, width, height, sourceDataFormat);
 
-    return { width, height, data: new Float32Array(source.buffer) };
+    const data = new Float32Array(source.buffer);
+
+    if (sourceDataFormat === 'rgba') return { width, height, data };
+
+    return {
+      width,
+      height,
+      data: expandInterleavedData(data, width, height, sourceDataFormat, extraPixelValue, target)
+    };
   }
 
   if (isFloatTextureWrappedSource(source) || isFloatTextureSquareSource(source)) {
@@ -326,6 +420,7 @@ export function packFloatTexture(
     const size = Math.max(1, Math.ceil(Math.sqrt(totalPixels)));
     const expectedLength = size * size * 4;
     const data = target?.length === expectedLength ? target : new Float32Array(expectedLength);
+
     let pixelIndex = 0;
 
     for (const { group, width: groupWidth } of groups) {

@@ -20,8 +20,8 @@ The first target workflow is:
   - `{ type: 'wrapped', channels: SharedArrayBuffer | SharedArrayBuffer[], width, version, format?, textureFormat? }` as shared wrapped channel packing.
   - `{ type: 'square', channels: Float32Array | Float32Array[], format?, textureFormat? }` as square channel packing.
   - `{ type: 'square', channels: SharedArrayBuffer | SharedArrayBuffer[], version, format?, textureFormat? }` as shared square channel packing.
-  - `{ data: Float32Array, width, height, type: 'rgba', textureFormat? }` as already-interleaved RGBA pixel data.
-  - `{ buffer: SharedArrayBuffer, width, height, type: 'rgba', version, textureFormat? }` as shared already-interleaved RGBA pixel data.
+  - `{ data: Float32Array, width, height, type: 'r' | 'rg' | 'rgb' | 'rgba', textureFormat? }` as already-interleaved pixel data.
+  - `{ buffer: SharedArrayBuffer, width, height, type: 'r' | 'rg' | 'rgb' | 'rgba', version, textureFormat? }` as shared already-interleaved pixel data.
 - Shared wrapped and square channel messages require `version`; repeated messages for the same shared buffers and version should be skipped.
 - `textureFormat` may be `'rgba32f'`, `'rgba16f'`, or `'rgba8'`; default is `'rgba32f'`.
 - The MVP packs samples into an `RGBA32F` texture.
@@ -69,7 +69,7 @@ When no explicit format is provided by code, `float.tex` infers the format from 
 - `[r, g, b]` → `rgb`
 - `[r, g, b, a]` and longer channel arrays → `rgba`
 
-Object-shaped messages with `type: 'rgba'` and explicit `width`/`height` skip repacking. `data.length` must equal `width * height * 4`. Shared-buffer messages use the same pixel layout, require `buffer.byteLength === width * height * 4 * 4`, and only upload when `version` changes for that buffer.
+Object-shaped interleaved messages with explicit `width`/`height` validate `data.length === width * height * componentCount`, where `componentCount` comes from `type`. `type: 'rgba'` data can upload without repacking; `r`, `rg`, and `rgb` are expanded into RGBA rows with missing components filled from the extra pixel value. Shared-buffer messages use the same pixel layout, require `buffer.byteLength === width * height * componentCount * 4`, and only upload when `version` changes for that buffer.
 
 Object-shaped inputs may set `textureFormat` to choose output texture storage:
 
@@ -115,7 +115,8 @@ Channel packing supports three layouts:
    - Consider `rgba16f` and `rgba8` first, then narrower float formats if the renderer path supports them cleanly.
 
 3. Add explicit `r`, `rg`, and `rgb` interleaved object inputs.
-   - This should follow texture format work so narrower inputs can eventually map to leaner storage instead of always expanding to RGBA.
+   - Accept `{ type, data, width, height }` and `{ type, buffer, width, height, version }` for `r`, `rg`, `rgb`, and `rgba`.
+   - Expand narrower interleaved inputs to RGBA internally until narrower texture storage is supported.
 
 4. Add validation and logging in the node UI.
    - Surface dimension and length mismatches near the node instead of relying only on thrown errors or console output.

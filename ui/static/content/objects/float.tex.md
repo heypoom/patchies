@@ -38,8 +38,8 @@ send({
 })
 ```
 
-If you already have interleaved RGBA pixel data, send an object with explicit
-dimensions:
+If you already have interleaved pixel data, send an object with explicit
+dimensions. `type` can be `"r"`, `"rg"`, `"rgb"`, or `"rgba"`:
 
 ```js
 send({
@@ -51,9 +51,10 @@ send({
 ```
 
 In that form, `rgba.length` must be `width * height * 4`, and `float.tex`
-uploads it without repacking.
+uploads it without repacking. Interleaved `"r"`, `"rg"`, and `"rgb"` data is
+expanded to RGBA internally.
 
-For shared RGBA data, send a `SharedArrayBuffer` and bump `version` whenever
+For shared interleaved data, send a `SharedArrayBuffer` and bump `version` whenever
 the producer has finished writing a new frame:
 
 ```js
@@ -160,7 +161,7 @@ send({
 })
 ```
 
-## Interleaved RGBA
+## Interleaved Pixels
 
 ```js
 setRunOnMount(true)
@@ -192,7 +193,7 @@ send({
 })
 ```
 
-## Shared RGBA Buffer
+## Shared Interleaved Buffer
 
 ```js
 setRunOnMount(true)

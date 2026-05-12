@@ -55,7 +55,7 @@
   });
 
   let dataFormat = $state<FloatTextureDataFormat>(data.dataFormat ?? 'r');
-  let textureFormat = $state<FBOFormat>(data.textureFormat ?? 'rgba32f');
+
   const containerClass = $derived(
     selected
       ? 'border-zinc-400/80 bg-zinc-900/90 shadow-glow-md'
@@ -116,7 +116,7 @@
     width = packed.width;
     height = packed.height;
     dataFormat = resolvedDataFormat;
-    textureFormat = resolvedTextureFormat;
+
     hasTexture = true;
 
     uploadScheduler.queue({
@@ -165,9 +165,8 @@
         {#if hasTexture}
           {width}x{height}
           {dataFormat}
-          · {textureFormat}
         {:else}
-          0x0 {dataFormat} · {textureFormat}
+          0x0 {dataFormat}
         {/if}
       </span>
     </div>

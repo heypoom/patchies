@@ -84,24 +84,24 @@ export const floatTexSchema: ObjectSchema = {
         },
         {
           schema: Type.Object({
-            type: Type.Literal('rgba'),
+            type: formatSchema,
             data: Type.Unsafe<Float32Array>({ type: 'Float32Array' }),
             width: Type.Number(),
             height: Type.Number(),
             textureFormat: Type.Optional(textureFormatSchema)
           }),
-          description: 'Interleaved RGBA pixels'
+          description: 'Interleaved pixel data'
         },
         {
           schema: Type.Object({
-            type: Type.Literal('rgba'),
+            type: formatSchema,
             buffer: Type.Unsafe<SharedArrayBuffer>({ type: 'SharedArrayBuffer' }),
             width: Type.Number(),
             height: Type.Number(),
             version: Type.Number(),
             textureFormat: Type.Optional(textureFormatSchema)
           }),
-          description: 'Shared interleaved RGBA pixels'
+          description: 'Shared interleaved pixel data'
         }
       ]
     }

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { Type } from '@sinclair/typebox';
 
-import { schemaToHtml, schemaToString } from './utils';
+import { getSchemaTypeNameHtml, schemaToHtml, schemaToString } from './utils';
 
 describe('schema rendering', () => {
   test('marks optional object fields from TypeBox required metadata', () => {
@@ -26,6 +26,25 @@ describe('schema rendering', () => {
     expect(schemaToString(Type.Optional(Type.String()))).toBe('string?');
     expect(schemaToHtml(Type.Optional(Type.String()))).toBe(
       '<span class="text-purple-400">string</span><span class="text-zinc-500">?</span>'
+    );
+  });
+
+  test('renders union literal type discriminators as a message name', () => {
+    const schema = Type.Object({
+      type: Type.Union([
+        Type.Literal('r'),
+        Type.Literal('rg'),
+        Type.Literal('rgb'),
+        Type.Literal('rgba')
+      ]),
+      data: Type.Unsafe<Float32Array>({ type: 'Float32Array' })
+    });
+
+    expect(schemaToHtml(schema, { compact: true })).toContain(
+      'r<span class="text-zinc-500/70"> | </span>rg<span class="text-zinc-500/70"> | </span>rgb<span class="text-zinc-500/70"> | </span>rgba'
+    );
+    expect(getSchemaTypeNameHtml(schema)).toBe(
+      'r<span class="text-zinc-500/70"> | </span>rg<span class="text-zinc-500/70"> | </span>rgb<span class="text-zinc-500/70"> | </span>rgba'
     );
   });
 });

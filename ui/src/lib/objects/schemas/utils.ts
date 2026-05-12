@@ -23,15 +23,79 @@ function formatObjectKey(key: string, requiredFields: Set<string> | null): strin
   return requiredFields?.has(key) === false ? `${key}?` : key;
 }
 
+function formatLiteralValue(schema: TSchema): string | null {
+  if (schema[Kind] !== 'Literal') return null;
+
+  return String(schema.const);
+}
+
+function formatLiteralUnionValue(schema: TSchema): string | null {
+  if (schema[Kind] !== 'Union') return null;
+
+  const anyOf = schema.anyOf as TSchema[];
+  const values = anyOf.map(formatLiteralValue);
+
+  if (values.some((value) => value === null)) return null;
+
+  return values.join(' | ');
+}
+
+function formatLiteralUnionHtml(schema: TSchema): string | null {
+  if (schema[Kind] !== 'Union') return null;
+
+  const anyOf = schema.anyOf as TSchema[];
+  const values = anyOf.map(formatLiteralValue);
+
+  if (values.some((value) => value === null)) return null;
+
+  return values.join(`<span class="${hl.punct}/70"> | </span>`);
+}
+
+function formatDiscriminatorValue(schema: TSchema | undefined): string | null {
+  if (!schema) return null;
+
+  return formatLiteralValue(schema) ?? formatLiteralUnionValue(schema);
+}
+
+function formatDiscriminatorHtml(schema: TSchema | undefined): string | null {
+  if (!schema) return null;
+
+  return formatLiteralValue(schema) ?? formatLiteralUnionHtml(schema);
+}
+
 /**
  * Get the discriminator field and value from a schema.
  * Supports `type` as discriminator field.
  */
 function getDiscriminator(props: Record<string, TSchema>): { field: string; value: string } | null {
   for (const field of DISCRIMINATOR_FIELDS) {
-    if (props[field]?.[Kind] === 'Literal') {
-      return { field, value: String(props[field].const) };
-    }
+    const value = formatDiscriminatorValue(props[field]);
+
+    if (value) return { field, value };
+  }
+
+  return null;
+}
+
+function getDiscriminatorHtml(
+  props: Record<string, TSchema>
+): { field: string; value: string } | null {
+  for (const field of DISCRIMINATOR_FIELDS) {
+    const value = formatDiscriminatorHtml(props[field]);
+
+    if (value) return { field, value };
+  }
+
+  return null;
+}
+
+function getLiteralDiscriminator(
+  props: Record<string, TSchema>
+): { field: string; value: string } | null {
+  for (const field of DISCRIMINATOR_FIELDS) {
+    const value = formatLiteralValue(props[field]);
+
+    if (value) return { field, value };
   }
 
   return null;
@@ -150,6 +214,24 @@ export function getSchemaTypeName(schema: TSchema): string | null {
   return disc?.value ?? null;
 }
 
+export function getSchemaTypeNameHtml(schema: TSchema): string | null {
+  if (schema[Kind] !== 'Object') return null;
+
+  const props = schema.properties as Record<string, TSchema>;
+  const disc = getDiscriminatorHtml(props);
+
+  return disc?.value ?? null;
+}
+
+function getLiteralSchemaTypeName(schema: TSchema): string | null {
+  if (schema[Kind] !== 'Object') return null;
+
+  const props = schema.properties as Record<string, TSchema>;
+  const disc = getLiteralDiscriminator(props);
+
+  return disc?.value ?? null;
+}
+
 /**
  * Convert a TypeBox schema to syntax-highlighted HTML.
  * Used for displaying message types with color coding.
@@ -184,19 +266,19 @@ export function schemaToHtml(schema: TSchema, options: SchemaToHtmlOptions = {})
     case 'Object': {
       const props = schema.properties as Record<string, TSchema>;
       const keys = Object.keys(props);
-      const disc = getDiscriminator(props);
+      const discHtml = getDiscriminatorHtml(props);
       const requiredFields = Array.isArray(schema.required)
         ? new Set(schema.required as string[])
         : null;
 
       // Symbol shorthand: { type: 'bang' } or { op: 'get' } → bang / get
-      if (keys.length === 1 && disc) {
-        return `<span>${disc.value}</span>${optionalSuffix}`;
+      if (keys.length === 1 && discHtml) {
+        return `<span>${discHtml.value}</span>${optionalSuffix}`;
       }
 
       // Compact mode: show discriminator name for complex objects
-      if (compact && disc) {
-        return `<span>${disc.value}</span><span class="${hl.punct}">{...}</span>${optionalSuffix}`;
+      if (compact && discHtml) {
+        return `<span>${discHtml.value}</span><span class="${hl.punct}">{...}</span>${optionalSuffix}`;
       }
 
       const parts = Object.entries(props).map(([key, value]) => {
@@ -288,7 +370,7 @@ export function getMessageFields(schema: TSchema): FieldMapping | null {
 
 /** Add a single schema's field mapping to a type map (with deduplication). */
 function addSchemaToMap(schema: TSchema, map: Map<string, FieldMapping[]>): void {
-  const typeName = getSchemaTypeName(schema);
+  const typeName = getLiteralSchemaTypeName(schema);
   if (!typeName) return;
 
   const mapping = getMessageFields(schema);
