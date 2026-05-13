@@ -7,7 +7,6 @@ Write Shader Park statements directly in the editor:
 
 ```javascript
 // @title Noise Sphere
-// @primaryButton settings
 
 let radius = input(0.7, 0.1, 1.2);
 let scale = 2.0;

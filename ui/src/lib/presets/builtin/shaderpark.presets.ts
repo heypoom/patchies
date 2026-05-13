@@ -2,7 +2,7 @@ const NOISE_SPHERE_SHADERPARK = `// @title Noise Sphere
 // @primaryButton settings
 
 let radius = input(0.7, 0.1, 1.2);
-let scale = 2.0;
+let scale = input(2.0, 0.0, 10.0);
 let s = getSpace();
 let n = 0.1 * noise(scale * s + time);
 sphere(radius + n);`;
