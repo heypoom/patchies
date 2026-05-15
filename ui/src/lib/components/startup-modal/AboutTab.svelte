@@ -1,5 +1,14 @@
 <script lang="ts">
-  import { BookOpen, Github, Info, Play, Diamond, Command } from '@lucide/svelte/icons';
+  import {
+    BookOpen,
+    Command,
+    Diamond,
+    Github,
+    Info,
+    Instagram,
+    MessageCircle,
+    Play
+  } from '@lucide/svelte/icons';
   import { onMount } from 'svelte';
 
   import QuickTips from './QuickTips.svelte';
@@ -115,9 +124,25 @@
         <Github class="h-3 w-3" />
         github
       </a>
-      <button class="footer-link cursor-pointer" onclick={() => setTab('thanks')}>
-        ♥ thanks
-      </button>
+      <a
+        href="https://www.instagram.com/patchiesapp"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="footer-link"
+      >
+        <Instagram class="h-3 w-3" />
+        IG
+      </a>
+      <a
+        href="https://discord.gg/PpccRb2XjE"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="footer-link"
+      >
+        <MessageCircle class="h-3 w-3" />
+        discord
+      </a>
+      <button class="footer-link cursor-pointer" onclick={() => setTab('thanks')}> ♥ thx </button>
     </div>
 
     <!-- Show on startup toggle -->

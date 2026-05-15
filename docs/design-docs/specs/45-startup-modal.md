@@ -12,6 +12,7 @@ MVP features
 2. Describes briefly what the application does and how to get started.
 3. Provides a link to the application's GitHub repository for further information.
 4. Contains an "examples" tab with card of examples with images. I should be able to update the patch list by simply updating a static file, e.g. `example-patches.json`. It should be groupde by categories.
+5. Provides footer community links for Patchies Instagram demos/tutorials and the Discord server.
 
 Phase 2 features - can wait until MVP is done
 
@@ -80,6 +81,7 @@ The startup modal is implemented as a modular component system in `/ui/src/lib/c
    - Description of capabilities (P5.js, Hydra, Strudel, GLSL, etc.)
    - Getting Started guide with keyboard shortcuts
    - Links to GitHub repository and documentation
+   - Footer links to Patchies Instagram and Discord for demos, tutorials, sharing creations, and help
 4. ✅ **Examples Tab**:
    - Loads from `/static/example-patches.json`
    - Grouped by categories
