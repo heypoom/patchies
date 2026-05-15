@@ -2,7 +2,7 @@
 
 ## Goal
 
-Add a `shaderpark` render-pipeline object that runs Shader Park/Sculpt code and participates in Patchies' existing zero-copy video chain.
+Add a `shaderpark` render-pipeline object that runs Shader Park code and participates in Patchies' existing zero-copy video chain.
 
 ## Approach
 

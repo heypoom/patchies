@@ -6,7 +6,7 @@ import type { ObjectSchema } from './types';
 export const shaderparkSchema: ObjectSchema = {
   type: 'shaderpark',
   category: 'video',
-  description: 'Creates Shader Park/Sculpt raymarched visuals for the render pipeline',
+  description: 'Creates Shader Park raymarched visuals for the render pipeline',
   inlets: [],
   outlets: [],
   tags: ['shader', 'shaderpark', 'sdf', 'raymarching', 'visual', 'graphics', 'generative'],
