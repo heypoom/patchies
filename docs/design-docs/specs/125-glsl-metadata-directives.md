@@ -8,6 +8,9 @@ GLSL nodes always display "glsl" as their title — you can't tell what a node d
 
 Parse `// @title`, `// @param`, and `// @noinlet` comment directives from shader code. Use `@title` to set the node title. Use `@param` to enrich uniform sliders with min/max/step and descriptions. Use `@noinlet` to keep selected uniforms configurable through the settings UI only, without exposing node inlet handles. These directives are already part of the shader effect format (spec 123) but are independently useful for any GLSL node right now.
 
+The GLSL editor should also provide concise shader completions for Patchies-injected values, core GLSL types, common built-in functions, and useful snippets. Patchies injects `uv`, but video uniforms are user-declared: the editor may suggest `uniform sampler2D image;` snippets, but must not imply `iChannel0`-`iChannel3` exist unless the shader declares them.
+Completions should cover documented GLSL object workflows such as dynamic uniforms, array uniforms, MRT output declarations, color/select `@param` directives, `@format`, and `@resolution`.
+
 ## Directives
 
 ### `@title`
