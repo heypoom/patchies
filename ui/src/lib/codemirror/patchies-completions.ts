@@ -2,6 +2,7 @@ import {
   CompletionContext as CMCompletionContext,
   type Completion
 } from '@codemirror/autocomplete';
+import { isCompletionSuppressedByComment } from '$lib/codemirror/completion-utils';
 
 /**
  * Patchies API function completions for JavaScript-based nodes
@@ -808,23 +809,6 @@ export function shouldShowPatchiesCompletions(context?: PatchiesContext): boolea
   if (!context?.nodeType) return true;
 
   return !PATCHIES_COMPLETION_DISABLED_NODE_TYPES.has(context.nodeType);
-}
-
-function isCompletionSuppressedByComment(context: CMCompletionContext, from: number): boolean {
-  const line = context.state.doc.lineAt(context.pos);
-  const lineText = line.text;
-  const posInLine = context.pos - line.from;
-
-  const commentStart = lineText.indexOf('//');
-  if (commentStart !== -1 && posInLine > commentStart) {
-    return true;
-  }
-
-  const textBefore = context.state.doc.sliceString(Math.max(0, from - 100), from);
-  const lastBlockCommentStart = textBefore.lastIndexOf('/*');
-  const lastBlockCommentEnd = textBefore.lastIndexOf('*/');
-
-  return lastBlockCommentStart > lastBlockCommentEnd;
 }
 
 /**

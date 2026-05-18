@@ -2,6 +2,7 @@ import {
   CompletionContext as CMCompletionContext,
   type Completion
 } from '@codemirror/autocomplete';
+import { isCompletionSuppressedByComment } from '$lib/codemirror/completion-utils';
 import type { PatchiesContext } from '$lib/codemirror/patchies-completions';
 
 const SHADERPARK_NODE_TYPE = 'shaderpark';
@@ -503,23 +504,6 @@ const shaderParkCompletions: Completion[] = rawShaderParkCompletions.map((comple
   info:
     completion.info ?? shaderParkCompletionInfo[completion.label] ?? 'Shader Park Sculpt helper.'
 }));
-
-function isCompletionSuppressedByComment(context: CMCompletionContext, from: number): boolean {
-  const line = context.state.doc.lineAt(context.pos);
-  const lineText = line.text;
-  const posInLine = context.pos - line.from;
-
-  const commentStart = lineText.indexOf('//');
-  if (commentStart !== -1 && posInLine > commentStart) {
-    return true;
-  }
-
-  const textBefore = context.state.doc.sliceString(Math.max(0, from - 100), from);
-  const lastBlockCommentStart = textBefore.lastIndexOf('/*');
-  const lastBlockCommentEnd = textBefore.lastIndexOf('*/');
-
-  return lastBlockCommentStart > lastBlockCommentEnd;
-}
 
 export function createShaderParkCompletionSource(patchiesContext?: PatchiesContext) {
   return (context: CMCompletionContext) => {
