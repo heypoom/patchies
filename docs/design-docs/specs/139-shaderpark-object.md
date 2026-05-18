@@ -33,6 +33,7 @@ Because `shader-park-core` evaluates user Sculpt code against locally scoped DSL
 - Shader Park code supports comment metadata directives matching GLSL: `// @title ...` and `// @primaryButton code|settings|run`.
 - The code editor should use JavaScript syntax highlighting only. It must not offer Patchies execution-environment completions such as `send()`, `recv()`, `settings`, `clock`, or `setTitle()` because Shader Park code runs in Shader Park's scoped DSL evaluation context, not the Patchies JS runtime.
 - The code editor should offer Shader Park-specific completions for Sculpt globals such as `sphere()`, `getSpace()`, `input()`, `glslFunc()`, `time`, and `mouse`. These completions should include short descriptions and useful type signatures, should only activate for the `shaderpark` object, and should not appear in normal Patchies JavaScript nodes.
+- The AI object prompt should be compact overall but spend detail on Sculpt function signatures and math helper constraints so generated Shader Park code uses the right DSL instead of generic GLSL or Patchies JavaScript APIs.
 - Object documentation should link to Shader Park's main site, JS reference docs, community examples, about page, and `shader-park-core` repository.
 - Code that references `mouse` or `mouseIntersection()` should receive normalized Shader Park mouse coordinates from the node preview and the shared surface mouse forwarder.
 
