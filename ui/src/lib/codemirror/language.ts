@@ -21,7 +21,7 @@ export async function loadLanguageExtension(language: string, context?: Patchies
         { javascript, javascriptLanguage },
         { LanguageSupport },
         { autocompletion },
-        { patchiesCompletions },
+        { patchiesCompletions, shaderParkCompletionsSource },
         { glslInJsWrap },
         { glslIncludeHighlighter }
       ] = await Promise.all([
@@ -37,7 +37,9 @@ export async function loadLanguageExtension(language: string, context?: Patchies
       const jsSupport = javascript();
       return [
         new LanguageSupport(jsWithGlsl, jsSupport.support),
-        autocompletion({ override: [patchiesCompletions(context)] }),
+        autocompletion({
+          override: [shaderParkCompletionsSource(context), patchiesCompletions(context)]
+        }),
         ...glslIncludeHighlighter
       ];
     })
