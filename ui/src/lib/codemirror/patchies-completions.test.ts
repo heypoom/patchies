@@ -99,6 +99,14 @@ describe('patchies completions', () => {
       detail: '(incident: vec3, normal: vec3) => vec3',
       info: 'Refract an incident vector through a surface normal.'
     });
+    expect(getShaderParkCompletion('atan')).toMatchObject({
+      detail: '(y: float, x: float) => float',
+      info: 'Arctangent from y and x, returning radians.'
+    });
+    expect(getShaderParkCompletion('step')).toMatchObject({
+      detail: '(edge: float, x: float) => float',
+      info: 'Return 0 below edge, otherwise 1.'
+    });
   });
 
   it('describes shader-park-core SDF helper completions with actual arguments', () => {
@@ -113,6 +121,37 @@ describe('patchies completions', () => {
     expect(getShaderParkCompletion('cappedTorus')).toMatchObject({
       detail: '(cap: vec2, radius: float, thickness: float) => void',
       info: 'Add a torus arc capped by a direction vector, radius, and tube thickness.'
+    });
+  });
+
+  it('describes useful helpers exposed from shader-park-core sculpt.js', () => {
+    expect(getShaderParkCompletion('repeat')).toMatchObject({
+      detail: '(spacing: float | vec3, repetitions: float | vec3) => void',
+      info: 'Repeat space at a regular interval.'
+    });
+    expect(getShaderParkCompletion('repeatLinear')).toMatchObject({
+      detail: '(scale: vec3, spacing: vec3, counts: vec3) => { index: vec3, local: vec3 }',
+      info: 'Repeat space on a bounded 3D grid.'
+    });
+    expect(getShaderParkCompletion('repeatRadial')).toMatchObject({
+      detail: '(repeats: float) => float',
+      info: 'Repeat space radially around the Y axis.'
+    });
+    expect(getShaderParkCompletion('reflectiveColor')).toMatchObject({
+      detail: '(color: vec3 | r: float, g?: float, b?: float) => void',
+      info: 'Set reflected material color.'
+    });
+    expect(getShaderParkCompletion('fresnel')).toMatchObject({
+      detail: '(power: float) => float',
+      info: 'Compute a view-angle Fresnel falloff.'
+    });
+    expect(getShaderParkCompletion('extractSDF')).toMatchObject({
+      detail: '(primitive: (...args) => void) => (...args) => float',
+      info: 'Wrap a primitive so it returns its SDF instead of applying it.'
+    });
+    expect(getShaderParkCompletion('vectorContourNoise')).toMatchObject({
+      detail: '(space: vec3, offset: float, sinScale?: float) => vec3',
+      info: 'Generate contour-like vector noise from repeated noise samples.'
     });
   });
 

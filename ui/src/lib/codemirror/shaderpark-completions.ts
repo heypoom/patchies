@@ -14,15 +14,25 @@ const shaderParkCompletionInfo: Record<string, string> = {
   blend: 'Softly blend the next geometry operation.',
   mixGeo: 'Mix between geometry operations.',
   getSpace: 'Read the current transformed 3D space.',
+  getSDF: 'Read the current signed-distance value.',
   shape: 'Group geometry in a nested shape callback.',
   setSDF: 'Set the current signed-distance value.',
+  extractSDF: 'Wrap a primitive so it returns its SDF instead of applying it.',
   reset: 'Reset the current shape state.',
   displace: 'Move the current space by x, y, z.',
   setSpace: 'Replace the current transformed space.',
   repeat: 'Repeat space at a regular interval.',
+  repeatLinear: 'Repeat space on a bounded 3D grid.',
+  repeatRadial: 'Repeat space radially around the Y axis.',
   rotateX: 'Rotate space around the X axis.',
   rotateY: 'Rotate space around the Y axis.',
   rotateZ: 'Rotate space around the Z axis.',
+  overwrite: 'Replace the current SDF with following geometry.',
+  mirrorN: 'Mirror space repeatedly across all axes.',
+  grid: 'Add a mirrored box-frame grid.',
+  scaleShape: 'Wrap a primitive so it renders at a scaled size.',
+  revolve2D: 'Wrap a 2D SDF as a surface of revolution.',
+  extrude2D: 'Wrap a 2D SDF as an extruded 3D shape.',
   mirrorX: 'Mirror space across the X axis.',
   mirrorY: 'Mirror space across the Y axis.',
   mirrorZ: 'Mirror space across the Z axis.',
@@ -33,8 +43,10 @@ const shaderParkCompletionInfo: Record<string, string> = {
   expand: 'Expand or shrink the current SDF.',
   shell: 'Turn the current SDF into a shell.',
   color: 'Set the material color.',
+  reflectiveColor: 'Set reflected material color.',
   metal: 'Set material metallic amount.',
   shine: 'Set material shine or roughness.',
+  fresnel: 'Compute a view-angle Fresnel falloff.',
   lightDirection: 'Set the scene light direction.',
   backgroundColor: 'Set the render background color.',
   noLighting: 'Render material color without lighting.',
@@ -42,6 +54,7 @@ const shaderParkCompletionInfo: Record<string, string> = {
   setStepSize: 'Set raymarching step size.',
   setGeometryQuality: 'Set geometry quality multiplier.',
   setMaxIterations: 'Set raymarching iteration limit.',
+  setMaxReflections: 'Set reflection bounce limit.',
   input: 'Create a persistent numeric setting.',
   input2D: 'Create a persistent 2D setting.',
   vec2: 'Create a two-component vector.',
@@ -66,12 +79,13 @@ const shaderParkCompletionInfo: Record<string, string> = {
   rotateVec: 'Rotate a vector around an axis.',
   toSpherical: 'Convert a vector to spherical coordinates.',
   fromSpherical: 'Convert spherical coordinates to a vector.',
-  osc: 'Oscillating Shader Park math helper.',
+  osc: 'Oscillator mapped from time-like input.',
   _hash33: 'Hash a vec3 to a vec3.',
   _hash13: 'Hash a vec3 to a float.',
   noise: 'Sample Shader Park noise.',
   fractalNoise: 'Sample layered Shader Park noise.',
   sphericalDistribution: 'Generate a spherical distribution vector.',
+  vectorContourNoise: 'Generate contour-like vector noise from repeated noise samples.',
   sin: 'Sine of an angle in radians.',
   cos: 'Cosine of an angle in radians.',
   tan: 'Tangent of an angle in radians.',
@@ -92,9 +106,9 @@ const shaderParkCompletionInfo: Record<string, string> = {
   mod: 'Remainder after division.',
   min: 'Smaller of two scalar values.',
   max: 'Larger of two scalar values.',
-  atan: 'GLSL arctangent helper.',
+  atan: 'Arctangent from y and x, returning radians.',
   clamp: 'Constrain x between min and max.',
-  step: 'GLSL step helper.',
+  step: 'Return 0 below edge, otherwise 1.',
   smoothstep: 'Smooth Hermite interpolation between two edges.',
   length: 'Vector magnitude.',
   distance: 'Distance between two points.',
@@ -127,7 +141,9 @@ const shaderParkCompletionDetails: Record<string, string> = {
   ceil: '(x: float | vecN) => same',
   min: '(a: float, b: float) => float',
   max: '(a: float, b: float) => float',
+  atan: '(y: float, x: float) => float',
   clamp: '(x: float, min: float, max: float) => float',
+  step: '(edge: float, x: float) => float',
   mix: '(a: T, b: T, amount: float | T) => T',
   smoothstep: '(edge0: float, edge1: float, x: float) => float',
   length: '(v: vec3) => float',
@@ -259,7 +275,9 @@ const rawShaderParkCompletions: Completion[] = [
   { label: 'intersect', type: 'function', detail: '() => void', apply: 'intersect()' },
   { label: 'blend', type: 'function', detail: '(amount: float) => void', apply: 'blend(0.2)' },
   { label: 'mixGeo', type: 'function', detail: '(amount: float) => void', apply: 'mixGeo(0.5)' },
+  { label: 'overwrite', type: 'function', detail: '() => void', apply: 'overwrite()' },
   { label: 'getSpace', type: 'function', detail: '() => vec3', apply: 'getSpace()' },
+  { label: 'getSDF', type: 'function', detail: '() => float', apply: 'getSDF()' },
   {
     label: 'shape',
     type: 'function',
@@ -267,6 +285,12 @@ const rawShaderParkCompletions: Completion[] = [
     apply: 'shape(() => {\n  \n})'
   },
   { label: 'setSDF', type: 'function', detail: '(sdf: float) => void', apply: 'setSDF()' },
+  {
+    label: 'extractSDF',
+    type: 'function',
+    detail: '(primitive: (...args) => void) => (...args) => float',
+    apply: 'extractSDF(sphere)'
+  },
   { label: 'reset', type: 'function', detail: '() => void', apply: 'reset()' },
   {
     label: 'displace',
@@ -278,8 +302,20 @@ const rawShaderParkCompletions: Completion[] = [
   {
     label: 'repeat',
     type: 'function',
-    detail: '(spacing: float | vec3) => void',
-    apply: 'repeat(1.0)'
+    detail: '(spacing: float | vec3, repetitions: float | vec3) => void',
+    apply: 'repeat(1.0, 3)'
+  },
+  {
+    label: 'repeatLinear',
+    type: 'function',
+    detail: '(scale: vec3, spacing: vec3, counts: vec3) => { index: vec3, local: vec3 }',
+    apply: 'repeatLinear(vec3(0.4), vec3(1.2), vec3(3))'
+  },
+  {
+    label: 'repeatRadial',
+    type: 'function',
+    detail: '(repeats: float) => float',
+    apply: 'repeatRadial(8)'
   },
   { label: 'rotateX', type: 'function', detail: '(angle: float) => void', apply: 'rotateX(time)' },
   { label: 'rotateY', type: 'function', detail: '(angle: float) => void', apply: 'rotateY(time)' },
@@ -291,16 +327,53 @@ const rawShaderParkCompletions: Completion[] = [
   { label: 'flipX', type: 'function', detail: '() => void', apply: 'flipX()' },
   { label: 'flipY', type: 'function', detail: '() => void', apply: 'flipY()' },
   { label: 'flipZ', type: 'function', detail: '() => void', apply: 'flipZ()' },
+  {
+    label: 'mirrorN',
+    type: 'function',
+    detail: '(iterations: number, scale: float) => void',
+    apply: 'mirrorN(3, 0.4)'
+  },
+  {
+    label: 'grid',
+    type: 'function',
+    detail: '(num?: number, scale?: float, roundness?: float) => void',
+    apply: 'grid(3, 0.2, 0.05)'
+  },
   { label: 'expand', type: 'function', detail: '(amount: float) => void', apply: 'expand(0.1)' },
   { label: 'shell', type: 'function', detail: '(thickness: float) => void', apply: 'shell(0.05)' },
+  {
+    label: 'scaleShape',
+    type: 'function',
+    detail: '(primitive: (...args) => void, factor: float) => (...args) => void',
+    apply: 'scaleShape(sphere, 1.5)'
+  },
+  {
+    label: 'revolve2D',
+    type: 'function',
+    detail: '(sdf2D: (...args) => float) => (radius: float, ...args) => void',
+    apply: 'revolve2D()'
+  },
+  {
+    label: 'extrude2D',
+    type: 'function',
+    detail: '(sdf2D: (...args) => float) => (height: float, ...args) => void',
+    apply: 'extrude2D()'
+  },
   {
     label: 'color',
     type: 'function',
     detail: '(r: float, g: float, b: float) => void',
     apply: 'color(1, 1, 1)'
   },
+  {
+    label: 'reflectiveColor',
+    type: 'function',
+    detail: '(color: vec3 | r: float, g?: float, b?: float) => void',
+    apply: 'reflectiveColor(vec3(1, 1, 1))'
+  },
   { label: 'metal', type: 'function', detail: '(amount: float) => void', apply: 'metal(0.5)' },
   { label: 'shine', type: 'function', detail: '(amount: float) => void', apply: 'shine(0.8)' },
+  { label: 'fresnel', type: 'function', detail: '(power: float) => float', apply: 'fresnel(3)' },
   {
     label: 'lightDirection',
     type: 'function',
@@ -337,6 +410,12 @@ const rawShaderParkCompletions: Completion[] = [
     type: 'function',
     detail: '(count: number) => void',
     apply: 'setMaxIterations(300)'
+  },
+  {
+    label: 'setMaxReflections',
+    type: 'function',
+    detail: '(count: number) => void',
+    apply: 'setMaxReflections(2)'
   },
   {
     label: 'input',
@@ -457,6 +536,12 @@ const rawShaderParkCompletions: Completion[] = [
     type: 'function',
     detail: '(value: vec3, amount: float) => vec4',
     apply: 'sphericalDistribution(getSpace(), 1)'
+  },
+  {
+    label: 'vectorContourNoise',
+    type: 'function',
+    detail: '(space: vec3, offset: float, sinScale?: float) => vec3',
+    apply: 'vectorContourNoise(getSpace(), time, 1)'
   },
   ...[
     'sin',
