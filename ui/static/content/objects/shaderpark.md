@@ -1,5 +1,6 @@
-The `shaderpark` object runs Shader Park code inside Patchies' render
-pipeline. It is useful for concise SDF and raymarched procedural 3D visuals.
+The `shaderpark` object runs [Shader Park](https://shaderpark.com) code inside
+Patchies' render pipeline. It is useful for concise SDF and raymarched
+procedural 3D visuals.
 
 ## Getting Started
 
@@ -14,9 +15,6 @@ let s = getSpace();
 let n = 0.1 * noise(scale * s + time);
 sphere(radius + n);
 ```
-
-The object compiles that code to GLSL with `shader-park-core`, then renders it
-into the node's FBO. It does not create a separate canvas or render loop.
 
 ## Settings
 
