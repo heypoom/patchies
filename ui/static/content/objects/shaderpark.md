@@ -56,7 +56,6 @@ Park mouse coordinates from the node preview and the shared surface preview.
 Enable the "Shader Park Visuals" preset pack to use ready-made Shader Park
 examples. It includes `Noise Sphere`, `Square Symmetry`, and `Mouse Follower`.
 
-
 ## Video Chaining
 
 The object shows video inlets only for sampler uniforms referenced in the code.
@@ -75,7 +74,8 @@ WebGL render pipeline.
 
 - [Shader Park](https://shaderpark.com)
 - [Shader Park JS reference](https://docs.shaderpark.com/references-js/)
-- [Community examples](https://shaderpark.com/explore) - these can be copied into Patchies as-is.
+- [Community examples](https://shaderpark.com/explore) - can be copied into
+  Patchies as-is.
 - [About Shader Park](https://shaderpark.com/about)
 - [shader-park-core repository](https://github.com/shader-park/shader-park-core)
 
