@@ -505,6 +505,23 @@ const shaderParkCompletions: Completion[] = rawShaderParkCompletions.map((comple
     completion.info ?? shaderParkCompletionInfo[completion.label] ?? 'Shader Park Sculpt helper.'
 }));
 
+function isValueReturningFunctionCompletion(completion: Completion): boolean {
+  return completion.type === 'function' && !completion.detail?.includes('=> void');
+}
+
+function isExpressionCompletionPosition(context: CMCompletionContext, from: number): boolean {
+  const line = context.state.doc.lineAt(context.pos);
+  const linePrefix = line.text.slice(0, from - line.from);
+  const trimmedPrefix = linePrefix.trimEnd();
+
+  if (!trimmedPrefix) return false;
+
+  return (
+    /[=([,{?:+\-*/%&|^!<>]$/.test(trimmedPrefix) ||
+    /(?:^|[^\w$])(?:return|throw|yield|typeof|void|delete|new)\s+$/.test(linePrefix)
+  );
+}
+
 export function createShaderParkCompletionSource(patchiesContext?: PatchiesContext) {
   return (context: CMCompletionContext) => {
     if (patchiesContext?.nodeType !== SHADERPARK_NODE_TYPE) return null;
@@ -515,11 +532,12 @@ export function createShaderParkCompletionSource(patchiesContext?: PatchiesConte
     if (isCompletionSuppressedByComment(context, word.from)) return null;
 
     const typedText = context.state.doc.sliceString(word.from, word.to).toLowerCase();
-    const options = typedText
-      ? shaderParkCompletions.filter((completion) =>
-          completion.label.toLowerCase().startsWith(typedText)
-        )
-      : shaderParkCompletions;
+    const isExpressionPosition = isExpressionCompletionPosition(context, word.from);
+    const options = shaderParkCompletions.filter(
+      (completion) =>
+        (!typedText || completion.label.toLowerCase().startsWith(typedText)) &&
+        (isExpressionPosition || !isValueReturningFunctionCompletion(completion))
+    );
 
     return {
       from: word.from,

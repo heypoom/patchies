@@ -32,7 +32,9 @@ function getShaderParkCompletions(doc: string) {
 }
 
 function getShaderParkCompletion(label: string) {
-  const completion = getShaderParkCompletions(label).find((option) => option.label === label);
+  const completion = getShaderParkCompletions(`let value = ${label}`).find(
+    (option) => option.label === label
+  );
 
   if (!completion) {
     throw new Error(`Missing Shader Park completion: ${label}`);
@@ -57,7 +59,7 @@ describe('patchies completions', () => {
 
   it('shows Shader Park completions only for shaderpark code', () => {
     expect(getShaderParkCompletionLabels('shaderpark', 'sp')).toContain('sphere');
-    expect(getShaderParkCompletionLabels('shaderpark', 'getS')).toContain('getSpace');
+    expect(getShaderParkCompletionLabels('shaderpark', 'setSpace(getS')).toContain('getSpace');
     expect(getShaderParkCompletionLabels('shaderpark', 'tim')).toContain('time');
 
     expect(getShaderParkCompletionLabels('js', 'sp')).toEqual([]);
@@ -97,5 +99,16 @@ describe('patchies completions', () => {
       detail: '(incident: vec3, normal: vec3) => vec3',
       info: 'Refract an incident vector through a surface normal.'
     });
+  });
+
+  it('only shows value-returning Shader Park functions in expression positions', () => {
+    expect(getShaderParkCompletionLabels('shaderpark', 'l')).toContain('line');
+    expect(getShaderParkCompletionLabels('shaderpark', 'l')).toContain('lightDirection');
+    expect(getShaderParkCompletionLabels('shaderpark', 'l')).not.toContain('log2');
+    expect(getShaderParkCompletionLabels('shaderpark', 'l')).not.toContain('length');
+
+    expect(getShaderParkCompletionLabels('shaderpark', 'let foo = l')).toContain('log2');
+    expect(getShaderParkCompletionLabels('shaderpark', 'let foo = l')).toContain('length');
+    expect(getShaderParkCompletionLabels('shaderpark', 'setSpace(l')).toContain('log2');
   });
 });
