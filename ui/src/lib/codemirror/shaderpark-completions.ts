@@ -236,23 +236,23 @@ const rawShaderParkCompletions: Completion[] = [
   {
     label: 'boxFrame',
     type: 'function',
-    detail: '(...) => void',
-    info: 'Shader Park SDF helper from shader-park-core.',
-    apply: 'boxFrame()'
+    detail: '(size: vec3, edge: float) => void',
+    info: 'Add a hollow box frame with the given half-size and edge thickness.',
+    apply: 'boxFrame(vec3(0.5), 0.05)'
   },
   {
     label: 'link',
     type: 'function',
-    detail: '(...) => void',
-    info: 'Shader Park SDF helper from shader-park-core.',
-    apply: 'link()'
+    detail: '(length: float, radius: float, thickness: float) => void',
+    info: 'Add a chain-link shape stretched along Y, with ring radius and tube thickness.',
+    apply: 'link(0.35, 0.35, 0.08)'
   },
   {
     label: 'cappedTorus',
     type: 'function',
-    detail: '(...) => void',
-    info: 'Shader Park SDF helper from shader-park-core.',
-    apply: 'cappedTorus()'
+    detail: '(cap: vec2, radius: float, thickness: float) => void',
+    info: 'Add a torus arc capped by a direction vector, radius, and tube thickness.',
+    apply: 'cappedTorus(vec2(0.8, 0.6), 0.5, 0.08)'
   },
   { label: 'union', type: 'function', detail: '() => void', apply: 'union()' },
   { label: 'difference', type: 'function', detail: '() => void', apply: 'difference()' },

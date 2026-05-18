@@ -101,6 +101,21 @@ describe('patchies completions', () => {
     });
   });
 
+  it('describes shader-park-core SDF helper completions with actual arguments', () => {
+    expect(getShaderParkCompletion('link')).toMatchObject({
+      detail: '(length: float, radius: float, thickness: float) => void',
+      info: 'Add a chain-link shape stretched along Y, with ring radius and tube thickness.'
+    });
+    expect(getShaderParkCompletion('boxFrame')).toMatchObject({
+      detail: '(size: vec3, edge: float) => void',
+      info: 'Add a hollow box frame with the given half-size and edge thickness.'
+    });
+    expect(getShaderParkCompletion('cappedTorus')).toMatchObject({
+      detail: '(cap: vec2, radius: float, thickness: float) => void',
+      info: 'Add a torus arc capped by a direction vector, radius, and tube thickness.'
+    });
+  });
+
   it('only shows value-returning Shader Park functions in expression positions', () => {
     expect(getShaderParkCompletionLabels('shaderpark', 'l')).toContain('line');
     expect(getShaderParkCompletionLabels('shaderpark', 'l')).toContain('lightDirection');
