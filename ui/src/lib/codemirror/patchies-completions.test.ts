@@ -3,9 +3,9 @@ import { EditorState } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
 import {
   createPatchiesCompletionSource,
-  createShaderParkCompletionSource,
   shouldShowPatchiesCompletions
 } from '$lib/codemirror/patchies-completions';
+import { createShaderParkCompletionSource } from '$lib/codemirror/shaderpark-completions';
 
 function getCompletionLabels(nodeType: string, doc: string) {
   const state = EditorState.create({ doc });
