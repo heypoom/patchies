@@ -22,6 +22,7 @@ export async function loadLanguageExtension(language: string, context?: Patchies
         { LanguageSupport },
         { autocompletion },
         { patchiesCompletions },
+        { shaderParkCompletionsSource },
         { glslInJsWrap },
         { glslIncludeHighlighter }
       ] = await Promise.all([
@@ -29,6 +30,7 @@ export async function loadLanguageExtension(language: string, context?: Patchies
         import('@codemirror/language'),
         import('@codemirror/autocomplete'),
         import('$lib/codemirror/patchies-completions'),
+        import('$lib/codemirror/shaderpark-completions'),
         import('$lib/codemirror/glsl-in-js'),
         import('$lib/codemirror/glsl.codemirror')
       ]);
@@ -37,7 +39,9 @@ export async function loadLanguageExtension(language: string, context?: Patchies
       const jsSupport = javascript();
       return [
         new LanguageSupport(jsWithGlsl, jsSupport.support),
-        autocompletion({ override: [patchiesCompletions(context)] }),
+        autocompletion({
+          override: [shaderParkCompletionsSource(context), patchiesCompletions(context)]
+        }),
         ...glslIncludeHighlighter
       ];
     })

@@ -2,6 +2,7 @@ import {
   CompletionContext as CMCompletionContext,
   type Completion
 } from '@codemirror/autocomplete';
+import { isCompletionSuppressedByComment } from '$lib/codemirror/completion-utils';
 
 /**
  * Patchies API function completions for JavaScript-based nodes
@@ -879,24 +880,7 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
     if (!word) return null;
     if (word.from === word.to && !context.explicit) return null;
 
-    // Get the line we're on to check for comments
-    const line = context.state.doc.lineAt(context.pos);
-    const lineText = line.text;
-    const posInLine = context.pos - line.from;
-
-    // Don't complete inside comments
-    const commentStart = lineText.indexOf('//');
-    if (commentStart !== -1 && posInLine > commentStart) {
-      return null;
-    }
-
-    // Don't complete inside block comments
-    const textBefore = context.state.doc.sliceString(Math.max(0, word.from - 100), word.from);
-    const lastBlockCommentStart = textBefore.lastIndexOf('/*');
-    const lastBlockCommentEnd = textBefore.lastIndexOf('*/');
-    if (lastBlockCommentStart > lastBlockCommentEnd) {
-      return null;
-    }
+    if (isCompletionSuppressedByComment(context, word.from)) return null;
 
     // Check the text before the word to avoid inappropriate contexts
     const recentTextBefore = context.state.doc.sliceString(Math.max(0, word.from - 20), word.from);

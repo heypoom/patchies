@@ -5,6 +5,7 @@ import {
   createPatchiesCompletionSource,
   shouldShowPatchiesCompletions
 } from '$lib/codemirror/patchies-completions';
+import { createShaderParkCompletionSource } from '$lib/codemirror/shaderpark-completions';
 
 function getCompletionLabels(nodeType: string, doc: string) {
   const state = EditorState.create({ doc });
@@ -12,6 +13,34 @@ function getCompletionLabels(nodeType: string, doc: string) {
   const result = createPatchiesCompletionSource({ nodeType })(context);
 
   return result?.options.map((option) => option.label) ?? [];
+}
+
+function getShaderParkCompletionLabels(nodeType: string, doc: string) {
+  const state = EditorState.create({ doc });
+  const context = new CompletionContext(state, doc.length, true);
+  const result = createShaderParkCompletionSource({ nodeType })(context);
+
+  return result?.options.map((option) => option.label) ?? [];
+}
+
+function getShaderParkCompletions(doc: string) {
+  const state = EditorState.create({ doc });
+  const context = new CompletionContext(state, doc.length, true);
+  const result = createShaderParkCompletionSource({ nodeType: 'shaderpark' })(context);
+
+  return result?.options ?? [];
+}
+
+function getShaderParkCompletion(label: string) {
+  const completion = getShaderParkCompletions(`let value = ${label}`).find(
+    (option) => option.label === label
+  );
+
+  if (!completion) {
+    throw new Error(`Missing Shader Park completion: ${label}`);
+  }
+
+  return completion;
 }
 
 describe('patchies completions', () => {
@@ -26,5 +55,114 @@ describe('patchies completions', () => {
     expect(shouldShowPatchiesCompletions({ nodeType: 'js' })).toBe(true);
     expect(getCompletionLabels('js', 'se')).toContain('send');
     expect(getCompletionLabels('js', 'settings.')).toContain('define');
+  });
+
+  it('shows Shader Park completions only for shaderpark code', () => {
+    expect(getShaderParkCompletionLabels('shaderpark', 'sp')).toContain('sphere');
+    expect(getShaderParkCompletionLabels('shaderpark', 'setSpace(getS')).toContain('getSpace');
+    expect(getShaderParkCompletionLabels('shaderpark', 'tim')).toContain('time');
+
+    expect(getShaderParkCompletionLabels('js', 'sp')).toEqual([]);
+    expect(getShaderParkCompletionLabels('shaderpark', '// sp')).toEqual([]);
+  });
+
+  it('adds short descriptions to Shader Park completions', () => {
+    const missingDescriptions = getShaderParkCompletions('s')
+      .filter((completion) => !completion.info)
+      .map((completion) => completion.label);
+
+    expect(missingDescriptions).toEqual([]);
+  });
+
+  it('uses useful Shader Park math signatures and descriptions', () => {
+    expect(getShaderParkCompletion('sin')).toMatchObject({
+      detail: '(x: float | vecN) => same',
+      info: 'Sine of an angle in radians.'
+    });
+    expect(getShaderParkCompletion('nsin')).toMatchObject({
+      detail: '(x: float) => float',
+      info: 'Sine mapped from -1..1 into 0..1.'
+    });
+    expect(getShaderParkCompletion('pow')).toMatchObject({
+      detail: '(base: T, exponent: T) => T',
+      info: 'Raise base to exponent; dimensions must match.'
+    });
+    expect(getShaderParkCompletion('mix')).toMatchObject({
+      detail: '(a: T, b: T, amount: float | T) => T',
+      info: 'Linearly interpolate between matching values.'
+    });
+    expect(getShaderParkCompletion('length')).toMatchObject({
+      detail: '(v: vec3) => float',
+      info: 'Vector magnitude.'
+    });
+    expect(getShaderParkCompletion('refract')).toMatchObject({
+      detail: '(incident: vec3, normal: vec3) => vec3',
+      info: 'Refract an incident vector through a surface normal.'
+    });
+    expect(getShaderParkCompletion('atan')).toMatchObject({
+      detail: '(y: float, x: float) => float',
+      info: 'Arctangent from y and x, returning radians.'
+    });
+    expect(getShaderParkCompletion('step')).toMatchObject({
+      detail: '(edge: float, x: float) => float',
+      info: 'Return 0 below edge, otherwise 1.'
+    });
+  });
+
+  it('describes shader-park-core SDF helper completions with actual arguments', () => {
+    expect(getShaderParkCompletion('link')).toMatchObject({
+      detail: '(length: float, radius: float, thickness: float) => void',
+      info: 'Add a chain-link shape stretched along Y, with ring radius and tube thickness.'
+    });
+    expect(getShaderParkCompletion('boxFrame')).toMatchObject({
+      detail: '(size: vec3, edge: float) => void',
+      info: 'Add a hollow box frame with the given half-size and edge thickness.'
+    });
+    expect(getShaderParkCompletion('cappedTorus')).toMatchObject({
+      detail: '(cap: vec2, radius: float, thickness: float) => void',
+      info: 'Add a torus arc capped by a direction vector, radius, and tube thickness.'
+    });
+  });
+
+  it('describes useful helpers exposed from shader-park-core sculpt.js', () => {
+    expect(getShaderParkCompletion('repeat')).toMatchObject({
+      detail: '(spacing: float | vec3, repetitions: float | vec3) => void',
+      info: 'Repeat space at a regular interval.'
+    });
+    expect(getShaderParkCompletion('repeatLinear')).toMatchObject({
+      detail: '(scale: vec3, spacing: vec3, counts: vec3) => { index: vec3, local: vec3 }',
+      info: 'Repeat space on a bounded 3D grid.'
+    });
+    expect(getShaderParkCompletion('repeatRadial')).toMatchObject({
+      detail: '(repeats: float) => float',
+      info: 'Repeat space radially around the Y axis.'
+    });
+    expect(getShaderParkCompletion('reflectiveColor')).toMatchObject({
+      detail: '(color: vec3 | r: float, g?: float, b?: float) => void',
+      info: 'Set reflected material color.'
+    });
+    expect(getShaderParkCompletion('fresnel')).toMatchObject({
+      detail: '(power: float) => float',
+      info: 'Compute a view-angle Fresnel falloff.'
+    });
+    expect(getShaderParkCompletion('extractSDF')).toMatchObject({
+      detail: '(primitive: (...args) => void) => (...args) => float',
+      info: 'Wrap a primitive so it returns its SDF instead of applying it.'
+    });
+    expect(getShaderParkCompletion('vectorContourNoise')).toMatchObject({
+      detail: '(space: vec3, offset: float, sinScale?: float) => vec3',
+      info: 'Generate contour-like vector noise from repeated noise samples.'
+    });
+  });
+
+  it('only shows value-returning Shader Park functions in expression positions', () => {
+    expect(getShaderParkCompletionLabels('shaderpark', 'l')).toContain('line');
+    expect(getShaderParkCompletionLabels('shaderpark', 'l')).toContain('lightDirection');
+    expect(getShaderParkCompletionLabels('shaderpark', 'l')).not.toContain('log2');
+    expect(getShaderParkCompletionLabels('shaderpark', 'l')).not.toContain('length');
+
+    expect(getShaderParkCompletionLabels('shaderpark', 'let foo = l')).toContain('log2');
+    expect(getShaderParkCompletionLabels('shaderpark', 'let foo = l')).toContain('length');
+    expect(getShaderParkCompletionLabels('shaderpark', 'setSpace(l')).toContain('log2');
   });
 });
