@@ -200,6 +200,21 @@ const directiveCompletions: Completion[] = [
     detail: 'Enrich uniform with UI metadata',
     info: '// @param strength 0.5 0.0 1.0 "Effect strength"'
   }),
+  snippetCompletion('@param ${name} color ${hex} "${title}"', {
+    label: '@param color',
+    type: 'keyword',
+    detail: 'Render vec3 uniform as color picker',
+    info: '// @param tint color #ff8800 "Tint"'
+  }),
+  snippetCompletion(
+    '@param ${name} ${default} (${valueA}: ${labelA}, ${valueB}: ${labelB}) "${title}"',
+    {
+      label: '@param select',
+      type: 'keyword',
+      detail: 'Render numeric uniform as select options',
+      info: '// @param mode 0 (0: Linear, 1: Radial) "Mode"'
+    }
+  ),
   snippetCompletion('@noinlet ${name}', {
     label: '@noinlet',
     type: 'keyword',
@@ -212,11 +227,35 @@ const directiveCompletions: Completion[] = [
     detail: 'Set FBO texture format',
     info: '// @format rgba32f'
   }),
+  snippetCompletion('@format rgba16f', {
+    label: '@format rgba16f',
+    type: 'keyword',
+    detail: 'Use 16-bit float output texture',
+    info: '// @format rgba16f'
+  }),
+  snippetCompletion('@format rgba8', {
+    label: '@format rgba8',
+    type: 'keyword',
+    detail: 'Use default 8-bit output texture',
+    info: '// @format rgba8'
+  }),
   snippetCompletion('@resolution 256', {
     label: '@resolution',
     type: 'keyword',
     detail: 'Set FBO size (number, WxH, or 1/n)',
     info: '// @resolution 256 or 256x128 or 1/2'
+  }),
+  snippetCompletion('@resolution 256x128', {
+    label: '@resolution WxH',
+    type: 'keyword',
+    detail: 'Set explicit non-square FBO size',
+    info: '// @resolution 256x128'
+  }),
+  snippetCompletion('@resolution 1/2', {
+    label: '@resolution 1/n',
+    type: 'keyword',
+    detail: 'Set output size as viewport fraction',
+    info: '// @resolution 1/2'
   }),
   snippetCompletion('@primaryButton settings', {
     label: '@primaryButton',

@@ -85,11 +85,10 @@ color(vec3(
   1.0 - smoothstep(0.0, 0.8, d)
 ));
 
-displace(mouse.x, mouse.y, 0.0);
-sphere(0.22 + 0.08 * sin(time * 2.0));
-
 shine(0.8);
-metal(0.15);`;
+metal(0.15);
+displace(mouse.x, mouse.y, 0.0);
+sphere(0.22 + 0.08 * sin(time * 2.0));`;
 
 type ShaderParkPresetData = {
   code: string;

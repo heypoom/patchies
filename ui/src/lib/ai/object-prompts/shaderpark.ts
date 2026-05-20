@@ -23,7 +23,7 @@ Example - Simple Sphere:
 {
   "type": "shaderpark",
   "data": {
-    "code": "// @title Simple Sphere\\nsphere(0.35);\\ncolor(vec3(0.2, 0.6, 1.0));\\nshine(0.6);\\nrotateY(time * 0.5);"
+    "code": "// @title Simple Sphere\\ncolor(vec3(0.2, 0.6, 1.0));\\nshine(0.6);\\nrotateY(time * 0.5);\\nsphere(0.35);"
   }
 }
 \`\`\`
@@ -33,7 +33,7 @@ Example - Animated Field:
 {
   "type": "shaderpark",
   "data": {
-    "code": "let p = getSpace();\\nsphere(0.25 + 0.08 * sin(time + p.x * 8.0));\\ncolor(hsv2rgb(vec3(0.55 + p.y * 0.2, 0.8, 1.0)));\\nmetal(0.2);\\nshine(0.7);"
+    "code": "let p = getSpace();\\nmetal(0.2);\\nshine(0.7);\\ncolor(hsv2rgb(vec3(0.55 + p.y * 0.2, 0.8, 1.0)));\\nsphere(0.25 + 0.08 * sin(time + p.x * 8.0));"
   }
 }
 \`\`\``;
