@@ -66,14 +66,24 @@ describe('glsl completions', () => {
 
   it('suggests generic sampler and entry point snippets', () => {
     expect(getGlslCompletionLabels('uniform s')).toContain('sampler2D');
-    expect(getGlslCompletionLabels('uniform s')).toContain('sampler2D uniform');
-    expect(getGlslCompletion('uniform s', 'sampler2D uniform')).toMatchObject({
-      detail: 'declare video texture input',
-      info: 'Declare a named video texture uniform. Patchies creates an inlet for the chosen name.'
+    expect(getGlslCompletionLabels('uniform s')).not.toContain('sampler2D uniform');
+    expect(getGlslCompletion('uniform s', 'sampler2D')).toMatchObject({
+      info: 'Opaque 2D texture sampler type for uniforms and function parameters.'
     });
 
     expect(getGlslCompletionLabels('m')).toContain('mainImage');
     expect(getGlslCompletionLabels('m')).toContain('mainImage MRT');
+  });
+
+  it('only suggests sampler2D in declaration contexts', () => {
+    expect(getGlslCompletionLabels('s')).not.toContain('sampler2D');
+    expect(getGlslCompletionLabels('fragColor = s')).not.toContain('sampler2D');
+
+    expect(getGlslCompletionLabels('uniform s')).toContain('sampler2D');
+    expect(getGlslCompletionLabels('vec4 sample(s')).toContain('sampler2D');
+    expect(getGlslCompletionLabels('vec4 sample(float amount, s')).toContain('sampler2D');
+    expect(getGlslCompletionLabels('vec4 sample(in s')).toContain('sampler2D');
+    expect(getGlslCompletionLabels('vec4 sample(s')).not.toContain('sampler2D uniform');
   });
 
   it('suggests dynamic uniform and array uniform snippets from the GLSL docs', () => {

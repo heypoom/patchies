@@ -20,8 +20,7 @@ const statementCompletions: Completion[] = [
     ['ivec4', 'Four-component integer vector.'],
     ['mat2', '2x2 float matrix.'],
     ['mat3', '3x3 float matrix.'],
-    ['mat4', '4x4 float matrix.'],
-    ['sampler2D', '2D texture sampler uniform.']
+    ['mat4', '4x4 float matrix.']
   ].map(([label, info]) => ({
     label,
     type: 'type',
@@ -63,12 +62,6 @@ const statementCompletions: Completion[] = [
     detail: 'declare vec2 array inlet',
     info: 'Declare an array uniform. Patchies accepts nested array messages.'
   }),
-  snippetCompletion('uniform sampler2D ${image};', {
-    label: 'sampler2D uniform',
-    type: 'keyword',
-    detail: 'declare video texture input',
-    info: 'Declare a named video texture uniform. Patchies creates an inlet for the chosen name.'
-  }),
   snippetCompletion('layout(location = ${0}) out vec4 ${color};', {
     label: 'layout(location)',
     type: 'keyword',
@@ -76,6 +69,14 @@ const statementCompletions: Completion[] = [
     info: 'Declare an additional render target output.'
   })
 ];
+
+const sampler2DTypeCompletion: Completion = {
+  label: 'sampler2D',
+  type: 'type',
+  info: 'Opaque 2D texture sampler type for uniforms and function parameters.'
+};
+
+const sampler2DDeclarationCompletions: Completion[] = [sampler2DTypeCompletion];
 
 const builtInValueCompletions: Completion[] = [
   {
@@ -116,18 +117,6 @@ const builtInValueCompletions: Completion[] = [
     type: 'variable',
     detail: 'vec4',
     info: 'Legacy single fragment color output.'
-  },
-  {
-    label: 'PI',
-    type: 'constant',
-    detail: 'float',
-    info: 'Pi constant, if defined by included code.'
-  },
-  {
-    label: 'TAU',
-    type: 'constant',
-    detail: 'float',
-    info: 'Two-pi constant, if defined by included code.'
   }
 ];
 
@@ -215,6 +204,21 @@ function isExpressionCompletionPosition(context: CMCompletionContext, from: numb
   return /[=([,{?:+\-*/%&|^!<>]$/.test(trimmedPrefix) || /(?:^|[^\w$])return\s+$/.test(linePrefix);
 }
 
+function isSampler2DDeclarationPosition(context: CMCompletionContext, from: number): boolean {
+  const line = context.state.doc.lineAt(context.pos);
+  const linePrefix = line.text.slice(0, from - line.from);
+  const trimmedPrefix = linePrefix.trimEnd();
+  const lastOpenParen = trimmedPrefix.lastIndexOf('(');
+  const lastCloseParen = trimmedPrefix.lastIndexOf(')');
+
+  return (
+    /(?:^|[^\w])uniform\s+$/.test(linePrefix) ||
+    (lastOpenParen > lastCloseParen &&
+      (/[,(]\s*(?:in\s+|out\s+|inout\s+)?$/.test(trimmedPrefix) ||
+        /(?:^|[^\w])(?:in|out|inout)\s+$/.test(linePrefix)))
+  );
+}
+
 function isPreprocessorCompletionPosition(context: CMCompletionContext) {
   const line = context.state.doc.lineAt(context.pos);
   const beforeCursor = line.text.slice(0, context.pos - line.from);
@@ -245,6 +249,9 @@ export function createGlslCompletionSource() {
     const options = [
       ...statementCompletions,
       ...builtInValueCompletions,
+      ...(isSampler2DDeclarationPosition(context, word.from)
+        ? sampler2DDeclarationCompletions
+        : []),
       ...(isExpressionPosition ? expressionFunctionCompletions : [])
     ].filter((completion) => completion.label.toLowerCase().startsWith(typedText));
 
