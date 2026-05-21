@@ -4,11 +4,14 @@ import { glslLanguage } from './glsl.codemirror';
 // glsl`` tagged template (Three.js / explicit preprocessing)
 const GLSL_TAG = new Set(['glsl']);
 
+// Shader Park GLSL extension helpers take full GLSL shader strings.
+const GLSL_CALLS = new Set(['glslFunc', 'glslFuncES3', 'glslSDF']);
+
 // Object property keys whose template string values are GLSL shader source:
 // REGL: frag/vert, Hydra: glsl, SwissGL: FP/VP
 const GLSL_PROPERTY_KEYS = new Set(['frag', 'vert', 'glsl', 'FP', 'VP']);
 
-function isGlslTemplateString(
+export function isGlslTemplateString(
   node: import('@lezer/common').SyntaxNodeRef,
   input: import('@lezer/common').Input
 ): boolean {
@@ -19,6 +22,19 @@ function isGlslTemplateString(
   if (parent.name === 'TaggedTemplateExpression') {
     const tag = parent.firstChild;
     return !!tag && GLSL_TAG.has(input.read(tag.from, tag.to));
+  }
+
+  // glslFunc(`...`), glslFuncES3(`...`), glslSDF(`...`)
+  if (parent.name === 'ArgList') {
+    const call = parent.parent;
+    const callee = call?.firstChild;
+    return (
+      !!call &&
+      call.name === 'CallExpression' &&
+      !!callee &&
+      callee.name === 'VariableName' &&
+      GLSL_CALLS.has(input.read(callee.from, callee.to))
+    );
   }
 
   // { frag: `...`, vert: `...`, glsl: `...`, FP: `...`, VP: `...` }
@@ -57,6 +73,7 @@ function glslOverlay(node: import('@lezer/common').SyntaxNodeRef): { from: numbe
  * - { frag: `...`, vert: `...` } (REGL)
  * - { glsl: `...` } (Hydra setFunction)
  * - { FP: `...`, VP: `...` } (SwissGL)
+ * - glslFunc(`...`), glslFuncES3(`...`), glslSDF(`...`) (Shader Park)
  *
  * ${...} interpolations are excluded from the GLSL overlay so JS
  * highlighting still applies inside them.
