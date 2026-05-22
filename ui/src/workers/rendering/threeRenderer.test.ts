@@ -5,7 +5,8 @@ describe('ThreeRenderer', () => {
   it('resizes the Three renderer and render target when the framebuffer size changes', async () => {
     const previousFramebuffer = { width: 100, height: 50 };
     const nextFramebuffer = { width: 200, height: 100 };
-    const renderer = Object.create(ThreeRenderer.prototype) as ThreeRenderer & {
+    const renderer = Object.create(ThreeRenderer.prototype) as {
+      updateConfig: ThreeRenderer['updateConfig'];
       config: { code: string; nodeId: string; runRevision: number };
       framebuffer: typeof previousFramebuffer;
       threeWebGLRenderer: { setSize: ReturnType<typeof vi.fn> };
@@ -21,7 +22,7 @@ describe('ThreeRenderer', () => {
 
     await renderer.updateConfig(
       { code: 'new code', nodeId: 'three-node', runRevision: 2 },
-      nextFramebuffer as never
+      nextFramebuffer as unknown as Parameters<ThreeRenderer['updateConfig']>[1]
     );
 
     expect(renderer.threeWebGLRenderer.setSize).toHaveBeenCalledWith(200, 100, false);

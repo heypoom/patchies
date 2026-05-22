@@ -14,6 +14,11 @@ type ThreeRendererConfig = BaseRendererConfig & {
   runRevision?: number;
 };
 
+type SizedFramebuffer = regl.Framebuffer2D & {
+  width: number;
+  height: number;
+};
+
 export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
   private animationId: number | null = null;
 
@@ -222,9 +227,19 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
   async updateConfig(config: ThreeRendererConfig, framebuffer: regl.Framebuffer2D) {
     const shouldUpdateCode =
       this.config.code !== config.code || this.config.runRevision !== config.runRevision;
+    const previousFramebuffer = this.framebuffer as SizedFramebuffer | null;
+    const nextFramebuffer = framebuffer as SizedFramebuffer;
+    const didFramebufferSizeChange =
+      previousFramebuffer?.width !== nextFramebuffer.width ||
+      previousFramebuffer?.height !== nextFramebuffer.height;
 
     this.config = config;
     this.framebuffer = framebuffer;
+
+    if (didFramebufferSizeChange) {
+      this.threeWebGLRenderer?.setSize(nextFramebuffer.width, nextFramebuffer.height, false);
+      this.renderTarget?.setSize(nextFramebuffer.width, nextFramebuffer.height);
+    }
 
     if (shouldUpdateCode) {
       await this.updateCode();

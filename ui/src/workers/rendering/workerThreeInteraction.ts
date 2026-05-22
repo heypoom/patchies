@@ -342,13 +342,20 @@ export function createWorkerOrbitControlsClass(
       const panY = ((2 * deltaY * targetDistance) / safeHeight) * this.panSpeed;
 
       const panOffset = new THREE.Vector3();
-      const matrix = this.object.matrix;
+      this.object.updateMatrixWorld();
 
-      panOffset.setFromMatrixColumn(matrix, 0).multiplyScalar(-panX);
+      const nextMatrix = this.object.matrixWorld;
+      panOffset.setFromMatrixColumn(nextMatrix, 0).multiplyScalar(-panX);
+
       this.object.position.add(panOffset);
       this.target.add(panOffset);
 
-      panOffset.setFromMatrixColumn(matrix, 1).multiplyScalar(panY);
+      if (this.screenSpacePanning) {
+        panOffset.setFromMatrixColumn(nextMatrix, 1).multiplyScalar(panY);
+      } else {
+        panOffset.setFromMatrixColumn(nextMatrix, 0).cross(this.object.up).multiplyScalar(-panY);
+      }
+
       this.object.position.add(panOffset);
       this.target.add(panOffset);
 
