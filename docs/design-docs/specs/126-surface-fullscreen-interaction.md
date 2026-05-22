@@ -215,6 +215,12 @@ onPointer((e) => {
 });
 ```
 
+### Built-in Presets
+
+- **Drawing Surface** — an interactive `surface` preset that disables FBO output,
+  draws rainbow strokes on pointer move, disables mouse forwarding so the surface
+  owns pointer input, and clears the canvas with `c` or Space.
+
 ```js
 // Flower blooms performance: send pointer position as messages,
 // receive bloom regions back from a JS node
