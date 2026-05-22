@@ -28,7 +28,7 @@ type ShaderParkCore = typeof import('shader-park-core');
 export const SHADERPARK_VIDEO_UNIFORM_COUNT = 4;
 const VIDEO_UNIFORM_COUNT = SHADERPARK_VIDEO_UNIFORM_COUNT;
 const UNIFORM_OVERRIDES_INDEX = VIDEO_UNIFORM_COUNT;
-const VIDEO_UNIFORMS = Array.from(
+export const SHADERPARK_VIDEO_UNIFORMS = Array.from(
   { length: VIDEO_UNIFORM_COUNT },
   (_, index) => `uniform sampler2D iChannel${index};`
 ).join('\n');
@@ -113,7 +113,7 @@ export async function buildShaderParkFragment(source: string) {
       usePBRHeader +
       useHemisphereLight +
       uniformsToGLSL(generated.uniforms) +
-      VIDEO_UNIFORMS +
+      SHADERPARK_VIDEO_UNIFORMS +
       '\nconst float STEP_SIZE_CONSTANT = ' +
       generated.stepSizeConstant +
       ';\n' +

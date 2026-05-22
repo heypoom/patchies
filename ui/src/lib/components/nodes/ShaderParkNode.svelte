@@ -1,6 +1,7 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
+  import { Box } from '@lucide/svelte/icons';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import {
@@ -23,14 +24,13 @@
     ConsoleOutputEvent,
     NodeHidePortsUpdateEvent,
     NodePortCountUpdateEvent,
-    PrimaryButton,
     NodeTitleUpdateEvent,
     NodeVideoOutputEnabledUpdateEvent
   } from '$lib/eventbus/events';
   import { logger } from '$lib/utils/logger';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { FBOFormat, FBOResolution } from '$lib/rendering/types';
+  import type { FBOFormat, FBOResolution, ShaderParkRenderMode } from '$lib/rendering/types';
   import type { GLUniformDef } from '../../../types/uniform-config';
   import {
     extractShaderParkVideoUniformIndices,
@@ -65,9 +65,9 @@
       showConsole?: boolean;
       shaderParkUniformDefs?: GLUniformDef[];
       uniformValues?: Record<string, unknown>;
+      renderMode?: ShaderParkRenderMode;
       fboFormat?: FBOFormat;
       resolution?: FBOResolution;
-      primaryButton?: PrimaryButton;
     };
     selected?: boolean;
     class?: string;
@@ -92,13 +92,17 @@
 
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
   let previousExecuteCode = $state<number | undefined>(undefined);
+
   const shaderParkVideoUniformIndices = $derived(
     data.shaderParkVideoUniformIndices ?? extractShaderParkVideoUniformIndices(data.code)
   );
+
   const shaderParkUniformDefs = $derived(data.shaderParkUniformDefs ?? []);
   const uniformsSchema = $derived(uniformDefsToSettingsSchema(shaderParkUniformDefs));
   const visibleUniformInlets = $derived(visibleUniformInletDefs(shaderParkUniformDefs));
   const usesMouseInput = $derived(usesShaderParkMouse(data.code));
+  const renderMode = $derived(data.renderMode ?? 'flat');
+  const usesInteractivePointer = $derived(usesMouseInput || renderMode === '3d');
 
   $effect(() => {
     removeExcessVideoOutletEdges(nodeId, videoOutletCount, getEdges, deleteElements);
@@ -112,16 +116,29 @@
   });
 
   $effect(() => {
-    if (!previewCanvas || !usesMouseInput) return;
+    if (!previewCanvas || !usesInteractivePointer) return;
 
-    mouseHandler = new CanvasMouseHandler({
-      type: 'simple',
-      nodeId,
-      canvas: previewCanvas,
-      outputWidth: $outputWidth,
-      outputHeight: $outputHeight,
-      scope: 'local'
-    });
+    const canvas = previewCanvas;
+
+    mouseHandler = new CanvasMouseHandler(
+      match(renderMode)
+        .with('3d', () => ({
+          type: 'shadertoy' as const,
+          nodeId,
+          canvas,
+          outputWidth: $outputWidth,
+          outputHeight: $outputHeight,
+          wheelZoom: true
+        }))
+        .otherwise(() => ({
+          type: 'simple' as const,
+          nodeId,
+          canvas,
+          outputWidth: $outputWidth,
+          outputHeight: $outputHeight,
+          scope: 'local' as const
+        }))
+    );
 
     mouseHandler.attach();
 
@@ -201,6 +218,14 @@
     return (defs ?? []).map(cloneUniformDef);
   }
 
+  function cloneVideoUniformIndices(indices: number[] | undefined): number[] {
+    return [...(indices ?? [])];
+  }
+
+  function cloneFboResolution(resolution: FBOResolution | undefined): FBOResolution | undefined {
+    return Array.isArray(resolution) ? [...resolution] : resolution;
+  }
+
   function cloneableUniformValues(
     defs: GLUniformDef[],
     values: Record<string, unknown>
@@ -236,15 +261,75 @@
     }
   }
 
+  function getShaderParkRendererData(
+    overrides: Partial<{
+      code: string;
+      videoInletCount: number;
+      videoOutletCount: number;
+      shaderParkVideoUniformIndices: number[];
+      shaderParkUniformDefs: GLUniformDef[];
+      uniformValues: Record<string, unknown>;
+      renderMode: ShaderParkRenderMode;
+      fboFormat: FBOFormat;
+      resolution: FBOResolution;
+      _runRevision: number;
+    }> = {}
+  ) {
+    const nextUniformDefs = cloneUniformDefs(
+      overrides.shaderParkUniformDefs ?? data.shaderParkUniformDefs
+    );
+
+    const nextUniformValues = cloneableUniformValues(
+      nextUniformDefs,
+      overrides.uniformValues ?? uniformValues
+    );
+
+    const nextVideoUniformIndices = cloneVideoUniformIndices(
+      overrides.shaderParkVideoUniformIndices ??
+        data.shaderParkVideoUniformIndices ??
+        extractShaderParkVideoUniformIndices(overrides.code ?? data.code)
+    );
+
+    return {
+      code: overrides.code ?? data.code,
+      videoInletCount: overrides.videoInletCount ?? data.videoInletCount ?? 4,
+      videoOutletCount: overrides.videoOutletCount ?? data.videoOutletCount ?? 1,
+      shaderParkVideoUniformIndices: nextVideoUniformIndices,
+      shaderParkUniformDefs: nextUniformDefs,
+      uniformValues: nextUniformValues,
+      renderMode: overrides.renderMode ?? renderMode,
+      fboFormat: overrides.fboFormat ?? data.fboFormat,
+      resolution: cloneFboResolution(overrides.resolution ?? data.resolution),
+
+      ...(overrides._runRevision !== undefined ? { _runRevision: overrides._runRevision } : {})
+    };
+  }
+
+  function toggleRenderMode() {
+    const nextRenderMode = match(renderMode)
+      .with('3d', () => 'flat' as const)
+      .otherwise(() => '3d' as const);
+
+    const nextData = getShaderParkRendererData({
+      renderMode: nextRenderMode,
+      _runRevision: Date.now()
+    });
+
+    updateNodeData(nodeId, nextData);
+    glSystem.upsertNode(nodeId, 'shaderpark', nextData);
+  }
+
   const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
       const isControlMessage = match(message)
         .with(messages.setCode, ({ value }) => {
           setCodeAndUpdate(value);
+
           return true;
         })
         .with(messages.run, () => {
           updateShaderPark();
+
           return true;
         })
         .otherwise(() => false);
@@ -265,6 +350,7 @@
         const uniformValue = toGLValue(uniformDef, cloneableValue);
 
         glSystem.setUniformData(nodeId, uniformName, uniformValue);
+
         uniformValues = { ...uniformValues, [uniformName]: cloneableValue };
         updateNodeData(nodeId, { uniformValues });
 
@@ -299,37 +385,39 @@
     }
 
     const initialUniformDefs = cloneUniformDefs(data.shaderParkUniformDefs);
+
     const initialVideoUniformIndices = [
       ...(data.shaderParkVideoUniformIndices ?? extractShaderParkVideoUniformIndices(data.code))
     ];
+
     const initialUniformValues = cloneableUniformValues(
       initialUniformDefs,
       data.uniformValues ?? {}
     );
 
-    glSystem.upsertNode(nodeId, 'shaderpark', {
-      code: data.code,
-      videoInletCount: data.videoInletCount ?? 4,
-      videoOutletCount: data.videoOutletCount ?? 1,
+    const rendererData = getShaderParkRendererData({
       shaderParkVideoUniformIndices: initialVideoUniformIndices,
       shaderParkUniformDefs: initialUniformDefs,
-      uniformValues: initialUniformValues,
-      fboFormat: data.fboFormat,
-      resolution: data.resolution
+      uniformValues: initialUniformValues
     });
+
+    glSystem.upsertNode(nodeId, 'shaderpark', rendererData);
 
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
+
       updateShaderPark();
     }, 50);
   });
 
   onDestroy(() => {
     const glEventBus = glSystem?.eventBus;
+
     if (glEventBus) {
       glEventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
       glEventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
       glEventBus.removeEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
+
       glEventBus.removeEventListener(
         'nodeVideoOutputEnabledUpdate',
         handleVideoOutputEnabledUpdate
@@ -356,6 +444,7 @@
 
   async function updateShaderPark(codeOverride?: string) {
     consoleRef?.clearConsole();
+
     lineErrors = undefined;
 
     try {
@@ -367,9 +456,11 @@
       const nextPrimaryButton = detectShaderParkPrimaryButton(code);
       const nextUniformDefs = cloneUniformDefs(await extractShaderParkUniformDefs(code));
       const nextVideoUniformIndices = [...extractShaderParkVideoUniformIndices(code)];
+
       const defaultValues = settingsSchemaToDefaultValues(
         uniformDefsToSettingsSchema(nextUniformDefs)
       );
+
       const pruned: Record<string, unknown> = {};
 
       for (const def of nextUniformDefs) {
@@ -399,6 +490,7 @@
         shaderParkVideoUniformIndices: nextVideoUniformIndices,
         shaderParkUniformDefs: nextUniformDefs,
         uniformValues: cloneablePruned,
+        renderMode,
         fboFormat: data.fboFormat,
         resolution: data.resolution,
         primaryButton: nextPrimaryButton,
@@ -423,7 +515,6 @@
 
       for (const [name, value] of Object.entries(cloneablePruned)) {
         const uniformDef = nextUniformDefs.find((def) => def.name === name);
-
         if (!uniformDef) continue;
 
         glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
@@ -436,6 +527,7 @@
         'Shader Park compilation failed:',
         error instanceof Error ? error.message : String(error)
       );
+
       logger.error('[shaderpark] update error:', error);
     }
   }
@@ -466,12 +558,19 @@
 
     for (const [name, value] of Object.entries(defaults)) {
       const uniformDef = shaderParkUniformDefs.find((def) => def.name === name);
-
       if (!uniformDef) continue;
 
       glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
     }
   }
+
+  const extraMenuItems = $derived([
+    {
+      label: renderMode === '3d' ? 'Use flat mode' : 'Use 3D mode',
+      icon: Box,
+      onclick: toggleRenderMode
+    }
+  ]);
 </script>
 
 <CanvasPreviewLayout
@@ -490,9 +589,10 @@
   settingsValues={uniformValues}
   onSettingsValueChange={handleUniformValueChange}
   onSettingsRevertAll={handleUniformRevertAll}
-  nodrag={usesMouseInput}
-  nopan={usesMouseInput}
-  nowheel={usesMouseInput}
+  nodrag={usesInteractivePointer}
+  nopan={usesInteractivePointer}
+  nowheel={usesInteractivePointer}
+  {extraMenuItems}
   class={className}
 >
   {#snippet topHandle()}

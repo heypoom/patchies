@@ -21,6 +21,27 @@ Because `shader-park-core` evaluates user Sculpt code against locally scoped DSL
 - The renderer always reserves those four Shader Park sampler slots internally, even when the UI hides unreferenced video inlets. User `input()`/`input2D()` overrides are passed after the fixed sampler slots.
 - The output is the node's normal FBO texture, so downstream render objects consume it like any other video source.
 
+## 3D Render Mode
+
+The `shaderpark` object supports two render modes:
+
+- `flat` (default): compile Sculpt to the current fullscreen fragment shader path.
+- `3d`: compile Sculpt through Shader Park core's Three.js target and render the result through Patchies' worker-side Three.js renderer pattern.
+
+The 3D mode keeps the same object, code editor, settings, dynamic `input()` message inlets, video inlets, and video outlet. It uses a Three.js scene, perspective camera, Shader Park `ShaderMaterial`, and render target inside the shared render worker. The raymarch proxy geometry is a `BoxGeometry(2, 2, 2)` with Shader Park's generated `BackSide` material and the generated default `_scale` of `1`, matching Shader Park core's `sculptToThreeJSMesh()` editor path so primitives like `box()` render as volumetric cubes. The Three render target is blitted into the node FBO, matching the existing `three` object's video-chain behavior.
+
+3D mode does not depend on DOM `OrbitControls`. Instead, the node preview forwards pointer down/move/up and wheel data to the worker. The worker maintains a small orbit-camera state and updates the camera before rendering. This keeps drag orbit and wheel zoom available without moving the renderer to the main thread or giving up the FBO pipeline.
+
+Mode changes must send clone-safe renderer data to the render worker. The Shader Park component should clone uniform definitions, video uniform index arrays, vector uniform values, and tuple resolution values before building the render graph so Svelte proxy state never crosses the worker `postMessage` boundary.
+
+The Three.js Shader Park target does not know about Patchies video samplers by default, so the renderer injects the fixed `iChannel0` through `iChannel3` sampler uniforms into the generated fragment shader and wraps connected regl textures as Three.js textures.
+
+Because the 3D path shares one WebGL2 context between regl and Three.js, the renderer must guard its private regl/Three interop fields at runtime and fail with clear diagnostics when those internals change. Pin the exact `three` and `regl` package versions rather than using caret ranges to reduce accidental upgrade breakage.
+
+3D renderer creation failures should be isolated per node during FBO rebuilds. A failed Shader Park 3D renderer should log the node id and error details, return no renderer for that node, and allow the remaining nodes in the rebuild to finish.
+
+The 3D renderer must size its Three.js render target, WebGL renderer, camera, resolution uniform, and blit dimensions from the resolved node FBO size, not the global output size, so per-node resolution overrides apply. Shader Park uniform defaults and persisted `uniformValues` must be initialized before choosing between flat and 3D render modes so both paths see the same state. Disconnected video inputs must clear their Three.js texture wrappers so old sampler sources are not reused after graph changes.
+
 ## Initial Scope
 
 - One video outlet.
@@ -39,6 +60,7 @@ Because `shader-park-core` evaluates user Sculpt code against locally scoped DSL
 - The AI object prompt should be compact overall but spend detail on Sculpt function signatures and math helper constraints so generated Shader Park code uses the right DSL instead of generic GLSL or Patchies JavaScript APIs.
 - Object documentation should link to Shader Park's main site, JS reference docs, community examples, about page, and `shader-park-core` repository.
 - Code that references `mouse` or `mouseIntersection()` should receive normalized Shader Park mouse coordinates from the node preview and the shared surface mouse forwarder.
+- Worker-side 3D uniform defaults should use declarative `ts-pattern` matching so built-in Shader Park names and vector uniform types stay centralized and easy to extend.
 
 ## Built-in Presets
 

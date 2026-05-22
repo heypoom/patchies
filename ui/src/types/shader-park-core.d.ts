@@ -18,6 +18,15 @@ declare module 'shader-park-core' {
     error?: unknown;
   };
 
+  export type ShaderParkThreeSource = {
+    uniforms: ShaderParkUniform[];
+    frag: string;
+    vert: string;
+    error?: unknown;
+    geoGLSL: string;
+    colorGLSL: string;
+  };
+
   export const fragFooter: string;
   export const minimalHeader: string;
   export const minimalVertexSource: string;
@@ -26,5 +35,6 @@ declare module 'shader-park-core' {
   export const usePBRHeader: string;
 
   export function sculptToGLSL(source: string): ShaderParkGeneratedSource;
+  export function sculptToThreeJSShaderSource(source: string): ShaderParkThreeSource;
   export function uniformsToGLSL(uniforms: Array<{ name: string; type: string }>): string;
 }

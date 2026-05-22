@@ -45,6 +45,7 @@ self.onmessage = (event) => {
     .with('setMouseData', () =>
       fboRenderer.setMouseData(data.nodeId, data.x, data.y, data.z, data.w)
     )
+    .with('zoomShaderParkOrbit', () => fboRenderer.zoomShaderParkOrbit(data.nodeId, data.deltaY))
     .with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height))
     .with('setBackgroundSize', () => fboRenderer.setBackgroundSize(data.width, data.height))
     .with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))

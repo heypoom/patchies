@@ -29,6 +29,7 @@ import { ThreeRenderer } from './threeRenderer';
 import { ReglRenderer } from './reglRenderer';
 import { SwissGLRenderer } from './swglRenderer';
 import { createShaderParkDrawCommand, SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
+import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
 import { ProjectionMapRenderer } from '$objects/projmap/ProjectionMapRenderer';
 import { getFramebuffer, getRawTexture } from './utils';
 import { isExternalTextureNode } from '$lib/canvas/node-types';
@@ -107,6 +108,7 @@ export class FBORenderer {
   public canvasByNode = new Map<string, CanvasRenderer | null>();
   public textmodeByNode = new Map<string, TextmodeRenderer | null>();
   public threeByNode = new Map<string, ThreeRenderer | null>();
+  public shaderParkThreeByNode = new Map<string, ShaderParkThreeRenderer | null>();
   public reglByNode = new Map<string, ReglRenderer | null>();
   public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
   public swglByNode = new Map<string, SwissGLRenderer | null>();
@@ -1082,9 +1084,6 @@ export class FBORenderer {
   ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
     if (node.type !== 'shaderpark') return null;
 
-    const nodeResolution = node.data.resolution;
-    const [width, height] = this.resolveNodeSize(nodeResolution);
-
     if (node.data.shaderParkUniformDefs) {
       const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
       const savedValues = node.data.uniformValues;
@@ -1108,6 +1107,13 @@ export class FBORenderer {
 
       this.uniformDataByNode.set(node.id, uniformData);
     }
+
+    if (node.data.renderMode === '3d') {
+      return this.createShaderParkThreeRenderer(node, framebuffer);
+    }
+
+    const nodeResolution = node.data.resolution;
+    const [width, height] = this.resolveNodeSize(nodeResolution);
 
     const renderCommand = await createShaderParkDrawCommand({
       width,
@@ -1137,6 +1143,53 @@ export class FBORenderer {
       },
       cleanup: () => {
         (renderCommand as regl.DrawCommand & { destroy?: () => void }).destroy?.();
+      }
+    };
+  }
+
+  async createShaderParkThreeRenderer(
+    node: RenderNode,
+    framebuffer: regl.Framebuffer2D
+  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
+    if (node.type !== 'shaderpark') return null;
+
+    if (this.shaderParkThreeByNode.has(node.id)) {
+      this.shaderParkThreeByNode.get(node.id)?.destroy();
+    }
+
+    const nodeSize = this.resolveNodeSize(node.data.resolution);
+
+    let shaderParkThreeRenderer: ShaderParkThreeRenderer;
+
+    try {
+      shaderParkThreeRenderer = await ShaderParkThreeRenderer.create(
+        {
+          code: node.data.code,
+          nodeId: node.id,
+          uniformDefs: node.data.shaderParkUniformDefs,
+          size: nodeSize
+        },
+        framebuffer,
+        this
+      );
+    } catch (error) {
+      console.error('failed to create Shader Park 3D renderer', {
+        nodeId: node.id,
+        error
+      });
+
+      this.shaderParkThreeByNode.delete(node.id);
+
+      return null;
+    }
+
+    this.shaderParkThreeByNode.set(node.id, shaderParkThreeRenderer);
+
+    return {
+      render: shaderParkThreeRenderer.renderFrame.bind(shaderParkThreeRenderer),
+      cleanup: () => {
+        shaderParkThreeRenderer.destroy();
+        this.shaderParkThreeByNode.delete(node.id);
       }
     };
   }
@@ -1302,6 +1355,10 @@ export class FBORenderer {
   /** Set mouse data for a node (Shadertoy iMouse format) */
   setMouseData(nodeId: string, x: number, y: number, z: number, w: number) {
     this.mouseDataByNode.set(nodeId, [x, y, z, w]);
+  }
+
+  zoomShaderParkOrbit(nodeId: string, deltaY: number) {
+    this.shaderParkThreeByNode.get(nodeId)?.zoom(deltaY);
   }
 
   /** Get list of nodes with preview enabled */
