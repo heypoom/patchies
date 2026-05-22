@@ -65,6 +65,7 @@ Support the practical subset first:
 - `zoomSpeed`
 - `minDistance`
 - `maxDistance`
+- `screenSpacePanning`
 - `mouseButtons`
 - `update()`
 - `reset()`
@@ -80,6 +81,11 @@ Support the practical subset first:
 - `dollyOut(scale)`
 
 Defer full parity features such as keyboard listeners, touch gestures, damping, auto-rotate, `zoomToCursor`, and detailed orthographic camera support.
+
+`screenSpacePanning` follows Three.js OrbitControls semantics for perspective cameras:
+
+- `true`: pan vertically along the camera's local up axis.
+- `false`: pan vertically in the plane perpendicular to the camera view direction, using the camera up vector crossed with the view direction.
 
 ## Input Forwarding
 

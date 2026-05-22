@@ -141,8 +141,6 @@ export class CanvasMouseHandler {
       this.glSystem.setMouseData(config.nodeId, x, y, 0, 0);
     };
 
-    console.log('local attached!');
-
     config.canvas.addEventListener('mousemove', handleLocalMouseMove);
 
     this.cleanupFn = () => {
@@ -235,9 +233,11 @@ export class CanvasMouseHandler {
           const rect = config.canvas.getBoundingClientRect();
           const screenX = event.clientX - rect.left;
           const screenY = event.clientY - rect.top;
+
           this.glSystem.sendThreeWheelData(config.nodeId, {
             x: (screenX / rect.width) * config.outputWidth,
             y: this.mapY(screenY, rect.height, config),
+
             deltaX: event.deltaX,
             deltaY: event.deltaY,
             deltaMode: event.deltaMode

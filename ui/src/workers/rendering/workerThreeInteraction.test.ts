@@ -85,4 +85,39 @@ describe('worker three interaction', () => {
     expect(controls.target.x).not.toBeCloseTo(0);
     expect(camera.position.x).not.toBeCloseTo(0);
   });
+
+  it('supports OrbitControls world-space panning when screenSpacePanning is disabled', () => {
+    const createCamera = () => {
+      const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+      camera.position.set(0, 3, 3);
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrix();
+
+      return camera;
+    };
+
+    const screenInteraction = new WorkerThreeInteraction();
+    const ScreenOrbitControls = createWorkerOrbitControlsClass(THREE, screenInteraction, () => [
+      100, 100
+    ]);
+    const screenCamera = createCamera();
+    const screenControls = new ScreenOrbitControls(screenCamera);
+
+    screenControls.pan(0, 10);
+    screenControls.update();
+
+    const worldInteraction = new WorkerThreeInteraction();
+    const WorldOrbitControls = createWorkerOrbitControlsClass(THREE, worldInteraction, () => [
+      100, 100
+    ]);
+    const worldCamera = createCamera();
+    const worldControls = new WorldOrbitControls(worldCamera);
+
+    worldControls.screenSpacePanning = false;
+    worldControls.pan(0, 10);
+    worldControls.update();
+
+    expect(worldControls.target.z).not.toBeCloseTo(screenControls.target.z);
+    expect(worldCamera.position.z).not.toBeCloseTo(screenCamera.position.z);
+  });
 });
