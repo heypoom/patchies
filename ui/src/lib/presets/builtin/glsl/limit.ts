@@ -5,6 +5,7 @@ const code = `// @title Limit
 // @param minValue 0.0 -2.0 2.0 0.001 "Min"
 // @param maxValue 1.0 -2.0 2.0 0.001 "Max"
 // @param mode 0 (0: Clamp, 1: Wrap, 2: Fold) "Mode"
+// @noinlet mode
 
 uniform sampler2D source;
 uniform float minValue;

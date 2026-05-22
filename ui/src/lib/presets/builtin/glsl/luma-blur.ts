@@ -7,6 +7,7 @@ const code = `// @title Luma Blur
 // @param softness 0.2 0.0 1.0 0.001 "Softness"
 // @param amount 1.0 0.0 1.0 0.001 "Amount"
 // @param mode 0 (0: Bright, 1: Dark) "Mode"
+// @noinlet mode
 
 uniform sampler2D source;
 uniform float radius;
