@@ -63,6 +63,14 @@ bun run lint             # Lint & format check
 bun run test             # All tests
 ```
 
+## Testing Guidance
+
+- Test observable behavior through public APIs, rendered UI, store state, emitted events, tool results, or user-visible outcomes.
+- Do **not** create tests that only inspect source text, declarations, prompts, imports, or implementation details. Avoid tests that read a file and assert it contains a string, import, function call, or regex match.
+- Do **not** add "guardrail" tests that lock wording or code shape unless that wording is itself a user-visible product contract.
+- If behavior is hard to test because logic is embedded in a prompt, component, or declaration object, first consider extracting the decision logic into a small function and test that function's input/output behavior instead.
+- Prefer no new test over a brittle test that merely proves code was written in a particular shape.
+
 ## Key Architectures
 
 **Event Bus**: Type-safe system events (undo/redo, lifecycle, collaboration)
