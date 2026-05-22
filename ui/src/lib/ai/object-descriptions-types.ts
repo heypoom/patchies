@@ -78,6 +78,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - ruby: Ruby code with ruby.wasm
 - python: Python code with Pyodide
 - expr: Mathematical expression evaluator
+- scale: Remap a number from one range to another (scale inMin inMax outMin outMax)
 - clip: Clamp a number to a min/max range (clip min max)
 - pack: Collect float, symbol, and any inlet values into one list (pack f s a, pack 0 symbol any)
 - unpack: Split an array into individual element outlets
