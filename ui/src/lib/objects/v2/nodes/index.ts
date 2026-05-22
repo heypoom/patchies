@@ -15,6 +15,7 @@ import { MetroObject } from './MetroObject';
 import { MtofObject } from './MtofObject';
 import { PackObject } from './PackObject';
 import { SelectObject } from './SelectObject';
+import { ScaleObject } from './ScaleObject';
 import { SpigotObject } from './SpigotObject';
 import { ThrottleObject } from './ThrottleObject';
 import { UniqbyObject } from './UniqbyObject';
@@ -44,6 +45,7 @@ export const TEXT_OBJECTS = [
   MtofObject,
   PackObject,
   SelectObject,
+  ScaleObject,
   SpigotObject,
   ThrottleObject,
   UniqbyObject,

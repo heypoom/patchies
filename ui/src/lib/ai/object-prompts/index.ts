@@ -61,6 +61,7 @@ import { sequencerPrompt } from './sequencer';
 import { stackPrompt } from './stack';
 import { queuePrompt } from './queue';
 import { packPrompt } from './pack';
+import { scalePrompt } from './scale';
 import {
   visionHandPrompt,
   visionBodyPrompt,
@@ -132,6 +133,7 @@ export const objectPrompts: Record<string, string> = {
   stack: stackPrompt,
   queue: queuePrompt,
   pack: packPrompt,
+  scale: scalePrompt,
   'scope~': scopePrompt,
   'tap~': tapTildePrompt,
   serial: serialPrompt,
