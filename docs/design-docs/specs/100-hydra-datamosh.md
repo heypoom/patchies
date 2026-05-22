@@ -23,8 +23,13 @@ Supported params:
 
 - `speed?: number` - how many times to decode non-key frames, default `2`
 - `keyFrame?: boolean` - request a key frame on the next encoded frame
-- `fps?: number` - encoding frame rate cap, default `60`
+- `fps?: number` - encoding frame rate cap, default `60`; capped by the global
+  render FPS cap when it is not unlimited
 - `bitrate?: number` - VP8 bitrate, default `1_000_000`
+- `scale?: number` - encode/readback scale from `0.05` to `1`, default `1`
+- `width?: number` / `height?: number` - fixed encode/readback size; setting
+  one preserves source aspect ratio, setting both uses the requested size capped
+  to the source dimensions
 
 ## Runtime Design
 
@@ -38,6 +43,10 @@ Instead, it uses worker-native primitives:
 - use `PixelReadbackService` PBOs for async readback: one tick initiates the
   read, a later tick harvests it with `clientWaitSync(..., 0, 0)` and encodes it
   without blocking the render loop
+- scale or resize the readback before the PBO read so readback, canvas upload,
+  and WebCodecs encode costs drop with pixel count
+- cap datamosh encoding FPS by the renderer's global FPS cap, so a 30 FPS render
+  cap prevents datamosh from encoding at 60 FPS even when params request it
 - build a `VideoFrame` from an `OffscreenCanvas`
 - encode with `VideoEncoder`
 - decode with `VideoDecoder`

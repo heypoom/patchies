@@ -41,8 +41,8 @@ Hydra-specific functions:
 
 - `datamosh(source, params)` - routes a Hydra source through a native
   WebCodecs datamosh effect
-  - `src(datamosh(s0, { speed: 3 })).out()`
-  - params: `speed`, `keyFrame`, `fps`, `bitrate`
+  - `src(datamosh(s0, { speed: 3, fps: 30, scale: 0.5 })).out()`
+  - params: `speed`, `keyFrame`, `fps`, `bitrate`, `scale`, `width`, `height`
 
 Patchies' `datamosh()` helper is based on the WebCodecs approach from
 [@emptyflash](https://github.com/emptyflash)'s

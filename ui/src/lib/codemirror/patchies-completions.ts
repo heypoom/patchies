@@ -108,8 +108,8 @@ const patchiesAPICompletions: Completion[] = [
     label: 'datamosh',
     type: 'function',
     detail: '(source, params?) => Source',
-    info: 'Route a Hydra source through the native WebCodecs datamosh effect. Params: speed, keyFrame, fps, bitrate.',
-    apply: 'datamosh(s0, { speed: 2 })'
+    info: 'Route a Hydra source through the native WebCodecs datamosh effect. Params: speed, keyFrame, fps, bitrate, scale, width, height.',
+    apply: 'datamosh(s0, { speed: 2, fps: 30, scale: 0.5 })'
   },
 
   // Node Configuration

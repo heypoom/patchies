@@ -8,6 +8,9 @@ export type DatamoshParams = {
   keyFrame?: boolean;
   fps?: number;
   bitrate?: number;
+  scale?: number;
+  width?: number;
+  height?: number;
 };
 
 type HydraSource = Pick<Source, 'init' | 'tick' | 'getTexture'>;
@@ -15,7 +18,8 @@ type HydraSource = Pick<Source, 'init' | 'tick' | 'getTexture'>;
 type CaptureSourceFrame = (
   source: HydraSource,
   canvas: OffscreenCanvas,
-  ctx: OffscreenCanvasRenderingContext2D
+  ctx: OffscreenCanvasRenderingContext2D,
+  params: DatamoshParams
 ) => { width: number; height: number } | null;
 
 type VideoEncoderConstructor = new (init: VideoEncoderInit) => VideoEncoder;
@@ -65,6 +69,7 @@ export function createHydraDatamosh(options: {
   codecs?: CodecConstructors;
   console?: DatamoshConsole;
   createCanvas?: (width: number, height: number) => OffscreenCanvas;
+  getRenderFpsCap?: () => number;
   now?: () => number;
 }): HydraDatamosh {
   const codecs = options.codecs ?? globalThis;
@@ -166,7 +171,7 @@ export function createHydraDatamosh(options: {
 
     outputSource.tick = () => {
       const currentTime = now();
-      const fpsInterval = 1000 / normalizeFps(pipelineParams.fps);
+      const fpsInterval = 1000 / normalizeFps(pipelineParams.fps, options.getRenderFpsCap?.());
 
       if (currentTime - lastFrame >= fpsInterval) {
         const encoded = processFrame(
@@ -204,7 +209,7 @@ export function createHydraDatamosh(options: {
     encoder: VideoEncoder,
     encoderSize: EncoderSize
   ): boolean {
-    const size = options.captureSourceFrame(source, encodeCanvas, encodeCtx);
+    const size = options.captureSourceFrame(source, encodeCanvas, encodeCtx, params);
     if (!size) return false;
 
     if (outputCanvas.width !== size.width || outputCanvas.height !== size.height) {
@@ -220,7 +225,7 @@ export function createHydraDatamosh(options: {
         width: size.width,
         height: size.height,
         bitrate: params.bitrate ?? 1_000_000,
-        framerate: normalizeFps(params.fps),
+        framerate: normalizeFps(params.fps, options.getRenderFpsCap?.()),
         latencyMode: 'realtime'
       });
 
@@ -260,6 +265,7 @@ export class HydraDatamoshRuntime {
     this.datamosh = createHydraDatamosh({
       createSource: () => new Source(this.hydra.glEnvironment),
       captureSourceFrame: this.captureSourceFrame.bind(this),
+      getRenderFpsCap: () => this.renderer.renderFpsCap,
       console
     });
   }
@@ -286,16 +292,19 @@ export class HydraDatamoshRuntime {
   private captureSourceFrame(
     source: { getTexture: () => regl.Texture2D | regl.Framebuffer2D },
     canvas: OffscreenCanvas,
-    ctx: OffscreenCanvasRenderingContext2D
+    ctx: OffscreenCanvasRenderingContext2D,
+    params: DatamoshParams
   ): { width: number; height: number } | null {
     const texture = source.getTexture();
     if (!texture) return null;
 
-    const { width, height } = getTextureSize(texture);
-    if (!width || !height) return null;
+    const sourceSize = getTextureSize(texture);
+    if (!sourceSize.width || !sourceSize.height) return null;
 
+    const targetSize = getDatamoshFrameSize(sourceSize.width, sourceSize.height, params);
     const completed = this.harvestRead(source, canvas, ctx);
-    this.initiateRead(source, texture, width, height);
+
+    this.initiateRead(source, texture, targetSize);
 
     return completed;
   }
@@ -355,14 +364,14 @@ export class HydraDatamoshRuntime {
   private initiateRead(
     source: object,
     texture: regl.Texture2D | regl.Framebuffer2D,
-    width: number,
-    height: number
+    targetSize: { width: number; height: number }
   ) {
     if (this.pendingReads.has(source)) {
       return;
     }
 
     const { gl, pixelReadbackService } = this.renderer;
+    const { width, height } = targetSize;
 
     pixelReadbackService.ensureIntermediateFboSize(width, height);
 
@@ -445,8 +454,64 @@ export class HydraDatamoshRuntime {
 
 const normalizeSpeed = (speed: number | undefined): number => Math.max(1, Math.floor(speed ?? 2));
 
-const normalizeFps = (fps: number | undefined): number =>
-  Math.max(1, Math.min(240, Math.floor(fps ?? 60)));
+export const normalizeFps = (fps: number | undefined, renderFpsCap = 0): number => {
+  const requestedFps = Math.max(1, Math.min(240, Math.floor(fps ?? 60)));
+  const cap = Math.floor(renderFpsCap);
+
+  if (cap <= 0) {
+    return requestedFps;
+  }
+
+  return Math.max(1, Math.min(requestedFps, cap));
+};
+
+export function getDatamoshFrameSize(
+  sourceWidth: number,
+  sourceHeight: number,
+  params: DatamoshParams
+): { width: number; height: number } {
+  const explicitWidth = normalizeDimension(params.width);
+  const explicitHeight = normalizeDimension(params.height);
+
+  if (explicitWidth && explicitHeight) {
+    return clampFrameSize(explicitWidth, explicitHeight, sourceWidth, sourceHeight);
+  }
+
+  if (explicitWidth) {
+    const height = Math.round(explicitWidth * (sourceHeight / sourceWidth));
+
+    return clampFrameSize(explicitWidth, height, sourceWidth, sourceHeight);
+  }
+
+  if (explicitHeight) {
+    const width = Math.round(explicitHeight * (sourceWidth / sourceHeight));
+
+    return clampFrameSize(width, explicitHeight, sourceWidth, sourceHeight);
+  }
+
+  const scale = Math.max(0.05, Math.min(1, params.scale ?? 1));
+
+  return {
+    width: Math.max(1, Math.floor(sourceWidth * scale)),
+    height: Math.max(1, Math.floor(sourceHeight * scale))
+  };
+}
+
+const normalizeDimension = (value: number | undefined): number | null => {
+  if (!Number.isFinite(value) || value === undefined) return null;
+
+  return Math.max(1, Math.floor(value));
+};
+
+const clampFrameSize = (
+  width: number,
+  height: number,
+  sourceWidth: number,
+  sourceHeight: number
+): { width: number; height: number } => ({
+  width: Math.max(1, Math.min(width, sourceWidth)),
+  height: Math.max(1, Math.min(height, sourceHeight))
+});
 
 function closeCodec(codec: { state?: string; close: () => void }) {
   if (codec.state === 'closed') return;

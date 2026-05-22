@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createHydraDatamosh } from './hydraDatamosh';
+import { createHydraDatamosh, getDatamoshFrameSize, normalizeFps } from './hydraDatamosh';
 
 type TestCodecs = NonNullable<Parameters<typeof createHydraDatamosh>[0]['codecs']>;
 
@@ -132,6 +132,43 @@ describe('createHydraDatamosh', () => {
       expect.any(codecs.VideoFrame),
       expect.objectContaining({ keyFrame: true })
     );
+  });
+});
+
+describe('getDatamoshFrameSize', () => {
+  it('scales source dimensions down by scale', () => {
+    expect(getDatamoshFrameSize(1920, 1080, { scale: 0.5 })).toEqual({
+      width: 960,
+      height: 540
+    });
+  });
+
+  it('preserves aspect ratio when only width is set', () => {
+    expect(getDatamoshFrameSize(1920, 1080, { width: 640 })).toEqual({
+      width: 640,
+      height: 360
+    });
+  });
+
+  it('caps explicit dimensions to source size', () => {
+    expect(getDatamoshFrameSize(320, 180, { width: 640, height: 360 })).toEqual({
+      width: 320,
+      height: 180
+    });
+  });
+});
+
+describe('normalizeFps', () => {
+  it('caps default datamosh fps by the global render fps cap', () => {
+    expect(normalizeFps(undefined, 30)).toBe(30);
+  });
+
+  it('caps user-provided datamosh fps by the global render fps cap', () => {
+    expect(normalizeFps(60, 30)).toBe(30);
+  });
+
+  it('treats global render fps cap 0 as unlimited', () => {
+    expect(normalizeFps(60, 0)).toBe(60);
   });
 });
 
