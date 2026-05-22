@@ -65,6 +65,13 @@ interface ExtensionsState {
 - Clean, focused experience
 - Users manage visibility in the dedicated Extensions tab
 
+### Registry Availability
+
+- Object Browser and autocomplete must be able to list enabled V2 text objects before any
+  `ObjectNode.svelte` instance mounts.
+- Catalog reads must use a lightweight object metadata source, such as generated schemas, instead
+  of relying on object runtime services to have been constructed first.
+
 ### UI Location: Sidebar Tab
 
 - New "Extensions" tab alongside Files and Presets

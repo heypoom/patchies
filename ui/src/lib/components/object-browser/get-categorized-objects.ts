@@ -87,6 +87,12 @@ export function getCategorizedObjects(
   // Collect all available object names
   const allObjectNames = new Set<string>();
 
+  // From schemas. This keeps catalog-only surfaces complete before runtime
+  // services, such as ObjectService, have mounted and populated registries.
+  for (const schemaName of Object.keys(objectSchemas)) {
+    allObjectNames.add(schemaName);
+  }
+
   // From audio registry
   for (const nodeType of audioRegistry.getVisibleNodeTypes()) {
     allObjectNames.add(nodeType);
