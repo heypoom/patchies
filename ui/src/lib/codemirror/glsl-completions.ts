@@ -240,12 +240,14 @@ export function createGlslCompletionSource() {
     }
 
     const word = context.matchBefore(/[A-Za-z_]\w*/);
+
     if (!word) return null;
     if (word.from === word.to && !context.explicit) return null;
     if (isCompletionSuppressedByComment(context, word.from)) return null;
 
     const typedText = context.state.doc.sliceString(word.from, word.to).toLowerCase();
     const isExpressionPosition = isExpressionCompletionPosition(context, word.from);
+
     const options = [
       ...statementCompletions,
       ...builtInValueCompletions,
@@ -263,13 +265,12 @@ export function createGlslCompletionSource() {
   };
 }
 
-export function getGlslCompletionByLabel(label: string): Completion | undefined {
-  return [
+export const getGlslCompletionByLabel = (label: string): Completion | undefined =>
+  [
     ...statementCompletions,
     ...builtInValueCompletions,
     ...sampler2DDeclarationCompletions,
     ...expressionFunctionCompletions
   ].find((completion) => completion.label === label);
-}
 
 export const glslCompletions = createGlslCompletionSource();

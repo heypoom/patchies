@@ -928,12 +928,12 @@ export function getPatchiesCompletionByLabel(
   label: string,
   context?: PatchiesContext
 ): Completion | undefined {
-  if (!shouldShowPatchiesCompletions(context)) return undefined;
-  if (context?.nodeType === 'expr') return undefined;
-  if (context?.nodeType === 'msg') return undefined;
+  if (!shouldShowPatchiesCompletions(context)) return;
+  if (context?.nodeType === 'expr') return;
+  if (context?.nodeType === 'msg') return;
 
   const completion = patchiesAPICompletions.find((option) => option.label === label);
-  if (!completion) return undefined;
+  if (!completion) return;
 
   return isCompletionAllowedForNode(completion, context) ? completion : undefined;
 }

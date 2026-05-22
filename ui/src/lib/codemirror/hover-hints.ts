@@ -31,6 +31,7 @@ function getWordAt(
   pos: number
 ): { from: number; to: number; text: string } | null {
   const line = state.doc.lineAt(pos);
+
   let from = pos;
   let to = pos;
 
@@ -51,12 +52,8 @@ function getWordAt(
   };
 }
 
-function createCompletionContext(state: EditorState, pos: number) {
-  return {
-    state,
-    pos
-  } as Parameters<typeof isJavaScriptStringCompletionContext>[0];
-}
+const createCompletionContext = (state: EditorState, pos: number) =>
+  ({ state, pos }) as Parameters<typeof isJavaScriptStringCompletionContext>[0];
 
 function getCompletionForWord(
   word: string,
@@ -74,7 +71,7 @@ function getCompletionForWord(
       }
 
       if (isJavaScriptStringCompletionContext(completionContext)) {
-        return undefined;
+        return;
       }
 
       if (context.nodeType === 'shaderpark') {
@@ -110,6 +107,7 @@ function appendTooltipLine(dom: HTMLElement, className: string, text: unknown) {
   const line = document.createElement('div');
   line.className = className;
   line.textContent = text;
+
   dom.appendChild(line);
 }
 
@@ -124,8 +122,8 @@ function createCompletionHintDom(completion: Completion) {
   return dom;
 }
 
-export function completionHoverHints(context: CompletionHoverContext = {}): Extension {
-  return hoverTooltip(
+export const completionHoverHints = (context: CompletionHoverContext = {}): Extension =>
+  hoverTooltip(
     (view, pos, side) => {
       const hint = getCompletionHoverHint(view.state, pos, context);
       if (!hint) return null;
@@ -138,13 +136,8 @@ export function completionHoverHints(context: CompletionHoverContext = {}): Exte
         pos: hint.from,
         end: hint.to,
         above: true,
-        create() {
-          return {
-            dom: createCompletionHintDom(hint.completion)
-          };
-        }
+        create: () => ({ dom: createCompletionHintDom(hint.completion) })
       } satisfies Tooltip;
     },
     { hoverTime: 250 }
   );
-}

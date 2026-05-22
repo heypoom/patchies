@@ -12,29 +12,18 @@ function cursor(doc: string) {
     throw new Error('Missing | cursor marker');
   }
 
-  return {
-    doc: doc.slice(0, pos) + doc.slice(pos + 1),
-    pos
-  };
+  return { doc: doc.slice(0, pos) + doc.slice(pos + 1), pos };
 }
 
-function jsState(doc: string) {
-  return EditorState.create({
-    doc,
-    extensions: [javascriptLanguage.configure({ wrap: glslInJsWrap })]
-  });
-}
+const jsState = (doc: string) =>
+  EditorState.create({ doc, extensions: [javascriptLanguage.configure({ wrap: glslInJsWrap })] });
 
-function glslState(doc: string) {
-  return EditorState.create({
-    doc,
-    extensions: [glslLanguage]
-  });
-}
+const glslState = (doc: string) => EditorState.create({ doc, extensions: [glslLanguage] });
 
 describe('completion hover hints', () => {
   it('uses Patchies JavaScript completion metadata for single-token globals', () => {
     const { doc, pos } = cursor('se|nd("hello")');
+
     const hint = getCompletionHoverHint(jsState(doc), pos, {
       language: 'javascript',
       nodeType: 'hydra'
@@ -49,6 +38,7 @@ describe('completion hover hints', () => {
 
   it('uses Shader Park completion metadata in shaderpark nodes', () => {
     const { doc, pos } = cursor('let x = si|n(time);');
+
     const hint = getCompletionHoverHint(jsState(doc), pos, {
       language: 'javascript',
       nodeType: 'shaderpark'
@@ -63,6 +53,7 @@ describe('completion hover hints', () => {
 
   it('uses GLSL completion metadata in GLSL editors', () => {
     const { doc, pos } = cursor('float d = leng|th(uv);');
+
     const hint = getCompletionHoverHint(glslState(doc), pos, {
       language: 'glsl'
     });
@@ -76,6 +67,7 @@ describe('completion hover hints', () => {
 
   it('uses GLSL completion metadata inside recognized GLSL-in-JS template strings', () => {
     const { doc, pos } = cursor('let sdf = glslSDF(`return leng|th(p);`);');
+
     const hint = getCompletionHoverHint(jsState(doc), pos, {
       language: 'javascript',
       nodeType: 'shaderpark'
@@ -101,6 +93,7 @@ describe('completion hover hints', () => {
 
   it('keeps template-string interpolation bodies in JavaScript hover context', () => {
     const { doc, pos } = cursor('glsl`vec2 p = ${se|nd("x")}`;');
+
     const hint = getCompletionHoverHint(jsState(doc), pos, {
       language: 'javascript',
       nodeType: 'hydra'
