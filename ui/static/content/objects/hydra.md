@@ -39,10 +39,18 @@ Hydra-specific functions:
   - `'local'` (default) tracks mouse within the canvas preview
   - `'global'` tracks mouse across the entire screen
 
-- `datamosh(source, params)` - routes a Hydra source through a native
-  WebCodecs datamosh effect
-  - `src(datamosh(s0, { speed: 3, fps: 30, scale: 0.5 })).out()`
-  - params: `speed`, `keyFrame`, `fps`, `bitrate`, `scale`, `width`, `height`
+## Datamoshing
+
+`datamosh(source, params)` routes a Hydra source through a native
+WebCodecs datamosh effect
+
+```javascript
+src(datamosh(s0, {
+  speed: 3, fps: 30, scale: 0.5
+})).out()
+```
+
+params: `speed`, `keyFrame`, `fps`, `bitrate`, `scale`, `width`, `height`
 
 Patchies' `datamosh()` helper is based on the WebCodecs approach from
 [@emptyflash](https://github.com/emptyflash)'s
