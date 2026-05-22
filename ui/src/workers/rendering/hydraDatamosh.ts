@@ -47,6 +47,13 @@ type CopyDrawProps = {
   framebuffer: regl.Framebuffer2D | null;
 };
 
+type PendingRead = {
+  pbo: WebGLBuffer;
+  sync: WebGLSync;
+  width: number;
+  height: number;
+};
+
 export type HydraDatamosh = ((source: HydraSource, params?: DatamoshParams) => HydraSource) & {
   destroy: () => void;
   tick: () => void;
@@ -162,7 +169,7 @@ export function createHydraDatamosh(options: {
       const fpsInterval = 1000 / normalizeFps(pipelineParams.fps);
 
       if (currentTime - lastFrame >= fpsInterval) {
-        processFrame(
+        const encoded = processFrame(
           source,
           pipelineParams,
           encodeCanvas,
@@ -172,7 +179,9 @@ export function createHydraDatamosh(options: {
           encoderSize
         );
 
-        lastFrame = currentTime;
+        if (encoded) {
+          lastFrame = currentTime;
+        }
       }
 
       originalTick();
@@ -194,9 +203,9 @@ export function createHydraDatamosh(options: {
     outputCanvas: OffscreenCanvas,
     encoder: VideoEncoder,
     encoderSize: EncoderSize
-  ) {
+  ): boolean {
     const size = options.captureSourceFrame(source, encodeCanvas, encodeCtx);
-    if (!size) return;
+    if (!size) return false;
 
     if (outputCanvas.width !== size.width || outputCanvas.height !== size.height) {
       outputCanvas.width = size.width;
@@ -229,6 +238,8 @@ export function createHydraDatamosh(options: {
 
     params.keyFrame = false;
     frame.close();
+
+    return true;
   }
 
   return datamosh;
@@ -238,12 +249,8 @@ export class HydraDatamoshRuntime {
   readonly datamosh: HydraDatamosh;
 
   private copyDraw: regl.DrawCommand | null = null;
-  private readFbo: regl.Framebuffer2D | null = null;
-  private readWidth = 0;
-  private readHeight = 0;
-  private pixels: Uint8Array | null = null;
-  private scratchCanvas: OffscreenCanvas | null = null;
-  private scratchCtx: OffscreenCanvasRenderingContext2D | null = null;
+  private pendingReads = new WeakMap<object, PendingRead>();
+  private activePendingReads = new Set<PendingRead>();
 
   constructor(
     private hydra: Hydra,
@@ -260,8 +267,16 @@ export class HydraDatamoshRuntime {
   destroy() {
     this.datamosh.destroy();
 
-    this.readFbo?.destroy();
-    this.readFbo = null;
+    const { gl, pixelReadbackService } = this.renderer;
+
+    for (const pending of this.activePendingReads) {
+      gl.deleteSync(pending.sync);
+
+      pixelReadbackService.returnPbo(pending.pbo);
+    }
+
+    this.activePendingReads.clear();
+    this.pendingReads = new WeakMap();
   }
 
   tick() {
@@ -279,56 +294,109 @@ export class HydraDatamoshRuntime {
     const { width, height } = getTextureSize(texture);
     if (!width || !height) return null;
 
-    this.ensureReadback(width, height);
+    const completed = this.harvestRead(source, canvas, ctx);
+    this.initiateRead(source, texture, width, height);
 
-    const draw = this.getCopyDraw();
-    draw({ sourceTexture: texture, framebuffer: this.readFbo });
+    return completed;
+  }
 
-    const gl = this.renderer.gl;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, getFramebuffer(this.readFbo));
-    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, this.pixels!);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  private harvestRead(
+    source: object,
+    canvas: OffscreenCanvas,
+    ctx: OffscreenCanvasRenderingContext2D
+  ): { width: number; height: number } | null {
+    const pending = this.pendingReads.get(source);
+    if (!pending) return null;
+
+    const { gl, pixelReadbackService } = this.renderer;
+    const status = gl.clientWaitSync(pending.sync, 0, 0);
+
+    if (status === gl.TIMEOUT_EXPIRED) {
+      return null;
+    }
+
+    gl.deleteSync(pending.sync);
+    this.pendingReads.delete(source);
+    this.activePendingReads.delete(pending);
+
+    if (status === gl.WAIT_FAILED) {
+      pixelReadbackService.returnPbo(pending.pbo);
+
+      return null;
+    }
+
+    const { pbo, width, height } = pending;
+    const pixels = new Uint8ClampedArray(width * height * 4);
+
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+
+    const start = pixelReadbackService.profiler.isEnabled ? performance.now() : 0;
+
+    gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, pixels);
+
+    if (pixelReadbackService.profiler.isEnabled) {
+      pixelReadbackService.profiler.recordReglRead(performance.now() - start);
+    }
+
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    pixelReadbackService.returnPbo(pbo);
 
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width;
       canvas.height = height;
     }
 
-    const array = new Uint8ClampedArray(this.pixels!);
-    const imageData = new ImageData(array, width, height);
-
-    this.scratchCtx!.putImageData(imageData, 0, 0);
-
-    ctx.save();
-    ctx.scale(1, -1);
-    ctx.drawImage(this.scratchCanvas!, 0, -height);
-    ctx.restore();
+    const imageData = new ImageData(pixels, width, height);
+    ctx.putImageData(imageData, 0, 0);
 
     return { width, height };
   }
 
-  private ensureReadback(width: number, height: number) {
-    if (this.readFbo && this.readWidth === width && this.readHeight === height) {
+  private initiateRead(
+    source: object,
+    texture: regl.Texture2D | regl.Framebuffer2D,
+    width: number,
+    height: number
+  ) {
+    if (this.pendingReads.has(source)) {
       return;
     }
 
-    this.readFbo?.destroy();
+    const { gl, pixelReadbackService } = this.renderer;
 
-    this.readFbo = this.renderer.regl.framebuffer({
-      color: this.renderer.regl.texture({
-        width,
-        height,
-        wrapS: 'clamp',
-        wrapT: 'clamp'
-      }),
-      depthStencil: false
-    });
+    pixelReadbackService.ensureIntermediateFboSize(width, height);
 
-    this.readWidth = width;
-    this.readHeight = height;
-    this.pixels = new Uint8Array(width * height * 4);
-    this.scratchCanvas = new OffscreenCanvas(width, height);
-    this.scratchCtx = this.scratchCanvas.getContext('2d');
+    const draw = this.getCopyDraw();
+    draw({ sourceTexture: texture, framebuffer: pixelReadbackService.getIntermediateFbo() });
+
+    const pbo = pixelReadbackService.getPbo();
+    const size = width * height * 4;
+
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, size, gl.STREAM_READ);
+
+    gl.bindFramebuffer(
+      gl.READ_FRAMEBUFFER,
+      getFramebuffer(pixelReadbackService.getIntermediateFbo())
+    );
+
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+
+    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+
+    if (!sync) {
+      pixelReadbackService.returnPbo(pbo);
+
+      return;
+    }
+
+    const pending = { pbo, sync, width, height };
+
+    this.pendingReads.set(source, pending);
+    this.activePendingReads.add(pending);
   }
 
   private getCopyDraw() {
@@ -343,7 +411,7 @@ export class HydraDatamoshRuntime {
         uniform sampler2D sourceTexture;
 
         void main () {
-          gl_FragColor = texture2D(sourceTexture, uv);
+          gl_FragColor = texture2D(sourceTexture, vec2(uv.x, 1.0 - uv.y));
         }
       `,
       vert: `

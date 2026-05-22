@@ -32,9 +32,12 @@ Patchies Hydra runs inside the render worker, so the implementation must not use
 `window`, `document`, DOM canvases, or the global browser Hydra constructor.
 Instead, it uses worker-native primitives:
 
-- read the input Hydra source texture through the render worker WebGL context
-- convert the WebGL readback buffer to a `Uint8ClampedArray` before constructing
-  `ImageData`
+- read the input Hydra source texture through the render worker WebGL context,
+  flipping Y in the GPU copy shader so the CPU path does not need a scratch
+  canvas flip
+- use `PixelReadbackService` PBOs for async readback: one tick initiates the
+  read, a later tick harvests it with `clientWaitSync(..., 0, 0)` and encodes it
+  without blocking the render loop
 - build a `VideoFrame` from an `OffscreenCanvas`
 - encode with `VideoEncoder`
 - decode with `VideoDecoder`
