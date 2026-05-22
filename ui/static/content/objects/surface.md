@@ -131,10 +131,16 @@ setDrawMode('manual');
 noOutput();
 
 let dot = { x: 0.5, y: 0.5 };
+let dragging = false
 
 onPointer(({ x, y, type }) => {
-  dot = { x, y };
-  redraw();
+  if (type === 'down') dragging = true
+  if (type === 'up') dragging = false
+  
+  if (dragging) {
+    dot = { x, y };
+    redraw();
+  }
 });
 
 function draw() {
