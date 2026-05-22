@@ -21,13 +21,19 @@ fullscreen. Press **Shift+Esc** or send `{ type: 'collapse' }` to exit.
 ## Getting Started
 
 ```javascript
-onPointer(({ x, y, down }) => {
-  if (!down) return;
+noOutput();
+setDrawMode('interact');
+
+function draw() {
+  ctx.clearRect(0, 0, width, height);
+
+  if (!mouse.down) return;
 
   ctx.beginPath();
-  ctx.arc(x * width, y * height, 20, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.arc(mouse.x * width, mouse.y * height, 24, 0, Math.PI * 2);
   ctx.fill();
-});
+}
 ```
 
 ## Coordinate System
