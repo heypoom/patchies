@@ -34,9 +34,27 @@ Hydra-specific functions:
   of video source ports
   - `setVideoCount(2)` initializes `s0` and `s1` sources with the
      first two visual inlets
+
 - `setMouseScope('global' | 'local')` - sets mouse tracking scope
   - `'local'` (default) tracks mouse within the canvas preview
   - `'global'` tracks mouse across the entire screen
+
+## Datamoshing
+
+`datamosh(source, params)` routes a Hydra source through a native
+WebCodecs datamosh effect
+
+```javascript
+src(datamosh(s0, {
+  speed: 3, fps: 30, scale: 0.5
+})).out()
+```
+
+params: `speed`, `keyFrame`, `fps`, `bitrate`, `scale`, `width`, `height`
+
+Patchies' `datamosh()` helper is based on the WebCodecs approach from
+[@emptyflash](https://github.com/emptyflash)'s
+[hydra-datamosh extension](https://github.com/emptyflash/hydra-datamosh).
 
 ## Multiple Video Outputs
 
@@ -201,6 +219,8 @@ osc(() => fft().getEnergy('bass')).out()
 - [Hydra Documentation](https://hydra.ojack.xyz/docs)
 - [Hydra Functions Reference](https://hydra.ojack.xyz/api)
 - [Hydra Book](https://hydra-book.glitches.me)
+- [hydra-datamosh](https://github.com/emptyflash/hydra-datamosh) - WebCodecs
+  datamosh extension by @emptyflash
 - [Olivia Jack's Website](https://ojack.xyz/)
 
 ## See Also

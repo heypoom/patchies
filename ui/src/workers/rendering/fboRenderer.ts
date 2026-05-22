@@ -130,6 +130,7 @@ export class FBORenderer {
 
   /** Minimum interval between rendered frames (ms). 0 = unlimited. */
   private renderIntervalMs: number = 0;
+  public renderFpsCap: number = 0;
   private lastRenderTime: number = 0;
 
   /** Transport time from main thread for synchronized timing */
@@ -1750,6 +1751,8 @@ export class FBORenderer {
 
   /** Set the render FPS cap. 0 = unlimited (render every frame). */
   setRenderFpsCap(fps: number): void {
+    this.renderFpsCap = fps;
+
     // Subtract 1ms tolerance so rAF timing jitter doesn't cause us to skip
     // the correct frame (e.g. 60 FPS on 120Hz: 16.6ms is just under 16.67ms)
     this.renderIntervalMs = fps > 0 ? 1000 / fps - 1 : 0;

@@ -63,6 +63,7 @@ import { preset as preset61 } from './ee-2-multiverse';
 import { preset as preset62 } from './ee-3-lines';
 import { preset as preset63 } from './ee-5-fugitive-geometry-vhs';
 import { preset as preset64 } from './ee-1-eye-in-the-sky';
+import { preset as preset65 } from './datamosh';
 
 import type { HydraPreset } from './types';
 
@@ -135,6 +136,7 @@ export const HYDRA_PRESETS: Record<string, HydraPreset> = {
   'blend.hydra': preset4,
   'mask.hydra': preset5,
   'fft.hydra': preset6,
+  Datamosh: preset65,
   ...HYDRA_DEMO_PRESETS
 };
 

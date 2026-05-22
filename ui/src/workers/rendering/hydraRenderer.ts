@@ -14,6 +14,7 @@ import { getFramebuffer } from './utils';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { HYDRA_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+import type { HydraDatamoshRuntime } from './hydraDatamosh';
 
 export interface HydraRendererConfig extends BaseRendererConfig {
   videoInletCount?: number;
@@ -34,6 +35,7 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
   // Hydra-specific error throttling (separate from base class to avoid key collisions)
   private hydraLastRuntimeError: string | null = null;
   private hydraLastRuntimeErrorTime = 0;
+  private datamoshRuntime: HydraDatamoshRuntime | null = null;
 
   private constructor(
     config: HydraRendererConfig,
@@ -110,6 +112,8 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
 
       source.tick();
     });
+
+    this.datamoshRuntime?.tick();
 
     this.hydra.outputs.forEach((output) => {
       if (!this.hydra) return;
@@ -221,12 +225,30 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
 
       const { sources, outputs, hush, render } = this.hydra;
 
+      this.datamoshRuntime?.destroy();
+      this.datamoshRuntime = null;
+
+      // Lazy-load the datamosh plugin if it is used
+      if (usesHydraDatamosh(this.config.code)) {
+        const { HydraDatamoshRuntime } = await import('./hydraDatamosh');
+
+        this.datamoshRuntime = new HydraDatamoshRuntime(
+          this.hydra,
+          this.renderer,
+          this.createCustomConsole()
+        );
+      }
+
       // Apply Hydra-specific code transformation (.out() -> .out(o0))
       const hydraCode = processCode(this.config.code);
 
       // Build sN/oN context entries dynamically from the actual sources/outputs arrays
       const sourceContext = Object.fromEntries(sources.map((s, i) => [`s${i}`, s]));
       const outputContext = Object.fromEntries(outputs.map((o, i) => [`o${i}`, o]));
+
+      const datamoshContext = this.datamoshRuntime
+        ? { datamosh: this.datamoshRuntime.datamosh }
+        : {};
 
       const extraContext = {
         ...this.buildBaseExtraContext(),
@@ -248,6 +270,7 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
         ...outputContext,
 
         setFunction,
+        ...datamoshContext,
         setVideoCount: this.setVideoCount.bind(this),
         setMouseScope: this.setMouseScope.bind(this)
       };
@@ -278,6 +301,7 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
     if (!this.hydra) return;
 
     this.stop();
+    this.datamoshRuntime?.destroy();
 
     for (const source of this.hydra.sources) {
       source.getTexture()?.destroy();
@@ -288,6 +312,7 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
     }
 
     this.hydra = null;
+    this.datamoshRuntime = null;
 
     super.destroy();
   }
@@ -369,3 +394,5 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
 }
 
 const processCode = (code: string) => code.replace('.out()', '.out(o0)');
+
+export const usesHydraDatamosh = (code: string): boolean => /\bdatamosh\b/.test(code);

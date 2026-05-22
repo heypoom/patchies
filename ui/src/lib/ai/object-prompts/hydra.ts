@@ -9,6 +9,7 @@ Live coding video synthesis with chainable Hydra functions.
 - out(o0), out(o1), etc. - Route to specific outlet; setVideoCount(0, 2) creates 2 outlets
 - Multiple outputs: setVideoCount(0, 2) then osc().out(o0); noise().out(o1)
 - Standard Hydra: .blend(), .add(), .mult(), .diff(), .kaleid(), etc.
+- datamosh(source, params) - datamosh effect e.g. src(datamosh(s0, { speed: 2, fps: 30, scale: 0.5 })).out()
 
 **setFunction — define custom generators/modifiers (always \`await\`):**
 - \`type: 'src'\` — generator; receives \`vec2 _st\`, returns the function to call
