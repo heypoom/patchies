@@ -58,11 +58,11 @@ Escape always returns to `preview`, never to `stopped`.
 Available globals inside the code editor (same as `canvas.dom`):
 
 ```js
-canvas // HTMLCanvasElement — always at fullscreen resolution (window.innerWidth × window.innerHeight)
-ctx    // CanvasRenderingContext2D
-width  // = window.innerWidth  (constant regardless of preview vs fullscreen mode)
-height // = window.innerHeight (constant regardless of preview vs fullscreen mode)
-mouse  // { x, y, down, buttons } — normalized 0–1 coords
+canvas; // HTMLCanvasElement — always at fullscreen resolution (window.innerWidth × window.innerHeight)
+ctx; // CanvasRenderingContext2D
+width; // = window.innerWidth  (constant regardless of preview vs fullscreen mode)
+height; // = window.innerHeight (constant regardless of preview vs fullscreen mode)
+mouse; // { x, y, down, buttons } — normalized 0–1 coords
 ```
 
 In `preview` mode the canvas is CSS-scaled down to fit the node (same `PREVIEW_SCALE_FACTOR`
@@ -76,25 +76,25 @@ based on the current draw mode. No `requestAnimationFrame` or manual invocation 
 
 ```js
 function draw() {
-  ctx.clearRect(0, 0, width, height)
+  ctx.clearRect(0, 0, width, height);
   // draw your frame here
 }
 ```
 
 ```js
-setDrawMode('always')   // rAF loop — redraws every frame (default)
-setDrawMode('interact') // redraws only on pointer/touch events — saves CPU when idle
-setDrawMode('manual')   // user calls redraw() explicitly
+setDrawMode("always"); // rAF loop — redraws every frame (default)
+setDrawMode("interact"); // redraws only on pointer/touch events — saves CPU when idle
+setDrawMode("manual"); // user calls redraw() explicitly
 ```
 
 ```js
-redraw() // trigger one draw pass (useful in manual mode)
+redraw(); // trigger one draw pass (useful in manual mode)
 ```
 
 ### Video Output
 
 ```js
-noOutput() // disable CPU→GPU texture copy (default: enabled, same as canvas.dom)
+noOutput(); // disable CPU→GPU texture copy (default: enabled, same as canvas.dom)
 ```
 
 CPU→GPU copy is expensive. Call `noOutput()` if you don't need to composite the overlay
@@ -103,8 +103,8 @@ into the FBO pipeline.
 ### Surface Activation
 
 ```js
-activate() // enter fullscreen state: show overlay, hide XYFlow, freeze DOM-renderer nodes
-deactivate() // return to preview state: remove overlay, restore XYFlow and frozen nodes
+activate(); // enter fullscreen state: show overlay, hide XYFlow, freeze DOM-renderer nodes
+deactivate(); // return to preview state: remove overlay, restore XYFlow and frozen nodes
 ```
 
 Messages also trigger these:
@@ -117,8 +117,8 @@ Messages also trigger these:
 ### Browser Fullscreen (optional)
 
 ```js
-goFullscreen() // call document.documentElement.requestFullscreen()
-exitFullscreen() // call document.exitFullscreen()
+goFullscreen(); // call document.documentElement.requestFullscreen()
+exitFullscreen(); // call document.exitFullscreen()
 ```
 
 `surface` does NOT auto-fullscreen on activation. Use `goFullscreen()` explicitly,
@@ -126,16 +126,16 @@ or combine with activation:
 
 ```js
 recv((msg) => {
-  if (msg.type === 'live') {
-    activate()
-    goFullscreen()
+  if (msg.type === "live") {
+    activate();
+    goFullscreen();
   }
 
-  if (msg.type === 'exit') {
-    deactivate()
-    exitFullscreen()
+  if (msg.type === "exit") {
+    deactivate();
+    exitFullscreen();
   }
-})
+});
 ```
 
 ### Interaction Callbacks
@@ -144,13 +144,34 @@ recv((msg) => {
 onPointer((event) => {
   // event: { x, y, pressure, buttons, type: 'down'|'move'|'up' }
   // coordinates normalized 0–1
-})
+});
 
 onTouch((touches) => {
   // touches: Array<{ x, y, pressure, id }>
   // coordinates normalized 0–1
-})
+});
 ```
+
+### Mouse Forwarding
+
+By default, `surface` forwards pointer and wheel events to every mouse-aware
+render node in the graph (`glsl`, `swgl`, `regl`, `hydra`, `canvas`, `textmode`,
+`shaderpark`, and worker `three`).
+
+User code can narrow that behavior by node ID:
+
+```js
+setMouseForwarding({
+  enabled: true, // optional, default true
+  only: ["shaderpark-1", "three-1"], // optional whitelist
+  except: ["glsl-1"], // optional blacklist
+});
+```
+
+Set `enabled: false` or `only: []` to disable all pointer and wheel forwarding.
+`only` restricts forwarding to the listed node IDs. `except` removes matching
+node IDs after the whitelist is applied. Call `setMouseForwarding()` with no
+arguments to restore the default "all mouse-aware render nodes" behavior.
 
 ### Message Outlets
 
@@ -179,25 +200,25 @@ send(outlet, msg)
 
 ```js
 // Draw red rectangles wherever the user clicks
-setDrawMode('interact')
+setDrawMode("interact");
 
 onPointer((e) => {
-  if (!e.down) return
-  ctx.fillStyle = 'rgba(255, 0, 0, 0.5)'
-  ctx.fillRect(e.x * width - 25, e.y * height - 25, 50, 50)
-  redraw()
-})
+  if (!e.down) return;
+  ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+  ctx.fillRect(e.x * width - 25, e.y * height - 25, 50, 50);
+  redraw();
+});
 ```
 
 ```js
 // Flower blooms performance: send pointer position as messages,
 // receive bloom regions back from a JS node
-setDrawMode('interact')
-noOutput()
+setDrawMode("interact");
+noOutput();
 
 onPointer((e) => {
-  if (e.type === 'down') send(0, {x: e.x, y: e.y})
-})
+  if (e.type === "down") send(0, { x: e.x, y: e.y });
+});
 ```
 
 ---

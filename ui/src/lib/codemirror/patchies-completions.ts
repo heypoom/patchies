@@ -231,6 +231,13 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'noOutput()'
   },
   {
+    label: 'setMouseForwarding',
+    type: 'function',
+    detail: '(args?: { enabled?: boolean, only?: string[], except?: string[] }) => void',
+    info: 'Enable, disable, whitelist, or blacklist surface mouse forwarding by node ID. Use enabled: false or only: [] to disable all.',
+    apply: 'setMouseForwarding({ enabled: false })'
+  },
+  {
     label: 'setCanvasSize',
     type: 'function',
     detail: '(width: number, height: number) => void',
@@ -381,6 +388,7 @@ const topLevelOnlyFunctions = new Set([
   'setHidePorts',
   'setKeepAlive',
   'setMouseScope',
+  'setMouseForwarding',
   'setPortCount',
   'setPrimaryButton',
   'setResolution',
@@ -448,6 +456,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   noPan: MOUSE_INTERACTION_JS_NODES,
   noWheel: MOUSE_INTERACTION_JS_NODES,
   noInteract: MOUSE_INTERACTION_JS_NODES,
+  setMouseForwarding: ['surface'],
   noOutput: [
     'p5',
     'canvas',
