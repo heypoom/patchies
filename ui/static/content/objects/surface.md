@@ -59,12 +59,16 @@ onPointer(({ x, y, buttons, down, type }) => {
 
 Pointer events are also sent to the **pointer outlet** as messages.
 
+On touch devices, the first active touch point is also emitted as mouse-style
+pointer events. `touchstart` behaves like left-button down, `touchmove` behaves
+like drag, and `touchend` or `touchcancel` behaves like button up.
+
 ## Mouse Forwarding
 
 By default, pointer and wheel events are forwarded to all mouse-aware render
 nodes in the graph, including `glsl`, `hydra`, `shaderpark`, and `three`.
 The target list follows the current graph, so newly added or changed render
-nodes receive forwarded events on the next pointer or wheel event.
+nodes receive forwarded events on the next pointer, touch, or wheel event.
 
 Use `setMouseForwarding()` to restrict forwarding by node ID:
 
@@ -94,6 +98,10 @@ onTouch((touches) => {
   }
 });
 ```
+
+`onTouch()` remains separate from mouse forwarding, so multi-touch patches can
+still read all active touches while the first touch drives mouse-aware render
+nodes.
 
 ## Draw Modes
 

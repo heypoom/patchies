@@ -50,13 +50,16 @@ sphere(radius);
 
 Code that references `mouse` or `mouseIntersection()` receives normalized Shader
 Park mouse coordinates from the node preview and the shared surface preview.
+On touch devices, a single finger is translated to the same left-button mouse
+drag input, so mouse-reactive Shader Park sketches work from the preview or from
+a forwarded `surface` interaction.
 
 ## 3D Mode
 
 Use the object menu to switch Shader Park into 3D mode. The same Shader Park
 code renders through a Three.js camera, so you can drag the preview to orbit
 around the sculpture while keeping the video outlet connected to the render
-pipeline.
+pipeline. Single-touch drag orbits the 3D preview like a mouse drag.
 
 3D mode is heavier than the default flat mode. Use it when camera movement or
 Shader Park's Three.js view is part of the patch.

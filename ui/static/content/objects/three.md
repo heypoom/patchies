@@ -48,6 +48,10 @@ Use `three` when you want video chaining plus pointer drag, wheel, and camera
 controls. Use [three.dom](/docs/objects/three.dom) when you need the lowest input
 latency, keyboard events, or direct DOM APIs.
 
+On touch devices, a single finger is translated to the same left-button mouse
+drag input used by `mouse`, `onPointerDrag()`, and worker-safe `OrbitControls`.
+Pinch-to-zoom gestures are not translated to wheel input yet.
+
 ## Available Variables
 
 - `THREE` - the Three.js library

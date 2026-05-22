@@ -37,6 +37,7 @@ export class CanvasMouseHandler {
   private config: MouseHandlerConfig;
   private isMouseDown = false;
   private mouseState = { x: 0, y: 0, z: -1, w: -1 };
+  private primaryTouchId: number | null = null;
   private cleanupFn: (() => void) | null = null;
 
   constructor(config: MouseHandlerConfig) {
@@ -71,6 +72,8 @@ export class CanvasMouseHandler {
       this.cleanupFn();
       this.cleanupFn = null;
     }
+
+    this.primaryTouchId = null;
   }
 
   /**
@@ -126,12 +129,12 @@ export class CanvasMouseHandler {
   }
 
   private setupSimpleLocalMouse(config: SimpleMouseConfig) {
-    const handleLocalMouseMove = (event: MouseEvent) => {
+    const sendLocalPosition = (clientX: number, clientY: number) => {
       const rect = config.canvas.getBoundingClientRect();
 
       // Get position relative to canvas in screen pixels
-      const screenX = event.clientX - rect.left;
-      const screenY = event.clientY - rect.top;
+      const screenX = clientX - rect.left;
+      const screenY = clientY - rect.top;
 
       // Map from displayed rect to actual framebuffer resolution (outputSize)
       // Hydra uses standard screen coordinates (Y-down, origin top-left)
@@ -141,27 +144,68 @@ export class CanvasMouseHandler {
       this.glSystem.setMouseData(config.nodeId, x, y, 0, 0);
     };
 
+    const handleLocalMouseMove = (event: MouseEvent) => {
+      sendLocalPosition(event.clientX, event.clientY);
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      const touch = this.getPrimaryTouch(event);
+      if (!touch) return;
+
+      event.preventDefault();
+      sendLocalPosition(touch.clientX, touch.clientY);
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      const touch = this.getPrimaryTouch(event);
+      if (!touch) return;
+
+      event.preventDefault();
+      sendLocalPosition(touch.clientX, touch.clientY);
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (this.primaryTouchId === null) return;
+      if (this.findTouch(event.touches, this.primaryTouchId)) return;
+
+      this.primaryTouchId = null;
+    };
+
     config.canvas.addEventListener('mousemove', handleLocalMouseMove);
+    config.canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    config.canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    config.canvas.addEventListener('touchend', handleTouchEnd);
+    config.canvas.addEventListener('touchcancel', handleTouchEnd);
 
     this.cleanupFn = () => {
       config.canvas.removeEventListener('mousemove', handleLocalMouseMove);
+      config.canvas.removeEventListener('touchstart', handleTouchStart);
+      config.canvas.removeEventListener('touchmove', handleTouchMove);
+      config.canvas.removeEventListener('touchend', handleTouchEnd);
+      config.canvas.removeEventListener('touchcancel', handleTouchEnd);
     };
   }
 
   private attachShadertoy(): void {
     const config = this.config as ShadertoyMouseConfig;
 
-    const handleMouseMove = (event: MouseEvent) => {
+    const getFramebufferPosition = (clientX: number, clientY: number) => {
       const rect = config.canvas.getBoundingClientRect();
 
       // Get position relative to canvas in screen pixels
-      const screenX = event.clientX - rect.left;
-      const screenY = event.clientY - rect.top;
+      const screenX = clientX - rect.left;
+      const screenY = clientY - rect.top;
 
       // Map from displayed rect to actual framebuffer resolution (outputSize)
       // Y is flipped because gl_FragCoord has origin at bottom, but mouse events have origin at top
       const x = (screenX / rect.width) * config.outputWidth;
       const y = this.mapY(screenY, rect.height, config);
+
+      return { x, y };
+    };
+
+    const moveMouse = (clientX: number, clientY: number, buttons: number) => {
+      const { x, y } = getFramebufferPosition(clientX, clientY);
 
       this.mouseState.x = x;
       this.mouseState.y = y;
@@ -176,21 +220,12 @@ export class CanvasMouseHandler {
         this.mouseState.y,
         z,
         w,
-        event.buttons
+        buttons
       );
     };
 
-    const handleMouseDown = (event: MouseEvent) => {
-      const rect = config.canvas.getBoundingClientRect();
-
-      // Get position relative to canvas in screen pixels
-      const screenX = event.clientX - rect.left;
-      const screenY = event.clientY - rect.top;
-
-      // Map from displayed rect to actual framebuffer resolution (outputSize)
-      // Y is flipped because gl_FragCoord has origin at bottom, but mouse events have origin at top
-      const x = (screenX / rect.width) * config.outputWidth;
-      const y = this.mapY(screenY, rect.height, config);
+    const downMouse = (clientX: number, clientY: number, buttons: number) => {
+      const { x, y } = getFramebufferPosition(clientX, clientY);
 
       this.isMouseDown = true;
       this.mouseState.z = x;
@@ -205,11 +240,11 @@ export class CanvasMouseHandler {
         this.mouseState.y,
         this.mouseState.z,
         this.mouseState.w,
-        event.buttons || 1
+        buttons || 1
       );
     };
 
-    const handleMouseUp = () => {
+    const upMouse = () => {
       this.isMouseDown = false;
 
       // Send negative values since mouse is now up (released)
@@ -221,6 +256,42 @@ export class CanvasMouseHandler {
         -Math.abs(this.mouseState.w),
         0
       );
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      moveMouse(event.clientX, event.clientY, event.buttons);
+    };
+
+    const handleMouseDown = (event: MouseEvent) => {
+      downMouse(event.clientX, event.clientY, event.buttons || 1);
+    };
+
+    const handleMouseUp = () => {
+      upMouse();
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      const touch = this.getPrimaryTouch(event);
+      if (!touch) return;
+
+      event.preventDefault();
+      downMouse(touch.clientX, touch.clientY, 1);
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      const touch = this.getPrimaryTouch(event);
+      if (!touch) return;
+
+      event.preventDefault();
+      moveMouse(touch.clientX, touch.clientY, 1);
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (this.primaryTouchId === null) return;
+      if (this.findTouch(event.touches, this.primaryTouchId)) return;
+
+      this.primaryTouchId = null;
+      upMouse();
     };
 
     const handleWheel = (event: WheelEvent) => {
@@ -253,6 +324,10 @@ export class CanvasMouseHandler {
     config.canvas.addEventListener('mousedown', handleMouseDown);
     config.canvas.addEventListener('mouseup', handleMouseUp);
     config.canvas.addEventListener('mouseleave', handleMouseUp);
+    config.canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    config.canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    config.canvas.addEventListener('touchend', handleTouchEnd);
+    config.canvas.addEventListener('touchcancel', handleTouchEnd);
     config.canvas.addEventListener('wheel', handleWheel, { passive: false });
 
     this.cleanupFn = () => {
@@ -260,6 +335,10 @@ export class CanvasMouseHandler {
       config.canvas.removeEventListener('mousedown', handleMouseDown);
       config.canvas.removeEventListener('mouseup', handleMouseUp);
       config.canvas.removeEventListener('mouseleave', handleMouseUp);
+      config.canvas.removeEventListener('touchstart', handleTouchStart);
+      config.canvas.removeEventListener('touchmove', handleTouchMove);
+      config.canvas.removeEventListener('touchend', handleTouchEnd);
+      config.canvas.removeEventListener('touchcancel', handleTouchEnd);
       config.canvas.removeEventListener('wheel', handleWheel);
     };
   }
@@ -268,5 +347,25 @@ export class CanvasMouseHandler {
     const y = (screenY / rectHeight) * config.outputHeight;
 
     return config.flipY === false ? y : config.outputHeight - y;
+  }
+
+  private getPrimaryTouch(event: TouchEvent): Touch | null {
+    if (this.primaryTouchId !== null) {
+      return this.findTouch(event.touches, this.primaryTouchId);
+    }
+
+    const touch = event.touches.item(0);
+    this.primaryTouchId = touch?.identifier ?? null;
+
+    return touch;
+  }
+
+  private findTouch(touches: TouchList, id: number): Touch | null {
+    for (let index = 0; index < touches.length; index++) {
+      const touch = touches.item(index);
+      if (touch?.identifier === id) return touch;
+    }
+
+    return null;
   }
 }

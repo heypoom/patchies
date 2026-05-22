@@ -1,4 +1,5 @@
 import { handleCodeError } from '$lib/js-runner/handleCodeError';
+import { match } from 'ts-pattern';
 
 export type PointerEvent_ = {
   x: number;
@@ -41,6 +42,7 @@ export interface SurfaceListenersOptions {
 
 export class SurfaceListeners {
   private cleanup: (() => void) | null = null;
+  private primaryTouchId: number | null = null;
 
   attach(canvas: HTMLCanvasElement, opts: SurfaceListenersOptions): void {
     this.detach();
@@ -90,6 +92,17 @@ export class SurfaceListeners {
       }));
     };
 
+    const normalizeTouch = (touch: Touch): TouchPoint => {
+      const rect = getContentRect();
+
+      return {
+        id: touch.identifier,
+        x: (touch.clientX - rect.left) / rect.width,
+        y: (touch.clientY - rect.top) / rect.height,
+        pressure: touch.force ?? 0
+      };
+    };
+
     const fireTouches = (e: TouchEvent) => {
       e.preventDefault();
 
@@ -100,6 +113,52 @@ export class SurfaceListeners {
       } catch (err) {
         handleCodeError(err, opts.code, opts.nodeId, opts.customConsole, opts.wrapperOffset);
       }
+    };
+
+    const fireTouchPointer = (event: TouchEvent, type: 'down' | 'move' | 'up') => {
+      const touch = match(type)
+        .with('up', () => {
+          if (this.primaryTouchId === null) return null;
+          if (this.findTouch(event.touches, this.primaryTouchId)) return null;
+
+          const endedTouch = this.findTouch(event.changedTouches, this.primaryTouchId);
+          this.primaryTouchId = null;
+
+          return endedTouch;
+        })
+        .otherwise(() => this.getPrimaryTouch(event));
+
+      if (!touch) return;
+
+      const point = normalizeTouch(touch);
+
+      try {
+        opts.onPointer({
+          x: point.x,
+          y: point.y,
+          pressure: point.pressure,
+          buttons: type === 'up' ? 0 : 1,
+          down: type !== 'up',
+          type
+        });
+      } catch (err) {
+        handleCodeError(err, opts.code, opts.nodeId, opts.customConsole, opts.wrapperOffset);
+      }
+    };
+
+    const onTouchStart = (event: TouchEvent) => {
+      fireTouches(event);
+      fireTouchPointer(event, 'down');
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      fireTouches(event);
+      fireTouchPointer(event, 'move');
+    };
+
+    const onTouchEnd = (event: TouchEvent) => {
+      fireTouches(event);
+      fireTouchPointer(event, 'up');
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -164,9 +223,10 @@ export class SurfaceListeners {
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('pointerleave', onPointerLeave);
     canvas.addEventListener('wheel', onWheel, { passive: false });
-    canvas.addEventListener('touchstart', fireTouches, { passive: false });
-    canvas.addEventListener('touchmove', fireTouches, { passive: false });
-    canvas.addEventListener('touchend', fireTouches, { passive: false });
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
 
     this.cleanup = () => {
       canvas.removeEventListener('pointermove', onPointerMove);
@@ -174,14 +234,36 @@ export class SurfaceListeners {
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointerleave', onPointerLeave);
       canvas.removeEventListener('wheel', onWheel);
-      canvas.removeEventListener('touchstart', fireTouches);
-      canvas.removeEventListener('touchmove', fireTouches);
-      canvas.removeEventListener('touchend', fireTouches);
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
+      canvas.removeEventListener('touchcancel', onTouchEnd);
     };
   }
 
   detach(): void {
     this.cleanup?.();
     this.cleanup = null;
+    this.primaryTouchId = null;
+  }
+
+  private getPrimaryTouch(event: TouchEvent): Touch | null {
+    if (this.primaryTouchId !== null) {
+      return this.findTouch(event.touches, this.primaryTouchId);
+    }
+
+    const touch = event.touches.item(0);
+    this.primaryTouchId = touch?.identifier ?? null;
+
+    return touch;
+  }
+
+  private findTouch(touches: TouchList, id: number): Touch | null {
+    for (let index = 0; index < touches.length; index++) {
+      const touch = touches.item(index);
+      if (touch?.identifier === id) return touch;
+    }
+
+    return null;
   }
 }
