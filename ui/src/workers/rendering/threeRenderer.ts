@@ -89,6 +89,7 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
     // Update mouse state from render params
     this.mouseX = params.mouseX;
     this.mouseY = params.mouseY;
+
     this.interaction.updatePointer({
       mouseX: params.mouseX,
       mouseY: params.mouseY,
@@ -96,6 +97,7 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
       mouseW: params.mouseW,
       mouseButtons: params.mouseButtons
     });
+
     this.interaction.flushWheelCallbacks();
 
     // Store input textures for getTexture() access
@@ -171,6 +173,7 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
       const THREE = this.THREE;
       const renderer = this.threeWebGLRenderer;
       const renderTarget = this.renderTarget;
+
       const OrbitControls = createWorkerOrbitControlsClass(
         THREE,
         this.interaction,

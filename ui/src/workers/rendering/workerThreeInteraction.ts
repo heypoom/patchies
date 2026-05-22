@@ -95,6 +95,7 @@ export class WorkerThreeInteraction {
 
     if (!down) {
       this.dragEvents = [];
+
       return;
     }
 
@@ -120,6 +121,7 @@ export class WorkerThreeInteraction {
     this.mouse.x = event.x;
     this.mouse.y = event.y;
     this.mouse.wheelDelta = event.deltaY;
+
     this.wheelEvents.push(event);
   }
 
@@ -136,6 +138,7 @@ export class WorkerThreeInteraction {
   consumeDragEvents() {
     const events = this.dragEvents;
     this.dragEvents = [];
+
     return events;
   }
 
@@ -143,6 +146,7 @@ export class WorkerThreeInteraction {
     const events = this.wheelEvents;
     this.wheelEvents = [];
     this.notifiedWheelCount = 0;
+
     return events;
   }
 
@@ -186,11 +190,13 @@ export function createWorkerOrbitControlsClass(
     minDistance = 0;
     maxDistance = Infinity;
     screenSpacePanning = true;
+
     mouseButtons = {
       LEFT: THREE.MOUSE.ROTATE,
       MIDDLE: THREE.MOUSE.DOLLY,
       RIGHT: THREE.MOUSE.PAN
     };
+
     target: Vector3;
 
     private spherical: Spherical;
@@ -198,18 +204,18 @@ export function createWorkerOrbitControlsClass(
     private target0: Vector3;
     private zoom0: number;
 
-    constructor(
-      public object: ControlledCamera,
-      public domElement?: unknown
-    ) {
+    constructor(public object: ControlledCamera) {
       this.target = new THREE.Vector3();
       interaction.restoreOrbitSnapshot(object, this.target);
+
       this.spherical = new THREE.Spherical().setFromVector3(
         object.position.clone().sub(this.target)
       );
+
       this.position0 = object.position.clone();
       this.target0 = this.target.clone();
       this.zoom0 = 'zoom' in object ? object.zoom : 1;
+
       onRegister?.();
       this.update();
     }
@@ -295,11 +301,13 @@ export function createWorkerOrbitControlsClass(
 
       if (action === THREE.MOUSE.PAN && this.enablePan) {
         this.applyPan(event.dx, event.dy);
+
         return true;
       }
 
       if (action === THREE.MOUSE.DOLLY && this.enableZoom) {
         this.spherical.radius *= Math.exp(event.dy * 0.01 * this.zoomSpeed);
+
         return true;
       }
 
@@ -309,6 +317,7 @@ export function createWorkerOrbitControlsClass(
 
         this.rotateLeft(((2 * Math.PI * event.dx) / safeHeight) * this.rotateSpeed);
         this.rotateUp(((2 * Math.PI * event.dy) / safeHeight) * this.rotateSpeed);
+
         return true;
       }
 
@@ -318,16 +327,20 @@ export function createWorkerOrbitControlsClass(
     private getMouseAction(buttons: number) {
       if ((buttons & 2) === 2) return this.mouseButtons.RIGHT;
       if ((buttons & 4) === 4) return this.mouseButtons.MIDDLE;
+
       return this.mouseButtons.LEFT;
     }
 
     private applyPan(deltaX: number, deltaY: number) {
       const [, height] = getSize();
       const safeHeight = Math.max(1, height);
+
       const offset = this.object.position.clone().sub(this.target);
       const targetDistance = this.getPerspectiveTargetDistance(offset);
+
       const panX = ((2 * deltaX * targetDistance) / safeHeight) * this.panSpeed;
       const panY = ((2 * deltaY * targetDistance) / safeHeight) * this.panSpeed;
+
       const panOffset = new THREE.Vector3();
       const matrix = this.object.matrix;
 
@@ -358,6 +371,7 @@ export function createWorkerOrbitControlsClass(
 
     private applyCamera() {
       this.spherical.makeSafe();
+
       this.spherical.radius = Math.max(
         this.minDistance,
         Math.min(this.maxDistance, this.spherical.radius)
@@ -365,6 +379,7 @@ export function createWorkerOrbitControlsClass(
 
       const offset = new THREE.Vector3().setFromSpherical(this.spherical);
       this.object.position.copy(this.target).add(offset);
+
       this.object.lookAt(this.target);
       this.object.updateProjectionMatrix();
     }
