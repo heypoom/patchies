@@ -73,6 +73,7 @@
   let isPaused = $state(false);
   let errorMessage = $state<string | null>(null);
   let showSettings = $state(false);
+  const CaptureIcon = $derived(isPaused ? Play : Pause);
 
   // Track which pipeline is currently in use (set on capture start)
   let currentPipeline = $state<'webcodecs' | 'fallback'>('fallback');
@@ -421,7 +422,7 @@
               class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
               onclick={togglePause}
             >
-              <svelte:component this={isPaused ? Play : Pause} class="h-4 w-4 text-zinc-300" />
+              <CaptureIcon class="h-4 w-4 text-zinc-300" />
             </button>
             <button
               title="Stop webcam"

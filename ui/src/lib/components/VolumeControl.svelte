@@ -63,6 +63,7 @@
 
     return Volume2;
   });
+  const VolumeIcon = $derived(volumeIcon);
 
   onMount(() => {
     setInterval(() => {
@@ -81,10 +82,7 @@
         onmouseenter={() => (isHovered = true)}
         onmouseleave={() => (isHovered = false)}
       >
-        <svelte:component
-          this={volumeIcon}
-          class="h-4 w-4 {isDspOff ? 'text-red-400' : 'text-zinc-300'}"
-        />
+        <VolumeIcon class="h-4 w-4 {isDspOff ? 'text-red-400' : 'text-zinc-300'}" />
       </button>
     {/snippet}
   </TooltipTrigger>

@@ -159,7 +159,7 @@
 
       <!-- Unipolar -->
       <div>
-        <label class="flex cursor-pointer items-center justify-between">
+        <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-zinc-300">Unipolar</span>
           <button
             class={[
@@ -167,6 +167,8 @@
               unipolar ? 'bg-green-600' : 'bg-zinc-700'
             ]}
             onclick={() => onUnipolarChange(!unipolar)}
+            aria-label="Toggle unipolar"
+            aria-pressed={unipolar}
           >
             <div
               class={[
@@ -175,7 +177,7 @@
               ]}
             ></div>
           </button>
-        </label>
+        </div>
       </div>
 
       <!-- Decay -->

@@ -50,6 +50,7 @@
   const count = $derived(Math.max(ASM_MEMORY_GRID_COLUMNS * rows, values.length));
   const overGridLimit = $derived(count > ASM_MEMORY_GRID_LIMIT);
   const base = $derived(format === 'hex' ? 16 : 10);
+  const FormatIcon = $derived(format === 'hex' ? Hash : Binary);
 
   const handleMessage: MessageCallbackFn = async (message, meta) => {
     const isMatchSimpleMessage = match(message)
@@ -194,7 +195,7 @@
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button onclick={toggleFormat} class="cursor-pointer rounded p-1 hover:bg-zinc-700">
-              <svelte:component this={format === 'hex' ? Hash : Binary} class="h-4 w-4" />
+              <FormatIcon class="h-4 w-4" />
             </button>
           </Tooltip.Trigger>
           <Tooltip.Content>Toggle format (hex/decimal)</Tooltip.Content>
@@ -339,8 +340,12 @@
       <div class="nodrag w-48 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
         <div class="space-y-3">
           <div>
-            <label class="mb-2 block text-xs font-medium text-zinc-300">Rows</label>
+            <label
+              class="mb-2 block text-xs font-medium text-zinc-300"
+              for="assembly-memory-rows-{nodeId}">Rows</label
+            >
             <input
+              id="assembly-memory-rows-{nodeId}"
               type="number"
               min="1"
               max="100"

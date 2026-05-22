@@ -112,7 +112,7 @@
   // Time edit state
   let isEditingTime = $state(false);
   let editTimeValue = $state('');
-  let timeInputRef: HTMLInputElement | null = null;
+  let timeInputRef: HTMLInputElement | null = $state(null);
   let clickTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Format time display
@@ -178,7 +178,7 @@
   // Time signature edit state
   let isEditingTimeSig = $state(false);
   let editTimeSignatureValue = $state('');
-  let timeSigInputRef: HTMLInputElement | null = null;
+  let timeSigInputRef: HTMLInputElement | null = $state(null);
 
   const timeSignatureDisplay = $derived(
     `${$transportStore.timeSignature[0]}/${$transportStore.timeSignature[1]}`

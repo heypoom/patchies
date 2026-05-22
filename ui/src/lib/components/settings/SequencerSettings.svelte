@@ -86,7 +86,7 @@
   <div class="flex flex-col gap-3">
     <!-- Steps -->
     <div>
-      <label class="mb-2 block text-xs font-medium text-zinc-300">Steps</label>
+      <span class="mb-2 block text-xs font-medium text-zinc-300">Steps</span>
       <div class="flex flex-wrap gap-1">
         {#each STEP_COUNTS as count}
           <button
@@ -106,7 +106,7 @@
 
     <!-- Output mode (dynamic based on outlet mode) -->
     <div class="py-1.5">
-      <label class="mb-2 block text-xs font-medium text-zinc-300">Output</label>
+      <span class="mb-2 block text-xs font-medium text-zinc-300">Output</span>
       <div class="flex gap-1">
         {#each activeOutputModes as mode}
           <Tooltip.Root>
@@ -224,9 +224,9 @@
 
     <!-- Swing -->
     <div>
-      <label class="mb-2 block text-xs font-medium text-zinc-300">
+      <span class="mb-2 block text-xs font-medium text-zinc-300">
         Swing: {swing}%
-      </label>
+      </span>
 
       <SettingsSlider
         min={0}
@@ -242,7 +242,7 @@
     <!-- Tracks -->
     <div>
       <div class="mb-2 flex items-center justify-between">
-        <label class="text-xs font-medium text-zinc-300">Tracks</label>
+        <span class="text-xs font-medium text-zinc-300">Tracks</span>
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button

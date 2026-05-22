@@ -52,6 +52,7 @@
 
     return VolumeX;
   });
+  const StatusIcon = $derived(statusIcon);
 
   const dataFieldType = $derived.by(() => {
     return match(event)
@@ -242,7 +243,7 @@
             onclick={toggleActive}
             title={isActive ? 'Deactivate' : 'Activate'}
           >
-            <svelte:component this={statusIcon} class="h-4 w-4" />
+            <StatusIcon class="h-4 w-4" />
 
             <div class="mt-1 max-w-[100px] truncate text-[10px] text-zinc-500">
               {midiSystem.getOutputById(deviceId)?.name || 'Unknown'}

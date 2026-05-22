@@ -39,7 +39,7 @@
   const { warnIfNoAudioConnection } = useAudioOutletWarning(nodeId);
 
   let strudelEditor: StrudelEditor | null = null;
-  let messageContext: MessageContext;
+  let messageContext: MessageContext | undefined = $state();
   let consoleRef: VirtualConsole | null = $state(null);
   let initTimeout: ReturnType<typeof setTimeout> | null = null;
   let destroyed = false;

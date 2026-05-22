@@ -218,10 +218,8 @@
                 </div>
               </div>
             {:else}
-              <svelte:component
-                this={isLoading ? Loader : ImageIcon}
-                class={`h-8 w-8 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`}
-              />
+              {@const PreviewIcon = isLoading ? Loader : ImageIcon}
+              <PreviewIcon class={`h-8 w-8 text-zinc-300 ${isLoading ? 'animate-spin' : ''}`} />
             {/if}
           </div>
         </div>

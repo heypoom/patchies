@@ -269,10 +269,8 @@
               {keybind || 'no keybind'}
             </div>
           {:else}
-            <svelte:component
-              this={statusIcon}
-              class={`h-4 w-4 ${isListening ? 'text-green-400' : 'text-zinc-500'}`}
-            />
+            {@const StatusIcon = statusIcon}
+            <StatusIcon class={`h-4 w-4 ${isListening ? 'text-green-400' : 'text-zinc-500'}`} />
           {/if}
         </button>
 
@@ -298,7 +296,7 @@
       <div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
         <div class="space-y-4">
           <div>
-            <label class="mb-2 block text-xs font-medium text-zinc-300">Mode</label>
+            <span class="mb-2 block text-xs font-medium text-zinc-300">Mode</span>
             <div class="flex gap-2">
               <label class="flex items-center">
                 <input
@@ -334,7 +332,7 @@
           </div>
 
           <div>
-            <label class="mb-2 block text-xs font-medium text-zinc-300">Trigger</label>
+            <span class="mb-2 block text-xs font-medium text-zinc-300">Trigger</span>
             <div class="flex gap-2">
               <label class="flex items-center">
                 <input
@@ -386,9 +384,13 @@
 
           {#if mode === 'filtered'}
             <div>
-              <label class="mb-2 block text-xs font-medium text-zinc-300">Keybind</label>
+              <label
+                class="mb-2 block text-xs font-medium text-zinc-300"
+                for="keyboard-keybind-{nodeId}">Keybind</label
+              >
 
               <input
+                id="keyboard-keybind-{nodeId}"
                 type="text"
                 value={keybind}
                 placeholder="Press a key or type here"
@@ -411,7 +413,7 @@
           {/if}
 
           <div>
-            <label class="mb-2 block text-xs font-medium text-zinc-300">Options</label>
+            <span class="mb-2 block text-xs font-medium text-zinc-300">Options</span>
 
             <label class="flex items-center">
               <input

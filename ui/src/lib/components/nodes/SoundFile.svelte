@@ -391,6 +391,7 @@
       </Dialog.Description>
     </Dialog.Header>
     <div class="py-2">
+      <!-- svelte-ignore a11y_autofocus -->
       <input
         class="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm text-zinc-200 outline-none focus:border-zinc-500"
         placeholder="table name"

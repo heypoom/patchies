@@ -18,6 +18,7 @@
   const { updateNodeData } = useSvelteFlow();
 
   let showTextInput = $state(false);
+  const ToggleIcon = $derived(showTextInput ? ChevronUp : Edit);
   let displayText = $derived(data.displayText || '');
   let url = $derived(data.url || '');
 
@@ -51,7 +52,7 @@
           onclick={() => (showTextInput = !showTextInput)}
           title="Configure Link"
         >
-          <svelte:component this={showTextInput ? ChevronUp : Edit} class="h-4 w-4 text-zinc-300" />
+          <ToggleIcon class="h-4 w-4 text-zinc-300" />
         </button>
       </div>
 

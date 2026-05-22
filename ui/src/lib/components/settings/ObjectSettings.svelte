@@ -298,14 +298,14 @@
           {#if field.description}
             <Tooltip.Root>
               <Tooltip.Trigger>
-                <label class="mb-2 block cursor-default text-xs font-medium text-zinc-300"
-                  >{field.label}</label
+                <span class="mb-2 block cursor-default text-xs font-medium text-zinc-300"
+                  >{field.label}</span
                 >
               </Tooltip.Trigger>
               <Tooltip.Content>{field.description}</Tooltip.Content>
             </Tooltip.Root>
           {:else}
-            <label class="mb-2 block text-xs font-medium text-zinc-300">{field.label}</label>
+            <span class="mb-2 block text-xs font-medium text-zinc-300">{field.label}</span>
           {/if}
 
           <div class="flex flex-wrap gap-1">
@@ -350,14 +350,14 @@
           {#if field.description}
             <Tooltip.Root>
               <Tooltip.Trigger>
-                <label class="mb-2 block cursor-default text-xs font-medium text-zinc-300"
-                  >{field.label}</label
+                <span class="mb-2 block cursor-default text-xs font-medium text-zinc-300"
+                  >{field.label}</span
                 >
               </Tooltip.Trigger>
               <Tooltip.Content>{field.description}</Tooltip.Content>
             </Tooltip.Root>
           {:else}
-            <label class="mb-2 block text-xs font-medium text-zinc-300">{field.label}</label>
+            <span class="mb-2 block text-xs font-medium text-zinc-300">{field.label}</span>
           {/if}
 
           {#if field.presets && field.presets.length > 0}

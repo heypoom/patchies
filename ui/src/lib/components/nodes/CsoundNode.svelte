@@ -41,6 +41,7 @@
   const tracker = useNodeDataTracker(nodeId);
 
   const syncTransport = $derived(data.syncTransport ?? false);
+  const PlaybackIcon = $derived(isPlaying ? Pause : Play);
 
   function setSyncTransport(value: boolean) {
     const oldValue = syncTransport;
@@ -192,7 +193,7 @@
                   onclick={handlePlayPause}
                   class="cursor-pointer rounded p-1 hover:bg-zinc-700"
                 >
-                  <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4" />
+                  <PlaybackIcon class="h-4 w-4" />
                 </button>
               </Tooltip.Trigger>
               <Tooltip.Content>{isPlaying ? 'Pause' : 'Play'}</Tooltip.Content>

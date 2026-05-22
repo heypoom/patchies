@@ -305,7 +305,7 @@
 
   <div class="group relative">
     <!-- Transparent bridge so group-hover stays active between title and node -->
-    <div class="absolute inset-x-0 -top-7 h-7" />
+    <div class="absolute inset-x-0 -top-7 h-7"></div>
     <!-- Title label (safe click target for selecting without entering canvas) -->
     <div
       class={[

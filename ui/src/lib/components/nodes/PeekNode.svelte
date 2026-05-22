@@ -24,6 +24,7 @@
   const jsRunner = JSRunner.getInstance();
 
   let showEditor = $state(false);
+  const ToggleIcon = $derived(showEditor ? ChevronUp : Code);
   let expr = $derived(data.expr || '');
   let latestValue = $state<unknown>(undefined);
   let evaluatedValue = $state<unknown>(undefined);
@@ -104,7 +105,7 @@
     onclick={() => (showEditor = !showEditor)}
     title="Toggle expression editor"
   >
-    <svelte:component this={showEditor ? ChevronUp : Code} class="h-3.5 w-3.5 text-zinc-400" />
+    <ToggleIcon class="h-3.5 w-3.5 text-zinc-400" />
   </button>
 
   <div class="flex flex-col gap-1">

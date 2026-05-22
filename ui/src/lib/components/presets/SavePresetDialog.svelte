@@ -209,7 +209,7 @@
 
       <!-- Location (Library + Folder) -->
       <div class="space-y-2">
-        <label class="text-sm font-medium text-zinc-300">Save to</label>
+        <span class="text-sm font-medium text-zinc-300">Save to</span>
         <button
           type="button"
           onclick={() => (showFolderPicker = true)}

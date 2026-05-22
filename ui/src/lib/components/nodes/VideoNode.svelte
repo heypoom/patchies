@@ -83,6 +83,8 @@
   let isVideoLoaded = $state(false);
   let isPaused = $state(true);
   let errorMessage = $state<string | null>(null);
+  const PauseIcon = $derived(isPaused ? Play : Pause);
+  const LoadingIcon = $derived(errorMessage ? OctagonX : Loader);
   let bitmapFrameId: number | undefined;
   let videoFrameCallbackId: number | undefined;
   let useVideoFrameCallback = false;
@@ -733,7 +735,7 @@
               class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
               onclick={togglePause}
             >
-              <svelte:component this={isPaused ? Play : Pause} class="h-4 w-4 text-zinc-300" />
+              <PauseIcon class="h-4 w-4 text-zinc-300" />
             </button>
             <button
               title="Restart video"
@@ -848,8 +850,7 @@
               style="width: {nodeWidth ?? $previewWidth}px; height: {nodeHeight ??
                 $previewHeight}px"
             >
-              <svelte:component
-                this={errorMessage ? OctagonX : Loader}
+              <LoadingIcon
                 class={[
                   'h-8 w-8 text-zinc-400',
                   !errorMessage ? 'animate-spin' : 'text-red-400'

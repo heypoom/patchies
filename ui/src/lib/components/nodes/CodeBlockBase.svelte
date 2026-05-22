@@ -203,6 +203,7 @@
 
     return Play;
   });
+  const PlayOrStopIcon = $derived(playOrStopIcon);
 
   onMount(() => {
     // Listen for console output events to capture lineErrors
@@ -451,7 +452,7 @@
             aria-label={isLongRunningTaskActive ? 'Stop' : 'Run code'}
           >
             <div class={[isRunning && !isLongRunningTaskActive ? 'animate-spin opacity-30' : '']}>
-              <svelte:component this={playOrStopIcon} size="16px" />
+              <PlayOrStopIcon size="16px" />
             </div>
           </button>
 

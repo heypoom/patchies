@@ -60,6 +60,7 @@
     if (isListening) return Music;
     return VolumeX;
   });
+  const StatusIcon = $derived(statusIcon);
 
   const handleMessage: MessageCallbackFn = (message) => {
     try {
@@ -199,7 +200,7 @@
             ]}
             onclick={toggleListening}
           >
-            <svelte:component this={statusIcon} class="h-4 w-4" />
+            <StatusIcon class="h-4 w-4" />
 
             <div class="mt-1 max-w-[100px] truncate text-[10px] text-zinc-500">
               {deviceName}
@@ -253,8 +254,12 @@
           </div>
 
           <div>
-            <label class="mb-2 block text-xs font-medium text-zinc-300">Channel</label>
+            <label
+              class="mb-2 block text-xs font-medium text-zinc-300"
+              for="midi-input-channel-{nodeId}">Channel</label
+            >
             <select
+              id="midi-input-channel-{nodeId}"
               class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
               value={channel}
               onchange={(e) => {

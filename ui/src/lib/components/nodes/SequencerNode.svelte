@@ -543,7 +543,7 @@
                           style:background-color={track.color}
                           style:opacity={isStepOn ? '0.85' : '0.2'}
                           style:height="{barValue * 100}%"
-                        />
+                        ></div>
                       </div>
                     {/if}
                   {/each}

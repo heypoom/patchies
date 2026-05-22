@@ -289,8 +289,12 @@
   <div class="nodrag w-64 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
     <div class="space-y-4">
       <div>
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Machine ID</label>
+        <label
+          class="mb-2 block text-xs font-medium text-zinc-300"
+          for="assembly-value-machine-{nodeId}">Machine ID</label
+        >
         <input
+          id="assembly-value-machine-{nodeId}"
           type="number"
           min="0"
           max="255"
@@ -306,8 +310,12 @@
       </div>
 
       <div>
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Memory Address (hex)</label>
+        <label
+          class="mb-2 block text-xs font-medium text-zinc-300"
+          for="assembly-value-address-{nodeId}">Memory Address (hex)</label
+        >
         <input
+          id="assembly-value-address-{nodeId}"
           type="text"
           value={address.toString(16)}
           onchange={(e) => {
@@ -325,8 +333,12 @@
       </div>
 
       <div>
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Size (bytes to display)</label>
+        <label
+          class="mb-2 block text-xs font-medium text-zinc-300"
+          for="assembly-value-size-{nodeId}">Size (bytes to display)</label
+        >
         <input
+          id="assembly-value-size-{nodeId}"
           type="number"
           min="1"
           max="32"
@@ -344,8 +356,12 @@
       </div>
 
       <div>
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Display Format</label>
+        <label
+          class="mb-2 block text-xs font-medium text-zinc-300"
+          for="assembly-value-format-{nodeId}">Display Format</label
+        >
         <select
+          id="assembly-value-format-{nodeId}"
           value={format}
           onchange={(e) => {
             const oldFormat = format;
@@ -362,8 +378,11 @@
       </div>
 
       <div class="flex items-center gap-x-2">
-        <label class="text-xs font-medium text-zinc-300">Signed</label>
+        <label class="text-xs font-medium text-zinc-300" for="assembly-value-signed-{nodeId}"
+          >Signed</label
+        >
         <input
+          id="assembly-value-signed-{nodeId}"
           type="checkbox"
           checked={signed}
           onchange={(e) => {
@@ -377,7 +396,7 @@
       </div>
 
       <div>
-        <label class="mb-2 block text-xs font-medium text-zinc-300">Memory Color</label>
+        <span class="mb-2 block text-xs font-medium text-zinc-300">Memory Color</span>
         <div class="flex flex-wrap gap-1">
           {#each regionPalettes as palette, i}
             <button
@@ -392,6 +411,7 @@
                 palette.bg
               ]}
               title={palette.name}
+              aria-label={palette.name}
             ></button>
           {/each}
         </div>

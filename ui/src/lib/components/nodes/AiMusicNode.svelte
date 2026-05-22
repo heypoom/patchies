@@ -167,6 +167,7 @@
       .with('loading', () => Loader2)
       .otherwise(() => Play);
   }
+  const PlayIcon = $derived(getPlayIcon());
 
   function getPlayTitle() {
     return match(playbackState)
@@ -189,7 +190,7 @@
           onclick={togglePlayback}
           title={getPlayTitle()}
         >
-          <svelte:component this={getPlayIcon()} class={['h-4 w-4 text-zinc-300']} />
+          <PlayIcon class={['h-4 w-4 text-zinc-300']} />
         </button>
       </div>
     </div>

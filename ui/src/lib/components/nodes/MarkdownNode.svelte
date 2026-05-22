@@ -150,7 +150,7 @@
   </div>
 </div>
 
-<style scoped>
+<style lang="postcss" scoped>
   @reference "../../../app.css";
 
   .overtype-editor :global(.overtype-wrapper) {

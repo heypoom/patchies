@@ -47,7 +47,7 @@
   const { updateNode } = useSvelteFlow();
 
   let messageContext: MessageContext;
-  let urlInputRef: HTMLInputElement;
+  let urlInputRef: HTMLInputElement | undefined = $state();
   let iframeRef: HTMLIFrameElement | undefined = $state();
   let showUrlInput = $state(false);
   let tempUrl = $state('');
