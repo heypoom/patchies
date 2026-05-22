@@ -1,4 +1,5 @@
 import { GLSystem } from './GLSystem';
+import { match } from 'ts-pattern';
 
 export type MouseScope = 'local' | 'global';
 
@@ -18,6 +19,8 @@ export interface ShadertoyMouseConfig {
   outputWidth: number;
   outputHeight: number;
   wheelZoom?: boolean;
+  wheelTarget?: 'shaderparkOrbit' | 'threeInteraction';
+  flipY?: boolean;
 }
 
 export type MouseHandlerConfig = SimpleMouseConfig | ShadertoyMouseConfig;
@@ -160,7 +163,7 @@ export class CanvasMouseHandler {
       // Map from displayed rect to actual framebuffer resolution (outputSize)
       // Y is flipped because gl_FragCoord has origin at bottom, but mouse events have origin at top
       const x = (screenX / rect.width) * config.outputWidth;
-      const y = config.outputHeight - (screenY / rect.height) * config.outputHeight;
+      const y = this.mapY(screenY, rect.height, config);
 
       this.mouseState.x = x;
       this.mouseState.y = y;
@@ -169,7 +172,14 @@ export class CanvasMouseHandler {
       const z = this.isMouseDown ? Math.abs(this.mouseState.z) : -Math.abs(this.mouseState.z);
       const w = this.isMouseDown ? Math.abs(this.mouseState.w) : -Math.abs(this.mouseState.w);
 
-      this.glSystem.setMouseData(config.nodeId, this.mouseState.x, this.mouseState.y, z, w);
+      this.glSystem.setMouseData(
+        config.nodeId,
+        this.mouseState.x,
+        this.mouseState.y,
+        z,
+        w,
+        event.buttons
+      );
     };
 
     const handleMouseDown = (event: MouseEvent) => {
@@ -182,7 +192,7 @@ export class CanvasMouseHandler {
       // Map from displayed rect to actual framebuffer resolution (outputSize)
       // Y is flipped because gl_FragCoord has origin at bottom, but mouse events have origin at top
       const x = (screenX / rect.width) * config.outputWidth;
-      const y = config.outputHeight - (screenY / rect.height) * config.outputHeight;
+      const y = this.mapY(screenY, rect.height, config);
 
       this.isMouseDown = true;
       this.mouseState.z = x;
@@ -196,7 +206,8 @@ export class CanvasMouseHandler {
         this.mouseState.x,
         this.mouseState.y,
         this.mouseState.z,
-        this.mouseState.w
+        this.mouseState.w,
+        event.buttons || 1
       );
     };
 
@@ -209,7 +220,8 @@ export class CanvasMouseHandler {
         this.mouseState.x,
         this.mouseState.y,
         -Math.abs(this.mouseState.z),
-        -Math.abs(this.mouseState.w)
+        -Math.abs(this.mouseState.w),
+        0
       );
     };
 
@@ -218,7 +230,23 @@ export class CanvasMouseHandler {
 
       event.preventDefault();
 
-      this.glSystem.zoomShaderParkOrbit(config.nodeId, event.deltaY);
+      match(config.wheelTarget ?? 'shaderparkOrbit')
+        .with('threeInteraction', () => {
+          const rect = config.canvas.getBoundingClientRect();
+          const screenX = event.clientX - rect.left;
+          const screenY = event.clientY - rect.top;
+          this.glSystem.sendThreeWheelData(config.nodeId, {
+            x: (screenX / rect.width) * config.outputWidth,
+            y: this.mapY(screenY, rect.height, config),
+            deltaX: event.deltaX,
+            deltaY: event.deltaY,
+            deltaMode: event.deltaMode
+          });
+        })
+        .with('shaderparkOrbit', () =>
+          this.glSystem.zoomShaderParkOrbit(config.nodeId, event.deltaY)
+        )
+        .exhaustive();
     };
 
     config.canvas.addEventListener('mousemove', handleMouseMove);
@@ -234,5 +262,11 @@ export class CanvasMouseHandler {
       config.canvas.removeEventListener('mouseleave', handleMouseUp);
       config.canvas.removeEventListener('wheel', handleWheel);
     };
+  }
+
+  private mapY(screenY: number, rectHeight: number, config: ShadertoyMouseConfig) {
+    const y = (screenY / rectHeight) * config.outputHeight;
+
+    return config.flipY === false ? y : config.outputHeight - y;
   }
 }

@@ -4,8 +4,17 @@ import type { RenderParams } from '$lib/rendering/types';
 import { getFramebuffer } from './utils';
 import { THREE_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+import {
+  WorkerThreeInteraction,
+  createWorkerOrbitControlsClass,
+  type WorkerWheelEvent
+} from './workerThreeInteraction';
 
-export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
+type ThreeRendererConfig = BaseRendererConfig & {
+  runRevision?: number;
+};
+
+export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
   private animationId: number | null = null;
 
   // Three.js instances
@@ -21,9 +30,10 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
   // Three.js textures wrapping regl textures
   private threeInputTextures: import('three').Texture[] = [];
+  private interaction = new WorkerThreeInteraction();
 
   private constructor(
-    config: BaseRendererConfig,
+    config: ThreeRendererConfig,
     framebuffer: regl.Framebuffer2D,
     renderer: FBORenderer
   ) {
@@ -31,7 +41,7 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   }
 
   static async create(
-    config: BaseRendererConfig,
+    config: ThreeRendererConfig,
     framebuffer: regl.Framebuffer2D,
     renderer: FBORenderer
   ): Promise<ThreeRenderer> {
@@ -79,6 +89,14 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     // Update mouse state from render params
     this.mouseX = params.mouseX;
     this.mouseY = params.mouseY;
+    this.interaction.updatePointer({
+      mouseX: params.mouseX,
+      mouseY: params.mouseY,
+      mouseZ: params.mouseZ,
+      mouseW: params.mouseW,
+      mouseButtons: params.mouseButtons
+    });
+    this.interaction.flushWheelCallbacks();
 
     // Store input textures for getTexture() access
     this.inputTextures = params.userParams as (regl.Texture2D | undefined)[];
@@ -141,6 +159,7 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     if (!this.THREE || !this.threeWebGLRenderer || !this.renderTarget) return;
 
     this.resetState();
+    this.interaction.clearCallbacks();
 
     // Cancel any existing animation frame
     if (this.animationId !== null) {
@@ -152,14 +171,23 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
       const THREE = this.THREE;
       const renderer = this.threeWebGLRenderer;
       const renderTarget = this.renderTarget;
+      const OrbitControls = createWorkerOrbitControlsClass(
+        THREE,
+        this.interaction,
+        () => this.renderer.outputSize
+      );
 
       const extraContext = {
         ...this.buildBaseExtraContext(),
         THREE,
+        OrbitControls,
         renderer,
         renderTarget,
+        mouse: this.interaction.mouse,
         setVideoCount: this.setVideoCount.bind(this),
         getTexture: this.getTexture.bind(this),
+        onPointerDrag: this.interaction.onPointerDrag.bind(this.interaction),
+        onWheel: this.interaction.onWheel.bind(this.interaction),
         requestAnimationFrame: () => {}
       };
 
@@ -185,6 +213,36 @@ export class ThreeRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
     } catch (error) {
       this.handleCodeError(error, THREE_WRAPPER_OFFSET);
     }
+  }
+
+  async updateConfig(config: ThreeRendererConfig, framebuffer: regl.Framebuffer2D) {
+    const shouldUpdateCode =
+      this.config.code !== config.code || this.config.runRevision !== config.runRevision;
+
+    this.config = config;
+    this.framebuffer = framebuffer;
+
+    if (shouldUpdateCode) {
+      await this.updateCode();
+    }
+  }
+
+  handleWheelData(event: {
+    x?: number;
+    y?: number;
+    deltaX?: number;
+    deltaY: number;
+    deltaMode?: number;
+  }) {
+    const wheelEvent: WorkerWheelEvent = {
+      x: event.x ?? this.mouseX,
+      y: event.y ?? this.mouseY,
+      deltaX: event.deltaX ?? 0,
+      deltaY: event.deltaY,
+      deltaMode: event.deltaMode ?? 0
+    };
+
+    this.interaction.queueWheel(wheelEvent);
   }
 
   destroy() {

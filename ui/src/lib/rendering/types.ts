@@ -49,7 +49,15 @@ export type RenderNode = {
     }
   | { type: 'canvas'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
   | { type: 'textmode'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
-  | { type: 'three'; data: { code: string; fboFormat?: FBOFormat; resolution?: FBOResolution } }
+  | {
+      type: 'three';
+      data: {
+        code: string;
+        fboFormat?: FBOFormat;
+        resolution?: FBOResolution;
+        _runRevision?: number;
+      };
+    }
   | {
       type: 'shaderpark';
       data: {
@@ -126,6 +134,7 @@ export interface RenderParams {
   mouseY: number;
   mouseZ: number;
   mouseW: number;
+  mouseButtons?: number;
   userParams: UserParam[];
 
   /** Global transport time in seconds for synchronized timing */
@@ -176,6 +185,15 @@ export type WorkerMessage =
   | { type: 'stopAnimation' }
   | { type: 'setPreviewEnabled'; nodeId: string; enabled: boolean }
   | { type: 'zoomShaderParkOrbit'; nodeId: string; deltaY: number }
+  | {
+      type: 'sendThreeWheelData';
+      nodeId: string;
+      x?: number;
+      y?: number;
+      deltaX?: number;
+      deltaY: number;
+      deltaMode?: number;
+    }
   | { type: 'animationFrame'; outputBitmap: ImageBitmap }
   | { type: 'updateOutput'; buffer: ArrayBuffer }
   | {

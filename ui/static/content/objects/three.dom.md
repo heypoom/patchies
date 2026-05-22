@@ -1,4 +1,4 @@
-The `three.dom` object creates 3D graphics using [Three.js](https://threejs.org). It runs on the main thread with full interactivity support.
+The `three.dom` object creates 3D graphics using [Three.js](https://threejs.org). It runs on the main thread for low-latency DOM interaction.
 
 ![Three.js torus demo](/content/images/threejs-torus.webp)
 
@@ -30,14 +30,19 @@ function draw() {
 ## Comparison with three
 
 | Feature | `three` | `three.dom` |
-|---------|---------|-------------|
+| -------- | -------- | -------- |
 | Runs on | Web worker | Main thread |
-| Video chaining | Fast | Slow (CPU-to-GPU copy) |
-| OrbitControls | No | Yes |
+| Video chaining | Fast, stays in the render pipeline | Slower, copies canvas back into the pipeline |
+| Input latency | A little higher because pointer events are forwarded to the worker | Lowest, handles DOM input directly |
+| Pointer drag/wheel | Yes, via `mouse`, `onPointerDrag()`, and `onWheel()` | Yes, via direct DOM mouse events |
+| Orbit controls | Worker-safe `OrbitControls` compatibility layer | Three.js DOM `OrbitControls` |
 | Keyboard events | No | Yes |
+| DOM APIs | No | Yes |
 | Video textures | Yes (`getTexture`) | No |
 
-Use `three` for pure video processing. Use `three.dom` when you need interactivity.
+Use `three` for video chaining with pointer drag, wheel, and worker camera
+controls. Use `three.dom` when interaction latency matters most, or when you need
+keyboard events or DOM APIs.
 
 ## Available Variables
 

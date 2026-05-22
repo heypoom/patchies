@@ -43,9 +43,18 @@ self.onmessage = (event) => {
       fboRenderer.setUniformData(data.nodeId, data.uniformName, data.uniformValue)
     )
     .with('setMouseData', () =>
-      fboRenderer.setMouseData(data.nodeId, data.x, data.y, data.z, data.w)
+      fboRenderer.setMouseData(data.nodeId, data.x, data.y, data.z, data.w, data.buttons)
     )
     .with('zoomShaderParkOrbit', () => fboRenderer.zoomShaderParkOrbit(data.nodeId, data.deltaY))
+    .with('sendThreeWheelData', () =>
+      fboRenderer.sendThreeWheelData(data.nodeId, {
+        x: data.x,
+        y: data.y,
+        deltaX: data.deltaX,
+        deltaY: data.deltaY,
+        deltaMode: data.deltaMode
+      })
+    )
     .with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height))
     .with('setBackgroundSize', () => fboRenderer.setBackgroundSize(data.width, data.height))
     .with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))

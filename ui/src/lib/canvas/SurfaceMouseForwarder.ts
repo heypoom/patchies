@@ -3,7 +3,8 @@ import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 import type { Node } from '@xyflow/svelte';
 
 const SHADERTOY_TYPES = new Set(['glsl', 'swgl', 'regl']);
-const SIMPLE_TYPES = new Set(['hydra', 'three', 'canvas', 'textmode', 'shaderpark']);
+const SIMPLE_TYPES = new Set(['hydra', 'canvas', 'textmode', 'shaderpark']);
+const WORKER_THREE_TYPES = new Set(['three']);
 
 /**
  * Forwards normalized surface mouse events to all render nodes in the graph.
@@ -26,7 +27,10 @@ export class SurfaceMouseForwarder {
    */
   forward(x: number, y: number, _buttons: number, type: string): void {
     const renderNodes = this.getNodes().filter(
-      (n) => SHADERTOY_TYPES.has(n.type ?? '') || SIMPLE_TYPES.has(n.type ?? '')
+      (n) =>
+        SHADERTOY_TYPES.has(n.type ?? '') ||
+        SIMPLE_TYPES.has(n.type ?? '') ||
+        WORKER_THREE_TYPES.has(n.type ?? '')
     );
 
     if (renderNodes.length === 0) return;
@@ -43,8 +47,10 @@ export class SurfaceMouseForwarder {
       const nodeType = node.type ?? '';
       const isShaderPark3d = nodeType === 'shaderpark' && node.data.renderMode === '3d';
 
-      if (SHADERTOY_TYPES.has(nodeType) || isShaderPark3d) {
-        this.forwardShadertoy(node.id, xFB, yFBShadertoy, type);
+      if (WORKER_THREE_TYPES.has(nodeType)) {
+        this.forwardShadertoy(node.id, xFB, yFBSimple, type, _buttons);
+      } else if (SHADERTOY_TYPES.has(nodeType) || isShaderPark3d) {
+        this.forwardShadertoy(node.id, xFB, yFBShadertoy, type, _buttons);
       } else if (SIMPLE_TYPES.has(nodeType)) {
         this.glSystem.setMouseData(node.id, xFB, yFBSimple, 0, 0);
       }
@@ -63,20 +69,26 @@ export class SurfaceMouseForwarder {
       );
   }
 
-  private forwardShadertoy(nodeId: string, x: number, y: number, type: string): void {
+  private forwardShadertoy(
+    nodeId: string,
+    x: number,
+    y: number,
+    type: string,
+    buttons: number
+  ): void {
     if (type === 'down') {
       this.isMouseDown = true;
       this.clickX = x;
       this.clickY = y;
-      this.glSystem.setMouseData(nodeId, x, y, x, y);
+      this.glSystem.setMouseData(nodeId, x, y, x, y, buttons || 1);
     } else if (type === 'up') {
       this.isMouseDown = false;
-      this.glSystem.setMouseData(nodeId, x, y, -Math.abs(this.clickX), -Math.abs(this.clickY));
+      this.glSystem.setMouseData(nodeId, x, y, -Math.abs(this.clickX), -Math.abs(this.clickY), 0);
     } else {
       // move
       const z = this.isMouseDown ? Math.abs(this.clickX) : -Math.abs(this.clickX);
       const w = this.isMouseDown ? Math.abs(this.clickY) : -Math.abs(this.clickY);
-      this.glSystem.setMouseData(nodeId, x, y, z, w);
+      this.glSystem.setMouseData(nodeId, x, y, z, w, this.isMouseDown ? buttons : 0);
     }
   }
 }

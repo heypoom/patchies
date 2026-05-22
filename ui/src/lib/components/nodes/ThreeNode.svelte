@@ -31,6 +31,7 @@
   import { SettingsManager, createWorkerSettingsCallbacks } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
 
   let {
     id: nodeId,
@@ -81,6 +82,7 @@
 
   let audioAnalysisSystem: AudioAnalysisSystem;
   let messageContext: MessageContext;
+  let mouseHandler: CanvasMouseHandler | null = null;
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewBitmapContext: ImageBitmapRenderingContext;
   let dragEnabled = $state(true);
@@ -104,6 +106,28 @@
       previousExecuteCode = data.executeCode;
       updateThree();
     }
+  });
+
+  $effect(() => {
+    if (!previewCanvas) return;
+
+    mouseHandler = new CanvasMouseHandler({
+      type: 'shadertoy',
+      nodeId,
+      canvas: previewCanvas,
+      outputWidth: $outputWidth,
+      outputHeight: $outputHeight,
+      wheelZoom: true,
+      wheelTarget: 'threeInteraction',
+      flipY: false
+    });
+
+    mouseHandler.attach();
+
+    return () => {
+      mouseHandler?.detach();
+      mouseHandler = null;
+    };
   });
 
   // Event handlers for worker messages
@@ -240,6 +264,7 @@
 
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
 
+    mouseHandler?.detach();
     glSystem?.unregisterSettingsCallbacks(nodeId);
     audioAnalysisSystem?.disableFFT(nodeId);
     glSystem?.removeNode(nodeId);
@@ -303,7 +328,7 @@
   }}
 >
   {#snippet topHandle()}
-    {#each Array.from({ length: videoInletCount }) as _, index (index)}
+    {#each Array.from({ length: videoInletCount }, (_, index) => index) as index (index)}
       <TypedHandle
         port="inlet"
         spec={{ handleType: 'video', handleId: index.toString() }}
@@ -315,7 +340,7 @@
       />
     {/each}
 
-    {#each Array.from({ length: messageInletCount }) as _, index (index)}
+    {#each Array.from({ length: messageInletCount }, (_, index) => index) as index (index)}
       <TypedHandle
         port="inlet"
         spec={{ handleType: 'message', handleId: index }}
@@ -330,7 +355,7 @@
 
   {#snippet bottomHandle()}
     {#if videoOutputEnabled}
-      {#each Array.from({ length: videoOutletCount }) as _, index (index)}
+      {#each Array.from({ length: videoOutletCount }, (_, index) => index) as index (index)}
         <TypedHandle
           port="outlet"
           spec={{ handleType: 'video', handleId: index.toString() }}
@@ -343,7 +368,7 @@
       {/each}
     {/if}
 
-    {#each Array.from({ length: messageOutletCount }) as _, index (index)}
+    {#each Array.from({ length: messageOutletCount }, (_, index) => index) as index (index)}
       <TypedHandle
         port="outlet"
         spec={{ handleType: 'message', handleId: index }}
