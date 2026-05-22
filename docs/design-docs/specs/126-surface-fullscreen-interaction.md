@@ -158,6 +158,11 @@ By default, `surface` forwards pointer and wheel events to every mouse-aware
 render node in the graph (`glsl`, `swgl`, `regl`, `hydra`, `canvas`, `textmode`,
 `shaderpark`, and worker `three`).
 
+Forwarding targets are derived from the current graph. Adding, removing, or
+changing mouse-aware nodes while a surface is already active should be reflected
+by the next forwarded pointer or wheel event, without requiring the surface code
+to re-run.
+
 User code can narrow that behavior by node ID:
 
 ```js

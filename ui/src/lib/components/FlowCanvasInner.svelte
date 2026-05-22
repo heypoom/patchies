@@ -86,6 +86,7 @@
   import { DirectChannelService } from '$lib/messages/DirectChannelService';
   import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
+  import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
 
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
@@ -406,6 +407,19 @@
     directChannelService.updateEdges(edges);
     workletDirectChannelService.updateEdges(edges);
     audioSourceConnections.set(buildAudioSourceConnections(edges));
+  });
+
+  let surfaceMouseForwardingKey = '';
+
+  // Tell surface object that node graph has been changed
+  // Also detects renderMode changes for shaderpark object.
+  $effect(() => {
+    const _forwardingKey = getSurfaceMouseForwardingKey(nodes);
+
+    if (_forwardingKey !== surfaceMouseForwardingKey) {
+      surfaceMouseForwardingKey = _forwardingKey;
+      eventBus.dispatch({ type: 'surfaceMouseForwardingGraphChanged', nodes });
+    }
   });
 
   // Keep DirectChannelService informed of node types for direct messaging

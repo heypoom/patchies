@@ -30,6 +30,25 @@ function matchesForwardingRules(nodeId: string, rules?: SurfaceMouseForwardingRu
   return !except.includes(nodeId);
 }
 
+export const isSurfaceMouseForwardingNode = (node: Node): boolean =>
+  match(node.type)
+    .with('three', () => true)
+    .when(
+      (type) => SHADERTOY_TYPES.has(type ?? ''),
+      () => true
+    )
+    .when(
+      (type) => SIMPLE_TYPES.has(type ?? ''),
+      () => true
+    )
+    .otherwise(() => false);
+
+export const getSurfaceMouseForwardingKey = (nodes: Node[]): string =>
+  nodes
+    .filter(isSurfaceMouseForwardingNode)
+    .map((node) => `${node.id}:${node.type ?? ''}:${String(node.data?.renderMode ?? '')}`)
+    .join('|');
+
 export const getSurfaceMouseTargets = (
   nodes: Node[],
   rules?: SurfaceMouseForwardingRules

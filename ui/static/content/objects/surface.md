@@ -57,6 +57,8 @@ Pointer events are also sent to the **pointer outlet** as messages.
 
 By default, pointer and wheel events are forwarded to all mouse-aware render
 nodes in the graph, including `glsl`, `hydra`, `shaderpark`, and `three`.
+The target list follows the current graph, so newly added or changed render
+nodes receive forwarded events on the next pointer or wheel event.
 
 Use `setMouseForwarding()` to restrict forwarding by node ID:
 

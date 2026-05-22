@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Node } from '@xyflow/svelte';
 
-import { getSurfaceMouseTargets, getSurfaceWheelTargets } from './surfaceMouseForwarding';
+import {
+  getSurfaceMouseForwardingKey,
+  getSurfaceMouseTargets,
+  getSurfaceWheelTargets
+} from './surfaceMouseForwarding';
 
 describe('surface mouse forwarding', () => {
   const nodes = [
@@ -59,5 +63,17 @@ describe('surface mouse forwarding', () => {
 
   it('disables wheel forwarding when only is an empty list', () => {
     expect(getSurfaceWheelTargets(nodes, { only: [] })).toEqual([]);
+  });
+
+  it('builds the graph-change key from mouse-aware render nodes only', () => {
+    expect(
+      getSurfaceMouseForwardingKey([
+        ...nodes,
+        { id: 'message-1', type: 'message', data: {} },
+        { id: 'slider-1', type: 'slider', data: {} }
+      ] as Node[])
+    ).toBe(
+      'three-1:three:|shaderpark-3d-1:shaderpark:3d|shaderpark-flat-1:shaderpark:flat|glsl-1:glsl:'
+    );
   });
 });

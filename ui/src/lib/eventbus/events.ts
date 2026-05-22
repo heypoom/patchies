@@ -1,4 +1,5 @@
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
+import type { Node } from '@xyflow/svelte';
 
 export type PatchiesEvent =
   | ConsoleOutputEvent
@@ -40,6 +41,7 @@ export type PatchiesEvent =
   | NodeDataCommitEvent
   | ObjectDataCommitEvent
   | NodeSetPausedEvent
+  | SurfaceMouseForwardingGraphChangedEvent
   | IncludeProcessingEvent
   | ScatterNodesEvent;
 
@@ -367,6 +369,11 @@ export interface NodeSetPausedEvent {
   type: 'nodeSetPaused';
   nodeId: string;
   paused: boolean;
+}
+
+export interface SurfaceMouseForwardingGraphChangedEvent {
+  type: 'surfaceMouseForwardingGraphChanged';
+  nodes: Node[];
 }
 
 export interface ObjectDataCommitEvent {

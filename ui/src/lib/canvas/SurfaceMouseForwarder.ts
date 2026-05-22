@@ -7,6 +7,7 @@ import {
   type SurfaceMouseTarget,
   type SurfaceWheelTarget
 } from './surfaceMouseForwarding';
+import type { SurfaceMouseForwardingGraphChangedEvent } from '$lib/eventbus/events';
 import type { Node } from '@xyflow/svelte';
 
 /**
@@ -26,8 +27,13 @@ export class SurfaceMouseForwarder {
   private mouseTargets: SurfaceMouseTarget[] = [];
   private wheelTargets: SurfaceWheelTarget[] = [];
 
+  private readonly handleGraphChanged = (event: SurfaceMouseForwardingGraphChangedEvent) => {
+    this.refreshForwardingTargets(event.nodes);
+  };
+
   constructor(private getNodes: () => Node[]) {
     this.refreshForwardingTargets();
+    this.eventBus.addEventListener('surfaceMouseForwardingGraphChanged', this.handleGraphChanged);
   }
 
   setForwardingRules(rules?: SurfaceMouseForwardingRules): void {
@@ -35,11 +41,16 @@ export class SurfaceMouseForwarder {
     this.refreshForwardingTargets();
   }
 
-  refreshForwardingTargets(): void {
-    const nodes = this.getNodes();
-
+  refreshForwardingTargets(nodes = this.getNodes()): void {
     this.mouseTargets = getSurfaceMouseTargets(nodes, this.forwardingRules);
     this.wheelTargets = getSurfaceWheelTargets(nodes, this.forwardingRules);
+  }
+
+  dispose(): void {
+    this.eventBus.removeEventListener(
+      'surfaceMouseForwardingGraphChanged',
+      this.handleGraphChanged
+    );
   }
 
   /**

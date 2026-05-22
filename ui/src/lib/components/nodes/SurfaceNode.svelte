@@ -662,6 +662,7 @@
     }
 
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);
+    mouseForwarder.dispose();
     glSystem?.removeNode(nodeId);
     jsRunner.destroy(nodeId);
   });
