@@ -12,8 +12,43 @@ describe('pack card behavior', () => {
     expect(canTogglePack({ locked: false, unavailable: true })).toBe(false);
   });
 
-  test('disables manual content expansion while searching', () => {
-    expect(canManuallyExpandPackContents({ searchQuery: '' })).toBe(true);
-    expect(canManuallyExpandPackContents({ searchQuery: 'glsl' })).toBe(false);
+  test('allows manual content expansion when not searching', () => {
+    expect(
+      canManuallyExpandPackContents({
+        searchQuery: '',
+        hasMatchingItems: false,
+        variant: 'row'
+      })
+    ).toBe(true);
+  });
+
+  test('disables manual content expansion when search already reveals matching items', () => {
+    expect(
+      canManuallyExpandPackContents({
+        searchQuery: 'glsl',
+        hasMatchingItems: true,
+        variant: 'row'
+      })
+    ).toBe(false);
+  });
+
+  test('allows row content expansion when search only matches pack metadata', () => {
+    expect(
+      canManuallyExpandPackContents({
+        searchQuery: 'visual',
+        hasMatchingItems: false,
+        variant: 'row'
+      })
+    ).toBe(true);
+  });
+
+  test('disables tile content expansion while searching', () => {
+    expect(
+      canManuallyExpandPackContents({
+        searchQuery: 'visual',
+        hasMatchingItems: false,
+        variant: 'tile'
+      })
+    ).toBe(false);
   });
 });

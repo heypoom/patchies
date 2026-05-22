@@ -47,7 +47,9 @@
 
   const hasMatches = $derived(matchingItems.size > 0);
   const toggleAllowed = $derived(canTogglePack({ locked, unavailable }));
-  const manualExpansionAllowed = $derived(canManuallyExpandPackContents({ searchQuery }));
+  const manualExpansionAllowed = $derived(
+    canManuallyExpandPackContents({ searchQuery, hasMatchingItems: hasMatches, variant })
+  );
   const searchTileItems = $derived.by(() => {
     if (variant !== 'tile' || !searchQuery.trim()) return items;
 
