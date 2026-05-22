@@ -104,6 +104,9 @@ export class FBORenderer {
   /** Mapping of nodeID to mouse state (iMouse vec4: xy = current, zw = click) */
   public mouseDataByNode: Map<string, [number, number, number, number, number?]> = new Map();
 
+  /** Enable the WebGL workaround for iOS Safari */
+  public usesMobileSafariWebGLWorkaround = false;
+
   public hydraByNode = new Map<string, HydraRenderer | null>();
   public canvasByNode = new Map<string, CanvasRenderer | null>();
   public textmodeByNode = new Map<string, TextmodeRenderer | null>();
@@ -127,6 +130,9 @@ export class FBORenderer {
   private lastTime: number = 0;
   private prevTransportTime: number = 0;
   private frameCount: number = 0;
+  private contextLossReported = false;
+  private renderErrorKeysByNode = new Map<string, Set<string>>();
+  private glErrorKeysByNode = new Map<string, Set<string>>();
 
   /** Minimum interval between rendered frames (ms). 0 = unlimited. */
   private renderIntervalMs: number = 0;
@@ -220,7 +226,36 @@ export class FBORenderer {
     // Create video texture manager
     this.videoTextures = new VideoTextureManager(this.regl, this.gl);
 
+    this.usesMobileSafariWebGLWorkaround = this.detectMobileSafari();
+
+    this.registerContextLossDiagnostics();
     this.defineWorkerGlobals();
+  }
+
+  private detectMobileSafari(): boolean {
+    const userAgent = globalThis.navigator?.userAgent ?? '';
+    const isIOS = /iP(hone|ad|od)/.test(userAgent);
+    const isWebKitSafari = /Safari/.test(userAgent) && !/CriOS|FxiOS|EdgiOS/.test(userAgent);
+
+    return isIOS && isWebKitSafari;
+  }
+
+  private registerContextLossDiagnostics() {
+    const addEventListener = this.offscreenCanvas.addEventListener?.bind(this.offscreenCanvas);
+
+    if (!addEventListener) return;
+
+    addEventListener('webglcontextlost', (event) => {
+      event.preventDefault();
+
+      this.contextLossReported = true;
+      this.reportWorkerError('WebGL context lost in render worker');
+    });
+
+    addEventListener('webglcontextrestored', () => {
+      this.contextLossReported = false;
+      this.reportWorkerError('WebGL context restored in render worker; rebuild the render graph');
+    });
   }
 
   /**
@@ -473,6 +508,7 @@ export class FBORenderer {
             node.type === 'shaderpark' &&
             node.data.renderMode === '3d' &&
             this.shaderParkThreeByNode.has(node.id);
+
           const isReusableThree = node.type === 'three' && this.threeByNode.has(node.id);
 
           if (!isHydra && !isShaderPark3D && !isReusableThree) {
@@ -1419,6 +1455,15 @@ export class FBORenderer {
       return;
     }
 
+    if (this.gl.isContextLost()) {
+      if (!this.contextLossReported) {
+        this.contextLossReported = true;
+        this.reportWorkerError('WebGL context is lost in render worker');
+      }
+
+      return;
+    }
+
     // Update time for animation
     const currentTime = (Date.now() - this.startTime) / 1000; // Convert to seconds
     this.lastTime = currentTime;
@@ -1442,7 +1487,12 @@ export class FBORenderer {
 
       if (!node || !fboNode) continue;
 
-      this.renderFboNode(node, fboNode);
+      try {
+        this.renderFboNode(node, fboNode);
+      } catch (error) {
+        this.reportNodeRenderError(node, error);
+        this.refreshReglState();
+      }
     }
 
     // Render the final result to the main canvas.
@@ -1600,6 +1650,51 @@ export class FBORenderer {
         });
       });
     });
+  }
+
+  private getWebGLErrorName(errorCode: number): string {
+    const gl = this.gl;
+
+    const errorNames = new Map<number, string>([
+      [gl.INVALID_ENUM, 'INVALID_ENUM'],
+      [gl.INVALID_VALUE, 'INVALID_VALUE'],
+      [gl.INVALID_OPERATION, 'INVALID_OPERATION'],
+      [gl.INVALID_FRAMEBUFFER_OPERATION, 'INVALID_FRAMEBUFFER_OPERATION'],
+      [gl.OUT_OF_MEMORY, 'OUT_OF_MEMORY'],
+      [gl.CONTEXT_LOST_WEBGL, 'CONTEXT_LOST_WEBGL']
+    ]);
+
+    return errorNames.get(errorCode) ?? `UNKNOWN_${errorCode}`;
+  }
+
+  private reportNodeRenderError(node: RenderNode, error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    const errorKey = `${node.type}:${message}`;
+
+    const reported = this.renderErrorKeysByNode.get(node.id) ?? new Set<string>();
+    if (reported.has(errorKey)) return;
+
+    reported.add(errorKey);
+    this.renderErrorKeysByNode.set(node.id, reported);
+
+    self.postMessage({
+      type: 'consoleOutput',
+      nodeId: node.id,
+      level: 'error',
+      args: [`Render error in ${node.type}: ${message}`]
+    });
+  }
+
+  private reportWorkerError(message: string) {
+    self.postMessage({ type: 'error', message });
+  }
+
+  private refreshReglState() {
+    const reglInstance = this.regl as regl.Regl & {
+      _refresh?: () => void;
+    };
+
+    reglInstance._refresh?.();
   }
 
   /**

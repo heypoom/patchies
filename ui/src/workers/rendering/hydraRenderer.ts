@@ -175,8 +175,23 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
+    // iOS Safari requires a refresh of the regl state after each frame
+    if (this.renderer.usesMobileSafariWebGLWorkaround) {
+      this.refreshReglState();
+    }
+
     this.hydra.timeSinceLastUpdate = 0;
     this.timestamp = time;
+  }
+
+  private refreshReglState() {
+    const reglInstance = this.renderer.regl as regl.Regl & {
+      _refresh?: () => void;
+    };
+
+    if (typeof reglInstance._refresh === 'function') {
+      reglInstance._refresh();
+    }
   }
 
   async updateCode() {

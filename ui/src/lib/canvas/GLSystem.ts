@@ -318,6 +318,9 @@ export class GLSystem {
           logger.nodeError(data.nodeId, 'Shader compilation failed:', data.error);
         }
       })
+      .with({ type: 'error' }, (data) => {
+        logger.error('[render worker]', data.message);
+      })
       .with({ type: 'setPortCount' }, (data) => {
         this.eventBus.dispatch({
           type: 'nodePortCountUpdate',
