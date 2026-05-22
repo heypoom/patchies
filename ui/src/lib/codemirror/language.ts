@@ -24,6 +24,7 @@ export async function loadLanguageExtension(language: string, context?: Patchies
         { patchiesCompletions },
         { shaderParkCompletionsSource },
         { glslInJsCompletions, glslInJsWrap },
+        { completionHoverHints },
         { glslIncludeHighlighter }
       ] = await Promise.all([
         import('@codemirror/lang-javascript'),
@@ -32,6 +33,7 @@ export async function loadLanguageExtension(language: string, context?: Patchies
         import('$lib/codemirror/patchies-completions'),
         import('$lib/codemirror/shaderpark-completions'),
         import('$lib/codemirror/glsl-in-js'),
+        import('$lib/codemirror/hover-hints'),
         import('$lib/codemirror/glsl.codemirror')
       ]);
 
@@ -46,6 +48,7 @@ export async function loadLanguageExtension(language: string, context?: Patchies
             patchiesCompletions(context)
           ]
         }),
+        completionHoverHints({ ...context, language: 'javascript' }),
         ...glslIncludeHighlighter
       ];
     })
@@ -54,17 +57,20 @@ export async function loadLanguageExtension(language: string, context?: Patchies
         { LanguageSupport },
         { autocompletion },
         { glslLanguage, glslIncludeHighlighter, glslDirectiveCompletions },
-        { glslCompletions }
+        { glslCompletions },
+        { completionHoverHints }
       ] = await Promise.all([
         import('@codemirror/language'),
         import('@codemirror/autocomplete'),
         import('$lib/codemirror/glsl.codemirror'),
-        import('$lib/codemirror/glsl-completions')
+        import('$lib/codemirror/glsl-completions'),
+        import('$lib/codemirror/hover-hints')
       ]);
 
       return [
         new LanguageSupport(glslLanguage),
         autocompletion({ override: [glslDirectiveCompletions, glslCompletions] }),
+        completionHoverHints({ ...context, language: 'glsl' }),
         ...glslIncludeHighlighter
       ];
     })

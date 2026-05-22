@@ -634,5 +634,9 @@ export function createShaderParkCompletionSource(patchiesContext?: PatchiesConte
   };
 }
 
+export function getShaderParkCompletionByLabel(label: string): Completion | undefined {
+  return shaderParkCompletions.find((completion) => completion.label === label);
+}
+
 export const shaderParkCompletionsSource = (context?: PatchiesContext) =>
   createShaderParkCompletionSource(context);

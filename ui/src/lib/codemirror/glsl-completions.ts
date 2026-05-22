@@ -263,4 +263,13 @@ export function createGlslCompletionSource() {
   };
 }
 
+export function getGlslCompletionByLabel(label: string): Completion | undefined {
+  return [
+    ...statementCompletions,
+    ...builtInValueCompletions,
+    ...sampler2DDeclarationCompletions,
+    ...expressionFunctionCompletions
+  ].find((completion) => completion.label === label);
+}
+
 export const glslCompletions = createGlslCompletionSource();

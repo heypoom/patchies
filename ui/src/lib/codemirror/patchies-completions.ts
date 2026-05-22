@@ -848,6 +848,32 @@ export function shouldShowPatchiesCompletions(context?: PatchiesContext): boolea
   return !PATCHIES_COMPLETION_DISABLED_NODE_TYPES.has(context.nodeType);
 }
 
+function isCompletionAllowedForNode(completion: Completion, context?: PatchiesContext): boolean {
+  if (!context?.nodeType) return true;
+
+  const allowedNodes = nodeSpecificFunctions[completion.label];
+
+  if (allowedNodes) {
+    return allowedNodes.includes(context.nodeType);
+  }
+
+  return true;
+}
+
+export function getPatchiesCompletionByLabel(
+  label: string,
+  context?: PatchiesContext
+): Completion | undefined {
+  if (!shouldShowPatchiesCompletions(context)) return undefined;
+  if (context?.nodeType === 'expr') return undefined;
+  if (context?.nodeType === 'msg') return undefined;
+
+  const completion = patchiesAPICompletions.find((option) => option.label === label);
+  if (!completion) return undefined;
+
+  return isCompletionAllowedForNode(completion, context) ? completion : undefined;
+}
+
 /**
  * Check if cursor is inside a function body by counting braces
  */
@@ -947,17 +973,9 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
 
     // Filter based on node type
     if (patchiesContext?.nodeType) {
-      options = options.filter((completion) => {
-        const allowedNodes = nodeSpecificFunctions[completion.label];
-
-        // If function has node restrictions, check if current node is allowed
-        if (allowedNodes) {
-          return allowedNodes.includes(patchiesContext.nodeType!);
-        }
-
-        // No restrictions, always show
-        return true;
-      });
+      options = options.filter((completion) =>
+        isCompletionAllowedForNode(completion, patchiesContext)
+      );
     }
 
     // Filter by prefix match only (not substring) - "quan" shouldn't match "requestAnimationFrame"
