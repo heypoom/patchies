@@ -123,6 +123,29 @@ function draw() {
 - `'interact'` — `draw` is called whenever a pointer event fires
 - `'manual'` — `draw` is called only when you call `redraw()`
 
+Use manual mode when you want callbacks or messages to decide exactly when the
+canvas updates:
+
+```javascript
+setDrawMode('manual');
+noOutput();
+
+let dot = { x: 0.5, y: 0.5 };
+
+onPointer(({ x, y, type }) => {
+  dot = { x, y };
+  redraw();
+});
+
+function draw() {
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = '#22d3ee';
+  ctx.beginPath();
+  ctx.arc(dot.x * width, dot.y * height, 32, 0, Math.PI * 2);
+  ctx.fill();
+}
+```
+
 ## Activation API
 
 You can programmatically enter or exit fullscreen surface mode through JavaScript:
