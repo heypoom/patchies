@@ -160,6 +160,17 @@ export class ShaderParkThreeRenderer {
     this.scene.add(mesh);
   }
 
+  async updateConfig(config: ShaderParkThreeRendererConfig, framebuffer: regl.Framebuffer2D) {
+    const shouldUpdateCode = this.config.code !== config.code;
+
+    this.config = config;
+    this.framebuffer = framebuffer;
+
+    if (shouldUpdateCode) {
+      await this.updateCode();
+    }
+  }
+
   renderFrame(params: RenderParams) {
     if (
       !this.THREE ||

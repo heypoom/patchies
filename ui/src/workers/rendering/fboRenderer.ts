@@ -364,6 +364,7 @@ export class FBORenderer {
 
     // Merge virtual edges from video channels into the render graph
     const virtualEdges = this.videoChannelRegistry.getVirtualEdges();
+
     const mergedGraph: RenderGraph = {
       ...renderGraph,
       edges: [...renderGraph.edges, ...virtualEdges]
@@ -391,16 +392,15 @@ export class FBORenderer {
     for (const node of renderGraph.nodes) {
       const existingFbo = this.fboNodes.get(node.id);
 
-      // MRT count: GLSL, REGL, SwissGL, Hydra, and Shader Park nodes can request multiple color attachments.
-      // REGL/Hydra store outlet count as `videoOutletCount`; GLSL/SwissGL use `mrtCount`.
-      const mrtCount =
-        node.type === 'glsl'
-          ? (node.data.mrtCount ?? 1)
-          : node.type === 'swgl'
-            ? (node.data.mrtCount ?? 1)
-            : node.type === 'regl' || node.type === 'hydra' || node.type === 'shaderpark'
-              ? (node.data.videoOutletCount ?? 1)
-              : 1;
+      // MRT count: GLSL, REGL, SwissGL, Hydra, and Shader Park
+      // nodes can request multiple color attachments.
+      const mrtCount = match(node)
+        .with({ type: P.union('glsl', 'swgl') }, ({ data }) => data.mrtCount ?? 1)
+        .with(
+          { type: P.union('regl', 'hydra', 'shaderpark') },
+          ({ data }) => data.videoOutletCount ?? 1
+        )
+        .otherwise(() => 1);
 
       // FBO format: read from node data, default to rgba8
       const fboFormat: FBOFormat =
@@ -451,16 +451,28 @@ export class FBORenderer {
         // The old Hydra instance stays alive until replaced in createHydraRenderer,
         // allowing us to read synth time directly. It then gets garbage collected.
         // For other nodes: run cleanup normally.
-        const isHydraNode = this.hydraByNode.has(node.id);
-        if (!isHydraNode) {
+        const isHydra = this.hydraByNode.has(node.id);
+
+        const isShaderPark3D =
+          node.type === 'shaderpark' &&
+          node.data.renderMode === '3d' &&
+          this.shaderParkThreeByNode.has(node.id);
+
+        if (!isHydra && !isShaderPark3D) {
           existingFbo.cleanup?.();
         }
       } else {
         // Destroy old FBO if it exists but size or mrtCount doesn't match
         if (existingFbo) {
           // For Hydra: skip cleanup (will be GC'd after createHydraRenderer reads synth time)
-          const isHydraNode = this.hydraByNode.has(node.id);
-          if (!isHydraNode) {
+          const isHydra = this.hydraByNode.has(node.id);
+
+          const isShaderPark3D =
+            node.type === 'shaderpark' &&
+            node.data.renderMode === '3d' &&
+            this.shaderParkThreeByNode.has(node.id);
+
+          if (!isHydra && !isShaderPark3D) {
             existingFbo.cleanup?.();
           }
 
@@ -1153,25 +1165,43 @@ export class FBORenderer {
   ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
     if (node.type !== 'shaderpark') return null;
 
-    if (this.shaderParkThreeByNode.has(node.id)) {
-      this.shaderParkThreeByNode.get(node.id)?.destroy();
-    }
-
     const nodeSize = this.resolveNodeSize(node.data.resolution);
+    const config = {
+      code: node.data.code,
+      nodeId: node.id,
+      uniformDefs: node.data.shaderParkUniformDefs,
+      size: nodeSize
+    };
+    const existingRenderer = this.shaderParkThreeByNode.get(node.id);
+
+    if (existingRenderer) {
+      try {
+        await existingRenderer.updateConfig(config, framebuffer);
+      } catch (error) {
+        console.error('failed to update Shader Park 3D renderer', {
+          nodeId: node.id,
+          error
+        });
+
+        existingRenderer.destroy();
+        this.shaderParkThreeByNode.delete(node.id);
+
+        return null;
+      }
+
+      return {
+        render: existingRenderer.renderFrame.bind(existingRenderer),
+        cleanup: () => {
+          existingRenderer.destroy();
+          this.shaderParkThreeByNode.delete(node.id);
+        }
+      };
+    }
 
     let shaderParkThreeRenderer: ShaderParkThreeRenderer;
 
     try {
-      shaderParkThreeRenderer = await ShaderParkThreeRenderer.create(
-        {
-          code: node.data.code,
-          nodeId: node.id,
-          uniformDefs: node.data.shaderParkUniformDefs,
-          size: nodeSize
-        },
-        framebuffer,
-        this
-      );
+      shaderParkThreeRenderer = await ShaderParkThreeRenderer.create(config, framebuffer, this);
     } catch (error) {
       console.error('failed to create Shader Park 3D renderer', {
         nodeId: node.id,

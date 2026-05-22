@@ -90,6 +90,8 @@ Writing these declarations automatically gives the node 3 video outlets. Removin
 
 Creates `mrtCount` color attachments per node. For MRT nodes (mrtCount > 1), regl is used to allocate individual textures and the framebuffer's extra attachments are bound manually via raw WebGL2 (regl's `framebuffer()` only accepts a single `color` argument):
 
+The per-node MRT count resolver uses `ts-pattern` to keep the two data conventions explicit: GLSL/SwissGL read `mrtCount`, while REGL/Hydra/Shader Park read `videoOutletCount`.
+
 ```typescript
 // Allocate one texture per outlet
 colorAttachments = Array.from({length: mrtCount}, () =>

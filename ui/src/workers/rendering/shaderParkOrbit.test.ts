@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
 import {
   createShaderParkOrbitState,
   updateShaderParkOrbit,
@@ -50,5 +51,52 @@ describe('shaderpark 3d orbit', () => {
     zoomShaderParkOrbit(state, -100_000);
 
     expect(state.radius).toBeGreaterThanOrEqual(1.2);
+  });
+
+  it('keeps orbit state when Shader Park 3D code is updated', async () => {
+    type TestShaderParkThreeRenderer = {
+      config: { code: string; nodeId: string; size: [number, number] };
+      framebuffer: unknown;
+      orbit: ReturnType<typeof createShaderParkOrbitState>;
+      updateCode: ReturnType<typeof vi.fn>;
+      updateConfig: (
+        config: { code: string; nodeId: string; size: [number, number] },
+        framebuffer: never
+      ) => Promise<void>;
+    };
+    const renderer = Object.create(
+      ShaderParkThreeRenderer.prototype
+    ) as TestShaderParkThreeRenderer;
+
+    renderer.config = { code: 'sphere(0.5);', nodeId: 'shaderpark-1', size: [640, 480] };
+    renderer.framebuffer = { id: 'old-framebuffer' };
+    renderer.orbit = createShaderParkOrbitState();
+    renderer.updateCode = vi.fn(async () => undefined);
+
+    updateShaderParkOrbit(renderer.orbit, {
+      mouseX: 100,
+      mouseY: 100,
+      mouseZ: 100,
+      mouseW: 100
+    });
+    updateShaderParkOrbit(renderer.orbit, {
+      mouseX: 180,
+      mouseY: 130,
+      mouseZ: 100,
+      mouseW: 100
+    });
+    zoomShaderParkOrbit(renderer.orbit, -120);
+
+    const orbit = renderer.orbit;
+
+    await renderer.updateConfig(
+      { code: 'sphere(0.8);', nodeId: 'shaderpark-1', size: [640, 480] },
+      { id: 'new-framebuffer' } as never
+    );
+
+    expect(renderer.orbit).toBe(orbit);
+    expect(renderer.orbit.theta).toBeGreaterThan(0);
+    expect(renderer.orbit.radius).toBeLessThan(3);
+    expect(renderer.updateCode).toHaveBeenCalledTimes(1);
   });
 });
