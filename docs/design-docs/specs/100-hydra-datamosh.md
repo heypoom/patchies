@@ -45,6 +45,9 @@ Instead, it uses worker-native primitives:
 - reconfigure the WebCodecs encoder when the captured source dimensions change,
   including the common case where a video inlet is connected after the Hydra
   code already started running
+- lazy-load and create the datamosh runtime only when Hydra code uses
+  `datamosh(...)`, so normal Hydra sketches do not pay WebCodecs setup or
+  per-pipeline tick overhead
 
 If WebCodecs is unavailable or VP8 is unsupported, `datamosh()` should return
 the original input source and log a warning once for that pipeline.
