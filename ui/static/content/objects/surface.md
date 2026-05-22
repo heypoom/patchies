@@ -53,6 +53,24 @@ onPointer(({ x, y, buttons, down, type }) => {
 
 Pointer events are also sent to the **pointer outlet** as messages.
 
+## Mouse Forwarding
+
+By default, pointer and wheel events are forwarded to all mouse-aware render
+nodes in the graph, including `glsl`, `hydra`, `shaderpark`, and `three`.
+
+Use `setMouseForwarding()` to restrict forwarding by node ID:
+
+```javascript
+setMouseForwarding({
+  only: ['shaderpark-1', 'three-1'],
+  except: ['glsl-1']
+});
+```
+
+`only` is an optional whitelist. `except` is an optional blacklist applied after
+the whitelist. Call `setMouseForwarding()` with no arguments to restore the
+default forwarding behavior.
+
 ## Touch Events
 
 `onTouch(callback)` fires with all active touch points:
@@ -126,6 +144,7 @@ plus:
 - `onKeyDown(cb)` / `onKeyUp(cb)` — keyboard callbacks
 - `setDrawMode('always'|'interact'|'manual')` — control render loop
 - `redraw()` — manually trigger a draw (manual mode)
+- `setMouseForwarding({ only, except })` — whitelist/blacklist forwarded mouse events by node ID
 - `activate()` / `deactivate()` — enter/exit fullscreen
 - `hideExitButton()` — hide the "Exit surface (Shift+Esc)" badge
 - `noOutput()` — hide video output port

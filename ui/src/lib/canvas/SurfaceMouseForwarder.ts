@@ -1,10 +1,13 @@
 import { GLSystem } from './GLSystem';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-import { getSurfaceWheelTargets } from './surfaceMouseForwarding';
+import {
+  getSurfaceMouseTargets,
+  getSurfaceWheelTargets,
+  type SurfaceMouseForwardingRules,
+  type SurfaceMouseTarget,
+  type SurfaceWheelTarget
+} from './surfaceMouseForwarding';
 import type { Node } from '@xyflow/svelte';
-
-const SHADERTOY_TYPES = new Set(['glsl', 'swgl', 'regl']);
-const SIMPLE_TYPES = new Set(['hydra', 'canvas', 'textmode', 'shaderpark']);
 
 /**
  * Forwards normalized surface mouse events to all render nodes in the graph.
@@ -19,19 +22,31 @@ export class SurfaceMouseForwarder {
   private isMouseDown = false;
   private clickX = 0;
   private clickY = 0;
+  private forwardingRules: SurfaceMouseForwardingRules | undefined;
+  private mouseTargets: SurfaceMouseTarget[] = [];
+  private wheelTargets: SurfaceWheelTarget[] = [];
 
-  constructor(private getNodes: () => Node[]) {}
+  constructor(private getNodes: () => Node[]) {
+    this.refreshForwardingTargets();
+  }
+
+  setForwardingRules(rules?: SurfaceMouseForwardingRules): void {
+    this.forwardingRules = rules;
+    this.refreshForwardingTargets();
+  }
+
+  refreshForwardingTargets(): void {
+    const nodes = this.getNodes();
+
+    this.mouseTargets = getSurfaceMouseTargets(nodes, this.forwardingRules);
+    this.wheelTargets = getSurfaceWheelTargets(nodes, this.forwardingRules);
+  }
 
   /**
    * Forward a normalized (0–1) pointer event to all render nodes.
    */
   forward(x: number, y: number, _buttons: number, type: string): void {
-    const renderNodes = this.getNodes().filter(
-      (node) =>
-        SHADERTOY_TYPES.has(node.type ?? '') ||
-        SIMPLE_TYPES.has(node.type ?? '') ||
-        node.type === 'three'
-    );
+    const renderNodes = this.mouseTargets;
 
     if (renderNodes.length === 0) return;
 
@@ -44,15 +59,12 @@ export class SurfaceMouseForwarder {
     const yFBShadertoy = (1 - y) * h; // Y-flip for GL origin (bottom-left)
 
     for (const node of renderNodes) {
-      const nodeType = node.type ?? '';
-      const isShaderPark3d = nodeType === 'shaderpark' && node.data.renderMode === '3d';
-
       if (node.type === 'three') {
-        this.forwardShadertoy(node.id, xFB, yFBSimple, type, _buttons);
-      } else if (SHADERTOY_TYPES.has(nodeType) || isShaderPark3d) {
-        this.forwardShadertoy(node.id, xFB, yFBShadertoy, type, _buttons);
-      } else if (SIMPLE_TYPES.has(nodeType)) {
-        this.glSystem.setMouseData(node.id, xFB, yFBSimple, 0, 0);
+        this.forwardShadertoy(node.nodeId, xFB, yFBSimple, type, _buttons);
+      } else if (node.kind === 'shadertoy') {
+        this.forwardShadertoy(node.nodeId, xFB, yFBShadertoy, type, _buttons);
+      } else {
+        this.glSystem.setMouseData(node.nodeId, xFB, yFBSimple, 0, 0);
       }
     }
   }
@@ -69,7 +81,7 @@ export class SurfaceMouseForwarder {
     const xFB = event.x * w;
     const yFB = event.y * h;
 
-    for (const target of getSurfaceWheelTargets(this.getNodes())) {
+    for (const target of this.wheelTargets) {
       if (target.kind === 'three') {
         this.glSystem.sendThreeWheelData(target.nodeId, {
           x: xFB,
@@ -89,11 +101,18 @@ export class SurfaceMouseForwarder {
    * Call with 'global' on surface fullscreen entry, 'local' on exit.
    */
   forceHydraScope(scope: 'global' | 'local'): void {
-    this.getNodes()
-      .filter((node) => node.type === 'hydra')
-      .forEach((node) =>
-        this.eventBus.dispatch({ type: 'nodeMouseScopeUpdate', nodeId: node.id, scope })
-      );
+    const allNodes = this.getNodes();
+    const nodes =
+      scope === 'global'
+        ? this.mouseTargets
+            .filter((node) => node.kind === 'simple')
+            .map((node) => allNodes.find((candidate) => candidate.id === node.nodeId))
+            .filter((node): node is Node => node?.type === 'hydra')
+        : allNodes.filter((node) => node.type === 'hydra');
+
+    nodes.forEach((node) =>
+      this.eventBus.dispatch({ type: 'nodeMouseScopeUpdate', nodeId: node.id, scope })
+    );
   }
 
   private forwardShadertoy(
@@ -114,7 +133,6 @@ export class SurfaceMouseForwarder {
 
       this.glSystem.setMouseData(nodeId, x, y, -Math.abs(this.clickX), -Math.abs(this.clickY), 0);
     } else {
-      // move
       const z = this.isMouseDown ? Math.abs(this.clickX) : -Math.abs(this.clickX);
       const w = this.isMouseDown ? Math.abs(this.clickY) : -Math.abs(this.clickY);
 

@@ -36,6 +36,7 @@
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { SurfaceMouseForwarder } from '$lib/canvas/SurfaceMouseForwarder';
+  import type { SurfaceMouseForwardingRules } from '$lib/canvas/surfaceMouseForwarding';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import type { ExtraMenuItem } from '$lib/components/ObjectPreviewOverflowMenu.svelte';
@@ -263,6 +264,15 @@
     }
   }
 
+  function setMouseForwarding(rules?: SurfaceMouseForwardingRules) {
+    mouseForwarder.setForwardingRules(rules);
+
+    if (isFullscreen) {
+      mouseForwarder.forceHydraScope('local');
+      mouseForwarder.forceHydraScope('global');
+    }
+  }
+
   // ── Draw mode & rAF ──────────────────────────────────────────────────────
 
   function triggerDraw() {
@@ -346,6 +356,7 @@
     const nodes = getNodes().map((n) => ({ id: n.id, type: n.type }));
 
     overlay.activate(nodeId, nodes, () => exitSurface());
+    mouseForwarder.refreshForwardingTargets();
     mouseForwarder.forceHydraScope('global');
 
     // Switch to output dimensions (overlay canvas uses object-fit: cover)
@@ -468,6 +479,7 @@
     pointerCallback = null;
     touchCallback = null;
     keyboardCallbacks = {};
+    setMouseForwarding();
 
     if (animationFrameId !== null) {
       cancelAnimationFrame(animationFrameId);
@@ -518,6 +530,7 @@
           activate: () => enterFullscreen(),
           deactivate: () => exitSurface(),
           hideExitButton: () => SurfaceOverlay.getInstance().hideBadge(),
+          setMouseForwarding,
 
           // Browser fullscreen (separate from surface activation)
           goFullscreen: () => document.documentElement.requestFullscreen?.(),
@@ -685,7 +698,7 @@
   {extraMenuItems}
 >
   {#snippet topHandle()}
-    {#each Array.from({ length: inletCount }) as _, index (index)}
+    {#each Array.from({ length: inletCount }), index (index)}
       <TypedHandle
         port="inlet"
         spec={{ handleId: index }}
@@ -711,7 +724,7 @@
       />
     {/if}
 
-    {#each Array.from({ length: outletCount }) as _, index (index)}
+    {#each Array.from({ length: outletCount }), index (index)}
       <TypedHandle
         port="outlet"
         spec={{ handleId: index + (videoOutputEnabled ? 1 : 0) }}
