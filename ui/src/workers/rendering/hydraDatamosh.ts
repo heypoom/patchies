@@ -455,8 +455,10 @@ export class HydraDatamoshRuntime {
 const normalizeSpeed = (speed: number | undefined): number => Math.max(1, Math.floor(speed ?? 2));
 
 export const normalizeFps = (fps: number | undefined, renderFpsCap = 0): number => {
-  const requestedFps = Math.max(1, Math.min(240, Math.floor(fps ?? 60)));
-  const cap = Math.floor(renderFpsCap);
+  const safeFps = Number.isFinite(fps) ? fps : 60;
+  const safeRenderFpsCap = Number.isFinite(renderFpsCap) ? renderFpsCap : 0;
+  const requestedFps = Math.max(1, Math.min(240, Math.floor(safeFps ?? 60)));
+  const cap = Math.floor(safeRenderFpsCap);
 
   if (cap <= 0) {
     return requestedFps;

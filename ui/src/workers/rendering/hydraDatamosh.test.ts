@@ -170,6 +170,16 @@ describe('normalizeFps', () => {
   it('treats global render fps cap 0 as unlimited', () => {
     expect(normalizeFps(60, 0)).toBe(60);
   });
+
+  it('falls back to default fps when user fps is non-finite', () => {
+    expect(normalizeFps(Number.NaN, 0)).toBe(60);
+    expect(normalizeFps(Number.POSITIVE_INFINITY, 0)).toBe(60);
+  });
+
+  it('treats non-finite global render fps cap as unlimited', () => {
+    expect(normalizeFps(60, Number.NaN)).toBe(60);
+    expect(normalizeFps(60, Number.POSITIVE_INFINITY)).toBe(60);
+  });
 });
 
 function createCodecs() {
