@@ -77,8 +77,10 @@ import {
 } from './chat-tool-declarations';
 import { resolveSearchSamples, resolveSearchFreesound } from './sample-tool-handlers';
 import type { ChatViewportSummary } from './viewport-summary';
+import { buildNodeContextSystemInstruction, type ChatNodeContext } from './node-context';
 
 export type { ChatViewportSummary } from './viewport-summary';
+export type { ChatNodeContext } from './node-context';
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -86,13 +88,6 @@ export interface ChatMessage {
   thinking?: string;
   images?: Array<{ mimeType: string; data: string }>;
   youtubeUrls?: string[];
-}
-
-export interface ChatNodeContext {
-  nodeId: string;
-  nodeType: string;
-  nodeData?: Record<string, unknown>;
-  consoleErrors?: string[];
 }
 
 /** A resolved tool call ready for the user to apply or dismiss */
@@ -161,7 +156,7 @@ const MAX_TOOL_ROUNDS = 15;
 
 export async function streamChatMessage(
   messages: ChatMessage[],
-  nodeContext: ChatNodeContext | null,
+  nodeContext: ChatNodeContext[] | null,
   onChunk: (text: string) => void,
   signal?: AbortSignal,
   onThinking?: (thought: string) => void,
@@ -187,30 +182,21 @@ export async function streamChatMessage(
 
   let systemInstruction = persona ? `${persona}\n\n${SYSTEM_PROMPT}` : SYSTEM_PROMPT;
 
-  if (nodeContext) {
-    systemInstruction += `\n\nThe user currently has a "${nodeContext.nodeType}" node selected (ID: "${nodeContext.nodeId}"). When performing canvas actions on this node, use nodeId "${nodeContext.nodeId}".`;
+  if (nodeContext?.length) {
+    systemInstruction += buildNodeContextSystemInstruction(nodeContext);
 
-    if (nodeContext.nodeData && Object.keys(nodeContext.nodeData).length > 0) {
-      try {
-        const serialized = JSON.stringify(nodeContext.nodeData, null, 2);
-        systemInstruction += `\nCurrent node data:\n${serialized}`;
-      } catch {
-        // ignore if data isn't serializable
-      }
-    }
+    const selectedTypes = [...new Set(nodeContext.map((context) => context.nodeType))];
 
-    if (nodeContext.consoleErrors && nodeContext.consoleErrors.length > 0) {
-      systemInstruction += `\n\nThe selected node currently has the following console errors:\n${nodeContext.consoleErrors.map((e) => `- ${e}`).join('\n')}`;
-    }
-
-    if (JS_ENABLED_OBJECTS.has(nodeContext.nodeType)) {
+    if (selectedTypes.some((nodeType) => JS_ENABLED_OBJECTS.has(nodeType))) {
       systemInstruction += `\n\n## JSRunner Runtime Functions\n\n${jsRunnerInstructions}`;
     }
 
-    const objectInstructions = getObjectSpecificInstructions(nodeContext.nodeType);
+    for (const nodeType of selectedTypes) {
+      const objectInstructions = getObjectSpecificInstructions(nodeType);
 
-    if (objectInstructions) {
-      systemInstruction += `\n\n## ${nodeContext.nodeType} Reference\n\n${objectInstructions}`;
+      if (objectInstructions) {
+        systemInstruction += `\n\n## ${nodeType} Reference\n\n${objectInstructions}`;
+      }
     }
   }
 
@@ -692,7 +678,7 @@ function buildContextFromArgs(
   mode: AiPromptMode,
   args: Record<string, unknown>,
   getNodeById?: (nodeId: string) => ChatNode | undefined,
-  nodeContext?: ChatNodeContext | null
+  nodeContext?: ChatNodeContext[] | null
 ): AiModeContext {
   const context: AiModeContext = {};
 
@@ -707,7 +693,8 @@ function buildContextFromArgs(
 
     // Fall back to the selected node context when the model hallucinates an ID
     const node =
-      getNodeById?.(nodeId) ?? (nodeContext ? getNodeById?.(nodeContext.nodeId) : undefined);
+      getNodeById?.(nodeId) ??
+      (nodeContext?.length === 1 ? getNodeById?.(nodeContext[0].nodeId) : undefined);
 
     if (!node) throw new Error(`Node "${nodeId}" not found`);
 

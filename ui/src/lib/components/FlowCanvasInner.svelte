@@ -35,6 +35,7 @@
     currentPatchName,
     helpModeObject,
     selectedNodeInfo,
+    selectedNodesInfo,
     audioSourceConnections,
     isCablesVisible,
     connectingFromAcceptsFloat,
@@ -331,21 +332,27 @@
     selectedNodeIds = nodes.map((node) => node.id);
     selectedEdgeIds = edges.map((edge) => edge.id);
 
-    // Sync selected node to store for context-sensitive help sidebar
-    if (nodes.length === 1 && nodes[0].type) {
-      // For "object" nodes, extract the actual object name from data.expr
-      const nodeType = nodes[0].type;
+    const selectedInfos = nodes
+      .filter((node) => node.type)
+      .map((node) => {
+        const nodeType = node.type as string;
+        const resolvedType =
+          nodeType === 'object' && node.data?.expr
+            ? getObjectNameFromExpr(node.data.expr as string)
+            : nodeType;
 
-      const resolvedType =
-        nodeType === 'object' && nodes[0].data?.expr
-          ? getObjectNameFromExpr(nodes[0].data.expr as string)
-          : nodeType;
-
-      selectedNodeInfo.set({
-        type: resolvedType,
-        id: nodes[0].id,
-        data: (nodes[0].data as Record<string, unknown>) ?? undefined
+        return {
+          type: resolvedType,
+          id: node.id,
+          data: (node.data as Record<string, unknown>) ?? undefined
+        };
       });
+
+    selectedNodesInfo.set(selectedInfos);
+
+    // Sync selected node to store for context-sensitive help sidebar
+    if (selectedInfos.length === 1) {
+      selectedNodeInfo.set(selectedInfos[0]);
     } else {
       selectedNodeInfo.set(null);
     }

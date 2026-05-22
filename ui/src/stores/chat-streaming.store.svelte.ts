@@ -125,7 +125,7 @@ const applyActionToCallbacks = (action: ChatAction, aiCallbacks: AiPromptCallbac
 
 export interface StartStreamParams {
   chatHistory: ChatMessage[];
-  nodeContext: ChatNodeContext | null;
+  nodeContext: ChatNodeContext[] | null;
   getNodeById?: (nodeId: string) => ChatNode | undefined;
   getGraphSummary?: () => ChatGraphSummary;
   getViewportSummary?: () => ChatViewportSummary;

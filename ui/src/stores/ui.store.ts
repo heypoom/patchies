@@ -4,6 +4,12 @@ import { nanoid } from 'nanoid';
 
 export type ObjectBrowserMode = 'insert' | 'help' | 'packs';
 
+interface SelectedNode {
+  type: string;
+  id: string;
+  data?: Record<string, unknown>;
+}
+
 // Mobile detection (768px breakpoint)
 const MOBILE_BREAKPOINT = 768;
 
@@ -35,11 +41,8 @@ export const isHelpMode = derived(helpModeObject, ($obj) => $obj !== null);
 
 // Selected node info - shared from FlowCanvas for context-sensitive help sidebar
 // Updated by FlowCanvasInner when selection changes
-export const selectedNodeInfo = writable<{
-  type: string;
-  id: string;
-  data?: Record<string, unknown>;
-} | null>(null);
+export const selectedNodeInfo = writable<SelectedNode | null>(null);
+export const selectedNodesInfo = writable<SelectedNode[]>([]);
 
 /** Set to a nodeId to request the canvas to select + pan to that node. Cleared after handled. */
 export const requestFocusNodeId = writable<string | null>(null);

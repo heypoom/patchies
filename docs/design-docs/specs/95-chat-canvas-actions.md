@@ -140,11 +140,11 @@ ChatView already passes `selectedNodeInfo` context to the AI. This becomes more 
 // In the chat system prompt context
 interface ChatContext {
   nodes: {id: string; type: string; name?: string}[] // all nodes
-  selectedNode?: {id: string; type: string; data: Record<string, unknown>}
+  selectedNodes?: {id: string; type: string; data: Record<string, unknown>}[]
 }
 ```
 
-This lets the AI say "I see you have an `osc~` node selected, I'll edit that" without the user needing to specify the node ID.
+This lets the AI say "I see you have an `osc~` node selected, I'll edit that" without the user needing to specify the node ID. When multiple objects are selected, ChatView sends all selected objects as context and the header summarizes the first two labels plus the remaining count.
 
 ---
 

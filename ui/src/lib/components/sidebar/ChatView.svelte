@@ -19,7 +19,7 @@
   import { useVoiceInput } from '$lib/ai/useVoiceInput.svelte';
   import { getNodeErrors } from '$lib/utils/logger';
   import { onMount, onDestroy } from 'svelte';
-  import { selectedNodeInfo } from '../../../stores/ui.store';
+  import { selectedNodesInfo } from '../../../stores/ui.store';
   import {
     type ChatNode,
     type ChatGraphSummary,
@@ -45,6 +45,7 @@
   import { chatStreamStore } from '../../../stores/chat-streaming.store.svelte';
   import { chatSettingsStore } from '../../../stores/chat-settings.store';
   import type { StagedImage } from '$lib/ai/chat/types';
+  import { buildChatNodeContexts, formatNodeContextLabel } from '$lib/ai/chat/node-context';
 
   let {
     sessionId,
@@ -159,18 +160,8 @@
     allPersonas.find((p: Persona) => p.id === $personaStore.activeId) ?? null
   );
 
-  const nodeContext = $derived.by(() => {
-    if (!$selectedNodeInfo) return null;
-
-    const errors = getNodeErrors($selectedNodeInfo.id);
-
-    return {
-      nodeId: $selectedNodeInfo.id,
-      nodeType: $selectedNodeInfo.type,
-      nodeData: $selectedNodeInfo.data,
-      consoleErrors: errors.length > 0 ? errors : undefined
-    };
-  });
+  const nodeContext = $derived(buildChatNodeContexts($selectedNodesInfo, getNodeErrors));
+  const nodeContextLabel = $derived(formatNodeContextLabel(nodeContext));
 
   $effect(() => {
     void session.messages;
@@ -267,7 +258,7 @@
 
     void chatStreamStore.startStream(sessionId, {
       chatHistory,
-      nodeContext,
+      nodeContext: nodeContext.length > 0 ? nodeContext : null,
       getNodeById,
       getGraphSummary,
       getViewportSummary,
@@ -363,16 +354,12 @@
 
 <div class="flex h-full min-h-0 flex-col overflow-hidden">
   <!-- Node context banner -->
-  {#if nodeContext}
+  {#if nodeContext.length > 0}
     <div class="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900/60 px-3 py-1.5">
       <MessageSquare class="h-3 w-3 shrink-0 text-purple-400" />
 
       <span class="min-w-0 truncate font-mono text-xs text-zinc-400">
-        Context: <span class="text-zinc-200"
-          >{(nodeContext.nodeData?.name as string) ||
-            (nodeContext.nodeData?.title as string) ||
-            nodeContext.nodeType}</span
-        >
+        Context: <span class="text-zinc-200">{nodeContextLabel}</span>
       </span>
     </div>
   {/if}
