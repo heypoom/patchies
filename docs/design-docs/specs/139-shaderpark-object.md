@@ -32,6 +32,8 @@ The 3D mode keeps the same object, code editor, settings, dynamic `input()` mess
 
 3D mode does not depend on DOM `OrbitControls`. Instead, the node preview forwards pointer down/move/up and wheel data to the worker. The worker maintains a small orbit-camera state and updates the camera before rendering. This keeps drag orbit and wheel zoom available without moving the renderer to the main thread or giving up the FBO pipeline.
 
+Mode changes must send clone-safe renderer data to the render worker. The Shader Park component should clone uniform definitions, video uniform index arrays, vector uniform values, and tuple resolution values before building the render graph so Svelte proxy state never crosses the worker `postMessage` boundary.
+
 The Three.js Shader Park target does not know about Patchies video samplers by default, so the renderer injects the fixed `iChannel0` through `iChannel3` sampler uniforms into the generated fragment shader and wraps connected regl textures as Three.js textures.
 
 ## Initial Scope

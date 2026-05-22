@@ -218,6 +218,14 @@
     return (defs ?? []).map(cloneUniformDef);
   }
 
+  function cloneVideoUniformIndices(indices: number[] | undefined): number[] {
+    return [...(indices ?? [])];
+  }
+
+  function cloneFboResolution(resolution: FBOResolution | undefined): FBOResolution | undefined {
+    return Array.isArray(resolution) ? [...resolution] : resolution;
+  }
+
   function cloneableUniformValues(
     defs: GLUniformDef[],
     values: Record<string, unknown>
@@ -267,20 +275,29 @@
       _runRevision: number;
     }> = {}
   ) {
+    const nextUniformDefs = cloneUniformDefs(
+      overrides.shaderParkUniformDefs ?? data.shaderParkUniformDefs
+    );
+    const nextUniformValues = cloneableUniformValues(
+      nextUniformDefs,
+      overrides.uniformValues ?? uniformValues
+    );
+    const nextVideoUniformIndices = cloneVideoUniformIndices(
+      overrides.shaderParkVideoUniformIndices ??
+        data.shaderParkVideoUniformIndices ??
+        extractShaderParkVideoUniformIndices(overrides.code ?? data.code)
+    );
+
     return {
       code: overrides.code ?? data.code,
       videoInletCount: overrides.videoInletCount ?? data.videoInletCount ?? 4,
       videoOutletCount: overrides.videoOutletCount ?? data.videoOutletCount ?? 1,
-      shaderParkVideoUniformIndices:
-        overrides.shaderParkVideoUniformIndices ??
-        data.shaderParkVideoUniformIndices ??
-        extractShaderParkVideoUniformIndices(data.code),
-      shaderParkUniformDefs:
-        overrides.shaderParkUniformDefs ?? cloneUniformDefs(data.shaderParkUniformDefs),
-      uniformValues: overrides.uniformValues ?? { ...uniformValues },
+      shaderParkVideoUniformIndices: nextVideoUniformIndices,
+      shaderParkUniformDefs: nextUniformDefs,
+      uniformValues: nextUniformValues,
       renderMode: overrides.renderMode ?? renderMode,
       fboFormat: overrides.fboFormat ?? data.fboFormat,
-      resolution: overrides.resolution ?? data.resolution,
+      resolution: cloneFboResolution(overrides.resolution ?? data.resolution),
       ...(overrides._runRevision !== undefined ? { _runRevision: overrides._runRevision } : {})
     };
   }
