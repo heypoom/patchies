@@ -31,6 +31,15 @@ type ShaderParkThreeRendererConfig = {
   uniformDefs?: GLUniformDef[];
 };
 
+type ThreeTextureInteropProps = {
+  __webglTexture?: WebGLTexture;
+  __webglInit?: boolean;
+};
+
+type ThreeRenderTargetInteropProps = {
+  __webglFramebuffer?: WebGLFramebuffer;
+};
+
 let shaderParkCorePromise: Promise<ShaderParkCore> | null = null;
 
 function lazyLoadShaderParkCore(): Promise<ShaderParkCore> {
@@ -72,6 +81,7 @@ export class ShaderParkThreeRenderer {
   private fallbackThreeTexture: import('three').Texture | null = null;
   private threeInputTextures: import('three').Texture[] = [];
   private orbit: ShaderParkOrbitState = createShaderParkOrbitState();
+  private missingInteropWarnings = new Set<string>();
 
   private constructor(
     private config: ShaderParkThreeRendererConfig,
@@ -133,7 +143,6 @@ export class ShaderParkThreeRenderer {
     this.disposeMesh();
 
     const { sculptToThreeJSShaderSource } = await lazyLoadShaderParkCore();
-
     const generated = sculptToThreeJSShaderSource(this.config.code);
 
     if (generated.error) {
@@ -146,6 +155,7 @@ export class ShaderParkThreeRenderer {
 
     this.material = material;
     this.mesh = mesh;
+
     this.scene.add(mesh);
   }
 
@@ -161,6 +171,7 @@ export class ShaderParkThreeRenderer {
       return;
     }
 
+    this.resizeToOutputSize();
     this.updateThreeTextures(params.userParams as (regl.Texture2D | undefined)[]);
     this.updateUniforms(params);
     this.updateCamera(params);
@@ -172,7 +183,7 @@ export class ShaderParkThreeRenderer {
 
     this.blitToReglFramebuffer();
     this.threeWebGLRenderer.resetState();
-    this.renderer.regl._refresh();
+    this.refreshReglState();
   }
 
   zoom(deltaY: number) {
@@ -287,7 +298,7 @@ export class ShaderParkThreeRenderer {
       uniforms.mouse.value.set(
         width > 0 ? (2 * params.mouseX) / width - 1 : 0,
         height > 0 ? 2 * (1 - params.mouseY / height) - 1 : 0,
-        params.mouseZ || -0.5
+        params.mouseZ ?? -0.5
       );
     }
 
@@ -350,21 +361,17 @@ export class ShaderParkThreeRenderer {
 
       const threeTexture = this.threeInputTextures[i];
 
-      // @ts-expect-error -- accessing internal regl property
-      const webglTexture = reglTex._texture?.texture as WebGLTexture | undefined;
+      const webglTexture = this.getReglTextureHandle(reglTex, i);
+      if (!webglTexture) continue;
 
-      if (webglTexture) {
-        const props = this.threeWebGLRenderer.properties.get(threeTexture) as {
-          __webglTexture?: WebGLTexture;
-          __webglInit?: boolean;
-        };
+      const props = this.getThreeTextureInteropProps(threeTexture, i);
+      if (!props) continue;
 
-        props.__webglTexture = webglTexture;
-        props.__webglInit = true;
+      props.__webglTexture = webglTexture;
+      props.__webglInit = true;
 
-        threeTexture.image = { width: reglTex.width, height: reglTex.height };
-        threeTexture.needsUpdate = false;
-      }
+      threeTexture.image = { width: reglTex.width, height: reglTex.height };
+      threeTexture.needsUpdate = false;
     }
   }
 
@@ -374,10 +381,7 @@ export class ShaderParkThreeRenderer {
     const gl = this.renderer.gl;
     const [width, height] = this.renderer.outputSize;
 
-    const threeProps = this.threeWebGLRenderer.properties.get(this.renderTarget);
-
-    // @ts-expect-error -- accessing internal Three.js property
-    const sourceFBO = threeProps.__webglFramebuffer as WebGLFramebuffer | undefined;
+    const sourceFBO = this.getThreeRenderTargetFramebuffer();
     if (!sourceFBO) return;
 
     const destFBO = getFramebuffer(this.framebuffer);
@@ -389,12 +393,103 @@ export class ShaderParkThreeRenderer {
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
   }
 
+  private resizeToOutputSize() {
+    if (!this.renderTarget || !this.threeWebGLRenderer || !this.camera) return;
+
+    const [width, height] = this.renderer.outputSize;
+    if (width <= 0 || height <= 0) return;
+
+    if (this.renderTarget.width !== width || this.renderTarget.height !== height) {
+      this.renderTarget.setSize(width, height);
+      this.threeWebGLRenderer.setSize(width, height, false);
+
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  private refreshReglState() {
+    const reglInstance = this.renderer.regl as regl.Regl & {
+      _refresh?: () => void;
+    };
+
+    if (typeof reglInstance._refresh !== 'function') {
+      throw new Error('Shader Park 3D renderer expected regl._refresh() after Three.js blit');
+    }
+
+    reglInstance._refresh();
+  }
+
+  private getReglTextureHandle(reglTex: regl.Texture2D, index: number) {
+    // Private regl/Three.js internals bridge the shared WebGL context; keep exact package versions pinned.
+    const rawTexture = reglTex as regl.Texture2D & {
+      _texture?: { texture?: WebGLTexture };
+    };
+
+    const webglTexture = rawTexture._texture?.texture;
+
+    if (!webglTexture) {
+      this.warnMissingInterop(
+        `regl-texture-${index}`,
+        `Shader Park 3D renderer skipped iChannel${index}: missing regl texture handle`
+      );
+    }
+
+    return webglTexture;
+  }
+
+  private getThreeTextureInteropProps(texture: import('three').Texture, index: number) {
+    if (!this.threeWebGLRenderer) return null;
+
+    const props = this.threeWebGLRenderer.properties.get(texture) as
+      | ThreeTextureInteropProps
+      | undefined;
+
+    if (!props) {
+      this.warnMissingInterop(
+        `three-texture-${index}`,
+        `Shader Park 3D renderer skipped iChannel${index}: missing Three.js texture properties`
+      );
+
+      return null;
+    }
+
+    return props;
+  }
+
+  private getThreeRenderTargetFramebuffer() {
+    if (!this.threeWebGLRenderer || !this.renderTarget) return null;
+
+    const threeProps = this.threeWebGLRenderer.properties.get(this.renderTarget) as
+      | ThreeRenderTargetInteropProps
+      | undefined;
+
+    if (!threeProps?.__webglFramebuffer) {
+      this.warnMissingInterop(
+        'three-render-target-framebuffer',
+        'Shader Park 3D renderer skipped blit: missing Three.js render target framebuffer'
+      );
+
+      return null;
+    }
+
+    return threeProps.__webglFramebuffer;
+  }
+
+  private warnMissingInterop(key: string, message: string) {
+    if (this.missingInteropWarnings.has(key)) return;
+
+    this.missingInteropWarnings.add(key);
+    console.warn(message, { nodeId: this.config.nodeId });
+  }
+
   private disposeMesh() {
     if (!this.scene || !this.mesh) return;
 
     this.scene.remove(this.mesh);
     this.mesh.geometry.dispose();
     this.material?.dispose();
+
     this.mesh = null;
     this.material = null;
   }

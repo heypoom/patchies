@@ -36,6 +36,12 @@ Mode changes must send clone-safe renderer data to the render worker. The Shader
 
 The Three.js Shader Park target does not know about Patchies video samplers by default, so the renderer injects the fixed `iChannel0` through `iChannel3` sampler uniforms into the generated fragment shader and wraps connected regl textures as Three.js textures.
 
+Because the 3D path shares one WebGL2 context between regl and Three.js, the renderer must guard its private regl/Three interop fields at runtime and fail with clear diagnostics when those internals change. Pin the exact `three` and `regl` package versions rather than using caret ranges to reduce accidental upgrade breakage.
+
+3D renderer creation failures should be isolated per node during FBO rebuilds. A failed Shader Park 3D renderer should log the node id and error details, return no renderer for that node, and allow the remaining nodes in the rebuild to finish.
+
+The 3D renderer must resize its Three.js render target, WebGL renderer, and camera when the live output size changes, before updating uniforms or blitting into the regl framebuffer. Shader Park uniform defaults and persisted `uniformValues` must be initialized before choosing between flat and 3D render modes so both paths see the same state.
+
 ## Initial Scope
 
 - One video outlet.

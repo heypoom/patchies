@@ -1084,13 +1084,6 @@ export class FBORenderer {
   ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
     if (node.type !== 'shaderpark') return null;
 
-    if (node.data.renderMode === '3d') {
-      return this.createShaderParkThreeRenderer(node, framebuffer);
-    }
-
-    const nodeResolution = node.data.resolution;
-    const [width, height] = this.resolveNodeSize(nodeResolution);
-
     if (node.data.shaderParkUniformDefs) {
       const uniformData = this.uniformDataByNode.get(node.id) ?? new Map();
       const savedValues = node.data.uniformValues;
@@ -1114,6 +1107,13 @@ export class FBORenderer {
 
       this.uniformDataByNode.set(node.id, uniformData);
     }
+
+    if (node.data.renderMode === '3d') {
+      return this.createShaderParkThreeRenderer(node, framebuffer);
+    }
+
+    const nodeResolution = node.data.resolution;
+    const [width, height] = this.resolveNodeSize(nodeResolution);
 
     const renderCommand = await createShaderParkDrawCommand({
       width,
@@ -1157,15 +1157,28 @@ export class FBORenderer {
       this.shaderParkThreeByNode.get(node.id)?.destroy();
     }
 
-    const shaderParkThreeRenderer = await ShaderParkThreeRenderer.create(
-      {
-        code: node.data.code,
+    let shaderParkThreeRenderer: ShaderParkThreeRenderer;
+
+    try {
+      shaderParkThreeRenderer = await ShaderParkThreeRenderer.create(
+        {
+          code: node.data.code,
+          nodeId: node.id,
+          uniformDefs: node.data.shaderParkUniformDefs
+        },
+        framebuffer,
+        this
+      );
+    } catch (error) {
+      console.error('failed to create Shader Park 3D renderer', {
         nodeId: node.id,
-        uniformDefs: node.data.shaderParkUniformDefs
-      },
-      framebuffer,
-      this
-    );
+        error
+      });
+
+      this.shaderParkThreeByNode.delete(node.id);
+
+      return null;
+    }
 
     this.shaderParkThreeByNode.set(node.id, shaderParkThreeRenderer);
 
