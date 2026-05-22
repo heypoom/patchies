@@ -29,6 +29,7 @@ type ShaderParkThreeRendererConfig = {
   code: string;
   nodeId: string;
   uniformDefs?: GLUniformDef[];
+  size: [number, number];
 };
 
 type ThreeTextureInteropProps = {
@@ -79,7 +80,7 @@ export class ShaderParkThreeRenderer {
   private mesh: import('three').Mesh | null = null;
   private material: import('three').ShaderMaterial | null = null;
   private fallbackThreeTexture: import('three').Texture | null = null;
-  private threeInputTextures: import('three').Texture[] = [];
+  private threeInputTextures: (import('three').Texture | undefined)[] = [];
   private orbit: ShaderParkOrbitState = createShaderParkOrbitState();
   private missingInteropWarnings = new Set<string>();
 
@@ -97,7 +98,7 @@ export class ShaderParkThreeRenderer {
     const instance = new ShaderParkThreeRenderer(config, framebuffer, renderer);
     instance.THREE = await import('three');
 
-    const [width, height] = instance.renderer.outputSize;
+    const [width, height] = instance.config.size;
 
     const fakeCanvas = {
       addEventListener: () => {},
@@ -171,7 +172,7 @@ export class ShaderParkThreeRenderer {
       return;
     }
 
-    this.resizeToOutputSize();
+    this.resizeToNodeSize();
     this.updateThreeTextures(params.userParams as (regl.Texture2D | undefined)[]);
     this.updateUniforms(params);
     this.updateCamera(params);
@@ -196,7 +197,7 @@ export class ShaderParkThreeRenderer {
     this.fallbackThreeTexture?.dispose();
 
     for (const texture of this.threeInputTextures) {
-      texture.dispose();
+      texture?.dispose();
     }
 
     this.threeInputTextures = [];
@@ -258,7 +259,7 @@ export class ShaderParkThreeRenderer {
       .with({ name: '_scale' }, ({ value }) => getDefaultScalarValue(value, 1))
       .with({ name: 'stepSize' }, ({ value }) => getDefaultScalarValue(value, 0.85))
       .with({ name: 'time' }, () => 0)
-      .with({ name: 'resolution' }, () => new THREE.Vector2(...this.renderer.outputSize))
+      .with({ name: 'resolution' }, () => new THREE.Vector2(...this.config.size))
       .with({ name: 'mouse' }, () => new THREE.Vector3(0, 0, -0.5))
       .with(
         { type: 'vec2' },
@@ -289,11 +290,11 @@ export class ShaderParkThreeRenderer {
     }
 
     if (uniforms.resolution) {
-      uniforms.resolution.value.set(...this.renderer.outputSize);
+      uniforms.resolution.value.set(...this.config.size);
     }
 
     if (uniforms.mouse) {
-      const [width, height] = this.renderer.outputSize;
+      const [width, height] = this.config.size;
 
       uniforms.mouse.value.set(
         width > 0 ? (2 * params.mouseX) / width - 1 : 0,
@@ -351,15 +352,20 @@ export class ShaderParkThreeRenderer {
 
     for (let i = 0; i < SHADERPARK_VIDEO_UNIFORM_COUNT; i++) {
       const reglTex = inputTextures[i];
-      if (!reglTex) continue;
-
-      if (!this.threeInputTextures[i]) {
-        this.threeInputTextures[i] = new this.THREE.Texture();
-        this.threeInputTextures[i].minFilter = this.THREE.LinearFilter;
-        this.threeInputTextures[i].magFilter = this.THREE.LinearFilter;
+      if (!reglTex) {
+        this.clearThreeInputTexture(i);
+        continue;
       }
 
-      const threeTexture = this.threeInputTextures[i];
+      let threeTexture = this.threeInputTextures[i];
+
+      if (!threeTexture) {
+        threeTexture = new this.THREE.Texture();
+        threeTexture.minFilter = this.THREE.LinearFilter;
+        threeTexture.magFilter = this.THREE.LinearFilter;
+
+        this.threeInputTextures[i] = threeTexture;
+      }
 
       const webglTexture = this.getReglTextureHandle(reglTex, i);
       if (!webglTexture) continue;
@@ -379,7 +385,7 @@ export class ShaderParkThreeRenderer {
     if (!this.threeWebGLRenderer || !this.renderTarget || !this.framebuffer) return;
 
     const gl = this.renderer.gl;
-    const [width, height] = this.renderer.outputSize;
+    const [width, height] = this.config.size;
 
     const sourceFBO = this.getThreeRenderTargetFramebuffer();
     if (!sourceFBO) return;
@@ -393,10 +399,10 @@ export class ShaderParkThreeRenderer {
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
   }
 
-  private resizeToOutputSize() {
+  private resizeToNodeSize() {
     if (!this.renderTarget || !this.threeWebGLRenderer || !this.camera) return;
 
-    const [width, height] = this.renderer.outputSize;
+    const [width, height] = this.config.size;
     if (width <= 0 || height <= 0) return;
 
     if (this.renderTarget.width !== width || this.renderTarget.height !== height) {
@@ -455,6 +461,25 @@ export class ShaderParkThreeRenderer {
     }
 
     return props;
+  }
+
+  private clearThreeInputTexture(index: number) {
+    const texture = this.threeInputTextures[index];
+    if (!texture || !this.threeWebGLRenderer) return;
+
+    const props = this.threeWebGLRenderer.properties.get(texture) as
+      | ThreeTextureInteropProps
+      | undefined;
+
+    if (props) {
+      props.__webglTexture = undefined;
+      props.__webglInit = false;
+    }
+
+    this.threeWebGLRenderer.properties.remove(texture);
+    texture.dispose();
+
+    this.threeInputTextures[index] = undefined;
   }
 
   private getThreeRenderTargetFramebuffer() {

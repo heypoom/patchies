@@ -40,7 +40,7 @@ Because the 3D path shares one WebGL2 context between regl and Three.js, the ren
 
 3D renderer creation failures should be isolated per node during FBO rebuilds. A failed Shader Park 3D renderer should log the node id and error details, return no renderer for that node, and allow the remaining nodes in the rebuild to finish.
 
-The 3D renderer must resize its Three.js render target, WebGL renderer, and camera when the live output size changes, before updating uniforms or blitting into the regl framebuffer. Shader Park uniform defaults and persisted `uniformValues` must be initialized before choosing between flat and 3D render modes so both paths see the same state.
+The 3D renderer must size its Three.js render target, WebGL renderer, camera, resolution uniform, and blit dimensions from the resolved node FBO size, not the global output size, so per-node resolution overrides apply. Shader Park uniform defaults and persisted `uniformValues` must be initialized before choosing between flat and 3D render modes so both paths see the same state. Disconnected video inputs must clear their Three.js texture wrappers so old sampler sources are not reused after graph changes.
 
 ## Initial Scope
 

@@ -1157,6 +1157,8 @@ export class FBORenderer {
       this.shaderParkThreeByNode.get(node.id)?.destroy();
     }
 
+    const nodeSize = this.resolveNodeSize(node.data.resolution);
+
     let shaderParkThreeRenderer: ShaderParkThreeRenderer;
 
     try {
@@ -1164,7 +1166,8 @@ export class FBORenderer {
         {
           code: node.data.code,
           nodeId: node.id,
-          uniformDefs: node.data.shaderParkUniformDefs
+          uniformDefs: node.data.shaderParkUniformDefs,
+          size: nodeSize
         },
         framebuffer,
         this
