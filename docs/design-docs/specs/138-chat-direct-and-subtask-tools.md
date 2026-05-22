@@ -518,6 +518,10 @@ Update the chat system prompt with the new tool-selection policy:
 4. Use subtask tools only when a generation/rewrite/planning step is required.
 5. After a subtask returns structured output, call a direct tool to queue the actual canvas mutation.
 6. Do not call resolver-backed mode tools from ChatView.
+7. Treat questions and explanation requests as read-only. If the user asks what code does, why a
+   constant exists, how something works, or asks "can you explain...", answer in text and do not call
+   direct canvas tools or subtask rewrite/generation tools unless the same message explicitly asks
+   for a change.
 
 ## Completed Implementation Notes
 
