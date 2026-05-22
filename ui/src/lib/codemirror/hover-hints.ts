@@ -2,6 +2,7 @@ import type { Completion } from '@codemirror/autocomplete';
 import { EditorState, type Extension } from '@codemirror/state';
 import { hoverTooltip, type Tooltip } from '@codemirror/view';
 import { match } from 'ts-pattern';
+import { isCompletionSuppressedByComment } from '$lib/codemirror/completion-utils';
 import {
   isGlslInJavaScriptCompletionContext,
   isJavaScriptStringCompletionContext
@@ -86,12 +87,18 @@ function getCompletionForWord(
 export function getCompletionHoverHint(
   state: EditorState,
   pos: number,
-  context: CompletionHoverContext
+  hoverCtx: CompletionHoverContext
 ): CompletionHoverHint | null {
   const word = getWordAt(state, pos);
   if (!word) return null;
 
-  const completion = getCompletionForWord(word.text, state, pos, context);
+  const completionCtx = createCompletionContext(state, pos);
+
+  if (isCompletionSuppressedByComment(completionCtx, word.from)) {
+    return null;
+  }
+
+  const completion = getCompletionForWord(word.text, state, pos, hoverCtx);
   if (!completion) return null;
 
   return {

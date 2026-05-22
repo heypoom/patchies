@@ -91,6 +91,28 @@ describe('completion hover hints', () => {
     ).toBeNull();
   });
 
+  it('does not show hover hints inside line comments', () => {
+    const { doc, pos } = cursor('// se|nd("hello")');
+
+    expect(
+      getCompletionHoverHint(jsState(doc), pos, {
+        language: 'javascript',
+        nodeType: 'hydra'
+      })
+    ).toBeNull();
+  });
+
+  it('does not show hover hints inside block comments', () => {
+    const { doc, pos } = cursor('/* se|nd("hello") */');
+
+    expect(
+      getCompletionHoverHint(jsState(doc), pos, {
+        language: 'javascript',
+        nodeType: 'hydra'
+      })
+    ).toBeNull();
+  });
+
   it('keeps template-string interpolation bodies in JavaScript hover context', () => {
     const { doc, pos } = cursor('glsl`vec2 p = ${se|nd("x")}`;');
 

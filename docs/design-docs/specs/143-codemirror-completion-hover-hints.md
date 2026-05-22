@@ -10,6 +10,7 @@ Show lightweight hover hints for single-token functions and values in CodeMirror
 - Hovering a Shader Park Sculpt global such as `sin`, `sphere`, or `time` should show the Shader Park autocomplete metadata in `shaderpark` nodes.
 - Hovering GLSL names such as `sin`, `length`, `uv`, or `iTime` should show GLSL autocomplete metadata in GLSL editors and recognized GLSL-in-JS template strings.
 - Normal JavaScript strings should not show Patchies or Shader Park hover hints.
+- Line comments (`//`) and block comments (`/* ... */`) should not show hover hints.
 - Template-string interpolation bodies (`${...}`) should remain JavaScript hover contexts.
 - Hover tooltip content should keep a readable minimum width even when the code editor node is narrow, while still fitting within small viewports.
 
