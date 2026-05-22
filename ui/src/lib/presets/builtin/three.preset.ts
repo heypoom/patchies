@@ -106,6 +106,26 @@ function draw(t) {
   renderer.render(scene, camera)
 }`;
 
+const MOUSE_CUBE_THREE = `const { Scene, PerspectiveCamera, BoxGeometry, Mesh, MeshNormalMaterial } = THREE
+
+const scene = new Scene()
+const camera = new PerspectiveCamera(75, width / height, 0.1, 1000)
+camera.position.z = 3
+
+const controls = new OrbitControls(camera)
+controls.enablePan = true
+controls.enableZoom = true
+
+const geometry = new BoxGeometry(1, 1, 1)
+const material = new MeshNormalMaterial()
+const mesh = new Mesh(geometry, material)
+scene.add(mesh)
+
+function draw() {
+  controls.update()
+  renderer.render(scene, camera)
+}`;
+
 const PIPE_THREE = `const { Scene, OrthographicCamera, PlaneGeometry, Mesh, MeshBasicMaterial } = THREE
 
 setVideoCount(1, 1)
@@ -404,6 +424,7 @@ export const THREE_PRESETS: Record<string, { type: string; data: { code: string 
   'video-torus.three': { type: 'three', data: { code: VIDEO_TORUS_THREE.trim() } },
   'video-sphere.three': { type: 'three', data: { code: VIDEO_SPHERE_THREE.trim() } },
   'crate.three': { type: 'three', data: { code: CRATE_THREE.trim() } },
+  'mouse-cube.three': { type: 'three', data: { code: MOUSE_CUBE_THREE.trim() } },
   'point-cloud-from-texture.three': {
     type: 'three',
     data: { code: POINT_CLOUD_FROM_TEXTURE.trim() }

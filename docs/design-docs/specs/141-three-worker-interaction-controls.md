@@ -97,6 +97,10 @@ The worker `ThreeRenderer` should reuse its instance across code updates when th
 
 When user code re-runs, raw callbacks should be cleared and registered again by the new code. Orbit control state should be restored into newly constructed controls so live-coding does not snap the camera back to its default position.
 
+## Built-In Preset
+
+Add a `mouse-cube.three` preset that demonstrates the worker-side `OrbitControls` API with a `MeshNormalMaterial` cube. The preset should use `new OrbitControls(camera)` with pan and zoom enabled, and it should not pass `renderer.domElement` because worker `three` has no DOM element.
+
 ## Documentation Updates
 
 Update:
