@@ -44,6 +44,17 @@ function getShaderParkCompletion(label: string) {
 }
 
 describe('patchies completions', () => {
+  it('does not show Patchies API completions inside strings or template strings', () => {
+    expect(getCompletionLabels('hydra', "'se")).toEqual([]);
+    expect(getCompletionLabels('hydra', '"se')).toEqual([]);
+    expect(getCompletionLabels('hydra', '`se')).toEqual([]);
+    expect(getCompletionLabels('hydra', 'glsl`vec2 p = u')).toEqual([]);
+  });
+
+  it('still shows Patchies API completions inside template interpolations', () => {
+    expect(getCompletionLabels('hydra', 'glsl`vec2 p = ${se')).toContain('send');
+  });
+
   it('does not show Patchies API completions for shaderpark code', () => {
     expect(shouldShowPatchiesCompletions({ nodeType: 'shaderpark' })).toBe(false);
     expect(createPatchiesCompletionSource({ nodeType: 'shaderpark' })).toBeDefined();
@@ -61,6 +72,7 @@ describe('patchies completions', () => {
     expect(getShaderParkCompletionLabels('shaderpark', 'sp')).toContain('sphere');
     expect(getShaderParkCompletionLabels('shaderpark', 'setSpace(getS')).toContain('getSpace');
     expect(getShaderParkCompletionLabels('shaderpark', 'tim')).toContain('time');
+    expect(getShaderParkCompletionLabels('shaderpark', 'glslSDF(`l')).toEqual([]);
 
     expect(getShaderParkCompletionLabels('js', 'sp')).toEqual([]);
     expect(getShaderParkCompletionLabels('shaderpark', '// sp')).toEqual([]);

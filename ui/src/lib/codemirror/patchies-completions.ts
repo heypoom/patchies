@@ -3,6 +3,7 @@ import {
   type Completion
 } from '@codemirror/autocomplete';
 import { isCompletionSuppressedByComment } from '$lib/codemirror/completion-utils';
+import { isJavaScriptStringCompletionContext } from '$lib/codemirror/glsl-in-js';
 
 /**
  * Patchies API function completions for JavaScript-based nodes
@@ -887,6 +888,7 @@ function isInsideFunctionBody(text: string): boolean {
 export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext) {
   return (context: CMCompletionContext) => {
     if (!shouldShowPatchiesCompletions(patchiesContext)) return null;
+    if (isJavaScriptStringCompletionContext(context)) return null;
 
     // Skip completions for non-JS nodes (expressions are pure, messages are JSON5)
     if (patchiesContext?.nodeType === 'expr') return null;
