@@ -265,6 +265,8 @@
             borderLeft: '3px solid rgb(239 68 68)'
           },
           '.cm-completion-hover': {
+            boxSizing: 'border-box',
+            minWidth: 'min(260px, calc(100vw - 32px))',
             maxWidth: '320px',
             padding: '8px 10px',
             border: '1px solid rgb(63 63 70)',
