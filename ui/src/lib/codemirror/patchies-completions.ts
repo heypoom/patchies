@@ -239,6 +239,55 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'setMouseForwarding({ enabled: false })'
   },
   {
+    label: 'setDrawMode',
+    type: 'function',
+    detail: "('always' | 'interact' | 'manual') => void",
+    info: 'Control when the surface draw() function runs: every frame, on interaction, or only when redraw() is called.',
+    apply: "setDrawMode('interact')"
+  },
+  {
+    label: 'redraw',
+    type: 'function',
+    detail: '() => void',
+    info: "Manually trigger the surface draw() function when using setDrawMode('manual').",
+    apply: 'redraw()'
+  },
+  {
+    label: 'activate',
+    type: 'function',
+    detail: '() => void',
+    info: 'Enter fullscreen surface mode.',
+    apply: 'activate()'
+  },
+  {
+    label: 'deactivate',
+    type: 'function',
+    detail: '() => void',
+    info: 'Exit fullscreen surface mode.',
+    apply: 'deactivate()'
+  },
+  {
+    label: 'hideExitButton',
+    type: 'function',
+    detail: '() => void',
+    info: 'Hide the fullscreen surface exit badge.',
+    apply: 'hideExitButton()'
+  },
+  {
+    label: 'onPointer',
+    type: 'function',
+    detail: '(callback: (event) => void) => void',
+    info: "Register a surface pointer callback. Event includes normalized x/y, buttons, down, and type: 'move' | 'down' | 'up'.",
+    apply: 'onPointer(({ x, y, buttons, down, type }) => {\n  \n})'
+  },
+  {
+    label: 'onTouch',
+    type: 'function',
+    detail: '(callback: (touches) => void) => void',
+    info: 'Register a surface touch callback. Touches include id, normalized x/y, and pressure.',
+    apply: 'onTouch((touches) => {\n  \n})'
+  },
+  {
     label: 'setCanvasSize',
     type: 'function',
     detail: '(width: number, height: number) => void',
@@ -379,13 +428,20 @@ const topLevelOnlyFunctions = new Set([
   'onCleanup',
   'onKeyDown',
   'onKeyUp',
+  'onPointer',
   'onPointerDrag',
+  'onTouch',
   'onWheel',
   'onMessage',
   'onVideoFrame',
   'recv',
+  'activate',
+  'deactivate',
+  'hideExitButton',
+  'redraw',
   'setAudioPortCount',
   'setCanvasSize',
+  'setDrawMode',
   'setHidePorts',
   'setKeepAlive',
   'setMouseScope',
@@ -466,10 +522,18 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode',
     'textmode.dom',
     'three',
-    'three.dom'
+    'three.dom',
+    'surface'
   ],
-  onKeyDown: ['canvas.dom', 'three.dom'],
-  onKeyUp: ['canvas.dom', 'three.dom'],
+  onKeyDown: ['canvas.dom', 'three.dom', 'surface'],
+  onKeyUp: ['canvas.dom', 'three.dom', 'surface'],
+  onPointer: ['surface'],
+  onTouch: ['surface'],
+  setDrawMode: ['surface'],
+  redraw: ['surface'],
+  activate: ['surface'],
+  deactivate: ['surface'],
+  hideExitButton: ['surface'],
   setAudioPortCount: ['dsp~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom'],
   setHidePorts: [
@@ -848,6 +912,32 @@ export function shouldShowPatchiesCompletions(context?: PatchiesContext): boolea
   return !PATCHIES_COMPLETION_DISABLED_NODE_TYPES.has(context.nodeType);
 }
 
+function isCompletionAllowedForNode(completion: Completion, context?: PatchiesContext): boolean {
+  if (!context?.nodeType) return true;
+
+  const allowedNodes = nodeSpecificFunctions[completion.label];
+
+  if (allowedNodes) {
+    return allowedNodes.includes(context.nodeType);
+  }
+
+  return true;
+}
+
+export function getPatchiesCompletionByLabel(
+  label: string,
+  context?: PatchiesContext
+): Completion | undefined {
+  if (!shouldShowPatchiesCompletions(context)) return;
+  if (context?.nodeType === 'expr') return;
+  if (context?.nodeType === 'msg') return;
+
+  const completion = patchiesAPICompletions.find((option) => option.label === label);
+  if (!completion) return;
+
+  return isCompletionAllowedForNode(completion, context) ? completion : undefined;
+}
+
 /**
  * Check if cursor is inside a function body by counting braces
  */
@@ -947,17 +1037,9 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
 
     // Filter based on node type
     if (patchiesContext?.nodeType) {
-      options = options.filter((completion) => {
-        const allowedNodes = nodeSpecificFunctions[completion.label];
-
-        // If function has node restrictions, check if current node is allowed
-        if (allowedNodes) {
-          return allowedNodes.includes(patchiesContext.nodeType!);
-        }
-
-        // No restrictions, always show
-        return true;
-      });
+      options = options.filter((completion) =>
+        isCompletionAllowedForNode(completion, patchiesContext)
+      );
     }
 
     // Filter by prefix match only (not substring) - "quan" shouldn't match "requestAnimationFrame"

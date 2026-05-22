@@ -68,6 +68,26 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('js', 'settings.')).toContain('define');
   });
 
+  it('shows the documented surface JavaScript API completions', () => {
+    const labels = getCompletionLabels('surface', '');
+
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        'onPointer',
+        'onTouch',
+        'onKeyDown',
+        'onKeyUp',
+        'setDrawMode',
+        'redraw',
+        'setMouseForwarding',
+        'activate',
+        'deactivate',
+        'hideExitButton',
+        'noOutput'
+      ])
+    );
+  });
+
   it('shows Shader Park completions only for shaderpark code', () => {
     expect(getShaderParkCompletionLabels('shaderpark', 'sp')).toContain('sphere');
     expect(getShaderParkCompletionLabels('shaderpark', 'setSpace(getS')).toContain('getSpace');

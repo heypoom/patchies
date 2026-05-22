@@ -109,7 +109,7 @@
     placeholder = '',
     class: className = '',
     onrun = () => {},
-    onchange = (code: string) => {},
+    onchange = () => {},
     oncommit,
     nodeId,
     dataKey = 'code',
@@ -263,6 +263,33 @@
           '.cm-errorLine': {
             backgroundColor: 'rgba(239, 68, 68, 0.15)',
             borderLeft: '3px solid rgb(239 68 68)'
+          },
+          '.cm-completion-hover': {
+            boxSizing: 'border-box',
+            minWidth: 'min(260px, calc(100vw - 32px))',
+            maxWidth: '320px',
+            padding: '8px 10px',
+            border: '1px solid rgb(63 63 70)',
+            borderRadius: '4px',
+            backgroundColor: 'rgb(39 39 42)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+            lineHeight: '1.35'
+          },
+          '.cm-completion-hover-label': {
+            color: 'rgb(244 244 245)',
+            fontSize: '12px',
+            fontWeight: '600'
+          },
+          '.cm-completion-hover-detail': {
+            marginTop: '2px',
+            color: 'rgb(147 197 253)',
+            fontSize: '11px'
+          },
+          '.cm-completion-hover-info': {
+            marginTop: '6px',
+            color: 'rgb(212 212 216)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '12px'
           },
           '.cm-error-tooltip': {
             backgroundColor: 'rgb(39 39 42)',

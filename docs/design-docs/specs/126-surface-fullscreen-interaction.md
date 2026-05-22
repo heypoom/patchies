@@ -261,6 +261,9 @@ Based on `CanvasDom.svelte` with these differences:
 - Canvas element is the overlay canvas from `SurfaceOverlay`, not an inline preview canvas
 - `setDrawMode()` added to `extraContext`
 - `onPointer()` / `onTouch()` added to `extraContext`
+- CodeMirror Patchies API completions should expose the documented surface JavaScript API:
+  `onPointer`, `onTouch`, `setDrawMode`, `redraw`, `activate`, `deactivate`,
+  `hideExitButton`, `onKeyDown`, `onKeyUp`, `setMouseForwarding`, and `noOutput`.
 - `pointer` and `touch` message outlets added
 - On mount: calls `SurfaceOverlay.activate(nodeId)`
 - On destroy: calls `SurfaceOverlay.deactivate(nodeId)`
