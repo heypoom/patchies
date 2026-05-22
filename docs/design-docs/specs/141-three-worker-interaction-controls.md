@@ -91,6 +91,8 @@ Defer full parity features such as keyboard listeners, touch gestures, damping, 
 
 Wheel input needs its own render-worker message because it is a discrete event rather than durable frame state. The wheel payload should include pointer coordinates when available, `deltaX`, `deltaY`, and `deltaMode`.
 
+The `surface` node should forward fullscreen and preview wheel events through the same worker paths: `three` receives `sendThreeWheelData`, and Shader Park 3D receives `zoomShaderParkOrbit`.
+
 ## Renderer Reuse
 
 The worker `ThreeRenderer` should reuse its instance across code updates when the FBO can be reused, similar to Hydra and Shader Park 3D. Reusing the renderer keeps worker-side interaction state, registered resources, and control snapshots alive across `run` / `setCode` re-evaluation.

@@ -1,5 +1,6 @@
 import { GLSystem } from './GLSystem';
 import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+import { getSurfaceWheelTargets } from './surfaceMouseForwarding';
 import type { Node } from '@xyflow/svelte';
 
 const SHADERTOY_TYPES = new Set(['glsl', 'swgl', 'regl']);
@@ -53,6 +54,32 @@ export class SurfaceMouseForwarder {
         this.forwardShadertoy(node.id, xFB, yFBShadertoy, type, _buttons);
       } else if (SIMPLE_TYPES.has(nodeType)) {
         this.glSystem.setMouseData(node.id, xFB, yFBSimple, 0, 0);
+      }
+    }
+  }
+
+  forwardWheel(event: {
+    x: number;
+    y: number;
+    deltaX: number;
+    deltaY: number;
+    deltaMode: number;
+  }): void {
+    const [w, h] = this.glSystem.outputSize;
+    const xFB = event.x * w;
+    const yFB = event.y * h;
+
+    for (const target of getSurfaceWheelTargets(this.getNodes())) {
+      if (target.kind === 'three') {
+        this.glSystem.sendThreeWheelData(target.nodeId, {
+          x: xFB,
+          y: yFB,
+          deltaX: event.deltaX,
+          deltaY: event.deltaY,
+          deltaMode: event.deltaMode
+        });
+      } else {
+        this.glSystem.zoomShaderParkOrbit(target.nodeId, event.deltaY);
       }
     }
   }

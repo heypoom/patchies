@@ -398,7 +398,8 @@ const MOUSE_INTERACTION_JS_NODES = [
   'three',
   'three.dom',
   'vue',
-  'dom'
+  'dom',
+  'surface'
 ];
 
 // Node-specific functions - only show in certain node types

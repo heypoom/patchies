@@ -25,7 +25,11 @@
   import { outputSize as outputSizeStore } from '../../../stores/renderer.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
-  import { SurfaceListeners, type PointerEvent_ } from '$lib/canvas/SurfaceListeners';
+  import {
+    SurfaceListeners,
+    type PointerEvent_,
+    type SurfaceWheelEvent_
+  } from '$lib/canvas/SurfaceListeners';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
@@ -114,9 +118,11 @@
         type: string;
       }) => void)
     | null = null;
+
   let touchCallback:
     | ((touches: { x: number; y: number; pressure: number; id: number }[]) => void)
     | null = null;
+
   let keyboardCallbacks: {
     onKeyDown?: (event: KeyboardEvent) => void;
     onKeyUp?: (event: KeyboardEvent) => void;
@@ -179,6 +185,7 @@
   $effect(() => {
     if (data.executeCode && data.executeCode !== previousExecuteCode) {
       previousExecuteCode = data.executeCode;
+
       runCode();
     }
   });
@@ -240,13 +247,27 @@
 
     mouseForwarder.forward(x, y, buttons, type);
 
-    if (drawMode === 'interact') triggerDraw();
+    if (drawMode === 'interact') {
+      triggerDraw();
+    }
+  }
+
+  function dispatchWheel(x: number, y: number, deltaX: number, deltaY: number, deltaMode: number) {
+    mouse.x = x;
+    mouse.y = y;
+
+    mouseForwarder.forwardWheel({ x, y, deltaX, deltaY, deltaMode });
+
+    if (drawMode === 'interact') {
+      triggerDraw();
+    }
   }
 
   // ── Draw mode & rAF ──────────────────────────────────────────────────────
 
   function triggerDraw() {
     if (drawMode !== 'manual' && drawMode !== 'interact') return;
+
     if (pausedCallback) {
       pausedCallback(performance.now());
       sendBitmap();
@@ -259,6 +280,7 @@
     if (!activeCanvas) return;
     if (!videoOutputEnabled) return;
     if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
+
     glSystem.setBitmapSource(nodeId, activeCanvas);
   }
 
@@ -272,7 +294,9 @@
         thumbnailFrameId = null;
         return;
       }
+
       previewCtx.drawImage(activeCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
+
       thumbnailFrameId = requestAnimationFrame(copyFrame);
     }
 
@@ -282,6 +306,7 @@
   function stopThumbnailLoop() {
     if (thumbnailFrameId !== null) {
       cancelAnimationFrame(thumbnailFrameId);
+
       thumbnailFrameId = null;
     }
   }
@@ -293,7 +318,12 @@
 
   function listenerOpts() {
     return {
-      onPointer: (e: PointerEvent_) => dispatchPointer(e.x, e.y, e.buttons, e.type),
+      onPointer(e: PointerEvent_) {
+        dispatchPointer(e.x, e.y, e.buttons, e.type);
+      },
+      onWheel(e: SurfaceWheelEvent_) {
+        dispatchWheel(e.x, e.y, e.deltaX, e.deltaY, e.deltaMode);
+      },
       get onTouch() {
         return touchCallback;
       },
