@@ -102,7 +102,7 @@ export class FBORenderer {
   public nodePausedMap: Map<string, boolean> = new Map();
 
   /** Mapping of nodeID to mouse state (iMouse vec4: xy = current, zw = click) */
-  public mouseDataByNode: Map<string, [number, number, number, number]> = new Map();
+  public mouseDataByNode: Map<string, [number, number, number, number, number?]> = new Map();
 
   public hydraByNode = new Map<string, HydraRenderer | null>();
   public canvasByNode = new Map<string, CanvasRenderer | null>();
@@ -457,8 +457,9 @@ export class FBORenderer {
           node.type === 'shaderpark' &&
           node.data.renderMode === '3d' &&
           this.shaderParkThreeByNode.has(node.id);
+        const isReusableThree = node.type === 'three' && this.threeByNode.has(node.id);
 
-        if (!isHydra && !isShaderPark3D) {
+        if (!isHydra && !isShaderPark3D && !isReusableThree) {
           existingFbo.cleanup?.();
         }
       } else {
@@ -471,8 +472,9 @@ export class FBORenderer {
             node.type === 'shaderpark' &&
             node.data.renderMode === '3d' &&
             this.shaderParkThreeByNode.has(node.id);
+          const isReusableThree = node.type === 'three' && this.threeByNode.has(node.id);
 
-          if (!isHydra && !isShaderPark3D) {
+          if (!isHydra && !isShaderPark3D && !isReusableThree) {
             existingFbo.cleanup?.();
           }
 
@@ -910,16 +912,23 @@ export class FBORenderer {
   ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
     if (node.type !== 'three') return null;
 
-    // Delete existing three renderer if it exists.
-    if (this.threeByNode.has(node.id)) {
-      this.threeByNode.get(node.id)?.destroy();
+    const existingRenderer = this.threeByNode.get(node.id);
+    const runRevision = node.data._runRevision;
+    const config = { code: node.data.code, nodeId: node.id, runRevision };
+
+    if (existingRenderer) {
+      await existingRenderer.updateConfig(config, framebuffer);
+
+      return {
+        render: existingRenderer.renderFrame.bind(existingRenderer),
+        cleanup: () => {
+          existingRenderer.destroy();
+          this.threeByNode.delete(node.id);
+        }
+      };
     }
 
-    const threeRenderer = await ThreeRenderer.create(
-      { code: node.data.code, nodeId: node.id },
-      framebuffer,
-      this
-    );
+    const threeRenderer = await ThreeRenderer.create(config, framebuffer, this);
 
     this.threeByNode.set(node.id, threeRenderer);
 
@@ -1383,8 +1392,15 @@ export class FBORenderer {
   }
 
   /** Set mouse data for a node (Shadertoy iMouse format) */
-  setMouseData(nodeId: string, x: number, y: number, z: number, w: number) {
-    this.mouseDataByNode.set(nodeId, [x, y, z, w]);
+  setMouseData(nodeId: string, x: number, y: number, z: number, w: number, buttons?: number) {
+    this.mouseDataByNode.set(nodeId, [x, y, z, w, buttons]);
+  }
+
+  sendThreeWheelData(
+    nodeId: string,
+    event: { x?: number; y?: number; deltaX?: number; deltaY: number; deltaMode?: number }
+  ) {
+    this.threeByNode.get(nodeId)?.handleWheelData(event);
   }
 
   zoomShaderParkOrbit(nodeId: string, deltaY: number) {
@@ -1577,6 +1593,7 @@ export class FBORenderer {
           mouseY: mouseData[1],
           mouseZ: mouseData[2],
           mouseW: mouseData[3],
+          mouseButtons: mouseData[4],
           userParams: userUniformParams as UserParam[],
           transportTime
         });

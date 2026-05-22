@@ -9,6 +9,14 @@ export type PointerEvent_ = {
   type: string;
 };
 
+export type SurfaceWheelEvent_ = {
+  x: number;
+  y: number;
+  deltaX: number;
+  deltaY: number;
+  deltaMode: number;
+};
+
 export type TouchPoint = {
   id: number;
   x: number;
@@ -18,9 +26,12 @@ export type TouchPoint = {
 
 export interface SurfaceListenersOptions {
   onPointer: (e: PointerEvent_) => void;
+  onWheel: (e: SurfaceWheelEvent_) => void;
   onTouch: ((touches: TouchPoint[]) => void) | null;
+
   /** Called when pointer leaves the canvas */
   onLeave: () => void;
+
   /** For error reporting */
   code: string;
   nodeId: string;
@@ -61,6 +72,7 @@ export class SurfaceListeners {
 
     const normalize = (clientX: number, clientY: number) => {
       const rect = getContentRect();
+
       return {
         x: (clientX - rect.left) / rect.width,
         y: (clientY - rect.top) / rect.height
@@ -69,6 +81,7 @@ export class SurfaceListeners {
 
     const normalizeTouches = (e: TouchEvent): TouchPoint[] => {
       const rect = getContentRect();
+
       return Array.from(e.touches).map((t) => ({
         id: t.identifier,
         x: (t.clientX - rect.left) / rect.width,
@@ -79,7 +92,9 @@ export class SurfaceListeners {
 
     const fireTouches = (e: TouchEvent) => {
       e.preventDefault();
+
       if (!opts.onTouch) return;
+
       try {
         opts.onTouch(normalizeTouches(e));
       } catch (err) {
@@ -89,6 +104,7 @@ export class SurfaceListeners {
 
     const onPointerMove = (e: PointerEvent) => {
       const { x, y } = normalize(e.clientX, e.clientY);
+
       try {
         opts.onPointer({
           x,
@@ -102,28 +118,52 @@ export class SurfaceListeners {
         handleCodeError(err, opts.code, opts.nodeId, opts.customConsole, opts.wrapperOffset);
       }
     };
+
     const onPointerDown = (e: PointerEvent) => {
       const { x, y } = normalize(e.clientX, e.clientY);
+
       try {
         opts.onPointer({ x, y, pressure: 0, buttons: e.buttons || 1, down: true, type: 'down' });
       } catch (err) {
         handleCodeError(err, opts.code, opts.nodeId, opts.customConsole, opts.wrapperOffset);
       }
     };
+
     const onPointerUp = (e: PointerEvent) => {
       const { x, y } = normalize(e.clientX, e.clientY);
+
       try {
         opts.onPointer({ x, y, pressure: 0, buttons: 0, down: false, type: 'up' });
       } catch (err) {
         handleCodeError(err, opts.code, opts.nodeId, opts.customConsole, opts.wrapperOffset);
       }
     };
+
     const onPointerLeave = () => opts.onLeave();
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+
+      const { x, y } = normalize(e.clientX, e.clientY);
+
+      try {
+        opts.onWheel({
+          x,
+          y,
+          deltaX: e.deltaX,
+          deltaY: e.deltaY,
+          deltaMode: e.deltaMode
+        });
+      } catch (err) {
+        handleCodeError(err, opts.code, opts.nodeId, opts.customConsole, opts.wrapperOffset);
+      }
+    };
 
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('pointerleave', onPointerLeave);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('touchstart', fireTouches, { passive: false });
     canvas.addEventListener('touchmove', fireTouches, { passive: false });
     canvas.addEventListener('touchend', fireTouches, { passive: false });
@@ -133,6 +173,7 @@ export class SurfaceListeners {
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointerleave', onPointerLeave);
+      canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('touchstart', fireTouches);
       canvas.removeEventListener('touchmove', fireTouches);
       canvas.removeEventListener('touchend', fireTouches);

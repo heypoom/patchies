@@ -7,7 +7,7 @@ import { Run, SetCode } from './common';
 export const threeSchema: ObjectSchema = {
   type: 'three',
   category: 'video',
-  description: 'Creates Three.js 3D graphics on web worker',
+  description: 'Creates interactive Three.js 3D graphics on web worker',
   inlets: [
     {
       id: 'message',
@@ -19,7 +19,7 @@ export const threeSchema: ObjectSchema = {
     }
   ],
   outlets: [],
-  tags: ['3d', 'webgl', 'graphics', 'animation', 'scene'],
+  tags: ['3d', 'webgl', 'graphics', 'animation', 'scene', 'interactive'],
   hasDynamicOutlets: true,
   handlePatterns: {
     inlet: {

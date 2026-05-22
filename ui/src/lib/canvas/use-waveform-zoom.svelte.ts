@@ -34,6 +34,7 @@ export function useWaveformZoom() {
       newStart = 0;
       newEnd = newSpan;
     }
+
     if (newEnd > 1) {
       newEnd = 1;
       newStart = 1 - newSpan;

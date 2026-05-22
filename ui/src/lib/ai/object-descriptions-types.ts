@@ -52,9 +52,9 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - glsl: GLSL fragment shaders for visual effects
 - float.tex: Convert Float32Array or Float32Array[] channel data into a 32-bit float video texture for shaders
 - shaderpark: Shader Park SDF raymarching visuals for the video pipeline
-- three: Three.js 3D graphics (offscreen worker, for video chaining)
+- three: Three.js 3D graphics (offscreen worker, video chaining, pointer drag/wheel interaction)
 - regl: GPU renderer with regl draw commands (custom vertices, buffers, multi-pass, blend modes)
-- three.dom: Three.js 3D graphics (main thread, for mouse/keyboard interaction)
+- three.dom: Three.js 3D graphics (main thread, for keyboard/DOM interaction)
 - projmap: Projection mapper — warp video textures onto N-point polygon surfaces with built-in point editor and expand mode
 - dom: write to the DOM element
 - swgl: do not use unless explicitly requested
@@ -144,8 +144,8 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - hydra: Live video synthesis — feedback loops, texture blending, webcam warping
 - glsl: GLSL fragment shaders — pixel-level visual effects, raymarching, procedural textures
 - shaderpark: Shader Park — concise SDF/raymarched procedural 3D visuals
-- three: Three.js 3D graphics (offscreen worker) — meshes, lighting, cameras, 3D scenes; for video chaining
-- three.dom: Three.js 3D graphics (main thread) — same as three but supports mouse/keyboard interaction
+- three: Three.js 3D graphics (offscreen worker) — meshes, lighting, cameras, 3D scenes, pointer drag/wheel interaction; for video chaining
+- three.dom: Three.js 3D graphics (main thread) — same as three but supports keyboard and DOM interaction
 - regl: Low-level GPU rendering — custom vertices, multi-pass, blend modes
 - canvas.dom: HTML5 Canvas (main thread) — supports mouse/keyboard, lower overhead than p5
 - projmap: Projection mapping — warp video onto surfaces with a built-in point editor

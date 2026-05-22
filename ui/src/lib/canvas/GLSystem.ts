@@ -751,13 +751,24 @@ export class GLSystem {
     });
   }
 
-  setMouseData(nodeId: string, x: number, y: number, z: number, w: number) {
+  setMouseData(nodeId: string, x: number, y: number, z: number, w: number, buttons?: number) {
     this.send('setMouseData', {
       nodeId,
       x,
       y,
       z,
-      w
+      w,
+      buttons
+    });
+  }
+
+  sendThreeWheelData(
+    nodeId: string,
+    event: { x?: number; y?: number; deltaX?: number; deltaY: number; deltaMode?: number }
+  ) {
+    this.send('sendThreeWheelData', {
+      nodeId,
+      ...event
     });
   }
 

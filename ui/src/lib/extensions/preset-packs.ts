@@ -268,7 +268,13 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: '3D graphics with Three.js',
     icon: 'Box',
     requiredObjects: ['three', 'glsl'],
-    presets: ['video-cube.three', 'video-torus.three', 'video-sphere.three', 'crate.three']
+    presets: [
+      'video-cube.three',
+      'video-torus.three',
+      'video-sphere.three',
+      'crate.three',
+      'mouse-cube.three'
+    ]
   },
   {
     id: 'gpu-geometry',

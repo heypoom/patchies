@@ -61,6 +61,27 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'getTexture(0)'
   },
   {
+    label: 'OrbitControls',
+    type: 'class',
+    detail: 'new OrbitControls(camera)',
+    info: 'Worker-safe OrbitControls-compatible helper for three nodes. Supports rotate, pan, and wheel zoom without a DOM element.',
+    apply: 'new OrbitControls(camera)'
+  },
+  {
+    label: 'onPointerDrag',
+    type: 'function',
+    detail: '(callback: (event) => void) => () => void',
+    info: 'Receive raw pointer drag events in worker three nodes. Event includes x, y, dx, dy, buttons, and down.',
+    apply: 'onPointerDrag(({ x, y, dx, dy, buttons }) => {\n  \n})'
+  },
+  {
+    label: 'onWheel',
+    type: 'function',
+    detail: '(callback: (event) => void) => () => void',
+    info: 'Receive raw wheel events in worker three nodes. Event includes x, y, deltaX, deltaY, and deltaMode.',
+    apply: 'onWheel(({ x, y, deltaY }) => {\n  \n})'
+  },
+  {
     label: 'onVideoFrame',
     type: 'function',
     detail: '(callback: (frames, timestamp) => void) => void',
@@ -350,6 +371,8 @@ const topLevelOnlyFunctions = new Set([
   'onCleanup',
   'onKeyDown',
   'onKeyUp',
+  'onPointerDrag',
+  'onWheel',
   'onMessage',
   'onVideoFrame',
   'recv',
@@ -375,7 +398,8 @@ const MOUSE_INTERACTION_JS_NODES = [
   'three',
   'three.dom',
   'vue',
-  'dom'
+  'dom',
+  'surface'
 ];
 
 // Node-specific functions - only show in certain node types
@@ -482,6 +506,9 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   setPrimaryButton: ['js', 'worker', 'p5', 'hydra', 'canvas', 'regl', 'swgl', 'textmode', 'three'],
   setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
   getTexture: ['hydra', 'regl', 'swgl', 'three'],
+  OrbitControls: ['three'],
+  onPointerDrag: ['three'],
+  onWheel: ['three'],
   onVideoFrame: ['worker'],
   getVideoFrames: ['worker'],
   getVfsUrl: [

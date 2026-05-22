@@ -13,17 +13,22 @@ const material = new THREE.ShaderMaterial({
 - THREE: Full Three.js library namespace
 - renderer: WebGLRenderer instance
 - width, height: Canvas dimensions
-- mouse: {x, y} coordinates
+- mouse: {x, y, down, buttons, dx, dy, wheelDelta} pointer state
+- OrbitControls: Worker-safe OrbitControls-compatible class
 
 **Three-specific methods:**
 - setVideoCount(inlets, outlets) - Configure video inlets/outlets (default 1, 1)
 - getTexture(index) - Get Three.js Texture from video inlet (0-based index)
+- onPointerDrag(callback) - Receive raw drag events with {x, y, dx, dy, buttons, down}
+- onWheel(callback) - Receive raw wheel events with {x, y, deltaX, deltaY, deltaMode}
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control
 - noOutput() - Hide video output port
 - setHidePorts(bool) - Toggle port visibility
 
 **Three-specific gotchas:**
 - Use draw(time) function for render loop instead of requestAnimationFrame
+- Use new OrbitControls(camera) for worker-side orbit/pan/wheel zoom; worker three has no DOM element
+- Call controls.update() inside draw() before renderer.render(scene, camera)
 - Runs in web worker - no direct DOM access
 
 **Font & element sizes:**
