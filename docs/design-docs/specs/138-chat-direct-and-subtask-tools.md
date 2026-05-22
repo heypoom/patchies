@@ -25,6 +25,8 @@
   `search_presets` to 10 results with an explicit `limit`.
 - Done: added `get_viewport` so Chat can read the current canvas viewport, zoom, visible bounds,
   and center before placing objects in the user's current view.
+- Done: viewport-aware chat inserts now use the most recent `get_viewport` result as a defensive
+  fallback, so omitted positions land at the visible center instead of a stale mouse coordinate.
 
 ## Summary
 
@@ -190,6 +192,14 @@ view, asks to place something nearby, or otherwise expects new objects to appear
 looking. The tool is intentionally fetched on demand instead of injected into every prompt so the
 coordinates stay fresh and ordinary questions do not carry extra context.
 
+Once `get_viewport` has been called in a tool loop, the resolver should also use that result as a
+placement fallback for later direct insert actions. If `insert_object`, `insert_preset`, or
+`insert_objects` omits placement after reading the viewport, the object or group should be queued at
+the viewport center, not at the last mouse position. For `insert_objects`, node-level positions are
+normally relative layout offsets from the group origin. If those positions already look like
+absolute coordinates inside the returned viewport bounds, keep them absolute by using a zero group
+origin instead of adding the viewport center again.
+
 ### Direct Tools
 
 Direct tools create pending `ChatAction`s from structured args without another LLM call.
@@ -231,7 +241,8 @@ insert_objects({
 
 Creates multiple objects and optional edges in one pending action. This is direct when the model has
 already produced final node data. It should share validation/layout logic with the current
-multi-object insert path.
+multi-object insert path. Node `position` values are relative layout offsets unless they were
+derived from `get_viewport` and already fall inside the visible viewport bounds.
 
 ```ts
 update_object_data({

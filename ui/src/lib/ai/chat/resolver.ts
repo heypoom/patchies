@@ -249,6 +249,7 @@ export async function streamChatMessage(
   // them to insert calls for pads~/soundfile~.
   const MAX_CACHED_SAMPLE_URLS = 24;
   const sampleUrlCache: string[] = [];
+  let latestViewportSummary: ChatViewportSummary | undefined;
 
   // Multi-turn loop: runs until the model produces a pure text response (no tool calls)
   while (true) {
@@ -285,6 +286,10 @@ export async function streamChatMessage(
       (tc) => !CONTEXT_TOOL_NAMES.has(tc.name) && !SUBTASK_TOOL_NAMES.has(tc.name)
     );
 
+    if (resultToolCalls.some((tc) => tc.name === GET_VIEWPORT)) {
+      latestViewportSummary = getViewportSummary?.();
+    }
+
     // Assign global indices
     const callIndexMap = new Map<ToolCall, number>();
     for (const tc of toolCalls) {
@@ -313,11 +318,16 @@ export async function streamChatMessage(
         } else if (toolName === DISCONNECT_EDGES) {
           onAction(resolveDisconnectEdges(args, { getNodeById, getGraphSummary }));
         } else if (toolName === INSERT_OBJECT) {
-          onAction(resolveInsertObject(args));
+          onAction(resolveInsertObject(args, { viewportSummary: latestViewportSummary }));
         } else if (toolName === INSERT_PRESET) {
-          onAction(resolveInsertPreset(args, { presets: getAvailablePresets?.() ?? [] }));
+          onAction(
+            resolveInsertPreset(args, {
+              presets: getAvailablePresets?.() ?? [],
+              viewportSummary: latestViewportSummary
+            })
+          );
         } else if (toolName === INSERT_OBJECTS) {
-          onAction(resolveInsertObjects(args));
+          onAction(resolveInsertObjects(args, { viewportSummary: latestViewportSummary }));
         } else if (toolName === UPDATE_OBJECT_DATA) {
           onAction(resolveUpdateObjectData(args, { getNodeById }));
         } else if (toolName === REPLACE_OBJECT) {
@@ -409,7 +419,7 @@ export async function streamChatMessage(
             respond(getGraphSummary?.() ?? { nodes: [], edges: [] })
           )
           .with(GET_VIEWPORT, async () =>
-            respond(getViewportSummary?.() ?? { error: 'Viewport is not available.' })
+            respond(latestViewportSummary ?? { error: 'Viewport is not available.' })
           )
           .with(GET_OBJECT_DATA, async () => {
             const nodeId = (args.objectId as string) ?? '';

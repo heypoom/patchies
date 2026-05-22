@@ -34,12 +34,19 @@
     position: { x: number; y: number };
     mode?: AiPromptMode;
     context?: AiModeContext;
+
     onInsertObject: (
       type: string,
       data: Record<string, unknown>,
       position?: { x: number; y: number }
     ) => void;
-    onInsertMultipleObjects?: (nodes: AiObjectNode[], edges: SimplifiedEdge[]) => void;
+
+    onInsertMultipleObjects?: (
+      nodes: AiObjectNode[],
+      edges: SimplifiedEdge[],
+      basePosition?: { x: number; y: number }
+    ) => void;
+
     onEditObject?: (nodeId: string, data: Record<string, unknown>) => void;
     onReplaceObject?: (nodeId: string, newType: string, newData: Record<string, unknown>) => void;
   } = $props();

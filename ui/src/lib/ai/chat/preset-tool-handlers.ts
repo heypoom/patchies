@@ -2,6 +2,7 @@ import type { Preset, PresetPath } from '$lib/presets/types';
 
 import type { ChatAction } from './resolver';
 import { resolveInsertObject } from './direct-tool-handlers';
+import type { ChatViewportSummary } from './viewport-summary';
 
 export interface AvailablePreset {
   path: PresetPath;
@@ -176,7 +177,7 @@ export function getPresetContent(args: InsertPresetArgs, presets: AvailablePrese
 
 export function resolveInsertPreset(
   args: InsertPresetArgs,
-  deps: { presets: AvailablePreset[] }
+  deps: { presets: AvailablePreset[]; viewportSummary?: ChatViewportSummary }
 ): ChatAction {
   const presetName = typeof args.presetName === 'string' ? args.presetName.trim() : '';
 
@@ -190,9 +191,12 @@ export function resolveInsertPreset(
     throw new Error(`Preset "${presetName}" not found. Call search_presets first.`);
   }
 
-  return resolveInsertObject({
-    type: match.preset.type,
-    data: match.preset.data,
-    ...(args.position ? { position: args.position } : {})
-  });
+  return resolveInsertObject(
+    {
+      type: match.preset.type,
+      data: match.preset.data,
+      ...(args.position ? { position: args.position } : {})
+    },
+    { viewportSummary: deps.viewportSummary }
+  );
 }

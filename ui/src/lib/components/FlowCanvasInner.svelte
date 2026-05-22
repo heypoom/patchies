@@ -569,14 +569,15 @@
 
   async function handleAiMultipleObjectsInsert(
     objectNodes: AiObjectNode[],
-    simplifiedEdges: SimplifiedEdge[]
+    simplifiedEdges: SimplifiedEdge[],
+    basePosition?: { x: number; y: number }
   ) {
-    const basePosition = screenToFlowPosition(lastMousePosition);
+    const insertBasePosition = basePosition ?? screenToFlowPosition(lastMousePosition);
     const viewport = getViewport();
 
     await aiOps.insertMultipleObjects(
       { objectNodes, simplifiedEdges },
-      basePosition,
+      insertBasePosition,
       viewport,
       () => tick()
     );

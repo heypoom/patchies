@@ -63,7 +63,12 @@ export type AiModeResult =
       data: Record<string, unknown>;
       position?: { x: number; y: number };
     }
-  | { kind: 'multi'; nodes: AiObjectNode[]; edges: SimplifiedEdge[] }
+  | {
+      kind: 'multi';
+      nodes: AiObjectNode[];
+      edges: SimplifiedEdge[];
+      basePosition?: { x: number; y: number };
+    }
   | { kind: 'edit'; nodeId: string; data: Record<string, unknown> }
   | { kind: 'replace'; nodeId: string; newType: string; newData: Record<string, unknown> }
   | { kind: 'connect-edges'; edges: Edge[]; invalidEdges?: { reason: string }[] }

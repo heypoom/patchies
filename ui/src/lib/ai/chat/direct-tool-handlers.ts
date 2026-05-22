@@ -10,9 +10,11 @@ import type { AiModeResult, AiPromptMode } from '../modes/types';
 import type { AiObjectNode, SimplifiedEdge } from '../types';
 import { assertKnownCanvasObjectType } from './object-type-validation';
 import type { ChatAction, ChatNode } from './resolver';
+import type { ChatViewportSummary } from './viewport-summary';
 
 interface DirectToolDeps {
   getNodeById?: (nodeId: string) => ChatNode | undefined;
+  viewportSummary?: ChatViewportSummary;
 }
 
 const INTERNAL_FIELDS = new Set(['executeCode', 'initialized']);
@@ -50,6 +52,20 @@ function assertPosition(value: unknown, label: string): { x: number; y: number }
   return { x, y };
 }
 
+function isInsideViewportBounds(
+  position: { x: number; y: number },
+  viewportSummary: ChatViewportSummary
+): boolean {
+  const { bounds } = viewportSummary;
+
+  return (
+    position.x >= bounds.left &&
+    position.x <= bounds.right &&
+    position.y >= bounds.top &&
+    position.y <= bounds.bottom
+  );
+}
+
 function sanitizeData(
   data: Record<string, unknown>,
   options: { preserveInternalName?: boolean } = {}
@@ -77,10 +93,16 @@ function pendingAction(
   };
 }
 
-export function resolveInsertObject(args: Record<string, unknown>): ChatAction {
+export function resolveInsertObject(
+  args: Record<string, unknown>,
+  deps: DirectToolDeps = {}
+): ChatAction {
   const type = assertKnownCanvasObjectType(args.type);
   const data = sanitizeData(assertRecord(args.data, 'data'));
-  const position = args.position ? assertPosition(args.position, 'position') : undefined;
+
+  const position = args.position
+    ? assertPosition(args.position, 'position')
+    : deps.viewportSummary?.center;
 
   assertJsonSerializable(data, 'data');
 
@@ -92,7 +114,10 @@ export function resolveInsertObject(args: Record<string, unknown>): ChatAction {
   });
 }
 
-export function resolveInsertObjects(args: Record<string, unknown>): ChatAction {
+export function resolveInsertObjects(
+  args: Record<string, unknown>,
+  deps: DirectToolDeps = {}
+): ChatAction {
   const rawNodes = args.nodes;
 
   if (!Array.isArray(rawNodes) || rawNodes.length === 0) {
@@ -103,10 +128,9 @@ export function resolveInsertObjects(args: Record<string, unknown>): ChatAction 
     const node = assertRecord(rawNode, `nodes[${index}]`);
     const type = assertKnownCanvasObjectType(node.type);
     const data = sanitizeData(assertRecord(node.data, `nodes[${index}].data`));
-    const position =
-      node.position && typeof node.position === 'object' && !Array.isArray(node.position)
-        ? (node.position as { x: number; y: number })
-        : undefined;
+    const position = node.position
+      ? assertPosition(node.position, `nodes[${index}].position`)
+      : undefined;
 
     assertJsonSerializable(data, `nodes[${index}].data`);
 
@@ -136,10 +160,20 @@ export function resolveInsertObjects(args: Record<string, unknown>): ChatAction 
       })
     : [];
 
+  const positionedNodes = nodes.filter(
+    (node): node is AiObjectNode & { position: { x: number; y: number } } => !!node.position
+  );
+  const hasAbsoluteViewportPosition =
+    !!deps.viewportSummary &&
+    positionedNodes.some((node) => isInsideViewportBounds(node.position, deps.viewportSummary!));
+
   return pendingAction('multi', {
     kind: 'multi',
     nodes,
-    edges
+    edges,
+    ...(deps.viewportSummary
+      ? { basePosition: hasAbsoluteViewportPosition ? { x: 0, y: 0 } : deps.viewportSummary.center }
+      : {})
   });
 }
 
