@@ -52,6 +52,7 @@ The Three.js Shader Park target does not know about Patchies video samplers by d
 - The AI object prompt should be compact overall but spend detail on Sculpt function signatures and math helper constraints so generated Shader Park code uses the right DSL instead of generic GLSL or Patchies JavaScript APIs.
 - Object documentation should link to Shader Park's main site, JS reference docs, community examples, about page, and `shader-park-core` repository.
 - Code that references `mouse` or `mouseIntersection()` should receive normalized Shader Park mouse coordinates from the node preview and the shared surface mouse forwarder.
+- Worker-side 3D uniform defaults should use declarative `ts-pattern` matching so built-in Shader Park names and vector uniform types stay centralized and easy to extend.
 
 ## Built-in Presets
 

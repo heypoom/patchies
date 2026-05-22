@@ -1,4 +1,5 @@
 import type regl from 'regl';
+import { match } from 'ts-pattern';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import type { GLUniformDef } from '../../types/uniform-config';
@@ -16,6 +17,7 @@ import {
 } from '$lib/shaderpark/uniforms';
 
 type ShaderParkCore = typeof import('shader-park-core');
+
 type ShaderParkUniform = {
   name: string;
   type: string;
@@ -30,7 +32,7 @@ type ShaderParkThreeRendererConfig = {
 
 let shaderParkCorePromise: Promise<ShaderParkCore> | null = null;
 
-function loadShaderParkCore(): Promise<ShaderParkCore> {
+function lazyLoadShaderParkCore(): Promise<ShaderParkCore> {
   shaderParkCorePromise ??= import('shader-park-core');
 
   return shaderParkCorePromise;
@@ -49,11 +51,10 @@ function injectVideoUniforms(fragment: string) {
   )}`;
 }
 
-function scalarDefault(value: unknown, fallback: number) {
-  return typeof value === 'number' ? value : fallback;
-}
+const getDefaultScalarValue = (value: unknown, fallback: number) =>
+  typeof value === 'number' ? value : fallback;
 
-function vectorDefault(value: unknown, fallback: number[]) {
+function getDefaultVectorValue(value: unknown, fallback: number[]) {
   const normalized = normalizeShaderParkUniformValue(value, `vec${fallback.length}`);
 
   return Array.isArray(normalized) ? normalized : fallback;
@@ -99,6 +100,7 @@ export class ShaderParkThreeRenderer {
       antialias: true,
       alpha: true
     });
+
     instance.threeWebGLRenderer.setSize(width, height, false);
     instance.threeWebGLRenderer.setClearColor(0x000000, 0);
 
@@ -106,14 +108,17 @@ export class ShaderParkThreeRenderer {
       format: instance.THREE.RGBAFormat,
       type: instance.THREE.UnsignedByteType
     });
+
     instance.scene = new instance.THREE.Scene();
     instance.camera = new instance.THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+
     instance.fallbackThreeTexture = new instance.THREE.DataTexture(
       new Uint8Array([0, 0, 0, 255]),
       1,
       1,
       instance.THREE.RGBAFormat
     );
+
     instance.fallbackThreeTexture.needsUpdate = true;
 
     await instance.updateCode();
@@ -126,7 +131,8 @@ export class ShaderParkThreeRenderer {
 
     this.disposeMesh();
 
-    const { sculptToThreeJSShaderSource } = await loadShaderParkCore();
+    const { sculptToThreeJSShaderSource } = await lazyLoadShaderParkCore();
+
     const generated = sculptToThreeJSShaderSource(this.config.code);
 
     if (generated.error) {
@@ -212,7 +218,9 @@ export class ShaderParkThreeRenderer {
     const threeUniforms: Record<string, { value: unknown }> = {};
 
     for (const uniform of uniforms) {
-      threeUniforms[uniform.name] = { value: this.defaultThreeUniformValue(uniform) };
+      threeUniforms[uniform.name] = {
+        value: this.defaultThreeUniformValue(uniform)
+      };
     }
 
     for (let index = 0; index < SHADERPARK_VIDEO_UNIFORM_COUNT; index++) {
@@ -223,37 +231,54 @@ export class ShaderParkThreeRenderer {
   }
 
   private defaultThreeUniformValue(uniform: ShaderParkUniform) {
-    if (!this.THREE) return uniform.value ?? 0;
+    if (!this.THREE) {
+      return uniform.value ?? 0;
+    }
 
-    if (uniform.name === 'opacity') return 1;
-    if (uniform.name === '_scale') return 2;
-    if (uniform.name === 'stepSize') return scalarDefault(uniform.value, 0.85);
-    if (uniform.name === 'time') return 0;
-    if (uniform.name === 'resolution') return new this.THREE.Vector2(...this.renderer.outputSize);
-    if (uniform.name === 'mouse') return new this.THREE.Vector3(0, 0, -0.5);
+    const THREE = this.THREE;
 
-    if (uniform.type === 'vec2')
-      return new this.THREE.Vector2(...vectorDefault(uniform.value, [0, 0]));
-    if (uniform.type === 'vec3')
-      return new this.THREE.Vector3(...vectorDefault(uniform.value, [0, 0, 0]));
-    if (uniform.type === 'vec4')
-      return new this.THREE.Vector4(...vectorDefault(uniform.value, [0, 0, 0, 0]));
-
-    return scalarDefault(uniform.value, 0);
+    return match(uniform)
+      .with({ name: 'opacity' }, () => 1)
+      .with({ name: '_scale' }, () => 2)
+      .with({ name: 'stepSize' }, ({ value }) => getDefaultScalarValue(value, 0.85))
+      .with({ name: 'time' }, () => 0)
+      .with({ name: 'resolution' }, () => new THREE.Vector2(...this.renderer.outputSize))
+      .with({ name: 'mouse' }, () => new THREE.Vector3(0, 0, -0.5))
+      .with(
+        { type: 'vec2' },
+        ({ value }) => new THREE.Vector2(...getDefaultVectorValue(value, [0, 0]))
+      )
+      .with(
+        { type: 'vec3' },
+        ({ value }) => new THREE.Vector3(...getDefaultVectorValue(value, [0, 0, 0]))
+      )
+      .with(
+        { type: 'vec4' },
+        ({ value }) => new THREE.Vector4(...getDefaultVectorValue(value, [0, 0, 0, 0]))
+      )
+      .otherwise(({ value }) => getDefaultScalarValue(value, 0));
   }
 
   private updateUniforms(params: RenderParams) {
     if (!this.THREE || !this.material) return;
 
     const uniforms = this.material.uniforms;
+
     const overrides = params.userParams[SHADERPARK_VIDEO_UNIFORM_COUNT] as
       | Record<string, unknown>
       | undefined;
 
-    if (uniforms.time) uniforms.time.value = params.transportTime;
-    if (uniforms.resolution) uniforms.resolution.value.set(...this.renderer.outputSize);
+    if (uniforms.time) {
+      uniforms.time.value = params.transportTime;
+    }
+
+    if (uniforms.resolution) {
+      uniforms.resolution.value.set(...this.renderer.outputSize);
+    }
+
     if (uniforms.mouse) {
       const [width, height] = this.renderer.outputSize;
+
       uniforms.mouse.value.set(
         width > 0 ? (2 * params.mouseX) / width - 1 : 0,
         height > 0 ? 2 * (1 - params.mouseY / height) - 1 : 0,
@@ -318,20 +343,22 @@ export class ShaderParkThreeRenderer {
         this.threeInputTextures[i].magFilter = this.THREE.LinearFilter;
       }
 
-      const threeTex = this.threeInputTextures[i];
+      const threeTexture = this.threeInputTextures[i];
 
       // @ts-expect-error -- accessing internal regl property
       const webglTexture = reglTex._texture?.texture as WebGLTexture | undefined;
 
       if (webglTexture) {
-        const props = this.threeWebGLRenderer.properties.get(threeTex) as {
+        const props = this.threeWebGLRenderer.properties.get(threeTexture) as {
           __webglTexture?: WebGLTexture;
           __webglInit?: boolean;
         };
+
         props.__webglTexture = webglTexture;
         props.__webglInit = true;
-        threeTex.image = { width: reglTex.width, height: reglTex.height };
-        threeTex.needsUpdate = false;
+
+        threeTexture.image = { width: reglTex.width, height: reglTex.height };
+        threeTexture.needsUpdate = false;
       }
     }
   }
@@ -341,6 +368,7 @@ export class ShaderParkThreeRenderer {
 
     const gl = this.renderer.gl;
     const [width, height] = this.renderer.outputSize;
+
     const threeProps = this.threeWebGLRenderer.properties.get(this.renderTarget);
 
     // @ts-expect-error -- accessing internal Three.js property
