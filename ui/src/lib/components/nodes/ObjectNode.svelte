@@ -24,7 +24,11 @@
   import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
   import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
   import { getAudioObjectNames, hasSignalPorts } from '$lib/audio/v2/audio-helpers';
-  import { isAiFeaturesVisible, isObjectBrowserOpen } from '../../../stores/ui.store';
+  import {
+    isAiFeaturesVisible,
+    isObjectBrowserOpen,
+    objectBrowserMode
+  } from '../../../stores/ui.store';
   import { enabledPackIds, togglePack } from '../../../stores/extensions.store';
   import { Search } from '@lucide/svelte/icons';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
@@ -32,7 +36,6 @@
   import { getObjectAutocompleteQuery } from '$lib/search/object-autocomplete-query';
   import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import { useAudioServiceSync } from '$lib/composables/useAudioServiceSync.svelte';
-  import { isSidebarOpen, sidebarView } from '../../../stores/ui.store';
   import DisabledObjectSuggestionInline from './DisabledObjectSuggestionInline.svelte';
   import ObjectSuggestionDropdown from './ObjectSuggestionDropdown.svelte';
   import { getIconById } from '$lib/components/icons';
@@ -208,6 +211,7 @@
 
   function enablePackFromSuggestion(packId: string, objectName: string) {
     togglePack(packId);
+
     // Set the expression and exit editing mode after pack is enabled
     setTimeout(() => {
       expr = objectName;
@@ -216,8 +220,9 @@
   }
 
   function openPacksBrowser() {
-    $sidebarView = 'packs';
-    $isSidebarOpen = true;
+    $objectBrowserMode = 'packs';
+    $isObjectBrowserOpen = true;
+
     exitEditingMode(false);
   }
 

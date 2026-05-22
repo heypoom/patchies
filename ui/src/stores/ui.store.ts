@@ -2,11 +2,13 @@ import { writable, derived, readable } from 'svelte/store';
 import type { FitViewOptions } from '@xyflow/svelte';
 import { nanoid } from 'nanoid';
 
+export type ObjectBrowserMode = 'insert' | 'help' | 'packs';
+
 // Mobile detection (768px breakpoint)
 const MOBILE_BREAKPOINT = 768;
 
-function createIsMobileStore() {
-  return readable(false, (set) => {
+const createIsMobileStore = () =>
+  readable(false, (set) => {
     if (typeof window === 'undefined') return;
 
     const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
@@ -17,7 +19,6 @@ function createIsMobileStore() {
 
     return () => mediaQuery.removeEventListener('change', handler);
   });
-}
 
 export const isMobile = createIsMobileStore();
 
@@ -65,8 +66,8 @@ if (typeof localStorage !== 'undefined') {
 }
 
 export const isConnectionMode = writable(false);
-
 export const isObjectBrowserOpen = writable(false);
+export const objectBrowserMode = writable<ObjectBrowserMode>('insert');
 export const isSettingsOpen = writable(false);
 
 // Sidebar state - persisted to localStorage

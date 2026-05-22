@@ -14,7 +14,14 @@
     type ObjectItem
   } from './get-categorized-objects';
   import Fuse from 'fuse.js';
-  import { isAiFeaturesVisible, patchObjectTypes } from '../../../stores/ui.store';
+  import {
+    isAiFeaturesVisible,
+    isSidebarOpen,
+    objectBrowserMode,
+    patchObjectTypes,
+    selectedNodeInfo,
+    sidebarView
+  } from '../../../stores/ui.store';
   import { flattenedPresets } from '../../../stores/preset-library.store';
   import {
     enabledObjects,
@@ -36,7 +43,6 @@
     enabledPrimaryObjects
   } from '../../../stores/extensions.store';
   import { sortFuseResultsWithPrefixPriority } from '$lib/utils/sort-fuse-results';
-  import { isSidebarOpen, sidebarView, selectedNodeInfo } from '../../../stores/ui.store';
   import { getPackIcon } from '$lib/extensions/pack-icons';
   import {
     getBuiltInPresetPackByPresetName,
@@ -53,10 +59,16 @@
   import { objectSchemas } from '$lib/objects/schemas';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
-  type BrowserMode = 'insert' | 'help' | 'packs';
-
   function openPacks() {
-    browserMode = 'packs';
+    $objectBrowserMode = 'packs';
+  }
+
+  function togglePacksMode() {
+    $objectBrowserMode = $objectBrowserMode === 'packs' ? 'insert' : 'packs';
+  }
+
+  function toggleHelpMode() {
+    $objectBrowserMode = $objectBrowserMode === 'help' ? 'insert' : 'help';
   }
 
   const getIconComponent = getPackIcon;
@@ -70,7 +82,6 @@
   let expandedCategories = $state<Set<string>>(new Set());
   let showPresets = $state(true);
   let hasInitialized = $state(false);
-  let browserMode = $state<BrowserMode>('insert');
   let expandedPackId = $state<string | null>(null);
 
   // Check if an object has help available
@@ -158,7 +169,7 @@
   });
 
   const allCategoriesWithPresets = $derived.by(() => {
-    if (showPresets && browserMode !== 'help') {
+    if (showPresets && $objectBrowserMode !== 'help') {
       return [...allCategories, ...presetCategories];
     }
     return allCategories;
@@ -254,7 +265,7 @@
   function handleClose() {
     open = false;
     searchQuery = '';
-    browserMode = 'insert';
+    $objectBrowserMode = 'insert';
     expandedPackId = null;
   }
 
@@ -414,10 +425,10 @@
             <Tooltip.Root delayDuration={100}>
               <Tooltip.Trigger>
                 <button
-                  onclick={() => (browserMode = browserMode === 'packs' ? 'insert' : 'packs')}
+                  onclick={togglePacksMode}
                   class={[
                     'flex cursor-pointer items-center gap-[5px] rounded border px-2.5 py-1 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap lowercase transition-all',
-                    browserMode === 'packs'
+                    $objectBrowserMode === 'packs'
                       ? 'border-orange-500/30 bg-orange-500/6 text-orange-500'
                       : 'border-white/8 bg-white/2 text-zinc-600 hover:border-white/14 hover:bg-white/4 hover:text-zinc-400'
                   ]}
@@ -434,10 +445,10 @@
               <Tooltip.Trigger>
                 <button
                   onclick={() => (showPresets = !showPresets)}
-                  disabled={browserMode === 'help' || browserMode === 'packs'}
+                  disabled={$objectBrowserMode === 'help' || $objectBrowserMode === 'packs'}
                   class={[
                     'flex cursor-pointer items-center gap-[5px] rounded border px-2.5 py-1 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap lowercase transition-all',
-                    browserMode === 'help' || browserMode === 'packs'
+                    $objectBrowserMode === 'help' || $objectBrowserMode === 'packs'
                       ? 'cursor-not-allowed border-white/4 text-zinc-700 opacity-50'
                       : showPresets
                         ? 'border-orange-500/30 bg-orange-500/6 text-orange-500'
@@ -449,9 +460,9 @@
                 </button>
               </Tooltip.Trigger>
               <Tooltip.Content side="bottom">
-                {browserMode === 'help'
+                {$objectBrowserMode === 'help'
                   ? 'Presets hidden in help mode'
-                  : browserMode === 'packs'
+                  : $objectBrowserMode === 'packs'
                     ? 'Switch to insert mode to browse presets'
                     : 'Show saved and enabled presets'}
               </Tooltip.Content>
@@ -461,10 +472,10 @@
             <Tooltip.Root delayDuration={100}>
               <Tooltip.Trigger>
                 <button
-                  onclick={() => (browserMode = browserMode === 'help' ? 'insert' : 'help')}
+                  onclick={toggleHelpMode}
                   class={[
                     'flex cursor-pointer items-center gap-[5px] rounded border px-2.5 py-1 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap lowercase transition-all',
-                    browserMode === 'help'
+                    $objectBrowserMode === 'help'
                       ? 'border-blue-400/30 bg-blue-400/6 text-blue-400'
                       : 'border-white/8 bg-white/2 text-zinc-600 hover:border-white/14 hover:bg-white/4 hover:text-zinc-400'
                   ]}
@@ -474,7 +485,7 @@
                 </button>
               </Tooltip.Trigger>
               <Tooltip.Content side="bottom">
-                {browserMode === 'help' ? 'Help mode active' : 'Browse help'}
+                {$objectBrowserMode === 'help' ? 'Help mode active' : 'Browse help'}
               </Tooltip.Content>
             </Tooltip.Root>
           </div>
@@ -514,7 +525,7 @@
       <div
         class="ob-scroll relative z-[1] flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 sm:pb-[max(1.25rem,env(safe-area-inset-bottom))]"
       >
-        {#if browserMode === 'packs'}
+        {#if $objectBrowserMode === 'packs'}
           <div class="flex flex-col gap-5">
             <!-- Object Packs Section -->
             {#if filteredObjectPacks.length > 0}
@@ -761,13 +772,13 @@
                       {@const isPreset = category.isPresetCategory === true}
                       {@const isLowPriority = object.priority === 'low'}
                       {@const objectHasHelp = hasHelp(object.name)}
-                      {@const noHelpAvailable = browserMode === 'help' && !objectHasHelp}
+                      {@const noHelpAvailable = $objectBrowserMode === 'help' && !objectHasHelp}
 
                       <div class="group relative flex">
                         <button
                           onclick={() => {
                             if (noHelpAvailable) return;
-                            if (browserMode === 'help') {
+                            if ($objectBrowserMode === 'help') {
                               openHelp(object.name);
                             } else {
                               handleSelectObject(object.name);
@@ -778,7 +789,7 @@
                             'flex h-full w-full cursor-pointer flex-col gap-1 rounded-md border px-2.5 py-2 text-left transition-all',
                             noHelpAvailable
                               ? 'cursor-not-allowed border-white/2 bg-transparent opacity-30'
-                              : browserMode === 'help'
+                              : $objectBrowserMode === 'help'
                                 ? 'border-blue-400/15 bg-blue-400/3 hover:border-blue-400/30 hover:bg-blue-400/7'
                                 : isPreset
                                   ? 'border-white/7 bg-white/2 hover:border-white/12 hover:bg-white/4'
@@ -787,7 +798,7 @@
                           ]}
                         >
                           <div class="flex items-center gap-[5px]">
-                            {#if browserMode === 'help'}
+                            {#if $objectBrowserMode === 'help'}
                               <CircleQuestionMark
                                 class={[
                                   'h-3 w-3',
@@ -800,7 +811,7 @@
                                 'font-mono text-xs leading-tight',
                                 noHelpAvailable
                                   ? 'text-zinc-600'
-                                  : browserMode === 'help'
+                                  : $objectBrowserMode === 'help'
                                     ? 'text-blue-200'
                                     : isPreset
                                       ? 'text-zinc-300'
@@ -826,7 +837,7 @@
                         </button>
 
                         <!-- Help hover button (insert mode, desktop) -->
-                        {#if browserMode === 'insert' && objectHasHelp}
+                        {#if $objectBrowserMode === 'insert' && objectHasHelp}
                           <button
                             onclick={(e) => {
                               e.stopPropagation();
@@ -847,7 +858,7 @@
 
             <!-- Enable more packs CTA -->
             <button
-              onclick={() => (browserMode = 'packs')}
+              onclick={() => ($objectBrowserMode = 'packs')}
               class="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-white/6 bg-transparent py-3.5 font-mono text-[10px] tracking-[0.12em] text-zinc-700 lowercase transition-all hover:border-orange-500/20 hover:text-zinc-500"
             >
               <Package class="h-4 w-4" />
