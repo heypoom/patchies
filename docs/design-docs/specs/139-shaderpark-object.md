@@ -28,9 +28,9 @@ The `shaderpark` object supports two render modes:
 - `flat` (default): compile Sculpt to the current fullscreen fragment shader path.
 - `3d`: compile Sculpt through Shader Park core's Three.js target and render the result through Patchies' worker-side Three.js renderer pattern.
 
-The 3D mode keeps the same object, code editor, settings, dynamic `input()` message inlets, video inlets, and video outlet. It uses a Three.js scene, perspective camera, Shader Park `ShaderMaterial`, and render target inside the shared render worker. The Three render target is blitted into the node FBO, matching the existing `three` object's video-chain behavior.
+The 3D mode keeps the same object, code editor, settings, dynamic `input()` message inlets, video inlets, and video outlet. It uses a Three.js scene, perspective camera, Shader Park `ShaderMaterial`, and render target inside the shared render worker. The raymarch proxy geometry is a `BoxGeometry(2, 2, 2)` with Shader Park's generated `BackSide` material and the generated default `_scale` of `1`, matching Shader Park core's `sculptToThreeJSMesh()` editor path so primitives like `box()` render as volumetric cubes. The Three render target is blitted into the node FBO, matching the existing `three` object's video-chain behavior.
 
-3D mode does not depend on DOM `OrbitControls`. Instead, the node preview forwards pointer down/move/up data to the worker. The worker maintains a small orbit-camera state and updates the camera before rendering. This keeps interaction available without moving the renderer to the main thread or giving up the FBO pipeline.
+3D mode does not depend on DOM `OrbitControls`. Instead, the node preview forwards pointer down/move/up and wheel data to the worker. The worker maintains a small orbit-camera state and updates the camera before rendering. This keeps drag orbit and wheel zoom available without moving the renderer to the main thread or giving up the FBO pipeline.
 
 The Three.js Shader Park target does not know about Patchies video samplers by default, so the renderer injects the fixed `iChannel0` through `iChannel3` sampler uniforms into the generated fragment shader and wraps connected regl textures as Three.js textures.
 

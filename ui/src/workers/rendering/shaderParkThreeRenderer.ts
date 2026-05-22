@@ -9,6 +9,7 @@ import {
   createShaderParkOrbitState,
   getShaderParkOrbitCameraPosition,
   updateShaderParkOrbit,
+  zoomShaderParkOrbit,
   type ShaderParkOrbitState
 } from './shaderParkOrbit';
 import {
@@ -140,7 +141,7 @@ export class ShaderParkThreeRenderer {
     }
 
     const material = this.createMaterial(generated.uniforms, generated.vert, generated.frag);
-    const geometry = new this.THREE.SphereGeometry(2, 16, 16);
+    const geometry = new this.THREE.BoxGeometry(2, 2, 2);
     const mesh = new this.THREE.Mesh(geometry, material);
 
     this.material = material;
@@ -172,6 +173,10 @@ export class ShaderParkThreeRenderer {
     this.blitToReglFramebuffer();
     this.threeWebGLRenderer.resetState();
     this.renderer.regl._refresh();
+  }
+
+  zoom(deltaY: number) {
+    zoomShaderParkOrbit(this.orbit, deltaY);
   }
 
   destroy() {
@@ -239,7 +244,7 @@ export class ShaderParkThreeRenderer {
 
     return match(uniform)
       .with({ name: 'opacity' }, () => 1)
-      .with({ name: '_scale' }, () => 2)
+      .with({ name: '_scale' }, ({ value }) => getDefaultScalarValue(value, 1))
       .with({ name: 'stepSize' }, ({ value }) => getDefaultScalarValue(value, 0.85))
       .with({ name: 'time' }, () => 0)
       .with({ name: 'resolution' }, () => new THREE.Vector2(...this.renderer.outputSize))

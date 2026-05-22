@@ -127,7 +127,8 @@
           nodeId,
           canvas,
           outputWidth: $outputWidth,
-          outputHeight: $outputHeight
+          outputHeight: $outputHeight,
+          wheelZoom: true
         }))
         .otherwise(() => ({
           type: 'simple' as const,

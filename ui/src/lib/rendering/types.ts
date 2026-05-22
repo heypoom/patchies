@@ -175,6 +175,7 @@ export type WorkerMessage =
   | { type: 'startAnimation' }
   | { type: 'stopAnimation' }
   | { type: 'setPreviewEnabled'; nodeId: string; enabled: boolean }
+  | { type: 'zoomShaderParkOrbit'; nodeId: string; deltaY: number }
   | { type: 'animationFrame'; outputBitmap: ImageBitmap }
   | { type: 'updateOutput'; buffer: ArrayBuffer }
   | {

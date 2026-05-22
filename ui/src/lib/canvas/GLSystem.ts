@@ -761,6 +761,13 @@ export class GLSystem {
     });
   }
 
+  zoomShaderParkOrbit(nodeId: string, deltaY: number) {
+    this.send('zoomShaderParkOrbit', {
+      nodeId,
+      deltaY
+    });
+  }
+
   removeNode(nodeId: string) {
     const node = this.nodes.find((n) => n.id === nodeId);
     if (!node) return;

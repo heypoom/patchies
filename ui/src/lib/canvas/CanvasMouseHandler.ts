@@ -17,6 +17,7 @@ export interface ShadertoyMouseConfig {
   canvas: HTMLCanvasElement;
   outputWidth: number;
   outputHeight: number;
+  wheelZoom?: boolean;
 }
 
 export type MouseHandlerConfig = SimpleMouseConfig | ShadertoyMouseConfig;
@@ -212,16 +213,26 @@ export class CanvasMouseHandler {
       );
     };
 
+    const handleWheel = (event: WheelEvent) => {
+      if (!config.wheelZoom) return;
+
+      event.preventDefault();
+
+      this.glSystem.zoomShaderParkOrbit(config.nodeId, event.deltaY);
+    };
+
     config.canvas.addEventListener('mousemove', handleMouseMove);
     config.canvas.addEventListener('mousedown', handleMouseDown);
     config.canvas.addEventListener('mouseup', handleMouseUp);
     config.canvas.addEventListener('mouseleave', handleMouseUp);
+    config.canvas.addEventListener('wheel', handleWheel, { passive: false });
 
     this.cleanupFn = () => {
       config.canvas.removeEventListener('mousemove', handleMouseMove);
       config.canvas.removeEventListener('mousedown', handleMouseDown);
       config.canvas.removeEventListener('mouseup', handleMouseUp);
       config.canvas.removeEventListener('mouseleave', handleMouseUp);
+      config.canvas.removeEventListener('wheel', handleWheel);
     };
   }
 }

@@ -1341,6 +1341,10 @@ export class FBORenderer {
     this.mouseDataByNode.set(nodeId, [x, y, z, w]);
   }
 
+  zoomShaderParkOrbit(nodeId: string, deltaY: number) {
+    this.shaderParkThreeByNode.get(nodeId)?.zoom(deltaY);
+  }
+
   /** Get list of nodes with preview enabled */
   getEnabledPreviews(): string[] {
     return this.previewRenderer.getEnabledPreviews();

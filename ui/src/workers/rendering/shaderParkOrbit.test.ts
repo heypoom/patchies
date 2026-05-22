@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createShaderParkOrbitState, updateShaderParkOrbit } from './shaderParkOrbit';
+import {
+  createShaderParkOrbitState,
+  updateShaderParkOrbit,
+  zoomShaderParkOrbit
+} from './shaderParkOrbit';
 
 describe('shaderpark 3d orbit', () => {
   it('rotates while forwarded pointer data is pressed', () => {
@@ -25,5 +29,26 @@ describe('shaderpark 3d orbit', () => {
 
     expect(state.theta).toBe(theta);
     expect(state.phi).toBe(phi);
+  });
+
+  it('zooms in and out from forwarded wheel delta', () => {
+    const state = createShaderParkOrbitState();
+    const initialRadius = state.radius;
+
+    zoomShaderParkOrbit(state, -120);
+
+    expect(state.radius).toBeLessThan(initialRadius);
+
+    zoomShaderParkOrbit(state, 120);
+
+    expect(state.radius).toBeGreaterThan(initialRadius * 0.9);
+  });
+
+  it('clamps wheel zoom so the camera stays outside the raymarch volume', () => {
+    const state = createShaderParkOrbitState();
+
+    zoomShaderParkOrbit(state, -100_000);
+
+    expect(state.radius).toBeGreaterThanOrEqual(1.2);
   });
 });
