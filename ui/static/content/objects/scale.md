@@ -12,14 +12,6 @@ The first two arguments set the input range. The last two arguments set the outp
 Values outside the input range are extrapolated. Use `clip` after `scale` when you want to
 constrain the output.
 
-## Inlets
-
-- **Inlet 0** (hot): Value to scale — outputs the remapped result immediately
-- **Inlet 1**: Input minimum
-- **Inlet 2**: Input maximum
-- **Inlet 3**: Output minimum
-- **Inlet 4**: Output maximum
-
 ## See Also
 
 - [clip](/docs/objects/clip) - clamp a number to a min/max range
