@@ -38,6 +38,15 @@ Create a **centralized virtual console system** that:
 4. Enables proper text selection and scrolling
 5. Works consistently across all node types
 
+### Re-Evaluation Error Freshness
+
+When a node re-evaluates code, `VirtualConsole.clearConsole()` must clear both:
+
+1. The visible console messages rendered in the node UI
+2. The backing node-scoped entries in `Logger`
+
+This keeps `getNodeErrors(nodeId)` aligned with the current evaluation instead of returning stale errors to AI chat context after the user fixes and reruns a node.
+
 ---
 
 ## Architecture

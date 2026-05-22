@@ -8,6 +8,7 @@
   import { toast } from 'svelte-sonner';
   import { VList } from 'virtua/svelte';
   import { GripVertical, GripHorizontal, Grip } from '@lucide/svelte/icons';
+  import { logger } from '$lib/utils/logger';
 
   let {
     nodeId,
@@ -114,6 +115,7 @@
 
   export function clearConsole() {
     messages = [];
+    logger.clearNodeLogs(nodeId);
 
     if (shouldAutoHideConsoleOnNoError) {
       updateNodeData(nodeId, { showConsole: false });
