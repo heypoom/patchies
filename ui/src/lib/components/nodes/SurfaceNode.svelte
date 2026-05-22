@@ -147,6 +147,8 @@
   // Mouse state (normalized 0–1)
   let mouse = $state({ x: 0, y: 0, down: false, buttons: 0 });
 
+  const { updateNodeData, getNodes } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
   const mouseForwarder = new SurfaceMouseForwarder(() => getNodes());
 
   function clearCanvas() {
@@ -168,9 +170,6 @@
       onclick: clearCanvas
     }
   ]);
-
-  const { updateNodeData, getNodes } = useSvelteFlow();
-  const updateNodeInternals = useUpdateNodeInternals();
 
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 0);

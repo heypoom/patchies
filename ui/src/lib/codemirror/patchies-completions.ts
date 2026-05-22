@@ -233,9 +233,9 @@ const patchiesAPICompletions: Completion[] = [
   {
     label: 'setMouseForwarding',
     type: 'function',
-    detail: '({ only?: string[], except?: string[] }) => void',
-    info: 'Restrict surface mouse forwarding by node ID. Use only as a whitelist and except as a blacklist.',
-    apply: "setMouseForwarding({\n  only: ['node-id'],\n  except: []\n})"
+    detail: '(args?: { enabled?: boolean, only?: string[], except?: string[] }) => void',
+    info: 'Enable, disable, whitelist, or blacklist surface mouse forwarding by node ID. Use enabled: false or only: [] to disable all.',
+    apply: 'setMouseForwarding({ enabled: false })'
   },
   {
     label: 'setCanvasSize',

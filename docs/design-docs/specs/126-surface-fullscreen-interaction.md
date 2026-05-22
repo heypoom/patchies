@@ -162,11 +162,13 @@ User code can narrow that behavior by node ID:
 
 ```js
 setMouseForwarding({
+  enabled: true, // optional, default true
   only: ["shaderpark-1", "three-1"], // optional whitelist
   except: ["glsl-1"], // optional blacklist
 });
 ```
 
+Set `enabled: false` or `only: []` to disable all pointer and wheel forwarding.
 `only` restricts forwarding to the listed node IDs. `except` removes matching
 node IDs after the whitelist is applied. Call `setMouseForwarding()` with no
 arguments to restore the default "all mouse-aware render nodes" behavior.

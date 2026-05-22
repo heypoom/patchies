@@ -13,7 +13,7 @@ Fullscreen interactive canvas overlay for live performance. Captures pointer/tou
 - onKeyUp(event => {}) — keyboard up
 - setDrawMode('always'|'interact'|'manual') — control render loop
 - redraw() — trigger a draw in manual mode
-- setMouseForwarding({ only?: string[], except?: string[] }) — restrict forwarded mouse events by node ID
+- setMouseForwarding({ enabled?: boolean, only?: string[], except?: string[] }) — enable/disable or restrict forwarded mouse events by node ID
 - activate() / deactivate() — enter/exit fullscreen from code
 - noOutput() — hide video output port
 
@@ -25,6 +25,7 @@ Fullscreen interactive canvas overlay for live performance. Captures pointer/tou
 - Call noOutput() unless the sketch explicitly outputs video to another node.
 - Use setDrawMode('interact') for sketches that only update on input (saves CPU).
 - Use setMouseForwarding() when the patch has multiple mouse-aware render nodes and only some should receive surface pointer/wheel events.
+- Use setMouseForwarding({ enabled: false }) or setMouseForwarding({ only: [] }) to disable mouse forwarding entirely.
 - Do NOT call setCanvasSize — the surface always fills the window.
 - Do NOT call noDrag/noPan/noWheel — the surface canvas is non-interactive by default.
 

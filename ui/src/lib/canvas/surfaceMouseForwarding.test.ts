@@ -27,6 +27,14 @@ describe('surface mouse forwarding', () => {
     ]);
   });
 
+  it('disables pointer forwarding when enabled is false', () => {
+    expect(getSurfaceMouseTargets(nodes, { enabled: false })).toEqual([]);
+  });
+
+  it('disables pointer forwarding when only is an empty list', () => {
+    expect(getSurfaceMouseTargets(nodes, { only: [] })).toEqual([]);
+  });
+
   it('applies whitelist before blacklist when forwarding mouse events', () => {
     expect(
       getSurfaceMouseTargets(nodes, {
@@ -43,5 +51,13 @@ describe('surface mouse forwarding', () => {
         except: ['three-1']
       })
     ).toEqual([{ kind: 'shaderpark3d', nodeId: 'shaderpark-3d-1' }]);
+  });
+
+  it('disables wheel forwarding when enabled is false', () => {
+    expect(getSurfaceWheelTargets(nodes, { enabled: false })).toEqual([]);
+  });
+
+  it('disables wheel forwarding when only is an empty list', () => {
+    expect(getSurfaceWheelTargets(nodes, { only: [] })).toEqual([]);
   });
 });

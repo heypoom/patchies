@@ -62,11 +62,13 @@ Use `setMouseForwarding()` to restrict forwarding by node ID:
 
 ```javascript
 setMouseForwarding({
+  enabled: true,
   only: ['shaderpark-1', 'three-1'],
   except: ['glsl-1']
 });
 ```
 
+Set `enabled: false` or `only: []` to disable all pointer and wheel forwarding.
 `only` is an optional whitelist. `except` is an optional blacklist applied after
 the whitelist. Call `setMouseForwarding()` with no arguments to restore the
 default forwarding behavior.
@@ -144,7 +146,7 @@ plus:
 - `onKeyDown(cb)` / `onKeyUp(cb)` — keyboard callbacks
 - `setDrawMode('always'|'interact'|'manual')` — control render loop
 - `redraw()` — manually trigger a draw (manual mode)
-- `setMouseForwarding({ only, except })` — whitelist/blacklist forwarded mouse events by node ID
+- `setMouseForwarding({ enabled, only, except })` — enable/disable or filter forwarded mouse events by node ID
 - `activate()` / `deactivate()` — enter/exit fullscreen
 - `hideExitButton()` — hide the "Exit surface (Shift+Esc)" badge
 - `noOutput()` — hide video output port

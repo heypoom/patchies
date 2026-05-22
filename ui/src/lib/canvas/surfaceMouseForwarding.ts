@@ -5,6 +5,7 @@ const SHADERTOY_TYPES = new Set(['glsl', 'swgl', 'regl']);
 const SIMPLE_TYPES = new Set(['hydra', 'canvas', 'textmode', 'shaderpark']);
 
 export type SurfaceMouseForwardingRules = {
+  enabled?: boolean;
   only?: readonly string[];
   except?: readonly string[];
 };
@@ -19,10 +20,12 @@ export type SurfaceWheelTarget =
   | { kind: 'shaderpark3d'; nodeId: string };
 
 function matchesForwardingRules(nodeId: string, rules?: SurfaceMouseForwardingRules): boolean {
+  if (rules?.enabled === false) return false;
+
   const only = rules?.only ?? [];
   const except = rules?.except ?? [];
 
-  if (only.length > 0 && !only.includes(nodeId)) return false;
+  if (rules?.only !== undefined && !only.includes(nodeId)) return false;
 
   return !except.includes(nodeId);
 }

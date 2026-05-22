@@ -102,6 +102,7 @@ export class SurfaceMouseForwarder {
    */
   forceHydraScope(scope: 'global' | 'local'): void {
     const allNodes = this.getNodes();
+
     const nodes =
       scope === 'global'
         ? this.mouseTargets
