@@ -61,7 +61,13 @@ Pointer events are also sent to the **pointer outlet** as messages.
 
 On touch devices, the first active touch point is also emitted as mouse-style
 pointer events. `touchstart` behaves like left-button down, `touchmove` behaves
-like drag, and `touchend` or `touchcancel` behaves like button up.
+like drag, and `touchend` or `touchcancel` behaves like button up. The initial
+touch waits briefly so an immediately-following second touch can become a pinch
+without firing a stray drag event.
+
+Two active touches are translated to wheel events from the pinch center. Pinch
+out emits negative `deltaY`, and pinch in emits positive `deltaY`. When a
+second touch joins an active drag, the drag is released before pinch starts.
 
 ## Mouse Forwarding
 
@@ -100,7 +106,7 @@ onTouch((touches) => {
 ```
 
 `onTouch()` remains separate from mouse forwarding, so multi-touch patches can
-still read all active touches while the first touch drives mouse-aware render
+still read all active touches while touch gestures drive mouse-aware render
 nodes.
 
 ## Draw Modes

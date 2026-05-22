@@ -50,7 +50,8 @@ latency, keyboard events, or direct DOM APIs.
 
 On touch devices, a single finger is translated to the same left-button mouse
 drag input used by `mouse`, `onPointerDrag()`, and worker-safe `OrbitControls`.
-Pinch-to-zoom gestures are not translated to wheel input yet.
+Two-finger pinch gestures are translated to wheel input, so pinch out zooms in
+and pinch in zooms out when your code or controls handle wheel events.
 
 ## Available Variables
 

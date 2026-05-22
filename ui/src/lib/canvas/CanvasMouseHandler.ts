@@ -33,11 +33,16 @@ export type MouseHandlerConfig = SimpleMouseConfig | ShadertoyMouseConfig;
  * - Shadertoy: iMouse-style tracking with x,y position and z,w click state
  */
 export class CanvasMouseHandler {
+  private static readonly TOUCH_GESTURE_DELAY_MS = 50;
+
   private glSystem: GLSystem;
   private config: MouseHandlerConfig;
   private isMouseDown = false;
   private mouseState = { x: 0, y: 0, z: -1, w: -1 };
   private primaryTouchId: number | null = null;
+  private lastPinchDistance: number | null = null;
+  private isPinching = false;
+  private pendingTouchTimer: ReturnType<typeof setTimeout> | null = null;
   private cleanupFn: (() => void) | null = null;
 
   constructor(config: MouseHandlerConfig) {
@@ -74,6 +79,10 @@ export class CanvasMouseHandler {
     }
 
     this.primaryTouchId = null;
+    this.lastPinchDistance = null;
+    this.isPinching = false;
+
+    this.clearPendingTouchTimer();
   }
 
   /**
@@ -149,6 +158,17 @@ export class CanvasMouseHandler {
     };
 
     const handleTouchStart = (event: TouchEvent) => {
+      this.lastPinchDistance = this.getPinchDistance(event.touches);
+
+      if (event.touches.length >= 2) {
+        this.isPinching = true;
+        this.primaryTouchId = null;
+
+        return;
+      }
+
+      if (this.isPinching) return;
+
       const touch = this.getPrimaryTouch(event);
       if (!touch) return;
 
@@ -157,6 +177,8 @@ export class CanvasMouseHandler {
     };
 
     const handleTouchMove = (event: TouchEvent) => {
+      if (this.isPinching) return;
+
       const touch = this.getPrimaryTouch(event);
       if (!touch) return;
 
@@ -165,6 +187,12 @@ export class CanvasMouseHandler {
     };
 
     const handleTouchEnd = (event: TouchEvent) => {
+      this.lastPinchDistance = this.getPinchDistance(event.touches);
+
+      if (event.touches.length === 0) {
+        this.isPinching = false;
+      }
+
       if (this.primaryTouchId === null) return;
       if (this.findTouch(event.touches, this.primaryTouchId)) return;
 
@@ -188,6 +216,7 @@ export class CanvasMouseHandler {
 
   private attachShadertoy(): void {
     const config = this.config as ShadertoyMouseConfig;
+    let pendingTouch: Touch | null = null;
 
     const getFramebufferPosition = (clientX: number, clientY: number) => {
       const rect = config.canvas.getBoundingClientRect();
@@ -270,23 +299,79 @@ export class CanvasMouseHandler {
       upMouse();
     };
 
-    const handleTouchStart = (event: TouchEvent) => {
-      const touch = this.getPrimaryTouch(event);
-      if (!touch) return;
+    const clearPendingTouch = () => {
+      pendingTouch = null;
+      this.clearPendingTouchTimer();
+    };
 
-      event.preventDefault();
+    const flushPendingTouch = () => {
+      if (!pendingTouch) return;
+
+      const touch = pendingTouch;
+      clearPendingTouch();
+
       downMouse(touch.clientX, touch.clientY, 1);
     };
 
-    const handleTouchMove = (event: TouchEvent) => {
+    const handleTouchStart = (event: TouchEvent) => {
+      this.lastPinchDistance = this.getPinchDistance(event.touches);
+
+      if (event.touches.length >= 2) {
+        clearPendingTouch();
+
+        if (this.isMouseDown) {
+          upMouse();
+        }
+
+        this.isPinching = true;
+        this.primaryTouchId = null;
+
+        return;
+      }
+
+      if (this.isPinching) return;
+
       const touch = this.getPrimaryTouch(event);
       if (!touch) return;
 
       event.preventDefault();
+      pendingTouch = touch;
+      this.clearPendingTouchTimer();
+      this.pendingTouchTimer = setTimeout(
+        flushPendingTouch,
+        CanvasMouseHandler.TOUCH_GESTURE_DELAY_MS
+      );
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (this.isPinching || event.touches.length >= 2) {
+        clearPendingTouch();
+        this.isPinching = true;
+        this.forwardPinchWheel(event, config, getFramebufferPosition);
+        return;
+      }
+
+      const touch = this.getPrimaryTouch(event);
+      if (!touch) return;
+
+      event.preventDefault();
+      flushPendingTouch();
       moveMouse(touch.clientX, touch.clientY, 1);
     };
 
     const handleTouchEnd = (event: TouchEvent) => {
+      this.lastPinchDistance = this.getPinchDistance(event.touches);
+
+      if (this.isPinching) {
+        if (event.touches.length === 0) {
+          this.isPinching = false;
+        }
+
+        return;
+      }
+
+      flushPendingTouch();
+
       if (this.primaryTouchId === null) return;
       if (this.findTouch(event.touches, this.primaryTouchId)) return;
 
@@ -340,6 +425,7 @@ export class CanvasMouseHandler {
       config.canvas.removeEventListener('touchend', handleTouchEnd);
       config.canvas.removeEventListener('touchcancel', handleTouchEnd);
       config.canvas.removeEventListener('wheel', handleWheel);
+      clearPendingTouch();
     };
   }
 
@@ -367,5 +453,73 @@ export class CanvasMouseHandler {
     }
 
     return null;
+  }
+
+  private clearPendingTouchTimer(): void {
+    if (!this.pendingTouchTimer) return;
+
+    clearTimeout(this.pendingTouchTimer);
+    this.pendingTouchTimer = null;
+  }
+
+  private forwardPinchWheel(
+    event: TouchEvent,
+    config: ShadertoyMouseConfig,
+    getFramebufferPosition: (clientX: number, clientY: number) => { x: number; y: number }
+  ): boolean {
+    if (!config.wheelZoom) return false;
+
+    const currentDistance = this.getPinchDistance(event.touches);
+
+    if (currentDistance === null) {
+      this.lastPinchDistance = null;
+
+      return false;
+    }
+
+    const previousDistance = this.lastPinchDistance;
+    this.lastPinchDistance = currentDistance;
+
+    if (previousDistance === null) return true;
+
+    event.preventDefault();
+
+    const center = this.getPinchCenter(event.touches);
+    const deltaY = previousDistance - currentDistance;
+
+    match(config.wheelTarget ?? 'shaderparkOrbit')
+      .with('threeInteraction', () => {
+        const { x, y } = getFramebufferPosition(center.clientX, center.clientY);
+
+        this.glSystem.sendThreeWheelData(config.nodeId, {
+          x,
+          y,
+          deltaX: 0,
+          deltaY,
+          deltaMode: 0
+        });
+      })
+      .with('shaderparkOrbit', () => this.glSystem.zoomShaderParkOrbit(config.nodeId, deltaY))
+      .exhaustive();
+
+    return true;
+  }
+
+  private getPinchDistance(touches: TouchList): number | null {
+    const first = touches.item(0);
+    const second = touches.item(1);
+    if (!first || !second) return null;
+
+    return Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+  }
+
+  private getPinchCenter(touches: TouchList) {
+    const first = touches.item(0);
+    const second = touches.item(1);
+
+    return {
+      clientX: ((first?.clientX ?? 0) + (second?.clientX ?? 0)) / 2,
+      clientY: ((first?.clientY ?? 0) + (second?.clientY ?? 0)) / 2
+    };
   }
 }
