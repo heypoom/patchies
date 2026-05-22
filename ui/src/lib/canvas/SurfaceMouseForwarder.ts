@@ -41,8 +41,9 @@ export class SurfaceMouseForwarder {
 
     for (const node of renderNodes) {
       const nodeType = node.type ?? '';
+      const isShaderPark3d = nodeType === 'shaderpark' && node.data.renderMode === '3d';
 
-      if (SHADERTOY_TYPES.has(nodeType)) {
+      if (SHADERTOY_TYPES.has(nodeType) || isShaderPark3d) {
         this.forwardShadertoy(node.id, xFB, yFBShadertoy, type);
       } else if (SIMPLE_TYPES.has(nodeType)) {
         this.glSystem.setMouseData(node.id, xFB, yFBSimple, 0, 0);

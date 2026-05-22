@@ -1,6 +1,7 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
+  import { Box } from '@lucide/svelte/icons';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import {
@@ -30,7 +31,7 @@
   import { logger } from '$lib/utils/logger';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { FBOFormat, FBOResolution } from '$lib/rendering/types';
+  import type { FBOFormat, FBOResolution, ShaderParkRenderMode } from '$lib/rendering/types';
   import type { GLUniformDef } from '../../../types/uniform-config';
   import {
     extractShaderParkVideoUniformIndices,
@@ -65,6 +66,7 @@
       showConsole?: boolean;
       shaderParkUniformDefs?: GLUniformDef[];
       uniformValues?: Record<string, unknown>;
+      renderMode?: ShaderParkRenderMode;
       fboFormat?: FBOFormat;
       resolution?: FBOResolution;
       primaryButton?: PrimaryButton;
@@ -99,6 +101,8 @@
   const uniformsSchema = $derived(uniformDefsToSettingsSchema(shaderParkUniformDefs));
   const visibleUniformInlets = $derived(visibleUniformInletDefs(shaderParkUniformDefs));
   const usesMouseInput = $derived(usesShaderParkMouse(data.code));
+  const renderMode = $derived(data.renderMode ?? 'flat');
+  const usesInteractivePointer = $derived(usesMouseInput || renderMode === '3d');
 
   $effect(() => {
     removeExcessVideoOutletEdges(nodeId, videoOutletCount, getEdges, deleteElements);
@@ -112,16 +116,28 @@
   });
 
   $effect(() => {
-    if (!previewCanvas || !usesMouseInput) return;
+    if (!previewCanvas || !usesInteractivePointer) return;
 
-    mouseHandler = new CanvasMouseHandler({
-      type: 'simple',
-      nodeId,
-      canvas: previewCanvas,
-      outputWidth: $outputWidth,
-      outputHeight: $outputHeight,
-      scope: 'local'
-    });
+    const canvas = previewCanvas;
+
+    mouseHandler = new CanvasMouseHandler(
+      match(renderMode)
+        .with('3d', () => ({
+          type: 'shadertoy' as const,
+          nodeId,
+          canvas,
+          outputWidth: $outputWidth,
+          outputHeight: $outputHeight
+        }))
+        .otherwise(() => ({
+          type: 'simple' as const,
+          nodeId,
+          canvas,
+          outputWidth: $outputWidth,
+          outputHeight: $outputHeight,
+          scope: 'local' as const
+        }))
+    );
 
     mouseHandler.attach();
 
@@ -236,6 +252,51 @@
     }
   }
 
+  function getShaderParkRendererData(
+    overrides: Partial<{
+      code: string;
+      videoInletCount: number;
+      videoOutletCount: number;
+      shaderParkVideoUniformIndices: number[];
+      shaderParkUniformDefs: GLUniformDef[];
+      uniformValues: Record<string, unknown>;
+      renderMode: ShaderParkRenderMode;
+      fboFormat: FBOFormat;
+      resolution: FBOResolution;
+      _runRevision: number;
+    }> = {}
+  ) {
+    return {
+      code: overrides.code ?? data.code,
+      videoInletCount: overrides.videoInletCount ?? data.videoInletCount ?? 4,
+      videoOutletCount: overrides.videoOutletCount ?? data.videoOutletCount ?? 1,
+      shaderParkVideoUniformIndices:
+        overrides.shaderParkVideoUniformIndices ??
+        data.shaderParkVideoUniformIndices ??
+        extractShaderParkVideoUniformIndices(data.code),
+      shaderParkUniformDefs:
+        overrides.shaderParkUniformDefs ?? cloneUniformDefs(data.shaderParkUniformDefs),
+      uniformValues: overrides.uniformValues ?? { ...uniformValues },
+      renderMode: overrides.renderMode ?? renderMode,
+      fboFormat: overrides.fboFormat ?? data.fboFormat,
+      resolution: overrides.resolution ?? data.resolution,
+      ...(overrides._runRevision !== undefined ? { _runRevision: overrides._runRevision } : {})
+    };
+  }
+
+  function toggleRenderMode() {
+    const nextRenderMode = match(renderMode)
+      .with('3d', () => 'flat' as const)
+      .otherwise(() => '3d' as const);
+    const nextData = getShaderParkRendererData({
+      renderMode: nextRenderMode,
+      _runRevision: Date.now()
+    });
+
+    updateNodeData(nodeId, nextData);
+    glSystem.upsertNode(nodeId, 'shaderpark', nextData);
+  }
+
   const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
       const isControlMessage = match(message)
@@ -307,16 +368,15 @@
       data.uniformValues ?? {}
     );
 
-    glSystem.upsertNode(nodeId, 'shaderpark', {
-      code: data.code,
-      videoInletCount: data.videoInletCount ?? 4,
-      videoOutletCount: data.videoOutletCount ?? 1,
-      shaderParkVideoUniformIndices: initialVideoUniformIndices,
-      shaderParkUniformDefs: initialUniformDefs,
-      uniformValues: initialUniformValues,
-      fboFormat: data.fboFormat,
-      resolution: data.resolution
-    });
+    glSystem.upsertNode(
+      nodeId,
+      'shaderpark',
+      getShaderParkRendererData({
+        shaderParkVideoUniformIndices: initialVideoUniformIndices,
+        shaderParkUniformDefs: initialUniformDefs,
+        uniformValues: initialUniformValues
+      })
+    );
 
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
@@ -399,6 +459,7 @@
         shaderParkVideoUniformIndices: nextVideoUniformIndices,
         shaderParkUniformDefs: nextUniformDefs,
         uniformValues: cloneablePruned,
+        renderMode,
         fboFormat: data.fboFormat,
         resolution: data.resolution,
         primaryButton: nextPrimaryButton,
@@ -472,6 +533,14 @@
       glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
     }
   }
+
+  const extraMenuItems = $derived([
+    {
+      label: renderMode === '3d' ? 'Use flat mode' : 'Use 3D mode',
+      icon: Box,
+      onclick: toggleRenderMode
+    }
+  ]);
 </script>
 
 <CanvasPreviewLayout
@@ -490,9 +559,10 @@
   settingsValues={uniformValues}
   onSettingsValueChange={handleUniformValueChange}
   onSettingsRevertAll={handleUniformRevertAll}
-  nodrag={usesMouseInput}
-  nopan={usesMouseInput}
-  nowheel={usesMouseInput}
+  nodrag={usesInteractivePointer}
+  nopan={usesInteractivePointer}
+  nowheel={usesInteractivePointer}
+  {extraMenuItems}
   class={className}
 >
   {#snippet topHandle()}

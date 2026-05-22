@@ -51,6 +51,16 @@ sphere(radius);
 Code that references `mouse` or `mouseIntersection()` receives normalized Shader
 Park mouse coordinates from the node preview and the shared surface preview.
 
+## 3D Mode
+
+Use the object menu to switch Shader Park into 3D mode. The same Shader Park
+code renders through a Three.js camera, so you can drag the preview to orbit
+around the sculpture while keeping the video outlet connected to the render
+pipeline.
+
+3D mode is heavier than the default flat mode. Use it when camera movement or
+Shader Park's Three.js view is part of the patch.
+
 ## Presets
 
 Enable the "Shader Park Visuals" preset pack to use ready-made Shader Park

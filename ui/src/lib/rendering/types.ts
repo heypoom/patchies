@@ -8,6 +8,8 @@ export type FBOFormat = 'rgba8' | 'rgba16f' | 'rgba32f';
 /** Per-node FBO resolution override. Default is full output size. */
 export type FBOResolution = number | [number, number] | string;
 
+export type ShaderParkRenderMode = 'flat' | '3d';
+
 export type RenderNode = {
   id: string;
   inputs: string[]; // IDs of input nodes
@@ -57,6 +59,7 @@ export type RenderNode = {
         shaderParkVideoUniformIndices?: number[];
         shaderParkUniformDefs?: GLUniformDef[];
         uniformValues?: Record<string, unknown>;
+        renderMode?: ShaderParkRenderMode;
         fboFormat?: FBOFormat;
         resolution?: FBOResolution;
       };

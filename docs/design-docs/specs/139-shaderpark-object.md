@@ -21,6 +21,19 @@ Because `shader-park-core` evaluates user Sculpt code against locally scoped DSL
 - The renderer always reserves those four Shader Park sampler slots internally, even when the UI hides unreferenced video inlets. User `input()`/`input2D()` overrides are passed after the fixed sampler slots.
 - The output is the node's normal FBO texture, so downstream render objects consume it like any other video source.
 
+## 3D Render Mode
+
+The `shaderpark` object supports two render modes:
+
+- `flat` (default): compile Sculpt to the current fullscreen fragment shader path.
+- `3d`: compile Sculpt through Shader Park core's Three.js target and render the result through Patchies' worker-side Three.js renderer pattern.
+
+The 3D mode keeps the same object, code editor, settings, dynamic `input()` message inlets, video inlets, and video outlet. It uses a Three.js scene, perspective camera, Shader Park `ShaderMaterial`, and render target inside the shared render worker. The Three render target is blitted into the node FBO, matching the existing `three` object's video-chain behavior.
+
+3D mode does not depend on DOM `OrbitControls`. Instead, the node preview forwards pointer down/move/up data to the worker. The worker maintains a small orbit-camera state and updates the camera before rendering. This keeps interaction available without moving the renderer to the main thread or giving up the FBO pipeline.
+
+The Three.js Shader Park target does not know about Patchies video samplers by default, so the renderer injects the fixed `iChannel0` through `iChannel3` sampler uniforms into the generated fragment shader and wraps connected regl textures as Three.js textures.
+
 ## Initial Scope
 
 - One video outlet.
