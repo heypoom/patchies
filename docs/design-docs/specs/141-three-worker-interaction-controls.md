@@ -49,6 +49,7 @@ function draw() {
 
 This is not Three.js' DOM `OrbitControls` addon. It is a worker-safe compatibility layer with a familiar constructor and common properties.
 It intentionally does not require `renderer.domElement`, because worker `three` has no real DOM element.
+Constructing `OrbitControls` should automatically send the same interaction updates as `noDrag()` and `noWheel()` so Patchies canvas gestures do not compete with camera drag and wheel zoom.
 
 ## Initial OrbitControls Compatibility
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { WorkerThreeInteraction, createWorkerOrbitControlsClass } from './workerThreeInteraction';
 import * as THREE from 'three';
 
@@ -33,8 +33,10 @@ describe('worker three interaction', () => {
   it('mimics OrbitControls rotation and wheel dolly for a perspective camera', () => {
     const interaction = new WorkerThreeInteraction();
     const OrbitControls = createWorkerOrbitControlsClass(THREE, interaction, () => [100, 100]);
+
     const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
     camera.position.set(0, 0, 3);
+
     const controls = new OrbitControls(camera);
 
     interaction.updatePointer({ mouseX: 50, mouseY: 50, mouseZ: 50, mouseW: 50, mouseButtons: 1 });
@@ -50,10 +52,29 @@ describe('worker three interaction', () => {
     expect(controls.getDistance()).toBeLessThan(distance);
   });
 
+  it('notifies when OrbitControls are registered', () => {
+    const interaction = new WorkerThreeInteraction();
+    const onRegister = vi.fn();
+
+    const OrbitControls = createWorkerOrbitControlsClass(
+      THREE,
+      interaction,
+      () => [100, 100],
+      onRegister
+    );
+
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+    new OrbitControls(camera);
+
+    expect(onRegister).toHaveBeenCalledTimes(1);
+  });
+
   it('mimics OrbitControls right-button panning', () => {
     const interaction = new WorkerThreeInteraction();
+
     const OrbitControls = createWorkerOrbitControlsClass(THREE, interaction, () => [100, 100]);
     const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+
     camera.position.set(0, 0, 3);
     const controls = new OrbitControls(camera);
 

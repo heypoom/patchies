@@ -174,7 +174,8 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
       const OrbitControls = createWorkerOrbitControlsClass(
         THREE,
         this.interaction,
-        () => this.renderer.outputSize
+        () => this.renderer.outputSize,
+        () => this.disablePatchCanvasCameraInteractions()
       );
 
       const extraContext = {
@@ -243,6 +244,11 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
     };
 
     this.interaction.queueWheel(wheelEvent);
+  }
+
+  private disablePatchCanvasCameraInteractions() {
+    this.setInteraction('drag', false);
+    this.setInteraction('wheel', false);
   }
 
   destroy() {

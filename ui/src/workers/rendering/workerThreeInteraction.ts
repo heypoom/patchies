@@ -172,7 +172,8 @@ export class WorkerThreeInteraction {
 export function createWorkerOrbitControlsClass(
   THREE: ThreeModule,
   interaction: WorkerThreeInteraction,
-  getSize: () => [number, number]
+  getSize: () => [number, number],
+  onRegister?: () => void
 ) {
   return class OrbitControls {
     enabled = true;
@@ -209,6 +210,7 @@ export function createWorkerOrbitControlsClass(
       this.position0 = object.position.clone();
       this.target0 = this.target.clone();
       this.zoom0 = 'zoom' in object ? object.zoom : 1;
+      onRegister?.();
       this.update();
     }
 

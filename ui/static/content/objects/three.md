@@ -76,7 +76,9 @@ const controls = new OrbitControls(camera);
 controls.enablePan = true;
 controls.enableZoom = true;
 
-const mesh = new Mesh(new BoxGeometry(1, 1, 1), new MeshNormalMaterial());
+const geometry = new BoxGeometry(1, 1, 1)
+const material = new MeshNormalMaterial();
+const mesh = new Mesh(geometry, material);
 scene.add(mesh);
 
 function draw() {
@@ -84,6 +86,10 @@ function draw() {
   renderer.render(scene, camera);
 }
 ```
+
+Creating `OrbitControls` automatically disables Patchies object dragging and
+canvas wheel handling for this node, so drag and wheel gestures go to the camera
+instead.
 
 Use raw events when the scene should decide what drag or wheel means:
 
