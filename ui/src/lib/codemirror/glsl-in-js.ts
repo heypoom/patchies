@@ -1,4 +1,8 @@
+import type { CompletionContext as CMCompletionContext } from '@codemirror/autocomplete';
+import { javascriptLanguage } from '@codemirror/lang-javascript';
 import { parseMixed } from '@lezer/common';
+import type { Input, SyntaxNodeRef } from '@lezer/common';
+import { createGlslCompletionSource } from './glsl-completions';
 import { glslLanguage } from './glsl.codemirror';
 
 // glsl`` tagged template (Three.js / explicit preprocessing)
@@ -12,7 +16,7 @@ const GLSL_CALLS = new Set(['glslFunc', 'glslFuncES3', 'glslSDF']);
 const GLSL_PROPERTY_KEYS = new Set(['frag', 'vert', 'glsl', 'FP', 'VP']);
 
 export function isGlslTemplateString(
-  node: import('@lezer/common').SyntaxNodeRef,
+  node: SyntaxNodeRef,
   input: import('@lezer/common').Input
 ): boolean {
   const parent = node.node.parent;
@@ -28,6 +32,7 @@ export function isGlslTemplateString(
   if (parent.name === 'ArgList') {
     const call = parent.parent;
     const callee = call?.firstChild;
+
     return (
       !!call &&
       call.name === 'CallExpression' &&
@@ -40,6 +45,7 @@ export function isGlslTemplateString(
   // { frag: `...`, vert: `...`, glsl: `...`, FP: `...`, VP: `...` }
   if (parent.name === 'Property') {
     const key = parent.firstChild;
+
     return (
       !!key &&
       key.name === 'PropertyDefinition' &&
@@ -50,6 +56,93 @@ export function isGlslTemplateString(
   return false;
 }
 
+function isPositionInTemplateContent(node: SyntaxNodeRef, pos: number, doc: string): boolean {
+  const hasClosingBacktick = doc[node.to - 1] === '`';
+  const contentFrom = node.from + 1;
+  const contentTo = hasClosingBacktick ? node.to - 1 : node.to;
+
+  if (pos < contentFrom || pos > contentTo) {
+    return false;
+  }
+
+  for (let child = node.node.firstChild; child; child = child.nextSibling) {
+    if (child.name === 'Interpolation' && pos > child.from && pos <= child.to) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isPositionInStringContent(node: SyntaxNodeRef, pos: number, doc: string): boolean {
+  const quote = doc[node.from];
+  const hasClosingQuote = doc[node.to - 1] === quote;
+
+  const contentFrom = node.from + 1;
+  const contentTo = hasClosingQuote ? node.to - 1 : node.to;
+
+  return pos >= contentFrom && pos <= contentTo;
+}
+
+function findJavaScriptStringContext(context: CMCompletionContext): {
+  isString: boolean;
+  isGlsl: boolean;
+} {
+  const doc = context.state.doc.toString();
+
+  const input = {
+    read: (from: number, to: number) => doc.slice(from, to)
+  } as Input;
+
+  let result = { isString: false, isGlsl: false };
+
+  javascriptLanguage.parser.parse(doc).iterate({
+    enter(node: SyntaxNodeRef) {
+      if (result.isString) return false;
+
+      if (node.name === 'TemplateString') {
+        if (!isPositionInTemplateContent(node, context.pos, doc)) return;
+
+        result = {
+          isString: true,
+          isGlsl: isGlslTemplateString(node, input)
+        };
+
+        return false;
+      }
+
+      if (node.name === 'String' && isPositionInStringContent(node, context.pos, doc)) {
+        result = { isString: true, isGlsl: false };
+
+        return false;
+      }
+    }
+  });
+
+  return result;
+}
+
+export const isJavaScriptStringCompletionContext = (context: CMCompletionContext): boolean =>
+  findJavaScriptStringContext(context).isString;
+
+export function isGlslInJavaScriptCompletionContext(context: CMCompletionContext): boolean {
+  const stringContext = findJavaScriptStringContext(context);
+
+  return stringContext.isString && stringContext.isGlsl;
+}
+
+export function createGlslInJsCompletionSource() {
+  const glslSource = createGlslCompletionSource();
+
+  return (context: CMCompletionContext) => {
+    if (!isGlslInJavaScriptCompletionContext(context)) return null;
+
+    return glslSource(context);
+  };
+}
+
+export const glslInJsCompletions = createGlslInJsCompletionSource();
+
 function glslOverlay(node: import('@lezer/common').SyntaxNodeRef): { from: number; to: number }[] {
   // Collect ranges covering all non-interpolation content inside the backticks.
   const overlay: { from: number; to: number }[] = [];
@@ -58,12 +151,14 @@ function glslOverlay(node: import('@lezer/common').SyntaxNodeRef): { from: numbe
   for (let child = node.node.firstChild; child; child = child.nextSibling) {
     if (child.name === 'Interpolation') {
       if (pos < child.from) overlay.push({ from: pos, to: child.from });
+
       pos = child.to;
     }
   }
 
   const end = node.to - 1; // skip closing backtick
   if (pos < end) overlay.push({ from: pos, to: end });
+
   return overlay;
 }
 

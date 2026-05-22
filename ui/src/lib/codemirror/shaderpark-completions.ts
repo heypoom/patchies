@@ -3,6 +3,7 @@ import {
   type Completion
 } from '@codemirror/autocomplete';
 import { isCompletionSuppressedByComment } from '$lib/codemirror/completion-utils';
+import { isJavaScriptStringCompletionContext } from '$lib/codemirror/glsl-in-js';
 import type { PatchiesContext } from '$lib/codemirror/patchies-completions';
 
 const SHADERPARK_NODE_TYPE = 'shaderpark';
@@ -610,6 +611,7 @@ function isExpressionCompletionPosition(context: CMCompletionContext, from: numb
 export function createShaderParkCompletionSource(patchiesContext?: PatchiesContext) {
   return (context: CMCompletionContext) => {
     if (patchiesContext?.nodeType !== SHADERPARK_NODE_TYPE) return null;
+    if (isJavaScriptStringCompletionContext(context)) return null;
 
     const word = context.matchBefore(/[A-Za-z_$][\w$]*/);
     if (!word) return null;

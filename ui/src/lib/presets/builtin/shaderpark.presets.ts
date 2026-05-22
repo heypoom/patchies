@@ -1,3 +1,5 @@
+import type { ShaderParkRenderMode } from '$lib/rendering/types';
+
 const NOISE_SPHERE_SHADERPARK = `// @title Noise Sphere
 // @primaryButton settings
 
@@ -29,6 +31,7 @@ const sz = sizeBase + nsin(time) * sizeAmp;
 
 const complexDiv = (a, b) => {
   const dm = 1.0 / (b.x * b.x + b.y * b.y);
+
   return dm * vec2(
     a.x * b.x + a.y * b.y,
     a.y * b.x - a.x * b.y
@@ -46,6 +49,7 @@ for (let i = 0.0; i < lineCount; i += 1.0) {
   const a = vec2(s.x - xoff, s.y - sz);
   const b = vec2(s.x - xoff, s.y + sz);
   const q = complexDiv(a, b);
+
   phi += strength * atan(q.y, q.x) + 0.35 * i * sin(time * 0.9);
 }
 
@@ -54,6 +58,7 @@ for (let i = 0.0; i < lineCount; i += 1.0) {
   const a = vec2(s.y - yoff, s.x - sz);
   const b = vec2(s.y - yoff, s.x + sz);
   const q = complexDiv(a, b);
+
   phi += strength * atan(q.y, q.x) + 0.35 * i * sin(time * 0.9);
 }
 
@@ -90,9 +95,38 @@ metal(0.15);
 displace(mouse.x, mouse.y, 0.0);
 sphere(0.22 + 0.08 * sin(time * 2.0));`;
 
+const OCTAHEDRON_SDF_SHADERPARK = `// @title Octahedron SDF
+// https://iquilezles.org/articles/distfunctions/
+
+let octahedron = glslSDF(\`
+  float sdOctahedron(vec3 p, float s) {
+    vec3 q;
+    p = abs(p);
+
+    float m = p.x + p.y + p.z - s;
+
+    if (3.0 * p.x < m) {
+      q = p.xyz;
+    } else if (3.0 * p.y < m) {
+      q = p.yzx;
+    } else if (3.0 * p.z < m) {
+      q = p.zxy;
+    } else {
+      return m * 0.57735027;
+    }
+
+    float k = clamp(0.5 * (q.z - q.y + s), 0.0, s);
+
+    return length(vec3(q.x, q.y - s + k, q.z - k));
+  }
+\`);
+
+octahedron(.6);`;
+
 type ShaderParkPresetData = {
   code: string;
   title?: string;
+  renderMode?: ShaderParkRenderMode;
   videoInletCount?: number;
   videoOutletCount?: number;
 };
@@ -127,6 +161,17 @@ export const SHADERPARK_PRESETS: Record<
     data: {
       title: 'Mouse Follower',
       code: MOUSE_FOLLOWER_SHADERPARK,
+      videoInletCount: 0,
+      videoOutletCount: 1
+    }
+  },
+  'Octahedron SDF': {
+    type: 'shaderpark',
+    description: 'An octahedron SDF made with Shader Park glslSDF',
+    data: {
+      title: 'Octahedron SDF',
+      code: OCTAHEDRON_SDF_SHADERPARK,
+      renderMode: '3d',
       videoInletCount: 0,
       videoOutletCount: 1
     }
