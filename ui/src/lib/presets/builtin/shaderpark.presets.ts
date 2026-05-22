@@ -121,6 +121,12 @@ let octahedron = glslSDF(\`
   }
 \`);
 
+shine(nsin(time))
+metal(nsin(time))
+
+let ray = getRayDirection()
+color(ray.z, ray.x, ray.y)
+
 octahedron(.6);`;
 
 type ShaderParkPresetData = {
