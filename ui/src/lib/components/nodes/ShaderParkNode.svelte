@@ -24,7 +24,6 @@
     ConsoleOutputEvent,
     NodeHidePortsUpdateEvent,
     NodePortCountUpdateEvent,
-    PrimaryButton,
     NodeTitleUpdateEvent,
     NodeVideoOutputEnabledUpdateEvent
   } from '$lib/eventbus/events';
@@ -69,7 +68,6 @@
       renderMode?: ShaderParkRenderMode;
       fboFormat?: FBOFormat;
       resolution?: FBOResolution;
-      primaryButton?: PrimaryButton;
     };
     selected?: boolean;
     class?: string;
@@ -94,9 +92,11 @@
 
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
   let previousExecuteCode = $state<number | undefined>(undefined);
+
   const shaderParkVideoUniformIndices = $derived(
     data.shaderParkVideoUniformIndices ?? extractShaderParkVideoUniformIndices(data.code)
   );
+
   const shaderParkUniformDefs = $derived(data.shaderParkUniformDefs ?? []);
   const uniformsSchema = $derived(uniformDefsToSettingsSchema(shaderParkUniformDefs));
   const visibleUniformInlets = $derived(visibleUniformInletDefs(shaderParkUniformDefs));
@@ -278,10 +278,12 @@
     const nextUniformDefs = cloneUniformDefs(
       overrides.shaderParkUniformDefs ?? data.shaderParkUniformDefs
     );
+
     const nextUniformValues = cloneableUniformValues(
       nextUniformDefs,
       overrides.uniformValues ?? uniformValues
     );
+
     const nextVideoUniformIndices = cloneVideoUniformIndices(
       overrides.shaderParkVideoUniformIndices ??
         data.shaderParkVideoUniformIndices ??
@@ -298,6 +300,7 @@
       renderMode: overrides.renderMode ?? renderMode,
       fboFormat: overrides.fboFormat ?? data.fboFormat,
       resolution: cloneFboResolution(overrides.resolution ?? data.resolution),
+
       ...(overrides._runRevision !== undefined ? { _runRevision: overrides._runRevision } : {})
     };
   }
@@ -306,6 +309,7 @@
     const nextRenderMode = match(renderMode)
       .with('3d', () => 'flat' as const)
       .otherwise(() => '3d' as const);
+
     const nextData = getShaderParkRendererData({
       renderMode: nextRenderMode,
       _runRevision: Date.now()
@@ -320,10 +324,12 @@
       const isControlMessage = match(message)
         .with(messages.setCode, ({ value }) => {
           setCodeAndUpdate(value);
+
           return true;
         })
         .with(messages.run, () => {
           updateShaderPark();
+
           return true;
         })
         .otherwise(() => false);
@@ -344,6 +350,7 @@
         const uniformValue = toGLValue(uniformDef, cloneableValue);
 
         glSystem.setUniformData(nodeId, uniformName, uniformValue);
+
         uniformValues = { ...uniformValues, [uniformName]: cloneableValue };
         updateNodeData(nodeId, { uniformValues });
 
@@ -378,36 +385,39 @@
     }
 
     const initialUniformDefs = cloneUniformDefs(data.shaderParkUniformDefs);
+
     const initialVideoUniformIndices = [
       ...(data.shaderParkVideoUniformIndices ?? extractShaderParkVideoUniformIndices(data.code))
     ];
+
     const initialUniformValues = cloneableUniformValues(
       initialUniformDefs,
       data.uniformValues ?? {}
     );
 
-    glSystem.upsertNode(
-      nodeId,
-      'shaderpark',
-      getShaderParkRendererData({
-        shaderParkVideoUniformIndices: initialVideoUniformIndices,
-        shaderParkUniformDefs: initialUniformDefs,
-        uniformValues: initialUniformValues
-      })
-    );
+    const rendererData = getShaderParkRendererData({
+      shaderParkVideoUniformIndices: initialVideoUniformIndices,
+      shaderParkUniformDefs: initialUniformDefs,
+      uniformValues: initialUniformValues
+    });
+
+    glSystem.upsertNode(nodeId, 'shaderpark', rendererData);
 
     setTimeout(() => {
       glSystem.setPreviewEnabled(nodeId, true);
+
       updateShaderPark();
     }, 50);
   });
 
   onDestroy(() => {
     const glEventBus = glSystem?.eventBus;
+
     if (glEventBus) {
       glEventBus.removeEventListener('nodePortCountUpdate', handlePortCountUpdate);
       glEventBus.removeEventListener('nodeTitleUpdate', handleTitleUpdate);
       glEventBus.removeEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
+
       glEventBus.removeEventListener(
         'nodeVideoOutputEnabledUpdate',
         handleVideoOutputEnabledUpdate
@@ -434,6 +444,7 @@
 
   async function updateShaderPark(codeOverride?: string) {
     consoleRef?.clearConsole();
+
     lineErrors = undefined;
 
     try {
@@ -445,9 +456,11 @@
       const nextPrimaryButton = detectShaderParkPrimaryButton(code);
       const nextUniformDefs = cloneUniformDefs(await extractShaderParkUniformDefs(code));
       const nextVideoUniformIndices = [...extractShaderParkVideoUniformIndices(code)];
+
       const defaultValues = settingsSchemaToDefaultValues(
         uniformDefsToSettingsSchema(nextUniformDefs)
       );
+
       const pruned: Record<string, unknown> = {};
 
       for (const def of nextUniformDefs) {
@@ -502,7 +515,6 @@
 
       for (const [name, value] of Object.entries(cloneablePruned)) {
         const uniformDef = nextUniformDefs.find((def) => def.name === name);
-
         if (!uniformDef) continue;
 
         glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
@@ -515,6 +527,7 @@
         'Shader Park compilation failed:',
         error instanceof Error ? error.message : String(error)
       );
+
       logger.error('[shaderpark] update error:', error);
     }
   }
@@ -545,7 +558,6 @@
 
     for (const [name, value] of Object.entries(defaults)) {
       const uniformDef = shaderParkUniformDefs.find((def) => def.name === name);
-
       if (!uniformDef) continue;
 
       glSystem.setUniformData(nodeId, name, toGLValue(uniformDef, value));
