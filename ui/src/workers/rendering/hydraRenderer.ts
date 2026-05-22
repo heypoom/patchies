@@ -14,6 +14,7 @@ import { getFramebuffer } from './utils';
 import { parseJSError, countLines } from '$lib/js-runner/js-error-parser';
 import { HYDRA_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
 import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRenderer';
+import { HydraDatamoshRuntime } from './hydraDatamosh';
 
 export interface HydraRendererConfig extends BaseRendererConfig {
   videoInletCount?: number;
@@ -34,6 +35,7 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
   // Hydra-specific error throttling (separate from base class to avoid key collisions)
   private hydraLastRuntimeError: string | null = null;
   private hydraLastRuntimeErrorTime = 0;
+  private datamoshRuntime: HydraDatamoshRuntime | null = null;
 
   private constructor(
     config: HydraRendererConfig,
@@ -110,6 +112,8 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
 
       source.tick();
     });
+
+    this.datamoshRuntime?.tick();
 
     this.hydra.outputs.forEach((output) => {
       if (!this.hydra) return;
@@ -221,6 +225,14 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
 
       const { sources, outputs, hush, render } = this.hydra;
 
+      this.datamoshRuntime?.destroy();
+
+      this.datamoshRuntime = new HydraDatamoshRuntime(
+        this.hydra,
+        this.renderer,
+        this.createCustomConsole()
+      );
+
       // Apply Hydra-specific code transformation (.out() -> .out(o0))
       const hydraCode = processCode(this.config.code);
 
@@ -248,6 +260,7 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
         ...outputContext,
 
         setFunction,
+        datamosh: this.datamoshRuntime.datamosh,
         setVideoCount: this.setVideoCount.bind(this),
         setMouseScope: this.setMouseScope.bind(this)
       };
@@ -278,6 +291,7 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
     if (!this.hydra) return;
 
     this.stop();
+    this.datamoshRuntime?.destroy();
 
     for (const source of this.hydra.sources) {
       source.getTexture()?.destroy();
@@ -288,6 +302,7 @@ export class HydraRenderer extends BaseWorkerRenderer<HydraRendererConfig> {
     }
 
     this.hydra = null;
+    this.datamoshRuntime = null;
 
     super.destroy();
   }

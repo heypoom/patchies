@@ -208,6 +208,11 @@ preset pack. Larger visual effect libraries remain in their own opt-in preset pa
 - various glsl presets
 - three.js presets
 
+**Hydra Operators:**
+
+- Include compact Hydra utility presets such as `add.hydra`, `diff.hydra`, and `Datamosh`.
+- Operator presets should expose the inlet/outlet counts needed for immediate patching.
+
 **Hydra Demos:**
 
 - Community Hydra sketches live in the **Hydra Demos** preset pack.

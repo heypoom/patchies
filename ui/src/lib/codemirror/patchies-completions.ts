@@ -104,6 +104,13 @@ const patchiesAPICompletions: Completion[] = [
     info: "Set mouse tracking scope. 'local' (default) tracks within canvas, 'global' tracks across entire screen",
     apply: "setMouseScope('global')"
   },
+  {
+    label: 'datamosh',
+    type: 'function',
+    detail: '(source, params?) => Source',
+    info: 'Route a Hydra source through the native WebCodecs datamosh effect. Params: speed, keyFrame, fps, bitrate.',
+    apply: 'datamosh(s0, { speed: 2 })'
+  },
 
   // Node Configuration
   {
@@ -579,6 +586,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   setResolution: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
   setPrimaryButton: ['js', 'worker', 'p5', 'hydra', 'canvas', 'regl', 'swgl', 'textmode', 'three'],
   setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
+  datamosh: ['hydra'],
   getTexture: ['hydra', 'regl', 'swgl', 'three'],
   OrbitControls: ['three'],
   onPointerDrag: ['three'],

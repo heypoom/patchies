@@ -41,7 +41,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Video operators built with Hydra',
     icon: 'Palette',
     requiredObjects: ['hydra'],
-    presets: ['add.hydra', 'diff.hydra', 'sub.hydra', 'blend.hydra', 'mask.hydra']
+    presets: ['add.hydra', 'diff.hydra', 'sub.hydra', 'blend.hydra', 'mask.hydra', 'Datamosh']
   },
   {
     id: 'texture-generators',

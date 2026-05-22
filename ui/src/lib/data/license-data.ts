@@ -484,6 +484,16 @@ export const portedCode: PortedCode[] = [
       'Local fork at ui/src/lib/hydra/ modifies error handling to integrate with Patchies error reporting instead of console.log.'
   },
   {
+    name: 'hydra-datamosh',
+    description:
+      'Patchies datamosh support is based on the WebCodecs source/output datamosh approach from the hydra-datamosh extension.',
+    authors: 'emptyflash',
+    repository: 'https://github.com/emptyflash/hydra-datamosh',
+    license: 'No license listed',
+    notes:
+      'Patchies implements a worker-native datamosh helper for its local Hydra renderer instead of importing the browser extension directly. Upstream documentation: https://github.com/emptyflash/hydra-datamosh/blob/main/README.md'
+  },
+  {
     name: 'Superdough (patched)',
     description:
       'Superdough is used by the Strudel node for audio synthesis. Patchies includes a patched version with minor modifications.',
