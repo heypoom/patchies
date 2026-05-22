@@ -136,6 +136,12 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     transform: createExprTransform('expr~', 'expr')
   },
   {
+    names: ['fexpr~'],
+    nodeType: 'fexpr~',
+    description: 'Audio-rate filter expression',
+    transform: createExprTransform('fexpr~', 'expr')
+  },
+  {
     names: ['netsend'],
     nodeType: 'netsend',
     description: 'Network message sender',
