@@ -58,7 +58,16 @@ export class IpcSystem {
         return;
       }
 
-      if (!message) return;
+      const hasHandshakeBound = isHandshakeBoundOutputWindow(
+        event.source,
+        event.origin,
+        this.outputWindow,
+        this.outputOrigin
+      );
+
+      if (!hasHandshakeBound) {
+        return;
+      }
 
       dispatchOutputToMainMessage(message, this.outputSurfaceInputSink);
     });
@@ -111,8 +120,7 @@ export class IpcSystem {
   }
 
   openOutputWindow() {
-    this.outputWindow = window.open('/output', '_blank');
-    this.outputOrigin = window.location.origin;
+    window.open('/output', '_blank');
   }
 
   hasConnectedOutputWindow() {
@@ -151,6 +159,17 @@ export class IpcSystem {
     });
   }
 }
+
+export const isHandshakeBoundOutputWindow = (
+  source: Window,
+  origin: string,
+  outputWindow: Window | null,
+  outputOrigin: string | null
+): boolean =>
+  outputWindow !== null &&
+  !outputWindow.closed &&
+  source === outputWindow &&
+  origin === outputOrigin;
 
 function isWindowMessageSource(source: MessageEventSource | null): source is Window {
   return (

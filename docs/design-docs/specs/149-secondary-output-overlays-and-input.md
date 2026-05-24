@@ -95,6 +95,11 @@ accepts `/output` messages only when `event.origin` matches the app origin and
 messages only from `window.opener` with the same expected origin. All
 `postMessage` calls use that concrete origin instead of `*`.
 
+Only the `outputReady` handshake may establish or refresh the connected output
+window. Surface input messages from `/output` must be ignored until that
+handshake has completed, and after it completes they must match the
+handshake-bound `Window` and origin.
+
 Both sides validate runtime message shape before dispatching. Render messages
 must include an `ImageBitmap`, overlay state messages must carry either `null`
 or the expected serializable state shape, and output input messages must include
