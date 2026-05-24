@@ -121,6 +121,11 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('js', 'setS')).not.toContain('setSize');
   });
 
+  it('shows setViewState only for deckgl code', () => {
+    expect(getCompletionLabels('deckgl', 'setV')).toContain('setViewState');
+    expect(getCompletionLabels('three', 'setV')).not.toContain('setViewState');
+  });
+
   it('shows Shader Park completions only for shaderpark code', () => {
     expect(getShaderParkCompletionLabels('shaderpark', 'sp')).toContain('sphere');
     expect(getShaderParkCompletionLabels('shaderpark', 'setSpace(getS')).toContain('getSpace');

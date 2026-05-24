@@ -172,6 +172,14 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'setResolution(256)'
   },
   {
+    label: 'setViewState',
+    type: 'function',
+    detail: '(viewState: Partial<{ longitude, latitude, zoom, pitch, bearing }>) => void',
+    info: 'Set the deck.gl camera view state for deckgl nodes.',
+    apply:
+      'setViewState({\n  longitude: -122.44,\n  latitude: 37.76,\n  zoom: 11,\n  pitch: 0,\n  bearing: 0\n})'
+  },
+  {
     label: 'setPrimaryButton',
     type: 'function',
     detail: "('code' | 'settings' | 'run') => void",
@@ -621,6 +629,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   'htmlCanvas.glslLayer': ['dom', 'vue'],
   setTextureFormat: ['hydra', 'canvas', 'three', 'deckgl', 'regl', 'swgl', 'textmode'],
   setResolution: ['hydra', 'canvas', 'three', 'deckgl', 'regl', 'swgl', 'textmode'],
+  setViewState: ['deckgl'],
   setPrimaryButton: ['js', 'worker', 'p5', 'hydra', 'canvas', 'regl', 'swgl', 'textmode', 'three'],
   setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
   getTexture: ['hydra', 'regl', 'swgl', 'three'],
