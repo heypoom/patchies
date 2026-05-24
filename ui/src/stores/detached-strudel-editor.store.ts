@@ -1,4 +1,5 @@
 import { get, writable } from 'svelte/store';
+import { match } from 'ts-pattern';
 
 export const activeDetachedStrudelNodeId = writable<string | null>(null);
 
@@ -11,7 +12,7 @@ export function closeDetachedStrudelEditor(): void {
 }
 
 export function isDetachedStrudelEditor(nodeId: string | undefined): boolean {
-  if (!nodeId) return false;
-
-  return get(activeDetachedStrudelNodeId) === nodeId;
+  return match(nodeId)
+    .with(undefined, () => false)
+    .otherwise((n) => get(activeDetachedStrudelNodeId) === n);
 }

@@ -369,7 +369,8 @@
         } else {
           toggleInlineCode();
         }
-      });
+      })
+      .exhaustive();
   }
 </script>
 
@@ -569,6 +570,7 @@
                   if (isCodeEditorDetached) closeCodeEditorOverlay();
                 }}
                 class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                aria-label="Close editor"
               >
                 <X class="h-4 w-4 text-zinc-300" />
               </button>

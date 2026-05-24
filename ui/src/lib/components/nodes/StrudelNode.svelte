@@ -531,15 +531,11 @@
     border-radius: 0 !important;
     box-shadow: none !important;
     font-size: 28px !important;
-    outline: none !important;
   }
 
   :global(.strudel-detached-editor .strudel-editor-shell .cm-focused) {
-    outline: none !important;
-  }
-
-  :global(.strudel-detached-editor .strudel-editor-shell *:focus) {
-    outline: none !important;
+    outline: 2px solid rgb(212 212 216);
+    outline-offset: -2px;
   }
 
   :global(.strudel-detached-editor .strudel-editor-shell .cm-content) {

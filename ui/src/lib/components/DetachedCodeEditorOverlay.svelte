@@ -10,11 +10,13 @@
   let {
     onClose,
     onrun,
-    codeEditor
+    codeEditor,
+    class: className = ''
   }: {
     onClose: () => void;
     onrun?: () => void;
     codeEditor: Snippet;
+    class?: string;
   } = $props();
 
   let panelBackground = $derived(`rgba(9, 9, 11, ${$overlayEditorTransparency})`);
@@ -40,7 +42,7 @@
 </script>
 
 <div
-  class="detached-code-editor-overlay fixed inset-0 z-[60]"
+  class={['detached-code-editor-overlay fixed inset-0 z-[60]', className]}
   style:background-color={panelBackground}
 >
   <div class="absolute top-6 right-6 z-10 flex gap-1">

@@ -85,13 +85,13 @@ bun run test             # All tests
 
 ## Code Patterns
 
-- **Always use `ts-pattern`**, never `switch` statements. This includes:
-  - Conditional logic based on type/mode/state
-  - Dynamic CSS class selection based on variants
-  - Any branching on union types or enums
+- **Use `ts-pattern` when it improves clarity**, especially for:
+  - Exhaustive branching on discriminated unions, enums, or mode/state values
+  - Data-shape matching where destructuring in the branch is useful
+  - Replacing `switch` statements that would otherwise duplicate fallthrough/default logic
 
   ```ts
-  // WRONG - never use switch
+  // WRONG - avoid switch for union-style branching
   switch (mode) {
     case "edit":
       return "bg-amber-600";
@@ -101,13 +101,24 @@ bun run test             # All tests
       return "bg-purple-600";
   }
 
-  // RIGHT - always use ts-pattern
+  // RIGHT - ts-pattern makes this branch set clear
   import { match } from "ts-pattern";
   match(mode)
     .with("edit", () => "bg-amber-600")
     .with("multi", () => "bg-blue-600")
     .otherwise(() => "bg-purple-600");
   ```
+
+- **Do NOT use `ts-pattern` when it makes code heavier or harder to follow.** Prefer
+  normal `if` statements, guard clauses, or small helper functions for:
+  - Simple null/undefined checks
+  - Early returns in effects, event handlers, and setup/cleanup code
+  - Hot paths such as render loops, audio processing, worker message loops, or
+    high-frequency pointer/animation handlers
+  - Sequential control flow where each guard has side effects or depends on the
+    previous guard
+  - Cases where a `match(...).with(...).otherwise(...)` block is longer or less
+    direct than the equivalent `if` statements
 
 - Separate UI from business logic (manager pattern)
 - TypeScript for all code
@@ -118,7 +129,19 @@ bun run test             # All tests
 
 ## Styling
 
-- Tailwind classes only (no custom CSS)
+- Prefer Tailwind utility classes for DOM the component owns directly.
+- Do **not** force Tailwind classes when they make the code harder to read. Use a
+  small, local `<style>` block instead when:
+  - Styling generated or third-party DOM that cannot receive classes directly
+    (CodeMirror `.cm-*`, canvas/library internals, embedded editors, etc.)
+  - Tailwind arbitrary variants become long descendant-selector strings
+  - The same selector-based rule would be clearer, shorter, and more stable as
+    CSS
+  - You need to override library styles in one component boundary
+- Keep local CSS scoped and minimal. Prefer component-level selectors over broad
+  globals, avoid `!important` unless overriding a library requires it, and never
+  remove focus indicators without replacing them with an accessible visible
+  focus style.
 - Zinc palette, dark theme
 - Support `class` prop for component extension
 - Icons: `@lucide/svelte`

@@ -64,10 +64,10 @@ export function getEditorOpenLayout(
     .with('overlay', () => 'overlay' as const)
     .otherwise(() => 'inline' as const);
 
-  if (!useAlternateLayout) return preferredLayout;
-
-  return match(preferredLayout)
-    .with('inline', () => 'overlay' as const)
-    .with('overlay', () => 'inline' as const)
+  return match([useAlternateLayout, preferredLayout])
+    .with([false, 'inline'], () => 'inline' as const)
+    .with([false, 'overlay'], () => 'overlay' as const)
+    .with([true, 'inline'], () => 'overlay' as const)
+    .with([true, 'overlay'], () => 'inline' as const)
     .exhaustive();
 }

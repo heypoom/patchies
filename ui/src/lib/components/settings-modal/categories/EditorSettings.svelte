@@ -56,7 +56,7 @@
       step="5"
       value={overlayTransparencyPercent}
       oninput={handleTransparencyInput}
-      class="h-1.5 w-28 cursor-pointer accent-orange-500"
+      class="h-1.5 w-28 cursor-pointer accent-zinc-500"
       aria-label="Overlay editor transparency"
     />
     <span class="w-9 text-right font-mono text-xs text-zinc-400">{overlayTransparencyPercent}%</span
