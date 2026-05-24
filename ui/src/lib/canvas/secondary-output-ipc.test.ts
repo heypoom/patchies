@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createCodeOverlayMirrorState,
+  createDetachedStrudelCodeOverlayMirrorState,
   dispatchOutputToMainMessage,
   hasConnectedOutputWindow,
   highlightCodeOverlayValue,
@@ -42,6 +43,21 @@ describe('secondary output IPC', () => {
     };
 
     expect(createCodeOverlayMirrorState(target, 'code', 28, 0.72)).toBeNull();
+  });
+
+  it('creates a display-only code overlay state for detached strudel code', () => {
+    expect(
+      createDetachedStrudelCodeOverlayMirrorState('strudel-1', 's("bd sd")', 28, 0.72)
+    ).toEqual({
+      nodeId: 'strudel-1',
+      dataKey: 'code',
+      value: 's("bd sd")',
+      language: 'javascript',
+      nodeType: 'strudel',
+      title: 'strudel',
+      fontSizePx: 28,
+      transparency: 0.72
+    });
   });
 
   it('routes output surface input messages to the active sink', () => {

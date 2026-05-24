@@ -86,6 +86,24 @@ export function createCodeOverlayMirrorState(
   };
 }
 
+export function createDetachedStrudelCodeOverlayMirrorState(
+  nodeId: string,
+  value: string,
+  fontSizePx: number,
+  transparency: number
+): CodeOverlayMirrorState {
+  return {
+    nodeId,
+    dataKey: 'code',
+    value,
+    language: 'javascript',
+    nodeType: 'strudel',
+    title: 'strudel',
+    fontSizePx,
+    transparency
+  };
+}
+
 export function dispatchOutputToMainMessage(
   message: OutputToMainMessage,
   sink: OutputSurfaceInputSink | null

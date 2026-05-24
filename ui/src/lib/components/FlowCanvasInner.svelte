@@ -91,7 +91,10 @@
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
   import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
   import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
-  import { createCodeOverlayMirrorState } from '$lib/canvas/secondary-output-ipc';
+  import {
+    createCodeOverlayMirrorState,
+    createDetachedStrudelCodeOverlayMirrorState
+  } from '$lib/canvas/secondary-output-ipc';
 
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
@@ -103,6 +106,7 @@
   } from '../../stores/code-editor-layout.store';
   import { editorFullscreenFontSize } from '../../stores/editor.store';
   import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
+  import { activeDetachedStrudelNodeId } from '../../stores/detached-strudel-editor.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
@@ -275,12 +279,27 @@
   });
 
   $effect(() => {
-    const state = createCodeOverlayMirrorState(
-      $activeCodeEditorTarget,
-      detachedCodeEditor.value,
-      $editorFullscreenFontSize,
-      $overlayEditorTransparency
-    );
+    const detachedStrudelNode =
+      $activeDetachedStrudelNodeId === null
+        ? undefined
+        : nodes.find((node) => node.id === $activeDetachedStrudelNodeId);
+
+    const detachedStrudelCode = detachedStrudelNode?.data?.code;
+
+    const state =
+      $activeDetachedStrudelNodeId && typeof detachedStrudelCode === 'string'
+        ? createDetachedStrudelCodeOverlayMirrorState(
+            $activeDetachedStrudelNodeId,
+            detachedStrudelCode,
+            $editorFullscreenFontSize,
+            $overlayEditorTransparency
+          )
+        : createCodeOverlayMirrorState(
+            $activeCodeEditorTarget,
+            detachedCodeEditor.value,
+            $editorFullscreenFontSize,
+            $overlayEditorTransparency
+          );
 
     glSystem.ipcSystem.sendCodeOverlayState(state);
   });
