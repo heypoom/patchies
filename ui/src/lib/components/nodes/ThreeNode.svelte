@@ -301,6 +301,7 @@
 <CanvasPreviewLayout
   title={data.title ?? 'three'}
   objectType="three"
+  codePlaceholder="Write your Three.js code here..."
   {nodeId}
   onrun={updateThree}
   bind:previewCanvas

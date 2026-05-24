@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Ellipsis, Link, Play, Square, Terminal, VolumeX } from '@lucide/svelte/icons';
+  import { Ellipsis, Expand, Link, Play, Square, Terminal, VolumeX, X } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -16,6 +16,15 @@
   import { AudioService } from '$lib/audio/v2/AudioService';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as Popover from '$lib/components/ui/popover';
+  import { portal } from '$lib/dom/portal';
+  import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
+  import { isSidebarOpen } from '../../../stores/ui.store';
+  import {
+    activeDetachedStrudelNodeId,
+    closeDetachedStrudelEditor,
+    openDetachedStrudelEditor
+  } from '../../../stores/detached-strudel-editor.store';
+  import { overlayEditorTransparency } from '../../../stores/editor-layout-settings.store';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -209,6 +218,13 @@
   const consoleLeftPos = $derived(editorContainerWidth + consoleGap);
   const syncTransport = $derived(data.syncTransport ?? false);
   const muted = $derived(data.muted ?? false);
+  const isDetached = $derived($activeDetachedStrudelNodeId === nodeId);
+
+  const detachedPortalTarget = $derived(
+    isDetached && typeof document !== 'undefined' ? document.body : null
+  );
+
+  const detachedBackground = $derived(`rgba(9, 9, 11, ${$overlayEditorTransparency})`);
   const tracker = useNodeDataTracker(nodeId);
 
   function setSyncTransport(value: boolean) {
@@ -243,6 +259,45 @@
       transportSync.subscribe();
     } else {
       transportSync.unsubscribe();
+    }
+  });
+
+  function openExpandedEditor() {
+    openDetachedStrudelEditor(nodeId);
+
+    menuOpen = false;
+  }
+
+  function closeExpandedEditor() {
+    closeDetachedStrudelEditor();
+  }
+
+  $effect(() => {
+    if (!isDetached) return;
+
+    isSidebarOpen.set(false);
+    isFullscreenActive.set(true);
+
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || !event.shiftKey) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      closeExpandedEditor();
+    };
+
+    window.addEventListener('keydown', handleKeydown, { capture: true });
+
+    return () => {
+      window.removeEventListener('keydown', handleKeydown, { capture: true });
+      isFullscreenActive.set(false);
+    };
+  });
+
+  onDestroy(() => {
+    if (isDetached) {
+      closeDetachedStrudelEditor();
     }
   });
 </script>
@@ -312,6 +367,14 @@
 
               <button
                 class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
+                onclick={openExpandedEditor}
+              >
+                <Expand class="h-4 w-4" />
+                Expand Editor
+              </button>
+
+              <button
+                class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-zinc-300 hover:bg-zinc-700"
                 onclick={() => {
                   setSyncTransport(!syncTransport);
                   menuOpen = false;
@@ -350,14 +413,67 @@
 
         <div
           bind:this={editorContainer}
+          use:portal={detachedPortalTarget}
           class={[
-            'nodrag nopan flex w-full items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 p-1 transition-opacity',
-            hasError ? 'border-red-500' : 'border-transparent',
+            'nodrag nopan transition-opacity',
+            isDetached
+              ? 'strudel-detached-editor fixed inset-0 z-[60] flex items-stretch justify-stretch'
+              : 'flex w-full items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 p-2',
+            !isDetached && (hasError ? 'border-red-500' : 'border-transparent'),
             muted ? 'opacity-40' : 'opacity-100'
           ]}
-          style={data.styles?.container}
+          style={isDetached
+            ? `${data.styles?.container ?? ''};background-color:${detachedBackground};`
+            : (data.styles?.container ?? '')}
         >
-          <div class="nodrag nowheel max-h-[600px] max-w-[800px] overflow-auto">
+          {#if isDetached}
+            <div class="absolute top-6 right-6 z-10 flex gap-1">
+              {#if isInitialized && !syncTransport}
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    {#if isPlaying}
+                      <button
+                        class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
+                        onclick={stop}
+                        aria-label="Stop Strudel"
+                      >
+                        <Square class="h-4 w-4" />
+                      </button>
+                    {:else}
+                      <button
+                        class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
+                        onclick={evaluate}
+                        aria-label="Run Strudel"
+                      >
+                        <Play class="h-4 w-4" />
+                      </button>
+                    {/if}
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>{isPlaying ? 'Stop' : 'Run Strudel'}</Tooltip.Content>
+                </Tooltip.Root>
+              {/if}
+
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <button
+                    class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
+                    onclick={closeExpandedEditor}
+                    aria-label="Close expanded Strudel editor"
+                  >
+                    <X class="h-4 w-4" />
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>Close Expanded Editor (Shift+Esc)</Tooltip.Content>
+              </Tooltip.Root>
+            </div>
+          {/if}
+
+          <div
+            class={[
+              'strudel-editor-shell nodrag nowheel overflow-auto',
+              isDetached ? 'h-full w-full' : 'max-h-[600px] max-w-[800px]'
+            ]}
+          >
             <StrudelEditor
               {code}
               fontFamily={data.fontFamily}
@@ -396,3 +512,42 @@
     />
   </div>
 </div>
+
+<style>
+  :global(.strudel-editor-shell .cm-editor) {
+    height: 100%;
+  }
+
+  :global(.strudel-editor-shell .cm-content) {
+    max-width: none !important;
+  }
+
+  :global(.strudel-editor-shell .cm-gutters) {
+    display: none !important;
+  }
+
+  :global(.strudel-detached-editor .strudel-editor-shell .cm-editor) {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    font-size: 28px !important;
+  }
+
+  :global(.strudel-detached-editor .strudel-editor-shell .cm-focused) {
+    outline: 2px solid rgb(212 212 216);
+    outline-offset: -2px;
+  }
+
+  :global(.strudel-detached-editor .strudel-editor-shell .cm-content) {
+    padding: 48px !important;
+    line-height: 1.55 !important;
+  }
+
+  :global(.strudel-detached-editor .strudel-editor-shell .cm-line) {
+    padding: 0 8px !important;
+  }
+
+  :global(.strudel-detached-editor .strudel-editor-shell .cm-scroller) {
+    padding: 8px 0 !important;
+  }
+</style>

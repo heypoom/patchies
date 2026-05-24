@@ -421,6 +421,7 @@
 <CanvasPreviewLayout
   title={data.title ?? 'textmode.dom'}
   objectType="textmode.dom"
+  codePlaceholder="Write your Textmode.js code here..."
   {nodeId}
   onrun={runCode}
   onPlaybackToggle={togglePlayback}

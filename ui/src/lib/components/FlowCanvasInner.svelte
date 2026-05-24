@@ -12,6 +12,8 @@
   } from '@xyflow/svelte';
   import { onDestroy, onMount, tick } from 'svelte';
   import CommandPalette from './CommandPalette.svelte';
+  import CodeEditor from './CodeEditor.svelte';
+  import DetachedCodeEditorOverlay from './DetachedCodeEditorOverlay.svelte';
   import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
   import SettingsModal from './settings-modal/SettingsModal.svelte';
   import BottomToolbar from './BottomToolbar.svelte';
@@ -88,11 +90,16 @@
   import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
   import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
+  import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
 
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
   import { transportStore } from '../../stores/transport.store';
   import { allPreviewsDisabled } from '../../stores/renderer.store';
+  import {
+    activeCodeEditorTarget,
+    closeCodeEditorOverlay
+  } from '../../stores/code-editor-layout.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
@@ -257,6 +264,12 @@
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, fitView, getViewport, getNode } = useSvelteFlow();
+  const detachedCodeEditor = useDetachedCodeEditorOverlay({
+    getNodes: () => nodes,
+    setNodes: (nextNodes) => (nodes = nextNodes),
+    getEdges: () => edges,
+    glSystem
+  });
 
   // Viewport culling for preview rendering optimization
   const viewport = useViewport();
@@ -1186,6 +1199,29 @@
   <div class="pointer-events-none absolute inset-0 z-0">
     <BackgroundOutputCanvas />
   </div>
+
+  {#if $activeCodeEditorTarget && detachedCodeEditor.node}
+    {#snippet detachedCodeEditorSnippet()}
+      <CodeEditor
+        value={detachedCodeEditor.value}
+        onchange={detachedCodeEditor.updateValue}
+        language={$activeCodeEditorTarget.language}
+        nodeType={$activeCodeEditorTarget.nodeType}
+        placeholder={$activeCodeEditorTarget.placeholder ?? ''}
+        class="nodrag nopan nowheel h-full w-full resize-none"
+        onrun={$activeCodeEditorTarget.onrun}
+        nodeId={$activeCodeEditorTarget.nodeId}
+        dataKey={$activeCodeEditorTarget.dataKey}
+      />
+    {/snippet}
+
+    <DetachedCodeEditorOverlay
+      onClose={closeCodeEditorOverlay}
+      onrun={$activeCodeEditorTarget.onrun}
+      codeEditor={detachedCodeEditorSnippet}
+    />
+  {/if}
+
   <!-- Sidebar (Files / Presets) -->
   <SidebarPanel
     bind:open={$isSidebarOpen}

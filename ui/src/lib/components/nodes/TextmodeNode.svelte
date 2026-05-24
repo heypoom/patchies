@@ -262,6 +262,7 @@
 <CanvasPreviewLayout
   title={data.title ?? 'textmode'}
   objectType="textmode"
+  codePlaceholder="Write your Textmode.js code here..."
   {nodeId}
   onrun={updateTextmode}
   bind:previewCanvas

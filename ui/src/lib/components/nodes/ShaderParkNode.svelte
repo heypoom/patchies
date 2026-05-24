@@ -576,6 +576,7 @@
 <CanvasPreviewLayout
   title={shaderParkTitle ?? data.title ?? 'shaderpark'}
   objectType="shaderpark"
+  codePlaceholder="Write Shader Park code here..."
   {nodeId}
   onrun={updateShaderPark}
   bind:previewCanvas

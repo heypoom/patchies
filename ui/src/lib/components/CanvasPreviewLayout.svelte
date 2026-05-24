@@ -4,6 +4,7 @@
   import type { SettingsSchema } from '$lib/settings';
   import type { ExtraMenuItem } from './ObjectPreviewOverflowMenu.svelte';
   import { previewBackgroundColor } from '../../stores/renderer.store';
+  import type { SupportedLanguage } from '$lib/codemirror/types';
 
   let {
     title,
@@ -34,6 +35,9 @@
     codeEditor,
     console: consoleSnippet,
     editorReady,
+    codeDataKey = 'code',
+    codeLanguage = 'javascript',
+    codePlaceholder = '',
 
     settingsSchema = undefined,
     settingsValues = {},
@@ -72,6 +76,9 @@
     codeEditor: Snippet;
     console?: Snippet;
     editorReady?: boolean;
+    codeDataKey?: string;
+    codeLanguage?: SupportedLanguage;
+    codePlaceholder?: string;
 
     settingsSchema?: SettingsSchema;
     settingsValues?: Record<string, unknown>;
@@ -113,6 +120,9 @@
   {bottomHandle}
   {codeEditor}
   {editorReady}
+  {codeDataKey}
+  {codeLanguage}
+  {codePlaceholder}
   console={consoleSnippet}
   {settingsSchema}
   {settingsValues}

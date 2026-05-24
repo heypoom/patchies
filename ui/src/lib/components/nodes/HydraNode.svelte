@@ -296,6 +296,7 @@
 <CanvasPreviewLayout
   title={data.title ?? 'hydra'}
   objectType="hydra"
+  codePlaceholder="Write your Hydra code here..."
   {nodeId}
   onrun={updateHydra}
   onPlaybackToggle={togglePause}

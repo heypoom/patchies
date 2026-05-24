@@ -488,6 +488,7 @@
 <CanvasPreviewLayout
   title={data.title ?? 'three.dom'}
   objectType="three.dom"
+  codePlaceholder="Write your Three.js code here..."
   {nodeId}
   onrun={runCode}
   onPlaybackToggle={togglePlayback}
