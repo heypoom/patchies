@@ -417,7 +417,7 @@
           class={[
             'nodrag nopan transition-opacity',
             isDetached
-              ? 'strudel-detached-editor fixed inset-0 z-[60] flex items-stretch justify-stretch backdrop-blur-md'
+              ? 'strudel-detached-editor fixed inset-0 z-[60] flex items-stretch justify-stretch'
               : 'flex w-full items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 p-1',
             !isDetached && (hasError ? 'border-red-500' : 'border-transparent'),
             muted ? 'opacity-40' : 'opacity-100'
