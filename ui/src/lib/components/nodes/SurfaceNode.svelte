@@ -159,7 +159,7 @@
 
   const extraMenuItems: ExtraMenuItem[] = $derived([
     {
-      label: isFullscreen ? 'Exit surface' : 'Go Live',
+      label: isFullscreen ? 'Exit surface' : 'Expand',
       icon: isFullscreen ? Shrink : Expand,
       onclick: () => (isFullscreen ? exitSurface() : enterFullscreen()),
       variant: isFullscreen ? 'danger' : 'default'

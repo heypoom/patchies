@@ -15,7 +15,7 @@ while GPU-intensive shaders run in the background without interruption.
 | **Preview** | Default. Small canvas preview in the node editor, interactive. |
 | **Fullscreen** | Full-screen overlay. Node editor hidden, video pipeline visible beneath. |
 
-Use **Go Live** in the node menu (or send `{ type: 'expand' }`) to enter
+Use **Expand** in the node menu (or send `{ type: 'expand' }`) to enter
 fullscreen. Press **Shift+Esc** or send `{ type: 'collapse' }` to exit.
 
 ## Getting Started
