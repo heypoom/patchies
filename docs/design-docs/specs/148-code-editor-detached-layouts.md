@@ -69,7 +69,7 @@ nodeType, title, mode }` in a shared store.
   starts inline, opens the overlay, or opens the sidebar editor directly.
 - `Shift+click` on the visual node code edit action opens the alternate layout
   for that invocation: inline defaults open overlay, and overlay defaults open
-  inline.
+  inline, while sidebar defaults open overlay.
 - Strudel editor views hide line-number gutters in both inline and detached
   layouts so pattern code stays visually central.
 - While a detached editor is active for a node field, the inline editor for that
