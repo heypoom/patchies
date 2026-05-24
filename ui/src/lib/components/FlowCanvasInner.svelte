@@ -91,6 +91,7 @@
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
   import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
   import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
+  import { createCodeOverlayMirrorState } from '$lib/canvas/secondary-output-ipc';
 
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
@@ -101,6 +102,7 @@
     closeCodeEditorOverlay
   } from '../../stores/code-editor-layout.store';
   import { editorFullscreenFontSize } from '../../stores/editor.store';
+  import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
@@ -270,6 +272,17 @@
     setNodes: (nextNodes) => (nodes = nextNodes),
     getEdges: () => edges,
     glSystem
+  });
+
+  $effect(() => {
+    const state = createCodeOverlayMirrorState(
+      $activeCodeEditorTarget,
+      detachedCodeEditor.value,
+      $editorFullscreenFontSize,
+      $overlayEditorTransparency
+    );
+
+    glSystem.ipcSystem.sendCodeOverlayState(state);
   });
 
   // Viewport culling for preview rendering optimization
