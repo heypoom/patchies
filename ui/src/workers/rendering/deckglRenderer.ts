@@ -85,6 +85,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
   private getLayers: UserGetLayers | null = null;
   private previousPointer: { x: number; y: number; down: boolean } | null = null;
   private pendingWheelDelta = 0;
+  private deckInteractionEnabled = true;
 
   private viewState: DeckViewState = {
     longitude: -122.44,
@@ -131,8 +132,14 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     this.mouseX = params.mouseX;
     this.mouseY = params.mouseY;
 
-    this.updateViewStateFromPointer(params);
-    this.updateViewStateFromWheel();
+    if (this.deckInteractionEnabled) {
+      this.updateViewStateFromPointer(params);
+      this.updateViewStateFromWheel();
+    } else {
+      this.previousPointer = null;
+      this.pendingWheelDelta = 0;
+    }
+
     this.ensureRenderTargetSize();
 
     let layers: Layer[] = [];
@@ -148,11 +155,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
       return;
     }
 
-    this.deck.setProps({
-      viewState: this.viewState,
-      layers
-    });
-
+    this.deck.setProps({ viewState: this.viewState, layers });
     this.deck.redraw('patchies');
 
     this.blitToReglFramebuffer();
@@ -161,7 +164,10 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
 
   async updateCode(): Promise<void> {
     this.resetState();
+
     this.setInteraction('interact', false);
+    this.deckInteractionEnabled = true;
+
     this.setPortCount(1, 0);
 
     if (!this.DeckClass || !this.layerClasses || !this.geoLayerClasses) return;
@@ -171,13 +177,18 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
         this.viewState = { ...this.viewState, ...viewState };
       };
 
+      const setDeckInteraction = (enabled: boolean) => {
+        this.deckInteractionEnabled = enabled;
+      };
+
       const extraContext = {
         ...this.buildBaseExtraContext(),
         Deck: this.DeckClass,
         ...this.layerClasses,
         ...this.geoLayerClasses,
         viewState: this.viewState,
-        setViewState
+        setViewState,
+        setDeckInteraction
       };
 
       const codeWithWrapper = `
@@ -255,9 +266,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     canvas.parentElement ??= null;
 
     await new Promise<void>((resolve) => {
-      const renderer = this;
-
-      renderer.deck = new DeckClass({
+      this.deck = new DeckClass({
         controller: false,
         gl,
         width: null,
@@ -269,10 +278,10 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
         getTooltip: null,
         parameters: { depthCompare: 'less-equal' },
         onDeviceInitialized: (device: unknown) => {
-          renderer.device = device as DeckDevice;
-          renderer.createRenderTarget();
+          this.device = device as DeckDevice;
+          this.createRenderTarget();
 
-          renderer.deck?.setProps({ _framebuffer: renderer.deckFramebuffer } as never);
+          this.deck?.setProps({ _framebuffer: this.deckFramebuffer } as never);
 
           resolve();
         },

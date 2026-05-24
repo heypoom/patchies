@@ -63,6 +63,9 @@ function getLayers() {
 - Left-drag pans longitude/latitude.
 - Wheel changes zoom.
 - The surface object forwards pointer and wheel input to `deckgl` the same way it does for worker `three`.
+- User code can call `setDeckInteraction(false)` to disable Patchies'
+  built-in deck camera pan/zoom while still rendering layers from a fixed or
+  programmatically controlled `viewState`.
 
 ## Non-goals
 

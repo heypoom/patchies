@@ -38,6 +38,8 @@ function getLayers({ time, viewState, mouse }) {
 - `TileLayer` - tiled raster/vector data, useful for OSM-style map tiles
 - `viewState` - current camera state
 - `setViewState(value)` - replace camera state
+- `setDeckInteraction(enabled)` - enable or disable Patchies' built-in deck
+  camera pan/zoom controls
 - `mouse` - forwarded mouse position
 
 ## Interaction
@@ -45,6 +47,9 @@ function getLayers({ time, viewState, mouse }) {
 Drag the preview or a fullscreen `surface` to pan. Use the mouse wheel or pinch
 gesture to zoom. `deckgl` disables Patchies canvas drag/pan/wheel interaction by
 default so those gestures control the deck.gl view instead of moving the object.
+
+Call `setDeckInteraction(false)` to keep the deck camera fixed unless your code
+changes it with `setViewState()`.
 
 ## OSM Tiles
 

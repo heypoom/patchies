@@ -180,6 +180,13 @@ const patchiesAPICompletions: Completion[] = [
       'setViewState({\n  longitude: -122.44,\n  latitude: 37.76,\n  zoom: 11,\n  pitch: 0,\n  bearing: 0\n})'
   },
   {
+    label: 'setDeckInteraction',
+    type: 'function',
+    detail: '(enabled: boolean) => void',
+    info: 'Enable or disable Patchies-provided deckgl camera pan and zoom controls.',
+    apply: 'setDeckInteraction(false)'
+  },
+  {
     label: 'setPrimaryButton',
     type: 'function',
     detail: "('code' | 'settings' | 'run') => void",
@@ -630,6 +637,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   setTextureFormat: ['hydra', 'canvas', 'three', 'deckgl', 'regl', 'swgl', 'textmode'],
   setResolution: ['hydra', 'canvas', 'three', 'deckgl', 'regl', 'swgl', 'textmode'],
   setViewState: ['deckgl'],
+  setDeckInteraction: ['deckgl'],
   setPrimaryButton: ['js', 'worker', 'p5', 'hydra', 'canvas', 'regl', 'swgl', 'textmode', 'three'],
   setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
   getTexture: ['hydra', 'regl', 'swgl', 'three'],

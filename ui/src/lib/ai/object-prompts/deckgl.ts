@@ -4,6 +4,8 @@ deckgl renders deck.gl data visualization layers into the Patchies video pipelin
 
 Define a getLayers({ time, viewState, mouse }) function that returns deck.gl layers. Common layer classes are available as globals: ScatterplotLayer, GeoJsonLayer, LineLayer, ArcLayer, PolygonLayer, TextLayer, BitmapLayer, TileLayer.
 
+Use setDeckInteraction(false) when the camera should stay fixed instead of responding to forwarded mouse drag/wheel input. Use setViewState({ longitude, latitude, zoom, pitch, bearing }) to set the camera explicitly.
+
 Example:
 
 \`\`\`js
@@ -13,6 +15,14 @@ const data = [
   { position: [-122.45, 37.78], color: [255, 90, 70] },
   { position: [-122.42, 37.76], color: [80, 180, 255] }
 ]
+
+setViewState({
+  longitude: -122.44,
+  latitude: 37.76,
+  zoom: 11,
+  pitch: 45,
+  bearing: 0
+})
 
 function getLayers({ time }) {
   return [
