@@ -104,13 +104,6 @@ const patchiesAPICompletions: Completion[] = [
     info: "Set mouse tracking scope. 'local' (default) tracks within canvas, 'global' tracks across entire screen",
     apply: "setMouseScope('global')"
   },
-  {
-    label: 'datamosh',
-    type: 'function',
-    detail: '(source, params?) => Source',
-    info: 'Route a Hydra source through the native WebCodecs datamosh effect. Params: speed, keyFrame, fps, bitrate, scale, width, height.',
-    apply: 'datamosh(s0, { speed: 2, fps: 30, scale: 0.5 })'
-  },
 
   // Node Configuration
   {
@@ -586,7 +579,6 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   setResolution: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
   setPrimaryButton: ['js', 'worker', 'p5', 'hydra', 'canvas', 'regl', 'swgl', 'textmode', 'three'],
   setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
-  datamosh: ['hydra'],
   getTexture: ['hydra', 'regl', 'swgl', 'three'],
   OrbitControls: ['three'],
   onPointerDrag: ['three'],
@@ -1014,8 +1006,8 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
 
     const word = context.matchBefore(/\w*/);
     if (!word) return null;
-    if (word.from === word.to && !context.explicit) return null;
 
+    if (word.from === word.to && !context.explicit) return null;
     if (isCompletionSuppressedByComment(context, word.from)) return null;
 
     // Check the text before the word to avoid inappropriate contexts
