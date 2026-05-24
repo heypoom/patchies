@@ -1237,7 +1237,11 @@
   />
 
   <!-- Main content area -->
-  <div class="relative flex flex-1 flex-col" class:hidden={$isFullscreenActive}>
+  <div
+    class="relative flex flex-1 flex-col"
+    hidden={$isFullscreenActive ||
+      ($activeCodeEditorTarget?.mode === 'overlay' && detachedCodeEditor.node !== undefined)}
+  >
     <!-- URL Loading Indicator -->
     {#if isLoadingFromUrl && !($isMobile && $isSidebarOpen)}
       <div class="top-safe-4 absolute left-1/2 z-50 -translate-x-1/2 transform">
