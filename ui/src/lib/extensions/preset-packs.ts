@@ -306,7 +306,13 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'Geospatial visualization layers rendered into the video pipeline',
     icon: 'Map',
     requiredObjects: ['deckgl'],
-    presets: ['osm.deckgl', 'osm-points.deckgl', 'hexagon.deckgl']
+    presets: [
+      'osm.deckgl',
+      'osm-points.deckgl',
+      'hexagon.deckgl',
+      'hexagon-flat.deckgl',
+      'column.deckgl'
+    ]
   },
   {
     id: 'tone-presets',

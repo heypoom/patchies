@@ -201,6 +201,20 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'setDeckInteraction(false)'
   },
   {
+    label: 'setDeckPicking',
+    type: 'function',
+    detail: '(enabled: boolean) => void',
+    info: 'Enable or disable Patchies-provided deckgl hover/click picking.',
+    apply: 'setDeckPicking(false)'
+  },
+  {
+    label: 'setDeckDebug',
+    type: 'function',
+    detail: '(enabled?: boolean) => void',
+    info: 'Enable throttled deckgl worker diagnostics for frame stages, layer summaries, framebuffer size, and WebGL errors.',
+    apply: 'setDeckDebug(true)'
+  },
+  {
     label: 'setPrimaryButton',
     type: 'function',
     detail: "('code' | 'settings' | 'run') => void",
@@ -652,6 +666,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   setResolution: ['hydra', 'canvas', 'three', 'deckgl', 'regl', 'swgl', 'textmode'],
   setViewState: ['deckgl'],
   setDeckInteraction: ['deckgl'],
+  setDeckPicking: ['deckgl'],
+  setDeckDebug: ['deckgl'],
   setPrimaryButton: ['js', 'worker', 'p5', 'hydra', 'canvas', 'regl', 'swgl', 'textmode', 'three'],
   setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
   getTexture: ['hydra', 'regl', 'swgl', 'three'],

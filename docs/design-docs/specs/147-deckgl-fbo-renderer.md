@@ -62,6 +62,12 @@ function getLayers() {
 output for hover/click events.
 `chiang-mai-hexagon.deckgl` uses `HexagonLayer` from
 `@deck.gl/aggregation-layers` to render an extruded 3D heatmap over Chiang Mai.
+The installed `@deck.gl/aggregation-layers@9.0.0` HexagonLayer path is
+CPU-backed and renders an aggregated `ColumnLayer` sublayer, so debugging should
+inspect sublayer data, picking, and GL state across frame boundaries.
+`hexagon-flat.deckgl` and `column.deckgl` are diagnostic presets used to isolate
+whether failures come from HexagonLayer aggregation, ColumnLayer rendering, or
+extruded/depth/lighting state.
 
 ## Interaction
 
@@ -75,10 +81,23 @@ output for hover/click events.
 - User code can call `onDeckHover(callback)` and `onDeckClick(callback)` to
   receive manual picking results from forwarded mouse input. Layers must opt in
   with `pickable: true`.
+- User code can call `setDeckPicking(false)` to skip Patchies' manual
+  `pickObject()` pass while keeping camera interaction enabled. This is useful
+  for render-only demos and for isolating whether deck.gl's picking pass is
+  involved in a rendering issue.
+- The worker also skips `pickObject()` when the flattened deck.gl layer tree has
+  no `pickable` layers, even if hover/click callbacks are registered.
+- User code can call `setDeckDebug(true)` to log throttled worker diagnostics
+  for deck.gl frame stages, flattened layer ids, framebuffer size, and WebGL
+  errors.
 - The worker patches deck.gl v9.0 picking blend parameters into legacy WebGL
   `blendEquation`/`blendFunc` parameters because deck.gl's picking pass emits
   `blendAlphaSrcFactor: 'constant-alpha'`, which the pinned luma.gl WebGL
   adapter does not accept.
+- The worker sets deck.gl `width`/`height` from Patchies'
+  `renderer.outputSize` instead of relying on DOM/canvas auto-size inference.
+  Worker `OffscreenCanvas` and the shared regl WebGL context do not provide the
+  same reliable `clientWidth`/`clientHeight` path as a DOM canvas.
 
 ## Non-goals
 

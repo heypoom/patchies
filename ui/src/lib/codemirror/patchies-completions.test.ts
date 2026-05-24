@@ -137,9 +137,13 @@ describe('patchies completions', () => {
 
   it('shows deckgl camera helper completions only for deckgl code', () => {
     expect(getCompletionLabels('deckgl', 'setV')).toContain('setViewState');
-    expect(getCompletionLabels('deckgl', 'setD')).toContain('setDeckInteraction');
+    expect(getCompletionLabels('deckgl', 'setD')).toEqual(
+      expect.arrayContaining(['setDeckDebug', 'setDeckInteraction', 'setDeckPicking'])
+    );
     expect(getCompletionLabels('three', 'setV')).not.toContain('setViewState');
     expect(getCompletionLabels('three', 'setD')).not.toContain('setDeckInteraction');
+    expect(getCompletionLabels('three', 'setD')).not.toContain('setDeckPicking');
+    expect(getCompletionLabels('three', 'setD')).not.toContain('setDeckDebug');
   });
 
   it('shows deckgl picking helper completions only for deckgl code', () => {

@@ -41,6 +41,10 @@ function getLayers({ time, viewState, mouse }) {
 - `setViewState(value)` - replace camera state
 - `setDeckInteraction(enabled)` - enable or disable Patchies' built-in deck
   camera pan/zoom controls
+- `setDeckPicking(enabled)` - enable or disable Patchies' manual hover/click
+  picking pass
+- `setDeckDebug(enabled)` - enable throttled worker diagnostics for render
+  stages, layer summaries, framebuffer size, and WebGL errors
 - `onDeckHover(callback)` - receive deck.gl picking info when hovering over
   pickable layers
 - `onDeckClick(callback)` - receive deck.gl picking info when clicking pickable
@@ -55,6 +59,10 @@ default so those gestures control the deck.gl view instead of moving the object.
 
 Call `setDeckInteraction(false)` to keep the deck camera fixed unless your code
 changes it with `setViewState()`.
+
+Call `setDeckDebug(true)` while investigating renderer issues. It logs the first
+few frames, then periodic snapshots, including flattened deck.gl layer ids and
+WebGL errors after `setProps`, picking, redraw, and blit.
 
 ## Picking
 

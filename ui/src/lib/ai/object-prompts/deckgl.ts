@@ -8,6 +8,8 @@ Use setDeckInteraction(false) when the camera should stay fixed instead of respo
 
 Use onDeckHover(info => {}) and onDeckClick(info => {}) for picking callbacks. Layers must set pickable: true for picking to work.
 
+Use setDeckPicking(false) to isolate render-only layers from Patchies' manual hover/click picking pass. Use setDeckDebug(true) only while debugging renderer issues.
+
 Example:
 
 \`\`\`js

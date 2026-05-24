@@ -74,6 +74,46 @@ type DeckWithPrivatePicker = Deck & {
   };
 };
 
+type DeckWithPrivateLayers = Deck & {
+  layerManager?: {
+    getLayers?: () => unknown[];
+  };
+  viewManager?: {
+    getViewports?: () => Array<{
+      id?: unknown;
+      x?: unknown;
+      y?: unknown;
+      width?: unknown;
+      height?: unknown;
+      longitude?: unknown;
+      latitude?: unknown;
+      zoom?: unknown;
+      pitch?: unknown;
+      bearing?: unknown;
+    }>;
+  };
+};
+
+type DeckDebugModel = {
+  id?: unknown;
+  vertexCount?: unknown;
+  instanceCount?: unknown;
+  bindings?: Record<string, unknown>;
+  uniforms?: Record<string, unknown>;
+  pipeline?: {
+    id?: unknown;
+    shaderLayout?: {
+      bindings?: Array<{ name?: unknown; type?: unknown }>;
+      attributes?: Array<{ name?: unknown }>;
+    };
+  };
+};
+
+type DeckDebugAttribute = {
+  size?: number;
+  value?: unknown;
+};
+
 type SizedFramebuffer = regl.Framebuffer2D & {
   width: number;
   height: number;
@@ -92,6 +132,7 @@ type DeckFramebuffer = {
 };
 
 type DeckDevice = {
+  _lumaData?: Record<string, unknown>;
   canvasContext?: {
     setDrawingBufferSize?: (width: number, height: number) => void;
   };
@@ -129,6 +170,10 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
   private patchedPickingPasses = new WeakSet<object>();
   private pendingWheelDelta = 0;
   private deckInteractionEnabled = true;
+  private deckPickingEnabled = true;
+  private deckDebugEnabled = false;
+  private deckDebugFrame = 0;
+  private deckDebugStageState = new Map<string, { signature: string; time: number }>();
 
   private viewState: DeckViewState = {
     longitude: -122.44,
@@ -173,6 +218,8 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     const gl = this.renderer.gl;
     if (!gl) return;
 
+    this.deckDebugFrame += 1;
+
     this.mouseX = params.mouseX;
     this.mouseY = params.mouseY;
 
@@ -199,11 +246,67 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
       return;
     }
 
-    this.deck.setProps({ viewState: this.viewState, layers });
-    this.deck.redraw('patchies');
-    this.updatePicking(params);
+    this.logDeckDebug(
+      'layers',
+      {
+        input: this.summarizeLayers(layers),
+        outputSize: this.renderer.outputSize,
+        viewState: this.viewState,
+        pickingEnabled: this.deckPickingEnabled,
+        hoverCallbacks: this.hoverCallbacks.size,
+        clickCallbacks: this.clickCallbacks.size
+      },
+      this.shouldLogFrameDebug()
+    );
+
+    try {
+      const [width, height] = this.renderer.outputSize;
+
+      this.deck.setProps({ width, height, viewState: this.viewState, layers });
+      this.readGlError('setProps');
+
+      this.updatePicking(params);
+      this.readGlError('picking');
+
+      this.deck.redraw('patchies');
+      this.readGlError('redraw');
+
+      this.logDeckDebug(
+        'post-redraw',
+        {
+          flattened: this.summarizeFlattenedLayers(),
+          framebuffer: this.summarizeDeckFramebuffer(),
+          viewports: this.summarizeDeckViewports(),
+          pixels: this.sampleFramebufferPixels(this.deckFramebuffer.handle)
+        },
+        this.shouldLogFrameDebug()
+      );
+    } catch (error) {
+      this.logDeckDebug(
+        'render-error',
+        {
+          message: error instanceof Error ? error.message : String(error),
+          flattened: this.summarizeFlattenedLayers(),
+          framebuffer: this.summarizeDeckFramebuffer()
+        },
+        true
+      );
+      this.handleRuntimeError(error, CANVAS_WRAPPER_OFFSET);
+      return;
+    }
 
     this.blitToReglFramebuffer();
+    this.readGlError('blit');
+    this.logDeckDebug(
+      'post-blit',
+      {
+        framebuffer: this.summarizeReglFramebuffer(),
+        pixels: this.sampleFramebufferPixels(
+          this.framebuffer ? getFramebuffer(this.framebuffer) : null
+        )
+      },
+      this.shouldLogFrameDebug()
+    );
     this.renderer.regl._refresh();
   }
 
@@ -212,6 +315,10 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     this.setInteraction('interact', false);
 
     this.deckInteractionEnabled = true;
+    this.deckPickingEnabled = true;
+    this.deckDebugEnabled = false;
+    this.deckDebugFrame = 0;
+    this.deckDebugStageState.clear();
     this.hoverCallbacks.clear();
     this.clickCallbacks.clear();
     this.previousPickingPointer = null;
@@ -238,6 +345,16 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
         this.deckInteractionEnabled = enabled;
       };
 
+      const setDeckPicking = (enabled: boolean) => {
+        this.deckPickingEnabled = enabled;
+      };
+
+      const setDeckDebug = (enabled = true) => {
+        this.deckDebugEnabled = enabled;
+        this.deckDebugFrame = 0;
+        this.deckDebugStageState.clear();
+      };
+
       const onDeckHover = (callback: DeckPickingCallback) => {
         this.hoverCallbacks.add(callback);
 
@@ -259,6 +376,8 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
         viewState: this.viewState,
         setViewState,
         setDeckInteraction,
+        setDeckPicking,
+        setDeckDebug,
         onDeckHover,
         onDeckClick
       };
@@ -338,13 +457,14 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     canvas.parentElement ??= null;
 
     await new Promise<void>((resolve) => {
+      const [width, height] = this.renderer.outputSize;
+
       this.deck = new DeckClass({
         controller: false,
         gl,
-        width: null,
-        height: null,
+        width,
+        height,
         useDevicePixels: false,
-        initialViewState: this.viewState,
         viewState: this.viewState,
         layers: [],
         getTooltip: null,
@@ -400,6 +520,14 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     this.device.canvasContext?.setDrawingBufferSize?.(width, height);
 
     if (this.deckFramebuffer.width !== width || this.deckFramebuffer.height !== height) {
+      this.logDeckDebug(
+        'resize-target',
+        {
+          from: [this.deckFramebuffer.width, this.deckFramebuffer.height],
+          to: [width, height]
+        },
+        true
+      );
       this.deckFramebuffer.resize({ width, height });
     }
   }
@@ -465,8 +593,28 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
   }
 
   private updatePicking(params: RenderParams): void {
-    if (!this.deck || (this.hoverCallbacks.size === 0 && this.clickCallbacks.size === 0)) {
+    const hasPickableLayer = this.hasPickableLayer();
+
+    if (
+      !this.deck ||
+      !this.deckPickingEnabled ||
+      !hasPickableLayer ||
+      (this.hoverCallbacks.size === 0 && this.clickCallbacks.size === 0)
+    ) {
+      this.logDeckDebug(
+        'picking-skipped',
+        {
+          deckReady: Boolean(this.deck),
+          pickingEnabled: this.deckPickingEnabled,
+          hasPickableLayer,
+          hoverCallbacks: this.hoverCallbacks.size,
+          clickCallbacks: this.clickCallbacks.size
+        },
+        this.shouldLogFrameDebug()
+      );
       this.previousPickingPointer = this.getPointerState(params);
+      this.clickStartPointer = null;
+      this.lastHoverKey = null;
       return;
     }
 
@@ -503,6 +651,14 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     this.previousPickingPointer = pointer;
   }
 
+  private hasPickableLayer(): boolean {
+    const layers = (this.deck as DeckWithPrivateLayers | null)?.layerManager?.getLayers?.() ?? [];
+
+    return layers.some((layer) =>
+      Boolean((layer as { props?: { pickable?: unknown } }).props?.pickable)
+    );
+  }
+
   private pickAt(pointer: DeckPointerState): PickingInfo | null {
     if (!this.deck) return null;
 
@@ -515,6 +671,312 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
 
       return null;
     }
+  }
+
+  private shouldLogFrameDebug(): boolean {
+    if (!this.deckDebugEnabled) return false;
+
+    return this.deckDebugFrame === 1 || this.deckDebugFrame % 120 === 0;
+  }
+
+  private logDeckDebug(stage: string, details: Record<string, unknown>, force = false): void {
+    if (!this.deckDebugEnabled) return;
+
+    const now = performance.now();
+    const signature = JSON.stringify(details);
+    const previous = this.deckDebugStageState.get(stage);
+    const isSame = previous?.signature === signature;
+    const elapsed = previous ? now - previous.time : Number.POSITIVE_INFINITY;
+
+    if (!force) {
+      if (isSame) return;
+      if (elapsed < 1000) return;
+    }
+
+    this.deckDebugStageState.set(stage, { signature, time: now });
+
+    self.postMessage({
+      type: 'consoleOutput',
+      nodeId: this.config.nodeId,
+      level: 'log',
+      args: [`[deckgl debug] frame ${this.deckDebugFrame} ${stage}`, details]
+    });
+  }
+
+  private readGlError(stage: string): void {
+    if (!this.deckDebugEnabled) return;
+
+    const gl = this.renderer.gl;
+    if (!gl) return;
+
+    const errors: number[] = [];
+    let error = gl.getError();
+
+    while (error !== gl.NO_ERROR && errors.length < 8) {
+      errors.push(error);
+      error = gl.getError();
+    }
+
+    if (errors.length === 0) return;
+
+    this.logDeckDebug(`${stage}:gl-error`, { errors }, true);
+  }
+
+  private summarizeDeckFramebuffer(): Record<string, unknown> | null {
+    if (!this.deckFramebuffer) return null;
+
+    return {
+      width: this.deckFramebuffer.width,
+      height: this.deckFramebuffer.height,
+      hasHandle: Boolean(this.deckFramebuffer.handle)
+    };
+  }
+
+  private summarizeReglFramebuffer(): Record<string, unknown> | null {
+    const framebuffer = this.framebuffer as SizedFramebuffer | null;
+    if (!framebuffer) return null;
+
+    return {
+      width: framebuffer.width,
+      height: framebuffer.height,
+      hasHandle: Boolean(getFramebuffer(framebuffer))
+    };
+  }
+
+  private sampleFramebufferPixels(
+    framebuffer: WebGLFramebuffer | null | undefined
+  ): Record<string, unknown> | null {
+    if (!this.deckDebugEnabled || !this.shouldLogFrameDebug()) return null;
+
+    const gl = this.renderer.gl;
+    if (!gl || !framebuffer) return null;
+
+    const [width, height] = this.renderer.outputSize;
+    if (width <= 0 || height <= 0) return null;
+
+    const previousReadFramebuffer = gl.getParameter(gl.READ_FRAMEBUFFER_BINDING);
+    const pixel = new Uint8Array(4);
+    const samples = [
+      [0.5, 0.5],
+      [0.4, 0.5],
+      [0.6, 0.5],
+      [0.5, 0.4],
+      [0.5, 0.6],
+      [0.35, 0.35],
+      [0.65, 0.35],
+      [0.35, 0.65],
+      [0.65, 0.65]
+    ];
+
+    let maxAlpha = 0;
+    let nonTransparentSamples = 0;
+    let colorSum = 0;
+
+    try {
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, framebuffer);
+
+      for (const [xRatio, yRatio] of samples) {
+        const x = Math.max(0, Math.min(width - 1, Math.floor(width * xRatio)));
+        const y = Math.max(0, Math.min(height - 1, Math.floor(height * yRatio)));
+
+        gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+
+        maxAlpha = Math.max(maxAlpha, pixel[3]);
+        colorSum += pixel[0] + pixel[1] + pixel[2] + pixel[3];
+
+        if (pixel[3] > 0) {
+          nonTransparentSamples += 1;
+        }
+      }
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : String(error)
+      };
+    } finally {
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, previousReadFramebuffer);
+    }
+
+    return {
+      samples: samples.length,
+      nonTransparentSamples,
+      maxAlpha,
+      colorSum
+    };
+  }
+
+  private summarizeFlattenedLayers(): unknown[] {
+    const layers = (this.deck as DeckWithPrivateLayers | null)?.layerManager?.getLayers?.() ?? [];
+
+    return this.summarizeLayers(layers);
+  }
+
+  private summarizeDeckViewports(): unknown[] {
+    const viewports =
+      (this.deck as DeckWithPrivateLayers | null)?.viewManager?.getViewports?.() ?? [];
+
+    return viewports.map((viewport) => ({
+      id: viewport.id,
+      x: viewport.x,
+      y: viewport.y,
+      width: viewport.width,
+      height: viewport.height,
+      longitude: viewport.longitude,
+      latitude: viewport.latitude,
+      zoom: viewport.zoom,
+      pitch: viewport.pitch,
+      bearing: viewport.bearing
+    }));
+  }
+
+  private summarizeLayers(layers: unknown[]): unknown[] {
+    return layers.map((layer) => {
+      const layerLike = layer as {
+        id?: unknown;
+        constructor?: { name?: string };
+        props?: { data?: unknown; pickable?: unknown; visible?: unknown };
+        state?: { aggregatorState?: { layerData?: { data?: unknown } } };
+        getModels?: () => DeckDebugModel[];
+        getAttributeManager?: () => {
+          getAttributes?: () => Record<string, DeckDebugAttribute>;
+        } | null;
+      };
+      const aggregatedData = layerLike.state?.aggregatorState?.layerData?.data;
+
+      return {
+        id: layerLike.id,
+        type: layerLike.constructor?.name,
+        visible: layerLike.props?.visible,
+        pickable: layerLike.props?.pickable,
+        dataLength: this.getDataLength(layerLike.props?.data),
+        aggregatedDataLength: this.getDataLength(aggregatedData),
+        attributes: this.summarizeLayerAttributes(layerLike),
+        models: this.summarizeLayerModels(layerLike)
+      };
+    });
+  }
+
+  private summarizeLayerAttributes(layer: {
+    getAttributeManager?: () => {
+      getAttributes?: () => Record<string, DeckDebugAttribute>;
+    } | null;
+  }): Record<string, unknown> {
+    let attributes: Record<string, DeckDebugAttribute> = {};
+
+    try {
+      attributes = layer.getAttributeManager?.()?.getAttributes?.() ?? {};
+    } catch {
+      return {};
+    }
+
+    const summary: Record<string, unknown> = {};
+
+    for (const [name, attribute] of Object.entries(attributes)) {
+      summary[name] = this.summarizeAttribute(attribute);
+    }
+
+    return summary;
+  }
+
+  private summarizeAttribute(attribute: DeckDebugAttribute): Record<string, unknown> {
+    const value = attribute.value;
+    const size = attribute.size ?? null;
+
+    if (!ArrayBuffer.isView(value) && !Array.isArray(value)) {
+      return {
+        size,
+        length: this.getDataLength(value)
+      };
+    }
+
+    const array = value as ArrayLike<number>;
+    const length = array.length;
+    const tupleCount = size && size > 0 ? Math.floor(length / size) : null;
+    const first = Array.from({ length: Math.min(size ?? 4, length) }, (_, index) => array[index]);
+    const stats = this.getAttributeStats(array, size);
+
+    return {
+      size,
+      length,
+      tupleCount,
+      first,
+      ...stats
+    };
+  }
+
+  private getAttributeStats(
+    array: ArrayLike<number>,
+    size: number | null
+  ): Record<string, unknown> {
+    if (!size || size <= 0 || array.length === 0) {
+      return {};
+    }
+
+    const sampleTuples = Math.min(256, Math.floor(array.length / size));
+    const mins = Array.from({ length: size }, () => Number.POSITIVE_INFINITY);
+    const maxs = Array.from({ length: size }, () => Number.NEGATIVE_INFINITY);
+    const zeroCounts = Array.from({ length: size }, () => 0);
+
+    for (let tuple = 0; tuple < sampleTuples; tuple += 1) {
+      for (let component = 0; component < size; component += 1) {
+        const value = array[tuple * size + component];
+        mins[component] = Math.min(mins[component], value);
+        maxs[component] = Math.max(maxs[component], value);
+
+        if (value === 0) {
+          zeroCounts[component] += 1;
+        }
+      }
+    }
+
+    return {
+      sampleTuples,
+      min: mins,
+      max: maxs,
+      zeroCounts
+    };
+  }
+
+  private summarizeLayerModels(layer: { getModels?: () => DeckDebugModel[] }): unknown[] {
+    let models: DeckDebugModel[] = [];
+
+    try {
+      models = layer.getModels?.() ?? [];
+    } catch {
+      return [];
+    }
+
+    return models.map((model) => ({
+      id: model.id,
+      vertexCount: model.vertexCount,
+      instanceCount: model.instanceCount,
+      bindingKeys: Object.keys(model.bindings ?? {}),
+      uniformKeys: Object.keys(model.uniforms ?? {}),
+      pipelineId: model.pipeline?.id,
+      pipelineBindings:
+        model.pipeline?.shaderLayout?.bindings?.map((binding) => ({
+          name: binding.name,
+          type: binding.type
+        })) ?? [],
+      pipelineAttributes:
+        model.pipeline?.shaderLayout?.attributes?.map((attribute) => attribute.name) ?? []
+    }));
+  }
+
+  private getDataLength(data: unknown): number | null {
+    if (!data) return null;
+    if (Array.isArray(data)) return data.length;
+    if (ArrayBuffer.isView(data)) {
+      const viewLength = (data as { length?: unknown; byteLength?: unknown }).length;
+      const byteLength = (data as { length?: unknown; byteLength?: unknown }).byteLength;
+
+      if (typeof viewLength === 'number') return viewLength;
+
+      return typeof byteLength === 'number' ? byteLength : null;
+    }
+
+    const maybeLength = (data as { length?: unknown }).length;
+
+    return typeof maybeLength === 'number' ? maybeLength : null;
   }
 
   private emitHoverIfChanged(info: PickingInfo | null): void {

@@ -156,6 +156,7 @@ function getLayers({ time }) {
 
 const HEXAGON_DECKGL = `setTitle('Hexagon')
 setPortCount(1, 1)
+setDeckDebug(true)
 
 setViewState({
   longitude: 98.9853,
@@ -262,6 +263,152 @@ function getLayers() {
   ]
 }`;
 
+const HEXAGON_FLAT_DECKGL = `setTitle('Hexagon Flat Probe')
+setPortCount(1, 0)
+setDeckPicking(false)
+setDeckDebug(true)
+
+setViewState({
+  longitude: 98.9853,
+  latitude: 18.7883,
+  zoom: 12,
+  pitch: 0,
+  bearing: 0
+})
+
+const colorRange = [
+  [28, 120, 170],
+  [55, 174, 170],
+  [123, 204, 146],
+  [205, 230, 122],
+  [247, 196, 89],
+  [225, 90, 72]
+]
+
+const centers = [
+  { name: 'Old City', position: [98.9853, 18.7883], weight: 1.2 },
+  { name: 'Nimman', position: [98.9677, 18.7991], weight: 1.0 },
+  { name: 'Night Bazaar', position: [99.0006, 18.7833], weight: 0.9 },
+  { name: 'Riverside', position: [99.0089, 18.7896], weight: 0.75 },
+  { name: 'Doi Suthep Road', position: [98.9495, 18.7965], weight: 0.65 }
+]
+
+function makePoint(id, center) {
+  const spread = 0.008 + (1.3 - center.weight) * 0.006
+  const angle = Math.random() * Math.PI * 2
+  const distance = Math.pow(Math.random(), 1.7) * spread
+
+  return {
+    id,
+    area: center.name,
+    position: [
+      center.position[0] + Math.cos(angle) * distance,
+      center.position[1] + Math.sin(angle) * distance
+    ],
+    value: Math.round(8 + Math.random() * 18 * center.weight)
+  }
+}
+
+const points = Array.from({ length: 1800 }, (_, i) => {
+  const center = centers[Math.floor(Math.random() * centers.length)]
+
+  return makePoint(i, center)
+})
+
+function getLayers() {
+  return [
+    new HexagonLayer({
+      id: 'hexagons-flat',
+      data: points,
+      getPosition: d => d.position,
+      getColorWeight: d => d.value,
+      colorRange,
+      radius: 260,
+      coverage: 0.82,
+      extruded: false,
+      stroked: true,
+      getLineColor: [255, 255, 255, 160],
+      lineWidthUnits: 'pixels',
+      getLineWidth: 1
+    })
+  ]
+}`;
+
+const COLUMN_DECKGL = `setTitle('Column Probe')
+setPortCount(1, 0)
+setDeckPicking(false)
+setDeckDebug(true)
+
+setViewState({
+  longitude: 98.9853,
+  latitude: 18.7883,
+  zoom: 12,
+  pitch: 52,
+  bearing: -24
+})
+
+const colors = [
+  [28, 120, 170, 255],
+  [55, 174, 170, 255],
+  [123, 204, 146, 255],
+  [205, 230, 122, 255],
+  [247, 196, 89, 255],
+  [225, 90, 72, 255]
+]
+
+const centers = [
+  { name: 'Old City', position: [98.9853, 18.7883], weight: 1.2 },
+  { name: 'Nimman', position: [98.9677, 18.7991], weight: 1.0 },
+  { name: 'Night Bazaar', position: [99.0006, 18.7833], weight: 0.9 },
+  { name: 'Riverside', position: [99.0089, 18.7896], weight: 0.75 },
+  { name: 'Doi Suthep Road', position: [98.9495, 18.7965], weight: 0.65 }
+]
+
+function makeColumn(id, center) {
+  const spread = 0.012 + (1.3 - center.weight) * 0.008
+  const angle = Math.random() * Math.PI * 2
+  const distance = Math.pow(Math.random(), 1.3) * spread
+  const bucket = Math.min(colors.length - 1, Math.floor(Math.random() * colors.length))
+
+  return {
+    id,
+    position: [
+      center.position[0] + Math.cos(angle) * distance,
+      center.position[1] + Math.sin(angle) * distance
+    ],
+    elevation: 80 + bucket * 120 * center.weight,
+    color: colors[bucket]
+  }
+}
+
+const columns = Array.from({ length: 120 }, (_, i) => {
+  const center = centers[Math.floor(Math.random() * centers.length)]
+
+  return makeColumn(i, center)
+})
+
+function getLayers() {
+  return [
+    new ColumnLayer({
+      id: 'columns',
+      data: columns,
+      diskResolution: 6,
+      radius: 90,
+      coverage: 0.9,
+      extruded: true,
+      getPosition: d => d.position,
+      getElevation: d => d.elevation,
+      getFillColor: d => d.color,
+      material: {
+        ambient: 0.45,
+        diffuse: 0.65,
+        shininess: 18,
+        specularColor: [180, 180, 180]
+      }
+    })
+  ]
+}`;
+
 type DeckGLPresetData = {
   code: string;
   messageInletCount?: number;
@@ -303,6 +450,28 @@ export const DECKGL_PRESETS: Record<
       code: HEXAGON_DECKGL.trim(),
       messageInletCount: 1,
       messageOutletCount: 1,
+      videoInletCount: 0,
+      videoOutletCount: 1
+    }
+  },
+  'hexagon-flat.deckgl': {
+    type: 'deckgl',
+    description: 'Diagnostic flat HexagonLayer over Chiang Mai',
+    data: {
+      code: HEXAGON_FLAT_DECKGL.trim(),
+      messageInletCount: 1,
+      messageOutletCount: 0,
+      videoInletCount: 0,
+      videoOutletCount: 1
+    }
+  },
+  'column.deckgl': {
+    type: 'deckgl',
+    description: 'Diagnostic direct ColumnLayer over Chiang Mai',
+    data: {
+      code: COLUMN_DECKGL.trim(),
+      messageInletCount: 1,
+      messageOutletCount: 0,
       videoInletCount: 0,
       videoOutletCount: 1
     }
