@@ -297,7 +297,9 @@ function render(time) {
   draw({ time })
 }`;
 
-export const DEFAULT_DECKGL_CODE = `const data = [
+export const DEFAULT_DECKGL_CODE = `noInteract()
+
+const data = [
   { position: [-122.45, 37.78], color: [255, 90, 70] },
   { position: [-122.42, 37.76], color: [80, 180, 255] },
   { position: [-122.48, 37.74], color: [255, 210, 80] }

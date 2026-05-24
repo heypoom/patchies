@@ -14,7 +14,7 @@ Prototype a `deckgl` visual object that renders deck.gl layers inside the worker
 
 ## User Code Shape
 
-The object exposes deck.gl classes and expects user code to define `getLayers`.
+The object exposes deck.gl layer classes and expects user code to define `getLayers`.
 
 ```js
 function getLayers({ time, viewState, mouse }) {
@@ -28,6 +28,32 @@ function getLayers({ time, viewState, mouse }) {
       pickable: true
     })
   ]
+}
+```
+
+Raster tile layers are supported through `TileLayer` from `@deck.gl/geo-layers`
+and `BitmapLayer` from `@deck.gl/layers`. The first built-in preset uses OSM
+slippy-map raster tiles:
+
+```js
+function getLayers() {
+  return [
+    new TileLayer({
+      data: 'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      renderSubLayers: props => {
+        const { boundingBox } = props.tile;
+        return new BitmapLayer(props, {
+          image: props.data,
+          bounds: [
+            boundingBox[0][0],
+            boundingBox[0][1],
+            boundingBox[1][0],
+            boundingBox[1][1]
+          ]
+        });
+      }
+    })
+  ];
 }
 ```
 

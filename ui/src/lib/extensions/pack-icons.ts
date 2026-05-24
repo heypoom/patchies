@@ -24,6 +24,7 @@ import {
   Calculator,
   FileHeadphone,
   Grid3x3,
+  Map,
   Usb,
   Waypoints
 } from '@lucide/svelte/icons';
@@ -58,6 +59,7 @@ export function getPackIcon(iconName: string) {
     .with('Calculator', () => Calculator)
     .with('FileHeadphone', () => FileHeadphone)
     .with('Grid3x3', () => Grid3x3)
+    .with('Map', () => Map)
     .with('Usb', () => Usb)
     .with('Eye', () => Eye)
     .with('Waypoints', () => Waypoints)

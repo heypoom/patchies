@@ -2,11 +2,13 @@ export const deckglPrompt = `## deckgl Object Instructions
 
 deckgl renders deck.gl data visualization layers into the Patchies video pipeline. Use it for point maps, lines, arcs, polygons, geospatial visualization, and data-driven visual layers.
 
-Define a getLayers({ time, viewState, mouse }) function that returns deck.gl layers. Common layer classes are available as globals: ScatterplotLayer, GeoJsonLayer, LineLayer, ArcLayer, PolygonLayer, TextLayer, BitmapLayer.
+Define a getLayers({ time, viewState, mouse }) function that returns deck.gl layers. Common layer classes are available as globals: ScatterplotLayer, GeoJsonLayer, LineLayer, ArcLayer, PolygonLayer, TextLayer, BitmapLayer, TileLayer.
 
 Example:
 
 \`\`\`js
+noInteract()
+
 const data = [
   { position: [-122.45, 37.78], color: [255, 90, 70] },
   { position: [-122.42, 37.76], color: [80, 180, 255] }

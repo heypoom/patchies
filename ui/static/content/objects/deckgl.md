@@ -10,6 +10,8 @@ to `bg.out` and other video objects.
 Define a `getLayers()` function that returns deck.gl layers.
 
 ```js
+noInteract()
+
 const data = [
   { position: [-122.45, 37.78], color: [255, 90, 70] },
   { position: [-122.42, 37.76], color: [80, 180, 255] }
@@ -33,6 +35,7 @@ function getLayers({ time, viewState, mouse }) {
 
 - `Deck` - deck.gl Deck class
 - `ScatterplotLayer`, `GeoJsonLayer`, `LineLayer`, `ArcLayer`, `PolygonLayer`, `TextLayer`, `BitmapLayer` - common deck.gl layers
+- `TileLayer` - tiled raster/vector data, useful for OSM-style map tiles
 - `viewState` - current camera state
 - `setViewState(value)` - replace camera state
 - `mouse` - forwarded mouse position
@@ -40,7 +43,28 @@ function getLayers({ time, viewState, mouse }) {
 ## Interaction
 
 Drag the preview or a fullscreen `surface` to pan. Use the mouse wheel or pinch
-gesture to zoom.
+gesture to zoom. `deckgl` disables Patchies canvas drag/pan/wheel interaction by
+default so those gestures control the deck.gl view instead of moving the object.
+
+## OSM Tiles
+
+Use `TileLayer` with `BitmapLayer` to render OpenStreetMap raster tiles.
+
+```js
+new TileLayer({
+  id: 'osm-tiles',
+  data: 'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  renderSubLayers: props => {
+    const [[west, south], [east, north]] = props.tile.boundingBox
+
+    return new BitmapLayer(props, {
+      data: null,
+      image: props.data,
+      bounds: [west, south, east, north]
+    })
+  }
+})
+```
 
 ## See Also
 

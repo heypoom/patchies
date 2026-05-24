@@ -81,9 +81,9 @@
   let mouseHandler: CanvasMouseHandler | null = null;
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
   let previewBitmapContext: ImageBitmapRenderingContext;
-  let dragEnabled = $state(true);
-  let panEnabled = $state(true);
-  let wheelEnabled = $state(true);
+  let dragEnabled = $state(false);
+  let panEnabled = $state(false);
+  let wheelEnabled = $state(false);
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
 

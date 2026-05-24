@@ -1677,8 +1677,9 @@ export class FBORenderer {
       userUniformParams = textureArray;
     }
 
-    // Get mouse data for this node (defaults to [0, 0, 0, 0])
-    const mouseData = this.mouseDataByNode.get(node.id) ?? [0, 0, 0, 0];
+    // Get mouse data for this node. Negative zw follows the Shadertoy-style
+    // "not pressed" convention used by CanvasMouseHandler.
+    const mouseData = this.mouseDataByNode.get(node.id) ?? [0, 0, -1, -1, 0];
 
     // Render to FBO
     // Use transport time if available, otherwise fall back to local time
