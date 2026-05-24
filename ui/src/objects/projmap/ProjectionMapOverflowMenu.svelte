@@ -142,10 +142,10 @@
     >
       {#if isOutputOverride}
         <MonitorOff class="h-4 w-4 text-orange-400" />
-        <span class="text-orange-400">Remove background output</span>
+        <span class="text-orange-400">Hide output</span>
       {:else}
         <Monitor class="h-4 w-4 text-zinc-400" />
-        Output to background
+        Use as output
       {/if}
     </button>
   </Popover.Content>

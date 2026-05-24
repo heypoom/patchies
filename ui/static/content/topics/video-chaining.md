@@ -21,7 +21,7 @@ Connect orange outlet → orange inlet to chain them:
 [p5] → [hydra>] → [glsl>] → [bg.out]
 ```
 
-To hear — er, *see* — anything, connect the final object to `bg.out` or use **Output to Background**.
+To hear — er, *see* — anything, connect the final object to `bg.out` or use **Use as output**.
 
 ## Try It
 
@@ -47,11 +47,11 @@ The preset library has ready-made building blocks for video chaining. Enable the
 - **`diff.hydra`, `add.hydra`, `sub.hydra`** — blend two video inputs with Hydra
 - Check the [hydra](/docs/objects/hydra) and [glsl](/docs/objects/glsl) docs for more preset ideas
 
-## Output to Background
+## Sending to output
 
-Right-click any visual object (or use its **···** menu) and choose **Output to background** to make it the fullscreen output. This overrides any `bg.out` connection.
+Right-click any visual object (or use its **···** menu) and choose **Use as output** to make it the fullscreen output. This overrides any `bg.out` connection.
 
-- Click **Output to background** again on the same object to clear the override
+- Click **Use as output** again on the same object to clear the override
 - Switching to a different object replaces the current output — only one at a time
 - This is great for live performance; it is not saved across sessions
 
@@ -69,7 +69,7 @@ screen re-connects within a second.
 
 1. Open the output screen (`Cmd+K` → "Open Output Screen")
 2. Create a `hydra` object and write a pattern
-3. Right-click the hydra object → **Output to background**
+3. Right-click the hydra object → **Use as output**
 4. Drag the output window to a second monitor or projector — your audience sees clean visuals while you keep editing.
 
 ## Output Resolution
