@@ -65,6 +65,9 @@ nodeType, title, mode }` in a shared store.
   the current code field in overlay mode.
 - The user's default editor layout decides whether opening a visual node editor
   starts inline or opens the overlay directly.
+- `Shift+click` on the visual node code edit action opens the alternate layout
+  for that invocation: inline defaults open overlay, and overlay defaults open
+  inline.
 - While a detached editor is active for a node field, the inline editor for that
   same field is hidden or replaced with a compact "editing elsewhere" affordance.
 - Closing detached mode clears the active target and allows the inline editor to

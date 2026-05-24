@@ -51,7 +51,7 @@
     showSettings: boolean;
     onSettingsToggle: () => void;
     /** Provided when code editor is NOT the primary button — adds an "Edit code" entry. */
-    onCodeToggle?: () => void;
+    onCodeToggle?: (event: MouseEvent) => void;
     onExpandToggle?: () => void;
     isExpanded?: boolean;
     onBgOutputToggle: () => void;
