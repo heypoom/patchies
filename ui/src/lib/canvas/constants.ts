@@ -305,6 +305,14 @@ const data = [
   { position: [-122.48, 37.74], color: [255, 210, 80] }
 ]
 
+setViewState({
+  longitude: -122.44,
+  latitude: 37.76,
+  zoom: 11,
+  pitch: 0,
+  bearing: 0
+})
+
 function getLayers({ time }) {
   return [
     new ScatterplotLayer({
