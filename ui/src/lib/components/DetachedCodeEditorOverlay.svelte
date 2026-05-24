@@ -93,7 +93,6 @@
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    font-size: 28px !important;
   }
 
   :global(.detached-code-editor-overlay .cm-editor.cm-focused) {

@@ -9,14 +9,12 @@
     value = '',
     onchange,
     title,
-    onClose,
     onrun
   }: {
     target?: CodeEditorTarget;
     value?: string;
     onchange?: (value: string) => void;
     title?: string;
-    onClose: () => void;
     onrun?: () => void;
   } = $props();
 </script>
@@ -39,22 +37,10 @@
               <Play class="h-4 w-4" />
             </button>
           </Tooltip.Trigger>
+
           <Tooltip.Content>Run Code</Tooltip.Content>
         </Tooltip.Root>
       {/if}
-
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          <button
-            class="cursor-pointer rounded p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-            onclick={onClose}
-            aria-label="Close code editor"
-          >
-            <X class="h-4 w-4" />
-          </button>
-        </Tooltip.Trigger>
-        <Tooltip.Content>Close Editor</Tooltip.Content>
-      </Tooltip.Root>
     </div>
   </div>
 

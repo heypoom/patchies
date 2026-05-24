@@ -15,6 +15,8 @@
   import { StateField, StateEffect } from '@codemirror/state';
   import {
     editorAutocompleteEnabled,
+    editorFontFamily,
+    editorFontSize,
     editorHoverHintsEnabled,
     useVimInEditor
   } from '../../stores/editor.store';
@@ -118,7 +120,8 @@
     oncommit,
     nodeId,
     dataKey = 'code',
-    fontSize = '12px',
+    fontSize,
+    fontFamily,
     extraExtensions = [],
     onready,
     nodeType,
@@ -143,6 +146,7 @@
     dataKey?: string;
     extraExtensions?: Extension[];
     fontSize?: string;
+    fontFamily?: string;
     onready?: () => void;
     nodeType?: string;
     lineErrors?: Record<number, string[]>;
@@ -155,6 +159,8 @@
   let editorView: EditorView | null = $state(null);
   let isInternalUpdate = false; // Flag to prevent loops when user types
   let valueOnFocus: string | null = null; // Track value at focus for undo commit
+  let resolvedFontSize = $derived(fontSize ?? `${$editorFontSize}px`);
+  let resolvedFontFamily = $derived(fontFamily ?? $editorFontFamily);
 
   onMount(async () => {
     if (editorElement) {
@@ -241,8 +247,8 @@
 
         EditorView.theme({
           '&': {
-            fontSize,
-            fontFamily: 'var(--font-mono)'
+            fontSize: 'var(--patchies-code-editor-font-size)',
+            fontFamily: 'var(--patchies-code-editor-font-family)'
           },
           '.cm-content': {
             padding: '12px',
@@ -479,6 +485,8 @@
 <div
   bind:this={editorElement}
   class={['code-editor-container nodrag nopan nowheel outline-none', className]}
+  style:--patchies-code-editor-font-size={resolvedFontSize}
+  style:--patchies-code-editor-font-family={resolvedFontFamily}
   {...restProps}
 ></div>
 

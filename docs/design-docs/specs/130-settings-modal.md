@@ -80,6 +80,9 @@ Each section header in the sidebar has a small label: `PER-USER` or `PER-PATCH` 
 | Vim mode | Toggle | `editor.vim` | Shows "requires reload" hint |
 | Autocomplete | Toggle | `editor.autocomplete` | Enabled by default; applies to CodeMirror completions |
 | Hover hints | Toggle | `editor.hoverHints` | Enabled by default; applies to CodeMirror completion metadata tooltips |
+| Font family | Text input | `editor.fontFamily` | Applies a custom CSS font stack to CodeMirror editors; default `var(--font-mono)` |
+| Font size | Number/slider | `editor.fontSize` | Applies to inline and sidebar CodeMirror editors; default `12px` |
+| Fullscreen font size | Number/slider | `editor.fullscreenFontSize` | Applies to expanded overlay CodeMirror editors; default `28px` |
 
 **Rendering**
 | Setting | Control | Store | Notes |

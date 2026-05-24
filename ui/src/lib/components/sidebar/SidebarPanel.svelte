@@ -61,7 +61,6 @@
     codeEditorValue,
     onCodeEditorChange,
     codeEditorTitle,
-    onCloseCodeEditor,
     onRunCodeEditor
   }: {
     open: boolean;
@@ -78,7 +77,6 @@
     codeEditorValue?: string;
     onCodeEditorChange?: (value: string) => void;
     codeEditorTitle?: string;
-    onCloseCodeEditor?: () => void;
     onRunCodeEditor?: () => void;
   } = $props();
 
@@ -325,7 +323,6 @@
             value={codeEditorValue ?? ''}
             onchange={onCodeEditorChange}
             title={codeEditorTitle}
-            onClose={onCloseCodeEditor ?? (() => {})}
             onrun={onRunCodeEditor}
           />
         {/if}

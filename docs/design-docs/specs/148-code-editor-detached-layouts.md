@@ -136,6 +136,11 @@ Initial settings:
 
 - Default editor layout: `Inline`, `Overlay`, or `Sidebar`
 - Overlay editor transparency
+- Code editor font family
+- Code editor font size for inline and sidebar layouts
+- Fullscreen editor font size for overlay layout; this should stay separate from
+  the inline/sidebar font size so expanded editing can remain intentionally
+  larger.
 
 Settings should live in a dedicated store under `src/stores/`, not directly in
 the settings modal component. The default editor layout is user preference state,

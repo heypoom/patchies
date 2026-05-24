@@ -100,6 +100,7 @@
     activeCodeEditorTarget,
     closeCodeEditorOverlay
   } from '../../stores/code-editor-layout.store';
+  import { editorFullscreenFontSize } from '../../stores/editor.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
@@ -1212,6 +1213,7 @@
         onrun={$activeCodeEditorTarget.onrun}
         nodeId={$activeCodeEditorTarget.nodeId}
         dataKey={$activeCodeEditorTarget.dataKey}
+        fontSize={`${$editorFullscreenFontSize}px`}
       />
     {/snippet}
 
@@ -1240,7 +1242,6 @@
     codeEditorValue={detachedCodeEditor.value}
     onCodeEditorChange={detachedCodeEditor.updateValue}
     codeEditorTitle={$activeCodeEditorTarget?.title}
-    onCloseCodeEditor={closeCodeEditorOverlay}
     onRunCodeEditor={$activeCodeEditorTarget?.onrun}
   />
 
