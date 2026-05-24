@@ -13,6 +13,8 @@ to the existing Patchies JavaScript runtime helpers.
   their full Patchies-specific signatures.
 - Chain methods such as `diff`, `luma`, `layer`, and `out` should only be
   suggested when completing a member after a dot, such as `osc().lu`.
+- Patchies runtime helper completions such as `onCleanup` and `onMessage`
+  should not appear in Hydra chain member positions such as `osc().o`.
 - Dynamic source and output globals such as `s0` and `o0` should not be
   suggested because they crowd the completion list.
 - Completion metadata should include short descriptions and signatures so the

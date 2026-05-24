@@ -1010,6 +1010,12 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
     if (word.from === word.to && !context.explicit) return null;
     if (isCompletionSuppressedByComment(context, word.from)) return null;
 
+    // If this is member access but not one of Patchies' known objects
+    // (settings., clock., etc.), leave the completion to domain-specific sources.
+    if (word.from > 0 && context.state.doc.sliceString(word.from - 1, word.from) === '.') {
+      return null;
+    }
+
     // Check the text before the word to avoid inappropriate contexts
     const recentTextBefore = context.state.doc.sliceString(Math.max(0, word.from - 20), word.from);
 

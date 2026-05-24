@@ -153,6 +153,8 @@ describe('patchies completions', () => {
     expect(getHydraCompletionLabels('hydra', 'osc(30).d')).toContain('diff');
     expect(getHydraCompletionLabels('hydra', 'osc(30).o')).toContain('out');
     expect(getHydraCompletionLabels('hydra', 'osc(30).o')).not.toContain('osc');
+
+    expect(getCompletionLabels('hydra', 'osc(30).o')).toEqual([]);
   });
 
   it('describes Hydra transforms by behavior instead of implementation', () => {
