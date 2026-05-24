@@ -4,7 +4,9 @@ const defaultWidth = Math.round(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR);
 
 const defaultHeight = Math.round(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR);
 
-export const DEFAULT_P5_CODE = `function setup() {
+export const DEFAULT_P5_CODE = `noOutput()
+
+function setup() {
   createCanvas(${defaultWidth}, ${defaultHeight})
   pixelDensity(${PREVIEW_SCALE_FACTOR})
 }
