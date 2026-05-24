@@ -43,16 +43,16 @@ This is useful when the editor is expanded over the background output.
 Create a `js` object, connect it to `strudel`, and run:
 
 ```javascript
+// Font size
+send({type: 'setFontSize', value: 25})
+
+// Font family. Use commas to fallback to multiple fonts.
 send({
   type: 'setFontFamily',
   value: 'Monaco, Menlo, Ubuntu Mono, Consolas, source-code-pro, monospace'
 })
 
-send({
-  type: 'setFontSize',
-  value: 25
-})
-
+// Set custom CSS styles for the editor container.
 send({
   type: 'setStyles',
   value: {
