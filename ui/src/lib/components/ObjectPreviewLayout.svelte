@@ -9,6 +9,7 @@
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
   import type { ExtraMenuItem } from './ObjectPreviewOverflowMenu.svelte';
+  import { outputTarget } from '../../stores/canvas.store';
   import { transportStore } from '../../stores/transport.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
@@ -228,6 +229,10 @@
     showBgOutputOption && nodeId !== undefined && $overrideOutputNodeId === nodeId
   );
 
+  let canExpand = $derived(
+    showExpandOption && nodeId !== undefined && $outputTarget === 'background'
+  );
+
   function handleBgOutputToggle() {
     if (!nodeId) return;
 
@@ -271,6 +276,8 @@
   }
 
   function handleExpandToggle() {
+    if (!canExpand) return;
+
     const controller = getExpandController();
     if (!controller) return;
 
@@ -320,7 +327,7 @@
                   if (showSettings) showEditor = false;
                 }}
                 onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
-                onExpandToggle={showExpandOption && nodeId ? handleExpandToggle : undefined}
+                onExpandToggle={canExpand ? handleExpandToggle : undefined}
                 {isExpanded}
                 onBgOutputToggle={handleBgOutputToggle}
                 onPlaybackToggle={handlePlaybackToggle}
@@ -422,7 +429,7 @@
         if (showEditor) showSettings = false;
         measureContainerWidth();
       }}
-      onExpandToggle={showExpandOption && nodeId ? handleExpandToggle : undefined}
+      onExpandToggle={canExpand ? handleExpandToggle : undefined}
       {isExpanded}
       onBgOutputToggle={handleBgOutputToggle}
       onPlaybackToggle={handlePlaybackToggle}
