@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
   import ObjectPreviewLayout from './ObjectPreviewLayout.svelte';
   import type { SettingsSchema } from '$lib/settings';
-  import type { ExtraMenuItem } from './ObjectPreviewOverflowMenu.svelte';
+  import type { ExtraMenuItem } from './object-preview-menu-actions';
   import { previewBackgroundColor } from '../../stores/renderer.store';
   import type { SupportedLanguage } from '$lib/codemirror/types';
 

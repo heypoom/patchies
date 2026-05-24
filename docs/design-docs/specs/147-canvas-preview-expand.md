@@ -44,6 +44,11 @@ overlay canvas and exposes surface-specific JavaScript APIs such as `activate()`
 background-output pinning and the overflow/context menus used by
 `CanvasPreviewLayout`.
 
+The overflow menu and context menu should share a single object-preview menu
+action model. Keep Popover and ContextMenu rendering separate, but derive labels,
+icons, disabled states, variants, and separator groups from one helper so adding
+or changing preview actions does not require editing two independent menu trees.
+
 ## Testing
 
 Add unit coverage for the controller:

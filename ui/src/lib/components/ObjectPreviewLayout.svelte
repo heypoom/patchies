@@ -16,7 +16,7 @@
   import { useSvelteFlow } from '@xyflow/svelte';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
-  import type { ExtraMenuItem } from './ObjectPreviewOverflowMenu.svelte';
+  import type { ExtraMenuItem } from './object-preview-menu-actions';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import { outputTarget } from '../../stores/canvas.store';
   import { transportStore } from '../../stores/transport.store';

@@ -1,31 +1,12 @@
 <script lang="ts">
-  import {
-    CircleHelp,
-    Code,
-    Eye,
-    EyeOff,
-    Ellipsis,
-    Expand,
-    Monitor,
-    MonitorOff,
-    Pin,
-    PinOff,
-    Play,
-    Settings,
-    Shrink,
-    OctagonPause
-  } from '@lucide/svelte/icons';
+  import { Ellipsis } from '@lucide/svelte/icons';
   import * as Popover from './ui/popover';
-  import type { SettingsSchema } from '$lib/settings';
   import Separator from './ui/separator/separator.svelte';
-  import type { Component } from 'svelte';
-
-  export interface ExtraMenuItem {
-    label: string;
-    icon: Component<{ class?: string }>;
-    onclick: () => void;
-    variant?: 'default' | 'danger';
-  }
+  import {
+    getObjectPreviewMenuGroups,
+    type ObjectPreviewMenuAction,
+    type ObjectPreviewMenuProps
+  } from './object-preview-menu-actions';
 
   let {
     onrun,
@@ -47,36 +28,38 @@
     onPlaybackToggle,
     onOpenHelp,
     extraMenuItems
-  }: {
-    onrun?: () => void;
-    settingsSchema?: SettingsSchema;
-    showSettings?: boolean;
-    showBgOutputOption?: boolean;
-    nodeId?: string;
-    isOutputOverride?: boolean;
-    showPauseButton?: boolean;
-    paused?: boolean;
-    canPin?: boolean;
-    onPreviewToggle?: () => void;
-    previewVisible?: boolean;
-    onSettingsToggle?: () => void;
-    /** Provided when code editor is NOT the primary button — adds an "Edit code" entry to the menu. */
-    onCodeToggle?: (event: MouseEvent) => void;
-    onExpandToggle?: () => void;
-    isExpanded?: boolean;
-    onBgOutputToggle?: () => void;
-    onPlaybackToggle?: () => void;
-    onOpenHelp: () => void;
-    extraMenuItems?: ExtraMenuItem[];
-  } = $props();
+  }: ObjectPreviewMenuProps = $props();
 
-  const hasTopItems = $derived(
-    Boolean(onrun || (settingsSchema && settingsSchema.length > 0) || extraMenuItems?.length)
+  const menuGroups = $derived(
+    getObjectPreviewMenuGroups({
+      onrun,
+      settingsSchema,
+      showSettings,
+      showBgOutputOption,
+      nodeId,
+      isOutputOverride,
+      showPauseButton,
+      paused,
+      canPin,
+      onPreviewToggle,
+      previewVisible,
+      onSettingsToggle,
+      onCodeToggle,
+      onExpandToggle,
+      isExpanded,
+      onBgOutputToggle,
+      onPlaybackToggle,
+      onOpenHelp,
+      extraMenuItems
+    })
   );
 
-  const hasOutputItems = $derived(
-    Boolean((showBgOutputOption && nodeId !== undefined) || onCodeToggle || onExpandToggle)
-  );
+  function getVariantClass(action: ObjectPreviewMenuAction) {
+    if (action.variant === 'danger') return 'text-red-400';
+    if (action.variant === 'warning') return 'text-orange-400';
+
+    return 'text-zinc-300';
+  }
 </script>
 
 <Popover.Root>
@@ -89,157 +72,24 @@
   </Popover.Trigger>
 
   <Popover.Content class="flex w-auto flex-col p-1" align="end" sideOffset={4}>
-    {#if onrun}
-      <Popover.Close class="contents">
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-          onclick={onrun}
-        >
-          <Play class="h-4 w-4 text-zinc-300" />
+    {#each menuGroups as group, groupIndex (group.id)}
+      {#if groupIndex > 0}
+        <Separator />
+      {/if}
 
-          <span>Run</span>
-        </button>
-      </Popover.Close>
-    {/if}
-
-    {#if settingsSchema && settingsSchema.length > 0}
-      <Popover.Close class="contents">
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-          onclick={onSettingsToggle}
-        >
-          <Settings class="h-4 w-4 text-zinc-300" />
-
-          <span>{showSettings ? 'Hide settings' : 'Settings'}</span>
-        </button>
-      </Popover.Close>
-    {/if}
-
-    {#if extraMenuItems && extraMenuItems.length > 0}
-      {#each extraMenuItems as item, index (index)}
+      {#each group.actions as action (action.id)}
         <Popover.Close class="contents">
           <button
-            class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-            onclick={item.onclick}
+            class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+            onclick={action.onclick}
+            disabled={action.disabled}
           >
-            <item.icon
-              class="h-4 w-4 {item.variant === 'danger' ? 'text-red-400' : 'text-zinc-300'}"
-            />
-            <span class={item.variant === 'danger' ? 'text-red-400' : ''}>{item.label}</span>
+            <action.icon class="h-4 w-4 {getVariantClass(action)}" />
+
+            <span class={action.variant ? getVariantClass(action) : ''}>{action.label}</span>
           </button>
         </Popover.Close>
       {/each}
-    {/if}
-
-    {#if hasTopItems && hasOutputItems}
-      <Separator />
-    {/if}
-
-    {#if onCodeToggle}
-      <Popover.Close class="contents">
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-          onclick={onCodeToggle}
-        >
-          <Code class="h-4 w-4 text-zinc-300" />
-
-          <span>Edit code</span>
-        </button>
-      </Popover.Close>
-    {/if}
-
-    {#if showBgOutputOption && nodeId !== undefined}
-      <Popover.Close class="contents">
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-          onclick={onBgOutputToggle}
-        >
-          {#if isOutputOverride}
-            <MonitorOff class="h-4 w-4 text-orange-400" />
-
-            <span class="text-orange-400">Hide output</span>
-          {:else}
-            <Monitor class="h-4 w-4 text-zinc-300" />
-
-            <span>Use as output</span>
-          {/if}
-        </button>
-      </Popover.Close>
-    {/if}
-
-    {#if onExpandToggle || showPauseButton || onPreviewToggle}
-      <Separator />
-    {/if}
-
-    {#if onExpandToggle}
-      <Popover.Close class="contents">
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-          onclick={onExpandToggle}
-        >
-          {#if isExpanded}
-            <Shrink class="h-4 w-4 text-red-400" />
-
-            <span class="text-red-400">Exit expanded</span>
-          {:else}
-            <Expand class="h-4 w-4 text-zinc-300" />
-
-            <span>Expand</span>
-          {/if}
-        </button>
-      </Popover.Close>
-    {/if}
-
-    {#if showPauseButton}
-      <Popover.Close class="contents">
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-          onclick={onPlaybackToggle}
-          disabled={!canPin && !paused}
-        >
-          {#if paused}
-            <PinOff class="h-4 w-4 text-red-400" />
-
-            <span>Unfreeze frame</span>
-          {:else}
-            <Pin class="h-4 w-4 text-zinc-300" />
-
-            <span>Freeze frame</span>
-          {/if}
-        </button>
-      </Popover.Close>
-    {/if}
-
-    {#if onPreviewToggle}
-      <Popover.Close class="contents">
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-          onclick={onPreviewToggle}
-        >
-          {#if previewVisible}
-            <EyeOff class="h-4 w-4 text-zinc-300" />
-
-            <span>Hide preview</span>
-          {:else}
-            <Eye class="h-4 w-4 text-zinc-300" />
-
-            <span>Show preview</span>
-          {/if}
-        </button>
-      </Popover.Close>
-    {/if}
-
-    <Separator />
-
-    <Popover.Close class="contents">
-      <button
-        class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-        onclick={onOpenHelp}
-      >
-        <CircleHelp class="h-4 w-4 text-zinc-300" />
-
-        <span>Help</span>
-      </button>
-    </Popover.Close>
+    {/each}
   </Popover.Content>
 </Popover.Root>

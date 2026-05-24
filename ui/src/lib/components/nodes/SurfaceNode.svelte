@@ -39,7 +39,7 @@
   import type { SurfaceMouseForwardingRules } from '$lib/canvas/surfaceMouseForwarding';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { CANVAS_DOM_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
-  import type { ExtraMenuItem } from '$lib/components/ObjectPreviewOverflowMenu.svelte';
+  import type { ExtraMenuItem } from '$lib/components/object-preview-menu-actions';
   import { Expand, Shrink, Eraser } from '@lucide/svelte/icons';
   import { profiler } from '$lib/profiler';
 
