@@ -1,10 +1,10 @@
 import {
   dispatchOutputToMainMessage,
   hasConnectedOutputWindow,
+  isOutputToMainMessage,
   type CodeOverlayMirrorState,
   type MainToOutputMessage,
   type OutputSurfaceInputSink,
-  type OutputToMainMessage,
   type SurfaceOverlayMirrorState
 } from './secondary-output-ipc';
 
@@ -15,6 +15,7 @@ export class IpcSystem {
 
   public outputWindow: Window | null = null;
 
+  private outputOrigin: string | null = null;
   private outputSurfaceInputSink: OutputSurfaceInputSink | null = null;
   private pendingSurfaceOverlayCanvas: HTMLCanvasElement | null = null;
 
@@ -37,10 +38,19 @@ export class IpcSystem {
   constructor() {
     // Listen for output window announcing itself (handles reloads on either side)
     window.addEventListener('message', (event) => {
-      const message = event.data as OutputToMainMessage | undefined;
+      if (event.origin !== window.location.origin) return;
+      if (!isWindowMessageSource(event.source)) return;
 
-      if (message?.type === 'outputReady' && event.source) {
-        this.outputWindow = event.source as Window;
+      if (this.outputWindow && !this.outputWindow.closed && event.source !== this.outputWindow) {
+        return;
+      }
+
+      const message = event.data;
+      if (!isOutputToMainMessage(message)) return;
+
+      if (message.type === 'outputReady') {
+        this.outputWindow = event.source;
+        this.outputOrigin = event.origin;
 
         this.postToOutput({ type: 'codeOverlayState', state: this.lastCodeOverlayState });
         this.postToOutput({ type: 'surfaceOverlayState', state: this.lastSurfaceOverlayState });
@@ -102,6 +112,7 @@ export class IpcSystem {
 
   openOutputWindow() {
     this.outputWindow = window.open('/output', '_blank');
+    this.outputOrigin = window.location.origin;
   }
 
   hasConnectedOutputWindow() {
@@ -132,9 +143,17 @@ export class IpcSystem {
   }
 
   private postToOutput(message: MainToOutputMessage, transfer?: Transferable[]) {
+    if (!this.outputOrigin) return;
+
     this.outputWindow?.postMessage(message, {
       transfer,
-      targetOrigin: '*'
+      targetOrigin: this.outputOrigin
     });
   }
+}
+
+function isWindowMessageSource(source: MessageEventSource | null): source is Window {
+  return (
+    typeof source === 'object' && source !== null && 'postMessage' in source && 'closed' in source
+  );
 }

@@ -89,6 +89,18 @@ type OutputToMainMessage =
 The exact types should live near `IpcSystem` so both windows use the same
 contract.
 
+The IPC bridge must only trust the paired same-origin window. The main window
+accepts `/output` messages only when `event.origin` matches the app origin and
+`event.source` is the connected output `Window`. The output route accepts main
+messages only from `window.opener` with the same expected origin. All
+`postMessage` calls use that concrete origin instead of `*`.
+
+Both sides validate runtime message shape before dispatching. Render messages
+must include an `ImageBitmap`, overlay state messages must carry either `null`
+or the expected serializable state shape, and output input messages must include
+the required pointer, wheel, or touch numeric fields before they can reach the
+active `SurfaceNode`.
+
 ### 2. Layered `/output` route
 
 Replace the single output canvas with layered surfaces:
@@ -141,6 +153,11 @@ mirror interactive.
 The main window sends `null` when the overlay closes, the target is deleted, or
 the target switches to sidebar mode.
 
+`FlowCanvasInner.svelte` should not own the reactive details for deciding which
+code overlay state to mirror. Keep that in a dedicated canvas composable so the
+component only passes current nodes, detached-editor state, editor display
+settings, and the IPC sender.
+
 ### 4. Surface overlay bitmap mirror
 
 When a surface enters fullscreen mode, the main window keeps running that surface
@@ -156,7 +173,7 @@ const bitmap = await createImageBitmap(surfaceOverlay.canvas);
 
 outputWindow.postMessage(
   { type: 'surfaceOverlayFrame', bitmap },
-  { transfer: [bitmap], targetOrigin: '*' }
+  { transfer: [bitmap], targetOrigin: window.location.origin }
 );
 ```
 

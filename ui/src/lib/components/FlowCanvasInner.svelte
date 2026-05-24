@@ -91,10 +91,7 @@
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
   import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
   import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
-  import {
-    createCodeOverlayMirrorState,
-    createDetachedStrudelCodeOverlayMirrorState
-  } from '$lib/canvas/secondary-output-ipc';
+  import { useSecondaryOutputCodeOverlay } from '$lib/canvas/use-secondary-output-code-overlay.svelte';
 
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
@@ -278,30 +275,14 @@
     glSystem
   });
 
-  $effect(() => {
-    const detachedStrudelNode =
-      $activeDetachedStrudelNodeId === null
-        ? undefined
-        : nodes.find((node) => node.id === $activeDetachedStrudelNodeId);
-
-    const detachedStrudelCode = detachedStrudelNode?.data?.code;
-
-    const state =
-      $activeDetachedStrudelNodeId && typeof detachedStrudelCode === 'string'
-        ? createDetachedStrudelCodeOverlayMirrorState(
-            $activeDetachedStrudelNodeId,
-            detachedStrudelCode,
-            $editorFullscreenFontSize,
-            $overlayEditorTransparency
-          )
-        : createCodeOverlayMirrorState(
-            $activeCodeEditorTarget,
-            detachedCodeEditor.value,
-            $editorFullscreenFontSize,
-            $overlayEditorTransparency
-          );
-
-    glSystem.ipcSystem.sendCodeOverlayState(state);
+  useSecondaryOutputCodeOverlay({
+    getNodes: () => nodes,
+    getActiveDetachedStrudelNodeId: () => $activeDetachedStrudelNodeId,
+    getActiveCodeEditorTarget: () => $activeCodeEditorTarget,
+    getDetachedCodeEditorValue: () => detachedCodeEditor.value,
+    getFontSizePx: () => $editorFullscreenFontSize,
+    getTransparency: () => $overlayEditorTransparency,
+    sendCodeOverlayState: (state) => glSystem.ipcSystem.sendCodeOverlayState(state)
   });
 
   // Viewport culling for preview rendering optimization

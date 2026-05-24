@@ -3,9 +3,10 @@
   import { SurfaceListeners } from '$lib/canvas/SurfaceListeners';
   import {
     highlightCodeOverlayValue,
+    isMainToOutputMessage,
     syncCanvasSizeToBitmap,
     type CodeOverlayMirrorState,
-    type MainToOutputMessage
+    type OutputToMainMessage
   } from '$lib/canvas/secondary-output-ipc';
 
   let outputCanvas: HTMLCanvasElement;
@@ -15,6 +16,7 @@
   let codeOverlayState = $state<CodeOverlayMirrorState | null>(null);
   let surfaceOverlayActive = $state(false);
   let surfaceListeners = new SurfaceListeners();
+  let expectedOrigin: string | null = null;
 
   let codeOverlayBackground = $derived(
     codeOverlayState ? `rgba(9, 9, 11, ${codeOverlayState.transparency})` : 'transparent'
@@ -27,7 +29,9 @@
   );
 
   function announceReady() {
-    window.opener?.postMessage({ type: 'outputReady' }, '*');
+    if (!expectedOrigin) return;
+
+    window.opener?.postMessage({ type: 'outputReady' }, expectedOrigin);
   }
 
   function resizeCanvases() {
@@ -43,16 +47,16 @@
   function attachSurfaceInput() {
     surfaceListeners.attach(surfaceCanvas, {
       onPointer: (event) => {
-        window.opener?.postMessage({ type: 'outputSurfacePointer', event }, '*');
+        postToOpener({ type: 'outputSurfacePointer', event });
       },
       onWheel: (event) => {
-        window.opener?.postMessage({ type: 'outputSurfaceWheel', event }, '*');
+        postToOpener({ type: 'outputSurfaceWheel', event });
       },
       onTouch: (touches) => {
-        window.opener?.postMessage({ type: 'outputSurfaceTouch', touches }, '*');
+        postToOpener({ type: 'outputSurfaceTouch', touches });
       },
       onLeave: () => {
-        window.opener?.postMessage({ type: 'outputSurfaceLeave' }, '*');
+        postToOpener({ type: 'outputSurfaceLeave' });
       },
       code: '',
       nodeId: 'secondary-output-surface',
@@ -65,13 +69,26 @@
     surfaceListeners.detach();
   }
 
+  function postToOpener(message: OutputToMainMessage) {
+    if (!expectedOrigin) return;
+
+    window.opener?.postMessage(message, expectedOrigin);
+  }
+
   onMount(() => {
+    expectedOrigin = getExpectedOrigin();
+
     resizeCanvases();
 
     outputBitmapContext = outputCanvas.getContext('bitmaprenderer')!;
     surfaceBitmapContext = surfaceCanvas.getContext('bitmaprenderer')!;
 
-    const handleMessage = (event: MessageEvent<MainToOutputMessage>) => {
+    const handleMessage = (event: MessageEvent<unknown>) => {
+      if (event.origin !== expectedOrigin) return;
+      if (event.source !== window.opener) return;
+
+      if (!isMainToOutputMessage(event.data)) return;
+
       if (event.data.type === 'renderOutput') {
         syncCanvasSizeToBitmap(outputCanvas, event.data.bitmap);
         outputBitmapContext.transferFromImageBitmap(event.data.bitmap);
@@ -99,17 +116,35 @@
 
     // Listen for ping from main page (handles main page reload)
     const channel = new BroadcastChannel('patchies-ipc');
+
     channel.addEventListener('message', (event) => {
-      if (event.data.type === 'ping') announceReady();
+      if (event.data.type === 'ping') {
+        announceReady();
+      }
     });
 
     return () => {
       window.removeEventListener('message', handleMessage);
       window.removeEventListener('resize', resizeCanvases);
+
       detachSurfaceInput();
       channel.close();
     };
   });
+
+  function getExpectedOrigin() {
+    try {
+      const referrerOrigin = new URL(document.referrer).origin;
+
+      if (referrerOrigin === window.location.origin) {
+        return referrerOrigin;
+      }
+    } catch {
+      // Fall back to the app origin when the output page has no referrer.
+    }
+
+    return window.location.origin;
+  }
 </script>
 
 <div class="secondary-output-root">

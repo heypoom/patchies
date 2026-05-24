@@ -86,28 +86,27 @@ export function createCodeOverlayMirrorState(
   };
 }
 
-export function createDetachedStrudelCodeOverlayMirrorState(
+export const createDetachedStrudelCodeOverlayMirrorState = (
   nodeId: string,
   value: string,
   fontSizePx: number,
   transparency: number
-): CodeOverlayMirrorState {
-  return {
-    nodeId,
-    dataKey: 'code',
-    value,
-    language: 'javascript',
-    nodeType: 'strudel',
-    title: 'strudel',
-    fontSizePx,
-    transparency
-  };
-}
+): CodeOverlayMirrorState => ({
+  nodeId,
+  dataKey: 'code',
+  value,
+  language: 'javascript',
+  nodeType: 'strudel',
+  title: 'strudel',
+  fontSizePx,
+  transparency
+});
 
 export function dispatchOutputToMainMessage(
-  message: OutputToMainMessage,
+  message: unknown,
   sink: OutputSurfaceInputSink | null
 ): void {
+  if (!isOutputToMainMessage(message)) return;
   if (!sink) return;
 
   if (message.type === 'outputSurfacePointer') {
@@ -119,6 +118,46 @@ export function dispatchOutputToMainMessage(
   } else if (message.type === 'outputSurfaceLeave') {
     sink.leave();
   }
+}
+
+export function isMainToOutputMessage(message: unknown): message is MainToOutputMessage {
+  if (!isRecord(message) || typeof message.type !== 'string') return false;
+
+  if (message.type === 'renderOutput' || message.type === 'surfaceOverlayFrame') {
+    return isImageBitmapLike(message.bitmap);
+  }
+
+  if (message.type === 'codeOverlayState') {
+    return message.state === null || isCodeOverlayMirrorState(message.state);
+  }
+
+  if (message.type === 'surfaceOverlayState') {
+    return message.state === null || isSurfaceOverlayMirrorState(message.state);
+  }
+
+  return false;
+}
+
+export function isOutputToMainMessage(message: unknown): message is OutputToMainMessage {
+  if (!isRecord(message) || typeof message.type !== 'string') return false;
+
+  if (message.type === 'outputReady' || message.type === 'outputSurfaceLeave') {
+    return true;
+  }
+
+  if (message.type === 'outputSurfacePointer') {
+    return isPointerEventPayload(message.event);
+  }
+
+  if (message.type === 'outputSurfaceWheel') {
+    return isWheelEventPayload(message.event);
+  }
+
+  if (message.type === 'outputSurfaceTouch') {
+    return Array.isArray(message.touches) && message.touches.every(isTouchPointPayload);
+  }
+
+  return false;
 }
 
 export function highlightCodeOverlayValue(value: string, language: SupportedLanguage): string {
@@ -141,17 +180,67 @@ export function syncCanvasSizeToBitmap(canvas: HTMLCanvasElement, bitmap: ImageB
   }
 }
 
-export function hasConnectedOutputWindow(
+export const hasConnectedOutputWindow = (
   outputWindow: Pick<Window, 'closed'> | null | undefined
-): boolean {
-  return outputWindow !== null && outputWindow !== undefined && !outputWindow.closed;
-}
+): boolean => outputWindow !== null && outputWindow !== undefined && !outputWindow.closed;
 
-function escapeHtml(value: string): string {
-  return value
+const escapeHtml = (value: string): string =>
+  value
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
-}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+const isOptionalString = (value: unknown): value is string | undefined =>
+  value === undefined || typeof value === 'string';
+
+const isImageBitmapLike = (value: unknown): value is ImageBitmap =>
+  isRecord(value) &&
+  isFiniteNumber(value.width) &&
+  isFiniteNumber(value.height) &&
+  typeof value.close === 'function';
+
+const isCodeOverlayMirrorState = (value: unknown): value is CodeOverlayMirrorState =>
+  isRecord(value) &&
+  typeof value.nodeId === 'string' &&
+  typeof value.dataKey === 'string' &&
+  typeof value.value === 'string' &&
+  typeof value.language === 'string' &&
+  isOptionalString(value.nodeType) &&
+  isOptionalString(value.title) &&
+  isFiniteNumber(value.fontSizePx) &&
+  isFiniteNumber(value.transparency);
+
+const isSurfaceOverlayMirrorState = (value: unknown): value is SurfaceOverlayMirrorState =>
+  isRecord(value) && typeof value.active === 'boolean';
+
+const isPointerEventPayload = (value: unknown): value is PointerEvent_ =>
+  isRecord(value) &&
+  isFiniteNumber(value.x) &&
+  isFiniteNumber(value.y) &&
+  isFiniteNumber(value.pressure) &&
+  isFiniteNumber(value.buttons) &&
+  typeof value.down === 'boolean' &&
+  typeof value.type === 'string';
+
+const isWheelEventPayload = (value: unknown): value is SurfaceWheelEvent_ =>
+  isRecord(value) &&
+  isFiniteNumber(value.x) &&
+  isFiniteNumber(value.y) &&
+  isFiniteNumber(value.deltaX) &&
+  isFiniteNumber(value.deltaY) &&
+  isFiniteNumber(value.deltaMode);
+
+const isTouchPointPayload = (value: unknown): value is TouchPoint =>
+  isRecord(value) &&
+  isFiniteNumber(value.id) &&
+  isFiniteNumber(value.x) &&
+  isFiniteNumber(value.y) &&
+  isFiniteNumber(value.pressure);

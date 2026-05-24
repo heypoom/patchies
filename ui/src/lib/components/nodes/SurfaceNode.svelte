@@ -378,7 +378,9 @@
     const presentation = glSystem.ipcSystem.hasConnectedOutputWindow() ? 'secondary' : 'main';
 
     overlay.activate(nodeId, nodes, () => exitSurface(), { presentation });
+
     glSystem.ipcSystem.sendSurfaceOverlayState({ active: true });
+
     glSystem.ipcSystem.setOutputSurfaceInputSink({
       pointer: (event) => dispatchPointer(event.x, event.y, event.buttons, event.type),
       wheel: (event) =>
@@ -389,6 +391,7 @@
         mouse.buttons = 0;
       }
     });
+
     mouseForwarder.refreshForwardingTargets();
     mouseForwarder.forceHydraScope('global');
 
@@ -429,6 +432,7 @@
     isFullscreen = false;
 
     SurfaceOverlay.getInstance().deactivate(nodeId);
+
     glSystem.ipcSystem.sendSurfaceOverlayState(null);
     glSystem.ipcSystem.setOutputSurfaceInputSink(null);
     mouseForwarder.forceHydraScope('local');
@@ -700,6 +704,9 @@
     // Deactivate overlay if this node was active
     if (isFullscreen) {
       SurfaceOverlay.getInstance().deactivate(nodeId);
+
+      glSystem.ipcSystem.sendSurfaceOverlayState(null);
+      glSystem.ipcSystem.setOutputSurfaceInputSink(null);
     }
 
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);

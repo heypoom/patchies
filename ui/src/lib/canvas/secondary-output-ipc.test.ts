@@ -5,6 +5,7 @@ import {
   dispatchOutputToMainMessage,
   hasConnectedOutputWindow,
   highlightCodeOverlayValue,
+  isMainToOutputMessage,
   syncCanvasSizeToBitmap
 } from './secondary-output-ipc';
 import type { CodeEditorTarget } from '../../stores/code-editor-layout.store';
@@ -113,6 +114,42 @@ describe('secondary output IPC', () => {
         null
       )
     ).not.toThrow();
+  });
+
+  it('rejects malformed output surface input messages before dispatching', () => {
+    const events: unknown[] = [];
+    const sink = {
+      pointer: (event: unknown) => events.push(['pointer', event]),
+      wheel: (event: unknown) => events.push(['wheel', event]),
+      touch: (touches: unknown) => events.push(['touch', touches]),
+      leave: () => events.push(['leave'])
+    };
+
+    dispatchOutputToMainMessage({ type: 'outputSurfacePointer', event: { x: 0.25 } }, sink);
+    dispatchOutputToMainMessage(
+      { type: 'outputSurfaceWheel', event: { x: 0.25, y: 0.5, deltaY: -12 } },
+      sink
+    );
+    dispatchOutputToMainMessage({ type: 'outputSurfaceTouch', touches: [{ id: 1 }] }, sink);
+    dispatchOutputToMainMessage({ type: 'unknown' }, sink);
+
+    expect(events).toEqual([]);
+  });
+
+  it('validates main-to-output message payloads', () => {
+    const bitmap = { width: 1008, height: 654, close: () => {} } as ImageBitmap;
+
+    expect(isMainToOutputMessage({ type: 'renderOutput', bitmap })).toBe(true);
+    expect(isMainToOutputMessage({ type: 'surfaceOverlayFrame', bitmap })).toBe(true);
+    expect(isMainToOutputMessage({ type: 'renderOutput' })).toBe(false);
+    expect(isMainToOutputMessage({ type: 'surfaceOverlayFrame', bitmap: {} })).toBe(false);
+    expect(isMainToOutputMessage({ type: 'codeOverlayState', state: null })).toBe(true);
+    expect(isMainToOutputMessage({ type: 'surfaceOverlayState', state: { active: true } })).toBe(
+      true
+    );
+    expect(isMainToOutputMessage({ type: 'surfaceOverlayState', state: { active: 'yes' } })).toBe(
+      false
+    );
   });
 
   it('highlights display-only code overlay values while escaping unknown languages', () => {
