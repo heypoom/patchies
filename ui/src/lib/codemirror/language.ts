@@ -49,6 +49,7 @@ export async function loadLanguageExtension(
         { autocompletion },
         { patchiesCompletions },
         { shaderParkCompletionsSource },
+        { hydraCompletionsSource },
         { glslInJsCompletions, glslInJsWrap },
         { completionHoverHints },
         { glslIncludeHighlighter }
@@ -58,6 +59,7 @@ export async function loadLanguageExtension(
         import('@codemirror/autocomplete'),
         import('$lib/codemirror/patchies-completions'),
         import('$lib/codemirror/shaderpark-completions'),
+        import('$lib/codemirror/hydra-completions'),
         import('$lib/codemirror/glsl-in-js'),
         import('$lib/codemirror/hover-hints'),
         import('$lib/codemirror/glsl.codemirror')
@@ -76,6 +78,7 @@ export async function loadLanguageExtension(
             override: [
               glslInJsCompletions,
               shaderParkCompletionsSource(context),
+              hydraCompletionsSource(context),
               patchiesCompletions(context)
             ]
           })

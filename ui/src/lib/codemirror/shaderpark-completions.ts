@@ -615,6 +615,7 @@ export function createShaderParkCompletionSource(patchiesContext?: PatchiesConte
 
     const word = context.matchBefore(/[A-Za-z_$][\w$]*/);
     if (!word) return null;
+
     if (word.from === word.to && !context.explicit) return null;
     if (isCompletionSuppressedByComment(context, word.from)) return null;
 

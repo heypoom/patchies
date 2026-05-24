@@ -51,6 +51,21 @@ describe('completion hover hints', () => {
     });
   });
 
+  it('uses Hydra completion metadata in hydra nodes', () => {
+    const { doc, pos } = cursor('os|c(10, 0.1).out();');
+
+    const hint = getCompletionHoverHint(jsState(doc), pos, {
+      language: 'javascript',
+      nodeType: 'hydra'
+    });
+
+    expect(hint?.completion).toMatchObject({
+      label: 'osc',
+      detail: '(frequency: float = 60, sync: float = 0.1, offset: float = 0) => Source',
+      info: 'Create a color oscillator with separate red, green, and blue phase offsets.'
+    });
+  });
+
   it('uses GLSL completion metadata in GLSL editors', () => {
     const { doc, pos } = cursor('float d = leng|th(uv);');
 

@@ -5,6 +5,7 @@ import {
   createPatchiesCompletionSource,
   shouldShowPatchiesCompletions
 } from '$lib/codemirror/patchies-completions';
+import { createHydraCompletionSource } from '$lib/codemirror/hydra-completions';
 import { createShaderParkCompletionSource } from '$lib/codemirror/shaderpark-completions';
 
 function getCompletionLabels(nodeType: string, doc: string) {
@@ -38,6 +39,32 @@ function getShaderParkCompletion(label: string) {
 
   if (!completion) {
     throw new Error(`Missing Shader Park completion: ${label}`);
+  }
+
+  return completion;
+}
+
+function getHydraCompletionLabels(nodeType: string, doc: string) {
+  const state = EditorState.create({ doc });
+  const context = new CompletionContext(state, doc.length, true);
+  const result = createHydraCompletionSource({ nodeType })(context);
+
+  return result?.options.map((option) => option.label) ?? [];
+}
+
+function getHydraCompletions(doc: string) {
+  const state = EditorState.create({ doc });
+  const context = new CompletionContext(state, doc.length, true);
+  const result = createHydraCompletionSource({ nodeType: 'hydra' })(context);
+
+  return result?.options ?? [];
+}
+
+function getHydraCompletion(doc: string, label: string) {
+  const completion = getHydraCompletions(doc).find((option) => option.label === label);
+
+  if (!completion) {
+    throw new Error(`Missing Hydra completion: ${label}`);
   }
 
   return completion;
@@ -96,6 +123,58 @@ describe('patchies completions', () => {
 
     expect(getShaderParkCompletionLabels('js', 'sp')).toEqual([]);
     expect(getShaderParkCompletionLabels('shaderpark', '// sp')).toEqual([]);
+  });
+
+  it('shows Hydra completions only for hydra code', () => {
+    expect(getHydraCompletionLabels('hydra', 'o')).toContain('osc');
+    expect(getHydraCompletionLabels('hydra', 's')).toEqual(
+      expect.arrayContaining(['src', 'shape', 'solid'])
+    );
+    expect(getHydraCompletionLabels('hydra', 'g')).toContain('gradient');
+    expect(getHydraCompletionLabels('hydra', 'v')).toContain('voronoi');
+    expect(getHydraCompletionLabels('hydra', 'n')).toContain('noise');
+    expect(getHydraCompletionLabels('hydra', 'd')).toContain('datamosh');
+
+    expect(getHydraCompletionLabels('js', 'o')).toEqual([]);
+    expect(getHydraCompletionLabels('hydra', '// o')).toEqual([]);
+    expect(getHydraCompletionLabels('hydra', 'setFunction({ glsl: `vec2 p = o')).toEqual([]);
+    expect(getHydraCompletionLabels('hydra', 's')).not.toContain('s0');
+    expect(getHydraCompletionLabels('hydra', 'o')).not.toContain('o0');
+  });
+
+  it('separates Hydra generators from chain method completions', () => {
+    expect(getHydraCompletionLabels('hydra', 'l')).not.toContain('luma');
+    expect(getHydraCompletionLabels('hydra', 'l')).not.toContain('layer');
+    expect(getHydraCompletionLabels('hydra', 'd')).not.toContain('diff');
+
+    expect(getHydraCompletionLabels('hydra', 'osc(30, 0.1, 0.8)\\n  .l')).toEqual(
+      expect.arrayContaining(['luma', 'layer'])
+    );
+    expect(getHydraCompletionLabels('hydra', 'osc(30).d')).toContain('diff');
+    expect(getHydraCompletionLabels('hydra', 'osc(30).o')).toContain('out');
+    expect(getHydraCompletionLabels('hydra', 'osc(30).o')).not.toContain('osc');
+
+    expect(getCompletionLabels('hydra', 'osc(30).o')).toEqual([]);
+  });
+
+  it('describes Hydra transforms by behavior instead of implementation', () => {
+    expect(getHydraCompletion('osc(30).l', 'luma')).toMatchObject({
+      info: 'Use luminance as alpha, fading pixels in above the threshold.'
+    });
+
+    expect(getHydraCompletion('osc(30).l', 'layer')).toMatchObject({
+      info: 'Alpha-composite another chain over the current chain.'
+    });
+
+    expect(getHydraCompletion('osc(30).d', 'diff')).toMatchObject({
+      info: 'Show the absolute RGB difference between this chain and another chain.'
+    });
+
+    expect(getHydraCompletion('d', 'datamosh')).toMatchObject({
+      detail: '(source, params?) => Source',
+      info: 'Route a Hydra source through the native WebCodecs datamosh effect. Params: speed, keyFrame, fps, bitrate, scale, width, height.',
+      apply: 'datamosh(s0, { speed: 2, fps: 30, scale: 0.5 })'
+    });
   });
 
   it('adds short descriptions to Shader Park completions', () => {

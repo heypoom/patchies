@@ -12,6 +12,7 @@ import {
   getPatchiesCompletionByLabel,
   type PatchiesContext
 } from '$lib/codemirror/patchies-completions';
+import { getHydraCompletionByLabel } from '$lib/codemirror/hydra-completions';
 import { getShaderParkCompletionByLabel } from '$lib/codemirror/shaderpark-completions';
 import type { SupportedLanguage } from '$lib/codemirror/types';
 
@@ -77,6 +78,10 @@ function getCompletionForWord(
 
       if (context.nodeType === 'shaderpark') {
         return getShaderParkCompletionByLabel(word);
+      }
+
+      if (context.nodeType === 'hydra') {
+        return getHydraCompletionByLabel(word) ?? getPatchiesCompletionByLabel(word, context);
       }
 
       return getPatchiesCompletionByLabel(word, context);
