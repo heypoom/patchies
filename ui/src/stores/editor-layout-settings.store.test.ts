@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   defaultEditorLayout,
+  getEditorOpenLayout,
   overlayEditorTransparency,
   setDefaultEditorLayout,
   setOverlayEditorTransparency
@@ -40,5 +41,13 @@ describe('editor layout settings store', () => {
 
     expect(get(overlayEditorTransparency)).toBe(0);
     expect(localStorage.getItem('editor.overlayTransparency')).toBe('0');
+  });
+
+  it('resolves shift-click alternate editor layouts', () => {
+    expect(getEditorOpenLayout('inline', false)).toBe('inline');
+    expect(getEditorOpenLayout('inline', true)).toBe('overlay');
+    expect(getEditorOpenLayout('overlay', false)).toBe('overlay');
+    expect(getEditorOpenLayout('overlay', true)).toBe('inline');
+    expect(getEditorOpenLayout('sidebar', true)).toBe('overlay');
   });
 });

@@ -28,7 +28,10 @@
     closeCodeEditorOverlay,
     openCodeEditorOverlay
   } from '../../stores/code-editor-layout.store';
-  import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
+  import {
+    defaultEditorLayout,
+    getEditorOpenLayout
+  } from '../../stores/editor-layout-settings.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CanvasPreviewExpandController } from '$lib/canvas/CanvasPreviewExpandController';
   import { SurfaceListeners } from '$lib/canvas/SurfaceListeners';
@@ -343,17 +346,29 @@
     measureContainerWidth();
   }
 
-  function handleCodeOpen() {
-    match($defaultEditorLayout)
+  function openInlineCodeEditor() {
+    if (isCodeEditorDetached) {
+      closeCodeEditorOverlay();
+    }
+
+    showEditor = true;
+    showSettings = false;
+    measureContainerWidth();
+  }
+
+  function handleCodeOpen(event?: MouseEvent) {
+    const layout = getEditorOpenLayout($defaultEditorLayout, event?.shiftKey ?? false);
+
+    match(layout)
       .with('overlay', () => {
-        if (!showEditor && !isCodeEditorDetached) {
-          openExpandedCodeEditor();
+        openExpandedCodeEditor();
+      })
+      .with('inline', () => {
+        if (event?.shiftKey) {
+          openInlineCodeEditor();
         } else {
           toggleInlineCode();
         }
-      })
-      .otherwise(() => {
-        toggleInlineCode();
       });
   }
 </script>
@@ -479,9 +494,7 @@
         showSettings = !showSettings;
         if (showSettings) showEditor = false;
       }}
-      onCodeToggle={() => {
-        handleCodeOpen();
-      }}
+      onCodeToggle={handleCodeOpen}
       onExpandToggle={canExpand ? handleExpandToggle : undefined}
       {isExpanded}
       onBgOutputToggle={handleBgOutputToggle}

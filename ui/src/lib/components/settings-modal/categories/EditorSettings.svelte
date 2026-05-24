@@ -10,6 +10,7 @@
     type EditorLayoutPreference
   } from '../../../../stores/editor-layout-settings.store';
   import { useVimInEditor } from '../../../../stores/editor.store';
+
   import { setVimMode } from '$lib/utils/settings-actions';
 
   const editorLayoutOptions: { value: EditorLayoutPreference; label: string }[] = [
@@ -27,6 +28,7 @@
 
   function handleTransparencyInput(event: Event) {
     const target = event.target as HTMLInputElement;
+
     setOverlayEditorTransparency(Number(target.value) / 100);
   }
 </script>

@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import { match } from 'ts-pattern';
 
 export type EditorLayoutPreference = 'inline' | 'overlay' | 'sidebar';
+export type EditorOpenLayout = 'inline' | 'overlay';
 
 const DEFAULT_EDITOR_LAYOUT_KEY = 'editor.defaultLayout';
 const OVERLAY_TRANSPARENCY_KEY = 'editor.overlayTransparency';
@@ -53,4 +54,20 @@ export function setOverlayEditorTransparency(value: number): void {
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(OVERLAY_TRANSPARENCY_KEY, String(next));
   }
+}
+
+export function getEditorOpenLayout(
+  defaultLayout: EditorLayoutPreference,
+  useAlternateLayout: boolean
+): EditorOpenLayout {
+  const preferredLayout = match(defaultLayout)
+    .with('overlay', () => 'overlay' as const)
+    .otherwise(() => 'inline' as const);
+
+  if (!useAlternateLayout) return preferredLayout;
+
+  return match(preferredLayout)
+    .with('inline', () => 'overlay' as const)
+    .with('overlay', () => 'inline' as const)
+    .exhaustive();
 }
