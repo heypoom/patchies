@@ -5,6 +5,7 @@
     Package,
     Pause,
     Play,
+    Expand,
     Settings as SettingsIcon,
     Terminal,
     X
@@ -25,6 +26,14 @@
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import {
+    activeCodeEditorTarget,
+    closeCodeEditorOverlay,
+    openCodeEditorOverlay,
+    openCodeEditorSidebar
+  } from '../../../stores/code-editor-layout.store';
+  import { defaultEditorLayout } from '../../../stores/editor-layout-settings.store';
+  import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
 
   let contentContainer: HTMLDivElement | null = null;
   let consoleRef: VirtualConsole | null = $state(null);
@@ -135,6 +144,9 @@
 
   const code = $derived(data.code || '');
   let previousExecuteCode = $state<number | undefined>(undefined);
+  let isCodeEditorDetached = $derived(
+    $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
+  );
 
   // Track error line numbers for code highlighting
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
@@ -245,8 +257,67 @@
     contentWidth = contentContainer.offsetWidth;
   }
 
-  function toggleEditor() {
+  function toggleInlineEditor() {
     showEditor = !showEditor;
+
+    if (showEditor) {
+      showSettings = false;
+    }
+  }
+
+  function openInlineEditor() {
+    if (isCodeEditorDetached) {
+      closeCodeEditorOverlay();
+    }
+
+    showEditor = true;
+    showSettings = false;
+  }
+
+  function openExpandedCodeEditor() {
+    openCodeEditorOverlay({
+      nodeId,
+      dataKey: 'code',
+      language,
+      nodeType,
+      title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
+      placeholder: editorPlaceholder,
+      onrun: executeCode
+    });
+
+    showEditor = false;
+    showSettings = false;
+  }
+
+  function openSidebarCodeEditor() {
+    openCodeEditorSidebar({
+      nodeId,
+      dataKey: 'code',
+      language,
+      nodeType,
+      title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
+      placeholder: editorPlaceholder,
+      onrun: executeCode
+    });
+
+    showEditor = false;
+    showSettings = false;
+  }
+
+  function handleCodeOpen(event?: MouseEvent) {
+    if (supportsLibraries && data.libraryName) {
+      openInlineEditor();
+      return;
+    }
+
+    openEditorLayout({
+      defaultLayout: $defaultEditorLayout,
+      useAlternateLayout: event?.shiftKey ?? false,
+      openInline: openInlineEditor,
+      toggleInline: toggleInlineEditor,
+      openOverlay: openExpandedCodeEditor,
+      openSidebar: openSidebarCodeEditor
+    });
   }
 
   function runOrStop() {
@@ -271,7 +342,7 @@
 
   function handleDoubleClickOnRun() {
     if (supportsLibraries && data.libraryName) {
-      toggleEditor();
+      toggleInlineEditor();
     }
   }
 
@@ -296,12 +367,8 @@
     return baseWidth + Math.max(Math.max(totalInlets, 2), Math.max(outletCount, 2)) * inletWidth;
   });
 
-  const toggleCode = () => {
-    toggleEditor();
-
-    if (showEditor) {
-      showSettings = false;
-    }
+  const toggleCode = (event?: MouseEvent) => {
+    handleCodeOpen(event);
   };
 </script>
 
@@ -367,11 +434,7 @@
               <Tooltip.Trigger>
                 <button
                   class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-                  onclick={() => {
-                    toggleEditor();
-
-                    if (showEditor) showSettings = false;
-                  }}
+                  onclick={handleCodeOpen}
                   aria-label="Edit code"
                 >
                   <Code class="h-4 w-4 text-zinc-300" />
@@ -489,18 +552,41 @@
     </div>
   </div>
 
-  {#if showEditor}
+  {#if showEditor && !isCodeEditorDetached}
     <div class="absolute" style="left: {contentWidth + 10}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button
-          onclick={() => (showEditor = false)}
-          class="cursor-pointer rounded p-1 hover:bg-zinc-700"
-        >
-          <X class="h-4 w-4 text-zinc-300" />
-        </button>
+        {#if !(supportsLibraries && data.libraryName)}
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={openExpandedCodeEditor}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                aria-label="Open expanded editor"
+              >
+                <Expand class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+
+            <Tooltip.Content>Open Expanded Editor</Tooltip.Content>
+          </Tooltip.Root>
+        {/if}
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => (showEditor = false)}
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              aria-label="Close editor"
+            >
+              <X class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
+
+          <Tooltip.Content>Close Editor</Tooltip.Content>
+        </Tooltip.Root>
       </div>
 
-      <div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
+      <div class="min-w-72 rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
         <CodeEditor
           value={code}
           onchange={(newCode) => {
@@ -512,7 +598,7 @@
           {language}
           {nodeType}
           placeholder={editorPlaceholder}
-          class="nodrag h-64 w-full resize-none"
+          class="nodrag h-64 w-full min-w-72 resize-none"
           onrun={executeCode}
           {lineErrors}
           {nodeId}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code, Play, Settings, Terminal, X } from '@lucide/svelte/icons';
+  import { Code, Expand, Play, Settings, Terminal, X } from '@lucide/svelte/icons';
   import { useUpdateNodeInternals } from '@xyflow/svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { onMount, onDestroy, type Snippet } from 'svelte';
@@ -9,6 +9,14 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
+  import {
+    activeCodeEditorTarget,
+    closeCodeEditorOverlay,
+    openCodeEditorOverlay,
+    openCodeEditorSidebar
+  } from '../../../stores/code-editor-layout.store';
+  import { defaultEditorLayout } from '../../../stores/editor-layout-settings.store';
+  import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
 
   let {
     nodeId,
@@ -65,6 +73,9 @@
   const messageInletCount = $derived(data.messageInletCount || 0);
   const messageOutletCount = $derived(data.messageOutletCount || 0);
   const displayTitle = $derived(data.title || nodeName);
+  const isCodeEditorDetached = $derived(
+    $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
+  );
 
   // Update content width when title changes
   $effect(() => {
@@ -107,9 +118,57 @@
     contentWidth = contentContainer.offsetWidth;
   }
 
-  function toggleEditor() {
+  function toggleInlineEditor() {
     showEditor = !showEditor;
     if (showEditor) showSettings = false;
+  }
+
+  function openInlineEditor() {
+    if (isCodeEditorDetached) {
+      closeCodeEditorOverlay();
+    }
+
+    showEditor = true;
+    showSettings = false;
+  }
+
+  function openExpandedCodeEditor() {
+    openCodeEditorOverlay({
+      nodeId,
+      dataKey: 'code',
+      language: 'javascript',
+      nodeType,
+      title: displayTitle,
+      onrun: onRun
+    });
+
+    showEditor = false;
+    showSettings = false;
+  }
+
+  function openSidebarCodeEditor() {
+    openCodeEditorSidebar({
+      nodeId,
+      dataKey: 'code',
+      language: 'javascript',
+      nodeType,
+      title: displayTitle,
+      onrun: onRun
+    });
+
+    showEditor = false;
+    showSettings = false;
+  }
+
+  function handleCodeOpen(event?: MouseEvent) {
+    openEditorLayout({
+      defaultLayout: $defaultEditorLayout,
+      useAlternateLayout: event?.shiftKey ?? false,
+      openInline: openInlineEditor,
+      toggleInline: toggleInlineEditor,
+      openOverlay: openExpandedCodeEditor,
+      openSidebar: openSidebarCodeEditor
+    });
   }
 
   function toggleSettings() {
@@ -134,30 +193,41 @@
           {@render actionButtons?.()}
 
           {#if settingsSchema && settingsSchema.length > 0}
-            <button
-              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              onclick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleSettings();
-              }}
-              title="Settings"
-            >
-              <Settings class="h-4 w-4 text-zinc-300" />
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                  onclick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    toggleSettings();
+                  }}
+                  aria-label="Settings"
+                >
+                  <Settings class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>{showSettings ? 'Hide Settings' : 'Settings'}</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
 
-          <button
-            class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-            onclick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleEditor();
-            }}
-            title="Edit code"
-          >
-            <Code class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                onclick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleCodeOpen(e);
+                }}
+                aria-label="Edit code"
+              >
+                <Code class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Edit Code</Tooltip.Content>
+          </Tooltip.Root>
         </div>
       </div>
 
@@ -197,7 +267,7 @@
           ondblclick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            toggleEditor();
+            openInlineEditor();
           }}
           title="Double click to edit code"
         >
@@ -237,12 +307,16 @@
     </div>
   </div>
 
-  {#if showEditor}
+  {#if showEditor && !isCodeEditorDetached}
     <div class="absolute" style="left: {contentWidth + 10}px">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
         <Tooltip.Root>
           <Tooltip.Trigger>
-            <button onclick={onRun} class="rounded p-1 hover:bg-zinc-700">
+            <button
+              onclick={onRun}
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              aria-label="Run code"
+            >
               <Play class="h-4 w-4 text-zinc-300" />
             </button>
           </Tooltip.Trigger>
@@ -252,27 +326,56 @@
         </Tooltip.Root>
 
         {#if consoleSnippet}
-          <button
-            title="Toggle console"
-            class="rounded p-1 hover:bg-zinc-700"
-            onclick={onToggleConsole}
-          >
-            <Terminal class="h-4 w-4 text-zinc-300" />
-          </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                onclick={onToggleConsole}
+                aria-label="Toggle console"
+              >
+                <Terminal class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+
+            <Tooltip.Content>Toggle Console</Tooltip.Content>
+          </Tooltip.Root>
         {/if}
 
-        <button onclick={() => (showEditor = false)} class="rounded p-1 hover:bg-zinc-700">
-          <X class="h-4 w-4 text-zinc-300" />
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={openExpandedCodeEditor}
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              aria-label="Open expanded editor"
+            >
+              <Expand class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
+
+          <Tooltip.Content>Open Expanded Editor</Tooltip.Content>
+        </Tooltip.Root>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              onclick={() => (showEditor = false)}
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              aria-label="Close editor"
+            >
+              <X class="h-4 w-4 text-zinc-300" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Close Editor</Tooltip.Content>
+        </Tooltip.Root>
       </div>
 
-      <div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
+      <div class="min-w-72 rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
         <CodeEditor
           value={code}
           onchange={handleCodeChangeInternal}
           language="javascript"
           {nodeType}
-          class="nodrag h-64 w-full resize-none"
+          class="nodrag h-64 w-full min-w-72 resize-none"
           onrun={onRun}
           {lineErrors}
           {nodeId}

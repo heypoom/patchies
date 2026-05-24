@@ -15,13 +15,14 @@
 
   const editorLayoutOptions: { value: EditorLayoutPreference; label: string }[] = [
     { value: 'inline', label: 'Inline' },
-    { value: 'overlay', label: 'Overlay' }
+    { value: 'overlay', label: 'Overlay' },
+    { value: 'sidebar', label: 'Sidebar' }
   ];
 
   let overlayTransparencyPercent = $derived(Math.round($overlayEditorTransparency * 100));
 
   function handleLayoutChange(value: string) {
-    if (value === 'inline' || value === 'overlay') {
+    if (value === 'inline' || value === 'overlay' || value === 'sidebar') {
       setDefaultEditorLayout(value);
     }
   }
