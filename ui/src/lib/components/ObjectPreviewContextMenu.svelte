@@ -97,6 +97,13 @@
     <ContextMenu.Separator />
   {/if}
 
+  {#if onCodeToggle}
+    <ContextMenu.Item onclick={onCodeToggle}>
+      <Code class="mr-2 h-4 w-4" />
+      Edit code
+    </ContextMenu.Item>
+  {/if}
+
   {#if showBgOutputOption && nodeId !== undefined}
     <ContextMenu.Item onclick={onBgOutputToggle}>
       {#if isOutputOverride}
@@ -118,13 +125,6 @@
         <Expand class="mr-2 h-4 w-4" />
         Expand
       {/if}
-    </ContextMenu.Item>
-  {/if}
-
-  {#if onCodeToggle}
-    <ContextMenu.Item onclick={onCodeToggle}>
-      <Code class="mr-2 h-4 w-4" />
-      Edit code
     </ContextMenu.Item>
   {/if}
 

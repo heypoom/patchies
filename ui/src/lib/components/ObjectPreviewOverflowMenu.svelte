@@ -134,6 +134,19 @@
       <Separator />
     {/if}
 
+    {#if onCodeToggle}
+      <Popover.Close class="contents">
+        <button
+          class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
+          onclick={onCodeToggle}
+        >
+          <Code class="h-4 w-4 text-zinc-300" />
+
+          <span>Edit code</span>
+        </button>
+      </Popover.Close>
+    {/if}
+
     {#if showBgOutputOption && nodeId !== undefined}
       <Popover.Close class="contents">
         <button
@@ -168,19 +181,6 @@
 
             <span>Expand</span>
           {/if}
-        </button>
-      </Popover.Close>
-    {/if}
-
-    {#if onCodeToggle}
-      <Popover.Close class="contents">
-        <button
-          class="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-zinc-700"
-          onclick={onCodeToggle}
-        >
-          <Code class="h-4 w-4 text-zinc-300" />
-
-          <span>Edit code</span>
         </button>
       </Popover.Close>
     {/if}
