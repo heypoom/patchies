@@ -60,6 +60,8 @@ function getLayers() {
 `osm-points.deckgl` extends the OSM tile pattern with a pickable
 `ScatterplotLayer`, hover highlighting, click-driven color updates, and message
 output for hover/click events.
+`chiang-mai-hexagon.deckgl` uses `HexagonLayer` from
+`@deck.gl/aggregation-layers` to render an extruded 3D heatmap over Chiang Mai.
 
 ## Interaction
 

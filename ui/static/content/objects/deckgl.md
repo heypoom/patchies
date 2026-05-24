@@ -36,6 +36,7 @@ function getLayers({ time, viewState, mouse }) {
 - `Deck` - deck.gl Deck class
 - `ScatterplotLayer`, `GeoJsonLayer`, `LineLayer`, `ArcLayer`, `PolygonLayer`, `TextLayer`, `BitmapLayer` - common deck.gl layers
 - `TileLayer` - tiled raster/vector data, useful for OSM-style map tiles
+- `HexagonLayer` - aggregate points into extruded 3D hexagonal bins
 - `viewState` - current camera state
 - `setViewState(value)` - replace camera state
 - `setDeckInteraction(enabled)` - enable or disable Patchies' built-in deck

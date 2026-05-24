@@ -72,6 +72,13 @@ const layerCompletions: DeckGLLayerCompletion[] = [
       "new H3HexagonLayer({\n  id: 'h3-hexagons',\n  data,\n  getHexagon: d => d.hex,\n  getFillColor: [80, 180, 255, 160]\n})"
   },
   {
+    label: 'HexagonLayer',
+    detail: 'new HexagonLayer(props)',
+    info: 'Aggregate points into extruded 3D hexagonal bins.',
+    apply:
+      "new HexagonLayer({\n  id: 'hexagons',\n  data,\n  getPosition: d => d.position,\n  radius: 200,\n  extruded: true,\n  elevationScale: 40,\n  pickable: true\n})"
+  },
+  {
     label: 'IconLayer',
     detail: 'new IconLayer(props)',
     info: 'Render billboarded icons at coordinates.',

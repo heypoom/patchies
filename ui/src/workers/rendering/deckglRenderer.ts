@@ -113,6 +113,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
   private DeckClass: typeof import('@deck.gl/core').Deck | null = null;
   private layerClasses: typeof import('@deck.gl/layers') | null = null;
   private geoLayerClasses: typeof import('@deck.gl/geo-layers') | null = null;
+  private aggregationLayerClasses: typeof import('@deck.gl/aggregation-layers') | null = null;
 
   private deck: Deck | null = null;
   private device: DeckDevice | null = null;
@@ -156,6 +157,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     const deckModule = await import('@deck.gl/core');
     instance.layerClasses = await import('@deck.gl/layers');
     instance.geoLayerClasses = await import('@deck.gl/geo-layers');
+    instance.aggregationLayerClasses = await import('@deck.gl/aggregation-layers');
 
     instance.DeckClass = deckModule.Deck;
 
@@ -218,7 +220,14 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
 
     this.setPortCount(1, 0);
 
-    if (!this.DeckClass || !this.layerClasses || !this.geoLayerClasses) return;
+    if (
+      !this.DeckClass ||
+      !this.layerClasses ||
+      !this.geoLayerClasses ||
+      !this.aggregationLayerClasses
+    ) {
+      return;
+    }
 
     try {
       const setViewState = (viewState: Partial<DeckViewState>) => {
@@ -246,6 +255,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
         Deck: this.DeckClass,
         ...this.layerClasses,
         ...this.geoLayerClasses,
+        ...this.aggregationLayerClasses,
         viewState: this.viewState,
         setViewState,
         setDeckInteraction,

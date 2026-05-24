@@ -162,6 +162,7 @@ describe('patchies completions', () => {
         'ArcLayer',
         'BitmapLayer',
         'GeoJsonLayer',
+        'HexagonLayer',
         'LineLayer',
         'MVTLayer',
         'ScatterplotLayer',
