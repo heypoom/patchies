@@ -89,7 +89,7 @@ export const jsRunnerInstructions = `
 
 **User-defined Settings:**
 - only add a few settings by default where it makes sense.
-  - tell the user in the response what settings they have and how to show it i.e. in the overflow menu > "Show settings"
+  - tell the user in the response what settings they have and how to show it i.e. in the overflow menu > "Settings"
   - do NOT add too much settings, 1 - 3 is enough. users can always ask to add more in a follow-up.
 - await settings.define([...schema]) - expose a settings panel on the node (gear icon appears)
   - on P5.js: do NOT await in setup() - do it at top level outside setup()

@@ -326,7 +326,7 @@
                   <Tooltip.Trigger>
                     <button
                       class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                      aria-label={showSettings ? 'Hide settings' : 'Show settings'}
+                      aria-label={showSettings ? 'Hide settings' : 'Settings'}
                       onclick={() => {
                         showSettings = !showSettings;
                         if (showSettings) showEditor = false;
@@ -335,9 +335,7 @@
                       <SettingsIcon class="h-4 w-4 text-zinc-300" />
                     </button>
                   </Tooltip.Trigger>
-                  <Tooltip.Content
-                    >{showSettings ? 'Hide settings' : 'Show settings'}</Tooltip.Content
-                  >
+                  <Tooltip.Content>{showSettings ? 'Hide settings' : 'Settings'}</Tooltip.Content>
                 </Tooltip.Root>
               {:else if resolvedPrimary === 'run'}
                 <Tooltip.Root>

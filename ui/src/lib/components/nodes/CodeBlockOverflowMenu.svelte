@@ -43,7 +43,7 @@
         >
           <Settings class="h-4 w-4 text-zinc-300" />
 
-          <span>{showSettings ? 'Hide settings' : 'Show settings'}</span>
+          <span>{showSettings ? 'Hide settings' : 'Settings'}</span>
         </button>
       </Popover.Close>
     {/if}

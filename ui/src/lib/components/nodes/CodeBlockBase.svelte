@@ -359,7 +359,7 @@
               </Tooltip.Trigger>
 
               <Tooltip.Content>
-                {showSettings ? 'Hide settings' : 'Show settings'}
+                {showSettings ? 'Hide settings' : 'Settings'}
               </Tooltip.Content>
             </Tooltip.Root>
           {:else}
