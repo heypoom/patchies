@@ -1200,7 +1200,7 @@
     <BackgroundOutputCanvas />
   </div>
 
-  {#if $activeCodeEditorTarget && detachedCodeEditor.node}
+  {#if $activeCodeEditorTarget?.mode === 'overlay' && detachedCodeEditor.node}
     {#snippet detachedCodeEditorSnippet()}
       <CodeEditor
         value={detachedCodeEditor.value}
@@ -1234,6 +1234,14 @@
     {getGraphSummary}
     {getViewportSummary}
     {hasGeminiApiKey}
+    codeEditorTarget={$activeCodeEditorTarget?.mode === 'sidebar' && detachedCodeEditor.node
+      ? $activeCodeEditorTarget
+      : undefined}
+    codeEditorValue={detachedCodeEditor.value}
+    onCodeEditorChange={detachedCodeEditor.updateValue}
+    codeEditorTitle={$activeCodeEditorTarget?.title}
+    onCloseCodeEditor={closeCodeEditorOverlay}
+    onRunCodeEditor={$activeCodeEditorTarget?.onrun}
   />
 
   <!-- Main content area -->

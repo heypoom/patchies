@@ -26,7 +26,8 @@
   import {
     activeCodeEditorTarget,
     closeCodeEditorOverlay,
-    openCodeEditorOverlay
+    openCodeEditorOverlay,
+    openCodeEditorSidebar
   } from '../../stores/code-editor-layout.store';
   import {
     defaultEditorLayout,
@@ -281,6 +282,23 @@
     showSettings = false;
   }
 
+  function openSidebarCodeEditor() {
+    if (!nodeId) return;
+
+    openCodeEditorSidebar({
+      nodeId,
+      dataKey: codeDataKey,
+      language: codeLanguage,
+      nodeType: objectType,
+      title,
+      placeholder: codePlaceholder,
+      onrun: onrun ? handleRun : undefined
+    });
+
+    showEditor = false;
+    showSettings = false;
+  }
+
   function handleBgOutputToggle() {
     if (!nodeId) return;
 
@@ -362,6 +380,9 @@
     match(layout)
       .with('overlay', () => {
         openExpandedCodeEditor();
+      })
+      .with('sidebar', () => {
+        openSidebarCodeEditor();
       })
       .with('inline', () => {
         if (event?.shiftKey) {
@@ -518,7 +539,7 @@
     </div>
   {/if}
 
-  {#if showEditor || isCodeEditorDetached}
+  {#if showEditor && !isCodeEditorDetached}
     <div class="absolute" style="left: {editorLeftPos}px;">
       {#if editorReady !== false}
         <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
@@ -580,31 +601,14 @@
         </div>
       {/if}
 
-      {#if isCodeEditorDetached}
-        <div class="rounded-lg border border-zinc-600 bg-zinc-900 px-4 py-3 shadow-xl">
-          <div class="flex min-w-[260px] items-center justify-between gap-3">
-            <div>
-              <div class="text-xs font-medium text-zinc-200">Editing in expanded view</div>
-              <div class="mt-0.5 text-[11px] text-zinc-500">Close it to return inline.</div>
-            </div>
-            <button
-              class="cursor-pointer rounded border border-zinc-700 px-2 py-1 text-xs text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-              onclick={closeCodeEditorOverlay}
-            >
-              Return
-            </button>
-          </div>
+      <div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
+        <div class="flex flex-col">
+          {@render codeEditor()}
         </div>
-      {:else}
-        <div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
-          <div class="flex flex-col">
-            {@render codeEditor()}
-          </div>
-        </div>
+      </div>
 
-        {#if consoleSnippet}
-          {@render consoleSnippet()}
-        {/if}
+      {#if consoleSnippet}
+        {@render consoleSnippet()}
       {/if}
     </div>
   {/if}

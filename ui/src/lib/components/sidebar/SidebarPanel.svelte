@@ -10,7 +10,8 @@
     Ellipsis,
     Music,
     MessageSquare,
-    Activity
+    Activity,
+    Code
   } from '@lucide/svelte/icons';
 
   import FileTreeView from './FileTreeView.svelte';
@@ -22,6 +23,7 @@
   import SampleSearchView from './SampleSearchView.svelte';
   import ChatSessionsPanel from './ChatSessionsPanel.svelte';
   import ProfilerView from './ProfilerView.svelte';
+  import SidebarCodeEditorView from './SidebarCodeEditorView.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Popover from '$lib/components/ui/popover';
@@ -39,6 +41,7 @@
     toggleSidebarTab,
     showSidebarTab
   } from '../../../stores/sidebar-visibility.store';
+  import type { CodeEditorTarget } from '../../../stores/code-editor-layout.store';
 
   import type { AiPromptCallbacks } from '$lib/ai/ai-prompt-controller.svelte';
   import type { ChatNode, ChatGraphSummary, ChatViewportSummary } from '$lib/ai/chat/resolver';
@@ -53,7 +56,13 @@
     getNodeById,
     getGraphSummary,
     getViewportSummary,
-    hasGeminiApiKey = false
+    hasGeminiApiKey = false,
+    codeEditorTarget,
+    codeEditorValue,
+    onCodeEditorChange,
+    codeEditorTitle,
+    onCloseCodeEditor,
+    onRunCodeEditor
   }: {
     open: boolean;
     view?: SidebarView;
@@ -65,6 +74,12 @@
     getGraphSummary?: () => ChatGraphSummary;
     getViewportSummary?: () => ChatViewportSummary;
     hasGeminiApiKey?: boolean;
+    codeEditorTarget?: CodeEditorTarget;
+    codeEditorValue?: string;
+    onCodeEditorChange?: (value: string) => void;
+    codeEditorTitle?: string;
+    onCloseCodeEditor?: () => void;
+    onRunCodeEditor?: () => void;
   } = $props();
 
   // All sidebar views
@@ -77,7 +92,8 @@
     { id: 'samples', icon: Music, title: 'Samples' },
     { id: 'chat', icon: MessageSquare, title: 'Chat', aiOnly: true },
     { id: 'preview', icon: AppWindow, title: 'Patch to App', aiOnly: true },
-    { id: 'profiler', icon: Activity, title: 'Profiler' }
+    { id: 'profiler', icon: Activity, title: 'Profiler' },
+    { id: 'code', icon: Code, title: 'Code' }
   ];
 
   const AI_VIEWS: SidebarView[] = ['chat', 'preview'];
@@ -288,7 +304,7 @@
     </div>
 
     {#if view !== 'chat' && view !== 'profiler'}
-      <div class="min-h-0 flex-1 overflow-y-auto">
+      <div class={['min-h-0 flex-1', view === 'code' ? 'overflow-hidden' : 'overflow-y-auto']}>
         {#if view === 'files'}
           <FileTreeView />
         {:else if view === 'presets'}
@@ -303,6 +319,15 @@
           <SampleSearchView />
         {:else if view === 'preview'}
           <AppPreviewView {onRequestApiKey} {onOpenPatchToApp} />
+        {:else if view === 'code'}
+          <SidebarCodeEditorView
+            target={codeEditorTarget}
+            value={codeEditorValue ?? ''}
+            onchange={onCodeEditorChange}
+            title={codeEditorTitle}
+            onClose={onCloseCodeEditor ?? (() => {})}
+            onrun={onRunCodeEditor}
+          />
         {/if}
       </div>
     {/if}

@@ -95,6 +95,11 @@ export function useDetachedCodeEditorOverlay({
       return;
     }
 
+    if (target.mode !== 'overlay') {
+      clearTemporaryOutput();
+      return;
+    }
+
     if (temporaryOutputNodeId && temporaryOutputNodeId !== target.nodeId) {
       clearTemporaryOutput();
     }
@@ -104,7 +109,6 @@ export function useDetachedCodeEditorOverlay({
     if (hasBgOutOutput(getNodes(), getEdges())) return;
 
     temporaryOutputNodeId = target.nodeId;
-
     overrideOutputNodeId.set(target.nodeId);
     glSystem.setOverrideOutputNode(target.nodeId);
   });

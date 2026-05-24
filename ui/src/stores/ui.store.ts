@@ -89,7 +89,8 @@ export type SidebarView =
   | 'preview'
   | 'samples'
   | 'chat'
-  | 'profiler';
+  | 'profiler'
+  | 'code';
 
 const storedSidebarView =
   typeof localStorage !== 'undefined' ? localStorage.getItem('patchies-sidebar-view') : null;

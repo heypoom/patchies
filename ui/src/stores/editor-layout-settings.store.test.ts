@@ -48,6 +48,7 @@ describe('editor layout settings store', () => {
     expect(getEditorOpenLayout('inline', true)).toBe('overlay');
     expect(getEditorOpenLayout('overlay', false)).toBe('overlay');
     expect(getEditorOpenLayout('overlay', true)).toBe('inline');
+    expect(getEditorOpenLayout('sidebar', false)).toBe('sidebar');
     expect(getEditorOpenLayout('sidebar', true)).toBe('overlay');
   });
 });

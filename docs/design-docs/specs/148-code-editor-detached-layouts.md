@@ -64,7 +64,7 @@ nodeType, title, mode }` in a shared store.
 - Code editor chrome in `CanvasPreviewLayout` exposes an expand action that opens
   the current code field in overlay mode.
 - The user's default editor layout decides whether opening a visual node editor
-  starts inline or opens the overlay directly.
+  starts inline, opens the overlay, or opens the sidebar editor directly.
 - `Shift+click` on the visual node code edit action opens the alternate layout
   for that invocation: inline defaults open overlay, and overlay defaults open
   inline.
@@ -123,11 +123,8 @@ sidebar mode should open the sidebar, select the `code` tab, and render the
 editor there.
 
 Sidebar mode is useful for focused editing without covering the background
-output.
-
-Sidebar mode is not part of the first implementation. The type and settings
-should leave room for it, but the first shipped behavior only needs inline and
-overlay.
+output. Unlike overlay mode, opening the sidebar editor should not create a
+temporary background output override.
 
 ## Settings
 
@@ -135,12 +132,8 @@ Add editor layout preferences to `SettingsModal.svelte`.
 
 Initial settings:
 
-- Default editor layout: `Inline` or `Overlay`
+- Default editor layout: `Inline`, `Overlay`, or `Sidebar`
 - Overlay editor transparency
-
-Future setting:
-
-- `Sidebar` default layout, once the sidebar code view exists
 
 Settings should live in a dedicated store under `src/stores/`, not directly in
 the settings modal component. The default editor layout is user preference state,
@@ -169,15 +162,13 @@ Responsibilities:
 - hold the default editor layout preference
 - hold the overlay transparency preference
 - persist user preferences to localStorage
-- leave room for `sidebar` as a future layout value without showing it in the
-  first dropdown
 
 ### Shared Shells
 
 Add dedicated presentation components:
 
 - `DetachedCodeEditorOverlay.svelte`
-- `SidebarCodeEditorView.svelte` in a follow-up
+- `SidebarCodeEditorView.svelte`
 
 Both components resolve the active node and code value from the canvas state,
 then pass normal props into `CodeEditor.svelte`.
@@ -236,7 +227,9 @@ First pass:
 
 - shared active detached-editor target store
 - overlay editor for `CanvasPreviewLayout` consumers
-- Settings modal option for default editor layout: `Inline` or `Overlay`
+- sidebar editor for `CanvasPreviewLayout` consumers
+- Settings modal option for default editor layout: `Inline`, `Overlay`, or
+  `Sidebar`
 - Settings modal option for overlay editor transparency
 - hide inline editor while detached overlay is active
 - compact inline affordance showing that the editor is open in expanded view
@@ -245,7 +238,6 @@ First pass:
 
 Follow-up:
 
-- sidebar `code` tab
 - layout switch between overlay and sidebar
 - typography controls for performance mode beyond the first overlay defaults
 - persisted user preferences for font size, line wrapping, and chrome density
