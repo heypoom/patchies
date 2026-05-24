@@ -35,6 +35,37 @@ is controlled by the transport bar instead of per-node controls.
 You can create multiple `strudel` objects, but only **one** plays at a time.
 Use `bang` or `run` messages to switch playback between them.
 
+## Styling The Editor
+
+Send style messages into a `strudel` object to tune its editor for live coding.
+This is useful when the editor is expanded over the background output.
+
+Create a `js` object, connect it to `strudel`, and run:
+
+```javascript
+send({
+  type: 'setFontFamily',
+  value: 'Monaco, Menlo, Ubuntu Mono, Consolas, source-code-pro, monospace'
+})
+
+send({
+  type: 'setFontSize',
+  value: 25
+})
+
+send({
+  type: 'setStyles',
+  value: {
+    container: `
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      padding: 20px 10px;
+      border: none;
+    `
+  }
+})
+```
+
 ## Examples
 
 Try [funk42 preset by froos](/?id=zntnikb36c47eaw) for a
