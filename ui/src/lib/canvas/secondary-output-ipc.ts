@@ -123,6 +123,12 @@ export function syncCanvasSizeToBitmap(canvas: HTMLCanvasElement, bitmap: ImageB
   }
 }
 
+export function hasConnectedOutputWindow(
+  outputWindow: Pick<Window, 'closed'> | null | undefined
+): boolean {
+  return outputWindow !== null && outputWindow !== undefined && !outputWindow.closed;
+}
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')

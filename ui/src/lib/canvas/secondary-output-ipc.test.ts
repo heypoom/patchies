@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createCodeOverlayMirrorState,
   dispatchOutputToMainMessage,
+  hasConnectedOutputWindow,
   highlightCodeOverlayValue,
   syncCanvasSizeToBitmap
 } from './secondary-output-ipc';
@@ -114,5 +115,11 @@ describe('secondary output IPC', () => {
 
     expect(canvas.width).toBe(1008);
     expect(canvas.height).toBe(654);
+  });
+
+  it('treats a non-closed output window as connected', () => {
+    expect(hasConnectedOutputWindow(null)).toBe(false);
+    expect(hasConnectedOutputWindow({ closed: true })).toBe(false);
+    expect(hasConnectedOutputWindow({ closed: false })).toBe(true);
   });
 });

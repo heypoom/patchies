@@ -136,6 +136,7 @@
   } | null = null;
 
   let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
   const debouncedHandleWindowResize = () => {
     // Resize canvas immediately so the draw loop sends correctly-sized bitmaps
     // to the GLSL renderer (which resizes its output synchronously on resize).
@@ -155,6 +156,7 @@
   function clearCanvas() {
     if (activeCanvas && activeCtx) {
       activeCtx.clearRect(0, 0, activeCanvas.width, activeCanvas.height);
+
       requestSurfaceOverlayMirrorFrame();
     }
   }
@@ -373,8 +375,9 @@
 
     const overlay = SurfaceOverlay.getInstance();
     const nodes = getNodes().map((n) => ({ id: n.id, type: n.type }));
+    const presentation = glSystem.ipcSystem.hasConnectedOutputWindow() ? 'secondary' : 'main';
 
-    overlay.activate(nodeId, nodes, () => exitSurface());
+    overlay.activate(nodeId, nodes, () => exitSurface(), { presentation });
     glSystem.ipcSystem.sendSurfaceOverlayState({ active: true });
     glSystem.ipcSystem.setOutputSurfaceInputSink({
       pointer: (event) => dispatchPointer(event.x, event.y, event.buttons, event.type),
@@ -398,19 +401,24 @@
     activeCanvas = overlay.canvas;
     activeCtx = overlay.ctx;
 
-    // Swap pointer listeners
+    // Swap pointer listeners. Secondary presentation starts hidden, but the main-window toggle
+    // can reveal this same canvas for direct local interaction.
     previewListeners.detach();
     overlayListeners.attach(overlay.canvas, listenerOpts());
 
-    // Stop thumbnail loop (XYFlow is hidden anyway)
+    // Stop thumbnail loop while the surface draws to the overlay canvas.
     stopThumbnailLoop();
 
-    // Attach keyboard listeners
-    const handleKeyDown = (e: KeyboardEvent) => keyboardCallbacks.onKeyDown?.(e);
-    const handleKeyUp = (e: KeyboardEvent) => keyboardCallbacks.onKeyUp?.(e);
-    keyboardListenerHandlers = { keydown: handleKeyDown, keyup: handleKeyUp };
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keyup', handleKeyUp);
+    // Attach keyboard listeners only when this window is the presentation surface.
+    if (presentation === 'main') {
+      const handleKeyDown = (e: KeyboardEvent) => keyboardCallbacks.onKeyDown?.(e);
+      const handleKeyUp = (e: KeyboardEvent) => keyboardCallbacks.onKeyUp?.(e);
+
+      keyboardListenerHandlers = { keydown: handleKeyDown, keyup: handleKeyUp };
+
+      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keyup', handleKeyUp);
+    }
 
     // Re-run code with overlay canvas
     void runCode().then(() => requestSurfaceOverlayMirrorFrame());

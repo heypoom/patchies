@@ -1,5 +1,6 @@
 import {
   dispatchOutputToMainMessage,
+  hasConnectedOutputWindow,
   type CodeOverlayMirrorState,
   type MainToOutputMessage,
   type OutputSurfaceInputSink,
@@ -75,7 +76,7 @@ export class IpcSystem {
   }
 
   requestSurfaceOverlayFrame(canvas: HTMLCanvasElement) {
-    if (!this.outputWindow) return;
+    if (!this.hasConnectedOutputWindow()) return;
 
     this.pendingSurfaceOverlayCanvas = canvas;
 
@@ -90,7 +91,7 @@ export class IpcSystem {
       this.pendingSurfaceOverlayCanvas = null;
 
       if (nextCanvas) {
-        void this.sendSurfaceOverlayFrame(nextCanvas);
+        this.sendSurfaceOverlayFrame(nextCanvas);
       }
     });
   }
@@ -103,8 +104,12 @@ export class IpcSystem {
     this.outputWindow = window.open('/output', '_blank');
   }
 
+  hasConnectedOutputWindow() {
+    return hasConnectedOutputWindow(this.outputWindow);
+  }
+
   private async sendSurfaceOverlayFrame(canvas: HTMLCanvasElement) {
-    if (this.surfaceFrameInFlight || !this.outputWindow) return;
+    if (this.surfaceFrameInFlight || !this.hasConnectedOutputWindow()) return;
 
     this.surfaceFrameInFlight = true;
 
