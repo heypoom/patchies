@@ -5,11 +5,16 @@ import {
   activeCodeEditorTarget,
   closeCodeEditorOverlay,
   isDetachedCodeEditorTarget,
-  openCodeEditorOverlay
+  openCodeEditorOverlay,
+  openCodeEditorSidebar
 } from './code-editor-layout.store';
+import { sidebarVisibleTabs } from './sidebar-visibility.store';
+import { isSidebarOpen, sidebarView } from './ui.store';
 
 describe('code editor layout store', () => {
   it('tracks the active overlay target and clears it', () => {
+    isSidebarOpen.set(true);
+
     openCodeEditorOverlay({
       nodeId: 'node-1',
       dataKey: 'code',
@@ -28,10 +33,35 @@ describe('code editor layout store', () => {
     });
     expect(isDetachedCodeEditorTarget('node-1', 'code')).toBe(true);
     expect(isDetachedCodeEditorTarget('node-1', 'expr')).toBe(false);
+    expect(get(isSidebarOpen)).toBe(false);
 
     closeCodeEditorOverlay();
 
     expect(get(activeCodeEditorTarget)).toBeNull();
     expect(isDetachedCodeEditorTarget('node-1', 'code')).toBe(false);
+  });
+
+  it('opens sidebar targets and activates the sidebar code view', () => {
+    openCodeEditorSidebar({
+      nodeId: 'node-2',
+      dataKey: 'code',
+      language: 'javascript',
+      nodeType: 'hydra',
+      title: 'hydra'
+    });
+
+    expect(get(activeCodeEditorTarget)).toEqual({
+      nodeId: 'node-2',
+      dataKey: 'code',
+      language: 'javascript',
+      nodeType: 'hydra',
+      title: 'hydra',
+      mode: 'sidebar'
+    });
+    expect(get(sidebarView)).toBe('code');
+    expect(get(isSidebarOpen)).toBe(true);
+    expect(get(sidebarVisibleTabs).has('code')).toBe(true);
+
+    closeCodeEditorOverlay();
   });
 });

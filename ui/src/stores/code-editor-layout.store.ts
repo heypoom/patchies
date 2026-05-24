@@ -1,5 +1,7 @@
 import { get, writable } from 'svelte/store';
 import type { SupportedLanguage } from '$lib/codemirror/types';
+import { isSidebarOpen, sidebarView } from './ui.store';
+import { showSidebarTab } from './sidebar-visibility.store';
 
 export interface CodeEditorTarget {
   nodeId: string;
@@ -13,11 +15,20 @@ export interface CodeEditorTarget {
 }
 
 export type OpenCodeEditorOverlayTarget = Omit<CodeEditorTarget, 'mode'>;
+export type OpenCodeEditorSidebarTarget = Omit<CodeEditorTarget, 'mode'>;
 
 export const activeCodeEditorTarget = writable<CodeEditorTarget | null>(null);
 
 export function openCodeEditorOverlay(target: OpenCodeEditorOverlayTarget): void {
   activeCodeEditorTarget.set({ ...target, mode: 'overlay' });
+  isSidebarOpen.set(false);
+}
+
+export function openCodeEditorSidebar(target: OpenCodeEditorSidebarTarget): void {
+  activeCodeEditorTarget.set({ ...target, mode: 'sidebar' });
+  showSidebarTab('code');
+  sidebarView.set('code');
+  isSidebarOpen.set(true);
 }
 
 export function closeCodeEditorOverlay(): void {
