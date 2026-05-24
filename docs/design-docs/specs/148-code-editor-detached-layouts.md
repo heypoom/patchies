@@ -28,10 +28,11 @@ Detached editor layouts should support:
 - future display-only or performance-oriented code views
 
 The first implementation focuses on visual code nodes that already use
-`CanvasPreviewLayout`, plus JS-style code block nodes that share
-`CodeBlockBase`. Expression-style nodes such as `CommonExprLayout` do not need
-detached editing initially because their inline editors are already compact and
-the code is less likely to be part of a performance visual.
+`CanvasPreviewLayout`, JS-style code block nodes that share `CodeBlockBase`, and
+simple DSP code nodes that share `SimpleDspLayout`. Expression-style nodes such
+as `CommonExprLayout` do not need detached editing initially because their inline
+editors are already compact and the code is less likely to be part of a
+performance visual.
 
 ## Source Of Truth
 
@@ -227,8 +228,10 @@ run path is traced.
 First pass:
 
 - shared active detached-editor target store
-- overlay editor for `CanvasPreviewLayout` and `CodeBlockBase` consumers
-- sidebar editor for `CanvasPreviewLayout` and `CodeBlockBase` consumers
+- overlay editor for `CanvasPreviewLayout`, `CodeBlockBase`, and
+  `SimpleDspLayout` consumers
+- sidebar editor for `CanvasPreviewLayout`, `CodeBlockBase`, and
+  `SimpleDspLayout` consumers
 - Settings modal option for default editor layout: `Inline`, `Overlay`, or
   `Sidebar`
 - Settings modal option for overlay editor transparency
