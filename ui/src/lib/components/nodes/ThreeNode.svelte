@@ -1,5 +1,6 @@
 <script lang="ts">
   import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { RotateCcw } from '@lucide/svelte/icons';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
@@ -22,6 +23,7 @@
     NodeTitleUpdateEvent,
     NodeHidePortsUpdateEvent,
     NodeInteractionUpdateEvent,
+    NodeThreeOrbitControlsAvailabilityUpdateEvent,
     NodeVideoOutputEnabledUpdateEvent,
     ConsoleOutputEvent
   } from '$lib/eventbus/events';
@@ -32,6 +34,7 @@
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
+  import type { ExtraMenuItem } from '$lib/components/object-preview-menu-actions';
 
   let {
     id: nodeId,
@@ -90,6 +93,7 @@
   let wheelEnabled = $state(true);
   let videoOutputEnabled = $state(true);
   let editorReady = $state(false);
+  let hasOrbitControls = $state(false);
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -154,11 +158,13 @@
 
   function handleTitleUpdate(e: NodeTitleUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     updateNodeData(nodeId, { title: e.title });
   }
 
   function handleHidePortsUpdate(e: NodeHidePortsUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     updateNodeData(nodeId, { hidePorts: e.hidePorts });
   }
 
@@ -183,9 +189,17 @@
       .exhaustive();
   }
 
+  function handleOrbitControlsAvailabilityUpdate(e: NodeThreeOrbitControlsAvailabilityUpdateEvent) {
+    if (e.nodeId !== nodeId) return;
+
+    hasOrbitControls = e.available;
+  }
+
   function handleVideoOutputEnabledUpdate(e: NodeVideoOutputEnabledUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     videoOutputEnabled = e.videoOutputEnabled;
+
     updateNodeInternals(nodeId);
   }
 
@@ -211,6 +225,18 @@
     }
   };
 
+  const displayExtraMenuItems: ExtraMenuItem[] = $derived(
+    hasOrbitControls
+      ? [
+          {
+            label: 'Reset camera',
+            icon: RotateCcw,
+            onclick: () => glSystem.resetThreeOrbitControls(nodeId)
+          }
+        ]
+      : []
+  );
+
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
@@ -222,6 +248,10 @@
     glEventBus.addEventListener('nodeTitleUpdate', handleTitleUpdate);
     glEventBus.addEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
     glEventBus.addEventListener('nodeInteractionUpdate', handleInteractionUpdate);
+    glEventBus.addEventListener(
+      'nodeThreeOrbitControlsAvailabilityUpdate',
+      handleOrbitControlsAvailabilityUpdate
+    );
     glEventBus.addEventListener('nodeVideoOutputEnabledUpdate', handleVideoOutputEnabledUpdate);
 
     // Listen for console output events to capture lineErrors
@@ -257,6 +287,10 @@
       glEventBus.removeEventListener('nodeHidePortsUpdate', handleHidePortsUpdate);
       glEventBus.removeEventListener('nodeInteractionUpdate', handleInteractionUpdate);
       glEventBus.removeEventListener(
+        'nodeThreeOrbitControlsAvailabilityUpdate',
+        handleOrbitControlsAvailabilityUpdate
+      );
+      glEventBus.removeEventListener(
         'nodeVideoOutputEnabledUpdate',
         handleVideoOutputEnabledUpdate
       );
@@ -290,6 +324,7 @@
     try {
       messageContext?.clearTimers();
       audioAnalysisSystem?.disableFFT(nodeId);
+      hasOrbitControls = false;
 
       glSystem.upsertNode(nodeId, 'three', { code: data.code, _runRevision: Date.now() });
     } catch (error) {
@@ -327,6 +362,7 @@
       glSystem.sendSettingsValueChanged(nodeId, key, value);
     }
   }}
+  {displayExtraMenuItems}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: videoInletCount }, (_, index) => index) as index (index)}

@@ -122,16 +122,19 @@
 
   function handleTitleUpdate(e: NodeTitleUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     updateNodeData(nodeId, { title: e.title });
   }
 
   function handleHidePortsUpdate(e: NodeHidePortsUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     updateNodeData(nodeId, { hidePorts: e.hidePorts });
   }
 
   function handleInteractionUpdate(e: NodeInteractionUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     if (e.mode === 'drag') dragEnabled = e.enabled;
     else if (e.mode === 'pan') panEnabled = e.enabled;
     else if (e.mode === 'wheel') wheelEnabled = e.enabled;
@@ -144,7 +147,9 @@
 
   function handleVideoOutputEnabledUpdate(e: NodeVideoOutputEnabledUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     videoOutputEnabled = e.videoOutputEnabled;
+
     updateNodeInternals(nodeId);
   }
 

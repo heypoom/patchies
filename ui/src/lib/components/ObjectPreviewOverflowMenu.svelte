@@ -27,7 +27,8 @@
     onBgOutputToggle,
     onPlaybackToggle,
     onOpenHelp,
-    extraMenuItems
+    extraMenuItems,
+    displayExtraMenuItems
   }: ObjectPreviewMenuProps = $props();
 
   const menuGroups = $derived(
@@ -50,7 +51,8 @@
       onBgOutputToggle,
       onPlaybackToggle,
       onOpenHelp,
-      extraMenuItems
+      extraMenuItems,
+      displayExtraMenuItems
     })
   );
 

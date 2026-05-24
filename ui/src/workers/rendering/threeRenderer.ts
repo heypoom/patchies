@@ -7,6 +7,7 @@ import { BaseWorkerRenderer, type BaseRendererConfig } from './BaseWorkerRendere
 import {
   WorkerThreeInteraction,
   createWorkerOrbitControlsClass,
+  type WorkerOrbitControlsRegistration,
   type WorkerWheelEvent
 } from './workerThreeInteraction';
 
@@ -36,6 +37,7 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
   // Three.js textures wrapping regl textures
   private threeInputTextures: import('three').Texture[] = [];
   private interaction = new WorkerThreeInteraction();
+  private orbitControls = new Set<WorkerOrbitControlsRegistration>();
 
   private constructor(
     config: ThreeRendererConfig,
@@ -167,6 +169,7 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
 
     this.resetState();
     this.interaction.clearCallbacks();
+    this.clearOrbitControls();
 
     // Cancel any existing animation frame
     if (this.animationId !== null) {
@@ -183,7 +186,7 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
         THREE,
         this.interaction,
         () => this.renderer.outputSize,
-        () => this.disablePatchCanvasCameraInteractions()
+        (controls) => this.registerOrbitControls(controls)
       );
 
       const extraContext = {
@@ -269,6 +272,46 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
     this.setInteraction('wheel', false);
   }
 
+  private registerOrbitControls(controls: WorkerOrbitControlsRegistration) {
+    this.disablePatchCanvasCameraInteractions();
+
+    const wasEmpty = this.orbitControls.size === 0;
+    this.orbitControls.add(controls);
+
+    if (wasEmpty) {
+      this.setOrbitControlsAvailable(true);
+    }
+
+    return () => {
+      this.orbitControls.delete(controls);
+
+      if (this.orbitControls.size === 0) {
+        this.setOrbitControlsAvailable(false);
+      }
+    };
+  }
+
+  private clearOrbitControls() {
+    if (this.orbitControls.size === 0) return;
+
+    this.orbitControls.clear();
+    this.setOrbitControlsAvailable(false);
+  }
+
+  private setOrbitControlsAvailable(available: boolean) {
+    self.postMessage({
+      type: 'setThreeOrbitControlsAvailable',
+      nodeId: this.config.nodeId,
+      available
+    });
+  }
+
+  resetOrbitControls() {
+    for (const controls of this.orbitControls) {
+      controls.reset();
+    }
+  }
+
   destroy() {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
@@ -276,6 +319,7 @@ export class ThreeRenderer extends BaseWorkerRenderer<ThreeRendererConfig> {
     }
 
     this.renderTarget?.dispose();
+    this.clearOrbitControls();
 
     this.threeWebGLRenderer = null;
     this.renderTarget = null;
