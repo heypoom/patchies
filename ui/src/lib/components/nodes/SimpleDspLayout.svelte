@@ -366,13 +366,13 @@
         </Tooltip.Root>
       </div>
 
-      <div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
+      <div class="min-w-72 rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
         <CodeEditor
           value={code}
           onchange={handleCodeChangeInternal}
           language="javascript"
           {nodeType}
-          class="nodrag h-64 w-full resize-none"
+          class="nodrag h-64 w-full min-w-72 resize-none"
           onrun={onRun}
           {lineErrors}
           {nodeId}
