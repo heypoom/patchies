@@ -12,6 +12,8 @@
   } from '@xyflow/svelte';
   import { onDestroy, onMount, tick } from 'svelte';
   import CommandPalette from './CommandPalette.svelte';
+  import CodeEditor from './CodeEditor.svelte';
+  import DetachedCodeEditorOverlay from './DetachedCodeEditorOverlay.svelte';
   import ObjectBrowserModal from './object-browser/ObjectBrowserModal.svelte';
   import SettingsModal from './settings-modal/SettingsModal.svelte';
   import BottomToolbar from './BottomToolbar.svelte';
@@ -93,6 +95,10 @@
   import { Transport } from '$lib/transport';
   import { transportStore } from '../../stores/transport.store';
   import { allPreviewsDisabled } from '../../stores/renderer.store';
+  import {
+    activeCodeEditorTarget,
+    closeCodeEditorOverlay
+  } from '../../stores/code-editor-layout.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
@@ -257,6 +263,49 @@
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, fitView, getViewport, getNode } = useSvelteFlow();
+
+  let detachedCodeEditorNode = $derived.by(() => {
+    const target = $activeCodeEditorTarget;
+    if (!target) return undefined;
+
+    return nodes.find((node) => node.id === target.nodeId);
+  });
+
+  let detachedCodeEditorValue = $derived.by(() => {
+    const target = $activeCodeEditorTarget;
+    const node = detachedCodeEditorNode;
+    if (!target || !node) return '';
+
+    const value = node.data?.[target.dataKey];
+    return typeof value === 'string' ? value : '';
+  });
+
+  function updateDetachedCodeEditorValue(value: string) {
+    const target = $activeCodeEditorTarget;
+    if (!target) return;
+
+    nodes = nodes.map((node) =>
+      node.id === target.nodeId
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              [target.dataKey]: value
+            }
+          }
+        : node
+    );
+  }
+
+  $effect(() => {
+    const target = $activeCodeEditorTarget;
+    if (!target) return;
+
+    const targetExists = nodes.some((node) => node.id === target.nodeId);
+    if (!targetExists) {
+      closeCodeEditorOverlay();
+    }
+  });
 
   // Viewport culling for preview rendering optimization
   const viewport = useViewport();
@@ -1186,6 +1235,29 @@
   <div class="pointer-events-none absolute inset-0 z-0">
     <BackgroundOutputCanvas />
   </div>
+
+  {#if $activeCodeEditorTarget && detachedCodeEditorNode}
+    {#snippet detachedCodeEditor()}
+      <CodeEditor
+        value={detachedCodeEditorValue}
+        onchange={updateDetachedCodeEditorValue}
+        language={$activeCodeEditorTarget.language}
+        nodeType={$activeCodeEditorTarget.nodeType}
+        placeholder={$activeCodeEditorTarget.placeholder ?? ''}
+        class="nodrag nopan nowheel h-full w-full resize-none"
+        onrun={$activeCodeEditorTarget.onrun}
+        nodeId={$activeCodeEditorTarget.nodeId}
+        dataKey={$activeCodeEditorTarget.dataKey}
+      />
+    {/snippet}
+
+    <DetachedCodeEditorOverlay
+      onClose={closeCodeEditorOverlay}
+      onrun={$activeCodeEditorTarget.onrun}
+      codeEditor={detachedCodeEditor}
+    />
+  {/if}
+
   <!-- Sidebar (Files / Presets) -->
   <SidebarPanel
     bind:open={$isSidebarOpen}

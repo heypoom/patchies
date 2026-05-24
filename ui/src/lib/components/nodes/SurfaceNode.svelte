@@ -678,6 +678,7 @@
 <CanvasPreviewLayout
   title={data.title ?? 'surface'}
   objectType="surface"
+  codePlaceholder="Write your surface interaction code here..."
   {nodeId}
   onrun={runCode}
   onPlaybackToggle={togglePlayback}

@@ -223,6 +223,7 @@
 <CanvasPreviewLayout
   title="swgl"
   objectType="swgl"
+  codePlaceholder="Write your SwissGL code here..."
   {nodeId}
   onrun={updateSwissGL}
   onPlaybackToggle={togglePause}

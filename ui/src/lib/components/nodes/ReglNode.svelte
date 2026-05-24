@@ -279,6 +279,7 @@
 <CanvasPreviewLayout
   title={data.title ?? 'regl'}
   objectType="regl"
+  codePlaceholder="Write your regl code here..."
   {nodeId}
   onrun={updateRegl}
   bind:previewCanvas

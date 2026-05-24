@@ -43,10 +43,10 @@ interface CodeEditorTarget {
   language: SupportedLanguage;
   nodeType?: string;
   title?: string;
-  mode: 'overlay' | 'sidebar';
+  mode: "overlay" | "sidebar";
 }
 
-type EditorLayoutPreference = 'inline' | 'overlay' | 'sidebar';
+type EditorLayoutPreference = "inline" | "overlay" | "sidebar";
 ```
 
 All editor accessors read from and write to the active node's `data[dataKey]`
@@ -60,7 +60,7 @@ and commit events, but it does not own the durable code value.
 
 - Only one detached editor target is active at a time.
 - Opening detached mode for a node stores `{ nodeId, dataKey, language,
-  nodeType, title, mode }` in a shared store.
+nodeType, title, mode }` in a shared store.
 - Code editor chrome in `CanvasPreviewLayout` exposes an expand action that opens
   the current code field in overlay mode.
 - The user's default editor layout decides whether opening a visual node editor
@@ -88,18 +88,21 @@ output and above `SvelteFlow`.
 
 Expected presentation:
 
-- transparent editor background
+- fullscreen transparent editor background
 - large configurable font size
 - ample padding so the code reads well on a projected output
-- centered, wide layout that makes the code front-and-center
+- code editor spans the screen with no outer margin, panel border, or title
+- close and run buttons sit inside the fullscreen editor padding
+- `Shift+Esc` closes the expanded editor, matching surface expand mode
 - configurable editor transparency
 - optional line wrapping
 - minimal chrome, with close and layout-switch controls where available
 - `nodrag`, `nopan`, and `nowheel` behavior so XYFlow does not consume editor
   interactions
 
-The overlay should not activate `isFullscreenActive`; it is an editing layer, not
-a canvas preview fullscreen mode.
+The overlay should reuse the existing fullscreen UI-hiding infrastructure used by
+surface expand mode. It should set `isFullscreenActive` while open and close the
+sidebar so the rest of the Patchies UI is hidden during focused editing.
 
 ### Sidebar
 

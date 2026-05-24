@@ -269,6 +269,7 @@
 <CanvasPreviewLayout
   title={data.title ?? 'canvas'}
   objectType="canvas"
+  codePlaceholder="Write your Canvas API code here..."
   {nodeId}
   onrun={updateCanvas}
   onPlaybackToggle={togglePlayback}

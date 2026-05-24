@@ -1,5 +1,13 @@
 <script lang="ts">
-  import { Code, Loader, Play, Settings as SettingsIcon, Terminal, X } from '@lucide/svelte/icons';
+  import {
+    Code,
+    Expand,
+    Loader,
+    Play,
+    Settings as SettingsIcon,
+    Terminal,
+    X
+  } from '@lucide/svelte/icons';
   import { onMount, type Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';
   import * as ContextMenu from './ui/context-menu';
@@ -9,11 +17,18 @@
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
   import type { ExtraMenuItem } from './ObjectPreviewOverflowMenu.svelte';
+  import type { SupportedLanguage } from '$lib/codemirror/types';
   import { outputTarget } from '../../stores/canvas.store';
   import { transportStore } from '../../stores/transport.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
   import { overrideOutputNodeId, previewBackgroundColor } from '../../stores/renderer.store';
+  import {
+    activeCodeEditorTarget,
+    closeCodeEditorOverlay,
+    openCodeEditorOverlay
+  } from '../../stores/code-editor-layout.store';
+  import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CanvasPreviewExpandController } from '$lib/canvas/CanvasPreviewExpandController';
   import { SurfaceListeners } from '$lib/canvas/SurfaceListeners';
@@ -23,6 +38,7 @@
   import { useIncludeProcessing } from '$lib/canvas/use-include-processing.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { NodePrimaryButtonUpdateEvent, PrimaryButton } from '$lib/eventbus/events';
+  import { match } from 'ts-pattern';
 
   let previewContainer: HTMLDivElement | null = null;
   const { getNode, getNodes, updateNodeData } = useSvelteFlow();
@@ -47,6 +63,9 @@
     codeEditor,
     console: consoleSnippet,
     editorReady,
+    codeDataKey = 'code',
+    codeLanguage = 'javascript',
+    codePlaceholder = '',
 
     settingsSchema = undefined,
     settingsValues = {},
@@ -73,6 +92,9 @@
     codeEditor: Snippet;
     console?: Snippet;
     editorReady?: boolean;
+    codeDataKey?: string;
+    codeLanguage?: SupportedLanguage;
+    codePlaceholder?: string;
 
     previewWidth?: number;
 
@@ -233,6 +255,29 @@
     showExpandOption && nodeId !== undefined && $outputTarget === 'background'
   );
 
+  let isCodeEditorDetached = $derived(
+    nodeId !== undefined &&
+      $activeCodeEditorTarget?.nodeId === nodeId &&
+      $activeCodeEditorTarget.dataKey === codeDataKey
+  );
+
+  function openExpandedCodeEditor() {
+    if (!nodeId) return;
+
+    openCodeEditorOverlay({
+      nodeId,
+      dataKey: codeDataKey,
+      language: codeLanguage,
+      nodeType: objectType,
+      title,
+      placeholder: codePlaceholder,
+      onrun: onrun ? handleRun : undefined
+    });
+
+    showEditor = false;
+    showSettings = false;
+  }
+
   function handleBgOutputToggle() {
     if (!nodeId) return;
 
@@ -288,7 +333,7 @@
     }
   }
 
-  const toggleCode = () => {
+  function toggleInlineCode() {
     showEditor = !showEditor;
 
     if (showEditor) {
@@ -296,7 +341,21 @@
     }
 
     measureContainerWidth();
-  };
+  }
+
+  function handleCodeOpen() {
+    match($defaultEditorLayout)
+      .with('overlay', () => {
+        if (!showEditor && !isCodeEditorDetached) {
+          openExpandedCodeEditor();
+        } else {
+          toggleInlineCode();
+        }
+      })
+      .otherwise(() => {
+        toggleInlineCode();
+      });
+  }
 </script>
 
 <div class={['relative flex gap-x-3', className]}>
@@ -326,7 +385,7 @@
                   showSettings = !showSettings;
                   if (showSettings) showEditor = false;
                 }}
-                onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
+                onCodeToggle={resolvedPrimary === 'code' ? undefined : handleCodeOpen}
                 onExpandToggle={canExpand ? handleExpandToggle : undefined}
                 {isExpanded}
                 onBgOutputToggle={handleBgOutputToggle}
@@ -341,11 +400,7 @@
                     <button
                       class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
                       aria-label="Edit code"
-                      onclick={() => {
-                        showEditor = !showEditor;
-                        if (showEditor) showSettings = false;
-                        measureContainerWidth();
-                      }}
+                      onclick={handleCodeOpen}
                     >
                       <Code class="h-4 w-4 text-zinc-300" />
                     </button>
@@ -425,9 +480,7 @@
         if (showSettings) showEditor = false;
       }}
       onCodeToggle={() => {
-        showEditor = !showEditor;
-        if (showEditor) showSettings = false;
-        measureContainerWidth();
+        handleCodeOpen();
       }}
       onExpandToggle={canExpand ? handleExpandToggle : undefined}
       {isExpanded}
@@ -451,7 +504,7 @@
     </div>
   {/if}
 
-  {#if showEditor}
+  {#if showEditor || isCodeEditorDetached}
     <div class="absolute" style="left: {editorLeftPos}px;">
       {#if editorReady !== false}
         <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
@@ -485,7 +538,23 @@
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
-                onclick={() => (showEditor = false)}
+                onclick={openExpandedCodeEditor}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                aria-label="Open expanded editor"
+              >
+                <Expand class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Open Expanded Editor</Tooltip.Content>
+          </Tooltip.Root>
+
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={() => {
+                  showEditor = false;
+                  if (isCodeEditorDetached) closeCodeEditorOverlay();
+                }}
                 class="cursor-pointer rounded p-1 hover:bg-zinc-700"
               >
                 <X class="h-4 w-4 text-zinc-300" />
@@ -496,14 +565,31 @@
         </div>
       {/if}
 
-      <div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
-        <div class="flex flex-col">
-          {@render codeEditor()}
+      {#if isCodeEditorDetached}
+        <div class="rounded-lg border border-zinc-600 bg-zinc-900 px-4 py-3 shadow-xl">
+          <div class="flex min-w-[260px] items-center justify-between gap-3">
+            <div>
+              <div class="text-xs font-medium text-zinc-200">Editing in expanded view</div>
+              <div class="mt-0.5 text-[11px] text-zinc-500">Close it to return inline.</div>
+            </div>
+            <button
+              class="cursor-pointer rounded border border-zinc-700 px-2 py-1 text-xs text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+              onclick={closeCodeEditorOverlay}
+            >
+              Return
+            </button>
+          </div>
         </div>
-      </div>
+      {:else}
+        <div class="rounded-lg border border-zinc-600 bg-zinc-900 shadow-xl">
+          <div class="flex flex-col">
+            {@render codeEditor()}
+          </div>
+        </div>
 
-      {#if consoleSnippet}
-        {@render consoleSnippet()}
+        {#if consoleSnippet}
+          {@render consoleSnippet()}
+        {/if}
       {/if}
     </div>
   {/if}

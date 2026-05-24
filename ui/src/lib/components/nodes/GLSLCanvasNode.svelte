@@ -350,6 +350,8 @@
 <CanvasPreviewLayout
   title={shaderName ?? data.title ?? 'glsl'}
   objectType="glsl"
+  codeLanguage="glsl"
+  codePlaceholder="Write your GLSL fragment shader here..."
   {nodeId}
   onrun={updateShader}
   onPlaybackToggle={togglePause}
