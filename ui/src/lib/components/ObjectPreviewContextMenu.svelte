@@ -116,6 +116,10 @@
     </ContextMenu.Item>
   {/if}
 
+  {#if onExpandToggle || showPauseButton || onPreviewToggle}
+    <ContextMenu.Separator />
+  {/if}
+
   {#if onExpandToggle}
     <ContextMenu.Item onclick={onExpandToggle}>
       {#if isExpanded}
@@ -126,10 +130,6 @@
         Expand
       {/if}
     </ContextMenu.Item>
-  {/if}
-
-  {#if showPauseButton || onPreviewToggle}
-    <ContextMenu.Separator />
   {/if}
 
   {#if showPauseButton}

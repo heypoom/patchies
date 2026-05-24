@@ -12,7 +12,8 @@
     PinOff,
     Play,
     Settings,
-    Shrink
+    Shrink,
+    OctagonPause
   } from '@lucide/svelte/icons';
   import * as Popover from './ui/popover';
   import type { SettingsSchema } from '$lib/settings';
@@ -166,6 +167,10 @@
       </Popover.Close>
     {/if}
 
+    {#if onExpandToggle || showPauseButton || onPreviewToggle}
+      <Separator />
+    {/if}
+
     {#if onExpandToggle}
       <Popover.Close class="contents">
         <button
@@ -183,10 +188,6 @@
           {/if}
         </button>
       </Popover.Close>
-    {/if}
-
-    {#if showPauseButton || onPreviewToggle}
-      <Separator />
     {/if}
 
     {#if showPauseButton}
