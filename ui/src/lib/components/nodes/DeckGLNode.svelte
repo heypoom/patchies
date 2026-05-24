@@ -55,9 +55,10 @@
     selected?: boolean;
   } = $props();
 
+  const eventBus = PatchiesEventBus.getInstance();
+
   let consoleRef: VirtualConsole | null = $state(null);
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
-  const eventBus = PatchiesEventBus.getInstance();
 
   function handleConsoleOutput(event: ConsoleOutputEvent) {
     if (event.nodeId !== nodeId) return;
@@ -147,11 +148,13 @@
 
   function handleTitleUpdate(e: NodeTitleUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     updateNodeData(nodeId, { title: e.title });
   }
 
   function handleHidePortsUpdate(e: NodeHidePortsUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     updateNodeData(nodeId, { hidePorts: e.hidePorts });
   }
 
@@ -178,12 +181,15 @@
 
   function handleVideoOutputEnabledUpdate(e: NodeVideoOutputEnabledUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     videoOutputEnabled = e.videoOutputEnabled;
+
     updateNodeInternals(nodeId);
   }
 
   const setCodeAndUpdate = (newCode: string) => {
     updateNodeData(nodeId, { code: newCode });
+
     setTimeout(() => updateDeckGL());
   };
 

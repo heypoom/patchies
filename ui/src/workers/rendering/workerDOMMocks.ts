@@ -128,6 +128,11 @@ const mockWindow = {
   clearInterval: self.clearInterval.bind(self)
 };
 
+class MockHTMLElement {}
+class MockHTMLCanvasElement extends MockHTMLElement {}
+class MockHTMLImageElement extends MockHTMLElement {}
+class MockHTMLVideoElement extends MockHTMLElement {}
+
 let isSetup = false;
 
 /**
@@ -150,7 +155,37 @@ export function setupWorkerDOMMocks(): void {
 
   // Also make HTMLElement available for instanceof checks
   // @ts-expect-error -- mock class for instanceof
-  self.HTMLElement = class HTMLElement {};
+  self.HTMLElement = MockHTMLElement;
+
+  // luma.gl checks `canvas instanceof HTMLCanvasElement` even when running with
+  // an OffscreenCanvas. The worker only needs the global constructor to exist.
+  // @ts-expect-error -- mock class for instanceof
+  self.HTMLCanvasElement = MockHTMLCanvasElement;
+
+  // Texture/source checks in visualization libraries often reference these
+  // browser globals even when the current deck.gl layer does not use them.
+  // @ts-expect-error -- mock class for instanceof
+  self.HTMLImageElement = MockHTMLImageElement;
+  // @ts-expect-error -- mock class for instanceof
+  self.HTMLVideoElement = MockHTMLVideoElement;
+
+  // @ts-expect-error -- injecting browser constructors into worker global
+  globalThis.HTMLElement = MockHTMLElement;
+  // @ts-expect-error -- injecting browser constructors into worker global
+  globalThis.HTMLCanvasElement = MockHTMLCanvasElement;
+  // @ts-expect-error -- injecting browser constructors into worker global
+  globalThis.HTMLImageElement = MockHTMLImageElement;
+  // @ts-expect-error -- injecting browser constructors into worker global
+  globalThis.HTMLVideoElement = MockHTMLVideoElement;
+
+  // @ts-expect-error -- mock window shape
+  mockWindow.HTMLElement = MockHTMLElement;
+  // @ts-expect-error -- mock window shape
+  mockWindow.HTMLCanvasElement = MockHTMLCanvasElement;
+  // @ts-expect-error -- mock window shape
+  mockWindow.HTMLImageElement = MockHTMLImageElement;
+  // @ts-expect-error -- mock window shape
+  mockWindow.HTMLVideoElement = MockHTMLVideoElement;
 
   isSetup = true;
 }

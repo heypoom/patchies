@@ -1,6 +1,5 @@
 import type regl from 'regl';
 import type { Deck, Layer } from '@deck.gl/core';
-import type { Device, Framebuffer, Texture } from '@luma.gl/core';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
@@ -44,14 +43,44 @@ type SizedFramebuffer = regl.Framebuffer2D & {
   height: number;
 };
 
+type DeckTexture = {
+  destroy(): void;
+};
+
+type DeckFramebuffer = {
+  width: number;
+  height: number;
+  handle?: WebGLFramebuffer;
+  resize(options: { width: number; height: number }): void;
+  destroy(): void;
+};
+
+type DeckDevice = {
+  canvasContext?: {
+    setDrawingBufferSize?: (width: number, height: number) => void;
+  };
+  createTexture(options: {
+    format: string;
+    width: number;
+    height: number;
+    sampler?: Record<string, string>;
+  }): DeckTexture;
+  createFramebuffer(options: {
+    width: number;
+    height: number;
+    colorAttachments: DeckTexture[];
+    depthStencilAttachment?: string;
+  }): DeckFramebuffer;
+};
+
 export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
   private DeckClass: typeof import('@deck.gl/core').Deck | null = null;
   private layerClasses: typeof import('@deck.gl/layers') | null = null;
 
   private deck: Deck | null = null;
-  private device: Device | null = null;
-  private deckTexture: Texture | null = null;
-  private deckFramebuffer: Framebuffer | null = null;
+  private device: DeckDevice | null = null;
+  private deckTexture: DeckTexture | null = null;
+  private deckFramebuffer: DeckFramebuffer | null = null;
   private getLayers: UserGetLayers | null = null;
   private previousPointer: { x: number; y: number; down: boolean } | null = null;
   private pendingWheelDelta = 0;
@@ -222,7 +251,9 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     canvas.parentElement ??= null;
 
     await new Promise<void>((resolve) => {
-      this.deck = new DeckClass({
+      const renderer = this;
+
+      renderer.deck = new DeckClass({
         controller: false,
         gl,
         width: null,
@@ -233,11 +264,11 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
         layers: [],
         getTooltip: null,
         parameters: { depthCompare: 'less-equal' },
-        onDeviceInitialized: (device: Device) => {
-          this.device = device;
-          this.createRenderTarget();
+        onDeviceInitialized: (device: unknown) => {
+          renderer.device = device as DeckDevice;
+          renderer.createRenderTarget();
 
-          this.deck?.setProps({ _framebuffer: this.deckFramebuffer });
+          renderer.deck?.setProps({ _framebuffer: renderer.deckFramebuffer } as never);
 
           resolve();
         },
@@ -280,7 +311,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     if (!this.device || !this.deckFramebuffer) return;
 
     const [width, height] = this.renderer.outputSize;
-    this.device.canvasContext?.setDrawingBufferSize(width, height);
+    this.device.canvasContext?.setDrawingBufferSize?.(width, height);
 
     if (this.deckFramebuffer.width !== width || this.deckFramebuffer.height !== height) {
       this.deckFramebuffer.resize({ width, height });
@@ -325,7 +356,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     if (!gl) return;
 
     const [width, height] = this.renderer.outputSize;
-    const sourceFBO = (this.deckFramebuffer as Framebuffer & { handle?: WebGLFramebuffer }).handle;
+    const sourceFBO = this.deckFramebuffer.handle;
     const destFBO = getFramebuffer(this.framebuffer);
     if (!sourceFBO) return;
 

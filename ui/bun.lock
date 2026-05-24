@@ -15,16 +15,18 @@
         "@codemirror/theme-one-dark": "^6.1.3",
         "@codemirror/view": "^6.38.1",
         "@csound/browser": "file:./packages/csound-browser",
-        "@deck.gl/core": "^9.3.0-beta.2",
-        "@deck.gl/layers": "^9.3.0-beta.2",
+        "@deck.gl/core": "9.0.0",
+        "@deck.gl/layers": "9.0.0",
         "@elemaudio/core": "^4.0.1",
         "@elemaudio/web-renderer": "^4.0.3",
         "@google/genai": "^1.11.0",
         "@iizukak/codemirror-lang-wgsl": "^0.3.0",
         "@lezer/generator": "^1.8.0",
         "@lezer/highlight": "^1.2.1",
-        "@luma.gl/core": "^9.3.3",
-        "@luma.gl/webgl": "^9.3.3",
+        "@luma.gl/core": "9.0.0",
+        "@luma.gl/engine": "9.0.0",
+        "@luma.gl/shadertools": "9.0.0",
+        "@luma.gl/webgl": "9.0.0",
         "@mediapipe/tasks-vision": "0.10.33",
         "@replit/codemirror-vim": "^6.3.0",
         "@rollup/browser": "^4.50.1",
@@ -162,6 +164,12 @@
   ],
   "patchedDependencies": {
     "superdough@1.2.6": "patches/superdough@1.2.6.patch",
+  },
+  "overrides": {
+    "@luma.gl/core": "9.0.0",
+    "@luma.gl/engine": "9.0.0",
+    "@luma.gl/shadertools": "9.0.0",
+    "@luma.gl/webgl": "9.0.0",
   },
   "packages": {
     "@ampproject/remapping": ["@ampproject/remapping@2.3.0", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw=="],
@@ -406,9 +414,9 @@
 
     "@davepagurek/bezier-path": ["@davepagurek/bezier-path@0.0.2", "", {}, "sha512-4L9ddgzZc9DRGyl1RrS3z5nwnVJoyjsAelVG4X1jh4tVxryEHr4H9QavhxW/my6Rn3669Qz6mhv8gd5O/WeFTA=="],
 
-    "@deck.gl/core": ["@deck.gl/core@9.3.2", "", { "dependencies": { "@loaders.gl/core": "^4.4.1", "@loaders.gl/images": "^4.4.1", "@luma.gl/core": "^9.3.3", "@luma.gl/engine": "^9.3.3", "@luma.gl/shadertools": "^9.3.3", "@luma.gl/webgl": "^9.3.3", "@math.gl/core": "^4.1.0", "@math.gl/sun": "^4.1.0", "@math.gl/types": "^4.1.0", "@math.gl/web-mercator": "^4.1.0", "@probe.gl/env": "^4.1.1", "@probe.gl/log": "^4.1.1", "@probe.gl/stats": "^4.1.1", "@types/offscreencanvas": "^2019.6.4", "gl-matrix": "^3.0.0", "mjolnir.js": "^3.0.0" } }, "sha512-32Va3np0Zdlz/LBNtDWCs4EkKqdHmXcbGmVp4+7i1Cpdza8y8CFmJs2VPOmSX1fwHvNCGkAZV/SFZOfDb2INsg=="],
+    "@deck.gl/core": ["@deck.gl/core@9.0.0", "", { "dependencies": { "@loaders.gl/core": "^4.1.4", "@loaders.gl/images": "^4.1.4", "@luma.gl/constants": "^9.0.6", "@luma.gl/core": "^9.0.6", "@luma.gl/engine": "^9.0.6", "@luma.gl/shadertools": "^9.0.6", "@luma.gl/webgl": "^9.0.6", "@math.gl/core": "^4.0.0", "@math.gl/sun": "^4.0.0", "@math.gl/web-mercator": "^4.0.0", "@probe.gl/env": "^4.0.9", "@probe.gl/log": "^4.0.9", "@probe.gl/stats": "^4.0.9", "@types/offscreencanvas": "^2019.6.4", "gl-matrix": "^3.0.0", "mjolnir.js": "^2.7.0" } }, "sha512-o3Ica4ZUU+dHAJ3v5BXorzg90xy9THLWiZQ/v4kZHat050EfFT8ZAPWwL0xS9M0DBvY4ikcZjTtcBtsh+KGm0A=="],
 
-    "@deck.gl/layers": ["@deck.gl/layers@9.3.2", "", { "dependencies": { "@loaders.gl/images": "^4.4.1", "@loaders.gl/schema": "^4.4.1", "@luma.gl/shadertools": "^9.3.3", "@mapbox/tiny-sdf": "^2.0.5", "@math.gl/core": "^4.1.0", "@math.gl/polygon": "^4.1.0", "@math.gl/web-mercator": "^4.1.0", "earcut": "^2.2.4" }, "peerDependencies": { "@deck.gl/core": "~9.3.0", "@loaders.gl/core": "^4.4.1", "@luma.gl/core": "~9.3.3", "@luma.gl/engine": "~9.3.3" } }, "sha512-TeVfhQ/cQU1oTlTn16mCp7268d1uBJ6dwfgmKXThe2TzW9hql3iJaxbYTKg2phDg5YSiGmeEOpXbeBh59jyUcA=="],
+    "@deck.gl/layers": ["@deck.gl/layers@9.0.0", "", { "dependencies": { "@loaders.gl/images": "^4.1.4", "@loaders.gl/schema": "^4.1.4", "@mapbox/tiny-sdf": "^2.0.5", "@math.gl/core": "^4.0.0", "@math.gl/polygon": "^4.0.0", "@math.gl/web-mercator": "^4.0.0", "earcut": "^2.2.4" }, "peerDependencies": { "@deck.gl/core": "^9.0.0", "@loaders.gl/core": "^4.1.0", "@luma.gl/core": "^9.0.0", "@luma.gl/engine": "^9.0.0" } }, "sha512-ScWnvgyWEuJCritPshptbtp1DIqn9KTDCFlJyxKZFj1ATn9Hco5gXgPxVJmoY2w3j2WOwaAo93Mgk8GlUry0Pg=="],
 
     "@dimforge/rapier3d-compat": ["@dimforge/rapier3d-compat@0.12.0", "", {}, "sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow=="],
 
@@ -620,13 +628,15 @@
 
     "@lucide/svelte": ["@lucide/svelte@0.575.0", "", { "peerDependencies": { "svelte": "^5" } }, "sha512-FEFp/0McZwsjBqh1Dn8H+UBm1yHFQYk+utuVMFDw57155+wz2XMoc1pw027ylCPzs+bi14UEXYKbekFhuJKtnw=="],
 
-    "@luma.gl/core": ["@luma.gl/core@9.3.3", "", { "dependencies": { "@math.gl/types": "^4.1.0", "@probe.gl/env": "^4.1.1", "@probe.gl/log": "^4.1.1", "@probe.gl/stats": "^4.1.1", "@types/offscreencanvas": "^2019.7.3" } }, "sha512-jCFm2htvrVpcXIy85TBTF1ROgMfknKnfw2OH+Vydr41hiCFd6nqr79gM3f2uhaNkal0BghFNqF3qDioKiUWtew=="],
+    "@luma.gl/constants": ["@luma.gl/constants@9.1.10", "", {}, "sha512-O4Nx8UbWmrHHZ7ihKB8WiscX1cz05l1KvKorYTgq+xeXwz2Beh3MkXBMnA46uuyEtimN945OEdYshZnbh80jyw=="],
 
-    "@luma.gl/engine": ["@luma.gl/engine@9.3.3", "", { "dependencies": { "@math.gl/core": "^4.1.0", "@math.gl/types": "^4.1.0", "@probe.gl/log": "^4.1.1", "@probe.gl/stats": "^4.1.1" }, "peerDependencies": { "@luma.gl/core": "~9.3.0", "@luma.gl/shadertools": "~9.3.0" } }, "sha512-StmMTzUcUlpKMU3wvWU48A6OQyphptD9zVGBsSkK6iHIBdtBKlOcmqRkyfvRouo8JHtlrnoJDHLVKhxorwhGAg=="],
+    "@luma.gl/core": ["@luma.gl/core@9.0.0", "", { "dependencies": { "@math.gl/types": "^4.0.0", "@probe.gl/env": "^4.0.2", "@probe.gl/log": "^4.0.2", "@probe.gl/stats": "^4.0.2", "@types/offscreencanvas": "^2019.6.4" } }, "sha512-3ApetxOC5vcdViyQGyiyUiXxcpt6f+bsFE0LcJy32HA9ygBkojzcpmfTFRm9SO9FMhI2zn2jq7i+xh7xVmrl0Q=="],
 
-    "@luma.gl/shadertools": ["@luma.gl/shadertools@9.3.3", "", { "dependencies": { "@math.gl/core": "^4.1.0", "@math.gl/types": "^4.1.0" }, "peerDependencies": { "@luma.gl/core": "~9.3.0" } }, "sha512-4ZfG4/Utix951vqyiG/JIx+Eg+GMNwOxgr/07/i0gf7bK1gJZIEQ5BxVcDw4MCQfdoVlGPGzl0cQKbdqBvaCAQ=="],
+    "@luma.gl/engine": ["@luma.gl/engine@9.0.0", "", { "dependencies": { "@luma.gl/shadertools": "9.0.0", "@math.gl/core": "^4.0.0", "@probe.gl/log": "^4.0.2", "@probe.gl/stats": "^4.0.2" }, "peerDependencies": { "@luma.gl/core": "^9.0.0-beta" } }, "sha512-I5OUFvqkYlsz1zn0u9EcF+NDtWSCvtSA3Ki8dRcbhx3ff2f1UuMZ8w0H2f/0Dz4pfnRaSXFaxfx6EslbXK2TzQ=="],
 
-    "@luma.gl/webgl": ["@luma.gl/webgl@9.3.3", "", { "dependencies": { "@math.gl/types": "^4.1.0", "@probe.gl/env": "^4.1.1" }, "peerDependencies": { "@luma.gl/core": "~9.3.0" } }, "sha512-X+aavdP5o6VFHSA0es9gKZTT145jfcFbhKJt/gwJrptnKNoIW4+Y37ZEpCo1AzAnr+FQCxjgcM2kOCpoWMfSVA=="],
+    "@luma.gl/shadertools": ["@luma.gl/shadertools@9.0.0", "", { "dependencies": { "@math.gl/core": "^4.0.0", "@math.gl/types": "^4.0.0" }, "peerDependencies": { "@luma.gl/core": "^9.0.0-beta" } }, "sha512-m8IdrG+bFz8P2onLDD0fdaH12ibMzShxZ4I/DDrz9HFq4CitdiMABQiqRmAzZNv0RxnyJ6xIYxvudgvUk18B3Q=="],
+
+    "@luma.gl/webgl": ["@luma.gl/webgl@9.0.0", "", { "dependencies": { "@luma.gl/constants": "9.0.0", "@probe.gl/env": "^4.0.2" }, "peerDependencies": { "@luma.gl/core": "^9.0.0-beta" } }, "sha512-yAHvoFcSXepMk5mh3Z3K/P63fkkNYoivkUBhivz0rXFzkp5I1kXpyEvnDvREdan8GRZoKXM9SvlRSvHVxTdNIw=="],
 
     "@mapbox/tiny-sdf": ["@mapbox/tiny-sdf@2.2.0", "", {}, "sha512-LVL4wgI9YAum5V+LNVQO6QgFBPw7/MIIY4XJPNsPDMrjEwcE+JfKk1LuIl8GnF197ejVdC9QdPaxrx5gfgdGXg=="],
 
@@ -1013,6 +1023,8 @@
     "@types/fast-json-stable-stringify": ["@types/fast-json-stable-stringify@2.1.2", "", { "dependencies": { "fast-json-stable-stringify": "*" } }, "sha512-vsxcbfLDdjytnCnHXtinE40Xl46Wr7l/VGRGt7ewJwCPMKEHOdEsTxXX8xwgoR7cbc+6dE8SB4jlMrOV2zAg7g=="],
 
     "@types/geojson": ["@types/geojson@7946.0.16", "", {}, "sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg=="],
+
+    "@types/hammerjs": ["@types/hammerjs@2.0.46", "", {}, "sha512-ynRvcq6wvqexJ9brDMS4BnBLzmr0e14d6ZJTEShTBWKymQiHwlAyGu0ZPEFI2Fh1U53F7tN9ufClWM5KvqkKOw=="],
 
     "@types/json-schema": ["@types/json-schema@7.0.15", "", {}, "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="],
 
@@ -1810,6 +1822,8 @@
 
     "gtoken": ["gtoken@7.1.0", "", { "dependencies": { "gaxios": "^6.0.0", "jws": "^4.0.0" } }, "sha512-pCcEwRi+TKpMlxAQObHDQ56KawURgyAf6jtIY046fJ5tIv3zDe/LEIubckAO8fj6JnAxLdmWkUfNyulQ2iKdEw=="],
 
+    "hammerjs": ["hammerjs@2.0.8", "", {}, "sha512-tSQXBXS/MWQOn/RKckawJ61vvsDpCom87JgxiYdGwHdOa0ht0vzUWDlfioofFCRU0L+6NGDt6XzbgoJvZkMeRQ=="],
+
     "handlebars": ["handlebars@4.7.8", "", { "dependencies": { "minimist": "^1.2.5", "neo-async": "^2.6.2", "source-map": "^0.6.1", "wordwrap": "^1.0.0" }, "optionalDependencies": { "uglify-js": "^3.1.4" }, "bin": { "handlebars": "bin/handlebars" } }, "sha512-vafaFqs8MZkRrSX7sFVUdo3ap/eNiLnb4IakshzvP56X5Nr1iGKAIqdX6tMlm6HcNRIkr6AxO5jFEoJzzpT8aQ=="],
 
     "has-bigints": ["has-bigints@1.1.0", "", {}, "sha512-R3pbpkcIqv2Pm3dUwgjclDRVmWpTJW2DcMzcIhEXEx1oh/CEMObMm3KLmRJOdvhM7o4uQBnwr8pzRK2sJWIqfg=="],
@@ -2196,7 +2210,7 @@
 
     "minizlib": ["minizlib@3.0.2", "", { "dependencies": { "minipass": "^7.1.2" } }, "sha512-oG62iEk+CYt5Xj2YqI5Xi9xWUeZhDI8jjQmC5oThVH5JGCTgIjr7ciJDzC7MBzYd//WvR1OTmP5Q38Q8ShQtVA=="],
 
-    "mjolnir.js": ["mjolnir.js@3.0.0", "", {}, "sha512-siX3YCG7N2HnmN1xMH3cK4JkUZJhbkhRFJL+G5N1vH0mh1t5088rJknIoqDFWDIU6NPGvRRgLnYW3ZHjSMEBLA=="],
+    "mjolnir.js": ["mjolnir.js@2.7.3", "", { "dependencies": { "@types/hammerjs": "^2.0.41", "hammerjs": "^2.0.8" } }, "sha512-Z5z/+FzZqOSO3juSVKV3zcm4R2eAlWwlKMcqHmyFEJAaLILNcDKnIbnb4/kbcGyIuhtdWrzu8WOIR7uM6I34aw=="],
 
     "mkdirp": ["mkdirp@0.5.6", "", { "dependencies": { "minimist": "^1.2.6" }, "bin": { "mkdirp": "bin/cmd.js" } }, "sha512-FP+p8RB8OWpF3YZBCrP5gtADmtXApB5AMLn+vdyA+PyxCjrCs00mjyUozssO33cwDeT3wNGdLxJ5M//YqtHAJw=="],
 
@@ -3099,6 +3113,8 @@
     "@isaacs/cliui/strip-ansi": ["strip-ansi@7.1.2", "", { "dependencies": { "ansi-regex": "^6.0.1" } }, "sha512-gmBGslpoQJtgnMAvOVqGZpEz9dyoKTCzy2nfz/n8aIFhN/jCE/rCmcxabB6jOOHV+0WNnylOxaxBQPSvcWklhA=="],
 
     "@isaacs/cliui/wrap-ansi": ["wrap-ansi@8.1.0", "", { "dependencies": { "ansi-styles": "^6.1.0", "string-width": "^5.0.1", "strip-ansi": "^7.0.1" } }, "sha512-si7QWI6zUMq56bESFvagtmzMdGOtoxfR+Sez11Mobfc7tm+VkUckk9bW2UeffTGVUbOksxmSw0AA2gs8g71NCQ=="],
+
+    "@luma.gl/webgl/@luma.gl/constants": ["@luma.gl/constants@9.0.0", "", {}, "sha512-0oVddffzzkYeHs2CKwehezQ0R5IkqM9Jq2FVYdnOAa02rAtqytWwvmhn4zs0Q/kYtHVn51OnkqIcB1vk5MsLJA=="],
 
     "@poppinss/dumper/supports-color": ["supports-color@10.0.0", "", {}, "sha512-HRVVSbCCMbj7/kdWF9Q+bbckjBHLtHMEoJWlkmYzzdwhYMkjkOwubLM6t7NbWKjgKamGDrWL1++KrjUO1t9oAQ=="],
 
