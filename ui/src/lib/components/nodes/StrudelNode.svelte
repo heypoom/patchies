@@ -533,9 +533,9 @@
     font-size: 28px !important;
   }
 
-  :global(.strudel-detached-editor .strudel-editor-shell .cm-focused) {
-    outline: 2px solid rgb(212 212 216);
-    outline-offset: -2px;
+  :global(.strudel-detached-editor .strudel-editor-shell .cm-focused),
+  :global(.strudel-detached-editor .strudel-editor-shell *:focus) {
+    outline: none !important;
   }
 
   :global(.strudel-detached-editor .strudel-editor-shell .cm-content) {
