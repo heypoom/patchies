@@ -20,14 +20,14 @@ The object exposes deck.gl layer classes and expects user code to define `getLay
 function getLayers({ time, viewState, mouse }) {
   return [
     new ScatterplotLayer({
-      id: 'points',
+      id: "points",
       data,
-      getPosition: d => d.position,
+      getPosition: (d) => d.position,
       getRadius: 400,
       getFillColor: [255, 140, 40],
-      pickable: true
-    })
-  ]
+      pickable: true,
+    }),
+  ];
 }
 ```
 
@@ -39,8 +39,8 @@ slippy-map raster tiles:
 function getLayers() {
   return [
     new TileLayer({
-      data: 'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      renderSubLayers: props => {
+      data: "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      renderSubLayers: (props) => {
         const { boundingBox } = props.tile;
         return new BitmapLayer(props, {
           image: props.data,
@@ -48,11 +48,11 @@ function getLayers() {
             boundingBox[0][0],
             boundingBox[0][1],
             boundingBox[1][0],
-            boundingBox[1][1]
-          ]
+            boundingBox[1][1],
+          ],
         });
-      }
-    })
+      },
+    }),
   ];
 }
 ```
@@ -66,6 +66,13 @@ function getLayers() {
 - User code can call `setDeckInteraction(false)` to disable Patchies'
   built-in deck camera pan/zoom while still rendering layers from a fixed or
   programmatically controlled `viewState`.
+- User code can call `onDeckHover(callback)` and `onDeckClick(callback)` to
+  receive manual picking results from forwarded mouse input. Layers must opt in
+  with `pickable: true`.
+- The worker patches deck.gl v9.0 picking blend parameters into legacy WebGL
+  `blendEquation`/`blendFunc` parameters because deck.gl's picking pass emits
+  `blendAlphaSrcFactor: 'constant-alpha'`, which the pinned luma.gl WebGL
+  adapter does not accept.
 
 ## Non-goals
 

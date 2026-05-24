@@ -142,6 +142,13 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('three', 'setD')).not.toContain('setDeckInteraction');
   });
 
+  it('shows deckgl picking helper completions only for deckgl code', () => {
+    expect(getCompletionLabels('deckgl', 'onDeck')).toEqual(
+      expect.arrayContaining(['onDeckHover', 'onDeckClick'])
+    );
+    expect(getCompletionLabels('three', 'onDeck')).toEqual([]);
+  });
+
   it('shows deck.gl layer completions only for deckgl code', () => {
     expect(getDeckGLCompletionLabels('deckgl', 'Tile')).toEqual(
       expect.arrayContaining(['TileLayer', 'Tile3DLayer'])

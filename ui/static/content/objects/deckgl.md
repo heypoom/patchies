@@ -40,6 +40,10 @@ function getLayers({ time, viewState, mouse }) {
 - `setViewState(value)` - replace camera state
 - `setDeckInteraction(enabled)` - enable or disable Patchies' built-in deck
   camera pan/zoom controls
+- `onDeckHover(callback)` - receive deck.gl picking info when hovering over
+  pickable layers
+- `onDeckClick(callback)` - receive deck.gl picking info when clicking pickable
+  layers
 - `mouse` - forwarded mouse position
 
 ## Interaction
@@ -50,6 +54,24 @@ default so those gestures control the deck.gl view instead of moving the object.
 
 Call `setDeckInteraction(false)` to keep the deck camera fixed unless your code
 changes it with `setViewState()`.
+
+## Picking
+
+Set `pickable: true` on a layer, then register hover or click callbacks.
+The callback receives clone-safe picking info with `object`, `index`, `x`, `y`,
+`coordinate`, and lightweight `layer`/`sourceLayer`/`viewport` ids.
+
+```js
+onDeckHover(info => {
+  if (info) {
+    console.log('hover', info.object)
+  }
+})
+
+onDeckClick(info => {
+  console.log('click', info?.object)
+})
+```
 
 ## OSM Tiles
 

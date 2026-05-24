@@ -83,6 +83,20 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'onWheel(({ x, y, deltaY }) => {\n  \n})'
   },
   {
+    label: 'onDeckHover',
+    type: 'function',
+    detail: '(callback: (info) => void) => () => void',
+    info: 'Register a callback for deckgl hover picking. Layers must set pickable: true. Receives null when leaving a picked object.',
+    apply: 'onDeckHover((info) => {\n  \n})'
+  },
+  {
+    label: 'onDeckClick',
+    type: 'function',
+    detail: '(callback: (info) => void) => () => void',
+    info: 'Register a callback for deckgl click picking. Layers must set pickable: true.',
+    apply: 'onDeckClick((info) => {\n  \n})'
+  },
+  {
     label: 'onVideoFrame',
     type: 'function',
     detail: '(callback: (frames, timestamp) => void) => void',
@@ -644,6 +658,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   OrbitControls: ['three'],
   onPointerDrag: ['three'],
   onWheel: ['three'],
+  onDeckHover: ['deckgl'],
+  onDeckClick: ['deckgl'],
   onVideoFrame: ['worker'],
   getVideoFrames: ['worker'],
   getVfsUrl: [

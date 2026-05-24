@@ -1,5 +1,5 @@
 import type regl from 'regl';
-import type { Deck, Layer } from '@deck.gl/core';
+import type { Deck, Layer, PickingInfo } from '@deck.gl/core';
 import type { FBORenderer } from './fboRenderer';
 import type { RenderParams } from '$lib/rendering/types';
 import { CANVAS_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
@@ -37,6 +37,42 @@ type UserGetLayers = (args: {
   viewState: DeckViewState;
   mouse: WorkerMouseObject;
 }) => Layer[];
+
+type SerializablePickingInfo = {
+  picked: boolean;
+  index: number;
+  object: unknown;
+  x: number;
+  y: number;
+  coordinate?: number[];
+  color?: number[];
+  pixelRatio?: number;
+  layer?: { id: string } | null;
+  sourceLayer?: { id: string } | null;
+  viewport?: { id: string } | null;
+};
+
+type DeckPickingCallback = (info: SerializablePickingInfo | null) => void;
+
+type DeckPointerState = {
+  x: number;
+  y: number;
+  down: boolean;
+};
+
+type DeckPrivatePickingPass = {
+  getLayerParameters?: (
+    layer: unknown,
+    layerIndex: number,
+    viewport: unknown
+  ) => Record<string, unknown>;
+};
+
+type DeckWithPrivatePicker = Deck & {
+  deckPicker?: {
+    pickLayersPass?: DeckPrivatePickingPass;
+  };
+};
 
 type SizedFramebuffer = regl.Framebuffer2D & {
   width: number;
@@ -83,7 +119,13 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
   private deckTexture: DeckTexture | null = null;
   private deckFramebuffer: DeckFramebuffer | null = null;
   private getLayers: UserGetLayers | null = null;
-  private previousPointer: { x: number; y: number; down: boolean } | null = null;
+  private previousCameraPointer: DeckPointerState | null = null;
+  private previousPickingPointer: DeckPointerState | null = null;
+  private clickStartPointer: DeckPointerState | null = null;
+  private lastHoverKey: string | null = null;
+  private hoverCallbacks = new Set<DeckPickingCallback>();
+  private clickCallbacks = new Set<DeckPickingCallback>();
+  private patchedPickingPasses = new WeakSet<object>();
   private pendingWheelDelta = 0;
   private deckInteractionEnabled = true;
 
@@ -136,7 +178,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
       this.updateViewStateFromPointer(params);
       this.updateViewStateFromWheel();
     } else {
-      this.previousPointer = null;
+      this.previousCameraPointer = null;
       this.pendingWheelDelta = 0;
     }
 
@@ -157,6 +199,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
 
     this.deck.setProps({ viewState: this.viewState, layers });
     this.deck.redraw('patchies');
+    this.updatePicking(params);
 
     this.blitToReglFramebuffer();
     this.renderer.regl._refresh();
@@ -164,9 +207,14 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
 
   async updateCode(): Promise<void> {
     this.resetState();
-
     this.setInteraction('interact', false);
+
     this.deckInteractionEnabled = true;
+    this.hoverCallbacks.clear();
+    this.clickCallbacks.clear();
+    this.previousPickingPointer = null;
+    this.clickStartPointer = null;
+    this.lastHoverKey = null;
 
     this.setPortCount(1, 0);
 
@@ -181,6 +229,18 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
         this.deckInteractionEnabled = enabled;
       };
 
+      const onDeckHover = (callback: DeckPickingCallback) => {
+        this.hoverCallbacks.add(callback);
+
+        return () => this.hoverCallbacks.delete(callback);
+      };
+
+      const onDeckClick = (callback: DeckPickingCallback) => {
+        this.clickCallbacks.add(callback);
+
+        return () => this.clickCallbacks.delete(callback);
+      };
+
       const extraContext = {
         ...this.buildBaseExtraContext(),
         Deck: this.DeckClass,
@@ -188,7 +248,9 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
         ...this.geoLayerClasses,
         viewState: this.viewState,
         setViewState,
-        setDeckInteraction
+        setDeckInteraction,
+        onDeckHover,
+        onDeckClick
       };
 
       const codeWithWrapper = `
@@ -282,6 +344,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
           this.createRenderTarget();
 
           this.deck?.setProps({ _framebuffer: this.deckFramebuffer } as never);
+          this.patchPickingBlendParameters();
 
           resolve();
         },
@@ -332,12 +395,11 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
   }
 
   private updateViewStateFromPointer(params: RenderParams): void {
-    const down = params.mouseZ >= 0 && params.mouseW >= 0;
-    const pointer = { x: params.mouseX, y: params.mouseY, down };
+    const pointer = this.getPointerState(params);
 
-    if (down && this.previousPointer?.down) {
-      const dx = pointer.x - this.previousPointer.x;
-      const dy = pointer.y - this.previousPointer.y;
+    if (pointer.down && this.previousCameraPointer?.down) {
+      const dx = pointer.x - this.previousCameraPointer.x;
+      const dy = pointer.y - this.previousCameraPointer.y;
       const zoomScale = Math.max(1, this.viewState.zoom);
 
       this.viewState = {
@@ -347,7 +409,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
       };
     }
 
-    this.previousPointer = pointer;
+    this.previousCameraPointer = pointer;
   }
 
   private updateViewStateFromWheel(): void {
@@ -362,6 +424,198 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     };
   }
 
+  private patchPickingBlendParameters(): void {
+    const pickLayersPass = (this.deck as DeckWithPrivatePicker | null)?.deckPicker?.pickLayersPass;
+    const getLayerParameters = pickLayersPass?.getLayerParameters;
+
+    if (!pickLayersPass || !getLayerParameters) return;
+    if (this.patchedPickingPasses.has(pickLayersPass)) return;
+
+    this.patchedPickingPasses.add(pickLayersPass);
+
+    pickLayersPass.getLayerParameters = (layer, layerIndex, viewport) => {
+      const parameters = getLayerParameters.call(pickLayersPass, layer, layerIndex, viewport);
+
+      if (parameters.blendAlphaSrcFactor !== 'constant-alpha') return parameters;
+
+      const legacyParameters = { ...parameters };
+      delete legacyParameters.blendColorOperation;
+      delete legacyParameters.blendColorSrcFactor;
+      delete legacyParameters.blendColorDstFactor;
+      delete legacyParameters.blendAlphaOperation;
+      delete legacyParameters.blendAlphaSrcFactor;
+      delete legacyParameters.blendAlphaDstFactor;
+
+      return {
+        ...legacyParameters,
+        blendEquation: [32774, 32774],
+        blendFunc: [1, 0, 32771, 0]
+      };
+    };
+  }
+
+  private updatePicking(params: RenderParams): void {
+    if (!this.deck || (this.hoverCallbacks.size === 0 && this.clickCallbacks.size === 0)) {
+      this.previousPickingPointer = this.getPointerState(params);
+      return;
+    }
+
+    const pointer = this.getPointerState(params);
+    const previousPointer = this.previousPickingPointer;
+
+    if (pointer.down && !previousPointer?.down) {
+      this.clickStartPointer = pointer;
+    }
+
+    if (!pointer.down) {
+      const hoverInfo = this.pickAt(pointer);
+
+      this.emitHoverIfChanged(hoverInfo);
+    }
+
+    if (!pointer.down && previousPointer?.down && this.clickStartPointer) {
+      const dx = pointer.x - this.clickStartPointer.x;
+      const dy = pointer.y - this.clickStartPointer.y;
+
+      const movedDistance = Math.hypot(dx, dy);
+
+      if (movedDistance <= 5) {
+        const clickInfo = this.pickAt(pointer);
+
+        if (clickInfo?.object) {
+          this.emitPickingCallbacks(this.clickCallbacks, clickInfo);
+        }
+      }
+
+      this.clickStartPointer = null;
+    }
+
+    this.previousPickingPointer = pointer;
+  }
+
+  private pickAt(pointer: DeckPointerState): PickingInfo | null {
+    if (!this.deck) return null;
+
+    try {
+      this.patchPickingBlendParameters();
+
+      return this.deck.pickObject({ x: pointer.x, y: pointer.y, radius: 5 });
+    } catch (error) {
+      this.handleRuntimeError(error, CANVAS_WRAPPER_OFFSET);
+
+      return null;
+    }
+  }
+
+  private emitHoverIfChanged(info: PickingInfo | null): void {
+    const hoverKey = info?.object ? `${info.layer?.id ?? 'unknown'}:${info.index}` : null;
+    if (hoverKey === this.lastHoverKey) return;
+
+    this.lastHoverKey = hoverKey;
+    this.emitPickingCallbacks(this.hoverCallbacks, info?.object ? info : null);
+  }
+
+  private emitPickingCallbacks(
+    callbacks: Set<DeckPickingCallback>,
+    info: PickingInfo | null
+  ): void {
+    const serializableInfo = this.serializePickingInfo(info);
+
+    for (const callback of callbacks) {
+      try {
+        callback(serializableInfo);
+      } catch (error) {
+        this.handleRuntimeError(error, CANVAS_WRAPPER_OFFSET);
+      }
+    }
+  }
+
+  private serializePickingInfo(info: PickingInfo | null): SerializablePickingInfo | null {
+    if (!info) return null;
+
+    return {
+      picked: info.picked,
+      index: info.index,
+      object: this.toCloneableValue(info.object),
+      x: info.x,
+      y: info.y,
+      coordinate: this.toNumberArray(info.coordinate),
+      color: this.toNumberArray(info.color),
+      pixelRatio: info.pixelRatio,
+      layer: this.serializeDeckItem(info.layer),
+      sourceLayer: this.serializeDeckItem(info.sourceLayer),
+      viewport: this.serializeDeckItem(info.viewport)
+    };
+  }
+
+  private serializeDeckItem(item: { id?: string } | null | undefined): { id: string } | null {
+    return item?.id ? { id: item.id } : null;
+  }
+
+  private toNumberArray(value: unknown): number[] | undefined {
+    return Array.isArray(value)
+      ? value.filter((item): item is number => typeof item === 'number')
+      : undefined;
+  }
+
+  private toCloneableValue(value: unknown): unknown {
+    if (value === null || value === undefined) return value;
+
+    try {
+      return structuredClone(value);
+    } catch {
+      return this.toJsonLikeValue(value, new WeakSet());
+    }
+  }
+
+  private toJsonLikeValue(value: unknown, seen: WeakSet<object>): unknown {
+    if (
+      value === null ||
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
+      return value;
+    }
+
+    if (ArrayBuffer.isView(value)) {
+      const view = value as unknown as { length?: number; [index: number]: unknown };
+      if (typeof view.length !== 'number') return undefined;
+
+      return Array.from({ length: view.length }, (_, index) =>
+        this.toJsonLikeValue(view[index], seen)
+      );
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => this.toJsonLikeValue(item, seen));
+    }
+
+    if (typeof value !== 'object' || seen.has(value)) return undefined;
+
+    seen.add(value);
+
+    const output: Record<string, unknown> = {};
+
+    for (const [key, item] of Object.entries(value)) {
+      if (typeof item === 'function' || typeof item === 'symbol') continue;
+
+      output[key] = this.toJsonLikeValue(item, seen);
+    }
+
+    seen.delete(value);
+
+    return output;
+  }
+
+  private getPointerState(params: RenderParams): DeckPointerState {
+    return {
+      x: params.mouseX,
+      y: params.mouseY,
+      down: params.mouseZ >= 0 && params.mouseW >= 0
+    };
+  }
+
   private blitToReglFramebuffer(): void {
     if (!this.deckFramebuffer || !this.framebuffer) return;
 
@@ -370,6 +624,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
 
     const [width, height] = this.renderer.outputSize;
     const sourceFBO = this.deckFramebuffer.handle;
+
     const destFBO = getFramebuffer(this.framebuffer);
     if (!sourceFBO) return;
 

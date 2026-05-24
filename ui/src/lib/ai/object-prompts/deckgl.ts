@@ -6,6 +6,8 @@ Define a getLayers({ time, viewState, mouse }) function that returns deck.gl lay
 
 Use setDeckInteraction(false) when the camera should stay fixed instead of responding to forwarded mouse drag/wheel input. Use setViewState({ longitude, latitude, zoom, pitch, bearing }) to set the camera explicitly.
 
+Use onDeckHover(info => {}) and onDeckClick(info => {}) for picking callbacks. Layers must set pickable: true for picking to work.
+
 Example:
 
 \`\`\`js
