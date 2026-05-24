@@ -29,10 +29,8 @@
     openCodeEditorOverlay,
     openCodeEditorSidebar
   } from '../../stores/code-editor-layout.store';
-  import {
-    defaultEditorLayout,
-    getEditorOpenLayout
-  } from '../../stores/editor-layout-settings.store';
+  import { defaultEditorLayout } from '../../stores/editor-layout-settings.store';
+  import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
   import { GLSystem } from '$lib/canvas/GLSystem';
   import { CanvasPreviewExpandController } from '$lib/canvas/CanvasPreviewExpandController';
   import { SurfaceListeners } from '$lib/canvas/SurfaceListeners';
@@ -42,7 +40,6 @@
   import { useIncludeProcessing } from '$lib/canvas/use-include-processing.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { NodePrimaryButtonUpdateEvent, PrimaryButton } from '$lib/eventbus/events';
-  import { match } from 'ts-pattern';
 
   let previewContainer: HTMLDivElement | null = null;
   const { getNode, getNodes, updateNodeData } = useSvelteFlow();
@@ -375,23 +372,14 @@
   }
 
   function handleCodeOpen(event?: MouseEvent) {
-    const layout = getEditorOpenLayout($defaultEditorLayout, event?.shiftKey ?? false);
-
-    match(layout)
-      .with('overlay', () => {
-        openExpandedCodeEditor();
-      })
-      .with('sidebar', () => {
-        openSidebarCodeEditor();
-      })
-      .with('inline', () => {
-        if (event?.shiftKey) {
-          openInlineCodeEditor();
-        } else {
-          toggleInlineCode();
-        }
-      })
-      .exhaustive();
+    openEditorLayout({
+      defaultLayout: $defaultEditorLayout,
+      useAlternateLayout: event?.shiftKey ?? false,
+      openInline: openInlineCodeEditor,
+      toggleInline: toggleInlineCode,
+      openOverlay: openExpandedCodeEditor,
+      openSidebar: openSidebarCodeEditor
+    });
   }
 </script>
 

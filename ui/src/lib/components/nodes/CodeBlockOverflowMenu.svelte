@@ -17,7 +17,7 @@
     onConsoleToggle: () => void;
     onSettingsToggle: () => void;
     /** Provided when code editor is NOT the primary button — adds an "Edit code" entry. */
-    onCodeToggle?: () => void;
+    onCodeToggle?: (event: MouseEvent) => void;
     settingsSchema: SettingsSchema;
   } = $props();
 </script>
