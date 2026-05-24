@@ -566,7 +566,7 @@
 
   const extraMenuItems = $derived([
     {
-      label: renderMode === '3d' ? 'Use flat mode' : 'Use 3D mode',
+      label: renderMode === '3d' ? '2D mode' : '3D mode',
       icon: Box,
       onclick: toggleRenderMode
     }

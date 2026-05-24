@@ -63,7 +63,7 @@ around the sculpture while keeping the video outlet connected to the render
 pipeline. Single-touch drag orbits the 3D preview like a mouse drag.
 Two-finger pinch zooms the orbit camera.
 
-3D mode is heavier than the default flat mode. Use it when camera movement or
+3D mode is heavier than the default 2D mode. Use it when camera movement or
 Shader Park's Three.js view is part of the patch.
 
 ## Presets
