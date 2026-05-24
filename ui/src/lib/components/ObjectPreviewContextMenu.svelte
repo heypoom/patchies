@@ -4,12 +4,14 @@
     Code,
     Eye,
     EyeOff,
+    Expand,
     Monitor,
     MonitorOff,
     Pin,
     PinOff,
     Play,
-    Settings
+    Settings,
+    Shrink
   } from '@lucide/svelte/icons';
   import * as ContextMenu from './ui/context-menu';
   import type { SettingsSchema } from '$lib/settings';
@@ -29,6 +31,8 @@
     showSettings,
     onSettingsToggle,
     onCodeToggle,
+    onExpandToggle,
+    isExpanded = false,
     onBgOutputToggle,
     onPlaybackToggle,
     onOpenHelp,
@@ -48,6 +52,8 @@
     onSettingsToggle: () => void;
     /** Provided when code editor is NOT the primary button — adds an "Edit code" entry. */
     onCodeToggle?: () => void;
+    onExpandToggle?: () => void;
+    isExpanded?: boolean;
     onBgOutputToggle: () => void;
     onPlaybackToggle: () => void;
     onOpenHelp: () => void;
@@ -63,29 +69,23 @@
     </ContextMenu.Item>
   {/if}
 
-  {#if onCodeToggle}
-    <ContextMenu.Item onclick={onCodeToggle}>
-      <Code class="mr-2 h-4 w-4" />
-      Edit code
+  {#if settingsSchema && settingsSchema.length > 0}
+    <ContextMenu.Item onclick={onSettingsToggle}>
+      <Settings class="mr-2 h-4 w-4" />
+      {showSettings ? 'Hide settings' : 'Settings'}
     </ContextMenu.Item>
   {/if}
 
   {#if extraMenuItems && extraMenuItems.length > 0}
-    {#each extraMenuItems as item}
+    {#each extraMenuItems as item, index (index)}
       <ContextMenu.Item onclick={item.onclick}>
         <item.icon class="mr-2 h-4 w-4 {item.variant === 'danger' ? 'text-red-400' : ''}" />
         <span class={item.variant === 'danger' ? 'text-red-400' : ''}>{item.label}</span>
       </ContextMenu.Item>
     {/each}
-    <ContextMenu.Separator />
   {/if}
 
-  {#if settingsSchema && settingsSchema.length > 0}
-    <ContextMenu.Item onclick={onSettingsToggle}>
-      <Settings class="mr-2 h-4 w-4" />
-      {showSettings ? 'Hide settings' : 'Show settings'}
-    </ContextMenu.Item>
-  {/if}
+  <ContextMenu.Separator />
 
   {#if showBgOutputOption && nodeId !== undefined}
     <ContextMenu.Item onclick={onBgOutputToggle}>
@@ -97,6 +97,29 @@
         Output to background
       {/if}
     </ContextMenu.Item>
+  {/if}
+
+  {#if onExpandToggle}
+    <ContextMenu.Item onclick={onExpandToggle}>
+      {#if isExpanded}
+        <Shrink class="mr-2 h-4 w-4 text-red-400" />
+        <span class="text-red-400">Exit expanded</span>
+      {:else}
+        <Expand class="mr-2 h-4 w-4" />
+        Expand
+      {/if}
+    </ContextMenu.Item>
+  {/if}
+
+  {#if onCodeToggle}
+    <ContextMenu.Item onclick={onCodeToggle}>
+      <Code class="mr-2 h-4 w-4" />
+      Edit code
+    </ContextMenu.Item>
+  {/if}
+
+  {#if showPauseButton || onPreviewToggle}
+    <ContextMenu.Separator />
   {/if}
 
   {#if showPauseButton}

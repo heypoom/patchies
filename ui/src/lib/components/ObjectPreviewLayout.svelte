@@ -14,13 +14,17 @@
   import { helpViewStore } from '../../stores/help-view.store';
   import { overrideOutputNodeId, previewBackgroundColor } from '../../stores/renderer.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { CanvasPreviewExpandController } from '$lib/canvas/CanvasPreviewExpandController';
+  import { SurfaceListeners } from '$lib/canvas/SurfaceListeners';
+  import { SurfaceMouseForwarder } from '$lib/canvas/SurfaceMouseForwarder';
+  import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { useIncludeProcessing } from '$lib/canvas/use-include-processing.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { NodePrimaryButtonUpdateEvent, PrimaryButton } from '$lib/eventbus/events';
 
   let previewContainer: HTMLDivElement | null = null;
-  const { getNode, updateNodeData } = useSvelteFlow();
+  const { getNode, getNodes, updateNodeData } = useSvelteFlow();
 
   let {
     title,
@@ -33,6 +37,7 @@
     previewVisible = true,
     showPauseButton = false,
     showBgOutputOption = false,
+    showExpandOption = false,
 
     topHandle,
     bottomHandle,
@@ -59,6 +64,7 @@
     previewVisible?: boolean;
     showPauseButton?: boolean;
     showBgOutputOption?: boolean;
+    showExpandOption?: boolean;
 
     topHandle?: Snippet;
     bottomHandle?: Snippet;
@@ -89,7 +95,9 @@
 
   let showEditor = $state(false);
   let showSettings = $state(false);
+  let isExpanded = $state(false);
   let previewContainerWidth = $state(0);
+  let expandController: CanvasPreviewExpandController | null = null;
 
   // Which button is rendered as the primary (rightmost) action.
   // Set via setPrimaryButton('settings'|'run'|'code') from worker code, or
@@ -187,6 +195,8 @@
     eventBus.addEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
 
     return () => {
+      expandController?.exit();
+      expandController = null;
       resizeObserver?.disconnect();
 
       eventBus.removeEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
@@ -210,6 +220,41 @@
     overrideOutputNodeId.set(next);
 
     GLSystem.getInstance().setOverrideOutputNode(next);
+  }
+
+  function getExpandController() {
+    if (!nodeId) return null;
+
+    if (!expandController) {
+      expandController = new CanvasPreviewExpandController({
+        nodeId,
+        getNodes,
+        getOverrideOutputNode: () => $overrideOutputNodeId,
+        setOverrideOutputNode: (next) => {
+          overrideOutputNodeId.set(next);
+          GLSystem.getInstance().setOverrideOutputNode(next);
+        },
+        overlay: SurfaceOverlay.getInstance(),
+        createForwarder: () => new SurfaceMouseForwarder(() => getNodes()),
+        createListeners: () => new SurfaceListeners(),
+        onActiveChange: (active) => {
+          isExpanded = active;
+        }
+      });
+    }
+
+    return expandController;
+  }
+
+  function handleExpandToggle() {
+    const controller = getExpandController();
+    if (!controller) return;
+
+    if (controller.isActive) {
+      controller.exit();
+    } else {
+      controller.enter();
+    }
   }
 
   const toggleCode = () => {
@@ -251,6 +296,8 @@
                   if (showSettings) showEditor = false;
                 }}
                 onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
+                onExpandToggle={showExpandOption && nodeId ? handleExpandToggle : undefined}
+                {isExpanded}
                 onBgOutputToggle={handleBgOutputToggle}
                 onPlaybackToggle={handlePlaybackToggle}
                 onOpenHelp={handleOpenHelp}
@@ -348,13 +395,13 @@
         showSettings = !showSettings;
         if (showSettings) showEditor = false;
       }}
-      onCodeToggle={resolvedPrimary === 'code'
-        ? undefined
-        : () => {
-            showEditor = !showEditor;
-            if (showEditor) showSettings = false;
-            measureContainerWidth();
-          }}
+      onCodeToggle={() => {
+        showEditor = !showEditor;
+        if (showEditor) showSettings = false;
+        measureContainerWidth();
+      }}
+      onExpandToggle={showExpandOption && nodeId ? handleExpandToggle : undefined}
+      {isExpanded}
       onBgOutputToggle={handleBgOutputToggle}
       onPlaybackToggle={handlePlaybackToggle}
       onOpenHelp={handleOpenHelp}

@@ -41,6 +41,7 @@
     onSettingsRevertAll = undefined,
     extraMenuItems = undefined,
     showBgOutputOption = true,
+    showExpandOption = true,
     class: className = ''
   }: {
     title: string;
@@ -78,6 +79,7 @@
     onSettingsRevertAll?: () => void;
     extraMenuItems?: ExtraMenuItem[];
     showBgOutputOption?: boolean;
+    showExpandOption?: boolean;
     class?: string;
   } = $props();
 
@@ -106,6 +108,7 @@
   {previewVisible}
   {showPauseButton}
   {showBgOutputOption}
+  {showExpandOption}
   {topHandle}
   {bottomHandle}
   {codeEditor}
