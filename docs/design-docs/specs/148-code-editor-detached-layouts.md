@@ -78,6 +78,10 @@ nodeType, title, mode }` in a shared store.
 - Deleting the target node closes detached mode.
 - If the target node's data changes externally, the detached editor receives the
   new value through the existing `value` prop sync path.
+- If no background output is active when overlay mode opens, the edited node
+  becomes a temporary output override.
+- Temporary output overrides are cleared on exit, but existing `bg.out`
+  connections or user-selected output overrides are preserved.
 
 ## Layouts
 

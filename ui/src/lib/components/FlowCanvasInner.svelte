@@ -90,6 +90,7 @@
   import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
   import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
+  import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
 
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
@@ -263,48 +264,11 @@
 
   // Get flow utilities for coordinate transformation
   const { screenToFlowPosition, fitView, getViewport, getNode } = useSvelteFlow();
-
-  let detachedCodeEditorNode = $derived.by(() => {
-    const target = $activeCodeEditorTarget;
-    if (!target) return undefined;
-
-    return nodes.find((node) => node.id === target.nodeId);
-  });
-
-  let detachedCodeEditorValue = $derived.by(() => {
-    const target = $activeCodeEditorTarget;
-    const node = detachedCodeEditorNode;
-    if (!target || !node) return '';
-
-    const value = node.data?.[target.dataKey];
-    return typeof value === 'string' ? value : '';
-  });
-
-  function updateDetachedCodeEditorValue(value: string) {
-    const target = $activeCodeEditorTarget;
-    if (!target) return;
-
-    nodes = nodes.map((node) =>
-      node.id === target.nodeId
-        ? {
-            ...node,
-            data: {
-              ...node.data,
-              [target.dataKey]: value
-            }
-          }
-        : node
-    );
-  }
-
-  $effect(() => {
-    const target = $activeCodeEditorTarget;
-    if (!target) return;
-
-    const targetExists = nodes.some((node) => node.id === target.nodeId);
-    if (!targetExists) {
-      closeCodeEditorOverlay();
-    }
+  const detachedCodeEditor = useDetachedCodeEditorOverlay({
+    getNodes: () => nodes,
+    setNodes: (nextNodes) => (nodes = nextNodes),
+    getEdges: () => edges,
+    glSystem
   });
 
   // Viewport culling for preview rendering optimization
@@ -1236,11 +1200,11 @@
     <BackgroundOutputCanvas />
   </div>
 
-  {#if $activeCodeEditorTarget && detachedCodeEditorNode}
-    {#snippet detachedCodeEditor()}
+  {#if $activeCodeEditorTarget && detachedCodeEditor.node}
+    {#snippet detachedCodeEditorSnippet()}
       <CodeEditor
-        value={detachedCodeEditorValue}
-        onchange={updateDetachedCodeEditorValue}
+        value={detachedCodeEditor.value}
+        onchange={detachedCodeEditor.updateValue}
         language={$activeCodeEditorTarget.language}
         nodeType={$activeCodeEditorTarget.nodeType}
         placeholder={$activeCodeEditorTarget.placeholder ?? ''}
@@ -1254,7 +1218,7 @@
     <DetachedCodeEditorOverlay
       onClose={closeCodeEditorOverlay}
       onrun={$activeCodeEditorTarget.onrun}
-      codeEditor={detachedCodeEditor}
+      codeEditor={detachedCodeEditorSnippet}
     />
   {/if}
 
