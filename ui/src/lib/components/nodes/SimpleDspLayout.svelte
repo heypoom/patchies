@@ -200,6 +200,7 @@
                   onclick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+
                     toggleSettings();
                   }}
                   aria-label="Settings"
@@ -335,6 +336,7 @@
                 <Terminal class="h-4 w-4 text-zinc-300" />
               </button>
             </Tooltip.Trigger>
+
             <Tooltip.Content>Toggle Console</Tooltip.Content>
           </Tooltip.Root>
         {/if}
@@ -349,6 +351,7 @@
               <Expand class="h-4 w-4 text-zinc-300" />
             </button>
           </Tooltip.Trigger>
+
           <Tooltip.Content>Open Expanded Editor</Tooltip.Content>
         </Tooltip.Root>
 
