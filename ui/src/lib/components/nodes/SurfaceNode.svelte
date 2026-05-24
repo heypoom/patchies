@@ -28,7 +28,8 @@
   import {
     SurfaceListeners,
     type PointerEvent_,
-    type SurfaceWheelEvent_
+    type SurfaceWheelEvent_,
+    type TouchPoint
   } from '$lib/canvas/SurfaceListeners';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
@@ -135,6 +136,7 @@
   } | null = null;
 
   let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
   const debouncedHandleWindowResize = () => {
     // Resize canvas immediately so the draw loop sends correctly-sized bitmaps
     // to the GLSL renderer (which resizes its output synchronously on resize).
@@ -154,6 +156,8 @@
   function clearCanvas() {
     if (activeCanvas && activeCtx) {
       activeCtx.clearRect(0, 0, activeCanvas.width, activeCanvas.height);
+
+      requestSurfaceOverlayMirrorFrame();
     }
   }
 
@@ -263,6 +267,16 @@
     }
   }
 
+  function dispatchTouch(touches: TouchPoint[]) {
+    if (!touchCallback) return;
+
+    try {
+      touchCallback(touches);
+    } catch (err) {
+      handleCodeError(err, data.code, nodeId, customConsole, SURFACE_WRAPPER_OFFSET);
+    }
+  }
+
   function setMouseForwarding(rules?: SurfaceMouseForwardingRules) {
     mouseForwarder.setForwardingRules(rules);
 
@@ -285,7 +299,15 @@
 
   // ── Bitmap output ────────────────────────────────────────────────────────
 
+  function requestSurfaceOverlayMirrorFrame() {
+    if (!isFullscreen || !activeCanvas) return;
+
+    glSystem.ipcSystem.requestSurfaceOverlayFrame(activeCanvas);
+  }
+
   function sendBitmap() {
+    requestSurfaceOverlayMirrorFrame();
+
     if (!activeCanvas) return;
     if (!videoOutputEnabled) return;
     if (!glSystem.hasOutgoingVideoConnections(nodeId)) return;
@@ -353,8 +375,23 @@
 
     const overlay = SurfaceOverlay.getInstance();
     const nodes = getNodes().map((n) => ({ id: n.id, type: n.type }));
+    const presentation = glSystem.ipcSystem.hasConnectedOutputWindow() ? 'secondary' : 'main';
 
-    overlay.activate(nodeId, nodes, () => exitSurface());
+    overlay.activate(nodeId, nodes, () => exitSurface(), { presentation });
+
+    glSystem.ipcSystem.sendSurfaceOverlayState({ active: true });
+
+    glSystem.ipcSystem.setOutputSurfaceInputSink({
+      pointer: (event) => dispatchPointer(event.x, event.y, event.buttons, event.type),
+      wheel: (event) =>
+        dispatchWheel(event.x, event.y, event.deltaX, event.deltaY, event.deltaMode),
+      touch: (touches) => dispatchTouch(touches),
+      leave: () => {
+        mouse.down = false;
+        mouse.buttons = 0;
+      }
+    });
+
     mouseForwarder.refreshForwardingTargets();
     mouseForwarder.forceHydraScope('global');
 
@@ -367,22 +404,27 @@
     activeCanvas = overlay.canvas;
     activeCtx = overlay.ctx;
 
-    // Swap pointer listeners
+    // Swap pointer listeners. Secondary presentation starts hidden, but the main-window toggle
+    // can reveal this same canvas for direct local interaction.
     previewListeners.detach();
     overlayListeners.attach(overlay.canvas, listenerOpts());
 
-    // Stop thumbnail loop (XYFlow is hidden anyway)
+    // Stop thumbnail loop while the surface draws to the overlay canvas.
     stopThumbnailLoop();
 
-    // Attach keyboard listeners
-    const handleKeyDown = (e: KeyboardEvent) => keyboardCallbacks.onKeyDown?.(e);
-    const handleKeyUp = (e: KeyboardEvent) => keyboardCallbacks.onKeyUp?.(e);
-    keyboardListenerHandlers = { keydown: handleKeyDown, keyup: handleKeyUp };
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keyup', handleKeyUp);
+    // Attach keyboard listeners only when this window is the presentation surface.
+    if (presentation === 'main') {
+      const handleKeyDown = (e: KeyboardEvent) => keyboardCallbacks.onKeyDown?.(e);
+      const handleKeyUp = (e: KeyboardEvent) => keyboardCallbacks.onKeyUp?.(e);
+
+      keyboardListenerHandlers = { keydown: handleKeyDown, keyup: handleKeyUp };
+
+      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keyup', handleKeyUp);
+    }
 
     // Re-run code with overlay canvas
-    runCode();
+    void runCode().then(() => requestSurfaceOverlayMirrorFrame());
   }
 
   function exitSurface() {
@@ -390,6 +432,9 @@
     isFullscreen = false;
 
     SurfaceOverlay.getInstance().deactivate(nodeId);
+
+    glSystem.ipcSystem.sendSurfaceOverlayState(null);
+    glSystem.ipcSystem.setOutputSurfaceInputSink(null);
     mouseForwarder.forceHydraScope('local');
 
     // Restore window dimensions for preview mode
@@ -659,6 +704,9 @@
     // Deactivate overlay if this node was active
     if (isFullscreen) {
       SurfaceOverlay.getInstance().deactivate(nodeId);
+
+      glSystem.ipcSystem.sendSurfaceOverlayState(null);
+      glSystem.ipcSystem.setOutputSurfaceInputSink(null);
     }
 
     eventBus.removeEventListener('consoleOutput', handleConsoleOutput);

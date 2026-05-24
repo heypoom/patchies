@@ -16,6 +16,12 @@ const DOM_RENDERER_TYPES = new Set(['p5', 'canvas.dom', 'textmode.dom', 'three.d
  */
 export const isFullscreenActive = writable(false);
 
+export type SurfacePresentationMode = 'main' | 'secondary';
+
+export type SurfaceOverlayActivateOptions = {
+  presentation?: SurfacePresentationMode;
+};
+
 export class SurfaceOverlay {
   private static _instance: SurfaceOverlay | null = null;
 
@@ -24,6 +30,7 @@ export class SurfaceOverlay {
   private _activeNodeId: string | null = null;
   private _frozenNodeIds: string[] = [];
   private _badge: HTMLButtonElement | null = null;
+  private _secondarySurfaceVisible = false;
 
   private _onEscape: (e: KeyboardEvent) => void;
   private _onExit: (() => void) | null = null;
@@ -92,7 +99,15 @@ export class SurfaceOverlay {
    * @param nodes - All current patch nodes (to find DOM-renderer nodes to freeze)
    * @param onExit - Callback invoked when user exits via Escape or badge
    */
-  activate(nodeId: string, nodes: { id: string; type?: string }[], onExit: () => void): void {
+  activate(
+    nodeId: string,
+    nodes: { id: string; type?: string }[],
+    onExit: () => void,
+    options: SurfaceOverlayActivateOptions = {}
+  ): void {
+    const presentation = options.presentation ?? 'main';
+    this._secondarySurfaceVisible = false;
+
     // Last activated wins — displace previous
     if (this._activeNodeId && this._activeNodeId !== nodeId) {
       this._deactivateInternal(this._activeNodeId, false);
@@ -100,27 +115,36 @@ export class SurfaceOverlay {
 
     this._activeNodeId = nodeId;
 
-    // Show canvas + enable pointer events
-    this._canvas.style.display = 'block';
-    this._canvas.style.pointerEvents = 'all';
+    // Main presentation shows the overlay in this window. Secondary presentation keeps the
+    // canvas as a hidden drawing target while the /output window owns the visible surface.
+    this._canvas.style.display = presentation === 'main' ? 'block' : 'none';
+    this._canvas.style.pointerEvents = presentation === 'main' ? 'all' : 'none';
 
-    // Freeze DOM-renderer nodes (not the surface node itself)
-    const eventBus = PatchiesEventBus.getInstance();
     this._frozenNodeIds = [];
 
-    for (const node of nodes) {
-      if (node.type && DOM_RENDERER_TYPES.has(node.type) && node.id !== nodeId) {
-        eventBus.dispatch({ type: 'nodeSetPaused', nodeId: node.id, paused: true });
-        this._frozenNodeIds.push(node.id);
+    // Freeze DOM-renderer nodes (not the surface node itself)
+    if (presentation === 'main') {
+      const eventBus = PatchiesEventBus.getInstance();
+
+      for (const node of nodes) {
+        if (node.type && DOM_RENDERER_TYPES.has(node.type) && node.id !== nodeId) {
+          eventBus.dispatch({ type: 'nodeSetPaused', nodeId: node.id, paused: true });
+          this._frozenNodeIds.push(node.id);
+        }
       }
     }
 
     this._onExit = onExit;
 
-    isFullscreenActive.set(true);
-    isSidebarOpen.set(false);
+    if (presentation === 'main') {
+      isFullscreenActive.set(true);
+      isSidebarOpen.set(false);
 
-    this._showBadge(onExit);
+      this._showBadge(onExit);
+    } else {
+      isFullscreenActive.set(false);
+      this._showSecondaryToggleButton();
+    }
   }
 
   /**
@@ -137,6 +161,7 @@ export class SurfaceOverlay {
     if (this._activeNodeId !== nodeId) return;
 
     this._activeNodeId = null;
+    this._secondarySurfaceVisible = false;
 
     this._canvas.style.display = 'none';
     this._canvas.style.pointerEvents = 'none';
@@ -203,6 +228,57 @@ export class SurfaceOverlay {
     document.body.appendChild(badge);
 
     this._badge = badge;
+  }
+
+  private _showSecondaryToggleButton(): void {
+    this._removeBadge();
+
+    const button = document.createElement('button');
+
+    button.type = 'button';
+
+    button.style.cssText = `
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 51;
+      background: rgba(0,0,0,0.55);
+      color: rgba(255,255,255,0.72);
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.16);
+      transition: color 0.15s, background 0.15s;
+      user-select: none;
+    `;
+
+    const syncButton = () => {
+      button.textContent = this._secondarySurfaceVisible ? 'Hide surface' : 'Show surface';
+    };
+
+    button.addEventListener('mouseenter', () => {
+      button.style.color = 'rgba(255,255,255,0.95)';
+      button.style.background = 'rgba(0,0,0,0.78)';
+    });
+
+    button.addEventListener('mouseleave', () => {
+      button.style.color = 'rgba(255,255,255,0.72)';
+      button.style.background = 'rgba(0,0,0,0.55)';
+    });
+
+    button.addEventListener('click', () => {
+      this._secondarySurfaceVisible = !this._secondarySurfaceVisible;
+      this._canvas.style.display = this._secondarySurfaceVisible ? 'block' : 'none';
+      this._canvas.style.pointerEvents = this._secondarySurfaceVisible ? 'all' : 'none';
+      syncButton();
+    });
+
+    syncButton();
+    document.body.appendChild(button);
+
+    this._badge = button;
   }
 
   hideBadge(): void {

@@ -91,6 +91,7 @@
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
   import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
   import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
+  import { useSecondaryOutputCodeOverlay } from '$lib/canvas/use-secondary-output-code-overlay.svelte';
 
   import { toast } from 'svelte-sonner';
   import { Transport } from '$lib/transport';
@@ -101,6 +102,8 @@
     closeCodeEditorOverlay
   } from '../../stores/code-editor-layout.store';
   import { editorFullscreenFontSize } from '../../stores/editor.store';
+  import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
+  import { activeDetachedStrudelNodeId } from '../../stores/detached-strudel-editor.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
   import { PREVIEW_ZOOM_LOD_TIERS } from '$workers/rendering/constants';
   import { initializeVFS } from '$lib/vfs';
@@ -270,6 +273,16 @@
     setNodes: (nextNodes) => (nodes = nextNodes),
     getEdges: () => edges,
     glSystem
+  });
+
+  useSecondaryOutputCodeOverlay({
+    getNodes: () => nodes,
+    getActiveDetachedStrudelNodeId: () => $activeDetachedStrudelNodeId,
+    getActiveCodeEditorTarget: () => $activeCodeEditorTarget,
+    getDetachedCodeEditorValue: () => detachedCodeEditor.value,
+    getFontSizePx: () => $editorFullscreenFontSize,
+    getTransparency: () => $overlayEditorTransparency,
+    sendCodeOverlayState: (state) => glSystem.ipcSystem.sendCodeOverlayState(state)
   });
 
   // Viewport culling for preview rendering optimization
