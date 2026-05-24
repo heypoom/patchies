@@ -418,7 +418,7 @@
             'nodrag nopan transition-opacity',
             isDetached
               ? 'strudel-detached-editor fixed inset-0 z-[60] flex items-stretch justify-stretch'
-              : 'flex w-full items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 p-1',
+              : 'flex w-full items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 p-2',
             !isDetached && (hasError ? 'border-red-500' : 'border-transparent'),
             muted ? 'opacity-40' : 'opacity-100'
           ]}
@@ -520,6 +520,10 @@
 
   :global(.strudel-editor-shell .cm-content) {
     max-width: none !important;
+  }
+
+  :global(.strudel-editor-shell .cm-gutters) {
+    display: none !important;
   }
 
   :global(.strudel-detached-editor .strudel-editor-shell .cm-editor) {

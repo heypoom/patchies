@@ -68,6 +68,8 @@ nodeType, title, mode }` in a shared store.
 - `Shift+click` on the visual node code edit action opens the alternate layout
   for that invocation: inline defaults open overlay, and overlay defaults open
   inline.
+- Strudel editor views hide line-number gutters in both inline and detached
+  layouts so pattern code stays visually central.
 - While a detached editor is active for a node field, the inline editor for that
   same field is hidden or replaced with a compact "editing elsewhere" affordance.
 - Closing detached mode clears the active target and allows the inline editor to
