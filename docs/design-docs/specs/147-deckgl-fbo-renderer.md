@@ -57,6 +57,10 @@ function getLayers() {
 }
 ```
 
+`osm-points.deckgl` extends the OSM tile pattern with a pickable
+`ScatterplotLayer`, hover highlighting, click-driven color updates, and message
+output for hover/click events.
+
 ## Interaction
 
 - Drag forwards through the existing Shadertoy-style mouse state.
