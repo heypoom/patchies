@@ -33,7 +33,10 @@
   import { Search } from '@lucide/svelte/icons';
   import { formatPresetLocation } from '$lib/presets/preset-utils';
   import { objectPresetSearchIndex } from '../../../stores/object-preset-search.store';
-  import { getObjectAutocompleteQuery } from '$lib/search/object-autocomplete-query';
+  import {
+    getObjectAutocompleteQuery,
+    shouldSuppressObjectAutocomplete
+  } from '$lib/search/object-autocomplete-query';
   import { useDisabledObjectSuggestion } from '$lib/composables/useDisabledObjectSuggestion.svelte';
   import { useAudioServiceSync } from '$lib/composables/useAudioServiceSync.svelte';
   import DisabledObjectSuggestionInline from './DisabledObjectSuggestionInline.svelte';
@@ -184,6 +187,7 @@
 
   const filteredSuggestions = $derived.by(() => {
     if (!isEditing) return [];
+    if (isEditingObjectArguments) return [];
 
     const query = getObjectAutocompleteQuery(expr);
 
@@ -198,6 +202,8 @@
   // Requires at least 3 characters to avoid noisy suggestions
   const suggestedDisabledObject = $derived.by(() => {
     if (!isEditing) return null;
+    if (isEditingObjectArguments) return null;
+
     const query = getObjectAutocompleteQuery(expr);
     if (!query) return null;
 
@@ -207,6 +213,14 @@
     if (filteredSuggestions.length > 0) return null;
 
     return searchDisabledObject(query);
+  });
+
+  const isEditingObjectArguments = $derived.by(() => {
+    const objectNames = $objectPresetSearchIndex.allSearchableItems
+      .filter((item) => item.type === 'object')
+      .map((item) => item.name);
+
+    return shouldSuppressObjectAutocomplete(expr, objectNames);
   });
 
   function enablePackFromSuggestion(packId: string, objectName: string) {

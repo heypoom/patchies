@@ -6,6 +6,14 @@ function findShorthand(name: string) {
 }
 
 describe('slider/knob shorthand parsing', () => {
+  it('injects a typed keybind into keyboard shorthand data', () => {
+    const { transform } = findShorthand('keyboard');
+    const result = transform('keyboard a', 'keyboard');
+
+    expect(result.nodeType).toBe('keyboard');
+    expect(result.data).toMatchObject({ keybind: 'a', mode: 'filtered' });
+  });
+
   it('treats single arg as max (min defaults to 0)', () => {
     const { transform } = findShorthand('knob');
     const result = transform('knob 880', 'knob');

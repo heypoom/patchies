@@ -72,6 +72,13 @@ interface ExtensionsState {
 - Catalog reads must use a lightweight object metadata source, such as generated schemas, instead
   of relying on object runtime services to have been constructed first.
 
+### Object Arguments and Shorthands
+
+- Object autocomplete should help choose the object or preset name, but it must not consume arguments
+  once the first token already matches an enabled object or shorthand.
+- Confirming `keyboard a`, `slider 10`, or similar shorthand expressions should preserve the full
+  expression so the shorthand transform can receive the arguments.
+
 ### UI Location: Sidebar Tab
 
 - New "Extensions" tab alongside Files and Presets
