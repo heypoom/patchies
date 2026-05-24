@@ -59,6 +59,14 @@
     onOpenHelp: () => void;
     extraMenuItems?: ExtraMenuItem[];
   } = $props();
+
+  const hasTopItems = $derived(
+    Boolean(onrun || (settingsSchema && settingsSchema.length > 0) || extraMenuItems?.length)
+  );
+
+  const hasOutputItems = $derived(
+    Boolean((showBgOutputOption && nodeId !== undefined) || onCodeToggle || onExpandToggle)
+  );
 </script>
 
 <ContextMenu.Content>
@@ -85,7 +93,9 @@
     {/each}
   {/if}
 
-  <ContextMenu.Separator />
+  {#if hasTopItems && hasOutputItems}
+    <ContextMenu.Separator />
+  {/if}
 
   {#if showBgOutputOption && nodeId !== undefined}
     <ContextMenu.Item onclick={onBgOutputToggle}>

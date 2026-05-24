@@ -96,4 +96,54 @@ describe('CanvasPreviewExpandController', () => {
     expect(currentOverride).toBe('glsl-old');
     expect(setOverride).toHaveBeenLastCalledWith('glsl-old');
   });
+
+  it('rolls back allocated resources and output pin when entering fails', () => {
+    let currentOverride: string | null = 'glsl-old';
+    let active = false;
+    const error = new Error('attach failed');
+
+    const forwarder = {
+      setForwardingRules: vi.fn(),
+      forward: vi.fn(),
+      forwardWheel: vi.fn(),
+      dispose: vi.fn()
+    };
+    const listeners = {
+      attach: vi.fn(() => {
+        throw error;
+      }),
+      detach: vi.fn()
+    };
+    const overlay = {
+      canvas: {} as HTMLCanvasElement,
+      activate: vi.fn(),
+      deactivate: vi.fn()
+    };
+    const setOverride = vi.fn((nodeId: string | null) => {
+      currentOverride = nodeId;
+    });
+
+    const controller = new CanvasPreviewExpandController({
+      nodeId: 'three-1',
+      getNodes: () => [renderNode('three-1', 'three')],
+      getOverrideOutputNode: () => currentOverride,
+      setOverrideOutputNode: setOverride,
+      overlay,
+      createForwarder: () => forwarder,
+      createListeners: () => listeners,
+      onActiveChange: (next) => {
+        active = next;
+      }
+    });
+
+    expect(() => controller.enter()).toThrow(error);
+
+    expect(active).toBe(false);
+    expect(controller.isActive).toBe(false);
+    expect(listeners.detach).toHaveBeenCalled();
+    expect(overlay.deactivate).toHaveBeenCalledWith('three-1');
+    expect(forwarder.dispose).toHaveBeenCalled();
+    expect(currentOverride).toBe('glsl-old');
+    expect(setOverride).toHaveBeenLastCalledWith('glsl-old');
+  });
 });

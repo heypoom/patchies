@@ -68,6 +68,14 @@
     onOpenHelp: () => void;
     extraMenuItems?: ExtraMenuItem[];
   } = $props();
+
+  const hasTopItems = $derived(
+    Boolean(onrun || (settingsSchema && settingsSchema.length > 0) || extraMenuItems?.length)
+  );
+
+  const hasOutputItems = $derived(
+    Boolean((showBgOutputOption && nodeId !== undefined) || onCodeToggle || onExpandToggle)
+  );
 </script>
 
 <Popover.Root>
@@ -122,7 +130,9 @@
       {/each}
     {/if}
 
-    <Separator />
+    {#if hasTopItems && hasOutputItems}
+      <Separator />
+    {/if}
 
     {#if showBgOutputOption && nodeId !== undefined}
       <Popover.Close class="contents">

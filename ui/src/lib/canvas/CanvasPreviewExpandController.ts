@@ -3,6 +3,7 @@ import type { SurfaceListenersOptions } from './SurfaceListeners';
 
 type ExpandOverlay = {
   canvas: HTMLCanvasElement;
+
   activate: (nodeId: string, nodes: { id: string; type?: string }[], onExit: () => void) => void;
   deactivate: (nodeId: string) => void;
 };
@@ -13,7 +14,7 @@ type ExpandForwarder = {
     only?: readonly string[];
     except?: readonly string[];
   }) => void;
-  forward: (x: number, y: number, buttons: number, type: string) => void;
+
   forwardWheel: (event: {
     x: number;
     y: number;
@@ -21,6 +22,8 @@ type ExpandForwarder = {
     deltaY: number;
     deltaMode: number;
   }) => void;
+
+  forward: (x: number, y: number, buttons: number, type: string) => void;
   dispose: () => void;
 };
 
@@ -65,20 +68,47 @@ export class CanvasPreviewExpandController {
   enter(): void {
     if (this.active) return;
 
-    const forwarder = this.options.createForwarder();
-    const listeners = this.options.createListeners();
+    const previousOverrideNodeId = this.options.getOverrideOutputNode();
+    let forwarder: ExpandForwarder | null = null;
+    let listeners: ExpandListeners | null = null;
+    let overlayActivated = false;
 
-    this.previousOverrideNodeId = this.options.getOverrideOutputNode();
-    this.forwarder = forwarder;
-    this.listeners = listeners;
-    this.active = true;
-    this.options.onActiveChange?.(true);
+    try {
+      forwarder = this.options.createForwarder();
+      listeners = this.options.createListeners();
 
-    forwarder.setForwardingRules({ only: [this.options.nodeId] });
-    this.options.setOverrideOutputNode(this.options.nodeId);
+      this.forwarder = forwarder;
+      this.listeners = listeners;
 
-    this.options.overlay.activate(this.options.nodeId, this.getOverlayNodes(), () => this.exit());
-    listeners.attach(this.options.overlay.canvas, this.createListenerOptions());
+      forwarder.setForwardingRules({ only: [this.options.nodeId] });
+      this.options.setOverrideOutputNode(this.options.nodeId);
+
+      this.options.overlay.activate(this.options.nodeId, this.getOverlayNodes(), () => this.exit());
+      overlayActivated = true;
+
+      listeners.attach(this.options.overlay.canvas, this.createListenerOptions());
+      this.previousOverrideNodeId = previousOverrideNodeId;
+
+      this.active = true;
+      this.options.onActiveChange?.(true);
+    } catch (error) {
+      listeners?.detach();
+
+      if (overlayActivated) {
+        this.options.overlay.deactivate(this.options.nodeId);
+      }
+
+      forwarder?.dispose();
+      this.options.setOverrideOutputNode(previousOverrideNodeId);
+
+      this.previousOverrideNodeId = null;
+      this.listeners = null;
+      this.forwarder = null;
+      this.active = false;
+      this.options.onActiveChange?.(false);
+
+      throw error;
+    }
   }
 
   exit(): void {
@@ -96,6 +126,7 @@ export class CanvasPreviewExpandController {
 
     listeners?.detach();
     this.options.overlay.deactivate(this.options.nodeId);
+
     forwarder?.dispose();
     this.options.setOverrideOutputNode(previousOverrideNodeId);
   }
