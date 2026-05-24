@@ -55,6 +55,7 @@ self.onmessage = (event) => {
         deltaMode: data.deltaMode
       })
     )
+    .with('resetThreeOrbitControls', () => fboRenderer.resetThreeOrbitControls(data.nodeId))
     .with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height))
     .with('setBackgroundSize', () => fboRenderer.setBackgroundSize(data.width, data.height))
     .with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))

@@ -1440,6 +1440,10 @@ export class FBORenderer {
     this.threeByNode.get(nodeId)?.handleWheelData(event);
   }
 
+  resetThreeOrbitControls(nodeId: string) {
+    this.threeByNode.get(nodeId)?.resetOrbitControls();
+  }
+
   zoomShaderParkOrbit(nodeId: string, deltaY: number) {
     this.shaderParkThreeByNode.get(nodeId)?.zoom(deltaY);
   }

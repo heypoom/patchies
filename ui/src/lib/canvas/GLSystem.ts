@@ -378,6 +378,13 @@ export class GLSystem {
           enabled: data.enabled
         });
       })
+      .with({ type: 'setThreeOrbitControlsAvailable' }, (data) => {
+        this.eventBus.dispatch({
+          type: 'nodeThreeOrbitControlsAvailabilityUpdate',
+          nodeId: data.nodeId,
+          available: data.available
+        });
+      })
       .with({ type: 'setVideoOutputEnabled' }, (data) => {
         this.eventBus.dispatch({
           type: 'nodeVideoOutputEnabledUpdate',
@@ -773,6 +780,10 @@ export class GLSystem {
       nodeId,
       ...event
     });
+  }
+
+  resetThreeOrbitControls(nodeId: string) {
+    this.send('resetThreeOrbitControls', { nodeId });
   }
 
   zoomShaderParkOrbit(nodeId: string, deltaY: number) {

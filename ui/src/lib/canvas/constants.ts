@@ -227,6 +227,7 @@ scene.add(cube)
 function draw() {
   cube.rotation.x += 0.01
   cube.rotation.y += 0.01
+
   renderer.render(scene, camera)
 }`;
 
@@ -284,15 +285,15 @@ export const DEFAULT_TEXTMODE_CODE = `t.setup(() => {
 
 t.draw(() => {
   t.background(0, 0, 0, 0)
-  
+
   const halfCols = t.grid.cols / 1.95
   const halfRows = t.grid.rows / 1.95
-  
+
   for (let y = -halfRows; y < halfRows; y++) {
     for (let x = -halfCols; x < halfCols; x++) {
       const dist = Math.sqrt(x * x + y * y)
       const wave = Math.sin(dist * 0.2 - t.frameCount * 0.1)
-      
+
       t.push()
       t.translate(x, y, 0)
       t.char(wave > 0.5 ? '▓' : wave > 0 ? '▒' : '░')

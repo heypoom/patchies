@@ -44,6 +44,7 @@
     onSettingsValueChange = undefined,
     onSettingsRevertAll = undefined,
     extraMenuItems = undefined,
+    displayExtraMenuItems = undefined,
     showBgOutputOption = true,
     showExpandOption = true,
     class: className = ''
@@ -85,6 +86,7 @@
     onSettingsValueChange?: (key: string, value: unknown) => void;
     onSettingsRevertAll?: () => void;
     extraMenuItems?: ExtraMenuItem[];
+    displayExtraMenuItems?: ExtraMenuItem[];
     showBgOutputOption?: boolean;
     showExpandOption?: boolean;
     class?: string;
@@ -129,6 +131,7 @@
   {onSettingsValueChange}
   {onSettingsRevertAll}
   {extraMenuItems}
+  {displayExtraMenuItems}
   class={className}
 >
   {#snippet preview()}

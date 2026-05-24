@@ -51,6 +51,8 @@ This is not Three.js' DOM `OrbitControls` addon. It is a worker-safe compatibili
 It intentionally does not require `renderer.domElement`, because worker `three` has no real DOM element.
 Constructing `OrbitControls` should automatically send the same interaction updates as `noDrag()` and `noWheel()` so Patchies canvas gestures do not compete with camera drag and wheel zoom.
 
+When worker `OrbitControls` is constructed, the `three` node preview should expose a camera reset action in the shared preview menu model. The action should appear in both the overflow menu and the right-click context menu, because both menus are driven by the same `ObjectPreviewLayout` action list. Choosing it should reset the registered worker controls to their saved state without sending a user patch message to `onMessage`.
+
 ## Initial OrbitControls Compatibility
 
 Support the practical subset first:
@@ -98,6 +100,18 @@ Defer full parity features such as keyboard listeners, touch gestures, damping, 
 Wheel input needs its own render-worker message because it is a discrete event rather than durable frame state. The wheel payload should include pointer coordinates when available, `deltaX`, `deltaY`, and `deltaMode`.
 
 The `surface` node should forward fullscreen and preview wheel events through the same worker paths: `three` receives `sendThreeWheelData`, and Shader Park 3D receives `zoomShaderParkOrbit`.
+
+## Preview Camera Reset
+
+The reset action should be enabled only after user code constructs at least one worker `OrbitControls` instance with `new OrbitControls(camera)`.
+
+Implementation notes:
+
+- The worker renderer should emit an availability update when controls are registered, and clear it before each code re-run.
+- The UI node should keep that availability as transient component state, not persisted node data.
+- The reset command should use a dedicated render-worker message, similar to wheel forwarding, rather than `sendMessageToNode`; reset is an editor control action, not a user patch message.
+- If multiple controls are registered during one run, reset all live controls. `dispose()` should unregister its control instance.
+- Re-running code should drop stale control registrations before executing the new code.
 
 ## Renderer Reuse
 

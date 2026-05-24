@@ -165,17 +165,21 @@
 
   function handleTitleUpdate(e: NodeTitleUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     updateNodeData(nodeId, { title: e.title });
   }
 
   function handleHidePortsUpdate(e: NodeHidePortsUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     updateNodeData(nodeId, { hidePorts: e.hidePorts });
   }
 
   function handleVideoOutputEnabledUpdate(e: NodeVideoOutputEnabledUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     videoOutputEnabled = e.videoOutputEnabled;
+
     updateNodeInternals(nodeId);
   }
 

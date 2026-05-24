@@ -11,6 +11,7 @@ export type PatchiesEvent =
   | NodeRunOnMountUpdateEvent
   | NodeHidePortsUpdateEvent
   | NodeInteractionUpdateEvent
+  | NodeThreeOrbitControlsAvailabilityUpdateEvent
   | NodeVideoOutputEnabledUpdateEvent
   | NodeMouseScopeUpdateEvent
   | NodePrimaryButtonUpdateEvent
@@ -112,6 +113,12 @@ export interface NodeInteractionUpdateEvent {
   nodeId: string;
   mode: NodeInteractionMode;
   enabled: boolean;
+}
+
+export interface NodeThreeOrbitControlsAvailabilityUpdateEvent {
+  type: 'nodeThreeOrbitControlsAvailabilityUpdate';
+  nodeId: string;
+  available: boolean;
 }
 
 export interface NodeVideoOutputEnabledUpdateEvent {

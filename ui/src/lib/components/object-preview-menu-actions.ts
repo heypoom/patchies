@@ -42,6 +42,7 @@ export interface ObjectPreviewMenuProps {
   onPlaybackToggle?: () => void;
   onOpenHelp: () => void;
   extraMenuItems?: ExtraMenuItem[];
+  displayExtraMenuItems?: ExtraMenuItem[];
 }
 
 export type ObjectPreviewMenuActionVariant = 'default' | 'danger' | 'warning';
@@ -83,7 +84,8 @@ export function getObjectPreviewMenuGroups({
   onBgOutputToggle,
   onPlaybackToggle,
   onOpenHelp,
-  extraMenuItems
+  extraMenuItems,
+  displayExtraMenuItems
 }: ObjectPreviewMenuProps): ObjectPreviewMenuGroup[] {
   const topActions: ObjectPreviewMenuAction[] = [];
 
@@ -165,6 +167,16 @@ export function getObjectPreviewMenuGroups({
       label: previewVisible ? 'Hide preview' : 'Show preview',
       icon: previewVisible ? EyeOff : Eye,
       onclick: () => onPreviewToggle()
+    });
+  }
+
+  for (const [index, item] of displayExtraMenuItems?.entries() ?? []) {
+    displayActions.push({
+      id: `display-extra-${index}`,
+      label: item.label,
+      icon: item.icon,
+      onclick: () => item.onclick(),
+      variant: item.variant
     });
   }
 

@@ -69,6 +69,54 @@ describe('worker three interaction', () => {
     expect(onRegister).toHaveBeenCalledTimes(1);
   });
 
+  it('passes a resettable OrbitControls instance to the registration callback', () => {
+    const interaction = new WorkerThreeInteraction();
+    const registeredControls: Array<{ reset: () => void }> = [];
+
+    const OrbitControls = createWorkerOrbitControlsClass(
+      THREE,
+      interaction,
+      () => [100, 100],
+      (controls) => {
+        registeredControls.push(controls);
+      }
+    );
+
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+    camera.position.set(0, 0, 3);
+    const controls = new OrbitControls(camera);
+
+    controls.rotateLeft(Math.PI / 4);
+    controls.update();
+
+    expect(camera.position.x).not.toBeCloseTo(0);
+
+    registeredControls[0].reset();
+
+    expect(camera.position.x).toBeCloseTo(0);
+    expect(camera.position.y).toBeCloseTo(0);
+    expect(camera.position.z).toBeCloseTo(3);
+  });
+
+  it('unregisters OrbitControls when disposed', () => {
+    const interaction = new WorkerThreeInteraction();
+    const unregister = vi.fn();
+
+    const OrbitControls = createWorkerOrbitControlsClass(
+      THREE,
+      interaction,
+      () => [100, 100],
+      () => unregister
+    );
+
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+    const controls = new OrbitControls(camera);
+
+    controls.dispose();
+
+    expect(unregister).toHaveBeenCalledTimes(1);
+  });
+
   it('mimics OrbitControls right-button panning', () => {
     const interaction = new WorkerThreeInteraction();
 

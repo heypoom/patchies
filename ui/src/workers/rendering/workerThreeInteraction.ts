@@ -36,6 +36,10 @@ type OrbitSnapshot = {
   zoom?: number;
 };
 
+export type WorkerOrbitControlsRegistration = {
+  reset: () => void;
+};
+
 export class WorkerThreeInteraction {
   readonly mouse = {
     x: 0,
@@ -177,7 +181,7 @@ export function createWorkerOrbitControlsClass(
   THREE: ThreeModule,
   interaction: WorkerThreeInteraction,
   getSize: () => [number, number],
-  onRegister?: () => void
+  onRegister?: (controls: WorkerOrbitControlsRegistration) => void | (() => void)
 ) {
   return class OrbitControls {
     enabled = true;
@@ -203,6 +207,7 @@ export function createWorkerOrbitControlsClass(
     private position0: Vector3;
     private target0: Vector3;
     private zoom0: number;
+    private unregister: (() => void) | void;
 
     constructor(public object: ControlledCamera) {
       this.target = new THREE.Vector3();
@@ -216,7 +221,7 @@ export function createWorkerOrbitControlsClass(
       this.target0 = this.target.clone();
       this.zoom0 = 'zoom' in object ? object.zoom : 1;
 
-      onRegister?.();
+      this.unregister = onRegister?.(this);
       this.update();
     }
 
@@ -243,7 +248,10 @@ export function createWorkerOrbitControlsClass(
       return changed;
     }
 
-    dispose() {}
+    dispose() {
+      this.unregister?.();
+      this.unregister = undefined;
+    }
 
     saveState() {
       this.position0.copy(this.object.position);

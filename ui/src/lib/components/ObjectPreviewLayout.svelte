@@ -73,6 +73,7 @@
     onSettingsValueChange = undefined,
     onSettingsRevertAll = undefined,
     extraMenuItems = undefined,
+    displayExtraMenuItems = undefined,
     class: className = ''
   }: {
     title: string;
@@ -104,6 +105,7 @@
     onSettingsValueChange?: (key: string, value: unknown) => void;
     onSettingsRevertAll?: () => void;
     extraMenuItems?: ExtraMenuItem[];
+    displayExtraMenuItems?: ExtraMenuItem[];
     class?: string;
   } = $props();
 
@@ -417,6 +419,7 @@
                 onPlaybackToggle={handlePlaybackToggle}
                 onOpenHelp={handleOpenHelp}
                 {extraMenuItems}
+                {displayExtraMenuItems}
               />
 
               {#if resolvedPrimary === 'code'}
@@ -511,6 +514,7 @@
       onPlaybackToggle={handlePlaybackToggle}
       onOpenHelp={handleOpenHelp}
       {extraMenuItems}
+      {displayExtraMenuItems}
     />
   </ContextMenu.Root>
 

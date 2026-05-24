@@ -275,6 +275,11 @@ export type RenderWorkerMessage =
       enabled: boolean;
     }
   | {
+      type: 'setThreeOrbitControlsAvailable';
+      nodeId: string;
+      available: boolean;
+    }
+  | {
       type: 'previewFrameCaptured';
       success: boolean;
       nodeId: string;
