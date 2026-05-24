@@ -97,7 +97,9 @@
   let showSettings = $state(false);
   let isExpanded = $state(false);
   let previewContainerWidth = $state(0);
+
   let expandController: CanvasPreviewExpandController | null = null;
+  let controllerNodeId: string | null = null;
 
   // Which button is rendered as the primary (rightmost) action.
   // Set via setPrimaryButton('settings'|'run'|'code') from worker code, or
@@ -107,9 +109,14 @@
   // Resolved primary — falls back to 'code' if the requested mode isn't usable
   // (e.g. 'settings' selected but no schema yet, 'run' selected but no onrun).
   let resolvedPrimary = $derived.by<PrimaryButton>(() => {
-    if (primaryButton === 'settings' && (!settingsSchema || settingsSchema.length === 0))
+    if (primaryButton === 'settings' && (!settingsSchema || settingsSchema.length === 0)) {
       return 'code';
-    if (primaryButton === 'run' && !onrun) return 'code';
+    }
+
+    if (primaryButton === 'run' && !onrun) {
+      return 'code';
+    }
+
     return primaryButton;
   });
 
@@ -142,9 +149,12 @@
   function handleConsoleToggle() {
     if (nodeId) {
       const node = getNode(nodeId);
+
       if (node) {
-        const newShowConsole = !node.data.showConsole;
-        updateNodeData(nodeId, { ...node.data, showConsole: newShowConsole });
+        updateNodeData(nodeId, {
+          ...node.data,
+          showConsole: !node.data.showConsole
+        });
       }
     }
   }
@@ -157,10 +167,13 @@
   // require threading `data` as a prop through every node component using this layout.
   function handlePrimaryButtonUpdate(e: NodePrimaryButtonUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     // Defensive whitelist — TypeScript guarantees this at the type level, but the
     // event bus is loosely typed at runtime so a buggy dispatcher could send anything.
-    if (e.primaryButton !== 'code' && e.primaryButton !== 'settings' && e.primaryButton !== 'run')
+    if (e.primaryButton !== 'code' && e.primaryButton !== 'settings' && e.primaryButton !== 'run') {
       return;
+    }
+
     if (e.primaryButton === primaryButton) return;
 
     primaryButton = e.primaryButton;
@@ -196,7 +209,9 @@
 
     return () => {
       expandController?.exit();
+
       expandController = null;
+      controllerNodeId = null;
       resizeObserver?.disconnect();
 
       eventBus.removeEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
@@ -225,6 +240,13 @@
   function getExpandController() {
     if (!nodeId) return null;
 
+    if (controllerNodeId !== null && controllerNodeId !== nodeId) {
+      expandController?.exit();
+
+      expandController = null;
+      controllerNodeId = null;
+    }
+
     if (!expandController) {
       expandController = new CanvasPreviewExpandController({
         nodeId,
@@ -241,6 +263,8 @@
           isExpanded = active;
         }
       });
+
+      controllerNodeId = nodeId;
     }
 
     return expandController;
