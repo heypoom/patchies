@@ -251,7 +251,7 @@ function getLayers() {
       radius: 260,
       coverage: 0.82,
       elevationRange: [0, 900],
-      elevationScale: 36,
+      elevationScale: 4,
       extruded: true,
       material: {
         ambient: 0.45,
@@ -409,6 +409,67 @@ function getLayers() {
   ]
 }`;
 
+const COLUMN_COMMON_DECKGL = `setTitle('Column Common-Unit Probe')
+setPortCount(1, 0)
+setDeckPicking(false)
+setDeckDebug(true)
+
+setViewState({
+  longitude: 98.9853,
+  latitude: 18.7883,
+  zoom: 12,
+  pitch: 52,
+  bearing: -24
+})
+
+const colors = [
+  [28, 120, 170, 255],
+  [55, 174, 170, 255],
+  [123, 204, 146, 255],
+  [205, 230, 122, 255],
+  [247, 196, 89, 255],
+  [225, 90, 72, 255]
+]
+
+const columns = Array.from({ length: 120 }, (_, i) => {
+  const angle = Math.random() * Math.PI * 2
+  const distance = Math.pow(Math.random(), 1.3) * 0.04
+  const bucket = i % colors.length
+
+  return {
+    id: i,
+    position: [
+      98.9853 + Math.cos(angle) * distance,
+      18.7883 + Math.sin(angle) * distance
+    ],
+    elevation: 80 + bucket * 120,
+    color: colors[bucket]
+  }
+})
+
+function getLayers() {
+  return [
+    new ColumnLayer({
+      id: 'columns-common',
+      data: columns,
+      diskResolution: 6,
+      radius: 0.0025,
+      radiusUnits: 'common',
+      coverage: 0.9,
+      extruded: true,
+      getPosition: d => d.position,
+      getElevation: d => d.elevation,
+      getFillColor: d => d.color,
+      material: {
+        ambient: 0.45,
+        diffuse: 0.65,
+        shininess: 18,
+        specularColor: [180, 180, 180]
+      }
+    })
+  ]
+}`;
+
 type DeckGLPresetData = {
   code: string;
   messageInletCount?: number;
@@ -470,6 +531,17 @@ export const DECKGL_PRESETS: Record<
     description: 'Diagnostic direct ColumnLayer over Chiang Mai',
     data: {
       code: COLUMN_DECKGL.trim(),
+      messageInletCount: 1,
+      messageOutletCount: 0,
+      videoInletCount: 0,
+      videoOutletCount: 1
+    }
+  },
+  'column-common.deckgl': {
+    type: 'deckgl',
+    description: 'Diagnostic ColumnLayer with common-unit radius over Chiang Mai',
+    data: {
+      code: COLUMN_COMMON_DECKGL.trim(),
       messageInletCount: 1,
       messageOutletCount: 0,
       videoInletCount: 0,

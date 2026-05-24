@@ -814,18 +814,28 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
     const viewports =
       (this.deck as DeckWithPrivateLayers | null)?.viewManager?.getViewports?.() ?? [];
 
-    return viewports.map((viewport) => ({
-      id: viewport.id,
-      x: viewport.x,
-      y: viewport.y,
-      width: viewport.width,
-      height: viewport.height,
-      longitude: viewport.longitude,
-      latitude: viewport.latitude,
-      zoom: viewport.zoom,
-      pitch: viewport.pitch,
-      bearing: viewport.bearing
-    }));
+    return viewports.map((viewport) => {
+      const viewState = viewport as {
+        longitude?: unknown;
+        latitude?: unknown;
+        zoom?: unknown;
+        pitch?: unknown;
+        bearing?: unknown;
+      };
+
+      return {
+        id: viewport.id,
+        x: viewport.x,
+        y: viewport.y,
+        width: viewport.width,
+        height: viewport.height,
+        longitude: viewState.longitude,
+        latitude: viewState.latitude,
+        zoom: viewState.zoom,
+        pitch: viewState.pitch,
+        bearing: viewState.bearing
+      };
+    });
   }
 
   private summarizeLayers(layers: unknown[]): unknown[] {
@@ -833,7 +843,7 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
       const layerLike = layer as {
         id?: unknown;
         constructor?: { name?: string };
-        props?: { data?: unknown; pickable?: unknown; visible?: unknown };
+        props?: Record<string, unknown> & { data?: unknown; pickable?: unknown; visible?: unknown };
         state?: { aggregatorState?: { layerData?: { data?: unknown } } };
         getModels?: () => DeckDebugModel[];
         getAttributeManager?: () => {
@@ -847,12 +857,30 @@ export class DeckGLRenderer extends BaseWorkerRenderer<DeckGLRendererConfig> {
         type: layerLike.constructor?.name,
         visible: layerLike.props?.visible,
         pickable: layerLike.props?.pickable,
+        props: this.summarizeLayerProps(layerLike.props),
         dataLength: this.getDataLength(layerLike.props?.data),
         aggregatedDataLength: this.getDataLength(aggregatedData),
         attributes: this.summarizeLayerAttributes(layerLike),
         models: this.summarizeLayerModels(layerLike)
       };
     });
+  }
+
+  private summarizeLayerProps(props: Record<string, unknown> | undefined): Record<string, unknown> {
+    if (!props) return {};
+
+    return {
+      operation: props.operation,
+      opacity: props.opacity,
+      radius: props.radius,
+      radiusUnits: props.radiusUnits,
+      elevationScale: props.elevationScale,
+      extruded: props.extruded,
+      filled: props.filled,
+      stroked: props.stroked,
+      coverage: props.coverage,
+      material: props.material
+    };
   }
 
   private summarizeLayerAttributes(layer: {

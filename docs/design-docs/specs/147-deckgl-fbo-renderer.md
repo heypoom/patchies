@@ -65,9 +65,13 @@ output for hover/click events.
 The installed `@deck.gl/aggregation-layers@9.0.0` HexagonLayer path is
 CPU-backed and renders an aggregated `ColumnLayer` sublayer, so debugging should
 inspect sublayer data, picking, and GL state across frame boundaries.
-`hexagon-flat.deckgl` and `column.deckgl` are diagnostic presets used to isolate
-whether failures come from HexagonLayer aggregation, ColumnLayer rendering, or
+`hexagon-flat.deckgl`, `column.deckgl`, and `column-common.deckgl` are
+diagnostic presets used to isolate whether failures come from HexagonLayer
+aggregation, ColumnLayer rendering, common-unit radii, or
 extruded/depth/lighting state.
+The extruded Chiang Mai HexagonLayer preset keeps `elevationScale` conservative;
+large values can push aggregated columns outside the camera frustum after the
+aggregation domain settles, making a valid layer render transparent.
 
 ## Interaction
 

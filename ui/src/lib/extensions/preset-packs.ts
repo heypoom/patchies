@@ -311,7 +311,8 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'osm-points.deckgl',
       'hexagon.deckgl',
       'hexagon-flat.deckgl',
-      'column.deckgl'
+      'column.deckgl',
+      'column-common.deckgl'
     ]
   },
   {
