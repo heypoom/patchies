@@ -9,18 +9,23 @@
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import type { SettingsSchema } from '$lib/settings';
   import type { ExtraMenuItem } from './ObjectPreviewOverflowMenu.svelte';
+  import { outputTarget } from '../../stores/canvas.store';
   import { transportStore } from '../../stores/transport.store';
   import { isSidebarOpen, sidebarView } from '../../stores/ui.store';
   import { helpViewStore } from '../../stores/help-view.store';
   import { overrideOutputNodeId, previewBackgroundColor } from '../../stores/renderer.store';
   import { GLSystem } from '$lib/canvas/GLSystem';
+  import { CanvasPreviewExpandController } from '$lib/canvas/CanvasPreviewExpandController';
+  import { SurfaceListeners } from '$lib/canvas/SurfaceListeners';
+  import { SurfaceMouseForwarder } from '$lib/canvas/SurfaceMouseForwarder';
+  import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import { useNodeSetPaused } from '$lib/canvas/use-node-set-paused.svelte';
   import { useIncludeProcessing } from '$lib/canvas/use-include-processing.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { NodePrimaryButtonUpdateEvent, PrimaryButton } from '$lib/eventbus/events';
 
   let previewContainer: HTMLDivElement | null = null;
-  const { getNode, updateNodeData } = useSvelteFlow();
+  const { getNode, getNodes, updateNodeData } = useSvelteFlow();
 
   let {
     title,
@@ -33,6 +38,7 @@
     previewVisible = true,
     showPauseButton = false,
     showBgOutputOption = false,
+    showExpandOption = false,
 
     topHandle,
     bottomHandle,
@@ -59,6 +65,7 @@
     previewVisible?: boolean;
     showPauseButton?: boolean;
     showBgOutputOption?: boolean;
+    showExpandOption?: boolean;
 
     topHandle?: Snippet;
     bottomHandle?: Snippet;
@@ -89,7 +96,11 @@
 
   let showEditor = $state(false);
   let showSettings = $state(false);
+  let isExpanded = $state(false);
   let previewContainerWidth = $state(0);
+
+  let expandController: CanvasPreviewExpandController | null = null;
+  let controllerNodeId: string | null = null;
 
   // Which button is rendered as the primary (rightmost) action.
   // Set via setPrimaryButton('settings'|'run'|'code') from worker code, or
@@ -99,9 +110,14 @@
   // Resolved primary — falls back to 'code' if the requested mode isn't usable
   // (e.g. 'settings' selected but no schema yet, 'run' selected but no onrun).
   let resolvedPrimary = $derived.by<PrimaryButton>(() => {
-    if (primaryButton === 'settings' && (!settingsSchema || settingsSchema.length === 0))
+    if (primaryButton === 'settings' && (!settingsSchema || settingsSchema.length === 0)) {
       return 'code';
-    if (primaryButton === 'run' && !onrun) return 'code';
+    }
+
+    if (primaryButton === 'run' && !onrun) {
+      return 'code';
+    }
+
     return primaryButton;
   });
 
@@ -134,9 +150,12 @@
   function handleConsoleToggle() {
     if (nodeId) {
       const node = getNode(nodeId);
+
       if (node) {
-        const newShowConsole = !node.data.showConsole;
-        updateNodeData(nodeId, { ...node.data, showConsole: newShowConsole });
+        updateNodeData(nodeId, {
+          ...node.data,
+          showConsole: !node.data.showConsole
+        });
       }
     }
   }
@@ -149,10 +168,13 @@
   // require threading `data` as a prop through every node component using this layout.
   function handlePrimaryButtonUpdate(e: NodePrimaryButtonUpdateEvent) {
     if (e.nodeId !== nodeId) return;
+
     // Defensive whitelist — TypeScript guarantees this at the type level, but the
     // event bus is loosely typed at runtime so a buggy dispatcher could send anything.
-    if (e.primaryButton !== 'code' && e.primaryButton !== 'settings' && e.primaryButton !== 'run')
+    if (e.primaryButton !== 'code' && e.primaryButton !== 'settings' && e.primaryButton !== 'run') {
       return;
+    }
+
     if (e.primaryButton === primaryButton) return;
 
     primaryButton = e.primaryButton;
@@ -187,6 +209,10 @@
     eventBus.addEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
 
     return () => {
+      expandController?.exit();
+
+      expandController = null;
+      controllerNodeId = null;
       resizeObserver?.disconnect();
 
       eventBus.removeEventListener('nodePrimaryButtonUpdate', handlePrimaryButtonUpdate);
@@ -203,6 +229,10 @@
     showBgOutputOption && nodeId !== undefined && $overrideOutputNodeId === nodeId
   );
 
+  let canExpand = $derived(
+    showExpandOption && nodeId !== undefined && $outputTarget === 'background'
+  );
+
   function handleBgOutputToggle() {
     if (!nodeId) return;
 
@@ -210,6 +240,52 @@
     overrideOutputNodeId.set(next);
 
     GLSystem.getInstance().setOverrideOutputNode(next);
+  }
+
+  function getExpandController() {
+    if (!nodeId) return null;
+
+    if (controllerNodeId !== null && controllerNodeId !== nodeId) {
+      expandController?.exit();
+
+      expandController = null;
+      controllerNodeId = null;
+    }
+
+    if (!expandController) {
+      expandController = new CanvasPreviewExpandController({
+        nodeId,
+        getNodes,
+        getOverrideOutputNode: () => $overrideOutputNodeId,
+        setOverrideOutputNode: (next) => {
+          overrideOutputNodeId.set(next);
+          GLSystem.getInstance().setOverrideOutputNode(next);
+        },
+        overlay: SurfaceOverlay.getInstance(),
+        createForwarder: () => new SurfaceMouseForwarder(() => getNodes()),
+        createListeners: () => new SurfaceListeners(),
+        onActiveChange: (active) => {
+          isExpanded = active;
+        }
+      });
+
+      controllerNodeId = nodeId;
+    }
+
+    return expandController;
+  }
+
+  function handleExpandToggle() {
+    if (!canExpand) return;
+
+    const controller = getExpandController();
+    if (!controller) return;
+
+    if (controller.isActive) {
+      controller.exit();
+    } else {
+      controller.enter();
+    }
   }
 
   const toggleCode = () => {
@@ -251,6 +327,8 @@
                   if (showSettings) showEditor = false;
                 }}
                 onCodeToggle={resolvedPrimary === 'code' ? undefined : toggleCode}
+                onExpandToggle={canExpand ? handleExpandToggle : undefined}
+                {isExpanded}
                 onBgOutputToggle={handleBgOutputToggle}
                 onPlaybackToggle={handlePlaybackToggle}
                 onOpenHelp={handleOpenHelp}
@@ -279,7 +357,7 @@
                   <Tooltip.Trigger>
                     <button
                       class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                      aria-label={showSettings ? 'Hide settings' : 'Show settings'}
+                      aria-label={showSettings ? 'Hide settings' : 'Settings'}
                       onclick={() => {
                         showSettings = !showSettings;
                         if (showSettings) showEditor = false;
@@ -288,9 +366,7 @@
                       <SettingsIcon class="h-4 w-4 text-zinc-300" />
                     </button>
                   </Tooltip.Trigger>
-                  <Tooltip.Content
-                    >{showSettings ? 'Hide settings' : 'Show settings'}</Tooltip.Content
-                  >
+                  <Tooltip.Content>{showSettings ? 'Hide settings' : 'Settings'}</Tooltip.Content>
                 </Tooltip.Root>
               {:else if resolvedPrimary === 'run'}
                 <Tooltip.Root>
@@ -348,13 +424,13 @@
         showSettings = !showSettings;
         if (showSettings) showEditor = false;
       }}
-      onCodeToggle={resolvedPrimary === 'code'
-        ? undefined
-        : () => {
-            showEditor = !showEditor;
-            if (showEditor) showSettings = false;
-            measureContainerWidth();
-          }}
+      onCodeToggle={() => {
+        showEditor = !showEditor;
+        if (showEditor) showSettings = false;
+        measureContainerWidth();
+      }}
+      onExpandToggle={canExpand ? handleExpandToggle : undefined}
+      {isExpanded}
       onBgOutputToggle={handleBgOutputToggle}
       onPlaybackToggle={handlePlaybackToggle}
       onOpenHelp={handleOpenHelp}

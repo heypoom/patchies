@@ -684,6 +684,7 @@
   paused={data.paused}
   showPauseButton={true}
   showBgOutputOption={false}
+  showExpandOption={false}
   bind:previewCanvas
   nodrag={!dragEnabled}
   nopan={!panEnabled}

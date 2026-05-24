@@ -4,12 +4,14 @@
     Code,
     Eye,
     EyeOff,
+    Expand,
     Monitor,
     MonitorOff,
     Pin,
     PinOff,
     Play,
-    Settings
+    Settings,
+    Shrink
   } from '@lucide/svelte/icons';
   import * as ContextMenu from './ui/context-menu';
   import type { SettingsSchema } from '$lib/settings';
@@ -29,6 +31,8 @@
     showSettings,
     onSettingsToggle,
     onCodeToggle,
+    onExpandToggle,
+    isExpanded = false,
     onBgOutputToggle,
     onPlaybackToggle,
     onOpenHelp,
@@ -48,11 +52,21 @@
     onSettingsToggle: () => void;
     /** Provided when code editor is NOT the primary button — adds an "Edit code" entry. */
     onCodeToggle?: () => void;
+    onExpandToggle?: () => void;
+    isExpanded?: boolean;
     onBgOutputToggle: () => void;
     onPlaybackToggle: () => void;
     onOpenHelp: () => void;
     extraMenuItems?: ExtraMenuItem[];
   } = $props();
+
+  const hasTopItems = $derived(
+    Boolean(onrun || (settingsSchema && settingsSchema.length > 0) || extraMenuItems?.length)
+  );
+
+  const hasOutputItems = $derived(
+    Boolean((showBgOutputOption && nodeId !== undefined) || onCodeToggle || onExpandToggle)
+  );
 </script>
 
 <ContextMenu.Content>
@@ -63,6 +77,26 @@
     </ContextMenu.Item>
   {/if}
 
+  {#if settingsSchema && settingsSchema.length > 0}
+    <ContextMenu.Item onclick={onSettingsToggle}>
+      <Settings class="mr-2 h-4 w-4" />
+      {showSettings ? 'Hide settings' : 'Settings'}
+    </ContextMenu.Item>
+  {/if}
+
+  {#if extraMenuItems && extraMenuItems.length > 0}
+    {#each extraMenuItems as item, index (index)}
+      <ContextMenu.Item onclick={item.onclick}>
+        <item.icon class="mr-2 h-4 w-4 {item.variant === 'danger' ? 'text-red-400' : ''}" />
+        <span class={item.variant === 'danger' ? 'text-red-400' : ''}>{item.label}</span>
+      </ContextMenu.Item>
+    {/each}
+  {/if}
+
+  {#if hasTopItems && hasOutputItems}
+    <ContextMenu.Separator />
+  {/if}
+
   {#if onCodeToggle}
     <ContextMenu.Item onclick={onCodeToggle}>
       <Code class="mr-2 h-4 w-4" />
@@ -70,31 +104,30 @@
     </ContextMenu.Item>
   {/if}
 
-  {#if extraMenuItems && extraMenuItems.length > 0}
-    {#each extraMenuItems as item}
-      <ContextMenu.Item onclick={item.onclick}>
-        <item.icon class="mr-2 h-4 w-4 {item.variant === 'danger' ? 'text-red-400' : ''}" />
-        <span class={item.variant === 'danger' ? 'text-red-400' : ''}>{item.label}</span>
-      </ContextMenu.Item>
-    {/each}
-    <ContextMenu.Separator />
-  {/if}
-
-  {#if settingsSchema && settingsSchema.length > 0}
-    <ContextMenu.Item onclick={onSettingsToggle}>
-      <Settings class="mr-2 h-4 w-4" />
-      {showSettings ? 'Hide settings' : 'Show settings'}
-    </ContextMenu.Item>
-  {/if}
-
   {#if showBgOutputOption && nodeId !== undefined}
     <ContextMenu.Item onclick={onBgOutputToggle}>
       {#if isOutputOverride}
         <MonitorOff class="mr-2 h-4 w-4 text-orange-400" />
-        <span class="text-orange-400">Remove background output</span>
+        <span class="text-orange-400">Hide output</span>
       {:else}
         <Monitor class="mr-2 h-4 w-4" />
-        Output to background
+        Use as output
+      {/if}
+    </ContextMenu.Item>
+  {/if}
+
+  {#if onExpandToggle || showPauseButton || onPreviewToggle}
+    <ContextMenu.Separator />
+  {/if}
+
+  {#if onExpandToggle}
+    <ContextMenu.Item onclick={onExpandToggle}>
+      {#if isExpanded}
+        <Shrink class="mr-2 h-4 w-4 text-red-400" />
+        <span class="text-red-400">Exit expanded</span>
+      {:else}
+        <Expand class="mr-2 h-4 w-4" />
+        Expand
       {/if}
     </ContextMenu.Item>
   {/if}
