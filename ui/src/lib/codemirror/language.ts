@@ -4,12 +4,38 @@ import type { PatchiesContext } from '$lib/codemirror/patchies-completions';
 
 const cachedLanguages: Record<string, Extension> = {};
 
-export async function loadLanguageExtension(language: string, context?: PatchiesContext) {
+export interface EditorLanguageFeatures {
+  autocomplete?: boolean;
+  hoverHints?: boolean;
+}
+
+const DEFAULT_EDITOR_LANGUAGE_FEATURES = {
+  autocomplete: true,
+  hoverHints: true
+} satisfies Required<EditorLanguageFeatures>;
+
+export async function loadLanguageExtension(
+  language: string,
+  context?: PatchiesContext,
+  features: EditorLanguageFeatures = DEFAULT_EDITOR_LANGUAGE_FEATURES
+) {
+  const autocompleteEnabled =
+    features.autocomplete ?? DEFAULT_EDITOR_LANGUAGE_FEATURES.autocomplete;
+
+  const hoverHintsEnabled = features.hoverHints ?? DEFAULT_EDITOR_LANGUAGE_FEATURES.hoverHints;
+
   // Skip caching for assembly during development to handle HMR properly
   const shouldCache = language !== 'assembly' || !import.meta.hot;
 
   // Create cache key that includes node type to avoid context conflicts
-  const cacheKey = context?.nodeType ? `${language}-${context.nodeType}` : language;
+  const cacheKey = [
+    language,
+    context?.nodeType,
+    `autocomplete:${autocompleteEnabled}`,
+    `hover:${hoverHintsEnabled}`
+  ]
+    .filter(Boolean)
+    .join('-');
 
   if (shouldCache && cachedLanguages[cacheKey]) {
     return cachedLanguages[cacheKey];
@@ -39,18 +65,28 @@ export async function loadLanguageExtension(language: string, context?: Patchies
 
       const jsWithGlsl = javascriptLanguage.configure({ wrap: glslInJsWrap });
       const jsSupport = javascript();
-      return [
+      const extensions: Extension[] = [
         new LanguageSupport(jsWithGlsl, jsSupport.support),
-        autocompletion({
-          override: [
-            glslInJsCompletions,
-            shaderParkCompletionsSource(context),
-            patchiesCompletions(context)
-          ]
-        }),
-        completionHoverHints({ ...context, language: 'javascript' }),
         ...glslIncludeHighlighter
       ];
+
+      if (autocompleteEnabled) {
+        extensions.push(
+          autocompletion({
+            override: [
+              glslInJsCompletions,
+              shaderParkCompletionsSource(context),
+              patchiesCompletions(context)
+            ]
+          })
+        );
+      }
+
+      if (hoverHintsEnabled) {
+        extensions.push(completionHoverHints({ ...context, language: 'javascript' }));
+      }
+
+      return extensions;
     })
     .with('glsl', async () => {
       const [
@@ -67,12 +103,20 @@ export async function loadLanguageExtension(language: string, context?: Patchies
         import('$lib/codemirror/hover-hints')
       ]);
 
-      return [
+      const extensions: Extension[] = [
         new LanguageSupport(glslLanguage),
-        autocompletion({ override: [glslDirectiveCompletions, glslCompletions] }),
-        completionHoverHints({ ...context, language: 'glsl' }),
         ...glslIncludeHighlighter
       ];
+
+      if (autocompleteEnabled) {
+        extensions.push(autocompletion({ override: [glslDirectiveCompletions, glslCompletions] }));
+      }
+
+      if (hoverHintsEnabled) {
+        extensions.push(completionHoverHints({ ...context, language: 'glsl' }));
+      }
+
+      return extensions;
     })
     .with('assembly', async () => {
       const { assembly } = await import('$lib/codemirror/assembly/assembly');

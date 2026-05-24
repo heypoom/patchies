@@ -13,6 +13,11 @@ Show lightweight hover hints for single-token functions and values in CodeMirror
 - Line comments (`//`) and block comments (`/* ... */`) should not show hover hints.
 - Template-string interpolation bodies (`${...}`) should remain JavaScript hover contexts.
 - Hover tooltip content should keep a readable minimum width even when the code editor node is narrow, while still fitting within small viewports.
+- Users can disable completion hover hints from the Settings modal's Editor section. The setting is enabled by default and should reconfigure existing CodeMirror editors without a page reload.
+
+## Related Settings
+
+- Users can also disable autocomplete from the Settings modal's Editor section. The setting is enabled by default and should remove CodeMirror autocomplete sources and completion UI from existing editors without disabling syntax highlighting or other language support.
 
 ## Out Of Scope
 

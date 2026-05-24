@@ -12,6 +12,7 @@ import {
 describe('editor layout settings store', () => {
   beforeEach(() => {
     const items = new Map<string, string>();
+
     vi.stubGlobal('localStorage', {
       clear: () => items.clear(),
       getItem: (key: string) => items.get(key) ?? null,

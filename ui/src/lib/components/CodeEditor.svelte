@@ -13,7 +13,11 @@
     placeholder as cmPlaceholder
   } from '@codemirror/view';
   import { StateField, StateEffect } from '@codemirror/state';
-  import { useVimInEditor } from '../../stores/editor.store';
+  import {
+    editorAutocompleteEnabled,
+    editorHoverHintsEnabled,
+    useVimInEditor
+  } from '../../stores/editor.store';
   import { loadLanguageExtension } from '$lib/codemirror/language';
   import { autocompletion, acceptCompletion, completionStatus } from '@codemirror/autocomplete';
   import { indentMore } from '@codemirror/commands';
@@ -102,6 +106,7 @@
   );
 
   let languageComp = new Compartment();
+  let autocompleteComp = new Compartment();
 
   let {
     value = $bindable(),
@@ -153,7 +158,14 @@
 
   onMount(async () => {
     if (editorElement) {
-      const languageExtension = await loadLanguageExtension(language, { nodeType });
+      const languageExtension = await loadLanguageExtension(
+        language,
+        { nodeType },
+        {
+          autocomplete: $editorAutocompleteEnabled,
+          hoverHints: $editorHoverHintsEnabled
+        }
+      );
 
       const extensions = [
         keymap.of(searchKeymap),
@@ -333,7 +345,7 @@
             });
           }
         }),
-        autocompletion(),
+        autocompleteComp.of($editorAutocompleteEnabled ? autocompletion() : []),
         ...extraExtensions
       ];
 
@@ -414,15 +426,23 @@
     }
   });
 
-  // Sync language extension with the `language` prop
+  // Sync language, autocomplete, and hover-hint extensions with editor settings.
   $effect(() => {
-    loadLanguageExtension(language, { nodeType }).then((languageExtension) => {
-      if (editorView) {
-        editorView.dispatch({
-          effects: languageComp.reconfigure(languageExtension)
-        });
+    const autocomplete = $editorAutocompleteEnabled;
+    const hoverHints = $editorHoverHintsEnabled;
+
+    loadLanguageExtension(language, { nodeType }, { autocomplete, hoverHints }).then(
+      (languageExtension) => {
+        if (editorView) {
+          editorView.dispatch({
+            effects: [
+              languageComp.reconfigure(languageExtension),
+              autocompleteComp.reconfigure(autocomplete ? autocompletion() : [])
+            ]
+          });
+        }
       }
-    });
+    );
   });
 
   // Highlight error lines when lineErrors prop or editorView changes

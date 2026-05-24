@@ -78,6 +78,8 @@ Each section header in the sidebar has a small label: `PER-USER` or `PER-PATCH` 
 | Setting | Control | Store | Notes |
 |---------|---------|-------|-------|
 | Vim mode | Toggle | `editor.vim` | Shows "requires reload" hint |
+| Autocomplete | Toggle | `editor.autocomplete` | Enabled by default; applies to CodeMirror completions |
+| Hover hints | Toggle | `editor.hoverHints` | Enabled by default; applies to CodeMirror completion metadata tooltips |
 
 **Rendering**
 | Setting | Control | Store | Notes |

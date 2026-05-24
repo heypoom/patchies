@@ -9,7 +9,13 @@
     setOverlayEditorTransparency,
     type EditorLayoutPreference
   } from '../../../../stores/editor-layout-settings.store';
-  import { useVimInEditor } from '../../../../stores/editor.store';
+  import {
+    editorAutocompleteEnabled,
+    editorHoverHintsEnabled,
+    setEditorAutocompleteEnabled,
+    setEditorHoverHintsEnabled,
+    useVimInEditor
+  } from '../../../../stores/editor.store';
 
   import { setVimMode } from '$lib/utils/settings-actions';
 
@@ -63,6 +69,14 @@
     <span class="w-9 text-right font-mono text-xs text-zinc-400">{overlayTransparencyPercent}%</span
     >
   </div>
+</SettingRow>
+
+<SettingRow title="Autocomplete" description="Show code completions while typing in code editors.">
+  <SettingToggle checked={$editorAutocompleteEnabled} onchange={setEditorAutocompleteEnabled} />
+</SettingRow>
+
+<SettingRow title="Hover hints" description="Show function and value hints when hovering code.">
+  <SettingToggle checked={$editorHoverHintsEnabled} onchange={setEditorHoverHintsEnabled} />
 </SettingRow>
 
 <SettingRow title="Vim mode" description="Enable Vim keybindings in code editors (requires reload)">
