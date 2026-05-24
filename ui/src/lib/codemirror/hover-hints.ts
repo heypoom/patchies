@@ -14,7 +14,11 @@ import {
 } from '$lib/codemirror/patchies-completions';
 import { getHydraCompletionByLabel } from '$lib/codemirror/hydra-completions';
 import { getShaderParkCompletionByLabel } from '$lib/codemirror/shaderpark-completions';
+<<<<<<< HEAD
 import { getPeppermintCompletionByLabel } from '$lib/codemirror/peppermint.codemirror';
+=======
+import { getDeckGLCompletionByLabel } from '$lib/codemirror/deckgl-completions';
+>>>>>>> 31751603 (feat(deckgl): add completion layers for deck.gl)
 import type { SupportedLanguage } from '$lib/codemirror/types';
 
 export interface CompletionHoverContext extends PatchiesContext {
@@ -84,6 +88,10 @@ function getCompletionForWord(
 
       if (context.nodeType === 'hydra') {
         return getHydraCompletionByLabel(word) ?? getPatchiesCompletionByLabel(word, context);
+      }
+
+      if (context.nodeType === 'deckgl') {
+        return getDeckGLCompletionByLabel(word) ?? getPatchiesCompletionByLabel(word, context);
       }
 
       return getPatchiesCompletionByLabel(word, context);
