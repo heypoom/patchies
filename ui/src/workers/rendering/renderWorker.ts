@@ -332,6 +332,12 @@ function handleSetFFTData(payload: AudioAnalysisPayloadWithType) {
 
       reglRenderer.setFFTData(payload);
     })
+    .with('deckgl', () => {
+      const deckglRenderer = fboRenderer.deckglByNode.get(nodeId);
+      if (!deckglRenderer) return;
+
+      deckglRenderer.setFFTData(payload);
+    })
     .with('swgl', () => {
       const swglRenderer = fboRenderer.swglByNode.get(nodeId);
       if (!swglRenderer) return;

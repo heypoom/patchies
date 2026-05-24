@@ -10,6 +10,7 @@ import ThreeDom from '$lib/components/nodes/ThreeDom.svelte';
 import GLSLCanvasNode from '$lib/components/nodes/GLSLCanvasNode.svelte';
 import SwissGLNode from '$lib/components/nodes/SwissGLNode.svelte';
 import ReglNode from '$lib/components/nodes/ReglNode.svelte';
+import DeckGLNode from '$lib/components/nodes/DeckGLNode.svelte';
 import ShaderParkNode from '$lib/components/nodes/ShaderParkNode.svelte';
 import FloatTextureNode from '$lib/components/nodes/FloatTextureNode.svelte';
 import StrudelNode from '$lib/components/nodes/StrudelNode.svelte';
@@ -129,6 +130,7 @@ export const nodeTypes: Record<string, any> = {
   dom: DomNode,
   vue: VueNode,
   regl: ReglNode,
+  deckgl: DeckGLNode,
   shaderpark: ShaderParkNode,
   'float.tex': FloatTextureNode,
   glsl: GLSLCanvasNode,

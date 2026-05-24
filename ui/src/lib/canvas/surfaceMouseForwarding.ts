@@ -12,11 +12,13 @@ export type SurfaceMouseForwardingRules = {
 
 export type SurfaceMouseTarget =
   | { kind: 'three'; nodeId: string; type: string }
+  | { kind: 'deckgl'; nodeId: string; type: string }
   | { kind: 'shadertoy'; nodeId: string; type: string }
   | { kind: 'simple'; nodeId: string; type: string };
 
 export type SurfaceWheelTarget =
   | { kind: 'three'; nodeId: string }
+  | { kind: 'deckgl'; nodeId: string }
   | { kind: 'shaderpark3d'; nodeId: string };
 
 function matchesForwardingRules(nodeId: string, rules?: SurfaceMouseForwardingRules): boolean {
@@ -33,6 +35,7 @@ function matchesForwardingRules(nodeId: string, rules?: SurfaceMouseForwardingRu
 export const isSurfaceMouseForwardingNode = (node: Node): boolean =>
   match(node.type)
     .with('three', () => true)
+    .with('deckgl', () => true)
     .when(
       (type) => SHADERTOY_TYPES.has(type ?? ''),
       () => true
@@ -60,6 +63,9 @@ export const getSurfaceMouseTargets = (
       .with({ type: 'three' }, (): SurfaceMouseTarget[] => [
         { kind: 'three', nodeId: node.id, type: 'three' }
       ])
+      .with({ type: 'deckgl' }, (): SurfaceMouseTarget[] => [
+        { kind: 'deckgl', nodeId: node.id, type: 'deckgl' }
+      ])
       .with({ type: 'shaderpark', renderMode: '3d' }, (): SurfaceMouseTarget[] => [
         { kind: 'shadertoy', nodeId: node.id, type: 'shaderpark' }
       ])
@@ -85,6 +91,7 @@ export const getSurfaceWheelTargets = (
 
     return match({ type: node.type, renderMode: node.data?.renderMode })
       .with({ type: 'three' }, (): SurfaceWheelTarget[] => [{ kind: 'three', nodeId: node.id }])
+      .with({ type: 'deckgl' }, (): SurfaceWheelTarget[] => [{ kind: 'deckgl', nodeId: node.id }])
       .with({ type: 'shaderpark', renderMode: '3d' }, (): SurfaceWheelTarget[] => [
         { kind: 'shaderpark3d', nodeId: node.id }
       ])

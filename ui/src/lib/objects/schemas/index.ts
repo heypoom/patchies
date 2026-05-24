@@ -7,6 +7,7 @@ export * from './p5';
 export * from './hydra';
 export * from './glsl';
 export * from './canvas';
+export * from './deckgl';
 export * from './surface';
 export * from './shaderpark';
 export * from './float-tex';
@@ -104,6 +105,7 @@ import { p5Schema } from './p5';
 import { hydraSchema } from './hydra';
 import { glslSchema } from './glsl';
 import { canvasSchema, canvasDomSchema } from './canvas';
+import { deckglSchema } from './deckgl';
 import { surfaceSchema } from './surface';
 import { shaderparkSchema } from './shaderpark';
 import { floatTexSchema } from './float-tex';
@@ -219,6 +221,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   glsl: glslSchema,
   canvas: canvasSchema,
   'canvas.dom': canvasDomSchema,
+  deckgl: deckglSchema,
   surface: surfaceSchema,
   shaderpark: shaderparkSchema,
   'float.tex': floatTexSchema,

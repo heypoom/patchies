@@ -50,15 +50,35 @@ function createMockElement(tagName: string): unknown {
   }
 
   // Generic mock element
-  return {
+  const children: unknown[] = [];
+  const element = {
     tagName: tagName.toUpperCase(),
     style: {},
     className: '',
-    appendChild: () => {},
-    removeChild: () => {},
+    classList: {
+      add: () => {},
+      remove: () => {},
+      contains: () => false
+    },
+    append: (child: unknown) => {
+      children.push(child);
+    },
+    appendChild: (child: unknown) => {
+      children.push(child);
+      return child;
+    },
+    remove: () => {},
+    removeChild: (child: unknown) => {
+      const index = children.indexOf(child);
+      if (index >= 0) children.splice(index, 1);
+      return child;
+    },
+    querySelector: () => null,
     addEventListener: () => {},
     removeEventListener: () => {}
   };
+
+  return element;
 }
 
 // Mock document object
