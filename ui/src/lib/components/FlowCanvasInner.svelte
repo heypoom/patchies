@@ -1233,6 +1233,8 @@
     <DetachedCodeEditorOverlay
       onClose={closeCodeEditorOverlay}
       onrun={$activeCodeEditorTarget.onrun}
+      nodeId={$activeCodeEditorTarget.nodeId}
+      settings={$activeCodeEditorTarget.settings}
       codeEditor={detachedCodeEditorSnippet}
     />
   {/if}

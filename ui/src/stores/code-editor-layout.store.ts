@@ -1,7 +1,16 @@
 import { get, writable } from 'svelte/store';
 import type { SupportedLanguage } from '$lib/codemirror/types';
+import type { SettingsSchema } from '$lib/settings';
 import { isSidebarOpen, sidebarView } from './ui.store';
 import { showSidebarTab } from './sidebar-visibility.store';
+
+export interface CodeEditorTargetSettings {
+  schema: SettingsSchema;
+  values: Record<string, unknown>;
+  onValueChange: (key: string, value: unknown) => void;
+  onRevertAll: () => void;
+  settingsPrefix?: string;
+}
 
 export interface CodeEditorTarget {
   nodeId: string;
@@ -11,6 +20,7 @@ export interface CodeEditorTarget {
   title?: string;
   placeholder?: string;
   onrun?: () => void;
+  settings?: CodeEditorTargetSettings;
   mode: 'overlay' | 'sidebar';
 }
 

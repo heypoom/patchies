@@ -12,7 +12,8 @@
     onValueChange,
     onRevertAll,
     onClose,
-    settingsPrefix = 'settings'
+    settingsPrefix = 'settings',
+    showCloseButton = true
   }: {
     nodeId: string;
     schema: SettingsSchema;
@@ -24,6 +25,7 @@
     /** Prefix for undo/redo tracking keys. Defaults to 'settings' (e.g. 'settings.foo').
      *  Pass '' to track at the top level (e.g. 'foo'). */
     settingsPrefix?: string;
+    showCloseButton?: boolean;
   } = $props();
 
   const VECTOR_AXES = ['x', 'y'] as const;
@@ -132,27 +134,31 @@
 </script>
 
 <!-- Close button bar -->
-<div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-  {#if isDirty}
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        <button
-          onclick={() => onRevertAll()}
-          class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300"
-        >
-          <RotateCcw class="h-4 w-4" />
-        </button>
-      </Tooltip.Trigger>
-      <Tooltip.Content>Revert all to defaults</Tooltip.Content>
-    </Tooltip.Root>
-  {/if}
-  <button
-    onclick={onClose}
-    class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
-  >
-    <X class="h-4 w-4" />
-  </button>
-</div>
+{#if showCloseButton || isDirty}
+  <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+    {#if isDirty}
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            onclick={() => onRevertAll()}
+            class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300"
+          >
+            <RotateCcw class="h-4 w-4" />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Revert all to defaults</Tooltip.Content>
+      </Tooltip.Root>
+    {/if}
+    {#if showCloseButton}
+      <button
+        onclick={onClose}
+        class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
+      >
+        <X class="h-4 w-4" />
+      </button>
+    {/if}
+  </div>
+{/if}
 
 <!-- Settings panel -->
 <div class="nodrag w-48 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">

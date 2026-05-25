@@ -274,7 +274,16 @@
       nodeType: objectType,
       title,
       placeholder: codePlaceholder,
-      onrun: onrun ? handleRun : undefined
+      onrun: onrun ? handleRun : undefined,
+      settings:
+        settingsSchema && settingsSchema.length > 0
+          ? {
+              schema: settingsSchema,
+              values: settingsValues,
+              onValueChange: (key, value) => onSettingsValueChange?.(key, value),
+              onRevertAll: () => onSettingsRevertAll?.()
+            }
+          : undefined
     });
 
     showEditor = false;
@@ -291,7 +300,16 @@
       nodeType: objectType,
       title,
       placeholder: codePlaceholder,
-      onrun: onrun ? handleRun : undefined
+      onrun: onrun ? handleRun : undefined,
+      settings:
+        settingsSchema && settingsSchema.length > 0
+          ? {
+              schema: settingsSchema,
+              values: settingsValues,
+              onValueChange: (key, value) => onSettingsValueChange?.(key, value),
+              onRevertAll: () => onSettingsRevertAll?.()
+            }
+          : undefined
     });
 
     showEditor = false;

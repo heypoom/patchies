@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { Play, X } from '@lucide/svelte/icons';
+  import { Play, Settings, X } from '@lucide/svelte/icons';
   import { onDestroy, onMount } from 'svelte';
   import type { Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';
+  import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
+  import type { CodeEditorTargetSettings } from '../../stores/code-editor-layout.store';
   import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
   import { isSidebarOpen } from '../../stores/ui.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
@@ -10,16 +12,21 @@
   let {
     onClose,
     onrun,
+    nodeId,
+    settings,
     codeEditor,
     class: className = ''
   }: {
     onClose: () => void;
     onrun?: () => void;
+    nodeId?: string;
+    settings?: CodeEditorTargetSettings;
     codeEditor: Snippet;
     class?: string;
   } = $props();
 
   let panelBackground = $derived(`rgba(9, 9, 11, ${$overlayEditorTransparency})`);
+  let showSettings = $state(false);
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key !== 'Escape' || !event.shiftKey) return;
@@ -60,6 +67,39 @@
 
         <Tooltip.Content>Run Code</Tooltip.Content>
       </Tooltip.Root>
+    {/if}
+
+    {#if settings && settings.schema.length > 0 && nodeId}
+      <div class="relative">
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
+              onclick={() => (showSettings = !showSettings)}
+              aria-label="Object settings"
+            >
+              <Settings class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+
+          <Tooltip.Content>Settings</Tooltip.Content>
+        </Tooltip.Root>
+
+        {#if showSettings}
+          <div class="absolute top-11 right-0">
+            <ObjectSettings
+              {nodeId}
+              schema={settings.schema}
+              values={settings.values}
+              onValueChange={settings.onValueChange}
+              onRevertAll={settings.onRevertAll}
+              settingsPrefix={settings.settingsPrefix}
+              onClose={() => (showSettings = false)}
+              showCloseButton={false}
+            />
+          </div>
+        {/if}
+      </div>
     {/if}
 
     <Tooltip.Root>

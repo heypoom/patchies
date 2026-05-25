@@ -139,7 +139,16 @@
       language: 'javascript',
       nodeType,
       title: displayTitle,
-      onrun: onRun
+      onrun: onRun,
+      settings:
+        settingsSchema && settingsSchema.length > 0
+          ? {
+              schema: settingsSchema,
+              values: settingsValues,
+              onValueChange: (key, value) => onSettingsValueChange?.(key, value),
+              onRevertAll: () => onSettingsRevertAll?.()
+            }
+          : undefined
     });
 
     showEditor = false;
@@ -153,7 +162,16 @@
       language: 'javascript',
       nodeType,
       title: displayTitle,
-      onrun: onRun
+      onrun: onRun,
+      settings:
+        settingsSchema && settingsSchema.length > 0
+          ? {
+              schema: settingsSchema,
+              values: settingsValues,
+              onValueChange: (key, value) => onSettingsValueChange?.(key, value),
+              onRevertAll: () => onSettingsRevertAll?.()
+            }
+          : undefined
     });
 
     showEditor = false;
