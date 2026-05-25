@@ -96,6 +96,7 @@
               settingsPrefix={settings.settingsPrefix}
               onClose={() => (showSettings = false)}
               showCloseButton={false}
+              showRevertButton={false}
             />
           </div>
         {/if}

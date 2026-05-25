@@ -13,7 +13,8 @@
     onRevertAll,
     onClose,
     settingsPrefix = 'settings',
-    showCloseButton = true
+    showCloseButton = true,
+    showRevertButton = true
   }: {
     nodeId: string;
     schema: SettingsSchema;
@@ -26,6 +27,7 @@
      *  Pass '' to track at the top level (e.g. 'foo'). */
     settingsPrefix?: string;
     showCloseButton?: boolean;
+    showRevertButton?: boolean;
   } = $props();
 
   const VECTOR_AXES = ['x', 'y'] as const;
@@ -134,9 +136,9 @@
 </script>
 
 <!-- Close button bar -->
-{#if showCloseButton || isDirty}
+{#if showCloseButton || (showRevertButton && isDirty)}
   <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-    {#if isDirty}
+    {#if showRevertButton && isDirty}
       <Tooltip.Root>
         <Tooltip.Trigger>
           <button
