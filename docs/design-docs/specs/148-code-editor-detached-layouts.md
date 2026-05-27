@@ -29,10 +29,11 @@ Detached editor layouts should support:
 
 The first implementation focuses on visual code nodes that already use
 `CanvasPreviewLayout`, JS-style code block nodes that share `CodeBlockBase`, and
-simple DSP code nodes that share `SimpleDspLayout`. Expression-style nodes such
-as `CommonExprLayout` do not need detached editing initially because their inline
-editors are already compact and the code is less likely to be part of a
-performance visual.
+simple DSP code nodes that share `SimpleDspLayout`. Most expression-style nodes
+such as `CommonExprLayout` do not need detached editing initially because their
+inline editors are already compact. Longer live-coding expression nodes can opt
+in when their `expr` field benefits from the same focused editor, starting with
+`chuck~`.
 
 ## Source Of Truth
 
@@ -239,6 +240,8 @@ First pass:
   `SimpleDspLayout` consumers
 - sidebar editor for `CanvasPreviewLayout`, `CodeBlockBase`, and
   `SimpleDspLayout` consumers
+- opt-in detached editing for longer expression editors such as `chuck~`, using
+  `dataKey: "expr"` and the same node run callback as the inline editor
 - Settings modal option for default editor layout: `Inline`, `Overlay`, or
   `Sidebar`
 - Settings modal option for overlay editor transparency

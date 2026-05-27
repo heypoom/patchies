@@ -4,9 +4,11 @@ import { describe, expect, it } from 'vitest';
 import {
   activeCodeEditorTarget,
   closeCodeEditorOverlay,
+  hasCodeEditorTargetSettings,
   isDetachedCodeEditorTarget,
   openCodeEditorOverlay,
-  openCodeEditorSidebar
+  openCodeEditorSidebar,
+  type CodeEditorTarget
 } from './code-editor-layout.store';
 import { sidebarVisibleTabs } from './sidebar-visibility.store';
 import { isSidebarOpen, sidebarView } from './ui.store';
@@ -63,5 +65,56 @@ describe('code editor layout store', () => {
     expect(get(sidebarVisibleTabs).has('code')).toBe(true);
 
     closeCodeEditorOverlay();
+  });
+
+  it('detects schema and custom settings targets', () => {
+    const baseTarget = {
+      nodeId: 'node-1',
+      dataKey: 'code',
+      language: 'javascript',
+      mode: 'overlay'
+    } satisfies CodeEditorTarget;
+
+    expect(hasCodeEditorTargetSettings(baseTarget)).toBe(false);
+
+    expect(
+      hasCodeEditorTargetSettings({
+        ...baseTarget,
+        settings: {
+          schema: [],
+          values: {},
+          onValueChange: () => {},
+          onRevertAll: () => {}
+        }
+      })
+    ).toBe(false);
+
+    expect(
+      hasCodeEditorTargetSettings({
+        ...baseTarget,
+        settings: {
+          schema: [
+            {
+              key: 'size',
+              label: 'Size',
+              type: 'number',
+              min: 1,
+              max: 10,
+              step: 1
+            }
+          ],
+          values: {},
+          onValueChange: () => {},
+          onRevertAll: () => {}
+        }
+      })
+    ).toBe(true);
+
+    expect(
+      hasCodeEditorTargetSettings({
+        ...baseTarget,
+        customSettings: (() => {}) as any
+      })
+    ).toBe(true);
   });
 });

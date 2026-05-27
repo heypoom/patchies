@@ -1,4 +1,5 @@
 import { get, writable } from 'svelte/store';
+import type { Snippet } from 'svelte';
 import type { SupportedLanguage } from '$lib/codemirror/types';
 import type { SettingsSchema } from '$lib/settings';
 import { isSidebarOpen, sidebarView } from './ui.store';
@@ -21,6 +22,8 @@ export interface CodeEditorTarget {
   placeholder?: string;
   onrun?: () => void;
   settings?: CodeEditorTargetSettings;
+  customActions?: Snippet;
+  customSettings?: Snippet;
   mode: 'overlay' | 'sidebar';
 }
 
@@ -43,6 +46,21 @@ export function openCodeEditorSidebar(target: OpenCodeEditorSidebarTarget): void
 
 export function closeCodeEditorOverlay(): void {
   activeCodeEditorTarget.set(null);
+}
+
+interface CodeEditorTargetSettingsState {
+  settings?: CodeEditorTargetSettings;
+  customSettings?: Snippet;
+}
+
+export function hasCodeEditorTargetSettings(
+  target: CodeEditorTarget | CodeEditorTargetSettingsState | null | undefined
+): boolean {
+  if (!target) return false;
+
+  if (target.customSettings) return true;
+
+  return (target.settings?.schema.length ?? 0) > 0;
 }
 
 export function isDetachedCodeEditorTarget(nodeId: string | undefined, dataKey: string): boolean {

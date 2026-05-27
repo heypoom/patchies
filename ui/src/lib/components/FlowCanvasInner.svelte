@@ -1236,6 +1236,8 @@
       onrun={$activeCodeEditorTarget.onrun}
       nodeId={$activeCodeEditorTarget.nodeId}
       settings={$activeCodeEditorTarget.settings}
+      customActions={$activeCodeEditorTarget.customActions}
+      customSettings={$activeCodeEditorTarget.customSettings}
       codeEditor={detachedCodeEditorSnippet}
     />
   {/if}
