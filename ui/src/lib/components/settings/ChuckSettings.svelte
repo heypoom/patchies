@@ -31,7 +31,12 @@
     <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
       <Tooltip.Root>
         <Tooltip.Trigger>
-          <button onclick={onStopAll} class="cursor-pointer rounded p-1 hover:bg-zinc-700">
+          <button
+            onclick={onStopAll}
+            class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+            type="button"
+            aria-label="Stop all shreds"
+          >
             <Trash class="h-4 w-4 text-zinc-300" />
           </button>
         </Tooltip.Trigger>
@@ -41,7 +46,12 @@
       {#if showCloseButton && onClose}
         <Tooltip.Root>
           <Tooltip.Trigger>
-            <button onclick={onClose} class="cursor-pointer rounded p-1 hover:bg-zinc-700">
+            <button
+              onclick={onClose}
+              class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+              type="button"
+              aria-label="Close settings"
+            >
               <X class="h-4 w-4 text-zinc-300" />
             </button>
           </Tooltip.Trigger>
@@ -78,6 +88,8 @@
                       <button
                         onclick={() => onRemoveShred(shred.id)}
                         class="ml-2 cursor-pointer rounded p-1 hover:bg-zinc-700"
+                        type="button"
+                        aria-label={`Remove shred ${shred.id}`}
                       >
                         <X class="h-3 w-3 text-red-400" />
                       </button>

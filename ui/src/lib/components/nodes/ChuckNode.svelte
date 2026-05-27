@@ -326,6 +326,9 @@
               <button
                 class="cursor-pointer rounded p-1 hover:bg-zinc-700"
                 onclick={() => (showSettings = !showSettings)}
+                type="button"
+                aria-label={showSettings ? 'Close settings' : 'Open settings'}
+                aria-pressed={showSettings}
               >
                 <Settings class="h-4 w-4 text-zinc-300" />
               </button>
