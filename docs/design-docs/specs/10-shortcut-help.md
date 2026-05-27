@@ -6,6 +6,7 @@ Examples of shortcuts we have right now:
 
 - N on an empty canvas to create a new node.
 - SHIFT + ENTER in code editor to run a node.
+- Backspace or Delete to remove the selected object or edge.
 
 You can use Shadcn for the modal. Example:
 
