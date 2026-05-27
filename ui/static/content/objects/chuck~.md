@@ -21,6 +21,7 @@ textures.
 - **Replace Shred** (`Ctrl/Cmd + Enter`): replaces the most recent shred
 - **Add Shred** (`Ctrl/Cmd + \`): adds a new shred
 - **Remove Shred** (`Ctrl/Cmd + Backspace`): removes the most recent shred
+- **Expand Editor**: opens the ChucK code in the detached overlay editor
 - **Gear button**: see running shreds, remove any with "x"
 
 ## Audio Input

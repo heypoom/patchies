@@ -4,7 +4,10 @@
   import type { Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
-  import type { CodeEditorTargetSettings } from '../../stores/code-editor-layout.store';
+  import {
+    hasCodeEditorTargetSettings,
+    type CodeEditorTargetSettings
+  } from '../../stores/code-editor-layout.store';
   import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
   import { isSidebarOpen } from '../../stores/ui.store';
   import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
@@ -14,6 +17,8 @@
     onrun,
     nodeId,
     settings,
+    customActions,
+    customSettings,
     codeEditor,
     class: className = ''
   }: {
@@ -21,12 +26,15 @@
     onrun?: () => void;
     nodeId?: string;
     settings?: CodeEditorTargetSettings;
+    customActions?: Snippet;
+    customSettings?: Snippet;
     codeEditor: Snippet;
     class?: string;
   } = $props();
 
   let panelBackground = $derived(`rgba(9, 9, 11, ${$overlayEditorTransparency})`);
   let showSettings = $state(false);
+  let hasSettings = $derived(hasCodeEditorTargetSettings({ settings, customSettings }));
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key !== 'Escape' || !event.shiftKey) return;
@@ -53,7 +61,11 @@
   style:background-color={panelBackground}
 >
   <div class="absolute top-6 right-6 z-10 flex gap-1">
-    {#if onrun}
+    {#if customActions}
+      {@render customActions()}
+    {/if}
+
+    {#if onrun && !customActions}
       <Tooltip.Root>
         <Tooltip.Trigger>
           <button
@@ -69,7 +81,7 @@
       </Tooltip.Root>
     {/if}
 
-    {#if settings && settings.schema.length > 0 && nodeId}
+    {#if hasSettings}
       <div class="relative">
         <Tooltip.Root>
           <Tooltip.Trigger>
@@ -87,17 +99,21 @@
 
         {#if showSettings}
           <div class="absolute top-11 right-0">
-            <ObjectSettings
-              {nodeId}
-              schema={settings.schema}
-              values={settings.values}
-              onValueChange={settings.onValueChange}
-              onRevertAll={settings.onRevertAll}
-              settingsPrefix={settings.settingsPrefix}
-              onClose={() => (showSettings = false)}
-              showCloseButton={false}
-              showRevertButton={false}
-            />
+            {#if customSettings}
+              {@render customSettings()}
+            {:else if settings && settings.schema.length > 0 && nodeId}
+              <ObjectSettings
+                {nodeId}
+                schema={settings.schema}
+                values={settings.values}
+                onValueChange={settings.onValueChange}
+                onRevertAll={settings.onRevertAll}
+                settingsPrefix={settings.settingsPrefix}
+                onClose={() => (showSettings = false)}
+                showCloseButton={false}
+                showRevertButton={false}
+              />
+            {/if}
           </div>
         {/if}
       </div>

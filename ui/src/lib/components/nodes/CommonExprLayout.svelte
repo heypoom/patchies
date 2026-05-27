@@ -1,5 +1,6 @@
 <script lang="ts">
   import { useSvelteFlow } from '@xyflow/svelte';
+  import type { Snippet } from 'svelte';
   import hljs from 'highlight.js/lib/core';
   import javascript from 'highlight.js/lib/languages/javascript';
   import CodeEditor from '../CodeEditor.svelte';
@@ -7,6 +8,12 @@
   import { EditorView } from 'codemirror';
   import { highlightUiua } from '$lib/uiua/uiua-highlight';
   import type { SupportedLanguage } from '$lib/codemirror/types';
+  import {
+    activeCodeEditorTarget,
+    closeCodeEditorOverlay,
+    openCodeEditorOverlay
+  } from '../../../stores/code-editor-layout.store';
+  import { createCommonExprEditorTarget } from '$lib/code-editor/common-expr-editor-target';
 
   import 'highlight.js/styles/tokyo-night-dark.css';
 
@@ -57,6 +64,10 @@
     hasError = false,
     allowEmptyExpr = false,
     dataKey = 'expr',
+    nodeType = 'expr',
+    detachedEditorTitle = undefined,
+    detachedActions = undefined,
+    detachedSettings = undefined,
     fontSize,
     lineWrap = false,
     children,
@@ -88,6 +99,10 @@
     handles?: any;
     outlets?: any;
     dataKey?: string;
+    nodeType?: string;
+    detachedEditorTitle?: string;
+    detachedActions?: Snippet;
+    detachedSettings?: Snippet;
     lineWrap?: boolean;
     onPreviewMouseOver?: (e: MouseEvent) => void;
     onPreviewMouseOut?: (e: MouseEvent) => void;
@@ -97,6 +112,9 @@
 
   let codeEditorRef: CodeEditor | null = $state(null);
   let originalExpr = expr; // Store original for escape functionality
+  const isCodeEditorDetached = $derived(
+    $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === dataKey
+  );
 
   // Escape HTML for safe display
   function escapeHtml(text: string): string {
@@ -131,6 +149,10 @@
   });
 
   function enterEditingMode() {
+    if (isCodeEditorDetached) {
+      closeCodeEditorOverlay();
+    }
+
     isEditing = true;
     originalExpr = expr;
 
@@ -207,6 +229,24 @@
   export function insertAtCursor(text: string) {
     codeEditorRef?.insertAtCursor(text);
   }
+
+  export function openExpandedEditor() {
+    openCodeEditorOverlay(
+      createCommonExprEditorTarget({
+        nodeId,
+        dataKey,
+        language,
+        nodeType,
+        title: detachedEditorTitle,
+        placeholder,
+        onrun: onRun,
+        customActions: detachedActions,
+        customSettings: detachedSettings
+      })
+    );
+
+    isEditing = false;
+  }
 </script>
 
 <div class="relative">
@@ -216,7 +256,7 @@
         {@render handles?.()}
 
         <div class="relative">
-          {#if isEditing}
+          {#if isEditing && !isCodeEditorDetached}
             <div
               class={[
                 'expr-editor-container nodrag w-full max-w-[400px] min-w-[40px] resize-none rounded-lg border font-mono text-zinc-200',

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CirclePlus, Delete, Replace, Settings } from '@lucide/svelte/icons';
+  import { CirclePlus, Delete, Expand, Replace, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -203,6 +203,60 @@
   />
 {/snippet}
 
+{#snippet detachedChuckSettings()}
+  <ChuckSettings
+    {shreds}
+    onRemoveShred={removeShred}
+    onStopAll={stopChuck}
+    showCloseButton={false}
+    showHeaderActions={false}
+  />
+{/snippet}
+
+{#snippet detachedChuckActions()}
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      <button
+        onclick={handleReplace}
+        class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={isReplaceDisabled}
+        aria-label="Replace ChucK shred"
+      >
+        <Replace class="h-4 w-4" />
+      </button>
+    </Tooltip.Trigger>
+    <Tooltip.Content>Replace (Cmd+Enter)</Tooltip.Content>
+  </Tooltip.Root>
+
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      <button
+        onclick={handleAddShred}
+        class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!data.expr.trim()}
+        aria-label="Add ChucK shred"
+      >
+        <CirclePlus class="h-4 w-4" />
+      </button>
+    </Tooltip.Trigger>
+    <Tooltip.Content>Add Shred (Cmd+\)</Tooltip.Content>
+  </Tooltip.Root>
+
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      <button
+        onclick={removeChuckCode}
+        class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={shreds.length === 0}
+        aria-label="Remove ChucK shred"
+      >
+        <Delete class="h-4 w-4" />
+      </button>
+    </Tooltip.Trigger>
+    <Tooltip.Content>Remove (Cmd+Backspace)</Tooltip.Content>
+  </Tooltip.Root>
+{/snippet}
+
 <div class="relative flex gap-x-3">
   <div class="group relative">
     <div class="flex flex-col gap-2" bind:this={contentContainer}>
@@ -252,17 +306,33 @@
           </Tooltip.Root>
         </div>
 
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            <button
-              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              onclick={() => (showSettings = !showSettings)}
-            >
-              <Settings class="h-4 w-4 text-zinc-300" />
-            </button>
-          </Tooltip.Trigger>
-          <Tooltip.Content>Settings</Tooltip.Content>
-        </Tooltip.Root>
+        <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={() => layoutRef?.openExpandedEditor()}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!data.expr.trim()}
+                aria-label="Expand ChucK editor"
+              >
+                <Expand class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Expand Editor</Tooltip.Content>
+          </Tooltip.Root>
+
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+                onclick={() => (showSettings = !showSettings)}
+              >
+                <Settings class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Settings</Tooltip.Content>
+          </Tooltip.Root>
+        </div>
       </div>
 
       <div class="chuck-node-container relative">
@@ -282,6 +352,10 @@
           extraExtensions={chuckKeymaps}
           exitOnRun={false}
           onRun={handleReplace}
+          nodeType="chuck~"
+          detachedEditorTitle="chuck~"
+          detachedActions={detachedChuckActions}
+          detachedSettings={detachedChuckSettings}
         />
 
         {@render chuckOutlets()}
