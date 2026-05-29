@@ -75,6 +75,17 @@
     window.opener?.postMessage(message, expectedOrigin);
   }
 
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key.toLowerCase() !== 'f') return;
+    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || event.repeat) return;
+    if (document.fullscreenElement) return;
+
+    event.preventDefault();
+    document.documentElement.requestFullscreen?.().catch(() => {
+      // Browser fullscreen can be rejected by browser policy or user settings.
+    });
+  }
+
   onMount(() => {
     expectedOrigin = getExpectedOrigin();
 
@@ -110,6 +121,7 @@
 
     window.addEventListener('message', handleMessage);
     window.addEventListener('resize', resizeCanvases);
+    window.addEventListener('keydown', handleKeydown);
 
     // Announce to opener so it can re-capture the window reference after reloads
     announceReady();
@@ -126,6 +138,7 @@
     return () => {
       window.removeEventListener('message', handleMessage);
       window.removeEventListener('resize', resizeCanvases);
+      window.removeEventListener('keydown', handleKeydown);
 
       detachSurfaceInput();
       channel.close();

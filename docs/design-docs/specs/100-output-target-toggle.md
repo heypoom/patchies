@@ -8,6 +8,14 @@ When a secondary output screen is open, frames **always** go to it — there's n
 
 Add an `outputTarget` setting (`'background' | 'screen'`) that controls where rendered frames are routed, independent of whether the output window is open.
 
+## Secondary Output Fullscreen Shortcut
+
+The `/output` secondary screen should support a single-letter `f` hotkey for live
+use. Pressing `f` while the secondary output window is focused requests browser
+fullscreen for that output page. Modified chords such as `Cmd+F`, `Ctrl+F`,
+`Alt+F`, and `Shift+F` are ignored so browser/system shortcuts keep working.
+Repeated keydown events from holding the key are ignored.
+
 ## Current Routing Logic (GLSystem.ts:264-268)
 
 ```typescript
