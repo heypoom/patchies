@@ -220,11 +220,7 @@ body {
   }
 
   .node-title-drag-handle {
-    @apply cursor-grab select-none active:cursor-grabbing;
-  }
-
-  .svelte-flow__node.dragging .node-title-drag-handle {
-    @apply cursor-grabbing;
+    @apply cursor-move select-none;
   }
 
   .background-output-active .node-floating-button {

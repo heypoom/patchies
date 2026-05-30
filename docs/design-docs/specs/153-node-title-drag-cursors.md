@@ -4,8 +4,7 @@ Node title labels, such as `glsl`, `strudel`, `midi.in`, and `serial`, are commo
 
 ## Requirement
 
-- Floating node title labels should show a grab cursor on hover.
-- While pressing on a title label, the cursor should switch to grabbing.
+- Floating node title labels should show a move cursor on hover.
 - This is only a cursor affordance. It must not change node dragging behavior or add new interactive controls.
 
 ## Implementation
