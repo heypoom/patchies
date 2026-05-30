@@ -13,3 +13,7 @@ export function getOrcaDisplayFontSize({
 }: OrcaDisplayFontSizeOptions): number {
   return isDetached ? fullscreenFontSize : inlineFontSize;
 }
+
+export function getOrcaFullscreenOverlayBackground(transparency: number): string {
+  return `rgba(0, 0, 0, ${transparency})`;
+}

@@ -28,8 +28,13 @@
     closeDetachedOrcaEditor,
     openDetachedOrcaEditor
   } from '../../../stores/detached-orca-editor.store';
+  import { overlayEditorTransparency } from '../../../stores/editor-layout-settings.store';
   import { screenToOrcaGridCell } from '$lib/orca/pointer';
-  import { DEFAULT_ORCA_FULLSCREEN_FONT_SIZE, getOrcaDisplayFontSize } from '$lib/orca/layout';
+  import {
+    DEFAULT_ORCA_FULLSCREEN_FONT_SIZE,
+    getOrcaDisplayFontSize,
+    getOrcaFullscreenOverlayBackground
+  } from '$lib/orca/layout';
 
   let {
     id: nodeId,
@@ -95,6 +100,9 @@
       fullscreenFontSize,
       isDetached
     })
+  );
+  const fullscreenOverlayBackground = $derived(
+    getOrcaFullscreenOverlayBackground($overlayEditorTransparency)
   );
   let TILE_W = $derived(10 * displayFontSize);
   let TILE_H = $derived(15 * displayFontSize);
@@ -563,7 +571,15 @@
     renderer.updateFontScale(displayFontSize);
 
     const selection = { x: cursorX, y: cursorY, w: selectionW, h: selectionH };
-    renderer.render(cursorX, cursorY, clock.isPaused, showInterface, showGuide, selection);
+    renderer.render(
+      cursorX,
+      cursorY,
+      clock.isPaused,
+      showInterface,
+      showGuide,
+      selection,
+      isDetached ? 'transparent' : COLORS.background
+    );
   }
 
   function increaseBpm(): void {
@@ -791,7 +807,7 @@
           ]}
           bind:this={containerElement}
           use:portal={detachedPortalTarget}
-          style:background-color={isDetached ? '#000000' : undefined}
+          style:background-color={isDetached ? fullscreenOverlayBackground : undefined}
         >
           {#if isDetached}
             <div class="absolute top-6 right-6 z-10 flex gap-1">

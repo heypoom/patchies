@@ -26,8 +26,11 @@ selection, and playback state.
   while the inline canvas continues to account for the current XYFlow zoom.
 - Fullscreen mode defaults to a `2.7x` Orca font scale so the grid is readable
   for an audience.
-- The fullscreen overlay background is pitch black (`#000000`) to match Orca's
-  canvas background.
+- The fullscreen overlay background uses the same transparency setting as
+  fullscreen CodeMirror overlays, with black as its base color.
+- The fullscreen Orca canvas clears its own black background so background
+  visuals show through the overlay and the grid area does not become darker than
+  the rest of the screen.
 - The fullscreen canvas is borderless; the grid itself should be the visual
   focus.
 - The fullscreen chrome includes play/pause, settings, and close controls.

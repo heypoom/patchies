@@ -230,7 +230,8 @@ export class OrcaRenderer {
     isPaused: boolean,
     showInterface: boolean = false,
     showGuide: boolean = false,
-    selection?: { x: number; y: number; w: number; h: number }
+    selection?: { x: number; y: number; w: number; h: number },
+    background: string = this.colors.background
   ): void {
     // Update ports map
     this.findPorts();
@@ -252,9 +253,13 @@ export class OrcaRenderer {
       this.ctx.font = `${this.tileHS * 0.75}px monospace`;
     }
 
-    // Clear canvas
-    this.ctx.fillStyle = this.colors.background;
-    this.ctx.fillRect(0, 0, width, height);
+    // Clear canvas. Fullscreen mode can request a transparent grid background
+    // so visuals behind the overlay show through evenly.
+    this.ctx.clearRect(0, 0, width, height);
+    if (background !== 'transparent') {
+      this.ctx.fillStyle = background;
+      this.ctx.fillRect(0, 0, width, height);
+    }
 
     // Calculate selection bounds
     let selMinX = cursorX,
