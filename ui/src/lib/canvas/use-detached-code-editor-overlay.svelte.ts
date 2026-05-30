@@ -6,6 +6,7 @@ import {
   closeCodeEditorOverlay
 } from '../../stores/code-editor-layout.store';
 import { overrideOutputNodeId } from '../../stores/renderer.store';
+import { commitDetachedCodeEditorChange } from './detached-code-editor-change';
 
 interface DetachedCodeEditorOverlayOptions {
   getNodes: () => Node[];
@@ -61,19 +62,7 @@ export function useDetachedCodeEditorOverlay({
     const target = activeTarget.current;
     if (!target) return;
 
-    setNodes(
-      getNodes().map((candidate) =>
-        candidate.id === target.nodeId
-          ? {
-              ...candidate,
-              data: {
-                ...candidate.data,
-                [target.dataKey]: nextValue
-              }
-            }
-          : candidate
-      )
-    );
+    commitDetachedCodeEditorChange(getNodes(), target, nextValue, setNodes);
   }
 
   $effect(() => {

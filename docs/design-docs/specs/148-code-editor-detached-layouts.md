@@ -79,6 +79,9 @@ nodeType, title, mode }` in a shared store.
   render normally again.
 - Editing in detached mode updates `node.data[dataKey]` continuously, matching
   current inline editor behavior.
+- Detached editing can also invoke an optional target-specific change callback
+  after updating node data, so expression editors with live side effects such as
+  `bytebeat~` can keep their "run on edit" behavior in fullscreen.
 - Blur commits still emit the existing `codeCommit` event so undo/redo records a
   single focused editing session.
 - `Shift-Enter` should run the same node action as the inline editor where the

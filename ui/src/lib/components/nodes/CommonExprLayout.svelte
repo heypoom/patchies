@@ -240,6 +240,7 @@
         nodeType,
         title: detachedEditorTitle,
         placeholder,
+        onchange: onExpressionChange,
         onrun: onRun,
         customActions: detachedActions,
         customSettings: detachedSettings

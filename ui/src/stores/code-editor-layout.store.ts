@@ -20,6 +20,7 @@ export interface CodeEditorTarget {
   nodeType?: string;
   title?: string;
   placeholder?: string;
+  onchange?: (value: string) => void | Promise<void>;
   onrun?: () => void;
   settings?: CodeEditorTargetSettings;
   customActions?: Snippet;

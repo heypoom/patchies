@@ -5,6 +5,7 @@ import { createCommonExprEditorTarget } from './common-expr-editor-target';
 describe('createCommonExprEditorTarget', () => {
   it('builds a detached target for expression-backed code editors', () => {
     const onrun = vi.fn();
+    const onchange = vi.fn();
     const customActions = vi.fn() as any;
     const customSettings = vi.fn() as any;
 
@@ -16,6 +17,7 @@ describe('createCommonExprEditorTarget', () => {
         nodeType: 'chuck~',
         title: 'chuck~',
         placeholder: 'SinOsc osc => dac;',
+        onchange,
         onrun,
         customActions,
         customSettings
@@ -27,6 +29,7 @@ describe('createCommonExprEditorTarget', () => {
       nodeType: 'chuck~',
       title: 'chuck~',
       placeholder: 'SinOsc osc => dac;',
+      onchange,
       onrun,
       customActions,
       customSettings

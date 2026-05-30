@@ -9,6 +9,7 @@ interface CommonExprEditorTargetOptions {
   nodeType?: string;
   title?: string;
   placeholder?: string;
+  onchange?: (value: string) => void | Promise<void>;
   onrun?: () => void;
   customActions?: Snippet;
   customSettings?: Snippet;
@@ -21,6 +22,7 @@ export function createCommonExprEditorTarget({
   nodeType,
   title,
   placeholder,
+  onchange,
   onrun,
   customActions,
   customSettings
@@ -32,6 +34,7 @@ export function createCommonExprEditorTarget({
     nodeType,
     title,
     placeholder,
+    onchange,
     onrun,
     customActions,
     customSettings
