@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Play, Pause, Square, Settings } from '@lucide/svelte/icons';
+  import { Expand, Play, Pause, Square, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -243,6 +243,23 @@
   />
 {/snippet}
 
+{#snippet detachedBytebeatSettings()}
+  <BytebeatSettings
+    {bytebeatType}
+    {syntax}
+    {sampleRate}
+    {autoEval}
+    {syncTransport}
+    onTypeChange={setType}
+    onSyntaxChange={setSyntax}
+    onSampleRateChange={setSampleRate}
+    onAutoEvalChange={setAutoEval}
+    onSyncTransportChange={setSyncTransport}
+    onClose={() => {}}
+    showCloseButton={false}
+  />
+{/snippet}
+
 <div class="relative flex gap-x-3">
   <div class="group relative">
     <div class="flex flex-col gap-2" bind:this={contentContainer}>
@@ -276,14 +293,36 @@
           {/if}
         </div>
 
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            <button class="node-floating-button" onclick={() => (showSettings = !showSettings)}>
-              <Settings class="h-4 w-4 text-zinc-300" />
-            </button>
-          </Tooltip.Trigger>
-          <Tooltip.Content>Settings</Tooltip.Content>
-        </Tooltip.Root>
+        <div class="node-floating-controls flex gap-1">
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={() => layoutRef?.openExpandedEditor()}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!expr.trim()}
+                aria-label="Expand bytebeat editor"
+              >
+                <Expand class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Expand Editor</Tooltip.Content>
+          </Tooltip.Root>
+
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="node-floating-button"
+                onclick={() => (showSettings = !showSettings)}
+                type="button"
+                aria-label={showSettings ? 'Close settings' : 'Open settings'}
+                aria-pressed={showSettings}
+              >
+                <Settings class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Settings</Tooltip.Content>
+          </Tooltip.Root>
+        </div>
       </div>
 
       <div class={['bytebeat-node-container relative']}>
@@ -302,6 +341,9 @@
           onRun={handleRun}
           hasError={!!errorMessage}
           dataKey="expr"
+          nodeType="bytebeat~"
+          detachedEditorTitle="bytebeat~"
+          detachedSettings={detachedBytebeatSettings}
           handles={bytebeatHandles}
           outlets={bytebeatOutlets}
           lineWrap

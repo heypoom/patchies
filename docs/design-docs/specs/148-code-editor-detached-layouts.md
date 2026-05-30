@@ -33,7 +33,7 @@ simple DSP code nodes that share `SimpleDspLayout`. Most expression-style nodes
 such as `CommonExprLayout` do not need detached editing initially because their
 inline editors are already compact. Longer live-coding expression nodes can opt
 in when their `expr` field benefits from the same focused editor, starting with
-`chuck~`.
+`chuck~` and `bytebeat~`.
 
 ## Source Of Truth
 
@@ -243,8 +243,9 @@ First pass:
   `SimpleDspLayout` consumers
 - sidebar editor for `CanvasPreviewLayout`, `CodeBlockBase`, and
   `SimpleDspLayout` consumers
-- opt-in detached editing for longer expression editors such as `chuck~`, using
-  `dataKey: "expr"` and the same node run callback as the inline editor
+- opt-in detached editing for longer expression editors such as `chuck~` and
+  `bytebeat~`, using `dataKey: "expr"` and the same node run callback as the
+  inline editor
 - Settings modal option for default editor layout: `Inline`, `Overlay`, or
   `Sidebar`
 - Settings modal option for overlay editor transparency

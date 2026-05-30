@@ -16,10 +16,15 @@ Write an expression using `t` (the time counter that increments each sample):
 Click the **Play** button to hear your creation. The expression is evaluated
 for each audio sample, creating sound from pure math.
 
+Use **Expand Editor** when you want the expression fullscreen for longer formulas
+or live-coding performance. The fullscreen editor uses the same expression and
+settings as the node, so changes stay in sync.
+
 ## Controls
 
 - **Play/Pause**: Start or pause audio generation
 - **Stop**: Stop and reset time counter to zero
+- **Expand Editor**: Open the expression in the fullscreen code editor
 - **Settings**: Configure type, syntax, and sample rate
 
 ## Transport Sync

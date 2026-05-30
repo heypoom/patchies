@@ -28,7 +28,8 @@
     onSampleRateChange,
     onAutoEvalChange,
     onSyncTransportChange,
-    onClose
+    onClose,
+    showCloseButton = true
   }: {
     bytebeatType: BytebeatType;
     syntax: BytebeatSyntax;
@@ -41,6 +42,7 @@
     onAutoEvalChange: (value: boolean) => void;
     onSyncTransportChange: (value: boolean) => void;
     onClose: () => void;
+    showCloseButton?: boolean;
   } = $props();
 
   function handleClick(e: MouseEvent) {
@@ -51,14 +53,16 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div onclick={handleClick}>
-  <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-    <button
-      onclick={onClose}
-      class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
-    >
-      <X class="h-4 w-4" />
-    </button>
-  </div>
+  {#if showCloseButton}
+    <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+      <button
+        onclick={onClose}
+        class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
+      >
+        <X class="h-4 w-4" />
+      </button>
+    </div>
+  {/if}
 
   <div class="nodrag w-48 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
     <div class="space-y-4">
