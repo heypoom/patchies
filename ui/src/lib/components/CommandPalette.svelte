@@ -190,6 +190,11 @@
       description: 'Open the object browser to add nodes (Ctrl+O)'
     },
     {
+      id: 'enable-all-packs',
+      name: 'Enable All Packs',
+      description: 'Enable every object and preset pack for workshops'
+    },
+    {
       id: 'save-as-preset',
       name: 'Save Selected Object as Preset',
       description: 'Save the selected node as a reusable preset',
@@ -521,6 +526,13 @@
       .with('browse-objects', () => {
         onCancel();
         onBrowseObjects?.();
+      })
+      .with('enable-all-packs', async () => {
+        const { enableAllExtensionPacks } = await import('../../stores/extensions.store');
+
+        enableAllExtensionPacks();
+        toast.success('Enabled all object and preset packs');
+        onCancel();
       })
       .with('toggle-vim-mode', () => {
         toggleVimMode();

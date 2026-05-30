@@ -234,6 +234,14 @@ export function enableAllPresetPacks(): void {
 }
 
 /**
+ * Enable all object and preset packs.
+ */
+export function enableAllExtensionPacks(): void {
+  enableAllPacks();
+  enableAllPresetPacks();
+}
+
+/**
  * Disable all preset packs (except starter for safety)
  */
 export function disableAllPresetPacks(): void {

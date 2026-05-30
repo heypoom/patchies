@@ -315,6 +315,10 @@ at missing preset names.
    - Locked or unavailable packs do not toggle from the card body; their lock/warning affordances explain the blocked state.
    - Add visual distinction for unavailable packs
 2. Update pack card to show availability warnings
+3. Add a command palette shortcut named "Enable All Packs" that enables every object pack and
+   preset pack in one action for workshop setup. This should call the same helpers as the object
+   and preset pack section "All" buttons so command palette behavior stays consistent with the
+   Packs UI.
 
 ### Phase 4: Content Curation
 
