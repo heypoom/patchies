@@ -31,5 +31,5 @@ export function getStandardEdgeClass({
     .with([true, false], () => '!stroke-[1.5px]')
     .otherwise(() => '!stroke-[0.7px]');
 
-  return [baseClass, !selected && deselectedClass, strokeStyle];
+  return [baseClass, selected && 'edge-selected-glow', !selected && deselectedClass, strokeStyle];
 }

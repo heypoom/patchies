@@ -8,4 +8,4 @@
 
 ## Selected Edge Styling
 
-Selected edges should use a distinct yellow stroke color so the selection remains obvious over background output. Selection color takes precedence over edge type colors such as audio blue, video orange, and message zinc.
+Selected edges should use a yellow stroke with a yellow-ish glow so the selection remains obvious over background output. Selection color takes precedence over edge type colors such as audio blue, video orange, and message zinc.

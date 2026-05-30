@@ -33,7 +33,7 @@
   const edgeClass = $derived.by(() => {
     return getStandardEdgeClass({
       type,
-      selected,
+      selected: selected === true,
       isBackgroundOutputCanvasEnabled: $isBackgroundOutputCanvasEnabled
     });
   });
@@ -60,3 +60,9 @@
     .filter(Boolean)
     .join('; ')}
 />
+
+<style>
+  :global(.svelte-flow__edge-path.edge-selected-glow) {
+    filter: drop-shadow(0 0 4px rgb(253 224 71 / 0.9)) drop-shadow(0 0 12px rgb(250 204 21 / 0.7));
+  }
+</style>
