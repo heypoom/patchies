@@ -1,30 +1,16 @@
+import { synthdefTemplate } from '$lib/canvas/sonic-templates';
+
 export const SONIC_PRESETS = {
   'sonic-prophet': {
     type: 'sonic~',
     data: {
-      code: `setPortCount(1)
-
-await sonic.loadSynthDef('sonic-pi-prophet')
-
-recv(msg => {
-  const note = typeof msg === 'number' ? msg : 60
-
-  sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0, 'note', note, 'release', 2)
-})`
+      code: synthdefTemplate('sonic-pi-prophet')
     }
   },
   'sonic-tb303': {
     type: 'sonic~',
     data: {
-      code: `setPortCount(1)
-
-await sonic.loadSynthDef('sonic-pi-tb303')
-
-recv(msg => {
-  const note = typeof msg === 'number' ? msg : 60
-
-  sonic.send('/s_new', 'sonic-pi-tb303', -1, 0, 0, 'note', note, 'cutoff', 80, 'res', 0.9)
-})`
+      code: synthdefTemplate('sonic-pi-tb303')
     }
   },
   'sonic-sample-loop': {
@@ -54,19 +40,49 @@ recv(msg => {
   'sonic-multi-synth': {
     type: 'sonic~',
     data: {
-      code: `setPortCount(1)
+      code: `setPortCount(1);
+setTitle('sonic-multi-synth');
 
-// Load multiple synthdefs efficiently
-await sonic.loadSynthDefs(['sonic-pi-beep', 'sonic-pi-prophet', 'sonic-pi-saw'])
+const synths = ['sonic-pi-beep', 'sonic-pi-prophet', 'sonic-pi-saw'];
+await sonic.loadSynthDefs(synths);
 
-const synths = ['sonic-pi-beep', 'sonic-pi-prophet', 'sonic-pi-saw']
-let idx = 0
+const activeNotes = new Map();
+let idx = 0;
 
 recv(msg => {
-  const note = typeof msg === 'number' ? msg : 60
+  if (!msg || typeof msg !== 'object') return;
 
-  sonic.send('/s_new', synths[idx++ % synths.length], -1, 0, 0, 'note', note)
-})`
+  const { type, note, velocity } = msg;
+
+  if (type === 'noteOn') {
+    if (activeNotes.has(note)) {
+      sonic.send('/n_set', activeNotes.get(note), 'gate', 0);
+    }
+
+    const id = sonic.nextNodeId();
+    const name = synths[idx++ % synths.length];
+    activeNotes.set(note, id);
+
+    sonic.send('/s_new', name, id, 0, 0,
+      'note', note,
+      'amp', (velocity || 127) / 127,
+      'gate', 1,
+      'out_bus', outBus
+    );
+  } else if (type === 'noteOff') {
+    const id = activeNotes.get(note);
+
+    if (id !== undefined) {
+      sonic.send('/n_set', id, 'gate', 0);
+      activeNotes.delete(note);
+    }
+  }
+});
+
+onCleanup(() => {
+  activeNotes.forEach(id => sonic.send('/n_free', id));
+  activeNotes.clear();
+});`
     }
   }
 };

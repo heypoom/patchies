@@ -69,6 +69,7 @@ bun run test             # All tests
 - Do **not** create tests that only inspect source text, declarations, prompts, imports, or implementation details. Avoid tests that read a file and assert it contains a string, import, function call, or regex match.
 - Do **not** add "guardrail" tests that lock wording or code shape unless that wording is itself a user-visible product contract.
 - If behavior is hard to test because logic is embedded in a prompt, component, or declaration object, first consider extracting the decision logic into a small function and test that function's input/output behavior instead.
+- For declaration-only changes such as built-in preset code strings, static metadata, prompts, or config tables, do not force TDD if the only practical test would assert declarations or source shape. Prefer careful review plus targeted typecheck/lint where useful.
 - Prefer no new test over a brittle test that merely proves code was written in a particular shape.
 
 ## Key Architectures
