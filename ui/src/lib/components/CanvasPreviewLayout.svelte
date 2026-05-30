@@ -94,7 +94,7 @@
 
   // Build the interaction class string based on individual flags
   const interactionClass = $derived.by(() => {
-    if (!nodrag && !nopan && !nowheel) return 'cursor-grab';
+    if (!nodrag && !nopan && !nowheel) return 'cursor-move';
 
     const classes: string[] = ['cursor-default'];
 
