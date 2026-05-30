@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Pause, Play, Settings, X } from '@lucide/svelte/icons';
+  import { Expand, Pause, Play, Settings, X } from '@lucide/svelte/icons';
   import OrcaSettings from '../settings/OrcaSettings.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { useSvelteFlow, useViewport } from '@xyflow/svelte';
@@ -20,6 +20,16 @@
   import { transportStore } from '../../../stores/transport.store';
   import { Transport } from '$lib/transport/Transport';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import { portal } from '$lib/dom/portal';
+  import { isFullscreenActive } from '$lib/canvas/SurfaceOverlay';
+  import { isSidebarOpen } from '../../../stores/ui.store';
+  import {
+    activeDetachedOrcaNodeId,
+    closeDetachedOrcaEditor,
+    openDetachedOrcaEditor
+  } from '../../../stores/detached-orca-editor.store';
+  import { screenToOrcaGridCell } from '$lib/orca/pointer';
+  import { DEFAULT_ORCA_FULLSCREEN_FONT_SIZE, getOrcaDisplayFontSize } from '$lib/orca/layout';
 
   let {
     id: nodeId,
@@ -72,13 +82,25 @@
 
   // Scale factor for font size
   let fontSize = $state(1.0);
+  let fullscreenFontSize = $state(DEFAULT_ORCA_FULLSCREEN_FONT_SIZE);
 
   // Canvas rendering scale
   let canvasDensity = $state(Math.round(window.devicePixelRatio) ?? 1);
 
   // Tile dimensions for mouse interaction
-  let TILE_W = $derived(10 * fontSize);
-  let TILE_H = $derived(15 * fontSize);
+  const isDetached = $derived($activeDetachedOrcaNodeId === nodeId);
+  const displayFontSize = $derived(
+    getOrcaDisplayFontSize({
+      inlineFontSize: fontSize,
+      fullscreenFontSize,
+      isDetached
+    })
+  );
+  let TILE_W = $derived(10 * displayFontSize);
+  let TILE_H = $derived(15 * displayFontSize);
+  const detachedPortalTarget = $derived(
+    isDetached && typeof document !== 'undefined' ? document.body : null
+  );
 
   const COLORS = {
     background: '#000000',
@@ -147,6 +169,10 @@
   });
 
   onDestroy(() => {
+    if (isDetached) {
+      closeDetachedOrcaEditor();
+    }
+
     if (clock) {
       clock.stop();
     }
@@ -207,6 +233,16 @@
 
       isPlaying = !isPlaying;
     }
+  }
+
+  function openExpandedEditor(): void {
+    showSettings = false;
+    openDetachedOrcaEditor(nodeId);
+  }
+
+  function closeExpandedEditor(): void {
+    showSettings = false;
+    closeDetachedOrcaEditor();
   }
 
   function measureWidth() {
@@ -404,10 +440,14 @@
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const canvasX = (e.clientX - rect.left) / viewport.current.zoom;
-    const canvasY = (e.clientY - rect.top) / viewport.current.zoom;
-    const x = Math.floor(canvasX / TILE_W);
-    const y = Math.floor(canvasY / TILE_H);
+    const { x, y } = screenToOrcaGridCell({
+      clientX: e.clientX,
+      clientY: e.clientY,
+      rect,
+      zoom: isDetached ? 1 : viewport.current.zoom,
+      tileWidth: TILE_W,
+      tileHeight: TILE_H
+    });
 
     if (orca && x >= 0 && x < orca.w && y >= 0 && y < orca.h) {
       cursorX = x;
@@ -423,10 +463,14 @@
     if (!canvas || !mouseFrom) return;
 
     const rect = canvas.getBoundingClientRect();
-    const canvasX = (e.clientX - rect.left) / viewport.current.zoom;
-    const canvasY = (e.clientY - rect.top) / viewport.current.zoom;
-    const x = Math.floor(canvasX / TILE_W);
-    const y = Math.floor(canvasY / TILE_H);
+    const { x, y } = screenToOrcaGridCell({
+      clientX: e.clientX,
+      clientY: e.clientY,
+      rect,
+      zoom: isDetached ? 1 : viewport.current.zoom,
+      tileWidth: TILE_W,
+      tileHeight: TILE_H
+    });
 
     if (orca && x >= 0 && x < orca.w && y >= 0 && y < orca.h) {
       selectionW = x - mouseFrom.x;
@@ -516,7 +560,7 @@
     if (!renderer || !clock) return;
 
     // Update font scale if it changed
-    renderer.updateFontScale(fontSize);
+    renderer.updateFontScale(displayFontSize);
 
     const selection = { x: cursorX, y: cursorY, w: selectionW, h: selectionH };
     renderer.render(cursorX, cursorY, clock.isPaused, showInterface, showGuide, selection);
@@ -569,7 +613,110 @@
       })
       .exhaustive();
   });
+
+  $effect(() => {
+    if (!isDetached) return;
+
+    isSidebarOpen.set(false);
+    isFullscreenActive.set(true);
+    render();
+
+    queueMicrotask(() => {
+      canvas?.focus();
+    });
+
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || !event.shiftKey) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      closeExpandedEditor();
+    };
+
+    window.addEventListener('keydown', handleKeydown, { capture: true });
+
+    return () => {
+      window.removeEventListener('keydown', handleKeydown, { capture: true });
+      isFullscreenActive.set(false);
+      queueMicrotask(() => {
+        measureWidth();
+        render();
+      });
+    };
+  });
 </script>
+
+{#snippet settingsPanel()}
+  <OrcaSettings
+    gridWidth={orca?.w ?? gridWidth}
+    gridHeight={orca?.h ?? gridHeight}
+    {syncTransport}
+    {bpm}
+    transportBpm={$transportStore.bpm}
+    {showInterface}
+    {showGuide}
+    fontSize={displayFontSize}
+    {canvasDensity}
+    onGridWidthChange={(val) => {
+      if (orca) {
+        const oldWidth = orca.w;
+        const oldGrid = orca.s;
+        orca.load(val, orca.h, oldGrid, orca.f);
+        updateNodeData(nodeId, { width: val, grid: orca.s });
+        tracker.commit('width', oldWidth, val);
+        render();
+        measureWidth();
+      }
+    }}
+    onGridHeightChange={(val) => {
+      if (orca) {
+        const oldHeight = orca.h;
+        const oldGrid = orca.s;
+        orca.load(orca.w, val, oldGrid, orca.f);
+        updateNodeData(nodeId, { height: val, grid: orca.s });
+        tracker.commit('height', oldHeight, val);
+        render();
+        measureWidth();
+      }
+    }}
+    onSyncTransportChange={() => {
+      const oldValue = syncTransport;
+      updateNodeData(nodeId, { syncTransport: !syncTransport });
+      tracker.commit('syncTransport', oldValue, !oldValue);
+    }}
+    onBpmChange={(val) => {
+      if (clock) {
+        const oldBpm = bpm;
+        clock.setSpeed(val, val);
+        updateNodeData(nodeId, { bpm: val });
+        tracker.commit('bpm', oldBpm, val);
+      }
+    }}
+    onShowInterfaceChange={(show) => {
+      showInterface = show;
+      render();
+    }}
+    onShowGuideChange={(show) => {
+      showGuide = show;
+      render();
+    }}
+    onFontSizeChange={(size) => {
+      if (isDetached) {
+        fullscreenFontSize = size;
+      } else {
+        fontSize = size;
+      }
+      render();
+      measureWidth();
+    }}
+    onCanvasDensityChange={(density) => {
+      canvasDensity = density;
+      if (renderer) renderer.updateCanvasScale(canvasDensity);
+      render();
+    }}
+  />
+{/snippet}
 
 <div class="relative flex gap-x-3">
   <div class="group relative">
@@ -600,6 +747,19 @@
             <Tooltip.Trigger>
               <button
                 class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                onclick={openExpandedEditor}
+                aria-label="Expand Orca"
+              >
+                <Expand class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Expand Orca</Tooltip.Content>
+          </Tooltip.Root>
+
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
                 onclick={() => {
                   showSettings = !showSettings;
                   measureWidth();
@@ -622,7 +782,71 @@
           index={0}
           {nodeId}
         />
-        <div class="relative" bind:this={containerElement}>
+        <div
+          class={[
+            'nodrag nopan nowheel',
+            isDetached
+              ? 'fixed inset-0 z-[60] flex items-center justify-center overflow-auto p-12'
+              : 'relative'
+          ]}
+          bind:this={containerElement}
+          use:portal={detachedPortalTarget}
+          style:background-color={isDetached ? '#000000' : undefined}
+        >
+          {#if isDetached}
+            <div class="absolute top-6 right-6 z-10 flex gap-1">
+              {#if !syncTransport}
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <button
+                      class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
+                      onclick={togglePlay}
+                      aria-label={isPlaying ? 'Pause Orca' : 'Play Orca'}
+                    >
+                      <!-- svelte-ignore svelte_component_deprecated -->
+                      <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4" />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>{isPlaying ? 'Pause' : 'Play'}</Tooltip.Content>
+                </Tooltip.Root>
+              {/if}
+
+              <div class="relative">
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    <button
+                      class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
+                      onclick={() => (showSettings = !showSettings)}
+                      aria-label={showSettings ? 'Hide Orca settings' : 'Show Orca settings'}
+                    >
+                      <Settings class="h-4 w-4" />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>{showSettings ? 'Hide Settings' : 'Settings'}</Tooltip.Content>
+                </Tooltip.Root>
+
+                {#if showSettings}
+                  <div class="absolute top-11 right-0 z-20">
+                    {@render settingsPanel()}
+                  </div>
+                {/if}
+              </div>
+
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <button
+                    class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
+                    onclick={closeExpandedEditor}
+                    aria-label="Close expanded Orca editor"
+                  >
+                    <X class="h-4 w-4" />
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>Close Expanded Orca (Shift+Esc)</Tooltip.Content>
+              </Tooltip.Root>
+            </div>
+          {/if}
+
           <canvas
             bind:this={canvas}
             onkeydown={handleKeyDown}
@@ -633,10 +857,12 @@
             role="textbox"
             aria-label="Orca grid editor"
             class={[
-              'nodrag cursor-text rounded-md border focus:outline-none',
-              selected
-                ? 'shadow-glow-md border-zinc-400'
-                : 'hover:shadow-glow-sm border-transparent'
+              'nodrag cursor-text focus:outline-none',
+              isDetached
+                ? 'rounded-none border-0 shadow-none'
+                : selected
+                  ? 'shadow-glow-md rounded-md border border-zinc-400'
+                  : 'hover:shadow-glow-sm rounded-md border border-transparent'
             ].join(' ')}
           ></canvas>
         </div>
@@ -653,78 +879,18 @@
   </div>
 
   <!-- Settings Panel -->
-  {#if showSettings}
+  {#if showSettings && !isDetached}
     <div class="absolute" style="left: {previewContainerWidth + 10}px;">
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
-        <button onclick={() => (showSettings = false)} class="rounded p-1 hover:bg-zinc-700">
+        <button
+          onclick={() => (showSettings = false)}
+          class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+        >
           <X class="h-4 w-4 text-zinc-300" />
         </button>
       </div>
 
-      <OrcaSettings
-        gridWidth={orca?.w ?? gridWidth}
-        gridHeight={orca?.h ?? gridHeight}
-        {syncTransport}
-        {bpm}
-        transportBpm={$transportStore.bpm}
-        {showInterface}
-        {showGuide}
-        {fontSize}
-        {canvasDensity}
-        onGridWidthChange={(val) => {
-          if (orca) {
-            const oldWidth = orca.w;
-            const oldGrid = orca.s;
-            orca.load(val, orca.h, oldGrid, orca.f);
-            updateNodeData(nodeId, { width: val, grid: orca.s });
-            tracker.commit('width', oldWidth, val);
-            render();
-            measureWidth();
-          }
-        }}
-        onGridHeightChange={(val) => {
-          if (orca) {
-            const oldHeight = orca.h;
-            const oldGrid = orca.s;
-            orca.load(orca.w, val, oldGrid, orca.f);
-            updateNodeData(nodeId, { height: val, grid: orca.s });
-            tracker.commit('height', oldHeight, val);
-            render();
-            measureWidth();
-          }
-        }}
-        onSyncTransportChange={() => {
-          const oldValue = syncTransport;
-          updateNodeData(nodeId, { syncTransport: !syncTransport });
-          tracker.commit('syncTransport', oldValue, !oldValue);
-        }}
-        onBpmChange={(val) => {
-          if (clock) {
-            const oldBpm = bpm;
-            clock.setSpeed(val, val);
-            updateNodeData(nodeId, { bpm: val });
-            tracker.commit('bpm', oldBpm, val);
-          }
-        }}
-        onShowInterfaceChange={(show) => {
-          showInterface = show;
-          render();
-        }}
-        onShowGuideChange={(show) => {
-          showGuide = show;
-          render();
-        }}
-        onFontSizeChange={(size) => {
-          fontSize = size;
-          render();
-          measureWidth();
-        }}
-        onCanvasDensityChange={(density) => {
-          canvasDensity = density;
-          if (renderer) renderer.updateCanvasScale(canvasDensity);
-          render();
-        }}
-      />
+      {@render settingsPanel()}
     </div>
   {/if}
 </div>
