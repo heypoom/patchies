@@ -30,13 +30,45 @@ Enable **Sync to transport** in settings to lock Orca's clock to the global
 [transport](/docs/transport-control). When synced, BPM and play/pause are
 controlled by the transport bar instead of per-node controls.
 
+## Fullscreen
+
+Use the **Expand** button to move the Orca grid into a fullscreen performance
+view. The same live grid is moved out of the canvas editor, so playback,
+selection, cursor position, and edits keep going.
+
+Fullscreen mode is useful for layering Orca over visual output:
+
+- The grid defaults to a larger font size
+- The background defaults to `transparent`
+- **Brighter foreground** makes operators and hints easier to read over visuals
+- **Background** accepts CSS colors like `transparent`, `#00000080`, or
+  `rgba(0, 0, 0, 0.4)`
+
+Press **Shift+Esc** or the close button to leave fullscreen.
+
+## Settings
+
+Use the settings button to tune the grid and performance view:
+
+- **Width / Height**: resize the Orca grid
+- **BPM**: set Orca's local tempo when transport sync is off
+- **Sync to transport**: follow Patchies transport BPM and play state
+- **Brighter foreground**: use brighter text for transparent or visual
+  backgrounds
+- **Show Status Interface**: show the bottom status readout
+- **Show Operator Guide**: show built-in operator hints
+- **Font Size**: scale the grid text
+- **Canvas Density**: adjust canvas pixel density
+- **Background**: set the Orca canvas background using any CSS color string
+
 ## Controls
 
 - Click on the canvas and type characters to edit the grid
 - **Space**: play/pause
 - **Enter** or **Ctrl+F**: advance one frame
 - **Ctrl+Shift+R**: reset frame
-- **Settings button**: update BPM, font size, grid size
+- **Expand button**: open fullscreen mode
+- **Settings button**: update display, clock, and grid settings
 - **`>`**: increase tempo
 - **`<`**: decrease tempo
 

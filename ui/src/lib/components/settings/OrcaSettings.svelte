@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { OrcaForegroundMode } from '$lib/orca/layout';
+
   let {
     gridWidth,
     gridHeight,
@@ -8,6 +10,8 @@
     showInterface,
     showGuide,
     fontSize,
+    foregroundMode,
+    background,
     canvasDensity,
     onGridWidthChange,
     onGridHeightChange,
@@ -16,6 +20,8 @@
     onShowInterfaceChange,
     onShowGuideChange,
     onFontSizeChange,
+    onForegroundModeChange,
+    onBackgroundChange,
     onCanvasDensityChange
   }: {
     gridWidth: number;
@@ -26,6 +32,8 @@
     showInterface: boolean;
     showGuide: boolean;
     fontSize: number;
+    foregroundMode: OrcaForegroundMode;
+    background: string;
     canvasDensity: number;
     onGridWidthChange: (width: number) => void;
     onGridHeightChange: (height: number) => void;
@@ -34,6 +42,8 @@
     onShowInterfaceChange: (show: boolean) => void;
     onShowGuideChange: (show: boolean) => void;
     onFontSizeChange: (size: number) => void;
+    onForegroundModeChange: (mode: OrcaForegroundMode) => void;
+    onBackgroundChange: (background: string) => void;
     onCanvasDensityChange: (density: number) => void;
   } = $props();
 </script>
@@ -116,6 +126,17 @@
       <label class="flex items-center gap-2 text-xs text-zinc-400">
         <input
           type="checkbox"
+          checked={foregroundMode === 'light'}
+          onchange={(e) => onForegroundModeChange(e.currentTarget.checked ? 'light' : 'dark')}
+          class="cursor-pointer rounded"
+        />
+
+        <span>Brighter foreground</span>
+      </label>
+
+      <label class="flex items-center gap-2 text-xs text-zinc-400">
+        <input
+          type="checkbox"
           checked={showInterface}
           onchange={(e) => onShowInterfaceChange(e.currentTarget.checked)}
           class="cursor-pointer rounded"
@@ -170,6 +191,16 @@
             +
           </button>
         </div>
+      </label>
+
+      <label class="flex flex-col text-xs text-zinc-400">
+        <span>Background</span>
+        <input
+          value={background}
+          oninput={(e) => onBackgroundChange(e.currentTarget.value)}
+          placeholder="transparent or rgba(0,0,0,.4)"
+          class="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-xs text-white placeholder:text-zinc-500"
+        />
       </label>
     </div>
   </div>
