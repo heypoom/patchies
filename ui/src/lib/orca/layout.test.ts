@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ORCA_FULLSCREEN_FONT_SIZE,
   getOrcaColors,
+  getOrcaCanvasBackground,
   getOrcaDisplayFontSize,
   getOrcaDisplayForegroundMode,
   getOrcaFullscreenOverlayBackground,
@@ -30,6 +31,14 @@ describe('getOrcaDisplayFontSize', () => {
 describe('getOrcaFullscreenOverlayBackground', () => {
   it('uses black with the shared overlay transparency value', () => {
     expect(getOrcaFullscreenOverlayBackground(0.45)).toBe('rgba(0, 0, 0, 0.45)');
+  });
+});
+
+describe('getOrcaCanvasBackground', () => {
+  it('uses the user-provided CSS background string', () => {
+    expect(getOrcaCanvasBackground('rgba(0, 0, 0, 0.4)')).toBe('rgba(0, 0, 0, 0.4)');
+    expect(getOrcaCanvasBackground('#00000080')).toBe('#00000080');
+    expect(getOrcaCanvasBackground('transparent')).toBe('transparent');
   });
 });
 

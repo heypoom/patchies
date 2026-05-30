@@ -11,6 +11,7 @@
     showGuide,
     fontSize,
     foregroundMode,
+    background,
     canvasDensity,
     onGridWidthChange,
     onGridHeightChange,
@@ -20,6 +21,7 @@
     onShowGuideChange,
     onFontSizeChange,
     onForegroundModeChange,
+    onBackgroundChange,
     onCanvasDensityChange
   }: {
     gridWidth: number;
@@ -31,6 +33,7 @@
     showGuide: boolean;
     fontSize: number;
     foregroundMode: OrcaForegroundMode;
+    background: string;
     canvasDensity: number;
     onGridWidthChange: (width: number) => void;
     onGridHeightChange: (height: number) => void;
@@ -40,6 +43,7 @@
     onShowGuideChange: (show: boolean) => void;
     onFontSizeChange: (size: number) => void;
     onForegroundModeChange: (mode: OrcaForegroundMode) => void;
+    onBackgroundChange: (background: string) => void;
     onCanvasDensityChange: (density: number) => void;
   } = $props();
 </script>
@@ -187,6 +191,16 @@
             +
           </button>
         </div>
+      </label>
+
+      <label class="flex flex-col text-xs text-zinc-400">
+        <span>Background</span>
+        <input
+          value={background}
+          oninput={(e) => onBackgroundChange(e.currentTarget.value)}
+          placeholder="transparent or rgba(0,0,0,.4)"
+          class="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-xs text-white placeholder:text-zinc-500"
+        />
       </label>
     </div>
   </div>

@@ -84,3 +84,7 @@ export function getOrcaPortForeground(colors: OrcaColors, portType: number): str
 export function getOrcaFullscreenOverlayBackground(transparency: number): string {
   return `rgba(0, 0, 0, ${transparency})`;
 }
+
+export function getOrcaCanvasBackground(background: string): string {
+  return background.trim() || 'transparent';
+}

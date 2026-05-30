@@ -31,6 +31,10 @@ selection, and playback state.
 - The fullscreen Orca canvas clears its own black background so background
   visuals show through the overlay and the grid area does not become darker than
   the rest of the screen.
+- Orca settings include a background color input that accepts CSS color strings
+  such as `transparent`, hex colors, and `rgba(...)`. Inline mode defaults to
+  opaque black for the classic Orca view, while fullscreen defaults to
+  `transparent` so background visuals can show through.
 - The fullscreen canvas is borderless; the grid itself should be the visual
   focus.
 - Orca settings include a light/dark foreground mode. Inline mode preserves the

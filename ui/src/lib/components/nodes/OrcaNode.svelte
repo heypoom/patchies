@@ -32,6 +32,7 @@
   import { screenToOrcaGridCell } from '$lib/orca/pointer';
   import {
     DEFAULT_ORCA_FULLSCREEN_FONT_SIZE,
+    getOrcaCanvasBackground,
     getOrcaColors,
     getOrcaDisplayFontSize,
     getOrcaDisplayForegroundMode,
@@ -93,6 +94,8 @@
   let fullscreenFontSize = $state(DEFAULT_ORCA_FULLSCREEN_FONT_SIZE);
   let foregroundMode = $state<OrcaForegroundMode>('dark');
   let fullscreenForegroundMode = $state<OrcaForegroundMode>('light');
+  let background = $state('#000000');
+  let fullscreenBackground = $state('transparent');
 
   // Canvas rendering scale
   let canvasDensity = $state(Math.round(window.devicePixelRatio) ?? 1);
@@ -117,6 +120,8 @@
     })
   );
   const colors = $derived(getOrcaColors(displayForegroundMode));
+  const displayBackground = $derived(isDetached ? fullscreenBackground : background);
+  const canvasBackground = $derived(getOrcaCanvasBackground(displayBackground));
   let TILE_W = $derived(10 * displayFontSize);
   let TILE_H = $derived(15 * displayFontSize);
   const detachedPortalTarget = $derived(
@@ -579,7 +584,7 @@
       showInterface,
       showGuide,
       selection,
-      isDetached ? 'transparent' : colors.background
+      canvasBackground
     );
   }
 
@@ -683,6 +688,7 @@
     {showGuide}
     fontSize={displayFontSize}
     foregroundMode={displayForegroundMode}
+    background={displayBackground}
     {canvasDensity}
     onGridWidthChange={(val) => {
       if (orca) {
@@ -741,6 +747,14 @@
         fullscreenForegroundMode = mode;
       } else {
         foregroundMode = mode;
+      }
+      render();
+    }}
+    onBackgroundChange={(nextBackground) => {
+      if (isDetached) {
+        fullscreenBackground = nextBackground;
+      } else {
+        background = nextBackground;
       }
       render();
     }}
