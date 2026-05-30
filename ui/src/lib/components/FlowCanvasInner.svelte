@@ -48,7 +48,7 @@
   import { nodeTypes } from '$lib/nodes/node-types';
   import { edgeTypes } from '$lib/components/edges/edge-types';
   import { GLSystem } from '$lib/canvas/GLSystem';
-  import { CANVAS_DELETE_KEYS } from '$lib/canvas/keyboard-shortcuts';
+  import { CANVAS_DELETE_KEYS, CANVAS_MULTIPLE_SELECT_KEYS } from '$lib/canvas/keyboard-shortcuts';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
@@ -1412,6 +1412,7 @@
         {edgeTypes}
         fitView
         deleteKey={CANVAS_DELETE_KEYS}
+        multiSelectionKey={CANVAS_MULTIPLE_SELECT_KEYS}
         class="bg-zinc-900"
         snapGrid={$snapGridSize > 0 ? [$snapGridSize, $snapGridSize] : undefined}
         proOptions={{ hideAttribution: true }}
