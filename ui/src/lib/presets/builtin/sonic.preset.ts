@@ -17,6 +17,7 @@ export const SONIC_PRESETS = {
     type: 'sonic~',
     data: {
       code: `setPortCount(1)
+setTitle('sonic-sample-loop')
 
 // Track loading state
 on('loading:start', ({type, name}) => console.log(\`Loading \${type}: \${name}\`))
@@ -34,7 +35,9 @@ recv(msg => {
   } else if (typeof msg === 'number') {
     sonic.send('/s_new', 'sonic-pi-basic_stereo_player', -1, 0, 0, 'buf', 0, 'rate', msg)
   }
-})`
+})`,
+      messageInletCount: 1,
+      title: 'sonic-sample-loop'
     }
   },
   'sonic-multi-synth': {
@@ -82,7 +85,9 @@ recv(msg => {
 onCleanup(() => {
   activeNotes.forEach(id => sonic.send('/n_free', id));
   activeNotes.clear();
-});`
+});`,
+      messageInletCount: 1,
+      title: 'sonic-multi-synth'
     }
   }
 };
