@@ -106,7 +106,8 @@ Expected presentation:
 - code editor spans the screen with no outer margin, panel border, or title
 - close and run buttons sit inside the fullscreen editor padding
 - close, run, settings, and custom action buttons honor device safe-area insets
-  so they remain tappable on phones with notches or system gesture regions
+  so they remain tappable on phones with notches or system gesture regions,
+  including portaled Orca and Strudel detached editors
 - a settings button appears when the target object exposes settings; it opens a
   small floating settings panel below the button
 - `Shift+Esc` closes the expanded editor, matching surface expand mode

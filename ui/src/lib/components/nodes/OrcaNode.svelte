@@ -839,7 +839,7 @@
           style:background-color={isDetached ? fullscreenOverlayBackground : undefined}
         >
           {#if isDetached}
-            <div class="absolute top-6 right-6 z-10 flex gap-1">
+            <div class="detached-editor-actions absolute z-10 flex gap-1">
               {#if !syncTransport}
                 <Tooltip.Root>
                   <Tooltip.Trigger>
@@ -939,3 +939,10 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .detached-editor-actions {
+    top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
+    right: calc(env(safe-area-inset-right, 0px) + 1.5rem);
+  }
+</style>

@@ -421,7 +421,7 @@
             : (data.styles?.container ?? '')}
         >
           {#if isDetached}
-            <div class="absolute top-6 right-6 z-10 flex gap-1">
+            <div class="detached-editor-actions absolute z-10 flex gap-1">
               {#if isInitialized && !syncTransport}
                 <Tooltip.Root>
                   <Tooltip.Trigger>
@@ -543,5 +543,10 @@
 
   :global(.strudel-detached-editor .strudel-editor-shell .cm-scroller) {
     padding: 8px 0 !important;
+  }
+
+  .detached-editor-actions {
+    top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
+    right: calc(env(safe-area-inset-right, 0px) + 1.5rem);
   }
 </style>
