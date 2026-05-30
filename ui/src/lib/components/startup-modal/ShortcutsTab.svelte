@@ -29,8 +29,8 @@
       category: 'mouse'
     },
     {
-      keys: ['Ctrl', 'Click on object / edge'],
-      description: 'Multi-select objects and edges',
+      keys: ['Shift', 'Click on object / edge'],
+      description: 'Select multiple objects and edges',
       category: 'mouse'
     },
     { keys: ['Enter'], description: 'Create a new object at cursor', category: 'keyboard' },
