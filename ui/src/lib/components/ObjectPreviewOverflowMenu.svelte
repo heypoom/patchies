@@ -66,9 +66,7 @@
 
 <Popover.Root>
   <Popover.Trigger>
-    <button
-      class="cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700 sm:opacity-0 sm:group-hover:opacity-100"
-    >
+    <button class="node-floating-button">
       <Ellipsis class="h-4 w-4 text-zinc-300" />
     </button>
   </Popover.Trigger>

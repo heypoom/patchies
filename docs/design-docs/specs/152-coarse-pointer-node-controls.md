@@ -9,9 +9,11 @@ Floating node controls should remain visible on coarse-pointer devices, includin
 - Mouse and trackpad layouts keep the existing hover-reveal behavior on larger viewports.
 - Coarse-pointer layouts force floating node controls visible, because hover is unavailable or unreliable.
 - The decision must be based on pointer capability, not viewport width alone.
+- When background output is enabled, floating node action buttons use a subtle dark surface so icons remain legible over bright or low-contrast visuals.
 
 ## Implementation
 
 - Use the existing `pointer-coarse` Tailwind variant from `ui/src/app.css`.
 - Use shared `node-floating-button` and `node-floating-controls` component classes so coarse-pointer visibility behavior has one source of truth.
 - For controls currently hidden with `sm:opacity-0`, include `pointer-coarse:!opacity-100` through those shared classes so tablet-sized touch devices do not lose access to node actions.
+- Scope the background-output contrast treatment from the flow canvas root, rather than adding per-node button variants.

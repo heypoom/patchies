@@ -53,7 +53,11 @@
   import { ProfilerCoordinator } from '$lib/profiler/ProfilerCoordinator';
   import { AudioAnalysisSystem } from '$lib/audio/AudioAnalysisSystem';
   import type { PatchSaveFormat } from '$lib/save-load/serialize-patch';
-  import { hasSomeAudioNode, snapGridSize } from '../../stores/canvas.store';
+  import {
+    hasSomeAudioNode,
+    isBackgroundOutputCanvasEnabled,
+    snapGridSize
+  } from '../../stores/canvas.store';
   import { getObjectNameFromExpr } from '$lib/objects/object-definitions';
   import { deleteSearchParam } from '$lib/utils/search-params';
   import BackgroundPattern from './BackgroundPattern.svelte';
@@ -1209,7 +1213,10 @@
   }
 </script>
 
-<div class="flow-container relative flex h-dvh w-full">
+<div
+  class="flow-container relative flex h-dvh w-full"
+  class:background-output-active={$isBackgroundOutputCanvasEnabled}
+>
   <!-- Background output canvas lives outside the flow editor so it stays visible during surface fullscreen -->
   <div class="pointer-events-none absolute inset-0 z-0">
     <BackgroundOutputCanvas />

@@ -181,7 +181,11 @@
   <div class="flex flex-col gap-2">
     <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
       <div class="z-10 rounded-lg bg-transparent px-2 py-1">
-        <div class="font-mono text-xs font-medium text-zinc-400">ai.music</div>
+        <div
+          class="cursor-grab font-mono text-xs font-medium text-zinc-400 select-none active:cursor-grabbing"
+        >
+          ai.music
+        </div>
       </div>
 
       <div class="flex gap-1">

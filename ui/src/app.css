@@ -219,6 +219,10 @@ body {
     @apply cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0 pointer-coarse:!opacity-100;
   }
 
+  .background-output-active .node-floating-button {
+    @apply bg-zinc-950/70 text-zinc-100 shadow-lg ring-1 ring-white/15 backdrop-blur-sm hover:bg-zinc-900/85;
+  }
+
   /* Uiua glyph hover tooltip styles (shared by CodeMirror and preview mode) */
   .cm-tooltip:has(.uiua-tooltip) {
     background: transparent !important;

@@ -315,7 +315,10 @@
           : 'opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100'
       ]}
     >
-      <span class="font-mono text-xs font-medium text-zinc-400">curve</span>
+      <span
+        class="cursor-grab font-mono text-xs font-medium text-zinc-400 select-none active:cursor-grabbing"
+        >curve</span
+      >
     </div>
 
     <!-- Header buttons -->

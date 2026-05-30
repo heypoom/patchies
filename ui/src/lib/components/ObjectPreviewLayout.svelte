@@ -444,7 +444,7 @@
                 <Tooltip.Root>
                   <Tooltip.Trigger>
                     <button
-                      class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                      class="node-floating-button"
                       aria-label="Edit code"
                       onclick={handleCodeOpen}
                     >
@@ -457,7 +457,7 @@
                 <Tooltip.Root>
                   <Tooltip.Trigger>
                     <button
-                      class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                      class="node-floating-button"
                       aria-label={showSettings ? 'Hide settings' : 'Settings'}
                       onclick={() => {
                         showSettings = !showSettings;
@@ -473,7 +473,7 @@
                 <Tooltip.Root>
                   <Tooltip.Trigger>
                     <button
-                      class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                      class="node-floating-button"
                       aria-label="Run code (shift+enter)"
                       onclick={handleRun}
                     >
