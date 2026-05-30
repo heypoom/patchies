@@ -57,9 +57,27 @@ Right-click any visual object (or use its **···** menu) and choose **Use as o
 
 ## Output Screen
 
-Open a separate browser window that displays your visual output fullscreen — perfect for projectors, second monitors, or showing visuals to an audience.
+Open a separate browser window that displays your visual output — perfect for
+projectors, second monitors, or showing visuals to an audience while you keep
+editing in the main Patchies window.
 
 Open it from the command palette: `Cmd+K` → "Open Output Screen".
+
+The output screen is a clean viewer. It shows the same output you would see from
+`bg.out` or **Use as output**, without the patch canvas, sidebar, object chrome,
+or editing controls.
+
+Move the output screen to your projector or second monitor, focus that window,
+then press `f` to enter browser fullscreen. Use the browser's normal fullscreen
+exit shortcut, such as `Esc`, when you want to leave fullscreen.
+
+You can switch where frames are sent without closing the output screen:
+
+- **Background** — show output behind the patch canvas in the main window
+- **Output Screen** — show output in the secondary output window
+
+Change this from Settings → Rendering → **Output target**, or use `Cmd+K` →
+"Toggle Output Target".
 
 The output screen stays connected even if you reload either window. Reload the output
 screen and it reconnects automatically. Reload the main patch and the output
@@ -70,7 +88,8 @@ screen re-connects within a second.
 1. Open the output screen (`Cmd+K` → "Open Output Screen")
 2. Create a `hydra` object and write a pattern
 3. Right-click the hydra object → **Use as output**
-4. Drag the output window to a second monitor or projector — your audience sees clean visuals while you keep editing.
+4. Drag the output window to a second monitor or projector
+5. Focus the output window and press `f` — your audience sees clean fullscreen visuals while you keep editing
 
 ## Output Resolution
 
