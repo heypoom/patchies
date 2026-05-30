@@ -219,6 +219,14 @@ body {
     @apply cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0 pointer-coarse:!opacity-100;
   }
 
+  .node-title-drag-handle {
+    @apply cursor-grab select-none active:cursor-grabbing;
+  }
+
+  .svelte-flow__node.dragging .node-title-drag-handle {
+    @apply cursor-grabbing;
+  }
+
   .background-output-active .node-floating-button {
     @apply bg-zinc-950/70 text-zinc-100 shadow-lg ring-1 ring-white/15 backdrop-blur-sm hover:bg-zinc-900/85;
   }

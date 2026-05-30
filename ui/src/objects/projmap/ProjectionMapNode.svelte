@@ -538,16 +538,13 @@
     <!-- Title -->
     <div
       class={[
-        'absolute -top-7 left-0 z-10 flex items-center gap-1.5 rounded-lg bg-zinc-900 px-2 py-1 transition-opacity',
+        'node-title-drag-handle absolute -top-7 left-0 z-10 flex items-center gap-1.5 rounded-lg bg-zinc-900 px-2 py-1 transition-opacity',
         node.selected
           ? 'opacity-100'
           : 'opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100'
       ]}
     >
-      <span
-        class="cursor-grab font-mono text-xs font-medium text-zinc-400 select-none active:cursor-grabbing"
-        >projmap</span
-      >
+      <span class="font-mono text-xs font-medium text-zinc-400">projmap</span>
     </div>
 
     <!-- Header buttons (top-right) -->

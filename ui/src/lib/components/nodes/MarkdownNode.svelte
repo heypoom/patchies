@@ -116,12 +116,8 @@
   <NodeResizer class="z-1" isVisible={props.selected} />
 
   {#if props.selected}
-    <div class="absolute -top-7 z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1">
-      <div
-        class="cursor-grab font-mono text-xs font-medium text-zinc-400 select-none active:cursor-grabbing"
-      >
-        markdown
-      </div>
+    <div class="node-title-drag-handle absolute -top-7 z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1">
+      <div class="font-mono text-xs font-medium text-zinc-400">markdown</div>
     </div>
   {/if}
 

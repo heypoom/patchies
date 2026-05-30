@@ -224,6 +224,8 @@ preset pack. Larger visual effect libraries remain in their own opt-in preset pa
   name when the same artist has multiple untitled sketches.
 - Imported legacy Hydra audio-reactive snippets must use Patchies FFT access (`fft().a`,
   `fft().f`, `fft().getEnergy(...)`) instead of Hydra's `a.fft`.
+- Hydra presets that read `fft().a` must call `setPortCount(1)` in their code and set
+  `messageInletCount: 1` so the FFT message inlet is available immediately after insertion.
 
 ## Dependency Handling
 

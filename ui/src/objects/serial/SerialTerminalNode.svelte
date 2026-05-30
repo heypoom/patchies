@@ -326,12 +326,8 @@
 
   <div class="group relative" style="width: {displayWidth}px; height: {displayHeight}px;">
     <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-      <div class="z-10 rounded-lg bg-zinc-900 px-2 py-1">
-        <div
-          class="cursor-grab font-mono text-xs font-medium text-zinc-400 select-none active:cursor-grabbing"
-        >
-          serial.term
-        </div>
+      <div class="node-title-drag-handle z-10 rounded-lg bg-zinc-900 px-2 py-1">
+        <div class="font-mono text-xs font-medium text-zinc-400">serial.term</div>
       </div>
 
       <div class="flex items-center gap-1">
