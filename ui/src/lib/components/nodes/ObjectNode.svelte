@@ -45,6 +45,7 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { useObjectDataTracker } from '$lib/history';
   import type { TextObjectV2 } from '$lib/objects/v2/interfaces/text-objects';
+  import { editorFontFamily } from '../../../stores/editor.store';
 
   let {
     id: nodeId,
@@ -824,7 +825,7 @@
   });
 </script>
 
-<div class="relative">
+<div class="relative" style:--patchies-object-node-font-family={$editorFontFamily}>
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="relative">
@@ -861,7 +862,7 @@
                 onblur={handleBlur}
                 onkeydown={handleKeydown}
                 placeholder="<name>"
-                class="nodrag bg-transparent px-3 py-2 font-mono text-xs text-zinc-200 placeholder-zinc-500 outline-none"
+                class="object-node-font nodrag bg-transparent px-3 py-2 text-xs text-zinc-200 placeholder-zinc-500 outline-none"
               />
             </div>
 
@@ -895,7 +896,7 @@
                 <!-- Browse objects link -->
                 <button
                   type="button"
-                  class="mt-1.5 flex w-fit cursor-pointer items-center gap-1 text-left font-mono text-[8px] text-zinc-500 underline-offset-2 hover:text-blue-300 hover:underline"
+                  class="object-node-font mt-1.5 flex w-fit cursor-pointer items-center gap-1 text-left text-[8px] text-zinc-500 underline-offset-2 hover:text-blue-300 hover:underline"
                   onclick={() => ($isObjectBrowserOpen = true)}
                   title="Discover objects by categories (Ctrl+O)"
                 >
@@ -915,7 +916,7 @@
               tabindex="0"
               onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
             >
-              <div class="flex items-center gap-1.5 font-mono text-xs">
+              <div class="object-node-font flex items-center gap-1.5 text-xs">
                 <span class={[!getCombinedMetadata(data.name) ? 'text-red-300' : 'text-zinc-200']}
                   >{data.name}</span
                 >
@@ -1005,3 +1006,9 @@
     </div>
   </div>
 </div>
+
+<style>
+  .object-node-font {
+    font-family: var(--patchies-object-node-font-family, var(--font-mono));
+  }
+</style>

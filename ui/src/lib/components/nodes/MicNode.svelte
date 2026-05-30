@@ -11,6 +11,7 @@
     hasEnumeratedDevices
   } from '../../../stores/audio-devices.store';
   import { useNodeDataTracker } from '$lib/history';
+  import { editorFontFamily } from '../../../stores/editor.store';
 
   let {
     id: nodeId,
@@ -88,7 +89,7 @@
   }
 </script>
 
-<div class="relative flex gap-x-3">
+<div class="relative flex gap-x-3" style:--patchies-mic-node-font-family={$editorFontFamily}>
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -126,7 +127,7 @@
           <div class="flex items-center justify-center gap-2">
             <Mic class="h-4 w-4 text-zinc-500" />
 
-            <div class="font-mono text-xs text-zinc-300">mic~</div>
+            <div class="mic-node-label text-xs text-zinc-300">mic~</div>
           </div>
         </button>
 
@@ -231,3 +232,9 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .mic-node-label {
+    font-family: var(--patchies-mic-node-font-family, var(--font-mono));
+  }
+</style>

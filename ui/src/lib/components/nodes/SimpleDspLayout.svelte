@@ -17,6 +17,7 @@
   } from '../../../stores/code-editor-layout.store';
   import { defaultEditorLayout } from '../../../stores/editor-layout-settings.store';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
+  import { editorFontFamily } from '../../../stores/editor.store';
 
   let {
     nodeId,
@@ -201,7 +202,7 @@
   });
 </script>
 
-<div class="relative flex gap-x-3">
+<div class="relative flex gap-x-3" style:--patchies-simple-dsp-font-family={$editorFontFamily}>
   <div class="group relative">
     <div class="flex flex-col gap-2" bind:this={contentContainer}>
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -290,7 +291,7 @@
           title="Double click to edit code"
         >
           <div class="flex items-center justify-center">
-            <div class="font-mono text-xs text-zinc-300">{displayTitle}</div>
+            <div class="simple-dsp-label text-xs text-zinc-300">{displayTitle}</div>
           </div>
         </button>
 
@@ -421,3 +422,9 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .simple-dsp-label {
+    font-family: var(--patchies-simple-dsp-font-family, var(--font-mono));
+  }
+</style>
