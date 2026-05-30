@@ -14,6 +14,7 @@
     openCodeEditorOverlay
   } from '../../../stores/code-editor-layout.store';
   import { createCommonExprEditorTarget } from '$lib/code-editor/common-expr-editor-target';
+  import { editorFontFamily } from '../../../stores/editor.store';
 
   import 'highlight.js/styles/tokyo-night-dark.css';
 
@@ -316,11 +317,12 @@
                 containerClass,
                 previewContainerClass
               ]}
+              style:--patchies-expr-preview-font-family={$editorFontFamily}
               role="button"
               tabindex="0"
               onkeydown={(e) => e.key === 'Enter' && handleDoubleClick()}
             >
-              <div class="expr-preview flex items-center gap-2 font-mono">
+              <div class="expr-preview flex items-center gap-2">
                 {#if expr || displayPrefix}
                   <span class="flex max-w-[400px] overflow-hidden">
                     {#if displayPrefix}
@@ -336,7 +338,7 @@
                       <code
                         class={[
                           'expr-preview-code text-xs',
-                          lineWrap ? 'break-all whitespace-pre-wrap' : 'whitespace-pre'
+                          lineWrap ? 'expr-preview-code-line-wrap' : 'whitespace-pre'
                         ]}
                       >
                         {@html highlightedHtml}
@@ -361,7 +363,18 @@
   }
 
   .expr-display {
-    font-family: var(--font-mono);
+    font-family: var(--patchies-expr-preview-font-family, var(--font-mono));
+  }
+
+  .expr-preview-code {
+    font-family: inherit;
+  }
+
+  .expr-preview-code-line-wrap {
+    white-space: break-spaces;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    flex-shrink: 1;
   }
 
   /* Uiua syntax highlighting for preview */
