@@ -11,7 +11,7 @@ const renderNode = (id: string, type: string): Node => ({
 });
 
 describe('CanvasPreviewExpandController', () => {
-  it('pins the node, forwards overlay input to only that node, and restores the previous pin on exit', () => {
+  it('pins the node, forwards overlay input with default rules, and restores the previous pin on exit', () => {
     let currentOverride: string | null = 'glsl-old';
     let active = false;
     let listenerOptions: SurfaceListenersOptions | undefined;
@@ -68,7 +68,7 @@ describe('CanvasPreviewExpandController', () => {
       ],
       expect.any(Function)
     );
-    expect(forwarder.setForwardingRules).toHaveBeenCalledWith({ only: ['three-1'] });
+    expect(forwarder.setForwardingRules).not.toHaveBeenCalled();
     expect(listeners.attach).toHaveBeenCalledWith(canvas, expect.any(Object));
 
     expect(listenerOptions).toBeDefined();

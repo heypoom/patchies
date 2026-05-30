@@ -80,7 +80,6 @@ export class CanvasPreviewExpandController {
       this.forwarder = forwarder;
       this.listeners = listeners;
 
-      forwarder.setForwardingRules({ only: [this.options.nodeId] });
       this.options.setOverrideOutputNode(this.options.nodeId);
 
       this.options.overlay.activate(this.options.nodeId, this.getOverlayNodes(), () => this.exit());

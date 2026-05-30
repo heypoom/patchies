@@ -16,8 +16,8 @@ input to that same object.
 - `SurfaceOverlay` provides the fullscreen transparent input canvas and hides the
   editor UI through the existing `isFullscreenActive` store.
 - `SurfaceListeners` normalizes pointer, touch, and wheel input from the overlay.
-- `SurfaceMouseForwarder` forwards input only to the expanded node by using
-  `{ only: [nodeId] }` forwarding rules.
+- `SurfaceMouseForwarder` uses its default forwarding behavior, so overlay input
+  is forwarded to all eligible render nodes.
 - Exiting expanded mode detaches overlay listeners, deactivates the overlay, and
   restores the previous background-output override.
 
@@ -54,5 +54,5 @@ or changing preview actions does not require editing two independent menu trees.
 Add unit coverage for the controller:
 
 - entering stores and replaces the current background override
-- pointer and wheel events are forwarded only to the expanded node
+- pointer and wheel events use the default forwarding rules
 - exiting restores the previous override and disposes listeners/forwarder
