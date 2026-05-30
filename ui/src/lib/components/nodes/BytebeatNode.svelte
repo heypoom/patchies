@@ -298,7 +298,7 @@
             <Tooltip.Trigger>
               <button
                 onclick={() => layoutRef?.openExpandedEditor()}
-                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                class="node-floating-button disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!expr.trim()}
                 aria-label="Expand bytebeat editor"
               >
