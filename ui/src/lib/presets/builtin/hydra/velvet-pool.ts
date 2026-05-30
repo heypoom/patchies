@@ -4,6 +4,7 @@ const code = `// Velvet Pool
 // by Mahalia H-R
 // IG: mm_hr_
 
+setPortCount(1)
 
 noise()
 .color(() => fft().a[2]*2,0,.6)
@@ -40,7 +41,7 @@ export const preset: HydraPreset = {
   type: 'hydra',
   data: {
     code: code.trim(),
-    messageInletCount: 0,
+    messageInletCount: 1,
     messageOutletCount: 0,
     videoInletCount: 0,
     videoOutletCount: 1

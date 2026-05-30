@@ -4,6 +4,8 @@ const code = `//CNDSD
 //http://malitzincortes.net/
 //ameba
 
+setPortCount(1)
+
 osc(15, 0.01, 0.1).mult(osc(1, -0.1).modulate(osc(2).rotate(4,1), 20))
 .color(0,2.4,5)
 .saturate(0.4)
@@ -16,7 +18,7 @@ export const preset: HydraPreset = {
   type: 'hydra',
   data: {
     code: code.trim(),
-    messageInletCount: 0,
+    messageInletCount: 1,
     messageOutletCount: 0,
     videoInletCount: 0,
     videoOutletCount: 1

@@ -3,6 +3,8 @@ import type { HydraPreset } from './types';
 const code = `//ee_5 . FUGITIVE GEOMETRY VHS . audioreactive shapes and gradients
 // e_e // @eerie_ear
 //
+setPortCount(1)
+
 await settings.define([
   { key: 'sensitivity', label: 'FFT Sensitivity', type: 'slider', min: 0, max: 20, default: 8, step: 0.1 },
   { key: 'feedback', label: 'Feedback Amount', type: 'slider', min: 0, max: 0.99, default: 0.6, step: 0.01 }
@@ -47,7 +49,7 @@ export const preset: HydraPreset = {
   type: 'hydra',
   data: {
     code: code.trim(),
-    messageInletCount: 0,
+    messageInletCount: 1,
     messageOutletCount: 0,
     videoInletCount: 0,
     videoOutletCount: 1

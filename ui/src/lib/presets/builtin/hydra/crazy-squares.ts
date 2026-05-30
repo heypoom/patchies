@@ -4,6 +4,8 @@ const code = `//CNDSD
 //http://malitzincortes.net/
 //crazy squares
 
+setPortCount(1)
+
 shape(4, (0.01, ()=> 0.2 + fft().a[2]),1)
 .mult(osc(1, 1).modulate(osc(5).rotate(1.4,1),3))
 .color(1,2,4)
@@ -17,7 +19,7 @@ export const preset: HydraPreset = {
   type: 'hydra',
   data: {
     code: code.trim(),
-    messageInletCount: 0,
+    messageInletCount: 1,
     messageOutletCount: 0,
     videoInletCount: 0,
     videoOutletCount: 1

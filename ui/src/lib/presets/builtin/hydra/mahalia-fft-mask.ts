@@ -3,6 +3,8 @@ import type { HydraPreset } from './types';
 const code = `// by Mahalia H-R
 // IG: mm_hr_
 
+setPortCount(1)
+
 shape(()=>Math.sin(time)+1*3, .5,.01)
 .repeat(5,3, ()=>fft().a[0]*2, ()=>fft().a[1]*2)
 .scrollY(.5,0.1)
@@ -27,7 +29,7 @@ export const preset: HydraPreset = {
   type: 'hydra',
   data: {
     code: code.trim(),
-    messageInletCount: 0,
+    messageInletCount: 1,
     messageOutletCount: 0,
     videoInletCount: 0,
     videoOutletCount: 1
