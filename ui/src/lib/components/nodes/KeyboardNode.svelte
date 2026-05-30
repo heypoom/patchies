@@ -235,7 +235,7 @@
         <div></div>
 
         <button
-          class="z-4 rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          class="node-floating-button z-4"
           onclick={() => (showSettings = !showSettings)}
           title="Settings"
         >

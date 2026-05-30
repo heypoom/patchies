@@ -42,9 +42,7 @@
                   updateNodeData(nodeId, { locked: !oldLocked });
                   tracker.commit('locked', oldLocked, !oldLocked);
                 }}
-                class={[
-                  'cursor-pointer rounded p-1 text-zinc-300 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0'
-                ]}
+                class={['node-floating-button text-zinc-300']}
               >
                 {#if data.locked}
                   <Lock class="h-4 w-4" />
@@ -61,9 +59,7 @@
 
           {#if !isLocked}
             <button
-              class={[
-                'cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0'
-              ]}
+              class={['node-floating-button']}
               onclick={() => !isLocked && (showTextInput = !showTextInput)}
               title="Toggle Message Input"
             >

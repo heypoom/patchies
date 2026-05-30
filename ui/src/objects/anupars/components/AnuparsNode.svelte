@@ -441,10 +441,7 @@
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
-                class={[
-                  'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-                  frozen ? 'opacity-100' : 'group-hover:opacity-100 sm:opacity-0'
-                ].join(' ')}
+                class={['node-floating-button', frozen && '!opacity-100'].join(' ')}
                 onclick={toggleFrozen}
               >
                 <Moon class={['h-4 w-4', frozen ? 'text-sky-400' : 'text-zinc-300'].join(' ')} />
@@ -455,10 +452,7 @@
 
           <Tooltip.Root>
             <Tooltip.Trigger>
-              <button
-                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                onclick={openHelp}
-              >
+              <button class="node-floating-button" onclick={openHelp}>
                 <CircleQuestionMark class="h-4 w-4 text-zinc-300" />
               </button>
             </Tooltip.Trigger>

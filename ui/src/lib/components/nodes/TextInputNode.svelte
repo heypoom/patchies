@@ -109,12 +109,7 @@
         <div></div>
       {/if}
 
-      <div
-        class={[
-          'flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0',
-          node.selected && 'opacity-100'
-        ]}
-      >
+      <div class={['node-floating-controls flex gap-1', node.selected && 'opacity-100']}>
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button

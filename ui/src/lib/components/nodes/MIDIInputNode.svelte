@@ -162,10 +162,7 @@
 
         <Tooltip.Root>
           <Tooltip.Trigger>
-            <button
-              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              onclick={() => (showSettings = !showSettings)}
-            >
+            <button class="node-floating-button" onclick={() => (showSettings = !showSettings)}>
               <Settings class="h-4 w-4 text-zinc-300" />
             </button>
           </Tooltip.Trigger>

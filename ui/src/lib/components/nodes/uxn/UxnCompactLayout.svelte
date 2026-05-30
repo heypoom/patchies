@@ -71,7 +71,7 @@
       <button
         class={[
           'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-          !menuOpen && 'sm:opacity-0 sm:group-hover:opacity-100'
+          !menuOpen && 'node-floating-controls'
         ]}
       >
         <EllipsisVertical class="h-4 w-4 text-zinc-300" />

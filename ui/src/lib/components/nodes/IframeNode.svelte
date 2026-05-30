@@ -276,7 +276,7 @@
               {/if}
 
               <button
-                class="absolute -top-2 -right-2 cursor-pointer rounded-full border border-zinc-600 bg-zinc-800 p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                class="node-floating-controls absolute -top-2 -right-2 cursor-pointer rounded-full border border-zinc-600 bg-zinc-800 p-1 hover:bg-zinc-700"
                 onclick={toggleUrlInput}
               >
                 <SquarePen class="h-3 w-3 text-zinc-300" />

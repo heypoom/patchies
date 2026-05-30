@@ -316,17 +316,11 @@
             <Tooltip.Root>
               <Tooltip.Trigger>
                 {#if isPlaying}
-                  <button
-                    class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                    onclick={stop}
-                  >
+                  <button class="node-floating-button" onclick={stop}>
                     <Square class="h-4 w-4 text-zinc-300" />
                   </button>
                 {:else}
-                  <button
-                    class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                    onclick={evaluate}
-                  >
+                  <button class="node-floating-button" onclick={evaluate}>
                     <Play class="h-4 w-4 text-zinc-300" />
                   </button>
                 {/if}
@@ -340,7 +334,7 @@
               <button
                 class={[
                   'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-                  !menuOpen && 'sm:opacity-0 sm:group-hover:opacity-100'
+                  !menuOpen && 'node-floating-controls'
                 ]}
               >
                 <Ellipsis class="h-4 w-4 text-zinc-300" />

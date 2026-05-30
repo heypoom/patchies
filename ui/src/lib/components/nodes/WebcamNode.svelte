@@ -406,7 +406,7 @@
         <div></div>
         <div class="flex gap-1">
           <button
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+            class="node-floating-button"
             onclick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -419,7 +419,7 @@
           {#if isCapturing}
             <button
               title={isPaused ? 'Resume webcam' : 'Pause webcam'}
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              class="node-floating-button"
               onclick={togglePause}
             >
               <CaptureIcon class="h-4 w-4 text-zinc-300" />
@@ -432,11 +432,7 @@
               <Square class="h-4 w-4 text-red-500" />
             </button>
           {:else}
-            <button
-              title="Start webcam"
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              onclick={startCapture}
-            >
+            <button title="Start webcam" class="node-floating-button" onclick={startCapture}>
               <Play class="h-4 w-4 text-zinc-300" />
             </button>
           {/if}

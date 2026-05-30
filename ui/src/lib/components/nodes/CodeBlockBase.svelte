@@ -402,9 +402,7 @@
           </div>
         </div>
 
-        <div
-          class="flex items-center transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-hover/header:opacity-100"
-        >
+        <div class="node-floating-controls flex items-center sm:group-hover/header:opacity-100">
           {#if !(supportsLibraries && data.libraryName)}
             {#if settingsSchema && settingsSchema.length > 0}
               <CodeBlockOverflowMenu

@@ -732,21 +732,17 @@
           {#if isVideoLoaded}
             <button
               title={isPaused ? 'Play video' : 'Pause video'}
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              class="node-floating-button"
               onclick={togglePause}
             >
               <PauseIcon class="h-4 w-4 text-zinc-300" />
             </button>
-            <button
-              title="Restart video"
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              onclick={restartVideo}
-            >
+            <button title="Restart video" class="node-floating-button" onclick={restartVideo}>
               <SkipBack class="h-4 w-4 text-zinc-300" />
             </button>
             <button
               title="Change video"
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              class="node-floating-button"
               onclick={vfsMedia.openFileDialog}
             >
               <Upload class="h-4 w-4 text-zinc-300" />

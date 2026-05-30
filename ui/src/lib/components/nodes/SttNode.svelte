@@ -177,7 +177,7 @@
             </button>
           {:else}
             <button
-              class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+              class="node-floating-button"
               onclick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -191,7 +191,7 @@
         </div>
         <div>
           <button
-            class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+            class="node-floating-button"
             onclick={(e) => {
               e.preventDefault();
               e.stopPropagation();

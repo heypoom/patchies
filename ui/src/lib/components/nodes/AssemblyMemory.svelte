@@ -191,7 +191,7 @@
   <div class="group relative">
     <!-- Floating header -->
     <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-      <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
+      <div class="node-floating-controls flex gap-1">
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button onclick={toggleFormat} class="cursor-pointer rounded p-1 hover:bg-zinc-700">
@@ -214,7 +214,7 @@
         </Tooltip.Root>
       </div>
 
-      <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
+      <div class="node-floating-controls flex gap-1">
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button

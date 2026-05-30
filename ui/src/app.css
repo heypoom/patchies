@@ -210,6 +210,15 @@ body {
     @apply border-red-500 bg-zinc-900;
   }
 
+  /* Floating node controls stay visible on coarse-pointer devices where hover is unreliable. */
+  .node-floating-controls {
+    @apply transition-opacity group-hover:opacity-100 sm:opacity-0 pointer-coarse:!opacity-100;
+  }
+
+  .node-floating-button {
+    @apply cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0 pointer-coarse:!opacity-100;
+  }
+
   /* Uiua glyph hover tooltip styles (shared by CodeMirror and preview mode) */
   .cm-tooltip:has(.uiua-tooltip) {
     background: transparent !important;

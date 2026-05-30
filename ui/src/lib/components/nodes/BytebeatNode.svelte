@@ -248,7 +248,7 @@
     <div class="flex flex-col gap-2" bind:this={contentContainer}>
       <!-- Floating toolbar -->
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-        <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
+        <div class="node-floating-controls flex gap-1">
           {#if !syncTransport}
             <!-- Play/Pause button -->
             <Tooltip.Root>
@@ -278,10 +278,7 @@
 
         <Tooltip.Root>
           <Tooltip.Trigger>
-            <button
-              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              onclick={() => (showSettings = !showSettings)}
-            >
+            <button class="node-floating-button" onclick={() => (showSettings = !showSettings)}>
               <Settings class="h-4 w-4 text-zinc-300" />
             </button>
           </Tooltip.Trigger>

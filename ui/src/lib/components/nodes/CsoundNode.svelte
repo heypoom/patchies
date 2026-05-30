@@ -184,7 +184,7 @@
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
         <div></div>
 
-        <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
+        <div class="node-floating-controls flex gap-1">
           <!-- Play/Pause button (hidden when synced to transport) -->
           {#if !syncTransport}
             <Tooltip.Root>

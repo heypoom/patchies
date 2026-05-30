@@ -214,7 +214,7 @@
             <Tooltip.Root>
               <Tooltip.Trigger>
                 <button
-                  class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                  class="node-floating-button"
                   onclick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -233,7 +233,7 @@
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
-                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                class="node-floating-button"
                 onclick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();

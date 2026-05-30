@@ -50,10 +50,7 @@
   <div class="flex gap-1">
     <Tooltip.Root>
       <Tooltip.Trigger>
-        <button
-          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-          onclick={onTogglePause}
-        >
+        <button class="node-floating-button" onclick={onTogglePause}>
           {#if isPaused}
             <Play class="h-4 w-4 text-zinc-300" />
           {:else}
@@ -67,7 +64,7 @@
     <Tooltip.Root>
       <Tooltip.Trigger>
         <button
-          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          class="node-floating-button"
           onclick={() => {
             onToggleEditor();
             onMeasureContainerWidth();
@@ -87,7 +84,7 @@
         <button
           class={[
             'cursor-pointer rounded p-1 transition-opacity hover:bg-zinc-700',
-            !menuOpen && 'sm:opacity-0 sm:group-hover:opacity-100'
+            !menuOpen && 'node-floating-controls'
           ]}
         >
           <EllipsisVertical class="h-4 w-4 text-zinc-300" />

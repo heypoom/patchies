@@ -333,7 +333,7 @@
       <div class="flex items-center gap-1">
         <button
           aria-label="Open settings"
-          class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          class="node-floating-button"
           onclick={() => (showSettings = !showSettings)}
         >
           <Settings class="h-4 w-4 text-zinc-300" />

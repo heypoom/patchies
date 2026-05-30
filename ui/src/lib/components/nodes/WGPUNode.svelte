@@ -332,7 +332,7 @@
         </div>
 
         <div
-          class="flex items-center gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-hover/header:opacity-100"
+          class="node-floating-controls flex items-center gap-1 sm:group-hover/header:opacity-100"
         >
           <button
             class="rounded p-1 hover:bg-zinc-700"

@@ -310,7 +310,7 @@
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
         <div></div>
         <button
-          class="rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+          class="node-floating-button"
           onclick={() => (showTextInput = !showTextInput)}
           title="Toggle Message Input"
         >

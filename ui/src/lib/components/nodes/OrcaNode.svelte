@@ -779,10 +779,7 @@
           {#if !syncTransport}
             <Tooltip.Root>
               <Tooltip.Trigger>
-                <button
-                  class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-                  onclick={togglePlay}
-                >
+                <button class="node-floating-button" onclick={togglePlay}>
                   <!-- svelte-ignore svelte_component_deprecated -->
                   <svelte:component this={isPlaying ? Pause : Play} class="h-4 w-4 text-zinc-300" />
                 </button>
@@ -794,7 +791,7 @@
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
-                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                class="node-floating-button"
                 onclick={openExpandedEditor}
                 aria-label="Expand Orca"
               >
@@ -807,7 +804,7 @@
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button
-                class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+                class="node-floating-button"
                 onclick={() => {
                   showSettings = !showSettings;
                   measureWidth();
@@ -832,7 +829,7 @@
         />
         <div
           class={[
-            'nodrag nopan nowheel',
+            'nodrag nopan',
             isDetached
               ? 'fixed inset-0 z-[60] flex items-center justify-center overflow-auto p-12'
               : 'relative'

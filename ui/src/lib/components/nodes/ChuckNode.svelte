@@ -262,7 +262,7 @@
     <div class="flex flex-col gap-2" bind:this={contentContainer}>
       <!-- Floating toolbar -->
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
-        <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
+        <div class="node-floating-controls flex gap-1">
           <!-- Replace button -->
           <Tooltip.Root>
             <Tooltip.Trigger>
@@ -306,7 +306,7 @@
           </Tooltip.Root>
         </div>
 
-        <div class="flex gap-1 transition-opacity group-hover:opacity-100 sm:opacity-0">
+        <div class="node-floating-controls flex gap-1">
           <Tooltip.Root>
             <Tooltip.Trigger>
               <button

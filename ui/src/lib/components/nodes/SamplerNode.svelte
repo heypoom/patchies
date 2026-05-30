@@ -518,9 +518,7 @@
           <!-- Record Button -->
           <button
             title={isRecording ? 'Stop Recording' : 'Start Recording'}
-            class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0 {isRecording
-              ? '!opacity-100'
-              : ''}"
+            class="node-floating-button {isRecording ? '!opacity-100' : ''}"
             onclick={toggleRecording}
           >
             <!-- svelte-ignore svelte_component_deprecated -->
@@ -532,17 +530,13 @@
 
           <!-- Play Button -->
           {#if hasRecording && !isRecording}
-            <button
-              title="Play Recording"
-              class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
-              onclick={playRecording}
-            >
+            <button title="Play Recording" class="node-floating-button" onclick={playRecording}>
               <Play class="h-4 w-4 text-zinc-300" />
             </button>
           {/if}
 
           <button
-            class="cursor-pointer rounded p-1 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 sm:opacity-0"
+            class="node-floating-button"
             onclick={() => (showSettings = !showSettings)}
             title="Settings"
           >
