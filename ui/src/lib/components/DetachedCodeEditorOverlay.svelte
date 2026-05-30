@@ -60,7 +60,7 @@
   class={['detached-code-editor-overlay fixed inset-0 z-[60]', className]}
   style:background-color={panelBackground}
 >
-  <div class="absolute top-6 right-6 z-10 flex gap-1">
+  <div class="overlay-actions absolute z-10 flex gap-1">
     {#if customActions}
       {@render customActions()}
     {/if}
@@ -170,5 +170,10 @@
 
   :global(.detached-code-editor-overlay .cm-scroller) {
     padding: 8px 0 !important;
+  }
+
+  .overlay-actions {
+    top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
+    right: calc(env(safe-area-inset-right, 0px) + 1.5rem);
   }
 </style>
