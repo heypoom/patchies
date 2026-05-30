@@ -33,6 +33,9 @@ selection, and playback state.
   the rest of the screen.
 - The fullscreen canvas is borderless; the grid itself should be the visual
   focus.
+- Orca settings include a light/dark foreground mode. Inline mode preserves the
+  current dark foreground default, while fullscreen defaults to light foregrounds
+  for legibility over transparent visuals.
 - The fullscreen chrome includes play/pause, settings, and close controls.
 - Settings render inside the fullscreen wrapper, anchored under the fullscreen
   settings button, so they remain visible while the main editor UI is hidden.

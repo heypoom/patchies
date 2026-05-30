@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { OrcaForegroundMode } from '$lib/orca/layout';
+
   let {
     gridWidth,
     gridHeight,
@@ -8,6 +10,7 @@
     showInterface,
     showGuide,
     fontSize,
+    foregroundMode,
     canvasDensity,
     onGridWidthChange,
     onGridHeightChange,
@@ -16,6 +19,7 @@
     onShowInterfaceChange,
     onShowGuideChange,
     onFontSizeChange,
+    onForegroundModeChange,
     onCanvasDensityChange
   }: {
     gridWidth: number;
@@ -26,6 +30,7 @@
     showInterface: boolean;
     showGuide: boolean;
     fontSize: number;
+    foregroundMode: OrcaForegroundMode;
     canvasDensity: number;
     onGridWidthChange: (width: number) => void;
     onGridHeightChange: (height: number) => void;
@@ -34,6 +39,7 @@
     onShowInterfaceChange: (show: boolean) => void;
     onShowGuideChange: (show: boolean) => void;
     onFontSizeChange: (size: number) => void;
+    onForegroundModeChange: (mode: OrcaForegroundMode) => void;
     onCanvasDensityChange: (density: number) => void;
   } = $props();
 </script>
@@ -113,6 +119,17 @@
 
     <div class="space-y-2">
       <div class="text-xs font-medium text-zinc-400">Display Options</div>
+      <label class="flex items-center gap-2 text-xs text-zinc-400">
+        <input
+          type="checkbox"
+          checked={foregroundMode === 'light'}
+          onchange={(e) => onForegroundModeChange(e.currentTarget.checked ? 'light' : 'dark')}
+          class="cursor-pointer rounded"
+        />
+
+        <span>Brighter foreground</span>
+      </label>
+
       <label class="flex items-center gap-2 text-xs text-zinc-400">
         <input
           type="checkbox"

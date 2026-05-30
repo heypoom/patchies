@@ -32,9 +32,12 @@
   import { screenToOrcaGridCell } from '$lib/orca/pointer';
   import {
     DEFAULT_ORCA_FULLSCREEN_FONT_SIZE,
+    getOrcaColors,
     getOrcaDisplayFontSize,
+    getOrcaDisplayForegroundMode,
     getOrcaFullscreenOverlayBackground
   } from '$lib/orca/layout';
+  import type { OrcaForegroundMode } from '$lib/orca/layout';
 
   let {
     id: nodeId,
@@ -88,6 +91,8 @@
   // Scale factor for font size
   let fontSize = $state(1.0);
   let fullscreenFontSize = $state(DEFAULT_ORCA_FULLSCREEN_FONT_SIZE);
+  let foregroundMode = $state<OrcaForegroundMode>('dark');
+  let fullscreenForegroundMode = $state<OrcaForegroundMode>('light');
 
   // Canvas rendering scale
   let canvasDensity = $state(Math.round(window.devicePixelRatio) ?? 1);
@@ -104,24 +109,19 @@
   const fullscreenOverlayBackground = $derived(
     getOrcaFullscreenOverlayBackground($overlayEditorTransparency)
   );
+  const displayForegroundMode = $derived(
+    getOrcaDisplayForegroundMode({
+      inlineMode: foregroundMode,
+      fullscreenMode: fullscreenForegroundMode,
+      isDetached
+    })
+  );
+  const colors = $derived(getOrcaColors(displayForegroundMode));
   let TILE_W = $derived(10 * displayFontSize);
   let TILE_H = $derived(15 * displayFontSize);
   const detachedPortalTarget = $derived(
     isDetached && typeof document !== 'undefined' ? document.body : null
   );
-
-  const COLORS = {
-    background: '#000000',
-    f_high: '#ffffff',
-    f_med: '#777777',
-    f_low: '#444444',
-    f_inv: '#000000',
-    b_high: '#eeeeee',
-    b_med: '#72dec2',
-    b_low: '#444444',
-    b_inv: '#ffb545',
-    cursor: '#ffb545'
-  };
 
   onMount(() => {
     if (!canvas) return;
@@ -132,7 +132,7 @@
 
     clock = new Clock(orca);
     io = new IO(messageContext);
-    renderer = new OrcaRenderer(canvas, orca, COLORS, fontSize, canvasDensity);
+    renderer = new OrcaRenderer(canvas, orca, colors, fontSize, canvasDensity);
 
     // Connect IO to Orca so operators can access it
     orca.io = io;
@@ -569,6 +569,7 @@
 
     // Update font scale if it changed
     renderer.updateFontScale(displayFontSize);
+    renderer.updateColors(colors);
 
     const selection = { x: cursorX, y: cursorY, w: selectionW, h: selectionH };
     renderer.render(
@@ -578,9 +579,17 @@
       showInterface,
       showGuide,
       selection,
-      isDetached ? 'transparent' : COLORS.background
+      isDetached ? 'transparent' : colors.background
     );
   }
+
+  $effect(() => {
+    if (!renderer) return;
+
+    renderer.updateFontScale(displayFontSize);
+    renderer.updateColors(colors);
+    render();
+  });
 
   function increaseBpm(): void {
     if (clock) {
@@ -673,6 +682,7 @@
     {showInterface}
     {showGuide}
     fontSize={displayFontSize}
+    foregroundMode={displayForegroundMode}
     {canvasDensity}
     onGridWidthChange={(val) => {
       if (orca) {
@@ -725,6 +735,14 @@
       }
       render();
       measureWidth();
+    }}
+    onForegroundModeChange={(mode) => {
+      if (isDetached) {
+        fullscreenForegroundMode = mode;
+      } else {
+        foregroundMode = mode;
+      }
+      render();
     }}
     onCanvasDensityChange={(density) => {
       canvasDensity = density;

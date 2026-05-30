@@ -8,19 +8,7 @@
  */
 
 import type { Orca } from './Orca';
-
-interface OrcaColors {
-  background: string;
-  f_high: string;
-  f_med: string;
-  f_low: string;
-  f_inv: string;
-  b_high: string;
-  b_med: string;
-  b_low: string;
-  b_inv: string;
-  cursor: string;
-}
+import { getOrcaPortForeground, type OrcaColors } from './layout';
 
 export class OrcaRenderer {
   private orca: Orca;
@@ -67,6 +55,10 @@ export class OrcaRenderer {
     this.tileH = 15 * fontScale;
     this.tileWS = Math.floor(this.tileW * this.scale);
     this.tileHS = Math.floor(this.tileH * this.scale);
+  }
+
+  updateColors(colors: OrcaColors): void {
+    this.colors = colors;
   }
 
   findPorts(): void {
@@ -393,15 +385,15 @@ export class OrcaRenderer {
       // type 0: operator (already handled by uppercase check below)
       // type 1: haste port (inputs at negative positions)
       if (portType === 1) {
-        return { fg: this.colors.b_med };
+        return { fg: getOrcaPortForeground(this.colors, portType) };
       }
       // type 2: input port
       if (portType === 2) {
-        return { fg: this.colors.b_high };
+        return { fg: getOrcaPortForeground(this.colors, portType) };
       }
       // type 3: output port
       if (portType === 3) {
-        return { bg: this.colors.b_high, fg: this.colors.f_low };
+        return { bg: this.colors.b_high, fg: this.colors.f_on_bg };
       }
     }
 
@@ -411,7 +403,7 @@ export class OrcaRenderer {
       glyph === glyph.toUpperCase() &&
       glyph.toLowerCase() !== glyph.toUpperCase()
     ) {
-      return { bg: this.colors.b_med, fg: this.colors.f_low };
+      return { bg: this.colors.b_med, fg: this.colors.f_on_bg };
     }
 
     // Locked cells
