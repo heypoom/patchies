@@ -323,7 +323,13 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     description: 'SuperCollider synths via SuperSonic',
     icon: 'Music',
     requiredObjects: ['sonic~'],
-    presets: ['sonic-prophet', 'sonic-tb303', 'sonic-sample-loop', 'sonic-multi-synth']
+    presets: [
+      'sonic-beep',
+      'sonic-prophet',
+      'sonic-tb303',
+      'sonic-sample-loop',
+      'sonic-multi-synth'
+    ]
   },
   {
     id: 'ascii-art-demos',

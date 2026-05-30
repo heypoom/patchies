@@ -1,18 +1,18 @@
 import { synthdefTemplate } from '$lib/canvas/sonic-templates';
 
+const createPreset = (synthdef: string) => ({
+  type: 'sonic~',
+  data: {
+    code: synthdefTemplate(synthdef),
+    title: synthdef,
+    messageInletCount: 1
+  }
+});
+
 export const SONIC_PRESETS = {
-  'sonic-prophet': {
-    type: 'sonic~',
-    data: {
-      code: synthdefTemplate('sonic-pi-prophet')
-    }
-  },
-  'sonic-tb303': {
-    type: 'sonic~',
-    data: {
-      code: synthdefTemplate('sonic-pi-tb303')
-    }
-  },
+  'sonic-prophet': createPreset('sonic-pi-prophet'),
+  'sonic-beep': createPreset('sonic-pi-beep'),
+  'sonic-tb303': createPreset('sonic-pi-tb303'),
   'sonic-sample-loop': {
     type: 'sonic~',
     data: {
