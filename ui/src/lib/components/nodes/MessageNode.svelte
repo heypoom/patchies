@@ -27,6 +27,7 @@
     buildMessageTypeMapForTypes,
     COMMON_SCHEMAS
   } from '$lib/objects/schemas';
+  import { editorFontFamily } from '../../../stores/editor.store';
 
   hljs.registerLanguage('javascript', javascript);
 
@@ -304,7 +305,7 @@
   );
 </script>
 
-<div class="relative">
+<div class="relative" style:--patchies-message-node-font-family={$editorFontFamily}>
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -363,7 +364,7 @@
             <button
               onclick={sendMessage}
               class={[
-                'send-message-button rounded-lg border-1 border-dashed px-3 py-2 text-start text-xs font-medium whitespace-pre text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
+                'send-message-button cursor-pointer rounded-lg border-1 border-dashed px-3 py-2 text-start text-xs font-medium whitespace-pre text-zinc-200 hover:bg-zinc-800 active:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50',
                 containerClass
               ]}
             >
@@ -395,6 +396,10 @@
   }
 
   .send-message-button {
-    font-family: var(--font-mono);
+    font-family: var(--patchies-message-node-font-family, var(--font-mono));
+  }
+
+  .send-message-button code {
+    font-family: inherit;
   }
 </style>
