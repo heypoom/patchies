@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
-  import { useSvelteFlow } from '@xyflow/svelte';
-  import { match } from 'ts-pattern';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { match, P } from 'ts-pattern';
   import { Plus, Settings, Trash2, X } from '@lucide/svelte/icons';
 
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -51,6 +51,7 @@
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
   const tracker = useNodeDataTracker(nodeId);
 
   let messageContext: MessageContext;
@@ -80,6 +81,7 @@
     tracker.commit('columns', oldData.columns, newData.columns);
     tracker.commit('rows', oldData.rows, newData.rows);
     tracker.commit('outputObjects', oldData.outputObjects, newData.outputObjects);
+    setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
   function setData(nextData: DatatableData) {
@@ -124,6 +126,7 @@
 
     headerValidationError = '';
     updateNodeData(nodeId, updateColumnName(normalizedData, columnIndex, value));
+    setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
   function setCell(rowIndex: number, columnIndex: number, value: string) {
@@ -224,6 +227,9 @@
         loadCsvFromSrc(src).catch((error) => {
           console.error('datatable load failed:', error);
         });
+      })
+      .with(P.string, (csv) => {
+        setData({ ...parseCsvTable(csv), outputObjects });
       })
       .otherwise(() => {});
   };

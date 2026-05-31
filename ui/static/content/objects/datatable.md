@@ -38,6 +38,8 @@ Use `objects` to always output row objects.
 Drop a `.csv` file onto the canvas to create a `datatable` from it. The first
 CSV row becomes editable column headers.
 
+You can also send CSV text directly to the inlet to replace the table.
+
 ## See Also
 
 - [msg](/docs/objects/msg) — send table commands

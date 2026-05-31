@@ -28,6 +28,10 @@ export const datatableSchema: ObjectSchema = {
         { schema: DatatableClear, description: 'Clear all cells' },
         { schema: LoadBySrc, description: 'Load CSV text from a VFS path or URL' },
         {
+          schema: Type.String(),
+          description: 'Parse CSV text and replace the table'
+        },
+        {
           schema: DatatableRowsOutput,
           description: 'Replace table from a 2D array, using first row as column headers'
         },
