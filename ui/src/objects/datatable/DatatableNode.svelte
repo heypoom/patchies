@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { match } from 'ts-pattern';
   import { Plus, Settings, Trash2, X } from '@lucide/svelte/icons';
@@ -58,6 +58,7 @@
   let rowsBeforeEdit: DatatableCell[][] | null = null;
   let isDraggingCsv = $state(false);
   let showSettings = $state(false);
+  let headerValidationError = $state('');
 
   const columns = $derived(data.columns ?? DEFAULT_DATATABLE_DATA.columns);
   const rows = $derived(data.rows ?? DEFAULT_DATATABLE_DATA.rows);
@@ -108,6 +109,20 @@
   }
 
   function setColumnName(columnIndex: number, value: string) {
+    const trimmed = value.trim();
+
+    const isDuplicate = normalizedData.columns.some(
+      (column, index) => index !== columnIndex && column.trim() === trimmed
+    );
+
+    if (!trimmed || isDuplicate) {
+      headerValidationError = !trimmed
+        ? 'Column headers cannot be blank'
+        : 'Column headers must be unique';
+      return;
+    }
+
+    headerValidationError = '';
     updateNodeData(nodeId, updateColumnName(normalizedData, columnIndex, value));
   }
 
@@ -116,7 +131,7 @@
   }
 
   function clearTable() {
-    setData(createEmptyDatatable());
+    setData({ ...createEmptyDatatable(), outputObjects });
   }
 
   function setOutputObjects(value: boolean) {
@@ -138,6 +153,14 @@
   function resizeTextarea(textarea: HTMLTextAreaElement) {
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.max(28, textarea.scrollHeight)}px`;
+  }
+
+  async function resizeRenderedTextareas() {
+    await tick();
+
+    document
+      .querySelectorAll<HTMLTextAreaElement>(`[data-datatable-node="${nodeId}"] textarea`)
+      .forEach(resizeTextarea);
   }
 
   function handleCellKeydown(event: KeyboardEvent) {
@@ -238,6 +261,13 @@
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
+    resizeRenderedTextareas();
+  });
+
+  $effect(() => {
+    columns;
+    rows;
+    resizeRenderedTextareas();
   });
 
   onDestroy(() => {
@@ -344,7 +374,7 @@
           </tr>
         </thead>
 
-        <tbody>
+        <tbody data-datatable-node={nodeId}>
           {#each rows as row, rowIndex}
             <tr>
               {#each columns as _column, columnIndex}
@@ -385,6 +415,12 @@
         </tbody>
       </table>
     </div>
+
+    {#if headerValidationError}
+      <div class="border-t border-zinc-700 px-2 py-1 font-mono text-[10px] text-red-300">
+        {headerValidationError}
+      </div>
+    {/if}
 
     <div class="nodrag flex items-center justify-between border-t border-zinc-700 px-2 py-1.5">
       <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">

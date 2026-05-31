@@ -82,4 +82,9 @@ describe('datatable utilities', () => {
       ]
     });
   });
+
+  it('returns only public table fields for empty CSV input', () => {
+    expect(parseCsvTable('')).toEqual({ columns: [], rows: [] });
+    expect(Object.keys(parseCsvTable(''))).toEqual(['columns', 'rows']);
+  });
 });

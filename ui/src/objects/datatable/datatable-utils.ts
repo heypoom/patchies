@@ -8,6 +8,8 @@ export type DatatableData = {
 
 export type ParsedCsvTable = Pick<DatatableData, 'columns' | 'rows'>;
 
+const EMPTY_PARSED_TABLE: ParsedCsvTable = { columns: [], rows: [] };
+
 export function ensureUniqueColumnKeys(columns: string[]): string[] {
   const seen = new Map<string, number>();
 
@@ -121,11 +123,13 @@ export function updateColumnName(
 }
 
 export function parseCsvTable(csv: string): ParsedCsvTable {
+  if (csv.trim() === '') return EMPTY_PARSED_TABLE;
+
   const parsedRows = parseCsvRows(csv);
   const [headerRow, ...bodyRows] = parsedRows;
 
   if (!headerRow) {
-    return createEmptyDatatable();
+    return EMPTY_PARSED_TABLE;
   }
 
   const columnCount = Math.max(1, headerRow.length, ...bodyRows.map((row) => row.length));
@@ -144,7 +148,7 @@ export function tableFromArray(rows: unknown[][]): ParsedCsvTable {
   const [headerRow, ...bodyRows] = rows;
 
   if (!headerRow) {
-    return createEmptyDatatable();
+    return EMPTY_PARSED_TABLE;
   }
 
   const columnCount = Math.max(1, headerRow.length, ...bodyRows.map((row) => row.length));
@@ -161,7 +165,7 @@ export function tableFromObjects(objects: Record<string, unknown>[]): ParsedCsvT
   const columns = Array.from(new Set(objects.flatMap((object) => Object.keys(object))));
 
   if (columns.length === 0) {
-    return createEmptyDatatable();
+    return EMPTY_PARSED_TABLE;
   }
 
   return {
