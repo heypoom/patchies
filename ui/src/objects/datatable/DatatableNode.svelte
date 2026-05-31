@@ -65,6 +65,7 @@
   const rows = $derived(data.rows ?? DEFAULT_DATATABLE_DATA.rows);
   const outputObjects = $derived(data.outputObjects ?? false);
   const normalizedData = $derived<DatatableData>({ columns, rows, outputObjects });
+  const tableWidth = $derived(Math.min(520, Math.max(280, columns.length * 110 + 44)));
   const containerClass = $derived(
     selected ? 'object-container-selected !bg-zinc-900' : 'object-container-light'
   );
@@ -274,6 +275,7 @@
     columns;
     rows;
     resizeRenderedTextareas();
+    setTimeout(() => updateNodeInternals(nodeId), 0);
   });
 
   onDestroy(() => {
@@ -322,6 +324,7 @@
     ondrop={handleCsvDrop}
     role="group"
     aria-label="Editable data table"
+    style:width={`${tableWidth}px`}
   >
     <div class="flex cursor-move items-center justify-between border-b border-zinc-700 px-2 py-1.5">
       <span class="font-mono text-[10px] text-zinc-400">datatable</span>
@@ -331,7 +334,7 @@
       </span>
     </div>
 
-    <div class="nodrag max-h-[240px] max-w-[520px] overflow-auto">
+    <div class="nodrag nopan nowheel max-h-[240px] max-w-[520px] overflow-auto">
       <table class="w-full min-w-max border-collapse">
         <thead>
           <tr>
