@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg, sym } from './helpers';
-import { Bang, Stop, messages } from './common';
+import { Bang, Collapse, Expand, Stop, messages } from './common';
 
 // ChucK-specific message schemas
 const Replace = sym('replace');
@@ -90,6 +90,8 @@ export const chuckSchema: ObjectSchema = {
         { schema: Bang, description: 'Replace most recent shred with current expression' },
         { schema: Replace, description: 'Replace most recent shred' },
         { schema: Run, description: 'Replace most recent shred' },
+        { schema: Expand, description: 'Open the expanded editor' },
+        { schema: Collapse, description: 'Close the expanded editor' },
         { schema: Add, description: 'Add current expression as new shred' },
         { schema: Remove, description: 'Remove the last shred' },
         { schema: Stop, description: 'Stop all shreds' },

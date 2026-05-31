@@ -15,6 +15,8 @@ export const PlayMsg = sym('play');
 export const StopMsg = sym('stop');
 export const PauseMsg = sym('pause');
 export const BangMsg = sym('bang');
+export const ExpandMsg = sym('expand');
+export const CollapseMsg = sym('collapse');
 
 export const SetTypeMsg = msg('setType', {
   value: Type.Union([
@@ -41,6 +43,8 @@ export const bytebeatMessages = {
   stop: schema(StopMsg),
   pause: schema(PauseMsg),
   bang: schema(BangMsg),
+  expand: schema(ExpandMsg),
+  collapse: schema(CollapseMsg),
   setType: schema(SetTypeMsg),
   setSyntax: schema(SetSyntaxMsg),
   setSampleRate: schema(SetSampleRateMsg)
@@ -84,6 +88,8 @@ export class BytebeatNode implements AudioNodeV2 {
         { schema: StopMsg, description: 'Stop and reset t=0' },
         { schema: PauseMsg, description: 'Pause playback (keep t)' },
         { schema: BangMsg, description: 'Evaluate expression and play' },
+        { schema: ExpandMsg, description: 'Open the expanded editor' },
+        { schema: CollapseMsg, description: 'Close the expanded editor' },
         { schema: SetTypeMsg, description: 'Set bytebeat type' },
         { schema: SetSyntaxMsg, description: 'Set expression syntax' },
         { schema: SetSampleRateMsg, description: 'Set sample rate' }

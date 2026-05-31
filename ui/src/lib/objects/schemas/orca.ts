@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg, sym } from './helpers';
-import { Bang, messages, Play, Set } from './common';
+import { Bang, Collapse, Expand, messages, Play, Set } from './common';
 
 // Orca-specific message schemas
 const Stop = sym('stop');
@@ -31,6 +31,8 @@ export const orcaSchema: ObjectSchema = {
         { schema: Bang, description: 'Toggle play/pause' },
         { schema: Play, description: 'Start playback' },
         { schema: Stop, description: 'Stop playback' },
+        { schema: Expand, description: 'Open the expanded editor' },
+        { schema: Collapse, description: 'Close the expanded editor' },
         { schema: SetBpm, description: 'Set tempo in BPM' }
       ]
     }

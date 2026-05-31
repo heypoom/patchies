@@ -76,6 +76,12 @@
       .with(bytebeatMessages.bang, async () => {
         await bang();
       })
+      .with(bytebeatMessages.expand, () => {
+        layoutRef?.openExpandedEditor();
+      })
+      .with(bytebeatMessages.collapse, () => {
+        layoutRef?.closeExpandedEditor();
+      })
       .with(bytebeatMessages.setType, async (msg) => {
         await setType(msg.value);
       })

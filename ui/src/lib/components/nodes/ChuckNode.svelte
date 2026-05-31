@@ -57,6 +57,12 @@
       .with(chuckMessages.run, async () => {
         await send('replace', data.expr);
       })
+      .with(chuckMessages.expand, () => {
+        layoutRef?.openExpandedEditor();
+      })
+      .with(chuckMessages.collapse, () => {
+        layoutRef?.closeExpandedEditor();
+      })
       .with(chuckMessages.add, async () => {
         await send('add', data.expr);
       })

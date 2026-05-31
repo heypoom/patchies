@@ -1,9 +1,7 @@
 import { msg } from './helpers';
 import type { ObjectSchema } from './types';
-import { Run, SetCode } from './common';
+import { Collapse, Expand, Run, SetCode } from './common';
 
-export const SurfaceExpand = msg('expand', {});
-export const SurfaceCollapse = msg('collapse', {});
 export const SurfaceFullscreen = msg('fullscreen', {});
 
 export const surfaceSchema: ObjectSchema = {
@@ -17,8 +15,8 @@ export const surfaceSchema: ObjectSchema = {
       messages: [
         { schema: SetCode, description: 'Set the code in the editor' },
         { schema: Run, description: 'Evaluate code and update visuals' },
-        { schema: SurfaceExpand, description: 'Enter fullscreen surface mode' },
-        { schema: SurfaceCollapse, description: 'Exit fullscreen surface mode' },
+        { schema: Expand, description: 'Enter fullscreen surface mode' },
+        { schema: Collapse, description: 'Exit fullscreen surface mode' },
         { schema: SurfaceFullscreen, description: 'Request browser fullscreen' }
       ]
     }

@@ -20,6 +20,8 @@ export const Stop = sym('stop');
 export const Pause = sym('pause');
 export const Play = sym('play');
 export const Run = sym('run');
+export const Expand = sym('expand');
+export const Collapse = sym('collapse');
 export const Toggle = sym('toggle');
 export const SetMin = msg('setMin', { value: Type.Number() });
 export const SetMax = msg('setMax', { value: Type.Number() });
@@ -53,6 +55,8 @@ export const COMMON_SCHEMAS = [
   Pause,
   Play,
   Run,
+  Expand,
+  Collapse,
   Toggle,
   SetMin,
   SetMax,
@@ -79,6 +83,8 @@ export const messages = {
   pause: schema(Pause),
   play: schema(Play),
   run: schema(Run),
+  expand: schema(Expand),
+  collapse: schema(Collapse),
   toggle: schema(Toggle),
   setMin: schema(SetMin),
   setMax: schema(SetMax),

@@ -224,6 +224,8 @@
             isPlaying = false;
           }
         })
+        .with(orcaMessages.expand, openExpandedEditor)
+        .with(orcaMessages.collapse, closeExpandedEditor)
         .with(orcaMessages.setBpm, ({ value }) => {
           if (clock) {
             clock.setSpeed(value, value);

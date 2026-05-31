@@ -76,6 +76,8 @@
         })
         .with(strudelMessages.bang, evaluate)
         .with(strudelMessages.run, evaluate)
+        .with(strudelMessages.expand, openExpandedEditor)
+        .with(strudelMessages.collapse, closeExpandedEditor)
         .with(strudelMessages.setStyles, ({ value }) => {
           updateNodeData(nodeId, { styles: value as Record<string, string> });
         })

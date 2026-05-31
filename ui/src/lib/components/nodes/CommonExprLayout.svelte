@@ -249,6 +249,12 @@
 
     isEditing = false;
   }
+
+  export function closeExpandedEditor() {
+    if (isCodeEditorDetached) {
+      closeCodeEditorOverlay();
+    }
+  }
 </script>
 
 <div class="relative">

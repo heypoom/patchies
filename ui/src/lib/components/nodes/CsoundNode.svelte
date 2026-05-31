@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Pause, Play, Settings } from '@lucide/svelte/icons';
+  import { Expand, Pause, Play, Settings } from '@lucide/svelte/icons';
   import { useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -60,19 +60,33 @@
   const getCsoundNode = () => audioService.getNodeById(nodeId) as CsoundNode | undefined;
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
-    const csoundNode = getCsoundNode();
-    if (!csoundNode) return;
-
-    match(message)
+    const shouldForward = match(message)
+      .with(csoundMessages.expand, () => {
+        layoutRef?.openExpandedEditor();
+        return false;
+      })
+      .with(csoundMessages.collapse, () => {
+        layoutRef?.closeExpandedEditor();
+        return false;
+      })
       .with(csoundMessages.bang, () => {
         isPlaying = true;
+        return true;
       })
       .with(csoundMessages.run, () => {
         isPlaying = true;
+        return true;
       })
       .with(csoundMessages.resume, () => {
         isPlaying = true;
-      });
+        return true;
+      })
+      .otherwise(() => true);
+
+    if (!shouldForward) return;
+
+    const csoundNode = getCsoundNode();
+    if (!csoundNode) return;
 
     csoundNode.send('messageInlet', { inletIndex: meta.inlet, message, meta });
   };
@@ -200,6 +214,21 @@
             </Tooltip.Root>
           {/if}
 
+          <!-- Expand button -->
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={() => layoutRef?.openExpandedEditor()}
+                class="cursor-pointer rounded p-1 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!data.expr.trim()}
+                aria-label="Expand Csound editor"
+              >
+                <Expand class="h-4 w-4 text-zinc-300" />
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Expand Editor</Tooltip.Content>
+          </Tooltip.Root>
+
           <!-- Settings button -->
           <Tooltip.Root>
             <Tooltip.Trigger>
@@ -228,6 +257,8 @@
           onExpressionChange={handleExpressionChange}
           exitOnRun={false}
           onRun={handleRun}
+          nodeType="csound~"
+          detachedEditorTitle="csound~"
           handles={csoundInlets}
           outlets={csoundOutlets}
         />

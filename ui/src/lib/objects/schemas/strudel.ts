@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg, sym } from './helpers';
-import { Bang, Run, messages, SetCode } from './common';
+import { Bang, Collapse, Expand, Run, messages, SetCode } from './common';
 
 // Strudel-specific message schemas
 const SetFontSize = msg('setFontSize', { value: Type.Number() });
@@ -39,6 +39,8 @@ export const strudelSchema: ObjectSchema = {
       messages: [
         { schema: Bang, description: 'Evaluate code and start playback' },
         { schema: Run, description: 'Evaluate code and start playback' },
+        { schema: Expand, description: 'Open the expanded editor' },
+        { schema: Collapse, description: 'Close the expanded editor' },
         { schema: Type.String(), description: 'Set the code in the editor' },
         { schema: SetCode, description: 'Set the code in the editor' },
         { schema: SetFontSize, description: 'Set editor font size' },

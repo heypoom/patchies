@@ -7,17 +7,10 @@
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
-  import {
-    messages,
-    SurfaceExpand,
-    SurfaceCollapse,
-    SurfaceFullscreen
-  } from '$lib/objects/schemas';
+  import { messages, SurfaceFullscreen } from '$lib/objects/schemas';
   import { schema } from '$lib/objects/schemas/types';
 
   const surfaceMessages = {
-    expand: schema(SurfaceExpand),
-    collapse: schema(SurfaceCollapse),
     fullscreen: schema(SurfaceFullscreen)
   };
 
@@ -221,8 +214,8 @@
       match(message)
         .with(messages.setCode, ({ value }) => setCodeAndUpdate(value))
         .with(messages.run, () => runCode())
-        .with(surfaceMessages.expand, () => enterFullscreen())
-        .with(surfaceMessages.collapse, () => exitSurface())
+        .with(messages.expand, () => enterFullscreen())
+        .with(messages.collapse, () => exitSurface())
         .with(surfaceMessages.fullscreen, () => document.documentElement.requestFullscreen?.())
         .otherwise(() => {});
     } catch (error) {

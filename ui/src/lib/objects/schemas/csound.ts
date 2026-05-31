@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg, sym } from './helpers';
-import { Bang, Play, Pause, Stop, Reset, messages } from './common';
+import { Bang, Collapse, Expand, Play, Pause, Stop, Reset, messages } from './common';
 
 // Csound-specific message schemas
 const Resume = sym('resume');
@@ -52,6 +52,8 @@ export const csoundSchema: ObjectSchema = {
         { schema: Resume, description: 'Resume playback' },
         { schema: Pause, description: 'Pause playback' },
         { schema: Stop, description: 'Stop playback' },
+        { schema: Expand, description: 'Open the expanded editor' },
+        { schema: Collapse, description: 'Close the expanded editor' },
         { schema: Reset, description: 'Reset the Csound instance' },
         { schema: SetChannel, description: 'Set a control or string channel value' },
         { schema: SetOptions, description: 'Set Csound options and reset' },

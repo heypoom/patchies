@@ -30,6 +30,14 @@ export const bytebeatSchema: ObjectSchema = {
           description: 'Evaluate expression and play'
         },
         {
+          schema: Type.Object({ type: Type.Literal('expand') }),
+          description: 'Open the expanded editor'
+        },
+        {
+          schema: Type.Object({ type: Type.Literal('collapse') }),
+          description: 'Close the expanded editor'
+        },
+        {
           schema: Type.Object({
             type: Type.Literal('setType'),
             value: Type.Union([
