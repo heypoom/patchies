@@ -31,9 +31,9 @@ export const orcaSchema: ObjectSchema = {
         { schema: Bang, description: 'Toggle play/pause' },
         { schema: Play, description: 'Start playback' },
         { schema: Stop, description: 'Stop playback' },
+        { schema: SetBpm, description: 'Set tempo in BPM' },
         { schema: Expand, description: 'Open the expanded editor' },
-        { schema: Collapse, description: 'Close the expanded editor' },
-        { schema: SetBpm, description: 'Set tempo in BPM' }
+        { schema: Collapse, description: 'Close the expanded editor' }
       ]
     }
   ],

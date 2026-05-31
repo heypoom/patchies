@@ -619,14 +619,6 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
             description: 'Evaluate expression and play'
           },
           {
-            schema: Type.Object({ type: Type.Literal('expand') }),
-            description: 'Open the expanded editor'
-          },
-          {
-            schema: Type.Object({ type: Type.Literal('collapse') }),
-            description: 'Close the expanded editor'
-          },
-          {
             schema: Type.Object({
               type: Type.Literal('setType'),
               value: Type.Union([
@@ -652,6 +644,14 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
           {
             schema: Type.Object({ type: Type.Literal('setSampleRate'), value: Type.Number() }),
             description: 'Set sample rate'
+          },
+          {
+            schema: Type.Object({ type: Type.Literal('expand') }),
+            description: 'Open the expanded editor'
+          },
+          {
+            schema: Type.Object({ type: Type.Literal('collapse') }),
+            description: 'Close the expanded editor'
           }
         ],
         handle: { handleType: 'message', handleId: 0 }

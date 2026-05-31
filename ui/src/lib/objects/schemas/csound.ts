@@ -52,8 +52,6 @@ export const csoundSchema: ObjectSchema = {
         { schema: Resume, description: 'Resume playback' },
         { schema: Pause, description: 'Pause playback' },
         { schema: Stop, description: 'Stop playback' },
-        { schema: Expand, description: 'Open the expanded editor' },
-        { schema: Collapse, description: 'Close the expanded editor' },
         { schema: Reset, description: 'Reset the Csound instance' },
         { schema: SetChannel, description: 'Set a control or string channel value' },
         { schema: SetOptions, description: 'Set Csound options and reset' },
@@ -61,6 +59,8 @@ export const csoundSchema: ObjectSchema = {
         { schema: NoteOff, description: 'Send MIDI note off' },
         { schema: ReadScore, description: 'Send score statements to Csound' },
         { schema: Eval, description: 'Evaluate Csound code' },
+        { schema: Expand, description: 'Open the expanded editor' },
+        { schema: Collapse, description: 'Close the expanded editor' },
         { schema: Type.Number(), description: 'Set control channel for inlet index' },
         { schema: Type.String(), description: 'Send input message or set option' }
       ]

@@ -90,8 +90,6 @@ export const chuckSchema: ObjectSchema = {
         { schema: Bang, description: 'Replace most recent shred with current expression' },
         { schema: Replace, description: 'Replace most recent shred' },
         { schema: Run, description: 'Replace most recent shred' },
-        { schema: Expand, description: 'Open the expanded editor' },
-        { schema: Collapse, description: 'Close the expanded editor' },
         { schema: Add, description: 'Add current expression as new shred' },
         { schema: Remove, description: 'Remove the last shred' },
         { schema: Stop, description: 'Stop all shreds' },
@@ -112,7 +110,9 @@ export const chuckSchema: ObjectSchema = {
         { schema: Broadcast, description: 'Broadcast an event by name' },
         { schema: ListenOnce, description: 'Listen for event once' },
         { schema: ListenStart, description: 'Start listening for event continuously' },
-        { schema: ListenStop, description: 'Stop listening for event' }
+        { schema: ListenStop, description: 'Stop listening for event' },
+        { schema: Expand, description: 'Open the expanded editor' },
+        { schema: Collapse, description: 'Close the expanded editor' }
       ]
     }
   ],

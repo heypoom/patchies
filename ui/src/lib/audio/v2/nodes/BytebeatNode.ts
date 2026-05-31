@@ -88,11 +88,11 @@ export class BytebeatNode implements AudioNodeV2 {
         { schema: StopMsg, description: 'Stop and reset t=0' },
         { schema: PauseMsg, description: 'Pause playback (keep t)' },
         { schema: BangMsg, description: 'Evaluate expression and play' },
-        { schema: ExpandMsg, description: 'Open the expanded editor' },
-        { schema: CollapseMsg, description: 'Close the expanded editor' },
         { schema: SetTypeMsg, description: 'Set bytebeat type' },
         { schema: SetSyntaxMsg, description: 'Set expression syntax' },
-        { schema: SetSampleRateMsg, description: 'Set sample rate' }
+        { schema: SetSampleRateMsg, description: 'Set sample rate' },
+        { schema: ExpandMsg, description: 'Open the expanded editor' },
+        { schema: CollapseMsg, description: 'Close the expanded editor' }
       ]
     }
   ];
