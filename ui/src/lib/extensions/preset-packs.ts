@@ -2,6 +2,7 @@ import type { PresetPack } from '../../stores/extensions.store';
 import { GREGGMAN_BYTEBEAT_PRESET_FOLDERS } from '../presets/builtin/bytebeat/greggman';
 import { CHUCK_DEMO_PRESET_KEYS } from '../presets/builtin/chuck';
 import { HYDRA_DEMO_PRESET_KEYS } from '../presets/builtin/hydra';
+import { PEPPERMINT_PRESET_KEYS } from '../presets/builtin/peppermint';
 
 export const OBJECT_PIPE_PRESETS = ['js>', 'hydra>', 'glsl>', 'regl>', 'swgl>', 'three>', 'tone>'];
 
@@ -254,6 +255,14 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     icon: 'Music',
     requiredObjects: ['chuck~'],
     presets: [...CHUCK_DEMO_PRESET_KEYS]
+  },
+  {
+    id: 'peppermint-examples',
+    name: 'Peppermint Examples',
+    description: 'Pipe-first data and algorithm examples from Peppermint',
+    icon: 'Code',
+    requiredObjects: ['peppermint'],
+    presets: [...PEPPERMINT_PRESET_KEYS]
   },
   {
     id: 'demo-compositions',

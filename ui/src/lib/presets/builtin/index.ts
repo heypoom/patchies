@@ -23,6 +23,7 @@ import { IFRAME_PRESETS } from './iframe.presets';
 import { ASM_PRESETS } from './asm.presets';
 import { UIUA_PRESETS } from './uiua.presets';
 import { BYTEBEAT_PRESETS } from './bytebeat';
+import { PEPPERMINT_PRESETS } from './peppermint';
 import { REGL_PRESETS } from './regl';
 import { SWGL_PRESETS } from './swgl.presets';
 import { SHADERPARK_PRESETS } from './shaderpark.presets';
@@ -53,6 +54,7 @@ export {
   ASM_PRESETS,
   UIUA_PRESETS,
   BYTEBEAT_PRESETS,
+  PEPPERMINT_PRESETS,
   REGL_PRESETS,
   SWGL_PRESETS,
   SHADERPARK_PRESETS,
@@ -90,6 +92,7 @@ export const BUILTIN_PRESETS: Record<
   ...ASM_PRESETS,
   ...UIUA_PRESETS,
   ...BYTEBEAT_PRESETS,
+  ...PEPPERMINT_PRESETS,
   ...REGL_PRESETS,
   ...SWGL_PRESETS,
   ...SHADERPARK_PRESETS,
