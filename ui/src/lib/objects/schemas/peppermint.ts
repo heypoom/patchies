@@ -20,9 +20,9 @@ export const peppermintSchema: ObjectSchema = {
   outlets: [
     {
       id: 'message',
-      description: 'Output from print()',
+      description: 'Output from send()',
       handle: { handleType: 'message' },
-      messages: [{ schema: Type.Any(), description: 'Data emitted by print()' }]
+      messages: [{ schema: Type.Any(), description: 'Data emitted by send()' }]
     }
   ],
   tags: ['programming', 'peppermint', 'pyodide', 'data', 'pipeline']

@@ -46,7 +46,7 @@ glider = [
 ]
 
 step = (grid, n) -> (
-  grid |> render |> print
+  grid |> render |> send
   match(n, < 20: step(next_gen(grid), n + 1), _: none)
 )
 

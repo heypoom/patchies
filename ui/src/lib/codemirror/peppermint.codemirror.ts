@@ -109,6 +109,12 @@ const functionCompletions: Completion[] = [
     label: 'print',
     type: 'function',
     detail: 'print(value: Any) -> Any',
+    info: 'Print a value to the virtual console and pass it through unchanged.'
+  },
+  {
+    label: 'send',
+    type: 'function',
+    detail: 'send(value: Any) -> Any',
     info: 'Send a value from the peppermint object and pass it through unchanged.'
   },
   {

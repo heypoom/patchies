@@ -8,7 +8,7 @@ result = input()
   |> add(tier: match(it.income, > 80000: "high", > 40000: "medium", _: "low"))
   |> sort(by: "income", dir: "desc")
 
-print(result)`;
+send(result)`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

@@ -9,7 +9,7 @@ const code = `input()
       |> drop("rank")
   )
   |> sort(by: "region")
-  |> print`;
+  |> send`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

@@ -8,12 +8,12 @@ input()
       |> sort(by: "income", dir: "desc")
       |> take(2)
   )
-  |> print()
+  |> send()
 
 # Lambda form — single expression, consistent with map/filter
 input()
   |> each(by: "region", grp -> grp |> sort(by: "income", dir: "desc") |> take(2))
-  |> print()`;
+  |> send()`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

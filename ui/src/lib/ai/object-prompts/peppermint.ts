@@ -6,10 +6,10 @@ Use it for compact message transforms over arrays, objects, strings, and numbers
 CRITICAL RULES:
 1. Use input() to read the latest inbound Patchies message
 2. input() returns none before the first message arrives
-3. Use print(value) to emit a message from the outlet
-4. print(value) returns value, so it can end a pipeline
+3. Use send(value) to emit a message from the outlet
+4. send(value) returns value, so it can end a pipeline
 5. The object re-runs automatically whenever a message arrives
-6. Only print() emits Patchies messages; a final expression alone does not send output
+6. Only send() emits Patchies messages; a final expression alone does not send output
 7. Prefer pure transformations; each run starts with a fresh Peppermint environment
 
 Language essentials:
@@ -43,13 +43,14 @@ Pipe and table primitives:
 
 Patchies-specific primitives:
 - input(): current inbound message, latest message on manual run, or none before any message
-- print(value): send value to outlet 0 and pass it through unchanged
+- send(value): send value to outlet 0 and pass it through unchanged
+- print(value): write value to the virtual console and pass it through unchanged
 
 Recommended patterns:
-- Always end user-visible transforms with |> print()
+- Always end user-visible transforms with |> send()
 - Guard missing input with match(input(), none: ..., _: ...)
 - For list-of-object messages, use filter/add/select/sort/take directly after input()
-- For a single object, either print({ ...input(), field: value }) or wrap it in a list if using table functions
+- For a single object, either send({ ...input(), field: value }) or wrap it in a list if using table functions
 - Avoid load(), save(), file imports, env, ml, and viz unless the user explicitly asks; Patchies messages are usually the data source
 
 Example - Filter Rows:
@@ -57,7 +58,7 @@ Example - Filter Rows:
 {
   "type": "peppermint",
   "data": {
-    "code": "input()\\n  |> filter(it.age >= 18)\\n  |> print()"
+    "code": "input()\\n  |> filter(it.age >= 18)\\n  |> send()"
   }
 }
 \`\`\`
@@ -67,7 +68,7 @@ Example - Add Fields:
 {
   "type": "peppermint",
   "data": {
-    "code": "input()\\n  |> add(label: \\"{it.name} is {it.age}\\")\\n  |> add(adult: it.age >= 18)\\n  |> print()"
+    "code": "input()\\n  |> add(label: \\"{it.name} is {it.age}\\")\\n  |> add(adult: it.age >= 18)\\n  |> send()"
   }
 }
 \`\`\`
@@ -77,7 +78,7 @@ Example - Sort and Select:
 {
   "type": "peppermint",
   "data": {
-    "code": "input()\\n  |> sort(by: \\"score\\", dir: \\"desc\\")\\n  |> take(5)\\n  |> select(\\"name\\", \\"score\\")\\n  |> print()"
+    "code": "input()\\n  |> sort(by: \\"score\\", dir: \\"desc\\")\\n  |> take(5)\\n  |> select(\\"name\\", \\"score\\")\\n  |> send()"
   }
 }
 \`\`\`
@@ -87,7 +88,7 @@ Example - Aggregate:
 {
   "type": "peppermint",
   "data": {
-    "code": "input()\\n  |> collapse(by: \\"group\\", avg: mean(col.value), n: count())\\n  |> print()"
+    "code": "input()\\n  |> collapse(by: \\"group\\", avg: mean(col.value), n: count())\\n  |> send()"
   }
 }
 \`\`\`
@@ -97,7 +98,7 @@ Example - Map Values:
 {
   "type": "peppermint",
   "data": {
-    "code": "input()\\n  |> map(it * 2)\\n  |> print()"
+    "code": "input()\\n  |> map(it * 2)\\n  |> send()"
   }
 }
 \`\`\`
@@ -107,7 +108,7 @@ Example - Single Object:
 {
   "type": "peppermint",
   "data": {
-    "code": "msg = input()\\nmatch(msg,\\n  none: print(none),\\n  _:    print({ ...msg, processed: true })\\n)"
+    "code": "msg = input()\\nmatch(msg,\\n  none: send(none),\\n  _:    send({ ...msg, processed: true })\\n)"
   }
 }
 \`\`\`
@@ -117,7 +118,7 @@ Example - Handle Missing Input:
 {
   "type": "peppermint",
   "data": {
-    "code": "match(input(),\\n  none: print(\\"waiting for input\\"),\\n  _:    input() |> print()\\n)"
+    "code": "match(input(),\\n  none: print(\\"waiting for input\\"),\\n  _:    input() |> send()\\n)"
   }
 }
 \`\`\``;

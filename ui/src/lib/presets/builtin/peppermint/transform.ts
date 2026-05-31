@@ -23,7 +23,7 @@ input()
   |> clean()
   |> engineer()
   |> sort(by: "income_per_year", dir: "desc")
-  |> print()`;
+  |> send()`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

@@ -6,7 +6,7 @@ input()
   |> add(revenue_per_unit: it.revenue / it.units)
   |> add(performance: match(it.revenue, > 12000: "strong", > 7000: "moderate", _: "weak"))
   |> sort(by: "revenue", dir: "desc")
-  |> print()`;
+  |> send()`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

@@ -77,7 +77,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - worker: JavaScript in Web Worker thread (non-blocking)
 - ruby: Ruby code with ruby.wasm
 - python: Python code with Pyodide
-- peppermint: Peppermint data pipelines with input() and print()
+- peppermint: Peppermint data pipelines with input() and send()
 - expr: Mathematical expression evaluator
 - scale: Remap a number from one range to another (scale inMin inMax outMin outMax)
 - clip: Clamp a number to a min/max range (clip min max)
@@ -231,7 +231,7 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - worker: JavaScript in a Web Worker — non-blocking heavy computation
 - ruby: Ruby scripting with ruby.wasm
 - python: Python scripting with Pyodide — numpy, scipy, ML libraries
-- peppermint: Peppermint data pipelines — transform inbound messages with input(), emit with print()
+- peppermint: Peppermint data pipelines — transform inbound messages with input(), emit with send()
 - expr: Mathematical expression evaluator — compact formula nodes
 - sequencer: Step sequencer synced to transport clock — drum machine style, one outlet per track
 - slider, button, toggle, keyboard, textbox, curve: UI controls and display widgets

@@ -10,7 +10,7 @@ input()
       max_age:    max(col.age),
       n:          count()
   )
-  |> print()
+  |> send()
 
 # Group by region using collapse
 input()
@@ -19,12 +19,12 @@ input()
       n:          count()
   )
   |> sort(by: "avg_income", dir: "desc")
-  |> print()
+  |> send()
 
 # Annotate each row with its group average (broadcast)
 input()
   |> add(region_avg: mean(col.income, by: "region"))
-  |> print()
+  |> send()
 
 # Top 1 per region using each
 input()
@@ -33,7 +33,7 @@ input()
       |> filter(it.rank == 1)
       |> drop("rank")
   )
-  |> print()`;
+  |> send()`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

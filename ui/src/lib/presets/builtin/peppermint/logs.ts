@@ -6,7 +6,7 @@ input()
   |> filter(it.status != 200)
   |> add(severity: match(it.latency_ms, > 500: "critical", > 200: "slow", _: "normal"))
   |> sort(by: "latency_ms", dir: "desc")
-  |> print()`;
+  |> send()`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

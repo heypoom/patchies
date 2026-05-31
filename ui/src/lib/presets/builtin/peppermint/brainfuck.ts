@@ -52,7 +52,7 @@ run = (state, len) -> match(state.ip,
 prog = "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.+++++++++++++++++++++++++++++++++."
 init = {tape: [0, 0], ptr: 0, ip: 0, prog: prog, output: ""}
 result = run(init, text.length(prog))
-print(result.output)`;
+send(result.output)`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

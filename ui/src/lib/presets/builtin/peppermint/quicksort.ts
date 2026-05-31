@@ -11,7 +11,7 @@ const code = `qs = lst -> match(len(lst),
   )
 )
 
-qs([3, 1, 4, 1, 5, 9, 2, 6]) |> print`;
+qs([3, 1, 4, 1, 5, 9, 2, 6]) |> send`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

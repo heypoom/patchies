@@ -10,7 +10,7 @@ people = [
 # 1. Row-level error — field missing on some rows
 #    alice has no 'score', so that row goes to .errors
 result = people |> add(label: it.score * 2)
-print(result.errors)    # [{ name: "alice", ..., _error: "...", _step: "add(label)" }]
+send(result.errors)    # [{ name: "alice", ..., _error: "...", _step: "add(label)" }]
 
 # 2. Undefined variable — whole pipe fails
 # result = missing_data |> filter(it.age > 18)

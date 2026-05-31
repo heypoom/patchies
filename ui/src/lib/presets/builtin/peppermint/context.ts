@@ -8,17 +8,17 @@ result = input()
   |> add(income_k: it.income / 1000)
 
 # .data — the rows
-result.data |> print()
+result.data |> send()
 
 # .errors — rows that failed any step
-print(result.errors)
+send(result.errors)
 
 # Dot into a named assignment to access Context fields again
 posts = input()
   |> add(group: match(it.age, > 30: "experienced", _: "new"))
 
-posts.data |> print()
-posts.errors |> print()`;
+posts.data |> send()
+posts.errors |> send()`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

@@ -9,7 +9,7 @@ input()
       avg_income: mean(col.income),
       top_earner: rows -> rows |> sort(by: "income", dir: "desc") |> get(0)
   )
-  |> print()
+  |> send()
 
 # Collapse without by — summarize the whole table
 input()
@@ -17,7 +17,7 @@ input()
       n:     count(),
       names: rows -> rows |> map(it.name)
   )
-  |> print()`;
+  |> send()`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

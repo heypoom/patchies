@@ -23,7 +23,7 @@ def __patchies_unwrap(value):
 def __patchies_input(*_args, **_kwargs):
     return __patchies_pep_input
 
-def __patchies_print(value=None, *_args, **_kwargs):
+def __patchies_send(value=None, *_args, **_kwargs):
     output = __patchies_unwrap(value)
     patch.send(
         to_js(output, dict_converter=Object.fromEntries),
@@ -33,10 +33,10 @@ def __patchies_print(value=None, *_args, **_kwargs):
 
 env = build_global_env()
 env.set("input", __patchies_input)
-env.set("print", __patchies_print)
+env.set("send", __patchies_send)
 interp = Interpreter(env, quiet=True)
-__patchies_result = interp.run(parse(__patchies_pep_src))
-None if __patchies_result is None else repr(__patchies_result)
+interp.run(parse(__patchies_pep_src))
+None
 `;
 
 export class PeppermintPyodideRuntime {

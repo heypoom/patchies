@@ -23,7 +23,7 @@ input()
   |> transforms.clean()
   |> transforms.label_region()
   |> sort(by: "income", dir: "desc")
-  |> print()`;
+  |> send()`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

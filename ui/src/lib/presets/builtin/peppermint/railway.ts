@@ -9,8 +9,8 @@ result = input()
   |> sort(by: "ratio", dir: "desc")
 
 match(result,
-  Ok(data): data |> print(),
-  Err(msg):  print(msg)
+  Ok(data): data |> send(),
+  Err(msg):  send(msg)
 )`;
 
 export const preset: PeppermintPreset = {

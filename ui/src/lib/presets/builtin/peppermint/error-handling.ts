@@ -9,7 +9,7 @@ result = input()
   |> add(ratio: it.income / it.age)
 
 # .errors holds any rows that failed
-print(result.errors)
+send(result.errors)
 
 # recover() pulls failed rows back with a fallback value
 result2 = input()
@@ -20,11 +20,11 @@ result2 = input()
   ))
   |> recover(score_label: "unknown")
 
-result2.data |> print()
+result2.data |> send()
 
 # Echo the original input so the preset is still useful in Patchies,
 # where data arrives by message rather than file loading.
-input() |> print()`;
+input() |> send()`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',

@@ -153,6 +153,20 @@ describe('completion hover hints', () => {
     expect(hint?.completion).toMatchObject({
       label: 'print',
       detail: 'print(value: Any) -> Any',
+      info: 'Print a value to the virtual console and pass it through unchanged.'
+    });
+  });
+
+  it('shows Peppermint send hover metadata', () => {
+    const { doc, pos } = cursor('se|nd(input())');
+
+    const hint = getCompletionHoverHint(peppermintState(doc), pos, {
+      language: 'peppermint'
+    });
+
+    expect(hint?.completion).toMatchObject({
+      label: 'send',
+      detail: 'send(value: Any) -> Any',
       info: 'Send a value from the peppermint object and pass it through unchanged.'
     });
   });

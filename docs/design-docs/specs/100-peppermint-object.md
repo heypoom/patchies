@@ -2,7 +2,7 @@
 
 ## Summary
 
-Add a `peppermint` object that runs Peppermint source code in the browser through Pyodide. Peppermint is a pipe-first Python-hosted language for data transformation, so the object should behave like a message transform: inbound Patchies messages become `input()` in Peppermint, and Peppermint `print()` emits messages from the object's outlet.
+Add a `peppermint` object that runs Peppermint source code in the browser through Pyodide. Peppermint is a pipe-first Python-hosted language for data transformation, so the object should behave like a message transform: inbound Patchies messages become `input()` in Peppermint, and Patchies' injected `send()` emits messages from the object's outlet.
 
 ## Motivation
 
@@ -10,8 +10,8 @@ Patchies already has a `python` object for general Pyodide scripting. Peppermint
 
 ```peppermint
 input()
-  |> filter(it.age >= 18)
-  |> print()
+  |> print
+  |> send
 ```
 
 This should make list/object transformation feel closer to patching than writing a full Python program, while still using Python libraries under the hood.
@@ -40,22 +40,29 @@ This keeps manual runs valid for scripts that do not need input and lets input-a
 ```peppermint
 match(input(),
   none: print("waiting for input"),
-  _:    input() |> print()
+  _:    input() |> send()
 )
 ```
 
 ### `print()`
 
-Patchies overrides Peppermint's stdlib `print()` function for this object.
+Peppermint's stdlib `print()` function keeps its normal debugging behavior.
 
-- `print(value)` sends `value` to message outlet 0.
 - `print(value)` returns `value` unchanged so pipeline flow continues.
-- Peppermint `Context` values should emit their `.data` list, matching the reference stdlib's display behavior.
-- Console logging can still show a readable representation, but the message outlet is the product contract.
+- `print(value)` writes to the node's virtual console.
+- Peppermint `Context` values print their `.data` list, matching the reference stdlib behavior.
+
+### `send()`
+
+Patchies injects a `send()` function into the Peppermint global environment.
+
+- `send(value)` sends `value` to message outlet 0.
+- `send(value)` returns `value` unchanged so pipeline flow continues.
+- Peppermint `Context` values emit their `.data` list, matching the value users typically want from table pipelines.
 
 ### Return Values
 
-Only `print()` emits messages in v1. A final expression result that is not printed may be shown in the console for debugging, but it should not automatically emit to the outlet. This avoids accidental duplicate output in pipelines that already end with `print()`.
+Only `send()` emits messages. A final expression result that is not sent should not be echoed to the virtual console or emitted to the outlet. This keeps the console quiet unless the user explicitly calls `print()`.
 
 ### Re-entrancy
 
@@ -85,7 +92,7 @@ The node label is `peppermint`, editor language is `peppermint`, and the default
 ```peppermint
 input()
   |> filter(it.age >= 18)
-  |> print()
+  |> send()
 ```
 
 ### Pyodide Worker
@@ -118,7 +125,7 @@ Each run creates a fresh Peppermint environment:
 ```python
 env = build_global_env()
 env.set("input", patchies_input)
-env.set("print", patchies_print)
+env.set("send", patchies_send)
 interp = Interpreter(env, quiet=True)
 result = interp.run(parse(src))
 ```
@@ -155,7 +162,7 @@ Add a basic completion source with:
 
 - language keywords: `match`, `use`, `as`, `ns`, `quiet`, `true`, `false`, `none`, `it`, `col`
 - pipe/operator snippets: `|>`, `->`
-- core stdlib functions: `filter`, `map`, `mapi`, `add`, `drop`, `select`, `rename`, `sort`, `take`, `print`, `collapse`, `sum`, `mean`, `count`, `min`, `max`, `len`, `unique`, `slice`, `concat`
+- core stdlib functions: `filter`, `map`, `mapi`, `add`, `drop`, `select`, `rename`, `sort`, `take`, `print`, `send`, `collapse`, `sum`, `mean`, `count`, `min`, `max`, `len`, `unique`, `slice`, `concat`
 
 The reference LSP catalog can guide labels, signatures, and docs, but v1 should stay static and browser-local.
 
@@ -227,14 +234,14 @@ Use a small patch:
    ```peppermint
    input()
      |> filter(it.age >= 18)
-     |> print()
+     |> send()
    ```
 
 3. `peek` or another message display confirms only adult rows are emitted.
 4. Manual run before any inbound message with:
 
    ```peppermint
-   input() |> print()
+   input() |> send()
    ```
 
    emits `none`.

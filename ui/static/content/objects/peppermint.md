@@ -1,11 +1,11 @@
 Run [Peppermint](https://github.com/chayapatr/peppermint) data pipelines in the browser.
 
-Peppermint is useful when you want to transform lists of objects with compact pipe syntax. Incoming Patchies messages become `input()`, and `print()` sends values to the outlet.
+Peppermint is useful when you want to transform lists of objects with compact pipe syntax. Incoming Patchies messages become `input()`, and `send()` sends values to the outlet.
 
 ```peppermint
 input()
   |> filter(it.age >= 18)
-  |> print()
+  |> send()
 ```
 
 Send this list into the inlet:
@@ -32,11 +32,13 @@ Before the first message arrives, `input()` returns `none`:
 ```peppermint
 match(input(),
   none: print("waiting for input"),
-  _:    input() |> print()
+  _:    input() |> send()
 )
 ```
 
-`print(value)` sends `value` from the message outlet and passes it through, so it can end a pipeline.
+`send(value)` sends `value` from the message outlet and passes it through, so it can end a pipeline.
+
+`print(value)` writes to the node's virtual console and also passes the value through. Use it for debugging without emitting Patchies messages.
 
 ## Resources
 
