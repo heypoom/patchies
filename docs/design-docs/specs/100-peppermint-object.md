@@ -91,8 +91,8 @@ The node label is `peppermint`, editor language is `peppermint`, and the default
 
 ```peppermint
 input()
-  |> filter(it.age >= 18)
-  |> send()
+  |> print
+  |> send
 ```
 
 ### Pyodide Worker
