@@ -52,6 +52,8 @@
 
     // State from parent
     isRunning,
+    showRunningBorder = true,
+    showRunningIndicator = true,
     isMessageCallbackActive,
     isTimerCallbackActive,
 
@@ -97,6 +99,8 @@
     onCleanup: () => void;
     onCodeChange?: (code: string) => void;
     isRunning: boolean;
+    showRunningBorder?: boolean;
+    showRunningIndicator?: boolean;
     isMessageCallbackActive: boolean;
     isTimerCallbackActive: boolean;
     supportsLibraries?: boolean;
@@ -222,8 +226,8 @@
     // Prioritize showing emerald if there are active timers (stoppable state)
     if (isLongRunningTaskActive && selected) return 'border-emerald-300';
     if (isLongRunningTaskActive) return 'border-emerald-500';
-    if (isRunning && selected) return 'border-pink-300';
-    if (isRunning) return 'border-pink-500';
+    if (showRunningBorder && isRunning && selected) return 'border-pink-300';
+    if (showRunningBorder && isRunning) return 'border-pink-500';
     if (selected) return 'border-zinc-400';
 
     return 'border-zinc-600';
@@ -234,7 +238,7 @@
 
     // Prioritize showing Pause if there are active timers (so user can stop them)
     if (isLongRunningTaskActive) return Pause;
-    if (isRunning) return Loader;
+    if (showRunningIndicator && isRunning) return Loader;
 
     return Play;
   });
@@ -524,7 +528,9 @@
           <button
             class={[
               'flex w-full justify-center rounded-md border py-3 text-zinc-300 hover:bg-zinc-700',
-              isRunning && !isLongRunningTaskActive ? 'cursor-not-allowed' : 'cursor-pointer',
+              showRunningIndicator && isRunning && !isLongRunningTaskActive
+                ? 'cursor-not-allowed'
+                : 'cursor-pointer',
               borderColor,
               isFlashing
                 ? 'bg-zinc-500'
@@ -540,10 +546,16 @@
 
               handleDoubleClickOnRun();
             }}
-            aria-disabled={isRunning && !isLongRunningTaskActive}
+            aria-disabled={showRunningIndicator && isRunning && !isLongRunningTaskActive}
             aria-label={isLongRunningTaskActive ? 'Stop' : 'Run code'}
           >
-            <div class={[isRunning && !isLongRunningTaskActive ? 'animate-spin opacity-30' : '']}>
+            <div
+              class={[
+                showRunningIndicator && isRunning && !isLongRunningTaskActive
+                  ? 'animate-spin opacity-30'
+                  : ''
+              ]}
+            >
               <PlayOrStopIcon size="16px" />
             </div>
           </button>

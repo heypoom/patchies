@@ -156,6 +156,8 @@
   onExecute={executeCode}
   onCleanup={cleanupRunningTasks}
   {isRunning}
+  showRunningBorder={false}
+  showRunningIndicator={false}
   isMessageCallbackActive={false}
   isTimerCallbackActive={false}
   supportsLibraries={false}
