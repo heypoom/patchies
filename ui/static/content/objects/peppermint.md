@@ -1,4 +1,4 @@
-Run Peppermint data pipelines in the browser.
+Run [Peppermint](https://github.com/chayapatr/peppermint) data pipelines in the browser.
 
 Peppermint is useful when you want to transform lists of objects with compact pipe syntax. Incoming Patchies messages become `input()`, and `print()` sends values to the outlet.
 
@@ -37,6 +37,10 @@ match(input(),
 ```
 
 `print(value)` sends `value` from the message outlet and passes it through, so it can end a pipeline.
+
+## Resources
+
+- [Peppermint on GitHub](https://github.com/chayapatr/peppermint)
 
 ## See Also
 
