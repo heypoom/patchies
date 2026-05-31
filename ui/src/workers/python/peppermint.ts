@@ -20,7 +20,7 @@ def __patchies_unwrap(value):
         return value.data
     return value
 
-def __patchies_input():
+def __patchies_input(*_args, **_kwargs):
     return __patchies_pep_input
 
 def __patchies_print(value=None, *_args, **_kwargs):
