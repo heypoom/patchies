@@ -5,6 +5,7 @@
   import { PyodideSystem } from '$lib/python/PyodideSystem';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { PyodideConsoleOutputEvent, PyodideSendMessageEvent } from '$lib/eventbus/events';
+  import { getNextPeppermintInput } from '$lib/peppermint/input';
   import { PeppermintRunQueue } from '$lib/peppermint/run-queue';
   import { logger } from '$lib/utils/logger';
   import CodeBlockBase from './CodeBlockBase.svelte';
@@ -46,7 +47,7 @@
   const runQueue = new PeppermintRunQueue<PeppermintInput>(runPeppermint);
 
   const handleMessage: MessageCallbackFn = (message) => {
-    latestInput = { value: message };
+    latestInput = { value: getNextPeppermintInput(latestInput.value, message) };
     void runQueue.requestRun(latestInput);
   };
 

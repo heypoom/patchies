@@ -12,7 +12,7 @@ export const peppermintSchema: ObjectSchema = {
       description: 'Input value for input()',
       handle: { handleType: 'message' },
       messages: [
-        { schema: Bang, description: 'Trigger a run; input() receives the bang message' },
+        { schema: Bang, description: 'Trigger a run with the last captured input() value' },
         { schema: Type.Any(), description: 'Data received by input() and used to trigger a run' }
       ]
     }
