@@ -268,9 +268,7 @@
 
   async function executeCode() {
     // Clear previous console output and error highlighting
-    consoleRef?.clearConsole();
-    lineErrors = undefined;
-    hasError = false;
+    clearConsole();
 
     await onExecute();
   }
@@ -507,6 +505,10 @@
             {nodeId}
             {borderColor}
             {selected}
+            onClear={() => {
+              lineErrors = undefined;
+              hasError = false;
+            }}
             onrun={executeCode}
             {isRunning}
             {isLongRunningTaskActive}

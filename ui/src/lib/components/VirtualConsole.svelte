@@ -29,7 +29,8 @@
     initialHeight,
     initialWidth,
     onHeightChange,
-    onWidthChange
+    onWidthChange,
+    onClear
   }: {
     nodeId: string;
     maxHeight?: string;
@@ -50,6 +51,7 @@
     initialWidth?: number;
     onHeightChange?: (height: number) => void;
     onWidthChange?: (width: number) => void;
+    onClear?: () => void;
   } = $props();
 
   let messages = $state<Array<{ type: string; timestamp: number; args: unknown[] }>>([]);
@@ -116,6 +118,7 @@
   export function clearConsole() {
     messages = [];
     logger.clearNodeLogs(nodeId);
+    onClear?.();
 
     if (shouldAutoHideConsoleOnNoError) {
       updateNodeData(nodeId, { showConsole: false });
