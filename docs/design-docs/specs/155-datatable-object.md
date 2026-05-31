@@ -10,6 +10,8 @@ from `table`, which remains an audio/wavetable float buffer.
 - Render a compact grid UI where column headers are normal editable inputs.
 - Allow adding and removing columns.
 - Allow adding and removing rows when editing table data.
+- Allow resizing the node with `NodeResizer`; the table viewport should scroll
+  when content exceeds the resized bounds.
 - On `bang`, output a 2D JavaScript array by default. The first row is the
   current column header row, followed by each data row.
 - Add a checkbox setting to output array-of-row-objects instead. This mode uses
@@ -28,6 +30,8 @@ type DatatableNodeData = {
   columns: string[];
   rows: unknown[][];
   outputObjects?: boolean;
+  width?: number;
+  height?: number;
 };
 ```
 
@@ -44,3 +48,5 @@ overwriting earlier values.
 - Add a manual object schema for documentation and message validation surfaces.
 - Add `.csv` drag/drop handling after MIME-specific text formats and before the
   generic `text/* -> markdown` fallback.
+- Preserve user-resized dimensions across table data changes. Before the user
+  resizes, the node may auto-size its width from the current column count.

@@ -1,6 +1,13 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
-  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import {
+    NodeResizer,
+    useSvelteFlow,
+    useUpdateNodeInternals,
+    type OnResize,
+    type OnResizeEnd,
+    type OnResizeStart
+  } from '@xyflow/svelte';
   import { match, P } from 'ts-pattern';
   import { Plus, Settings, Trash2, X } from '@lucide/svelte/icons';
 
@@ -50,6 +57,11 @@
     selected: boolean;
   } = $props();
 
+  const DATATABLE_MIN_WIDTH = 280;
+  const DATATABLE_MIN_HEIGHT = 136;
+  const DATATABLE_MAX_WIDTH = 900;
+  const DATATABLE_MAX_HEIGHT = 640;
+
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const tracker = useNodeDataTracker(nodeId);
@@ -60,12 +72,20 @@
   let isDraggingCsv = $state(false);
   let showSettings = $state(false);
   let headerValidationError = $state('');
+  let resizingSize = $state<{ width: number; height: number } | null>(null);
+  let sizeBeforeResize: { width?: number; height?: number } | null = null;
 
   const columns = $derived(data.columns ?? DEFAULT_DATATABLE_DATA.columns);
   const rows = $derived(data.rows ?? DEFAULT_DATATABLE_DATA.rows);
   const outputObjects = $derived(data.outputObjects ?? false);
-  const normalizedData = $derived<DatatableData>({ columns, rows, outputObjects });
-  const tableWidth = $derived(Math.min(520, Math.max(280, columns.length * 110 + 44)));
+  const width = $derived(data.width);
+  const height = $derived(data.height);
+  const normalizedData = $derived<DatatableData>({ columns, rows, outputObjects, width, height });
+  const autoTableWidth = $derived(
+    Math.min(520, Math.max(DATATABLE_MIN_WIDTH, columns.length * 110 + 44))
+  );
+  const displayWidth = $derived(resizingSize?.width ?? width ?? autoTableWidth);
+  const displayHeight = $derived(resizingSize?.height ?? height);
   const containerClass = $derived(
     selected ? 'object-container-selected !bg-zinc-900' : 'object-container-light'
   );
@@ -86,7 +106,7 @@
   }
 
   function setData(nextData: DatatableData) {
-    commitData(normalizedData, nextData);
+    commitData(normalizedData, { ...nextData, width, height });
   }
 
   function beginColumnEdit() {
@@ -143,6 +163,30 @@
     updateNodeData(nodeId, { ...normalizedData, outputObjects: value });
     tracker.commit('outputObjects', oldValue, value);
   }
+
+  const handleResizeStart: OnResizeStart = () => {
+    sizeBeforeResize = { width, height };
+  };
+
+  const handleResize: OnResize = (_event, params) => {
+    resizingSize = { width: params.width, height: params.height };
+  };
+
+  const handleResizeEnd: OnResizeEnd = (_event, params) => {
+    const nextWidth = params.width;
+    const nextHeight = params.height;
+
+    resizingSize = { width: nextWidth, height: nextHeight };
+    updateNodeData(nodeId, {
+      ...normalizedData,
+      width: nextWidth,
+      height: nextHeight
+    });
+    tracker.commit('width', sizeBeforeResize?.width, nextWidth);
+    tracker.commit('height', sizeBeforeResize?.height, nextHeight);
+    sizeBeforeResize = null;
+    setTimeout(() => updateNodeInternals(nodeId), 0);
+  };
 
   function sendTableOutput(format: 'setting' | 'rows' | 'objects' = 'setting') {
     const output = match(format)
@@ -278,6 +322,12 @@
     setTimeout(() => updateNodeInternals(nodeId), 0);
   });
 
+  $effect(() => {
+    if (resizingSize && width === resizingSize.width && height === resizingSize.height) {
+      resizingSize = null;
+    }
+  });
+
   onDestroy(() => {
     messageContext?.queue.removeCallback(handleMessage);
     messageContext?.destroy();
@@ -285,6 +335,18 @@
 </script>
 
 <div class="group relative">
+  <NodeResizer
+    class="z-1"
+    isVisible={selected}
+    minWidth={DATATABLE_MIN_WIDTH}
+    minHeight={DATATABLE_MIN_HEIGHT}
+    maxWidth={DATATABLE_MAX_WIDTH}
+    maxHeight={DATATABLE_MAX_HEIGHT}
+    onResizeStart={handleResizeStart}
+    onResize={handleResize}
+    onResizeEnd={handleResizeEnd}
+  />
+
   <div class="absolute -top-7 right-0 z-10">
     <div class="node-floating-controls flex gap-1">
       <Tooltip.Root>
@@ -315,7 +377,7 @@
 
   <div
     class={[
-      'min-w-[280px] overflow-hidden rounded-lg border text-xs text-zinc-200 shadow-lg',
+      'flex min-w-[280px] flex-col overflow-hidden rounded-lg border text-xs text-zinc-200 shadow-lg',
       containerClass,
       isDraggingCsv ? 'border-blue-400 bg-blue-950/40' : ''
     ]}
@@ -324,9 +386,12 @@
     ondrop={handleCsvDrop}
     role="group"
     aria-label="Editable data table"
-    style:width={`${tableWidth}px`}
+    style:width={`${displayWidth}px`}
+    style:height={displayHeight ? `${displayHeight}px` : undefined}
   >
-    <div class="flex cursor-move items-center justify-between border-b border-zinc-700 px-2 py-1.5">
+    <div
+      class="flex shrink-0 cursor-move items-center justify-between border-b border-zinc-700 px-2 py-1.5"
+    >
       <span class="font-mono text-[10px] text-zinc-400">datatable</span>
       <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
         {columns.length}
@@ -334,7 +399,10 @@
       </span>
     </div>
 
-    <div class="nodrag nopan nowheel max-h-[240px] max-w-[520px] overflow-auto">
+    <div
+      class="nodrag nopan nowheel min-h-0 flex-1 overflow-auto"
+      style:max-height={displayHeight ? undefined : '240px'}
+    >
       <table class="w-full min-w-max border-collapse">
         <thead>
           <tr>
@@ -431,7 +499,9 @@
       </div>
     {/if}
 
-    <div class="nodrag flex items-center justify-between border-t border-zinc-700 px-2 py-1.5">
+    <div
+      class="nodrag flex shrink-0 items-center justify-between border-t border-zinc-700 px-2 py-1.5"
+    >
       <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
         {rows.length} rows
       </span>

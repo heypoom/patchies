@@ -4,6 +4,8 @@ export type DatatableData = {
   columns: string[];
   rows: DatatableCell[][];
   outputObjects?: boolean;
+  width?: number;
+  height?: number;
 };
 
 export type ParsedCsvTable = Pick<DatatableData, 'columns' | 'rows'>;

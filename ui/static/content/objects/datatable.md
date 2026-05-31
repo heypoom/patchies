@@ -5,6 +5,9 @@ The `datatable` object is an editable CSV-style table for message data.
 Edit the column headers directly in the top row. Use the plus buttons to add
 rows or columns, and the trash buttons to remove them.
 
+Select the object and drag its resize handles to set the visible table area.
+Extra rows or columns scroll inside the table.
+
 Table cells are multiline. Press `Enter` for a newline, or `Shift+Enter` to
 output the table, the same as sending `bang`.
 
