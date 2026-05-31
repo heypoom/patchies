@@ -41,6 +41,7 @@ import {
   DEFAULT_SERIAL_TERMINAL_DATA,
   DEFAULT_DMX_DATA
 } from '$objects/serial/constants';
+import { DEFAULT_DATATABLE_DATA } from '$objects/datatable/constants';
 
 // TODO: make this type-safe!
 export type NodeData = {
@@ -360,5 +361,6 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       inletCount: 1,
       outletCount: 1
     }))
+    .with('datatable', () => DEFAULT_DATATABLE_DATA)
     .otherwise(() => ({}));
 }

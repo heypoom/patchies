@@ -176,6 +176,9 @@ export function guessMimeType(filename: string): string | undefined {
     // Code
     '.js': 'application/javascript',
 
+    // Data
+    '.csv': 'text/csv',
+
     // Csound
     '.csd': 'text/x-csound-csd',
 

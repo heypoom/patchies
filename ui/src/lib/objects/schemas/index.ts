@@ -91,6 +91,7 @@ export * from './bytebeat';
 export * from './projmap';
 export * from '$objects/ngea/schema';
 export * from '$objects/anupars/schema';
+export * from '$objects/datatable/schema';
 export * from './from-v2-node';
 export * from '$objects/mediapipe/schemas';
 
@@ -188,6 +189,7 @@ import { bytebeatSchema } from './bytebeat';
 import { projmapSchema } from './projmap';
 import { ngeaSchema } from '$objects/ngea/schema';
 import { anuparsSchema } from '$objects/anupars/schema';
+import { datatableSchema } from '$objects/datatable/schema';
 import { curveSchema } from '$objects/curve/schema';
 import { serialSchema, serialTermSchema, dmxSchema } from '$objects/serial/schema';
 import {
@@ -314,7 +316,8 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'vision.detect': visionDetectSchema,
   'vision.segment': visionSegmentSchema,
   ngea: ngeaSchema,
-  anupars: anuparsSchema
+  anupars: anuparsSchema,
+  datatable: datatableSchema
 };
 
 /**

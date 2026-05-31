@@ -107,6 +107,7 @@ import VisionClassifyNode from '$objects/mediapipe/components/VisionClassifyNode
 import NgeaNode from '$objects/ngea/components/NgeaNode.svelte';
 import AnuparsNode from '$objects/anupars/components/AnuparsNode.svelte';
 import SurfaceNode from '$lib/components/nodes/SurfaceNode.svelte';
+import DatatableNode from '$objects/datatable/DatatableNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -218,7 +219,8 @@ export const nodeTypes: Record<string, any> = {
   'vision.classify': VisionClassifyNode,
   ngea: NgeaNode,
   anupars: AnuparsNode,
-  surface: SurfaceNode
+  surface: SurfaceNode,
+  datatable: DatatableNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];
