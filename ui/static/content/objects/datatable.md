@@ -8,6 +8,8 @@ rows or columns, and the trash buttons to remove them.
 Select the object and drag its resize handles to set the visible table area.
 Extra rows or columns scroll inside the table.
 
+Drag the right edge of a column header to resize that column.
+
 Table cells are multiline. Press `Enter` for a newline, or `Shift+Enter` to
 output the table, the same as sending `bang`.
 

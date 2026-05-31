@@ -61,6 +61,9 @@
   const DATATABLE_MIN_HEIGHT = 136;
   const DATATABLE_MAX_WIDTH = 900;
   const DATATABLE_MAX_HEIGHT = 640;
+  const DATATABLE_COLUMN_WIDTH = 110;
+  const DATATABLE_MIN_COLUMN_WIDTH = 64;
+  const DATATABLE_ACTION_COLUMN_WIDTH = 44;
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -74,18 +77,49 @@
   let headerValidationError = $state('');
   let resizingSize = $state<{ width: number; height: number } | null>(null);
   let sizeBeforeResize: { width?: number; height?: number } | null = null;
+  type ColumnResizeState = {
+    index: number;
+    nextIndex: number | null;
+    startX: number;
+    startWidth: number;
+    startNextWidth: number;
+    widths: number[];
+  };
+
+  let resizingColumn = $state<ColumnResizeState | null>(null);
+  let columnWidthsBeforeResize: number[] | null = null;
 
   const columns = $derived(data.columns ?? DEFAULT_DATATABLE_DATA.columns);
   const rows = $derived(data.rows ?? DEFAULT_DATATABLE_DATA.rows);
   const outputObjects = $derived(data.outputObjects ?? false);
   const width = $derived(data.width);
   const height = $derived(data.height);
-  const normalizedData = $derived<DatatableData>({ columns, rows, outputObjects, width, height });
+  const columnWidths = $derived(normalizeColumnWidths(data.columnWidths, columns.length));
+  const activeColumnWidths = $derived(resizingColumn?.widths ?? columnWidths);
+  const baseTableContentWidth = $derived(
+    activeColumnWidths.reduce((sum: number, columnWidth: number) => sum + columnWidth, 0) +
+      DATATABLE_ACTION_COLUMN_WIDTH
+  );
+  const normalizedData = $derived<DatatableData>({
+    columns,
+    rows,
+    outputObjects,
+    width,
+    height,
+    columnWidths
+  });
   const autoTableWidth = $derived(
-    Math.min(520, Math.max(DATATABLE_MIN_WIDTH, columns.length * 110 + 44))
+    Math.min(520, Math.max(DATATABLE_MIN_WIDTH, baseTableContentWidth))
   );
   const displayWidth = $derived(resizingSize?.width ?? width ?? autoTableWidth);
   const displayHeight = $derived(resizingSize?.height ?? height);
+  const renderedColumnWidths = $derived(
+    fillColumnWidths(activeColumnWidths, Math.max(0, displayWidth - DATATABLE_ACTION_COLUMN_WIDTH))
+  );
+  const tableContentWidth = $derived(
+    renderedColumnWidths.reduce((sum: number, columnWidth: number) => sum + columnWidth, 0) +
+      DATATABLE_ACTION_COLUMN_WIDTH
+  );
   const containerClass = $derived(
     selected ? 'object-container-selected !bg-zinc-900' : 'object-container-light'
   );
@@ -102,11 +136,35 @@
     tracker.commit('columns', oldData.columns, newData.columns);
     tracker.commit('rows', oldData.rows, newData.rows);
     tracker.commit('outputObjects', oldData.outputObjects, newData.outputObjects);
+    tracker.commit('columnWidths', oldData.columnWidths, newData.columnWidths);
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
   function setData(nextData: DatatableData) {
-    commitData(normalizedData, { ...nextData, width, height });
+    commitData(normalizedData, {
+      ...nextData,
+      width,
+      height,
+      columnWidths: reconcileColumnWidths(columnWidths, nextData.columns.length)
+    });
+  }
+
+  function normalizeColumnWidths(widths: number[] | undefined, count: number) {
+    return Array.from({ length: count }, (_, index) =>
+      Math.max(DATATABLE_MIN_COLUMN_WIDTH, widths?.[index] ?? DATATABLE_COLUMN_WIDTH)
+    );
+  }
+
+  function reconcileColumnWidths(widths: number[], count: number) {
+    return normalizeColumnWidths(widths, count);
+  }
+
+  function fillColumnWidths(widths: number[], targetWidth: number) {
+    const currentWidth = widths.reduce((sum, columnWidth) => sum + columnWidth, 0);
+    if (widths.length === 0 || currentWidth >= targetWidth) return widths;
+
+    const extraWidth = (targetWidth - currentWidth) / widths.length;
+    return widths.map((columnWidth) => columnWidth + extraWidth);
   }
 
   function beginColumnEdit() {
@@ -187,6 +245,66 @@
     sizeBeforeResize = null;
     setTimeout(() => updateNodeInternals(nodeId), 0);
   };
+
+  function beginColumnResize(event: PointerEvent, columnIndex: number) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const visibleWidths = [...renderedColumnWidths];
+    const nextIndex = columnIndex < columns.length - 1 ? columnIndex + 1 : null;
+
+    columnWidthsBeforeResize = visibleWidths;
+    resizingColumn = {
+      index: columnIndex,
+      nextIndex,
+      startX: event.clientX,
+      startWidth: visibleWidths[columnIndex] ?? DATATABLE_COLUMN_WIDTH,
+      startNextWidth: nextIndex === null ? 0 : (visibleWidths[nextIndex] ?? DATATABLE_COLUMN_WIDTH),
+      widths: visibleWidths
+    };
+
+    window.addEventListener('pointermove', handleColumnResizeMove);
+    window.addEventListener('pointerup', endColumnResize, { once: true });
+  }
+
+  function handleColumnResizeMove(event: PointerEvent) {
+    if (!resizingColumn) return;
+
+    const rawDelta = event.clientX - resizingColumn.startX;
+    const nextWidths = [...resizingColumn.widths];
+
+    if (resizingColumn.nextIndex === null) {
+      nextWidths[resizingColumn.index] = Math.max(
+        DATATABLE_MIN_COLUMN_WIDTH,
+        resizingColumn.startWidth + rawDelta
+      );
+    } else {
+      const minDelta = DATATABLE_MIN_COLUMN_WIDTH - resizingColumn.startWidth;
+      const maxDelta = resizingColumn.startNextWidth - DATATABLE_MIN_COLUMN_WIDTH;
+      const delta = Math.max(minDelta, Math.min(maxDelta, rawDelta));
+
+      nextWidths[resizingColumn.index] = resizingColumn.startWidth + delta;
+      nextWidths[resizingColumn.nextIndex] = resizingColumn.startNextWidth - delta;
+    }
+
+    resizingColumn = { ...resizingColumn, widths: nextWidths };
+  }
+
+  function endColumnResize() {
+    if (!resizingColumn) return;
+
+    const nextWidths = resizingColumn.widths;
+    resizingColumn = null;
+
+    updateNodeData(nodeId, {
+      ...normalizedData,
+      columnWidths: nextWidths
+    });
+    tracker.commit('columnWidths', columnWidthsBeforeResize, nextWidths);
+    columnWidthsBeforeResize = null;
+    window.removeEventListener('pointermove', handleColumnResizeMove);
+    setTimeout(() => updateNodeInternals(nodeId), 0);
+  }
 
   function sendTableOutput(format: 'setting' | 'rows' | 'objects' = 'setting') {
     const output = match(format)
@@ -331,6 +449,8 @@
   onDestroy(() => {
     messageContext?.queue.removeCallback(handleMessage);
     messageContext?.destroy();
+    window.removeEventListener('pointermove', handleColumnResizeMove);
+    window.removeEventListener('pointerup', endColumnResize);
   });
 </script>
 
@@ -403,12 +523,19 @@
       class="nodrag nopan nowheel min-h-0 flex-1 overflow-auto"
       style:max-height={displayHeight ? undefined : '240px'}
     >
-      <table class="w-full min-w-max border-collapse">
+      <table class="table-fixed border-collapse" style:width={`${tableContentWidth}px`}>
+        <colgroup>
+          {#each renderedColumnWidths as columnWidth}
+            <col style:width={`${columnWidth}px`} />
+          {/each}
+          <col style:width={`${DATATABLE_ACTION_COLUMN_WIDTH}px`} />
+        </colgroup>
+
         <thead>
           <tr>
             {#each columns as column, columnIndex}
-              <th class="border-r border-b border-zinc-700 bg-zinc-800 p-0">
-                <div class="flex min-w-[110px] items-center">
+              <th class="relative border-r border-b border-zinc-700 bg-zinc-800 p-0">
+                <div class="flex min-w-0 items-center">
                   <input
                     class="w-full bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-200 outline-none focus:bg-zinc-700"
                     style:font-family={$editorFontFamily}
@@ -432,10 +559,17 @@
                     <Tooltip.Content>Remove Column</Tooltip.Content>
                   </Tooltip.Root>
                 </div>
+
+                <button
+                  class="nodrag nopan absolute top-0 right-[-4px] bottom-0 z-10 w-2 cursor-col-resize bg-transparent hover:bg-zinc-400/20"
+                  type="button"
+                  aria-label={`Resize column ${columnIndex + 1}`}
+                  onpointerdown={(event) => beginColumnResize(event, columnIndex)}
+                ></button>
               </th>
             {/each}
 
-            <th class="w-11 border-b border-zinc-700 bg-zinc-800 px-1">
+            <th class="border-b border-zinc-700 bg-zinc-800 px-1">
               <Tooltip.Root>
                 <Tooltip.Trigger>
                   <button
@@ -457,7 +591,7 @@
               {#each columns as _column, columnIndex}
                 <td class="border-r border-b border-zinc-700 p-0">
                   <textarea
-                    class="box-border block min-h-7 w-full min-w-[110px] resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none focus:bg-zinc-800"
+                    class="box-border block min-h-7 w-full resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none focus:bg-zinc-800"
                     style:font-family={$editorFontFamily}
                     value={String(row[columnIndex] ?? '')}
                     aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}

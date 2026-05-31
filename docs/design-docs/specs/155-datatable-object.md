@@ -12,6 +12,8 @@ from `table`, which remains an audio/wavetable float buffer.
 - Allow adding and removing rows when editing table data.
 - Allow resizing the node with `NodeResizer`; the table viewport should scroll
   when content exceeds the resized bounds.
+- Allow resizing individual columns by dragging the right border of a column
+  header.
 - On `bang`, output a 2D JavaScript array by default. The first row is the
   current column header row, followed by each data row.
 - Add a checkbox setting to output array-of-row-objects instead. This mode uses
@@ -32,6 +34,7 @@ type DatatableNodeData = {
   outputObjects?: boolean;
   width?: number;
   height?: number;
+  columnWidths?: number[];
 };
 ```
 
@@ -50,3 +53,5 @@ overwriting earlier values.
   generic `text/* -> markdown` fallback.
 - Preserve user-resized dimensions across table data changes. Before the user
   resizes, the node may auto-size its width from the current column count.
+- Preserve user-resized column widths across table data changes where possible;
+  new columns receive the default width.

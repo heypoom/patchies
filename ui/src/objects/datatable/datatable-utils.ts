@@ -6,6 +6,7 @@ export type DatatableData = {
   outputObjects?: boolean;
   width?: number;
   height?: number;
+  columnWidths?: number[];
 };
 
 export type ParsedCsvTable = Pick<DatatableData, 'columns' | 'rows'>;
