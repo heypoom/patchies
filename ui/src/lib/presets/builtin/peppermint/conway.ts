@@ -45,12 +45,12 @@ glider = [
   0, 0, 0, 0, 0, 0, 0, 0
 ]
 
-step = x -> (
-  run(glider, x) |> render |> print
-  match(x, < 20: step(x + 1), _: none)
+step = (grid, n) -> (
+  grid |> render |> print
+  match(n, < 20: step(next_gen(grid), n + 1), _: none)
 )
 
-step(0)`;
+step(glider, 0)`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',
