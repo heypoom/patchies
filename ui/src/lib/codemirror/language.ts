@@ -131,6 +131,20 @@ export async function loadLanguageExtension(
 
       return python();
     })
+    .with('peppermint', async () => {
+      const [{ autocompletion }, { peppermint, peppermintCompletions }] = await Promise.all([
+        import('@codemirror/autocomplete'),
+        import('$lib/codemirror/peppermint.codemirror')
+      ]);
+
+      const extensions: Extension[] = [peppermint()];
+
+      if (autocompleteEnabled) {
+        extensions.push(autocompletion({ override: [peppermintCompletions] }));
+      }
+
+      return extensions;
+    })
     .with('ruby', async () => {
       const [{ StreamLanguage }, { ruby }] = await Promise.all([
         import('@codemirror/language'),

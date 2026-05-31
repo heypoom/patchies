@@ -76,6 +76,10 @@ export const DEFAULT_PYTHON_CODE = `import numpy as np
 
 np.arange(15).reshape(3, 5)`;
 
+export const DEFAULT_PEPPERMINT_CODE = `input()
+  |> filter(it.age >= 18)
+  |> print()`;
+
 export const DEFAULT_CHUCK_CODE = `SinOsc s => JCRev r => dac;
 
 .2 => s.gain;

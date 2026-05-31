@@ -105,7 +105,7 @@ The worker should lazily initialize Peppermint once per node:
 import micropip
 
 await micropip.install("pandas")
-await micropip.install("peppermint-lang")
+await micropip.install("peppermint-lang@0.4.0a2")
 
 from peppermint.interpreter import Interpreter
 from peppermint.parser import parse

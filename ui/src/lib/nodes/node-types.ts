@@ -30,6 +30,7 @@ import ObjectNode from '$lib/components/nodes/ObjectNode.svelte';
 import SliderNode from '$lib/components/nodes/SliderNode.svelte';
 import KnobNode from '$lib/components/nodes/KnobNode.svelte';
 import PythonNode from '$lib/components/nodes/PythonNode.svelte';
+import PeppermintNode from '$lib/components/nodes/PeppermintNode.svelte';
 import MarkdownNode from '$lib/components/nodes/MarkdownNode.svelte';
 import ExprNode from '$lib/components/nodes/ExprNode.svelte';
 import FilterNode from '$lib/components/nodes/FilterNode.svelte';
@@ -145,6 +146,7 @@ export const nodeTypes: Record<string, any> = {
   slider: SliderNode,
   knob: KnobNode,
   python: PythonNode,
+  peppermint: PeppermintNode,
   markdown: MarkdownNode,
   expr: ExprNode,
   filter: FilterNode,
