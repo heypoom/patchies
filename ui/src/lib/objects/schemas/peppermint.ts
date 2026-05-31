@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox';
+import { Bang } from './common';
 import type { ObjectSchema } from './types';
 
 export const peppermintSchema: ObjectSchema = {
@@ -10,7 +11,10 @@ export const peppermintSchema: ObjectSchema = {
       id: 'message',
       description: 'Input value for input()',
       handle: { handleType: 'message' },
-      messages: [{ schema: Type.Any(), description: 'Data received by input()' }]
+      messages: [
+        { schema: Bang, description: 'Trigger a run; input() receives the bang message' },
+        { schema: Type.Any(), description: 'Data received by input() and used to trigger a run' }
+      ]
     }
   ],
   outlets: [

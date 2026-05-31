@@ -189,6 +189,8 @@ Mirror the non-ML examples from the Peppermint reference repository into built-i
 
 - Source files come from `.references/peppermint/examples`.
 - Examples under `.references/peppermint/examples/ml` are intentionally excluded because Patchies' Pyodide runtime does not support Numba.
+- Reference `load(...)` calls are adapted to `input()` because Patchies data arrives through object messages, not Peppermint file loading.
+- ML-dependent snippets outside the `ml` folder should be adapted or omitted for the same runtime reason.
 - Each example is stored as its own preset source module under `ui/src/lib/presets/builtin/peppermint/`.
 - Preset keys preserve the upstream `.pep` filenames, such as `conway.pep`, `quicksort.pep`, and `sales_analysis.pep`.
 - The presets are exposed through a dedicated `Peppermint Examples` preset pack that requires the `peppermint` object.

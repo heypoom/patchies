@@ -2,8 +2,6 @@ import type { PeppermintPreset } from './types';
 
 const code = `# context.pep — accessing Context fields after a pipe
 
-use ml
-
 # After a pipe, the result is a Context with .data and .errors
 result = input()
   |> filter(it.age > 18)
@@ -15,14 +13,12 @@ result.data |> print()
 # .errors — rows that failed any step
 print(result.errors)
 
-# Dot into a named assignment to access artifact fields
+# Dot into a named assignment to access Context fields again
 posts = input()
-  |> add(embedding: [0.1, 0.2, 0.3])  # placeholder
-  |> ml.kmeans(k: 2, on: "embedding", out: "cluster")
+  |> add(group: match(it.age, > 30: "experienced", _: "new"))
 
-posts.kmeans    # { model, k } written by ml.kmeans
-posts.data      # the rows
-posts.errors    # any rows that failed`;
+posts.data |> print()
+posts.errors |> print()`;
 
 export const preset: PeppermintPreset = {
   type: 'peppermint',
