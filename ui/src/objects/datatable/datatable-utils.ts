@@ -25,10 +25,14 @@ export function ensureUniqueColumnKeys(columns: string[]): string[] {
 export function buildDatatableOutput(
   data: DatatableData
 ): DatatableCell[][] | Record<string, DatatableCell>[] {
-  if (!data.outputObjects) {
-    return [data.columns, ...data.rows];
-  }
+  return data.outputObjects ? buildDatatableObjectsOutput(data) : buildDatatableRowsOutput(data);
+}
 
+export function buildDatatableRowsOutput(data: DatatableData): DatatableCell[][] {
+  return [data.columns, ...data.rows];
+}
+
+export function buildDatatableObjectsOutput(data: DatatableData): Record<string, DatatableCell>[] {
   const keys = ensureUniqueColumnKeys(data.columns);
 
   return data.rows.map((row) => {

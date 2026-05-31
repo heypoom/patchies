@@ -5,6 +5,8 @@ import { Bang, LoadBySrc } from '$lib/objects/schemas/common';
 import { sym } from '$lib/objects/schemas/helpers';
 
 export const DatatableClear = sym('clear');
+export const DatatableRows = sym('rows');
+export const DatatableObjects = sym('objects');
 export { LoadBySrc as DatatableLoad } from '$lib/objects/schemas/common';
 
 const DatatableRowsOutput = Type.Array(Type.Array(Type.Any()));
@@ -21,6 +23,8 @@ export const datatableSchema: ObjectSchema = {
       handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Output the table' },
+        { schema: DatatableRows, description: 'Output the table as a 2D array' },
+        { schema: DatatableObjects, description: 'Output the table as row objects' },
         { schema: DatatableClear, description: 'Clear all cells' },
         { schema: LoadBySrc, description: 'Load CSV text from a VFS path or URL' },
         {

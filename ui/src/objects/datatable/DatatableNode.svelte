@@ -14,11 +14,19 @@
   import { VirtualFilesystem } from '$lib/vfs';
 
   import { DEFAULT_DATATABLE_DATA } from './constants';
-  import { DatatableClear, DatatableLoad, datatableSchema } from './schema';
+  import {
+    DatatableClear,
+    DatatableLoad,
+    DatatableObjects,
+    DatatableRows,
+    datatableSchema
+  } from './schema';
   import {
     addColumn,
     addRow,
+    buildDatatableObjectsOutput,
     buildDatatableOutput,
+    buildDatatableRowsOutput,
     createEmptyDatatable,
     parseCsvTable,
     removeColumn,
@@ -60,7 +68,9 @@
 
   const datatableMessages = {
     clear: schema(DatatableClear),
-    load: schema(DatatableLoad)
+    load: schema(DatatableLoad),
+    rows: schema(DatatableRows),
+    objects: schema(DatatableObjects)
   };
 
   function commitData(oldData: DatatableData, newData: DatatableData) {
@@ -114,8 +124,14 @@
     tracker.commit('outputObjects', oldValue, value);
   }
 
-  function sendTableOutput() {
-    messageContext.send(buildDatatableOutput(normalizedData));
+  function sendTableOutput(format: 'setting' | 'rows' | 'objects' = 'setting') {
+    const output = match(format)
+      .with('rows', () => buildDatatableRowsOutput(normalizedData))
+      .with('objects', () => buildDatatableObjectsOutput(normalizedData))
+      .with('setting', () => buildDatatableOutput(normalizedData))
+      .exhaustive();
+
+    messageContext.send(output);
   }
 
   function resizeTextarea(textarea: HTMLTextAreaElement) {
@@ -170,6 +186,12 @@
     match(message)
       .with(messages.bang, () => {
         sendTableOutput();
+      })
+      .with(datatableMessages.rows, () => {
+        sendTableOutput('rows');
+      })
+      .with(datatableMessages.objects, () => {
+        sendTableOutput('objects');
       })
       .with(datatableMessages.clear, () => {
         clearTable();

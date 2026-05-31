@@ -8,8 +8,8 @@ rows or columns, and the trash buttons to remove them.
 Table cells are multiline. Press `Enter` for a newline, or `Shift+Enter` to
 output the table, the same as sending `bang`.
 
-Send `bang` to output the table as a 2D JavaScript array. The first row is the
-current column headers:
+Send `bang` to output the table. By default this is a 2D JavaScript array where
+the first row is the current column headers:
 
 ```js
 [
@@ -29,6 +29,9 @@ Enable **row objects** to output an array of objects instead:
 ```
 
 Blank object-mode headers use fallback names like `column_1`.
+
+Use `rows` to always output the 2D array, ignoring the row objects setting.
+Use `objects` to always output row objects.
 
 ## CSV
 
