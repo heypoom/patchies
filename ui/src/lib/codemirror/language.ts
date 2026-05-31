@@ -132,15 +132,21 @@ export async function loadLanguageExtension(
       return python();
     })
     .with('peppermint', async () => {
-      const [{ autocompletion }, { peppermint, peppermintCompletions }] = await Promise.all([
-        import('@codemirror/autocomplete'),
-        import('$lib/codemirror/peppermint.codemirror')
-      ]);
+      const [{ autocompletion }, { peppermint, peppermintCompletions }, { completionHoverHints }] =
+        await Promise.all([
+          import('@codemirror/autocomplete'),
+          import('$lib/codemirror/peppermint.codemirror'),
+          import('$lib/codemirror/hover-hints')
+        ]);
 
       const extensions: Extension[] = [peppermint()];
 
       if (autocompleteEnabled) {
         extensions.push(autocompletion({ override: [peppermintCompletions] }));
+      }
+
+      if (hoverHintsEnabled) {
+        extensions.push(completionHoverHints({ ...context, language: 'peppermint' }));
       }
 
       return extensions;

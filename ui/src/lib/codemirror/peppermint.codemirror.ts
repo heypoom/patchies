@@ -72,44 +72,159 @@ const peppermintHighlightStyle = HighlightStyle.define([
   { tag: tags.typeName, color: '#e0af68' },
   { tag: tags.namespace, color: '#c0caf5' },
   { tag: tags.propertyName, color: '#c0caf5' },
-  { tag: tags.special(tags.variableName), color: '#f7768e' }
+  { tag: tags.variableName, color: '#f7768e' }
 ]);
 
 const keywordCompletions: Completion[] = [
-  { label: 'match', type: 'keyword' },
-  { label: 'use', type: 'keyword' },
-  { label: 'as', type: 'keyword' },
-  { label: 'ns', type: 'keyword' },
-  { label: 'quiet', type: 'keyword' },
-  { label: 'true', type: 'constant' },
-  { label: 'false', type: 'constant' },
-  { label: 'none', type: 'constant' },
-  { label: 'it', type: 'variable', detail: 'current row/item' },
-  { label: 'col', type: 'variable', detail: 'column reference' }
+  { label: 'match', type: 'keyword', info: 'Pattern match on a value.' },
+  { label: 'use', type: 'keyword', info: 'Import a Peppermint standard library namespace.' },
+  { label: 'as', type: 'keyword', info: 'Give an imported namespace an alias.' },
+  { label: 'ns', type: 'keyword', info: 'Declare a namespace.' },
+  { label: 'quiet', type: 'keyword', info: 'Suppress pipe step summary output.' },
+  { label: 'true', type: 'constant', info: 'Boolean true.' },
+  { label: 'false', type: 'constant', info: 'Boolean false.' },
+  { label: 'none', type: 'constant', info: 'Null / no value.' },
+  {
+    label: 'it',
+    type: 'variable',
+    detail: 'current row/item',
+    info: 'Current element in row-wise expressions.'
+  },
+  {
+    label: 'col',
+    type: 'variable',
+    detail: 'column reference',
+    info: 'Reference a column by name in aggregate expressions.'
+  }
 ];
 
 const functionCompletions: Completion[] = [
-  { label: 'input', type: 'function', detail: 'input() -> Any' },
-  { label: 'print', type: 'function', detail: 'print(value: Any) -> Any' },
-  { label: 'filter', type: 'function', detail: 'filter(pred: Expr) -> List<Row>' },
-  { label: 'map', type: 'function', detail: 'map(expr: Expr) -> List<Any>' },
-  { label: 'mapi', type: 'function', detail: 'mapi(expr: Expr) -> List<Any>' },
-  { label: 'add', type: 'function', detail: 'add(field: Expr, ...) -> List<Row>' },
-  { label: 'drop', type: 'function', detail: 'drop(field: str, ...) -> List<Row>' },
-  { label: 'select', type: 'function', detail: 'select(fields: str..., renamed?: Expr)' },
-  { label: 'rename', type: 'function', detail: 'rename(old: new) -> List<Row>' },
-  { label: 'sort', type: 'function', detail: 'sort(by: str, dir?: "asc" | "desc")' },
-  { label: 'take', type: 'function', detail: 'take(n: Int) -> List<Row>' },
-  { label: 'collapse', type: 'function', detail: 'collapse(by?: str, ...agg)' },
-  { label: 'sum', type: 'function', detail: 'sum(col.field) -> AggFn' },
-  { label: 'mean', type: 'function', detail: 'mean(col.field) -> AggFn' },
-  { label: 'count', type: 'function', detail: 'count() -> AggFn' },
-  { label: 'min', type: 'function', detail: 'min(col.field) -> AggFn' },
-  { label: 'max', type: 'function', detail: 'max(col.field) -> AggFn' },
-  { label: 'len', type: 'function', detail: 'len(list: List<Any>) -> Int' },
-  { label: 'unique', type: 'function', detail: 'unique(by: str) -> List<Row>' },
-  { label: 'slice', type: 'function', detail: 'slice(list, start, end)' },
-  { label: 'concat', type: 'function', detail: 'concat(a, b, ...) -> List<Any>' }
+  {
+    label: 'input',
+    type: 'function',
+    detail: 'input() -> Any',
+    info: 'Read the latest inbound Patchies message. Returns none before the first input.'
+  },
+  {
+    label: 'print',
+    type: 'function',
+    detail: 'print(value: Any) -> Any',
+    info: 'Send a value from the peppermint object and pass it through unchanged.'
+  },
+  {
+    label: 'filter',
+    type: 'function',
+    detail: 'filter(pred: Expr) -> List<Row>',
+    info: 'Keep rows where the predicate is true.'
+  },
+  {
+    label: 'map',
+    type: 'function',
+    detail: 'map(expr: Expr) -> List<Any>',
+    info: 'Transform every item with an expression.'
+  },
+  {
+    label: 'mapi',
+    type: 'function',
+    detail: 'mapi(expr: Expr) -> List<Any>',
+    info: 'Transform every item with index and value available as it.idx and it.val.'
+  },
+  {
+    label: 'add',
+    type: 'function',
+    detail: 'add(field: Expr, ...) -> List<Row>',
+    info: 'Add one or more computed fields to every row.'
+  },
+  {
+    label: 'drop',
+    type: 'function',
+    detail: 'drop(field: str, ...) -> List<Row>',
+    info: 'Remove one or more fields from every row.'
+  },
+  {
+    label: 'select',
+    type: 'function',
+    detail: 'select(fields: str..., renamed?: Expr)',
+    info: 'Keep selected fields and optionally compute renamed fields.'
+  },
+  {
+    label: 'rename',
+    type: 'function',
+    detail: 'rename(old: new) -> List<Row>',
+    info: 'Rename a field.'
+  },
+  {
+    label: 'sort',
+    type: 'function',
+    detail: 'sort(by: str, dir?: "asc" | "desc")',
+    info: 'Sort rows by a field.'
+  },
+  {
+    label: 'take',
+    type: 'function',
+    detail: 'take(n: Int) -> List<Row>',
+    info: 'Keep the first n rows.'
+  },
+  {
+    label: 'collapse',
+    type: 'function',
+    detail: 'collapse(by?: str, ...agg)',
+    info: 'Group rows and compute aggregate values.'
+  },
+  {
+    label: 'sum',
+    type: 'function',
+    detail: 'sum(col.field) -> AggFn',
+    info: 'Aggregate by summing a column.'
+  },
+  {
+    label: 'mean',
+    type: 'function',
+    detail: 'mean(col.field) -> AggFn',
+    info: 'Aggregate by averaging a column.'
+  },
+  {
+    label: 'count',
+    type: 'function',
+    detail: 'count() -> AggFn',
+    info: 'Aggregate by counting rows.'
+  },
+  {
+    label: 'min',
+    type: 'function',
+    detail: 'min(col.field) -> AggFn',
+    info: 'Aggregate with the minimum column value.'
+  },
+  {
+    label: 'max',
+    type: 'function',
+    detail: 'max(col.field) -> AggFn',
+    info: 'Aggregate with the maximum column value.'
+  },
+  {
+    label: 'len',
+    type: 'function',
+    detail: 'len(list: List<Any>) -> Int',
+    info: 'Return the length of a list.'
+  },
+  {
+    label: 'unique',
+    type: 'function',
+    detail: 'unique(by: str) -> List<Row>',
+    info: 'Keep unique rows by a field.'
+  },
+  {
+    label: 'slice',
+    type: 'function',
+    detail: 'slice(list, start, end)',
+    info: 'Return a list slice.'
+  },
+  {
+    label: 'concat',
+    type: 'function',
+    detail: 'concat(a, b, ...) -> List<Any>',
+    info: 'Concatenate multiple lists.'
+  }
 ];
 
 const operatorCompletions: Completion[] = [
@@ -135,6 +250,10 @@ export function peppermintCompletions(context: CompletionContext): CompletionRes
     options: peppermintCompletionOptions,
     validFor: /^[\w|>-]*$/
   };
+}
+
+export function getPeppermintCompletionByLabel(label: string): Completion | undefined {
+  return peppermintCompletionOptions.find((completion) => completion.label === label);
 }
 
 export function peppermint(): LanguageSupport {
