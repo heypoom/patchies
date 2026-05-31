@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { glslInJsWrap } from '$lib/codemirror/glsl-in-js';
 import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
 import { getCompletionHoverHint } from '$lib/codemirror/hover-hints';
+import { peppermintLanguage } from '$lib/codemirror/peppermint.codemirror';
 
 function cursor(doc: string) {
   const pos = doc.indexOf('|');
@@ -19,6 +20,9 @@ const jsState = (doc: string) =>
   EditorState.create({ doc, extensions: [javascriptLanguage.configure({ wrap: glslInJsWrap })] });
 
 const glslState = (doc: string) => EditorState.create({ doc, extensions: [glslLanguage] });
+
+const peppermintState = (doc: string) =>
+  EditorState.create({ doc, extensions: [peppermintLanguage] });
 
 describe('completion hover hints', () => {
   it('uses Patchies JavaScript completion metadata for single-token globals', () => {
@@ -137,5 +141,19 @@ describe('completion hover hints', () => {
     });
 
     expect(hint?.completion.label).toBe('send');
+  });
+
+  it('uses Peppermint completion metadata in Peppermint editors', () => {
+    const { doc, pos } = cursor('input() |> pri|nt()');
+
+    const hint = getCompletionHoverHint(peppermintState(doc), pos, {
+      language: 'peppermint'
+    });
+
+    expect(hint?.completion).toMatchObject({
+      label: 'print',
+      detail: 'print(value: Any) -> Any',
+      info: 'Send a value from the peppermint object and pass it through unchanged.'
+    });
   });
 });
