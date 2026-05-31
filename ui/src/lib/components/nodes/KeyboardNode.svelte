@@ -10,6 +10,7 @@
   import { messages } from '$lib/objects/schemas';
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
+  import { editorFontFamily } from '../../../stores/editor.store';
 
   let {
     id: nodeId,
@@ -228,7 +229,7 @@
   });
 </script>
 
-<div class="relative flex gap-x-3">
+<div class="relative flex gap-x-3" style:--patchies-keyboard-node-font-family={$editorFontFamily}>
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -264,7 +265,10 @@
         >
           {#if mode === 'filtered'}
             <div
-              class={['font-mono text-[12px]', isListening ? 'text-green-400' : 'text-zinc-500']}
+              class={[
+                'keyboard-node-font text-[12px]',
+                isListening ? 'text-green-400' : 'text-zinc-500'
+              ]}
             >
               {keybind || 'no keybind'}
             </div>
@@ -407,7 +411,7 @@
                   updateConfig({ keybind: newKeybind });
                   tracker.commit('keybind', oldKeybind, newKeybind);
                 }}
-                class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
+                class="keyboard-node-font w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
               />
             </div>
           {/if}
@@ -441,3 +445,9 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .keyboard-node-font {
+    font-family: var(--patchies-keyboard-node-font-family, var(--font-mono));
+  }
+</style>
