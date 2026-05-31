@@ -144,7 +144,7 @@ describe('completion hover hints', () => {
   });
 
   it('uses Peppermint completion metadata in Peppermint editors', () => {
-    const { doc, pos } = cursor('input() |> pri|nt()');
+    const { doc, pos } = cursor('pri|nt(input())');
 
     const hint = getCompletionHoverHint(peppermintState(doc), pos, {
       language: 'peppermint'

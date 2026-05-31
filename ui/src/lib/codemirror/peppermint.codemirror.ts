@@ -44,10 +44,10 @@ const peppermintParser: StreamParser<PeppermintState> = {
     if (stream.match(/\b(match|use|as|ns|quiet|and|or|not)\b/)) return 'keyword';
     if (stream.match(/\b(true|false|none)\b/)) return 'atom';
     if (stream.match(/\b(Ok|Err)\b/)) return 'typeName';
-    if (stream.match(/\b(it|col|_)\b/)) return 'variableName.special';
+    if (stream.match(/\b(it|col|_)\b/)) return 'variableName';
     if (stream.match(/\b[A-Za-z_][A-Za-z0-9_]*(?=\.)/)) return 'namespace';
     if (stream.match(/(?<=\.)[A-Za-z_][A-Za-z0-9_]*/)) return 'propertyName';
-    if (stream.match(/\b[A-Za-z_][A-Za-z0-9_]*(?=\s*\()/)) return 'function';
+    if (stream.match(/\b[A-Za-z_][A-Za-z0-9_]*(?=\s*\()/)) return 'variableName';
     if (stream.match(/\|>|->|\.\.\.|\.{2}|>=|<=|==|!=|[+\-*/%<>=]/)) return 'operator';
     if (stream.match(/\b[A-Za-z_][A-Za-z0-9_]*\b/)) return 'variableName';
 
