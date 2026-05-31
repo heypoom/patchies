@@ -8,6 +8,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { JSRunner } from '$lib/js-runner/JSRunner';
+  import { editorFontFamily } from '../../../stores/editor.store';
 
   let {
     id: nodeId,
@@ -89,7 +90,7 @@
   );
 </script>
 
-<div class="group relative">
+<div class="group relative" style:--patchies-peek-node-font-family={$editorFontFamily}>
   <TypedHandle
     port="inlet"
     spec={peekSchema.inlets[0].handle!}
@@ -112,7 +113,7 @@
     {#if showEditor}
       <div
         class={[
-          'nodrag min-w-[120px] rounded-lg border font-mono text-zinc-200',
+          'peek-node-font nodrag min-w-[120px] rounded-lg border text-zinc-200',
           containerClass,
           hasError ? 'border-red-500/50' : ''
         ]}
@@ -139,12 +140,12 @@
 
     <div
       class={[
-        'nowheel max-w-[300px] min-w-[60px] rounded-lg border px-3 py-2 font-mono text-xs text-zinc-200',
+        'peek-node-font nowheel max-w-[300px] min-w-[60px] rounded-lg border px-3 py-2 text-xs text-zinc-200',
         containerClass
       ]}
     >
       <pre
-        class="m-0 max-h-[200px] overflow-auto break-all whitespace-pre-wrap">{displayValue}</pre>
+        class="font-inherit m-0 max-h-[200px] overflow-auto break-all whitespace-pre-wrap">{displayValue}</pre>
     </div>
   </div>
 </div>
@@ -152,5 +153,13 @@
 <style>
   :global(.peek-node-code-editor .cm-content) {
     padding: 6px 8px 7px 4px !important;
+  }
+
+  .peek-node-font {
+    font-family: var(--patchies-peek-node-font-family, var(--font-mono));
+  }
+
+  .font-inherit {
+    font-family: inherit;
   }
 </style>
