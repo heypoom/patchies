@@ -10,6 +10,9 @@ Extra rows or columns scroll inside the table.
 
 Drag the right edge of a column header to resize that column.
 
+Right-click a column header to move or delete that column. Right-click a row to
+move or delete that row.
+
 Table cells are multiline. Press `Enter` for a newline, or `Shift+Enter` to
 output the table, the same as sending `bang`.
 

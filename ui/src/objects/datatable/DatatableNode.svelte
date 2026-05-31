@@ -9,9 +9,10 @@
     type OnResizeStart
   } from '@xyflow/svelte';
   import { match, P } from 'ts-pattern';
-  import { Plus, Settings, Trash2, X } from '@lucide/svelte/icons';
+  import { Plus, Settings, X } from '@lucide/svelte/icons';
 
   import TypedHandle from '$lib/components/TypedHandle.svelte';
+  import * as ContextMenu from '$lib/components/ui/context-menu';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
@@ -36,6 +37,8 @@
     buildDatatableOutput,
     buildDatatableRowsOutput,
     createEmptyDatatable,
+    moveColumn,
+    moveRow,
     parseCsvTable,
     removeColumn,
     removeRow,
@@ -88,6 +91,9 @@
 
   let resizingColumn = $state<ColumnResizeState | null>(null);
   let columnWidthsBeforeResize: number[] | null = null;
+  let contextTarget = $state<
+    { type: 'column'; index: number } | { type: 'row'; index: number } | null
+  >(null);
 
   const columns = $derived(data.columns ?? DEFAULT_DATATABLE_DATA.columns);
   const rows = $derived(data.rows ?? DEFAULT_DATATABLE_DATA.rows);
@@ -145,7 +151,10 @@
       ...nextData,
       width,
       height,
-      columnWidths: reconcileColumnWidths(columnWidths, nextData.columns.length)
+      columnWidths: reconcileColumnWidths(
+        nextData.columnWidths ?? columnWidths,
+        nextData.columns.length
+      )
     });
   }
 
@@ -220,6 +229,18 @@
     const oldValue = outputObjects;
     updateNodeData(nodeId, { ...normalizedData, outputObjects: value });
     tracker.commit('outputObjects', oldValue, value);
+  }
+
+  function setColumnContext(columnIndex: number) {
+    queueMicrotask(() => {
+      contextTarget = { type: 'column', index: columnIndex };
+    });
+  }
+
+  function setRowContext(rowIndex: number) {
+    queueMicrotask(() => {
+      contextTarget = { type: 'row', index: rowIndex };
+    });
   }
 
   const handleResizeStart: OnResizeStart = () => {
@@ -495,178 +516,200 @@
     {nodeId}
   />
 
-  <div
-    class={[
-      'flex min-w-[280px] flex-col overflow-hidden rounded-lg border text-xs text-zinc-200 shadow-lg',
-      containerClass,
-      isDraggingCsv ? 'border-blue-400 bg-blue-950/40' : ''
-    ]}
-    ondragover={handleCsvDragOver}
-    ondragleave={handleCsvDragLeave}
-    ondrop={handleCsvDrop}
-    role="group"
-    aria-label="Editable data table"
-    style:width={`${displayWidth}px`}
-    style:height={displayHeight ? `${displayHeight}px` : undefined}
-  >
-    <div
-      class="flex shrink-0 cursor-move items-center justify-between border-b border-zinc-700 px-2 py-1.5"
-    >
-      <span class="font-mono text-[10px] text-zinc-400">datatable</span>
-      <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
-        {columns.length}
-        {columns.length === 1 ? 'col' : 'cols'}
-      </span>
-    </div>
+  <ContextMenu.Root>
+    <ContextMenu.Trigger>
+      <div
+        class={[
+          'flex min-w-[280px] flex-col overflow-hidden rounded-lg border text-xs text-zinc-200 shadow-lg',
+          containerClass,
+          isDraggingCsv ? 'border-blue-400 bg-blue-950/40' : ''
+        ]}
+        ondragover={handleCsvDragOver}
+        ondragleave={handleCsvDragLeave}
+        ondrop={handleCsvDrop}
+        oncontextmenu={() => (contextTarget = null)}
+        role="group"
+        aria-label="Editable data table"
+        style:width={`${displayWidth}px`}
+        style:height={displayHeight ? `${displayHeight}px` : undefined}
+      >
+        <div
+          class="flex shrink-0 cursor-move items-center justify-between border-b border-zinc-700 px-2 py-1.5"
+        >
+          <span class="font-mono text-[10px] text-zinc-400">datatable</span>
+          <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
+            {columns.length}
+            {columns.length === 1 ? 'col' : 'cols'}
+          </span>
+        </div>
 
-    <div
-      class="nodrag nopan nowheel min-h-0 flex-1 overflow-auto"
-      style:max-height={displayHeight ? undefined : '240px'}
-    >
-      <table class="table-fixed border-collapse" style:width={`${tableContentWidth}px`}>
-        <colgroup>
-          {#each renderedColumnWidths as columnWidth}
-            <col style:width={`${columnWidth}px`} />
-          {/each}
-          <col style:width={`${DATATABLE_ACTION_COLUMN_WIDTH}px`} />
-        </colgroup>
+        <div
+          class="nodrag nopan nowheel min-h-0 flex-1 overflow-auto"
+          style:max-height={displayHeight ? undefined : '240px'}
+        >
+          <table class="table-fixed border-collapse" style:width={`${tableContentWidth}px`}>
+            <colgroup>
+              {#each renderedColumnWidths as columnWidth}
+                <col style:width={`${columnWidth}px`} />
+              {/each}
+              <col style:width={`${DATATABLE_ACTION_COLUMN_WIDTH}px`} />
+            </colgroup>
 
-        <thead>
-          <tr>
-            {#each columns as column, columnIndex}
-              <th class="relative border-r border-b border-zinc-700 bg-zinc-800 p-0">
-                <div class="flex min-w-0 items-center">
-                  <input
-                    class="w-full bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-200 outline-none focus:bg-zinc-700"
-                    style:font-family={$editorFontFamily}
-                    value={column}
-                    aria-label={`Column ${columnIndex + 1} header`}
-                    onfocus={beginColumnEdit}
-                    onblur={endColumnEdit}
-                    oninput={(event) => setColumnName(columnIndex, event.currentTarget.value)}
-                  />
+            <thead>
+              <tr>
+                {#each columns as column, columnIndex}
+                  <th
+                    class="relative border-r border-b border-zinc-700 bg-zinc-800 p-0"
+                    oncontextmenu={() => setColumnContext(columnIndex)}
+                  >
+                    <div class="flex min-w-0 items-center">
+                      <input
+                        class="w-full bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-200 outline-none focus:bg-zinc-700"
+                        style:font-family={$editorFontFamily}
+                        value={column}
+                        aria-label={`Column ${columnIndex + 1} header`}
+                        onfocus={beginColumnEdit}
+                        onblur={endColumnEdit}
+                        oninput={(event) => setColumnName(columnIndex, event.currentTarget.value)}
+                      />
+                    </div>
 
+                    <button
+                      class="nodrag nopan absolute top-0 right-[-4px] bottom-0 z-10 w-2 cursor-col-resize bg-transparent hover:bg-zinc-400/20"
+                      type="button"
+                      aria-label={`Resize column ${columnIndex + 1}`}
+                      onpointerdown={(event) => beginColumnResize(event, columnIndex)}
+                    ></button>
+                  </th>
+                {/each}
+
+                <th class="border-b border-zinc-700 bg-zinc-800 px-1">
                   <Tooltip.Root>
                     <Tooltip.Trigger>
                       <button
-                        class="cursor-pointer px-1.5 py-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-                        disabled={columns.length <= 1}
-                        onclick={() => setData(removeColumn(normalizedData, columnIndex))}
+                        class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                        onclick={() => setData(addColumn(normalizedData))}
                       >
-                        <Trash2 class="h-3 w-3" />
+                        <Plus class="h-3.5 w-3.5" />
                       </button>
                     </Tooltip.Trigger>
-                    <Tooltip.Content>Remove Column</Tooltip.Content>
+                    <Tooltip.Content>Add Column</Tooltip.Content>
                   </Tooltip.Root>
-                </div>
+                </th>
+              </tr>
+            </thead>
 
-                <button
-                  class="nodrag nopan absolute top-0 right-[-4px] bottom-0 z-10 w-2 cursor-col-resize bg-transparent hover:bg-zinc-400/20"
-                  type="button"
-                  aria-label={`Resize column ${columnIndex + 1}`}
-                  onpointerdown={(event) => beginColumnResize(event, columnIndex)}
-                ></button>
-              </th>
-            {/each}
+            <tbody data-datatable-node={nodeId}>
+              {#each rows as row, rowIndex}
+                <tr oncontextmenu={() => setRowContext(rowIndex)}>
+                  {#each columns as _column, columnIndex}
+                    <td class="border-r border-b border-zinc-700 p-0">
+                      <textarea
+                        class="box-border block min-h-7 w-full resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none focus:bg-zinc-800"
+                        style:font-family={$editorFontFamily}
+                        value={String(row[columnIndex] ?? '')}
+                        aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
+                        rows="1"
+                        onfocus={beginCellEdit}
+                        onblur={endCellEdit}
+                        onkeydown={handleCellKeydown}
+                        oninput={(event) => {
+                          resizeTextarea(event.currentTarget);
+                          setCell(rowIndex, columnIndex, event.currentTarget.value);
+                        }}
+                      ></textarea>
+                    </td>
+                  {/each}
 
-            <th class="border-b border-zinc-700 bg-zinc-800 px-1">
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  <button
-                    class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
-                    onclick={() => setData(addColumn(normalizedData))}
-                  >
-                    <Plus class="h-3.5 w-3.5" />
-                  </button>
-                </Tooltip.Trigger>
-                <Tooltip.Content>Add Column</Tooltip.Content>
-              </Tooltip.Root>
-            </th>
-          </tr>
-        </thead>
-
-        <tbody data-datatable-node={nodeId}>
-          {#each rows as row, rowIndex}
-            <tr>
-              {#each columns as _column, columnIndex}
-                <td class="border-r border-b border-zinc-700 p-0">
-                  <textarea
-                    class="box-border block min-h-7 w-full resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none focus:bg-zinc-800"
-                    style:font-family={$editorFontFamily}
-                    value={String(row[columnIndex] ?? '')}
-                    aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
-                    rows="1"
-                    onfocus={beginCellEdit}
-                    onblur={endCellEdit}
-                    onkeydown={handleCellKeydown}
-                    oninput={(event) => {
-                      resizeTextarea(event.currentTarget);
-                      setCell(rowIndex, columnIndex, event.currentTarget.value);
-                    }}
-                  ></textarea>
-                </td>
+                  <td class="border-b border-zinc-700 px-1"></td>
+                </tr>
               {/each}
+            </tbody>
+          </table>
+        </div>
 
-              <td class="w-11 border-b border-zinc-700 px-1">
-                <Tooltip.Root>
-                  <Tooltip.Trigger>
-                    <button
-                      class="cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-900 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
-                      disabled={rows.length <= 1}
-                      onclick={() => setData(removeRow(normalizedData, rowIndex))}
-                    >
-                      <Trash2 class="h-3 w-3" />
-                    </button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content>Remove Row</Tooltip.Content>
-                </Tooltip.Root>
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+        {#if headerValidationError}
+          <div class="border-t border-zinc-700 px-2 py-1 font-mono text-[10px] text-red-300">
+            {headerValidationError}
+          </div>
+        {/if}
 
-    {#if headerValidationError}
-      <div class="border-t border-zinc-700 px-2 py-1 font-mono text-[10px] text-red-300">
-        {headerValidationError}
+        <div
+          class="nodrag flex shrink-0 items-center justify-between border-t border-zinc-700 px-2 py-1.5"
+        >
+          <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
+            {rows.length} rows
+          </span>
+
+          <div class="flex items-center gap-1">
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                  onclick={() => setData(addRow(normalizedData))}
+                >
+                  <Plus class="h-3.5 w-3.5" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Add Row</Tooltip.Content>
+            </Tooltip.Root>
+          </div>
+        </div>
       </div>
-    {/if}
+    </ContextMenu.Trigger>
 
-    <div
-      class="nodrag flex shrink-0 items-center justify-between border-t border-zinc-700 px-2 py-1.5"
-    >
-      <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
-        {rows.length} rows
-      </span>
-
-      <div class="flex items-center gap-1">
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            <button
-              class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
-              onclick={() => setData(addRow(normalizedData))}
-            >
-              <Plus class="h-3.5 w-3.5" />
-            </button>
-          </Tooltip.Trigger>
-          <Tooltip.Content>Add Row</Tooltip.Content>
-        </Tooltip.Root>
-
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            <button
-              class="cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-900 hover:text-red-400"
-              onclick={clearTable}
-            >
-              <Trash2 class="h-3.5 w-3.5" />
-            </button>
-          </Tooltip.Trigger>
-          <Tooltip.Content>Clear Table</Tooltip.Content>
-        </Tooltip.Root>
-      </div>
-    </div>
-  </div>
+    <ContextMenu.Content class="w-44">
+      {#if contextTarget?.type === 'column'}
+        <ContextMenu.Item
+          disabled={contextTarget.index <= 0}
+          onclick={() =>
+            setData(moveColumn(normalizedData, contextTarget!.index, contextTarget!.index - 1))}
+        >
+          Move Column Left
+        </ContextMenu.Item>
+        <ContextMenu.Item
+          disabled={contextTarget.index >= columns.length - 1}
+          onclick={() =>
+            setData(moveColumn(normalizedData, contextTarget!.index, contextTarget!.index + 1))}
+        >
+          Move Column Right
+        </ContextMenu.Item>
+        <ContextMenu.Separator />
+        <ContextMenu.Item
+          variant="destructive"
+          disabled={columns.length <= 1}
+          onclick={() => setData(removeColumn(normalizedData, contextTarget!.index))}
+        >
+          Delete Column
+        </ContextMenu.Item>
+      {:else if contextTarget?.type === 'row'}
+        <ContextMenu.Item
+          disabled={contextTarget.index <= 0}
+          onclick={() =>
+            setData(moveRow(normalizedData, contextTarget!.index, contextTarget!.index - 1))}
+        >
+          Move Row Up
+        </ContextMenu.Item>
+        <ContextMenu.Item
+          disabled={contextTarget.index >= rows.length - 1}
+          onclick={() =>
+            setData(moveRow(normalizedData, contextTarget!.index, contextTarget!.index + 1))}
+        >
+          Move Row Down
+        </ContextMenu.Item>
+        <ContextMenu.Separator />
+        <ContextMenu.Item
+          variant="destructive"
+          disabled={rows.length <= 1}
+          onclick={() => setData(removeRow(normalizedData, contextTarget!.index))}
+        >
+          Delete Row
+        </ContextMenu.Item>
+      {:else}
+        <ContextMenu.Item onclick={clearTable}>Clear Table</ContextMenu.Item>
+      {/if}
+    </ContextMenu.Content>
+  </ContextMenu.Root>
 
   <TypedHandle
     port="outlet"

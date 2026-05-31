@@ -5,6 +5,8 @@ import {
   buildDatatableObjectsOutput,
   buildDatatableRowsOutput,
   ensureUniqueColumnKeys,
+  moveColumn,
+  moveRow,
   parseCsvTable
 } from './datatable-utils';
 
@@ -86,5 +88,51 @@ describe('datatable utilities', () => {
   it('returns only public table fields for empty CSV input', () => {
     expect(parseCsvTable('')).toEqual({ columns: [], rows: [] });
     expect(Object.keys(parseCsvTable(''))).toEqual(['columns', 'rows']);
+  });
+
+  it('moves columns with their row cells and widths', () => {
+    expect(
+      moveColumn(
+        {
+          columns: ['id', 'name', 'age'],
+          rows: [
+            ['1', 'Ada', '37'],
+            ['2', 'Grace', '85']
+          ],
+          columnWidths: [80, 160, 100]
+        },
+        2,
+        1
+      )
+    ).toEqual({
+      columns: ['id', 'age', 'name'],
+      rows: [
+        ['1', '37', 'Ada'],
+        ['2', '85', 'Grace']
+      ],
+      columnWidths: [80, 100, 160]
+    });
+  });
+
+  it('moves rows', () => {
+    expect(
+      moveRow(
+        {
+          columns: ['id', 'name'],
+          rows: [
+            ['1', 'Ada'],
+            ['2', 'Grace']
+          ]
+        },
+        1,
+        0
+      )
+    ).toEqual({
+      columns: ['id', 'name'],
+      rows: [
+        ['2', 'Grace'],
+        ['1', 'Ada']
+      ]
+    });
   });
 });

@@ -14,6 +14,9 @@ from `table`, which remains an audio/wavetable float buffer.
   when content exceeds the resized bounds.
 - Allow resizing individual columns by dragging the right border of a column
   header.
+- Move row and column deletion into context menus instead of always-visible grid
+  buttons.
+- Allow reordering columns and rows from their context menus.
 - On `bang`, output a 2D JavaScript array by default. The first row is the
   current column header row, followed by each data row.
 - Add a checkbox setting to output array-of-row-objects instead. This mode uses
@@ -55,3 +58,5 @@ overwriting earlier values.
   resizes, the node may auto-size its width from the current column count.
 - Preserve user-resized column widths across table data changes where possible;
   new columns receive the default width.
+- Column reorder should move header names, row cells, and stored column widths
+  together.

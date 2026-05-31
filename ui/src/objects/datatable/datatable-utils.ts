@@ -78,7 +78,27 @@ export function removeColumn(data: DatatableData, index: number): DatatableData 
   return {
     ...data,
     columns: data.columns.filter((_, columnIndex) => columnIndex !== index),
-    rows: data.rows.map((row) => row.filter((_, columnIndex) => columnIndex !== index))
+    rows: data.rows.map((row) => row.filter((_, columnIndex) => columnIndex !== index)),
+    columnWidths: data.columnWidths?.filter((_, columnIndex) => columnIndex !== index)
+  };
+}
+
+export function moveColumn(data: DatatableData, fromIndex: number, toIndex: number): DatatableData {
+  if (
+    fromIndex < 0 ||
+    fromIndex >= data.columns.length ||
+    toIndex < 0 ||
+    toIndex >= data.columns.length ||
+    fromIndex === toIndex
+  ) {
+    return data;
+  }
+
+  return {
+    ...data,
+    columns: moveItem(data.columns, fromIndex, toIndex),
+    rows: data.rows.map((row) => moveItem(row, fromIndex, toIndex)),
+    columnWidths: data.columnWidths ? moveItem(data.columnWidths, fromIndex, toIndex) : undefined
   };
 }
 
@@ -95,6 +115,23 @@ export function removeRow(data: DatatableData, index: number): DatatableData {
   return {
     ...data,
     rows: data.rows.filter((_, rowIndex) => rowIndex !== index)
+  };
+}
+
+export function moveRow(data: DatatableData, fromIndex: number, toIndex: number): DatatableData {
+  if (
+    fromIndex < 0 ||
+    fromIndex >= data.rows.length ||
+    toIndex < 0 ||
+    toIndex >= data.rows.length ||
+    fromIndex === toIndex
+  ) {
+    return data;
+  }
+
+  return {
+    ...data,
+    rows: moveItem(data.rows, fromIndex, toIndex)
   };
 }
 
@@ -191,6 +228,13 @@ function normalizeCell(value: unknown): DatatableCell {
   }
 
   return value === null || value === undefined ? '' : String(value);
+}
+
+function moveItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
+  const next = [...items];
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, item);
+  return next;
 }
 
 function parseCsvRows(csv: string): string[][] {
