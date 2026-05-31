@@ -54,6 +54,9 @@
   const rows = $derived(data.rows ?? DEFAULT_DATATABLE_DATA.rows);
   const outputObjects = $derived(data.outputObjects ?? false);
   const normalizedData = $derived<DatatableData>({ columns, rows, outputObjects });
+  const containerClass = $derived(
+    selected ? 'object-container-selected !bg-zinc-900' : 'object-container-light'
+  );
 
   const datatableMessages = {
     clear: schema(DatatableClear),
@@ -111,6 +114,22 @@
     tracker.commit('outputObjects', oldValue, value);
   }
 
+  function sendTableOutput() {
+    messageContext.send(buildDatatableOutput(normalizedData));
+  }
+
+  function resizeTextarea(textarea: HTMLTextAreaElement) {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.max(28, textarea.scrollHeight)}px`;
+  }
+
+  function handleCellKeydown(event: KeyboardEvent) {
+    if (event.key !== 'Enter' || !event.shiftKey) return;
+
+    event.preventDefault();
+    sendTableOutput();
+  }
+
   async function loadCsvFromSrc(src: string) {
     let csv: string;
 
@@ -150,7 +169,7 @@
 
     match(message)
       .with(messages.bang, () => {
-        messageContext.send(buildDatatableOutput(normalizedData));
+        sendTableOutput();
       })
       .with(datatableMessages.clear, () => {
         clearTable();
@@ -235,8 +254,8 @@
 
   <div
     class={[
-      'min-w-[280px] overflow-hidden rounded-lg border bg-zinc-950 text-xs shadow-lg',
-      selected ? 'shadow-glow-md border-zinc-400' : 'border-zinc-800',
+      'min-w-[280px] overflow-hidden rounded-lg border text-xs text-zinc-200 shadow-lg',
+      containerClass,
       isDraggingCsv ? 'border-blue-400 bg-blue-950/40' : ''
     ]}
     ondragover={handleCsvDragOver}
@@ -245,20 +264,23 @@
     role="group"
     aria-label="Editable data table"
   >
-    <div class="flex cursor-move items-center justify-between border-b border-zinc-800 px-2 py-1.5">
-      <span class="font-mono text-zinc-300">datatable</span>
-      <span class="font-mono text-[10px] text-zinc-500">{columns.length} cols</span>
+    <div class="flex cursor-move items-center justify-between border-b border-zinc-700 px-2 py-1.5">
+      <span class="font-mono text-[10px] text-zinc-400">datatable</span>
+      <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
+        {columns.length}
+        {columns.length === 1 ? 'col' : 'cols'}
+      </span>
     </div>
 
     <div class="nodrag max-h-[240px] max-w-[520px] overflow-auto">
-      <table class="border-collapse">
+      <table class="w-full min-w-max border-collapse">
         <thead>
           <tr>
             {#each columns as column, columnIndex}
-              <th class="border-r border-b border-zinc-800 bg-zinc-900/90 p-0">
+              <th class="border-r border-b border-zinc-700 bg-zinc-800 p-0">
                 <div class="flex min-w-[110px] items-center">
                   <input
-                    class="w-full bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-100 outline-none focus:bg-zinc-800"
+                    class="w-full bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-200 outline-none focus:bg-zinc-700"
                     value={column}
                     aria-label={`Column ${columnIndex + 1} header`}
                     onfocus={beginColumnEdit}
@@ -269,7 +291,7 @@
                   <Tooltip.Root>
                     <Tooltip.Trigger>
                       <button
-                        class="cursor-pointer px-1.5 py-1 text-zinc-500 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="cursor-pointer px-1.5 py-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
                         disabled={columns.length <= 1}
                         onclick={() => setData(removeColumn(normalizedData, columnIndex))}
                       >
@@ -282,11 +304,11 @@
               </th>
             {/each}
 
-            <th class="border-b border-zinc-800 bg-zinc-900/90 px-1">
+            <th class="w-11 border-b border-zinc-700 bg-zinc-800 px-1">
               <Tooltip.Root>
                 <Tooltip.Trigger>
                   <button
-                    class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+                    class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
                     onclick={() => setData(addColumn(normalizedData))}
                   >
                     <Plus class="h-3.5 w-3.5" />
@@ -302,19 +324,24 @@
           {#each rows as row, rowIndex}
             <tr>
               {#each columns as _column, columnIndex}
-                <td class="border-r border-b border-zinc-800 p-0">
-                  <input
-                    class="w-[110px] bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-200 outline-none focus:bg-zinc-800"
-                    value={row[columnIndex] ?? ''}
+                <td class="border-r border-b border-zinc-700 p-0">
+                  <textarea
+                    class="box-border block min-h-7 w-full min-w-[110px] resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none focus:bg-zinc-800"
+                    value={String(row[columnIndex] ?? '')}
                     aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
+                    rows="1"
                     onfocus={beginCellEdit}
                     onblur={endCellEdit}
-                    oninput={(event) => setCell(rowIndex, columnIndex, event.currentTarget.value)}
-                  />
+                    onkeydown={handleCellKeydown}
+                    oninput={(event) => {
+                      resizeTextarea(event.currentTarget);
+                      setCell(rowIndex, columnIndex, event.currentTarget.value);
+                    }}
+                  ></textarea>
                 </td>
               {/each}
 
-              <td class="border-b border-zinc-800 px-1">
+              <td class="w-11 border-b border-zinc-700 px-1">
                 <Tooltip.Root>
                   <Tooltip.Trigger>
                     <button
@@ -334,8 +361,10 @@
       </table>
     </div>
 
-    <div class="nodrag flex items-center justify-between border-t border-zinc-800 px-2 py-1.5">
-      <span class="font-mono text-[10px] text-zinc-500">{rows.length} rows</span>
+    <div class="nodrag flex items-center justify-between border-t border-zinc-700 px-2 py-1.5">
+      <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
+        {rows.length} rows
+      </span>
 
       <div class="flex items-center gap-1">
         <Tooltip.Root>

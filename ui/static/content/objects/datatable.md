@@ -5,6 +5,9 @@ The `datatable` object is an editable CSV-style table for message data.
 Edit the column headers directly in the top row. Use the plus buttons to add
 rows or columns, and the trash buttons to remove them.
 
+Table cells are multiline. Press `Enter` for a newline, or `Shift+Enter` to
+output the table, the same as sending `bang`.
+
 Send `bang` to output the table as a 2D JavaScript array. The first row is the
 current column headers:
 
