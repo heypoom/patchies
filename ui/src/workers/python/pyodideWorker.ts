@@ -2,13 +2,14 @@ import { match } from 'ts-pattern';
 import type { PyodideAPI } from 'pyodide';
 import type { PyodideWorkerMessage } from '$lib/python/PyodideSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
+import { PeppermintPyodideRuntime } from './peppermint';
 
 /** Name of the Python package to interact with patchies */
 const PATCHIES_PACKAGE = 'patch';
 
 // Store pyodide instances by node ID
 const pyodideByNode = new Map<string, PyodideAPI>();
-const peppermintReadyByNode = new Set<string>();
+const peppermintRuntime = new PeppermintPyodideRuntime();
 
 self.onmessage = async (event: MessageEvent<PyodideWorkerMessage>) => {
   const { id } = event.data;
@@ -94,7 +95,7 @@ async function handleDeleteInstance(data: { nodeId: string }) {
   if (pyodide) {
     pyodide.unregisterJsModule(PATCHIES_PACKAGE);
     pyodideByNode.delete(nodeId);
-    peppermintReadyByNode.delete(nodeId);
+    peppermintRuntime.delete(nodeId);
   }
 
   return { success: true };
@@ -151,47 +152,7 @@ async function handleExecutePeppermintCode(data: { nodeId: string; code: string;
   }
 
   try {
-    await ensurePeppermint(pyodide, nodeId);
-
-    pyodide.globals.set('__patchies_pep_src', code);
-    pyodide.globals.set('__patchies_pep_input', pyodide.toPy(input));
-
-    const result = await pyodide.runPythonAsync(`
-from peppermint.interpreter import Interpreter, Ok, Err
-from peppermint.parser import parse
-from peppermint.stdlib import build_global_env
-from peppermint.context import Context
-from pyodide.ffi import to_js
-from js import Object
-import patch
-
-def __patchies_unwrap(value):
-    if isinstance(value, Ok):
-        return __patchies_unwrap(value.value)
-    if isinstance(value, Err):
-        return {"type": "Err", "message": value.msg}
-    if isinstance(value, Context):
-        return value.data
-    return value
-
-def __patchies_input():
-    return __patchies_pep_input
-
-def __patchies_print(value=None, *_args, **_kwargs):
-    output = __patchies_unwrap(value)
-    patch.send(
-        to_js(output, dict_converter=Object.fromEntries),
-        to_js({"to": 0}, dict_converter=Object.fromEntries),
-    )
-    return value
-
-env = build_global_env()
-env.set("input", __patchies_input)
-env.set("print", __patchies_print)
-interp = Interpreter(env, quiet=True)
-__patchies_result = interp.run(parse(__patchies_pep_src))
-None if __patchies_result is None else repr(__patchies_result)
-`);
+    const result = await peppermintRuntime.execute(pyodide, nodeId, code, input);
 
     self.postMessage({
       type: 'consoleOutput',
@@ -209,25 +170,6 @@ None if __patchies_result is None else repr(__patchies_result)
       finished: true
     });
   }
-}
-
-async function ensurePeppermint(pyodide: PyodideAPI, nodeId: string) {
-  if (peppermintReadyByNode.has(nodeId)) {
-    return;
-  }
-
-  await pyodide.loadPackage(['micropip', 'pandas'], {
-    messageCallback: () => {},
-    errorCallback: () => {},
-    checkIntegrity: false
-  });
-
-  await pyodide.runPythonAsync(`
-import micropip
-await micropip.install("peppermint-lang==0.4.0a2")
-`);
-
-  peppermintReadyByNode.add(nodeId);
 }
 
 console.log('[pyodide worker] initialized');
