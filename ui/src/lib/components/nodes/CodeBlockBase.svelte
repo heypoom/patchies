@@ -30,7 +30,8 @@
     activeCodeEditorTarget,
     closeCodeEditorOverlay,
     openCodeEditorOverlay,
-    openCodeEditorSidebar
+    openCodeEditorSidebar,
+    syncActiveCodeEditorTargetSettings
   } from '../../../stores/code-editor-layout.store';
   import { defaultEditorLayout } from '../../../stores/editor-layout-settings.store';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
@@ -147,6 +148,24 @@
   let isCodeEditorDetached = $derived(
     $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
   );
+  const detachedSettings = $derived(
+    settingsSchema && settingsSchema.length > 0
+      ? {
+          schema: settingsSchema,
+          values: settingsValues,
+          onValueChange: (key: string, value: unknown) => onSettingsValueChange?.(key, value),
+          onRevertAll: () => onSettingsRevertAll?.()
+        }
+      : undefined
+  );
+
+  $effect(() => {
+    syncActiveCodeEditorTargetSettings({
+      nodeId,
+      dataKey: 'code',
+      settings: detachedSettings
+    });
+  });
 
   // Track error line numbers for code highlighting
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
@@ -283,15 +302,7 @@
       title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
       placeholder: editorPlaceholder,
       onrun: executeCode,
-      settings:
-        settingsSchema && settingsSchema.length > 0
-          ? {
-              schema: settingsSchema,
-              values: settingsValues,
-              onValueChange: (key, value) => onSettingsValueChange?.(key, value),
-              onRevertAll: () => onSettingsRevertAll?.()
-            }
-          : undefined
+      settings: detachedSettings
     });
 
     showEditor = false;
@@ -307,15 +318,7 @@
       title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
       placeholder: editorPlaceholder,
       onrun: executeCode,
-      settings:
-        settingsSchema && settingsSchema.length > 0
-          ? {
-              schema: settingsSchema,
-              values: settingsValues,
-              onValueChange: (key, value) => onSettingsValueChange?.(key, value),
-              onRevertAll: () => onSettingsRevertAll?.()
-            }
-          : undefined
+      settings: detachedSettings
     });
 
     showEditor = false;

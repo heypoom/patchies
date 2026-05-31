@@ -21,7 +21,12 @@
     class: className = ''
   }: Props = $props();
 
-  const percent = $derived(((value - min) / (max - min)) * 100);
+  const percent = $derived.by(() => {
+    const range = max - min;
+    if (range <= 0) return 0;
+
+    return Math.min(100, Math.max(0, ((value - min) / range) * 100));
+  });
 </script>
 
 <input

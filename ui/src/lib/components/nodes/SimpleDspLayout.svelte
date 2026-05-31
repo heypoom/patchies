@@ -13,7 +13,8 @@
     activeCodeEditorTarget,
     closeCodeEditorOverlay,
     openCodeEditorOverlay,
-    openCodeEditorSidebar
+    openCodeEditorSidebar,
+    syncActiveCodeEditorTargetSettings
   } from '../../../stores/code-editor-layout.store';
   import { defaultEditorLayout } from '../../../stores/editor-layout-settings.store';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
@@ -77,11 +78,29 @@
   const isCodeEditorDetached = $derived(
     $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
   );
+  const detachedSettings = $derived(
+    settingsSchema && settingsSchema.length > 0
+      ? {
+          schema: settingsSchema,
+          values: settingsValues,
+          onValueChange: (key: string, value: unknown) => onSettingsValueChange?.(key, value),
+          onRevertAll: () => onSettingsRevertAll?.()
+        }
+      : undefined
+  );
 
   // Update content width when title changes
   $effect(() => {
     displayTitle;
     setTimeout(updateContentWidth, 0);
+  });
+
+  $effect(() => {
+    syncActiveCodeEditorTargetSettings({
+      nodeId,
+      dataKey: 'code',
+      settings: detachedSettings
+    });
   });
 
   const containerClass = $derived.by(() => {
@@ -141,15 +160,7 @@
       nodeType,
       title: displayTitle,
       onrun: onRun,
-      settings:
-        settingsSchema && settingsSchema.length > 0
-          ? {
-              schema: settingsSchema,
-              values: settingsValues,
-              onValueChange: (key, value) => onSettingsValueChange?.(key, value),
-              onRevertAll: () => onSettingsRevertAll?.()
-            }
-          : undefined
+      settings: detachedSettings
     });
 
     showEditor = false;
@@ -164,15 +175,7 @@
       nodeType,
       title: displayTitle,
       onrun: onRun,
-      settings:
-        settingsSchema && settingsSchema.length > 0
-          ? {
-              schema: settingsSchema,
-              values: settingsValues,
-              onValueChange: (key, value) => onSettingsValueChange?.(key, value),
-              onRevertAll: () => onSettingsRevertAll?.()
-            }
-          : undefined
+      settings: detachedSettings
     });
 
     showEditor = false;

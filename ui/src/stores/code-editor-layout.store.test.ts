@@ -8,6 +8,7 @@ import {
   isDetachedCodeEditorTarget,
   openCodeEditorOverlay,
   openCodeEditorSidebar,
+  syncActiveCodeEditorTargetSettings,
   type CodeEditorTarget
 } from './code-editor-layout.store';
 import { sidebarVisibleTabs } from './sidebar-visibility.store';
@@ -116,5 +117,53 @@ describe('code editor layout store', () => {
         customSettings: (() => {}) as any
       })
     ).toBe(true);
+  });
+
+  it('refreshes settings for the active detached target', () => {
+    const firstSettings = {
+      schema: [
+        {
+          key: 'radius',
+          label: 'Radius',
+          type: 'slider',
+          min: 0,
+          max: 1,
+          step: 0.1
+        }
+      ],
+      values: { radius: 0.2 },
+      onValueChange: () => {},
+      onRevertAll: () => {}
+    } satisfies CodeEditorTarget['settings'];
+
+    const nextSettings = {
+      ...firstSettings,
+      values: { radius: 0.6 }
+    } satisfies CodeEditorTarget['settings'];
+
+    openCodeEditorOverlay({
+      nodeId: 'node-1',
+      dataKey: 'code',
+      language: 'javascript',
+      settings: firstSettings
+    });
+
+    syncActiveCodeEditorTargetSettings({
+      nodeId: 'node-2',
+      dataKey: 'code',
+      settings: nextSettings
+    });
+
+    expect(get(activeCodeEditorTarget)?.settings?.values).toEqual({ radius: 0.2 });
+
+    syncActiveCodeEditorTargetSettings({
+      nodeId: 'node-1',
+      dataKey: 'code',
+      settings: nextSettings
+    });
+
+    expect(get(activeCodeEditorTarget)?.settings?.values).toEqual({ radius: 0.6 });
+
+    closeCodeEditorOverlay();
   });
 });

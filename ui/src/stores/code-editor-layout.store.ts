@@ -49,6 +49,33 @@ export function closeCodeEditorOverlay(): void {
   activeCodeEditorTarget.set(null);
 }
 
+export function syncActiveCodeEditorTargetSettings({
+  nodeId,
+  dataKey,
+  settings
+}: {
+  nodeId: string | undefined;
+  dataKey: string;
+  settings?: CodeEditorTargetSettings;
+}): void {
+  if (!nodeId) return;
+
+  activeCodeEditorTarget.update((target) => {
+    if (!target || target.nodeId !== nodeId || target.dataKey !== dataKey) {
+      return target;
+    }
+
+    if (target.settings === settings) {
+      return target;
+    }
+
+    return {
+      ...target,
+      settings
+    };
+  });
+}
+
 interface CodeEditorTargetSettingsState {
   settings?: CodeEditorTargetSettings;
   customSettings?: Snippet;

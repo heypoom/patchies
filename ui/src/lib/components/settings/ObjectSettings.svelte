@@ -165,7 +165,7 @@
 <!-- Settings panel -->
 <div class="nodrag w-48 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
   <div class="flex flex-col gap-3">
-    {#each schema as field, index (index)}
+    {#each schema as field (field.key)}
       {#if field.type === 'slider'}
         {@const sliderTracker = makeTracker(field)}
         {@const rawValue = (getCurrentValue(field) as number) ?? field.min}
