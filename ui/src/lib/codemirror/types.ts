@@ -3,6 +3,7 @@ export type SupportedLanguage =
   | 'glsl'
   | 'wgsl'
   | 'python'
+  | 'peppermint'
   | 'ruby'
   | 'markdown'
   | 'plain'

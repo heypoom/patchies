@@ -14,6 +14,7 @@ import {
 } from '$lib/codemirror/patchies-completions';
 import { getHydraCompletionByLabel } from '$lib/codemirror/hydra-completions';
 import { getShaderParkCompletionByLabel } from '$lib/codemirror/shaderpark-completions';
+import { getPeppermintCompletionByLabel } from '$lib/codemirror/peppermint.codemirror';
 import type { SupportedLanguage } from '$lib/codemirror/types';
 
 export interface CompletionHoverContext extends PatchiesContext {
@@ -65,6 +66,7 @@ function getCompletionForWord(
 ): Completion | undefined {
   return match(context.language)
     .with('glsl', () => getGlslCompletionByLabel(word))
+    .with('peppermint', () => getPeppermintCompletionByLabel(word))
     .with('javascript', () => {
       const completionContext = createCompletionContext(state, pos);
 

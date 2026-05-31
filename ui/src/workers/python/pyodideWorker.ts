@@ -2,12 +2,14 @@ import { match } from 'ts-pattern';
 import type { PyodideAPI } from 'pyodide';
 import type { PyodideWorkerMessage } from '$lib/python/PyodideSystem';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
+import { PeppermintPyodideRuntime } from './peppermint';
 
 /** Name of the Python package to interact with patchies */
 const PATCHIES_PACKAGE = 'patch';
 
 // Store pyodide instances by node ID
 const pyodideByNode = new Map<string, PyodideAPI>();
+const peppermintRuntime = new PeppermintPyodideRuntime();
 
 self.onmessage = async (event: MessageEvent<PyodideWorkerMessage>) => {
   const { id } = event.data;
@@ -16,7 +18,8 @@ self.onmessage = async (event: MessageEvent<PyodideWorkerMessage>) => {
     const result = await match(event.data)
       .with({ type: 'createInstance' }, (data) => handleCreateInstance(data))
       .with({ type: 'deleteInstance' }, (data) => handleDeleteInstance(data))
-      .with({ type: 'executeCode' }, (data) => handleExecuteCode(data));
+      .with({ type: 'executeCode' }, (data) => handleExecuteCode(data))
+      .with({ type: 'executePeppermintCode' }, (data) => handleExecutePeppermintCode(data));
 
     self.postMessage({ type: 'success', id, result });
   } catch (error) {
@@ -92,6 +95,7 @@ async function handleDeleteInstance(data: { nodeId: string }) {
   if (pyodide) {
     pyodide.unregisterJsModule(PATCHIES_PACKAGE);
     pyodideByNode.delete(nodeId);
+    peppermintRuntime.delete(nodeId);
   }
 
   return { success: true };
@@ -126,6 +130,35 @@ async function handleExecuteCode(data: { nodeId: string; code: string }) {
       nodeId,
       output: 'stdout',
       message: result === undefined ? null : String(result),
+      finished: true
+    });
+  } catch (error) {
+    self.postMessage({
+      type: 'consoleOutput',
+      nodeId,
+      output: 'stderr',
+      message: String(error),
+      finished: true
+    });
+  }
+}
+
+async function handleExecutePeppermintCode(data: { nodeId: string; code: string; input: unknown }) {
+  const { nodeId, code, input } = data;
+  const pyodide = pyodideByNode.get(nodeId);
+
+  if (!pyodide) {
+    throw new Error(`No Pyodide instance found for node ${nodeId}`);
+  }
+
+  try {
+    const result = await peppermintRuntime.execute(pyodide, nodeId, code, input);
+
+    self.postMessage({
+      type: 'consoleOutput',
+      nodeId,
+      output: 'stdout',
+      message: result === undefined || result === null ? null : String(result),
       finished: true
     });
   } catch (error) {

@@ -65,6 +65,7 @@ This is a comprehensive list of all third-party dependencies and their licenses.
 | mode-watcher                      | 0.5.1        | MIT                    |
 | ohash                             | ^2.0.11      | MIT                    |
 | overtype                          | ^1.1.1       | MIT                    |
+| peppermint-lang                   | 0.4.0a2      | MIT                    |
 | p2pkit                            | ^0.0.0-2     | MIT                    |
 | p2pt                              | ^1.5.1       | MIT                    |
 | p5                                | ^1.11.9      | LGPL-2.1               |
@@ -217,6 +218,17 @@ The `uiua` node uses a WASM build approach adapted from [Array Box](https://gith
 - **License**: MIT
 
 The WASM build script and wasm-bindgen wrapper for Uiua were adapted from Array Box. The build compiles the Uiua language to WebAssembly for browser execution.
+
+#### Peppermint
+
+The `peppermint` node runs [Peppermint](https://github.com/chayapatr/peppermint), a pipe-first language for data and ML work.
+
+- **Original Project**: Peppermint
+- **Author**: [Chayapatr (Pub) Archiwaranguprok](https://github.com/chayapatr)
+- **Repository**: <https://github.com/chayapatr/peppermint>
+- **License**: MIT
+
+Patchies uses the `peppermint-lang` Python package through Pyodide and adapts Peppermint editor metadata for in-app syntax highlighting and completions.
 
 #### html5bytebeat (Local Fork)
 

@@ -26,6 +26,7 @@ import { objectPrompt } from './object';
 import { orcaPrompt } from './orca';
 import { p5Prompt } from './p5';
 import { pythonPrompt } from './python';
+import { peppermintPrompt } from './peppermint';
 import { recvPrompt } from './recv';
 import { recvVdoPrompt } from './recv.vdo';
 import { rubyPrompt } from './ruby';
@@ -100,6 +101,7 @@ export const objectPrompts: Record<string, string> = {
   surface: surfacePrompt,
   strudel: strudelPrompt,
   python: pythonPrompt,
+  peppermint: peppermintPrompt,
   ruby: rubyPrompt,
   swgl: swglPrompt,
   uxn: uxnPrompt,

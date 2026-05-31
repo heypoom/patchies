@@ -58,7 +58,7 @@ export interface ConsoleOutputEvent {
 export interface PyodideConsoleOutputEvent {
   type: 'pyodideConsoleOutput';
   output: 'stdout' | 'stderr';
-  message: string;
+  message: string | null;
   nodeId: string;
 
   /** Mark that code execution is done. */

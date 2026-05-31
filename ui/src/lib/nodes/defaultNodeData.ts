@@ -8,6 +8,7 @@ import {
   DEFAULT_JS_CANVAS_CODE,
   DEFAULT_SWISSGL_CODE,
   DEFAULT_PYTHON_CODE,
+  DEFAULT_PEPPERMINT_CODE,
   DEFAULT_CHUCK_CODE,
   DEFAULT_DSP_JS_CODE,
   DEFAULT_TONE_JS_CODE,
@@ -51,6 +52,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('object', () => ({ expr: '', name: '', params: [] }))
     .with('js', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
     .with('python', () => ({ code: DEFAULT_PYTHON_CODE, showConsole: true }))
+    .with('peppermint', () => ({ code: DEFAULT_PEPPERMINT_CODE, showConsole: true }))
     .with('glsl', () => ({ code: DEFAULT_GLSL_CODE }))
     .with('strudel', () => ({ code: DEFAULT_STRUDEL_CODE, syncTransport: false }))
     .with('ai.img', () => ({ prompt: DEFAULT_AI_IMAGE_PROMPT }))

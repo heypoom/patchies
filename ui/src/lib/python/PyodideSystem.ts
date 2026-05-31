@@ -7,12 +7,13 @@ export type PyodideWorkerMessage = { id: string; nodeId: string } & (
   | { type: 'createInstance' }
   | { type: 'deleteInstance' }
   | { type: 'executeCode'; code: string }
+  | { type: 'executePeppermintCode'; code: string; input: unknown }
 );
 
 export type PyodideWorkerResponse = { id?: string; nodeId: string } & (
   | { type: 'success' }
   | { type: 'error'; error: string }
-  | { type: 'consoleOutput'; output: 'stdout' | 'stderr'; message: string }
+  | { type: 'consoleOutput'; output: 'stdout' | 'stderr'; message: string | null }
   | { type: 'sendMessage'; data: unknown; options?: SendMessageOptions }
 );
 
@@ -37,6 +38,15 @@ export class PyodideSystem {
       })
       .with({ type: 'sendMessage' }, (event) => {
         this.eventBus.dispatch({ ...event, type: 'pyodideSendMessage' });
+      })
+      .with({ type: 'error' }, (event) => {
+        this.eventBus.dispatch({
+          type: 'pyodideConsoleOutput',
+          nodeId: event.nodeId,
+          output: 'stderr',
+          message: event.error,
+          finished: true
+        });
       });
   };
 
@@ -84,6 +94,14 @@ export class PyodideSystem {
     }
 
     await this.send('executeCode', { nodeId, code });
+  }
+
+  async executePeppermintCode(nodeId: string, code: string, input: unknown) {
+    if (!this.nodeInstances.has(nodeId)) {
+      throw new Error(`No Pyodide instance found for node ${nodeId}`);
+    }
+
+    await this.send('executePeppermintCode', { nodeId, code, input });
   }
 
   static getInstance() {

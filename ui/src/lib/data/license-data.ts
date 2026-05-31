@@ -321,6 +321,12 @@ export const dependencies: ProjectLicense[] = [
     license: 'MIT',
     url: 'https://npmjs.com/package/overtype'
   },
+  {
+    name: 'peppermint-lang',
+    version: '0.4.0a2',
+    license: 'MIT',
+    url: 'https://github.com/chayapatr/peppermint'
+  },
   { name: 'p2pkit', version: '^0.0.0-2', license: 'MIT', url: 'https://npmjs.com/package/p2pkit' },
   { name: 'p2pt', version: '^1.5.1', license: 'MIT', url: 'https://npmjs.com/package/p2pt' },
   { name: 'p5', version: '^1.11.9', license: 'LGPL-2.1', url: 'https://npmjs.com/package/p5' },
@@ -555,6 +561,15 @@ export const portedCode: PortedCode[] = [
     license: 'MIT',
     notes:
       'The WASM build script and wasm-bindgen wrapper for Uiua were adapted from Array Box. The build compiles the Uiua language to WebAssembly for browser execution.'
+  },
+  {
+    name: 'Peppermint',
+    description: 'The peppermint node runs Peppermint, a pipe-first language for data and ML work.',
+    authors: 'Chayapatr (Pub) Archiwaranguprok',
+    repository: 'https://github.com/chayapatr/peppermint',
+    license: 'MIT',
+    notes:
+      'Patchies uses the peppermint-lang Python package through Pyodide and adapts Peppermint editor metadata for in-app syntax highlighting and completions.'
   },
   {
     name: 'html5bytebeat (local fork)',

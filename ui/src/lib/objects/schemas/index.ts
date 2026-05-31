@@ -152,6 +152,7 @@ import { uxnSchema } from './uxn';
 import { uiuaSchema } from './uiua';
 import { rubySchema } from './ruby';
 import { pythonSchema } from './python';
+import { peppermintSchema } from './peppermint';
 import { exprSchema } from './expr';
 import { filterSchema } from './filter';
 import { mapSchema } from './map';
@@ -267,6 +268,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   uiua: uiuaSchema,
   ruby: rubySchema,
   python: pythonSchema,
+  peppermint: peppermintSchema,
   expr: exprSchema,
   filter: filterSchema,
   map: mapSchema,
