@@ -169,15 +169,19 @@
 
   // Track error line numbers for code highlighting
   let lineErrors = $state<Record<number, string[]> | undefined>(undefined);
+  let hasError = $state(false);
   const eventBus = PatchiesEventBus.getInstance();
 
   // Listen for console output events to capture lineErrors
   function handleConsoleOutput(event: ConsoleOutputEvent) {
     if (event.nodeId !== nodeId) return;
 
-    // If this error has lineErrors, update state for code highlighting
-    if (event.messageType === 'error' && event.lineErrors) {
-      lineErrors = event.lineErrors;
+    if (event.messageType === 'error') {
+      hasError = true;
+
+      if (event.lineErrors) {
+        lineErrors = event.lineErrors;
+      }
     }
   }
 
@@ -211,7 +215,7 @@
     if (isFlashing) return 'border-zinc-300';
 
     // Error state - show red border when there are errors
-    if (lineErrors) {
+    if (hasError) {
       return selected ? 'border-red-500' : 'border-red-400';
     }
 
@@ -266,6 +270,7 @@
     // Clear previous console output and error highlighting
     consoleRef?.clearConsole();
     lineErrors = undefined;
+    hasError = false;
 
     await onExecute();
   }
@@ -359,6 +364,7 @@
   export function clearConsole() {
     consoleRef?.clearConsole();
     lineErrors = undefined;
+    hasError = false;
   }
 
   function handleDoubleClickOnRun() {

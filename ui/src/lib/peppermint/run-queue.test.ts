@@ -39,4 +39,19 @@ describe('PeppermintRunQueue', () => {
 
     expect(seen).toEqual(['first', 'third']);
   });
+
+  it('returns to idle when a run fails', async () => {
+    const seen: unknown[] = [];
+    const queue = new PeppermintRunQueue(async (input) => {
+      seen.push(input);
+      if (input === 'bad') {
+        throw new Error('boom');
+      }
+    });
+
+    await expect(queue.requestRun('bad')).rejects.toThrow('boom');
+    await queue.requestRun('good');
+
+    expect(seen).toEqual(['bad', 'good']);
+  });
 });

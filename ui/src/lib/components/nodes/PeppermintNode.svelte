@@ -92,15 +92,16 @@
     eventBus.addEventListener('pyodideConsoleOutput', handlePyodideConsoleOutput);
     eventBus.addEventListener('pyodideSendMessage', handlePyodideSendMessage);
 
-    try {
-      initializePromise = pyodideSystem.create(nodeId).then(() => {
+    initializePromise = pyodideSystem
+      .create(nodeId)
+      .then(() => {
         isInitialized = true;
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        nodeLogger.error(`Failed to setup Peppermint: ${message}`);
+        throw error;
       });
-    } catch (error) {
-      nodeLogger.error(
-        `Failed to setup Peppermint: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
   });
 
   onDestroy(async () => {
@@ -116,17 +117,17 @@
   });
 
   async function runPeppermint(input: PeppermintInput) {
-    await initializePromise;
-    if (!isInitialized) return;
-
     isRunning = true;
     baseRef?.clearConsole();
 
     try {
+      await initializePromise;
+      if (!isInitialized) return;
+
       await new Promise<void>((resolve, reject) => {
         activeRunResolve = resolve;
         activeRunReject = reject;
-        void pyodideSystem.executePeppermintCode(nodeId, code, input.value);
+        void pyodideSystem.executePeppermintCode(nodeId, code, input.value).catch(reject);
       });
     } catch (error) {
       nodeLogger.error(error instanceof Error ? error.message : String(error));

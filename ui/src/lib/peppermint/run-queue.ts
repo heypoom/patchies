@@ -36,19 +36,22 @@ export class PeppermintRunQueue<TInput = unknown> {
   private async drain(input: TInput): Promise<void> {
     let nextInput: TInput | undefined = input;
 
-    while (nextInput !== undefined) {
-      const currentInput = nextInput;
-      nextInput = undefined;
+    try {
+      while (nextInput !== undefined) {
+        const currentInput = nextInput;
+        nextInput = undefined;
 
-      await this.run(currentInput);
+        await this.run(currentInput);
 
-      if (this.pendingInput !== undefined) {
-        nextInput = this.pendingInput;
-        this.pendingInput = undefined;
+        if (this.pendingInput !== undefined) {
+          nextInput = this.pendingInput;
+          this.pendingInput = undefined;
+        }
       }
+    } finally {
+      this.pendingInput = undefined;
+      this.isRunning = false;
     }
-
-    this.isRunning = false;
   }
 
   private resolveIdle() {

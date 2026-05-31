@@ -17,6 +17,11 @@ export type PyodideWorkerResponse = { id?: string; nodeId: string } & (
   | { type: 'sendMessage'; data: unknown; options?: SendMessageOptions }
 );
 
+type PendingRequest = {
+  resolve: () => void;
+  reject: (error: Error) => void;
+};
+
 export class PyodideSystem {
   private static instance: PyodideSystem | null = null;
 
@@ -24,6 +29,7 @@ export class PyodideSystem {
   private worker: Worker;
   private lastId = 1;
   private nodeInstances = new Set<string>();
+  private pendingRequests = new Map<string, PendingRequest>();
 
   constructor() {
     this.worker = new PyodideWorker();
@@ -39,6 +45,15 @@ export class PyodideSystem {
       .with({ type: 'sendMessage' }, (event) => {
         this.eventBus.dispatch({ ...event, type: 'pyodideSendMessage' });
       })
+      .with({ type: 'success' }, (event) => {
+        if (!event.id) return;
+
+        const request = this.pendingRequests.get(event.id);
+        if (!request) return;
+
+        this.pendingRequests.delete(event.id);
+        request.resolve();
+      })
       .with({ type: 'error' }, (event) => {
         this.eventBus.dispatch({
           type: 'pyodideConsoleOutput',
@@ -47,19 +62,31 @@ export class PyodideSystem {
           message: event.error,
           finished: true
         });
+
+        if (!event.id) return;
+
+        const request = this.pendingRequests.get(event.id);
+        if (!request) return;
+
+        this.pendingRequests.delete(event.id);
+        request.reject(new Error(event.error));
       });
   };
 
   private send<T extends PyodideWorkerMessage['type']>(
     type: T,
     payload: Omit<Extract<PyodideWorkerMessage, { type: T }>, 'type' | 'id'>
-  ) {
+  ): Promise<void> {
     const id = this.getId();
 
-    this.worker.postMessage({
-      type,
-      id,
-      ...payload
+    return new Promise((resolve, reject) => {
+      this.pendingRequests.set(id, { resolve, reject });
+
+      this.worker.postMessage({
+        type,
+        id,
+        ...payload
+      });
     });
   }
 

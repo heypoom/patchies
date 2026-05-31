@@ -1,6 +1,10 @@
 import { match } from 'ts-pattern';
 import type { PyodideAPI } from 'pyodide';
 import type { PyodideWorkerMessage } from '$lib/python/PyodideSystem';
+import {
+  createPyodideWorkerErrorResponse,
+  createPyodideWorkerSuccessResponse
+} from '$lib/python/pyodide-messages';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { PeppermintPyodideRuntime } from './peppermint';
 
@@ -12,22 +16,17 @@ const pyodideByNode = new Map<string, PyodideAPI>();
 const peppermintRuntime = new PeppermintPyodideRuntime();
 
 self.onmessage = async (event: MessageEvent<PyodideWorkerMessage>) => {
-  const { id } = event.data;
-
   try {
-    const result = await match(event.data)
+    await match(event.data)
       .with({ type: 'createInstance' }, (data) => handleCreateInstance(data))
       .with({ type: 'deleteInstance' }, (data) => handleDeleteInstance(data))
       .with({ type: 'executeCode' }, (data) => handleExecuteCode(data))
-      .with({ type: 'executePeppermintCode' }, (data) => handleExecutePeppermintCode(data));
+      .with({ type: 'executePeppermintCode' }, (data) => handleExecutePeppermintCode(data))
+      .exhaustive();
 
-    self.postMessage({ type: 'success', id, result });
+    self.postMessage(createPyodideWorkerSuccessResponse(event.data));
   } catch (error) {
-    self.postMessage({
-      type: 'error',
-      id,
-      error: error instanceof Error ? error.message : String(error)
-    });
+    self.postMessage(createPyodideWorkerErrorResponse(event.data, error));
   }
 };
 
