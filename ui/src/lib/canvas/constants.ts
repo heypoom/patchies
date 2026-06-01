@@ -61,6 +61,28 @@ export const DEFAULT_JS_CANVAS_CODE = `function draw() {
 
 draw()`;
 
+export const DEFAULT_DOM_CODE = `// root is a div element you can manipulate
+// Tailwind CSS is enabled by default, tailwind(false) to disable
+root.innerHTML = \`
+  <h1 class="px-3 py-1 text-green-400">
+    Hello DOM!
+  </h1>
+\``;
+
+export const DEFAULT_VUE_CODE = `const message = ref('Hello Vue!')
+
+// Tailwind CSS is enabled by default, tailwind(false) to disable
+createApp({
+  template: \`
+    <div class="px-3 py-1 text-green-400">
+      {{ message }}
+    </div>
+  \`,
+  setup() {
+    return { message }
+  }
+}).mount(root)`;
+
 export const DEFAULT_SWISSGL_CODE = `const shader = await glsl({
   Clear: 0,
   Mesh: [10, 10],
