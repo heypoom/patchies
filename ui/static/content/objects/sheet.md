@@ -69,7 +69,7 @@ Use `rows` to always output the 2D array, ignoring the Send 2D array setting.
 Use `objects` to always output row objects.
 
 Use `goto` to jump to a visible row number, and optionally a column number. Row
-and column coordinates are 1-based.
+and column coordinates are 1-based. Row-only `goto` selects the entire row.
 
 ```js
 { type: "goto", row: 887 }

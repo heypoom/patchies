@@ -57,8 +57,8 @@ from `table`, which remains an audio/wavetable float buffer.
   column header row, followed by each data row.
 - Support pasted or loaded CSV text as a table source. The first CSV row becomes
   column headers so users can rename them directly after import.
-- Support a `goto` message with 1-based `{ row, column? }` coordinates to
-  select and scroll to a row, or to a row and column.
+- Support a `goto` message with 1-based `{ row, column? }` coordinates. Row-only
+  `goto` selects the full row; row-and-column `goto` selects the target cell.
 - Support common `expand` and `collapse` messages for opening and closing the
   detached sheet editor.
 

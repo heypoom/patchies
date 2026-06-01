@@ -742,18 +742,30 @@
       ?.focus();
   }
 
-  function gotoCell(row: number, column = 1) {
+  function gotoCell(row: number, column?: number) {
     if (rows.length === 0 || columns.length === 0) return;
 
     const rowIndex = Math.max(0, Math.min(rows.length - 1, Math.trunc(row) - 1));
-    const columnIndex = Math.max(0, Math.min(columns.length - 1, Math.trunc(column) - 1));
+
+    const columnIndex =
+      column === undefined ? 0 : Math.max(0, Math.min(columns.length - 1, Math.trunc(column) - 1));
+
     const cell = { rowIndex, columnIndex };
 
     selectedCell = cell;
-    selectedRange = { anchor: cell, focus: cell };
+
+    selectedRange =
+      column === undefined
+        ? {
+            anchor: cell,
+            focus: { rowIndex, columnIndex: columns.length - 1 }
+          }
+        : { anchor: cell, focus: cell };
 
     editingCell = null;
     editingHeaderColumn = null;
+
+    scrollCellIntoView(rowIndex, column === undefined ? undefined : columnIndex);
 
     void focusCell(cell);
   }
