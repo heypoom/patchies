@@ -67,7 +67,7 @@
   const SHEET_MIN_WIDTH = 280;
   const SHEET_MIN_HEIGHT = 136;
   const SHEET_MAX_WIDTH = 900;
-  const SHEET_MAX_HEIGHT = 640;
+  const SHEET_MAX_HEIGHT = 1000;
   const SHEET_DETACHED_WIDTH = 900;
   const SHEET_DETACHED_HEIGHT = 640;
   const SHEET_COLUMN_WIDTH = 110;
@@ -75,6 +75,8 @@
   const SHEET_ROW_HEADER_WIDTH = 44;
   const SHEET_ACTION_COLUMN_WIDTH = 44;
   const SHEET_HEADER_ROW = -1;
+  const SHEET_ESTIMATED_ROW_HEIGHT = 28;
+  const SHEET_VIRTUAL_OVERSCAN_ROWS = 8;
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -138,6 +140,12 @@
   let isSelectingCells = $state(false);
   let selectionLayoutVersion = $state(0);
   let sheetContentMaxHeight = $state(SHEET_MAX_HEIGHT);
+  let tableViewportElement = $state<HTMLDivElement | null>(null);
+  let tableScrollTop = $state(0);
+  let tableViewportHeight = $state(0);
+  let tableHeaderHeight = $state(0);
+  let measuredRowHeights = $state<Record<number, number>>({});
+  let lastAutoFitRowCount = $state<number | null>(null);
 
   let detachedViewportSize = $state({
     width: SHEET_DETACHED_WIDTH,
@@ -204,6 +212,10 @@
       : displayHeight
   );
 
+  const tableViewportMaxHeight = $derived(
+    isDetached ? detachedViewportSize.height : Math.min(SHEET_MAX_HEIGHT, displayHeight ?? 240)
+  );
+
   const renderedColumnWidths = $derived(
     fillColumnWidths(
       activeColumnWidths,
@@ -215,6 +227,13 @@
     draggingColumn ? (renderedColumnWidths[draggingColumn.fromIndex] ?? SHEET_COLUMN_WIDTH) : 0
   );
 
+  const virtualRowHeights = $derived(
+    rows.map((_, index) => measuredRowHeights[index] ?? SHEET_ESTIMATED_ROW_HEIGHT)
+  );
+
+  const virtualRowOffsets = $derived(getRowOffsets(virtualRowHeights));
+  const virtualRows = $derived(getVirtualRows());
+  const virtualRowsHeight = $derived(virtualRowOffsets[rows.length] ?? 0);
   const draggingRowHeight = $derived(getRowHeight(draggingRow?.fromIndex));
   const selectedRangeRect = $derived(getSelectedRangeRect());
 
@@ -274,6 +293,65 @@
     const extraWidth = (targetWidth - currentWidth) / widths.length;
 
     return widths.map((columnWidth) => columnWidth + extraWidth);
+  }
+
+  function getRowOffsets(rowHeights: number[]) {
+    const offsets = [0];
+
+    for (const rowHeight of rowHeights) {
+      offsets.push(offsets[offsets.length - 1] + rowHeight);
+    }
+
+    return offsets;
+  }
+
+  function findRowIndexAtOffset(offset: number) {
+    let low = 0;
+    let high = rows.length - 1;
+
+    while (low <= high) {
+      const middle = Math.floor((low + high) / 2);
+      const rowTop = virtualRowOffsets[middle] ?? 0;
+      const rowBottom = virtualRowOffsets[middle + 1] ?? rowTop;
+
+      if (offset < rowTop) {
+        high = middle - 1;
+      } else if (offset >= rowBottom) {
+        low = middle + 1;
+      } else {
+        return middle;
+      }
+    }
+
+    return Math.max(0, Math.min(rows.length - 1, low));
+  }
+
+  function getVirtualRows() {
+    const totalHeight = virtualRowOffsets[rows.length] ?? 0;
+    const viewportHeight = tableViewportHeight || Math.min(SHEET_MAX_HEIGHT, totalHeight);
+    const visibleTop = Math.max(0, tableScrollTop - tableHeaderHeight);
+    const visibleBottom = Math.max(visibleTop, tableScrollTop + viewportHeight - tableHeaderHeight);
+
+    const startIndex = Math.max(0, findRowIndexAtOffset(visibleTop) - SHEET_VIRTUAL_OVERSCAN_ROWS);
+
+    const endIndex = Math.min(
+      rows.length,
+      findRowIndexAtOffset(visibleBottom) + SHEET_VIRTUAL_OVERSCAN_ROWS + 1
+    );
+
+    const topPadding = virtualRowOffsets[startIndex] ?? 0;
+    const bottomPadding = Math.max(0, totalHeight - (virtualRowOffsets[endIndex] ?? totalHeight));
+
+    return {
+      startIndex,
+      endIndex,
+      topPadding,
+      bottomPadding,
+      items: rows.slice(startIndex, endIndex).map((row, index) => ({
+        row,
+        rowIndex: startIndex + index
+      }))
+    };
   }
 
   function beginColumnEdit() {
@@ -370,29 +448,13 @@
     const bounds = getSelectedRangeBounds();
     if (!bounds || bounds.minRow < 0) return null;
 
-    const startCell = document.querySelector<HTMLElement>(
-      `[data-sheet-node="${nodeId}"] [data-cell-container="${bounds.minRow}-${bounds.minColumn}"]`
-    );
-    const endCell = document.querySelector<HTMLElement>(
-      `[data-sheet-node="${nodeId}"] [data-cell-container="${bounds.maxRow}-${bounds.maxColumn}"]`
-    );
-    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
-
-    if (!startCell || !endCell || !table) return null;
-
-    const tableRect = table.getBoundingClientRect();
-
-    const startRect = startCell.getBoundingClientRect();
-    const endRect = endCell.getBoundingClientRect();
-
-    const scaleX = tableRect.width / table.offsetWidth || 1;
-    const scaleY = tableRect.height / table.offsetHeight || scaleX;
-
     return {
-      left: (startRect.left - tableRect.left) / scaleX,
-      top: (startRect.top - tableRect.top) / scaleY,
-      width: (endRect.right - startRect.left) / scaleX,
-      height: (endRect.bottom - startRect.top) / scaleY
+      left: getColumnLeft(bounds.minColumn),
+      top: tableHeaderHeight + (virtualRowOffsets[bounds.minRow] ?? 0),
+      width: renderedColumnWidths
+        .slice(bounds.minColumn, bounds.maxColumn + 1)
+        .reduce((sum: number, columnWidth: number) => sum + columnWidth, 0),
+      height: (virtualRowOffsets[bounds.maxRow + 1] ?? 0) - (virtualRowOffsets[bounds.minRow] ?? 0)
     };
   }
 
@@ -620,6 +682,8 @@
   }
 
   async function focusCell(cell: CellPosition) {
+    scrollCellIntoView(cell.rowIndex);
+
     await tick();
 
     document
@@ -627,6 +691,23 @@
         `[data-sheet-node="${nodeId}"] [data-cell-display="${cell.rowIndex}-${cell.columnIndex}"]`
       )
       ?.focus();
+  }
+
+  function scrollCellIntoView(rowIndex: number) {
+    if (rowIndex < 0 || !tableViewportElement) return;
+
+    const rowTop = tableHeaderHeight + (virtualRowOffsets[rowIndex] ?? 0);
+    const rowBottom = tableHeaderHeight + (virtualRowOffsets[rowIndex + 1] ?? rowTop);
+    const viewportTop = tableViewportElement.scrollTop;
+    const viewportBottom = viewportTop + tableViewportElement.clientHeight;
+
+    if (rowTop < viewportTop) {
+      tableViewportElement.scrollTop = rowTop;
+    } else if (rowBottom > viewportBottom) {
+      tableViewportElement.scrollTop = rowBottom - tableViewportElement.clientHeight;
+    }
+
+    updateTableViewportMetrics();
   }
 
   async function focusHeader(columnIndex: number) {
@@ -1073,17 +1154,19 @@
 
   function getRowIndexAtY(clientY: number) {
     const rowElements = Array.from(
-      document.querySelectorAll<HTMLTableRowElement>(`[data-sheet-table="${nodeId}"] tbody tr`)
+      document.querySelectorAll<HTMLTableRowElement>(
+        `[data-sheet-table="${nodeId}"] tbody tr[data-row-index]`
+      )
     );
 
     let closestIndex = 0;
 
-    rowElements.forEach((rowElement, index) => {
+    rowElements.forEach((rowElement) => {
       const rect = rowElement.getBoundingClientRect();
       const center = rect.top + rect.height / 2;
 
       if (clientY >= center) {
-        closestIndex = index;
+        closestIndex = Number(rowElement.dataset.rowIndex);
       }
     });
 
@@ -1091,63 +1174,28 @@
   }
 
   function getRowInsertTop(index: number) {
-    const rowElement = document.querySelector<HTMLTableRowElement>(
-      `[data-sheet-table="${nodeId}"] tbody tr[data-row-index="${index}"]`
-    );
-
-    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
-
-    if (!rowElement || !table) return 0;
-
-    const tableRect = table.getBoundingClientRect();
-    const rowRect = rowElement.getBoundingClientRect();
-
-    const scaleY = tableRect.height / table.offsetHeight || 1;
+    const targetTop = tableHeaderHeight + (virtualRowOffsets[index] ?? 0);
+    const targetBottom = tableHeaderHeight + (virtualRowOffsets[index + 1] ?? targetTop);
 
     if (!draggingRow) {
-      return (rowRect.top - tableRect.top) / scaleY;
+      return targetTop;
     }
 
     const isAfterTarget = draggingRow.fromIndex < index;
 
-    return ((isAfterTarget ? rowRect.bottom : rowRect.top) - tableRect.top) / scaleY;
+    return isAfterTarget ? targetBottom : targetTop;
   }
 
   function getRowTop(index: number | undefined) {
     if (index === undefined) return 0;
 
-    const rowElement = document.querySelector<HTMLTableRowElement>(
-      `[data-sheet-table="${nodeId}"] tbody tr[data-row-index="${index}"]`
-    );
-
-    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
-    if (!rowElement || !table) return 0;
-
-    const tableRect = table.getBoundingClientRect();
-    const rowRect = rowElement.getBoundingClientRect();
-
-    const scaleY = tableRect.height / table.offsetHeight || 1;
-
-    return (rowRect.top - tableRect.top) / scaleY;
+    return tableHeaderHeight + (virtualRowOffsets[index] ?? 0);
   }
 
   function getRowHeight(index: number | undefined) {
-    if (index === undefined) return 28;
+    if (index === undefined) return SHEET_ESTIMATED_ROW_HEIGHT;
 
-    const rowElement = document.querySelector<HTMLTableRowElement>(
-      `[data-sheet-table="${nodeId}"] tbody tr[data-row-index="${index}"]`
-    );
-
-    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
-
-    if (!rowElement || !table) return 28;
-
-    const tableRect = table.getBoundingClientRect();
-    const rowRect = rowElement.getBoundingClientRect();
-
-    const scaleY = tableRect.height / table.offsetHeight || 1;
-
-    return rowRect.height / scaleY;
+    return virtualRowHeights[index] ?? SHEET_ESTIMATED_ROW_HEIGHT;
   }
 
   function endRowDrag() {
@@ -1188,6 +1236,90 @@
       .exhaustive();
 
     messageContext.send(output);
+  }
+
+  function updateTableViewportMetrics() {
+    if (!tableViewportElement) return;
+
+    const nextScrollTop = tableViewportElement.scrollTop;
+    const nextViewportHeight = tableViewportElement.clientHeight;
+    const nextHeaderHeight =
+      document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"] thead`)?.offsetHeight ??
+      0;
+
+    if (
+      tableScrollTop !== nextScrollTop ||
+      tableViewportHeight !== nextViewportHeight ||
+      tableHeaderHeight !== nextHeaderHeight
+    ) {
+      tableScrollTop = nextScrollTop;
+      tableViewportHeight = nextViewportHeight;
+      tableHeaderHeight = nextHeaderHeight;
+      selectionLayoutVersion += 1;
+    }
+  }
+
+  function getWheelDelta(event: WheelEvent) {
+    if (event.deltaMode === 1) return 16;
+    if (event.deltaMode === 2) {
+      return tableViewportElement?.clientHeight || SHEET_MAX_HEIGHT;
+    }
+
+    return 1;
+  }
+
+  function handleTableWheel(event: WheelEvent) {
+    event.stopPropagation();
+
+    if (!tableViewportElement) return;
+
+    const scale = getWheelDelta(event);
+    const previousScrollTop = tableViewportElement.scrollTop;
+    const previousScrollLeft = tableViewportElement.scrollLeft;
+
+    tableViewportElement.scrollTop += event.deltaY * scale;
+    tableViewportElement.scrollLeft += event.deltaX * scale;
+
+    if (
+      tableViewportElement.scrollTop !== previousScrollTop ||
+      tableViewportElement.scrollLeft !== previousScrollLeft
+    ) {
+      event.preventDefault();
+      updateTableViewportMetrics();
+    }
+  }
+
+  async function measureRenderedRows() {
+    await tick();
+
+    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
+    if (!table) return;
+
+    const tableRect = table.getBoundingClientRect();
+    const scaleY = tableRect.height / table.offsetHeight || 1;
+    const nextHeights = { ...measuredRowHeights };
+    let changed = false;
+
+    table
+      .querySelectorAll<HTMLTableRowElement>('tbody tr[data-row-index]')
+      .forEach((rowElement) => {
+        const rowIndex = Number(rowElement.dataset.rowIndex);
+        if (!Number.isInteger(rowIndex)) return;
+
+        const nextHeight = Math.max(
+          SHEET_ESTIMATED_ROW_HEIGHT,
+          Math.ceil(rowElement.getBoundingClientRect().height / scaleY)
+        );
+
+        if (nextHeights[rowIndex] === nextHeight) return;
+
+        nextHeights[rowIndex] = nextHeight;
+        changed = true;
+      });
+
+    if (changed) {
+      measuredRowHeights = nextHeights;
+    }
   }
 
   function resizeTextarea(textarea: HTMLTextAreaElement) {
@@ -1236,11 +1368,18 @@
       (showFooter ? (footer?.offsetHeight ?? 0) : 0) +
       2;
 
-    const nextHeight = Math.max(SHEET_MIN_HEIGHT, Math.ceil(measuredHeight));
+    const nextHeight = Math.min(
+      SHEET_MAX_HEIGHT,
+      Math.max(SHEET_MIN_HEIGHT, Math.ceil(measuredHeight))
+    );
 
     sheetContentMaxHeight = nextHeight;
 
+    const rowCountChanged = lastAutoFitRowCount !== rows.length;
+    lastAutoFitRowCount = rows.length;
+
     if (!autoFitHeight || isDetached || resizingSize) return;
+    if (height !== undefined && !rowCountChanged) return;
     if (height === nextHeight) return;
 
     updateNodeData(nodeId, {
@@ -1405,6 +1544,21 @@
   });
 
   $effect(() => {
+    const viewport = tableViewportElement;
+    if (!viewport) return;
+
+    const handleNativeWheel = (event: WheelEvent) => {
+      handleTableWheel(event);
+    };
+
+    viewport.addEventListener('wheel', handleNativeWheel, { capture: true, passive: false });
+
+    return () => {
+      viewport.removeEventListener('wheel', handleNativeWheel, { capture: true });
+    };
+  });
+
+  $effect(() => {
     void columns;
     void rows;
     void showFooter;
@@ -1413,6 +1567,8 @@
     void tableContentWidth;
 
     resizeRenderedTextareas();
+    measureRenderedRows();
+    updateTableViewportMetrics();
     measureSheetContentMaxHeight();
 
     setTimeout(() => updateNodeInternals(nodeId), 0);
@@ -1424,8 +1580,11 @@
     void sheetViewportHeight;
     void tableContentWidth;
     void sheetContentMaxHeight;
+    void tableViewportMaxHeight;
+    void virtualRows;
 
     refreshSelectionLayout();
+    updateTableViewportMetrics();
   });
 
   $effect(() => {
@@ -1580,13 +1739,23 @@
         <ContextMenu.Trigger>
           <div class="flex min-h-0 flex-1 flex-col overflow-hidden" role="presentation">
             <div
+              bind:this={tableViewportElement}
               class="nodrag nopan nowheel relative min-h-0 flex-1 overflow-auto"
-              style:max-height={isDetached || displayHeight ? undefined : '240px'}
+              style:max-height={`${tableViewportMaxHeight}px`}
+              data-sheet-viewport={nodeId}
               role="presentation"
+              onscroll={updateTableViewportMetrics}
               oncontextmenu={(event) => {
                 if (event.target === event.currentTarget) contextTarget = null;
               }}
             >
+              <div
+                class="pointer-events-none absolute top-0 left-0 opacity-0"
+                aria-hidden="true"
+                style:width={`${tableContentWidth}px`}
+                style:height={`${tableHeaderHeight + virtualRowsHeight}px`}
+              ></div>
+
               {#if draggingColumn?.isDragging}
                 <div
                   class="pointer-events-none absolute top-0 bottom-0 z-30 border-2 border-blue-300 bg-blue-300/10 shadow-[0_0_10px_rgba(147,197,253,0.35)]"
@@ -1720,7 +1889,15 @@
                 </thead>
 
                 <tbody data-sheet-node={nodeId}>
-                  {#each rows as row, rowIndex}
+                  {#if virtualRows.topPadding > 0}
+                    <tr aria-hidden="true" style:height={`${virtualRows.topPadding}px`}>
+                      <td colspan={columns.length + 2} class="border-0 p-0">
+                        <div style:height={`${virtualRows.topPadding}px`}></div>
+                      </td>
+                    </tr>
+                  {/if}
+
+                  {#each virtualRows.items as { row, rowIndex } (rowIndex)}
                     <tr
                       data-row-index={rowIndex}
                       class={draggingRow?.fromIndex === rowIndex ? 'opacity-60' : ''}
@@ -1795,6 +1972,14 @@
                       <td class="border-b border-zinc-700 px-1"></td>
                     </tr>
                   {/each}
+
+                  {#if virtualRows.bottomPadding > 0}
+                    <tr aria-hidden="true" style:height={`${virtualRows.bottomPadding}px`}>
+                      <td colspan={columns.length + 2} class="border-0 p-0">
+                        <div style:height={`${virtualRows.bottomPadding}px`}></div>
+                      </td>
+                    </tr>
+                  {/if}
                 </tbody>
               </table>
             </div>

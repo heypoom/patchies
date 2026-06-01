@@ -14,11 +14,16 @@ from `table`, which remains an audio/wavetable float buffer.
   when content exceeds the resized bounds.
 - Add an Allow resize setting, enabled by default, that lets users disable node
   resizing while keeping table editing and column resizing available.
-- Node resize height should max out at current rendered content height: title
-  header, table header/body, validation message if visible, and footer if shown.
+- Node resize height should max out at the smaller of 1000px or current rendered
+  content height: title header, table header/body, validation message if
+  visible, and footer if shown. When content exceeds the max height, the table
+  viewport scrolls with the mouse wheel.
+- Virtualize body rows so large sheets can scroll and move selection without
+  rendering every cell in the table at once.
 - Add an Auto fit height setting, enabled by default, that updates node height
-  to the current rendered content height as rows, footer visibility, validation,
-  and cell content heights change.
+  to the current rendered content height when rows are added or removed.
+  Scrolling, column resizing, and cell measurement updates must not overwrite
+  the user's current node height.
 - Add a Show footer setting, enabled by default, that hides or shows the row
   count and add-row footer.
 - Add an expand control beside the settings control. Expanded mode moves the

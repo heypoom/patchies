@@ -6,11 +6,12 @@ Use the plus buttons to add rows or columns.
 
 Select the object and drag its resize handles to set the visible table area.
 Extra rows or columns scroll inside the table. The node cannot be resized
-taller than the current table content.
+taller than 1000px or the current table content, whichever is smaller.
+Large sheets only render the visible rows while you scroll.
 
 Disable **Allow resize** in settings to hide the node resize handles.
-Disable **Auto fit height** to keep the node height fixed when rows or cell
-content change.
+Disable **Auto fit height** to keep the node height fixed when rows are added
+or removed. Scrolling does not change the node height.
 Disable **Show footer** to hide the row count and add-row footer.
 
 Use the expand button beside settings to edit the sheet in a detached overlay.
