@@ -148,6 +148,7 @@
   const draggingColumnWidth = $derived(
     draggingColumn ? (renderedColumnWidths[draggingColumn.fromIndex] ?? DATATABLE_COLUMN_WIDTH) : 0
   );
+  const selectedRangeRect = $derived(getSelectedRangeRect());
   const tableContentWidth = $derived(
     renderedColumnWidths.reduce((sum: number, columnWidth: number) => sum + columnWidth, 0) +
       DATATABLE_ACTION_COLUMN_WIDTH
@@ -276,20 +277,34 @@
     };
   }
 
-  function getSelectedCellBorderClass(rowIndex: number, columnIndex: number) {
-    const bounds = getSelectedRangeBounds();
-    if (!bounds || !isCellInSelectedRange(rowIndex, columnIndex)) return '';
-
-    return [
-      rowIndex === bounds.minRow ? 'border-t-blue-400' : '',
-      rowIndex === bounds.maxRow ? 'border-b-blue-400' : '',
-      columnIndex === bounds.minColumn ? 'border-l-blue-400' : '',
-      columnIndex === bounds.maxColumn ? 'border-r-blue-400' : ''
-    ].join(' ');
-  }
-
   function isEditingCell(rowIndex: number, columnIndex: number) {
     return editingCell?.rowIndex === rowIndex && editingCell.columnIndex === columnIndex;
+  }
+
+  function getSelectedRangeRect() {
+    const bounds = getSelectedRangeBounds();
+    if (!bounds || bounds.minRow < 0) return null;
+
+    const startCell = document.querySelector<HTMLElement>(
+      `[data-datatable-node="${nodeId}"] [data-cell-display="${bounds.minRow}-${bounds.minColumn}"]`
+    );
+    const endCell = document.querySelector<HTMLElement>(
+      `[data-datatable-node="${nodeId}"] [data-cell-display="${bounds.maxRow}-${bounds.maxColumn}"]`
+    );
+    const table = document.querySelector<HTMLElement>(`[data-datatable-table="${nodeId}"]`);
+
+    if (!startCell || !endCell || !table) return null;
+
+    const tableRect = table.getBoundingClientRect();
+    const startRect = startCell.getBoundingClientRect();
+    const endRect = endCell.getBoundingClientRect();
+
+    return {
+      left: startRect.left - tableRect.left,
+      top: startRect.top - tableRect.top,
+      width: endRect.right - startRect.left,
+      height: endRect.bottom - startRect.top
+    };
   }
 
   function isSelectedHeader(columnIndex: number) {
@@ -968,6 +983,16 @@
             ></div>
           {/if}
 
+          {#if selectedRangeRect}
+            <div
+              class="pointer-events-none absolute z-20 border-2 border-blue-400"
+              style:left={`${selectedRangeRect.left}px`}
+              style:top={`${selectedRangeRect.top}px`}
+              style:width={`${selectedRangeRect.width}px`}
+              style:height={`${selectedRangeRect.height}px`}
+            ></div>
+          {/if}
+
           <table
             class="table-fixed border-collapse"
             style:width={`${tableContentWidth}px`}
@@ -1055,7 +1080,14 @@
               {#each rows as row, rowIndex}
                 <tr oncontextmenu={() => setRowContext(rowIndex)}>
                   {#each columns as _column, columnIndex}
-                    <td class="border-r border-b border-zinc-700 p-0">
+                    <td
+                      class={[
+                        'border-r border-b p-0',
+                        isCellInSelectedRange(rowIndex, columnIndex)
+                          ? 'border-blue-500/20 bg-blue-500/20'
+                          : 'border-zinc-700'
+                      ]}
+                    >
                       {#if isEditingCell(rowIndex, columnIndex)}
                         <textarea
                           class="box-border block min-h-7 w-full resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none focus:bg-zinc-800"
@@ -1074,9 +1106,7 @@
                       {:else}
                         <div
                           class={[
-                            'box-border min-h-7 w-full border border-transparent px-2 py-1 font-mono text-[11px] leading-5 break-words whitespace-pre-wrap text-zinc-200 outline-none select-none',
-                            isCellInSelectedRange(rowIndex, columnIndex) ? 'bg-blue-500/20' : '',
-                            getSelectedCellBorderClass(rowIndex, columnIndex)
+                            'box-border min-h-7 w-full border border-transparent px-2 py-1 font-mono text-[11px] leading-5 break-words whitespace-pre-wrap text-zinc-200 outline-none select-none'
                           ]}
                           style:font-family={$editorFontFamily}
                           role="gridcell"
