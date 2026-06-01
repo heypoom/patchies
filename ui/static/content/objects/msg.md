@@ -44,8 +44,9 @@ are mapped to schema fields:
 { type: 'setCode', value: 'console.log(x) + 1' }
 ```
 
-The number of arguments selects the schema. `set 1` uses the 1-field `{value}`
-schema, while `set foo 42` uses the 2-field `{key, value}` schema.
+The number of arguments selects the schema. Optional fields may be omitted.
+`set 1` uses the 1-field `{value}` schema, while `set foo 42` uses the
+2-field `{key, value}` schema.
 
 ## Named Field Shorthand
 

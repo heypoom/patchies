@@ -65,6 +65,14 @@ Blank object-mode headers use fallback names like `column_1`.
 Use `rows` to always output the 2D array, ignoring the Send 2D array setting.
 Use `objects` to always output row objects.
 
+Use `goto` to jump to a visible row number, and optionally a column number. Row
+and column coordinates are 1-based.
+
+```js
+{ type: "goto", row: 887 }
+{ type: "goto", row: 887, column: 2 }
+```
+
 ## CSV
 
 Drop a `.csv` file onto the canvas to create a `sheet` from it. The first

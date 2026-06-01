@@ -172,17 +172,26 @@ export function tryResolveShorthand(
   const mappings = typeMap.get(typeName);
   if (!mappings) return null;
 
-  // Sort by field count ascending for predictable matching
-  const sorted = [...mappings].sort((a, b) => a.fields.length - b.fields.length);
+  // Sort by required field count first, then total field count for predictable matching.
+  const sorted = [...mappings].sort((a, b) => {
+    const aRequiredCount = a.fields.length - (a.optionalFields?.length ?? 0);
+    const bRequiredCount = b.fields.length - (b.optionalFields?.length ?? 0);
+
+    return aRequiredCount - bRequiredCount || a.fields.length - b.fields.length;
+  });
 
   for (const mapping of sorted) {
     // All named keys must exist in this schema's fields
     if (Object.keys(named).some((k) => !mapping.fields.includes(k))) continue;
 
     const remainingFields = mapping.fields.filter((f) => !(f in named));
+    const optionalFields = new Set(mapping.optionalFields ?? []);
+    const requiredRemainingFields = remainingFields.filter((field) => !optionalFields.has(field));
 
-    // Exact match: positional count equals remaining fields
-    const exactMatch = positional.length === remainingFields.length;
+    // Exact match: positional count covers required fields and may include optional fields.
+    const exactMatch =
+      positional.length >= requiredRemainingFields.length &&
+      positional.length <= remainingFields.length;
 
     // Rest-args: last field is String, more positional than remaining, at least 1 remaining
     const lastRemaining = remainingFields[remainingFields.length - 1];

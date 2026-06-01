@@ -31,7 +31,7 @@
   import { isSidebarOpen } from '../../stores/ui.store';
 
   import { DEFAULT_SHEET_DATA } from './constants';
-  import { SheetClear, SheetLoad, SheetObjects, SheetRows, sheetSchema } from './schema';
+  import { SheetClear, SheetGoto, SheetLoad, SheetObjects, SheetRows, sheetSchema } from './schema';
   import {
     addColumn,
     addRow,
@@ -253,6 +253,7 @@
 
   const sheetMessages = {
     clear: schema(SheetClear),
+    goto: schema(SheetGoto),
     load: schema(SheetLoad),
     rows: schema(SheetRows),
     objects: schema(SheetObjects)
@@ -707,7 +708,7 @@
   }
 
   async function focusCell(cell: CellPosition) {
-    scrollCellIntoView(cell.rowIndex);
+    scrollCellIntoView(cell.rowIndex, cell.columnIndex);
 
     await tick();
 
@@ -718,7 +719,23 @@
       ?.focus();
   }
 
-  function scrollCellIntoView(rowIndex: number) {
+  function gotoCell(row: number, column = 1) {
+    if (rows.length === 0 || columns.length === 0) return;
+
+    const rowIndex = Math.max(0, Math.min(rows.length - 1, Math.trunc(row) - 1));
+    const columnIndex = Math.max(0, Math.min(columns.length - 1, Math.trunc(column) - 1));
+    const cell = { rowIndex, columnIndex };
+
+    selectedCell = cell;
+    selectedRange = { anchor: cell, focus: cell };
+
+    editingCell = null;
+    editingHeaderColumn = null;
+
+    void focusCell(cell);
+  }
+
+  function scrollCellIntoView(rowIndex: number, columnIndex?: number) {
     if (rowIndex < 0 || !tableViewportElement) return;
 
     const rowTop = tableHeaderHeight + (virtualRowOffsets[rowIndex] ?? 0);
@@ -730,6 +747,20 @@
       tableViewportElement.scrollTop = rowTop;
     } else if (rowBottom > viewportBottom) {
       tableViewportElement.scrollTop = rowBottom - tableViewportElement.clientHeight;
+    }
+
+    if (columnIndex !== undefined) {
+      const columnLeft = getColumnLeft(columnIndex);
+      const columnRight = columnLeft + (renderedColumnWidths[columnIndex] ?? SHEET_COLUMN_WIDTH);
+
+      const viewportLeft = tableViewportElement.scrollLeft;
+      const viewportRight = viewportLeft + tableViewportElement.clientWidth;
+
+      if (columnLeft < viewportLeft) {
+        tableViewportElement.scrollLeft = columnLeft;
+      } else if (columnRight > viewportRight) {
+        tableViewportElement.scrollLeft = columnRight - tableViewportElement.clientWidth;
+      }
     }
 
     updateTableViewportMetrics();
@@ -1480,6 +1511,9 @@
       .with(sheetMessages.clear, () => {
         clearTable();
       })
+      .with(sheetMessages.goto, ({ row, column }) => {
+        gotoCell(row, column);
+      })
       .with(sheetMessages.load, ({ src }) => {
         loadCsvFromSrc(src).catch((error) => {
           console.error('sheet load failed:', error);
@@ -1702,7 +1736,7 @@
   <TypedHandle
     port="inlet"
     spec={sheetSchema.inlets[0].handle!}
-    title="Commands (bang, clear, load, array)"
+    title="Commands (bang, clear, goto, load, array)"
     total={1}
     index={0}
     {nodeId}

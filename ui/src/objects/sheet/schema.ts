@@ -2,12 +2,18 @@ import { Type } from '@sinclair/typebox';
 
 import type { ObjectSchema } from '$lib/objects/schemas/types';
 import { Bang, Collapse, Expand, LoadBySrc } from '$lib/objects/schemas/common';
-import { sym } from '$lib/objects/schemas/helpers';
+import { msg, sym } from '$lib/objects/schemas/helpers';
+
+export { LoadBySrc as SheetLoad } from '$lib/objects/schemas/common';
 
 export const SheetClear = sym('clear');
 export const SheetRows = sym('rows');
 export const SheetObjects = sym('objects');
-export { LoadBySrc as SheetLoad } from '$lib/objects/schemas/common';
+
+export const SheetGoto = msg('goto', {
+  row: Type.Number(),
+  column: Type.Optional(Type.Number())
+});
 
 const SheetRowsOutput = Type.Array(Type.Array(Type.Any()));
 const SheetObjectsOutput = Type.Array(Type.Record(Type.String(), Type.Any()));
@@ -26,6 +32,10 @@ export const sheetSchema: ObjectSchema = {
         { schema: SheetRows, description: 'Output the table as a 2D array' },
         { schema: SheetObjects, description: 'Output the table as row objects' },
         { schema: SheetClear, description: 'Clear all cells' },
+        {
+          schema: SheetGoto,
+          description: 'Jump to a 1-based row, and optionally a 1-based column'
+        },
         { schema: LoadBySrc, description: 'Load CSV text from a VFS path or URL' },
         { schema: Expand, description: 'Open the expanded sheet editor' },
         { schema: Collapse, description: 'Close the expanded sheet editor' },

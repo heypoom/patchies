@@ -131,6 +131,7 @@ describe('tryResolveShorthand', () => {
       ]
     ],
     ['get', [{ fields: ['key'], lastFieldIsString: false }]],
+    ['goto', [{ fields: ['row', 'column'], optionalFields: ['column'], lastFieldIsString: false }]],
     ['setCode', [{ fields: ['value'], lastFieldIsString: true }]],
     ['bang', [{ fields: [], lastFieldIsString: false }]],
     ['clear', [{ fields: [], lastFieldIsString: false }]]
@@ -149,6 +150,11 @@ describe('tryResolveShorthand', () => {
     [['set', '{x: 1}'], { type: 'set', value: { x: 1 } }],
     [['set', '[1, 2]'], { type: 'set', value: [1, 2] }],
     [['get', 'foo'], { type: 'get', key: 'foo' }],
+    [['goto', '2'], { type: 'goto', row: 2 }],
+    [['goto', '2', '1'], { type: 'goto', row: 2, column: 1 }],
+    [['goto', 'row=2'], { type: 'goto', row: 2 }],
+    [['goto', 'row=2', 'column=1'], { type: 'goto', row: 2, column: 1 }],
+    [['goto', '2', 'column=1'], { type: 'goto', row: 2, column: 1 }],
 
     // Basic positional — 2-field schema (arg count selects schema)
     [['set', 'foo', '42'], { type: 'set', key: 'foo', value: 42 }],

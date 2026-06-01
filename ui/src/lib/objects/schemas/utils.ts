@@ -340,6 +340,9 @@ export interface FieldMapping {
   /** Field names in canonical order (declaration order) */
   fields: string[];
 
+  /** Optional field names from the schema. */
+  optionalFields?: string[];
+
   /**
    * Whether the last field is Type.String().
    *
@@ -362,10 +365,13 @@ export function getMessageFields(schema: TSchema): FieldMapping | null {
 
   const props = schema.properties as Record<string, TSchema>;
   const fields = Object.keys(props).filter((k) => k !== 'type');
+
+  const optionalFields = fields.filter((field) => isOptionalSchema(props[field]));
+
   const lastField = fields[fields.length - 1];
   const lastFieldIsString = lastField ? props[lastField]?.[Kind] === 'String' : false;
 
-  return { fields, lastFieldIsString };
+  return { fields, optionalFields, lastFieldIsString };
 }
 
 /** Add a single schema's field mapping to a type map (with deduplication). */
