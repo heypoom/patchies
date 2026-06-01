@@ -130,6 +130,7 @@
   let editingCell = $state<CellPosition | null>(null);
   let editingHeaderColumn = $state<number | null>(null);
   let isSelectingCells = $state(false);
+  let selectionLayoutVersion = $state(0);
   let detachedViewportSize = $state({
     width: SHEET_DETACHED_WIDTH,
     height: SHEET_DETACHED_HEIGHT
@@ -321,14 +322,16 @@
   }
 
   function getSelectedRangeRect() {
+    selectionLayoutVersion;
+
     const bounds = getSelectedRangeBounds();
     if (!bounds || bounds.minRow < 0) return null;
 
     const startCell = document.querySelector<HTMLElement>(
-      `[data-sheet-node="${nodeId}"] [data-cell-display="${bounds.minRow}-${bounds.minColumn}"]`
+      `[data-sheet-node="${nodeId}"] [data-cell-container="${bounds.minRow}-${bounds.minColumn}"]`
     );
     const endCell = document.querySelector<HTMLElement>(
-      `[data-sheet-node="${nodeId}"] [data-cell-display="${bounds.maxRow}-${bounds.maxColumn}"]`
+      `[data-sheet-node="${nodeId}"] [data-cell-container="${bounds.maxRow}-${bounds.maxColumn}"]`
     );
     const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
 
@@ -1021,6 +1024,7 @@
   function resizeTextarea(textarea: HTMLTextAreaElement) {
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.max(28, textarea.scrollHeight)}px`;
+    selectionLayoutVersion += 1;
   }
 
   async function resizeRenderedTextareas() {
@@ -1452,7 +1456,7 @@
                     >
                       <th
                         class={[
-                          'cursor-grab border-r border-b border-zinc-700 bg-zinc-900 px-2 py-1 text-left font-mono text-[11px] text-zinc-500 active:cursor-grabbing',
+                          'h-px cursor-grab border-r border-b border-zinc-700 bg-zinc-900 px-2 py-1 text-left align-top font-mono text-[11px] text-zinc-500 active:cursor-grabbing',
                           draggingRow?.targetIndex === rowIndex && draggingRow.isDragging
                             ? 'bg-zinc-800 text-zinc-300'
                             : ''
@@ -1468,11 +1472,12 @@
                       {#each columns as _column, columnIndex}
                         <td
                           class={[
-                            'border-r border-b p-0',
+                            'h-px border-r border-b p-0 align-top',
                             isCellInSelectedRange(rowIndex, columnIndex)
                               ? 'border-blue-500/20 bg-blue-500/20'
                               : 'border-zinc-700'
                           ]}
+                          data-cell-container={`${rowIndex}-${columnIndex}`}
                           oncontextmenu={() => setCellContext(rowIndex, columnIndex)}
                         >
                           {#if isEditingCell(rowIndex, columnIndex)}
@@ -1494,7 +1499,7 @@
                           {:else}
                             <div
                               class={[
-                                'box-border min-h-7 w-full border border-transparent px-2 py-1 font-mono text-[11px] leading-5 break-words whitespace-pre-wrap text-zinc-200 outline-none select-none'
+                                'box-border h-full min-h-7 w-full border border-transparent px-2 py-1 font-mono text-[11px] leading-5 break-words whitespace-pre-wrap text-zinc-200 outline-none select-none'
                               ]}
                               style:font-family={$editorFontFamily}
                               role="gridcell"
