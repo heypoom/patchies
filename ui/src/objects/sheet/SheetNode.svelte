@@ -182,6 +182,7 @@
   const draggingColumnWidth = $derived(
     draggingColumn ? (renderedColumnWidths[draggingColumn.fromIndex] ?? SHEET_COLUMN_WIDTH) : 0
   );
+  const draggingRowHeight = $derived(getRowHeight(draggingRow?.fromIndex));
   const selectedRangeRect = $derived(getSelectedRangeRect());
   const tableContentWidth = $derived(
     renderedColumnWidths.reduce((sum: number, columnWidth: number) => sum + columnWidth, 0) +
@@ -948,6 +949,40 @@
     return ((isAfterTarget ? rowRect.bottom : rowRect.top) - tableRect.top) / scaleY;
   }
 
+  function getRowTop(index: number | undefined) {
+    if (index === undefined) return 0;
+
+    const rowElement = document.querySelector<HTMLTableRowElement>(
+      `[data-sheet-table="${nodeId}"] tbody tr[data-row-index="${index}"]`
+    );
+    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
+
+    if (!rowElement || !table) return 0;
+
+    const tableRect = table.getBoundingClientRect();
+    const rowRect = rowElement.getBoundingClientRect();
+    const scaleY = tableRect.height / table.offsetHeight || 1;
+
+    return (rowRect.top - tableRect.top) / scaleY;
+  }
+
+  function getRowHeight(index: number | undefined) {
+    if (index === undefined) return 28;
+
+    const rowElement = document.querySelector<HTMLTableRowElement>(
+      `[data-sheet-table="${nodeId}"] tbody tr[data-row-index="${index}"]`
+    );
+    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
+
+    if (!rowElement || !table) return 28;
+
+    const tableRect = table.getBoundingClientRect();
+    const rowRect = rowElement.getBoundingClientRect();
+    const scaleY = tableRect.height / table.offsetHeight || 1;
+
+    return rowRect.height / scaleY;
+  }
+
   function endRowDrag() {
     if (!draggingRow) return;
 
@@ -1293,6 +1328,12 @@
               {/if}
 
               {#if draggingRow?.isDragging}
+                <div
+                  class="pointer-events-none absolute right-0 left-0 z-30 border-2 border-blue-300 bg-blue-300/10 shadow-[0_0_10px_rgba(147,197,253,0.35)]"
+                  style:top={`${draggingRow.currentY - draggingRow.startY + getRowTop(draggingRow.fromIndex)}px`}
+                  style:height={`${draggingRowHeight}px`}
+                ></div>
+
                 <div
                   class="pointer-events-none absolute right-0 left-0 z-30 h-0.5 bg-blue-300 shadow-[0_0_8px_rgba(147,197,253,0.8)]"
                   style:top={`${getRowInsertTop(draggingRow.targetIndex)}px`}
