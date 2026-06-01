@@ -12,6 +12,8 @@ from `table`, which remains an audio/wavetable float buffer.
 - Allow adding and removing rows when editing table data.
 - Allow resizing the node with `NodeResizer`; the table viewport should scroll
   when content exceeds the resized bounds.
+- Add an Allow resize setting, enabled by default, that lets users disable node
+  resizing while keeping table editing and column resizing available.
 - Add an expand control beside the settings control. Expanded mode moves the
   live sheet editor into a detached overlay and can be closed with the collapse
   control or a `collapse` message.
@@ -53,6 +55,7 @@ type SheetNodeData = {
   columns: string[];
   rows: unknown[][];
   outputRows?: boolean;
+  allowResize?: boolean;
   width?: number;
   height?: number;
   columnWidths?: number[];

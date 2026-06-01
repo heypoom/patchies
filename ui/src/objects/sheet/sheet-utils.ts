@@ -4,6 +4,7 @@ export type SheetData = {
   columns: string[];
   rows: SheetCell[][];
   outputRows?: boolean;
+  allowResize?: boolean;
   width?: number;
   height?: number;
   columnWidths?: number[];
@@ -57,7 +58,8 @@ export function createEmptySheet(): SheetData {
       ['', ''],
       ['', '']
     ],
-    outputRows: false
+    outputRows: false,
+    allowResize: true
   };
 }
 

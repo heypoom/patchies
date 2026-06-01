@@ -145,6 +145,7 @@
   const columns = $derived(data.columns ?? DEFAULT_SHEET_DATA.columns);
   const rows = $derived(data.rows ?? DEFAULT_SHEET_DATA.rows);
   const outputRows = $derived(data.outputRows ?? false);
+  const allowResize = $derived(data.allowResize ?? true);
   const width = $derived(data.width);
   const height = $derived(data.height);
   const isDetached = $derived($activeDetachedSheetNodeId === nodeId);
@@ -159,6 +160,7 @@
     columns,
     rows,
     outputRows,
+    allowResize,
     width,
     height,
     columnWidths
@@ -209,6 +211,7 @@
     tracker.commit('columns', oldData.columns, newData.columns);
     tracker.commit('rows', oldData.rows, newData.rows);
     tracker.commit('outputRows', oldData.outputRows, newData.outputRows);
+    tracker.commit('allowResize', oldData.allowResize, newData.allowResize);
     tracker.commit('columnWidths', oldData.columnWidths, newData.columnWidths);
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
@@ -624,6 +627,12 @@
     const oldValue = outputRows;
     updateNodeData(nodeId, { ...normalizedData, outputRows: value });
     tracker.commit('outputRows', oldValue, value);
+  }
+
+  function setAllowResize(value: boolean) {
+    const oldValue = allowResize;
+    updateNodeData(nodeId, { ...normalizedData, allowResize: value });
+    tracker.commit('allowResize', oldValue, value);
   }
 
   function openExpandedSheet() {
@@ -1240,7 +1249,7 @@
 <div class="group relative">
   <NodeResizer
     class="z-1"
-    isVisible={selected && !isDetached}
+    isVisible={selected && !isDetached && allowResize}
     minWidth={SHEET_MIN_WIDTH}
     minHeight={SHEET_MIN_HEIGHT}
     maxWidth={SHEET_MAX_WIDTH}
@@ -1711,23 +1720,39 @@
       </div>
 
       <div class="nodrag w-52 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
-        <div class="space-y-3">
-          <div>
-            <div class="text-xs font-medium text-zinc-300">Output</div>
-            <div class="mt-1 text-[11px] leading-snug text-zinc-500">
-              Bang sends row objects by default.
+        <div class="space-y-4">
+          <div class="space-y-3">
+            <div>
+              <div class="text-xs font-medium text-zinc-300">Output</div>
+              <div class="mt-1 text-[11px] leading-snug text-zinc-500">
+                Bang sends row objects by default.
+              </div>
             </div>
+
+            <label class="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={outputRows}
+                onchange={(event) => setOutputRows(event.currentTarget.checked)}
+                class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
+              />
+              <span class="text-xs text-zinc-300">Send 2D array</span>
+            </label>
           </div>
 
-          <label class="flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              checked={outputRows}
-              onchange={(event) => setOutputRows(event.currentTarget.checked)}
-              class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
-            />
-            <span class="text-xs text-zinc-300">Send 2D array</span>
-          </label>
+          <div class="space-y-3 border-t border-zinc-700 pt-3">
+            <div class="text-xs font-medium text-zinc-300">Node</div>
+
+            <label class="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={allowResize}
+                onchange={(event) => setAllowResize(event.currentTarget.checked)}
+                class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
+              />
+              <span class="text-xs text-zinc-300">Allow resize</span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
