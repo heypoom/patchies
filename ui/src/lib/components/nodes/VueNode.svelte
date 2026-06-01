@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals, useViewport } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
@@ -19,7 +19,12 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
-  import { getDomSizeResetData, shouldResetDomSize } from './runtime-size';
+  import {
+    getDomSizeResetData,
+    measureDomSize,
+    shouldResetDomSize,
+    type DomSize
+  } from './runtime-size';
 
   let {
     id: nodeId,
@@ -73,16 +78,22 @@
   const customConsole = createCustomConsole(nodeId);
 
   let rootContainer = $state<HTMLDivElement | undefined>();
+  let previewContainer = $state<HTMLDivElement | undefined>();
+  let transientSize = $state<DomSize | null>(null);
   let dragEnabled = $state(true);
   let panEnabled = $state(true);
   let wheelEnabled = $state(true);
   let editorReady = $state(false);
+  let runRevision = 0;
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+  const viewport = useViewport();
 
   let containerWidth = $derived(data.width);
   let containerHeight = $derived(data.height);
+  let previewWidth = $derived(transientSize?.width ?? containerWidth);
+  let previewHeight = $derived(transientSize?.height ?? containerHeight);
 
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 0);
@@ -147,8 +158,18 @@
     }
   }
 
+  function releaseTransientSize(runId: number) {
+    requestAnimationFrame(() => {
+      if (runRevision === runId) {
+        transientSize = null;
+      }
+    });
+  }
+
   async function runCode() {
     if (!rootContainer) return;
+
+    const runId = ++runRevision;
 
     // Clear console and error highlighting on re-run
     consoleRef?.clearConsole();
@@ -162,6 +183,15 @@
     const resetSize = shouldResetDomSize(data.code);
 
     if (resetSize) {
+      transientSize = measureDomSize(
+        previewContainer,
+        {
+          width: containerWidth,
+          height: containerHeight
+        },
+        viewport.current.zoom
+      );
+
       updateNodeData(nodeId, getDomSizeResetData());
     }
 
@@ -244,6 +274,10 @@
       }
     } catch (error) {
       handleCodeError(error, data.code, nodeId, customConsole, VUE_WRAPPER_OFFSET);
+    } finally {
+      if (resetSize) {
+        releaseTransientSize(runId);
+      }
     }
   }
 
@@ -303,6 +337,7 @@
 
   {#snippet preview()}
     <div
+      bind:this={previewContainer}
       class={[
         'overflow-hidden rounded-md',
         lineErrors !== undefined
@@ -314,8 +349,8 @@
         !panEnabled && 'nopan',
         !wheelEnabled && 'nowheel'
       ]}
-      style={containerWidth !== undefined && containerHeight !== undefined
-        ? `width: ${containerWidth}px; height: ${containerHeight}px;`
+      style={previewWidth !== undefined && previewHeight !== undefined
+        ? `width: ${previewWidth}px; height: ${previewHeight}px;`
         : ''}
     >
       <div bind:this={rootContainer} class="h-full w-full"></div>
