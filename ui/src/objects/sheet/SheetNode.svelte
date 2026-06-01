@@ -131,6 +131,7 @@
   let editingHeaderColumn = $state<number | null>(null);
   let isSelectingCells = $state(false);
   let selectionLayoutVersion = $state(0);
+  let sheetContentMaxHeight = $state(SHEET_MAX_HEIGHT);
   let detachedViewportSize = $state({
     width: SHEET_DETACHED_WIDTH,
     height: SHEET_DETACHED_HEIGHT
@@ -146,6 +147,7 @@
   const rows = $derived(data.rows ?? DEFAULT_SHEET_DATA.rows);
   const outputRows = $derived(data.outputRows ?? false);
   const allowResize = $derived(data.allowResize ?? true);
+  const showFooter = $derived(data.showFooter ?? true);
   const width = $derived(data.width);
   const height = $derived(data.height);
   const isDetached = $derived($activeDetachedSheetNodeId === nodeId);
@@ -161,13 +163,17 @@
     rows,
     outputRows,
     allowResize,
+    showFooter,
     width,
     height,
     columnWidths
   });
   const autoTableWidth = $derived(Math.min(520, Math.max(SHEET_MIN_WIDTH, baseTableContentWidth)));
   const displayWidth = $derived(resizingSize?.width ?? width ?? autoTableWidth);
-  const displayHeight = $derived(resizingSize?.height ?? height);
+  const rawDisplayHeight = $derived(resizingSize?.height ?? height);
+  const displayHeight = $derived(
+    rawDisplayHeight ? Math.min(rawDisplayHeight, sheetContentMaxHeight) : undefined
+  );
   const sheetViewportWidth = $derived(
     isDetached ? Math.max(displayWidth, detachedViewportSize.width) : displayWidth
   );
@@ -212,6 +218,7 @@
     tracker.commit('rows', oldData.rows, newData.rows);
     tracker.commit('outputRows', oldData.outputRows, newData.outputRows);
     tracker.commit('allowResize', oldData.allowResize, newData.allowResize);
+    tracker.commit('showFooter', oldData.showFooter, newData.showFooter);
     tracker.commit('columnWidths', oldData.columnWidths, newData.columnWidths);
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
@@ -635,6 +642,12 @@
     tracker.commit('allowResize', oldValue, value);
   }
 
+  function setShowFooter(value: boolean) {
+    const oldValue = showFooter;
+    updateNodeData(nodeId, { ...normalizedData, showFooter: value });
+    tracker.commit('showFooter', oldValue, value);
+  }
+
   function openExpandedSheet() {
     showSettings = false;
     openDetachedSheet(nodeId);
@@ -714,12 +727,12 @@
   };
 
   const handleResize: OnResize = (_event, params) => {
-    resizingSize = { width: params.width, height: params.height };
+    resizingSize = { width: params.width, height: Math.min(params.height, sheetContentMaxHeight) };
   };
 
   const handleResizeEnd: OnResizeEnd = (_event, params) => {
     const nextWidth = params.width;
-    const nextHeight = params.height;
+    const nextHeight = Math.min(params.height, sheetContentMaxHeight);
 
     resizingSize = { width: nextWidth, height: nextHeight };
     updateNodeData(nodeId, {
@@ -1070,6 +1083,26 @@
     selectionLayoutVersion += 1;
   }
 
+  async function measureSheetContentMaxHeight() {
+    await tick();
+
+    const title = document.querySelector<HTMLElement>(`[data-sheet-title="${nodeId}"]`);
+    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
+    const validation = document.querySelector<HTMLElement>(`[data-sheet-validation="${nodeId}"]`);
+    const footer = document.querySelector<HTMLElement>(`[data-sheet-footer="${nodeId}"]`);
+
+    if (!title || !table) return;
+
+    const measuredHeight =
+      title.offsetHeight +
+      table.offsetHeight +
+      (validation?.offsetHeight ?? 0) +
+      (showFooter ? (footer?.offsetHeight ?? 0) : 0) +
+      2;
+
+    sheetContentMaxHeight = Math.max(SHEET_MIN_HEIGHT, Math.ceil(measuredHeight));
+  }
+
   function handleCellKeydown(event: KeyboardEvent) {
     if (event.key !== 'Enter' || !event.shiftKey) return;
 
@@ -1211,7 +1244,11 @@
   $effect(() => {
     columns;
     rows;
+    showFooter;
+    headerValidationError;
+    tableContentWidth;
     resizeRenderedTextareas();
+    measureSheetContentMaxHeight();
     setTimeout(() => updateNodeInternals(nodeId), 0);
   });
 
@@ -1220,6 +1257,7 @@
     sheetViewportWidth;
     sheetViewportHeight;
     tableContentWidth;
+    sheetContentMaxHeight;
     refreshSelectionLayout();
   });
 
@@ -1253,7 +1291,7 @@
     minWidth={SHEET_MIN_WIDTH}
     minHeight={SHEET_MIN_HEIGHT}
     maxWidth={SHEET_MAX_WIDTH}
-    maxHeight={SHEET_MAX_HEIGHT}
+    maxHeight={sheetContentMaxHeight}
     onResizeStart={handleResizeStart}
     onResize={handleResize}
     onResizeEnd={handleResizeEnd}
@@ -1338,6 +1376,7 @@
     >
       <div
         class="flex shrink-0 cursor-move items-center justify-between border-b border-zinc-700 px-2 py-1.5"
+        data-sheet-title={nodeId}
       >
         <span class="font-mono text-[10px] text-zinc-400">sheet</span>
         <div class="flex items-center gap-1">
@@ -1586,34 +1625,40 @@
             </div>
 
             {#if headerValidationError}
-              <div class="border-t border-zinc-700 px-2 py-1 font-mono text-[10px] text-red-300">
+              <div
+                class="border-t border-zinc-700 px-2 py-1 font-mono text-[10px] text-red-300"
+                data-sheet-validation={nodeId}
+              >
                 {headerValidationError}
               </div>
             {/if}
 
-            <div
-              class="nodrag flex shrink-0 items-center justify-between border-t border-zinc-700 px-2 py-1.5"
-              role="presentation"
-              oncontextmenu={() => (contextTarget = null)}
-            >
-              <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
-                {rows.length} rows
-              </span>
+            {#if showFooter}
+              <div
+                class="nodrag flex shrink-0 items-center justify-between border-t border-zinc-700 px-2 py-1.5"
+                role="presentation"
+                oncontextmenu={() => (contextTarget = null)}
+                data-sheet-footer={nodeId}
+              >
+                <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
+                  {rows.length} rows
+                </span>
 
-              <div class="flex items-center gap-1">
-                <Tooltip.Root>
-                  <Tooltip.Trigger>
-                    <button
-                      class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
-                      onclick={() => setData(addRow(normalizedData))}
-                    >
-                      <Plus class="h-3.5 w-3.5" />
-                    </button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content>Add Row</Tooltip.Content>
-                </Tooltip.Root>
+                <div class="flex items-center gap-1">
+                  <Tooltip.Root>
+                    <Tooltip.Trigger>
+                      <button
+                        class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                        onclick={() => setData(addRow(normalizedData))}
+                      >
+                        <Plus class="h-3.5 w-3.5" />
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>Add Row</Tooltip.Content>
+                  </Tooltip.Root>
+                </div>
               </div>
-            </div>
+            {/if}
           </div>
         </ContextMenu.Trigger>
 
@@ -1751,6 +1796,16 @@
                 class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
               />
               <span class="text-xs text-zinc-300">Allow resize</span>
+            </label>
+
+            <label class="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={showFooter}
+                onchange={(event) => setShowFooter(event.currentTarget.checked)}
+                class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
+              />
+              <span class="text-xs text-zinc-300">Show footer</span>
             </label>
           </div>
         </div>

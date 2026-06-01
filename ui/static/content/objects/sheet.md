@@ -5,9 +5,11 @@ The `sheet` object is an editable spreadsheet-style grid for message data.
 Use the plus buttons to add rows or columns.
 
 Select the object and drag its resize handles to set the visible table area.
-Extra rows or columns scroll inside the table.
+Extra rows or columns scroll inside the table. The node cannot be resized
+taller than the current table content.
 
 Disable **Allow resize** in settings to hide the node resize handles.
+Disable **Show footer** to hide the row count and add-row footer.
 
 Use the expand button beside settings to edit the sheet in a detached overlay.
 Send `expand` to open it, and `collapse` to close it.

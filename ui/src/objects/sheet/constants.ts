@@ -7,5 +7,6 @@ export const DEFAULT_SHEET_DATA: SheetData = {
     ['', '']
   ],
   outputRows: false,
-  allowResize: true
+  allowResize: true,
+  showFooter: true
 };

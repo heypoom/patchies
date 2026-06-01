@@ -14,6 +14,10 @@ from `table`, which remains an audio/wavetable float buffer.
   when content exceeds the resized bounds.
 - Add an Allow resize setting, enabled by default, that lets users disable node
   resizing while keeping table editing and column resizing available.
+- Node resize height should max out at current rendered content height: title
+  header, table header/body, validation message if visible, and footer if shown.
+- Add a Show footer setting, enabled by default, that hides or shows the row
+  count and add-row footer.
 - Add an expand control beside the settings control. Expanded mode moves the
   live sheet editor into a detached overlay and can be closed with the collapse
   control or a `collapse` message.
@@ -56,6 +60,7 @@ type SheetNodeData = {
   rows: unknown[][];
   outputRows?: boolean;
   allowResize?: boolean;
+  showFooter?: boolean;
   width?: number;
   height?: number;
   columnWidths?: number[];
