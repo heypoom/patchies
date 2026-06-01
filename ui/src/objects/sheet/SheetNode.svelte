@@ -1262,7 +1262,7 @@
   >
     <div
       class={[
-        'flex min-w-[280px] flex-col overflow-hidden rounded-lg border text-xs text-zinc-200 shadow-lg',
+        'flex min-w-[280px] flex-col overflow-hidden rounded-lg border text-xs text-zinc-200 shadow-lg select-none',
         containerClass,
         isDetached ? '!rounded-none !border-0 !shadow-none' : '',
         isDraggingCsv ? 'border-blue-400 bg-blue-950/40' : ''
@@ -1391,7 +1391,7 @@
                         <div class="flex min-w-0 items-center">
                           {#if editingHeaderColumn === columnIndex}
                             <input
-                              class="w-full bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-200 outline-none focus:bg-zinc-700"
+                              class="w-full bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-200 outline-none select-text focus:bg-zinc-700"
                               style:font-family={$editorFontFamily}
                               value={column}
                               aria-label={`Column ${columnIndex + 1} header`}
@@ -1477,7 +1477,7 @@
                         >
                           {#if isEditingCell(rowIndex, columnIndex)}
                             <textarea
-                              class="box-border block min-h-7 w-full resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none focus:bg-zinc-800"
+                              class="box-border block min-h-7 w-full resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none select-text focus:bg-zinc-800"
                               style:font-family={$editorFontFamily}
                               value={String(row[columnIndex] ?? '')}
                               aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
