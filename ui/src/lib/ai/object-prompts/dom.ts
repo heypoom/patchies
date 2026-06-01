@@ -8,6 +8,9 @@ DOM manipulation node with direct JavaScript access to a root div element. Conta
 - root: HTMLDivElement - the container element you can manipulate
 - width, height: Container dimensions (undefined if fluid, set after setSize)
 - setSize(w, h): Set fixed container dimensions
+- htmlCanvas.videoOutput(options): Experimental API that exposes the DOM node as a video source using Chromium's experimental HTML-in-Canvas flag; call htmlCanvas.videoOutput() to match the render output size, htmlCanvas.videoOutput(false) to disable, or htmlCanvas.videoOutput({ size: "free" }) to let the DOM content choose its own source size before Patchies fits it into the render output; mutually exclusive with canvasLayer and glslLayer
+- htmlCanvas.canvasLayer(callback): Experimental API that locally post-processes the live DOM interface with a 2D canvas and Chromium's experimental HTML-in-Canvas flag without adding video output; callback receives (ctx, { width, height, displayWidth, displayHeight, pixelRatio, time, delta }); call htmlCanvas.canvasLayer(false) to disable; mutually exclusive with videoOutput and glslLayer
+- htmlCanvas.glslLayer(fragmentShader): Experimental API that locally post-processes the live DOM interface with a WebGL2 GLSL ES 3 fragment shader and source sampler; use texture(source, uv), mainImage(out vec4 fragColor, in vec2 fragCoord), source, iResolution, iTime, iTimeDelta, and iFrame; supports #include directives; mutually exclusive with videoOutput and canvasLayer
 - setHidePorts(hide): Hide/show ports
 - noDrag(), noPan(), noWheel(), noInteract() - Interaction control (whole node)
 - tailwind(enabled): Enable/disable Tailwind CSS (enabled by default)

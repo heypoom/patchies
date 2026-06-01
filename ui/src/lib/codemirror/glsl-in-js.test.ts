@@ -54,6 +54,14 @@ describe('glsl in js mixed parsing', () => {
     );
   });
 
+  it('detects htmlCanvas.glslLayer template strings as GLSL shader bodies', () => {
+    expect(
+      findTemplateStrings(
+        'htmlCanvas.glslLayer(`void mainImage(out vec4 fragColor, in vec2 fragCoord) { fragColor = texture(source, fragCoord); }`);'
+      )
+    ).toEqual([true]);
+  });
+
   it('keeps unrelated function template strings in JavaScript mode', () => {
     expect(findTemplateStrings('let f = String.raw`not glsl`;')).toEqual([false]);
     expect(findTemplateStrings('let f = shaderParkHelper(`not glsl`);')).toEqual([false]);
@@ -63,6 +71,10 @@ describe('glsl in js mixed parsing', () => {
     expect(getGlslInJsCompletionLabels('setFunction({ glsl: `vec2 p = u')).toContain('uv');
     expect(getGlslInJsCompletionLabels('glsl({ FP: `RGBA = tex')).toContain('texture');
     expect(getGlslInJsCompletionLabels('let sdf = glslSDF(`return l')).toContain('length');
+
+    expect(getGlslInJsCompletionLabels('htmlCanvas.glslLayer(`fragColor = tex')).toContain(
+      'texture'
+    );
   });
 
   it('does not offer GLSL completions in normal template strings or interpolations', () => {

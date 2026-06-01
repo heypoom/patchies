@@ -32,6 +32,9 @@ export const vueSchema: ObjectSchema = {
   hasDynamicOutlets: true,
   handlePatterns: {
     inlet: { template: 'in-{index}', description: 'Message inlets (0-indexed)' },
-    outlet: { template: 'out-{index}', description: 'Message outlets (0-indexed)' }
+    outlet: {
+      template: 'out-{index}',
+      description: 'Message outlets (0-indexed); htmlCanvas() adds video-out-0'
+    }
   }
 };

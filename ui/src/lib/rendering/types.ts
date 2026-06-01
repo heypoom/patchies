@@ -2,6 +2,7 @@ import type regl from 'regl';
 import type { ProfilerCategory, RenderFrameStats, TimingStats } from '$lib/profiler/types';
 import type { GLUniformDef } from '../../types/uniform-config';
 import type { PrimaryButton } from '$lib/eventbus/events';
+import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
 
 export type FBOFormat = 'rgba8' | 'rgba16f' | 'rgba32f';
 
@@ -196,6 +197,13 @@ export type WorkerMessage =
     }
   | { type: 'animationFrame'; outputBitmap: ImageBitmap }
   | { type: 'updateOutput'; buffer: ArrayBuffer }
+  | {
+      type: 'setElementImage';
+      nodeId: string;
+      elementImage: ElementImageLike;
+      width: number;
+      height: number;
+    }
   | {
       type: 'captureWorkerVideoFrames';
       targetNodeId: string;

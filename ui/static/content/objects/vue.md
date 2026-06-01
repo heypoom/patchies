@@ -48,7 +48,15 @@ The Vue component is mounted under an open
 [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Shadow_DOM_API)
 to isolate the DOM tree from the rest of the page.
 
+## HTML-in-Canvas
+
+`vue` supports experimental HTML in Canvas APIs for video output and local
+canvas or GLSL layers. See [HTML in Canvas](/docs/html-in-canvas) for
+`htmlCanvas.videoOutput()`, `htmlCanvas.canvasLayer()`, and
+`htmlCanvas.glslLayer()`.
+
 ## See Also
 
 - [dom](/docs/objects/dom) - vanilla JS interfaces
+- [HTML in Canvas](/docs/html-in-canvas) - Experimental HTML rendering APIs
 - [JavaScript Runner](/docs/javascript-runner) - messaging API

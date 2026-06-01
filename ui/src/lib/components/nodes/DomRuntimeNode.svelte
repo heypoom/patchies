@@ -37,6 +37,8 @@
     customConsole: CustomConsole;
   }) => Promise<DomRuntimeRoot> | DomRuntimeRoot;
 
+  type RuntimeContextOptions = { runCode: () => void };
+
   type DomRuntimeData = {
     title: string;
     code: string;
@@ -61,7 +63,17 @@
     consolePlaceholder,
     errorOffset,
     createRuntimeRoot,
-    cleanupRuntime = () => {}
+    cleanupRuntime = () => {},
+    beforeRun = () => true,
+    afterRun = () => {},
+    extraContext = () => ({}),
+    rootElement = $bindable<HTMLElement | undefined>(),
+    htmlCanvasElement = $bindable<HTMLCanvasElement | undefined>(),
+    htmlCanvasRootActive = false,
+    htmlCanvasEnabled = false,
+    htmlCanvasContextMode = '2d',
+    htmlRootClass = 'h-full w-full',
+    onRunReady = () => {}
   }: {
     id: string;
     data: DomRuntimeData;
@@ -73,6 +85,16 @@
     errorOffset: number;
     createRuntimeRoot: CreateDomRuntimeRoot;
     cleanupRuntime?: () => void;
+    beforeRun?: () => boolean | Promise<boolean>;
+    afterRun?: () => void;
+    extraContext?: (options: RuntimeContextOptions) => Record<string, unknown>;
+    rootElement?: HTMLElement;
+    htmlCanvasElement?: HTMLCanvasElement;
+    htmlCanvasRootActive?: boolean;
+    htmlCanvasEnabled?: boolean;
+    htmlCanvasContextMode?: string;
+    htmlRootClass?: string;
+    onRunReady?: (run: () => void) => void;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
@@ -109,6 +131,14 @@
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 0);
   let previousExecuteCode = $state<number | undefined>(undefined);
+
+  $effect(() => {
+    onRunReady(runCode);
+  });
+
+  $effect(() => {
+    rootElement = rootContainer;
+  });
 
   $effect(() => {
     if (data.executeCode && data.executeCode !== previousExecuteCode) {
@@ -203,11 +233,19 @@
     settingsManager.clearCallbacks();
 
     try {
+      const shouldContinue = await beforeRun();
+
+      if (!shouldContinue) {
+        return;
+      }
+
       const container = createIsolatedContainer(rootContainer);
+
       const runtimeRoot = await createRuntimeRoot({
         containerRoot: container.root,
         customConsole
       });
+
       const processedCode = await jsRunner.preprocessCode(data.code, { nodeId });
 
       if (processedCode === null) {
@@ -240,11 +278,13 @@
             wheelEnabled = false;
           },
           tailwind: container.tailwind,
+          ...extraContext({ runCode }),
           ...(runtimeRoot.extraContext ?? {})
         }
       });
 
       runtimeRoot.handleResult?.(result);
+      afterRun();
     } catch (error) {
       handleCodeError(error, data.code, nodeId, customConsole, errorOffset);
     } finally {
@@ -294,7 +334,7 @@
   onSettingsRevertAll={() => settingsManager.revertAll()}
 >
   {#snippet topHandle()}
-    {#each Array.from({ length: inletCount }) as _, index}
+    {#each Array.from({ length: inletCount }) as _, index (index)}
       <TypedHandle
         port="inlet"
         spec={{ handleId: index }}
@@ -325,18 +365,38 @@
         ? `width: ${previewWidth}px; height: ${previewHeight}px;`
         : ''}
     >
-      <div bind:this={rootContainer} class="h-full w-full"></div>
+      {#if htmlCanvasRootActive}
+        {#key htmlCanvasContextMode}
+          <canvas bind:this={htmlCanvasElement} class="block overflow-hidden">
+            <div bind:this={rootContainer} class={htmlRootClass}></div>
+          </canvas>
+        {/key}
+      {:else}
+        <div bind:this={rootContainer} class="h-full w-full"></div>
+      {/if}
     </div>
   {/snippet}
 
   {#snippet bottomHandle()}
-    {#each Array.from({ length: outletCount }) as _, index}
+    {#if htmlCanvasEnabled}
+      <TypedHandle
+        port="outlet"
+        spec={{ handleType: 'video', handleId: '0' }}
+        title="Video output"
+        total={outletCount + 1}
+        index={0}
+        class={handleClass}
+        {nodeId}
+      />
+    {/if}
+
+    {#each Array.from({ length: outletCount }) as _, index (index)}
       <TypedHandle
         port="outlet"
         spec={{ handleId: index }}
         title={`Outlet ${index}`}
-        total={outletCount}
-        {index}
+        total={htmlCanvasEnabled ? outletCount + 1 : outletCount}
+        index={htmlCanvasEnabled ? index + 1 : index}
         class={handleClass}
         {nodeId}
       />
