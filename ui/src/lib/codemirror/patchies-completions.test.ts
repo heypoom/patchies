@@ -115,6 +115,12 @@ describe('patchies completions', () => {
     );
   });
 
+  it('shows setSize completions for DOM and Vue nodes', () => {
+    expect(getCompletionLabels('dom', 'setS')).toContain('setSize');
+    expect(getCompletionLabels('vue', 'setS')).toContain('setSize');
+    expect(getCompletionLabels('js', 'setS')).not.toContain('setSize');
+  });
+
   it('shows Shader Park completions only for shaderpark code', () => {
     expect(getShaderParkCompletionLabels('shaderpark', 'sp')).toContain('sphere');
     expect(getShaderParkCompletionLabels('shaderpark', 'setSpace(getS')).toContain('getSpace');

@@ -295,6 +295,13 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'setCanvasSize(500, 500)'
   },
   {
+    label: 'setSize',
+    type: 'function',
+    detail: '(width: number, height: number) => void',
+    info: 'Set fixed container dimensions for DOM and Vue nodes',
+    apply: 'setSize(250, 100)'
+  },
+  {
     label: 'onKeyDown',
     type: 'function',
     detail: '(callback: (event: KeyboardEvent) => void) => void',
@@ -450,6 +457,7 @@ const topLevelOnlyFunctions = new Set([
   'setPrimaryButton',
   'setResolution',
   'setRunOnMount',
+  'setSize',
   'setTextureFormat',
   'setVideoCount'
 ]);
@@ -536,6 +544,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   hideExitButton: ['surface'],
   setAudioPortCount: ['dsp~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom'],
+  setSize: ['dom', 'vue'],
   setHidePorts: [
     'p5',
     'hydra',
