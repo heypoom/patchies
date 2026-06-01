@@ -1046,6 +1046,19 @@
       .forEach(resizeTextarea);
   }
 
+  async function refreshSelectionLayout() {
+    await tick();
+
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        selectionLayoutVersion += 1;
+      });
+      return;
+    }
+
+    selectionLayoutVersion += 1;
+  }
+
   function handleCellKeydown(event: KeyboardEvent) {
     if (event.key !== 'Enter' || !event.shiftKey) return;
 
@@ -1189,6 +1202,14 @@
     rows;
     resizeRenderedTextareas();
     setTimeout(() => updateNodeInternals(nodeId), 0);
+  });
+
+  $effect(() => {
+    isDetached;
+    sheetViewportWidth;
+    sheetViewportHeight;
+    tableContentWidth;
+    refreshSelectionLayout();
   });
 
   $effect(() => {
