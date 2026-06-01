@@ -192,13 +192,13 @@
 
 {#if open}
   <div
-    class="relative flex h-dvh w-full shrink-0 flex-col overflow-hidden border-r border-zinc-700 bg-zinc-950 sm:h-full"
+    class="pt-safe pr-safe pb-safe pl-safe relative flex h-dvh w-full shrink-0 flex-col overflow-hidden border-r border-zinc-700 bg-zinc-950 sm:h-full"
     style:--sidebar-width="{$sidebarWidth}px"
     class:sm:w-[var(--sidebar-width)]={true}
     data-sidebar
   >
     <!-- Header with view switcher -->
-    <div class="pt-safe flex flex-col border-b border-zinc-700">
+    <div class="flex flex-col border-b border-zinc-700">
       <ContextMenu.Root onOpenChange={handleContextMenuOpenChange}>
         <ContextMenu.Trigger class="flex items-center justify-between px-2 py-1.5">
           <!-- View switcher icons -->

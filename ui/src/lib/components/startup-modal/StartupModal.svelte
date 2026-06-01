@@ -134,7 +134,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+      env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
     font-family: 'Syne', sans-serif;
   }
 
@@ -168,7 +169,7 @@
     border-radius: 14px;
     width: 100%;
     max-width: 680px;
-    height: 100dvh;
+    height: 100%;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -180,7 +181,7 @@
 
   @media (min-width: 640px) {
     .modal-card {
-      height: 85vh;
+      height: 85dvh;
       max-height: 720px;
       margin: 16px;
     }
@@ -259,7 +260,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: max(16px, env(safe-area-inset-top)) 20px 0;
+    padding: 16px 20px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     flex-shrink: 0;
   }
@@ -334,15 +335,15 @@
     z-index: 1;
     flex: 1;
     overflow-y: auto;
-    padding: 24px 24px max(20px, env(safe-area-inset-bottom));
+    padding: 24px 24px 20px;
   }
 
   @media (min-width: 640px) {
     .modal-tabbar {
-      padding: max(18px, env(safe-area-inset-top)) 28px 0;
+      padding: 18px 28px 0;
     }
     .modal-body {
-      padding: 28px 28px max(24px, env(safe-area-inset-bottom));
+      padding: 28px 28px 24px;
     }
   }
 

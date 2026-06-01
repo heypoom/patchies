@@ -362,7 +362,10 @@
 </script>
 
 {#if open}
-  <div class="fixed inset-0 z-50 flex items-center justify-center" role="presentation">
+  <div
+    class="pt-safe pr-safe pb-safe pl-safe fixed inset-0 z-50 flex items-center justify-center"
+    role="presentation"
+  >
     <!-- Backdrop -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -378,7 +381,7 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="relative z-10 m-0 flex h-dvh w-full max-w-[860px] animate-[ob-card-in_0.35s_cubic-bezier(0.22,0.61,0.36,1)_both] flex-col overflow-hidden rounded-[14px] border border-orange-500/18 bg-[#09090b] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),0_0_80px_rgba(249,115,22,0.06),0_40px_80px_rgba(0,0,0,0.8)] outline-none sm:m-4 sm:h-[88vh] sm:max-h-[780px]"
+      class="relative z-10 m-0 flex h-full w-full max-w-[860px] animate-[ob-card-in_0.35s_cubic-bezier(0.22,0.61,0.36,1)_both] flex-col overflow-hidden rounded-[14px] border border-orange-500/18 bg-[#09090b] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),0_0_80px_rgba(249,115,22,0.06),0_40px_80px_rgba(0,0,0,0.8)] outline-none sm:m-4 sm:h-[88dvh] sm:max-h-[780px]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="ob-title"
@@ -411,7 +414,7 @@
 
       <!-- Header -->
       <div
-        class="relative z-[1] flex shrink-0 items-center justify-between gap-3 border-b border-white/5 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3 max-sm:flex-col max-sm:items-start sm:px-7 sm:pt-[max(18px,env(safe-area-inset-top))] sm:pb-3.5"
+        class="relative z-[1] flex shrink-0 items-center justify-between gap-3 border-b border-white/5 px-5 pt-4 pb-3 max-sm:flex-col max-sm:items-start sm:px-7 sm:pt-[18px] sm:pb-3.5"
       >
         <span
           class="shrink-0 font-mono text-[10px] tracking-[0.18em] whitespace-nowrap text-zinc-700 uppercase"
@@ -522,9 +525,7 @@
       </div>
 
       <!-- Object list / Packs panel -->
-      <div
-        class="ob-scroll relative z-[1] flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 sm:pb-[max(1.25rem,env(safe-area-inset-bottom))]"
-      >
+      <div class="ob-scroll relative z-[1] flex-1 overflow-y-auto p-4 sm:p-5">
         {#if $objectBrowserMode === 'packs'}
           <div class="flex flex-col gap-5">
             <!-- Object Packs Section -->

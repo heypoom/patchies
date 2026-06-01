@@ -41,7 +41,10 @@
 </script>
 
 {#if open}
-  <div class="fixed inset-0 z-50 flex items-center justify-center" role="presentation">
+  <div
+    class="pt-safe pr-safe pb-safe pl-safe fixed inset-0 z-50 flex items-center justify-center"
+    role="presentation"
+  >
     <!-- Backdrop -->
     <div
       class="fixed inset-0 animate-[ob-fade_0.2s_ease_both] bg-black/88 backdrop-blur-[12px]"
@@ -56,7 +59,7 @@
 
     <!-- Modal container -->
     <div
-      class="relative z-10 m-0 flex h-dvh w-full max-w-[780px] animate-[ob-card-in_0.35s_cubic-bezier(0.22,0.61,0.36,1)_both] flex-col overflow-hidden rounded-[14px] border border-orange-500/18 bg-[#09090b] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),0_0_80px_rgba(249,115,22,0.06),0_40px_80px_rgba(0,0,0,0.8)] outline-none sm:m-4 sm:h-[85vh] sm:max-h-[720px] sm:flex-row"
+      class="relative z-10 m-0 flex h-full w-full max-w-[780px] animate-[ob-card-in_0.35s_cubic-bezier(0.22,0.61,0.36,1)_both] flex-col overflow-hidden rounded-[14px] border border-orange-500/18 bg-[#09090b] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),0_0_80px_rgba(249,115,22,0.06),0_40px_80px_rgba(0,0,0,0.8)] outline-none sm:m-4 sm:h-[85dvh] sm:max-h-[720px] sm:flex-row"
       role="dialog"
       aria-modal="true"
       aria-labelledby="settings-title"
@@ -212,9 +215,7 @@
         </div>
 
         <!-- Settings content -->
-        <div
-          class="settings-scroll flex-1 overflow-y-auto px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6"
-        >
+        <div class="settings-scroll flex-1 overflow-y-auto px-5 py-4 sm:px-6">
           {#if activeCategory === 'general'}
             <GeneralSettings />
           {:else if activeCategory === 'editor'}
