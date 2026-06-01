@@ -1,11 +1,11 @@
-# 155. Datatable Object
+# 155. Sheet Object
 
-`datatable` is an editable data grid for small CSV-like tables. It is separate
+`sheet` is an editable spreadsheet-style data grid for small CSV-like tables. It is separate
 from `table`, which remains an audio/wavetable float buffer.
 
 ## Scope
 
-- Add a `datatable` node with one message inlet and one message outlet.
+- Add a `sheet` node with one message inlet and one message outlet.
 - Store table data in node data as editable `columns` and `rows`.
 - Render a compact grid UI where column headers are normal editable inputs.
 - Allow adding and removing columns.
@@ -40,7 +40,7 @@ headers are not always reliable or meaningful. Object output is opt-in for cases
 where renamed headers should become object keys.
 
 ```ts
-type DatatableNodeData = {
+type SheetNodeData = {
   columns: string[];
   rows: unknown[][];
   outputObjects?: boolean;
@@ -56,7 +56,7 @@ overwriting earlier values.
 
 ## Implementation Notes
 
-- Put shared table conversion helpers under `ui/src/objects/datatable/` so the
+- Put shared table conversion helpers under `ui/src/objects/sheet/` so the
   message contract is tested outside the Svelte component.
 - Register the object as a dedicated node type rather than a V2 text object,
   because the main behavior is an editable grid UI.

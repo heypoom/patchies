@@ -1,15 +1,15 @@
-export type DatatableCell = string | number | boolean | null;
+export type SheetCell = string | number | boolean | null;
 
-export type DatatableData = {
+export type SheetData = {
   columns: string[];
-  rows: DatatableCell[][];
+  rows: SheetCell[][];
   outputObjects?: boolean;
   width?: number;
   height?: number;
   columnWidths?: number[];
 };
 
-export type ParsedCsvTable = Pick<DatatableData, 'columns' | 'rows'>;
+export type ParsedCsvTable = Pick<SheetData, 'columns' | 'rows'>;
 
 const EMPTY_PARSED_TABLE: ParsedCsvTable = { columns: [], rows: [] };
 
@@ -27,21 +27,19 @@ export function ensureUniqueColumnKeys(columns: string[]): string[] {
   });
 }
 
-export function buildDatatableOutput(
-  data: DatatableData
-): DatatableCell[][] | Record<string, DatatableCell>[] {
-  return data.outputObjects ? buildDatatableObjectsOutput(data) : buildDatatableRowsOutput(data);
+export function buildSheetOutput(data: SheetData): SheetCell[][] | Record<string, SheetCell>[] {
+  return data.outputObjects ? buildSheetObjectsOutput(data) : buildSheetRowsOutput(data);
 }
 
-export function buildDatatableRowsOutput(data: DatatableData): DatatableCell[][] {
+export function buildSheetRowsOutput(data: SheetData): SheetCell[][] {
   return [data.columns, ...data.rows];
 }
 
-export function buildDatatableObjectsOutput(data: DatatableData): Record<string, DatatableCell>[] {
+export function buildSheetObjectsOutput(data: SheetData): Record<string, SheetCell>[] {
   const keys = ensureUniqueColumnKeys(data.columns);
 
   return data.rows.map((row) => {
-    const object: Record<string, DatatableCell> = {};
+    const object: Record<string, SheetCell> = {};
 
     keys.forEach((key, index) => {
       object[key] = row[index] ?? null;
@@ -51,7 +49,7 @@ export function buildDatatableObjectsOutput(data: DatatableData): Record<string,
   });
 }
 
-export function createEmptyDatatable(): DatatableData {
+export function createEmptySheet(): SheetData {
   return {
     columns: ['column 1', 'column 2'],
     rows: [
@@ -62,7 +60,7 @@ export function createEmptyDatatable(): DatatableData {
   };
 }
 
-export function addColumn(data: DatatableData): DatatableData {
+export function addColumn(data: SheetData): SheetData {
   const nextIndex = data.columns.length + 1;
 
   return {
@@ -72,7 +70,7 @@ export function addColumn(data: DatatableData): DatatableData {
   };
 }
 
-export function removeColumn(data: DatatableData, index: number): DatatableData {
+export function removeColumn(data: SheetData, index: number): SheetData {
   if (data.columns.length <= 1 || index < 0 || index >= data.columns.length) return data;
 
   return {
@@ -83,7 +81,7 @@ export function removeColumn(data: DatatableData, index: number): DatatableData 
   };
 }
 
-export function moveColumn(data: DatatableData, fromIndex: number, toIndex: number): DatatableData {
+export function moveColumn(data: SheetData, fromIndex: number, toIndex: number): SheetData {
   if (
     fromIndex < 0 ||
     fromIndex >= data.columns.length ||
@@ -102,14 +100,14 @@ export function moveColumn(data: DatatableData, fromIndex: number, toIndex: numb
   };
 }
 
-export function addRow(data: DatatableData): DatatableData {
+export function addRow(data: SheetData): SheetData {
   return {
     ...data,
     rows: [...data.rows, data.columns.map(() => '')]
   };
 }
 
-export function removeRow(data: DatatableData, index: number): DatatableData {
+export function removeRow(data: SheetData, index: number): SheetData {
   if (data.rows.length <= 1 || index < 0 || index >= data.rows.length) return data;
 
   return {
@@ -118,7 +116,7 @@ export function removeRow(data: DatatableData, index: number): DatatableData {
   };
 }
 
-export function moveRow(data: DatatableData, fromIndex: number, toIndex: number): DatatableData {
+export function moveRow(data: SheetData, fromIndex: number, toIndex: number): SheetData {
   if (
     fromIndex < 0 ||
     fromIndex >= data.rows.length ||
@@ -136,11 +134,11 @@ export function moveRow(data: DatatableData, fromIndex: number, toIndex: number)
 }
 
 export function updateCell(
-  data: DatatableData,
+  data: SheetData,
   rowIndex: number,
   columnIndex: number,
-  value: DatatableCell
-): DatatableData {
+  value: SheetCell
+): SheetData {
   return {
     ...data,
     rows: data.rows.map((row, currentRowIndex) =>
@@ -151,11 +149,7 @@ export function updateCell(
   };
 }
 
-export function updateColumnName(
-  data: DatatableData,
-  columnIndex: number,
-  value: string
-): DatatableData {
+export function updateColumnName(data: SheetData, columnIndex: number, value: string): SheetData {
   return {
     ...data,
     columns: data.columns.map((column, index) => (index === columnIndex ? value : column))
@@ -218,11 +212,11 @@ function normalizeRow(row: string[], columnCount: number): string[] {
   return Array.from({ length: columnCount }, (_, index) => row[index] ?? '');
 }
 
-function normalizeUnknownRow(row: unknown[], columnCount: number): DatatableCell[] {
+function normalizeUnknownRow(row: unknown[], columnCount: number): SheetCell[] {
   return Array.from({ length: columnCount }, (_, index) => normalizeCell(row[index]));
 }
 
-function normalizeCell(value: unknown): DatatableCell {
+function normalizeCell(value: unknown): SheetCell {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return value;
   }

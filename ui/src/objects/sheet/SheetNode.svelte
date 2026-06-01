@@ -22,21 +22,15 @@
   import { VirtualFilesystem } from '$lib/vfs';
   import { editorFontFamily } from '../../stores/editor.store';
 
-  import { DEFAULT_DATATABLE_DATA } from './constants';
-  import {
-    DatatableClear,
-    DatatableLoad,
-    DatatableObjects,
-    DatatableRows,
-    datatableSchema
-  } from './schema';
+  import { DEFAULT_SHEET_DATA } from './constants';
+  import { SheetClear, SheetLoad, SheetObjects, SheetRows, sheetSchema } from './schema';
   import {
     addColumn,
     addRow,
-    buildDatatableObjectsOutput,
-    buildDatatableOutput,
-    buildDatatableRowsOutput,
-    createEmptyDatatable,
+    buildSheetObjectsOutput,
+    buildSheetOutput,
+    buildSheetRowsOutput,
+    createEmptySheet,
     moveColumn,
     moveRow,
     parseCsvTable,
@@ -46,9 +40,9 @@
     tableFromObjects,
     updateCell,
     updateColumnName,
-    type DatatableCell,
-    type DatatableData
-  } from './datatable-utils';
+    type SheetCell,
+    type SheetData
+  } from './sheet-utils';
 
   let {
     id: nodeId,
@@ -56,18 +50,18 @@
     selected
   }: {
     id: string;
-    data: Partial<DatatableData>;
+    data: Partial<SheetData>;
     selected: boolean;
   } = $props();
 
-  const DATATABLE_MIN_WIDTH = 280;
-  const DATATABLE_MIN_HEIGHT = 136;
-  const DATATABLE_MAX_WIDTH = 900;
-  const DATATABLE_MAX_HEIGHT = 640;
-  const DATATABLE_COLUMN_WIDTH = 110;
-  const DATATABLE_MIN_COLUMN_WIDTH = 64;
-  const DATATABLE_ACTION_COLUMN_WIDTH = 44;
-  const DATATABLE_HEADER_ROW = -1;
+  const SHEET_MIN_WIDTH = 280;
+  const SHEET_MIN_HEIGHT = 136;
+  const SHEET_MAX_WIDTH = 900;
+  const SHEET_MAX_HEIGHT = 640;
+  const SHEET_COLUMN_WIDTH = 110;
+  const SHEET_MIN_COLUMN_WIDTH = 64;
+  const SHEET_ACTION_COLUMN_WIDTH = 44;
+  const SHEET_HEADER_ROW = -1;
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -75,7 +69,7 @@
 
   let messageContext: MessageContext;
   let columnsBeforeEdit: string[] | null = null;
-  let rowsBeforeEdit: DatatableCell[][] | null = null;
+  let rowsBeforeEdit: SheetCell[][] | null = null;
   let isDraggingCsv = $state(false);
   let showSettings = $state(false);
   let headerValidationError = $state('');
@@ -115,11 +109,11 @@
   let isSelectingCells = $state(false);
   let draggingColumn = $state<ColumnDragState | null>(null);
   let columnsBeforeDrag: string[] | null = null;
-  let rowsBeforeDrag: DatatableCell[][] | null = null;
+  let rowsBeforeDrag: SheetCell[][] | null = null;
   let columnWidthsBeforeDrag: number[] | null = null;
 
-  const columns = $derived(data.columns ?? DEFAULT_DATATABLE_DATA.columns);
-  const rows = $derived(data.rows ?? DEFAULT_DATATABLE_DATA.rows);
+  const columns = $derived(data.columns ?? DEFAULT_SHEET_DATA.columns);
+  const rows = $derived(data.rows ?? DEFAULT_SHEET_DATA.rows);
   const outputObjects = $derived(data.outputObjects ?? false);
   const width = $derived(data.width);
   const height = $derived(data.height);
@@ -127,9 +121,9 @@
   const activeColumnWidths = $derived(resizingColumn?.widths ?? columnWidths);
   const baseTableContentWidth = $derived(
     activeColumnWidths.reduce((sum: number, columnWidth: number) => sum + columnWidth, 0) +
-      DATATABLE_ACTION_COLUMN_WIDTH
+      SHEET_ACTION_COLUMN_WIDTH
   );
-  const normalizedData = $derived<DatatableData>({
+  const normalizedData = $derived<SheetData>({
     columns,
     rows,
     outputObjects,
@@ -137,34 +131,32 @@
     height,
     columnWidths
   });
-  const autoTableWidth = $derived(
-    Math.min(520, Math.max(DATATABLE_MIN_WIDTH, baseTableContentWidth))
-  );
+  const autoTableWidth = $derived(Math.min(520, Math.max(SHEET_MIN_WIDTH, baseTableContentWidth)));
   const displayWidth = $derived(resizingSize?.width ?? width ?? autoTableWidth);
   const displayHeight = $derived(resizingSize?.height ?? height);
   const renderedColumnWidths = $derived(
-    fillColumnWidths(activeColumnWidths, Math.max(0, displayWidth - DATATABLE_ACTION_COLUMN_WIDTH))
+    fillColumnWidths(activeColumnWidths, Math.max(0, displayWidth - SHEET_ACTION_COLUMN_WIDTH))
   );
   const draggingColumnWidth = $derived(
-    draggingColumn ? (renderedColumnWidths[draggingColumn.fromIndex] ?? DATATABLE_COLUMN_WIDTH) : 0
+    draggingColumn ? (renderedColumnWidths[draggingColumn.fromIndex] ?? SHEET_COLUMN_WIDTH) : 0
   );
   const selectedRangeRect = $derived(getSelectedRangeRect());
   const tableContentWidth = $derived(
     renderedColumnWidths.reduce((sum: number, columnWidth: number) => sum + columnWidth, 0) +
-      DATATABLE_ACTION_COLUMN_WIDTH
+      SHEET_ACTION_COLUMN_WIDTH
   );
   const containerClass = $derived(
     selected ? 'object-container-selected !bg-zinc-900' : 'object-container-light'
   );
 
-  const datatableMessages = {
-    clear: schema(DatatableClear),
-    load: schema(DatatableLoad),
-    rows: schema(DatatableRows),
-    objects: schema(DatatableObjects)
+  const sheetMessages = {
+    clear: schema(SheetClear),
+    load: schema(SheetLoad),
+    rows: schema(SheetRows),
+    objects: schema(SheetObjects)
   };
 
-  function commitData(oldData: DatatableData, newData: DatatableData) {
+  function commitData(oldData: SheetData, newData: SheetData) {
     updateNodeData(nodeId, newData);
     tracker.commit('columns', oldData.columns, newData.columns);
     tracker.commit('rows', oldData.rows, newData.rows);
@@ -173,7 +165,7 @@
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
-  function setData(nextData: DatatableData) {
+  function setData(nextData: SheetData) {
     commitData(normalizedData, {
       ...nextData,
       width,
@@ -187,7 +179,7 @@
 
   function normalizeColumnWidths(widths: number[] | undefined, count: number) {
     return Array.from({ length: count }, (_, index) =>
-      Math.max(DATATABLE_MIN_COLUMN_WIDTH, widths?.[index] ?? DATATABLE_COLUMN_WIDTH)
+      Math.max(SHEET_MIN_COLUMN_WIDTH, widths?.[index] ?? SHEET_COLUMN_WIDTH)
     );
   }
 
@@ -286,12 +278,12 @@
     if (!bounds || bounds.minRow < 0) return null;
 
     const startCell = document.querySelector<HTMLElement>(
-      `[data-datatable-node="${nodeId}"] [data-cell-display="${bounds.minRow}-${bounds.minColumn}"]`
+      `[data-sheet-node="${nodeId}"] [data-cell-display="${bounds.minRow}-${bounds.minColumn}"]`
     );
     const endCell = document.querySelector<HTMLElement>(
-      `[data-datatable-node="${nodeId}"] [data-cell-display="${bounds.maxRow}-${bounds.maxColumn}"]`
+      `[data-sheet-node="${nodeId}"] [data-cell-display="${bounds.maxRow}-${bounds.maxColumn}"]`
     );
-    const table = document.querySelector<HTMLElement>(`[data-datatable-table="${nodeId}"]`);
+    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
 
     if (!startCell || !endCell || !table) return null;
 
@@ -308,7 +300,7 @@
   }
 
   function isSelectedHeader(columnIndex: number) {
-    return isSelectedCell(DATATABLE_HEADER_ROW, columnIndex);
+    return isSelectedCell(SHEET_HEADER_ROW, columnIndex);
   }
 
   async function selectCell(rowIndex: number, columnIndex: number, target?: HTMLElement) {
@@ -324,7 +316,7 @@
   }
 
   async function selectHeader(columnIndex: number, target?: HTMLElement) {
-    await selectCell(DATATABLE_HEADER_ROW, columnIndex, target);
+    await selectCell(SHEET_HEADER_ROW, columnIndex, target);
   }
 
   function beginCellSelection(event: PointerEvent, rowIndex: number, columnIndex: number) {
@@ -373,7 +365,7 @@
     await tick();
 
     const textarea = document.querySelector<HTMLTextAreaElement>(
-      `[data-datatable-node="${nodeId}"] textarea[data-cell="${rowIndex}-${columnIndex}"]`
+      `[data-sheet-node="${nodeId}"] textarea[data-cell="${rowIndex}-${columnIndex}"]`
     );
 
     if (!textarea) return;
@@ -384,7 +376,7 @@
   }
 
   async function enterHeaderEdit(columnIndex: number, initialValue?: string) {
-    selectedCell = { rowIndex: DATATABLE_HEADER_ROW, columnIndex };
+    selectedCell = { rowIndex: SHEET_HEADER_ROW, columnIndex };
     editingCell = null;
     editingHeaderColumn = columnIndex;
 
@@ -396,7 +388,7 @@
     await tick();
 
     const input = document.querySelector<HTMLInputElement>(
-      `[data-datatable-table="${nodeId}"] input[data-header="${columnIndex}"]`
+      `[data-sheet-table="${nodeId}"] input[data-header="${columnIndex}"]`
     );
 
     if (!input) return;
@@ -496,7 +488,7 @@
 
     document
       .querySelector<HTMLElement>(
-        `[data-datatable-node="${nodeId}"] [data-cell-display="${cell.rowIndex}-${cell.columnIndex}"]`
+        `[data-sheet-node="${nodeId}"] [data-cell-display="${cell.rowIndex}-${cell.columnIndex}"]`
       )
       ?.focus();
   }
@@ -506,7 +498,7 @@
 
     document
       .querySelector<HTMLElement>(
-        `[data-datatable-table="${nodeId}"] [data-header-display="${columnIndex}"]`
+        `[data-sheet-table="${nodeId}"] [data-header-display="${columnIndex}"]`
       )
       ?.focus();
   }
@@ -562,7 +554,7 @@
   }
 
   function clearTable() {
-    setData({ ...createEmptyDatatable(), outputObjects });
+    setData({ ...createEmptySheet(), outputObjects });
   }
 
   function setOutputObjects(value: boolean) {
@@ -619,8 +611,8 @@
       index: columnIndex,
       nextIndex,
       startX: event.clientX,
-      startWidth: visibleWidths[columnIndex] ?? DATATABLE_COLUMN_WIDTH,
-      startNextWidth: nextIndex === null ? 0 : (visibleWidths[nextIndex] ?? DATATABLE_COLUMN_WIDTH),
+      startWidth: visibleWidths[columnIndex] ?? SHEET_COLUMN_WIDTH,
+      startNextWidth: nextIndex === null ? 0 : (visibleWidths[nextIndex] ?? SHEET_COLUMN_WIDTH),
       widths: visibleWidths
     };
 
@@ -636,12 +628,12 @@
 
     if (resizingColumn.nextIndex === null) {
       nextWidths[resizingColumn.index] = Math.max(
-        DATATABLE_MIN_COLUMN_WIDTH,
+        SHEET_MIN_COLUMN_WIDTH,
         resizingColumn.startWidth + rawDelta
       );
     } else {
-      const minDelta = DATATABLE_MIN_COLUMN_WIDTH - resizingColumn.startWidth;
-      const maxDelta = resizingColumn.startNextWidth - DATATABLE_MIN_COLUMN_WIDTH;
+      const minDelta = SHEET_MIN_COLUMN_WIDTH - resizingColumn.startWidth;
+      const maxDelta = resizingColumn.startNextWidth - SHEET_MIN_COLUMN_WIDTH;
       const delta = Math.max(minDelta, Math.min(maxDelta, rawDelta));
 
       nextWidths[resizingColumn.index] = resizingColumn.startWidth + delta;
@@ -704,7 +696,7 @@
   }
 
   function getColumnIndexAtX(clientX: number) {
-    const table = document.querySelector<HTMLTableElement>(`[data-datatable-table="${nodeId}"]`);
+    const table = document.querySelector<HTMLTableElement>(`[data-sheet-table="${nodeId}"]`);
     const x = clientX - (table?.getBoundingClientRect().left ?? 0);
     let left = 0;
     let closestIndex = 0;
@@ -731,7 +723,7 @@
 
   function getColumnInsertLeft(index: number) {
     const targetLeft = getColumnLeft(index);
-    const targetWidth = renderedColumnWidths[index] ?? DATATABLE_COLUMN_WIDTH;
+    const targetWidth = renderedColumnWidths[index] ?? SHEET_COLUMN_WIDTH;
 
     if (!draggingColumn) return targetLeft;
 
@@ -780,9 +772,9 @@
 
   function sendTableOutput(format: 'setting' | 'rows' | 'objects' = 'setting') {
     const output = match(format)
-      .with('rows', () => buildDatatableRowsOutput(normalizedData))
-      .with('objects', () => buildDatatableObjectsOutput(normalizedData))
-      .with('setting', () => buildDatatableOutput(normalizedData))
+      .with('rows', () => buildSheetRowsOutput(normalizedData))
+      .with('objects', () => buildSheetObjectsOutput(normalizedData))
+      .with('setting', () => buildSheetOutput(normalizedData))
       .exhaustive();
 
     messageContext.send(output);
@@ -797,7 +789,7 @@
     await tick();
 
     document
-      .querySelectorAll<HTMLTextAreaElement>(`[data-datatable-node="${nodeId}"] textarea`)
+      .querySelectorAll<HTMLTextAreaElement>(`[data-sheet-node="${nodeId}"] textarea`)
       .forEach(resizeTextarea);
   }
 
@@ -849,18 +841,18 @@
       .with(messages.bang, () => {
         sendTableOutput();
       })
-      .with(datatableMessages.rows, () => {
+      .with(sheetMessages.rows, () => {
         sendTableOutput('rows');
       })
-      .with(datatableMessages.objects, () => {
+      .with(sheetMessages.objects, () => {
         sendTableOutput('objects');
       })
-      .with(datatableMessages.clear, () => {
+      .with(sheetMessages.clear, () => {
         clearTable();
       })
-      .with(datatableMessages.load, ({ src }) => {
+      .with(sheetMessages.load, ({ src }) => {
         loadCsvFromSrc(src).catch((error) => {
-          console.error('datatable load failed:', error);
+          console.error('sheet load failed:', error);
         });
       })
       .with(P.string, (csv) => {
@@ -933,10 +925,10 @@
   <NodeResizer
     class="z-1"
     isVisible={selected}
-    minWidth={DATATABLE_MIN_WIDTH}
-    minHeight={DATATABLE_MIN_HEIGHT}
-    maxWidth={DATATABLE_MAX_WIDTH}
-    maxHeight={DATATABLE_MAX_HEIGHT}
+    minWidth={SHEET_MIN_WIDTH}
+    minHeight={SHEET_MIN_HEIGHT}
+    maxWidth={SHEET_MAX_WIDTH}
+    maxHeight={SHEET_MAX_HEIGHT}
     onResizeStart={handleResizeStart}
     onResize={handleResize}
     onResizeEnd={handleResizeEnd}
@@ -963,7 +955,7 @@
 
   <TypedHandle
     port="inlet"
-    spec={datatableSchema.inlets[0].handle!}
+    spec={sheetSchema.inlets[0].handle!}
     title="Commands (bang, clear, load, array)"
     total={1}
     index={0}
@@ -990,7 +982,7 @@
         <div
           class="flex shrink-0 cursor-move items-center justify-between border-b border-zinc-700 px-2 py-1.5"
         >
-          <span class="font-mono text-[10px] text-zinc-400">datatable</span>
+          <span class="font-mono text-[10px] text-zinc-400">sheet</span>
           <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
             {columns.length}
             {columns.length === 1 ? 'col' : 'cols'}
@@ -1027,13 +1019,13 @@
           <table
             class="table-fixed border-collapse"
             style:width={`${tableContentWidth}px`}
-            data-datatable-table={nodeId}
+            data-sheet-table={nodeId}
           >
             <colgroup>
               {#each renderedColumnWidths as columnWidth}
                 <col style:width={`${columnWidth}px`} />
               {/each}
-              <col style:width={`${DATATABLE_ACTION_COLUMN_WIDTH}px`} />
+              <col style:width={`${SHEET_ACTION_COLUMN_WIDTH}px`} />
             </colgroup>
 
             <thead>
@@ -1109,7 +1101,7 @@
               </tr>
             </thead>
 
-            <tbody data-datatable-node={nodeId}>
+            <tbody data-sheet-node={nodeId}>
               {#each rows as row, rowIndex}
                 <tr oncontextmenu={() => setRowContext(rowIndex)}>
                   {#each columns as _column, columnIndex}
@@ -1251,7 +1243,7 @@
 
   <TypedHandle
     port="outlet"
-    spec={datatableSchema.outlets[0].handle!}
+    spec={sheetSchema.outlets[0].handle!}
     title="Table data output"
     total={1}
     index={0}
@@ -1264,7 +1256,7 @@
         <button
           onclick={() => (showSettings = false)}
           class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
-          aria-label="Close datatable settings"
+          aria-label="Close sheet settings"
         >
           <X class="h-4 w-4" />
         </button>

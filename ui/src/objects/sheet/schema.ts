@@ -4,18 +4,18 @@ import type { ObjectSchema } from '$lib/objects/schemas/types';
 import { Bang, LoadBySrc } from '$lib/objects/schemas/common';
 import { sym } from '$lib/objects/schemas/helpers';
 
-export const DatatableClear = sym('clear');
-export const DatatableRows = sym('rows');
-export const DatatableObjects = sym('objects');
-export { LoadBySrc as DatatableLoad } from '$lib/objects/schemas/common';
+export const SheetClear = sym('clear');
+export const SheetRows = sym('rows');
+export const SheetObjects = sym('objects');
+export { LoadBySrc as SheetLoad } from '$lib/objects/schemas/common';
 
-const DatatableRowsOutput = Type.Array(Type.Array(Type.Any()));
-const DatatableObjectsOutput = Type.Array(Type.Record(Type.String(), Type.Any()));
+const SheetRowsOutput = Type.Array(Type.Array(Type.Any()));
+const SheetObjectsOutput = Type.Array(Type.Record(Type.String(), Type.Any()));
 
-export const datatableSchema: ObjectSchema = {
-  type: 'datatable',
+export const sheetSchema: ObjectSchema = {
+  type: 'sheet',
   category: 'control',
-  description: 'Editable CSV-style data table',
+  description: 'Editable spreadsheet-style data grid',
   inlets: [
     {
       id: 'command',
@@ -23,20 +23,20 @@ export const datatableSchema: ObjectSchema = {
       handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Output the table' },
-        { schema: DatatableRows, description: 'Output the table as a 2D array' },
-        { schema: DatatableObjects, description: 'Output the table as row objects' },
-        { schema: DatatableClear, description: 'Clear all cells' },
+        { schema: SheetRows, description: 'Output the table as a 2D array' },
+        { schema: SheetObjects, description: 'Output the table as row objects' },
+        { schema: SheetClear, description: 'Clear all cells' },
         { schema: LoadBySrc, description: 'Load CSV text from a VFS path or URL' },
         {
           schema: Type.String(),
           description: 'Parse CSV text and replace the table'
         },
         {
-          schema: DatatableRowsOutput,
+          schema: SheetRowsOutput,
           description: 'Replace table from a 2D array, using first row as column headers'
         },
         {
-          schema: DatatableObjectsOutput,
+          schema: SheetObjectsOutput,
           description: 'Replace table from an array of row objects'
         }
       ]
@@ -49,11 +49,11 @@ export const datatableSchema: ObjectSchema = {
       handle: { handleType: 'message' },
       messages: [
         {
-          schema: DatatableRowsOutput,
+          schema: SheetRowsOutput,
           description: '2D array with headers as first row'
         },
         {
-          schema: DatatableObjectsOutput,
+          schema: SheetObjectsOutput,
           description: 'Array of row objects when object output is enabled'
         }
       ]

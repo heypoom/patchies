@@ -3,7 +3,7 @@ import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
 import { VirtualFilesystem, VFS_FOLDERS } from '$lib/vfs';
 import { logger } from '$lib/utils/logger';
 import { synthdefTemplate, scSampleTemplate } from './sonic-templates';
-import { parseCsvTable } from '$objects/datatable/datatable-utils';
+import { parseCsvTable } from '$objects/sheet/sheet-utils';
 
 /**
  * Escape a string for safe embedding inside a JS string literal (single or double-quoted).
@@ -383,7 +383,7 @@ export class CanvasDragDropManager {
     const ext = filename.split('.').pop()?.toLowerCase();
 
     return match(ext)
-      .with('csv', () => 'datatable')
+      .with('csv', () => 'sheet')
       .with('rom', () => 'uxn')
       .with('csd', () => 'csound~')
       .with('ck', () => 'chuck~')
@@ -422,7 +422,7 @@ export class CanvasDragDropManager {
       )
       .when(
         (t) => t === 'text/csv',
-        () => 'datatable'
+        () => 'sheet'
       )
       .when(
         (t) => t.startsWith('text/'),
@@ -446,7 +446,7 @@ export class CanvasDragDropManager {
     const vfs = VirtualFilesystem.getInstance();
 
     // Refactored: combine common logic for file-based text nodes
-    const textNodeTypes = ['markdown', 'js', 'csound~', 'chuck~', 'datatable'];
+    const textNodeTypes = ['markdown', 'js', 'csound~', 'chuck~', 'sheet'];
     if (textNodeTypes.includes(nodeType)) {
       try {
         const file = await vfs.resolve(vfsPath);
@@ -456,7 +456,7 @@ export class CanvasDragDropManager {
           ...getDefaultNodeData(nodeType),
           ...(nodeType === 'markdown' && { markdown: content }),
           ...(nodeType === 'js' && { code: content }),
-          ...(nodeType === 'datatable' && parseCsvTable(content)),
+          ...(nodeType === 'sheet' && parseCsvTable(content)),
           ...((nodeType === 'csound~' || nodeType === 'chuck~') && { expr: content })
         };
       } catch (error) {
@@ -466,7 +466,7 @@ export class CanvasDragDropManager {
           ...getDefaultNodeData(nodeType),
           ...(nodeType === 'markdown' && { markdown: '// Error loading file' }),
           ...(nodeType === 'js' && { code: '// Error loading file' }),
-          ...(nodeType === 'datatable' && { ...getDefaultNodeData('datatable') }),
+          ...(nodeType === 'sheet' && { ...getDefaultNodeData('sheet') }),
           ...((nodeType === 'csound~' || nodeType === 'chuck~') && {
             expr: '// Error loading file'
           })
@@ -525,15 +525,15 @@ export class CanvasDragDropManager {
           return { ...getDefaultNodeData('js'), code: `// Error loading file: ${file.name}` };
         }
       })
-      .with('datatable', async () => {
+      .with('sheet', async () => {
         try {
           const content = await file.text();
 
-          return { ...getDefaultNodeData('datatable'), ...parseCsvTable(content) };
+          return { ...getDefaultNodeData('sheet'), ...parseCsvTable(content) };
         } catch (error) {
           logger.error('Failed to read CSV file:', error);
 
-          return getDefaultNodeData('datatable');
+          return getDefaultNodeData('sheet');
         }
       })
       .with('soundfile~', async () => {

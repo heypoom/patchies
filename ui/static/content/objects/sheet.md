@@ -1,9 +1,8 @@
-The `datatable` object is an editable CSV-style table for message data.
+The `sheet` object is an editable spreadsheet-style grid for message data.
 
 ## Getting Started
 
-Edit the column headers directly in the top row. Use the plus buttons to add
-rows or columns, and the trash buttons to remove them.
+Use the plus buttons to add rows or columns.
 
 Select the object and drag its resize handles to set the visible table area.
 Extra rows or columns scroll inside the table.
@@ -54,7 +53,7 @@ Use `objects` to always output row objects.
 
 ## CSV
 
-Drop a `.csv` file onto the canvas to create a `datatable` from it. The first
+Drop a `.csv` file onto the canvas to create a `sheet` from it. The first
 CSV row becomes editable column headers.
 
 You can also send CSV text directly to the inlet to replace the table.

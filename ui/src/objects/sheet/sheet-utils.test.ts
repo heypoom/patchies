@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  buildDatatableOutput,
-  buildDatatableObjectsOutput,
-  buildDatatableRowsOutput,
+  buildSheetOutput,
+  buildSheetObjectsOutput,
+  buildSheetRowsOutput,
   ensureUniqueColumnKeys,
   moveColumn,
   moveRow,
   parseCsvTable
-} from './datatable-utils';
+} from './sheet-utils';
 
-describe('datatable utilities', () => {
+describe('sheet utilities', () => {
   it('outputs a 2D array with headers as the first row by default', () => {
     expect(
-      buildDatatableOutput({
+      buildSheetOutput({
         columns: ['name', 'age'],
         rows: [
           ['Ada', '37'],
@@ -29,7 +29,7 @@ describe('datatable utilities', () => {
 
   it('outputs row objects when object mode is enabled', () => {
     expect(
-      buildDatatableOutput({
+      buildSheetOutput({
         columns: ['name', 'age'],
         rows: [
           ['Ada', '37'],
@@ -45,7 +45,7 @@ describe('datatable utilities', () => {
 
   it('can force 2D row output regardless of object mode', () => {
     expect(
-      buildDatatableRowsOutput({
+      buildSheetRowsOutput({
         columns: ['name', 'age'],
         rows: [['Ada', '37']],
         outputObjects: true
@@ -58,7 +58,7 @@ describe('datatable utilities', () => {
 
   it('can force row-object output regardless of default row mode', () => {
     expect(
-      buildDatatableObjectsOutput({
+      buildSheetObjectsOutput({
         columns: ['name', 'age'],
         rows: [['Ada', '37']],
         outputObjects: false
