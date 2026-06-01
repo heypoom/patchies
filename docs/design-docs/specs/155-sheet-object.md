@@ -32,10 +32,11 @@ from `table`, which remains an audio/wavetable float buffer.
 - Column headers follow the same select-then-edit model as body cells: click to
   select, type to replace/edit, and double-click to edit the existing header.
 - Allow dragging a column header to reorder columns freely.
-- On `bang`, output a 2D JavaScript array by default. The first row is the
-  current column header row, followed by each data row.
-- Add a checkbox setting to output array-of-row-objects instead. This mode uses
-  current column headers as keys and each row as an object value.
+- On `bang`, output an array of row objects by default. This mode uses current
+  column headers as keys and each row as an object value.
+- Add a checkbox setting to disable row-object output and output a 2D
+  JavaScript array instead. In 2D array mode, the first row is the current
+  column header row, followed by each data row.
 - Support pasted or loaded CSV text as a table source. The first CSV row becomes
   column headers so users can rename them directly after import.
 - Support common `expand` and `collapse` messages for opening and closing the
@@ -43,15 +44,15 @@ from `table`, which remains an audio/wavetable float buffer.
 
 ## Data Contract
 
-The default output intentionally preserves headers as the first row because CSV
-headers are not always reliable or meaningful. Object output is opt-in for cases
-where renamed headers should become object keys.
+The default output is row objects because JavaScript and Peppermint workflows
+usually want named fields. 2D array output remains available for cases where CSV
+headers are unreliable or positional data is preferable.
 
 ```ts
 type SheetNodeData = {
   columns: string[];
   rows: unknown[][];
-  outputObjects?: boolean;
+  outputRows?: boolean;
   width?: number;
   height?: number;
   columnWidths?: number[];

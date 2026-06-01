@@ -3,7 +3,7 @@ export type SheetCell = string | number | boolean | null;
 export type SheetData = {
   columns: string[];
   rows: SheetCell[][];
-  outputObjects?: boolean;
+  outputRows?: boolean;
   width?: number;
   height?: number;
   columnWidths?: number[];
@@ -29,7 +29,7 @@ export function ensureUniqueColumnKeys(columns: string[]): string[] {
 }
 
 export function buildSheetOutput(data: SheetData): SheetCell[][] | Record<string, SheetCell>[] {
-  return data.outputObjects ? buildSheetObjectsOutput(data) : buildSheetRowsOutput(data);
+  return data.outputRows ? buildSheetRowsOutput(data) : buildSheetObjectsOutput(data);
 }
 
 export function buildSheetRowsOutput(data: SheetData): SheetCell[][] {
@@ -57,7 +57,7 @@ export function createEmptySheet(): SheetData {
       ['', ''],
       ['', '']
     ],
-    outputObjects: false
+    outputRows: false
   };
 }
 

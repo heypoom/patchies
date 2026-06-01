@@ -144,7 +144,7 @@
 
   const columns = $derived(data.columns ?? DEFAULT_SHEET_DATA.columns);
   const rows = $derived(data.rows ?? DEFAULT_SHEET_DATA.rows);
-  const outputObjects = $derived(data.outputObjects ?? false);
+  const outputRows = $derived(data.outputRows ?? false);
   const width = $derived(data.width);
   const height = $derived(data.height);
   const isDetached = $derived($activeDetachedSheetNodeId === nodeId);
@@ -158,7 +158,7 @@
   const normalizedData = $derived<SheetData>({
     columns,
     rows,
-    outputObjects,
+    outputRows,
     width,
     height,
     columnWidths
@@ -208,7 +208,7 @@
     updateNodeData(nodeId, newData);
     tracker.commit('columns', oldData.columns, newData.columns);
     tracker.commit('rows', oldData.rows, newData.rows);
-    tracker.commit('outputObjects', oldData.outputObjects, newData.outputObjects);
+    tracker.commit('outputRows', oldData.outputRows, newData.outputRows);
     tracker.commit('columnWidths', oldData.columnWidths, newData.columnWidths);
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
@@ -617,13 +617,13 @@
   }
 
   function clearTable() {
-    setData({ ...createEmptySheet(), outputObjects });
+    setData({ ...createEmptySheet(), outputRows });
   }
 
-  function setOutputObjects(value: boolean) {
-    const oldValue = outputObjects;
-    updateNodeData(nodeId, { ...normalizedData, outputObjects: value });
-    tracker.commit('outputObjects', oldValue, value);
+  function setOutputRows(value: boolean) {
+    const oldValue = outputRows;
+    updateNodeData(nodeId, { ...normalizedData, outputRows: value });
+    tracker.commit('outputRows', oldValue, value);
   }
 
   function openExpandedSheet() {
@@ -1065,15 +1065,15 @@
       csv = await file.text();
     }
 
-    setData({ ...parseCsvTable(csv), outputObjects });
+    setData({ ...parseCsvTable(csv), outputRows });
   }
 
   function setFromUnknownArray(value: unknown[][]) {
-    setData({ ...tableFromArray(value), outputObjects });
+    setData({ ...tableFromArray(value), outputRows });
   }
 
   function setFromObjectRows(value: Record<string, unknown>[]) {
-    setData({ ...tableFromObjects(value), outputObjects });
+    setData({ ...tableFromObjects(value), outputRows });
   }
 
   const handleMessage: MessageCallbackFn = (message) => {
@@ -1111,7 +1111,7 @@
       .with(messages.expand, openExpandedSheet)
       .with(messages.collapse, closeExpandedSheet)
       .with(P.string, (csv) => {
-        setData({ ...parseCsvTable(csv), outputObjects });
+        setData({ ...parseCsvTable(csv), outputRows });
       })
       .otherwise(() => {});
   };
@@ -1143,7 +1143,7 @@
     event.preventDefault();
     event.stopPropagation();
     isDraggingCsv = false;
-    setData({ ...parseCsvTable(await file.text()), outputObjects });
+    setData({ ...parseCsvTable(await file.text()), outputRows });
   }
 
   onMount(() => {
@@ -1692,18 +1692,18 @@
           <div>
             <div class="text-xs font-medium text-zinc-300">Output</div>
             <div class="mt-1 text-[11px] leading-snug text-zinc-500">
-              Bang sends a 2D array unless row objects are enabled.
+              Bang sends row objects by default.
             </div>
           </div>
 
           <label class="flex cursor-pointer items-center gap-2">
             <input
               type="checkbox"
-              checked={outputObjects}
-              onchange={(event) => setOutputObjects(event.currentTarget.checked)}
+              checked={outputRows}
+              onchange={(event) => setOutputRows(event.currentTarget.checked)}
               class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
             />
-            <span class="text-xs text-zinc-300">Send row objects</span>
+            <span class="text-xs text-zinc-300">Send 2D array</span>
           </label>
         </div>
       </div>

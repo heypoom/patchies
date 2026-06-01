@@ -13,7 +13,7 @@ import {
 } from './sheet-utils';
 
 describe('sheet utilities', () => {
-  it('outputs a 2D array with headers as the first row by default', () => {
+  it('outputs row objects by default', () => {
     expect(
       buildSheetOutput({
         columns: ['name', 'age'],
@@ -23,13 +23,12 @@ describe('sheet utilities', () => {
         ]
       })
     ).toEqual([
-      ['name', 'age'],
-      ['Ada', '37'],
-      ['Grace', '85']
+      { name: 'Ada', age: '37' },
+      { name: 'Grace', age: '85' }
     ]);
   });
 
-  it('outputs row objects when object mode is enabled', () => {
+  it('outputs a 2D array when row output mode is enabled', () => {
     expect(
       buildSheetOutput({
         columns: ['name', 'age'],
@@ -37,11 +36,12 @@ describe('sheet utilities', () => {
           ['Ada', '37'],
           ['Grace', '85']
         ],
-        outputObjects: true
+        outputRows: true
       })
     ).toEqual([
-      { name: 'Ada', age: '37' },
-      { name: 'Grace', age: '85' }
+      ['name', 'age'],
+      ['Ada', '37'],
+      ['Grace', '85']
     ]);
   });
 
@@ -50,7 +50,7 @@ describe('sheet utilities', () => {
       buildSheetRowsOutput({
         columns: ['name', 'age'],
         rows: [['Ada', '37']],
-        outputObjects: true
+        outputRows: false
       })
     ).toEqual([
       ['name', 'age'],
@@ -63,7 +63,7 @@ describe('sheet utilities', () => {
       buildSheetObjectsOutput({
         columns: ['name', 'age'],
         rows: [['Ada', '37']],
-        outputObjects: false
+        outputRows: true
       })
     ).toEqual([{ name: 'Ada', age: '37' }]);
   });

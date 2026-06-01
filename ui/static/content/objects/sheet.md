@@ -32,7 +32,17 @@ to replace it, or double-click to edit the existing header.
 
 Drag a column header to reorder columns.
 
-Send `bang` to output the table. By default this is a 2D JavaScript array where
+Send `bang` to output the table. By default this is an array of row objects
+using the current column headers as keys:
+
+```js
+[
+  { name: "Ada", age: "37" },
+  { name: "Grace", age: "85" }
+]
+```
+
+Disable **row objects** to output a 2D JavaScript array instead. In that mode,
 the first row is the current column headers:
 
 ```js
@@ -43,18 +53,9 @@ the first row is the current column headers:
 ]
 ```
 
-Enable **row objects** to output an array of objects instead:
-
-```js
-[
-  { name: "Ada", age: "37" },
-  { name: "Grace", age: "85" }
-]
-```
-
 Blank object-mode headers use fallback names like `column_1`.
 
-Use `rows` to always output the 2D array, ignoring the row objects setting.
+Use `rows` to always output the 2D array, ignoring the Send 2D array setting.
 Use `objects` to always output row objects.
 
 ## CSV

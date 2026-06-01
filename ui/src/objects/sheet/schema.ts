@@ -56,7 +56,7 @@ export const sheetSchema: ObjectSchema = {
         },
         {
           schema: SheetObjectsOutput,
-          description: 'Array of row objects when object output is enabled'
+          description: 'Array of row objects'
         }
       ]
     }

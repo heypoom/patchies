@@ -6,5 +6,5 @@ export const DEFAULT_SHEET_DATA: SheetData = {
     ['', ''],
     ['', '']
   ],
-  outputObjects: false
+  outputRows: false
 };
