@@ -24,6 +24,9 @@ edit mode, or double-click a cell to edit the existing value.
 Drag across body cells to select multiple cells. Press `Delete` or `Backspace`
 to clear the selected cell contents.
 
+The leading `#` column is a row handle only. Drag a numbered row cell to reorder
+that row. The `#` column is not included in emitted table data.
+
 Column headers can be selected the same way. Click a header to select it, type
 to replace it, or double-click to edit the existing header.
 

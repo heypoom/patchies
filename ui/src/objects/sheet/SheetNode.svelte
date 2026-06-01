@@ -72,6 +72,7 @@
   const SHEET_DETACHED_HEIGHT = 640;
   const SHEET_COLUMN_WIDTH = 110;
   const SHEET_MIN_COLUMN_WIDTH = 64;
+  const SHEET_ROW_HEADER_WIDTH = 44;
   const SHEET_ACTION_COLUMN_WIDTH = 44;
   const SHEET_HEADER_ROW = -1;
 
@@ -104,6 +105,13 @@
     currentX: number;
     isDragging: boolean;
   };
+  type RowDragState = {
+    fromIndex: number;
+    targetIndex: number;
+    startY: number;
+    currentY: number;
+    isDragging: boolean;
+  };
   type CellSelectionRange = {
     anchor: CellPosition;
     focus: CellPosition;
@@ -127,9 +135,11 @@
     height: SHEET_DETACHED_HEIGHT
   });
   let draggingColumn = $state<ColumnDragState | null>(null);
+  let draggingRow = $state<RowDragState | null>(null);
   let columnsBeforeDrag: string[] | null = null;
   let rowsBeforeDrag: SheetCell[][] | null = null;
   let columnWidthsBeforeDrag: number[] | null = null;
+  let rowsBeforeRowDrag: SheetCell[][] | null = null;
 
   const columns = $derived(data.columns ?? DEFAULT_SHEET_DATA.columns);
   const rows = $derived(data.rows ?? DEFAULT_SHEET_DATA.rows);
@@ -141,6 +151,7 @@
   const activeColumnWidths = $derived(resizingColumn?.widths ?? columnWidths);
   const baseTableContentWidth = $derived(
     activeColumnWidths.reduce((sum: number, columnWidth: number) => sum + columnWidth, 0) +
+      SHEET_ROW_HEADER_WIDTH +
       SHEET_ACTION_COLUMN_WIDTH
   );
   const normalizedData = $derived<SheetData>({
@@ -165,7 +176,7 @@
   const renderedColumnWidths = $derived(
     fillColumnWidths(
       activeColumnWidths,
-      Math.max(0, sheetViewportWidth - SHEET_ACTION_COLUMN_WIDTH)
+      Math.max(0, sheetViewportWidth - SHEET_ROW_HEADER_WIDTH - SHEET_ACTION_COLUMN_WIDTH)
     )
   );
   const draggingColumnWidth = $derived(
@@ -174,6 +185,7 @@
   const selectedRangeRect = $derived(getSelectedRangeRect());
   const tableContentWidth = $derived(
     renderedColumnWidths.reduce((sum: number, columnWidth: number) => sum + columnWidth, 0) +
+      SHEET_ROW_HEADER_WIDTH +
       SHEET_ACTION_COLUMN_WIDTH
   );
   const containerClass = $derived(
@@ -795,7 +807,9 @@
 
   function getColumnIndexAtX(clientX: number) {
     const table = document.querySelector<HTMLTableElement>(`[data-sheet-table="${nodeId}"]`);
-    const x = clientX - (table?.getBoundingClientRect().left ?? 0);
+    const tableRect = table?.getBoundingClientRect();
+    const scaleX = table && tableRect ? tableRect.width / table.offsetWidth || 1 : 1;
+    const x = (clientX - (tableRect?.left ?? 0)) / scaleX - SHEET_ROW_HEADER_WIDTH;
     let left = 0;
     let closestIndex = 0;
 
@@ -814,9 +828,12 @@
   }
 
   function getColumnLeft(index: number) {
-    return renderedColumnWidths
-      .slice(0, Math.max(0, index))
-      .reduce((sum: number, columnWidth: number) => sum + columnWidth, 0);
+    return (
+      SHEET_ROW_HEADER_WIDTH +
+      renderedColumnWidths
+        .slice(0, Math.max(0, index))
+        .reduce((sum: number, columnWidth: number) => sum + columnWidth, 0)
+    );
   }
 
   function getColumnInsertLeft(index: number) {
@@ -858,6 +875,94 @@
     columnsBeforeDrag = null;
     rowsBeforeDrag = null;
     columnWidthsBeforeDrag = null;
+    setTimeout(() => updateNodeInternals(nodeId), 0);
+  }
+
+  function beginRowDrag(event: PointerEvent, rowIndex: number) {
+    if (event.button !== 0 || draggingColumn || resizingColumn) return;
+
+    draggingRow = {
+      fromIndex: rowIndex,
+      targetIndex: rowIndex,
+      startY: event.clientY,
+      currentY: event.clientY,
+      isDragging: false
+    };
+    rowsBeforeRowDrag = rows.map((row) => [...row]);
+
+    window.addEventListener('pointermove', handleRowDragMove);
+    window.addEventListener('pointerup', endRowDrag, { once: true });
+  }
+
+  function handleRowDragMove(event: PointerEvent) {
+    if (!draggingRow) return;
+
+    const hasPassedThreshold =
+      draggingRow.isDragging || Math.abs(event.clientY - draggingRow.startY) > 6;
+
+    if (!hasPassedThreshold) return;
+
+    event.preventDefault();
+
+    draggingRow = {
+      ...draggingRow,
+      currentY: event.clientY,
+      isDragging: true,
+      targetIndex: getRowIndexAtY(event.clientY)
+    };
+  }
+
+  function getRowIndexAtY(clientY: number) {
+    const rowElements = Array.from(
+      document.querySelectorAll<HTMLTableRowElement>(`[data-sheet-table="${nodeId}"] tbody tr`)
+    );
+    let closestIndex = 0;
+
+    rowElements.forEach((rowElement, index) => {
+      const rect = rowElement.getBoundingClientRect();
+      const center = rect.top + rect.height / 2;
+
+      if (clientY >= center) {
+        closestIndex = index;
+      }
+    });
+
+    return Math.max(0, Math.min(rows.length - 1, closestIndex));
+  }
+
+  function getRowInsertTop(index: number) {
+    const rowElement = document.querySelector<HTMLTableRowElement>(
+      `[data-sheet-table="${nodeId}"] tbody tr[data-row-index="${index}"]`
+    );
+    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
+
+    if (!rowElement || !table) return 0;
+
+    const tableRect = table.getBoundingClientRect();
+    const rowRect = rowElement.getBoundingClientRect();
+    const scaleY = tableRect.height / table.offsetHeight || 1;
+
+    if (!draggingRow) return (rowRect.top - tableRect.top) / scaleY;
+
+    const isAfterTarget = draggingRow.fromIndex < index;
+    return ((isAfterTarget ? rowRect.bottom : rowRect.top) - tableRect.top) / scaleY;
+  }
+
+  function endRowDrag() {
+    if (!draggingRow) return;
+
+    const { fromIndex, targetIndex, isDragging } = draggingRow;
+    draggingRow = null;
+    window.removeEventListener('pointermove', handleRowDragMove);
+
+    if (!isDragging || fromIndex === targetIndex) {
+      rowsBeforeRowDrag = null;
+      return;
+    }
+
+    updateNodeData(nodeId, moveRow(normalizedData, fromIndex, targetIndex));
+    tracker.commit('rows', rowsBeforeRowDrag, moveItem(rows, fromIndex, targetIndex));
+    rowsBeforeRowDrag = null;
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
@@ -1053,6 +1158,8 @@
     window.removeEventListener('pointerup', endColumnResize);
     window.removeEventListener('pointermove', handleColumnDragMove);
     window.removeEventListener('pointerup', endColumnDrag);
+    window.removeEventListener('pointermove', handleRowDragMove);
+    window.removeEventListener('pointerup', endRowDrag);
     window.removeEventListener('pointerup', endCellSelection);
   });
 </script>
@@ -1167,6 +1274,10 @@
             <div
               class="nodrag nopan nowheel relative min-h-0 flex-1 overflow-auto"
               style:max-height={isDetached || displayHeight ? undefined : '240px'}
+              role="presentation"
+              oncontextmenu={(event) => {
+                if (event.target === event.currentTarget) contextTarget = null;
+              }}
             >
               {#if draggingColumn?.isDragging}
                 <div
@@ -1178,6 +1289,13 @@
                 <div
                   class="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 bg-blue-300 shadow-[0_0_8px_rgba(147,197,253,0.8)]"
                   style:left={`${getColumnInsertLeft(draggingColumn.targetIndex)}px`}
+                ></div>
+              {/if}
+
+              {#if draggingRow?.isDragging}
+                <div
+                  class="pointer-events-none absolute right-0 left-0 z-30 h-0.5 bg-blue-300 shadow-[0_0_8px_rgba(147,197,253,0.8)]"
+                  style:top={`${getRowInsertTop(draggingRow.targetIndex)}px`}
                 ></div>
               {/if}
 
@@ -1197,6 +1315,7 @@
                 data-sheet-table={nodeId}
               >
                 <colgroup>
+                  <col style:width={`${SHEET_ROW_HEADER_WIDTH}px`} />
                   {#each renderedColumnWidths as columnWidth}
                     <col style:width={`${columnWidth}px`} />
                   {/each}
@@ -1205,6 +1324,13 @@
 
                 <thead>
                   <tr>
+                    <th
+                      class="border-r border-b border-zinc-700 bg-zinc-800 px-2 py-1.5 text-left font-mono text-[11px] text-zinc-500"
+                      aria-label="Row numbers"
+                    >
+                      #
+                    </th>
+
                     {#each columns as column, columnIndex}
                       <th
                         class={[
@@ -1279,7 +1405,25 @@
 
                 <tbody data-sheet-node={nodeId}>
                   {#each rows as row, rowIndex}
-                    <tr oncontextmenu={() => setRowContext(rowIndex)}>
+                    <tr
+                      data-row-index={rowIndex}
+                      class={draggingRow?.fromIndex === rowIndex ? 'opacity-60' : ''}
+                    >
+                      <th
+                        class={[
+                          'cursor-grab border-r border-b border-zinc-700 bg-zinc-900 px-2 py-1 text-left font-mono text-[11px] text-zinc-500 active:cursor-grabbing',
+                          draggingRow?.targetIndex === rowIndex && draggingRow.isDragging
+                            ? 'bg-zinc-800 text-zinc-300'
+                            : ''
+                        ]}
+                        scope="row"
+                        aria-label={`Row ${rowIndex + 1}`}
+                        oncontextmenu={() => setRowContext(rowIndex)}
+                        onpointerdown={(event) => beginRowDrag(event, rowIndex)}
+                      >
+                        {rowIndex + 1}
+                      </th>
+
                       {#each columns as _column, columnIndex}
                         <td
                           class={[
@@ -1344,6 +1488,8 @@
 
             <div
               class="nodrag flex shrink-0 items-center justify-between border-t border-zinc-700 px-2 py-1.5"
+              role="presentation"
+              oncontextmenu={() => (contextTarget = null)}
             >
               <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
                 {rows.length} rows

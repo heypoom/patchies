@@ -26,6 +26,9 @@ from `table`, which remains an audio/wavetable float buffer.
 - Allow dragging across body cells to select a rectangular cell range. Pressing
   `Delete` or `Backspace` clears the selected cell contents without removing
   rows or columns.
+- Show a UI-only leading `#` column with row numbers. This column is not part of
+  sheet data, CSV import/export, or emitted outputs.
+- Allow dragging a row number cell to reorder rows freely.
 - Column headers follow the same select-then-edit model as body cells: click to
   select, type to replace/edit, and double-click to edit the existing header.
 - Allow dragging a column header to reorder columns freely.
@@ -76,5 +79,7 @@ overwriting earlier values.
   together.
 - Column header drag reorder should use a small movement threshold so normal
   header clicks and edits do not accidentally reorder columns.
+- Row header drag reorder should only move row data and should not alter
+  columns, column widths, or output shapes.
 - Expanded mode should use the same rendered sheet instance through a portal so
   selection, editing, context menus, and column drag state stay continuous.
