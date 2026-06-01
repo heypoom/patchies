@@ -16,6 +16,9 @@ from `table`, which remains an audio/wavetable float buffer.
   resizing while keeping table editing and column resizing available.
 - Node resize height should max out at current rendered content height: title
   header, table header/body, validation message if visible, and footer if shown.
+- Add an Auto fit height setting, enabled by default, that updates node height
+  to the current rendered content height as rows, footer visibility, validation,
+  and cell content heights change.
 - Add a Show footer setting, enabled by default, that hides or shows the row
   count and add-row footer.
 - Add an expand control beside the settings control. Expanded mode moves the
@@ -61,6 +64,7 @@ type SheetNodeData = {
   outputRows?: boolean;
   allowResize?: boolean;
   showFooter?: boolean;
+  autoFitHeight?: boolean;
   width?: number;
   height?: number;
   columnWidths?: number[];

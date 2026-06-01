@@ -8,5 +8,6 @@ export const DEFAULT_SHEET_DATA: SheetData = {
   ],
   outputRows: false,
   allowResize: true,
-  showFooter: true
+  showFooter: true,
+  autoFitHeight: true
 };

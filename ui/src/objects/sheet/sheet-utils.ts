@@ -6,6 +6,7 @@ export type SheetData = {
   outputRows?: boolean;
   allowResize?: boolean;
   showFooter?: boolean;
+  autoFitHeight?: boolean;
   width?: number;
   height?: number;
   columnWidths?: number[];
@@ -61,7 +62,8 @@ export function createEmptySheet(): SheetData {
     ],
     outputRows: false,
     allowResize: true,
-    showFooter: true
+    showFooter: true,
+    autoFitHeight: true
   };
 }
 

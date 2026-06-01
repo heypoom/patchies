@@ -88,6 +88,7 @@
   let headerValidationError = $state('');
   let resizingSize = $state<{ width: number; height: number } | null>(null);
   let sizeBeforeResize: { width?: number; height?: number } | null = null;
+
   type ColumnResizeState = {
     index: number;
     nextIndex: number | null;
@@ -98,6 +99,7 @@
   };
 
   type CellPosition = { rowIndex: number; columnIndex: number };
+
   type ColumnDragState = {
     fromIndex: number;
     targetIndex: number;
@@ -105,6 +107,7 @@
     currentX: number;
     isDragging: boolean;
   };
+
   type RowDragState = {
     fromIndex: number;
     targetIndex: number;
@@ -112,19 +115,22 @@
     currentY: number;
     isDragging: boolean;
   };
+
   type CellSelectionRange = {
     anchor: CellPosition;
     focus: CellPosition;
   };
 
-  let resizingColumn = $state<ColumnResizeState | null>(null);
-  let columnWidthsBeforeResize: number[] | null = null;
-  let contextTarget = $state<
+  type ContextTarget =
     | { type: 'column'; index: number }
     | { type: 'row'; index: number }
     | { type: 'cell'; rowIndex: number; columnIndex: number }
-    | null
-  >(null);
+    | null;
+
+  let resizingColumn = $state<ColumnResizeState | null>(null);
+  let columnWidthsBeforeResize: number[] | null = null;
+  let contextTarget = $state<ContextTarget>(null);
+
   let selectedCell = $state<CellPosition | null>(null);
   let selectedRange = $state<CellSelectionRange | null>(null);
   let editingCell = $state<CellPosition | null>(null);
@@ -132,10 +138,12 @@
   let isSelectingCells = $state(false);
   let selectionLayoutVersion = $state(0);
   let sheetContentMaxHeight = $state(SHEET_MAX_HEIGHT);
+
   let detachedViewportSize = $state({
     width: SHEET_DETACHED_WIDTH,
     height: SHEET_DETACHED_HEIGHT
   });
+
   let draggingColumn = $state<ColumnDragState | null>(null);
   let draggingRow = $state<RowDragState | null>(null);
   let columnsBeforeDrag: string[] | null = null;
@@ -143,64 +151,83 @@
   let columnWidthsBeforeDrag: number[] | null = null;
   let rowsBeforeRowDrag: SheetCell[][] | null = null;
 
+  const normalizeColumnWidths = (widths: number[] | undefined, count: number) =>
+    Array.from({ length: count }, (_, index) =>
+      Math.max(SHEET_MIN_COLUMN_WIDTH, widths?.[index] ?? SHEET_COLUMN_WIDTH)
+    );
+
   const columns = $derived(data.columns ?? DEFAULT_SHEET_DATA.columns);
   const rows = $derived(data.rows ?? DEFAULT_SHEET_DATA.rows);
   const outputRows = $derived(data.outputRows ?? false);
   const allowResize = $derived(data.allowResize ?? true);
   const showFooter = $derived(data.showFooter ?? true);
+  const autoFitHeight = $derived(data.autoFitHeight ?? true);
   const width = $derived(data.width);
   const height = $derived(data.height);
   const isDetached = $derived($activeDetachedSheetNodeId === nodeId);
   const columnWidths = $derived(normalizeColumnWidths(data.columnWidths, columns.length));
   const activeColumnWidths = $derived(resizingColumn?.widths ?? columnWidths);
+
   const baseTableContentWidth = $derived(
     activeColumnWidths.reduce((sum: number, columnWidth: number) => sum + columnWidth, 0) +
       SHEET_ROW_HEADER_WIDTH +
       SHEET_ACTION_COLUMN_WIDTH
   );
+
   const normalizedData = $derived<SheetData>({
     columns,
     rows,
     outputRows,
     allowResize,
     showFooter,
+    autoFitHeight,
     width,
     height,
     columnWidths
   });
+
   const autoTableWidth = $derived(Math.min(520, Math.max(SHEET_MIN_WIDTH, baseTableContentWidth)));
   const displayWidth = $derived(resizingSize?.width ?? width ?? autoTableWidth);
   const rawDisplayHeight = $derived(resizingSize?.height ?? height);
+
   const displayHeight = $derived(
     rawDisplayHeight ? Math.min(rawDisplayHeight, sheetContentMaxHeight) : undefined
   );
+
   const sheetViewportWidth = $derived(
     isDetached ? Math.max(displayWidth, detachedViewportSize.width) : displayWidth
   );
+
   const sheetViewportHeight = $derived(
     isDetached
       ? Math.max(displayHeight ?? SHEET_MIN_HEIGHT, detachedViewportSize.height)
       : displayHeight
   );
+
   const renderedColumnWidths = $derived(
     fillColumnWidths(
       activeColumnWidths,
       Math.max(0, sheetViewportWidth - SHEET_ROW_HEADER_WIDTH - SHEET_ACTION_COLUMN_WIDTH)
     )
   );
+
   const draggingColumnWidth = $derived(
     draggingColumn ? (renderedColumnWidths[draggingColumn.fromIndex] ?? SHEET_COLUMN_WIDTH) : 0
   );
+
   const draggingRowHeight = $derived(getRowHeight(draggingRow?.fromIndex));
   const selectedRangeRect = $derived(getSelectedRangeRect());
+
   const tableContentWidth = $derived(
     renderedColumnWidths.reduce((sum: number, columnWidth: number) => sum + columnWidth, 0) +
       SHEET_ROW_HEADER_WIDTH +
       SHEET_ACTION_COLUMN_WIDTH
   );
+
   const containerClass = $derived(
     selected ? 'object-container-selected !bg-zinc-900' : 'object-container-light'
   );
+
   const detachedPortalTarget = $derived(
     isDetached && typeof document !== 'undefined' ? document.body : null
   );
@@ -214,16 +241,19 @@
 
   function commitData(oldData: SheetData, newData: SheetData) {
     updateNodeData(nodeId, newData);
+
     tracker.commit('columns', oldData.columns, newData.columns);
     tracker.commit('rows', oldData.rows, newData.rows);
     tracker.commit('outputRows', oldData.outputRows, newData.outputRows);
     tracker.commit('allowResize', oldData.allowResize, newData.allowResize);
     tracker.commit('showFooter', oldData.showFooter, newData.showFooter);
+    tracker.commit('autoFitHeight', oldData.autoFitHeight, newData.autoFitHeight);
     tracker.commit('columnWidths', oldData.columnWidths, newData.columnWidths);
+
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
-  function setData(nextData: SheetData) {
+  const setData = (nextData: SheetData) =>
     commitData(normalizedData, {
       ...nextData,
       width,
@@ -233,23 +263,16 @@
         nextData.columns.length
       )
     });
-  }
 
-  function normalizeColumnWidths(widths: number[] | undefined, count: number) {
-    return Array.from({ length: count }, (_, index) =>
-      Math.max(SHEET_MIN_COLUMN_WIDTH, widths?.[index] ?? SHEET_COLUMN_WIDTH)
-    );
-  }
-
-  function reconcileColumnWidths(widths: number[], count: number) {
-    return normalizeColumnWidths(widths, count);
-  }
+  const reconcileColumnWidths = (widths: number[], count: number) =>
+    normalizeColumnWidths(widths, count);
 
   function fillColumnWidths(widths: number[], targetWidth: number) {
     const currentWidth = widths.reduce((sum, columnWidth) => sum + columnWidth, 0);
     if (widths.length === 0 || currentWidth >= targetWidth) return widths;
 
     const extraWidth = (targetWidth - currentWidth) / widths.length;
+
     return widths.map((columnWidth) => columnWidth + extraWidth);
   }
 
@@ -291,16 +314,15 @@
 
     headerValidationError = '';
     updateNodeData(nodeId, updateColumnName(normalizedData, columnIndex, value));
+
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
-  function setCell(rowIndex: number, columnIndex: number, value: string) {
+  const setCell = (rowIndex: number, columnIndex: number, value: string) =>
     updateNodeData(nodeId, updateCell(normalizedData, rowIndex, columnIndex, value));
-  }
 
-  function isSelectedCell(rowIndex: number, columnIndex: number) {
-    return selectedCell?.rowIndex === rowIndex && selectedCell.columnIndex === columnIndex;
-  }
+  const isSelectedCell = (rowIndex: number, columnIndex: number) =>
+    selectedCell?.rowIndex === rowIndex && selectedCell.columnIndex === columnIndex;
 
   function isCellInSelectedRange(rowIndex: number, columnIndex: number) {
     if (!selectedRange) return isSelectedCell(rowIndex, columnIndex);
@@ -333,17 +355,17 @@
     return {
       minRow: Math.min(selectedRange.anchor.rowIndex, selectedRange.focus.rowIndex),
       maxRow: Math.max(selectedRange.anchor.rowIndex, selectedRange.focus.rowIndex),
+
       minColumn: Math.min(selectedRange.anchor.columnIndex, selectedRange.focus.columnIndex),
       maxColumn: Math.max(selectedRange.anchor.columnIndex, selectedRange.focus.columnIndex)
     };
   }
 
-  function isEditingCell(rowIndex: number, columnIndex: number) {
-    return editingCell?.rowIndex === rowIndex && editingCell.columnIndex === columnIndex;
-  }
+  const isEditingCell = (rowIndex: number, columnIndex: number) =>
+    editingCell?.rowIndex === rowIndex && editingCell.columnIndex === columnIndex;
 
   function getSelectedRangeRect() {
-    selectionLayoutVersion;
+    void selectionLayoutVersion;
 
     const bounds = getSelectedRangeBounds();
     if (!bounds || bounds.minRow < 0) return null;
@@ -359,8 +381,10 @@
     if (!startCell || !endCell || !table) return null;
 
     const tableRect = table.getBoundingClientRect();
+
     const startRect = startCell.getBoundingClientRect();
     const endRect = endCell.getBoundingClientRect();
+
     const scaleX = tableRect.width / table.offsetWidth || 1;
     const scaleY = tableRect.height / table.offsetHeight || scaleX;
 
@@ -372,38 +396,43 @@
     };
   }
 
-  function isSelectedHeader(columnIndex: number) {
-    return isSelectedCell(SHEET_HEADER_ROW, columnIndex);
-  }
+  const isSelectedHeader = (columnIndex: number) => isSelectedCell(SHEET_HEADER_ROW, columnIndex);
 
   async function selectCell(rowIndex: number, columnIndex: number, target?: HTMLElement) {
     selectedCell = { rowIndex, columnIndex };
+
     selectedRange =
       rowIndex >= 0
         ? { anchor: { rowIndex, columnIndex }, focus: { rowIndex, columnIndex } }
         : null;
+
     editingCell = null;
     editingHeaderColumn = null;
+
     await tick();
+
     target?.focus();
   }
 
-  async function selectHeader(columnIndex: number, target?: HTMLElement) {
-    await selectCell(SHEET_HEADER_ROW, columnIndex, target);
-  }
+  const selectHeader = (columnIndex: number, target?: HTMLElement) =>
+    selectCell(SHEET_HEADER_ROW, columnIndex, target);
 
   function beginCellSelection(event: PointerEvent, rowIndex: number, columnIndex: number) {
     if (event.button !== 0) return;
 
     event.preventDefault();
+
     selectedCell = { rowIndex, columnIndex };
+
     selectedRange = {
       anchor: { rowIndex, columnIndex },
       focus: { rowIndex, columnIndex }
     };
+
     editingCell = null;
     editingHeaderColumn = null;
     isSelectingCells = true;
+
     (event.currentTarget as HTMLElement | null)?.focus();
     window.addEventListener('pointerup', endCellSelection, { once: true });
   }
@@ -423,14 +452,17 @@
 
   async function enterCellEdit(rowIndex: number, columnIndex: number, initialValue?: string) {
     selectedCell = { rowIndex, columnIndex };
+
     selectedRange = {
       anchor: { rowIndex, columnIndex },
       focus: { rowIndex, columnIndex }
     };
+
     editingCell = { rowIndex, columnIndex };
     editingHeaderColumn = null;
 
     beginCellEdit();
+
     if (initialValue !== undefined) {
       setCell(rowIndex, columnIndex, initialValue);
     }
@@ -444,6 +476,7 @@
     if (!textarea) return;
 
     resizeTextarea(textarea);
+
     textarea.focus();
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
   }
@@ -454,6 +487,7 @@
     editingHeaderColumn = columnIndex;
 
     beginColumnEdit();
+
     if (initialValue !== undefined) {
       setColumnName(columnIndex, initialValue);
     }
@@ -484,8 +518,10 @@
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
+
       finishCellEdit();
       focusCell({ rowIndex, columnIndex });
+
       return;
     }
 
@@ -497,13 +533,13 @@
 
     event.preventDefault();
     event.stopPropagation();
+
     finishHeaderEdit();
     focusHeader(columnIndex);
   }
 
-  function isPrintableKey(event: KeyboardEvent) {
-    return event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey;
-  }
+  const isPrintableKey = (event: KeyboardEvent) =>
+    event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey;
 
   function handleSelectedCellKeydown(event: KeyboardEvent, rowIndex: number, columnIndex: number) {
     if (!isSelectedCell(rowIndex, columnIndex)) return;
@@ -511,7 +547,9 @@
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
       event.stopPropagation();
+
       clearSelectedCells();
+
       return;
     }
 
@@ -520,22 +558,28 @@
     if (nextCell) {
       event.preventDefault();
       event.stopPropagation();
+
       selectedCell = nextCell;
       selectedRange = { anchor: nextCell, focus: nextCell };
+
       focusCell(nextCell);
+
       return;
     }
 
     if (isPrintableKey(event)) {
       event.preventDefault();
       event.stopPropagation();
+
       enterCellEdit(rowIndex, columnIndex, event.key);
+
       return;
     }
 
     if (event.key === 'Enter') {
       event.preventDefault();
       event.stopPropagation();
+
       enterCellEdit(rowIndex, columnIndex);
     }
   }
@@ -583,19 +627,24 @@
       0,
       Math.min(selectedRange.anchor.rowIndex, selectedRange.focus.rowIndex)
     );
+
     const maxRow = Math.min(
       rows.length - 1,
       Math.max(selectedRange.anchor.rowIndex, selectedRange.focus.rowIndex)
     );
+
     const minColumn = Math.max(
       0,
       Math.min(selectedRange.anchor.columnIndex, selectedRange.focus.columnIndex)
     );
+
     const maxColumn = Math.min(
       columns.length - 1,
       Math.max(selectedRange.anchor.columnIndex, selectedRange.focus.columnIndex)
     );
+
     const oldRows = rows.map((row) => [...row]);
+
     const nextRows = rows.map((row, rowIndex) =>
       row.map((cell, columnIndex) =>
         rowIndex >= minRow &&
@@ -616,12 +665,14 @@
 
     if (isPrintableKey(event)) {
       event.preventDefault();
+
       enterHeaderEdit(columnIndex, event.key);
       return;
     }
 
     if (event.key === 'Enter') {
       event.preventDefault();
+
       enterHeaderEdit(columnIndex);
     }
   }
@@ -632,20 +683,30 @@
 
   function setOutputRows(value: boolean) {
     const oldValue = outputRows;
+
     updateNodeData(nodeId, { ...normalizedData, outputRows: value });
     tracker.commit('outputRows', oldValue, value);
   }
 
   function setAllowResize(value: boolean) {
     const oldValue = allowResize;
+
     updateNodeData(nodeId, { ...normalizedData, allowResize: value });
     tracker.commit('allowResize', oldValue, value);
   }
 
   function setShowFooter(value: boolean) {
     const oldValue = showFooter;
+
     updateNodeData(nodeId, { ...normalizedData, showFooter: value });
     tracker.commit('showFooter', oldValue, value);
+  }
+
+  function setAutoFitHeight(value: boolean) {
+    const oldValue = autoFitHeight;
+
+    updateNodeData(nodeId, { ...normalizedData, autoFitHeight: value });
+    tracker.commit('autoFitHeight', oldValue, value);
   }
 
   function openExpandedSheet() {
@@ -673,52 +734,66 @@
   }
 
   function getContextRowIndex() {
-    if (contextTarget?.type === 'row') return contextTarget.index;
-    if (contextTarget?.type === 'cell') return contextTarget.rowIndex;
+    if (contextTarget?.type === 'row') {
+      return contextTarget.index;
+    }
+
+    if (contextTarget?.type === 'cell') {
+      return contextTarget.rowIndex;
+    }
+
     return null;
   }
 
   function addContextRowAbove() {
     const rowIndex = getContextRowIndex();
     if (rowIndex === null) return;
+
     setData(insertRow(normalizedData, rowIndex));
   }
 
   function addContextRowBelow() {
     const rowIndex = getContextRowIndex();
     if (rowIndex === null) return;
+
     setData(insertRow(normalizedData, rowIndex + 1));
   }
 
   function moveContextRow(delta: -1 | 1) {
     const rowIndex = getContextRowIndex();
     if (rowIndex === null) return;
+
     setData(moveRow(normalizedData, rowIndex, rowIndex + delta));
   }
 
   function removeContextRow() {
     const rowIndex = getContextRowIndex();
     if (rowIndex === null) return;
+
     setData(removeRow(normalizedData, rowIndex));
   }
 
   function moveContextColumn(delta: -1 | 1) {
     if (contextTarget?.type !== 'column') return;
+
     setData(moveColumn(normalizedData, contextTarget.index, contextTarget.index + delta));
   }
 
   function addContextColumnLeft() {
     if (contextTarget?.type !== 'column') return;
+
     setData(insertColumn(normalizedData, contextTarget.index));
   }
 
   function addContextColumnRight() {
     if (contextTarget?.type !== 'column') return;
+
     setData(insertColumn(normalizedData, contextTarget.index + 1));
   }
 
   function removeContextColumn() {
     if (contextTarget?.type !== 'column') return;
+
     setData(removeColumn(normalizedData, contextTarget.index));
   }
 
@@ -735,14 +810,17 @@
     const nextHeight = Math.min(params.height, sheetContentMaxHeight);
 
     resizingSize = { width: nextWidth, height: nextHeight };
+
     updateNodeData(nodeId, {
       ...normalizedData,
       width: nextWidth,
       height: nextHeight
     });
+
     tracker.commit('width', sizeBeforeResize?.width, nextWidth);
     tracker.commit('height', sizeBeforeResize?.height, nextHeight);
     sizeBeforeResize = null;
+
     setTimeout(() => updateNodeInternals(nodeId), 0);
   };
 
@@ -754,6 +832,7 @@
     const nextIndex = columnIndex < columns.length - 1 ? columnIndex + 1 : null;
 
     columnWidthsBeforeResize = visibleWidths;
+
     resizingColumn = {
       index: columnIndex,
       nextIndex,
@@ -801,10 +880,13 @@
       ...normalizedData,
       columnWidths: nextWidths
     });
+
     tracker.commit('columnWidths', columnWidthsBeforeResize, nextWidths);
     columnWidthsBeforeResize = null;
+
     window.removeEventListener('pointermove', handleColumnResizeMove);
     selectionLayoutVersion += 1;
+
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
@@ -818,6 +900,7 @@
       currentX: event.clientX,
       isDragging: false
     };
+
     columnsBeforeDrag = [...columns];
     rowsBeforeDrag = rows.map((row) => [...row]);
     columnWidthsBeforeDrag = [...columnWidths];
@@ -849,6 +932,7 @@
     const tableRect = table?.getBoundingClientRect();
     const scaleX = table && tableRect ? tableRect.width / table.offsetWidth || 1 : 1;
     const x = (clientX - (tableRect?.left ?? 0)) / scaleX - SHEET_ROW_HEADER_WIDTH;
+
     let left = 0;
     let closestIndex = 0;
 
@@ -866,14 +950,11 @@
     return Math.max(0, Math.min(columns.length - 1, closestIndex));
   }
 
-  function getColumnLeft(index: number) {
-    return (
-      SHEET_ROW_HEADER_WIDTH +
-      renderedColumnWidths
-        .slice(0, Math.max(0, index))
-        .reduce((sum: number, columnWidth: number) => sum + columnWidth, 0)
-    );
-  }
+  const getColumnLeft = (index: number) =>
+    SHEET_ROW_HEADER_WIDTH +
+    renderedColumnWidths
+      .slice(0, Math.max(0, index))
+      .reduce((sum: number, columnWidth: number) => sum + columnWidth, 0);
 
   function getColumnInsertLeft(index: number) {
     const targetLeft = getColumnLeft(index);
@@ -888,6 +969,7 @@
     if (!draggingColumn) return;
 
     const { fromIndex, targetIndex, isDragging } = draggingColumn;
+
     draggingColumn = null;
     window.removeEventListener('pointermove', handleColumnDragMove);
 
@@ -895,16 +977,20 @@
       columnsBeforeDrag = null;
       rowsBeforeDrag = null;
       columnWidthsBeforeDrag = null;
+
       return;
     }
 
     updateNodeData(nodeId, moveColumn(normalizedData, fromIndex, targetIndex));
+
     tracker.commit('columns', columnsBeforeDrag, moveItem(columns, fromIndex, targetIndex));
+
     tracker.commit(
       'rows',
       rowsBeforeDrag,
       rows.map((row) => moveItem(row, fromIndex, targetIndex))
     );
+
     tracker.commit(
       'columnWidths',
       columnWidthsBeforeDrag,
@@ -914,6 +1000,7 @@
     columnsBeforeDrag = null;
     rowsBeforeDrag = null;
     columnWidthsBeforeDrag = null;
+
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
@@ -927,6 +1014,7 @@
       currentY: event.clientY,
       isDragging: false
     };
+
     rowsBeforeRowDrag = rows.map((row) => [...row]);
 
     window.addEventListener('pointermove', handleRowDragMove);
@@ -955,6 +1043,7 @@
     const rowElements = Array.from(
       document.querySelectorAll<HTMLTableRowElement>(`[data-sheet-table="${nodeId}"] tbody tr`)
     );
+
     let closestIndex = 0;
 
     rowElements.forEach((rowElement, index) => {
@@ -973,17 +1062,22 @@
     const rowElement = document.querySelector<HTMLTableRowElement>(
       `[data-sheet-table="${nodeId}"] tbody tr[data-row-index="${index}"]`
     );
+
     const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
 
     if (!rowElement || !table) return 0;
 
     const tableRect = table.getBoundingClientRect();
     const rowRect = rowElement.getBoundingClientRect();
+
     const scaleY = tableRect.height / table.offsetHeight || 1;
 
-    if (!draggingRow) return (rowRect.top - tableRect.top) / scaleY;
+    if (!draggingRow) {
+      return (rowRect.top - tableRect.top) / scaleY;
+    }
 
     const isAfterTarget = draggingRow.fromIndex < index;
+
     return ((isAfterTarget ? rowRect.bottom : rowRect.top) - tableRect.top) / scaleY;
   }
 
@@ -993,12 +1087,13 @@
     const rowElement = document.querySelector<HTMLTableRowElement>(
       `[data-sheet-table="${nodeId}"] tbody tr[data-row-index="${index}"]`
     );
-    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
 
+    const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
     if (!rowElement || !table) return 0;
 
     const tableRect = table.getBoundingClientRect();
     const rowRect = rowElement.getBoundingClientRect();
+
     const scaleY = tableRect.height / table.offsetHeight || 1;
 
     return (rowRect.top - tableRect.top) / scaleY;
@@ -1010,12 +1105,14 @@
     const rowElement = document.querySelector<HTMLTableRowElement>(
       `[data-sheet-table="${nodeId}"] tbody tr[data-row-index="${index}"]`
     );
+
     const table = document.querySelector<HTMLElement>(`[data-sheet-table="${nodeId}"]`);
 
     if (!rowElement || !table) return 28;
 
     const tableRect = table.getBoundingClientRect();
     const rowRect = rowElement.getBoundingClientRect();
+
     const scaleY = tableRect.height / table.offsetHeight || 1;
 
     return rowRect.height / scaleY;
@@ -1026,6 +1123,7 @@
 
     const { fromIndex, targetIndex, isDragging } = draggingRow;
     draggingRow = null;
+
     window.removeEventListener('pointermove', handleRowDragMove);
 
     if (!isDragging || fromIndex === targetIndex) {
@@ -1035,14 +1133,18 @@
 
     updateNodeData(nodeId, moveRow(normalizedData, fromIndex, targetIndex));
     tracker.commit('rows', rowsBeforeRowDrag, moveItem(rows, fromIndex, targetIndex));
+
     rowsBeforeRowDrag = null;
+
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
   function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
     const next = [...items];
     const [item] = next.splice(fromIndex, 1);
+
     next.splice(toIndex, 0, item);
+
     return next;
   }
 
@@ -1059,6 +1161,7 @@
   function resizeTextarea(textarea: HTMLTextAreaElement) {
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.max(28, textarea.scrollHeight)}px`;
+
     selectionLayoutVersion += 1;
   }
 
@@ -1077,6 +1180,7 @@
       requestAnimationFrame(() => {
         selectionLayoutVersion += 1;
       });
+
       return;
     }
 
@@ -1100,13 +1204,26 @@
       (showFooter ? (footer?.offsetHeight ?? 0) : 0) +
       2;
 
-    sheetContentMaxHeight = Math.max(SHEET_MIN_HEIGHT, Math.ceil(measuredHeight));
+    const nextHeight = Math.max(SHEET_MIN_HEIGHT, Math.ceil(measuredHeight));
+
+    sheetContentMaxHeight = nextHeight;
+
+    if (!autoFitHeight || isDetached || resizingSize) return;
+    if (height === nextHeight) return;
+
+    updateNodeData(nodeId, {
+      ...normalizedData,
+      height: nextHeight
+    });
+
+    setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
   function handleCellKeydown(event: KeyboardEvent) {
     if (event.key !== 'Enter' || !event.shiftKey) return;
 
     event.preventDefault();
+
     sendTableOutput();
   }
 
@@ -1115,10 +1232,15 @@
 
     if (src.startsWith('http://') || src.startsWith('https://')) {
       const response = await fetch(src);
-      if (!response.ok) throw new Error(`Failed to load CSV: ${response.status}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to load CSV: ${response.status}`);
+      }
+
       csv = await response.text();
     } else {
       const file = await VirtualFilesystem.getInstance().resolve(src);
+
       csv = await file.text();
     }
 
@@ -1136,6 +1258,7 @@
   const handleMessage: MessageCallbackFn = (message) => {
     if (Array.isArray(message) && message.every((row) => Array.isArray(row))) {
       setFromUnknownArray(message as unknown[][]);
+
       return;
     }
 
@@ -1144,6 +1267,7 @@
       message.every((row) => typeof row === 'object' && row !== null && !Array.isArray(row))
     ) {
       setFromObjectRows(message as Record<string, unknown>[]);
+
       return;
     }
 
@@ -1176,6 +1300,7 @@
   function handleCsvDragOver(event: DragEvent) {
     const hasCsv = Array.from(event.dataTransfer?.items ?? []).some((item) => {
       const file = item.getAsFile();
+
       return file?.name.toLowerCase().endsWith('.csv') || item.type === 'text/csv';
     });
 
@@ -1183,6 +1308,7 @@
 
     event.preventDefault();
     event.stopPropagation();
+
     isDraggingCsv = true;
   }
 
@@ -1199,13 +1325,16 @@
 
     event.preventDefault();
     event.stopPropagation();
+
     isDraggingCsv = false;
+
     setData({ ...parseCsvTable(await file.text()), outputRows });
   }
 
   onMount(() => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
+
     resizeRenderedTextareas();
   });
 
@@ -1227,10 +1356,12 @@
 
       event.preventDefault();
       event.stopPropagation();
+
       closeExpandedSheet();
     };
 
     updateDetachedViewportSize();
+
     window.addEventListener('resize', updateDetachedViewportSize);
     window.addEventListener('keydown', handleKeydown, { capture: true });
 
@@ -1242,22 +1373,26 @@
   });
 
   $effect(() => {
-    columns;
-    rows;
-    showFooter;
-    headerValidationError;
-    tableContentWidth;
+    void columns;
+    void rows;
+    void showFooter;
+    void autoFitHeight;
+    void headerValidationError;
+    void tableContentWidth;
+
     resizeRenderedTextareas();
     measureSheetContentMaxHeight();
+
     setTimeout(() => updateNodeInternals(nodeId), 0);
   });
 
   $effect(() => {
-    isDetached;
-    sheetViewportWidth;
-    sheetViewportHeight;
-    tableContentWidth;
-    sheetContentMaxHeight;
+    void isDetached;
+    void sheetViewportWidth;
+    void sheetViewportHeight;
+    void tableContentWidth;
+    void sheetContentMaxHeight;
+
     refreshSelectionLayout();
   });
 
@@ -1274,6 +1409,7 @@
 
     messageContext?.queue.removeCallback(handleMessage);
     messageContext?.destroy();
+
     window.removeEventListener('pointermove', handleColumnResizeMove);
     window.removeEventListener('pointerup', endColumnResize);
     window.removeEventListener('pointermove', handleColumnDragMove);
@@ -1310,6 +1446,7 @@
             <Play class="h-4 w-4 text-zinc-300" />
           </button>
         </Tooltip.Trigger>
+
         <Tooltip.Content>Output Sheet</Tooltip.Content>
       </Tooltip.Root>
 
@@ -1324,6 +1461,7 @@
             <Expand class="h-4 w-4 text-zinc-300" />
           </button>
         </Tooltip.Trigger>
+
         <Tooltip.Content>Expand Sheet</Tooltip.Content>
       </Tooltip.Root>
 
@@ -1339,6 +1477,7 @@
             <Settings class="h-4 w-4 text-zinc-300" />
           </button>
         </Tooltip.Trigger>
+
         <Tooltip.Content>Settings</Tooltip.Content>
       </Tooltip.Root>
     </div>
@@ -1379,6 +1518,7 @@
         data-sheet-title={nodeId}
       >
         <span class="font-mono text-[10px] text-zinc-400">sheet</span>
+
         <div class="flex items-center gap-1">
           <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
             {columns.length}
@@ -1397,6 +1537,7 @@
                   <X class="h-3.5 w-3.5" />
                 </button>
               </Tooltip.Trigger>
+
               <Tooltip.Content>Close Expanded Sheet (Shift+Esc)</Tooltip.Content>
             </Tooltip.Root>
           {/if}
@@ -1457,9 +1598,11 @@
               >
                 <colgroup>
                   <col style:width={`${SHEET_ROW_HEADER_WIDTH}px`} />
-                  {#each renderedColumnWidths as columnWidth}
+
+                  {#each renderedColumnWidths as columnWidth, index (index)}
                     <col style:width={`${columnWidth}px`} />
                   {/each}
+
                   <col style:width={`${SHEET_ACTION_COLUMN_WIDTH}px`} />
                 </colgroup>
 
@@ -1472,7 +1615,7 @@
                       #
                     </th>
 
-                    {#each columns as column, columnIndex}
+                    {#each columns as column, columnIndex (columnIndex)}
                       <th
                         class={[
                           'relative border-r border-b border-zinc-700 bg-zinc-800 p-0',
@@ -1806,6 +1949,16 @@
                 class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
               />
               <span class="text-xs text-zinc-300">Show footer</span>
+            </label>
+
+            <label class="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={autoFitHeight}
+                onchange={(event) => setAutoFitHeight(event.currentTarget.checked)}
+                class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-800 text-blue-500"
+              />
+              <span class="text-xs text-zinc-300">Auto fit height</span>
             </label>
           </div>
         </div>

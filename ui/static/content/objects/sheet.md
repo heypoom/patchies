@@ -9,6 +9,8 @@ Extra rows or columns scroll inside the table. The node cannot be resized
 taller than the current table content.
 
 Disable **Allow resize** in settings to hide the node resize handles.
+Disable **Auto fit height** to keep the node height fixed when rows or cell
+content change.
 Disable **Show footer** to hide the row count and add-row footer.
 
 Use the expand button beside settings to edit the sheet in a detached overlay.
