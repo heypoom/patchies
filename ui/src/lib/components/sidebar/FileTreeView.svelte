@@ -40,6 +40,11 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import { isMobile, isSidebarOpen } from '../../../stores/ui.store';
   import FolderPickerDialog, { type FolderNode } from './FolderPickerDialog.svelte';
+  import {
+    getExpandedChildDirectories,
+    getExpandedLinkedFolderPathsToLoad,
+    type LinkedFolderItem
+  } from './file-tree-linked-folders';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
   interface TreeNode {
@@ -807,12 +812,15 @@
   // Check if a path or any of its children need permission re-grant
   function needsReselect(nodePath: string | undefined): boolean {
     if (!nodePath) return false;
+
     // Check if this exact path needs permission
     if ($pendingPermissions.has(nodePath)) return true;
+
     // Check if any child path needs permission (for folders)
     for (const pending of $pendingPermissions) {
       if (pending.startsWith(nodePath.replace(/\/$/, '') + '/')) return true;
     }
+
     return false;
   }
 
@@ -877,13 +885,11 @@
   // The path key can be either:
   // - A VFS path for the root linked folder (e.g., "user://my-folder")
   // - A VFS-style path for subdirectories (e.g., "user://my-folder/subdir")
-  let localFolderContents = new SvelteMap<
-    string,
-    Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }>
-  >();
+  let localFolderContents = new SvelteMap<string, LinkedFolderItem[]>();
 
   // Cache for directory handles within linked folders (for expanding subdirs)
   let subdirHandleCache = new SvelteMap<string, FileSystemDirectoryHandle>();
+  const loadingLocalFolderPaths = new Set<string>();
 
   async function handleLinkFolderClick(event: MouseEvent) {
     event.stopPropagation();
@@ -910,12 +916,20 @@
     }
   }
 
-  async function loadLocalFolderContents(path: string, handle?: FileSystemDirectoryHandle) {
+  async function loadLocalFolderContents(
+    path: string,
+    handle?: FileSystemDirectoryHandle,
+    options: { refreshExpandedDescendants?: boolean } = {},
+    visitedPaths = new SvelteSet<string>()
+  ) {
     const provider = getLocalProvider();
     if (!provider) return;
+    if (visitedPaths.has(path)) return;
+
+    visitedPaths.add(path);
 
     try {
-      let contents: Array<{ name: string; kind: 'file' | 'directory'; handle: FileSystemHandle }>;
+      let contents: LinkedFolderItem[];
 
       if (handle) {
         // Use the provided handle directly (for subdirectories)
@@ -935,10 +949,44 @@
       }
 
       localFolderContents.set(path, contents);
+
+      const expandedChildDirectories = getExpandedChildDirectories({
+        parentPath: path,
+        contents,
+        expandedPaths,
+        loadedPaths: new Set(localFolderContents.keys()),
+        includeLoaded: options.refreshExpandedDescendants
+      });
+
+      for (const child of expandedChildDirectories) {
+        await loadLocalFolderContents(child.path, child.handle, options, visitedPaths);
+      }
     } catch (err) {
       console.error('Failed to load local folder contents:', err);
     }
   }
+
+  function queueLocalFolderContentsLoad(path: string) {
+    loadingLocalFolderPaths.add(path);
+
+    void loadLocalFolderContents(path).finally(() => {
+      loadingLocalFolderPaths.delete(path);
+    });
+  }
+
+  $effect(() => {
+    const pathsToLoad = getExpandedLinkedFolderPathsToLoad({
+      entries: $vfsEntries,
+      expandedPaths,
+      loadedPaths: new Set(localFolderContents.keys()),
+      pendingPaths: $pendingPermissions,
+      loadingPaths: loadingLocalFolderPaths
+    });
+
+    for (const path of pathsToLoad) {
+      queueLocalFolderContentsLoad(path);
+    }
+  });
 
   // Load contents when a local folder is expanded (always refresh to pick up filesystem changes)
   async function handleLocalFolderExpand(path: string) {
@@ -947,7 +995,7 @@
 
   async function handleRefreshLinkedFolder(path: string, event: MouseEvent) {
     event.stopPropagation();
-    await loadLocalFolderContents(path);
+    await loadLocalFolderContents(path, undefined, { refreshExpandedDescendants: true });
   }
 
   async function handleRelinkFolderClick(path: string, event: MouseEvent) {
