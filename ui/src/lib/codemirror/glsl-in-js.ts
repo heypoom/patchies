@@ -11,6 +11,9 @@ const GLSL_TAG = new Set(['glsl']);
 // Shader Park GLSL extension helpers take full GLSL shader strings.
 const GLSL_CALLS = new Set(['glslFunc', 'glslFuncES3', 'glslSDF']);
 
+// Namespaced APIs whose first argument is a full GLSL shader string.
+const GLSL_MEMBER_CALLS = new Set(['htmlCanvas.glslLayer']);
+
 // Object property keys whose template string values are GLSL shader source:
 // REGL: frag/vert, Hydra: glsl, SwissGL: FP/VP
 const GLSL_PROPERTY_KEYS = new Set(['frag', 'vert', 'glsl', 'FP', 'VP']);
@@ -28,17 +31,18 @@ export function isGlslTemplateString(
     return !!tag && GLSL_TAG.has(input.read(tag.from, tag.to));
   }
 
-  // glslFunc(`...`), glslFuncES3(`...`), glslSDF(`...`)
+  // glslFunc(`...`), glslFuncES3(`...`), glslSDF(`...`), htmlCanvas.glslLayer(`...`)
   if (parent.name === 'ArgList') {
     const call = parent.parent;
     const callee = call?.firstChild;
+    const calleeText = callee ? input.read(callee.from, callee.to) : '';
 
     return (
       !!call &&
       call.name === 'CallExpression' &&
       !!callee &&
-      callee.name === 'VariableName' &&
-      GLSL_CALLS.has(input.read(callee.from, callee.to))
+      ((callee.name === 'VariableName' && GLSL_CALLS.has(calleeText)) ||
+        GLSL_MEMBER_CALLS.has(calleeText))
     );
   }
 

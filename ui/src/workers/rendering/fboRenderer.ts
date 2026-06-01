@@ -43,6 +43,8 @@ import { JSRunner } from '../../lib/js-runner/JSRunner.js';
 import { RenderingProfiler } from './RenderingProfiler.js';
 import { WorkerProfiler } from '../shared/WorkerProfiler.js';
 import { VideoTextureManager } from './VideoTextureManager.js';
+import { renderElementImageToBitmap } from './elementImageBitmap.js';
+import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
 import { processIncludes } from '$lib/glsl-include/preprocessor';
 import { createWorkerResolver } from '$lib/glsl-include/worker-resolver';
 import { VideoChannelRegistry } from './VideoChannelRegistry.js';
@@ -1961,6 +1963,20 @@ export class FBORenderer {
    */
   setBitmap(nodeId: string, bitmap: ImageBitmap) {
     this.videoTextures.setBitmap(nodeId, bitmap);
+  }
+
+  setElementImage(nodeId: string, elementImage: ElementImageLike, width: number, height: number) {
+    const bitmap = renderElementImageToBitmap(elementImage, width, height);
+
+    if (!bitmap) {
+      console.warn(
+        `[htmlCanvas] Worker cannot draw ElementImage for node ${nodeId}; missing drawElementImage support`
+      );
+
+      return;
+    }
+
+    this.setBitmap(nodeId, bitmap);
   }
 
   setFloatTexture(

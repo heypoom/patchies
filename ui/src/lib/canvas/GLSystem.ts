@@ -1,5 +1,6 @@
 import { buildRenderGraph, type REdge, type RNode } from '$lib/rendering/graphUtils';
 import type { FBOFormat, RenderGraph, RenderNode, RenderWorkerMessage } from '$lib/rendering/types';
+import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
 
 import * as ohash from 'ohash';
@@ -954,6 +955,19 @@ export class GLSystem {
         bitmap
       },
       { transfer: [bitmap] }
+    );
+  }
+
+  setElementImage(nodeId: string, elementImage: ElementImageLike, width: number, height: number) {
+    this.renderWorker.postMessage(
+      {
+        type: 'setElementImage',
+        nodeId,
+        elementImage,
+        width,
+        height
+      },
+      { transfer: [elementImage as unknown as Transferable] }
     );
   }
 

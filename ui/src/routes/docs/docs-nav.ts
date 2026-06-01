@@ -30,7 +30,8 @@ export const topicOrder: Record<string, string[]> = {
     'virtual-filesystem',
     'glsl-imports',
     'data-storage',
-    'network-p2p'
+    'network-p2p',
+    'html-in-canvas'
   ],
   Sidebar: ['manage-files', 'manage-presets', 'manage-saves', 'in-app-help', 'browse-samples'],
   'Timing & Sync': ['audio-reactivity', 'transport-control', 'clock-api', 'parameter-automation'],

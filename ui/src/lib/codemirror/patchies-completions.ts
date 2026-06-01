@@ -135,6 +135,29 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'setHidePorts(true)'
   },
   {
+    label: 'htmlCanvas.videoOutput',
+    type: 'function',
+    detail: '(options?: boolean | { size: "free" }) => boolean',
+    info: "Render a dom/vue node through Chromium's experimental HTML-in-Canvas API and expose a video output. Mutually exclusive with htmlCanvas.canvasLayer() and htmlCanvas.glslLayer().",
+    apply: 'htmlCanvas.videoOutput()'
+  },
+  {
+    label: 'htmlCanvas.canvasLayer',
+    type: 'function',
+    detail: '((ctx: CanvasRenderingContext2D, frame: HtmlLayerFrame) => void) | false => boolean',
+    info: 'Locally post-process a dom/vue node with a 2D canvas. Mutually exclusive with htmlCanvas.videoOutput() and htmlCanvas.glslLayer().',
+    apply:
+      'htmlCanvas.canvasLayer((ctx, frame) => {\n  // draw over or post-process the live UI pixels\n})'
+  },
+  {
+    label: 'htmlCanvas.glslLayer',
+    type: 'function',
+    detail: '(fragmentShader: string | false) => boolean',
+    info: 'Locally post-process a dom/vue node with a WebGL2 GLSL ES 3 fragment shader and source sampler. Mutually exclusive with htmlCanvas.videoOutput() and htmlCanvas.canvasLayer().',
+    apply:
+      'htmlCanvas.glslLayer(`\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  vec2 uv = fragCoord / iResolution.xy;\n  fragColor = texture(source, uv);\n}\n`)'
+  },
+  {
     label: 'setTextureFormat',
     type: 'function',
     detail: "('rgba8' | 'rgba16f' | 'rgba32f') => void",
@@ -445,6 +468,9 @@ const topLevelOnlyFunctions = new Set([
   'activate',
   'deactivate',
   'hideExitButton',
+  'htmlCanvas.videoOutput',
+  'htmlCanvas.canvasLayer',
+  'htmlCanvas.glslLayer',
   'redraw',
   'setAudioPortCount',
   'setCanvasSize',
@@ -584,6 +610,9 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'three',
     'three.dom'
   ],
+  'htmlCanvas.videoOutput': ['dom', 'vue'],
+  'htmlCanvas.canvasLayer': ['dom', 'vue'],
+  'htmlCanvas.glslLayer': ['dom', 'vue'],
   setTextureFormat: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
   setResolution: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
   setPrimaryButton: ['js', 'worker', 'p5', 'hydra', 'canvas', 'regl', 'swgl', 'textmode', 'three'],

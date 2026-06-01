@@ -3,7 +3,7 @@ import type { GLUniformDef } from '../../types/uniform-config';
 import { validateShader, type LineErrors } from './shader-validator';
 
 // Render a simple quad for a vertex shader.
-const VERTEX_SHADER = `#version 300 es
+export const SHADERTOY_VERTEX_SHADER = `#version 300 es
   precision highp float;
   in vec2 position;
 	out vec2 uv;
@@ -23,6 +23,43 @@ const PLACEHOLDER_MAIN_IMAGE = `
 const PLACEHOLDER_MAIN_IMAGE_MRT = `
 	void mainImage(in vec2 fragCoord) {}
 `;
+
+export function buildShaderToyFragmentShader({
+  code,
+  mrtCount = 1,
+  extraUniforms = '',
+  fragCoordExpression = 'gl_FragCoord.xy'
+}: {
+  code: string;
+  /** Number of MRT color attachments. 1 = standard single-output mode. */
+  mrtCount?: number;
+  extraUniforms?: string;
+  fragCoordExpression?: string;
+}) {
+  const isMRT = mrtCount > 1;
+  const extraUniformBlock = extraUniforms ? `${extraUniforms}\n` : '';
+
+  return `#version 300 es
+    precision highp float;
+
+    uniform vec3 iResolution;
+    uniform float iTime;
+    uniform vec4 iMouse;
+    uniform vec4 iDate;
+    uniform float iTimeDelta;
+    uniform int iFrame;
+    ${extraUniformBlock}
+
+		in vec2 uv;
+		${isMRT ? '' : 'out vec4 fragColor;'}
+
+    ${code ?? (isMRT ? PLACEHOLDER_MAIN_IMAGE_MRT : PLACEHOLDER_MAIN_IMAGE)}
+
+    void main() {
+      ${isMRT ? `mainImage(${fragCoordExpression});` : `fragColor = vec4(0.0);\n      mainImage(fragColor, ${fragCoordExpression});`}
+    }
+  `;
+}
 
 type UserUniformInputs = Record<string, (_: regl.DefaultContext, props: Props) => void>;
 
@@ -62,37 +99,17 @@ export function createShaderToyDrawCommand({
   mrtCount?: number;
   onError?: (error: Error & { lineErrors?: LineErrors }) => void;
 }): regl.DrawCommand | null {
-  const isMRT = mrtCount > 1;
-
   // Fragment shader with ShaderToy-compatible uniforms and textures.
   // In MRT mode the user declares their own layout(location=N) out variables and
   // mainImage only receives fragCoord — no fragColor injection.
-  const fragmentShader = `#version 300 es
-    precision highp float;
-
-    uniform vec3 iResolution;
-    uniform float iTime;
-    uniform vec4 iMouse;
-    uniform vec4 iDate;
-    uniform float iTimeDelta;
-    uniform int iFrame;
-
-		in vec2 uv;
-		${isMRT ? '' : 'out vec4 fragColor;'}
-
-    ${code ?? (isMRT ? PLACEHOLDER_MAIN_IMAGE_MRT : PLACEHOLDER_MAIN_IMAGE)}
-
-    void main() {
-      ${isMRT ? 'mainImage(gl_FragCoord.xy);' : 'fragColor = vec4(0.0);\n      mainImage(fragColor, gl_FragCoord.xy);'}
-    }
-  `;
+  const fragmentShader = buildShaderToyFragmentShader({ code, mrtCount });
 
   // Count preamble lines (everything before user code insertion)
   // Lines: #version, precision, blank, 5 uniforms, blank, in + optional out, blank = 13 lines
   const PREAMBLE_LINES = 13;
 
   // Validate both shaders before passing to regl
-  const vertexValidation = validateShader(gl, VERTEX_SHADER, gl.VERTEX_SHADER);
+  const vertexValidation = validateShader(gl, SHADERTOY_VERTEX_SHADER, gl.VERTEX_SHADER);
   if (!vertexValidation.valid) {
     const error = new Error(vertexValidation.error || 'Vertex shader compilation failed');
     onError?.(error);
@@ -129,7 +146,7 @@ export function createShaderToyDrawCommand({
   try {
     return regl({
       frag: fragmentShader,
-      vert: VERTEX_SHADER,
+      vert: SHADERTOY_VERTEX_SHADER,
       framebuffer,
 
       attributes: {

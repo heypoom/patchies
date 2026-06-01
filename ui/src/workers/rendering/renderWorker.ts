@@ -59,6 +59,9 @@ self.onmessage = (event) => {
     .with('setOutputSize', () => fboRenderer.setOutputSize(data.width, data.height))
     .with('setBackgroundSize', () => fboRenderer.setBackgroundSize(data.width, data.height))
     .with('setBitmap', () => fboRenderer.setBitmap(data.nodeId, data.bitmap))
+    .with('setElementImage', () =>
+      fboRenderer.setElementImage(data.nodeId, data.elementImage, data.width, data.height)
+    )
     .with('setFloatTexture', () => {
       const textureData = data.data;
 
