@@ -306,6 +306,17 @@
     );
   }
 
+  function isSingleSelectedCell(rowIndex: number, columnIndex: number) {
+    if (!selectedRange) return isSelectedCell(rowIndex, columnIndex);
+
+    return (
+      selectedRange.anchor.rowIndex === rowIndex &&
+      selectedRange.focus.rowIndex === rowIndex &&
+      selectedRange.anchor.columnIndex === columnIndex &&
+      selectedRange.focus.columnIndex === columnIndex
+    );
+  }
+
   function getSelectedRangeBounds() {
     if (!selectedRange) return null;
 
@@ -1473,9 +1484,11 @@
                         <td
                           class={[
                             'h-px border-r border-b p-0 align-top',
-                            isCellInSelectedRange(rowIndex, columnIndex)
-                              ? 'border-blue-500/20 bg-blue-500/20'
-                              : 'border-zinc-700'
+                            isSingleSelectedCell(rowIndex, columnIndex)
+                              ? 'border-zinc-700 bg-zinc-800'
+                              : isCellInSelectedRange(rowIndex, columnIndex)
+                                ? 'border-blue-500/20 bg-blue-500/20'
+                                : 'border-zinc-700'
                           ]}
                           data-cell-container={`${rowIndex}-${columnIndex}`}
                           oncontextmenu={() => setCellContext(rowIndex, columnIndex)}
