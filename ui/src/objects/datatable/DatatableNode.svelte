@@ -415,6 +415,27 @@
     endColumnEdit();
   }
 
+  function handleCellEditKeydown(event: KeyboardEvent, rowIndex: number, columnIndex: number) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      finishCellEdit();
+      focusCell({ rowIndex, columnIndex });
+      return;
+    }
+
+    handleCellKeydown(event);
+  }
+
+  function handleHeaderEditKeydown(event: KeyboardEvent, columnIndex: number) {
+    if (event.key !== 'Escape') return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    finishHeaderEdit();
+    focusHeader(columnIndex);
+  }
+
   function isPrintableKey(event: KeyboardEvent) {
     return event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey;
   }
@@ -476,6 +497,16 @@
     document
       .querySelector<HTMLElement>(
         `[data-datatable-node="${nodeId}"] [data-cell-display="${cell.rowIndex}-${cell.columnIndex}"]`
+      )
+      ?.focus();
+  }
+
+  async function focusHeader(columnIndex: number) {
+    await tick();
+
+    document
+      .querySelector<HTMLElement>(
+        `[data-datatable-table="${nodeId}"] [data-header-display="${columnIndex}"]`
       )
       ?.focus();
   }
@@ -1033,6 +1064,7 @@
                           data-header={columnIndex}
                           onpointerdown={(event) => event.stopPropagation()}
                           onblur={finishHeaderEdit}
+                          onkeydown={(event) => handleHeaderEditKeydown(event, columnIndex)}
                           oninput={(event) => setColumnName(columnIndex, event.currentTarget.value)}
                         />
                       {:else}
@@ -1042,6 +1074,7 @@
                           role="columnheader"
                           tabindex="0"
                           aria-label={`Column ${columnIndex + 1} header`}
+                          data-header-display={columnIndex}
                           onclick={(event) => selectHeader(columnIndex, event.currentTarget)}
                           ondblclick={() => enterHeaderEdit(columnIndex)}
                           onkeydown={(event) => handleSelectedHeaderKeydown(event, columnIndex)}
@@ -1097,7 +1130,7 @@
                           data-cell={`${rowIndex}-${columnIndex}`}
                           rows="1"
                           onblur={finishCellEdit}
-                          onkeydown={handleCellKeydown}
+                          onkeydown={(event) => handleCellEditKeydown(event, rowIndex, columnIndex)}
                           oninput={(event) => {
                             resizeTextarea(event.currentTarget);
                             setCell(rowIndex, columnIndex, event.currentTarget.value);
