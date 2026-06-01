@@ -50,7 +50,8 @@ export async function loadLanguageExtension(
         { patchiesCompletions },
         { shaderParkCompletionsSource },
         { hydraCompletionsSource },
-        { glslInJsCompletions, glslInJsWrap },
+        { glslInJsCompletions },
+        { javascriptMixedWrap },
         { completionHoverHints },
         { glslIncludeHighlighter }
       ] = await Promise.all([
@@ -61,14 +62,15 @@ export async function loadLanguageExtension(
         import('$lib/codemirror/shaderpark-completions'),
         import('$lib/codemirror/hydra-completions'),
         import('$lib/codemirror/glsl-in-js'),
+        import('$lib/codemirror/javascript-mixed'),
         import('$lib/codemirror/hover-hints'),
         import('$lib/codemirror/glsl.codemirror')
       ]);
 
-      const jsWithGlsl = javascriptLanguage.configure({ wrap: glslInJsWrap });
+      const jsWithMixedLanguages = javascriptLanguage.configure({ wrap: javascriptMixedWrap });
       const jsSupport = javascript();
       const extensions: Extension[] = [
-        new LanguageSupport(jsWithGlsl, jsSupport.support),
+        new LanguageSupport(jsWithMixedLanguages, jsSupport.support),
         ...glslIncludeHighlighter
       ];
 
