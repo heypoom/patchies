@@ -5,11 +5,15 @@ import {
   buildSheetObjectsOutput,
   buildSheetRowsOutput,
   ensureUniqueColumnKeys,
+  getCellsInRange,
   insertColumn,
   insertRow,
   moveColumn,
   moveRow,
-  parseCsvTable
+  parseClipboardCells,
+  parseCsvTable,
+  pasteCells,
+  serializeCellsForClipboard
 } from './sheet-utils';
 
 describe('sheet utilities', () => {
@@ -180,6 +184,62 @@ describe('sheet utilities', () => {
         ['', ''],
         ['2', 'Grace']
       ]
+    });
+  });
+
+  it('serializes and parses selected cells for clipboard copy/paste', () => {
+    const cells = [
+      ['Ada', 'hello\tworld'],
+      ['Grace', 'line\nbreak']
+    ];
+
+    const text = serializeCellsForClipboard(cells);
+
+    expect(text).toBe('Ada\t"hello\tworld"\nGrace\t"line\nbreak"');
+    expect(parseClipboardCells(text)).toEqual(cells);
+  });
+
+  it('extracts a selected cell range', () => {
+    expect(
+      getCellsInRange(
+        {
+          columns: ['a', 'b', 'c'],
+          rows: [
+            ['1a', '1b', '1c'],
+            ['2a', '2b', '2c'],
+            ['3a', '3b', '3c']
+          ]
+        },
+        { minRow: 1, maxRow: 2, minColumn: 1, maxColumn: 2 }
+      )
+    ).toEqual([
+      ['2b', '2c'],
+      ['3b', '3c']
+    ]);
+  });
+
+  it('pastes cells at a target cell and expands rows and columns', () => {
+    expect(
+      pasteCells(
+        {
+          columns: ['a', 'b'],
+          rows: [['1a', '1b']],
+          columnWidths: [80, 90]
+        },
+        0,
+        1,
+        [
+          ['x', 'y'],
+          ['z', 'w']
+        ]
+      )
+    ).toEqual({
+      columns: ['a', 'b', 'column 3'],
+      rows: [
+        ['1a', 'x', 'y'],
+        ['', 'z', 'w']
+      ],
+      columnWidths: [80, 90, 110]
     });
   });
 });

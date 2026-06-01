@@ -40,6 +40,10 @@ from `table`, which remains an audio/wavetable float buffer.
 - Allow dragging across body cells to select a rectangular cell range. Pressing
   `Delete` or `Backspace` clears the selected cell contents without removing
   rows or columns.
+- Support `Ctrl/Cmd+C` and `Ctrl/Cmd+V` on selected body cells. Copy serializes
+  the selected range as spreadsheet-compatible tab-separated text. Paste writes
+  the clipboard block at the selected range's top-left cell and expands rows or
+  columns when needed.
 - Show a UI-only leading `#` column with row numbers. This column is not part of
   sheet data, CSV import/export, or emitted outputs.
 - Allow dragging a row number cell to reorder rows freely.

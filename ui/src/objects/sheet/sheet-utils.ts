@@ -31,13 +31,13 @@ export function ensureUniqueColumnKeys(columns: string[]): string[] {
   });
 }
 
-export function buildSheetOutput(data: SheetData): SheetCell[][] | Record<string, SheetCell>[] {
-  return data.outputRows ? buildSheetRowsOutput(data) : buildSheetObjectsOutput(data);
-}
+export const buildSheetOutput = (data: SheetData): SheetCell[][] | Record<string, SheetCell>[] =>
+  data.outputRows ? buildSheetRowsOutput(data) : buildSheetObjectsOutput(data);
 
-export function buildSheetRowsOutput(data: SheetData): SheetCell[][] {
-  return [data.columns, ...data.rows];
-}
+export const buildSheetRowsOutput = (data: SheetData): SheetCell[][] => [
+  data.columns,
+  ...data.rows
+];
 
 export function buildSheetObjectsOutput(data: SheetData): Record<string, SheetCell>[] {
   const keys = ensureUniqueColumnKeys(data.columns);
@@ -53,23 +53,19 @@ export function buildSheetObjectsOutput(data: SheetData): Record<string, SheetCe
   });
 }
 
-export function createEmptySheet(): SheetData {
-  return {
-    columns: ['column 1', 'column 2'],
-    rows: [
-      ['', ''],
-      ['', '']
-    ],
-    outputRows: false,
-    allowResize: true,
-    showFooter: true,
-    autoFitHeight: true
-  };
-}
+export const createEmptySheet = (): SheetData => ({
+  columns: ['column 1', 'column 2'],
+  rows: [
+    ['', ''],
+    ['', '']
+  ],
+  outputRows: false,
+  allowResize: true,
+  showFooter: true,
+  autoFitHeight: true
+});
 
-export function addColumn(data: SheetData): SheetData {
-  return insertColumn(data, data.columns.length);
-}
+export const addColumn = (data: SheetData): SheetData => insertColumn(data, data.columns.length);
 
 export function insertColumn(data: SheetData, index: number): SheetData {
   const insertIndex = Math.max(0, Math.min(data.columns.length, index));
@@ -123,9 +119,7 @@ export function moveColumn(data: SheetData, fromIndex: number, toIndex: number):
   };
 }
 
-export function addRow(data: SheetData): SheetData {
-  return insertRow(data, data.rows.length);
-}
+export const addRow = (data: SheetData): SheetData => insertRow(data, data.rows.length);
 
 export function insertRow(data: SheetData, index: number): SheetData {
   const insertIndex = Math.max(0, Math.min(data.rows.length, index));
@@ -141,7 +135,9 @@ export function insertRow(data: SheetData, index: number): SheetData {
 }
 
 export function removeRow(data: SheetData, index: number): SheetData {
-  if (data.rows.length <= 1 || index < 0 || index >= data.rows.length) return data;
+  if (data.rows.length <= 1 || index < 0 || index >= data.rows.length) {
+    return data;
+  }
 
   return {
     ...data,
@@ -166,28 +162,151 @@ export function moveRow(data: SheetData, fromIndex: number, toIndex: number): Sh
   };
 }
 
-export function updateCell(
+export const updateCell = (
   data: SheetData,
   rowIndex: number,
   columnIndex: number,
   value: SheetCell
+): SheetData => ({
+  ...data,
+  rows: data.rows.map((row, currentRowIndex) =>
+    currentRowIndex === rowIndex
+      ? row.map((cell, currentColumnIndex) => (currentColumnIndex === columnIndex ? value : cell))
+      : row
+  )
+});
+
+export const updateColumnName = (
+  data: SheetData,
+  columnIndex: number,
+  value: string
+): SheetData => ({
+  ...data,
+  columns: data.columns.map((column, index) => (index === columnIndex ? value : column))
+});
+
+export const serializeCellsForClipboard = (cells: SheetCell[][]): string =>
+  cells.map((row) => row.map(escapeClipboardCell).join('\t')).join('\n');
+
+function escapeClipboardCell(cell: SheetCell): string {
+  const value = cell === null ? '' : String(cell);
+
+  if (!/["\n\r\t]/.test(value)) return value;
+
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+export function parseClipboardCells(text: string): SheetCell[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = '';
+  let inQuotes = false;
+
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index];
+
+    if (char === '"') {
+      if (inQuotes && text[index + 1] === '"') {
+        cell += '"';
+        index++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+
+      continue;
+    }
+
+    if (!inQuotes && char === '\t') {
+      row.push(cell);
+      cell = '';
+      continue;
+    }
+
+    if (!inQuotes && (char === '\n' || char === '\r')) {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = '';
+
+      if (char === '\r' && text[index + 1] === '\n') {
+        index++;
+      }
+
+      continue;
+    }
+
+    cell += char;
+  }
+
+  row.push(cell);
+  rows.push(row);
+
+  if (rows.length > 1 && rows.at(-1)?.length === 1 && rows.at(-1)?.[0] === '') {
+    rows.pop();
+  }
+
+  return rows;
+}
+
+export const getCellsInRange = (
+  data: SheetData,
+  range: {
+    minRow: number;
+    maxRow: number;
+    minColumn: number;
+    maxColumn: number;
+  }
+): SheetCell[][] =>
+  data.rows
+    .slice(range.minRow, range.maxRow + 1)
+    .map((row) => row.slice(range.minColumn, range.maxColumn + 1));
+
+export function pasteCells(
+  data: SheetData,
+  startRowIndex: number,
+  startColumnIndex: number,
+  cells: SheetCell[][]
 ): SheetData {
+  if (cells.length === 0 || cells.every((row) => row.length === 0)) {
+    return data;
+  }
+
+  const columnCount = Math.max(data.columns.length, startColumnIndex + maxRowLength(cells));
+  const rowCount = Math.max(data.rows.length, startRowIndex + cells.length);
+  const columns = normalizeColumnsForCount(data.columns, columnCount);
+
+  const columnWidths = data.columnWidths
+    ? normalizeColumnWidthsForCount(data.columnWidths, columnCount)
+    : undefined;
+
+  const rows: SheetCell[][] = Array.from({ length: rowCount }, (_, rowIndex) => {
+    const existingRow = data.rows[rowIndex] ?? [];
+
+    return Array.from({ length: columnCount }, (_, columnIndex) => existingRow[columnIndex] ?? '');
+  });
+
+  cells.forEach((sourceRow, rowOffset) => {
+    sourceRow.forEach((cell, columnOffset) => {
+      rows[startRowIndex + rowOffset][startColumnIndex + columnOffset] = cell;
+    });
+  });
+
   return {
     ...data,
-    rows: data.rows.map((row, currentRowIndex) =>
-      currentRowIndex === rowIndex
-        ? row.map((cell, currentColumnIndex) => (currentColumnIndex === columnIndex ? value : cell))
-        : row
-    )
+    columns,
+    rows,
+    columnWidths
   };
 }
 
-export function updateColumnName(data: SheetData, columnIndex: number, value: string): SheetData {
-  return {
-    ...data,
-    columns: data.columns.map((column, index) => (index === columnIndex ? value : column))
-  };
-}
+const maxRowLength = (rows: SheetCell[][]): number =>
+  rows.reduce((max, row) => Math.max(max, row.length), 0);
+
+const normalizeColumnsForCount = (columns: string[], count: number): string[] =>
+  Array.from({ length: count }, (_, index) => columns[index] ?? `column ${index + 1}`);
+
+const normalizeColumnWidthsForCount = (widths: number[], count: number): number[] =>
+  Array.from({ length: count }, (_, index) => widths[index] ?? DEFAULT_INSERTED_COLUMN_WIDTH);
 
 export function parseCsvTable(csv: string): ParsedCsvTable {
   if (csv.trim() === '') return EMPTY_PARSED_TABLE;
@@ -200,9 +319,11 @@ export function parseCsvTable(csv: string): ParsedCsvTable {
   }
 
   const columnCount = Math.max(1, headerRow.length, ...bodyRows.map((row) => row.length));
+
   const columns = normalizeRow(headerRow, columnCount).map((value, index) =>
     value.length > 0 ? value : `column ${index + 1}`
   );
+
   const rows = bodyRows.map((row) => normalizeRow(row, columnCount));
 
   return {
@@ -241,13 +362,11 @@ export function tableFromObjects(objects: Record<string, unknown>[]): ParsedCsvT
   };
 }
 
-function normalizeRow(row: string[], columnCount: number): string[] {
-  return Array.from({ length: columnCount }, (_, index) => row[index] ?? '');
-}
+const normalizeRow = (row: string[], columnCount: number): string[] =>
+  Array.from({ length: columnCount }, (_, index) => row[index] ?? '');
 
-function normalizeUnknownRow(row: unknown[], columnCount: number): SheetCell[] {
-  return Array.from({ length: columnCount }, (_, index) => normalizeCell(row[index]));
-}
+const normalizeUnknownRow = (row: unknown[], columnCount: number): SheetCell[] =>
+  Array.from({ length: columnCount }, (_, index) => normalizeCell(row[index]));
 
 function normalizeCell(value: unknown): SheetCell {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
@@ -259,8 +378,10 @@ function normalizeCell(value: unknown): SheetCell {
 
 function moveItem<T>(items: T[], fromIndex: number, toIndex: number): T[] {
   const next = [...items];
+
   const [item] = next.splice(fromIndex, 1);
   next.splice(toIndex, 0, item);
+
   return next;
 }
 
@@ -303,6 +424,7 @@ function parseCsvRows(csv: string): string[][] {
   }
 
   row.push(value);
+
   if (row.length > 1 || row[0] !== '' || rows.length === 0) {
     rows.push(row);
   }

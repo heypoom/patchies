@@ -41,11 +41,15 @@
     createEmptySheet,
     insertColumn,
     insertRow,
+    getCellsInRange,
     moveColumn,
     moveRow,
     parseCsvTable,
+    parseClipboardCells,
+    pasteCells,
     removeColumn,
     removeRow,
+    serializeCellsForClipboard,
     tableFromArray,
     tableFromObjects,
     updateCell,
@@ -158,6 +162,7 @@
   let rowsBeforeDrag: SheetCell[][] | null = null;
   let columnWidthsBeforeDrag: number[] | null = null;
   let rowsBeforeRowDrag: SheetCell[][] | null = null;
+  let clipboardFallback = '';
 
   const normalizeColumnWidths = (widths: number[] | undefined, count: number) =>
     Array.from({ length: count }, (_, index) =>
@@ -651,6 +656,24 @@
       return;
     }
 
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'c') {
+      event.preventDefault();
+      event.stopPropagation();
+
+      void copySelectedCells();
+
+      return;
+    }
+
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'v') {
+      event.preventDefault();
+      event.stopPropagation();
+
+      void pasteClipboardAtSelection();
+
+      return;
+    }
+
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
       event.stopPropagation();
@@ -814,6 +837,67 @@
 
     updateNodeData(nodeId, { ...normalizedData, rows: nextRows });
     tracker.commit('rows', oldRows, nextRows);
+  }
+
+  async function copySelectedCells() {
+    const bounds = getSelectedRangeBounds();
+    if (!bounds || bounds.minRow < 0) return;
+
+    const text = serializeCellsForClipboard(getCellsInRange(normalizedData, bounds));
+    clipboardFallback = text;
+
+    try {
+      await navigator.clipboard?.writeText(text);
+    } catch {
+      // The local fallback still lets paste work when browser clipboard access is unavailable.
+    }
+  }
+
+  async function pasteClipboardAtSelection() {
+    const bounds = getSelectedRangeBounds();
+    if (!bounds || bounds.minRow < 0) return;
+
+    let text = clipboardFallback;
+
+    try {
+      text = (await navigator.clipboard?.readText()) ?? clipboardFallback;
+    } catch {
+      // Fall back to the last block copied from this sheet.
+    }
+
+    if (!text) return;
+
+    const cells = parseClipboardCells(text);
+
+    const oldData = normalizedData;
+    const nextData = pasteCells(oldData, bounds.minRow, bounds.minColumn, cells);
+
+    const pastedRowCount = nextData.rows.length - oldData.rows.length;
+    const pastedColumnCount = nextData.columns.length - oldData.columns.length;
+
+    commitData(oldData, nextData);
+
+    const rowCount = cells.length;
+    const columnCount = Math.max(...cells.map((row) => row.length), 1);
+
+    const anchor = { rowIndex: bounds.minRow, columnIndex: bounds.minColumn };
+
+    const focus = {
+      rowIndex: Math.min(nextData.rows.length - 1, bounds.minRow + rowCount - 1),
+      columnIndex: Math.min(nextData.columns.length - 1, bounds.minColumn + columnCount - 1)
+    };
+
+    selectedCell = anchor;
+    selectedRange = { anchor, focus };
+
+    editingCell = null;
+    editingHeaderColumn = null;
+
+    if (pastedRowCount > 0 || pastedColumnCount > 0) {
+      setTimeout(() => updateNodeInternals(nodeId), 0);
+    }
+
+    void focusCell(anchor);
   }
 
   function selectAllCells() {

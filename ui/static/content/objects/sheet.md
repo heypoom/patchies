@@ -31,6 +31,9 @@ edit mode, or double-click a cell to edit the existing value.
 Drag across body cells to select multiple cells. Press `Delete` or `Backspace`
 to clear the selected cell contents.
 
+Press `Ctrl+C` or `Cmd+C` to copy selected cells. Press `Ctrl+V` or `Cmd+V` to
+paste cells at the selected range's top-left cell.
+
 The leading `#` column is a row handle only. Drag a numbered row cell to reorder
 that row. The `#` column is not included in emitted table data.
 
