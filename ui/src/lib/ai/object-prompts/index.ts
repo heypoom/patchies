@@ -12,6 +12,7 @@ import { canvasPrompt } from './canvas';
 import { chuckPrompt } from './chuck~';
 import { csoundPrompt } from './csound~';
 import { defaultPrompt } from './default';
+import { sheetPrompt } from './sheet';
 import { domPrompt } from './dom';
 import { dspPrompt } from './dsp~';
 import { exprPrompt } from './expr';
@@ -96,6 +97,7 @@ export const objectPrompts: Record<string, string> = {
   button: buttonPrompt,
   toggle: togglePrompt,
   msg: msgPrompt,
+  sheet: sheetPrompt,
   textbox: textboxPrompt,
   canvas: canvasPrompt,
   surface: surfacePrompt,

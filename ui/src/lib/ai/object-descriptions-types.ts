@@ -8,6 +8,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - msg: Send predefined messages
 - textbox: Text input and display
 - curve: Breakpoint curve editor
+- sheet: Editable spreadsheet-style grid that outputs a 2D array by default
 
 ## Audio I/O (Dedicated node types)
 - mic~: Audio input from microphone
@@ -95,6 +96,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - slider: Numerical value slider
 - msg: Message sender with predefined values
 - textbox: Multi-line text input
+- sheet: Editable spreadsheet-style grid; bang outputs a 2D array with headers first, optional row-object output
 - keyboard: Keyboard input controller
 - label: Text label for annotations
 - link: Clickable link button
