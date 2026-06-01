@@ -9,7 +9,7 @@
     type OnResizeStart
   } from '@xyflow/svelte';
   import { match, P } from 'ts-pattern';
-  import { Expand, Plus, Settings, X } from '@lucide/svelte/icons';
+  import { Expand, Play, Plus, Settings, X } from '@lucide/svelte/icons';
 
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import * as ContextMenu from '$lib/components/ui/context-menu';
@@ -1229,6 +1229,20 @@
 
   <div class="absolute -top-7 right-0 z-10">
     <div class="node-floating-controls flex gap-1">
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            class="node-floating-button"
+            onclick={() => sendTableOutput()}
+            type="button"
+            aria-label="Output sheet"
+          >
+            <Play class="h-4 w-4 text-zinc-300" />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Output Sheet</Tooltip.Content>
+      </Tooltip.Root>
+
       <Tooltip.Root>
         <Tooltip.Trigger>
           <button
