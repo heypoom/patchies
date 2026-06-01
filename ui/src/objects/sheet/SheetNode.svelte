@@ -766,6 +766,7 @@
     }
 
     resizingColumn = { ...resizingColumn, widths: nextWidths };
+    selectionLayoutVersion += 1;
   }
 
   function endColumnResize() {
@@ -781,6 +782,7 @@
     tracker.commit('columnWidths', columnWidthsBeforeResize, nextWidths);
     columnWidthsBeforeResize = null;
     window.removeEventListener('pointermove', handleColumnResizeMove);
+    selectionLayoutVersion += 1;
     setTimeout(() => updateNodeInternals(nodeId), 0);
   }
 
