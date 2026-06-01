@@ -98,6 +98,10 @@
     currentX: number;
     isDragging: boolean;
   };
+  type CellSelectionRange = {
+    anchor: CellPosition;
+    focus: CellPosition;
+  };
 
   let resizingColumn = $state<ColumnResizeState | null>(null);
   let columnWidthsBeforeResize: number[] | null = null;
@@ -105,8 +109,10 @@
     { type: 'column'; index: number } | { type: 'row'; index: number } | null
   >(null);
   let selectedCell = $state<CellPosition | null>(null);
+  let selectedRange = $state<CellSelectionRange | null>(null);
   let editingCell = $state<CellPosition | null>(null);
   let editingHeaderColumn = $state<number | null>(null);
+  let isSelectingCells = $state(false);
   let draggingColumn = $state<ColumnDragState | null>(null);
   let columnsBeforeDrag: string[] | null = null;
   let rowsBeforeDrag: DatatableCell[][] | null = null;
@@ -245,6 +251,43 @@
     return selectedCell?.rowIndex === rowIndex && selectedCell.columnIndex === columnIndex;
   }
 
+  function isCellInSelectedRange(rowIndex: number, columnIndex: number) {
+    if (!selectedRange) return isSelectedCell(rowIndex, columnIndex);
+
+    const bounds = getSelectedRangeBounds();
+    if (!bounds) return false;
+
+    return (
+      rowIndex >= bounds.minRow &&
+      rowIndex <= bounds.maxRow &&
+      columnIndex >= bounds.minColumn &&
+      columnIndex <= bounds.maxColumn
+    );
+  }
+
+  function getSelectedRangeBounds() {
+    if (!selectedRange) return null;
+
+    return {
+      minRow: Math.min(selectedRange.anchor.rowIndex, selectedRange.focus.rowIndex),
+      maxRow: Math.max(selectedRange.anchor.rowIndex, selectedRange.focus.rowIndex),
+      minColumn: Math.min(selectedRange.anchor.columnIndex, selectedRange.focus.columnIndex),
+      maxColumn: Math.max(selectedRange.anchor.columnIndex, selectedRange.focus.columnIndex)
+    };
+  }
+
+  function getSelectedCellBorderClass(rowIndex: number, columnIndex: number) {
+    const bounds = getSelectedRangeBounds();
+    if (!bounds || !isCellInSelectedRange(rowIndex, columnIndex)) return '';
+
+    return [
+      rowIndex === bounds.minRow ? 'border-t-blue-400' : '',
+      rowIndex === bounds.maxRow ? 'border-b-blue-400' : '',
+      columnIndex === bounds.minColumn ? 'border-l-blue-400' : '',
+      columnIndex === bounds.maxColumn ? 'border-r-blue-400' : ''
+    ].join(' ');
+  }
+
   function isEditingCell(rowIndex: number, columnIndex: number) {
     return editingCell?.rowIndex === rowIndex && editingCell.columnIndex === columnIndex;
   }
@@ -255,6 +298,10 @@
 
   async function selectCell(rowIndex: number, columnIndex: number, target?: HTMLElement) {
     selectedCell = { rowIndex, columnIndex };
+    selectedRange =
+      rowIndex >= 0
+        ? { anchor: { rowIndex, columnIndex }, focus: { rowIndex, columnIndex } }
+        : null;
     editingCell = null;
     editingHeaderColumn = null;
     await tick();
@@ -265,8 +312,41 @@
     await selectCell(DATATABLE_HEADER_ROW, columnIndex, target);
   }
 
+  function beginCellSelection(event: PointerEvent, rowIndex: number, columnIndex: number) {
+    if (event.button !== 0) return;
+
+    event.preventDefault();
+    selectedCell = { rowIndex, columnIndex };
+    selectedRange = {
+      anchor: { rowIndex, columnIndex },
+      focus: { rowIndex, columnIndex }
+    };
+    editingCell = null;
+    editingHeaderColumn = null;
+    isSelectingCells = true;
+    (event.currentTarget as HTMLElement | null)?.focus();
+    window.addEventListener('pointerup', endCellSelection, { once: true });
+  }
+
+  function extendCellSelection(rowIndex: number, columnIndex: number) {
+    if (!isSelectingCells || !selectedRange) return;
+
+    selectedRange = {
+      ...selectedRange,
+      focus: { rowIndex, columnIndex }
+    };
+  }
+
+  function endCellSelection() {
+    isSelectingCells = false;
+  }
+
   async function enterCellEdit(rowIndex: number, columnIndex: number, initialValue?: string) {
     selectedCell = { rowIndex, columnIndex };
+    selectedRange = {
+      anchor: { rowIndex, columnIndex },
+      focus: { rowIndex, columnIndex }
+    };
     editingCell = { rowIndex, columnIndex };
     editingHeaderColumn = null;
 
@@ -327,6 +407,12 @@
   function handleSelectedCellKeydown(event: KeyboardEvent, rowIndex: number, columnIndex: number) {
     if (!isSelectedCell(rowIndex, columnIndex)) return;
 
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      event.preventDefault();
+      clearSelectedCells();
+      return;
+    }
+
     if (isPrintableKey(event)) {
       event.preventDefault();
       enterCellEdit(rowIndex, columnIndex, event.key);
@@ -337,6 +423,41 @@
       event.preventDefault();
       enterCellEdit(rowIndex, columnIndex);
     }
+  }
+
+  function clearSelectedCells() {
+    if (!selectedRange) return;
+
+    const minRow = Math.max(
+      0,
+      Math.min(selectedRange.anchor.rowIndex, selectedRange.focus.rowIndex)
+    );
+    const maxRow = Math.min(
+      rows.length - 1,
+      Math.max(selectedRange.anchor.rowIndex, selectedRange.focus.rowIndex)
+    );
+    const minColumn = Math.max(
+      0,
+      Math.min(selectedRange.anchor.columnIndex, selectedRange.focus.columnIndex)
+    );
+    const maxColumn = Math.min(
+      columns.length - 1,
+      Math.max(selectedRange.anchor.columnIndex, selectedRange.focus.columnIndex)
+    );
+    const oldRows = rows.map((row) => [...row]);
+    const nextRows = rows.map((row, rowIndex) =>
+      row.map((cell, columnIndex) =>
+        rowIndex >= minRow &&
+        rowIndex <= maxRow &&
+        columnIndex >= minColumn &&
+        columnIndex <= maxColumn
+          ? ''
+          : cell
+      )
+    );
+
+    updateNodeData(nodeId, { ...normalizedData, rows: nextRows });
+    tracker.commit('rows', oldRows, nextRows);
   }
 
   function handleSelectedHeaderKeydown(event: KeyboardEvent, columnIndex: number) {
@@ -718,6 +839,7 @@
     window.removeEventListener('pointerup', endColumnResize);
     window.removeEventListener('pointermove', handleColumnDragMove);
     window.removeEventListener('pointerup', endColumnDrag);
+    window.removeEventListener('pointerup', endCellSelection);
   });
 </script>
 
@@ -912,17 +1034,17 @@
                       {:else}
                         <div
                           class={[
-                            'box-border min-h-7 w-full px-2 py-1 font-mono text-[11px] leading-5 break-words whitespace-pre-wrap text-zinc-200 outline-none',
-                            isSelectedCell(rowIndex, columnIndex)
-                              ? 'bg-blue-500/20 ring-1 ring-blue-400 ring-inset'
-                              : ''
+                            'box-border min-h-7 w-full border border-transparent px-2 py-1 font-mono text-[11px] leading-5 break-words whitespace-pre-wrap text-zinc-200 outline-none select-none',
+                            isCellInSelectedRange(rowIndex, columnIndex) ? 'bg-blue-500/20' : '',
+                            getSelectedCellBorderClass(rowIndex, columnIndex)
                           ]}
                           style:font-family={$editorFontFamily}
                           role="gridcell"
                           tabindex="0"
                           aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
-                          onclick={(event) =>
-                            selectCell(rowIndex, columnIndex, event.currentTarget)}
+                          onpointerdown={(event) =>
+                            beginCellSelection(event, rowIndex, columnIndex)}
+                          onpointerenter={() => extendCellSelection(rowIndex, columnIndex)}
                           ondblclick={() => enterCellEdit(rowIndex, columnIndex)}
                           onkeydown={(event) =>
                             handleSelectedCellKeydown(event, rowIndex, columnIndex)}

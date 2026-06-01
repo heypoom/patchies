@@ -20,6 +20,9 @@ from `table`, which remains an audio/wavetable float buffer.
 - Match spreadsheet-like cell editing: clicking selects a cell, typing while a
   cell is selected enters edit mode with that typed character, and double-click
   enters edit mode with the current cell content.
+- Allow dragging across body cells to select a rectangular cell range. Pressing
+  `Delete` or `Backspace` clears the selected cell contents without removing
+  rows or columns.
 - Column headers follow the same select-then-edit model as body cells: click to
   select, type to replace/edit, and double-click to edit the existing header.
 - Allow dragging a column header to reorder columns freely.

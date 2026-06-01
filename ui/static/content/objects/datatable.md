@@ -19,6 +19,9 @@ output the table, the same as sending `bang`.
 Click a cell to select it. Type while a cell is selected to replace it and enter
 edit mode, or double-click a cell to edit the existing value.
 
+Drag across body cells to select multiple cells. Press `Delete` or `Backspace`
+to clear the selected cell contents.
+
 Column headers can be selected the same way. Click a header to select it, type
 to replace it, or double-click to edit the existing header.
 
