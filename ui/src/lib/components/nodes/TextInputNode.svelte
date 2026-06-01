@@ -10,6 +10,7 @@
   import { messages } from '$lib/objects/schemas/common';
   import { useNodeDataTracker } from '$lib/history';
   import { shouldShowHandles } from '../../../stores/ui.store';
+  import { editorFontFamily } from '../../../stores/editor.store';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
   import * as Tooltip from '$lib/components/ui/tooltip';
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
@@ -89,7 +90,10 @@
   }
 </script>
 
-<div class={['group relative font-mono', isLocked && 'nodrag']}>
+<div
+  class={['group relative font-mono', isLocked && 'nodrag']}
+  style:--patchies-text-input-node-font-family={$editorFontFamily}
+>
   <NodeResizer class="z-1" isVisible={node.selected && !isLocked} minWidth={120} minHeight={32} />
 
   <div class="flex flex-col gap-2">
@@ -169,7 +173,7 @@
         placeholder="Enter text here..."
         style="width: {width}px; height: {height}px;"
         class={[
-          'focus:outline-one nodrag nowheel nopan block resize-none rounded border bg-zinc-900 px-3 py-2 text-xs text-zinc-100 placeholder-zinc-400 outline-none focus:bg-zinc-800',
+          'focus:outline-one text-input-node-font nodrag nowheel nopan block resize-none rounded border bg-zinc-900 px-3 py-2 text-xs text-zinc-100 placeholder-zinc-400 outline-none focus:bg-zinc-800',
           node.selected
             ? isLocked
               ? 'border-blue-500'
@@ -198,3 +202,9 @@
     </div>
   </div>
 </div>
+
+<style>
+  .text-input-node-font {
+    font-family: var(--patchies-text-input-node-font-family, var(--font-mono));
+  }
+</style>
