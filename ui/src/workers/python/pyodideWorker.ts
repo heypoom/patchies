@@ -67,9 +67,6 @@ async function handleCreateInstance(data: { nodeId: string }) {
     }
   });
 
-  const canvas = new OffscreenCanvas(200, 200);
-  pyodide.canvas.setCanvas2D(canvas as unknown as HTMLCanvasElement);
-
   const patchiesModule = {
     send(data: unknown, options?: SendMessageOptions) {
       self.postMessage({
