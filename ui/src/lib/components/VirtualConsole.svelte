@@ -20,6 +20,7 @@
     selected = false,
     onrun,
     isRunning = false,
+    showRunningIndicator = true,
     isLongRunningTaskActive = false,
     playOrStopIcon,
     runOrStop,
@@ -41,6 +42,7 @@
     selected?: boolean;
     onrun?: () => void;
     isRunning?: boolean;
+    showRunningIndicator?: boolean;
     isLongRunningTaskActive?: boolean;
     playOrStopIcon?: any;
     runOrStop?: () => void;
@@ -420,16 +422,18 @@
           onclick={handleRunOrStop}
           class={[
             'rounded p-1 text-zinc-300 hover:bg-zinc-700',
-            isRunning && !isLongRunningTaskActive
+            showRunningIndicator && isRunning && !isLongRunningTaskActive
               ? 'cursor-not-allowed opacity-30'
               : 'cursor-pointer'
           ].join(' ')}
           title={isLongRunningTaskActive ? 'Stop' : 'Run'}
           aria-label={isLongRunningTaskActive ? 'Stop' : 'Run'}
-          aria-disabled={isRunning && !isLongRunningTaskActive}
+          aria-disabled={showRunningIndicator && isRunning && !isLongRunningTaskActive}
         >
           <PlayOrStopIconComponent
-            class={isRunning && !isLongRunningTaskActive ? 'animate-spin' : ''}
+            class={showRunningIndicator && isRunning && !isLongRunningTaskActive
+              ? 'animate-spin'
+              : ''}
             size="14px"
           />
         </button>

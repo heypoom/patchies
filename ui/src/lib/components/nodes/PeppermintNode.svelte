@@ -33,6 +33,7 @@
   let pyodideSystem = PyodideSystem.getInstance();
   let eventBus = PatchiesEventBus.getInstance();
   let isInitialized = $state(false);
+  let isInitializing = $state(true);
   let isRunning = $state(false);
   let latestInput: PeppermintInput = { value: null };
   let initializePromise: Promise<void> | null = null;
@@ -101,6 +102,9 @@
         const message = error instanceof Error ? error.message : String(error);
         nodeLogger.error(`Failed to setup Peppermint: ${message}`);
         throw error;
+      })
+      .finally(() => {
+        isInitializing = false;
       });
   });
 
@@ -155,9 +159,7 @@
   {selected}
   onExecute={executeCode}
   onCleanup={cleanupRunningTasks}
-  {isRunning}
-  showRunningBorder={false}
-  showRunningIndicator={false}
+  isRunning={isInitializing}
   isMessageCallbackActive={false}
   isTimerCallbackActive={false}
   supportsLibraries={false}

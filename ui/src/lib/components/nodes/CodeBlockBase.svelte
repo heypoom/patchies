@@ -515,6 +515,7 @@
             }}
             onrun={executeCode}
             {isRunning}
+            {showRunningIndicator}
             {isLongRunningTaskActive}
             {playOrStopIcon}
             {runOrStop}
