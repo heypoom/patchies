@@ -16,6 +16,14 @@ move or delete that row.
 Table cells are multiline. Press `Enter` for a newline, or `Shift+Enter` to
 output the table, the same as sending `bang`.
 
+Click a cell to select it. Type while a cell is selected to replace it and enter
+edit mode, or double-click a cell to edit the existing value.
+
+Column headers can be selected the same way. Click a header to select it, type
+to replace it, or double-click to edit the existing header.
+
+Drag a column header to reorder columns.
+
 Send `bang` to output the table. By default this is a 2D JavaScript array where
 the first row is the current column headers:
 

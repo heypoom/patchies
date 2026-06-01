@@ -17,6 +17,12 @@ from `table`, which remains an audio/wavetable float buffer.
 - Move row and column deletion into context menus instead of always-visible grid
   buttons.
 - Allow reordering columns and rows from their context menus.
+- Match spreadsheet-like cell editing: clicking selects a cell, typing while a
+  cell is selected enters edit mode with that typed character, and double-click
+  enters edit mode with the current cell content.
+- Column headers follow the same select-then-edit model as body cells: click to
+  select, type to replace/edit, and double-click to edit the existing header.
+- Allow dragging a column header to reorder columns freely.
 - On `bang`, output a 2D JavaScript array by default. The first row is the
   current column header row, followed by each data row.
 - Add a checkbox setting to output array-of-row-objects instead. This mode uses
@@ -60,3 +66,5 @@ overwriting earlier values.
   new columns receive the default width.
 - Column reorder should move header names, row cells, and stored column widths
   together.
+- Column header drag reorder should use a small movement threshold so normal
+  header clicks and edits do not accidentally reorder columns.

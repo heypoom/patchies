@@ -67,6 +67,7 @@
   const DATATABLE_COLUMN_WIDTH = 110;
   const DATATABLE_MIN_COLUMN_WIDTH = 64;
   const DATATABLE_ACTION_COLUMN_WIDTH = 44;
+  const DATATABLE_HEADER_ROW = -1;
 
   const { updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -89,11 +90,26 @@
     widths: number[];
   };
 
+  type CellPosition = { rowIndex: number; columnIndex: number };
+  type ColumnDragState = {
+    fromIndex: number;
+    targetIndex: number;
+    startX: number;
+    isDragging: boolean;
+  };
+
   let resizingColumn = $state<ColumnResizeState | null>(null);
   let columnWidthsBeforeResize: number[] | null = null;
   let contextTarget = $state<
     { type: 'column'; index: number } | { type: 'row'; index: number } | null
   >(null);
+  let selectedCell = $state<CellPosition | null>(null);
+  let editingCell = $state<CellPosition | null>(null);
+  let editingHeaderColumn = $state<number | null>(null);
+  let draggingColumn = $state<ColumnDragState | null>(null);
+  let columnsBeforeDrag: string[] | null = null;
+  let rowsBeforeDrag: DatatableCell[][] | null = null;
+  let columnWidthsBeforeDrag: number[] | null = null;
 
   const columns = $derived(data.columns ?? DEFAULT_DATATABLE_DATA.columns);
   const rows = $derived(data.rows ?? DEFAULT_DATATABLE_DATA.rows);
@@ -221,6 +237,119 @@
     updateNodeData(nodeId, updateCell(normalizedData, rowIndex, columnIndex, value));
   }
 
+  function isSelectedCell(rowIndex: number, columnIndex: number) {
+    return selectedCell?.rowIndex === rowIndex && selectedCell.columnIndex === columnIndex;
+  }
+
+  function isEditingCell(rowIndex: number, columnIndex: number) {
+    return editingCell?.rowIndex === rowIndex && editingCell.columnIndex === columnIndex;
+  }
+
+  function isSelectedHeader(columnIndex: number) {
+    return isSelectedCell(DATATABLE_HEADER_ROW, columnIndex);
+  }
+
+  async function selectCell(rowIndex: number, columnIndex: number, target?: HTMLElement) {
+    selectedCell = { rowIndex, columnIndex };
+    editingCell = null;
+    editingHeaderColumn = null;
+    await tick();
+    target?.focus();
+  }
+
+  async function selectHeader(columnIndex: number, target?: HTMLElement) {
+    await selectCell(DATATABLE_HEADER_ROW, columnIndex, target);
+  }
+
+  async function enterCellEdit(rowIndex: number, columnIndex: number, initialValue?: string) {
+    selectedCell = { rowIndex, columnIndex };
+    editingCell = { rowIndex, columnIndex };
+    editingHeaderColumn = null;
+
+    beginCellEdit();
+    if (initialValue !== undefined) {
+      setCell(rowIndex, columnIndex, initialValue);
+    }
+
+    await tick();
+
+    const textarea = document.querySelector<HTMLTextAreaElement>(
+      `[data-datatable-node="${nodeId}"] textarea[data-cell="${rowIndex}-${columnIndex}"]`
+    );
+
+    if (!textarea) return;
+
+    resizeTextarea(textarea);
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }
+
+  async function enterHeaderEdit(columnIndex: number, initialValue?: string) {
+    selectedCell = { rowIndex: DATATABLE_HEADER_ROW, columnIndex };
+    editingCell = null;
+    editingHeaderColumn = columnIndex;
+
+    beginColumnEdit();
+    if (initialValue !== undefined) {
+      setColumnName(columnIndex, initialValue);
+    }
+
+    await tick();
+
+    const input = document.querySelector<HTMLInputElement>(
+      `[data-datatable-table="${nodeId}"] input[data-header="${columnIndex}"]`
+    );
+
+    if (!input) return;
+
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+
+  function finishCellEdit() {
+    editingCell = null;
+    endCellEdit();
+  }
+
+  function finishHeaderEdit() {
+    editingHeaderColumn = null;
+    endColumnEdit();
+  }
+
+  function isPrintableKey(event: KeyboardEvent) {
+    return event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey;
+  }
+
+  function handleSelectedCellKeydown(event: KeyboardEvent, rowIndex: number, columnIndex: number) {
+    if (!isSelectedCell(rowIndex, columnIndex)) return;
+
+    if (isPrintableKey(event)) {
+      event.preventDefault();
+      enterCellEdit(rowIndex, columnIndex, event.key);
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      enterCellEdit(rowIndex, columnIndex);
+    }
+  }
+
+  function handleSelectedHeaderKeydown(event: KeyboardEvent, columnIndex: number) {
+    if (!isSelectedHeader(columnIndex)) return;
+
+    if (isPrintableKey(event)) {
+      event.preventDefault();
+      enterHeaderEdit(columnIndex, event.key);
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      enterHeaderEdit(columnIndex);
+    }
+  }
+
   function clearTable() {
     setData({ ...createEmptyDatatable(), outputObjects });
   }
@@ -325,6 +454,100 @@
     columnWidthsBeforeResize = null;
     window.removeEventListener('pointermove', handleColumnResizeMove);
     setTimeout(() => updateNodeInternals(nodeId), 0);
+  }
+
+  function beginColumnDrag(event: PointerEvent, columnIndex: number) {
+    if (event.button !== 0 || resizingColumn) return;
+
+    draggingColumn = {
+      fromIndex: columnIndex,
+      targetIndex: columnIndex,
+      startX: event.clientX,
+      isDragging: false
+    };
+    columnsBeforeDrag = [...columns];
+    rowsBeforeDrag = rows.map((row) => [...row]);
+    columnWidthsBeforeDrag = [...columnWidths];
+
+    window.addEventListener('pointermove', handleColumnDragMove);
+    window.addEventListener('pointerup', endColumnDrag, { once: true });
+  }
+
+  function handleColumnDragMove(event: PointerEvent) {
+    if (!draggingColumn) return;
+
+    const hasPassedThreshold =
+      draggingColumn.isDragging || Math.abs(event.clientX - draggingColumn.startX) > 6;
+
+    if (!hasPassedThreshold) return;
+
+    event.preventDefault();
+
+    draggingColumn = {
+      ...draggingColumn,
+      isDragging: true,
+      targetIndex: getColumnIndexAtX(event.clientX)
+    };
+  }
+
+  function getColumnIndexAtX(clientX: number) {
+    const table = document.querySelector<HTMLTableElement>(`[data-datatable-table="${nodeId}"]`);
+    const x = clientX - (table?.getBoundingClientRect().left ?? 0);
+    let left = 0;
+    let closestIndex = 0;
+
+    for (let index = 0; index < renderedColumnWidths.length; index++) {
+      const width = renderedColumnWidths[index];
+      const center = left + width / 2;
+
+      if (x >= center) {
+        closestIndex = index;
+      }
+
+      left += width;
+    }
+
+    return Math.max(0, Math.min(columns.length - 1, closestIndex));
+  }
+
+  function endColumnDrag() {
+    if (!draggingColumn) return;
+
+    const { fromIndex, targetIndex, isDragging } = draggingColumn;
+    draggingColumn = null;
+    window.removeEventListener('pointermove', handleColumnDragMove);
+
+    if (!isDragging || fromIndex === targetIndex) {
+      columnsBeforeDrag = null;
+      rowsBeforeDrag = null;
+      columnWidthsBeforeDrag = null;
+      return;
+    }
+
+    updateNodeData(nodeId, moveColumn(normalizedData, fromIndex, targetIndex));
+    tracker.commit('columns', columnsBeforeDrag, moveItem(columns, fromIndex, targetIndex));
+    tracker.commit(
+      'rows',
+      rowsBeforeDrag,
+      rows.map((row) => moveItem(row, fromIndex, targetIndex))
+    );
+    tracker.commit(
+      'columnWidths',
+      columnWidthsBeforeDrag,
+      moveItem(columnWidths, fromIndex, targetIndex)
+    );
+
+    columnsBeforeDrag = null;
+    rowsBeforeDrag = null;
+    columnWidthsBeforeDrag = null;
+    setTimeout(() => updateNodeInternals(nodeId), 0);
+  }
+
+  function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
+    const next = [...items];
+    const [item] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, item);
+    return next;
   }
 
   function sendTableOutput(format: 'setting' | 'rows' | 'objects' = 'setting') {
@@ -472,6 +695,8 @@
     messageContext?.destroy();
     window.removeEventListener('pointermove', handleColumnResizeMove);
     window.removeEventListener('pointerup', endColumnResize);
+    window.removeEventListener('pointermove', handleColumnDragMove);
+    window.removeEventListener('pointerup', endColumnDrag);
   });
 </script>
 
@@ -547,7 +772,11 @@
           class="nodrag nopan nowheel min-h-0 flex-1 overflow-auto"
           style:max-height={displayHeight ? undefined : '240px'}
         >
-          <table class="table-fixed border-collapse" style:width={`${tableContentWidth}px`}>
+          <table
+            class="table-fixed border-collapse"
+            style:width={`${tableContentWidth}px`}
+            data-datatable-table={nodeId}
+          >
             <colgroup>
               {#each renderedColumnWidths as columnWidth}
                 <col style:width={`${columnWidth}px`} />
@@ -559,19 +788,46 @@
               <tr>
                 {#each columns as column, columnIndex}
                   <th
-                    class="relative border-r border-b border-zinc-700 bg-zinc-800 p-0"
+                    class={[
+                      'relative border-r border-b border-zinc-700 bg-zinc-800 p-0',
+                      draggingColumn?.fromIndex === columnIndex ? 'opacity-60' : '',
+                      draggingColumn?.targetIndex === columnIndex && draggingColumn.isDragging
+                        ? 'bg-zinc-700'
+                        : '',
+                      isSelectedHeader(columnIndex) ? 'ring-1 ring-blue-400 ring-inset' : '',
+                      isSelectedHeader(columnIndex) && editingHeaderColumn !== columnIndex
+                        ? 'bg-blue-500/20'
+                        : ''
+                    ]}
                     oncontextmenu={() => setColumnContext(columnIndex)}
+                    onpointerdown={(event) => beginColumnDrag(event, columnIndex)}
                   >
                     <div class="flex min-w-0 items-center">
-                      <input
-                        class="w-full bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-200 outline-none focus:bg-zinc-700"
-                        style:font-family={$editorFontFamily}
-                        value={column}
-                        aria-label={`Column ${columnIndex + 1} header`}
-                        onfocus={beginColumnEdit}
-                        onblur={endColumnEdit}
-                        oninput={(event) => setColumnName(columnIndex, event.currentTarget.value)}
-                      />
+                      {#if editingHeaderColumn === columnIndex}
+                        <input
+                          class="w-full bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-200 outline-none focus:bg-zinc-700"
+                          style:font-family={$editorFontFamily}
+                          value={column}
+                          aria-label={`Column ${columnIndex + 1} header`}
+                          data-header={columnIndex}
+                          onpointerdown={(event) => event.stopPropagation()}
+                          onblur={finishHeaderEdit}
+                          oninput={(event) => setColumnName(columnIndex, event.currentTarget.value)}
+                        />
+                      {:else}
+                        <div
+                          class="box-border min-h-7 w-full px-2 py-1.5 text-left font-mono text-[11px] text-zinc-200 outline-none"
+                          style:font-family={$editorFontFamily}
+                          role="columnheader"
+                          tabindex="0"
+                          aria-label={`Column ${columnIndex + 1} header`}
+                          onclick={(event) => selectHeader(columnIndex, event.currentTarget)}
+                          ondblclick={() => enterHeaderEdit(columnIndex)}
+                          onkeydown={(event) => handleSelectedHeaderKeydown(event, columnIndex)}
+                        >
+                          {column}
+                        </div>
+                      {/if}
                     </div>
 
                     <button
@@ -604,20 +860,42 @@
                 <tr oncontextmenu={() => setRowContext(rowIndex)}>
                   {#each columns as _column, columnIndex}
                     <td class="border-r border-b border-zinc-700 p-0">
-                      <textarea
-                        class="box-border block min-h-7 w-full resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none focus:bg-zinc-800"
-                        style:font-family={$editorFontFamily}
-                        value={String(row[columnIndex] ?? '')}
-                        aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
-                        rows="1"
-                        onfocus={beginCellEdit}
-                        onblur={endCellEdit}
-                        onkeydown={handleCellKeydown}
-                        oninput={(event) => {
-                          resizeTextarea(event.currentTarget);
-                          setCell(rowIndex, columnIndex, event.currentTarget.value);
-                        }}
-                      ></textarea>
+                      {#if isEditingCell(rowIndex, columnIndex)}
+                        <textarea
+                          class="box-border block min-h-7 w-full resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none focus:bg-zinc-800"
+                          style:font-family={$editorFontFamily}
+                          value={String(row[columnIndex] ?? '')}
+                          aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
+                          data-cell={`${rowIndex}-${columnIndex}`}
+                          rows="1"
+                          onblur={finishCellEdit}
+                          onkeydown={handleCellKeydown}
+                          oninput={(event) => {
+                            resizeTextarea(event.currentTarget);
+                            setCell(rowIndex, columnIndex, event.currentTarget.value);
+                          }}
+                        ></textarea>
+                      {:else}
+                        <div
+                          class={[
+                            'box-border min-h-7 w-full px-2 py-1 font-mono text-[11px] leading-5 break-words whitespace-pre-wrap text-zinc-200 outline-none',
+                            isSelectedCell(rowIndex, columnIndex)
+                              ? 'bg-blue-500/20 ring-1 ring-blue-400 ring-inset'
+                              : ''
+                          ]}
+                          style:font-family={$editorFontFamily}
+                          role="gridcell"
+                          tabindex="0"
+                          aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
+                          onclick={(event) =>
+                            selectCell(rowIndex, columnIndex, event.currentTarget)}
+                          ondblclick={() => enterCellEdit(rowIndex, columnIndex)}
+                          onkeydown={(event) =>
+                            handleSelectedCellKeydown(event, rowIndex, columnIndex)}
+                        >
+                          {String(row[columnIndex] ?? '')}
+                        </div>
+                      {/if}
                     </td>
                   {/each}
 
