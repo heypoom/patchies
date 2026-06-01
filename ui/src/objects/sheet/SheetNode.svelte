@@ -448,6 +448,31 @@
     const bounds = getSelectedRangeBounds();
     if (!bounds || bounds.minRow < 0) return null;
 
+    const startCell = document.querySelector<HTMLElement>(
+      `[data-sheet-node="${nodeId}"] [data-cell-container="${bounds.minRow}-${bounds.minColumn}"]`
+    );
+
+    const endCell = document.querySelector<HTMLElement>(
+      `[data-sheet-node="${nodeId}"] [data-cell-container="${bounds.maxRow}-${bounds.maxColumn}"]`
+    );
+
+    if (startCell && endCell && tableViewportElement) {
+      const viewportRect = tableViewportElement.getBoundingClientRect();
+
+      const startRect = startCell.getBoundingClientRect();
+      const endRect = endCell.getBoundingClientRect();
+
+      const scaleX = viewportRect.width / tableViewportElement.clientWidth || 1;
+      const scaleY = viewportRect.height / tableViewportElement.clientHeight || scaleX;
+
+      return {
+        left: tableViewportElement.scrollLeft + (startRect.left - viewportRect.left) / scaleX,
+        top: tableViewportElement.scrollTop + (startRect.top - viewportRect.top) / scaleY,
+        width: (endRect.right - startRect.left) / scaleX,
+        height: (endRect.bottom - startRect.top) / scaleY
+      };
+    }
+
     return {
       left: getColumnLeft(bounds.minColumn),
       top: tableHeaderHeight + (virtualRowOffsets[bounds.minRow] ?? 0),
