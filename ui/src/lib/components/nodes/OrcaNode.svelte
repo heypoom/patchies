@@ -30,6 +30,7 @@
   } from '../../../stores/detached-orca-editor.store';
   import { overlayEditorTransparency } from '../../../stores/editor-layout-settings.store';
   import { screenToOrcaGridCell } from '$lib/orca/pointer';
+  import { fillOrcaSelection, getOrcaSelectionBounds } from '$lib/orca/selection';
   import {
     DEFAULT_ORCA_FULLSCREEN_FONT_SIZE,
     getOrcaCanvasBackground,
@@ -414,16 +415,12 @@
         // Erase selection or single cell
         if (selectionW !== 0 || selectionH !== 0) {
           // Erase entire selection
-          const minX = cursorX < cursorX + selectionW ? cursorX : cursorX + selectionW;
-          const minY = cursorY < cursorY + selectionH ? cursorY : cursorY + selectionH;
-          const maxX = cursorX > cursorX + selectionW ? cursorX : cursorX + selectionW;
-          const maxY = cursorY > cursorY + selectionH ? cursorY : cursorY + selectionH;
+          fillOrcaSelection(
+            { x: cursorX, y: cursorY, w: selectionW, h: selectionH },
+            '.',
+            (x, y, glyph) => orca?.write(x, y, glyph)
+          );
 
-          for (let y = minY; y <= maxY; y++) {
-            for (let x = minX; x <= maxX; x++) {
-              orca.write(x, y, '.');
-            }
-          }
           // Reset selection
           selectionW = 0;
           selectionH = 0;
@@ -440,7 +437,15 @@
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
           const char = e.key; // Preserve case-sensitivity
           if (orca.isAllowed(char)) {
-            orca.write(cursorX, cursorY, char);
+            if (selectionW !== 0 || selectionH !== 0) {
+              fillOrcaSelection(
+                { x: cursorX, y: cursorY, w: selectionW, h: selectionH },
+                char,
+                (x, y, glyph) => orca?.write(x, y, glyph)
+              );
+            } else {
+              orca.write(cursorX, cursorY, char);
+            }
             updateNodeData(nodeId, { grid: orca.s });
             render();
             return true;
@@ -502,14 +507,14 @@
   function getSelection(): string {
     if (!orca) return '';
 
-    const minX = cursorX < cursorX + selectionW ? cursorX : cursorX + selectionW;
-    const minY = cursorY < cursorY + selectionH ? cursorY : cursorY + selectionH;
-    const maxX = cursorX > cursorX + selectionW ? cursorX : cursorX + selectionW;
-    const maxY = cursorY > cursorY + selectionH ? cursorY : cursorY + selectionH;
-    const w = maxX - minX + 1;
-    const h = maxY - minY + 1;
+    const { minX, minY, width, height } = getOrcaSelectionBounds({
+      x: cursorX,
+      y: cursorY,
+      w: selectionW,
+      h: selectionH
+    });
 
-    return orca.getBlock(minX, minY, w, h);
+    return orca.getBlock(minX, minY, width, height);
   }
 
   function performCopy(): void {
@@ -532,16 +537,11 @@
     });
 
     // Erase selected area
-    const minX = cursorX < cursorX + selectionW ? cursorX : cursorX + selectionW;
-    const minY = cursorY < cursorY + selectionH ? cursorY : cursorY + selectionH;
-    const maxX = cursorX > cursorX + selectionW ? cursorX : cursorX + selectionW;
-    const maxY = cursorY > cursorY + selectionH ? cursorY : cursorY + selectionH;
-
-    for (let y = minY; y <= maxY; y++) {
-      for (let x = minX; x <= maxX; x++) {
-        orca.write(x, y, '.');
-      }
-    }
+    fillOrcaSelection(
+      { x: cursorX, y: cursorY, w: selectionW, h: selectionH },
+      '.',
+      (x, y, glyph) => orca?.write(x, y, glyph)
+    );
 
     updateNodeData(nodeId, { grid: orca.s });
     render();
@@ -554,8 +554,12 @@
       const data = await navigator.clipboard.readText();
       if (!data) return;
 
-      const minX = cursorX < cursorX + selectionW ? cursorX : cursorX + selectionW;
-      const minY = cursorY < cursorY + selectionH ? cursorY : cursorY + selectionH;
+      const { minX, minY } = getOrcaSelectionBounds({
+        x: cursorX,
+        y: cursorY,
+        w: selectionW,
+        h: selectionH
+      });
 
       orca.writeBlock(minX, minY, data.trim(), false);
       updateNodeData(nodeId, { grid: orca.s });

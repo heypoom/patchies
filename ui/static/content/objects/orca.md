@@ -64,6 +64,7 @@ Use the settings button to tune the grid and performance view:
 ## Controls
 
 - Click on the canvas and type characters to edit the grid
+- Drag to select an area, then type a character to fill every selected cell
 - **Space**: play/pause
 - **Enter** or **Ctrl+F**: advance one frame
 - **Ctrl+Shift+R**: reset frame
