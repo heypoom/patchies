@@ -22,6 +22,7 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { resetCanvasSize } from './runtime-size';
 
   let {
     id: nodeId,
@@ -358,6 +359,11 @@
     panEnabled = true;
     wheelEnabled = true;
     videoOutputEnabled = true;
+
+    const resetSize = resetCanvasSize(canvas, DEFAULT_OUTPUT_SIZE);
+
+    outputWidth = resetSize.width;
+    outputHeight = resetSize.height;
 
     // Clear keyboard callbacks when code is re-run
     keyboardCallbacks = {};

@@ -19,6 +19,7 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { getDomSizeResetData } from './runtime-size';
 
   let {
     id: nodeId,
@@ -157,6 +158,7 @@
     dragEnabled = true;
     panEnabled = true;
     wheelEnabled = true;
+    updateNodeData(nodeId, getDomSizeResetData());
 
     // Unmount previous Vue app
     unmountVueApp();
@@ -197,8 +199,8 @@
         extraContext: {
           settings: createSettingsAPI(settingsManager),
           root: vueRoot,
-          width: containerWidth,
-          height: containerHeight,
+          width: undefined,
+          height: undefined,
           setSize,
           noDrag: () => {
             dragEnabled = false;
