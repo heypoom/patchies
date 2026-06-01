@@ -515,6 +515,16 @@
   }
 
   function handleCellEditKeydown(event: KeyboardEvent, rowIndex: number, columnIndex: number) {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'a') {
+      event.preventDefault();
+      event.stopPropagation();
+
+      finishCellEdit();
+      selectAllCells();
+
+      return;
+    }
+
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
@@ -543,6 +553,15 @@
 
   function handleSelectedCellKeydown(event: KeyboardEvent, rowIndex: number, columnIndex: number) {
     if (!isSelectedCell(rowIndex, columnIndex)) return;
+
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'a') {
+      event.preventDefault();
+      event.stopPropagation();
+
+      selectAllCells();
+
+      return;
+    }
 
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
@@ -658,6 +677,19 @@
 
     updateNodeData(nodeId, { ...normalizedData, rows: nextRows });
     tracker.commit('rows', oldRows, nextRows);
+  }
+
+  function selectAllCells() {
+    if (rows.length === 0 || columns.length === 0) return;
+
+    const anchor = { rowIndex: 0, columnIndex: 0 };
+    const focus = { rowIndex: rows.length - 1, columnIndex: columns.length - 1 };
+
+    selectedCell = anchor;
+    selectedRange = { anchor, focus };
+    editingCell = null;
+    editingHeaderColumn = null;
+    focusCell(anchor);
   }
 
   function handleSelectedHeaderKeydown(event: KeyboardEvent, columnIndex: number) {
@@ -1780,7 +1812,10 @@
               <div
                 class="nodrag flex shrink-0 items-center justify-between border-t border-zinc-700 px-2 py-1.5"
                 role="presentation"
-                oncontextmenu={() => (contextTarget = null)}
+                oncontextmenu={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
                 data-sheet-footer={nodeId}
               >
                 <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
@@ -1878,8 +1913,6 @@
             >
               Delete Row
             </ContextMenu.Item>
-          {:else}
-            <ContextMenu.Item onclick={clearTable}>Clear Table</ContextMenu.Item>
           {/if}
         </ContextMenu.Content>
       </ContextMenu.Root>
