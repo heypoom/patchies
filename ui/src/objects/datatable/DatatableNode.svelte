@@ -409,20 +409,60 @@
 
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
+      event.stopPropagation();
       clearSelectedCells();
+      return;
+    }
+
+    const nextCell = getCellForArrowKey(event.key, rowIndex, columnIndex);
+
+    if (nextCell) {
+      event.preventDefault();
+      event.stopPropagation();
+      selectedCell = nextCell;
+      selectedRange = { anchor: nextCell, focus: nextCell };
+      focusCell(nextCell);
       return;
     }
 
     if (isPrintableKey(event)) {
       event.preventDefault();
+      event.stopPropagation();
       enterCellEdit(rowIndex, columnIndex, event.key);
       return;
     }
 
     if (event.key === 'Enter') {
       event.preventDefault();
+      event.stopPropagation();
       enterCellEdit(rowIndex, columnIndex);
     }
+  }
+
+  function getCellForArrowKey(key: string, rowIndex: number, columnIndex: number) {
+    const nextCell = match(key)
+      .with('ArrowLeft', () => ({ rowIndex, columnIndex: columnIndex - 1 }))
+      .with('ArrowRight', () => ({ rowIndex, columnIndex: columnIndex + 1 }))
+      .with('ArrowUp', () => ({ rowIndex: rowIndex - 1, columnIndex }))
+      .with('ArrowDown', () => ({ rowIndex: rowIndex + 1, columnIndex }))
+      .otherwise(() => null);
+
+    if (!nextCell) return null;
+
+    return {
+      rowIndex: Math.max(0, Math.min(rows.length - 1, nextCell.rowIndex)),
+      columnIndex: Math.max(0, Math.min(columns.length - 1, nextCell.columnIndex))
+    };
+  }
+
+  async function focusCell(cell: CellPosition) {
+    await tick();
+
+    document
+      .querySelector<HTMLElement>(
+        `[data-datatable-node="${nodeId}"] [data-cell-display="${cell.rowIndex}-${cell.columnIndex}"]`
+      )
+      ?.focus();
   }
 
   function clearSelectedCells() {
@@ -1042,6 +1082,7 @@
                           role="gridcell"
                           tabindex="0"
                           aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
+                          data-cell-display={`${rowIndex}-${columnIndex}`}
                           onpointerdown={(event) =>
                             beginCellSelection(event, rowIndex, columnIndex)}
                           onpointerenter={() => extendCellSelection(rowIndex, columnIndex)}
