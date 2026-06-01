@@ -19,7 +19,7 @@
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
-  import { getDomSizeResetData } from './runtime-size';
+  import { getDomSizeResetData, shouldResetDomSize } from './runtime-size';
 
   let {
     id: nodeId,
@@ -142,7 +142,12 @@
     dragEnabled = true;
     panEnabled = true;
     wheelEnabled = true;
-    updateNodeData(nodeId, getDomSizeResetData());
+
+    const resetSize = shouldResetDomSize(data.code);
+
+    if (resetSize) {
+      updateNodeData(nodeId, getDomSizeResetData());
+    }
 
     settingsManager.clearCallbacks();
 
@@ -166,8 +171,8 @@
         extraContext: {
           settings: createSettingsAPI(settingsManager),
           root: container.root,
-          width: undefined,
-          height: undefined,
+          width: resetSize ? undefined : containerWidth,
+          height: resetSize ? undefined : containerHeight,
           setSize,
           noDrag: () => {
             dragEnabled = false;

@@ -1,9 +1,40 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_OUTPUT_SIZE, PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
-import { resetCanvasSize } from './runtime-size';
+import { resetCanvasSize, shouldResetDomSize } from './runtime-size';
 
 describe('runtime size resets', () => {
+  it('keeps persisted DOM dimensions when code calls setSize', () => {
+    expect(
+      shouldResetDomSize(`setTitle('MOD-04 Calculator');
+setSize(270, 390);
+noDrag();`)
+    ).toBe(false);
+  });
+
+  it('clears persisted DOM dimensions when code no longer calls setSize', () => {
+    expect(
+      shouldResetDomSize(`setTitle('MOD-04 Calculator');
+noDrag();`)
+    ).toBe(true);
+  });
+
+  it('clears persisted DOM dimensions when setSize only appears in a line comment', () => {
+    expect(
+      shouldResetDomSize(`setTitle('MOD-04 Calculator');
+// setSize(270, 390);
+noDrag();`)
+    ).toBe(true);
+  });
+
+  it('clears persisted DOM dimensions when setSize only appears in a block comment', () => {
+    expect(
+      shouldResetDomSize(`setTitle('MOD-04 Calculator');
+/* setSize(270, 390); */
+noDrag();`)
+    ).toBe(true);
+  });
+
   it('resets canvas element dimensions to the default output size', () => {
     const canvas = {
       width: 640,
