@@ -7,6 +7,9 @@ Use the plus buttons to add rows or columns.
 Select the object and drag its resize handles to set the visible table area.
 Extra rows or columns scroll inside the table.
 
+Use the expand button beside settings to edit the sheet in a detached overlay.
+Send `expand` to open it, and `collapse` to close it.
+
 Drag the right edge of a column header to resize that column.
 
 Right-click a column header to move or delete that column. Right-click a row to

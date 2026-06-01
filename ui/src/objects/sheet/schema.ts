@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox';
 
 import type { ObjectSchema } from '$lib/objects/schemas/types';
-import { Bang, LoadBySrc } from '$lib/objects/schemas/common';
+import { Bang, Collapse, Expand, LoadBySrc } from '$lib/objects/schemas/common';
 import { sym } from '$lib/objects/schemas/helpers';
 
 export const SheetClear = sym('clear');
@@ -27,6 +27,8 @@ export const sheetSchema: ObjectSchema = {
         { schema: SheetObjects, description: 'Output the table as row objects' },
         { schema: SheetClear, description: 'Clear all cells' },
         { schema: LoadBySrc, description: 'Load CSV text from a VFS path or URL' },
+        { schema: Expand, description: 'Open the expanded sheet editor' },
+        { schema: Collapse, description: 'Close the expanded sheet editor' },
         {
           schema: Type.String(),
           description: 'Parse CSV text and replace the table'

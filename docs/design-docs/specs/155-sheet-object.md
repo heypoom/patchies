@@ -12,6 +12,9 @@ from `table`, which remains an audio/wavetable float buffer.
 - Allow adding and removing rows when editing table data.
 - Allow resizing the node with `NodeResizer`; the table viewport should scroll
   when content exceeds the resized bounds.
+- Add an expand control beside the settings control. Expanded mode moves the
+  live sheet editor into a detached overlay and can be closed with the collapse
+  control or a `collapse` message.
 - Allow resizing individual columns by dragging the right border of a column
   header.
 - Move row and column deletion into context menus instead of always-visible grid
@@ -32,6 +35,8 @@ from `table`, which remains an audio/wavetable float buffer.
   current column headers as keys and each row as an object value.
 - Support pasted or loaded CSV text as a table source. The first CSV row becomes
   column headers so users can rename them directly after import.
+- Support common `expand` and `collapse` messages for opening and closing the
+  detached sheet editor.
 
 ## Data Contract
 
@@ -71,3 +76,5 @@ overwriting earlier values.
   together.
 - Column header drag reorder should use a small movement threshold so normal
   header clicks and edits do not accidentally reorder columns.
+- Expanded mode should use the same rendered sheet instance through a portal so
+  selection, editing, context menus, and column drag state stay continuous.
