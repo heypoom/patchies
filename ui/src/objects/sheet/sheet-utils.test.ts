@@ -5,6 +5,7 @@ import {
   buildSheetObjectsOutput,
   buildSheetRowsOutput,
   ensureUniqueColumnKeys,
+  insertRow,
   moveColumn,
   moveRow,
   parseCsvTable
@@ -132,6 +133,28 @@ describe('sheet utilities', () => {
       rows: [
         ['2', 'Grace'],
         ['1', 'Ada']
+      ]
+    });
+  });
+
+  it('inserts rows at a target index', () => {
+    expect(
+      insertRow(
+        {
+          columns: ['id', 'name'],
+          rows: [
+            ['1', 'Ada'],
+            ['2', 'Grace']
+          ]
+        },
+        1
+      )
+    ).toEqual({
+      columns: ['id', 'name'],
+      rows: [
+        ['1', 'Ada'],
+        ['', ''],
+        ['2', 'Grace']
       ]
     });
   });

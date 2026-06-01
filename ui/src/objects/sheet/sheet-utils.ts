@@ -101,9 +101,19 @@ export function moveColumn(data: SheetData, fromIndex: number, toIndex: number):
 }
 
 export function addRow(data: SheetData): SheetData {
+  return insertRow(data, data.rows.length);
+}
+
+export function insertRow(data: SheetData, index: number): SheetData {
+  const insertIndex = Math.max(0, Math.min(data.rows.length, index));
+
   return {
     ...data,
-    rows: [...data.rows, data.columns.map(() => '')]
+    rows: [
+      ...data.rows.slice(0, insertIndex),
+      data.columns.map(() => ''),
+      ...data.rows.slice(insertIndex)
+    ]
   };
 }
 

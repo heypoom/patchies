@@ -39,6 +39,7 @@
     buildSheetOutput,
     buildSheetRowsOutput,
     createEmptySheet,
+    insertRow,
     moveColumn,
     moveRow,
     parseCsvTable,
@@ -110,7 +111,10 @@
   let resizingColumn = $state<ColumnResizeState | null>(null);
   let columnWidthsBeforeResize: number[] | null = null;
   let contextTarget = $state<
-    { type: 'column'; index: number } | { type: 'row'; index: number } | null
+    | { type: 'column'; index: number }
+    | { type: 'row'; index: number }
+    | { type: 'cell'; rowIndex: number; columnIndex: number }
+    | null
   >(null);
   let selectedCell = $state<CellPosition | null>(null);
   let selectedRange = $state<CellSelectionRange | null>(null);
@@ -605,15 +609,57 @@
   }
 
   function setColumnContext(columnIndex: number) {
-    queueMicrotask(() => {
-      contextTarget = { type: 'column', index: columnIndex };
-    });
+    contextTarget = { type: 'column', index: columnIndex };
   }
 
   function setRowContext(rowIndex: number) {
-    queueMicrotask(() => {
-      contextTarget = { type: 'row', index: rowIndex };
-    });
+    if (contextTarget?.type === 'cell') return;
+
+    contextTarget = { type: 'row', index: rowIndex };
+  }
+
+  function setCellContext(rowIndex: number, columnIndex: number) {
+    contextTarget = { type: 'cell', rowIndex, columnIndex };
+  }
+
+  function getContextRowIndex() {
+    if (contextTarget?.type === 'row') return contextTarget.index;
+    if (contextTarget?.type === 'cell') return contextTarget.rowIndex;
+    return null;
+  }
+
+  function addContextRowAbove() {
+    const rowIndex = getContextRowIndex();
+    if (rowIndex === null) return;
+    setData(insertRow(normalizedData, rowIndex));
+  }
+
+  function addContextRowBelow() {
+    const rowIndex = getContextRowIndex();
+    if (rowIndex === null) return;
+    setData(insertRow(normalizedData, rowIndex + 1));
+  }
+
+  function moveContextRow(delta: -1 | 1) {
+    const rowIndex = getContextRowIndex();
+    if (rowIndex === null) return;
+    setData(moveRow(normalizedData, rowIndex, rowIndex + delta));
+  }
+
+  function removeContextRow() {
+    const rowIndex = getContextRowIndex();
+    if (rowIndex === null) return;
+    setData(removeRow(normalizedData, rowIndex));
+  }
+
+  function moveContextColumn(delta: -1 | 1) {
+    if (contextTarget?.type !== 'column') return;
+    setData(moveColumn(normalizedData, contextTarget.index, contextTarget.index + delta));
+  }
+
+  function removeContextColumn() {
+    if (contextTarget?.type !== 'column') return;
+    setData(removeColumn(normalizedData, contextTarget.index));
   }
 
   const handleResizeStart: OnResizeStart = () => {
@@ -1106,10 +1152,7 @@
 
       <ContextMenu.Root>
         <ContextMenu.Trigger>
-          <div
-            class="flex min-h-0 flex-1 flex-col overflow-hidden"
-            oncontextmenu={() => (contextTarget = null)}
-          >
+          <div class="flex min-h-0 flex-1 flex-col overflow-hidden" role="presentation">
             <div
               class="nodrag nopan nowheel relative min-h-0 flex-1 overflow-auto"
               style:max-height={isDetached || displayHeight ? undefined : '240px'}
@@ -1234,6 +1277,7 @@
                               ? 'border-blue-500/20 bg-blue-500/20'
                               : 'border-zinc-700'
                           ]}
+                          oncontextmenu={() => setCellContext(rowIndex, columnIndex)}
                         >
                           {#if isEditingCell(rowIndex, columnIndex)}
                             <textarea
@@ -1315,15 +1359,13 @@
           {#if contextTarget?.type === 'column'}
             <ContextMenu.Item
               disabled={contextTarget.index <= 0}
-              onclick={() =>
-                setData(moveColumn(normalizedData, contextTarget!.index, contextTarget!.index - 1))}
+              onclick={() => moveContextColumn(-1)}
             >
               Move Column Left
             </ContextMenu.Item>
             <ContextMenu.Item
               disabled={contextTarget.index >= columns.length - 1}
-              onclick={() =>
-                setData(moveColumn(normalizedData, contextTarget!.index, contextTarget!.index + 1))}
+              onclick={() => moveContextColumn(1)}
             >
               Move Column Right
             </ContextMenu.Item>
@@ -1331,22 +1373,23 @@
             <ContextMenu.Item
               variant="destructive"
               disabled={columns.length <= 1}
-              onclick={() => setData(removeColumn(normalizedData, contextTarget!.index))}
+              onclick={removeContextColumn}
             >
               Delete Column
             </ContextMenu.Item>
-          {:else if contextTarget?.type === 'row'}
+          {:else if contextTarget?.type === 'cell'}
+            <ContextMenu.Item onclick={addContextRowAbove}>Add Row Above</ContextMenu.Item>
+            <ContextMenu.Item onclick={addContextRowBelow}>Add Row Below</ContextMenu.Item>
+            <ContextMenu.Separator />
             <ContextMenu.Item
-              disabled={contextTarget.index <= 0}
-              onclick={() =>
-                setData(moveRow(normalizedData, contextTarget!.index, contextTarget!.index - 1))}
+              disabled={contextTarget.rowIndex <= 0}
+              onclick={() => moveContextRow(-1)}
             >
               Move Row Up
             </ContextMenu.Item>
             <ContextMenu.Item
-              disabled={contextTarget.index >= rows.length - 1}
-              onclick={() =>
-                setData(moveRow(normalizedData, contextTarget!.index, contextTarget!.index + 1))}
+              disabled={contextTarget.rowIndex >= rows.length - 1}
+              onclick={() => moveContextRow(1)}
             >
               Move Row Down
             </ContextMenu.Item>
@@ -1354,7 +1397,31 @@
             <ContextMenu.Item
               variant="destructive"
               disabled={rows.length <= 1}
-              onclick={() => setData(removeRow(normalizedData, contextTarget!.index))}
+              onclick={removeContextRow}
+            >
+              Delete Row
+            </ContextMenu.Item>
+          {:else if contextTarget?.type === 'row'}
+            <ContextMenu.Item onclick={addContextRowAbove}>Add Row Above</ContextMenu.Item>
+            <ContextMenu.Item onclick={addContextRowBelow}>Add Row Below</ContextMenu.Item>
+            <ContextMenu.Separator />
+            <ContextMenu.Item
+              disabled={contextTarget.index <= 0}
+              onclick={() => moveContextRow(-1)}
+            >
+              Move Row Up
+            </ContextMenu.Item>
+            <ContextMenu.Item
+              disabled={contextTarget.index >= rows.length - 1}
+              onclick={() => moveContextRow(1)}
+            >
+              Move Row Down
+            </ContextMenu.Item>
+            <ContextMenu.Separator />
+            <ContextMenu.Item
+              variant="destructive"
+              disabled={rows.length <= 1}
+              onclick={removeContextRow}
             >
               Delete Row
             </ContextMenu.Item>
