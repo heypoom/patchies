@@ -14,6 +14,7 @@
   import { shouldShowHandles } from '../../../stores/ui.store';
   import { useNodeDataTracker } from '$lib/history';
   import { checkMessageConnections } from '$lib/composables/checkHandleConnections';
+  import { editorFontFamily } from '../../../stores/editor.store';
   const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
 
   let props: {
@@ -84,6 +85,7 @@
       placeholder: 'Start typing markdown...',
       toolbar: false,
       value: props.data.markdown,
+      fontFamily: 'var(--patchies-markdown-node-font-family, var(--font-mono))',
       theme: {
         name: 'my-theme',
         colors: {
@@ -134,6 +136,7 @@
     <div
       bind:this={overtypeElement}
       style="width: {props.width ?? defaultWidth}px; height: {props.height ?? defaultHeight}px"
+      style:--patchies-markdown-node-font-family={$editorFontFamily}
       class="nodrag nowheel nopan overtype-editor rounded-lg bg-zinc-900"
       onfocusin={markdownTracker.onFocus}
       onfocusout={markdownTracker.onBlur}
@@ -155,5 +158,10 @@
 
   .overtype-editor :global(.overtype-wrapper) {
     @apply rounded-lg;
+  }
+
+  .overtype-editor :global(.overtype-wrapper .overtype-input),
+  .overtype-editor :global(.overtype-wrapper .overtype-preview) {
+    font-family: var(--patchies-markdown-node-font-family, var(--font-mono)) !important;
   }
 </style>
