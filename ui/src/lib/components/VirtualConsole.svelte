@@ -19,6 +19,7 @@
     borderColor = 'border-zinc-700',
     selected = false,
     onrun,
+    showRunControls = true,
     isRunning = false,
     showRunningIndicator = true,
     isLongRunningTaskActive = false,
@@ -41,6 +42,7 @@
     borderColor?: string;
     selected?: boolean;
     onrun?: () => void;
+    showRunControls?: boolean;
     isRunning?: boolean;
     showRunningIndicator?: boolean;
     isLongRunningTaskActive?: boolean;
@@ -404,7 +406,7 @@
     <span class="font-mono text-[11px] text-zinc-400">console</span>
 
     <div class="flex gap-1">
-      {#if (isRunning || isLongRunningTaskActive) && onrun}
+      {#if showRunControls && (isRunning || isLongRunningTaskActive) && onrun}
         <button
           onclick={handleRun}
           class="rounded p-1 text-zinc-300 hover:bg-zinc-700"
@@ -415,7 +417,7 @@
         </button>
       {/if}
 
-      {#if runOrStop && playOrStopIcon}
+      {#if showRunControls && runOrStop && playOrStopIcon}
         {@const PlayOrStopIconComponent = playOrStopIcon}
 
         <button

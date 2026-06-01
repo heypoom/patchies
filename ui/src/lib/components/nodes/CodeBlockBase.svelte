@@ -31,13 +31,15 @@
     closeCodeEditorOverlay,
     openCodeEditorOverlay,
     openCodeEditorSidebar,
+    syncActiveCodeEditorTargetLineErrors,
     syncActiveCodeEditorTargetSettings
   } from '../../../stores/code-editor-layout.store';
   import { defaultEditorLayout } from '../../../stores/editor-layout-settings.store';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
 
   let contentContainer: HTMLDivElement | null = null;
-  let consoleRef: VirtualConsole | null = $state(null);
+  let inlineConsoleRef: VirtualConsole | null = $state(null);
+  let overlayConsoleRef: VirtualConsole | null = $state(null);
 
   // Props from parent component
   let {
@@ -168,6 +170,14 @@
       nodeId,
       dataKey: 'code',
       settings: detachedSettings
+    });
+  });
+
+  $effect(() => {
+    syncActiveCodeEditorTargetLineErrors({
+      nodeId,
+      dataKey: 'code',
+      lineErrors
     });
   });
 
@@ -309,7 +319,9 @@
       title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
       placeholder: editorPlaceholder,
       onrun: executeCode,
-      settings: detachedSettings
+      lineErrors,
+      settings: detachedSettings,
+      console: detachedConsole
     });
 
     showEditor = false;
@@ -325,7 +337,9 @@
       title: (supportsLibraries && data.libraryName) || data.title || nodeLabel,
       placeholder: editorPlaceholder,
       onrun: executeCode,
-      settings: detachedSettings
+      lineErrors,
+      settings: detachedSettings,
+      console: detachedConsole
     });
 
     showEditor = false;
@@ -364,7 +378,8 @@
   }
 
   export function clearConsole() {
-    consoleRef?.clearConsole();
+    inlineConsoleRef?.clearConsole();
+    overlayConsoleRef?.clearConsole();
     lineErrors = undefined;
     hasError = false;
   }
@@ -400,6 +415,31 @@
     handleCodeOpen(event);
   };
 </script>
+
+{#snippet detachedConsole()}
+  <VirtualConsole
+    bind:this={overlayConsoleRef}
+    {nodeId}
+    borderColor="border-zinc-700"
+    selected={false}
+    onClear={() => {
+      lineErrors = undefined;
+      hasError = false;
+    }}
+    onrun={executeCode}
+    showRunControls={false}
+    {isRunning}
+    {showRunningIndicator}
+    {isLongRunningTaskActive}
+    {playOrStopIcon}
+    {runOrStop}
+    initialHeight={data.consoleHeight}
+    initialWidth={data.consoleWidth}
+    onHeightChange={(height) => updateNodeData(nodeId, { consoleHeight: height })}
+    onWidthChange={(width) => updateNodeData(nodeId, { consoleWidth: width })}
+    class="shadow-xl"
+  />
+{/snippet}
 
 <div class="relative flex gap-x-3">
   <div class="group relative">
@@ -505,7 +545,7 @@
 
         {#if data.showConsole && !(supportsLibraries && data.libraryName)}
           <VirtualConsole
-            bind:this={consoleRef}
+            bind:this={inlineConsoleRef}
             {nodeId}
             {borderColor}
             {selected}

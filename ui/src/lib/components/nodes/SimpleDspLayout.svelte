@@ -14,6 +14,7 @@
     closeCodeEditorOverlay,
     openCodeEditorOverlay,
     openCodeEditorSidebar,
+    syncActiveCodeEditorTargetLineErrors,
     syncActiveCodeEditorTargetSettings
   } from '../../../stores/code-editor-layout.store';
   import { defaultEditorLayout } from '../../../stores/editor-layout-settings.store';
@@ -103,6 +104,14 @@
     });
   });
 
+  $effect(() => {
+    syncActiveCodeEditorTargetLineErrors({
+      nodeId,
+      dataKey: 'code',
+      lineErrors
+    });
+  });
+
   const containerClass = $derived.by(() => {
     const hasError = lineErrors !== undefined;
     if (hasError) return 'object-container-error';
@@ -160,6 +169,7 @@
       nodeType,
       title: displayTitle,
       onrun: onRun,
+      lineErrors,
       settings: detachedSettings
     });
 
@@ -175,6 +185,7 @@
       nodeType,
       title: displayTitle,
       onrun: onRun,
+      lineErrors,
       settings: detachedSettings
     });
 

@@ -22,7 +22,9 @@ export interface CodeEditorTarget {
   placeholder?: string;
   onchange?: (value: string) => void | Promise<void>;
   onrun?: () => void;
+  lineErrors?: Record<number, string[]>;
   settings?: CodeEditorTargetSettings;
+  console?: Snippet;
   customActions?: Snippet;
   customSettings?: Snippet;
   mode: 'overlay' | 'sidebar';
@@ -76,9 +78,40 @@ export function syncActiveCodeEditorTargetSettings({
   });
 }
 
+export function syncActiveCodeEditorTargetLineErrors({
+  nodeId,
+  dataKey,
+  lineErrors
+}: {
+  nodeId: string | undefined;
+  dataKey: string;
+  lineErrors?: Record<number, string[]>;
+}): void {
+  if (!nodeId) return;
+
+  activeCodeEditorTarget.update((target) => {
+    if (!target || target.nodeId !== nodeId || target.dataKey !== dataKey) {
+      return target;
+    }
+
+    if (target.lineErrors === lineErrors) {
+      return target;
+    }
+
+    return {
+      ...target,
+      lineErrors
+    };
+  });
+}
+
 interface CodeEditorTargetSettingsState {
   settings?: CodeEditorTargetSettings;
   customSettings?: Snippet;
+}
+
+interface CodeEditorTargetConsoleState {
+  console?: Snippet;
 }
 
 export function hasCodeEditorTargetSettings(
@@ -89,6 +122,12 @@ export function hasCodeEditorTargetSettings(
   if (target.customSettings) return true;
 
   return (target.settings?.schema.length ?? 0) > 0;
+}
+
+export function hasCodeEditorTargetConsole(
+  target: CodeEditorTarget | CodeEditorTargetConsoleState | null | undefined
+): boolean {
+  return Boolean(target?.console);
 }
 
 export function isDetachedCodeEditorTarget(nodeId: string | undefined, dataKey: string): boolean {

@@ -1234,6 +1234,7 @@
         onrun={$activeCodeEditorTarget.onrun}
         nodeId={$activeCodeEditorTarget.nodeId}
         dataKey={$activeCodeEditorTarget.dataKey}
+        lineErrors={$activeCodeEditorTarget.lineErrors}
         fontSize={`${$editorFullscreenFontSize}px`}
       />
     {/snippet}
@@ -1243,6 +1244,7 @@
       onrun={$activeCodeEditorTarget.onrun}
       nodeId={$activeCodeEditorTarget.nodeId}
       settings={$activeCodeEditorTarget.settings}
+      console={$activeCodeEditorTarget.console}
       customActions={$activeCodeEditorTarget.customActions}
       customSettings={$activeCodeEditorTarget.customSettings}
       codeEditor={detachedCodeEditorSnippet}

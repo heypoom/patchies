@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { Play, Settings, X } from '@lucide/svelte/icons';
+  import { Play, Settings, Terminal, X } from '@lucide/svelte/icons';
   import { onDestroy, onMount } from 'svelte';
   import type { Snippet } from 'svelte';
   import * as Tooltip from './ui/tooltip';
   import ObjectSettings from '$lib/components/settings/ObjectSettings.svelte';
   import {
     hasCodeEditorTargetSettings,
+    hasCodeEditorTargetConsole,
     type CodeEditorTargetSettings
   } from '../../stores/code-editor-layout.store';
   import { overlayEditorTransparency } from '../../stores/editor-layout-settings.store';
@@ -19,6 +20,7 @@
     settings,
     customActions,
     customSettings,
+    console: consoleSnippet,
     codeEditor,
     class: className = ''
   }: {
@@ -26,6 +28,7 @@
     onrun?: () => void;
     nodeId?: string;
     settings?: CodeEditorTargetSettings;
+    console?: Snippet;
     customActions?: Snippet;
     customSettings?: Snippet;
     codeEditor: Snippet;
@@ -34,7 +37,25 @@
 
   let panelBackground = $derived(`rgba(9, 9, 11, ${$overlayEditorTransparency})`);
   let showSettings = $state(false);
+  let showConsole = $state(false);
   let hasSettings = $derived(hasCodeEditorTargetSettings({ settings, customSettings }));
+  let hasConsole = $derived(hasCodeEditorTargetConsole({ console: consoleSnippet }));
+
+  function toggleSettings() {
+    showSettings = !showSettings;
+
+    if (showSettings) {
+      showConsole = false;
+    }
+  }
+
+  function toggleConsole() {
+    showConsole = !showConsole;
+
+    if (showConsole) {
+      showSettings = false;
+    }
+  }
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key !== 'Escape' || !event.shiftKey) return;
@@ -81,14 +102,38 @@
       </Tooltip.Root>
     {/if}
 
+    {#if hasConsole}
+      <div class="relative">
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
+              onclick={toggleConsole}
+              aria-label="Console"
+              aria-pressed={showConsole}
+            >
+              <Terminal class="h-4 w-4" />
+            </button>
+          </Tooltip.Trigger>
+
+          <Tooltip.Content>{showConsole ? 'Hide Console' : 'Console'}</Tooltip.Content>
+        </Tooltip.Root>
+
+        <div class={['absolute top-11 right-0', showConsole ? '' : 'hidden']}>
+          {@render consoleSnippet?.()}
+        </div>
+      </div>
+    {/if}
+
     {#if hasSettings}
       <div class="relative">
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button
               class="cursor-pointer rounded bg-black/35 p-2 text-zinc-300 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
-              onclick={() => (showSettings = !showSettings)}
+              onclick={toggleSettings}
               aria-label="Object settings"
+              aria-pressed={showSettings}
             >
               <Settings class="h-4 w-4" />
             </button>

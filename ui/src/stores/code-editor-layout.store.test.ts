@@ -4,10 +4,12 @@ import { describe, expect, it } from 'vitest';
 import {
   activeCodeEditorTarget,
   closeCodeEditorOverlay,
+  hasCodeEditorTargetConsole,
   hasCodeEditorTargetSettings,
   isDetachedCodeEditorTarget,
   openCodeEditorOverlay,
   openCodeEditorSidebar,
+  syncActiveCodeEditorTargetLineErrors,
   syncActiveCodeEditorTargetSettings,
   type CodeEditorTarget
 } from './code-editor-layout.store';
@@ -119,6 +121,24 @@ describe('code editor layout store', () => {
     ).toBe(true);
   });
 
+  it('detects console targets', () => {
+    const baseTarget = {
+      nodeId: 'node-1',
+      dataKey: 'code',
+      language: 'javascript',
+      mode: 'overlay'
+    } satisfies CodeEditorTarget;
+
+    expect(hasCodeEditorTargetConsole(baseTarget)).toBe(false);
+
+    expect(
+      hasCodeEditorTargetConsole({
+        ...baseTarget,
+        console: (() => {}) as any
+      })
+    ).toBe(true);
+  });
+
   it('refreshes settings for the active detached target', () => {
     const firstSettings = {
       schema: [
@@ -163,6 +183,32 @@ describe('code editor layout store', () => {
     });
 
     expect(get(activeCodeEditorTarget)?.settings?.values).toEqual({ radius: 0.6 });
+
+    closeCodeEditorOverlay();
+  });
+
+  it('refreshes line errors for the active detached target', () => {
+    openCodeEditorOverlay({
+      nodeId: 'node-1',
+      dataKey: 'code',
+      language: 'javascript'
+    });
+
+    syncActiveCodeEditorTargetLineErrors({
+      nodeId: 'node-2',
+      dataKey: 'code',
+      lineErrors: { 2: ['wrong target'] }
+    });
+
+    expect(get(activeCodeEditorTarget)?.lineErrors).toBeUndefined();
+
+    syncActiveCodeEditorTargetLineErrors({
+      nodeId: 'node-1',
+      dataKey: 'code',
+      lineErrors: { 3: ['Unexpected token'] }
+    });
+
+    expect(get(activeCodeEditorTarget)?.lineErrors).toEqual({ 3: ['Unexpected token'] });
 
     closeCodeEditorOverlay();
   });
