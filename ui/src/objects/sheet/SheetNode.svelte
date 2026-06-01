@@ -39,6 +39,7 @@
     buildSheetOutput,
     buildSheetRowsOutput,
     createEmptySheet,
+    insertColumn,
     insertRow,
     moveColumn,
     moveRow,
@@ -655,6 +656,16 @@
   function moveContextColumn(delta: -1 | 1) {
     if (contextTarget?.type !== 'column') return;
     setData(moveColumn(normalizedData, contextTarget.index, contextTarget.index + delta));
+  }
+
+  function addContextColumnLeft() {
+    if (contextTarget?.type !== 'column') return;
+    setData(insertColumn(normalizedData, contextTarget.index));
+  }
+
+  function addContextColumnRight() {
+    if (contextTarget?.type !== 'column') return;
+    setData(insertColumn(normalizedData, contextTarget.index + 1));
   }
 
   function removeContextColumn() {
@@ -1357,6 +1368,9 @@
 
         <ContextMenu.Content class="z-[70] w-44">
           {#if contextTarget?.type === 'column'}
+            <ContextMenu.Item onclick={addContextColumnLeft}>Insert Column Left</ContextMenu.Item>
+            <ContextMenu.Item onclick={addContextColumnRight}>Insert Column Right</ContextMenu.Item>
+            <ContextMenu.Separator />
             <ContextMenu.Item
               disabled={contextTarget.index <= 0}
               onclick={() => moveContextColumn(-1)}

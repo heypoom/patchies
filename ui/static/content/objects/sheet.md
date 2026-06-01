@@ -12,8 +12,8 @@ Send `expand` to open it, and `collapse` to close it.
 
 Drag the right edge of a column header to resize that column.
 
-Right-click a column header to move or delete that column. Right-click a row to
-move or delete that row.
+Right-click a column header to insert, move, or delete that column. Right-click
+a cell or row to insert, move, or delete that row.
 
 Table cells are multiline. Press `Enter` for a newline, or `Shift+Enter` to
 output the table, the same as sending `bang`.

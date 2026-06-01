@@ -17,8 +17,8 @@ from `table`, which remains an audio/wavetable float buffer.
   control or a `collapse` message.
 - Allow resizing individual columns by dragging the right border of a column
   header.
-- Move row and column deletion into context menus instead of always-visible grid
-  buttons.
+- Move row and column insertion/deletion into context menus instead of
+  always-visible grid buttons.
 - Allow reordering columns and rows from their context menus.
 - Match spreadsheet-like cell editing: clicking selects a cell, typing while a
   cell is selected enters edit mode with that typed character, and double-click

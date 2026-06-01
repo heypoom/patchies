@@ -5,6 +5,7 @@ import {
   buildSheetObjectsOutput,
   buildSheetRowsOutput,
   ensureUniqueColumnKeys,
+  insertColumn,
   insertRow,
   moveColumn,
   moveRow,
@@ -112,6 +113,29 @@ describe('sheet utilities', () => {
         ['2', '85', 'Grace']
       ],
       columnWidths: [80, 100, 160]
+    });
+  });
+
+  it('inserts columns at a target index', () => {
+    expect(
+      insertColumn(
+        {
+          columns: ['id', 'name'],
+          rows: [
+            ['1', 'Ada'],
+            ['2', 'Grace']
+          ],
+          columnWidths: [80, 160]
+        },
+        1
+      )
+    ).toEqual({
+      columns: ['id', 'column 3', 'name'],
+      rows: [
+        ['1', '', 'Ada'],
+        ['2', '', 'Grace']
+      ],
+      columnWidths: [80, 110, 160]
     });
   });
 

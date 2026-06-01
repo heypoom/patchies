@@ -12,6 +12,7 @@ export type SheetData = {
 export type ParsedCsvTable = Pick<SheetData, 'columns' | 'rows'>;
 
 const EMPTY_PARSED_TABLE: ParsedCsvTable = { columns: [], rows: [] };
+const DEFAULT_INSERTED_COLUMN_WIDTH = 110;
 
 export function ensureUniqueColumnKeys(columns: string[]): string[] {
   const seen = new Map<string, number>();
@@ -61,12 +62,28 @@ export function createEmptySheet(): SheetData {
 }
 
 export function addColumn(data: SheetData): SheetData {
+  return insertColumn(data, data.columns.length);
+}
+
+export function insertColumn(data: SheetData, index: number): SheetData {
+  const insertIndex = Math.max(0, Math.min(data.columns.length, index));
   const nextIndex = data.columns.length + 1;
 
   return {
     ...data,
-    columns: [...data.columns, `column ${nextIndex}`],
-    rows: data.rows.map((row) => [...row, ''])
+    columns: [
+      ...data.columns.slice(0, insertIndex),
+      `column ${nextIndex}`,
+      ...data.columns.slice(insertIndex)
+    ],
+    rows: data.rows.map((row) => [...row.slice(0, insertIndex), '', ...row.slice(insertIndex)]),
+    columnWidths: data.columnWidths
+      ? [
+          ...data.columnWidths.slice(0, insertIndex),
+          DEFAULT_INSERTED_COLUMN_WIDTH,
+          ...data.columnWidths.slice(insertIndex)
+        ]
+      : undefined
   };
 }
 
