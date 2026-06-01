@@ -1061,305 +1061,309 @@
       ? 'nodrag nopan nowheel fixed inset-0 z-[60] flex items-stretch justify-stretch bg-zinc-900'
       : 'contents'}
   >
-    <ContextMenu.Root>
-      <ContextMenu.Trigger>
-        <div
-          class={[
-            'flex min-w-[280px] flex-col overflow-hidden rounded-lg border text-xs text-zinc-200 shadow-lg',
-            containerClass,
-            isDetached ? '!rounded-none !border-0 !shadow-none' : '',
-            isDraggingCsv ? 'border-blue-400 bg-blue-950/40' : ''
-          ]}
-          ondragover={handleCsvDragOver}
-          ondragleave={handleCsvDragLeave}
-          ondrop={handleCsvDrop}
-          oncontextmenu={() => (contextTarget = null)}
-          role="group"
-          aria-label="Editable data table"
-          style:width={`${sheetViewportWidth}px`}
-          style:height={sheetViewportHeight ? `${sheetViewportHeight}px` : undefined}
-        >
+    <div
+      class={[
+        'flex min-w-[280px] flex-col overflow-hidden rounded-lg border text-xs text-zinc-200 shadow-lg',
+        containerClass,
+        isDetached ? '!rounded-none !border-0 !shadow-none' : '',
+        isDraggingCsv ? 'border-blue-400 bg-blue-950/40' : ''
+      ]}
+      ondragover={handleCsvDragOver}
+      ondragleave={handleCsvDragLeave}
+      ondrop={handleCsvDrop}
+      role="group"
+      aria-label="Editable data table"
+      style:width={`${sheetViewportWidth}px`}
+      style:height={sheetViewportHeight ? `${sheetViewportHeight}px` : undefined}
+    >
+      <div
+        class="flex shrink-0 cursor-move items-center justify-between border-b border-zinc-700 px-2 py-1.5"
+      >
+        <span class="font-mono text-[10px] text-zinc-400">sheet</span>
+        <div class="flex items-center gap-1">
+          <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
+            {columns.length}
+            {columns.length === 1 ? 'col' : 'cols'}
+          </span>
+
+          {#if isDetached}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button
+                  class="nodrag nopan cursor-pointer rounded p-0.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+                  onclick={closeExpandedSheet}
+                  type="button"
+                  aria-label="Close expanded sheet"
+                >
+                  <X class="h-3.5 w-3.5" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Close Expanded Sheet (Shift+Esc)</Tooltip.Content>
+            </Tooltip.Root>
+          {/if}
+        </div>
+      </div>
+
+      <ContextMenu.Root>
+        <ContextMenu.Trigger>
           <div
-            class="flex shrink-0 cursor-move items-center justify-between border-b border-zinc-700 px-2 py-1.5"
+            class="flex min-h-0 flex-1 flex-col overflow-hidden"
+            oncontextmenu={() => (contextTarget = null)}
           >
-            <span class="font-mono text-[10px] text-zinc-400">sheet</span>
-            <div class="flex items-center gap-1">
+            <div
+              class="nodrag nopan nowheel relative min-h-0 flex-1 overflow-auto"
+              style:max-height={isDetached || displayHeight ? undefined : '240px'}
+            >
+              {#if draggingColumn?.isDragging}
+                <div
+                  class="pointer-events-none absolute top-0 bottom-0 z-30 border-2 border-blue-300 bg-blue-300/10 shadow-[0_0_10px_rgba(147,197,253,0.35)]"
+                  style:left={`${draggingColumn.currentX - draggingColumn.startX + getColumnLeft(draggingColumn.fromIndex)}px`}
+                  style:width={`${draggingColumnWidth}px`}
+                ></div>
+
+                <div
+                  class="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 bg-blue-300 shadow-[0_0_8px_rgba(147,197,253,0.8)]"
+                  style:left={`${getColumnInsertLeft(draggingColumn.targetIndex)}px`}
+                ></div>
+              {/if}
+
+              {#if selectedRangeRect}
+                <div
+                  class="pointer-events-none absolute z-20 border-2 border-blue-400"
+                  style:left={`${selectedRangeRect.left}px`}
+                  style:top={`${selectedRangeRect.top}px`}
+                  style:width={`${selectedRangeRect.width}px`}
+                  style:height={`${selectedRangeRect.height}px`}
+                ></div>
+              {/if}
+
+              <table
+                class="table-fixed border-collapse"
+                style:width={`${tableContentWidth}px`}
+                data-sheet-table={nodeId}
+              >
+                <colgroup>
+                  {#each renderedColumnWidths as columnWidth}
+                    <col style:width={`${columnWidth}px`} />
+                  {/each}
+                  <col style:width={`${SHEET_ACTION_COLUMN_WIDTH}px`} />
+                </colgroup>
+
+                <thead>
+                  <tr>
+                    {#each columns as column, columnIndex}
+                      <th
+                        class={[
+                          'relative border-r border-b border-zinc-700 bg-zinc-800 p-0',
+                          draggingColumn?.fromIndex === columnIndex ? 'opacity-60' : '',
+                          draggingColumn?.targetIndex === columnIndex && draggingColumn.isDragging
+                            ? 'bg-zinc-700'
+                            : '',
+                          isSelectedHeader(columnIndex) ? 'ring-1 ring-blue-400 ring-inset' : '',
+                          isSelectedHeader(columnIndex) && editingHeaderColumn !== columnIndex
+                            ? 'bg-blue-500/20'
+                            : ''
+                        ]}
+                        oncontextmenu={() => setColumnContext(columnIndex)}
+                        onpointerdown={(event) => beginColumnDrag(event, columnIndex)}
+                      >
+                        <div class="flex min-w-0 items-center">
+                          {#if editingHeaderColumn === columnIndex}
+                            <input
+                              class="w-full bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-200 outline-none focus:bg-zinc-700"
+                              style:font-family={$editorFontFamily}
+                              value={column}
+                              aria-label={`Column ${columnIndex + 1} header`}
+                              data-header={columnIndex}
+                              onpointerdown={(event) => event.stopPropagation()}
+                              onblur={finishHeaderEdit}
+                              onkeydown={(event) => handleHeaderEditKeydown(event, columnIndex)}
+                              oninput={(event) =>
+                                setColumnName(columnIndex, event.currentTarget.value)}
+                            />
+                          {:else}
+                            <div
+                              class="box-border min-h-7 w-full px-2 py-1.5 text-left font-mono text-[11px] text-zinc-200 outline-none"
+                              style:font-family={$editorFontFamily}
+                              role="columnheader"
+                              tabindex="0"
+                              aria-label={`Column ${columnIndex + 1} header`}
+                              data-header-display={columnIndex}
+                              onclick={(event) => selectHeader(columnIndex, event.currentTarget)}
+                              ondblclick={() => enterHeaderEdit(columnIndex)}
+                              onkeydown={(event) => handleSelectedHeaderKeydown(event, columnIndex)}
+                            >
+                              {column}
+                            </div>
+                          {/if}
+                        </div>
+
+                        <button
+                          class="nodrag nopan absolute top-0 right-[-4px] bottom-0 z-10 w-2 cursor-col-resize bg-transparent hover:bg-zinc-400/20"
+                          type="button"
+                          aria-label={`Resize column ${columnIndex + 1}`}
+                          onpointerdown={(event) => beginColumnResize(event, columnIndex)}
+                        ></button>
+                      </th>
+                    {/each}
+
+                    <th class="border-b border-zinc-700 bg-zinc-800 px-1">
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          <button
+                            class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                            onclick={() => setData(addColumn(normalizedData))}
+                          >
+                            <Plus class="h-3.5 w-3.5" />
+                          </button>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>Add Column</Tooltip.Content>
+                      </Tooltip.Root>
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody data-sheet-node={nodeId}>
+                  {#each rows as row, rowIndex}
+                    <tr oncontextmenu={() => setRowContext(rowIndex)}>
+                      {#each columns as _column, columnIndex}
+                        <td
+                          class={[
+                            'border-r border-b p-0',
+                            isCellInSelectedRange(rowIndex, columnIndex)
+                              ? 'border-blue-500/20 bg-blue-500/20'
+                              : 'border-zinc-700'
+                          ]}
+                        >
+                          {#if isEditingCell(rowIndex, columnIndex)}
+                            <textarea
+                              class="box-border block min-h-7 w-full resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none focus:bg-zinc-800"
+                              style:font-family={$editorFontFamily}
+                              value={String(row[columnIndex] ?? '')}
+                              aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
+                              data-cell={`${rowIndex}-${columnIndex}`}
+                              rows="1"
+                              onblur={finishCellEdit}
+                              onkeydown={(event) =>
+                                handleCellEditKeydown(event, rowIndex, columnIndex)}
+                              oninput={(event) => {
+                                resizeTextarea(event.currentTarget);
+                                setCell(rowIndex, columnIndex, event.currentTarget.value);
+                              }}
+                            ></textarea>
+                          {:else}
+                            <div
+                              class={[
+                                'box-border min-h-7 w-full border border-transparent px-2 py-1 font-mono text-[11px] leading-5 break-words whitespace-pre-wrap text-zinc-200 outline-none select-none'
+                              ]}
+                              style:font-family={$editorFontFamily}
+                              role="gridcell"
+                              tabindex="0"
+                              aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
+                              data-cell-display={`${rowIndex}-${columnIndex}`}
+                              onpointerdown={(event) =>
+                                beginCellSelection(event, rowIndex, columnIndex)}
+                              onpointerenter={() => extendCellSelection(rowIndex, columnIndex)}
+                              ondblclick={() => enterCellEdit(rowIndex, columnIndex)}
+                              onkeydown={(event) =>
+                                handleSelectedCellKeydown(event, rowIndex, columnIndex)}
+                            >
+                              {String(row[columnIndex] ?? '')}
+                            </div>
+                          {/if}
+                        </td>
+                      {/each}
+
+                      <td class="border-b border-zinc-700 px-1"></td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+
+            {#if headerValidationError}
+              <div class="border-t border-zinc-700 px-2 py-1 font-mono text-[10px] text-red-300">
+                {headerValidationError}
+              </div>
+            {/if}
+
+            <div
+              class="nodrag flex shrink-0 items-center justify-between border-t border-zinc-700 px-2 py-1.5"
+            >
               <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
-                {columns.length}
-                {columns.length === 1 ? 'col' : 'cols'}
+                {rows.length} rows
               </span>
 
-              {#if isDetached}
+              <div class="flex items-center gap-1">
                 <Tooltip.Root>
                   <Tooltip.Trigger>
                     <button
-                      class="nodrag nopan cursor-pointer rounded p-0.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
-                      onclick={closeExpandedSheet}
-                      type="button"
-                      aria-label="Close expanded sheet"
+                      class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                      onclick={() => setData(addRow(normalizedData))}
                     >
-                      <X class="h-3.5 w-3.5" />
+                      <Plus class="h-3.5 w-3.5" />
                     </button>
                   </Tooltip.Trigger>
-                  <Tooltip.Content>Close Expanded Sheet (Shift+Esc)</Tooltip.Content>
+                  <Tooltip.Content>Add Row</Tooltip.Content>
                 </Tooltip.Root>
-              {/if}
+              </div>
             </div>
           </div>
+        </ContextMenu.Trigger>
 
-          <div
-            class="nodrag nopan nowheel relative min-h-0 flex-1 overflow-auto"
-            style:max-height={isDetached || displayHeight ? undefined : '240px'}
-          >
-            {#if draggingColumn?.isDragging}
-              <div
-                class="pointer-events-none absolute top-0 bottom-0 z-30 border-2 border-blue-300 bg-blue-300/10 shadow-[0_0_10px_rgba(147,197,253,0.35)]"
-                style:left={`${draggingColumn.currentX - draggingColumn.startX + getColumnLeft(draggingColumn.fromIndex)}px`}
-                style:width={`${draggingColumnWidth}px`}
-              ></div>
-
-              <div
-                class="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 bg-blue-300 shadow-[0_0_8px_rgba(147,197,253,0.8)]"
-                style:left={`${getColumnInsertLeft(draggingColumn.targetIndex)}px`}
-              ></div>
-            {/if}
-
-            {#if selectedRangeRect}
-              <div
-                class="pointer-events-none absolute z-20 border-2 border-blue-400"
-                style:left={`${selectedRangeRect.left}px`}
-                style:top={`${selectedRangeRect.top}px`}
-                style:width={`${selectedRangeRect.width}px`}
-                style:height={`${selectedRangeRect.height}px`}
-              ></div>
-            {/if}
-
-            <table
-              class="table-fixed border-collapse"
-              style:width={`${tableContentWidth}px`}
-              data-sheet-table={nodeId}
+        <ContextMenu.Content class="z-[70] w-44">
+          {#if contextTarget?.type === 'column'}
+            <ContextMenu.Item
+              disabled={contextTarget.index <= 0}
+              onclick={() =>
+                setData(moveColumn(normalizedData, contextTarget!.index, contextTarget!.index - 1))}
             >
-              <colgroup>
-                {#each renderedColumnWidths as columnWidth}
-                  <col style:width={`${columnWidth}px`} />
-                {/each}
-                <col style:width={`${SHEET_ACTION_COLUMN_WIDTH}px`} />
-              </colgroup>
-
-              <thead>
-                <tr>
-                  {#each columns as column, columnIndex}
-                    <th
-                      class={[
-                        'relative border-r border-b border-zinc-700 bg-zinc-800 p-0',
-                        draggingColumn?.fromIndex === columnIndex ? 'opacity-60' : '',
-                        draggingColumn?.targetIndex === columnIndex && draggingColumn.isDragging
-                          ? 'bg-zinc-700'
-                          : '',
-                        isSelectedHeader(columnIndex) ? 'ring-1 ring-blue-400 ring-inset' : '',
-                        isSelectedHeader(columnIndex) && editingHeaderColumn !== columnIndex
-                          ? 'bg-blue-500/20'
-                          : ''
-                      ]}
-                      oncontextmenu={() => setColumnContext(columnIndex)}
-                      onpointerdown={(event) => beginColumnDrag(event, columnIndex)}
-                    >
-                      <div class="flex min-w-0 items-center">
-                        {#if editingHeaderColumn === columnIndex}
-                          <input
-                            class="w-full bg-transparent px-2 py-1.5 font-mono text-[11px] text-zinc-200 outline-none focus:bg-zinc-700"
-                            style:font-family={$editorFontFamily}
-                            value={column}
-                            aria-label={`Column ${columnIndex + 1} header`}
-                            data-header={columnIndex}
-                            onpointerdown={(event) => event.stopPropagation()}
-                            onblur={finishHeaderEdit}
-                            onkeydown={(event) => handleHeaderEditKeydown(event, columnIndex)}
-                            oninput={(event) =>
-                              setColumnName(columnIndex, event.currentTarget.value)}
-                          />
-                        {:else}
-                          <div
-                            class="box-border min-h-7 w-full px-2 py-1.5 text-left font-mono text-[11px] text-zinc-200 outline-none"
-                            style:font-family={$editorFontFamily}
-                            role="columnheader"
-                            tabindex="0"
-                            aria-label={`Column ${columnIndex + 1} header`}
-                            data-header-display={columnIndex}
-                            onclick={(event) => selectHeader(columnIndex, event.currentTarget)}
-                            ondblclick={() => enterHeaderEdit(columnIndex)}
-                            onkeydown={(event) => handleSelectedHeaderKeydown(event, columnIndex)}
-                          >
-                            {column}
-                          </div>
-                        {/if}
-                      </div>
-
-                      <button
-                        class="nodrag nopan absolute top-0 right-[-4px] bottom-0 z-10 w-2 cursor-col-resize bg-transparent hover:bg-zinc-400/20"
-                        type="button"
-                        aria-label={`Resize column ${columnIndex + 1}`}
-                        onpointerdown={(event) => beginColumnResize(event, columnIndex)}
-                      ></button>
-                    </th>
-                  {/each}
-
-                  <th class="border-b border-zinc-700 bg-zinc-800 px-1">
-                    <Tooltip.Root>
-                      <Tooltip.Trigger>
-                        <button
-                          class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
-                          onclick={() => setData(addColumn(normalizedData))}
-                        >
-                          <Plus class="h-3.5 w-3.5" />
-                        </button>
-                      </Tooltip.Trigger>
-                      <Tooltip.Content>Add Column</Tooltip.Content>
-                    </Tooltip.Root>
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody data-sheet-node={nodeId}>
-                {#each rows as row, rowIndex}
-                  <tr oncontextmenu={() => setRowContext(rowIndex)}>
-                    {#each columns as _column, columnIndex}
-                      <td
-                        class={[
-                          'border-r border-b p-0',
-                          isCellInSelectedRange(rowIndex, columnIndex)
-                            ? 'border-blue-500/20 bg-blue-500/20'
-                            : 'border-zinc-700'
-                        ]}
-                      >
-                        {#if isEditingCell(rowIndex, columnIndex)}
-                          <textarea
-                            class="box-border block min-h-7 w-full resize-none overflow-hidden bg-transparent px-2 py-1 font-mono text-[11px] leading-5 text-zinc-200 outline-none focus:bg-zinc-800"
-                            style:font-family={$editorFontFamily}
-                            value={String(row[columnIndex] ?? '')}
-                            aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
-                            data-cell={`${rowIndex}-${columnIndex}`}
-                            rows="1"
-                            onblur={finishCellEdit}
-                            onkeydown={(event) =>
-                              handleCellEditKeydown(event, rowIndex, columnIndex)}
-                            oninput={(event) => {
-                              resizeTextarea(event.currentTarget);
-                              setCell(rowIndex, columnIndex, event.currentTarget.value);
-                            }}
-                          ></textarea>
-                        {:else}
-                          <div
-                            class={[
-                              'box-border min-h-7 w-full border border-transparent px-2 py-1 font-mono text-[11px] leading-5 break-words whitespace-pre-wrap text-zinc-200 outline-none select-none'
-                            ]}
-                            style:font-family={$editorFontFamily}
-                            role="gridcell"
-                            tabindex="0"
-                            aria-label={`Row ${rowIndex + 1}, column ${columnIndex + 1}`}
-                            data-cell-display={`${rowIndex}-${columnIndex}`}
-                            onpointerdown={(event) =>
-                              beginCellSelection(event, rowIndex, columnIndex)}
-                            onpointerenter={() => extendCellSelection(rowIndex, columnIndex)}
-                            ondblclick={() => enterCellEdit(rowIndex, columnIndex)}
-                            onkeydown={(event) =>
-                              handleSelectedCellKeydown(event, rowIndex, columnIndex)}
-                          >
-                            {String(row[columnIndex] ?? '')}
-                          </div>
-                        {/if}
-                      </td>
-                    {/each}
-
-                    <td class="border-b border-zinc-700 px-1"></td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-
-          {#if headerValidationError}
-            <div class="border-t border-zinc-700 px-2 py-1 font-mono text-[10px] text-red-300">
-              {headerValidationError}
-            </div>
+              Move Column Left
+            </ContextMenu.Item>
+            <ContextMenu.Item
+              disabled={contextTarget.index >= columns.length - 1}
+              onclick={() =>
+                setData(moveColumn(normalizedData, contextTarget!.index, contextTarget!.index + 1))}
+            >
+              Move Column Right
+            </ContextMenu.Item>
+            <ContextMenu.Separator />
+            <ContextMenu.Item
+              variant="destructive"
+              disabled={columns.length <= 1}
+              onclick={() => setData(removeColumn(normalizedData, contextTarget!.index))}
+            >
+              Delete Column
+            </ContextMenu.Item>
+          {:else if contextTarget?.type === 'row'}
+            <ContextMenu.Item
+              disabled={contextTarget.index <= 0}
+              onclick={() =>
+                setData(moveRow(normalizedData, contextTarget!.index, contextTarget!.index - 1))}
+            >
+              Move Row Up
+            </ContextMenu.Item>
+            <ContextMenu.Item
+              disabled={contextTarget.index >= rows.length - 1}
+              onclick={() =>
+                setData(moveRow(normalizedData, contextTarget!.index, contextTarget!.index + 1))}
+            >
+              Move Row Down
+            </ContextMenu.Item>
+            <ContextMenu.Separator />
+            <ContextMenu.Item
+              variant="destructive"
+              disabled={rows.length <= 1}
+              onclick={() => setData(removeRow(normalizedData, contextTarget!.index))}
+            >
+              Delete Row
+            </ContextMenu.Item>
+          {:else}
+            <ContextMenu.Item onclick={clearTable}>Clear Table</ContextMenu.Item>
           {/if}
-
-          <div
-            class="nodrag flex shrink-0 items-center justify-between border-t border-zinc-700 px-2 py-1.5"
-          >
-            <span class="rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
-              {rows.length} rows
-            </span>
-
-            <div class="flex items-center gap-1">
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  <button
-                    class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
-                    onclick={() => setData(addRow(normalizedData))}
-                  >
-                    <Plus class="h-3.5 w-3.5" />
-                  </button>
-                </Tooltip.Trigger>
-                <Tooltip.Content>Add Row</Tooltip.Content>
-              </Tooltip.Root>
-            </div>
-          </div>
-        </div>
-      </ContextMenu.Trigger>
-
-      <ContextMenu.Content class="w-44">
-        {#if contextTarget?.type === 'column'}
-          <ContextMenu.Item
-            disabled={contextTarget.index <= 0}
-            onclick={() =>
-              setData(moveColumn(normalizedData, contextTarget!.index, contextTarget!.index - 1))}
-          >
-            Move Column Left
-          </ContextMenu.Item>
-          <ContextMenu.Item
-            disabled={contextTarget.index >= columns.length - 1}
-            onclick={() =>
-              setData(moveColumn(normalizedData, contextTarget!.index, contextTarget!.index + 1))}
-          >
-            Move Column Right
-          </ContextMenu.Item>
-          <ContextMenu.Separator />
-          <ContextMenu.Item
-            variant="destructive"
-            disabled={columns.length <= 1}
-            onclick={() => setData(removeColumn(normalizedData, contextTarget!.index))}
-          >
-            Delete Column
-          </ContextMenu.Item>
-        {:else if contextTarget?.type === 'row'}
-          <ContextMenu.Item
-            disabled={contextTarget.index <= 0}
-            onclick={() =>
-              setData(moveRow(normalizedData, contextTarget!.index, contextTarget!.index - 1))}
-          >
-            Move Row Up
-          </ContextMenu.Item>
-          <ContextMenu.Item
-            disabled={contextTarget.index >= rows.length - 1}
-            onclick={() =>
-              setData(moveRow(normalizedData, contextTarget!.index, contextTarget!.index + 1))}
-          >
-            Move Row Down
-          </ContextMenu.Item>
-          <ContextMenu.Separator />
-          <ContextMenu.Item
-            variant="destructive"
-            disabled={rows.length <= 1}
-            onclick={() => setData(removeRow(normalizedData, contextTarget!.index))}
-          >
-            Delete Row
-          </ContextMenu.Item>
-        {:else}
-          <ContextMenu.Item onclick={clearTable}>Clear Table</ContextMenu.Item>
-        {/if}
-      </ContextMenu.Content>
-    </ContextMenu.Root>
+        </ContextMenu.Content>
+      </ContextMenu.Root>
+    </div>
   </div>
 
   <TypedHandle
