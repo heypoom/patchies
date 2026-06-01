@@ -290,12 +290,14 @@
     const tableRect = table.getBoundingClientRect();
     const startRect = startCell.getBoundingClientRect();
     const endRect = endCell.getBoundingClientRect();
+    const scaleX = tableRect.width / table.offsetWidth || 1;
+    const scaleY = tableRect.height / table.offsetHeight || scaleX;
 
     return {
-      left: startRect.left - tableRect.left,
-      top: startRect.top - tableRect.top,
-      width: endRect.right - startRect.left,
-      height: endRect.bottom - startRect.top
+      left: (startRect.left - tableRect.left) / scaleX,
+      top: (startRect.top - tableRect.top) / scaleY,
+      width: (endRect.right - startRect.left) / scaleX,
+      height: (endRect.bottom - startRect.top) / scaleY
     };
   }
 
