@@ -60,6 +60,7 @@ export interface PyodideConsoleOutputEvent {
   output: 'stdout' | 'stderr';
   message: string | null;
   nodeId: string;
+  lineErrors?: Record<number, string[]>;
 
   /** Mark that code execution is done. */
   finished?: boolean;

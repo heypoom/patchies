@@ -219,7 +219,7 @@
     if (isFlashing) return 'border-zinc-300';
 
     // Error state - show red border when there are errors
-    if (hasError) {
+    if (hasError && !data.showConsole) {
       return selected ? 'border-red-500' : 'border-red-400';
     }
 

@@ -5,6 +5,7 @@ import {
   createPyodideWorkerErrorResponse,
   createPyodideWorkerSuccessResponse
 } from '$lib/python/pyodide-messages';
+import { formatPeppermintError } from '$lib/peppermint/errors';
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
 import { PeppermintPyodideRuntime } from './peppermint';
 
@@ -161,11 +162,14 @@ async function handleExecutePeppermintCode(data: { nodeId: string; code: string;
       finished: true
     });
   } catch (error) {
+    const formatted = formatPeppermintError(String(error), code);
+
     self.postMessage({
       type: 'consoleOutput',
       nodeId,
       output: 'stderr',
-      message: String(error),
+      message: formatted.message,
+      lineErrors: formatted.lineErrors,
       finished: true
     });
   }

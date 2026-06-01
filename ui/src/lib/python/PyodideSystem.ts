@@ -13,7 +13,12 @@ export type PyodideWorkerMessage = { id: string; nodeId: string } & (
 export type PyodideWorkerResponse = { id?: string; nodeId: string } & (
   | { type: 'success' }
   | { type: 'error'; error: string }
-  | { type: 'consoleOutput'; output: 'stdout' | 'stderr'; message: string | null }
+  | {
+      type: 'consoleOutput';
+      output: 'stdout' | 'stderr';
+      message: string | null;
+      lineErrors?: Record<number, string[]>;
+    }
   | { type: 'sendMessage'; data: unknown; options?: SendMessageOptions }
 );
 

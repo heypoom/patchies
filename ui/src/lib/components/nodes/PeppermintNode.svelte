@@ -59,7 +59,11 @@
 
     if (!hasNoReturnValue && event.message) {
       if (event.output === 'stderr') {
-        nodeLogger.error(event.message);
+        if (event.lineErrors) {
+          logger.nodeError(nodeId, { lineErrors: event.lineErrors }, event.message);
+        } else {
+          nodeLogger.error(event.message);
+        }
       } else {
         nodeLogger.log(event.message);
       }
