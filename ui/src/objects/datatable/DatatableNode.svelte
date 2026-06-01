@@ -95,6 +95,7 @@
     fromIndex: number;
     targetIndex: number;
     startX: number;
+    currentX: number;
     isDragging: boolean;
   };
 
@@ -137,6 +138,9 @@
   const displayHeight = $derived(resizingSize?.height ?? height);
   const renderedColumnWidths = $derived(
     fillColumnWidths(activeColumnWidths, Math.max(0, displayWidth - DATATABLE_ACTION_COLUMN_WIDTH))
+  );
+  const draggingColumnWidth = $derived(
+    draggingColumn ? (renderedColumnWidths[draggingColumn.fromIndex] ?? DATATABLE_COLUMN_WIDTH) : 0
   );
   const tableContentWidth = $derived(
     renderedColumnWidths.reduce((sum: number, columnWidth: number) => sum + columnWidth, 0) +
@@ -463,6 +467,7 @@
       fromIndex: columnIndex,
       targetIndex: columnIndex,
       startX: event.clientX,
+      currentX: event.clientX,
       isDragging: false
     };
     columnsBeforeDrag = [...columns];
@@ -485,6 +490,7 @@
 
     draggingColumn = {
       ...draggingColumn,
+      currentX: event.clientX,
       isDragging: true,
       targetIndex: getColumnIndexAtX(event.clientX)
     };
@@ -508,6 +514,21 @@
     }
 
     return Math.max(0, Math.min(columns.length - 1, closestIndex));
+  }
+
+  function getColumnLeft(index: number) {
+    return renderedColumnWidths
+      .slice(0, Math.max(0, index))
+      .reduce((sum: number, columnWidth: number) => sum + columnWidth, 0);
+  }
+
+  function getColumnInsertLeft(index: number) {
+    const targetLeft = getColumnLeft(index);
+    const targetWidth = renderedColumnWidths[index] ?? DATATABLE_COLUMN_WIDTH;
+
+    if (!draggingColumn) return targetLeft;
+
+    return draggingColumn.fromIndex < index ? targetLeft + targetWidth : targetLeft;
   }
 
   function endColumnDrag() {
@@ -769,9 +790,22 @@
         </div>
 
         <div
-          class="nodrag nopan nowheel min-h-0 flex-1 overflow-auto"
+          class="nodrag nopan nowheel relative min-h-0 flex-1 overflow-auto"
           style:max-height={displayHeight ? undefined : '240px'}
         >
+          {#if draggingColumn?.isDragging}
+            <div
+              class="pointer-events-none absolute top-0 bottom-0 z-30 border-2 border-blue-300 bg-blue-300/10 shadow-[0_0_10px_rgba(147,197,253,0.35)]"
+              style:left={`${draggingColumn.currentX - draggingColumn.startX + getColumnLeft(draggingColumn.fromIndex)}px`}
+              style:width={`${draggingColumnWidth}px`}
+            ></div>
+
+            <div
+              class="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 bg-blue-300 shadow-[0_0_8px_rgba(147,197,253,0.8)]"
+              style:left={`${getColumnInsertLeft(draggingColumn.targetIndex)}px`}
+            ></div>
+          {/if}
+
           <table
             class="table-fixed border-collapse"
             style:width={`${tableContentWidth}px`}
