@@ -93,7 +93,9 @@ nodeType, title, mode }` in a shared store.
   detached mode is open, the detached settings panel receives the current schema
   and values without requiring the user to close and reopen detached mode.
 - If no background output is active when overlay mode opens, the edited node
-  becomes a temporary output override.
+  becomes a temporary output override only when it is compatible with the
+  render graph. DOM/main-thread editors such as `p5`, `canvas.dom`, `dom`, and
+  `vue` do not become background output targets automatically.
 - Temporary output overrides are cleared on exit, but existing `bg.out`
   connections or user-selected output overrides are preserved.
 

@@ -6,6 +6,7 @@ import {
   closeCodeEditorOverlay
 } from '../../stores/code-editor-layout.store';
 import { overrideOutputNodeId } from '../../stores/renderer.store';
+import { isFBOCompatible } from '$lib/rendering/types';
 import { commitDetachedCodeEditorChange } from './detached-code-editor-change';
 
 interface DetachedCodeEditorOverlayOptions {
@@ -96,6 +97,7 @@ export function useDetachedCodeEditorOverlay({
     if (temporaryOutputNodeId) return;
     if (outputOverride.current !== null) return;
     if (hasBgOutOutput(getNodes(), getEdges())) return;
+    if (!isFBOCompatible(target.nodeType)) return;
 
     temporaryOutputNodeId = target.nodeId;
     overrideOutputNodeId.set(target.nodeId);
