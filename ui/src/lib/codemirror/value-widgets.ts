@@ -14,8 +14,10 @@ import type { Input, SyntaxNode, SyntaxNodeRef, Tree } from '@lezer/common';
 import { javascriptLanguage } from '@codemirror/lang-javascript';
 import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
 import { isGlslTemplateString } from '$lib/codemirror/glsl-in-js';
-
-export const VALUE_WIDGET_CHANGE_EVENT = 'patchies:value-widget-change';
+import {
+  VALUE_WIDGET_CHANGE_EVENT,
+  VALUE_WIDGET_VIEWPORT_CHANGE_EVENT
+} from '$lib/codemirror/value-widget-events';
 
 export type InlineValueWidgetKind = 'number' | 'xy' | 'color';
 
@@ -626,9 +628,12 @@ function updateVectorWidgetComponents(
   nextTexts: [string, string]
 ): InlineValueWidgetInfo {
   const [first, second] = widget.components;
+
   const firstDelta = nextTexts[0].length - first.text.length;
   const secondDelta = nextTexts[1].length - second.text.length;
+
   const nextFirst = updateDraggedNumberComponent(first, nextTexts[0]);
+
   const nextSecond = updateDraggedNumberComponent(
     {
       ...second,
@@ -661,6 +666,8 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
         this.numberModifierActive,
         this.hoveredWidget
       );
+
+      view.dom.addEventListener(VALUE_WIDGET_VIEWPORT_CHANGE_EVENT, this.handleViewportChange);
     }
 
     update(update: ViewUpdate) {
@@ -681,11 +688,23 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
     }
 
     destroy() {
+      this.view.dom.removeEventListener(
+        VALUE_WIDGET_VIEWPORT_CHANGE_EVENT,
+        this.handleViewportChange
+      );
+
       document.removeEventListener('mousemove', this.handleDocumentMouseMove);
       document.removeEventListener('mouseup', this.handleDocumentMouseUp);
       document.removeEventListener('mousedown', this.handleDocumentMouseDown);
+
       this.destroyXYGrid();
     }
+
+    handleViewportChange = () => {
+      if (this.activeXYWidget?.kind !== 'xy') return;
+
+      this.requestGridPosition();
+    };
 
     refreshDecorations() {
       this.decorations = buildValueDecorations(
@@ -694,6 +713,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
         this.numberModifierActive,
         this.hoveredWidget
       );
+
       this.view.dispatch({});
       this.syncXYGrid();
     }
@@ -783,6 +803,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
 
       this.xyGrid.removeEventListener('mousedown', this.handleGridMouseDown);
       document.removeEventListener('mousedown', this.handleDocumentMouseDown);
+
       this.xyGrid.remove();
       this.xyGrid = null;
     }
@@ -803,6 +824,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
 
     handleDocumentMouseDown = (event: MouseEvent) => {
       if (!this.xyGrid) return;
+
       if (isHTMLElement(event.target) && event.target.closest('.cm-value-widget-xy-grid')) {
         return;
       }
@@ -849,11 +871,13 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
 
       if (widget.kind !== 'number') {
         this.setHoveredWidget(widget);
+
         if (sameWidget(this.activeXYWidget, widget)) {
           this.setActiveXYWidget(null);
         } else if (widget.kind === 'xy') {
           this.setActiveXYWidget(widget);
         }
+
         event.preventDefault();
         event.stopPropagation();
 
@@ -861,12 +885,14 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       }
 
       const component = findNearestComponent(widget, pos);
+
       this.dragState = {
         kind: 'number',
         component,
         startY: event.clientY,
         startText: component.text
       };
+
       this.startDocumentDragListeners();
 
       this.view.focus();
@@ -884,6 +910,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       );
 
       if (!widget || widget.kind !== 'xy') return false;
+
       const gridRect = this.xyGrid ? gridRectFromElement(this.xyGrid) : gridRectFromEvent(event);
       if (!gridRect) return false;
 
@@ -910,7 +937,10 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
 
     updateDrag(event: MouseEvent) {
       if (!this.dragState) return false;
-      if (this.dragState.kind === 'xy') return this.updateXYDrag(event);
+
+      if (this.dragState.kind === 'xy') {
+        return this.updateXYDrag(event);
+      }
 
       const delta = dragDeltaForNumber(
         this.dragState.startText,
@@ -995,12 +1025,14 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
         if (!isActivationKey(event)) return false;
 
         view.plugin(plugin)?.setNumberModifierActive(true);
+
         return false;
       },
       keyup(event, view) {
         if (!isActivationKey(event)) return false;
 
         view.plugin(plugin)?.setNumberModifierActive(false);
+
         return false;
       },
       blur(_event, view) {
@@ -1022,6 +1054,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
         if (pluginValue.updateDrag(event)) return true;
 
         pluginValue.updateHover(event);
+
         return false;
       },
       mouseup(event, view) {

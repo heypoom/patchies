@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { useViewport } from '@xyflow/svelte';
   import { EditorView, minimalSetup } from 'codemirror';
   import { Compartment, EditorState, Prec, type Extension } from '@codemirror/state';
   import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
@@ -26,8 +27,10 @@
   import { search, searchKeymap } from '@codemirror/search';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-
-  const VALUE_WIDGET_CHANGE_EVENT = 'patchies:value-widget-change';
+  import {
+    VALUE_WIDGET_CHANGE_EVENT,
+    VALUE_WIDGET_VIEWPORT_CHANGE_EVENT
+  } from '$lib/codemirror/value-widget-events';
 
   // Effect to set error lines (supports multiple lines)
   const setErrorLinesEffect = StateEffect.define<number[] | null>();
@@ -159,6 +162,7 @@
 
   let editorElement: HTMLDivElement;
   let editorView: EditorView | null = $state(null);
+  const viewport = useViewport();
   let isInternalUpdate = false; // Flag to prevent loops when user types
   let valueOnFocus: string | null = null; // Track value at focus for undo commit
   let resolvedFontSize = $derived(fontSize ?? `${$editorFontSize}px`);
@@ -465,6 +469,19 @@
           });
         }
       }
+    );
+  });
+
+  // Reposition body-level value widgets when xyflow pan/zoom changes.
+  $effect(() => {
+    if (!editorView) return;
+
+    const { x, y, zoom } = viewport.current;
+
+    editorView.dom.dispatchEvent(
+      new CustomEvent(VALUE_WIDGET_VIEWPORT_CHANGE_EVENT, {
+        detail: { x, y, zoom }
+      })
     );
   });
 

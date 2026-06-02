@@ -189,6 +189,9 @@ Inline widget edits should flow through the same path as typed CodeMirror edits:
 - `EditorView.updateListener` updates node data continuously.
 - GLSL widget edits trigger the editor's run action after updating source text
   so shader changes are visible while dragging.
+- Body-level overlays, such as the XY grid, remeasure their editor anchor when
+  the XYFlow viewport pans or zooms so the overlay does not drift away from the
+  transformed editor.
 - `Shift-Enter` and existing run behavior remain unchanged.
 - Blur emits the existing `codeCommit` event for undo/redo tracking.
 - Error line decorations, hover hints, autocomplete, Vim mode, line wrapping,
