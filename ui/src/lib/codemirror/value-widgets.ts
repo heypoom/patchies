@@ -208,7 +208,19 @@ function collectJavaScriptValueWidgetsFromTree(state: EditorState, tree: Tree) {
 
   tree.iterate({
     enter(node) {
-      if (node.name !== 'ArrayExpression') return;
+      if (node.name !== 'ArrayExpression' && node.name !== 'SequenceExpression') return;
+
+      const bracketFrom = node.name === 'SequenceExpression' ? node.from - 1 : node.from;
+      const bracketTo = node.name === 'SequenceExpression' ? node.to + 1 : node.to;
+
+      if (
+        bracketFrom < 0 ||
+        bracketTo > state.doc.length ||
+        readDoc(state, bracketFrom, bracketFrom + 1) !== '[' ||
+        readDoc(state, bracketTo - 1, bracketTo) !== ']'
+      ) {
+        return;
+      }
 
       const components = directChildren(node.node)
         .map((child) => numericComponentFromNode(state, child))
@@ -221,8 +233,8 @@ function collectJavaScriptValueWidgetsFromTree(state: EditorState, tree: Tree) {
         consumedNumbers,
         components.length === 2 ? 'xy' : 'color',
         state,
-        node.from,
-        node.to,
+        bracketFrom,
+        bracketTo,
         components
       );
     }
@@ -352,12 +364,8 @@ function clamp01(value: number) {
 
 export function formatNormalizedVectorComponent(text: string, value: number) {
   const clamped = clamp01(value);
-  const precision = decimalPlaces(text);
+  const precision = text.includes('.') ? decimalPlaces(text) : 3;
   const prefix = text.startsWith('.') ? '.' : '';
-
-  if (precision === 0) {
-    return String(Math.round(clamped));
-  }
 
   const fixed = clamped.toFixed(precision);
   return prefix ? fixed.replace(/^0\./, '.') : fixed;

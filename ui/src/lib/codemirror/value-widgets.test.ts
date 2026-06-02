@@ -67,6 +67,16 @@ describe('CodeMirror inline value widgets', () => {
     ]);
   });
 
+  it('detects two-number JavaScript arrays with uneven whitespace and inclusive 0..1 values', () => {
+    expect(
+      labels(findInlineValueWidgets(jsState('[0.8, 0.5]\n[0,  0.5]\n[0.3,    1]'), 'javascript'))
+    ).toEqual([
+      { kind: 'xy', text: '[0.8, 0.5]', components: ['0.8', '0.5'] },
+      { kind: 'xy', text: '[0,  0.5]', components: ['0', '0.5'] },
+      { kind: 'xy', text: '[0.3,    1]', components: ['0.3', '1'] }
+    ]);
+  });
+
   it('uses GLSL detection inside recognized GLSL-in-JS template strings', () => {
     expect(
       labels(
@@ -100,6 +110,7 @@ describe('CodeMirror inline value widgets', () => {
     expect(formatNormalizedVectorComponent('0.570', 0.2)).toBe('0.200');
     expect(formatNormalizedVectorComponent('1.0', 0.125)).toBe('0.1');
     expect(formatNormalizedVectorComponent('.50', 1.2)).toBe('1.00');
-    expect(formatNormalizedVectorComponent('0', -0.5)).toBe('0');
+    expect(formatNormalizedVectorComponent('0', -0.5)).toBe('0.000');
+    expect(formatNormalizedVectorComponent('1', 0.5)).toBe('0.500');
   });
 });
