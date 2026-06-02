@@ -90,7 +90,19 @@ initial uniform values when the patch loads.
 
 ## Array Uniforms
 
-Arrays are supported for vector and matrix types:
+Arrays are supported for scalar, vector, and matrix types.
+
+For scalar arrays, send a flat array:
+
+```glsl
+uniform int iPoints[64];
+```
+
+```javascript
+send([...Array(64)].map(() => Math.random() > 0.5 ? 1 : 0))
+```
+
+For vector and matrix arrays, send one nested array per element:
 
 ```glsl
 uniform vec2 iPoints[4];

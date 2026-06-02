@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildGlslUserParams } from './glUniformUtils';
+import { buildGlslUserParams, defaultUniformValue, isValidUniformData } from './glUniformUtils';
 import type { GLUniformDef } from '../../types/uniform-config';
 
 describe('buildGlslUserParams', () => {
@@ -40,5 +40,34 @@ describe('buildGlslUserParams', () => {
     });
 
     expect(params).toEqual([fallbackTexture]);
+  });
+});
+
+describe('defaultUniformValue', () => {
+  it('defaults scalar uniform arrays to arrays of scalar defaults', () => {
+    expect(defaultUniformValue({ type: 'int', arraySize: 64 })).toEqual(
+      Array.from({ length: 64 }, () => 0)
+    );
+    expect(defaultUniformValue({ type: 'float', arraySize: 3 })).toEqual([0, 0, 0]);
+    expect(defaultUniformValue({ type: 'bool', arraySize: 2 })).toEqual([true, true]);
+  });
+});
+
+describe('isValidUniformData', () => {
+  it('accepts correctly sized scalar uniform arrays', () => {
+    expect(
+      isValidUniformData(
+        { type: 'int', arraySize: 64 },
+        Array.from({ length: 64 }, (_, index) => index % 2)
+      )
+    ).toBe(true);
+    expect(isValidUniformData({ type: 'float', arraySize: 3 }, [0, 0.5, 1])).toBe(true);
+    expect(isValidUniformData({ type: 'bool', arraySize: 2 }, [true, false])).toBe(true);
+  });
+
+  it('rejects scalar uniform arrays with the wrong length or element type', () => {
+    expect(isValidUniformData({ type: 'int', arraySize: 4 }, [0, 1, 0])).toBe(false);
+    expect(isValidUniformData({ type: 'int', arraySize: 2 }, [0, '1'])).toBe(false);
+    expect(isValidUniformData({ type: 'bool', arraySize: 2 }, [true, 0])).toBe(false);
   });
 });

@@ -24,7 +24,7 @@ export function hexToVec3(hex: string): [number, number, number] {
 export function toGLValue(
   def: GLUniformDef | undefined,
   value: unknown
-): number | boolean | number[] | number[][] {
+): number | boolean | number[] | boolean[] | number[][] {
   if (def?.widget === 'color' && typeof value === 'string') {
     return hexToVec3(value);
   }
@@ -33,7 +33,7 @@ export function toGLValue(
     return def.type === 'int' ? parseInt(value, 10) : parseFloat(value);
   }
 
-  return value as number | boolean | number[] | number[][];
+  return value as number | boolean | number[] | boolean[] | number[][];
 }
 
 export const vecComponents = (type: string): number | null =>
@@ -64,9 +64,15 @@ export function defaultUniformValue(def: { type: string; arraySize?: number }): 
   const identity = matIdentity(def.type);
 
   return match(def.type)
-    .with('bool', () => true)
-    .with('float', () => 0.0)
-    .with('int', () => 0)
+    .with('bool', () =>
+      def.arraySize !== undefined ? Array.from({ length: def.arraySize }, () => true) : true
+    )
+    .with('float', () =>
+      def.arraySize !== undefined ? Array.from({ length: def.arraySize }, () => 0.0) : 0.0
+    )
+    .with('int', () =>
+      def.arraySize !== undefined ? Array.from({ length: def.arraySize }, () => 0) : 0
+    )
     .with('vec2', 'vec3', 'vec4', () =>
       def.arraySize !== undefined
         ? Array.from({ length: def.arraySize }, () => new Array(n).fill(0))
@@ -89,8 +95,20 @@ export function isValidUniformData(
   const m = matElements(def.type);
 
   return match(def.type)
-    .with('bool', () => typeof data === 'boolean')
-    .with('float', 'int', () => typeof data === 'number')
+    .with('bool', () => {
+      if (def.arraySize !== undefined) {
+        return Array.isArray(data) && data.length === def.arraySize && data.every(isBoolean);
+      }
+
+      return typeof data === 'boolean';
+    })
+    .with('float', 'int', () => {
+      if (def.arraySize !== undefined) {
+        return Array.isArray(data) && data.length === def.arraySize && data.every(isNumber);
+      }
+
+      return typeof data === 'number';
+    })
     .with('vec2', 'vec3', 'vec4', () => {
       if (!Array.isArray(data)) return false;
 
@@ -116,6 +134,9 @@ export function isValidUniformData(
     .with('sampler2D', () => data === null)
     .otherwise(() => false);
 }
+
+const isNumber = (value: unknown): value is number => typeof value === 'number';
+const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean';
 
 export function buildGlslUserParams({
   uniformDefs,

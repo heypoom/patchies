@@ -46,7 +46,7 @@ import { VirtualFilesystem, isVFSPath } from '$lib/vfs';
 import { Transport, type TransportState } from '$lib/transport';
 import { FloatTextureUploadBufferPool } from '$lib/float-texture/upload-buffer-pool';
 
-export type UserUniformValue = number | boolean | number[] | number[][];
+export type UserUniformValue = number | boolean | number[] | boolean[] | number[][];
 
 export class GLSystem {
   /** Web worker for offscreen rendering. */

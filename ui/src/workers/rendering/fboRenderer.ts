@@ -1331,7 +1331,11 @@ export class FBORenderer {
     }
   }
 
-  setUniformData(nodeId: string, uniformName: string, uniformValue: number | boolean | number[]) {
+  setUniformData(
+    nodeId: string,
+    uniformName: string,
+    uniformValue: number | boolean | number[] | boolean[] | number[][]
+  ) {
     const renderNode = this.renderGraph?.nodes.find((n) => n.id === nodeId);
 
     const uniformDefs = match(renderNode)
