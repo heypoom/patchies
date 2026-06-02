@@ -53,7 +53,8 @@ export async function loadLanguageExtension(
         { glslInJsCompletions },
         { javascriptMixedWrap },
         { completionHoverHints },
-        { glslIncludeHighlighter }
+        { glslIncludeHighlighter },
+        { inlineValueWidgets }
       ] = await Promise.all([
         import('@codemirror/lang-javascript'),
         import('@codemirror/language'),
@@ -64,14 +65,16 @@ export async function loadLanguageExtension(
         import('$lib/codemirror/glsl-in-js'),
         import('$lib/codemirror/javascript-mixed'),
         import('$lib/codemirror/hover-hints'),
-        import('$lib/codemirror/glsl.codemirror')
+        import('$lib/codemirror/glsl.codemirror'),
+        import('$lib/codemirror/value-widgets')
       ]);
 
       const jsWithMixedLanguages = javascriptLanguage.configure({ wrap: javascriptMixedWrap });
       const jsSupport = javascript();
       const extensions: Extension[] = [
         new LanguageSupport(jsWithMixedLanguages, jsSupport.support),
-        ...glslIncludeHighlighter
+        ...glslIncludeHighlighter,
+        inlineValueWidgets('javascript')
       ];
 
       if (autocompleteEnabled) {
@@ -99,18 +102,21 @@ export async function loadLanguageExtension(
         { autocompletion },
         { glslLanguage, glslIncludeHighlighter, glslDirectiveCompletions },
         { glslCompletions },
-        { completionHoverHints }
+        { completionHoverHints },
+        { inlineValueWidgets }
       ] = await Promise.all([
         import('@codemirror/language'),
         import('@codemirror/autocomplete'),
         import('$lib/codemirror/glsl.codemirror'),
         import('$lib/codemirror/glsl-completions'),
-        import('$lib/codemirror/hover-hints')
+        import('$lib/codemirror/hover-hints'),
+        import('$lib/codemirror/value-widgets')
       ]);
 
       const extensions: Extension[] = [
         new LanguageSupport(glslLanguage),
-        ...glslIncludeHighlighter
+        ...glslIncludeHighlighter,
+        inlineValueWidgets('glsl')
       ];
 
       if (autocompleteEnabled) {

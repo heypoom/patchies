@@ -27,6 +27,8 @@
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
 
+  const VALUE_WIDGET_CHANGE_EVENT = 'patchies:value-widget-change';
+
   // Effect to set error lines (supports multiple lines)
   const setErrorLinesEffect = StateEffect.define<number[] | null>();
 
@@ -133,7 +135,7 @@
     language?: SupportedLanguage;
     placeholder?: string;
     class?: string;
-    onrun?: () => void;
+    onrun?: (code?: string) => void;
     onchange?: (code: string) => void;
 
     /** Called on blur if value changed since focus. For undo/redo tracking. */
@@ -162,8 +164,21 @@
   let resolvedFontSize = $derived(fontSize ?? `${$editorFontSize}px`);
   let resolvedFontFamily = $derived(fontFamily ?? $editorFontFamily);
 
+  function handleValueWidgetChange(event: Event) {
+    if (language !== 'glsl') return;
+
+    const valueFromEvent =
+      event instanceof CustomEvent && typeof event.detail?.value === 'string'
+        ? event.detail.value
+        : editorView?.state.doc.toString();
+
+    onrun(valueFromEvent);
+  }
+
   onMount(async () => {
     if (editorElement) {
+      editorElement.addEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
+
       const languageExtension = await loadLanguageExtension(
         language,
         { nodeType },
@@ -180,7 +195,7 @@
             {
               key: 'Shift-Enter',
               run: () => {
-                onrun();
+                onrun(editorView?.state.doc.toString());
                 return true;
               }
             },
@@ -401,6 +416,8 @@
   }
 
   onDestroy(() => {
+    editorElement?.removeEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
+
     if (editorView) {
       editorView.destroy();
     }

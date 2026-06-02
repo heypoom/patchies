@@ -52,22 +52,27 @@ Normalized vector affordances:
 
 ### Passive Cues
 
-The editor shows compact inline widgets next to recognized values:
+When the activation modifier is held and the pointer hovers a recognized value,
+the editor shows a compact inline affordance for that value:
 
-- a small drag handle next to scalar numbers
 - a small square or crosshair cue next to normalized 2D values
 - a small color swatch next to normalized 3D values
 
-The cues should be visually quiet enough to avoid turning code into UI soup, but
-clear enough that users can discover which values Patchies understands.
+Hovering without the activation modifier should not show value widgets. The cue
+should be scoped to the hovered value so the editor does not turn into UI soup
+while the user is reading code.
 
 Widgets should not replace the source text. The literal remains visible and
 editable.
 
+Scalar numbers do not show an always-visible passive cue. When the activation
+modifier is held and the pointer is over a recognized scalar number, that number
+is underlined to show that it can be dragged.
+
 ### Dragging Numbers
 
-Holding Command on macOS or Control on other platforms while dragging up/down on
-a recognized numeric literal changes that literal.
+Holding Option on macOS or Control on other platforms while dragging up/down on a
+recognized numeric literal changes that literal.
 
 Expected behavior:
 
@@ -90,9 +95,12 @@ invented min/max limits.
 
 ### Vector Widgets
 
-For normalized 2D values, the first implementation shows an XY-pad cue and lets
-users drag the individual numeric components. Opening a full XY pad from the cue
-is future work.
+For normalized 2D values, the first implementation underlines the `vec2(...)`
+or array source while the activation modifier is held and the value is hovered.
+Option/Control-clicking that underlined value opens an editor overlay grid for
+direct 2D dragging without being clipped by the CodeMirror scroller.
+Clicking outside the grid or Option/Control-clicking the same underlined value
+again closes the grid.
 
 For normalized 3D values, the first implementation shows the RGB color
 represented by the value and lets users drag the individual numeric components.
@@ -102,7 +110,9 @@ Opening a color picker from the swatch is future work.
 
 - Use CodeMirror keymap conventions for keyboard commands and DOM event handlers
   for pointer interactions.
-- Treat Command/Control as the activation modifier for direct manipulation.
+- Treat Option on macOS and Control on Windows/Linux as the activation modifier
+  for direct manipulation. Avoid Control-click on macOS because browsers and the
+  OS commonly treat it as a secondary-click context-menu gesture.
 - Do not consume normal clicks, selection, cursor movement, text editing, or
   completion interactions when the modifier is not held.
 - Pointer interactions must stop propagation to the canvas while active so
@@ -177,6 +187,8 @@ too malformed to edit safely.
 Inline widget edits should flow through the same path as typed CodeMirror edits:
 
 - `EditorView.updateListener` updates node data continuously.
+- GLSL widget edits trigger the editor's run action after updating source text
+  so shader changes are visible while dragging.
 - `Shift-Enter` and existing run behavior remain unchanged.
 - Blur emits the existing `codeCommit` event for undo/redo tracking.
 - Error line decorations, hover hints, autocomplete, Vim mode, line wrapping,
