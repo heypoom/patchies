@@ -37,8 +37,8 @@ Recognized literals:
 - `vec3(r, g, b)` in GLSL when all components are numeric literals
 - `[x, y]` in JavaScript when both entries are numeric literals
 - `[r, g, b]` in JavaScript when all entries are numeric literals
-- `vec3(r, g, b)` and `color(r, g, b)` in Shader Park JavaScript editors when
-  all arguments are numeric literals
+- `vec2(x, y)`, `vec3(r, g, b)`, and `color(r, g, b)` in Shader Park
+  JavaScript editors when all arguments are numeric literals
 - GLSL literals inside recognized GLSL-in-JS template strings, reusing the
   existing GLSL-in-JS detection rules
 
@@ -109,8 +109,9 @@ For normalized GLSL `vec3(r, g, b)` values and Shader Park JavaScript
 `vec3(r, g, b)` / `color(r, g, b)` values, the first implementation shows the
 RGB color represented by the value. Option/Control-clicking the hovered color
 opens a native color picker and writes the selected color back to the three
-normalized component literals. JavaScript `[r, g, b]` colors keep the passive
-swatch cue for now, but do not open the color picker in this scope.
+normalized component literals. Shader Park `vec2(x, y)` values use the same XY
+grid as GLSL `vec2(...)`. JavaScript `[r, g, b]` colors keep the passive swatch
+cue for now, but do not open the color picker in this scope.
 
 ### Keyboard And Pointer Rules
 

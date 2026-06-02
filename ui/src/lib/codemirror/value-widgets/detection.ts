@@ -211,17 +211,25 @@ function collectJavaScriptValueWidgetsFromTree(
         if (!callee || !args) return;
 
         const calleeText = readDoc(state, callee.from, callee.to);
-        if (calleeText !== 'vec3' && calleeText !== 'color') return;
+        if (calleeText !== 'vec2' && calleeText !== 'vec3' && calleeText !== 'color') return;
 
         const components = directChildren(args)
           .map((child) => numericComponentFromNode(state, child))
           .filter((component): component is InlineValueComponent => component !== null);
 
-        if (components.length !== 3) return;
+        const expectedComponentCount = calleeText === 'vec2' ? 2 : 3;
+        if (components.length !== expectedComponentCount) return;
 
-        addVectorWidget(widgets, consumedNumbers, 'color', state, node.from, node.to, components, {
-          colorPicker: true
-        });
+        addVectorWidget(
+          widgets,
+          consumedNumbers,
+          calleeText === 'vec2' ? 'xy' : 'color',
+          state,
+          node.from,
+          node.to,
+          components,
+          { colorPicker: calleeText !== 'vec2' }
+        );
       }
     });
   }

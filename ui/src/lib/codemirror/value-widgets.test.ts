@@ -76,31 +76,36 @@ describe('CodeMirror inline value widgets', () => {
     ]);
   });
 
-  it('detects Shader Park vec3 and color calls as normalized colors', () => {
+  it('detects Shader Park vec2, vec3, and color calls as normalized widgets', () => {
     expect(
       labels(
         findInlineValueWidgets(
-          jsState('setStepSize(0.2);\nvec3(0.46, 0.22, 0.35);\ncolor(0.5, 0.3, 0.5);'),
+          jsState(
+            'setStepSize(0.2);\nvec2(0.2, 0.8);\nvec3(0.46, 0.22, 0.35);\ncolor(0.5, 0.3, 0.5);'
+          ),
           'javascript',
           { nodeType: 'shaderpark' }
         )
       )
     ).toEqual([
       { kind: 'number', text: '0.2', components: ['0.2'] },
+      { kind: 'xy', text: 'vec2(0.2, 0.8)', components: ['0.2', '0.8'] },
       { kind: 'color', text: 'vec3(0.46, 0.22, 0.35)', components: ['0.46', '0.22', '0.35'] },
       { kind: 'color', text: 'color(0.5, 0.3, 0.5)', components: ['0.5', '0.3', '0.5'] }
     ]);
   });
 
-  it('does not detect vec3 and color calls as colors in normal JavaScript editors', () => {
+  it('does not detect Shader Park vector calls as widgets in normal JavaScript editors', () => {
     expect(
       labels(
         findInlineValueWidgets(
-          jsState('vec3(0.46, 0.22, 0.35);\ncolor(0.5, 0.3, 0.5);'),
+          jsState('vec2(0.2, 0.8);\nvec3(0.46, 0.22, 0.35);\ncolor(0.5, 0.3, 0.5);'),
           'javascript'
         )
       )
     ).toEqual([
+      { kind: 'number', text: '0.2', components: ['0.2'] },
+      { kind: 'number', text: '0.8', components: ['0.8'] },
       { kind: 'number', text: '0.46', components: ['0.46'] },
       { kind: 'number', text: '0.22', components: ['0.22'] },
       { kind: 'number', text: '0.35', components: ['0.35'] },
