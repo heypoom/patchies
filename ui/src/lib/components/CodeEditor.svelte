@@ -30,7 +30,9 @@
   import {
     VALUE_WIDGET_CHANGE_EVENT,
     VALUE_WIDGET_VIEWPORT_CHANGE_EVENT,
-    shouldRunOnValueWidgetChange
+    VALUE_WIDGET_SHADERPARK_RUN_THROTTLE_MS,
+    shouldRunOnValueWidgetChange,
+    shouldThrottleValueWidgetRun
   } from '$lib/codemirror/value-widget-events';
 
   // Effect to set error lines (supports multiple lines)
@@ -168,6 +170,45 @@
   let valueOnFocus: string | null = null; // Track value at focus for undo commit
   let resolvedFontSize = $derived(fontSize ?? `${$editorFontSize}px`);
   let resolvedFontFamily = $derived(fontFamily ?? $editorFontFamily);
+  let valueWidgetRunTimeout: ReturnType<typeof setTimeout> | null = null;
+  let lastValueWidgetRunAt = 0;
+  let pendingValueWidgetRunCode: string | undefined;
+
+  function runValueWidgetCode(code: string | undefined) {
+    onrun(code);
+    lastValueWidgetRunAt = Date.now();
+  }
+
+  function scheduleValueWidgetRun(code: string | undefined) {
+    if (!shouldThrottleValueWidgetRun(language, nodeType)) {
+      runValueWidgetCode(code);
+      return;
+    }
+
+    pendingValueWidgetRunCode = code;
+
+    const elapsed = Date.now() - lastValueWidgetRunAt;
+    const remaining = VALUE_WIDGET_SHADERPARK_RUN_THROTTLE_MS - elapsed;
+
+    if (remaining <= 0) {
+      if (valueWidgetRunTimeout) {
+        clearTimeout(valueWidgetRunTimeout);
+        valueWidgetRunTimeout = null;
+      }
+
+      runValueWidgetCode(pendingValueWidgetRunCode);
+      pendingValueWidgetRunCode = undefined;
+      return;
+    }
+
+    if (valueWidgetRunTimeout) return;
+
+    valueWidgetRunTimeout = setTimeout(() => {
+      valueWidgetRunTimeout = null;
+      runValueWidgetCode(pendingValueWidgetRunCode);
+      pendingValueWidgetRunCode = undefined;
+    }, remaining);
+  }
 
   function handleValueWidgetChange(event: Event) {
     if (!shouldRunOnValueWidgetChange(language, nodeType)) return;
@@ -177,7 +218,7 @@
         ? event.detail.value
         : editorView?.state.doc.toString();
 
-    onrun(valueFromEvent);
+    scheduleValueWidgetRun(valueFromEvent);
   }
 
   onMount(async () => {
@@ -422,6 +463,7 @@
 
   onDestroy(() => {
     editorElement?.removeEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
+    if (valueWidgetRunTimeout) clearTimeout(valueWidgetRunTimeout);
 
     if (editorView) {
       editorView.destroy();

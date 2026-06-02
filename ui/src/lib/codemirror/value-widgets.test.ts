@@ -3,7 +3,10 @@ import { EditorState } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
 import { glslInJsWrap } from '$lib/codemirror/glsl-in-js';
 import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
-import { shouldRunOnValueWidgetChange } from '$lib/codemirror/value-widget-events';
+import {
+  shouldRunOnValueWidgetChange,
+  shouldThrottleValueWidgetRun
+} from '$lib/codemirror/value-widget-events';
 import {
   dragDeltaForNumber,
   findInlineValueWidgets,
@@ -175,5 +178,11 @@ describe('CodeMirror inline value widgets', () => {
     expect(shouldRunOnValueWidgetChange('glsl')).toBe(true);
     expect(shouldRunOnValueWidgetChange('javascript', 'shaderpark')).toBe(true);
     expect(shouldRunOnValueWidgetChange('javascript', 'p5')).toBe(false);
+  });
+
+  it('throttles Shader Park inline widget reruns but keeps GLSL immediate', () => {
+    expect(shouldThrottleValueWidgetRun('javascript', 'shaderpark')).toBe(true);
+    expect(shouldThrottleValueWidgetRun('glsl')).toBe(false);
+    expect(shouldThrottleValueWidgetRun('javascript', 'p5')).toBe(false);
   });
 });

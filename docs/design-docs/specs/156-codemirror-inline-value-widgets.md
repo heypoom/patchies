@@ -194,8 +194,9 @@ Inline widget edits should flow through the same path as typed CodeMirror edits:
 - `EditorView.updateListener` updates node data continuously.
 - GLSL widget edits trigger the editor's run action after updating source text
   so shader changes are visible while dragging.
-- Shader Park widget edits trigger the editor's run action after updating source
-  text so procedural shapes and colors update while tuning literals.
+- Shader Park widget edits trigger a trailing-throttled editor run after
+  updating source text so procedural shapes and colors update while tuning
+  literals without rerunning on every color-picker input event.
 - Body-level overlays, such as the XY grid, remeasure their editor anchor when
   the XYFlow viewport pans or zooms so the overlay does not drift away from the
   transformed editor.
