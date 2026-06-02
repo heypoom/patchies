@@ -20,6 +20,7 @@ import {
 } from '$lib/codemirror/value-widget-events';
 
 export type InlineValueWidgetKind = 'number' | 'xy' | 'color';
+export type InlineValueWidgetLanguage = 'javascript' | 'glsl' | 'peppermint';
 
 export interface InlineValueComponent {
   from: number;
@@ -342,15 +343,88 @@ function findGlslInJsRanges(state: EditorState) {
   return ranges;
 }
 
+function collectPeppermintValueWidgets(state: EditorState) {
+  const widgets: InlineValueWidgetInfo[] = [];
+  const doc = state.doc.toString();
+  const numberPattern = /-?(?:\d+\.?\d*|\.\d+)/g;
+  let inString = false;
+  let escaped = false;
+  let lineStart = 0;
+
+  for (const line of doc.split('\n')) {
+    const visibleChars = Array.from(line, (char) => {
+      if (inString) {
+        if (char === '"' && !escaped) {
+          inString = false;
+        }
+        escaped = char === '\\' && !escaped;
+        return ' ';
+      }
+
+      if (char === '#') {
+        return null;
+      }
+
+      if (char === '"') {
+        inString = true;
+        escaped = false;
+        return ' ';
+      }
+
+      return char;
+    });
+
+    const commentIndex = visibleChars.indexOf(null);
+    const searchable = visibleChars
+      .slice(0, commentIndex === -1 ? visibleChars.length : commentIndex)
+      .map((char) => char ?? ' ')
+      .join('');
+
+    for (const match of searchable.matchAll(numberPattern)) {
+      if (match.index === undefined) continue;
+
+      const text = match[0];
+      const before = searchable[match.index - 1] ?? '';
+      const after = searchable[match.index + text.length] ?? '';
+      if (/[A-Za-z0-9_.]/.test(before) || /[A-Za-z0-9_]/.test(after)) continue;
+
+      const from = lineStart + match.index;
+      const to = from + text.length;
+      const component = {
+        from,
+        to,
+        text,
+        value: Number(text)
+      };
+
+      widgets.push({
+        kind: 'number',
+        from,
+        to,
+        text,
+        components: [component]
+      });
+    }
+
+    lineStart += line.length + 1;
+  }
+
+  return widgets;
+}
+
 function isInsideAnyRange(widget: InlineValueWidgetInfo, ranges: EmbeddedRange[]) {
   return ranges.some((range) => widget.from >= range.from && widget.to <= range.to);
 }
 
 export function findInlineValueWidgets(
   state: EditorState,
-  language: 'javascript' | 'glsl',
+  language: InlineValueWidgetLanguage,
   context?: InlineValueWidgetContext
 ): InlineValueWidgetInfo[] {
+  if (language === 'peppermint') {
+    return collectPeppermintValueWidgets(state).sort(compareWidgets);
+  }
+
   if (language === 'glsl') {
     const tree = syntaxTree(state);
     return collectGlslValueWidgetsFromTree(state, tree, 0, state.doc.length).sort(compareWidgets);
@@ -538,7 +612,7 @@ function createXYGridDom(info: InlineValueWidgetInfo) {
 
 function buildValueDecorations(
   view: EditorView,
-  language: 'javascript' | 'glsl',
+  language: InlineValueWidgetLanguage,
   numberModifierActive: boolean,
   hoveredWidget: InlineValueWidgetInfo | null
 ) {
@@ -605,7 +679,7 @@ function sameWidget(a: InlineValueWidgetInfo | null, b: InlineValueWidgetInfo | 
 
 function findWidgetAtPos(
   state: EditorState,
-  language: 'javascript' | 'glsl',
+  language: InlineValueWidgetLanguage,
   pos: number,
   context?: InlineValueWidgetContext
 ): InlineValueWidgetInfo | null {
@@ -678,7 +752,7 @@ function pointFromGridRect(event: MouseEvent, rect: GridRect): NormalizedPoint {
 
 function findWidgetFromDataset(
   state: EditorState,
-  language: 'javascript' | 'glsl',
+  language: InlineValueWidgetLanguage,
   target: HTMLElement | null,
   context?: InlineValueWidgetContext
 ) {
@@ -735,7 +809,7 @@ function updateVectorWidgetComponents(
 }
 
 export function inlineValueWidgets(
-  language: 'javascript' | 'glsl',
+  language: InlineValueWidgetLanguage,
   context?: InlineValueWidgetContext
 ): Extension {
   class InlineValuePluginValue implements PluginValue {

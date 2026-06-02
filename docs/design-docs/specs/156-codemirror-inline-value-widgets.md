@@ -27,11 +27,12 @@ the widgets entirely and type as usual.
 
 ## Initial Scope
 
-Support JavaScript and GLSL CodeMirror editors.
+Support JavaScript, GLSL, and Peppermint CodeMirror editors.
 
 Recognized literals:
 
 - integers and floats in JavaScript and GLSL
+- integers and floats in Peppermint
 - `vec2(x, y)` in GLSL when both components are numeric literals
 - `vec3(r, g, b)` in GLSL when all components are numeric literals
 - `[x, y]` in JavaScript when both entries are numeric literals

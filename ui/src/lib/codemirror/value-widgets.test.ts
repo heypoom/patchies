@@ -3,6 +3,7 @@ import { EditorState } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
 import { glslInJsWrap } from '$lib/codemirror/glsl-in-js';
 import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
+import { peppermintLanguage } from '$lib/codemirror/peppermint.codemirror';
 import {
   shouldRunOnValueWidgetChange,
   shouldThrottleValueWidgetRun
@@ -20,6 +21,8 @@ const jsState = (doc: string) =>
   EditorState.create({ doc, extensions: [javascriptLanguage.configure({ wrap: glslInJsWrap })] });
 
 const glslState = (doc: string) => EditorState.create({ doc, extensions: [glslLanguage] });
+const peppermintState = (doc: string) =>
+  EditorState.create({ doc, extensions: [peppermintLanguage] });
 
 const labels = (widgets: ReturnType<typeof findInlineValueWidgets>) =>
   widgets.map((widget) => ({
@@ -105,6 +108,32 @@ describe('CodeMirror inline value widgets', () => {
       { kind: 'number', text: '0.3', components: ['0.3'] },
       { kind: 'number', text: '0.5', components: ['0.5'] }
     ]);
+  });
+
+  it('detects Peppermint integer and float scalar numbers', () => {
+    expect(
+      labels(
+        findInlineValueWidgets(
+          peppermintState('take(5)\nthreshold = 0.75\namount = -2'),
+          'peppermint'
+        )
+      )
+    ).toEqual([
+      { kind: 'number', text: '5', components: ['5'] },
+      { kind: 'number', text: '0.75', components: ['0.75'] },
+      { kind: 'number', text: '-2', components: ['-2'] }
+    ]);
+  });
+
+  it('ignores Peppermint numbers in strings and comments', () => {
+    expect(
+      labels(
+        findInlineValueWidgets(
+          peppermintState('label = "score 0.75"\n# take 5\nscore = 0.9'),
+          'peppermint'
+        )
+      )
+    ).toEqual([{ kind: 'number', text: '0.9', components: ['0.9'] }]);
   });
 
   it('detects two-number JavaScript arrays with uneven whitespace and inclusive 0..1 values', () => {
