@@ -15,7 +15,7 @@ import {
   formatNormalizedColorComponents,
   formatNormalizedVectorComponent,
   updateDraggedNumberComponent
-} from '$lib/codemirror/value-widgets';
+} from '$lib/codemirror/value-widgets/index';
 
 const jsState = (doc: string) =>
   EditorState.create({ doc, extensions: [javascriptLanguage.configure({ wrap: glslInJsWrap })] });

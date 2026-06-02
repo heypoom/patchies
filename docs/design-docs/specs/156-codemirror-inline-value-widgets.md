@@ -132,7 +132,7 @@ swatch cue for now, but do not open the color picker in this scope.
 Create a focused CodeMirror extension, for example:
 
 ```text
-ui/src/lib/codemirror/value-widgets.ts
+ui/src/lib/codemirror/value-widgets/
 ```
 
 Responsibilities:

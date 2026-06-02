@@ -66,7 +66,7 @@ export async function loadLanguageExtension(
         import('$lib/codemirror/javascript-mixed'),
         import('$lib/codemirror/hover-hints'),
         import('$lib/codemirror/glsl.codemirror'),
-        import('$lib/codemirror/value-widgets')
+        import('$lib/codemirror/value-widgets/index')
       ]);
 
       const jsWithMixedLanguages = javascriptLanguage.configure({ wrap: javascriptMixedWrap });
@@ -110,7 +110,7 @@ export async function loadLanguageExtension(
         import('$lib/codemirror/glsl.codemirror'),
         import('$lib/codemirror/glsl-completions'),
         import('$lib/codemirror/hover-hints'),
-        import('$lib/codemirror/value-widgets')
+        import('$lib/codemirror/value-widgets/index')
       ]);
 
       const extensions: Extension[] = [
@@ -149,7 +149,7 @@ export async function loadLanguageExtension(
         import('@codemirror/autocomplete'),
         import('$lib/codemirror/peppermint.codemirror'),
         import('$lib/codemirror/hover-hints'),
-        import('$lib/codemirror/value-widgets')
+        import('$lib/codemirror/value-widgets/index')
       ]);
 
       const extensions: Extension[] = [peppermint(), inlineValueWidgets('peppermint', context)];

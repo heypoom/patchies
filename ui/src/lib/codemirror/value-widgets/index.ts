@@ -1,0 +1,16 @@
+export { inlineValueWidgets } from './extension';
+export { findInlineValueWidgets } from './detection';
+export {
+  dragDeltaForNumber,
+  formatDraggedNumber,
+  formatNormalizedVectorComponent,
+  updateDraggedNumberComponent
+} from './widgets/number-widget';
+export { formatNormalizedColorComponents } from './widgets/color-widget';
+export type {
+  InlineValueComponent,
+  InlineValueWidgetContext,
+  InlineValueWidgetInfo,
+  InlineValueWidgetKind,
+  InlineValueWidgetLanguage
+} from './types';
