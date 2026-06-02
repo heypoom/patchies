@@ -346,6 +346,13 @@ export function formatDraggedNumber(text: string, delta: number) {
   return nextValue.toFixed(precision);
 }
 
+export function dragDeltaForNumber(text: string, pixelDelta: number) {
+  const precision = decimalPlaces(text);
+  const step = precision === 0 ? 0.05 : 0.01;
+
+  return pixelDelta * step;
+}
+
 export function updateDraggedNumberComponent(
   component: InlineValueComponent,
   nextText: string
@@ -506,15 +513,11 @@ interface XYDragState {
 
 type ActiveDragState = DragState | XYDragState;
 
-function isActivationDrag(event: MouseEvent) {
-  return navigator.platform.toLowerCase().includes('mac') ? event.altKey : event.ctrlKey;
-}
+const isActivationDrag = (event: MouseEvent) =>
+  navigator.platform.toLowerCase().includes('mac') ? event.altKey : event.ctrlKey;
 
-function isActivationKey(event: KeyboardEvent) {
-  return navigator.platform.toLowerCase().includes('mac')
-    ? event.key === 'Alt'
-    : event.key === 'Control';
-}
+const isActivationKey = (event: KeyboardEvent) =>
+  navigator.platform.toLowerCase().includes('mac') ? event.key === 'Alt' : event.key === 'Control';
 
 function findNearestComponent(widget: InlineValueWidgetInfo, pos: number) {
   return (
@@ -885,6 +888,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       if (!gridRect) return false;
 
       this.dragState = { kind: 'xy', widget, gridRect };
+
       this.startDocumentDragListeners();
       this.updateXYDrag(event);
 
@@ -908,7 +912,11 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       if (!this.dragState) return false;
       if (this.dragState.kind === 'xy') return this.updateXYDrag(event);
 
-      const delta = (this.dragState.startY - event.clientY) * 0.01;
+      const delta = dragDeltaForNumber(
+        this.dragState.startText,
+        this.dragState.startY - event.clientY
+      );
+
       const nextText = formatDraggedNumber(this.dragState.startText, delta);
 
       this.view.dispatch({
@@ -918,7 +926,9 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
           insert: nextText
         }
       });
+
       dispatchValueWidgetChange(this.view);
+
       this.dragState.component = updateDraggedNumberComponent(this.dragState.component, nextText);
 
       event.preventDefault();
@@ -932,6 +942,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
 
       const point = pointFromGridRect(event, this.dragState.gridRect);
       const [xComponent, yComponent] = this.dragState.widget.components;
+
       const nextX = formatNormalizedVectorComponent(xComponent.text, point.x);
       const nextY = formatNormalizedVectorComponent(yComponent.text, point.y);
 
@@ -949,11 +960,13 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
           }
         ]
       });
+
       dispatchValueWidgetChange(this.view);
 
       this.dragState.widget = updateVectorWidgetComponents(this.dragState.widget, [nextX, nextY]);
       this.activeXYWidget = this.dragState.widget;
       this.hoveredWidget = this.dragState.widget;
+
       this.refreshDecorations();
 
       event.preventDefault();
@@ -966,8 +979,8 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       if (!this.dragState) return false;
 
       this.stopDocumentDragListeners();
-
       this.dragState = null;
+
       event.preventDefault();
       event.stopPropagation();
 

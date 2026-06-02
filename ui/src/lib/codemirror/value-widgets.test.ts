@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { glslInJsWrap } from '$lib/codemirror/glsl-in-js';
 import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
 import {
+  dragDeltaForNumber,
   findInlineValueWidgets,
   formatDraggedNumber,
   formatNormalizedVectorComponent,
@@ -93,6 +94,12 @@ describe('CodeMirror inline value widgets', () => {
     expect(formatDraggedNumber('-2', -1)).toBe('-3');
     expect(formatDraggedNumber('1.00', 0.25)).toBe('1.25');
     expect(formatDraggedNumber('0.5', -0.125)).toBe('0.4');
+  });
+
+  it('uses a whole-number drag scale for integer literals', () => {
+    expect(dragDeltaForNumber('10', 1)).toBe(0.05);
+    expect(dragDeltaForNumber('10', -2)).toBe(-0.1);
+    expect(dragDeltaForNumber('10.0', 1)).toBe(0.01);
   });
 
   it('updates the active drag range when a formatted number changes length', () => {
