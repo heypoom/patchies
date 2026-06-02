@@ -780,6 +780,16 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       this.startXYDrag(event);
     };
 
+    startDocumentDragListeners() {
+      document.addEventListener('mousemove', this.handleDocumentMouseMove);
+      document.addEventListener('mouseup', this.handleDocumentMouseUp);
+    }
+
+    stopDocumentDragListeners() {
+      document.removeEventListener('mousemove', this.handleDocumentMouseMove);
+      document.removeEventListener('mouseup', this.handleDocumentMouseUp);
+    }
+
     handleDocumentMouseDown = (event: MouseEvent) => {
       if (!this.xyGrid) return;
       if (isHTMLElement(event.target) && event.target.closest('.cm-value-widget-xy-grid')) {
@@ -846,6 +856,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
         startY: event.clientY,
         startText: component.text
       };
+      this.startDocumentDragListeners();
 
       this.view.focus();
       event.preventDefault();
@@ -866,8 +877,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       if (!gridRect) return false;
 
       this.dragState = { kind: 'xy', widget, gridRect };
-      document.addEventListener('mousemove', this.handleDocumentMouseMove);
-      document.addEventListener('mouseup', this.handleDocumentMouseUp);
+      this.startDocumentDragListeners();
       this.updateXYDrag(event);
 
       event.preventDefault();
@@ -877,6 +887,8 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
     }
 
     handleDocumentMouseMove = (event: MouseEvent) => {
+      if (isHTMLElement(event.target) && this.view.dom.contains(event.target)) return;
+
       this.updateDrag(event);
     };
 
@@ -945,10 +957,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
     endDrag(event: MouseEvent) {
       if (!this.dragState) return false;
 
-      if (this.dragState.kind === 'xy') {
-        document.removeEventListener('mousemove', this.handleDocumentMouseMove);
-        document.removeEventListener('mouseup', this.handleDocumentMouseUp);
-      }
+      this.stopDocumentDragListeners();
 
       this.dragState = null;
       event.preventDefault();
