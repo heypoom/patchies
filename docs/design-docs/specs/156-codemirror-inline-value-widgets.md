@@ -36,6 +36,8 @@ Recognized literals:
 - `vec3(r, g, b)` in GLSL when all components are numeric literals
 - `[x, y]` in JavaScript when both entries are numeric literals
 - `[r, g, b]` in JavaScript when all entries are numeric literals
+- `vec3(r, g, b)` and `color(r, g, b)` in Shader Park JavaScript editors when
+  all arguments are numeric literals
 - GLSL literals inside recognized GLSL-in-JS template strings, reusing the
   existing GLSL-in-JS detection rules
 
@@ -102,8 +104,9 @@ direct 2D dragging without being clipped by the CodeMirror scroller.
 Clicking outside the grid or Option/Control-clicking the same underlined value
 again closes the grid.
 
-For normalized GLSL `vec3(r, g, b)` values, the first implementation shows the
-RGB color represented by the value. Option/Control-clicking the hovered `vec3`
+For normalized GLSL `vec3(r, g, b)` values and Shader Park JavaScript
+`vec3(r, g, b)` / `color(r, g, b)` values, the first implementation shows the
+RGB color represented by the value. Option/Control-clicking the hovered color
 opens a native color picker and writes the selected color back to the three
 normalized component literals. JavaScript `[r, g, b]` colors keep the passive
 swatch cue for now, but do not open the color picker in this scope.
@@ -191,6 +194,8 @@ Inline widget edits should flow through the same path as typed CodeMirror edits:
 - `EditorView.updateListener` updates node data continuously.
 - GLSL widget edits trigger the editor's run action after updating source text
   so shader changes are visible while dragging.
+- Shader Park widget edits trigger the editor's run action after updating source
+  text so procedural shapes and colors update while tuning literals.
 - Body-level overlays, such as the XY grid, remeasure their editor anchor when
   the XYFlow viewport pans or zooms so the overlay does not drift away from the
   transformed editor.

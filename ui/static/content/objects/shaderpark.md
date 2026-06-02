@@ -29,6 +29,11 @@ displace(offset.x, offset.y, 0);
 sphere(radius);
 ```
 
+Normalized `vec3(r, g, b)` and `color(r, g, b)` literals are treated as colors
+in the editor. Hold Option on macOS or Control on Windows/Linux, hover the
+literal, then click it to open a color picker. Inline value edits run the
+Shader Park code immediately, so the preview updates while you tune values.
+
 The generated message inlets can also receive `run` and `setCode` control
 messages, so Shader Park does not expose a separate control inlet.
 

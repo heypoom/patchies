@@ -3,6 +3,7 @@ import { EditorState } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
 import { glslInJsWrap } from '$lib/codemirror/glsl-in-js';
 import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
+import { shouldRunOnValueWidgetChange } from '$lib/codemirror/value-widget-events';
 import {
   dragDeltaForNumber,
   findInlineValueWidgets,
@@ -66,6 +67,40 @@ describe('CodeMirror inline value widgets', () => {
     ).toEqual([
       { kind: 'xy', text: '[0.25, 0.75]', components: ['0.25', '0.75'] },
       { kind: 'color', text: '[1.0, 0.5, 0.0]', components: ['1.0', '0.5', '0.0'] }
+    ]);
+  });
+
+  it('detects Shader Park vec3 and color calls as normalized colors', () => {
+    expect(
+      labels(
+        findInlineValueWidgets(
+          jsState('setStepSize(0.2);\nvec3(0.46, 0.22, 0.35);\ncolor(0.5, 0.3, 0.5);'),
+          'javascript',
+          { nodeType: 'shaderpark' }
+        )
+      )
+    ).toEqual([
+      { kind: 'number', text: '0.2', components: ['0.2'] },
+      { kind: 'color', text: 'vec3(0.46, 0.22, 0.35)', components: ['0.46', '0.22', '0.35'] },
+      { kind: 'color', text: 'color(0.5, 0.3, 0.5)', components: ['0.5', '0.3', '0.5'] }
+    ]);
+  });
+
+  it('does not detect vec3 and color calls as colors in normal JavaScript editors', () => {
+    expect(
+      labels(
+        findInlineValueWidgets(
+          jsState('vec3(0.46, 0.22, 0.35);\ncolor(0.5, 0.3, 0.5);'),
+          'javascript'
+        )
+      )
+    ).toEqual([
+      { kind: 'number', text: '0.46', components: ['0.46'] },
+      { kind: 'number', text: '0.22', components: ['0.22'] },
+      { kind: 'number', text: '0.35', components: ['0.35'] },
+      { kind: 'number', text: '0.5', components: ['0.5'] },
+      { kind: 'number', text: '0.3', components: ['0.3'] },
+      { kind: 'number', text: '0.5', components: ['0.5'] }
     ]);
   });
 
@@ -134,5 +169,11 @@ describe('CodeMirror inline value widgets', () => {
       '0.4',
       '0.6'
     ]);
+  });
+
+  it('auto-runs inline widget edits for GLSL and Shader Park editors', () => {
+    expect(shouldRunOnValueWidgetChange('glsl')).toBe(true);
+    expect(shouldRunOnValueWidgetChange('javascript', 'shaderpark')).toBe(true);
+    expect(shouldRunOnValueWidgetChange('javascript', 'p5')).toBe(false);
   });
 });

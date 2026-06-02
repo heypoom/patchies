@@ -74,7 +74,7 @@ export async function loadLanguageExtension(
       const extensions: Extension[] = [
         new LanguageSupport(jsWithMixedLanguages, jsSupport.support),
         ...glslIncludeHighlighter,
-        inlineValueWidgets('javascript')
+        inlineValueWidgets('javascript', context)
       ];
 
       if (autocompleteEnabled) {
@@ -116,7 +116,7 @@ export async function loadLanguageExtension(
       const extensions: Extension[] = [
         new LanguageSupport(glslLanguage),
         ...glslIncludeHighlighter,
-        inlineValueWidgets('glsl')
+        inlineValueWidgets('glsl', context)
       ];
 
       if (autocompleteEnabled) {

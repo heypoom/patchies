@@ -29,7 +29,8 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import {
     VALUE_WIDGET_CHANGE_EVENT,
-    VALUE_WIDGET_VIEWPORT_CHANGE_EVENT
+    VALUE_WIDGET_VIEWPORT_CHANGE_EVENT,
+    shouldRunOnValueWidgetChange
   } from '$lib/codemirror/value-widget-events';
 
   // Effect to set error lines (supports multiple lines)
@@ -169,7 +170,7 @@
   let resolvedFontFamily = $derived(fontFamily ?? $editorFontFamily);
 
   function handleValueWidgetChange(event: Event) {
-    if (language !== 'glsl') return;
+    if (!shouldRunOnValueWidgetChange(language, nodeType)) return;
 
     const valueFromEvent =
       event instanceof CustomEvent && typeof event.detail?.value === 'string'

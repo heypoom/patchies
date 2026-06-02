@@ -34,6 +34,7 @@ export interface InlineValueWidgetInfo {
   to: number;
   text: string;
   components: InlineValueComponent[];
+  colorPicker?: boolean;
 }
 
 interface EmbeddedRange {
@@ -59,6 +60,10 @@ interface GridPosition {
 }
 
 type VectorComponentTexts = [string, string] | [string, string, string];
+
+interface InlineValueWidgetContext {
+  nodeType?: string;
+}
 
 function readDoc(state: EditorState, from: number, to: number) {
   return state.doc.sliceString(from, to);
@@ -128,7 +133,8 @@ function addVectorWidget(
   state: EditorState,
   from: number,
   to: number,
-  components: InlineValueComponent[]
+  components: InlineValueComponent[],
+  options: { colorPicker?: boolean } = {}
 ) {
   if (!isNormalized(components)) return;
 
@@ -137,7 +143,8 @@ function addVectorWidget(
     from,
     to,
     text: readDoc(state, from, to),
-    components
+    components,
+    colorPicker: kind === 'color' ? options.colorPicker : undefined
   });
 
   components.forEach((component) => consumedNumbers.add(componentKey(component)));
@@ -181,7 +188,8 @@ function collectGlslValueWidgetsFromTree(
         state,
         node.from + offset,
         node.to + offset,
-        components
+        components,
+        { colorPicker: calleeText === 'vec3' }
       );
     }
   });
@@ -206,7 +214,11 @@ function collectGlslValueWidgetsFromTree(
   return widgets;
 }
 
-function collectJavaScriptValueWidgetsFromTree(state: EditorState, tree: Tree) {
+function collectJavaScriptValueWidgetsFromTree(
+  state: EditorState,
+  tree: Tree,
+  context?: InlineValueWidgetContext
+) {
   const widgets: InlineValueWidgetInfo[] = [];
   const consumedNumbers = new Set<string>();
 
@@ -243,6 +255,32 @@ function collectJavaScriptValueWidgetsFromTree(state: EditorState, tree: Tree) {
       );
     }
   });
+
+  if (context?.nodeType === 'shaderpark') {
+    tree.iterate({
+      enter(node) {
+        if (node.name !== 'CallExpression') return;
+
+        const children = directChildren(node.node);
+        const callee = children[0];
+        const args = children.find((child) => child.name === 'ArgList');
+        if (!callee || !args) return;
+
+        const calleeText = readDoc(state, callee.from, callee.to);
+        if (calleeText !== 'vec3' && calleeText !== 'color') return;
+
+        const components = directChildren(args)
+          .map((child) => numericComponentFromNode(state, child))
+          .filter((component): component is InlineValueComponent => component !== null);
+
+        if (components.length !== 3) return;
+
+        addVectorWidget(widgets, consumedNumbers, 'color', state, node.from, node.to, components, {
+          colorPicker: true
+        });
+      }
+    });
+  }
 
   tree.iterate({
     enter(node) {
@@ -310,7 +348,8 @@ function isInsideAnyRange(widget: InlineValueWidgetInfo, ranges: EmbeddedRange[]
 
 export function findInlineValueWidgets(
   state: EditorState,
-  language: 'javascript' | 'glsl'
+  language: 'javascript' | 'glsl',
+  context?: InlineValueWidgetContext
 ): InlineValueWidgetInfo[] {
   if (language === 'glsl') {
     const tree = syntaxTree(state);
@@ -318,7 +357,7 @@ export function findInlineValueWidgets(
   }
 
   const glslRanges = findGlslInJsRanges(state);
-  const jsWidgets = collectJavaScriptValueWidgetsFromTree(state, syntaxTree(state)).filter(
+  const jsWidgets = collectJavaScriptValueWidgetsFromTree(state, syntaxTree(state), context).filter(
     (widget) => !isInsideAnyRange(widget, glslRanges)
   );
 
@@ -567,10 +606,11 @@ function sameWidget(a: InlineValueWidgetInfo | null, b: InlineValueWidgetInfo | 
 function findWidgetAtPos(
   state: EditorState,
   language: 'javascript' | 'glsl',
-  pos: number
+  pos: number,
+  context?: InlineValueWidgetContext
 ): InlineValueWidgetInfo | null {
   return (
-    findInlineValueWidgets(state, language).find(
+    findInlineValueWidgets(state, language, context).find(
       (widget) =>
         (pos >= widget.from && pos <= widget.to) ||
         widget.components.some((component) => pos >= component.from && pos <= component.to + 1)
@@ -639,7 +679,8 @@ function pointFromGridRect(event: MouseEvent, rect: GridRect): NormalizedPoint {
 function findWidgetFromDataset(
   state: EditorState,
   language: 'javascript' | 'glsl',
-  target: HTMLElement | null
+  target: HTMLElement | null,
+  context?: InlineValueWidgetContext
 ) {
   if (!target) return null;
 
@@ -648,7 +689,7 @@ function findWidgetFromDataset(
   if (!Number.isFinite(from) || !Number.isFinite(to)) return null;
 
   return (
-    findInlineValueWidgets(state, language).find(
+    findInlineValueWidgets(state, language, context).find(
       (widget) => widget.from === from && widget.to === to
     ) ?? null
   );
@@ -693,7 +734,10 @@ function updateVectorWidgetComponents(
   };
 }
 
-export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
+export function inlineValueWidgets(
+  language: 'javascript' | 'glsl',
+  context?: InlineValueWidgetContext
+): Extension {
   class InlineValuePluginValue implements PluginValue {
     decorations: DecorationSet;
     dragState: ActiveDragState | null = null;
@@ -791,7 +835,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
     }
 
     openColorPicker(widget: InlineValueWidgetInfo) {
-      if (language !== 'glsl' || widget.kind !== 'color') return false;
+      if (!widget.colorPicker) return false;
 
       this.destroyColorInput();
 
@@ -861,7 +905,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
     handleColorInput = (event: Event) => {
       if (!(event.target instanceof HTMLInputElement)) return;
 
-      const widget = findWidgetFromDataset(this.view.state, language, event.target);
+      const widget = findWidgetFromDataset(this.view.state, language, event.target, context);
       if (!widget || widget.kind !== 'color') return;
 
       this.applyColor(widget, event.target.value);
@@ -975,7 +1019,8 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       }
 
       const pos = this.view.posAtCoords({ x: event.clientX, y: event.clientY });
-      const widget = pos === null ? null : findWidgetAtPos(this.view.state, language, pos);
+      const widget = pos === null ? null : findWidgetAtPos(this.view.state, language, pos, context);
+
       if (sameWidget(widget, this.activeXYWidget)) return;
 
       this.setActiveXYWidget(null);
@@ -995,7 +1040,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       this.setNumberModifierActive(true);
 
       const pos = this.view.posAtCoords({ x: event.clientX, y: event.clientY });
-      const widget = pos === null ? null : findWidgetAtPos(this.view.state, language, pos);
+      const widget = pos === null ? null : findWidgetAtPos(this.view.state, language, pos, context);
 
       return this.setHoveredWidget(widget);
     }
@@ -1011,7 +1056,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       const pos = this.view.posAtCoords({ x: event.clientX, y: event.clientY });
       if (pos === null) return false;
 
-      const widget = findWidgetAtPos(this.view.state, language, pos);
+      const widget = findWidgetAtPos(this.view.state, language, pos, context);
 
       if (!widget) return false;
 
@@ -1054,7 +1099,8 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       const widget = findWidgetFromDataset(
         this.view.state,
         language,
-        getWidgetDatasetTarget(event)
+        getWidgetDatasetTarget(event),
+        context
       );
 
       if (!widget || widget.kind !== 'xy') return false;
