@@ -102,9 +102,11 @@ direct 2D dragging without being clipped by the CodeMirror scroller.
 Clicking outside the grid or Option/Control-clicking the same underlined value
 again closes the grid.
 
-For normalized 3D values, the first implementation shows the RGB color
-represented by the value and lets users drag the individual numeric components.
-Opening a color picker from the swatch is future work.
+For normalized GLSL `vec3(r, g, b)` values, the first implementation shows the
+RGB color represented by the value. Option/Control-clicking the hovered `vec3`
+opens a native color picker and writes the selected color back to the three
+normalized component literals. JavaScript `[r, g, b]` colors keep the passive
+swatch cue for now, but do not open the color picker in this scope.
 
 ### Keyboard And Pointer Rules
 

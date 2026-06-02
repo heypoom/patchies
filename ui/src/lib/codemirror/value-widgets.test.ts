@@ -7,6 +7,7 @@ import {
   dragDeltaForNumber,
   findInlineValueWidgets,
   formatDraggedNumber,
+  formatNormalizedColorComponents,
   formatNormalizedVectorComponent,
   updateDraggedNumberComponent
 } from '$lib/codemirror/value-widgets';
@@ -119,5 +120,19 @@ describe('CodeMirror inline value widgets', () => {
     expect(formatNormalizedVectorComponent('.50', 1.2)).toBe('1.00');
     expect(formatNormalizedVectorComponent('0', -0.5)).toBe('0.000');
     expect(formatNormalizedVectorComponent('1', 0.5)).toBe('0.500');
+  });
+
+  it('formats hex colors into normalized component text for GLSL vec3 colors', () => {
+    const widget = findInlineValueWidgets(
+      glslState('vec3 color = vec3(1.0, 0.5, 0.0);'),
+      'glsl'
+    ).find((item) => item.kind === 'color');
+
+    expect(widget).toBeDefined();
+    expect(formatNormalizedColorComponents(widget!.components, '#336699')).toEqual([
+      '0.2',
+      '0.4',
+      '0.6'
+    ]);
   });
 });

@@ -58,6 +58,8 @@ interface GridPosition {
   top: number;
 }
 
+type VectorComponentTexts = [string, string] | [string, string, string];
+
 function readDoc(state: EditorState, from: number, to: number) {
   return state.doc.sliceString(from, to);
 }
@@ -388,6 +390,36 @@ function colorForComponents(components: InlineValueComponent[]) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+function hexColorForComponents(components: InlineValueComponent[]) {
+  const channels = components.map((component) =>
+    Math.max(0, Math.min(255, Math.round(component.value * 255)))
+  );
+
+  return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function normalizedColorValueFromHex(hex: string) {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!match) return null;
+
+  const value = match[1];
+
+  return [0, 2, 4].map((index) => parseInt(value.slice(index, index + 2), 16) / 255) as [
+    number,
+    number,
+    number
+  ];
+}
+
+export function formatNormalizedColorComponents(components: InlineValueComponent[], hex: string) {
+  const values = normalizedColorValueFromHex(hex);
+  if (!values || components.length !== 3) return null;
+
+  return values.map((value, index) =>
+    formatNormalizedVectorComponent(components[index].text, value)
+  ) as [string, string, string];
+}
+
 class ValueCueWidget extends WidgetType {
   constructor(readonly info: InlineValueWidgetInfo) {
     super();
@@ -553,13 +585,21 @@ function isHTMLElement(value: EventTarget | null): value is HTMLElement {
 function getWidgetDatasetTarget(event: MouseEvent) {
   if (!isHTMLElement(event.target)) return null;
 
-  return event.target.closest<HTMLElement>('.cm-value-widget, .cm-value-widget-xy-grid');
+  return event.target.closest<HTMLElement>(
+    '.cm-value-widget, .cm-value-widget-xy-grid, .cm-value-widget-color-picker'
+  );
 }
 
 function isXYGridTarget(event: MouseEvent) {
   if (!isHTMLElement(event.target)) return false;
 
   return !!event.target.closest('.cm-value-widget-xy-grid');
+}
+
+function isValueWidgetOverlayTarget(event: MouseEvent) {
+  if (!isHTMLElement(event.target)) return false;
+
+  return !!event.target.closest('.cm-value-widget-xy-grid, .cm-value-widget-color-picker');
 }
 
 function gridRectFromEvent(event: MouseEvent): GridRect | null {
@@ -625,28 +665,31 @@ function dispatchValueWidgetChange(view: EditorView) {
 
 function updateVectorWidgetComponents(
   widget: InlineValueWidgetInfo,
-  nextTexts: [string, string]
+  nextTexts: VectorComponentTexts
 ): InlineValueWidgetInfo {
-  const [first, second] = widget.components;
+  let cumulativeDelta = 0;
+  const components = widget.components.map((component, index) => {
+    const nextText = nextTexts[index];
+    if (!nextText) return component;
 
-  const firstDelta = nextTexts[0].length - first.text.length;
-  const secondDelta = nextTexts[1].length - second.text.length;
+    const nextComponent = updateDraggedNumberComponent(
+      {
+        ...component,
+        from: component.from + cumulativeDelta,
+        to: component.to + cumulativeDelta
+      },
+      nextText
+    );
 
-  const nextFirst = updateDraggedNumberComponent(first, nextTexts[0]);
+    cumulativeDelta += nextText.length - component.text.length;
 
-  const nextSecond = updateDraggedNumberComponent(
-    {
-      ...second,
-      from: second.from + firstDelta,
-      to: second.to + firstDelta
-    },
-    nextTexts[1]
-  );
+    return nextComponent;
+  });
 
   return {
     ...widget,
-    to: widget.to + firstDelta + secondDelta,
-    components: [nextFirst, nextSecond]
+    to: widget.to + cumulativeDelta,
+    components
   };
 }
 
@@ -658,6 +701,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
     activeXYWidget: InlineValueWidgetInfo | null = null;
     numberModifierActive = false;
     xyGrid: HTMLElement | null = null;
+    colorInput: HTMLInputElement | null = null;
 
     constructor(readonly view: EditorView) {
       this.decorations = buildValueDecorations(
@@ -698,6 +742,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       document.removeEventListener('mousedown', this.handleDocumentMouseDown);
 
       this.destroyXYGrid();
+      this.destroyColorInput();
     }
 
     handleViewportChange = () => {
@@ -741,6 +786,103 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
 
       this.activeXYWidget = widget;
       this.syncXYGrid();
+
+      return true;
+    }
+
+    openColorPicker(widget: InlineValueWidgetInfo) {
+      if (language !== 'glsl' || widget.kind !== 'color') return false;
+
+      this.destroyColorInput();
+
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.className = 'cm-value-widget-color-picker';
+      input.value = hexColorForComponents(widget.components);
+      input.dataset.valueWidgetFrom = String(widget.from);
+      input.dataset.valueWidgetTo = String(widget.to);
+
+      Object.assign(input.style, {
+        position: 'fixed',
+        width: '24px',
+        height: '24px',
+        opacity: '0',
+        pointerEvents: 'none',
+        zIndex: '10001'
+      });
+
+      input.addEventListener('input', this.handleColorInput);
+      input.addEventListener('change', this.handleColorInput);
+      input.addEventListener('blur', this.handleColorBlur);
+
+      document.body.appendChild(input);
+      this.colorInput = input;
+      this.positionColorInput(widget, input);
+      input.focus({ preventScroll: true });
+      input.click();
+
+      return true;
+    }
+
+    positionColorInput(widget: InlineValueWidgetInfo, input: HTMLInputElement) {
+      const coords = this.view.coordsAtPos(widget.to);
+      const margin = 8;
+
+      if (!coords) {
+        input.style.left = `${margin}px`;
+        input.style.top = `${margin}px`;
+        return;
+      }
+
+      input.style.left = `${Math.max(
+        margin,
+        Math.min(window.innerWidth - 24 - margin, coords.left)
+      )}px`;
+      input.style.top = `${Math.max(
+        margin,
+        Math.min(window.innerHeight - 24 - margin, coords.bottom + 8)
+      )}px`;
+    }
+
+    destroyColorInput() {
+      if (!this.colorInput) return;
+
+      this.colorInput.removeEventListener('input', this.handleColorInput);
+      this.colorInput.removeEventListener('change', this.handleColorInput);
+      this.colorInput.removeEventListener('blur', this.handleColorBlur);
+      this.colorInput.remove();
+      this.colorInput = null;
+    }
+
+    handleColorBlur = () => {
+      this.destroyColorInput();
+    };
+
+    handleColorInput = (event: Event) => {
+      if (!(event.target instanceof HTMLInputElement)) return;
+
+      const widget = findWidgetFromDataset(this.view.state, language, event.target);
+      if (!widget || widget.kind !== 'color') return;
+
+      this.applyColor(widget, event.target.value);
+    };
+
+    applyColor(widget: InlineValueWidgetInfo, hex: string) {
+      const nextTexts = formatNormalizedColorComponents(widget.components, hex);
+      if (!nextTexts) return false;
+
+      const changes = widget.components.map((component, index) => ({
+        from: component.from,
+        to: component.to,
+        insert: nextTexts[index]
+      }));
+
+      this.view.dispatch({ changes });
+      dispatchValueWidgetChange(this.view);
+
+      const nextWidget = updateVectorWidgetComponents(widget, nextTexts);
+      this.hoveredWidget = nextWidget;
+      this.refreshDecorations();
 
       return true;
     }
@@ -823,9 +965,12 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
     }
 
     handleDocumentMouseDown = (event: MouseEvent) => {
-      if (!this.xyGrid) return;
+      if (!this.xyGrid && !this.colorInput) return;
 
-      if (isHTMLElement(event.target) && event.target.closest('.cm-value-widget-xy-grid')) {
+      if (
+        isHTMLElement(event.target) &&
+        event.target.closest('.cm-value-widget-xy-grid, .cm-value-widget-color-picker')
+      ) {
         return;
       }
 
@@ -834,6 +979,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
       if (sameWidget(widget, this.activeXYWidget)) return;
 
       this.setActiveXYWidget(null);
+      this.destroyColorInput();
     };
 
     updateHover(event: MouseEvent) {
@@ -855,7 +1001,7 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
     }
 
     startDrag(event: MouseEvent) {
-      if (isXYGridTarget(event)) {
+      if (isValueWidgetOverlayTarget(event)) {
         return this.startXYDrag(event);
       }
 
@@ -876,6 +1022,8 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
           this.setActiveXYWidget(null);
         } else if (widget.kind === 'xy') {
           this.setActiveXYWidget(widget);
+        } else if (widget.kind === 'color') {
+          this.openColorPicker(widget);
         }
 
         event.preventDefault();
@@ -1105,6 +1253,10 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
         background:
           'linear-gradient(90deg, transparent 45%, rgba(147, 197, 253, 0.9) 45%, rgba(147, 197, 253, 0.9) 55%, transparent 55%), linear-gradient(0deg, transparent 45%, rgba(147, 197, 253, 0.9) 45%, rgba(147, 197, 253, 0.9) 55%, transparent 55%)'
       },
+      '.cm-value-widget-color': {
+        borderColor: 'rgba(244, 244, 245, 0.8)',
+        cursor: 'pointer'
+      },
       '.cm-value-widget-xy-grid': {
         position: 'absolute',
         zIndex: '50',
@@ -1130,9 +1282,6 @@ export function inlineValueWidgets(language: 'javascript' | 'glsl'): Extension {
         border: '1px solid rgb(9, 9, 11)',
         transform: 'translate(-50%, -50%)',
         pointerEvents: 'none'
-      },
-      '.cm-value-widget-color': {
-        borderColor: 'rgba(244, 244, 245, 0.8)'
       }
     })
   ];
