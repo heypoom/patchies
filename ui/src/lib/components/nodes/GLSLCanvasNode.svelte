@@ -98,6 +98,10 @@
     }
   });
 
+  function handleCodeChange(newCode: string) {
+    updateNodeData(nodeId, { code: newCode });
+  }
+
   const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
       // 'run' from any inlet re-runs the shader
@@ -353,6 +357,7 @@
   objectType="glsl"
   codeLanguage="glsl"
   codePlaceholder="Write your GLSL fragment shader here..."
+  onCodeChange={handleCodeChange}
   {nodeId}
   onrun={updateShader}
   onPlaybackToggle={togglePause}
@@ -413,9 +418,7 @@
   {#snippet codeEditor()}
     <CodeEditor
       value={code}
-      onchange={(newCode) => {
-        updateNodeData(nodeId, { code: newCode });
-      }}
+      onchange={handleCodeChange}
       language="glsl"
       placeholder="Write your GLSL fragment shader here..."
       class="nodrag h-64 w-full resize-none"

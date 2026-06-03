@@ -25,7 +25,7 @@
     class: className = ''
   }: {
     onClose: () => void;
-    onrun?: () => void;
+    onrun?: (code?: string) => void;
     nodeId?: string;
     settings?: CodeEditorTargetSettings;
     console?: Snippet;

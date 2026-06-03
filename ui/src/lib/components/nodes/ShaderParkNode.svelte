@@ -196,6 +196,10 @@
     updateShaderPark(newCode);
   };
 
+  function handleCodeChange(newCode: string) {
+    updateNodeData(nodeId, { code: newCode });
+  }
+
   function toCloneableUniformValue(def: GLUniformDef | undefined, value: unknown): unknown {
     if (!def) return value;
 
@@ -581,6 +585,7 @@
   title={shaderParkTitle ?? data.title ?? 'shaderpark'}
   objectType="shaderpark"
   codePlaceholder="Write Shader Park code here..."
+  onCodeChange={handleCodeChange}
   {nodeId}
   onrun={updateShaderPark}
   bind:previewCanvas
@@ -650,9 +655,7 @@
       placeholder="Write Shader Park code here..."
       class="nodrag h-64 w-full resize-none"
       onrun={updateShaderPark}
-      onchange={(newCode) => {
-        updateNodeData(nodeId, { code: newCode });
-      }}
+      onchange={handleCodeChange}
       onready={() => (editorReady = true)}
       {lineErrors}
       {nodeId}

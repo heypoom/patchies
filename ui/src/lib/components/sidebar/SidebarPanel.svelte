@@ -77,7 +77,7 @@
     codeEditorValue?: string;
     onCodeEditorChange?: (value: string) => void;
     codeEditorTitle?: string;
-    onRunCodeEditor?: () => void;
+    onRunCodeEditor?: (code?: string) => void;
   } = $props();
 
   // All sidebar views

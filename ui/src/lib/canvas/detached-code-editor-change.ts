@@ -1,24 +1,12 @@
-import type { Node } from '@xyflow/svelte';
 import type { CodeEditorTarget } from '../../stores/code-editor-layout.store';
 
+type UpdateNodeData = (nodeId: string, data: Record<string, string>) => void;
+
 export function commitDetachedCodeEditorChange(
-  nodes: Node[],
   target: CodeEditorTarget,
   nextValue: string,
-  setNodes: (nodes: Node[]) => void
+  updateNodeData: UpdateNodeData
 ): void {
-  const nextNodes = nodes.map((candidate) =>
-    candidate.id === target.nodeId
-      ? {
-          ...candidate,
-          data: {
-            ...candidate.data,
-            [target.dataKey]: nextValue
-          }
-        }
-      : candidate
-  );
-
-  setNodes(nextNodes);
+  updateNodeData(target.nodeId, { [target.dataKey]: nextValue });
   target.onchange?.(nextValue);
 }

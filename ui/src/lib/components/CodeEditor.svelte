@@ -211,14 +211,14 @@
   }
 
   function handleValueWidgetChange(event: Event) {
-    if (!shouldRunOnValueWidgetChange(language, nodeType)) return;
-
     const valueFromEvent =
       event instanceof CustomEvent && typeof event.detail?.value === 'string'
         ? event.detail.value
         : editorView?.state.doc.toString();
 
-    scheduleValueWidgetRun(valueFromEvent);
+    if (shouldRunOnValueWidgetChange(language, nodeType)) {
+      scheduleValueWidgetRun(valueFromEvent);
+    }
   }
 
   onMount(async () => {

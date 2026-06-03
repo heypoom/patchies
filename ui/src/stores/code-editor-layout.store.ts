@@ -21,7 +21,7 @@ export interface CodeEditorTarget {
   title?: string;
   placeholder?: string;
   onchange?: (value: string) => void | Promise<void>;
-  onrun?: () => void;
+  onrun?: (code?: string) => void;
   lineErrors?: Record<number, string[]>;
   settings?: CodeEditorTargetSettings;
   console?: Snippet;

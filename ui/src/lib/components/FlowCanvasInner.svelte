@@ -272,10 +272,10 @@
   let showPatchToPromptDialog = $state(false);
 
   // Get flow utilities for coordinate transformation
-  const { screenToFlowPosition, fitView, getViewport, getNode } = useSvelteFlow();
+  const { screenToFlowPosition, fitView, getViewport, getNode, updateNodeData } = useSvelteFlow();
   const detachedCodeEditor = useDetachedCodeEditorOverlay({
     getNodes: () => nodes,
-    setNodes: (nextNodes) => (nodes = nextNodes),
+    updateNodeData,
     getEdges: () => edges,
     glSystem
   });

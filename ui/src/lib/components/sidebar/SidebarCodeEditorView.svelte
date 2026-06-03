@@ -19,7 +19,7 @@
     value?: string;
     onchange?: (value: string) => void;
     title?: string;
-    onrun?: () => void;
+    onrun?: (code?: string) => void;
   } = $props();
 
   function useSidebarByDefault() {
