@@ -244,8 +244,10 @@ export function inlineValueWidgets(
       input.addEventListener('blur', this.handleColorBlur);
 
       document.body.appendChild(input);
+
       this.colorInput = input;
       this.positionColorInput(widget, input);
+
       input.focus({ preventScroll: true });
       input.click();
 
@@ -266,6 +268,7 @@ export function inlineValueWidgets(
         margin,
         Math.min(window.innerWidth - 24 - margin, coords.left)
       )}px`;
+
       input.style.top = `${Math.max(
         margin,
         Math.min(window.innerHeight - 24 - margin, coords.bottom + 8)
@@ -278,6 +281,7 @@ export function inlineValueWidgets(
       this.colorInput.removeEventListener('input', this.handleColorInput);
       this.colorInput.removeEventListener('change', this.handleColorInput);
       this.colorInput.removeEventListener('blur', this.handleColorBlur);
+
       this.colorInput.remove();
       this.colorInput = null;
     }
@@ -324,6 +328,7 @@ export function inlineValueWidgets(
       if (!this.xyGrid) {
         this.xyGrid = createXYGridDom(this.activeXYWidget);
         this.xyGrid.addEventListener('mousedown', this.handleGridMouseDown);
+
         document.addEventListener('mousedown', this.handleDocumentMouseDown);
         document.body.appendChild(this.xyGrid);
       } else {

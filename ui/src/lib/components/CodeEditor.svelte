@@ -199,6 +199,7 @@
 
       runValueWidgetCode(pendingValueWidgetRunCode);
       pendingValueWidgetRunCode = undefined;
+
       return;
     }
 
@@ -206,6 +207,7 @@
 
     valueWidgetRunTimeout = setTimeout(() => {
       valueWidgetRunTimeout = null;
+
       runValueWidgetCode(pendingValueWidgetRunCode);
       pendingValueWidgetRunCode = undefined;
     }, remaining);
@@ -464,7 +466,10 @@
 
   onDestroy(() => {
     editorElement?.removeEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
-    if (valueWidgetRunTimeout) clearTimeout(valueWidgetRunTimeout);
+
+    if (valueWidgetRunTimeout) {
+      clearTimeout(valueWidgetRunTimeout);
+    }
 
     if (editorView) {
       editorView.destroy();

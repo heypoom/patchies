@@ -24,6 +24,7 @@ const jsState = (doc: string) =>
   EditorState.create({ doc, extensions: [javascriptLanguage.configure({ wrap: glslInJsWrap })] });
 
 const glslState = (doc: string) => EditorState.create({ doc, extensions: [glslLanguage] });
+
 const peppermintState = (doc: string) =>
   EditorState.create({ doc, extensions: [peppermintLanguage] });
 
