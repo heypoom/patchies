@@ -43,3 +43,22 @@ export function formatNormalizedVectorComponent(text: string, value: number) {
   const fixed = clamped.toFixed(precision);
   return prefix ? fixed.replace(/^0\./, '.') : fixed;
 }
+
+export function formatNormalizedVectorComponents(
+  components: [InlineValueComponent, InlineValueComponent],
+  values: [number, number]
+) {
+  const precision = Math.max(
+    ...components.map((component) =>
+      component.text.includes('.') ? decimalPlaces(component.text) : 3
+    )
+  );
+
+  return components.map((component, index) => {
+    const clamped = Math.max(0, Math.min(1, values[index]));
+    const prefix = component.text.startsWith('.') ? '.' : '';
+    const fixed = clamped.toFixed(precision);
+
+    return prefix ? fixed.replace(/^0\./, '.') : fixed;
+  }) as [string, string];
+}

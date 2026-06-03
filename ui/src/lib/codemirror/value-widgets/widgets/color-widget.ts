@@ -1,6 +1,5 @@
 import { WidgetType } from '@codemirror/view';
 import type { InlineValueComponent, InlineValueWidgetInfo } from '../types';
-import { formatNormalizedVectorComponent } from './number-widget';
 
 export function colorForComponents(components: InlineValueComponent[]) {
   const [r, g, b] = components.map((component) =>
@@ -31,12 +30,27 @@ function normalizedColorValueFromHex(hex: string) {
   ];
 }
 
+function decimalPlaces(text: string) {
+  const index = text.indexOf('.');
+  return index === -1 ? 3 : text.length - index - 1;
+}
+
+function formatNormalizedColorComponent(text: string, value: number, precision: number) {
+  const clamped = Math.max(0, Math.min(1, value));
+  const prefix = text.startsWith('.') ? '.' : '';
+  const fixed = clamped.toFixed(precision);
+
+  return prefix ? fixed.replace(/^0\./, '.') : fixed;
+}
+
 export function formatNormalizedColorComponents(components: InlineValueComponent[], hex: string) {
   const values = normalizedColorValueFromHex(hex);
   if (!values || components.length !== 3) return null;
 
+  const precision = Math.max(...components.map((component) => decimalPlaces(component.text)));
+
   return values.map((value, index) =>
-    formatNormalizedVectorComponent(components[index].text, value)
+    formatNormalizedColorComponent(components[index].text, value, precision)
   ) as [string, string, string];
 }
 

@@ -16,6 +16,7 @@ import {
   formatDraggedNumber,
   formatNormalizedColorComponents,
   formatNormalizedVectorComponent,
+  formatNormalizedVectorComponents,
   updateDraggedNumberComponent
 } from '$lib/codemirror/value-widgets/index';
 
@@ -196,6 +197,17 @@ describe('CodeMirror inline value widgets', () => {
     expect(formatNormalizedVectorComponent('1', 0.5)).toBe('0.500');
   });
 
+  it('formats normalized vector pairs with the maximum existing precision', () => {
+    const widget = findInlineValueWidgets(glslState('vec2 point = vec2(0.1, 0.222);'), 'glsl').find(
+      (item) => item.kind === 'xy'
+    );
+
+    expect(widget).toBeDefined();
+    expect(
+      formatNormalizedVectorComponents([widget!.components[0], widget!.components[1]], [0.4, 0.75])
+    ).toEqual(['0.400', '0.750']);
+  });
+
   it('formats hex colors into normalized component text for GLSL vec3 colors', () => {
     const widget = findInlineValueWidgets(
       glslState('vec3 color = vec3(1.0, 0.5, 0.0);'),
@@ -207,6 +219,20 @@ describe('CodeMirror inline value widgets', () => {
       '0.2',
       '0.4',
       '0.6'
+    ]);
+  });
+
+  it('formats GLSL vec3 color components with the maximum existing precision', () => {
+    const widget = findInlineValueWidgets(
+      glslState('vec3 color = vec3(0.1, 0.22, 0.333);'),
+      'glsl'
+    ).find((item) => item.kind === 'color');
+
+    expect(widget).toBeDefined();
+    expect(formatNormalizedColorComponents(widget!.components, '#336699')).toEqual([
+      '0.200',
+      '0.400',
+      '0.600'
     ]);
   });
 

@@ -40,7 +40,7 @@ import {
 import {
   dragDeltaForNumber,
   formatDraggedNumber,
-  formatNormalizedVectorComponent,
+  formatNormalizedVectorComponents,
   updateDraggedNumberComponent
 } from './widgets/number-widget';
 import {
@@ -552,8 +552,10 @@ export function inlineValueWidgets(
       const point = pointFromGridRect(event, this.dragState.gridRect);
       const [xComponent, yComponent] = this.dragState.widget.components;
 
-      const nextX = formatNormalizedVectorComponent(xComponent.text, point.x);
-      const nextY = formatNormalizedVectorComponent(yComponent.text, point.y);
+      const [nextX, nextY] = formatNormalizedVectorComponents(
+        [xComponent, yComponent],
+        [point.x, point.y]
+      );
 
       this.view.dispatch({
         changes: [

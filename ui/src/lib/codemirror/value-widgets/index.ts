@@ -4,6 +4,7 @@ export {
   dragDeltaForNumber,
   formatDraggedNumber,
   formatNormalizedVectorComponent,
+  formatNormalizedVectorComponents,
   updateDraggedNumberComponent
 } from './widgets/number-widget';
 export { formatNormalizedColorComponents } from './widgets/color-widget';
