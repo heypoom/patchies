@@ -5,8 +5,10 @@ import { glslInJsWrap } from '$lib/codemirror/glsl-in-js';
 import { glslLanguage } from '$lib/codemirror/glsl.codemirror';
 import { peppermintLanguage } from '$lib/codemirror/peppermint.codemirror';
 import {
+  VALUE_WIDGET_GLSL_RUN_THROTTLE_MS,
+  VALUE_WIDGET_SHADERPARK_RUN_THROTTLE_MS,
   shouldRunOnValueWidgetChange,
-  shouldThrottleValueWidgetRun
+  valueWidgetRunThrottleMs
 } from '$lib/codemirror/value-widget-events';
 import {
   dragDeltaForNumber,
@@ -214,9 +216,11 @@ describe('CodeMirror inline value widgets', () => {
     expect(shouldRunOnValueWidgetChange('javascript', 'p5')).toBe(false);
   });
 
-  it('throttles Shader Park inline widget reruns but keeps GLSL immediate', () => {
-    expect(shouldThrottleValueWidgetRun('javascript', 'shaderpark')).toBe(true);
-    expect(shouldThrottleValueWidgetRun('glsl')).toBe(false);
-    expect(shouldThrottleValueWidgetRun('javascript', 'p5')).toBe(false);
+  it('throttles expensive inline widget reruns', () => {
+    expect(valueWidgetRunThrottleMs('glsl')).toBe(VALUE_WIDGET_GLSL_RUN_THROTTLE_MS);
+    expect(valueWidgetRunThrottleMs('javascript', 'shaderpark')).toBe(
+      VALUE_WIDGET_SHADERPARK_RUN_THROTTLE_MS
+    );
+    expect(valueWidgetRunThrottleMs('javascript', 'p5')).toBe(0);
   });
 });

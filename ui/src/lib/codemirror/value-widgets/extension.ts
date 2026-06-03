@@ -526,6 +526,7 @@ export function inlineValueWidgets(
       );
 
       const nextText = formatDraggedNumber(this.dragState.startText, delta);
+      if (nextText === this.dragState.component.text) return false;
 
       this.view.dispatch({
         changes: {

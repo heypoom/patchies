@@ -30,9 +30,8 @@
   import {
     VALUE_WIDGET_CHANGE_EVENT,
     VALUE_WIDGET_VIEWPORT_CHANGE_EVENT,
-    VALUE_WIDGET_SHADERPARK_RUN_THROTTLE_MS,
     shouldRunOnValueWidgetChange,
-    shouldThrottleValueWidgetRun
+    valueWidgetRunThrottleMs
   } from '$lib/codemirror/value-widget-events';
 
   // Effect to set error lines (supports multiple lines)
@@ -180,7 +179,9 @@
   }
 
   function scheduleValueWidgetRun(code: string | undefined) {
-    if (!shouldThrottleValueWidgetRun(language, nodeType)) {
+    const throttleMs = valueWidgetRunThrottleMs(language, nodeType);
+
+    if (throttleMs <= 0) {
       runValueWidgetCode(code);
       return;
     }
@@ -188,7 +189,7 @@
     pendingValueWidgetRunCode = code;
 
     const elapsed = Date.now() - lastValueWidgetRunAt;
-    const remaining = VALUE_WIDGET_SHADERPARK_RUN_THROTTLE_MS - elapsed;
+    const remaining = throttleMs - elapsed;
 
     if (remaining <= 0) {
       if (valueWidgetRunTimeout) {
