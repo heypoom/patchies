@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { useViewport } from '@xyflow/svelte';
   import { EditorView, minimalSetup } from 'codemirror';
   import { Compartment, EditorState, Prec, type Extension } from '@codemirror/state';
   import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
@@ -26,6 +27,12 @@
   import { search, searchKeymap } from '@codemirror/search';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
+  import {
+    VALUE_WIDGET_CHANGE_EVENT,
+    VALUE_WIDGET_VIEWPORT_CHANGE_EVENT,
+    shouldRunOnValueWidgetChange,
+    valueWidgetRunThrottleMs
+  } from '$lib/codemirror/value-widget-events';
 
   // Effect to set error lines (supports multiple lines)
   const setErrorLinesEffect = StateEffect.define<number[] | null>();
@@ -133,7 +140,7 @@
     language?: SupportedLanguage;
     placeholder?: string;
     class?: string;
-    onrun?: () => void;
+    onrun?: (code?: string) => void;
     onchange?: (code: string) => void;
 
     /** Called on blur if value changed since focus. For undo/redo tracking. */
@@ -157,13 +164,68 @@
 
   let editorElement: HTMLDivElement;
   let editorView: EditorView | null = $state(null);
+  const viewport = useViewport();
   let isInternalUpdate = false; // Flag to prevent loops when user types
   let valueOnFocus: string | null = null; // Track value at focus for undo commit
   let resolvedFontSize = $derived(fontSize ?? `${$editorFontSize}px`);
   let resolvedFontFamily = $derived(fontFamily ?? $editorFontFamily);
+  let valueWidgetRunTimeout: ReturnType<typeof setTimeout> | null = null;
+  let lastValueWidgetRunAt = 0;
+  let pendingValueWidgetRunCode: string | undefined;
+
+  function runValueWidgetCode(code: string | undefined) {
+    onrun(code);
+    lastValueWidgetRunAt = Date.now();
+  }
+
+  function scheduleValueWidgetRun(code: string | undefined) {
+    const throttleMs = valueWidgetRunThrottleMs(language, nodeType);
+
+    if (throttleMs <= 0) {
+      runValueWidgetCode(code);
+      return;
+    }
+
+    pendingValueWidgetRunCode = code;
+
+    const elapsed = Date.now() - lastValueWidgetRunAt;
+    const remaining = throttleMs - elapsed;
+
+    if (remaining <= 0) {
+      if (valueWidgetRunTimeout) {
+        clearTimeout(valueWidgetRunTimeout);
+        valueWidgetRunTimeout = null;
+      }
+
+      runValueWidgetCode(pendingValueWidgetRunCode);
+      pendingValueWidgetRunCode = undefined;
+      return;
+    }
+
+    if (valueWidgetRunTimeout) return;
+
+    valueWidgetRunTimeout = setTimeout(() => {
+      valueWidgetRunTimeout = null;
+      runValueWidgetCode(pendingValueWidgetRunCode);
+      pendingValueWidgetRunCode = undefined;
+    }, remaining);
+  }
+
+  function handleValueWidgetChange(event: Event) {
+    const valueFromEvent =
+      event instanceof CustomEvent && typeof event.detail?.value === 'string'
+        ? event.detail.value
+        : editorView?.state.doc.toString();
+
+    if (shouldRunOnValueWidgetChange(language, nodeType)) {
+      scheduleValueWidgetRun(valueFromEvent);
+    }
+  }
 
   onMount(async () => {
     if (editorElement) {
+      editorElement.addEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
+
       const languageExtension = await loadLanguageExtension(
         language,
         { nodeType },
@@ -180,7 +242,7 @@
             {
               key: 'Shift-Enter',
               run: () => {
-                onrun();
+                onrun(editorView?.state.doc.toString());
                 return true;
               }
             },
@@ -401,6 +463,9 @@
   }
 
   onDestroy(() => {
+    editorElement?.removeEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
+    if (valueWidgetRunTimeout) clearTimeout(valueWidgetRunTimeout);
+
     if (editorView) {
       editorView.destroy();
     }
@@ -448,6 +513,19 @@
           });
         }
       }
+    );
+  });
+
+  // Reposition body-level value widgets when xyflow pan/zoom changes.
+  $effect(() => {
+    if (!editorView) return;
+
+    const { x, y, zoom } = viewport.current;
+
+    editorView.dom.dispatchEvent(
+      new CustomEvent(VALUE_WIDGET_VIEWPORT_CHANGE_EVENT, {
+        detail: { x, y, zoom }
+      })
     );
   });
 

@@ -29,6 +29,13 @@ displace(offset.x, offset.y, 0);
 sphere(radius);
 ```
 
+Normalized `vec2(x, y)`, `vec3(r, g, b)`, and `color(r, g, b)` literals get
+editor controls. Hold Option on macOS or Control on Windows/Linux, hover the
+literal, then click it to open an XY grid for `vec2` or a color picker for
+`vec3` and `color`. Inline value edits run the Shader Park code on a short
+throttle, so the preview updates while you tune values without rerunning on
+every tiny color-picker change.
+
 The generated message inlets can also receive `run` and `setCode` control
 messages, so Shader Park does not expose a separate control inlet.
 

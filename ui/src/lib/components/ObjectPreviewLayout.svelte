@@ -68,6 +68,7 @@
     codeDataKey = 'code',
     codeLanguage = 'javascript',
     codePlaceholder = '',
+    onCodeChange = undefined,
 
     settingsSchema = undefined,
     settingsValues = {},
@@ -80,7 +81,7 @@
     title: string;
     nodeId?: string;
     objectType?: string;
-    onrun?: () => void;
+    onrun?: (code?: string) => void;
     onPlaybackToggle?: () => void;
     onPreviewToggle?: () => void;
     paused?: boolean;
@@ -98,6 +99,7 @@
     codeDataKey?: string;
     codeLanguage?: SupportedLanguage;
     codePlaceholder?: string;
+    onCodeChange?: (value: string) => void;
 
     previewWidth?: number;
 
@@ -168,8 +170,8 @@
     isSidebarOpen.set(true);
   }
 
-  function handleRun() {
-    onrun?.();
+  function handleRun(code?: string) {
+    onrun?.(code);
     measureContainerWidth();
   }
 
@@ -293,6 +295,7 @@
       nodeType: objectType,
       title,
       placeholder: codePlaceholder,
+      onchange: onCodeChange,
       onrun: onrun ? handleRun : undefined,
       settings: detachedSettings
     });
@@ -311,6 +314,7 @@
       nodeType: objectType,
       title,
       placeholder: codePlaceholder,
+      onchange: onCodeChange,
       onrun: onrun ? handleRun : undefined,
       settings: detachedSettings
     });

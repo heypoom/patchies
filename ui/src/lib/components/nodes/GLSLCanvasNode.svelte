@@ -98,6 +98,10 @@
     }
   });
 
+  function handleCodeChange(newCode: string) {
+    updateNodeData(nodeId, { code: newCode });
+  }
+
   const handleMessage: MessageCallbackFn = (message, meta) => {
     try {
       // 'run' from any inlet re-runs the shader
@@ -191,7 +195,7 @@
     return (match?.[1] as PrimaryButton) ?? 'code';
   }
 
-  function updateShader() {
+  function updateShader(nextCode = data.code) {
     // Clear console on re-run
     consoleRef?.clearConsole();
 
@@ -199,10 +203,10 @@
     lineErrors = undefined;
 
     // Update title from @title directive
-    shaderName = parseShaderName(data.code);
+    shaderName = parseShaderName(nextCode);
 
     // Construct uniform definitions from the shader code.
-    const nextUniformDefs = shaderCodeToUniformDefs(data.code);
+    const nextUniformDefs = shaderCodeToUniformDefs(nextCode);
 
     // Prune saved uniform values for uniforms that no longer exist,
     // and seed missing values from @param defaults
@@ -220,15 +224,16 @@
 
     uniformValues = pruned;
 
-    const nextPrimaryButton = detectPrimaryButton(data.code);
+    const nextPrimaryButton = detectPrimaryButton(nextCode);
 
     const nextData = {
       ...data,
+      code: nextCode,
       glUniformDefs: nextUniformDefs,
       uniformValues: pruned,
-      mrtCount: detectMrtCount(data.code),
-      fboFormat: detectFboFormat(data.code),
-      resolution: detectResolution(data.code),
+      mrtCount: detectMrtCount(nextCode),
+      fboFormat: detectFboFormat(nextCode),
+      resolution: detectResolution(nextCode),
       primaryButton: nextPrimaryButton,
       _runRevision: Date.now()
     };
@@ -352,6 +357,7 @@
   objectType="glsl"
   codeLanguage="glsl"
   codePlaceholder="Write your GLSL fragment shader here..."
+  onCodeChange={handleCodeChange}
   {nodeId}
   onrun={updateShader}
   onPlaybackToggle={togglePause}
@@ -412,9 +418,7 @@
   {#snippet codeEditor()}
     <CodeEditor
       value={code}
-      onchange={(newCode) => {
-        updateNodeData(nodeId, { code: newCode });
-      }}
+      onchange={handleCodeChange}
       language="glsl"
       placeholder="Write your GLSL fragment shader here..."
       class="nodrag h-64 w-full resize-none"

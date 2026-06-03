@@ -11,7 +11,7 @@ import { commitDetachedCodeEditorChange } from './detached-code-editor-change';
 
 interface DetachedCodeEditorOverlayOptions {
   getNodes: () => Node[];
-  setNodes: (nodes: Node[]) => void;
+  updateNodeData: (nodeId: string, data: Record<string, string>) => void;
   getEdges: () => Edge[];
   glSystem: GLSystem;
 }
@@ -26,7 +26,7 @@ function hasBgOutOutput(nodes: Node[], edges: Edge[]): boolean {
 
 export function useDetachedCodeEditorOverlay({
   getNodes,
-  setNodes,
+  updateNodeData,
   getEdges,
   glSystem
 }: DetachedCodeEditorOverlayOptions) {
@@ -63,7 +63,7 @@ export function useDetachedCodeEditorOverlay({
     const target = activeTarget.current;
     if (!target) return;
 
-    commitDetachedCodeEditorChange(getNodes(), target, nextValue, setNodes);
+    commitDetachedCodeEditorChange(target, nextValue, updateNodeData);
   }
 
   $effect(() => {

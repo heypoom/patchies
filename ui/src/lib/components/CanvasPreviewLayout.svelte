@@ -38,6 +38,7 @@
     codeDataKey = 'code',
     codeLanguage = 'javascript',
     codePlaceholder = '',
+    onCodeChange = undefined,
 
     settingsSchema = undefined,
     settingsValues = {},
@@ -54,7 +55,7 @@
     objectType?: string;
     selected?: boolean;
     hasError?: boolean;
-    onrun?: () => void;
+    onrun?: (code?: string) => void;
     onPlaybackToggle?: () => void;
     onPreviewToggle?: () => void;
     paused?: boolean;
@@ -80,6 +81,7 @@
     codeDataKey?: string;
     codeLanguage?: SupportedLanguage;
     codePlaceholder?: string;
+    onCodeChange?: (value: string) => void;
 
     settingsSchema?: SettingsSchema;
     settingsValues?: Record<string, unknown>;
@@ -125,6 +127,7 @@
   {codeDataKey}
   {codeLanguage}
   {codePlaceholder}
+  {onCodeChange}
   console={consoleSnippet}
   {settingsSchema}
   {settingsValues}

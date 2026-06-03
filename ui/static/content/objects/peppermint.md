@@ -108,6 +108,9 @@ rows
   |> send
 ```
 
+Integer and float literals can be tuned directly in the editor. Hold Option on
+macOS or Control on Windows/Linux, then drag a number up or down to change it.
+
 Use `match` for branching:
 
 ```peppermint
