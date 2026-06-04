@@ -708,6 +708,58 @@ describe('analyzePatchbay', () => {
     expect(result.messageRoutes).toEqual([{ from: 'Foo', to: 'Bar' }]);
   });
 
+  it('continues a route chain across comment lines', () => {
+    const result = analyzePatchbay(
+      `
+      [Video]
+
+      Src = obj hydra-39
+      Edge = obj glsl-34
+
+      Src
+      // -> Edge
+      -> Aber
+      `,
+      {
+        videoTargets: new Set(['Aber']),
+        objects: new Map([
+          [
+            'hydra-39',
+            {
+              video: {
+                inlets: ['video-in-0'],
+                outlets: ['video-out-0']
+              }
+            }
+          ],
+          [
+            'glsl-34',
+            {
+              video: {
+                inlets: ['video-in-0'],
+                outlets: ['video-out']
+              }
+            }
+          ]
+        ])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.videoRoutes).toEqual([
+      {
+        from: 'Src',
+        to: 'Aber',
+        fromEndpoint: {
+          kind: 'object',
+          nodeId: 'hydra-39',
+          portIndex: 0,
+          handle: 'video-out-0'
+        }
+      }
+    ]);
+  });
+
   it('reports a dangling arrow before a blank line as malformed', () => {
     const result = analyzePatchbay(
       `

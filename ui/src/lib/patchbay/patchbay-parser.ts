@@ -545,8 +545,12 @@ export function analyzePatchbay(
     const line = index + 1;
     const text = rawLine.trim();
 
-    if (text.length === 0 || text.startsWith('//') || text.startsWith('# ')) {
+    if (text.length === 0) {
       flushPendingRoute();
+      return;
+    }
+
+    if (text.startsWith('//') || text.startsWith('# ')) {
       return;
     }
 

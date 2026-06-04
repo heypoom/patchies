@@ -141,7 +141,7 @@ Both forms normalize to:
 Src -> obj glsl-34 -> Aber
 ```
 
-Lines starting with `->` continue the previous route chain in the same section. Lines ending with `->` continue on the next non-empty line. A single endpoint line starts a pending route chain. Blank lines, comments, declarations, and section headers end the pending chain; if the chain is still waiting for an endpoint, it is malformed.
+Lines starting with `->` continue the previous route chain in the same section. Lines ending with `->` continue on the next non-empty line. A single endpoint line starts a pending route chain. Comment lines are ignored and do not end the pending chain, so users can quickly comment out route legs while switching pipelines. Blank lines, declarations, and section headers end the pending chain; if the chain is still waiting for an endpoint, it is malformed.
 
 ### Identifiers
 
