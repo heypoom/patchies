@@ -48,6 +48,8 @@ function getNodePorts(node: MinimalNode, schema: ObjectSchema | undefined): Patc
   if (schema) {
     addSchemaPorts(ports, 'inlet', schema.inlets);
     addSchemaPorts(ports, 'outlet', schema.outlets);
+    addDynamicVideoPorts(ports, 'inlet', schema, node.data);
+    addDynamicVideoPorts(ports, 'outlet', schema, node.data);
   }
 
   if (node.type === 'glsl') {
@@ -55,6 +57,34 @@ function getNodePorts(node: MinimalNode, schema: ObjectSchema | undefined): Patc
   }
 
   return ports;
+}
+
+function addDynamicVideoPorts(
+  ports: PatchbayObjectPortSet,
+  direction: PortDirection,
+  schema: ObjectSchema,
+  data: MinimalNode['data'] | undefined
+): void {
+  const pattern = schema.handlePatterns?.[direction];
+  if (pattern?.handleType !== 'video') return;
+
+  const count = getDynamicVideoPortCount(direction, data);
+  for (let index = 0; index < count; index += 1) {
+    const handle = pattern.template.replace('{index}', index.toString());
+    const key = direction === 'inlet' ? 'inlets' : 'outlets';
+    ports.video![key]!.push(handle);
+  }
+}
+
+function getDynamicVideoPortCount(
+  direction: PortDirection,
+  data: MinimalNode['data'] | undefined
+): number {
+  const key = direction === 'inlet' ? 'videoInletCount' : 'videoOutletCount';
+  const value = (data as Record<string, unknown> | undefined)?.[key];
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.max(0, Math.floor(value));
+
+  return direction === 'outlet' ? 1 : 0;
 }
 
 function addSchemaPorts(

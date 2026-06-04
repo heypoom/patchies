@@ -309,6 +309,8 @@ function analyzeSection(
         continue;
       }
 
+      if (endpoint.kind !== 'channel') continue;
+
       const channel = endpoint.name;
       if (!state.declarations.has(channel) && !knownChannels.has(channel)) {
         hasErrors = true;
