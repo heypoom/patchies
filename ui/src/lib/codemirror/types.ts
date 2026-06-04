@@ -4,6 +4,7 @@ export type SupportedLanguage =
   | 'wgsl'
   | 'python'
   | 'peppermint'
+  | 'patchbay'
   | 'ruby'
   | 'markdown'
   | 'plain'

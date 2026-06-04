@@ -10,6 +10,7 @@
     Decoration,
     type DecorationSet,
     hoverTooltip,
+    tooltips,
     type Tooltip,
     placeholder as cmPlaceholder
   } from '@codemirror/view';
@@ -39,6 +40,15 @@
 
   // Effect to set line errors with messages
   const setLineErrorsEffect = StateEffect.define<Record<number, string[]> | null>();
+
+  export type InlineDecoration = {
+    from: number;
+    to: number;
+    className: string;
+    data?: string;
+  };
+
+  const setInlineDecorationsEffect = StateEffect.define<InlineDecoration[] | null>();
 
   // StateField to store line errors for tooltip lookup
   const lineErrorsField = StateField.define<Record<number, string[]>>({
@@ -75,6 +85,40 @@
           }
         }
       }
+      return decorations;
+    },
+    provide: (f) => EditorView.decorations.from(f)
+  });
+
+  const inlineDecorationField = StateField.define<DecorationSet>({
+    create() {
+      return Decoration.none;
+    },
+    update(decorations, tr) {
+      decorations = decorations.map(tr.changes);
+
+      for (let effect of tr.effects) {
+        if (effect.is(setInlineDecorationsEffect)) {
+          if (effect.value === null || effect.value.length === 0) {
+            decorations = Decoration.none;
+          } else {
+            decorations = Decoration.set(
+              effect.value
+                .filter(({ from, to }) => from < to && from >= 0 && to <= tr.state.doc.length)
+                .map(({ from, to, className, data }) =>
+                  Decoration.mark({
+                    class: className,
+                    attributes: {
+                      ...(data ? { 'data-inline-decoration': data } : {})
+                    }
+                  }).range(from, to)
+                ),
+              true
+            );
+          }
+        }
+      }
+
       return decorations;
     },
     provide: (f) => EditorView.decorations.from(f)
@@ -133,6 +177,8 @@
     onready,
     nodeType,
     lineErrors,
+    inlineDecorations = [],
+    onaltdecorationclick,
     lineWrap = false,
     ...restProps
   }: {
@@ -157,6 +203,8 @@
     onready?: () => void;
     nodeType?: string;
     lineErrors?: Record<number, string[]>;
+    inlineDecorations?: InlineDecoration[];
+    onaltdecorationclick?: (data: string) => void;
 
     /** Enable line wrapping */
     lineWrap?: boolean;
@@ -164,6 +212,7 @@
 
   let editorElement: HTMLDivElement;
   let editorView: EditorView | null = $state(null);
+  let isAltNavigationActive = $state(false);
   const viewport = useViewport();
   let isInternalUpdate = false; // Flag to prevent loops when user types
   let valueOnFocus: string | null = null; // Track value at focus for undo commit
@@ -224,9 +273,22 @@
     }
   }
 
+  function setAltNavigationActive(event: KeyboardEvent) {
+    if (event.key === 'Alt') {
+      isAltNavigationActive = event.type === 'keydown';
+    }
+  }
+
+  function handleWindowBlur() {
+    isAltNavigationActive = false;
+  }
+
   onMount(async () => {
     if (editorElement) {
       editorElement.addEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
+      window.addEventListener('keydown', setAltNavigationActive);
+      window.addEventListener('keyup', setAltNavigationActive);
+      window.addEventListener('blur', handleWindowBlur);
 
       const languageExtension = await loadLanguageExtension(
         language,
@@ -271,7 +333,9 @@
         languageComp.of(languageExtension),
 
         // Error line highlighting with hover tooltips
+        tooltips({ parent: document.body }),
         errorLineField,
+        inlineDecorationField,
         lineErrorsField,
         errorTooltip,
 
@@ -306,6 +370,19 @@
             }
 
             valueOnFocus = null;
+          },
+          click: (event) => {
+            if (!event.altKey) return false;
+
+            const target = event.target instanceof Element ? event.target : null;
+            const decoration = target?.closest('[data-inline-decoration]');
+            const data = decoration?.getAttribute('data-inline-decoration');
+            if (!data) return false;
+
+            event.preventDefault();
+            event.stopPropagation();
+            onaltdecorationclick?.(data);
+            return true;
           }
         }),
 
@@ -345,6 +422,21 @@
           '.cm-errorLine': {
             backgroundColor: 'rgba(239, 68, 68, 0.15)',
             borderLeft: '3px solid rgb(239 68 68)'
+          },
+          '.cm-patchbay-unknown-channel': {
+            color: 'rgb(252 165 165)',
+            textDecoration: 'underline wavy rgb(248 113 113)',
+            textDecorationThickness: '1px',
+            textUnderlineOffset: '3px'
+          },
+          '.cm-patchbay-local-channel, .cm-patchbay-local-channel *': {
+            color: 'rgb(196 181 253)'
+          },
+          '.cm-patchbay-role-error': {
+            color: 'rgb(252 165 165)',
+            textDecoration: 'underline wavy rgb(248 113 113)',
+            textDecorationThickness: '1px',
+            textUnderlineOffset: '3px'
           },
           '.cm-completion-hover': {
             boxSizing: 'border-box',
@@ -466,6 +558,9 @@
 
   onDestroy(() => {
     editorElement?.removeEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
+    window.removeEventListener('keydown', setAltNavigationActive);
+    window.removeEventListener('keyup', setAltNavigationActive);
+    window.removeEventListener('blur', handleWindowBlur);
 
     if (valueWidgetRunTimeout) {
       clearTimeout(valueWidgetRunTimeout);
@@ -563,11 +658,23 @@
       effects: [setErrorLinesEffect.of(validErrorLines), setLineErrorsEffect.of(validLineErrors)]
     });
   });
+
+  $effect(() => {
+    if (!editorView) return;
+
+    editorView.dispatch({
+      effects: setInlineDecorationsEffect.of(inlineDecorations)
+    });
+  });
 </script>
 
 <div
   bind:this={editorElement}
-  class={['code-editor-container nodrag nopan nowheel outline-none', className]}
+  class={[
+    'code-editor-container nodrag nopan nowheel outline-none',
+    isAltNavigationActive && 'cm-alt-navigation-active',
+    className
+  ]}
   style:--patchies-code-editor-font-size={resolvedFontSize}
   style:--patchies-code-editor-font-family={resolvedFontFamily}
   {...restProps}
@@ -608,5 +715,12 @@
 
   :global(.code-editor-container .cm-cursor) {
     border-left-color: rgb(244 244 245) !important;
+  }
+
+  :global(.code-editor-container.cm-alt-navigation-active .cm-patchbay-channel-link) {
+    cursor: pointer;
+    color: rgb(147 197 253);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 </style>

@@ -14,6 +14,7 @@ import { LoadbangObject } from './LoadbangObject';
 import { MetroObject } from './MetroObject';
 import { MtofObject } from './MtofObject';
 import { PackObject } from './PackObject';
+import { PatchbayObject } from './PatchbayObject';
 import { SelectObject } from './SelectObject';
 import { ScaleObject } from './ScaleObject';
 import { SpigotObject } from './SpigotObject';
@@ -44,6 +45,7 @@ export const TEXT_OBJECTS = [
   MetroObject,
   MtofObject,
   PackObject,
+  PatchbayObject,
   SelectObject,
   ScaleObject,
   SpigotObject,

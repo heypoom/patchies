@@ -26,6 +26,7 @@ import { msgPrompt } from './msg';
 import { objectPrompt } from './object';
 import { orcaPrompt } from './orca';
 import { p5Prompt } from './p5';
+import { patchbayPrompt } from './patchbay';
 import { pythonPrompt } from './python';
 import { peppermintPrompt } from './peppermint';
 import { recvPrompt } from './recv';
@@ -116,6 +117,7 @@ export const objectPrompts: Record<string, string> = {
   'pads~': padsPrompt,
   markdown: markdownPrompt,
   object: objectPrompt,
+  patchbay: patchbayPrompt,
   'bg.out': bgOutPrompt,
   'sonic~': sonicPrompt,
   'elem~': elemPrompt,

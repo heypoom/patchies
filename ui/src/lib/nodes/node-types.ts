@@ -86,6 +86,7 @@ import TableNode from '$lib/components/nodes/TableNode.svelte';
 import SendVideoNode from '$lib/components/nodes/SendVideoNode.svelte';
 import RecvVideoNode from '$lib/components/nodes/RecvVideoNode.svelte';
 import PostItNode from '$lib/components/nodes/PostItNode.svelte';
+import PatchbayNode from '$lib/components/nodes/PatchbayNode.svelte';
 import TitleNode from '$lib/components/nodes/TitleNode.svelte';
 import ScopeNode from '$lib/components/nodes/ScopeNode.svelte';
 import UiuaNode from '$lib/components/nodes/UiuaNode.svelte';
@@ -198,6 +199,7 @@ export const nodeTypes: Record<string, any> = {
   table: TableNode,
   'send.vdo': SendVideoNode,
   'recv.vdo': RecvVideoNode,
+  patchbay: PatchbayNode,
   note: PostItNode,
   title: TitleNode,
   'scope~': ScopeNode,
