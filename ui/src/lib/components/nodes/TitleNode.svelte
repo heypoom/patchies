@@ -4,6 +4,7 @@
   import { match } from 'ts-pattern';
   import { useNodeDataTracker } from '$lib/history';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import { editorFontFamily } from '../../../stores/editor.store';
 
   const COLOR_PRESETS = [
     { name: 'Transparent', value: 'transparent' },
@@ -29,6 +30,16 @@
     { label: 'XXL', value: 56 }
   ] as const;
 
+  const FONT_OPTIONS = [
+    { label: 'Default', value: 'default' },
+    { label: 'Code', value: 'mono' },
+    { label: 'Serif', value: 'serif' },
+    { label: 'Syne', value: 'syne' },
+    { label: 'Custom', value: 'custom' }
+  ] as const;
+
+  type TitleFont = (typeof FONT_OPTIONS)[number]['value'];
+
   let node: {
     id: string;
     data: {
@@ -36,7 +47,8 @@
       color?: string;
       fontSize?: number;
       bordered?: boolean;
-      font?: 'default' | 'mono' | 'serif' | 'syne';
+      font?: TitleFont;
+      customFontFamily?: string;
     };
     selected: boolean;
     width?: number;
@@ -46,6 +58,10 @@
   const { updateNodeData } = useSvelteFlow();
 
   const tracker = useNodeDataTracker(node.id);
+  const customFontFamilyTracker = tracker.track(
+    'customFontFamily',
+    () => node.data.customFontFamily ?? ''
+  );
 
   let showSettings = $state(false);
   let isEditing = $state(false);
@@ -60,11 +76,13 @@
   const fontSize = $derived(node.data.fontSize ?? 28);
   const bordered = $derived(node.data.bordered ?? false);
   const font = $derived(node.data.font ?? 'default');
+  const customFontFamily = $derived(node.data.customFontFamily ?? '');
   const fontFamily = $derived(
     match(font)
-      .with('mono', () => "'IBM Plex Mono', monospace")
+      .with('mono', () => $editorFontFamily)
       .with('serif', () => "'Instrument Serif', serif")
       .with('syne', () => "'Syne', sans-serif")
+      .with('custom', () => customFontFamily.trim() || $editorFontFamily)
       .otherwise(() => 'inherit')
   );
   const width = $derived(node.width ?? defaultWidth);
@@ -265,7 +283,7 @@
             <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">Font Size</label>
             <div class="flex flex-wrap gap-1">
-              {#each FONT_SIZES as size}
+              {#each FONT_SIZES as size (size.label)}
                 <button
                   onclick={() => {
                     const old = fontSize;
@@ -290,11 +308,11 @@
             <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="mb-2 block text-xs font-medium text-zinc-300">Font</label>
             <div class="flex flex-wrap gap-1">
-              {#each [{ label: 'Default', value: 'default' }, { label: 'Mono', value: 'mono' }, { label: 'Serif', value: 'serif' }, { label: 'Syne', value: 'syne' }] as opt}
+              {#each FONT_OPTIONS as opt (opt.value)}
                 <button
                   onclick={() => {
                     const old = font;
-                    updateConfig({ font: opt.value as 'default' | 'mono' | 'serif' | 'syne' });
+                    updateConfig({ font: opt.value });
                     tracker.commit('font', old, opt.value);
                   }}
                   class={[
@@ -308,6 +326,22 @@
                 </button>
               {/each}
             </div>
+
+            {#if font === 'custom'}
+              <input
+                value={customFontFamily}
+                onfocus={customFontFamilyTracker.onFocus}
+                oninput={(event) => {
+                  updateConfig({
+                    customFontFamily: (event.currentTarget as HTMLInputElement).value
+                  });
+                }}
+                onblur={customFontFamilyTracker.onBlur}
+                class="mt-2 w-full rounded border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-xs text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-zinc-500"
+                placeholder={$editorFontFamily}
+                aria-label="Custom font family"
+              />
+            {/if}
           </div>
 
           <!-- Border toggle -->

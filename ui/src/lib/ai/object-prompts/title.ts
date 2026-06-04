@@ -12,7 +12,8 @@ Configuration:
 - text: The displayed text
 - color: Background color (default: 'transparent')
 - fontSize: Font size in pixels (10, 14, 20, 28, 40, 56)
-- font: 'default' or 'mono'
+- font: 'default', 'mono' (shown as Code), 'serif', 'syne', or 'custom'
+- customFontFamily: CSS font-family stack to use when font is 'custom'
 - bordered: Show a border (true/false)
 
 Example - Slide Title:
@@ -39,6 +40,21 @@ Example - Section Label with Background:
     "fontSize": 20,
     "font": "mono",
     "bordered": true
+  }
+}
+\`\`\`
+
+Example - Custom Font:
+\`\`\`json
+{
+  "type": "title",
+  "data": {
+    "text": "Opening Credits",
+    "color": "transparent",
+    "fontSize": 40,
+    "font": "custom",
+    "customFontFamily": "'Bebas Neue', Impact, sans-serif",
+    "bordered": false
   }
 }
 \`\`\``;

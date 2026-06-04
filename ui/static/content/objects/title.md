@@ -5,7 +5,7 @@ Centered text card for slide titles, section headers, and diagram labels. Design
 - **Resizable**: Drag corners to resize
 - **Customizable colors**: Choose from preset colors including transparent
 - **Adjustable font size**: XS (10), S (14), M (20), L (28), XL (40), XXL (56)
-- **Font selector**: Default or monospace
+- **Font selector**: Default, Code, Serif, Syne, or a custom font family
 - **Optional border**: Toggle a border on or off
 - **Double-click to edit**: Quickly enter edit mode
 
