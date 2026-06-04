@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseCanvasDimensions } from './component-helpers';
+import { parseCanvasDimensions, shouldResetP5CanvasSize } from './component-helpers';
 
 describe('parseCanvasDimensions', () => {
   it('should extract width and height from createCanvas call', () => {
@@ -25,5 +25,37 @@ describe('parseCanvasDimensions', () => {
 		}`;
 
     expect(parseCanvasDimensions(code)).toBeNull();
+  });
+
+  it('keeps preloaded canvas dimensions when code calls createCanvas', () => {
+    expect(
+      shouldResetP5CanvasSize(`function setup() {
+			createCanvas(320, 180)
+		}`)
+    ).toBe(false);
+  });
+
+  it('clears preloaded canvas dimensions when code no longer calls createCanvas', () => {
+    expect(
+      shouldResetP5CanvasSize(`function setup() {
+			background(0)
+		}`)
+    ).toBe(true);
+  });
+
+  it('clears preloaded canvas dimensions when createCanvas only appears in comments', () => {
+    expect(
+      shouldResetP5CanvasSize(`function setup() {
+			// createCanvas(320, 180)
+			background(0)
+		}`)
+    ).toBe(true);
+
+    expect(
+      shouldResetP5CanvasSize(`function setup() {
+			/* createCanvas(320, 180) */
+			background(0)
+		}`)
+    ).toBe(true);
   });
 });

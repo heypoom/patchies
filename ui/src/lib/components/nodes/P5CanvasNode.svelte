@@ -13,7 +13,7 @@
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
-  import { parseCanvasDimensions } from '$lib/p5/component-helpers';
+  import { parseCanvasDimensions, shouldResetP5CanvasSize } from '$lib/p5/component-helpers';
   import { P5_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
@@ -78,8 +78,8 @@
   let preloadCanvasHeight = $state<number | undefined>(0);
   let clearDimensionsTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  function setCanvasDimensionsFromCode() {
-    const dimensions = parseCanvasDimensions(code);
+  function setCanvasDimensionsFromCode(nextCode = code) {
+    const dimensions = parseCanvasDimensions(nextCode);
     if (dimensions) {
       preloadCanvasWidth = dimensions.width;
       preloadCanvasHeight = dimensions.height;
@@ -99,8 +99,10 @@
     }
   }
 
-  function scheduleDimensionsClear() {
+  function scheduleDimensionsClear(nextCode = code) {
     cancelScheduledDimensionsClear();
+
+    if (!shouldResetP5CanvasSize(nextCode)) return;
 
     clearDimensionsTimeout = setTimeout(() => {
       if (!errorMessage) {
@@ -196,7 +198,7 @@
     cancelScheduledDimensionsClear();
     errorMessage = error.message;
     handleCodeError(error, nextCode, nodeId, customConsole, P5_WRAPPER_OFFSET);
-    setCanvasDimensionsFromCode();
+    setCanvasDimensionsFromCode(nextCode);
   }
 
   function handleCodeChange(newCode: string) {
@@ -268,13 +270,13 @@
 
         // Schedule dimension cleanup only if no error occurred during updateCode
         if (!errorMessage) {
-          scheduleDimensionsClear();
+          scheduleDimensionsClear(nextCode);
         }
       } catch (error) {
         cancelScheduledDimensionsClear();
         errorMessage = error instanceof Error ? error.message : String(error);
         handleCodeError(error, nextCode, nodeId, customConsole);
-        setCanvasDimensionsFromCode();
+        setCanvasDimensionsFromCode(nextCode);
       }
     }
   }
