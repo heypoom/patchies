@@ -204,6 +204,13 @@
     updateNodeInternals(nodeId);
   };
 
+  function setVideoOutputEnabled(enabled: boolean) {
+    if (videoOutputEnabled === enabled) return;
+
+    videoOutputEnabled = enabled;
+    updateNodeInternals(nodeId);
+  }
+
   function togglePlayback() {
     const p5 = p5Manager?.p5;
     if (!p5) return;
@@ -251,7 +258,7 @@
     enableDrag = true;
     enablePan = true;
     enableWheel = true;
-    videoOutputEnabled = true;
+    let nextVideoOutputEnabled = true;
 
     // Clear previous error state at the start of each run
     // If an error occurs during updateCode, it will be set again
@@ -285,8 +292,8 @@
               enableWheel = false;
             },
             noOutput: () => {
-              videoOutputEnabled = false;
-              updateNodeInternals(nodeId);
+              nextVideoOutputEnabled = false;
+              setVideoOutputEnabled(false);
             },
             setPortCount,
             setTitle: (title: string) => {
@@ -301,7 +308,10 @@
           customConsole,
           onRuntimeError: (error) => handleRuntimeError(error, nextCode),
           onPreserveFrame: preserveFrameCanvas,
-          onFrameReady: clearPreservedFrameCanvas
+          onFrameReady: () => {
+            clearPreservedFrameCanvas();
+            setVideoOutputEnabled(nextVideoOutputEnabled);
+          }
         });
 
         measureWidth(100);
