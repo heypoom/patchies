@@ -7,7 +7,8 @@
   import {
     getPatchbayChannelLinkRanges,
     getPatchbayDiagnosticRanges,
-    getPatchbayLocalChannelRanges
+    getPatchbayLocalChannelRanges,
+    getPatchbayObjectLinkRanges
   } from '$lib/codemirror/patchbay.codemirror';
   import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
   import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
@@ -79,7 +80,13 @@
       from: range.from,
       to: range.to,
       className: range.className,
-      data: JSON.stringify({ section: range.section, channel: range.channel })
+      data: JSON.stringify({ type: 'channel', section: range.section, channel: range.channel })
+    })),
+    ...getPatchbayObjectLinkRanges(code).map((range) => ({
+      from: range.from,
+      to: range.to,
+      className: range.className,
+      data: JSON.stringify({ type: 'object', nodeId: range.nodeId })
     }))
   ]);
 
@@ -106,8 +113,22 @@
     updateNodeData(nodeId, { code: nextCode });
   }
 
-  function focusChannelNodes(data: string) {
-    const { section, channel } = JSON.parse(data) as { section: string; channel: string };
+  function focusPatchbayReference(data: string) {
+    const payload = JSON.parse(data) as
+      | { type: 'channel'; section: string; channel: string }
+      | { type: 'object'; nodeId: string };
+
+    if (payload.type === 'object') {
+      requestFitView.set({
+        nodes: [{ id: payload.nodeId }],
+        duration: 500,
+        padding: 0.3,
+        maxZoom: 1.5
+      });
+      return;
+    }
+
+    const { section, channel } = payload;
     const nodeIds =
       section === 'audio'
         ? audioChannelRegistry.getChannelNodeIds(channel)
@@ -181,7 +202,7 @@
       dataKey="code"
       {lineErrors}
       {inlineDecorations}
-      onaltdecorationclick={focusChannelNodes}
+      onaltdecorationclick={focusPatchbayReference}
       lineWrap
     />
   </div>

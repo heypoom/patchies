@@ -38,6 +38,13 @@ export type PatchbayLocalChannelRange = {
   className: string;
 };
 
+export type PatchbayObjectLinkRange = {
+  from: number;
+  to: number;
+  className: string;
+  nodeId: string;
+};
+
 export type PatchbayChannelRoles = {
   senders: Set<string>;
   receivers: Set<string>;
@@ -225,6 +232,44 @@ export function getPatchbayLocalChannelRanges(source: string): PatchbayLocalChan
         to: from + token.text.length,
         className: 'cm-patchbay-local-channel'
       });
+    }
+  });
+
+  return ranges;
+}
+
+export function getPatchbayObjectLinkRanges(source: string): PatchbayObjectLinkRange[] {
+  const lineStarts = getLineStarts(source);
+  const ranges: PatchbayObjectLinkRange[] = [];
+
+  source.split(/\r?\n/).forEach((line, lineIndex) => {
+    let searchStart = 0;
+    let previousWasObjectKeyword = false;
+
+    for (const token of tokenizePatchbayLine(line)) {
+      const column = line.indexOf(token.text, searchStart);
+      if (column === -1) continue;
+
+      searchStart = column + token.text.length;
+
+      if (token.text === 'obj' && token.style === 'keyword') {
+        previousWasObjectKeyword = true;
+        continue;
+      }
+
+      if (previousWasObjectKeyword && token.style === 'variableName') {
+        const nodeId = token.text.replace(/:\d+$/, '');
+        const from = lineStarts[lineIndex] + column;
+
+        ranges.push({
+          from,
+          to: from + nodeId.length,
+          className: 'cm-patchbay-object-link',
+          nodeId
+        });
+      }
+
+      previousWasObjectKeyword = false;
     }
   });
 

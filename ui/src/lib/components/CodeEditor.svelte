@@ -720,7 +720,8 @@
     border-left-color: rgb(244 244 245) !important;
   }
 
-  :global(.code-editor-container.cm-alt-navigation-active .cm-patchbay-channel-link) {
+  :global(.code-editor-container.cm-alt-navigation-active .cm-patchbay-channel-link),
+  :global(.code-editor-container.cm-alt-navigation-active .cm-patchbay-object-link) {
     cursor: pointer;
     color: rgb(147 197 253);
     text-decoration: underline;

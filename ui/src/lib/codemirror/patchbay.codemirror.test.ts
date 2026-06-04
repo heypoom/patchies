@@ -5,6 +5,7 @@ import {
   getPatchbayChannelLinkRanges,
   getPatchbayDiagnosticRanges,
   getPatchbayLocalChannelRanges,
+  getPatchbayObjectLinkRanges,
   tokenizePatchbayLine
 } from './patchbay.codemirror';
 
@@ -225,6 +226,27 @@ Camera -> obj glsl-34:0`;
         }
       }).map(({ channel, section, role }) => ({ channel, section, role }))
     ).toEqual([{ channel: 'Camera', section: 'video', role: 'sender' }]);
+  });
+
+  it('returns object link ranges for explicit object references', () => {
+    const source = `[Video]
+Camera -> obj glsl-34:0
+obj hydra-12 -> Output`;
+
+    expect(getPatchbayObjectLinkRanges(source)).toEqual([
+      {
+        from: 22,
+        to: 29,
+        className: 'cm-patchbay-object-link',
+        nodeId: 'glsl-34'
+      },
+      {
+        from: 36,
+        to: 44,
+        className: 'cm-patchbay-object-link',
+        nodeId: 'hydra-12'
+      }
+    ]);
   });
 
   it('returns inline ranges for object diagnostics', () => {
