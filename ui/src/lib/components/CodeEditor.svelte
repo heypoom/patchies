@@ -46,9 +46,31 @@
     to: number;
     className: string;
     data?: string;
+    hoverText?: string;
   };
 
   const setInlineDecorationsEffect = StateEffect.define<InlineDecoration[] | null>();
+
+  const inlineDecorationMetadataField = StateField.define<InlineDecoration[]>({
+    create() {
+      return [];
+    },
+    update(decorations, tr) {
+      for (let effect of tr.effects) {
+        if (effect.is(setInlineDecorationsEffect)) {
+          return effect.value ?? [];
+        }
+      }
+
+      if (!tr.docChanged) return decorations;
+
+      return decorations.map((decoration) => ({
+        ...decoration,
+        from: tr.changes.mapPos(decoration.from),
+        to: tr.changes.mapPos(decoration.to)
+      }));
+    }
+  });
 
   // StateField to store line errors for tooltip lookup
   const lineErrorsField = StateField.define<Record<number, string[]>>({
@@ -155,6 +177,29 @@
       } satisfies Tooltip;
     },
     { hoverTime: 100 }
+  );
+
+  const inlineDecorationTooltip = hoverTooltip(
+    (view, pos) => {
+      const decoration = view.state
+        .field(inlineDecorationMetadataField)
+        .find(({ from, to, hoverText }) => hoverText && from <= pos && pos <= to);
+      if (!decoration?.hoverText) return null;
+
+      return {
+        pos: decoration.from,
+        end: decoration.to,
+        above: true,
+        create() {
+          const dom = document.createElement('div');
+          dom.className = 'cm-inline-decoration-tooltip';
+          dom.textContent = decoration.hoverText ?? '';
+
+          return { dom };
+        }
+      } satisfies Tooltip;
+    },
+    { hoverTime: 150 }
   );
 
   let languageComp = new Compartment();
@@ -361,8 +406,10 @@
         tooltips({ parent: document.body }),
         errorLineField,
         inlineDecorationField,
+        inlineDecorationMetadataField,
         lineErrorsField,
         errorTooltip,
+        inlineDecorationTooltip,
 
         // Prevent wheel events from bubbling to XYFlow
         // Track focus/blur for undo commit
@@ -533,6 +580,19 @@
             borderTop: '1px solid rgb(63 63 70)',
             marginTop: '4px',
             paddingTop: '6px'
+          },
+          '.cm-inline-decoration-tooltip': {
+            backgroundColor: 'rgb(39 39 42)',
+            border: '1px solid rgb(63 63 70)',
+            borderRadius: '4px',
+            padding: '6px 10px',
+            maxWidth: '320px',
+            color: 'rgb(244 244 245)',
+            fontSize: '11px',
+            fontFamily: 'var(--font-mono)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word'
           }
         }),
         EditorView.updateListener.of((update) => {

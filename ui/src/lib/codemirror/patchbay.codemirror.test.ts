@@ -10,6 +10,7 @@ import {
   getPatchbayDiagnosticRanges,
   getPatchbayLocalChannelRanges,
   getPatchbayObjectAssignmentRanges,
+  getPatchbayObjectAliasHintRanges,
   getPatchbayObjectIdRanges,
   getPatchbayObjectKeywordRanges,
   getPatchbayObjectLinkRanges,
@@ -39,6 +40,19 @@ function getPatchbayContextualCompletionLabels(
   const result = patchbayContextualCompletions(context, options);
 
   return result?.options.map((option) => option.label) ?? [];
+}
+
+function getPatchbayContextualCompletions(
+  doc: string,
+  options: Parameters<typeof patchbayContextualCompletions>[1]
+) {
+  const cursorIndex = doc.indexOf('|');
+  const source = cursorIndex === -1 ? doc : doc.slice(0, cursorIndex) + doc.slice(cursorIndex + 1);
+  const position = cursorIndex === -1 ? source.length : cursorIndex;
+  const state = EditorState.create({ doc: source });
+  const context = new CompletionContext(state, position, true);
+
+  return patchbayContextualCompletions(context, options)?.options ?? [];
 }
 
 describe('tokenizePatchbayLine', () => {
@@ -380,6 +394,20 @@ Src -> Out`;
     ]);
   });
 
+  it('returns hover hint ranges for object alias definitions and usages', () => {
+    const source = `[Video]
+Edge = obj glsl-6
+Noise = obj glsl-5
+Noise -> Edge`;
+
+    expect(getPatchbayObjectAliasHintRanges(source).map(({ hoverText }) => hoverText)).toEqual([
+      'Edge = obj glsl-6',
+      'Noise = obj glsl-5',
+      'Noise = obj glsl-5',
+      'Edge = obj glsl-6'
+    ]);
+  });
+
   it('does not return channel link ranges for object aliases', () => {
     const source = `[Video]
 Camera -> Edge
@@ -525,6 +553,15 @@ describe('patchbayContextualCompletions', () => {
         }
       )
     ).toEqual(['Noise']);
+
+    expect(
+      getPatchbayContextualCompletions(
+        '[Video]\nEdge = obj glsl-6\nNoise = obj glsl-5\nChroma = obj glsl-7\nNo',
+        {
+          channels: {}
+        }
+      )[0]?.detail
+    ).toBe('glsl-5');
 
     expect(
       getPatchbayContextualCompletionLabels(

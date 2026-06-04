@@ -11,6 +11,7 @@
     getPatchbayChannelLinkRanges,
     getPatchbayDiagnosticRanges,
     getPatchbayLocalChannelRanges,
+    getPatchbayObjectAliasHintRanges,
     getPatchbayObjectAssignmentRanges,
     getPatchbayObjectKeywordRanges,
     getPatchbayObjectLinkRanges,
@@ -99,6 +100,7 @@
     ...getPatchbayObjectAssignmentRanges(code),
     ...getPatchbayObjectKeywordRanges(code),
     ...getPatchbayLocalChannelRanges(code),
+    ...getPatchbayObjectAliasHintRanges(code),
     ...getPatchbayChannelLinkRanges(code, {
       message: {
         senders: new Set(channelRegistry.getSenderChannelNames()),

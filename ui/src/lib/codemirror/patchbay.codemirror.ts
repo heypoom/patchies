@@ -75,6 +75,13 @@ export type PatchbayObjectLinkRange = {
   nodeId: string;
 };
 
+export type PatchbayObjectAliasHintRange = {
+  from: number;
+  to: number;
+  className: string;
+  hoverText: string;
+};
+
 export type PatchbayChannelRoles = {
   senders: Set<string>;
   receivers: Set<string>;
@@ -407,6 +414,58 @@ export function getPatchbayObjectNameRanges(source: string): PatchbayObjectNameR
         from,
         to: from + token.text.length,
         className: 'cm-patchbay-object-name'
+      });
+    }
+  });
+
+  return ranges;
+}
+
+export function getPatchbayObjectAliasHintRanges(source: string): PatchbayObjectAliasHintRange[] {
+  const lineStarts = getLineStarts(source);
+  const objectAliases = getPatchbayObjectAliases(source);
+  const ranges: PatchbayObjectAliasHintRange[] = [];
+  let currentSection: PatchbaySection | undefined;
+
+  source.split(/\r?\n/).forEach((line, lineIndex) => {
+    const lineTokens = tokenizePatchbayLine(line);
+    const section = parseSectionToken(lineTokens[0]);
+    if (section) {
+      currentSection = section;
+      return;
+    }
+
+    if (!currentSection) return;
+
+    let searchStart = 0;
+    let skipObjectId = false;
+
+    for (const token of lineTokens) {
+      const column = line.indexOf(token.text, searchStart);
+      if (column === -1) continue;
+
+      searchStart = column + token.text.length;
+
+      if (token.text === 'obj' && token.style === 'keyword') {
+        skipObjectId = true;
+        continue;
+      }
+
+      if (token.style !== 'variableName') continue;
+      if (skipObjectId) {
+        skipObjectId = false;
+        continue;
+      }
+
+      const nodeId = objectAliases.get(getChannelKey(currentSection, token.text));
+      if (!nodeId) continue;
+
+      const from = lineStarts[lineIndex] + column;
+      ranges.push({
+        from,
+        to: from + token.text.length,
+        className: 'cm-patchbay-object-alias-hint',
+        hoverText: `${token.text} = obj ${nodeId}`
       });
     }
   });
@@ -783,7 +842,7 @@ function getPatchbayChannelCompletions(
 ): CompletionResult | null {
   const channels = new Map<string, Completion>();
   const localChannels = getPatchbayLocalChannelNames(context.source, context.section);
-  const objectAliases = getPatchbayObjectAliasNames(context.source, context.section);
+  const objectAliases = getPatchbayObjectAliasesForSection(context.source, context.section);
   const roles = data.channels?.[context.section];
 
   for (const channel of localChannels) {
@@ -794,11 +853,11 @@ function getPatchbayChannelCompletions(
     });
   }
 
-  for (const alias of objectAliases) {
+  for (const [alias, nodeId] of objectAliases) {
     channels.set(alias, {
       label: alias,
       type: 'variable',
-      detail: `${context.section} object alias`
+      detail: nodeId
     });
   }
 
@@ -900,16 +959,19 @@ function getPatchbayLocalChannelNames(source: string, section: PatchbaySection):
   return channelNames;
 }
 
-function getPatchbayObjectAliasNames(source: string, section: PatchbaySection): Set<string> {
-  const aliasNames = new Set<string>();
+function getPatchbayObjectAliasesForSection(
+  source: string,
+  section: PatchbaySection
+): Map<string, string> {
+  const aliases = new Map<string, string>();
 
-  for (const alias of getPatchbayObjectAliases(source).keys()) {
+  for (const [alias, nodeId] of getPatchbayObjectAliases(source)) {
     if (alias.startsWith(`${section}\0`)) {
-      aliasNames.add(alias.slice(section.length + 1));
+      aliases.set(alias.slice(section.length + 1), nodeId);
     }
   }
 
-  return aliasNames;
+  return aliases;
 }
 
 function getRoleCompatibleChannels(
