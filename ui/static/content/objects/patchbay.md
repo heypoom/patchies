@@ -1,16 +1,8 @@
-Route named message, audio, and video channels with a compact text patchbay.
-
-## Usage
-
-```text
-patchbay
-```
-
-`patchbay` routes message, audio, and video channels.
+Route named message, audio, and video channels with text-based patchbay.
 
 ## How It Works
 
-`patchbay` is for channels and object ids, not object titles. A name in a route must be either:
+`patchbay` routes by **named channels** and **object ids**. A route name must be either:
 
 1. Declared with `chan` inside the matching section
 2. An existing message channel from `send`, `recv`, or JavaScript `send()` / `recv()` channel usage
@@ -69,7 +61,7 @@ This sends messages from the `svalue` channel into the first compatible message 
 
 ## Multiline Routes
 
-Long routes can continue across lines:
+Long routes can span across lines:
 
 ```text
 [Video]
