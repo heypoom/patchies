@@ -435,6 +435,15 @@
           '.cm-patchbay-local-channel, .cm-patchbay-local-channel *': {
             color: 'rgb(196 181 253)'
           },
+          '.cm-patchbay-object-name, .cm-patchbay-object-name *': {
+            color: 'rgb(253 224 171) !important'
+          },
+          '.cm-patchbay-object-assignment, .cm-patchbay-object-assignment *': {
+            color: 'rgb(224 231 255) !important'
+          },
+          '.cm-patchbay-object-keyword, .cm-patchbay-object-keyword *': {
+            color: 'rgb(255, 202, 105) !important'
+          },
           '.cm-patchbay-role-error': {
             color: 'rgb(252 165 165)',
             textDecoration: 'underline wavy rgb(248 113 113)',

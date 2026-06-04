@@ -38,6 +38,30 @@ export type PatchbayLocalChannelRange = {
   className: string;
 };
 
+export type PatchbayObjectNameRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
+export type PatchbayObjectKeywordRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
+export type PatchbayObjectAssignmentRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
+export type PatchbayObjectIdRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
 export type PatchbayObjectLinkRange = {
   from: number;
   to: number;
@@ -134,10 +158,13 @@ export function getPatchbayChannelLinkRanges(
   let currentSection: PatchbaySection | undefined;
 
   source.split(/\r?\n/).forEach((line, lineIndex) => {
+    const lineTokens = tokenizePatchbayLine(line);
+    if (isObjectAliasDeclarationTokens(lineTokens)) return;
+
     let searchStart = 0;
     let skipObjectId = false;
 
-    for (const token of tokenizePatchbayLine(line)) {
+    for (const token of lineTokens) {
       const column = line.indexOf(token.text, searchStart);
       if (column === -1) continue;
 
@@ -296,6 +323,171 @@ export function getPatchbayObjectLinkRanges(source: string): PatchbayObjectLinkR
 
       previousWasObjectKeyword = false;
     }
+  });
+
+  return ranges;
+}
+
+export function getPatchbayObjectKeywordRanges(source: string): PatchbayObjectKeywordRange[] {
+  return getPatchbayObjectReferenceTokenRanges(source, 'keyword', 'cm-patchbay-object-keyword');
+}
+
+export function getPatchbayObjectAssignmentRanges(source: string): PatchbayObjectAssignmentRange[] {
+  return getPatchbayObjectAliasTokenRanges(source, 1, 'cm-patchbay-object-assignment');
+}
+
+export function getPatchbayObjectNameRanges(source: string): PatchbayObjectNameRange[] {
+  const lineStarts = getLineStarts(source);
+  const objectAliases = getPatchbayObjectAliases(source);
+  const ranges = getPatchbayObjectAliasTokenRanges(source, 0, 'cm-patchbay-object-name');
+  const seenRanges = new Set(ranges.map((range) => `${range.from}:${range.to}`));
+  let currentSection: PatchbaySection | undefined;
+
+  source.split(/\r?\n/).forEach((line, lineIndex) => {
+    const lineTokens = tokenizePatchbayLine(line);
+    if (isObjectAliasDeclarationTokens(lineTokens)) return;
+
+    let searchStart = 0;
+    let skipObjectId = false;
+
+    for (const token of lineTokens) {
+      const column = line.indexOf(token.text, searchStart);
+      if (column === -1) continue;
+
+      searchStart = column + token.text.length;
+
+      const section = parseSectionToken(token);
+      if (section) {
+        currentSection = section;
+        continue;
+      }
+
+      if (token.text === 'obj' && token.style === 'keyword') {
+        skipObjectId = true;
+        continue;
+      }
+
+      if (token.style !== 'variableName') continue;
+      if (skipObjectId) {
+        skipObjectId = false;
+        continue;
+      }
+      if (!currentSection) continue;
+      if (!objectAliases.has(getChannelKey(currentSection, token.text))) continue;
+
+      const from = lineStarts[lineIndex] + column;
+      const rangeKey = `${from}:${from + token.text.length}`;
+      if (seenRanges.has(rangeKey)) continue;
+
+      seenRanges.add(rangeKey);
+      ranges.push({
+        from,
+        to: from + token.text.length,
+        className: 'cm-patchbay-object-name'
+      });
+    }
+  });
+
+  return ranges;
+}
+
+export function getPatchbayObjectIdRanges(source: string): PatchbayObjectIdRange[] {
+  return getPatchbayObjectReferenceTokenRanges(source, 'id', 'cm-patchbay-object-id');
+}
+
+function getPatchbayObjectReferenceTokenRanges(
+  source: string,
+  tokenKind: 'keyword' | 'id',
+  className: string
+): Array<{ from: number; to: number; className: string }> {
+  const lineStarts = getLineStarts(source);
+  const ranges: Array<{ from: number; to: number; className: string }> = [];
+
+  source.split(/\r?\n/).forEach((line, lineIndex) => {
+    let searchStart = 0;
+    let previousWasObjectKeyword = false;
+
+    for (const token of tokenizePatchbayLine(line)) {
+      const column = line.indexOf(token.text, searchStart);
+      if (column === -1) continue;
+
+      searchStart = column + token.text.length;
+
+      if (token.text === 'obj' && token.style === 'keyword') {
+        previousWasObjectKeyword = true;
+
+        if (tokenKind === 'keyword') {
+          const from = lineStarts[lineIndex] + column;
+          ranges.push({ from, to: from + token.text.length, className });
+        }
+
+        continue;
+      }
+
+      if (previousWasObjectKeyword && token.style === 'variableName') {
+        if (tokenKind === 'id') {
+          const nodeId = token.text.replace(/:\d+$/, '');
+          const from = lineStarts[lineIndex] + column;
+          ranges.push({ from, to: from + nodeId.length, className });
+        }
+
+        previousWasObjectKeyword = false;
+        continue;
+      }
+
+      previousWasObjectKeyword = false;
+    }
+  });
+
+  return ranges;
+}
+
+function isObjectAliasDeclarationTokens(tokens: PatchbayLineToken[]): boolean {
+  return (
+    tokens[0]?.style === 'variableName' &&
+    tokens[1]?.text === '=' &&
+    tokens[1]?.style === 'operator' &&
+    tokens[2]?.text === 'obj' &&
+    tokens[2]?.style === 'keyword' &&
+    tokens[3]?.style === 'variableName'
+  );
+}
+
+function getPatchbayObjectAliasTokenRanges(
+  source: string,
+  tokenIndex: 0 | 1 | 2 | 3,
+  className: string
+): Array<{ from: number; to: number; className: string }> {
+  const lineStarts = getLineStarts(source);
+  const ranges: Array<{ from: number; to: number; className: string }> = [];
+  let currentSection: PatchbaySection | undefined;
+
+  source.split(/\r?\n/).forEach((line, lineIndex) => {
+    const tokens = tokenizePatchbayLine(line);
+    const section = parseSectionToken(tokens[0]);
+    if (section) {
+      currentSection = section;
+      return;
+    }
+
+    if (!currentSection || !isObjectAliasDeclarationTokens(tokens)) {
+      return;
+    }
+
+    const previousToken = tokenIndex > 0 ? tokens[tokenIndex - 1] : undefined;
+    const token = tokens[tokenIndex];
+    const searchStart = previousToken
+      ? line.indexOf(previousToken.text) + previousToken.text.length
+      : 0;
+    const column = line.indexOf(token.text, searchStart);
+    if (column === -1) return;
+
+    const from = lineStarts[lineIndex] + column;
+    ranges.push({
+      from,
+      to: from + token.text.length,
+      className
+    });
   });
 
   return ranges;

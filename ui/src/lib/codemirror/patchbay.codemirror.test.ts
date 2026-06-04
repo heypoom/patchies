@@ -5,7 +5,11 @@ import {
   getPatchbayChannelLinkRanges,
   getPatchbayDiagnosticRanges,
   getPatchbayLocalChannelRanges,
+  getPatchbayObjectAssignmentRanges,
+  getPatchbayObjectIdRanges,
+  getPatchbayObjectKeywordRanges,
   getPatchbayObjectLinkRanges,
+  getPatchbayObjectNameRanges,
   tokenizePatchbayLine
 } from './patchbay.codemirror';
 
@@ -279,6 +283,71 @@ Edge = obj glsl-34`;
         to: 49,
         className: 'cm-patchbay-object-link',
         nodeId: 'glsl-34'
+      }
+    ]);
+  });
+
+  it('returns distinct syntax ranges for object alias declarations', () => {
+    const source = `[Video]
+chan Out
+Src = obj hydra-39
+Edge = obj glsl-34
+Src -> Out`;
+
+    expect(getPatchbayObjectNameRanges(source)).toEqual([
+      {
+        from: 17,
+        to: 20,
+        className: 'cm-patchbay-object-name'
+      },
+      {
+        from: 36,
+        to: 40,
+        className: 'cm-patchbay-object-name'
+      },
+      {
+        from: 55,
+        to: 58,
+        className: 'cm-patchbay-object-name'
+      }
+    ]);
+
+    expect(getPatchbayObjectAssignmentRanges(source)).toEqual([
+      {
+        from: 21,
+        to: 22,
+        className: 'cm-patchbay-object-assignment'
+      },
+      {
+        from: 41,
+        to: 42,
+        className: 'cm-patchbay-object-assignment'
+      }
+    ]);
+
+    expect(getPatchbayObjectKeywordRanges(source)).toEqual([
+      {
+        from: 23,
+        to: 26,
+        className: 'cm-patchbay-object-keyword'
+      },
+      {
+        from: 43,
+        to: 46,
+        className: 'cm-patchbay-object-keyword'
+      }
+    ]);
+
+    expect(getPatchbayObjectIdRanges(source)).toEqual([
+      {
+        from: 27,
+        to: 35,
+        className: 'cm-patchbay-object-id'
+      },
+      {
+        from: 47,
+        to: 54,
+        className: 'cm-patchbay-object-id'
       }
     ]);
   });

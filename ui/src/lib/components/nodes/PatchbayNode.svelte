@@ -8,7 +8,10 @@
     getPatchbayChannelLinkRanges,
     getPatchbayDiagnosticRanges,
     getPatchbayLocalChannelRanges,
-    getPatchbayObjectLinkRanges
+    getPatchbayObjectAssignmentRanges,
+    getPatchbayObjectKeywordRanges,
+    getPatchbayObjectLinkRanges,
+    getPatchbayObjectNameRanges
   } from '$lib/codemirror/patchbay.codemirror';
   import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
   import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
@@ -62,6 +65,9 @@
       to: range.to,
       className: range.className
     })),
+    ...getPatchbayObjectNameRanges(code),
+    ...getPatchbayObjectAssignmentRanges(code),
+    ...getPatchbayObjectKeywordRanges(code),
     ...getPatchbayLocalChannelRanges(code),
     ...getPatchbayChannelLinkRanges(code, {
       message: {
