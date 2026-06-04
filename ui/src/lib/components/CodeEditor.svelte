@@ -212,6 +212,7 @@
   let editorElement: HTMLDivElement;
   let editorView: EditorView | null = $state(null);
   let isAltNavigationActive = $state(false);
+  let altHoveredDecoration: Element | null = null;
   const viewport = useViewport();
   let isInternalUpdate = false; // Flag to prevent loops when user types
   let valueOnFocus: string | null = null; // Track value at focus for undo commit
@@ -275,11 +276,33 @@
   function setAltNavigationActive(event: KeyboardEvent) {
     if (event.key === 'Alt') {
       isAltNavigationActive = event.type === 'keydown';
+      if (!isAltNavigationActive) {
+        clearAltHoveredDecoration();
+      }
     }
   }
 
   function handleWindowBlur() {
     isAltNavigationActive = false;
+    clearAltHoveredDecoration();
+  }
+
+  function clearAltHoveredDecoration() {
+    altHoveredDecoration?.classList.remove('cm-alt-navigation-hover');
+    altHoveredDecoration = null;
+  }
+
+  function setAltHoveredDecoration(decoration: Element | null) {
+    if (decoration === altHoveredDecoration) return;
+
+    clearAltHoveredDecoration();
+    altHoveredDecoration = decoration;
+    altHoveredDecoration?.classList.add('cm-alt-navigation-hover');
+  }
+
+  function getInlineDecorationTarget(event: Event) {
+    const target = event.target instanceof Element ? event.target : null;
+    return target?.closest('[data-inline-decoration]') ?? null;
   }
 
   onMount(async () => {
@@ -376,8 +399,7 @@
           click: (event) => {
             if (!event.altKey) return false;
 
-            const target = event.target instanceof Element ? event.target : null;
-            const decoration = target?.closest('[data-inline-decoration]');
+            const decoration = getInlineDecorationTarget(event);
 
             const data = decoration?.getAttribute('data-inline-decoration');
             if (!data) return false;
@@ -386,6 +408,19 @@
             event.stopPropagation();
             onaltdecorationclick?.(data);
             return true;
+          },
+          mousemove: (event) => {
+            if (!event.altKey) {
+              clearAltHoveredDecoration();
+              return false;
+            }
+
+            setAltHoveredDecoration(getInlineDecorationTarget(event));
+            return false;
+          },
+          mouseleave: () => {
+            clearAltHoveredDecoration();
+            return false;
           }
         }),
 
@@ -729,8 +764,13 @@
     border-left-color: rgb(244 244 245) !important;
   }
 
-  :global(.code-editor-container.cm-alt-navigation-active .cm-patchbay-channel-link),
-  :global(.code-editor-container.cm-alt-navigation-active .cm-patchbay-object-link) {
+  :global(
+    .code-editor-container.cm-alt-navigation-active
+      .cm-patchbay-channel-link.cm-alt-navigation-hover
+  ),
+  :global(
+    .code-editor-container.cm-alt-navigation-active .cm-patchbay-object-link.cm-alt-navigation-hover
+  ) {
     cursor: pointer;
     color: rgb(147 197 253);
     text-decoration: underline;
