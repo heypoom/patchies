@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
+import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
+import { setPatchbayVideoRuntime } from '$lib/patchbay/patchbay-video-runtime';
 import { PatchbayObject } from './PatchbayObject';
 
 import type { ObjectContext } from '../ObjectContext';
@@ -197,6 +199,56 @@ describe('PatchbayObject', () => {
     );
 
     object.destroy();
+    registry.unsubscribe(source, sourceNodeId);
+    registry.unsubscribe(destination, destinationNodeId);
+  });
+
+  it('registers video patchbay routes as hidden recv.vdo to send.vdo pairs', () => {
+    const suffix = crypto.randomUUID();
+    const source = `video-source-${suffix}`;
+    const bus = `video-bus-${suffix}`;
+    const destination = `video-destination-${suffix}`;
+    const sourceNodeId = `send-video-${suffix}`;
+    const destinationNodeId = `recv-video-${suffix}`;
+    const registry = VideoChannelRegistry.getInstance();
+    const registeredRoutes: Array<{ routeId: string; from: string; to: string }> = [];
+    const unregisteredRoutes: string[] = [];
+    const restoreVideoRuntime = setPatchbayVideoRuntime({
+      registerRoute(routeId, from, to) {
+        registeredRoutes.push({ routeId, from, to });
+      },
+      unregisterRoute(routeId) {
+        unregisteredRoutes.push(routeId);
+      }
+    });
+
+    registry.subscribe(source, sourceNodeId, 'send');
+    registry.subscribe(destination, destinationNodeId, 'recv');
+
+    const { object } = createPatchbay(`
+      [Video]
+      chan ${bus}
+      ${source} -> ${bus} -> ${destination}
+    `);
+
+    expect(object.diagnostics).toEqual([]);
+    expect(registeredRoutes).toEqual([
+      {
+        routeId: expect.stringContaining(`video-route:${source}->${bus}`),
+        from: source,
+        to: bus
+      },
+      {
+        routeId: expect.stringContaining(`video-route:${bus}->${destination}`),
+        from: bus,
+        to: destination
+      }
+    ]);
+
+    object.destroy();
+    expect(unregisteredRoutes).toEqual(registeredRoutes.map(({ routeId }) => routeId));
+
+    restoreVideoRuntime();
     registry.unsubscribe(source, sourceNodeId);
     registry.unsubscribe(destination, destinationNodeId);
   });

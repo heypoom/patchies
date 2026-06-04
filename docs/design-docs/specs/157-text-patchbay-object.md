@@ -241,8 +241,7 @@ Implement the feature as three separable pieces:
 
 2. Patchbay runtime adapter
    - Owns registrations for one patchbay node instance.
-   - Applies resolved message and audio routes to existing channel systems.
-   - Leaves video route application for a later implementation phase.
+   - Applies resolved message, audio, and video routes to existing channel systems.
    - Cleans up old registrations before applying new valid routes.
 
 3. Patchbay editor component

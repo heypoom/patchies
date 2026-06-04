@@ -94,27 +94,26 @@
     create() {
       return Decoration.none;
     },
-    update(decorations, tr) {
-      decorations = decorations.map(tr.changes);
+    update(decorations, tx) {
+      decorations = decorations.map(tx.changes);
 
-      for (let effect of tr.effects) {
+      for (let effect of tx.effects) {
         if (effect.is(setInlineDecorationsEffect)) {
           if (effect.value === null || effect.value.length === 0) {
             decorations = Decoration.none;
           } else {
-            decorations = Decoration.set(
-              effect.value
-                .filter(({ from, to }) => from < to && from >= 0 && to <= tr.state.doc.length)
-                .map(({ from, to, className, data }) =>
-                  Decoration.mark({
-                    class: className,
-                    attributes: {
-                      ...(data ? { 'data-inline-decoration': data } : {})
-                    }
-                  }).range(from, to)
-                ),
-              true
-            );
+            const decor = effect.value
+              .filter(({ from, to }) => from < to && from >= 0 && to <= tx.state.doc.length)
+              .map(({ from, to, className, data }) =>
+                Decoration.mark({
+                  class: className,
+                  attributes: {
+                    ...(data ? { 'data-inline-decoration': data } : {})
+                  }
+                }).range(from, to)
+              );
+
+            decorations = Decoration.set(decor, true);
           }
         }
       }
@@ -286,6 +285,7 @@
   onMount(async () => {
     if (editorElement) {
       editorElement.addEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
+
       window.addEventListener('keydown', setAltNavigationActive);
       window.addEventListener('keyup', setAltNavigationActive);
       window.addEventListener('blur', handleWindowBlur);
@@ -301,6 +301,7 @@
 
       const extensions = [
         keymap.of(searchKeymap),
+
         Prec.highest(
           keymap.of([
             {
@@ -323,6 +324,7 @@
             }
           ])
         ),
+
         drawSelection(),
         minimalSetup,
 
@@ -376,6 +378,7 @@
 
             const target = event.target instanceof Element ? event.target : null;
             const decoration = target?.closest('[data-inline-decoration]');
+
             const data = decoration?.getAttribute('data-inline-decoration');
             if (!data) return false;
 

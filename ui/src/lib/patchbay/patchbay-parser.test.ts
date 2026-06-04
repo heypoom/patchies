@@ -215,4 +215,71 @@ describe('analyzePatchbay', () => {
       }
     ]);
   });
+
+  it('expands video route chains using video sender and receiver roles', () => {
+    const result = analyzePatchbay(
+      `
+      [Video]
+      chan Mix
+      Camera -> Mix -> Screen
+      `,
+      {
+        videoSources: new Set(['Camera']),
+        videoTargets: new Set(['Screen'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.videoRoutes).toEqual([
+      { from: 'Camera', to: 'Mix' },
+      { from: 'Mix', to: 'Screen' }
+    ]);
+  });
+
+  it('rejects video receiver-only channels as route sources', () => {
+    const result = analyzePatchbay(
+      `
+      [Video]
+      chan Mix
+      Inbound -> Mix
+      `,
+      {
+        videoTargets: new Set(['Inbound'])
+      }
+    );
+
+    expect(result.videoRoutes).toEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        severity: 'error',
+        code: 'receiver-as-source',
+        section: 'video',
+        name: 'Inbound'
+      }
+    ]);
+  });
+
+  it('rejects video sender-only channels as route targets', () => {
+    const result = analyzePatchbay(
+      `
+      [Video]
+      chan Mix
+      Mix -> Outbound
+      `,
+      {
+        videoSources: new Set(['Outbound']),
+        videoTargets: new Set()
+      }
+    );
+
+    expect(result.videoRoutes).toEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        severity: 'error',
+        code: 'sender-as-target',
+        section: 'video',
+        name: 'Outbound'
+      }
+    ]);
+  });
 });

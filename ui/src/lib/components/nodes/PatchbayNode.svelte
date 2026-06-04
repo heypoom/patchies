@@ -10,6 +10,7 @@
     getPatchbayLocalChannelRanges
   } from '$lib/codemirror/patchbay.codemirror';
   import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
+  import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
   import { PatchbayObject } from '$lib/objects/v2/nodes/PatchbayObject';
   import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
   import { requestFitView } from '../../../stores/ui.store';
@@ -35,10 +36,12 @@
   const [defaultWidth, defaultHeight] = [320, 220];
   const channelRegistry = MessageChannelRegistry.getInstance();
   const audioChannelRegistry = AudioChannelRegistry.getInstance();
+  const videoChannelRegistry = VideoChannelRegistry.getInstance();
 
   let patchbay: PatchbayObject | null = null;
   let unsubscribeRegistryChange: (() => void) | null = null;
   let unsubscribeAudioRegistryChange: (() => void) | null = null;
+  let unsubscribeVideoRegistryChange: (() => void) | null = null;
   let diagnostics = $state<PatchbayDiagnostic[]>([]);
   const code = $derived(data.code ?? '');
   const lineErrors = $derived.by(() => {
@@ -67,6 +70,10 @@
       audio: {
         senders: new Set(audioChannelRegistry.getSenderChannelNames()),
         receivers: new Set(audioChannelRegistry.getReceiverChannelNames())
+      },
+      video: {
+        senders: new Set(videoChannelRegistry.getSenderChannelNames()),
+        receivers: new Set(videoChannelRegistry.getReceiverChannelNames())
       }
     }).map((range) => ({
       from: range.from,
@@ -104,7 +111,9 @@
     const nodeIds =
       section === 'audio'
         ? audioChannelRegistry.getChannelNodeIds(channel)
-        : channelRegistry.getChannelNodeIds(channel);
+        : section === 'video'
+          ? videoChannelRegistry.getChannelNodeIds(channel)
+          : channelRegistry.getChannelNodeIds(channel);
 
     if (nodeIds.length === 0) return;
 
@@ -130,6 +139,9 @@
     unsubscribeAudioRegistryChange = audioChannelRegistry.onChannelsChange(() => {
       applyPatchbayCode();
     });
+    unsubscribeVideoRegistryChange = videoChannelRegistry.onChannelsChange(() => {
+      applyPatchbayCode();
+    });
     applyPatchbayCode();
   });
 
@@ -138,6 +150,8 @@
     unsubscribeRegistryChange = null;
     unsubscribeAudioRegistryChange?.();
     unsubscribeAudioRegistryChange = null;
+    unsubscribeVideoRegistryChange?.();
+    unsubscribeVideoRegistryChange = null;
     patchbay?.destroy();
     patchbay = null;
   });

@@ -18,6 +18,7 @@ import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
+import { VideoChannelRegistry } from './VideoChannelRegistry';
 import { PatchiesEventBus } from '../eventbus/PatchiesEventBus';
 import type {
   RequestWorkerVideoFramesEvent,
@@ -69,6 +70,9 @@ export class GLSystem {
   /** Stores FBO-compatible edges */
   public edges: REdge[] = [];
 
+  private patchbayVideoEdges = new Map<string, REdge>();
+  private patchbayVideoNodeIds = new Map<string, { recvId: string; sendId: string }>();
+
   private static instance: GLSystem;
   private hashes = { nodes: '', edges: '', graph: '' };
   private renderGraph: RenderGraph | null = null;
@@ -88,6 +92,7 @@ export class GLSystem {
   /** Tracks channel subscriptions made on behalf of render worker nodes */
   private renderWorkerChannelSubscriptions = new Map<string, Set<string>>();
   private channelRegistry = MessageChannelRegistry.getInstance();
+  private videoChannelRegistry = VideoChannelRegistry.getInstance();
   private floatTextureUploadBuffers = new FloatTextureUploadBufferPool();
 
   /** Cached singleton references to avoid repeated dynamic imports on hot paths */
@@ -143,8 +148,10 @@ export class GLSystem {
       GLSystem.instance = new GLSystem();
     }
 
-    // @ts-expect-error -- expose globally for debugging
-    window.glSystem = GLSystem.instance;
+    if (typeof window !== 'undefined') {
+      // @ts-expect-error -- expose globally for debugging
+      window.glSystem = GLSystem.instance;
+    }
 
     return GLSystem.instance;
   }
@@ -742,6 +749,8 @@ export class GLSystem {
     data: Record<string, unknown>,
     options?: { force?: boolean }
   ): boolean {
+    this.unregisterVideoChannelNode(id);
+
     const nodeIndex = this.nodes.findIndex((node) => node.id === id);
 
     if (nodeIndex === -1) {
@@ -751,7 +760,39 @@ export class GLSystem {
       this.nodes[nodeIndex] = { ...node, type, data };
     }
 
+    this.registerVideoChannelNode(id, type, data);
+
     return this.updateRenderGraph(options?.force ?? false);
+  }
+
+  registerPatchbayVideoRoute(routeId: string, from: string, to: string): void {
+    this.unregisterPatchbayVideoRoute(routeId);
+
+    const recvId = `${routeId}:video-recv:${from}`;
+    const sendId = `${routeId}:video-send:${to}`;
+
+    this.patchbayVideoNodeIds.set(routeId, { recvId, sendId });
+    this.patchbayVideoEdges.set(routeId, {
+      id: `${routeId}:video-edge:${from}->${to}`,
+      source: recvId,
+      target: sendId,
+      sourceHandle: 'video-out',
+      targetHandle: 'video-in-0'
+    });
+
+    this.upsertNode(recvId, 'recv.vdo', { channel: from }, { force: true });
+    this.upsertNode(sendId, 'send.vdo', { channel: to }, { force: true });
+    this.updateRenderGraph(true);
+  }
+
+  unregisterPatchbayVideoRoute(routeId: string): void {
+    const nodeIds = this.patchbayVideoNodeIds.get(routeId);
+    if (!nodeIds) return;
+
+    this.patchbayVideoEdges.delete(routeId);
+    this.patchbayVideoNodeIds.delete(routeId);
+    this.removeNode(nodeIds.recvId);
+    this.removeNode(nodeIds.sendId);
   }
 
   setUniformData(nodeId: string, uniformName: string, uniformValue: UserUniformValue) {
@@ -797,6 +838,8 @@ export class GLSystem {
   removeNode(nodeId: string) {
     const node = this.nodes.find((n) => n.id === nodeId);
     if (!node) return;
+
+    this.unregisterVideoChannelNode(nodeId);
 
     // Cleanup persistent external texture.
     if (isExternalTextureNode(node.type as RenderNode['type'])) {
@@ -859,9 +902,11 @@ export class GLSystem {
   }
 
   private updateRenderGraph(force = false) {
-    if (!force && !this.hasFlowGraphChanged(this.nodes, this.edges)) return false;
+    const edges = this.getAllRenderEdges();
 
-    const graph = buildRenderGraph(this.nodes, this.edges);
+    if (!force && !this.hasFlowGraphChanged(this.nodes, edges)) return false;
+
+    const graph = buildRenderGraph(this.nodes, edges);
     if (!force && !this.hasHashChanged('graph', graph)) return false;
 
     this.send('buildRenderGraph', { graph });
@@ -879,6 +924,31 @@ export class GLSystem {
   // TODO: optimize this!
   hasFlowGraphChanged(nodes: RNode[], edges: REdge[]) {
     return this.hasHashChanged('nodes', nodes) || this.hasHashChanged('edges', edges);
+  }
+
+  private getAllRenderEdges(): REdge[] {
+    return [...this.edges, ...this.patchbayVideoEdges.values()];
+  }
+
+  private registerVideoChannelNode(
+    nodeId: string,
+    type: RenderNode['type'],
+    data: Record<string, unknown>
+  ): void {
+    const channel = data.channel;
+    if (typeof channel !== 'string' || channel.length === 0) return;
+
+    if (type === 'send.vdo') {
+      this.videoChannelRegistry.subscribe(channel, nodeId, 'send');
+    }
+
+    if (type === 'recv.vdo') {
+      this.videoChannelRegistry.subscribe(channel, nodeId, 'recv');
+    }
+  }
+
+  private unregisterVideoChannelNode(nodeId: string): void {
+    this.videoChannelRegistry.unsubscribeAll(nodeId);
   }
 
   hasHashChanged<K extends keyof GLSystem['hashes'], T>(key: K, object: T) {

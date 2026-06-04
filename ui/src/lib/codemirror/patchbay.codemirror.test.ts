@@ -129,6 +129,9 @@ Clock -> Local -> Lights`;
 foo -> bar
 
 [Audio]
+foo -> bar
+
+[Video]
 foo -> bar`;
 
     expect(
@@ -140,13 +143,19 @@ foo -> bar`;
         audio: {
           senders: new Set(['bar']),
           receivers: new Set(['foo'])
+        },
+        video: {
+          senders: new Set(['foo']),
+          receivers: new Set(['bar'])
         }
       }).map(({ channel, section, role }) => ({ channel, section, role }))
     ).toEqual([
       { channel: 'foo', section: 'message', role: 'sender' },
       { channel: 'bar', section: 'message', role: 'receiver' },
       { channel: 'foo', section: 'audio', role: 'receiver' },
-      { channel: 'bar', section: 'audio', role: 'sender' }
+      { channel: 'bar', section: 'audio', role: 'sender' },
+      { channel: 'foo', section: 'video', role: 'sender' },
+      { channel: 'bar', section: 'video', role: 'receiver' }
     ]);
   });
 

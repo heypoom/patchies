@@ -35,6 +35,8 @@ export type PatchbayKnownChannels = Partial<Record<PatchbaySection, Set<string>>
   messageTargets?: Set<string>;
   audioSources?: Set<string>;
   audioTargets?: Set<string>;
+  videoSources?: Set<string>;
+  videoTargets?: Set<string>;
 };
 
 export type PatchbayAnalysis = {
@@ -366,6 +368,9 @@ export function analyzePatchbay(
   const audioKnownChannels =
     knownChannels.audio ??
     new Set([...(knownChannels.audioSources ?? []), ...(knownChannels.audioTargets ?? [])]);
+  const videoKnownChannels =
+    knownChannels.video ??
+    new Set([...(knownChannels.videoSources ?? []), ...(knownChannels.videoTargets ?? [])]);
 
   return {
     diagnostics,
@@ -408,8 +413,20 @@ export function analyzePatchbay(
     videoRoutes: analyzeSection(
       'video',
       states.video,
-      knownChannels.video ?? new Set(),
-      diagnostics
+      videoKnownChannels,
+      diagnostics,
+      knownChannels.videoSources || knownChannels.videoTargets
+        ? {
+            sources: new Set([
+              ...states.video.declarations.keys(),
+              ...(knownChannels.videoSources ?? [])
+            ]),
+            targets: new Set([
+              ...states.video.declarations.keys(),
+              ...(knownChannels.videoTargets ?? [])
+            ])
+          }
+        : undefined
     ),
     channels: {
       message: new Set(channels.message.keys()),
