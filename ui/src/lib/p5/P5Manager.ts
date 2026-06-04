@@ -39,6 +39,15 @@ interface P5SketchConfig {
    * Used for error line highlighting.
    */
   onRuntimeError?: (error: Error) => void;
+
+  onPreserveFrame?: (snapshot: P5CanvasSnapshot) => void;
+  onFrameReady?: () => void;
+}
+
+interface P5CanvasSnapshot {
+  canvas: HTMLCanvasElement;
+  displayWidth: number;
+  displayHeight: number;
 }
 
 export class P5Manager {
@@ -65,8 +74,18 @@ export class P5Manager {
 
   async updateCode(config: P5SketchConfig) {
     if (this.p5) {
+      // @ts-expect-error -- p5 exposes the live canvas at runtime.
+      const canvas: HTMLCanvasElement | undefined = this.p5.canvas;
+
+      const displayWidth = canvas?.clientWidth || parseFloat(canvas?.style.width ?? '') || 0;
+      const displayHeight = canvas?.clientHeight || parseFloat(canvas?.style.height ?? '') || 0;
+
       this.p5.remove();
       this.p5 = null;
+
+      if (canvas && displayWidth > 0 && displayHeight > 0) {
+        config.onPreserveFrame?.({ canvas, displayWidth, displayHeight });
+      }
     }
 
     if (!this.container) return;
@@ -105,6 +124,15 @@ export class P5Manager {
     const sketch = async (p: Sketch) => {
       const onRuntimeError = config.onRuntimeError;
 
+      let frameReady = false;
+
+      const signalFrameReady = () => {
+        if (frameReady) return;
+
+        frameReady = true;
+        config.onFrameReady?.();
+      };
+
       try {
         const sketchConfig: P5SketchConfig = {
           ...config,
@@ -126,6 +154,10 @@ export class P5Manager {
         try {
           await userCode?.preload?.call(p);
           await userCode?.setup?.call(p);
+
+          if (!userCode?.draw) {
+            requestAnimationFrame(signalFrameReady);
+          }
         } catch (error) {
           if (error instanceof Error) {
             onRuntimeError?.(error);
@@ -138,6 +170,10 @@ export class P5Manager {
         p.setup = function () {
           try {
             userCode?.setup?.call(p);
+
+            if (!userCode?.draw) {
+              requestAnimationFrame(signalFrameReady);
+            }
           } catch (error) {
             if (error instanceof Error) {
               onRuntimeError?.(error);
@@ -151,6 +187,8 @@ export class P5Manager {
           profiler.measure(nodeId, 'draw', () => {
             try {
               userCode?.draw?.call(p);
+
+              signalFrameReady();
               sendBitmap();
             } catch (error) {
               if (error instanceof Error) {

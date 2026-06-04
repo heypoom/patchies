@@ -77,6 +77,7 @@
   let preloadCanvasWidth = $state<number | undefined>(0);
   let preloadCanvasHeight = $state<number | undefined>(0);
   let clearDimensionsTimeout: ReturnType<typeof setTimeout> | null = null;
+  let preservedFrameCanvas: HTMLCanvasElement | null = null;
 
   function setCanvasDimensionsFromCode(nextCode = code) {
     const dimensions = parseCanvasDimensions(nextCode);
@@ -111,6 +112,40 @@
 
       clearDimensionsTimeout = null;
     }, 150);
+  }
+
+  function clearPreservedFrameCanvas() {
+    preservedFrameCanvas?.remove();
+    preservedFrameCanvas = null;
+  }
+
+  function preserveFrameCanvas({
+    canvas,
+    displayWidth,
+    displayHeight
+  }: {
+    canvas: HTMLCanvasElement;
+    displayWidth: number;
+    displayHeight: number;
+  }) {
+    if (!containerElement) return;
+
+    clearPreservedFrameCanvas();
+    canvas.classList.add('patchies-p5-preserved-frame');
+
+    Object.assign(canvas.style, {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      width: `${displayWidth}px`,
+      height: `${displayHeight}px`,
+      margin: '0',
+      pointerEvents: 'none',
+      zIndex: '1'
+    });
+
+    containerElement.appendChild(canvas);
+    preservedFrameCanvas = canvas;
   }
 
   // Create custom console for routing output to VirtualConsole
@@ -157,6 +192,7 @@
   });
 
   onDestroy(() => {
+    clearPreservedFrameCanvas();
     p5Manager?.destroy();
     glSystem.removeNode(nodeId);
     messageContext?.destroy();
@@ -263,7 +299,9 @@
           settings: settingsAPI,
           pauseOnMount: onMount && !!data.paused,
           customConsole,
-          onRuntimeError: (error) => handleRuntimeError(error, nextCode)
+          onRuntimeError: (error) => handleRuntimeError(error, nextCode),
+          onPreserveFrame: preserveFrameCanvas,
+          onFrameReady: clearPreservedFrameCanvas
         });
 
         measureWidth(100);
@@ -336,6 +374,7 @@
         bind:this={containerElement}
         class={[
           'rounded-md border bg-transparent',
+          'relative overflow-hidden',
           enableDrag && enablePan && enableWheel
             ? 'cursor-grab'
             : [
