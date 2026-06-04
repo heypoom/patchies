@@ -729,7 +729,7 @@ export class GLSystem {
    * and canvas store based on current edges + override.
    **/
   private syncOutputEnabled() {
-    const hasBgOutEdge = this.edges.some((edge) => edge.target.startsWith('bg.out'));
+    const hasBgOutEdge = this.getAllRenderEdges().some((edge) => edge.target.startsWith('bg.out'));
     const outputEnabled = this.overrideOutputNodeId !== null || hasBgOutEdge;
 
     const useBackground =
@@ -788,11 +788,13 @@ export class GLSystem {
     this.upsertNode(recvId, 'recv.vdo', { channel: from }, { force: true });
     this.upsertNode(sendId, 'send.vdo', { channel: to }, { force: true });
     this.updateRenderGraph(true);
+    this.syncOutputEnabled();
   }
 
   registerPatchbayVideoEdge(edgeId: string, edge: REdge): void {
     this.patchbayVideoEdges.set(edgeId, edge);
     this.updateRenderGraph(true);
+    this.syncOutputEnabled();
   }
 
   unregisterPatchbayVideoRoute(routeId: string): void {
@@ -803,11 +805,14 @@ export class GLSystem {
     this.patchbayVideoNodeIds.delete(routeId);
     this.removeNode(nodeIds.recvId);
     this.removeNode(nodeIds.sendId);
+    this.updateRenderGraph(true);
+    this.syncOutputEnabled();
   }
 
   unregisterPatchbayVideoEdge(edgeId: string): void {
     this.patchbayVideoEdges.delete(edgeId);
     this.updateRenderGraph(true);
+    this.syncOutputEnabled();
   }
 
   setUniformData(nodeId: string, uniformName: string, uniformValue: UserUniformValue) {
@@ -1135,7 +1140,7 @@ export class GLSystem {
     // Check all edges (not just FBO-filtered ones) for video connections
     // This allows external texture nodes (webcam, img) to upload when connected
     // to non-FBO nodes like vdo.ninja.push
-    const hasOutgoingVideoEdges = this.edges.some(
+    const hasOutgoingVideoEdges = this.getAllRenderEdges().some(
       (edge) => edge.source === nodeId && /(video-out|video-in|sampler2D)/.test(edge.id)
     );
 

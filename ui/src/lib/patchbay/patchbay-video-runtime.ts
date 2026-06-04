@@ -37,9 +37,10 @@ export function getPatchbayVideoRuntime(): PatchbayVideoRuntime {
 }
 
 export function setPatchbayVideoRuntime(nextRuntime: PatchbayVideoRuntime): () => void {
+  const previousRuntime = runtime;
   runtime = nextRuntime;
 
   return () => {
-    runtime = glSystemRuntime;
+    runtime = previousRuntime;
   };
 }

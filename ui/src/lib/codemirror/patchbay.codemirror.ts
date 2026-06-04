@@ -96,6 +96,8 @@ export type PatchbayCompletionData = {
 
 type PatchbayEndpointCompletionRole = 'source' | 'target' | 'both' | 'any';
 
+const commentLinePattern = /^\s*(?:#|\/\/).*/;
+const commentPrefixPattern = /^\s*(?:#|\/\/)/;
 const identifierPattern = /^[A-Za-z0-9_.~/:-]+/;
 const sectionPattern = /^\[(Message|Audio|Video)\]/i;
 const sectionCompletionOptions: Completion[] = [
@@ -663,7 +665,7 @@ function getLineStarts(source: string): number[] {
 }
 
 function readPatchbayTokenFromText(text: string): PatchbayLineToken | null {
-  const comment = text.match(/^\/\/.*/);
+  const comment = text.match(commentLinePattern);
   if (comment) return { text: comment[0], style: 'comment' };
 
   const section = text.match(sectionPattern);
@@ -751,7 +753,7 @@ function getEndpointCompletionContext(context: CompletionContext): {
   const column = context.pos - line.from;
   const linePrefix = line.text.slice(0, column);
   const lineSuffix = line.text.slice(column);
-  if (linePrefix.includes('//')) return null;
+  if (commentPrefixPattern.test(linePrefix)) return null;
 
   const wordMatch = linePrefix.match(/([A-Za-z0-9_.~/:-]*)$/);
   if (!wordMatch) return null;
@@ -939,7 +941,7 @@ function previousRouteLineWaitsForEndpoint(source: string, lineNumber: number): 
   for (let index = lineNumber - 2; index >= 0; index -= 1) {
     const text = lines[index]?.trim() ?? '';
     if (text === '' || text.startsWith('[') || text.startsWith('chan ')) return false;
-    if (text.startsWith('//') || text.startsWith('# ')) continue;
+    if (commentPrefixPattern.test(text)) continue;
 
     return text.endsWith('->');
   }

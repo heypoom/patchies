@@ -268,7 +268,7 @@
       <Tooltip.Root>
         <Tooltip.Trigger>
           <button
-            class="node-floating-button"
+            class="node-floating-button cursor-pointer"
             onclick={applyPatchbayCode}
             type="button"
             aria-label="Apply patchbay routes"
@@ -282,7 +282,7 @@
       <Tooltip.Root>
         <Tooltip.Trigger>
           <button
-            class="node-floating-button"
+            class="node-floating-button cursor-pointer"
             onclick={() => (showSettings = !showSettings)}
             type="button"
             aria-label={showSettings ? 'Close settings' : 'Open settings'}

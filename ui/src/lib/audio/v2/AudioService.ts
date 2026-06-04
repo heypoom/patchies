@@ -504,7 +504,7 @@ export class AudioService {
   }
 
   private isPatchbayAudioEndpointId(nodeId: string): boolean {
-    return nodeId.includes(':audio-recv:') && nodeId.includes(':audio-send:');
+    return nodeId.includes(':audio-recv:') || nodeId.includes(':audio-send:');
   }
 
   /**

@@ -38,25 +38,36 @@ export class MessageChannelRegistry {
    * Register a sender on a message channel so channel-aware tools can discover it.
    */
   registerSender(channel: string, nodeId: string): void {
+    if (!this.isRealNodeId(nodeId)) return;
+
     if (!this.channels.has(channel)) {
       this.channels.set(channel, { senders: new Set(), receivers: new Map() });
     }
 
-    this.channels.get(channel)!.senders.add(nodeId);
-    this.notifyListeners();
+    const senders = this.channels.get(channel)!.senders;
+    const hadSender = senders.has(nodeId);
+    senders.add(nodeId);
+
+    if (!hadSender) {
+      this.notifyListeners();
+    }
   }
 
   /**
    * Unregister a sender from a message channel.
    */
   unregisterSender(channel: string, nodeId: string): void {
+    if (!this.isRealNodeId(nodeId)) return;
+
     const channelData = this.channels.get(channel);
     if (!channelData) return;
 
-    channelData.senders.delete(nodeId);
+    const hadSender = channelData.senders.delete(nodeId);
 
     this.deleteChannelIfEmpty(channel, channelData);
-    this.notifyListeners();
+    if (hadSender) {
+      this.notifyListeners();
+    }
   }
 
   /**
@@ -120,7 +131,9 @@ export class MessageChannelRegistry {
 
   getSenderChannelNames(): string[] {
     return Array.from(this.channels.entries())
-      .filter(([, channelData]) => channelData.senders.size > 0)
+      .filter(([, channelData]) =>
+        Array.from(channelData.senders).some((nodeId) => this.isRealNodeId(nodeId))
+      )
       .map(([channel]) => channel);
   }
 

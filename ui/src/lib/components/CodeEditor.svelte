@@ -451,10 +451,14 @@
             const data = decoration?.getAttribute('data-inline-decoration');
             if (!data) return false;
 
-            event.preventDefault();
-            event.stopPropagation();
-            onaltdecorationclick?.(data);
-            return true;
+            if (onaltdecorationclick) {
+              event.preventDefault();
+              event.stopPropagation();
+              onaltdecorationclick(data);
+              return true;
+            }
+
+            return false;
           },
           mousemove: (event) => {
             if (!event.altKey) {

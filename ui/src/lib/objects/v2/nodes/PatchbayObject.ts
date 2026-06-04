@@ -46,7 +46,7 @@ export class PatchbayObject implements TextObjectV2 {
   private channelRegistry = MessageChannelRegistry.getInstance();
   private audioChannelRegistry = AudioChannelRegistry.getInstance();
   private videoChannelRegistry = VideoChannelRegistry.getInstance();
-  private activeMessageSubscriptions = new Map<string, string>();
+  private activeMessageSubscriptions = new Map<string, Set<string>>();
   private activeMessageEdges = new Set<string>();
   private activeMessageEndpoints = new Set<string>();
   private activeAudioRoutes = new Map<string, PatchbayRoute>();
@@ -57,6 +57,7 @@ export class PatchbayObject implements TextObjectV2 {
   private unsubscribeRegistryChange: (() => void) | null = null;
   private unsubscribeAudioRegistryChange: (() => void) | null = null;
   private unsubscribeVideoRegistryChange: (() => void) | null = null;
+  private unsubscribeParamsChange: (() => void) | null = null;
   private getNodes: () => Array<Pick<Node, 'id' | 'type' | 'data'>>;
   private lastAppliedSignature: string | null = null;
 
@@ -73,7 +74,7 @@ export class PatchbayObject implements TextObjectV2 {
 
     this.applyCode();
 
-    this.context.onParamsChange((_params, _index, _value) => {
+    this.unsubscribeParamsChange = this.context.onParamsChange((_params, _index, _value) => {
       this.applyCode();
     });
 
@@ -132,6 +133,8 @@ export class PatchbayObject implements TextObjectV2 {
   }
 
   destroy(): void {
+    this.unsubscribeParamsChange?.();
+    this.unsubscribeParamsChange = null;
     this.unsubscribeRegistryChange?.();
     this.unsubscribeRegistryChange = null;
     this.unsubscribeAudioRegistryChange?.();
@@ -180,7 +183,7 @@ export class PatchbayObject implements TextObjectV2 {
           this.channelRegistry.broadcast(destination, message, this.nodeId);
         }
       });
-      this.activeMessageSubscriptions.set(source, subscriberId);
+      this.trackMessageSubscription(source, subscriberId);
     }
 
     for (const route of routes.filter((route) => route.fromEndpoint || route.toEndpoint)) {
@@ -238,7 +241,7 @@ export class PatchbayObject implements TextObjectV2 {
       this.channelRegistry.subscribe(route.from, subscriberId, (message) => {
         getPatchbayMessageRuntime().sendFromEndpoint(sourceNodeId, message);
       });
-      this.activeMessageSubscriptions.set(route.from, subscriberId);
+      this.trackMessageSubscription(route.from, subscriberId);
     }
 
     if (!route.toEndpoint) {
@@ -326,11 +329,19 @@ export class PatchbayObject implements TextObjectV2 {
   }
 
   private clearSubscriptions(): void {
-    for (const [source, subscriberId] of this.activeMessageSubscriptions) {
-      this.channelRegistry.unsubscribe(source, subscriberId);
+    for (const [source, subscriberIds] of this.activeMessageSubscriptions) {
+      for (const subscriberId of subscriberIds) {
+        this.channelRegistry.unsubscribe(source, subscriberId);
+      }
     }
 
     this.activeMessageSubscriptions.clear();
+  }
+
+  private trackMessageSubscription(source: string, subscriberId: string): void {
+    const subscriberIds = this.activeMessageSubscriptions.get(source) ?? new Set<string>();
+    subscriberIds.add(subscriberId);
+    this.activeMessageSubscriptions.set(source, subscriberIds);
   }
 
   private clearMessageEdges(): void {

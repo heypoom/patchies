@@ -39,6 +39,7 @@ export class SendObject implements TextObjectV2 {
   readonly context: ObjectContext;
   private channelRegistry: MessageChannelRegistry;
   private currentChannel: string = '';
+  private unsubscribeParamsChange: (() => void) | null = null;
 
   constructor(nodeId: string, context: ObjectContext) {
     this.nodeId = nodeId;
@@ -54,7 +55,7 @@ export class SendObject implements TextObjectV2 {
   create(): void {
     this.registerChannel(this.getChannel());
 
-    this.context.onParamsChange(() => {
+    this.unsubscribeParamsChange = this.context.onParamsChange(() => {
       const channel = this.getChannel();
 
       if (channel !== this.currentChannel) {
@@ -87,8 +88,13 @@ export class SendObject implements TextObjectV2 {
   }
 
   destroy(): void {
+    this.unsubscribeParamsChange?.();
+    this.unsubscribeParamsChange = null;
+
     if (this.currentChannel) {
       this.channelRegistry.unregisterSender(this.currentChannel, this.nodeId);
     }
+
+    this.currentChannel = '';
   }
 }

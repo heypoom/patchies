@@ -279,8 +279,8 @@ Existing audio channel from send~ / recv~
 ```
 
 ```text
-Compsite
-Unknown video channel. Declare it with `chan Compsite` or create a matching send.vdo / recv.vdo object.
+Composite
+Unknown video channel. Declare it with `chan Composite` or create a matching send.vdo / recv.vdo object.
 ```
 
 Diagnostics are shown inline through line highlighting, token underlines, and hover hints. The object should still render the editor when the DSL is invalid, but invalid routes should not be applied.

@@ -331,6 +331,72 @@ describe('PatchbayObject', () => {
     MessageChannelRegistry.getInstance().unregisterSender(source, `send-${suffix}`);
   });
 
+  it('registers one message source routed to multiple object endpoints', () => {
+    const suffix = crypto.randomUUID();
+    const source = `message-source-${suffix}`;
+    const targetA = `js-a-${suffix}`;
+    const targetB = `js-b-${suffix}`;
+    const registeredEdges: Array<{ routeId: string; edge: unknown }> = [];
+    const unregisteredEdges: string[] = [];
+    const endpointMessages: Array<{ sourceNodeId: string; message: unknown }> = [];
+    const restoreMessageRuntime = setPatchbayMessageRuntime({
+      registerEdge(routeId, edge) {
+        registeredEdges.push({ routeId, edge });
+      },
+      unregisterEdge(routeId) {
+        unregisteredEdges.push(routeId);
+      },
+      registerEndpoint() {},
+      unregisterEndpoint() {},
+      sendFromEndpoint(sourceNodeId, message) {
+        endpointMessages.push({ sourceNodeId, message });
+      }
+    });
+
+    MessageChannelRegistry.getInstance().registerSender(source, `send-${suffix}`);
+
+    const { object } = createPatchbayWithNodes(
+      `
+      [Message]
+      ${source} -> obj ${targetA}:0
+      ${source} -> obj ${targetB}:0
+      `,
+      [
+        { id: targetA, type: 'object', data: { name: 'js' } },
+        { id: targetB, type: 'object', data: { name: 'js' } }
+      ]
+    );
+
+    expect(object.diagnostics).toEqual([]);
+    expect(registeredEdges).toEqual(
+      expect.arrayContaining([
+        {
+          routeId: expect.stringContaining(`message-edge:${source}->obj ${targetA}:0`),
+          edge: expect.objectContaining({
+            target: targetA,
+            targetHandle: 'message-in-0'
+          })
+        },
+        {
+          routeId: expect.stringContaining(`message-edge:${source}->obj ${targetB}:0`),
+          edge: expect.objectContaining({
+            target: targetB,
+            targetHandle: 'message-in-0'
+          })
+        }
+      ])
+    );
+    expect(registeredEdges).toHaveLength(2);
+
+    object.destroy();
+    expect(unregisteredEdges).toEqual(registeredEdges.map(({ routeId }) => routeId));
+    MessageChannelRegistry.getInstance().broadcast(source, 'after-destroy', `send-${suffix}`);
+    expect(endpointMessages).toEqual([]);
+
+    restoreMessageRuntime();
+    MessageChannelRegistry.getInstance().unregisterSender(source, `send-${suffix}`);
+  });
+
   it('routes message object endpoints for general MessageContext nodes', () => {
     const suffix = crypto.randomUUID();
     const sliderNodeId = `slider-${suffix}`;
