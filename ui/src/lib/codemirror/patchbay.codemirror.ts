@@ -84,6 +84,11 @@ const sectionCompletionOptions: Completion[] = [
   { label: '[Video]', type: 'namespace', detail: 'Video routes' },
   { label: '[Message]', type: 'namespace', detail: 'Message routes' }
 ];
+const objCompletionOption: Completion = {
+  label: 'obj',
+  type: 'keyword',
+  detail: 'object endpoint'
+};
 
 export function tokenizePatchbayLine(line: string): PatchbayLineToken[] {
   const tokens: PatchbayLineToken[] = [];
@@ -631,6 +636,16 @@ export const patchbayLanguage = StreamLanguage.define(patchbayParser);
 export function patchbaySectionCompletions(context: CompletionContext): CompletionResult | null {
   const line = context.state.doc.lineAt(context.pos);
   const linePrefix = line.text.slice(0, context.pos - line.from);
+  const sectionResult = getPatchbaySectionCompletion(line.from, linePrefix);
+  if (sectionResult) return sectionResult;
+
+  return getPatchbayObjectKeywordCompletion(line.from, linePrefix);
+}
+
+function getPatchbaySectionCompletion(
+  lineFrom: number,
+  linePrefix: string
+): CompletionResult | null {
   const match = linePrefix.match(/^(\s*)(\[[A-Za-z]*)$/);
   if (!match) return null;
 
@@ -641,10 +656,36 @@ export function patchbaySectionCompletions(context: CompletionContext): Completi
   if (options.length === 0) return null;
 
   return {
-    from: line.from + match[1].length,
+    from: lineFrom + match[1].length,
     options,
     validFor: /^\[[A-Za-z]*$/
   };
+}
+
+function getPatchbayObjectKeywordCompletion(
+  lineFrom: number,
+  linePrefix: string
+): CompletionResult | null {
+  const match = linePrefix.match(/(?:^|\s)(o(?:bj)?)$/);
+  if (!match || !objCompletionOption.label.startsWith(match[1])) return null;
+
+  const typedStart = linePrefix.length - match[1].length;
+  const beforeTypedText = linePrefix.slice(0, typedStart);
+  if (!canStartObjectEndpoint(beforeTypedText)) return null;
+
+  return {
+    from: lineFrom + typedStart,
+    options: [objCompletionOption],
+    validFor: /^obj?$/
+  };
+}
+
+function canStartObjectEndpoint(linePrefix: string): boolean {
+  const trimmed = linePrefix.trimEnd();
+  if (trimmed === '') return true;
+  if (trimmed.endsWith('->') || trimmed.endsWith('=')) return true;
+
+  return false;
 }
 
 const patchbayHighlightStyle = HighlightStyle.define([

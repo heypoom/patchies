@@ -442,4 +442,17 @@ describe('patchbaySectionCompletions', () => {
       '[Message]'
     ]);
   });
+
+  it('suggests obj only where an endpoint or alias target can start', () => {
+    expect(getPatchbayCompletionLabels('o')).toEqual(['obj']);
+    expect(getPatchbayCompletionLabels('obj')).toEqual(['obj']);
+    expect(getPatchbayCompletionLabels('src = o')).toEqual(['obj']);
+    expect(getPatchbayCompletionLabels('src -> o')).toEqual(['obj']);
+    expect(getPatchbayCompletionLabels('obj slider-43 -> o')).toEqual(['obj']);
+
+    expect(getPatchbayCompletionLabels('src o')).toEqual([]);
+    expect(getPatchbayCompletionLabels('slider-43 o')).toEqual([]);
+    expect(getPatchbayCompletionLabels('src obj =')).toEqual([]);
+    expect(getPatchbayCompletionLabels('slider-43 obj ->')).toEqual([]);
+  });
 });
