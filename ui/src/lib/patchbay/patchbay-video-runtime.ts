@@ -1,6 +1,10 @@
+import type { Edge } from '@xyflow/svelte';
+
 export type PatchbayVideoRuntime = {
   registerRoute(routeId: string, from: string, to: string): void;
   unregisterRoute(routeId: string): void;
+  registerEdge(routeId: string, edge: Edge): void;
+  unregisterEdge(routeId: string): void;
 };
 
 const glSystemRuntime: PatchbayVideoRuntime = {
@@ -12,6 +16,16 @@ const glSystemRuntime: PatchbayVideoRuntime = {
   unregisterRoute(routeId) {
     void import('$lib/canvas/GLSystem').then(({ GLSystem }) => {
       GLSystem.getInstance().unregisterPatchbayVideoRoute(routeId);
+    });
+  },
+  registerEdge(routeId, edge) {
+    void import('$lib/canvas/GLSystem').then(({ GLSystem }) => {
+      GLSystem.getInstance().registerPatchbayVideoEdge(routeId, edge);
+    });
+  },
+  unregisterEdge(routeId) {
+    void import('$lib/canvas/GLSystem').then(({ GLSystem }) => {
+      GLSystem.getInstance().unregisterPatchbayVideoEdge(routeId);
     });
   }
 };

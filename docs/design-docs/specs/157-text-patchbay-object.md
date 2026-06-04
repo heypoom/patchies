@@ -8,7 +8,7 @@ We want a text-based patchbay object that lets users describe message, audio, an
 
 ## Goals
 
-- Provide a small DSL for routing named channels, not visual graph objects.
+- Provide a small DSL for routing named channels and explicit object-id endpoints.
 - Keep message, audio, and video routes separate so the same channel name can be reused safely across data types.
 - Require patchbay-local virtual channels to be declared explicitly with `chan`.
 - Allow routes to use existing wireless channels from the patch graph without redeclaring them.
@@ -17,7 +17,7 @@ We want a text-based patchbay object that lets users describe message, audio, an
 
 ## Non-Goals
 
-- Do not route by node title, node id, visual object label, inlet name, or outlet name.
+- Do not route by node title, visual object label, inlet name, or outlet name.
 - Do not create visible `send`/`recv` objects on the canvas.
 - Do not support cross-type routing such as audio to video or message to audio.
 - Do not add gain, transforms, filtering, or conditional routing in v1.
@@ -25,12 +25,13 @@ We want a text-based patchbay object that lets users describe message, audio, an
 
 ## User Model
 
-The patchbay object routes channels. Every name in a route must resolve to one of:
+The patchbay object routes channels and explicit object-id endpoints. Every route endpoint must resolve to one of:
 
 1. A channel declared with `chan` in the same patchbay section.
 2. An existing wireless channel of the same type already present in the patch graph.
+3. An explicit object reference written with `obj`, such as `obj glsl-34` or `obj glsl-34:0`.
 
-Names never resolve to graph object titles. This keeps the model simple: if a user wants an object to participate in the patchbay, they first expose it through `send`, `recv`, `send~`, `recv~`, `send.vdo`, or `recv.vdo`.
+Names never resolve to graph object titles. Bare names are always channels. Object routing must use `obj` so collisions stay clear.
 
 ## DSL
 
@@ -76,11 +77,62 @@ Source -> Middle
 Middle -> Destination
 ```
 
-For v1, every route segment means "receive from the left channel and forward to the right channel" within the current section's data type.
+For v1, every route segment means "receive from the left endpoint and forward to the right endpoint" within the current section's data type.
+
+Routes may also use object-id endpoints:
+
+```text
+[Video]
+Camera -> obj glsl-34:0
+
+[Audio]
+obj mic~-12 -> Reverb
+
+[Message]
+Clock -> obj js-8:0
+```
+
+`obj node-id` defaults to compatible port `0`. `obj node-id:n` selects compatible port `n` for the current section and route direction. Source-side object references resolve to outlets. Target-side object references resolve to inlets.
+
+For mixed-type objects, the index only counts compatible ports in the current section and direction. For example, `obj glsl-34:0` in `[Video]` selects the first visible video inlet, while `obj glsl-34:0` in `[Message]` selects the first visible message inlet if one exists.
+
+Route chains may span multiple lines:
+
+```text
+Src -> obj glsl-34
+    -> Aber
+```
+
+```text
+Src
+-> obj glsl-34
+-> Aber
+```
+
+```text
+Src ->
+obj glsl-34 ->
+Aber
+```
+
+Both forms normalize to:
+
+```text
+Src -> obj glsl-34 -> Aber
+```
+
+Lines starting with `->` continue the previous route chain in the same section. Lines ending with `->` continue on the next non-empty line. A single endpoint line starts a pending route chain. Blank lines, comments, declarations, and section headers end the pending chain; if the chain is still waiting for an endpoint, it is malformed.
 
 ### Identifiers
 
 V1 identifiers are unquoted channel names. They may contain letters, numbers, underscores, dashes, dots, slashes, and tildes. They may not contain whitespace or `->`.
+
+Object references use the `obj` keyword followed by an object id, optionally with a zero-based compatible port index:
+
+```text
+obj glsl-34
+obj glsl-34:0
+```
 
 Quoted channel names can be considered later if users need spaces or other punctuation.
 
@@ -96,6 +148,14 @@ The patchbay object builds a known-channel set for each section:
 Resolution is type-specific. An audio section only sees audio channels, a video section only sees video channels, and a message section only sees message channels.
 
 If a route references a name that is not declared locally and is not an existing wireless channel of that type, the name is unresolved.
+
+Object references resolve against the current patch graph by object id. Resolution is section- and direction-specific:
+
+- `[Message]` object sources resolve message outlets; object targets resolve message inlets.
+- `[Audio]` object sources resolve audio outlets; object targets resolve audio inlets.
+- `[Video]` object sources resolve video outlets; object targets resolve video inlets.
+
+If an object id does not exist, the reference is unresolved. If the object exists but has no compatible port, or the selected port index is out of range, the route is invalid.
 
 ## Runtime Semantics
 
@@ -204,6 +264,9 @@ Errors:
 - `chan` outside a section.
 - Invalid identifier.
 - Unknown channel.
+- Unknown object id.
+- Object exists but has no compatible inlet or outlet for the current section and direction.
+- Object compatible port index is out of range.
 - Duplicate `chan` declaration in the same section.
 - Cycle in a section.
 - Malformed route arrow or incomplete route.

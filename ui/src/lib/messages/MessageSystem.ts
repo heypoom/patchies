@@ -77,6 +77,8 @@ export class MessageSystem {
   private deletedNodes = new Set<string>();
 
   private edges: Edge[] = [];
+  private graphEdges: Edge[] = [];
+  private patchbayEdges = new Map<string, Edge>();
 
   // Legacy
   private connections = new Map<string, string[]>(); // nodeId -> array of connected nodeIds
@@ -125,7 +127,8 @@ export class MessageSystem {
 
   // Update connections based on XY Flow graph
   updateEdges(edges: Edge[]) {
-    this.edges = edges;
+    this.graphEdges = edges;
+    this.edges = [...edges, ...this.patchbayEdges.values()];
 
     // Clear existing connections
     this.connections.clear();
@@ -143,6 +146,20 @@ export class MessageSystem {
     for (const [source, targets] of connectionSets) {
       this.connections.set(source, [...targets]);
     }
+  }
+
+  registerPatchbayEdge(routeId: string, edge: Edge): void {
+    this.patchbayEdges.set(routeId, edge);
+    this.updateEdges(this.graphEdges);
+  }
+
+  unregisterPatchbayEdge(routeId: string): void {
+    this.patchbayEdges.delete(routeId);
+    this.updateEdges(this.graphEdges);
+  }
+
+  sendFromPatchbayEndpoint(fromNodeId: string, data: unknown): void {
+    this.sendMessage(fromNodeId, data);
   }
 
   // Send a message from a node

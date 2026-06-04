@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
 import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
+import { setPatchbayAudioRuntime } from '$lib/patchbay/patchbay-audio-runtime';
+import { setPatchbayMessageRuntime } from '$lib/patchbay/patchbay-message-runtime';
 import { setPatchbayVideoRuntime } from '$lib/patchbay/patchbay-video-runtime';
 import { PatchbayObject } from './PatchbayObject';
 
@@ -25,6 +27,33 @@ function createPatchbay(code: string) {
   } as unknown as ObjectContext;
 
   const object = new PatchbayObject(`patchbay-${crypto.randomUUID()}`, context);
+  object.create([]);
+
+  return { object, params };
+}
+
+function createPatchbayWithNodes(
+  code: string,
+  nodes: Array<{ id: string; type?: string; data: Record<string, unknown> }>
+) {
+  const params = [code];
+  const context = {
+    getParam(indexOrName: number | string) {
+      return indexOrName === 'code' || indexOrName === 0 ? params[0] : undefined;
+    },
+    setParam(indexOrName: number | string, value: unknown) {
+      if (indexOrName === 'code' || indexOrName === 0) {
+        params[0] = value as string;
+      }
+    },
+    onParamsChange(callback: (params: unknown[], index: number, value: unknown) => void) {
+      return () => callback;
+    }
+  } as unknown as ObjectContext;
+
+  const object = new PatchbayObject(`patchbay-${crypto.randomUUID()}`, context, {
+    getNodes: () => nodes
+  });
   object.create([]);
 
   return { object, params };
@@ -219,7 +248,9 @@ describe('PatchbayObject', () => {
       },
       unregisterRoute(routeId) {
         unregisteredRoutes.push(routeId);
-      }
+      },
+      registerEdge() {},
+      unregisterEdge() {}
     });
 
     registry.subscribe(source, sourceNodeId, 'send');
@@ -251,5 +282,221 @@ describe('PatchbayObject', () => {
     restoreVideoRuntime();
     registry.unsubscribe(source, sourceNodeId);
     registry.unsubscribe(destination, destinationNodeId);
+  });
+
+  it('registers message object endpoints as hidden message edges', () => {
+    const suffix = crypto.randomUUID();
+    const source = `message-source-${suffix}`;
+    const targetNodeId = `js-${suffix}`;
+    const registeredEdges: Array<{ routeId: string; edge: unknown }> = [];
+    const unregisteredEdges: string[] = [];
+    const restoreMessageRuntime = setPatchbayMessageRuntime({
+      registerEdge(routeId, edge) {
+        registeredEdges.push({ routeId, edge });
+      },
+      unregisterEdge(routeId) {
+        unregisteredEdges.push(routeId);
+      },
+      registerEndpoint() {},
+      unregisterEndpoint() {},
+      sendFromEndpoint() {}
+    });
+
+    MessageChannelRegistry.getInstance().registerSender(source, `send-${suffix}`);
+
+    const { object } = createPatchbayWithNodes(
+      `
+      [Message]
+      ${source} -> obj ${targetNodeId}:0
+      `,
+      [{ id: targetNodeId, type: 'object', data: { name: 'js' } }]
+    );
+
+    expect(object.diagnostics).toEqual([]);
+    expect(registeredEdges).toEqual([
+      {
+        routeId: expect.stringContaining(`message-edge:${source}->obj ${targetNodeId}:0`),
+        edge: expect.objectContaining({
+          target: targetNodeId,
+          targetHandle: 'message-in-0'
+        })
+      }
+    ]);
+
+    object.destroy();
+    expect(unregisteredEdges).toEqual(registeredEdges.map(({ routeId }) => routeId));
+
+    restoreMessageRuntime();
+    MessageChannelRegistry.getInstance().unregisterSender(source, `send-${suffix}`);
+  });
+
+  it('registers audio object endpoints as hidden audio edges', () => {
+    const suffix = crypto.randomUUID();
+    const source = `audio-source-${suffix}`;
+    const targetNodeId = `gain-${suffix}`;
+    const sourceNodeId = `send-audio-${suffix}`;
+    const registry = AudioChannelRegistry.getInstance();
+    const registeredEdges: Array<{ routeId: string; edge: unknown }> = [];
+    const unregisteredEdges: string[] = [];
+    const restoreAudioRuntime = setPatchbayAudioRuntime({
+      registerEdge(routeId, edge) {
+        registeredEdges.push({ routeId, edge });
+      },
+      unregisterEdge(routeId) {
+        unregisteredEdges.push(routeId);
+      }
+    });
+
+    registry.subscribe(source, sourceNodeId, 'send');
+
+    const { object } = createPatchbayWithNodes(
+      `
+      [Audio]
+      ${source} -> obj ${targetNodeId}:1
+      `,
+      [{ id: targetNodeId, type: 'object', data: { name: 'gain~' } }]
+    );
+
+    const audioEdges = registry
+      .getVirtualEdges()
+      .filter((edge) => edge.id.includes(source) || edge.target === targetNodeId);
+
+    expect(object.diagnostics).toEqual([]);
+    expect(audioEdges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: sourceNodeId,
+          target: expect.stringContaining(`:audio-recv:${source}`),
+          sourceHandle: 'audio-out',
+          targetHandle: 'audio-in'
+        })
+      ])
+    );
+    expect(registeredEdges).toEqual([
+      {
+        routeId: expect.stringContaining(`audio-edge:${source}->obj ${targetNodeId}:1`),
+        edge: expect.objectContaining({
+          target: targetNodeId,
+          targetHandle: 'message-in-1'
+        })
+      }
+    ]);
+
+    object.destroy();
+    expect(unregisteredEdges).toEqual(registeredEdges.map(({ routeId }) => routeId));
+    restoreAudioRuntime();
+    registry.unsubscribe(source, sourceNodeId);
+  });
+
+  it('registers video object endpoints as hidden video edges', () => {
+    const suffix = crypto.randomUUID();
+    const source = `video-source-${suffix}`;
+    const targetNodeId = `glsl-${suffix}`;
+    const sourceNodeId = `send-video-${suffix}`;
+    const registry = VideoChannelRegistry.getInstance();
+    const registeredRoutes: Array<{ routeId: string; from: string; to: string }> = [];
+    const registeredEdges: Array<{ routeId: string; edge: unknown }> = [];
+    const restoreVideoRuntime = setPatchbayVideoRuntime({
+      registerRoute(routeId, from, to) {
+        registeredRoutes.push({ routeId, from, to });
+      },
+      unregisterRoute() {},
+      registerEdge(routeId, edge) {
+        registeredEdges.push({ routeId, edge });
+      },
+      unregisterEdge() {}
+    });
+
+    registry.subscribe(source, sourceNodeId, 'send');
+
+    const { object } = createPatchbayWithNodes(
+      `
+      [Video]
+      ${source} -> obj ${targetNodeId}:0
+      `,
+      [
+        {
+          id: targetNodeId,
+          type: 'glsl',
+          data: {
+            glUniformDefs: [
+              { name: 'mix', type: 'float' },
+              { name: 'iChannel0', type: 'sampler2D' }
+            ]
+          }
+        }
+      ]
+    );
+
+    expect(object.diagnostics).toEqual([]);
+    expect(registeredEdges).toEqual([
+      {
+        routeId: expect.stringContaining(`video-edge:${source}->obj ${targetNodeId}:0`),
+        edge: expect.objectContaining({
+          target: targetNodeId,
+          targetHandle: 'video-in-1-iChannel0-sampler2D'
+        })
+      }
+    ]);
+    expect(registeredRoutes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: source
+        })
+      ])
+    );
+
+    object.destroy();
+    restoreVideoRuntime();
+    registry.unsubscribe(source, sourceNodeId);
+  });
+
+  it('does not re-register object routes when only node position changes', () => {
+    const suffix = crypto.randomUUID();
+    const source = `video-source-${suffix}`;
+    const targetNodeId = `glsl-${suffix}`;
+    const registry = VideoChannelRegistry.getInstance();
+    const registeredEdges: Array<{ routeId: string; edge: unknown }> = [];
+    const unregisteredEdges: string[] = [];
+    const nodes = [
+      {
+        id: targetNodeId,
+        type: 'glsl',
+        position: { x: 0, y: 0 },
+        data: {
+          glUniformDefs: [{ name: 'iChannel0', type: 'sampler2D' }]
+        }
+      }
+    ];
+    const restoreVideoRuntime = setPatchbayVideoRuntime({
+      registerRoute() {},
+      unregisterRoute() {},
+      registerEdge(routeId, edge) {
+        registeredEdges.push({ routeId, edge });
+      },
+      unregisterEdge(routeId) {
+        unregisteredEdges.push(routeId);
+      }
+    });
+
+    registry.subscribe(source, `send-video-${suffix}`, 'send');
+
+    const { object } = createPatchbayWithNodes(
+      `
+      [Video]
+      ${source} -> obj ${targetNodeId}:0
+      `,
+      nodes
+    );
+
+    nodes[0].position = { x: 100, y: 100 };
+    object.applyCode();
+
+    expect(registeredEdges).toHaveLength(1);
+    expect(unregisteredEdges).toEqual([]);
+
+    object.destroy();
+    restoreVideoRuntime();
+    registry.unsubscribe(source, `send-video-${suffix}`);
   });
 });

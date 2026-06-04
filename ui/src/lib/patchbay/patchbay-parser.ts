@@ -3,6 +3,8 @@ export type PatchbaySection = 'message' | 'audio' | 'video';
 export type PatchbayRoute = {
   from: string;
   to: string;
+  fromEndpoint?: PatchbayResolvedObjectEndpoint;
+  toEndpoint?: PatchbayResolvedObjectEndpoint;
 };
 
 export type PatchbayDiagnosticSeverity = 'error' | 'warning';
@@ -18,7 +20,10 @@ export type PatchbayDiagnosticCode =
   | 'unused-channel'
   | 'duplicate-route'
   | 'receiver-as-source'
-  | 'sender-as-target';
+  | 'sender-as-target'
+  | 'unknown-object'
+  | 'object-port-unavailable'
+  | 'object-port-out-of-range';
 
 export type PatchbayDiagnostic = {
   severity: PatchbayDiagnosticSeverity;
@@ -31,12 +36,45 @@ export type PatchbayDiagnostic = {
 
 export type PatchbayKnownChannels = Partial<Record<PatchbaySection, Set<string>>> & {
   objectTitles?: Set<string>;
+  objects?: PatchbayObjectPorts;
   messageSources?: Set<string>;
   messageTargets?: Set<string>;
   audioSources?: Set<string>;
   audioTargets?: Set<string>;
   videoSources?: Set<string>;
   videoTargets?: Set<string>;
+};
+
+export type PatchbayObjectDirection = 'source' | 'target';
+
+export type PatchbayObjectPortSet = Partial<
+  Record<PatchbaySection, { inlets?: string[]; outlets?: string[] }>
+>;
+
+export type PatchbayObjectPorts = Map<string, PatchbayObjectPortSet>;
+
+export type PatchbayObjectEndpointRef = {
+  kind: 'object';
+  nodeId: string;
+  portIndex: number;
+  raw: string;
+  line: number;
+};
+
+export type PatchbayChannelEndpointRef = {
+  kind: 'channel';
+  name: string;
+  raw: string;
+  line: number;
+};
+
+export type PatchbayEndpointRef = PatchbayChannelEndpointRef | PatchbayObjectEndpointRef;
+
+export type PatchbayResolvedObjectEndpoint = {
+  kind: 'object';
+  nodeId: string;
+  portIndex: number;
+  handle: string;
 };
 
 export type PatchbayAnalysis = {
@@ -50,7 +88,15 @@ export type PatchbayAnalysis = {
 type SectionState = {
   declarations: Map<string, number>;
   declarationUseCount: Map<string, number>;
-  routes: Array<{ line: number; channels: string[] }>;
+  routes: Array<{ line: number; endpoints: PatchbayEndpointRef[] }>;
+};
+
+type PendingRoute = {
+  section: PatchbaySection;
+  line: number;
+  raw: string;
+  endpoints: PatchbayEndpointRef[];
+  waitingForEndpoint: boolean;
 };
 
 const SECTION_NAMES: Record<string, PatchbaySection> = {
@@ -60,6 +106,7 @@ const SECTION_NAMES: Record<string, PatchbaySection> = {
 };
 
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9_.~/:-]+$/;
+const OBJECT_ID_PATTERN = /^[A-Za-z0-9_.~/-]+$/;
 
 function createSectionState(): SectionState {
   return {
@@ -93,11 +140,65 @@ function splitRoute(raw: string): string[] | null {
   if (!raw.includes('->')) return null;
 
   const parts = raw.split('->').map((part) => part.trim());
-  if (parts.length < 2 || parts.some((part) => part.length === 0)) {
+  if (parts.length < 2 || parts.slice(0, -1).some((part) => part.length === 0)) {
     return null;
   }
 
   return parts;
+}
+
+function parseEndpoint(raw: string, line: number): PatchbayEndpointRef | null {
+  const objectMatch = raw.match(/^obj\s+(.+)$/);
+  if (!objectMatch) return { kind: 'channel', name: raw, raw, line };
+
+  const objectText = objectMatch[1].trim();
+  const portMatch = objectText.match(/^(.+):(\d+)$/);
+  const nodeId = (portMatch ? portMatch[1] : objectText).trim();
+  const portIndex = portMatch ? Number(portMatch[2]) : 0;
+
+  if (!OBJECT_ID_PATTERN.test(nodeId)) return null;
+
+  return { kind: 'object', nodeId, portIndex, raw, line };
+}
+
+function splitRouteContinuation(raw: string): string[] | null {
+  if (!raw.startsWith('->')) return null;
+
+  const parts = raw.split('->').map((part) => part.trim());
+  if (parts[0] !== '' || parts.length < 2 || parts.slice(1, -1).some((part) => part.length === 0)) {
+    return null;
+  }
+
+  return parts.slice(1);
+}
+
+function parseEndpointParts(
+  parts: string[],
+  line: number,
+  section: PatchbaySection,
+  diagnostics: PatchbayDiagnostic[]
+): PatchbayEndpointRef[] | null {
+  const endpoints: PatchbayEndpointRef[] = [];
+
+  for (const rawEndpoint of parts) {
+    const endpoint = parseEndpoint(rawEndpoint, line);
+    if (!endpoint || (endpoint.kind === 'channel' && !IDENTIFIER_PATTERN.test(endpoint.name))) {
+      diagnostics.push(
+        createDiagnostic(
+          'error',
+          'invalid-identifier',
+          line,
+          `Invalid channel name "${rawEndpoint}".`,
+          { section, name: rawEndpoint }
+        )
+      );
+      return null;
+    }
+
+    endpoints.push(endpoint);
+  }
+
+  return endpoints;
 }
 
 function hasCycle(routes: PatchbayRoute[]): boolean {
@@ -137,6 +238,7 @@ function analyzeSection(
   section: PatchbaySection,
   state: SectionState,
   knownChannels: Set<string>,
+  objects: PatchbayObjectPorts | undefined,
   diagnostics: PatchbayDiagnostic[],
   roles?: { sources: Set<string>; targets: Set<string> }
 ): PatchbayRoute[] {
@@ -145,14 +247,32 @@ function analyzeSection(
   let hasErrors = false;
 
   for (const route of state.routes) {
-    for (const channel of route.channels) {
+    for (const endpoint of route.endpoints) {
+      if (endpoint.kind === 'object') {
+        if (!objects?.has(endpoint.nodeId)) {
+          hasErrors = true;
+          diagnostics.push(
+            createDiagnostic(
+              'error',
+              'unknown-object',
+              endpoint.line,
+              `Unknown object "${endpoint.nodeId}". Use an existing object id after obj.`,
+              { section, name: endpoint.nodeId }
+            )
+          );
+        }
+
+        continue;
+      }
+
+      const channel = endpoint.name;
       if (!state.declarations.has(channel) && !knownChannels.has(channel)) {
         hasErrors = true;
         diagnostics.push(
           createDiagnostic(
             'error',
             'unknown-channel',
-            route.line,
+            endpoint.line,
             `Unknown ${section} channel "${channel}". Declare it with chan ${channel} or create a matching ${section} channel object.`,
             { section, name: channel }
           )
@@ -164,9 +284,11 @@ function analyzeSection(
       }
     }
 
-    for (let index = 0; index < route.channels.length - 1; index += 1) {
-      const from = route.channels[index];
-      const to = route.channels[index + 1];
+    for (let index = 0; index < route.endpoints.length - 1; index += 1) {
+      const fromEndpointRef = route.endpoints[index];
+      const toEndpointRef = route.endpoints[index + 1];
+      const from = fromEndpointRef.raw;
+      const to = toEndpointRef.raw;
       const key = `${from}\0${to}`;
 
       if (routeKeys.has(key)) {
@@ -184,37 +306,68 @@ function analyzeSection(
 
       if (
         roles &&
-        !state.declarations.has(from) &&
-        knownChannels.has(from) &&
-        !roles.sources.has(from)
+        fromEndpointRef.kind === 'channel' &&
+        !state.declarations.has(fromEndpointRef.name) &&
+        knownChannels.has(fromEndpointRef.name) &&
+        !roles.sources.has(fromEndpointRef.name)
       ) {
         hasErrors = true;
         diagnostics.push(
           createDiagnostic(
             'error',
             'receiver-as-source',
-            route.line,
-            `${formatSection(section)} channel "${from}" is registered as a receiver, so it cannot be used as a route source.`,
-            { section, name: from }
+            fromEndpointRef.line,
+            `${formatSection(section)} channel "${fromEndpointRef.name}" is registered as a receiver, so it cannot be used as a route source.`,
+            { section, name: fromEndpointRef.name }
           )
         );
       }
 
-      if (roles && !state.declarations.has(to) && knownChannels.has(to) && !roles.targets.has(to)) {
+      if (
+        roles &&
+        toEndpointRef.kind === 'channel' &&
+        !state.declarations.has(toEndpointRef.name) &&
+        knownChannels.has(toEndpointRef.name) &&
+        !roles.targets.has(toEndpointRef.name)
+      ) {
         hasErrors = true;
         diagnostics.push(
           createDiagnostic(
             'error',
             'sender-as-target',
-            route.line,
-            `${formatSection(section)} channel "${to}" is registered as a sender, so it cannot be used as a route target.`,
-            { section, name: to }
+            toEndpointRef.line,
+            `${formatSection(section)} channel "${toEndpointRef.name}" is registered as a sender, so it cannot be used as a route target.`,
+            { section, name: toEndpointRef.name }
           )
         );
       }
 
+      const fromEndpoint = resolveObjectEndpoint(
+        fromEndpointRef,
+        section,
+        'source',
+        objects,
+        fromEndpointRef.line,
+        diagnostics
+      );
+      const toEndpoint = resolveObjectEndpoint(
+        toEndpointRef,
+        section,
+        'target',
+        objects,
+        toEndpointRef.line,
+        diagnostics
+      );
+
+      if (
+        (fromEndpointRef.kind === 'object' && !fromEndpoint) ||
+        (toEndpointRef.kind === 'object' && !toEndpoint)
+      ) {
+        hasErrors = true;
+      }
+
       routeKeys.add(key);
-      routes.push({ from, to });
+      routes.push({ from, to, fromEndpoint, toEndpoint });
     }
   }
 
@@ -244,6 +397,59 @@ function analyzeSection(
   return hasErrors ? [] : routes;
 }
 
+function resolveObjectEndpoint(
+  endpoint: PatchbayEndpointRef,
+  section: PatchbaySection,
+  direction: PatchbayObjectDirection,
+  objects: PatchbayObjectPorts | undefined,
+  line: number,
+  diagnostics: PatchbayDiagnostic[]
+): PatchbayResolvedObjectEndpoint | undefined {
+  if (endpoint.kind !== 'object') return undefined;
+
+  const objectPorts = objects?.get(endpoint.nodeId);
+  if (!objectPorts) return undefined;
+
+  const ports =
+    direction === 'source'
+      ? (objectPorts[section]?.outlets ?? [])
+      : (objectPorts[section]?.inlets ?? []);
+
+  if (ports.length === 0) {
+    diagnostics.push(
+      createDiagnostic(
+        'error',
+        'object-port-unavailable',
+        line,
+        `Object "${endpoint.nodeId}" has no ${section} ${direction === 'source' ? 'outlet' : 'inlet'}.`,
+        { section, name: endpoint.nodeId }
+      )
+    );
+    return undefined;
+  }
+
+  const handle = ports[endpoint.portIndex];
+  if (!handle) {
+    diagnostics.push(
+      createDiagnostic(
+        'error',
+        'object-port-out-of-range',
+        line,
+        `Object "${endpoint.nodeId}" has no ${section} ${direction === 'source' ? 'outlet' : 'inlet'} at compatible port ${endpoint.portIndex}.`,
+        { section, name: `${endpoint.nodeId}:${endpoint.portIndex}` }
+      )
+    );
+    return undefined;
+  }
+
+  return {
+    kind: 'object',
+    nodeId: endpoint.nodeId,
+    portIndex: endpoint.portIndex,
+    handle
+  };
+}
+
 export function analyzePatchbay(
   source: string,
   knownChannels: PatchbayKnownChannels = {}
@@ -255,15 +461,43 @@ export function analyzePatchbay(
     video: createSectionState()
   };
   let currentSection: PatchbaySection | undefined;
+  let pendingRoute: PendingRoute | null = null;
+
+  function flushPendingRoute(): void {
+    if (!pendingRoute) return;
+
+    if (pendingRoute.endpoints.length < 2 || pendingRoute.waitingForEndpoint) {
+      diagnostics.push(
+        createDiagnostic(
+          'error',
+          'malformed-route',
+          pendingRoute.line,
+          `Malformed route "${pendingRoute.raw}". Use Source -> Destination.`,
+          { section: pendingRoute.section }
+        )
+      );
+    } else {
+      states[pendingRoute.section].routes.push({
+        line: pendingRoute.line,
+        endpoints: pendingRoute.endpoints
+      });
+    }
+
+    pendingRoute = null;
+  }
 
   source.split(/\r?\n/).forEach((rawLine, index) => {
     const line = index + 1;
     const text = rawLine.trim();
 
-    if (text.length === 0 || text.startsWith('//') || text.startsWith('# ')) return;
+    if (text.length === 0 || text.startsWith('//') || text.startsWith('# ')) {
+      flushPendingRoute();
+      return;
+    }
 
     const sectionMatch = text.match(/^\[([^\]]+)\]$/);
     if (sectionMatch) {
+      flushPendingRoute();
       const sectionName = sectionMatch[1].trim().toLowerCase();
       currentSection = SECTION_NAMES[sectionName];
 
@@ -282,6 +516,7 @@ export function analyzePatchbay(
     }
 
     if (!currentSection) {
+      flushPendingRoute();
       diagnostics.push(
         createDiagnostic(
           'error',
@@ -294,6 +529,7 @@ export function analyzePatchbay(
     }
 
     if (text.startsWith('chan ')) {
+      flushPendingRoute();
       const name = text.slice('chan '.length).trim();
 
       if (!IDENTIFIER_PATTERN.test(name)) {
@@ -325,37 +561,86 @@ export function analyzePatchbay(
       return;
     }
 
-    const channels = splitRoute(text);
-    if (!channels) {
-      diagnostics.push(
-        createDiagnostic(
-          'error',
-          'malformed-route',
-          line,
-          `Malformed route "${text}". Use Source -> Destination.`,
-          { section: currentSection }
-        )
-      );
-      return;
-    }
-
-    for (const channel of channels) {
-      if (!IDENTIFIER_PATTERN.test(channel)) {
+    const continuationParts = splitRouteContinuation(text);
+    if (continuationParts) {
+      if (!pendingRoute || pendingRoute.section !== currentSection) {
         diagnostics.push(
           createDiagnostic(
             'error',
-            'invalid-identifier',
+            'malformed-route',
             line,
-            `Invalid channel name "${channel}".`,
-            { section: currentSection, name: channel }
+            `Malformed route "${text}". Use Source -> Destination.`,
+            { section: currentSection }
           )
         );
         return;
       }
+
+      const waitingForEndpoint = continuationParts.at(-1) === '';
+      const endpoints = parseEndpointParts(
+        waitingForEndpoint ? continuationParts.slice(0, -1) : continuationParts,
+        line,
+        currentSection,
+        diagnostics
+      );
+      if (!endpoints) return;
+
+      pendingRoute.endpoints.push(...endpoints);
+      pendingRoute.waitingForEndpoint = waitingForEndpoint;
+      return;
     }
 
-    states[currentSection].routes.push({ line, channels });
+    const routeParts = splitRoute(text);
+    if (!routeParts) {
+      const endpoint = parseEndpoint(text, line);
+      if (!endpoint || (endpoint.kind === 'channel' && !IDENTIFIER_PATTERN.test(endpoint.name))) {
+        flushPendingRoute();
+        diagnostics.push(
+          createDiagnostic('error', 'invalid-identifier', line, `Invalid channel name "${text}".`, {
+            section: currentSection,
+            name: text
+          })
+        );
+        return;
+      }
+
+      if (pendingRoute?.waitingForEndpoint && pendingRoute.section === currentSection) {
+        pendingRoute.endpoints.push(endpoint);
+        pendingRoute.waitingForEndpoint = false;
+      } else {
+        flushPendingRoute();
+        pendingRoute = {
+          section: currentSection,
+          line,
+          raw: text,
+          endpoints: [endpoint],
+          waitingForEndpoint: false
+        };
+      }
+      return;
+    }
+
+    const waitingForEndpoint = routeParts.at(-1) === '';
+    const endpointParts = waitingForEndpoint ? routeParts.slice(0, -1) : routeParts;
+    const endpoints = parseEndpointParts(endpointParts, line, currentSection, diagnostics);
+    if (!endpoints) return;
+
+    if (pendingRoute?.waitingForEndpoint && pendingRoute.section === currentSection) {
+      pendingRoute.endpoints.push(...endpoints);
+      pendingRoute.waitingForEndpoint = waitingForEndpoint;
+    } else {
+      flushPendingRoute();
+      pendingRoute = {
+        section: currentSection,
+        line,
+        raw: text,
+        endpoints,
+        waitingForEndpoint
+      };
+    }
   });
+
+  flushPendingRoute();
 
   const channels = {
     message: states.message.declarations,
@@ -378,6 +663,7 @@ export function analyzePatchbay(
       'message',
       states.message,
       messageKnownChannels,
+      knownChannels.objects,
       diagnostics,
       knownChannels.messageSources || knownChannels.messageTargets
         ? {
@@ -396,6 +682,7 @@ export function analyzePatchbay(
       'audio',
       states.audio,
       audioKnownChannels,
+      knownChannels.objects,
       diagnostics,
       knownChannels.audioSources || knownChannels.audioTargets
         ? {
@@ -414,6 +701,7 @@ export function analyzePatchbay(
       'video',
       states.video,
       videoKnownChannels,
+      knownChannels.objects,
       diagnostics,
       knownChannels.videoSources || knownChannels.videoTargets
         ? {

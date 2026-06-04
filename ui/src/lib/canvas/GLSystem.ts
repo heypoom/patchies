@@ -1,4 +1,9 @@
-import { buildRenderGraph, type REdge, type RNode } from '$lib/rendering/graphUtils';
+import {
+  buildRenderGraph,
+  normalizeRenderEdges,
+  type REdge,
+  type RNode
+} from '$lib/rendering/graphUtils';
 import type { FBOFormat, RenderGraph, RenderNode, RenderWorkerMessage } from '$lib/rendering/types';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
@@ -785,6 +790,11 @@ export class GLSystem {
     this.updateRenderGraph(true);
   }
 
+  registerPatchbayVideoEdge(edgeId: string, edge: REdge): void {
+    this.patchbayVideoEdges.set(edgeId, edge);
+    this.updateRenderGraph(true);
+  }
+
   unregisterPatchbayVideoRoute(routeId: string): void {
     const nodeIds = this.patchbayVideoNodeIds.get(routeId);
     if (!nodeIds) return;
@@ -793,6 +803,11 @@ export class GLSystem {
     this.patchbayVideoNodeIds.delete(routeId);
     this.removeNode(nodeIds.recvId);
     this.removeNode(nodeIds.sendId);
+  }
+
+  unregisterPatchbayVideoEdge(edgeId: string): void {
+    this.patchbayVideoEdges.delete(edgeId);
+    this.updateRenderGraph(true);
   }
 
   setUniformData(nodeId: string, uniformName: string, uniformValue: UserUniformValue) {
@@ -875,7 +890,7 @@ export class GLSystem {
   }
 
   updateEdges(edges: REdge[]) {
-    this.edges = edges;
+    this.edges = normalizeRenderEdges(edges);
 
     this.updateRenderGraph();
     this.syncOutputEnabled();

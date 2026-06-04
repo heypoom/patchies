@@ -23,6 +23,13 @@ describe('tokenizePatchbayLine', () => {
       { text: 'Logger', style: 'variableName' },
       { text: '// route', style: 'comment' }
     ]);
+
+    expect(tokenizePatchbayLine('Clock -> obj glsl-34:0')).toEqual([
+      { text: 'Clock', style: 'variableName' },
+      { text: '->', style: 'operator' },
+      { text: 'obj', style: 'keyword' },
+      { text: 'glsl-34:0', style: 'variableName' }
+    ]);
   });
 
   it('returns inline ranges for unknown channel diagnostics', () => {
@@ -202,6 +209,72 @@ Bus -> Outbound`;
         className: 'cm-patchbay-role-error',
         message:
           'Message channel "Outbound" is registered as a sender, so it cannot be used as a route target.'
+      }
+    ]);
+  });
+
+  it('does not return channel link ranges for object ids', () => {
+    const source = `[Video]
+Camera -> obj glsl-34:0`;
+
+    expect(
+      getPatchbayChannelLinkRanges(source, {
+        video: {
+          senders: new Set(['Camera', 'glsl-34:0']),
+          receivers: new Set(['glsl-34:0'])
+        }
+      }).map(({ channel, section, role }) => ({ channel, section, role }))
+    ).toEqual([{ channel: 'Camera', section: 'video', role: 'sender' }]);
+  });
+
+  it('returns inline ranges for object diagnostics', () => {
+    const source = `[Audio]
+obj missing-1 -> obj gain-2:3`;
+    const analysis = analyzePatchbay(source, {
+      objects: new Map([
+        [
+          'gain-2',
+          {
+            audio: {
+              inlets: ['audio-in-0'],
+              outlets: ['audio-out']
+            }
+          }
+        ]
+      ])
+    });
+
+    expect(getPatchbayDiagnosticRanges(source, analysis.diagnostics)).toEqual([
+      {
+        from: 12,
+        to: 21,
+        className: 'cm-patchbay-role-error',
+        message: 'Unknown object "missing-1". Use an existing object id after obj.'
+      },
+      {
+        from: 29,
+        to: 37,
+        className: 'cm-patchbay-role-error',
+        message: 'Object "gain-2" has no audio inlet at compatible port 3.'
+      }
+    ]);
+  });
+
+  it('returns inline ranges on multiline route continuation lines', () => {
+    const source = `[Message]
+Src
+-> Missing`;
+    const analysis = analyzePatchbay(source, {
+      messageSources: new Set(['Src'])
+    });
+
+    expect(getPatchbayDiagnosticRanges(source, analysis.diagnostics)).toEqual([
+      {
+        from: 17,
+        to: 24,
+        className: 'cm-patchbay-unknown-channel',
+        message:
+          'Unknown message channel "Missing". Declare it with chan Missing or create a matching message channel object.'
       }
     ]);
   });

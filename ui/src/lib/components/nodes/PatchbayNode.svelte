@@ -32,7 +32,7 @@
     height?: number;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNodeData, getNodes } = useSvelteFlow();
   const [defaultWidth, defaultHeight] = [320, 220];
   const channelRegistry = MessageChannelRegistry.getInstance();
   const audioChannelRegistry = AudioChannelRegistry.getInstance();
@@ -131,7 +131,7 @@
   });
 
   onMount(() => {
-    patchbay = new PatchbayObject(nodeId, context);
+    patchbay = new PatchbayObject(nodeId, context, { getNodes });
     patchbay.create([]);
     unsubscribeRegistryChange = channelRegistry.onChannelsChange(() => {
       applyPatchbayCode();

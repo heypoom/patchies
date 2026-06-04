@@ -52,6 +52,7 @@ export class AudioService {
 
   /** Last graph edges provided by the canvas, without virtual audio-channel edges. */
   private currentGraphEdges: Edge[] = [];
+  private patchbayAudioEdges = new Map<string, Edge>();
 
   /** Output gain node for audio output */
   outGain: GainNode | null = null;
@@ -232,7 +233,7 @@ export class AudioService {
 
     // Merge real edges with virtual edges from audio channels
     const virtualEdges = this.channelRegistry.getVirtualEdges();
-    const allEdges = [...edges, ...virtualEdges];
+    const allEdges = [...edges, ...virtualEdges, ...this.patchbayAudioEdges.values()];
 
     // Store edges for late-arriving nodes (include virtual edges)
     this.currentEdges = allEdges;
@@ -272,6 +273,16 @@ export class AudioService {
     } catch (error) {
       logger.error('cannot update audio edges:', error);
     }
+  }
+
+  registerPatchbayAudioEdge(routeId: string, edge: Edge): void {
+    this.patchbayAudioEdges.set(routeId, edge);
+    this.updateEdges(this.currentGraphEdges);
+  }
+
+  unregisterPatchbayAudioEdge(routeId: string): void {
+    this.patchbayAudioEdges.delete(routeId);
+    this.updateEdges(this.currentGraphEdges);
   }
 
   /**

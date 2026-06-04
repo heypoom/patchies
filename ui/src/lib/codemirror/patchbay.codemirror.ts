@@ -81,7 +81,14 @@ export function getPatchbayDiagnosticRanges(
     .filter(
       (diagnostic) =>
         diagnostic.severity === 'error' &&
-        ['unknown-channel', 'receiver-as-source', 'sender-as-target'].includes(diagnostic.code)
+        [
+          'unknown-channel',
+          'receiver-as-source',
+          'sender-as-target',
+          'unknown-object',
+          'object-port-unavailable',
+          'object-port-out-of-range'
+        ].includes(diagnostic.code)
     )
     .flatMap((diagnostic) => {
       if (!diagnostic.name) return [];
@@ -120,6 +127,7 @@ export function getPatchbayChannelLinkRanges(
 
   source.split(/\r?\n/).forEach((line, lineIndex) => {
     let searchStart = 0;
+    let skipObjectId = false;
 
     for (const token of tokenizePatchbayLine(line)) {
       const column = line.indexOf(token.text, searchStart);
@@ -133,7 +141,16 @@ export function getPatchbayChannelLinkRanges(
         continue;
       }
 
+      if (token.text === 'obj' && token.style === 'keyword') {
+        skipObjectId = true;
+        continue;
+      }
+
       if (token.style !== 'variableName') continue;
+      if (skipObjectId) {
+        skipObjectId = false;
+        continue;
+      }
       if (!currentSection) continue;
       if (localChannels.has(getChannelKey(currentSection, token.text))) continue;
 
@@ -175,6 +192,7 @@ export function getPatchbayLocalChannelRanges(source: string): PatchbayLocalChan
 
   source.split(/\r?\n/).forEach((line, lineIndex) => {
     let searchStart = 0;
+    let skipObjectId = false;
 
     for (const token of tokenizePatchbayLine(line)) {
       const column = line.indexOf(token.text, searchStart);
@@ -188,7 +206,16 @@ export function getPatchbayLocalChannelRanges(source: string): PatchbayLocalChan
         continue;
       }
 
+      if (token.text === 'obj' && token.style === 'keyword') {
+        skipObjectId = true;
+        continue;
+      }
+
       if (token.style !== 'variableName') continue;
+      if (skipObjectId) {
+        skipObjectId = false;
+        continue;
+      }
       if (!currentSection) continue;
       if (!localChannels.has(getChannelKey(currentSection, token.text))) continue;
 
@@ -267,7 +294,7 @@ function readPatchbayTokenFromText(text: string): PatchbayLineToken | null {
   const section = text.match(sectionPattern);
   if (section) return { text: section[0], style: 'typeName' };
 
-  const keyword = text.match(/^chan\b/);
+  const keyword = text.match(/^(chan|obj)\b/);
   if (keyword) return { text: keyword[0], style: 'keyword' };
 
   if (text.startsWith('->')) return { text: '->', style: 'operator' };
