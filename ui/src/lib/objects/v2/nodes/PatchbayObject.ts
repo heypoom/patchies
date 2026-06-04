@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox';
+import { hash } from 'ohash';
 import { match } from 'ts-pattern';
 
 import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
@@ -43,6 +44,7 @@ export class PatchbayObject implements TextObjectV2 {
 
   readonly nodeId: string;
   readonly context: ObjectContext;
+
   private channelRegistry = MessageChannelRegistry.getInstance();
   private audioChannelRegistry = AudioChannelRegistry.getInstance();
   private videoChannelRegistry = VideoChannelRegistry.getInstance();
@@ -74,7 +76,7 @@ export class PatchbayObject implements TextObjectV2 {
 
     this.applyCode();
 
-    this.unsubscribeParamsChange = this.context.onParamsChange((_params, _index, _value) => {
+    this.unsubscribeParamsChange = this.context.onParamsChange(() => {
       this.applyCode();
     });
 
@@ -109,6 +111,7 @@ export class PatchbayObject implements TextObjectV2 {
       videoTargets: new Set(this.videoChannelRegistry.getReceiverChannelNames()),
       objects: objectPorts
     });
+
     this.currentDiagnostics = analysis.diagnostics;
 
     if (analysis.diagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
@@ -135,12 +138,16 @@ export class PatchbayObject implements TextObjectV2 {
   destroy(): void {
     this.unsubscribeParamsChange?.();
     this.unsubscribeParamsChange = null;
+
     this.unsubscribeRegistryChange?.();
     this.unsubscribeRegistryChange = null;
+
     this.unsubscribeAudioRegistryChange?.();
     this.unsubscribeAudioRegistryChange = null;
+
     this.unsubscribeVideoRegistryChange?.();
     this.unsubscribeVideoRegistryChange = null;
+
     this.clearSubscriptions();
     this.clearMessageEdges();
     this.clearMessageEndpoints();
@@ -150,11 +157,12 @@ export class PatchbayObject implements TextObjectV2 {
 
   private getCode(): string {
     const code = this.context.getParam('code');
+
     return typeof code === 'string' ? code : '';
   }
 
   private getApplySignature(objectPorts: ReturnType<typeof getPatchbayObjectPorts>): string {
-    return JSON.stringify({
+    return hash({
       code: this.getCode(),
       messageSources: this.channelRegistry.getSenderChannelNames().sort(),
       messageTargets: this.channelRegistry.getReceiverChannelNames().sort(),
@@ -178,15 +186,19 @@ export class PatchbayObject implements TextObjectV2 {
 
     for (const [source, destinations] of routesBySource) {
       const subscriberId = this.getSubscriberId(source);
+
       this.channelRegistry.subscribe(source, subscriberId, (message) => {
         for (const destination of destinations) {
           this.channelRegistry.broadcast(destination, message, this.nodeId);
         }
       });
+
       this.trackMessageSubscription(source, subscriberId);
     }
 
-    for (const route of routes.filter((route) => route.fromEndpoint || route.toEndpoint)) {
+    const routesWithEndpoint = routes.filter((route) => route.fromEndpoint || route.toEndpoint);
+
+    for (const route of routesWithEndpoint) {
       this.applyMessageObjectRoute(route);
     }
   }
@@ -218,12 +230,14 @@ export class PatchbayObject implements TextObjectV2 {
 
       const routeId = this.getVideoRouteId(route);
       getPatchbayVideoRuntime().registerRoute(routeId, route.from, route.to);
+
       this.activeVideoRoutes.add(routeId);
     }
   }
 
   private applyMessageObjectRoute(route: PatchbayRoute): void {
     const routeId = this.getMessageRouteId(route);
+
     const sourceNodeId = route.fromEndpoint?.nodeId ?? `${routeId}:message-source:${route.from}`;
     const targetNodeId = route.toEndpoint?.nodeId ?? `${routeId}:message-target:${route.to}`;
 
@@ -234,13 +248,16 @@ export class PatchbayObject implements TextObjectV2 {
       sourceHandle: route.fromEndpoint?.handle ?? 'message-out',
       targetHandle: route.toEndpoint?.handle ?? 'message-in'
     });
+
     this.activeMessageEdges.add(routeId);
 
     if (!route.fromEndpoint) {
       const subscriberId = `${routeId}:message-channel-source`;
+
       this.channelRegistry.subscribe(route.from, subscriberId, (message) => {
         getPatchbayMessageRuntime().sendFromEndpoint(sourceNodeId, message);
       });
+
       this.trackMessageSubscription(route.from, subscriberId);
     }
 
@@ -248,14 +265,17 @@ export class PatchbayObject implements TextObjectV2 {
       getPatchbayMessageRuntime().registerEndpoint(targetNodeId, (message) => {
         this.channelRegistry.broadcast(route.to, message, this.nodeId);
       });
+
       this.activeMessageEndpoints.add(targetNodeId);
     }
   }
 
   private applyAudioObjectRoute(route: PatchbayRoute): void {
     const routeId = this.getAudioObjectRouteId(route);
+
     const sourceNodeId =
       route.fromEndpoint?.nodeId ?? `${routeId}:audio-recv:${route.from}:audio-send:obj`;
+
     const targetNodeId =
       route.toEndpoint?.nodeId ?? `${routeId}:audio-recv:obj:audio-send:${route.to}`;
 
@@ -266,6 +286,7 @@ export class PatchbayObject implements TextObjectV2 {
       sourceHandle: route.fromEndpoint?.handle ?? 'audio-out',
       targetHandle: route.toEndpoint?.handle ?? 'audio-in'
     });
+
     this.activeAudioEdges.add(routeId);
 
     if (!route.fromEndpoint) {
@@ -281,16 +302,20 @@ export class PatchbayObject implements TextObjectV2 {
 
   private applyVideoObjectRoute(route: PatchbayRoute): void {
     const routeId = this.getVideoObjectRouteId(route);
+
     let sourceNodeId = route.fromEndpoint?.nodeId;
     let sourceHandle = route.fromEndpoint?.handle;
+
     let targetNodeId = route.toEndpoint?.nodeId;
     let targetHandle = route.toEndpoint?.handle;
 
     if (!route.fromEndpoint) {
       const sourceRouteId = `${routeId}:channel-source`;
       const syntheticChannel = `${sourceRouteId}:video-channel`;
+
       getPatchbayVideoRuntime().registerRoute(sourceRouteId, route.from, syntheticChannel);
       this.activeVideoRoutes.add(sourceRouteId);
+
       sourceNodeId = `${sourceRouteId}:video-send:${syntheticChannel}`;
       sourceHandle = 'video-out';
     }
@@ -298,8 +323,10 @@ export class PatchbayObject implements TextObjectV2 {
     if (!route.toEndpoint) {
       const targetRouteId = `${routeId}:channel-target`;
       const syntheticChannel = `${targetRouteId}:video-channel`;
+
       getPatchbayVideoRuntime().registerRoute(targetRouteId, syntheticChannel, route.to);
       this.activeVideoRoutes.add(targetRouteId);
+
       targetNodeId = `${targetRouteId}:video-recv:${syntheticChannel}`;
       targetHandle = 'video-in-0';
     }
@@ -311,6 +338,7 @@ export class PatchbayObject implements TextObjectV2 {
       sourceHandle,
       targetHandle
     });
+
     this.activeVideoEdges.add(routeId);
   }
 
@@ -341,6 +369,7 @@ export class PatchbayObject implements TextObjectV2 {
   private trackMessageSubscription(source: string, subscriberId: string): void {
     const subscriberIds = this.activeMessageSubscriptions.get(source) ?? new Set<string>();
     subscriberIds.add(subscriberId);
+
     this.activeMessageSubscriptions.set(source, subscriberIds);
   }
 
@@ -364,6 +393,7 @@ export class PatchbayObject implements TextObjectV2 {
     for (const routeId of this.activeAudioEdges) {
       getPatchbayAudioRuntime().unregisterEdge(routeId);
     }
+
     this.activeAudioEdges.clear();
 
     for (const [endpointId, route] of this.activeAudioRoutes) {
@@ -378,6 +408,7 @@ export class PatchbayObject implements TextObjectV2 {
     for (const routeId of this.activeVideoEdges) {
       getPatchbayVideoRuntime().unregisterEdge(routeId);
     }
+
     this.activeVideoEdges.clear();
 
     for (const routeId of this.activeVideoRoutes) {
