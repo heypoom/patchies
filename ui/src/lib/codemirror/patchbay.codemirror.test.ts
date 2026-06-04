@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { analyzePatchbay } from '$lib/patchbay/patchbay-parser';
 import {
   patchbaySectionCompletions,
+  patchbayContextualCompletions,
   getPatchbayChannelLinkRanges,
   getPatchbayDiagnosticRanges,
   getPatchbayLocalChannelRanges,
@@ -16,10 +17,26 @@ import {
   tokenizePatchbayLine
 } from './patchbay.codemirror';
 
+import type { PatchbayObjectPorts } from '$lib/patchbay/patchbay-parser';
+
 function getPatchbayCompletionLabels(doc: string) {
   const state = EditorState.create({ doc });
   const context = new CompletionContext(state, doc.length, true);
   const result = patchbaySectionCompletions(context);
+
+  return result?.options.map((option) => option.label) ?? [];
+}
+
+function getPatchbayContextualCompletionLabels(
+  doc: string,
+  options: Parameters<typeof patchbayContextualCompletions>[1]
+) {
+  const cursorIndex = doc.indexOf('|');
+  const source = cursorIndex === -1 ? doc : doc.slice(0, cursorIndex) + doc.slice(cursorIndex + 1);
+  const position = cursorIndex === -1 ? source.length : cursorIndex;
+  const state = EditorState.create({ doc: source });
+  const context = new CompletionContext(state, position, true);
+  const result = patchbayContextualCompletions(context, options);
 
   return result?.options.map((option) => option.label) ?? [];
 }
@@ -454,5 +471,112 @@ describe('patchbaySectionCompletions', () => {
     expect(getPatchbayCompletionLabels('slider-43 o')).toEqual([]);
     expect(getPatchbayCompletionLabels('src obj =')).toEqual([]);
     expect(getPatchbayCompletionLabels('slider-43 obj ->')).toEqual([]);
+  });
+});
+
+describe('patchbayContextualCompletions', () => {
+  it('suggests channels for the current section endpoint position', () => {
+    expect(
+      getPatchbayContextualCompletionLabels('[Audio]\nKi', {
+        channels: {
+          audio: {
+            senders: new Set(['Kick']),
+            receivers: new Set(['Reverb'])
+          },
+          video: {
+            senders: new Set(['Kinect']),
+            receivers: new Set()
+          }
+        }
+      })
+    ).toEqual(['Kick']);
+
+    expect(
+      getPatchbayContextualCompletionLabels('[Audio]\nKick -> Re', {
+        channels: {
+          audio: {
+            senders: new Set(['Kick']),
+            receivers: new Set(['Reverb'])
+          }
+        }
+      })
+    ).toEqual(['Reverb']);
+  });
+
+  it('suggests declared local channels in endpoint positions', () => {
+    expect(
+      getPatchbayContextualCompletionLabels('[Message]\nchan Logger\nClock -> Lo', {
+        channels: {
+          message: {
+            senders: new Set(['Clock']),
+            receivers: new Set()
+          }
+        }
+      })
+    ).toEqual(['Logger']);
+  });
+
+  it('suggests object aliases in endpoint positions', () => {
+    expect(
+      getPatchbayContextualCompletionLabels(
+        '[Video]\nEdge = obj glsl-6\nNoise = obj glsl-5\nChroma = obj glsl-7\nNo',
+        {
+          channels: {}
+        }
+      )
+    ).toEqual(['Noise']);
+
+    expect(
+      getPatchbayContextualCompletionLabels(
+        '[Video]\nEdge = obj glsl-6\nNoise = obj glsl-5\nChroma = obj glsl-7\nNoise -> Ch',
+        {
+          channels: {}
+        }
+      )
+    ).toEqual(['Chroma']);
+  });
+
+  it('suggests compatible object ids after obj', () => {
+    const objects: PatchbayObjectPorts = new Map([
+      ['hydra-1', { video: { outlets: ['video-out'], inlets: [] } }],
+      ['glsl-2', { video: { outlets: ['video-out'], inlets: ['video-in'] } }],
+      ['scope-3', { audio: { outlets: [], inlets: ['audio-in'] } }]
+    ]);
+
+    expect(
+      getPatchbayContextualCompletionLabels('[Video]\nobj h', {
+        channels: {},
+        objects
+      })
+    ).toEqual(['hydra-1']);
+
+    expect(
+      getPatchbayContextualCompletionLabels('[Video]\nSource -> obj g', {
+        channels: {},
+        objects
+      })
+    ).toEqual(['glsl-2']);
+
+    expect(
+      getPatchbayContextualCompletionLabels('[Video]\nSource -> obj g| -> Out', {
+        channels: {},
+        objects
+      })
+    ).toEqual(['glsl-2']);
+  });
+
+  it('suggests any section-compatible object id for alias declarations', () => {
+    const objects: PatchbayObjectPorts = new Map([
+      ['hydra-1', { video: { outlets: ['video-out'], inlets: [] } }],
+      ['glsl-2', { video: { outlets: ['video-out'], inlets: ['video-in'] } }],
+      ['scope-3', { audio: { outlets: [], inlets: ['audio-in'] } }]
+    ]);
+
+    expect(
+      getPatchbayContextualCompletionLabels('[Video]\nSource = obj ', {
+        channels: {},
+        objects
+      })
+    ).toEqual(['hydra-1', 'glsl-2']);
   });
 });

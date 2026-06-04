@@ -14,12 +14,14 @@
     getPatchbayObjectAssignmentRanges,
     getPatchbayObjectKeywordRanges,
     getPatchbayObjectLinkRanges,
-    getPatchbayObjectNameRanges
+    getPatchbayObjectNameRanges,
+    patchbayContextualCompletionSource
   } from '$lib/codemirror/patchbay.codemirror';
   import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
   import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
   import { PatchbayObject } from '$lib/objects/v2/nodes/PatchbayObject';
   import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
+  import { getPatchbayObjectPorts } from '$lib/patchbay/patchbay-object-ports';
   import { requestFitView } from '../../../stores/ui.store';
 
   import type { ObjectContext } from '$lib/objects/v2/ObjectContext';
@@ -45,6 +47,25 @@
   const channelRegistry = MessageChannelRegistry.getInstance();
   const audioChannelRegistry = AudioChannelRegistry.getInstance();
   const videoChannelRegistry = VideoChannelRegistry.getInstance();
+  const patchbayCompletionExtensions = [
+    patchbayContextualCompletionSource(() => ({
+      channels: {
+        message: {
+          senders: new Set(channelRegistry.getSenderChannelNames()),
+          receivers: new Set(channelRegistry.getReceiverChannelNames())
+        },
+        audio: {
+          senders: new Set(audioChannelRegistry.getSenderChannelNames()),
+          receivers: new Set(audioChannelRegistry.getReceiverChannelNames())
+        },
+        video: {
+          senders: new Set(videoChannelRegistry.getSenderChannelNames()),
+          receivers: new Set(videoChannelRegistry.getReceiverChannelNames())
+        }
+      },
+      objects: getPatchbayObjectPorts(getNodes())
+    }))
+  ];
 
   let patchbay: PatchbayObject | null = null;
   let unsubscribeRegistryChange: (() => void) | null = null;
@@ -291,6 +312,7 @@
       dataKey="code"
       {lineErrors}
       {inlineDecorations}
+      extraExtensions={patchbayCompletionExtensions}
       onrun={applyPatchbayCode}
       onaltdecorationclick={focusPatchbayReference}
       lineWrap

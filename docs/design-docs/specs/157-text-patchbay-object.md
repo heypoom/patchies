@@ -285,6 +285,14 @@ Unknown video channel. Declare it with `chan Compsite` or create a matching send
 
 Diagnostics are shown inline through line highlighting, token underlines, and hover hints. The object should still render the editor when the DSL is invalid, but invalid routes should not be applied.
 
+Autocomplete:
+
+- At the start of a section header, typing `[` suggests `[Audio]`, `[Video]`, and `[Message]`.
+- In endpoint positions, plain-word completions suggest channel names for the current section's data type. Suggestions include existing wireless channels from the matching registry and patchbay-local channels declared with `chan` in that section.
+- In endpoint positions where `obj` can begin, typing `o` suggests the `obj` keyword.
+- After an `obj` keyword, completions suggest current patch graph object ids with compatible ports for the current section and route direction. Source positions require compatible outlets, target positions require compatible inlets, and endpoints that already have `->` on both sides require both.
+- In object alias declarations, `Name = obj ...` suggests objects with any compatible port in the current section because the alias direction is decided by where it is later used.
+
 ## Diagnostics
 
 Errors:

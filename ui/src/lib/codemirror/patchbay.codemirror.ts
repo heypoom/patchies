@@ -7,8 +7,13 @@ import {
   type StringStream
 } from '@codemirror/language';
 import type { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
+import type { Extension } from '@codemirror/state';
 import { tags } from '@lezer/highlight';
-import type { PatchbayDiagnostic, PatchbaySection } from '$lib/patchbay/patchbay-parser';
+import type {
+  PatchbayDiagnostic,
+  PatchbayObjectPorts,
+  PatchbaySection
+} from '$lib/patchbay/patchbay-parser';
 
 export type PatchbayTokenStyle = 'comment' | 'keyword' | 'operator' | 'typeName' | 'variableName';
 
@@ -76,6 +81,13 @@ export type PatchbayChannelRoles = {
 };
 
 export type PatchbayChannelRolesBySection = Partial<Record<PatchbaySection, PatchbayChannelRoles>>;
+
+export type PatchbayCompletionData = {
+  channels?: PatchbayChannelRolesBySection;
+  objects?: PatchbayObjectPorts;
+};
+
+type PatchbayEndpointCompletionRole = 'source' | 'target' | 'both' | 'any';
 
 const identifierPattern = /^[A-Za-z0-9_.~/:-]+/;
 const sectionPattern = /^\[(Message|Audio|Video)\]/i;
@@ -640,6 +652,278 @@ export function patchbaySectionCompletions(context: CompletionContext): Completi
   if (sectionResult) return sectionResult;
 
   return getPatchbayObjectKeywordCompletion(line.from, linePrefix);
+}
+
+export function patchbayContextualCompletions(
+  context: CompletionContext,
+  data: PatchbayCompletionData
+): CompletionResult | null {
+  const completionContext = getEndpointCompletionContext(context);
+  if (!completionContext) return null;
+
+  if (completionContext.afterObjectKeyword) {
+    return getPatchbayObjectIdCompletions(completionContext, data.objects);
+  }
+
+  return getPatchbayChannelCompletions(completionContext, data);
+}
+
+export function patchbayContextualCompletionSource(
+  getData: () => PatchbayCompletionData
+): Extension {
+  return patchbayLanguage.data.of({
+    autocomplete: (context: CompletionContext) => patchbayContextualCompletions(context, getData())
+  });
+}
+
+function getEndpointCompletionContext(context: CompletionContext): {
+  section: PatchbaySection;
+  source: string;
+  from: number;
+  word: string;
+  role: PatchbayEndpointCompletionRole;
+  afterObjectKeyword: boolean;
+} | null {
+  const source = context.state.doc.toString();
+  const section = getSectionAtPosition(source, context.pos);
+  if (!section) return null;
+
+  const line = context.state.doc.lineAt(context.pos);
+  const column = context.pos - line.from;
+  const linePrefix = line.text.slice(0, column);
+  const lineSuffix = line.text.slice(column);
+  if (linePrefix.includes('//')) return null;
+
+  const wordMatch = linePrefix.match(/([A-Za-z0-9_.~/:-]*)$/);
+  if (!wordMatch) return null;
+  if (!context.explicit && wordMatch[1] === '') return null;
+
+  const word = wordMatch[1];
+  const wordStartColumn = linePrefix.length - word.length;
+  const beforeWord = linePrefix.slice(0, wordStartColumn);
+  const afterWord = lineSuffix;
+  const afterObjectKeyword = /(?:^|\s)obj\s*$/.test(beforeWord);
+  const role = getEndpointCompletionRole(source, line.number, beforeWord, afterWord);
+
+  if (afterObjectKeyword && !canCompleteObjectId(beforeWord)) return null;
+  if (!afterObjectKeyword && !canCompleteChannelName(beforeWord, afterWord)) return null;
+
+  return {
+    section,
+    source,
+    from: line.from + wordStartColumn,
+    word,
+    role: isObjectAliasCompletion(beforeWord) ? 'any' : role,
+    afterObjectKeyword
+  };
+}
+
+function getPatchbayObjectIdCompletions(
+  context: {
+    section: PatchbaySection;
+    source: string;
+    from: number;
+    word: string;
+    role: PatchbayEndpointCompletionRole;
+  },
+  objects: PatchbayObjectPorts | undefined
+): CompletionResult | null {
+  if (!objects) return null;
+
+  const options = [...objects.entries()]
+    .filter(([nodeId, ports]) => {
+      if (!nodeId.toLowerCase().startsWith(context.word.toLowerCase())) return false;
+
+      const sectionPorts = ports[context.section];
+      const inletCount = sectionPorts?.inlets?.length ?? 0;
+      const outletCount = sectionPorts?.outlets?.length ?? 0;
+
+      if (context.role === 'source') return outletCount > 0;
+      if (context.role === 'target') return inletCount > 0;
+      if (context.role === 'both') return inletCount > 0 && outletCount > 0;
+
+      return inletCount > 0 || outletCount > 0;
+    })
+    .map(([nodeId, ports]) => {
+      const sectionPorts = ports[context.section];
+      const inletCount = sectionPorts?.inlets?.length ?? 0;
+      const outletCount = sectionPorts?.outlets?.length ?? 0;
+      const detail =
+        inletCount > 0 && outletCount > 0
+          ? `${context.section} in/out`
+          : inletCount > 0
+            ? `${context.section} inlet`
+            : `${context.section} outlet`;
+
+      return {
+        label: nodeId,
+        type: 'variable',
+        detail
+      } satisfies Completion;
+    });
+
+  if (options.length === 0) return null;
+
+  return {
+    from: context.from,
+    options,
+    validFor: /^[A-Za-z0-9_.~/-]*$/
+  };
+}
+
+function getPatchbayChannelCompletions(
+  context: {
+    section: PatchbaySection;
+    source: string;
+    from: number;
+    word: string;
+    role: PatchbayEndpointCompletionRole;
+  },
+  data: PatchbayCompletionData
+): CompletionResult | null {
+  const channels = new Map<string, Completion>();
+  const localChannels = getPatchbayLocalChannelNames(context.source, context.section);
+  const objectAliases = getPatchbayObjectAliasNames(context.source, context.section);
+  const roles = data.channels?.[context.section];
+
+  for (const channel of localChannels) {
+    channels.set(channel, {
+      label: channel,
+      type: 'variable',
+      detail: `local ${context.section} channel`
+    });
+  }
+
+  for (const alias of objectAliases) {
+    channels.set(alias, {
+      label: alias,
+      type: 'variable',
+      detail: `${context.section} object alias`
+    });
+  }
+
+  if (roles) {
+    for (const channel of getRoleCompatibleChannels(roles, context.role)) {
+      channels.set(channel, {
+        label: channel,
+        type: 'variable',
+        detail: `${context.section} channel`
+      });
+    }
+  }
+
+  const word = context.word.toLowerCase();
+  const options = [...channels.values()].filter((option) =>
+    option.label.toLowerCase().startsWith(word)
+  );
+  if (options.length === 0) return null;
+
+  return {
+    from: context.from,
+    options,
+    validFor: /^[A-Za-z0-9_.~/:-]*$/
+  };
+}
+
+function getSectionAtPosition(source: string, position: number): PatchbaySection | undefined {
+  const beforePosition = source.slice(0, position);
+  let currentSection: PatchbaySection | undefined;
+
+  for (const line of beforePosition.split(/\r?\n/)) {
+    const section = parseSectionToken(tokenizePatchbayLine(line)[0]);
+    if (section) currentSection = section;
+  }
+
+  return currentSection;
+}
+
+function canCompleteObjectId(beforeWord: string): boolean {
+  return (
+    /(?:^|\s)obj\s*$/.test(beforeWord) && canStartObjectEndpoint(beforeWord.replace(/obj\s*$/, ''))
+  );
+}
+
+function canCompleteChannelName(beforeWord: string, afterWord: string): boolean {
+  const before = beforeWord.trimEnd();
+  const after = afterWord.trimStart();
+
+  if (before.endsWith('obj')) return false;
+  if (/^[^\s=]+\s*=\s*$/.test(before)) return false;
+  if (before === '' || before.endsWith('->')) return true;
+  if (after.startsWith('->')) return true;
+
+  return false;
+}
+
+function isObjectAliasCompletion(beforeWord: string): boolean {
+  return /^[^\s=]+\s*=\s*obj\s*$/.test(beforeWord.trim());
+}
+
+function getEndpointCompletionRole(
+  source: string,
+  lineNumber: number,
+  beforeWord: string,
+  afterWord: string
+): PatchbayEndpointCompletionRole {
+  const hasArrowBefore =
+    beforeWord.includes('->') || previousRouteLineWaitsForEndpoint(source, lineNumber);
+  const hasArrowAfter = afterWord.trimStart().startsWith('->');
+
+  if (hasArrowBefore && hasArrowAfter) return 'both';
+  if (hasArrowBefore) return 'target';
+  return 'source';
+}
+
+function previousRouteLineWaitsForEndpoint(source: string, lineNumber: number): boolean {
+  const lines = source.split(/\r?\n/);
+
+  for (let index = lineNumber - 2; index >= 0; index -= 1) {
+    const text = lines[index]?.trim() ?? '';
+    if (text === '' || text.startsWith('[') || text.startsWith('chan ')) return false;
+    if (text.startsWith('//') || text.startsWith('# ')) continue;
+
+    return text.endsWith('->');
+  }
+
+  return false;
+}
+
+function getPatchbayLocalChannelNames(source: string, section: PatchbaySection): Set<string> {
+  const channelNames = new Set<string>();
+
+  for (const channel of getPatchbayLocalChannels(source)) {
+    if (channel.startsWith(`${section}\0`)) {
+      channelNames.add(channel.slice(section.length + 1));
+    }
+  }
+
+  return channelNames;
+}
+
+function getPatchbayObjectAliasNames(source: string, section: PatchbaySection): Set<string> {
+  const aliasNames = new Set<string>();
+
+  for (const alias of getPatchbayObjectAliases(source).keys()) {
+    if (alias.startsWith(`${section}\0`)) {
+      aliasNames.add(alias.slice(section.length + 1));
+    }
+  }
+
+  return aliasNames;
+}
+
+function getRoleCompatibleChannels(
+  roles: PatchbayChannelRoles,
+  role: PatchbayEndpointCompletionRole
+): Set<string> {
+  if (role === 'source') return roles.senders;
+  if (role === 'target') return roles.receivers;
+
+  if (role === 'both') {
+    return new Set([...roles.senders].filter((channel) => roles.receivers.has(channel)));
+  }
+
+  return new Set([...roles.senders, ...roles.receivers]);
 }
 
 function getPatchbaySectionCompletion(
