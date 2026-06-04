@@ -153,9 +153,13 @@
   let videoInletCount = $derived(data.videoInletCount ?? 1);
   let videoOutletCount = $derived(data.videoOutletCount ?? 1);
 
-  const setCodeAndUpdate = (newCode: string) => {
+  function handleCodeChange(newCode: string) {
     updateNodeData(nodeId, { code: newCode });
-    setTimeout(() => updateHydra());
+  }
+
+  const setCodeAndUpdate = (newCode: string) => {
+    handleCodeChange(newCode);
+    setTimeout(() => updateHydra(newCode));
   };
 
   const handleMessage: MessageCallbackFn = (message, meta) => {
@@ -223,7 +227,7 @@
     eventBus.removeEventListener('nodeMouseScopeUpdate', handleMouseScopeUpdate);
   });
 
-  function updateHydra() {
+  function updateHydra(nextCode = code) {
     // Clear console and error line highlighting on re-run
     consoleRef?.clearConsole();
     lineErrors = undefined;
@@ -239,7 +243,7 @@
       audioAnalysisSystem.disableFFT(nodeId);
 
       glSystem.upsertNode(nodeId, 'hydra', {
-        code,
+        code: nextCode,
         videoInletCount: data.videoInletCount ?? 1,
         videoOutletCount: data.videoOutletCount ?? 1,
         _runRevision: Date.now()
@@ -297,6 +301,7 @@
   title={data.title ?? 'hydra'}
   objectType="hydra"
   codePlaceholder="Write your Hydra code here..."
+  onCodeChange={handleCodeChange}
   {nodeId}
   onrun={updateHydra}
   onPlaybackToggle={togglePause}
@@ -375,9 +380,7 @@
   {#snippet codeEditor()}
     <CodeEditor
       value={code}
-      onchange={(newCode) => {
-        updateNodeData(nodeId, { code: newCode });
-      }}
+      onchange={handleCodeChange}
       language="javascript"
       nodeType="hydra"
       placeholder="Write your Hydra code here..."

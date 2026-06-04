@@ -17,6 +17,10 @@ osc(10, 0.1, 1.5)
   .out()
 ```
 
+You can hold Option on macOS, or Control on Windows/Linux, and drag number
+literals in the editor to tune values. Hydra re-runs automatically while you
+drag, so changes like `osc(10, 0.1, 1.5)` update the preview as you explore.
+
 See the [Hydra documentation](https://hydra.ojack.xyz/docs) to learn how to use
 Hydra. Try out the standalone editor at [hydra.ojack.xyz](https://hydra.ojack.xyz)
 to see how Hydra works. Code examples in the editor will work in Patchies too,
