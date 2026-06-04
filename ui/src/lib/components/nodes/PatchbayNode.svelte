@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { Play, Settings, X } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onDestroy, onMount } from 'svelte';
 
   import CodeEditor from '$lib/components/CodeEditor.svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
+  import { useNodeDataTracker } from '$lib/history';
   import { editorFontFamily } from '../../../stores/editor.store';
   import {
     getPatchbayChannelLinkRanges,
@@ -30,13 +33,14 @@
     height
   }: {
     id: string;
-    data: { code: string };
+    data: { code: string; runOnEdit?: boolean; allowResize?: boolean };
     selected: boolean;
     width?: number;
     height?: number;
   } = $props();
 
   const { updateNodeData, getNodes } = useSvelteFlow();
+  const tracker = useNodeDataTracker(nodeId);
   const [defaultWidth, defaultHeight] = [320, 220];
   const channelRegistry = MessageChannelRegistry.getInstance();
   const audioChannelRegistry = AudioChannelRegistry.getInstance();
@@ -46,8 +50,13 @@
   let unsubscribeRegistryChange: (() => void) | null = null;
   let unsubscribeAudioRegistryChange: (() => void) | null = null;
   let unsubscribeVideoRegistryChange: (() => void) | null = null;
+  let contentContainer: HTMLDivElement | null = null;
+  let contentWidth = $state(defaultWidth);
+  let showSettings = $state(false);
   let diagnostics = $state<PatchbayDiagnostic[]>([]);
   const code = $derived(data.code ?? '');
+  const runOnEdit = $derived(data.runOnEdit ?? true);
+  const allowResize = $derived(data.allowResize ?? true);
   const lineErrors = $derived.by(() => {
     const errors: Record<number, string[]> = {};
 
@@ -115,8 +124,31 @@
     diagnostics = patchbay?.diagnostics ?? [];
   }
 
+  function applyPatchbayCodeIfRunOnEdit() {
+    if (runOnEdit) {
+      applyPatchbayCode();
+    }
+  }
+
   function handleCodeChange(nextCode: string) {
     updateNodeData(nodeId, { code: nextCode });
+  }
+
+  function handleRunOnEditChange(nextRunOnEdit: boolean) {
+    const oldRunOnEdit = runOnEdit;
+    updateNodeData(nodeId, { runOnEdit: nextRunOnEdit });
+    tracker.commit('runOnEdit', oldRunOnEdit, nextRunOnEdit);
+  }
+
+  function handleAllowResizeChange(nextAllowResize: boolean) {
+    const oldAllowResize = allowResize;
+    updateNodeData(nodeId, { allowResize: nextAllowResize });
+    tracker.commit('allowResize', oldAllowResize, nextAllowResize);
+  }
+
+  function updateContentWidth() {
+    if (!contentContainer) return;
+    contentWidth = contentContainer.offsetWidth;
   }
 
   function focusPatchbayReference(data: string) {
@@ -154,22 +186,36 @@
 
   $effect(() => {
     void code;
-    applyPatchbayCode();
+    applyPatchbayCodeIfRunOnEdit();
   });
 
   onMount(() => {
     patchbay = new PatchbayObject(nodeId, context, { getNodes });
     patchbay.create([]);
     unsubscribeRegistryChange = channelRegistry.onChannelsChange(() => {
-      applyPatchbayCode();
+      applyPatchbayCodeIfRunOnEdit();
     });
     unsubscribeAudioRegistryChange = audioChannelRegistry.onChannelsChange(() => {
-      applyPatchbayCode();
+      applyPatchbayCodeIfRunOnEdit();
     });
     unsubscribeVideoRegistryChange = videoChannelRegistry.onChannelsChange(() => {
-      applyPatchbayCode();
+      applyPatchbayCodeIfRunOnEdit();
     });
     applyPatchbayCode();
+
+    updateContentWidth();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateContentWidth();
+    });
+
+    if (contentContainer) {
+      resizeObserver.observe(contentContainer);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   });
 
   onDestroy(() => {
@@ -184,14 +230,51 @@
   });
 </script>
 
-<div class="relative" style:--patchies-patchbay-node-font-family={$editorFontFamily}>
-  <NodeResizer class="z-1" isVisible={selected} minWidth={260} minHeight={160} />
+<div class="group relative" style:--patchies-patchbay-node-font-family={$editorFontFamily}>
+  <NodeResizer class="z-1" isVisible={selected && allowResize} minWidth={260} minHeight={160} />
 
-  <div class="node-title-drag-handle absolute -top-7 z-10 w-fit rounded-lg bg-zinc-900 px-2 py-1">
-    <div class="font-mono text-xs font-medium text-zinc-400">patchbay</div>
+  <div
+    class="absolute -top-7 left-0 z-10 flex items-center justify-between"
+    style="width: {contentWidth}px"
+  >
+    <div class="node-title-drag-handle rounded-lg bg-zinc-900 px-2 py-1">
+      <div class="font-mono text-xs font-medium text-zinc-400">patchbay</div>
+    </div>
+
+    <div class="node-floating-controls flex gap-1">
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            class="node-floating-button"
+            onclick={applyPatchbayCode}
+            type="button"
+            aria-label="Apply patchbay routes"
+          >
+            <Play class="h-4 w-4 text-zinc-300" />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Apply Routes</Tooltip.Content>
+      </Tooltip.Root>
+
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            class="node-floating-button"
+            onclick={() => (showSettings = !showSettings)}
+            type="button"
+            aria-label={showSettings ? 'Close settings' : 'Open settings'}
+            aria-pressed={showSettings}
+          >
+            <Settings class="h-4 w-4 text-zinc-300" />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Settings</Tooltip.Content>
+      </Tooltip.Root>
+    </div>
   </div>
 
   <div
+    bind:this={contentContainer}
     class={[
       'nodrag nowheel nopan flex flex-col overflow-hidden rounded-lg border bg-zinc-950 shadow-lg',
       selected ? 'border-zinc-400' : 'border-zinc-700'
@@ -208,10 +291,48 @@
       dataKey="code"
       {lineErrors}
       {inlineDecorations}
+      onrun={applyPatchbayCode}
       onaltdecorationclick={focusPatchbayReference}
       lineWrap
     />
   </div>
+
+  {#if showSettings}
+    <div class="absolute top-0 z-20" style="left: {contentWidth + 10}px">
+      <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
+        <button
+          onclick={() => (showSettings = false)}
+          class="cursor-pointer rounded p-1 hover:bg-zinc-700"
+          type="button"
+          aria-label="Close patchbay settings"
+        >
+          <X class="h-4 w-4 text-zinc-300" />
+        </button>
+      </div>
+
+      <div class="w-56 rounded-lg border border-zinc-700 bg-zinc-900 p-3 shadow-xl">
+        <label class="flex cursor-pointer items-center gap-2 text-xs text-zinc-300">
+          <input
+            type="checkbox"
+            class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-950 accent-violet-400"
+            checked={runOnEdit}
+            onchange={(event) => handleRunOnEditChange(event.currentTarget.checked)}
+          />
+          <span>Run on Edit</span>
+        </label>
+
+        <label class="mt-3 flex cursor-pointer items-center gap-2 text-xs text-zinc-300">
+          <input
+            type="checkbox"
+            class="h-4 w-4 cursor-pointer rounded border-zinc-600 bg-zinc-950 accent-violet-400"
+            checked={allowResize}
+            onchange={(event) => handleAllowResizeChange(event.currentTarget.checked)}
+          />
+          <span>Allow Resize</span>
+        </label>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>

@@ -311,7 +311,9 @@ Warnings:
 
 The object should have no visible inlets or outlets in v1. It is a routing controller for named wireless channels.
 
-On edit:
+The node has a settings panel with `Run on Edit` and `Allow Resize` options. When `Run on Edit` is enabled, edits re-parse and apply automatically. When disabled, edits update the saved text but do not change active route registrations until the user explicitly applies the patchbay code. When `Allow Resize` is disabled, the node keeps its current size but hides the resize handles.
+
+On apply:
 
 1. Parse the DSL.
 2. Resolve channels against current local declarations and global wireless channel registries.

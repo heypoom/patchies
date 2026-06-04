@@ -53,7 +53,11 @@ export type NodeData = {
 export function getDefaultNodeData(nodeType: string): NodeData {
   return match(nodeType)
     .with('object', () => ({ expr: '', name: '', params: [] }))
-    .with('patchbay', () => ({ code: '[Message]\nchan Clock\nchan Logger\nClock -> Logger' }))
+    .with('patchbay', () => ({
+      code: '[Message]\nchan Clock\nchan Logger\nClock -> Logger',
+      runOnEdit: true,
+      allowResize: true
+    }))
     .with('js', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
     .with('python', () => ({ code: DEFAULT_PYTHON_CODE, showConsole: true }))
     .with('peppermint', () => ({ code: DEFAULT_PEPPERMINT_CODE, showConsole: true }))
