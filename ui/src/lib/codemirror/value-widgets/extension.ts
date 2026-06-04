@@ -33,7 +33,7 @@ import type {
   VectorComponentTexts
 } from './types';
 import {
-  formatNormalizedColorComponents,
+  formatColorComponents,
   hexColorForComponents,
   ValueCueWidget
 } from './widgets/color-widget';
@@ -142,6 +142,7 @@ export function inlineValueWidgets(
     dragState: ActiveDragState | null = null;
     hoveredWidget: InlineValueWidgetInfo | null = null;
     activeXYWidget: InlineValueWidgetInfo | null = null;
+    activeColorWidget: InlineValueWidgetInfo | null = null;
     numberModifierActive = false;
     xyGrid: HTMLElement | null = null;
     colorInput: HTMLInputElement | null = null;
@@ -226,7 +227,7 @@ export function inlineValueWidgets(
       const input = document.createElement('input');
       input.type = 'color';
       input.className = 'cm-value-widget-color-picker';
-      input.value = hexColorForComponents(widget.components);
+      input.value = hexColorForComponents(widget.components, widget.colorScale);
       input.dataset.valueWidgetFrom = String(widget.from);
       input.dataset.valueWidgetTo = String(widget.to);
 
@@ -241,12 +242,13 @@ export function inlineValueWidgets(
 
       input.addEventListener('input', this.handleColorInput);
       input.addEventListener('change', this.handleColorInput);
-      input.addEventListener('blur', this.handleColorBlur);
 
       document.body.appendChild(input);
 
       this.colorInput = input;
+      this.activeColorWidget = widget;
       this.positionColorInput(widget, input);
+      document.addEventListener('mousedown', this.handleDocumentMouseDown);
 
       input.focus({ preventScroll: true });
       input.click();
@@ -280,27 +282,29 @@ export function inlineValueWidgets(
 
       this.colorInput.removeEventListener('input', this.handleColorInput);
       this.colorInput.removeEventListener('change', this.handleColorInput);
-      this.colorInput.removeEventListener('blur', this.handleColorBlur);
 
       this.colorInput.remove();
       this.colorInput = null;
-    }
+      this.activeColorWidget = null;
 
-    handleColorBlur = () => {
-      this.destroyColorInput();
-    };
+      if (!this.xyGrid) {
+        document.removeEventListener('mousedown', this.handleDocumentMouseDown);
+      }
+    }
 
     handleColorInput = (event: Event) => {
       if (!(event.target instanceof HTMLInputElement)) return;
 
-      const widget = findWidgetFromDataset(this.view.state, language, event.target, context);
+      const widget =
+        this.activeColorWidget ??
+        findWidgetFromDataset(this.view.state, language, event.target, context);
       if (!widget || widget.kind !== 'color') return;
 
       this.applyColor(widget, event.target.value);
     };
 
     applyColor(widget: InlineValueWidgetInfo, hex: string) {
-      const nextTexts = formatNormalizedColorComponents(widget.components, hex);
+      const nextTexts = formatColorComponents(widget.components, hex, widget.colorScale);
       if (!nextTexts) return false;
 
       const changes = widget.components.map((component, index) => ({
@@ -313,7 +317,14 @@ export function inlineValueWidgets(
       dispatchValueWidgetChange(this.view);
 
       const nextWidget = updateVectorWidgetComponents(widget, nextTexts);
+      this.activeColorWidget = nextWidget;
       this.hoveredWidget = nextWidget;
+
+      if (this.colorInput) {
+        this.colorInput.dataset.valueWidgetFrom = String(nextWidget.from);
+        this.colorInput.dataset.valueWidgetTo = String(nextWidget.to);
+      }
+
       this.refreshDecorations();
 
       return true;
@@ -381,6 +392,10 @@ export function inlineValueWidgets(
 
       this.xyGrid.remove();
       this.xyGrid = null;
+
+      if (!this.colorInput) {
+        document.removeEventListener('mousedown', this.handleDocumentMouseDown);
+      }
     }
 
     handleGridMouseDown = (event: MouseEvent) => {

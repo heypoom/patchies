@@ -7,7 +7,7 @@ export {
   formatNormalizedVectorComponents,
   updateDraggedNumberComponent
 } from './widgets/number-widget';
-export { formatNormalizedColorComponents } from './widgets/color-widget';
+export { formatColorComponents, formatNormalizedColorComponents } from './widgets/color-widget';
 export type {
   InlineValueComponent,
   InlineValueWidgetContext,

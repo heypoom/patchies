@@ -62,8 +62,8 @@ function numericComponentFromNode(
   };
 }
 
-function isNormalized(components: InlineValueComponent[]) {
-  return components.every((component) => component.value >= 0 && component.value <= 1);
+function isWithinScale(components: InlineValueComponent[], scale: number) {
+  return components.every((component) => component.value >= 0 && component.value <= scale);
 }
 
 function componentKey(component: InlineValueComponent) {
@@ -78,9 +78,10 @@ function addVectorWidget(
   from: number,
   to: number,
   components: InlineValueComponent[],
-  options: { colorPicker?: boolean } = {}
+  options: { colorPicker?: boolean; colorScale?: number } = {}
 ) {
-  if (!isNormalized(components)) return;
+  const colorScale = options.colorScale ?? 1;
+  if (!isWithinScale(components, colorScale)) return;
 
   widgets.push({
     kind,
@@ -88,7 +89,8 @@ function addVectorWidget(
     to,
     text: readDoc(state, from, to),
     components,
-    colorPicker: kind === 'color' ? options.colorPicker : undefined
+    colorPicker: kind === 'color' ? options.colorPicker : undefined,
+    colorScale: kind === 'color' && colorScale !== 1 ? colorScale : undefined
   });
 
   components.forEach((component) => consumedNumbers.add(componentKey(component)));
@@ -229,6 +231,50 @@ function collectJavaScriptValueWidgetsFromTree(
           node.to,
           components,
           { colorPicker: calleeText !== 'vec2' }
+        );
+      }
+    });
+  }
+
+  if (context?.nodeType === 'p5') {
+    tree.iterate({
+      enter(node) {
+        if (node.name !== 'CallExpression') return;
+
+        const children = directChildren(node.node);
+        const callee = children[0];
+        const args = children.find((child) => child.name === 'ArgList');
+        if (!callee || !args) return;
+
+        const calleeText = readDoc(state, callee.from, callee.to);
+        if (
+          calleeText !== 'fill' &&
+          calleeText !== 'stroke' &&
+          calleeText !== 'background' &&
+          calleeText !== 'color' &&
+          calleeText !== 'tint'
+        ) {
+          return;
+        }
+
+        const components = directChildren(args)
+          .map((child) => numericComponentFromNode(state, child))
+          .filter((component): component is InlineValueComponent => component !== null);
+
+        if (components.length !== 3 && components.length !== 4) return;
+
+        addVectorWidget(
+          widgets,
+          consumedNumbers,
+          'color',
+          state,
+          node.from,
+          node.to,
+          components.slice(0, 3),
+          {
+            colorPicker: true,
+            colorScale: 255
+          }
         );
       }
     });

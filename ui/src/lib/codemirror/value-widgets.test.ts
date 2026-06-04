@@ -16,6 +16,7 @@ import {
   dragDeltaForNumber,
   findInlineValueWidgets,
   formatDraggedNumber,
+  formatColorComponents,
   formatNormalizedColorComponents,
   formatNormalizedVectorComponent,
   formatNormalizedVectorComponents,
@@ -118,6 +119,79 @@ describe('CodeMirror inline value widgets', () => {
       { kind: 'number', text: '0.5', components: ['0.5'] },
       { kind: 'number', text: '0.3', components: ['0.3'] },
       { kind: 'number', text: '0.5', components: ['0.5'] }
+    ]);
+  });
+
+  it('detects P5 RGB color calls as 255-scaled color widgets', () => {
+    const widgets = findInlineValueWidgets(
+      jsState(
+        'fill(244, 241, 100);\nstroke(12, 34, 56);\nbackground(0, 128, 255);\nconst c = color(1, 2, 3);\ntint(255, 0, 0, 100);'
+      ),
+      'javascript',
+      { nodeType: 'p5' }
+    );
+
+    expect(
+      widgets.map((widget) => ({
+        kind: widget.kind,
+        text: widget.text,
+        components: widget.components.map((component) => component.text),
+        colorScale: widget.colorScale
+      }))
+    ).toEqual([
+      {
+        kind: 'color',
+        text: 'fill(244, 241, 100)',
+        components: ['244', '241', '100'],
+        colorScale: 255
+      },
+      {
+        kind: 'color',
+        text: 'stroke(12, 34, 56)',
+        components: ['12', '34', '56'],
+        colorScale: 255
+      },
+      {
+        kind: 'color',
+        text: 'background(0, 128, 255)',
+        components: ['0', '128', '255'],
+        colorScale: 255
+      },
+      {
+        kind: 'color',
+        text: 'color(1, 2, 3)',
+        components: ['1', '2', '3'],
+        colorScale: 255
+      },
+      {
+        kind: 'color',
+        text: 'tint(255, 0, 0, 100)',
+        components: ['255', '0', '0'],
+        colorScale: 255
+      },
+      {
+        kind: 'number',
+        text: '100',
+        components: ['100'],
+        colorScale: undefined
+      }
+    ]);
+  });
+
+  it('does not detect P5 color calls outside the default 0..255 range', () => {
+    expect(
+      labels(
+        findInlineValueWidgets(jsState('fill(300, 241, 100);\nstroke(-1, 34, 56);'), 'javascript', {
+          nodeType: 'p5'
+        })
+      )
+    ).toEqual([
+      { kind: 'number', text: '300', components: ['300'] },
+      { kind: 'number', text: '241', components: ['241'] },
+      { kind: 'number', text: '100', components: ['100'] },
+      { kind: 'number', text: '-1', components: ['-1'] },
+      { kind: 'number', text: '34', components: ['34'] },
+      { kind: 'number', text: '56', components: ['56'] }
     ]);
   });
 
@@ -239,6 +313,19 @@ describe('CodeMirror inline value widgets', () => {
     ]);
   });
 
+  it('formats hex colors into 255-scaled component text for P5 color calls', () => {
+    const widget = findInlineValueWidgets(jsState('fill(244, 241, 100);'), 'javascript', {
+      nodeType: 'p5'
+    }).find((item) => item.kind === 'color');
+
+    expect(widget).toBeDefined();
+    expect(formatColorComponents(widget!.components, '#336699', widget!.colorScale)).toEqual([
+      '51',
+      '102',
+      '153'
+    ]);
+  });
+
   it('auto-runs inline widget edits for GLSL and Shader Park editors', () => {
     expect(shouldRunOnValueWidgetChange('glsl')).toBe(true);
     expect(shouldRunOnValueWidgetChange('javascript', 'hydra')).toBe(true);
@@ -253,6 +340,7 @@ describe('CodeMirror inline value widgets', () => {
       VALUE_WIDGET_HYDRA_RUN_THROTTLE_MS
     );
     expect(valueWidgetRunThrottleMs('javascript', 'p5')).toBe(VALUE_WIDGET_P5_RUN_THROTTLE_MS);
+    expect(VALUE_WIDGET_P5_RUN_THROTTLE_MS).toBe(50);
     expect(valueWidgetRunThrottleMs('javascript', 'shaderpark')).toBe(
       VALUE_WIDGET_SHADERPARK_RUN_THROTTLE_MS
     );

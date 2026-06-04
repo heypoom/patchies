@@ -17,6 +17,7 @@ export interface InlineValueWidgetInfo {
   text: string;
   components: InlineValueComponent[];
   colorPicker?: boolean;
+  colorScale?: number;
 }
 
 export interface InlineValueWidgetContext {
