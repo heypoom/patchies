@@ -148,4 +148,71 @@ describe('analyzePatchbay', () => {
     expect(result.messageRoutes).toEqual([]);
     expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(['unknown-channel']);
   });
+
+  it('expands audio route chains using audio sender and receiver roles', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      chan Bus
+      Mic -> Bus -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.audioRoutes).toEqual([
+      { from: 'Mic', to: 'Bus' },
+      { from: 'Bus', to: 'Out' }
+    ]);
+  });
+
+  it('rejects audio receiver-only channels as route sources', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      chan Bus
+      Inbound -> Bus
+      `,
+      {
+        audioTargets: new Set(['Inbound'])
+      }
+    );
+
+    expect(result.audioRoutes).toEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        severity: 'error',
+        code: 'receiver-as-source',
+        section: 'audio',
+        name: 'Inbound'
+      }
+    ]);
+  });
+
+  it('rejects audio sender-only channels as route targets', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      chan Bus
+      Bus -> Outbound
+      `,
+      {
+        audioSources: new Set(['Outbound']),
+        audioTargets: new Set()
+      }
+    );
+
+    expect(result.audioRoutes).toEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        severity: 'error',
+        code: 'sender-as-target',
+        section: 'audio',
+        name: 'Outbound'
+      }
+    ]);
+  });
 });

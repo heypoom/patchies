@@ -65,6 +65,7 @@ Clock -> Local -> Lights`;
         to: 26,
         className: 'cm-patchbay-channel-link cm-patchbay-sender-channel',
         channel: 'Clock',
+        section: 'message',
         role: 'sender'
       },
       {
@@ -72,6 +73,7 @@ Clock -> Local -> Lights`;
         to: 45,
         className: 'cm-patchbay-channel-link cm-patchbay-receiver-channel',
         channel: 'Lights',
+        section: 'message',
         role: 'receiver'
       }
     ]);
@@ -92,6 +94,7 @@ Shared -> Output`;
         to: 16,
         className: 'cm-patchbay-channel-link cm-patchbay-bidirectional-channel',
         channel: 'Shared',
+        section: 'message',
         role: 'both'
       },
       {
@@ -99,6 +102,7 @@ Shared -> Output`;
         to: 26,
         className: 'cm-patchbay-channel-link cm-patchbay-receiver-channel',
         channel: 'Output',
+        section: 'message',
         role: 'receiver'
       }
     ]);
@@ -113,10 +117,36 @@ Clock -> Local -> Lights`;
       getPatchbayChannelLinkRanges(source, {
         senders: new Set(['Clock', 'Local']),
         receivers: new Set(['Local', 'Lights'])
-      }).map(({ channel, role }) => ({ channel, role }))
+      }).map(({ channel, section, role }) => ({ channel, section, role }))
     ).toEqual([
-      { channel: 'Clock', role: 'sender' },
-      { channel: 'Lights', role: 'receiver' }
+      { channel: 'Clock', section: 'message', role: 'sender' },
+      { channel: 'Lights', section: 'message', role: 'receiver' }
+    ]);
+  });
+
+  it('uses section-specific channel roles for audio ranges', () => {
+    const source = `[Message]
+foo -> bar
+
+[Audio]
+foo -> bar`;
+
+    expect(
+      getPatchbayChannelLinkRanges(source, {
+        message: {
+          senders: new Set(['foo']),
+          receivers: new Set(['bar'])
+        },
+        audio: {
+          senders: new Set(['bar']),
+          receivers: new Set(['foo'])
+        }
+      }).map(({ channel, section, role }) => ({ channel, section, role }))
+    ).toEqual([
+      { channel: 'foo', section: 'message', role: 'sender' },
+      { channel: 'bar', section: 'message', role: 'receiver' },
+      { channel: 'foo', section: 'audio', role: 'receiver' },
+      { channel: 'bar', section: 'audio', role: 'sender' }
     ]);
   });
 

@@ -7,7 +7,7 @@ import {
   type StringStream
 } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
-import type { PatchbayDiagnostic } from '$lib/patchbay/patchbay-parser';
+import type { PatchbayDiagnostic, PatchbaySection } from '$lib/patchbay/patchbay-parser';
 
 export type PatchbayTokenStyle = 'comment' | 'keyword' | 'operator' | 'typeName' | 'variableName';
 
@@ -28,6 +28,7 @@ export type PatchbayChannelLinkRange = {
   to: number;
   className: string;
   channel: string;
+  section: PatchbaySection;
   role: 'sender' | 'receiver' | 'both';
 };
 
@@ -41,6 +42,8 @@ export type PatchbayChannelRoles = {
   senders: Set<string>;
   receivers: Set<string>;
 };
+
+export type PatchbayChannelRolesBySection = Partial<Record<PatchbaySection, PatchbayChannelRoles>>;
 
 const identifierPattern = /^[A-Za-z0-9_.~/:-]+/;
 const sectionPattern = /^\[(Message|Audio|Video)\]/i;
@@ -107,11 +110,13 @@ export function getPatchbayDiagnosticRanges(
 
 export function getPatchbayChannelLinkRanges(
   source: string,
-  registryChannels: PatchbayChannelRoles
+  registryChannels: PatchbayChannelRoles | PatchbayChannelRolesBySection
 ): PatchbayChannelLinkRange[] {
   const lineStarts = getLineStarts(source);
   const localChannels = getPatchbayLocalChannels(source);
+  const rolesBySection = normalizeRolesBySection(registryChannels);
   const ranges: PatchbayChannelLinkRange[] = [];
+  let currentSection: PatchbaySection | undefined;
 
   source.split(/\r?\n/).forEach((line, lineIndex) => {
     let searchStart = 0;
@@ -122,11 +127,21 @@ export function getPatchbayChannelLinkRanges(
 
       searchStart = column + token.text.length;
 
-      if (token.style !== 'variableName') continue;
-      if (localChannels.has(token.text)) continue;
+      const section = parseSectionToken(token);
+      if (section) {
+        currentSection = section;
+        continue;
+      }
 
-      const isSender = registryChannels.senders.has(token.text);
-      const isReceiver = registryChannels.receivers.has(token.text);
+      if (token.style !== 'variableName') continue;
+      if (!currentSection) continue;
+      if (localChannels.has(getChannelKey(currentSection, token.text))) continue;
+
+      const sectionRoles = rolesBySection[currentSection];
+      if (!sectionRoles) continue;
+
+      const isSender = sectionRoles.senders.has(token.text);
+      const isReceiver = sectionRoles.receivers.has(token.text);
       if (!isSender && !isReceiver) continue;
 
       const role = isSender && isReceiver ? 'both' : isSender ? 'sender' : 'receiver';
@@ -143,6 +158,7 @@ export function getPatchbayChannelLinkRanges(
         to: from + token.text.length,
         className: `cm-patchbay-channel-link ${roleClass}`,
         channel: token.text,
+        section: currentSection,
         role
       });
     }
@@ -155,6 +171,7 @@ export function getPatchbayLocalChannelRanges(source: string): PatchbayLocalChan
   const lineStarts = getLineStarts(source);
   const localChannels = getPatchbayLocalChannels(source);
   const ranges: PatchbayLocalChannelRange[] = [];
+  let currentSection: PatchbaySection | undefined;
 
   source.split(/\r?\n/).forEach((line, lineIndex) => {
     let searchStart = 0;
@@ -165,8 +182,15 @@ export function getPatchbayLocalChannelRanges(source: string): PatchbayLocalChan
 
       searchStart = column + token.text.length;
 
+      const section = parseSectionToken(token);
+      if (section) {
+        currentSection = section;
+        continue;
+      }
+
       if (token.style !== 'variableName') continue;
-      if (!localChannels.has(token.text)) continue;
+      if (!currentSection) continue;
+      if (!localChannels.has(getChannelKey(currentSection, token.text))) continue;
 
       const from = lineStarts[lineIndex] + column;
       ranges.push({
@@ -182,18 +206,46 @@ export function getPatchbayLocalChannelRanges(source: string): PatchbayLocalChan
 
 function getPatchbayLocalChannels(source: string): Set<string> {
   const channels = new Set<string>();
+  let currentSection: PatchbaySection | undefined;
 
   for (const line of source.split(/\r?\n/)) {
     const tokens = tokenizePatchbayLine(line);
+    const section = parseSectionToken(tokens[0]);
+    if (section) {
+      currentSection = section;
+      continue;
+    }
+
     if (tokens[0]?.text !== 'chan') continue;
 
     const channel = tokens[1];
-    if (channel?.style === 'variableName') {
-      channels.add(channel.text);
+    if (currentSection && channel?.style === 'variableName') {
+      channels.add(getChannelKey(currentSection, channel.text));
     }
   }
 
   return channels;
+}
+
+function normalizeRolesBySection(
+  registryChannels: PatchbayChannelRoles | PatchbayChannelRolesBySection
+): PatchbayChannelRolesBySection {
+  if ('senders' in registryChannels && 'receivers' in registryChannels) {
+    return { message: registryChannels };
+  }
+
+  return registryChannels;
+}
+
+function parseSectionToken(token: PatchbayLineToken | undefined): PatchbaySection | undefined {
+  if (!token || token.style !== 'typeName') return undefined;
+
+  const section = token.text.slice(1, -1).toLowerCase();
+  return section === 'message' || section === 'audio' || section === 'video' ? section : undefined;
+}
+
+function getChannelKey(section: PatchbaySection, channel: string): string {
+  return `${section}\0${channel}`;
 }
 
 function getLineStarts(source: string): number[] {

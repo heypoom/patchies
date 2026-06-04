@@ -33,6 +33,8 @@ export type PatchbayKnownChannels = Partial<Record<PatchbaySection, Set<string>>
   objectTitles?: Set<string>;
   messageSources?: Set<string>;
   messageTargets?: Set<string>;
+  audioSources?: Set<string>;
+  audioTargets?: Set<string>;
 };
 
 export type PatchbayAnalysis = {
@@ -190,7 +192,7 @@ function analyzeSection(
             'error',
             'receiver-as-source',
             route.line,
-            `Message channel "${from}" is registered as a receiver, so it cannot be used as a route source.`,
+            `${formatSection(section)} channel "${from}" is registered as a receiver, so it cannot be used as a route source.`,
             { section, name: from }
           )
         );
@@ -203,7 +205,7 @@ function analyzeSection(
             'error',
             'sender-as-target',
             route.line,
-            `Message channel "${to}" is registered as a sender, so it cannot be used as a route target.`,
+            `${formatSection(section)} channel "${to}" is registered as a sender, so it cannot be used as a route target.`,
             { section, name: to }
           )
         );
@@ -361,6 +363,9 @@ export function analyzePatchbay(
   const messageKnownChannels =
     knownChannels.message ??
     new Set([...(knownChannels.messageSources ?? []), ...(knownChannels.messageTargets ?? [])]);
+  const audioKnownChannels =
+    knownChannels.audio ??
+    new Set([...(knownChannels.audioSources ?? []), ...(knownChannels.audioTargets ?? [])]);
 
   return {
     diagnostics,
@@ -385,8 +390,20 @@ export function analyzePatchbay(
     audioRoutes: analyzeSection(
       'audio',
       states.audio,
-      knownChannels.audio ?? new Set(),
-      diagnostics
+      audioKnownChannels,
+      diagnostics,
+      knownChannels.audioSources || knownChannels.audioTargets
+        ? {
+            sources: new Set([
+              ...states.audio.declarations.keys(),
+              ...(knownChannels.audioSources ?? [])
+            ]),
+            targets: new Set([
+              ...states.audio.declarations.keys(),
+              ...(knownChannels.audioTargets ?? [])
+            ])
+          }
+        : undefined
     ),
     videoRoutes: analyzeSection(
       'video',

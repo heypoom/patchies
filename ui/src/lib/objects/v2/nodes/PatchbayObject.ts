@@ -1,6 +1,7 @@
 import { Type } from '@sinclair/typebox';
 import { match } from 'ts-pattern';
 
+import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import {
   analyzePatchbay,
@@ -34,9 +35,12 @@ export class PatchbayObject implements TextObjectV2 {
   readonly nodeId: string;
   readonly context: ObjectContext;
   private channelRegistry = MessageChannelRegistry.getInstance();
-  private activeSubscriptions = new Set<string>();
+  private audioChannelRegistry = AudioChannelRegistry.getInstance();
+  private activeMessageSubscriptions = new Set<string>();
+  private activeAudioRoutes = new Map<string, PatchbayRoute>();
   private currentDiagnostics: PatchbayDiagnostic[] = [];
   private unsubscribeRegistryChange: (() => void) | null = null;
+  private unsubscribeAudioRegistryChange: (() => void) | null = null;
 
   constructor(nodeId: string, context: ObjectContext) {
     this.nodeId = nodeId;
@@ -57,6 +61,9 @@ export class PatchbayObject implements TextObjectV2 {
     this.unsubscribeRegistryChange = this.channelRegistry.onChannelsChange(() => {
       this.applyCode();
     });
+    this.unsubscribeAudioRegistryChange = this.audioChannelRegistry.onChannelsChange(() => {
+      this.applyCode();
+    });
   }
 
   get diagnostics(): PatchbayDiagnostic[] {
@@ -66,7 +73,9 @@ export class PatchbayObject implements TextObjectV2 {
   applyCode(): void {
     const analysis = analyzePatchbay(this.getCode(), {
       messageSources: new Set(this.channelRegistry.getSenderChannelNames()),
-      messageTargets: new Set(this.channelRegistry.getReceiverChannelNames())
+      messageTargets: new Set(this.channelRegistry.getReceiverChannelNames()),
+      audioSources: new Set(this.audioChannelRegistry.getSenderChannelNames()),
+      audioTargets: new Set(this.audioChannelRegistry.getReceiverChannelNames())
     });
     this.currentDiagnostics = analysis.diagnostics;
 
@@ -75,6 +84,7 @@ export class PatchbayObject implements TextObjectV2 {
     }
 
     this.applyMessageRoutes(analysis.messageRoutes);
+    this.applyAudioRoutes(analysis.audioRoutes);
   }
 
   onMessage(data: unknown, meta: MessageMeta): void {
@@ -90,7 +100,10 @@ export class PatchbayObject implements TextObjectV2 {
   destroy(): void {
     this.unsubscribeRegistryChange?.();
     this.unsubscribeRegistryChange = null;
+    this.unsubscribeAudioRegistryChange?.();
+    this.unsubscribeAudioRegistryChange = null;
     this.clearSubscriptions();
+    this.clearAudioRoutes();
   }
 
   private getCode(): string {
@@ -110,7 +123,19 @@ export class PatchbayObject implements TextObjectV2 {
           this.channelRegistry.broadcast(destination, message, this.nodeId);
         }
       });
-      this.activeSubscriptions.add(source);
+      this.activeMessageSubscriptions.add(source);
+    }
+  }
+
+  private applyAudioRoutes(routes: PatchbayRoute[]): void {
+    this.clearAudioRoutes();
+
+    for (const route of routes) {
+      const endpointId = this.getAudioEndpointId(route);
+
+      this.audioChannelRegistry.subscribe(route.from, endpointId, 'recv');
+      this.audioChannelRegistry.subscribe(route.to, endpointId, 'send');
+      this.activeAudioRoutes.set(endpointId, route);
     }
   }
 
@@ -129,14 +154,27 @@ export class PatchbayObject implements TextObjectV2 {
   }
 
   private clearSubscriptions(): void {
-    for (const source of this.activeSubscriptions) {
+    for (const source of this.activeMessageSubscriptions) {
       this.channelRegistry.unsubscribe(source, this.getSubscriberId(source));
     }
 
-    this.activeSubscriptions.clear();
+    this.activeMessageSubscriptions.clear();
+  }
+
+  private clearAudioRoutes(): void {
+    for (const [endpointId, route] of this.activeAudioRoutes) {
+      this.audioChannelRegistry.unsubscribe(route.from, endpointId);
+      this.audioChannelRegistry.unsubscribe(route.to, endpointId);
+    }
+
+    this.activeAudioRoutes.clear();
   }
 
   private getSubscriberId(source: string): string {
     return `${this.nodeId}:message:${source}`;
+  }
+
+  private getAudioEndpointId(route: PatchbayRoute): string {
+    return `${this.nodeId}:audio-recv:${route.from}:audio-send:${route.to}`;
   }
 }

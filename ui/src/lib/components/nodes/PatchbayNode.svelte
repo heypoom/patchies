@@ -9,6 +9,7 @@
     getPatchbayDiagnosticRanges,
     getPatchbayLocalChannelRanges
   } from '$lib/codemirror/patchbay.codemirror';
+  import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
   import { PatchbayObject } from '$lib/objects/v2/nodes/PatchbayObject';
   import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
   import { requestFitView } from '../../../stores/ui.store';
@@ -33,9 +34,11 @@
   const { updateNodeData } = useSvelteFlow();
   const [defaultWidth, defaultHeight] = [320, 220];
   const channelRegistry = MessageChannelRegistry.getInstance();
+  const audioChannelRegistry = AudioChannelRegistry.getInstance();
 
   let patchbay: PatchbayObject | null = null;
   let unsubscribeRegistryChange: (() => void) | null = null;
+  let unsubscribeAudioRegistryChange: (() => void) | null = null;
   let diagnostics = $state<PatchbayDiagnostic[]>([]);
   const code = $derived(data.code ?? '');
   const lineErrors = $derived.by(() => {
@@ -57,13 +60,19 @@
     })),
     ...getPatchbayLocalChannelRanges(code),
     ...getPatchbayChannelLinkRanges(code, {
-      senders: new Set(channelRegistry.getSenderChannelNames()),
-      receivers: new Set(channelRegistry.getReceiverChannelNames())
+      message: {
+        senders: new Set(channelRegistry.getSenderChannelNames()),
+        receivers: new Set(channelRegistry.getReceiverChannelNames())
+      },
+      audio: {
+        senders: new Set(audioChannelRegistry.getSenderChannelNames()),
+        receivers: new Set(audioChannelRegistry.getReceiverChannelNames())
+      }
     }).map((range) => ({
       from: range.from,
       to: range.to,
       className: range.className,
-      data: range.channel
+      data: JSON.stringify({ section: range.section, channel: range.channel })
     }))
   ]);
 
@@ -90,8 +99,13 @@
     updateNodeData(nodeId, { code: nextCode });
   }
 
-  function focusChannelNodes(channel: string) {
-    const nodeIds = channelRegistry.getChannelNodeIds(channel);
+  function focusChannelNodes(data: string) {
+    const { section, channel } = JSON.parse(data) as { section: string; channel: string };
+    const nodeIds =
+      section === 'audio'
+        ? audioChannelRegistry.getChannelNodeIds(channel)
+        : channelRegistry.getChannelNodeIds(channel);
+
     if (nodeIds.length === 0) return;
 
     requestFitView.set({
@@ -113,12 +127,17 @@
     unsubscribeRegistryChange = channelRegistry.onChannelsChange(() => {
       applyPatchbayCode();
     });
+    unsubscribeAudioRegistryChange = audioChannelRegistry.onChannelsChange(() => {
+      applyPatchbayCode();
+    });
     applyPatchbayCode();
   });
 
   onDestroy(() => {
     unsubscribeRegistryChange?.();
     unsubscribeRegistryChange = null;
+    unsubscribeAudioRegistryChange?.();
+    unsubscribeAudioRegistryChange = null;
     patchbay?.destroy();
     patchbay = null;
   });

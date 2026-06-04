@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
 import { PatchbayObject } from './PatchbayObject';
 
@@ -146,5 +147,57 @@ describe('PatchbayObject', () => {
     object.destroy();
     registry.unregisterSender(source, `send-${suffix}`);
     registry.unsubscribe(destination, `recv-${suffix}`);
+  });
+
+  it('registers audio patchbay routes as virtual audio channel endpoints', () => {
+    const suffix = crypto.randomUUID();
+    const source = `audio-source-${suffix}`;
+    const bus = `audio-bus-${suffix}`;
+    const destination = `audio-destination-${suffix}`;
+    const sourceNodeId = `send-audio-${suffix}`;
+    const destinationNodeId = `recv-audio-${suffix}`;
+    const registry = AudioChannelRegistry.getInstance();
+
+    registry.subscribe(source, sourceNodeId, 'send');
+    registry.subscribe(destination, destinationNodeId, 'recv');
+
+    const { object } = createPatchbay(`
+      [Audio]
+      chan ${bus}
+      ${source} -> ${bus} -> ${destination}
+    `);
+
+    const audioEdges = registry
+      .getVirtualEdges()
+      .filter(
+        (edge) => edge.id.includes(source) || edge.id.includes(bus) || edge.id.includes(destination)
+      );
+
+    expect(audioEdges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: sourceNodeId,
+          target: expect.stringContaining(`:audio-recv:${source}`),
+          sourceHandle: 'audio-out',
+          targetHandle: 'audio-in'
+        }),
+        expect.objectContaining({
+          source: expect.stringContaining(`:audio-send:${bus}`),
+          target: expect.stringContaining(`:audio-recv:${bus}`),
+          sourceHandle: 'audio-out',
+          targetHandle: 'audio-in'
+        }),
+        expect.objectContaining({
+          source: expect.stringContaining(`:audio-send:${destination}`),
+          target: destinationNodeId,
+          sourceHandle: 'audio-out',
+          targetHandle: 'audio-in'
+        })
+      ])
+    );
+
+    object.destroy();
+    registry.unsubscribe(source, sourceNodeId);
+    registry.unsubscribe(destination, destinationNodeId);
   });
 });

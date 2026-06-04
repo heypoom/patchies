@@ -1,4 +1,4 @@
-Route named message channels with a compact text patchbay.
+Route named message and audio channels with a compact text patchbay.
 
 ## Usage
 
@@ -6,14 +6,15 @@ Route named message channels with a compact text patchbay.
 patchbay
 ```
 
-The first version of `patchbay` routes message channels only. Audio and video routing are planned, but not active yet.
+`patchbay` currently routes message and audio channels. Video routing is planned, but not active yet.
 
 ## How It Works
 
 `patchbay` is for channels, not object titles. A name in a route must be either:
 
-1. Declared with `chan` inside the `[Message]` section
+1. Declared with `chan` inside the matching section
 2. An existing message channel from `send`, `recv`, or JavaScript `send()` / `recv()` channel usage
+3. An existing audio channel from `send~` or `recv~`
 
 ```text
 [Message]
@@ -46,8 +47,31 @@ Clock -> Logger -> Lights
 
 Messages sent to `Clock` will pass through the virtual `Logger` channel and arrive at `Lights`.
 
+## Audio Example
+
+Create these objects anywhere in your patch:
+
+```text
+send~ Mic
+recv~ Out
+patchbay
+```
+
+Edit the patchbay code:
+
+```text
+[Audio]
+chan Reverb
+
+Mic -> Reverb -> Out
+```
+
+Audio sent to `Mic` will pass through the virtual `Reverb` channel and arrive at `Out`.
+
 ## See Also
 
 - [send](/docs/objects/send) - send messages to a named channel
 - [recv](/docs/objects/recv) - receive messages from a named channel
+- [send~](/docs/objects/send~) - send audio to a named channel
+- [recv~](/docs/objects/recv~) - receive audio from a named channel
 - [Message Passing](/docs/message-passing) - how messages flow between objects

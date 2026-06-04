@@ -12,7 +12,7 @@ We want a text-based patchbay object that lets users describe message, audio, an
 - Keep message, audio, and video routes separate so the same channel name can be reused safely across data types.
 - Require patchbay-local virtual channels to be declared explicitly with `chan`.
 - Allow routes to use existing wireless channels from the patch graph without redeclaring them.
-- Highlight unknown channels in the editor and show clear diagnostics below the object.
+- Highlight unknown channels in the editor and show clear hover diagnostics.
 - Reuse existing routing systems rather than introducing a second graph runtime.
 
 ## Non-Goals
@@ -193,7 +193,7 @@ Compsite
 Unknown video channel. Declare it with `chan Compsite` or create a matching send.vdo / recv.vdo object.
 ```
 
-Diagnostics are shown below the editor. The object should still render the editor when the DSL is invalid, but invalid routes should not be applied.
+Diagnostics are shown inline through line highlighting, token underlines, and hover hints. The object should still render the editor when the DSL is invalid, but invalid routes should not be applied.
 
 ## Diagnostics
 
@@ -241,7 +241,8 @@ Implement the feature as three separable pieces:
 
 2. Patchbay runtime adapter
    - Owns registrations for one patchbay node instance.
-   - Applies resolved message, audio, and video routes to existing channel systems.
+   - Applies resolved message and audio routes to existing channel systems.
+   - Leaves video route application for a later implementation phase.
    - Cleans up old registrations before applying new valid routes.
 
 3. Patchbay editor component
