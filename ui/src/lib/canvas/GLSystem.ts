@@ -754,7 +754,7 @@ export class GLSystem {
     data: Record<string, unknown>,
     options?: { force?: boolean }
   ): boolean {
-    this.unregisterVideoChannelNode(id);
+    const force = options?.force ?? false;
 
     const nodeIndex = this.nodes.findIndex((node) => node.id === id);
 
@@ -762,12 +762,15 @@ export class GLSystem {
       this.nodes.push({ id: id, type, data });
     } else {
       const node = this.nodes[nodeIndex];
+      if (!force && this.isSameRenderNode(node, type, data)) return false;
+
+      this.unregisterVideoChannelNode(id);
       this.nodes[nodeIndex] = { ...node, type, data };
     }
 
     this.registerVideoChannelNode(id, type, data);
 
-    return this.updateRenderGraph(options?.force ?? false);
+    return this.updateRenderGraph(force);
   }
 
   registerPatchbayVideoRoute(routeId: string, from: string, to: string): void {
@@ -944,6 +947,14 @@ export class GLSystem {
   // TODO: optimize this!
   hasFlowGraphChanged(nodes: RNode[], edges: REdge[]) {
     return this.hasHashChanged('nodes', nodes) || this.hasHashChanged('edges', edges);
+  }
+
+  private isSameRenderNode(
+    node: RNode,
+    type: RenderNode['type'],
+    data: Record<string, unknown>
+  ): boolean {
+    return node.type === type && ohash.hash(node.data) === ohash.hash(data);
   }
 
   private getAllRenderEdges(): REdge[] {
