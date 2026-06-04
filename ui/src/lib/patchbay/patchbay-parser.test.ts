@@ -383,6 +383,141 @@ describe('analyzePatchbay', () => {
     ]);
   });
 
+  it('resolves object aliases as section-local object endpoints', () => {
+    const result = analyzePatchbay(
+      `
+      [Video]
+      Edge = obj glsl-34
+      Src -> Edge -> Aber
+      `,
+      {
+        videoSources: new Set(['Src']),
+        videoTargets: new Set(['Aber']),
+        objects: new Map([
+          [
+            'glsl-34',
+            {
+              video: {
+                inlets: ['video-in-0'],
+                outlets: ['video-out']
+              }
+            }
+          ]
+        ])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.videoRoutes).toEqual([
+      {
+        from: 'Src',
+        to: 'Edge',
+        toEndpoint: {
+          kind: 'object',
+          nodeId: 'glsl-34',
+          portIndex: 0,
+          handle: 'video-in-0'
+        }
+      },
+      {
+        from: 'Edge',
+        to: 'Aber',
+        fromEndpoint: {
+          kind: 'object',
+          nodeId: 'glsl-34',
+          portIndex: 0,
+          handle: 'video-out'
+        }
+      }
+    ]);
+  });
+
+  it('resolves object aliases declared after routes', () => {
+    const result = analyzePatchbay(
+      `
+      [Message]
+      Src -> Edge -> Aber
+      Edge = obj js-1:1
+      `,
+      {
+        messageSources: new Set(['Src']),
+        messageTargets: new Set(['Aber']),
+        objects: new Map([
+          [
+            'js-1',
+            {
+              message: {
+                inlets: ['message-in-0', 'message-in-1'],
+                outlets: ['message-out-0', 'message-out-1']
+              }
+            }
+          ]
+        ])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.messageRoutes).toEqual([
+      {
+        from: 'Src',
+        to: 'Edge',
+        toEndpoint: {
+          kind: 'object',
+          nodeId: 'js-1',
+          portIndex: 1,
+          handle: 'message-in-1'
+        }
+      },
+      {
+        from: 'Edge',
+        to: 'Aber',
+        fromEndpoint: {
+          kind: 'object',
+          nodeId: 'js-1',
+          portIndex: 1,
+          handle: 'message-out-1'
+        }
+      }
+    ]);
+  });
+
+  it('reports duplicate object aliases and alias-channel collisions', () => {
+    const result = analyzePatchbay(
+      `
+      [Message]
+      chan Edge
+      Edge = obj js-1
+      Path = obj js-1
+      Path = obj js-2
+      `,
+      {
+        objects: new Map([
+          ['js-1', { message: { inlets: ['message-in'], outlets: ['message-out'] } }],
+          ['js-2', { message: { inlets: ['message-in'], outlets: ['message-out'] } }]
+        ])
+      }
+    );
+
+    expect(
+      result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')
+    ).toMatchObject([
+      {
+        severity: 'error',
+        code: 'duplicate-alias',
+        section: 'message',
+        name: 'Edge',
+        line: 4
+      },
+      {
+        severity: 'error',
+        code: 'duplicate-alias',
+        section: 'message',
+        name: 'Path',
+        line: 6
+      }
+    ]);
+  });
+
   it('continues a route chain from an indented arrow line', () => {
     const result = analyzePatchbay(
       `

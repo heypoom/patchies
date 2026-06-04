@@ -31,6 +31,13 @@ describe('tokenizePatchbayLine', () => {
       { text: 'obj', style: 'keyword' },
       { text: 'glsl-34:0', style: 'variableName' }
     ]);
+
+    expect(tokenizePatchbayLine('Edge = obj glsl-34')).toEqual([
+      { text: 'Edge', style: 'variableName' },
+      { text: '=', style: 'operator' },
+      { text: 'obj', style: 'keyword' },
+      { text: 'glsl-34', style: 'variableName' }
+    ]);
   });
 
   it('returns inline ranges for unknown channel diagnostics', () => {
@@ -247,6 +254,48 @@ obj hydra-12 -> Output`;
         nodeId: 'hydra-12'
       }
     ]);
+  });
+
+  it('returns object link ranges for object alias references', () => {
+    const source = `[Video]
+Camera -> Edge -> Aber
+Edge = obj glsl-34`;
+
+    expect(getPatchbayObjectLinkRanges(source)).toEqual([
+      {
+        from: 18,
+        to: 22,
+        className: 'cm-patchbay-object-link',
+        nodeId: 'glsl-34'
+      },
+      {
+        from: 31,
+        to: 35,
+        className: 'cm-patchbay-object-link',
+        nodeId: 'glsl-34'
+      },
+      {
+        from: 42,
+        to: 49,
+        className: 'cm-patchbay-object-link',
+        nodeId: 'glsl-34'
+      }
+    ]);
+  });
+
+  it('does not return channel link ranges for object aliases', () => {
+    const source = `[Video]
+Camera -> Edge
+Edge = obj glsl-34`;
+
+    expect(
+      getPatchbayChannelLinkRanges(source, {
+        video: {
+          senders: new Set(['Camera', 'Edge']),
+          receivers: new Set(['Edge'])
+        }
+      }).map(({ channel, section, role }) => ({ channel, section, role }))
+    ).toEqual([{ channel: 'Camera', section: 'video', role: 'sender' }]);
   });
 
   it('returns inline ranges for object diagnostics', () => {

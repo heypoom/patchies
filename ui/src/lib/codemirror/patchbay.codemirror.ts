@@ -128,6 +128,7 @@ export function getPatchbayChannelLinkRanges(
 ): PatchbayChannelLinkRange[] {
   const lineStarts = getLineStarts(source);
   const localChannels = getPatchbayLocalChannels(source);
+  const objectAliases = getPatchbayObjectAliases(source);
   const rolesBySection = normalizeRolesBySection(registryChannels);
   const ranges: PatchbayChannelLinkRange[] = [];
   let currentSection: PatchbaySection | undefined;
@@ -159,6 +160,7 @@ export function getPatchbayChannelLinkRanges(
         continue;
       }
       if (!currentSection) continue;
+      if (objectAliases.has(getChannelKey(currentSection, token.text))) continue;
       if (localChannels.has(getChannelKey(currentSection, token.text))) continue;
 
       const sectionRoles = rolesBySection[currentSection];
@@ -240,7 +242,9 @@ export function getPatchbayLocalChannelRanges(source: string): PatchbayLocalChan
 
 export function getPatchbayObjectLinkRanges(source: string): PatchbayObjectLinkRange[] {
   const lineStarts = getLineStarts(source);
+  const objectAliases = getPatchbayObjectAliases(source);
   const ranges: PatchbayObjectLinkRange[] = [];
+  let currentSection: PatchbaySection | undefined;
 
   source.split(/\r?\n/).forEach((line, lineIndex) => {
     let searchStart = 0;
@@ -252,9 +256,30 @@ export function getPatchbayObjectLinkRanges(source: string): PatchbayObjectLinkR
 
       searchStart = column + token.text.length;
 
+      const section = parseSectionToken(token);
+      if (section) {
+        currentSection = section;
+        previousWasObjectKeyword = false;
+        continue;
+      }
+
       if (token.text === 'obj' && token.style === 'keyword') {
         previousWasObjectKeyword = true;
         continue;
+      }
+
+      if (!previousWasObjectKeyword && currentSection && token.style === 'variableName') {
+        const nodeId = objectAliases.get(getChannelKey(currentSection, token.text));
+        if (nodeId) {
+          const from = lineStarts[lineIndex] + column;
+
+          ranges.push({
+            from,
+            to: from + token.text.length,
+            className: 'cm-patchbay-object-link',
+            nodeId
+          });
+        }
       }
 
       if (previousWasObjectKeyword && token.style === 'variableName') {
@@ -274,6 +299,37 @@ export function getPatchbayObjectLinkRanges(source: string): PatchbayObjectLinkR
   });
 
   return ranges;
+}
+
+function getPatchbayObjectAliases(source: string): Map<string, string> {
+  const aliases = new Map<string, string>();
+  let currentSection: PatchbaySection | undefined;
+
+  for (const line of source.split(/\r?\n/)) {
+    const tokens = tokenizePatchbayLine(line);
+    const section = parseSectionToken(tokens[0]);
+    if (section) {
+      currentSection = section;
+      continue;
+    }
+
+    if (
+      currentSection &&
+      tokens[0]?.style === 'variableName' &&
+      tokens[1]?.text === '=' &&
+      tokens[1]?.style === 'operator' &&
+      tokens[2]?.text === 'obj' &&
+      tokens[2]?.style === 'keyword' &&
+      tokens[3]?.style === 'variableName'
+    ) {
+      aliases.set(
+        getChannelKey(currentSection, tokens[0].text),
+        tokens[3].text.replace(/:\d+$/, '')
+      );
+    }
+  }
+
+  return aliases;
 }
 
 function getPatchbayLocalChannels(source: string): Set<string> {
@@ -343,6 +399,7 @@ function readPatchbayTokenFromText(text: string): PatchbayLineToken | null {
   if (keyword) return { text: keyword[0], style: 'keyword' };
 
   if (text.startsWith('->')) return { text: '->', style: 'operator' };
+  if (text.startsWith('=')) return { text: '=', style: 'operator' };
 
   const identifier = text.match(identifierPattern);
   if (identifier) return { text: identifier[0], style: 'variableName' };

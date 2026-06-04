@@ -21,6 +21,7 @@ export type PatchbayDiagnosticCode =
   | 'duplicate-route'
   | 'receiver-as-source'
   | 'sender-as-target'
+  | 'duplicate-alias'
   | 'unknown-object'
   | 'object-port-unavailable'
   | 'object-port-out-of-range';
@@ -88,6 +89,7 @@ export type PatchbayAnalysis = {
 type SectionState = {
   declarations: Map<string, number>;
   declarationUseCount: Map<string, number>;
+  aliases: Map<string, PatchbayObjectEndpointRef>;
   routes: Array<{ line: number; endpoints: PatchbayEndpointRef[] }>;
 };
 
@@ -112,6 +114,7 @@ function createSectionState(): SectionState {
   return {
     declarations: new Map(),
     declarationUseCount: new Map(),
+    aliases: new Map(),
     routes: []
   };
 }
@@ -159,6 +162,45 @@ function parseEndpoint(raw: string, line: number): PatchbayEndpointRef | null {
   if (!OBJECT_ID_PATTERN.test(nodeId)) return null;
 
   return { kind: 'object', nodeId, portIndex, raw, line };
+}
+
+function parseAliasDeclaration(
+  raw: string,
+  line: number,
+  section: PatchbaySection,
+  diagnostics: PatchbayDiagnostic[]
+): { name: string; endpoint: PatchbayObjectEndpointRef } | null {
+  const match = raw.match(/^([^=\s]+)\s*=\s*(.+)$/);
+  if (!match) return null;
+
+  const name = match[1].trim();
+  const endpointText = match[2].trim();
+  const endpoint = parseEndpoint(endpointText, line);
+
+  if (!IDENTIFIER_PATTERN.test(name)) {
+    diagnostics.push(
+      createDiagnostic('error', 'invalid-identifier', line, `Invalid alias name "${name}".`, {
+        section,
+        name
+      })
+    );
+    return null;
+  }
+
+  if (!endpoint || endpoint.kind !== 'object') {
+    diagnostics.push(
+      createDiagnostic(
+        'error',
+        'invalid-identifier',
+        line,
+        `Invalid object alias "${raw}". Use Name = obj node-id.`,
+        { section, name }
+      )
+    );
+    return null;
+  }
+
+  return { name, endpoint };
 }
 
 function splitRouteContinuation(raw: string): string[] | null {
@@ -248,16 +290,18 @@ function analyzeSection(
 
   for (const route of state.routes) {
     for (const endpoint of route.endpoints) {
-      if (endpoint.kind === 'object') {
-        if (!objects?.has(endpoint.nodeId)) {
+      const objectEndpoint = getObjectEndpointRef(endpoint, state);
+
+      if (objectEndpoint) {
+        if (!objects?.has(objectEndpoint.nodeId)) {
           hasErrors = true;
           diagnostics.push(
             createDiagnostic(
               'error',
               'unknown-object',
-              endpoint.line,
-              `Unknown object "${endpoint.nodeId}". Use an existing object id after obj.`,
-              { section, name: endpoint.nodeId }
+              objectEndpoint.line,
+              `Unknown object "${objectEndpoint.nodeId}". Use an existing object id after obj.`,
+              { section, name: objectEndpoint.nodeId }
             )
           );
         }
@@ -287,6 +331,8 @@ function analyzeSection(
     for (let index = 0; index < route.endpoints.length - 1; index += 1) {
       const fromEndpointRef = route.endpoints[index];
       const toEndpointRef = route.endpoints[index + 1];
+      const fromObjectRef = getObjectEndpointRef(fromEndpointRef, state);
+      const toObjectRef = getObjectEndpointRef(toEndpointRef, state);
       const from = fromEndpointRef.raw;
       const to = toEndpointRef.raw;
       const key = `${from}\0${to}`;
@@ -307,6 +353,7 @@ function analyzeSection(
       if (
         roles &&
         fromEndpointRef.kind === 'channel' &&
+        !state.aliases.has(fromEndpointRef.name) &&
         !state.declarations.has(fromEndpointRef.name) &&
         knownChannels.has(fromEndpointRef.name) &&
         !roles.sources.has(fromEndpointRef.name)
@@ -326,6 +373,7 @@ function analyzeSection(
       if (
         roles &&
         toEndpointRef.kind === 'channel' &&
+        !state.aliases.has(toEndpointRef.name) &&
         !state.declarations.has(toEndpointRef.name) &&
         knownChannels.has(toEndpointRef.name) &&
         !roles.targets.has(toEndpointRef.name)
@@ -343,7 +391,7 @@ function analyzeSection(
       }
 
       const fromEndpoint = resolveObjectEndpoint(
-        fromEndpointRef,
+        fromObjectRef,
         section,
         'source',
         objects,
@@ -351,7 +399,7 @@ function analyzeSection(
         diagnostics
       );
       const toEndpoint = resolveObjectEndpoint(
-        toEndpointRef,
+        toObjectRef,
         section,
         'target',
         objects,
@@ -359,10 +407,7 @@ function analyzeSection(
         diagnostics
       );
 
-      if (
-        (fromEndpointRef.kind === 'object' && !fromEndpoint) ||
-        (toEndpointRef.kind === 'object' && !toEndpoint)
-      ) {
+      if ((fromObjectRef && !fromEndpoint) || (toObjectRef && !toEndpoint)) {
         hasErrors = true;
       }
 
@@ -398,14 +443,14 @@ function analyzeSection(
 }
 
 function resolveObjectEndpoint(
-  endpoint: PatchbayEndpointRef,
+  endpoint: PatchbayObjectEndpointRef | undefined,
   section: PatchbaySection,
   direction: PatchbayObjectDirection,
   objects: PatchbayObjectPorts | undefined,
   line: number,
   diagnostics: PatchbayDiagnostic[]
 ): PatchbayResolvedObjectEndpoint | undefined {
-  if (endpoint.kind !== 'object') return undefined;
+  if (!endpoint) return undefined;
 
   const objectPorts = objects?.get(endpoint.nodeId);
   if (!objectPorts) return undefined;
@@ -448,6 +493,14 @@ function resolveObjectEndpoint(
     portIndex: endpoint.portIndex,
     handle
   };
+}
+
+function getObjectEndpointRef(
+  endpoint: PatchbayEndpointRef,
+  state: SectionState
+): PatchbayObjectEndpointRef | undefined {
+  if (endpoint.kind === 'object') return endpoint;
+  return state.aliases.get(endpoint.name);
 }
 
 export function analyzePatchbay(
@@ -543,7 +596,7 @@ export function analyzePatchbay(
       }
 
       const state = states[currentSection];
-      if (state.declarations.has(name)) {
+      if (state.declarations.has(name) || state.aliases.has(name)) {
         diagnostics.push(
           createDiagnostic(
             'error',
@@ -558,6 +611,33 @@ export function analyzePatchbay(
 
       state.declarations.set(name, line);
       state.declarationUseCount.set(name, 0);
+      return;
+    }
+
+    if (/^[^=\s]+\s*=/.test(text)) {
+      flushPendingRoute();
+      const aliasDeclaration = parseAliasDeclaration(text, line, currentSection, diagnostics);
+      if (!aliasDeclaration) return;
+
+      const state = states[currentSection];
+
+      if (
+        state.aliases.has(aliasDeclaration.name) ||
+        state.declarations.has(aliasDeclaration.name)
+      ) {
+        diagnostics.push(
+          createDiagnostic(
+            'error',
+            'duplicate-alias',
+            line,
+            `Duplicate ${currentSection} object alias "${aliasDeclaration.name}".`,
+            { section: currentSection, name: aliasDeclaration.name }
+          )
+        );
+        return;
+      }
+
+      state.aliases.set(aliasDeclaration.name, aliasDeclaration.endpoint);
       return;
     }
 

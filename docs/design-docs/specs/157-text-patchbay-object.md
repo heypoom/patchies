@@ -30,8 +30,9 @@ The patchbay object routes channels and explicit object-id endpoints. Every rout
 1. A channel declared with `chan` in the same patchbay section.
 2. An existing wireless channel of the same type already present in the patch graph.
 3. An explicit object reference written with `obj`, such as `obj glsl-34` or `obj glsl-34:0`.
+4. A section-local object alias declared with `Name = obj node-id`.
 
-Names never resolve to graph object titles. Bare names are always channels. Object routing must use `obj` so collisions stay clear.
+Names never resolve to graph object titles. Bare names are channels unless they match an object alias in the same section. Object routing must use `obj` at the declaration or route endpoint so collisions stay clear.
 
 ## DSL
 
@@ -63,6 +64,25 @@ chan Reverb
 Declares a patchbay-local virtual channel in the current section. A declared channel is scoped to its section, so `Reverb` in `[Audio]` and `Reverb` in `[Video]` are separate channels.
 
 Declarations may appear before or after routes in the same section. A route can use a declared channel even if the declaration appears later in the section.
+
+Object aliases keep object-heavy routes compact:
+
+```text
+Edge = obj glsl-34
+Edge2 = obj glsl-34:1
+```
+
+Aliases are scoped to the current section and may appear before or after routes in that section. An alias name cannot duplicate a `chan` declaration or another alias in the same section.
+
+Aliases resolve as object endpoints, not channels:
+
+```text
+[Video]
+Edge = obj glsl-34
+Camera -> Edge -> Composite
+```
+
+In a source position, `Edge` resolves to the compatible video outlet of `glsl-34`. In a target position, `Edge` resolves to the compatible video inlet of `glsl-34`.
 
 ### Routes
 
@@ -134,6 +154,12 @@ obj glsl-34
 obj glsl-34:0
 ```
 
+Object aliases use an unquoted alias name, `=`, and an object reference:
+
+```text
+Edge = obj glsl-34
+```
+
 Quoted channel names can be considered later if users need spaces or other punctuation.
 
 ## Channel Resolution
@@ -156,6 +182,8 @@ Object references resolve against the current patch graph by object id. Resoluti
 - `[Video]` object sources resolve video outlets; object targets resolve video inlets.
 
 If an object id does not exist, the reference is unresolved. If the object exists but has no compatible port, or the selected port index is out of range, the route is invalid.
+
+Object aliases resolve to their referenced object id before channel resolution. A bare alias therefore does not need a matching wireless channel and does not inherit sender/receiver-only channel role checks.
 
 ## Runtime Semantics
 
@@ -231,10 +259,12 @@ Syntax highlighting:
 
 - Section headers: type color per section.
 - `chan`: keyword color.
+- `obj`: keyword color.
+- `=` and `->`: operator color.
 - Declared local channels: accent color.
 - Existing external wireless channels: normal resolved-channel color.
+- Object ids and object aliases: use the object-navigation affordance.
 - Unknown channels: red highlight and diagnostic underline.
-- Route arrows: muted operator color.
 
 Hover hints:
 
