@@ -7,6 +7,7 @@ import { peppermintLanguage } from '$lib/codemirror/peppermint.codemirror';
 import {
   VALUE_WIDGET_GLSL_RUN_THROTTLE_MS,
   VALUE_WIDGET_HYDRA_RUN_THROTTLE_MS,
+  VALUE_WIDGET_P5_RUN_THROTTLE_MS,
   VALUE_WIDGET_SHADERPARK_RUN_THROTTLE_MS,
   shouldRunOnValueWidgetChange,
   valueWidgetRunThrottleMs
@@ -241,8 +242,9 @@ describe('CodeMirror inline value widgets', () => {
   it('auto-runs inline widget edits for GLSL and Shader Park editors', () => {
     expect(shouldRunOnValueWidgetChange('glsl')).toBe(true);
     expect(shouldRunOnValueWidgetChange('javascript', 'hydra')).toBe(true);
+    expect(shouldRunOnValueWidgetChange('javascript', 'p5')).toBe(true);
     expect(shouldRunOnValueWidgetChange('javascript', 'shaderpark')).toBe(true);
-    expect(shouldRunOnValueWidgetChange('javascript', 'p5')).toBe(false);
+    expect(shouldRunOnValueWidgetChange('javascript', 'js')).toBe(false);
   });
 
   it('throttles expensive inline widget reruns', () => {
@@ -250,9 +252,10 @@ describe('CodeMirror inline value widgets', () => {
     expect(valueWidgetRunThrottleMs('javascript', 'hydra')).toBe(
       VALUE_WIDGET_HYDRA_RUN_THROTTLE_MS
     );
+    expect(valueWidgetRunThrottleMs('javascript', 'p5')).toBe(VALUE_WIDGET_P5_RUN_THROTTLE_MS);
     expect(valueWidgetRunThrottleMs('javascript', 'shaderpark')).toBe(
       VALUE_WIDGET_SHADERPARK_RUN_THROTTLE_MS
     );
-    expect(valueWidgetRunThrottleMs('javascript', 'p5')).toBe(0);
+    expect(valueWidgetRunThrottleMs('javascript', 'js')).toBe(0);
   });
 });

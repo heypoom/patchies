@@ -192,14 +192,23 @@
   }
 
   // Handle runtime errors (from draw(), setup(), etc.)
-  function handleRuntimeError(error: Error) {
+  function handleRuntimeError(error: Error, nextCode = code) {
     cancelScheduledDimensionsClear();
     errorMessage = error.message;
-    handleCodeError(error, code, nodeId, customConsole, P5_WRAPPER_OFFSET);
+    handleCodeError(error, nextCode, nodeId, customConsole, P5_WRAPPER_OFFSET);
     setCanvasDimensionsFromCode();
   }
 
-  async function updateSketch({ onMount = false }: { onMount?: boolean } = {}) {
+  function handleCodeChange(newCode: string) {
+    updateNodeData(nodeId, { code: newCode });
+  }
+
+  type UpdateSketchOptions = { onMount?: boolean };
+
+  async function updateSketch(input: string | UpdateSketchOptions = {}) {
+    const nextCode = typeof input === 'string' ? input : code;
+    const onMount = typeof input === 'string' ? false : (input.onMount ?? false);
+
     // re-enable interactions on update. noDrag()/noPan()/noWheel() must be called on setup().
     enableDrag = true;
     enablePan = true;
@@ -220,7 +229,7 @@
       try {
         settingsManager.clearCallbacks();
         await p5Manager.updateCode({
-          code,
+          code: nextCode,
           messageContext: {
             ...messageContext.getContext(),
             noDrag: () => {
@@ -252,7 +261,7 @@
           settings: settingsAPI,
           pauseOnMount: onMount && !!data.paused,
           customConsole,
-          onRuntimeError: handleRuntimeError
+          onRuntimeError: (error) => handleRuntimeError(error, nextCode)
         });
 
         measureWidth(100);
@@ -264,7 +273,7 @@
       } catch (error) {
         cancelScheduledDimensionsClear();
         errorMessage = error instanceof Error ? error.message : String(error);
-        handleCodeError(error, code, nodeId, customConsole);
+        handleCodeError(error, nextCode, nodeId, customConsole);
         setCanvasDimensionsFromCode();
       }
     }
@@ -293,6 +302,7 @@
   title={data.title ?? 'p5'}
   objectType="p5"
   {nodeId}
+  onCodeChange={handleCodeChange}
   onrun={updateSketch}
   previewWidth={previewContainerWidth}
   showPauseButton
@@ -374,9 +384,7 @@
   {#snippet codeEditor()}
     <CodeEditor
       value={code}
-      onchange={(newCode) => {
-        updateNodeData(nodeId, { code: newCode });
-      }}
+      onchange={handleCodeChange}
       language="javascript"
       nodeType="p5"
       placeholder="Write your p5.js code here..."
