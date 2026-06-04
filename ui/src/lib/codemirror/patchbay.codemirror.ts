@@ -6,6 +6,7 @@ import {
   type StreamParser,
   type StringStream
 } from '@codemirror/language';
+import type { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 import { tags } from '@lezer/highlight';
 import type { PatchbayDiagnostic, PatchbaySection } from '$lib/patchbay/patchbay-parser';
 
@@ -78,6 +79,11 @@ export type PatchbayChannelRolesBySection = Partial<Record<PatchbaySection, Patc
 
 const identifierPattern = /^[A-Za-z0-9_.~/:-]+/;
 const sectionPattern = /^\[(Message|Audio|Video)\]/i;
+const sectionCompletionOptions: Completion[] = [
+  { label: '[Audio]', type: 'namespace', detail: 'Audio routes' },
+  { label: '[Video]', type: 'namespace', detail: 'Video routes' },
+  { label: '[Message]', type: 'namespace', detail: 'Message routes' }
+];
 
 export function tokenizePatchbayLine(line: string): PatchbayLineToken[] {
   const tokens: PatchbayLineToken[] = [];
@@ -622,6 +628,25 @@ const patchbayParser: StreamParser<null> = {
 
 export const patchbayLanguage = StreamLanguage.define(patchbayParser);
 
+export function patchbaySectionCompletions(context: CompletionContext): CompletionResult | null {
+  const line = context.state.doc.lineAt(context.pos);
+  const linePrefix = line.text.slice(0, context.pos - line.from);
+  const match = linePrefix.match(/^(\s*)(\[[A-Za-z]*)$/);
+  if (!match) return null;
+
+  const typedText = match[2].toLowerCase();
+  const options = sectionCompletionOptions.filter((option) =>
+    option.label.toLowerCase().startsWith(typedText)
+  );
+  if (options.length === 0) return null;
+
+  return {
+    from: line.from + match[1].length,
+    options,
+    validFor: /^\[[A-Za-z]*$/
+  };
+}
+
 const patchbayHighlightStyle = HighlightStyle.define([
   { tag: tags.typeName, color: '#7dcfff' },
   { tag: tags.keyword, color: '#bb9af7' },
@@ -631,5 +656,8 @@ const patchbayHighlightStyle = HighlightStyle.define([
 ]);
 
 export function patchbay(): LanguageSupport {
-  return new LanguageSupport(patchbayLanguage, [syntaxHighlighting(patchbayHighlightStyle)]);
+  return new LanguageSupport(patchbayLanguage, [
+    patchbayLanguage.data.of({ autocomplete: patchbaySectionCompletions }),
+    syntaxHighlighting(patchbayHighlightStyle)
+  ]);
 }

@@ -1,7 +1,10 @@
+import { CompletionContext } from '@codemirror/autocomplete';
+import { EditorState } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
 
 import { analyzePatchbay } from '$lib/patchbay/patchbay-parser';
 import {
+  patchbaySectionCompletions,
   getPatchbayChannelLinkRanges,
   getPatchbayDiagnosticRanges,
   getPatchbayLocalChannelRanges,
@@ -12,6 +15,14 @@ import {
   getPatchbayObjectNameRanges,
   tokenizePatchbayLine
 } from './patchbay.codemirror';
+
+function getPatchbayCompletionLabels(doc: string) {
+  const state = EditorState.create({ doc });
+  const context = new CompletionContext(state, doc.length, true);
+  const result = patchbaySectionCompletions(context);
+
+  return result?.options.map((option) => option.label) ?? [];
+}
 
 describe('tokenizePatchbayLine', () => {
   it('classifies section headers, channel declarations, routes, and comments', () => {
@@ -416,6 +427,19 @@ Src
         message:
           'Unknown message channel "Missing". Declare it with chan Missing or create a matching message channel object.'
       }
+    ]);
+  });
+});
+
+describe('patchbaySectionCompletions', () => {
+  it('suggests patchbay sections when typing an opening bracket at the start of a line', () => {
+    expect(getPatchbayCompletionLabels('[')).toEqual(['[Audio]', '[Video]', '[Message]']);
+    expect(getPatchbayCompletionLabels('[A')).toEqual(['[Audio]']);
+    expect(getPatchbayCompletionLabels('Clock -> [')).toEqual([]);
+    expect(getPatchbayCompletionLabels('[Message]\n[')).toEqual([
+      '[Audio]',
+      '[Video]',
+      '[Message]'
     ]);
   });
 });
