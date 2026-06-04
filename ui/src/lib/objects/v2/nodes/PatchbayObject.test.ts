@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
 import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
+import { MessageSystem } from '$lib/messages/MessageSystem';
 import { setPatchbayAudioRuntime } from '$lib/patchbay/patchbay-audio-runtime';
 import { setPatchbayMessageRuntime } from '$lib/patchbay/patchbay-message-runtime';
 import { setPatchbayVideoRuntime } from '$lib/patchbay/patchbay-video-runtime';
@@ -328,6 +329,38 @@ describe('PatchbayObject', () => {
 
     restoreMessageRuntime();
     MessageChannelRegistry.getInstance().unregisterSender(source, `send-${suffix}`);
+  });
+
+  it('routes message object endpoints for general MessageContext nodes', () => {
+    const suffix = crypto.randomUUID();
+    const sliderNodeId = `slider-${suffix}`;
+    const peekNodeId = `peek-${suffix}`;
+    const received: unknown[] = [];
+    const messageSystem = MessageSystem.getInstance();
+
+    messageSystem.updateEdges([]);
+    messageSystem.registerNode(peekNodeId).addCallback((message) => {
+      received.push(message);
+    });
+
+    const { object } = createPatchbayWithNodes(
+      `
+      [Message]
+      obj ${sliderNodeId} -> obj ${peekNodeId}
+      `,
+      [
+        { id: sliderNodeId, type: 'slider', data: {} },
+        { id: peekNodeId, type: 'peek', data: {} }
+      ]
+    );
+
+    messageSystem.sendMessage(sliderNodeId, 0.45);
+
+    expect(object.diagnostics).toEqual([]);
+    expect(received).toEqual([0.45]);
+
+    object.destroy();
+    messageSystem.unregisterNode(peekNodeId);
   });
 
   it('registers audio object endpoints as hidden audio edges', () => {

@@ -135,7 +135,7 @@ export class MessageSystem {
 
     // Build new connection map using Set for O(1) deduplication
     const connectionSets = new Map<string, Set<string>>();
-    for (const edge of edges) {
+    for (const edge of this.edges) {
       if (!connectionSets.has(edge.source)) {
         connectionSets.set(edge.source, new Set());
       }

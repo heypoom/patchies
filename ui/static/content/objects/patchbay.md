@@ -16,6 +16,7 @@ patchbay
 2. An existing message channel from `send`, `recv`, or JavaScript `send()` / `recv()` channel usage
 3. An existing audio channel from `send~` or `recv~`
 4. An existing video channel from `send.vdo` or `recv.vdo`
+5. An explicit object id written with `obj`, such as `obj slider-43`
 
 ```text
 [Message]
@@ -26,6 +27,16 @@ Logger -> Lights
 ```
 
 This forwards messages from `Clock` to `Logger`, then from `Logger` to `Lights`.
+
+You can also route directly between object ids:
+
+```text
+[Message]
+obj slider-43 -> obj peek-44
+obj expr-2 -> obj peek-45
+```
+
+`obj node-id` uses the first compatible message outlet or inlet for the route direction. Use `obj node-id:1` for the second compatible message port.
 
 ## Example
 
