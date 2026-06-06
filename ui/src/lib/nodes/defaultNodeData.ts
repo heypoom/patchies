@@ -278,7 +278,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('trigger', () => ({ types: ['b', 'n'], shorthand: false, showHelp: false }))
     .with('table', () => TABLE_DEFAULT_NODE_DATA)
     .with('send.vdo', () => ({ channel: 'foo' }))
-    .with('recv.vdo', () => ({ channel: 'foo' }))
+    .with('recv.vdo', () => ({ channel: 'foo', shorthand: false }))
     .with('note', () => ({ text: '', color: '#fef3c7', fontSize: 14 }))
     .with('title', () => ({
       text: '',

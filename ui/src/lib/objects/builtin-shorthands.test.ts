@@ -6,6 +6,21 @@ function findShorthand(name: string) {
 }
 
 describe('slider/knob shorthand parsing', () => {
+  it('marks rv as the recv.vdo shorthand for display', () => {
+    const { transform } = findShorthand('rv');
+    const result = transform('rv main', 'rv');
+
+    expect(result.nodeType).toBe('recv.vdo');
+    expect(result.data).toMatchObject({ channel: 'main', shorthand: true });
+  });
+
+  it('does not mark full recv.vdo usage as shorthand', () => {
+    const { transform } = findShorthand('recv.vdo');
+    const result = transform('recv.vdo main', 'recv.vdo');
+
+    expect(result.data).toMatchObject({ channel: 'main', shorthand: false });
+  });
+
   it('injects a typed keybind into keyboard shorthand data', () => {
     const { transform } = findShorthand('keyboard');
     const result = transform('keyboard a', 'keyboard');

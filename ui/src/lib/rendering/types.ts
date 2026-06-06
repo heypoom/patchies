@@ -87,7 +87,7 @@ export type RenderNode = {
   | { type: 'float.tex'; data: unknown }
   | { type: 'bg.out'; data: unknown }
   | { type: 'send.vdo'; data: { channel: string } }
-  | { type: 'recv.vdo'; data: { channel: string } }
+  | { type: 'recv.vdo'; data: { channel: string; shorthand?: boolean } }
 );
 
 export interface RenderEdge {
