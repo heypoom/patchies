@@ -23,7 +23,7 @@ import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
-import { VideoChannelRegistry } from './VideoChannelRegistry';
+import { PatchbayVideoIntegration } from './PatchbayVideoIntegration';
 import { PatchiesEventBus } from '../eventbus/PatchiesEventBus';
 import type {
   RequestWorkerVideoFramesEvent,
@@ -75,9 +75,6 @@ export class GLSystem {
   /** Stores FBO-compatible edges */
   public edges: REdge[] = [];
 
-  private patchbayVideoEdges = new Map<string, REdge>();
-  private patchbayVideoNodeIds = new Map<string, { recvId: string; sendId: string }>();
-
   private static instance: GLSystem;
   private hashes = { nodes: '', edges: '', graph: '' };
   private renderGraph: RenderGraph | null = null;
@@ -97,8 +94,16 @@ export class GLSystem {
   /** Tracks channel subscriptions made on behalf of render worker nodes */
   private renderWorkerChannelSubscriptions = new Map<string, Set<string>>();
   private channelRegistry = MessageChannelRegistry.getInstance();
-  private videoChannelRegistry = VideoChannelRegistry.getInstance();
   private floatTextureUploadBuffers = new FloatTextureUploadBufferPool();
+
+  private patchbay = new PatchbayVideoIntegration({
+    upsertNode: (...args) => this.upsertNode(...args),
+    removeNode: (nodeId) => this.removeNode(nodeId),
+    onGraphChanged: () => {
+      this.updateRenderGraph(true);
+      this.syncOutputEnabled();
+    }
+  });
 
   /** Cached singleton references to avoid repeated dynamic imports on hot paths */
   private workerNodeSystem: null | {
@@ -774,48 +779,19 @@ export class GLSystem {
   }
 
   registerPatchbayVideoRoute(routeId: string, from: string, to: string): void {
-    this.unregisterPatchbayVideoRoute(routeId);
-
-    const recvId = `${routeId}:video-recv:${from}`;
-    const sendId = `${routeId}:video-send:${to}`;
-
-    this.patchbayVideoNodeIds.set(routeId, { recvId, sendId });
-    this.patchbayVideoEdges.set(routeId, {
-      id: `${routeId}:video-edge:${from}->${to}`,
-      source: recvId,
-      target: sendId,
-      sourceHandle: 'video-out',
-      targetHandle: 'video-in-0'
-    });
-
-    this.upsertNode(recvId, 'recv.vdo', { channel: from }, { force: true });
-    this.upsertNode(sendId, 'send.vdo', { channel: to }, { force: true });
-    this.updateRenderGraph(true);
-    this.syncOutputEnabled();
+    this.patchbay.registerRoute(routeId, from, to);
   }
 
   registerPatchbayVideoEdge(edgeId: string, edge: REdge): void {
-    this.patchbayVideoEdges.set(edgeId, edge);
-    this.updateRenderGraph(true);
-    this.syncOutputEnabled();
+    this.patchbay.registerEdge(edgeId, edge);
   }
 
   unregisterPatchbayVideoRoute(routeId: string): void {
-    const nodeIds = this.patchbayVideoNodeIds.get(routeId);
-    if (!nodeIds) return;
-
-    this.patchbayVideoEdges.delete(routeId);
-    this.patchbayVideoNodeIds.delete(routeId);
-    this.removeNode(nodeIds.recvId);
-    this.removeNode(nodeIds.sendId);
-    this.updateRenderGraph(true);
-    this.syncOutputEnabled();
+    this.patchbay.unregisterRoute(routeId);
   }
 
   unregisterPatchbayVideoEdge(edgeId: string): void {
-    this.patchbayVideoEdges.delete(edgeId);
-    this.updateRenderGraph(true);
-    this.syncOutputEnabled();
+    this.patchbay.unregisterEdge(edgeId);
   }
 
   setUniformData(nodeId: string, uniformName: string, uniformValue: UserUniformValue) {
@@ -958,7 +934,7 @@ export class GLSystem {
   }
 
   private getAllRenderEdges(): REdge[] {
-    return [...this.edges, ...this.patchbayVideoEdges.values()];
+    return [...this.edges, ...this.patchbay.getEdges()];
   }
 
   private registerVideoChannelNode(
@@ -969,17 +945,11 @@ export class GLSystem {
     const channel = data.channel;
     if (typeof channel !== 'string' || channel.length === 0) return;
 
-    if (type === 'send.vdo') {
-      this.videoChannelRegistry.subscribe(channel, nodeId, 'send');
-    }
-
-    if (type === 'recv.vdo') {
-      this.videoChannelRegistry.subscribe(channel, nodeId, 'recv');
-    }
+    this.patchbay.registerVideoChannelNode(nodeId, type, data);
   }
 
   private unregisterVideoChannelNode(nodeId: string): void {
-    this.videoChannelRegistry.unsubscribeAll(nodeId);
+    this.patchbay.unregisterVideoChannelNode(nodeId);
   }
 
   hasHashChanged<K extends keyof GLSystem['hashes'], T>(key: K, object: T) {

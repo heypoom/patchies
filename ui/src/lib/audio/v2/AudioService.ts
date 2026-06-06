@@ -16,7 +16,7 @@ import { hasSomeAudioNode } from '../../../stores/canvas.store';
 import { BufferBridgeService } from '$lib/audio/buffer-bridge';
 import { Transport } from '$lib/transport';
 import type { SettingsManager } from '$lib/settings';
-import { PatchbayAudioEndpoint } from './nodes/PatchbayAudioEndpointNode';
+import { PatchbayAudioIntegration } from './PatchbayAudioIntegration';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -36,7 +36,6 @@ export class AudioService {
 
   /** Last graph edges provided by the canvas, without virtual audio-channel edges. */
   private currentGraphEdges: Edge[] = [];
-  private patchbayAudioEdges = new Map<string, Edge>();
 
   /** Output gain node for audio output */
   outGain: GainNode | null = null;
@@ -55,6 +54,13 @@ export class AudioService {
 
   /** Settings managers registered by Svelte components for main-thread audio nodes. */
   private settingsManagers: Map<string, SettingsManager> = new Map();
+
+  private patchbay = new PatchbayAudioIntegration({
+    getAudioContext: () => this.getAudioContext(),
+    nodesById: this.nodesById,
+    removeNodeById: (nodeId) => this.removeNodeById(nodeId),
+    onEdgesChanged: () => this.updateEdges(this.currentGraphEdges)
+  });
 
   constructor() {
     this.channelRegistry.onVirtualEdgesChange(() => {
@@ -217,11 +223,11 @@ export class AudioService {
 
     // Merge real edges with virtual edges from audio channels
     const virtualEdges = this.channelRegistry.getVirtualEdges();
-    const allEdges = [...edges, ...virtualEdges, ...this.patchbayAudioEdges.values()];
+    const allEdges = [...edges, ...virtualEdges, ...this.patchbay.getEdges()];
 
     // Store edges for late-arriving nodes (include virtual edges)
     this.currentEdges = allEdges;
-    this.cleanupStalePatchbayAudioEndpoints(allEdges);
+    this.patchbay.cleanupStaleEndpoints(allEdges);
 
     try {
       // Disconnect all existing connections
@@ -260,13 +266,11 @@ export class AudioService {
   }
 
   registerPatchbayAudioEdge(routeId: string, edge: Edge): void {
-    this.patchbayAudioEdges.set(routeId, edge);
-    this.updateEdges(this.currentGraphEdges);
+    this.patchbay.registerEdge(routeId, edge);
   }
 
   unregisterPatchbayAudioEdge(routeId: string): void {
-    this.patchbayAudioEdges.delete(routeId);
-    this.updateEdges(this.currentGraphEdges);
+    this.patchbay.unregisterEdge(routeId);
   }
 
   /**
@@ -371,8 +375,8 @@ export class AudioService {
    * Handles validation, node's custom connect() methods, and multi-channel routing.
    */
   private connectByEdge(edge: Edge): void {
-    this.ensurePatchbayAudioEndpoint(edge.source);
-    this.ensurePatchbayAudioEndpoint(edge.target);
+    this.patchbay.ensureEndpoint(edge.source);
+    this.patchbay.ensureEndpoint(edge.target);
 
     const sourceNode = this.nodesById.get(edge.source);
     const targetNode = this.nodesById.get(edge.target);
@@ -469,28 +473,6 @@ export class AudioService {
 
     // V2 validation
     return validateGroupConnection(sourceClass.group, targetClass.group);
-  }
-
-  private ensurePatchbayAudioEndpoint(nodeId: string): void {
-    if (!this.isPatchbayAudioEndpointId(nodeId) || this.nodesById.has(nodeId)) return;
-
-    const endpoint = new PatchbayAudioEndpoint(nodeId, this.getAudioContext());
-
-    this.nodesById.set(nodeId, endpoint);
-  }
-
-  private cleanupStalePatchbayAudioEndpoints(edges: Edge[]): void {
-    const referencedNodeIds = new Set(edges.flatMap((edge) => [edge.source, edge.target]));
-
-    for (const nodeId of this.nodesById.keys()) {
-      if (this.isPatchbayAudioEndpointId(nodeId) && !referencedNodeIds.has(nodeId)) {
-        this.removeNodeById(nodeId);
-      }
-    }
-  }
-
-  private isPatchbayAudioEndpointId(nodeId: string): boolean {
-    return nodeId.includes(':audio-recv:') || nodeId.includes(':audio-send:');
   }
 
   /**
