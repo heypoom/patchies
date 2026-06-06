@@ -83,9 +83,11 @@ export class PatchbayObject implements TextObjectV2 {
     this.unsubscribeRegistryChange = this.channelRegistry.onChannelsChange(() => {
       this.applyCode();
     });
+
     this.unsubscribeAudioRegistryChange = this.audioChannelRegistry.onChannelsChange(() => {
       this.applyCode();
     });
+
     this.unsubscribeVideoRegistryChange = this.videoChannelRegistry.onChannelsChange(() => {
       this.applyCode();
     });
@@ -97,19 +99,23 @@ export class PatchbayObject implements TextObjectV2 {
 
   applyCode(): void {
     const objectPorts = getPatchbayObjectPorts(this.getNodes());
+
     const signature = this.getApplySignature(objectPorts);
     if (signature === this.lastAppliedSignature) {
       return;
     }
 
     const analysis = analyzePatchbay(this.getCode(), {
+      objects: objectPorts,
+
       messageSources: new Set(this.channelRegistry.getSenderChannelNames()),
       messageTargets: new Set(this.channelRegistry.getReceiverChannelNames()),
+
       audioSources: new Set(this.audioChannelRegistry.getSenderChannelNames()),
       audioTargets: new Set(this.audioChannelRegistry.getReceiverChannelNames()),
+
       videoSources: new Set(this.videoChannelRegistry.getSenderChannelNames()),
-      videoTargets: new Set(this.videoChannelRegistry.getReceiverChannelNames()),
-      objects: objectPorts
+      videoTargets: new Set(this.videoChannelRegistry.getReceiverChannelNames())
     });
 
     this.currentDiagnostics = analysis.diagnostics;
@@ -122,6 +128,7 @@ export class PatchbayObject implements TextObjectV2 {
     this.applyMessageRoutes(analysis.messageRoutes);
     this.applyAudioRoutes(analysis.audioRoutes);
     this.applyVideoRoutes(analysis.videoRoutes);
+
     this.lastAppliedSignature = signature;
   }
 
@@ -164,15 +171,19 @@ export class PatchbayObject implements TextObjectV2 {
   private getApplySignature(objectPorts: ReturnType<typeof getPatchbayObjectPorts>): string {
     return hash({
       code: this.getCode(),
-      messageSources: this.channelRegistry.getSenderChannelNames().sort(),
-      messageTargets: this.channelRegistry.getReceiverChannelNames().sort(),
-      audioSources: this.audioChannelRegistry.getSenderChannelNames().sort(),
-      audioTargets: this.audioChannelRegistry.getReceiverChannelNames().sort(),
-      videoSources: this.videoChannelRegistry.getSenderChannelNames().sort(),
-      videoTargets: this.videoChannelRegistry.getReceiverChannelNames().sort(),
+
       objects: Array.from(objectPorts.entries())
         .map(([nodeId, ports]) => [nodeId, ports])
-        .sort(([a], [b]) => String(a).localeCompare(String(b)))
+        .sort(([a], [b]) => String(a).localeCompare(String(b))),
+
+      messageSources: this.channelRegistry.getSenderChannelNames().sort(),
+      messageTargets: this.channelRegistry.getReceiverChannelNames().sort(),
+
+      audioSources: this.audioChannelRegistry.getSenderChannelNames().sort(),
+      audioTargets: this.audioChannelRegistry.getReceiverChannelNames().sort(),
+
+      videoSources: this.videoChannelRegistry.getSenderChannelNames().sort(),
+      videoTargets: this.videoChannelRegistry.getReceiverChannelNames().sort()
     });
   }
 
@@ -213,6 +224,7 @@ export class PatchbayObject implements TextObjectV2 {
       }
 
       const endpointId = this.getAudioEndpointId(route);
+
       this.audioChannelRegistry.subscribe(route.from, endpointId, 'recv');
       this.audioChannelRegistry.subscribe(route.to, endpointId, 'send');
       this.activeAudioRoutes.set(endpointId, route);
@@ -237,11 +249,12 @@ export class PatchbayObject implements TextObjectV2 {
 
   private applyMessageObjectRoute(route: PatchbayRoute): void {
     const routeId = this.getMessageRouteId(route);
+    const runtime = getPatchbayMessageRuntime();
 
     const sourceNodeId = route.fromEndpoint?.nodeId ?? `${routeId}:message-source:${route.from}`;
     const targetNodeId = route.toEndpoint?.nodeId ?? `${routeId}:message-target:${route.to}`;
 
-    getPatchbayMessageRuntime().registerEdge(routeId, {
+    runtime.registerEdge(routeId, {
       id: routeId,
       source: sourceNodeId,
       target: targetNodeId,
@@ -255,14 +268,14 @@ export class PatchbayObject implements TextObjectV2 {
       const subscriberId = `${routeId}:message-channel-source`;
 
       this.channelRegistry.subscribe(route.from, subscriberId, (message) => {
-        getPatchbayMessageRuntime().sendFromEndpoint(sourceNodeId, message);
+        runtime.sendFromEndpoint(sourceNodeId, message);
       });
 
       this.trackMessageSubscription(route.from, subscriberId);
     }
 
     if (!route.toEndpoint) {
-      getPatchbayMessageRuntime().registerEndpoint(targetNodeId, (message) => {
+      runtime.registerEndpoint(targetNodeId, (message) => {
         this.channelRegistry.broadcast(route.to, message, this.nodeId);
       });
 
@@ -302,6 +315,7 @@ export class PatchbayObject implements TextObjectV2 {
 
   private applyVideoObjectRoute(route: PatchbayRoute): void {
     const routeId = this.getVideoObjectRouteId(route);
+    const runtime = getPatchbayVideoRuntime();
 
     let sourceNodeId = route.fromEndpoint?.nodeId;
     let sourceHandle = route.fromEndpoint?.handle;
@@ -313,7 +327,7 @@ export class PatchbayObject implements TextObjectV2 {
       const sourceRouteId = `${routeId}:channel-source`;
       const syntheticChannel = `${sourceRouteId}:video-channel`;
 
-      getPatchbayVideoRuntime().registerRoute(sourceRouteId, route.from, syntheticChannel);
+      runtime.registerRoute(sourceRouteId, route.from, syntheticChannel);
       this.activeVideoRoutes.add(sourceRouteId);
 
       sourceNodeId = `${sourceRouteId}:video-send:${syntheticChannel}`;
@@ -324,14 +338,14 @@ export class PatchbayObject implements TextObjectV2 {
       const targetRouteId = `${routeId}:channel-target`;
       const syntheticChannel = `${targetRouteId}:video-channel`;
 
-      getPatchbayVideoRuntime().registerRoute(targetRouteId, syntheticChannel, route.to);
+      runtime.registerRoute(targetRouteId, syntheticChannel, route.to);
       this.activeVideoRoutes.add(targetRouteId);
 
       targetNodeId = `${targetRouteId}:video-recv:${syntheticChannel}`;
       targetHandle = 'video-in-0';
     }
 
-    getPatchbayVideoRuntime().registerEdge(routeId, {
+    runtime.registerEdge(routeId, {
       id: routeId,
       source: sourceNodeId!,
       target: targetNodeId!,
@@ -405,14 +419,16 @@ export class PatchbayObject implements TextObjectV2 {
   }
 
   private clearVideoRoutes(): void {
+    const runtime = getPatchbayVideoRuntime();
+
     for (const routeId of this.activeVideoEdges) {
-      getPatchbayVideoRuntime().unregisterEdge(routeId);
+      runtime.unregisterEdge(routeId);
     }
 
     this.activeVideoEdges.clear();
 
     for (const routeId of this.activeVideoRoutes) {
-      getPatchbayVideoRuntime().unregisterRoute(routeId);
+      runtime.unregisterRoute(routeId);
     }
 
     this.activeVideoRoutes.clear();
