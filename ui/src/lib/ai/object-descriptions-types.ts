@@ -86,6 +86,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - unpack: Split an array into individual element outlets
 - stack: LIFO stack — push messages to inlet 0, bang inlet 1 to pop; also accepts clear and size commands on inlet 1
 - queue: FIFO queue — push messages to inlet 0, bang inlet 1 to dequeue; also accepts clear and size commands on inlet 1
+- patchbay: Text-based message, audio, and video channel router. Uses [Message]/[Audio]/[Video] sections, explicit chan declarations, and channel routes like A -> B -> C.
 - wgpu.compute: WebGPU compute shaders (WGSL) for parallel data processing
 - asm: Virtual stack machine assembly (can send/receive messages)
 - uxn: Uxn virtual machine (Uxntal, visual & interactive)

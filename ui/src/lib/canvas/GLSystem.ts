@@ -1,4 +1,9 @@
-import { buildRenderGraph, type REdge, type RNode } from '$lib/rendering/graphUtils';
+import {
+  buildRenderGraph,
+  normalizeRenderEdges,
+  type REdge,
+  type RNode
+} from '$lib/rendering/graphUtils';
 import type { FBOFormat, RenderGraph, RenderNode, RenderWorkerMessage } from '$lib/rendering/types';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
@@ -18,6 +23,7 @@ import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
 import { MessageChannelRegistry } from '$lib/messages/MessageChannelRegistry';
+import { PatchbayVideoIntegration } from './PatchbayVideoIntegration';
 import { PatchiesEventBus } from '../eventbus/PatchiesEventBus';
 import type {
   RequestWorkerVideoFramesEvent,
@@ -90,6 +96,15 @@ export class GLSystem {
   private channelRegistry = MessageChannelRegistry.getInstance();
   private floatTextureUploadBuffers = new FloatTextureUploadBufferPool();
 
+  private patchbay = new PatchbayVideoIntegration({
+    upsertNode: (...args) => this.upsertNode(...args),
+    removeNode: (nodeId) => this.removeNode(nodeId),
+    onGraphChanged: () => {
+      this.updateRenderGraph(true);
+      this.syncOutputEnabled();
+    }
+  });
+
   /** Cached singleton references to avoid repeated dynamic imports on hot paths */
   private workerNodeSystem: null | {
     deliverVideoFrames(targetNodeId: string, frames: unknown, timestamp: number): void;
@@ -143,8 +158,10 @@ export class GLSystem {
       GLSystem.instance = new GLSystem();
     }
 
-    // @ts-expect-error -- expose globally for debugging
-    window.glSystem = GLSystem.instance;
+    if (typeof window !== 'undefined') {
+      // @ts-expect-error -- expose globally for debugging
+      window.glSystem = GLSystem.instance;
+    }
 
     return GLSystem.instance;
   }
@@ -717,7 +734,7 @@ export class GLSystem {
    * and canvas store based on current edges + override.
    **/
   private syncOutputEnabled() {
-    const hasBgOutEdge = this.edges.some((edge) => edge.target.startsWith('bg.out'));
+    const hasBgOutEdge = this.getAllRenderEdges().some((edge) => edge.target.startsWith('bg.out'));
     const outputEnabled = this.overrideOutputNodeId !== null || hasBgOutEdge;
 
     const useBackground =
@@ -742,16 +759,39 @@ export class GLSystem {
     data: Record<string, unknown>,
     options?: { force?: boolean }
   ): boolean {
+    const force = options?.force ?? false;
+
     const nodeIndex = this.nodes.findIndex((node) => node.id === id);
 
     if (nodeIndex === -1) {
       this.nodes.push({ id: id, type, data });
     } else {
       const node = this.nodes[nodeIndex];
+      if (!force && this.isSameRenderNode(node, type, data)) return false;
+
+      this.unregisterVideoChannelNode(id);
       this.nodes[nodeIndex] = { ...node, type, data };
     }
 
-    return this.updateRenderGraph(options?.force ?? false);
+    this.registerVideoChannelNode(id, type, data);
+
+    return this.updateRenderGraph(force);
+  }
+
+  registerPatchbayVideoRoute(routeId: string, from: string, to: string): void {
+    this.patchbay.registerRoute(routeId, from, to);
+  }
+
+  registerPatchbayVideoEdge(edgeId: string, edge: REdge): void {
+    this.patchbay.registerEdge(edgeId, edge);
+  }
+
+  unregisterPatchbayVideoRoute(routeId: string): void {
+    this.patchbay.unregisterRoute(routeId);
+  }
+
+  unregisterPatchbayVideoEdge(edgeId: string): void {
+    this.patchbay.unregisterEdge(edgeId);
   }
 
   setUniformData(nodeId: string, uniformName: string, uniformValue: UserUniformValue) {
@@ -798,6 +838,8 @@ export class GLSystem {
     const node = this.nodes.find((n) => n.id === nodeId);
     if (!node) return;
 
+    this.unregisterVideoChannelNode(nodeId);
+
     // Cleanup persistent external texture.
     if (isExternalTextureNode(node.type as RenderNode['type'])) {
       this.removeBitmap(nodeId);
@@ -832,7 +874,7 @@ export class GLSystem {
   }
 
   updateEdges(edges: REdge[]) {
-    this.edges = edges;
+    this.edges = normalizeRenderEdges(edges);
 
     this.updateRenderGraph();
     this.syncOutputEnabled();
@@ -859,9 +901,11 @@ export class GLSystem {
   }
 
   private updateRenderGraph(force = false) {
-    if (!force && !this.hasFlowGraphChanged(this.nodes, this.edges)) return false;
+    const edges = this.getAllRenderEdges();
 
-    const graph = buildRenderGraph(this.nodes, this.edges);
+    if (!force && !this.hasFlowGraphChanged(this.nodes, edges)) return false;
+
+    const graph = buildRenderGraph(this.nodes, edges);
     if (!force && !this.hasHashChanged('graph', graph)) return false;
 
     this.send('buildRenderGraph', { graph });
@@ -879,6 +923,33 @@ export class GLSystem {
   // TODO: optimize this!
   hasFlowGraphChanged(nodes: RNode[], edges: REdge[]) {
     return this.hasHashChanged('nodes', nodes) || this.hasHashChanged('edges', edges);
+  }
+
+  private isSameRenderNode(
+    node: RNode,
+    type: RenderNode['type'],
+    data: Record<string, unknown>
+  ): boolean {
+    return node.type === type && ohash.hash(node.data) === ohash.hash(data);
+  }
+
+  private getAllRenderEdges(): REdge[] {
+    return [...this.edges, ...this.patchbay.getEdges()];
+  }
+
+  private registerVideoChannelNode(
+    nodeId: string,
+    type: RenderNode['type'],
+    data: Record<string, unknown>
+  ): void {
+    const channel = data.channel;
+    if (typeof channel !== 'string' || channel.length === 0) return;
+
+    this.patchbay.registerVideoChannelNode(nodeId, type, data);
+  }
+
+  private unregisterVideoChannelNode(nodeId: string): void {
+    this.patchbay.unregisterVideoChannelNode(nodeId);
   }
 
   hasHashChanged<K extends keyof GLSystem['hashes'], T>(key: K, object: T) {
@@ -1050,7 +1121,7 @@ export class GLSystem {
     // Check all edges (not just FBO-filtered ones) for video connections
     // This allows external texture nodes (webcam, img) to upload when connected
     // to non-FBO nodes like vdo.ninja.push
-    const hasOutgoingVideoEdges = this.edges.some(
+    const hasOutgoingVideoEdges = this.getAllRenderEdges().some(
       (edge) => edge.source === nodeId && /(video-out|video-in|sampler2D)/.test(edge.id)
     );
 

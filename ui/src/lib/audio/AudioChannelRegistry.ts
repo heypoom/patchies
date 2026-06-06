@@ -5,6 +5,10 @@
  */
 
 import type { Edge } from '@xyflow/svelte';
+import {
+  AudioChannelRegistryListeners,
+  type AudioChannelRegistryListener
+} from './AudioChannelRegistryListeners';
 
 interface AudioChannelData {
   senders: Set<string>; // nodeIds of send~ nodes
@@ -15,6 +19,7 @@ export class AudioChannelRegistry {
   private static instance: AudioChannelRegistry | null = null;
 
   private channels = new Map<string, AudioChannelData>();
+  private listeners = new AudioChannelRegistryListeners();
 
   /**
    * Subscribe an audio node to a channel as sender or receiver
@@ -31,6 +36,11 @@ export class AudioChannelRegistry {
     } else {
       channelData.receivers.add(nodeId);
     }
+
+    if (this.isRealNodeId(nodeId)) {
+      this.listeners.notifyChannelsChanged();
+    }
+    this.listeners.notifyVirtualEdgesChanged();
   }
 
   /**
@@ -47,6 +57,32 @@ export class AudioChannelRegistry {
     if (channelData.senders.size === 0 && channelData.receivers.size === 0) {
       this.channels.delete(channel);
     }
+
+    if (this.isRealNodeId(nodeId)) {
+      this.listeners.notifyChannelsChanged();
+    }
+    this.listeners.notifyVirtualEdgesChanged();
+  }
+
+  getSenderChannelNames(): string[] {
+    return Array.from(this.channels.entries())
+      .filter(([, data]) => Array.from(data.senders).some((nodeId) => this.isRealNodeId(nodeId)))
+      .map(([channel]) => channel);
+  }
+
+  getReceiverChannelNames(): string[] {
+    return Array.from(this.channels.entries())
+      .filter(([, data]) => Array.from(data.receivers).some((nodeId) => this.isRealNodeId(nodeId)))
+      .map(([channel]) => channel);
+  }
+
+  getChannelNodeIds(channel: string): string[] {
+    const channelData = this.channels.get(channel);
+    if (!channelData) return [];
+
+    return Array.from(new Set([...channelData.senders, ...channelData.receivers])).filter(
+      (nodeId) => this.isRealNodeId(nodeId)
+    );
   }
 
   /**
@@ -72,6 +108,18 @@ export class AudioChannelRegistry {
     }
 
     return edges;
+  }
+
+  onChannelsChange(listener: AudioChannelRegistryListener): () => void {
+    return this.listeners.onChannelsChange(listener);
+  }
+
+  onVirtualEdgesChange(listener: AudioChannelRegistryListener): () => void {
+    return this.listeners.onVirtualEdgesChange(listener);
+  }
+
+  private isRealNodeId(nodeId: string): boolean {
+    return !nodeId.includes(':');
   }
 
   static getInstance(): AudioChannelRegistry {

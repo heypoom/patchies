@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { filterFBOCompatibleGraph, topologicalSort, buildRenderGraph } from './graphUtils.js';
+import {
+  filterFBOCompatibleGraph,
+  topologicalSort,
+  buildRenderGraph,
+  normalizeRenderEdges
+} from './graphUtils.js';
 import type { RenderNode } from './types.js';
 
 function makeNode(id: string, inputs: string[], outputs: string[]): RenderNode {
@@ -79,6 +84,46 @@ describe('Graph Utils', () => {
     expect(graph.sortedNodes).toEqual(['n1', 'n3']);
     expect(graph.backEdges.size).toBe(0);
     expect(graph.feedbackNodes.size).toBe(0);
+  });
+
+  it('normalizes render edges to graph-relevant fields only', () => {
+    const edges = [
+      {
+        id: 'e1',
+        source: 'n1',
+        target: 'n2',
+        sourceHandle: 'video-out',
+        targetHandle: 'video-in-0',
+        selected: false,
+        dragging: true,
+        data: { uiOnly: true }
+      },
+      {
+        id: 'e2',
+        source: 'n2',
+        target: 'n3',
+        sourceHandle: null,
+        targetHandle: null,
+        markerEnd: { type: 'arrow' }
+      }
+    ];
+
+    expect(normalizeRenderEdges(edges)).toEqual([
+      {
+        id: 'e1',
+        source: 'n1',
+        target: 'n2',
+        sourceHandle: 'video-out',
+        targetHandle: 'video-in-0'
+      },
+      {
+        id: 'e2',
+        source: 'n2',
+        target: 'n3',
+        sourceHandle: undefined,
+        targetHandle: undefined
+      }
+    ]);
   });
 
   it('should annotate backEdgeInlets on feedback target nodes', () => {

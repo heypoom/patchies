@@ -13,6 +13,16 @@ export type RNode = {
 
 export type REdge = Pick<XYEdge, 'id' | 'source' | 'target' | 'sourceHandle' | 'targetHandle'>;
 
+export function normalizeRenderEdges(edges: REdge[]): REdge[] {
+  return edges.map((edge) => ({
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    sourceHandle: edge.sourceHandle ?? undefined,
+    targetHandle: edge.targetHandle ?? undefined
+  }));
+}
+
 /**
  * Parse outlet index from a sourceHandle string like "video-out-0". Returns 0 if absent or unparseable.
  * Handles both numeric ("video-out-1") and legacy non-numeric ("video-out-out") handles.

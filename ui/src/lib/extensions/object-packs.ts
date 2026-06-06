@@ -41,6 +41,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'stack',
       'queue',
       'kv',
+      'patchbay',
       'send',
       'recv'
     ]

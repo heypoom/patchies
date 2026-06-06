@@ -10,6 +10,7 @@
     Decoration,
     type DecorationSet,
     hoverTooltip,
+    tooltips,
     type Tooltip,
     placeholder as cmPlaceholder
   } from '@codemirror/view';
@@ -33,6 +34,13 @@
     shouldRunOnValueWidgetChange,
     valueWidgetRunThrottleMs
   } from '$lib/codemirror/value-widget-events';
+  import {
+    getInlineDecorationTarget,
+    inlineDecorationExtensions,
+    inlineDecorationTheme,
+    setInlineDecorationsEffect,
+    type InlineDecoration
+  } from '$lib/codemirror/inline-decorations';
 
   // Effect to set error lines (supports multiple lines)
   const setErrorLinesEffect = StateEffect.define<number[] | null>();
@@ -133,6 +141,8 @@
     onready,
     nodeType,
     lineErrors,
+    inlineDecorations = [],
+    onaltdecorationclick,
     lineWrap = false,
     ...restProps
   }: {
@@ -157,6 +167,8 @@
     onready?: () => void;
     nodeType?: string;
     lineErrors?: Record<number, string[]>;
+    inlineDecorations?: InlineDecoration[];
+    onaltdecorationclick?: (data: string) => void;
 
     /** Enable line wrapping */
     lineWrap?: boolean;
@@ -164,6 +176,8 @@
 
   let editorElement: HTMLDivElement;
   let editorView: EditorView | null = $state(null);
+  let isAltNavigationActive = $state(false);
+  let altHoveredDecoration: Element | null = null;
   const viewport = useViewport();
   let isInternalUpdate = false; // Flag to prevent loops when user types
   let valueOnFocus: string | null = null; // Track value at focus for undo commit
@@ -224,9 +238,40 @@
     }
   }
 
+  function setAltNavigationActive(event: KeyboardEvent) {
+    if (event.key === 'Alt') {
+      isAltNavigationActive = event.type === 'keydown';
+      if (!isAltNavigationActive) {
+        clearAltHoveredDecoration();
+      }
+    }
+  }
+
+  function handleWindowBlur() {
+    isAltNavigationActive = false;
+    clearAltHoveredDecoration();
+  }
+
+  function clearAltHoveredDecoration() {
+    altHoveredDecoration?.classList.remove('cm-alt-navigation-hover');
+    altHoveredDecoration = null;
+  }
+
+  function setAltHoveredDecoration(decoration: Element | null) {
+    if (decoration === altHoveredDecoration) return;
+
+    clearAltHoveredDecoration();
+    altHoveredDecoration = decoration;
+    altHoveredDecoration?.classList.add('cm-alt-navigation-hover');
+  }
+
   onMount(async () => {
     if (editorElement) {
       editorElement.addEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
+
+      window.addEventListener('keydown', setAltNavigationActive);
+      window.addEventListener('keyup', setAltNavigationActive);
+      window.addEventListener('blur', handleWindowBlur);
 
       const languageExtension = await loadLanguageExtension(
         language,
@@ -239,6 +284,7 @@
 
       const extensions = [
         keymap.of(searchKeymap),
+
         Prec.highest(
           keymap.of([
             {
@@ -261,6 +307,7 @@
             }
           ])
         ),
+
         drawSelection(),
         minimalSetup,
 
@@ -271,9 +318,11 @@
         languageComp.of(languageExtension),
 
         // Error line highlighting with hover tooltips
+        tooltips({ parent: document.body }),
         errorLineField,
         lineErrorsField,
         errorTooltip,
+        inlineDecorationExtensions,
 
         // Prevent wheel events from bubbling to XYFlow
         // Track focus/blur for undo commit
@@ -306,6 +355,36 @@
             }
 
             valueOnFocus = null;
+          },
+          click: (event) => {
+            if (!event.altKey) return false;
+
+            const decoration = getInlineDecorationTarget(event);
+
+            const data = decoration?.getAttribute('data-inline-decoration');
+            if (!data) return false;
+
+            if (onaltdecorationclick) {
+              event.preventDefault();
+              event.stopPropagation();
+              onaltdecorationclick(data);
+              return true;
+            }
+
+            return false;
+          },
+          mousemove: (event) => {
+            if (!event.altKey) {
+              clearAltHoveredDecoration();
+              return false;
+            }
+
+            setAltHoveredDecoration(getInlineDecorationTarget(event));
+            return false;
+          },
+          mouseleave: () => {
+            clearAltHoveredDecoration();
+            return false;
           }
         }),
 
@@ -345,6 +424,30 @@
           '.cm-errorLine': {
             backgroundColor: 'rgba(239, 68, 68, 0.15)',
             borderLeft: '3px solid rgb(239 68 68)'
+          },
+          '.cm-patchbay-unknown-channel': {
+            color: 'rgb(252 165 165)',
+            textDecoration: 'underline wavy rgb(248 113 113)',
+            textDecorationThickness: '1px',
+            textUnderlineOffset: '3px'
+          },
+          '.cm-patchbay-local-channel, .cm-patchbay-local-channel *': {
+            color: 'rgb(196 181 253)'
+          },
+          '.cm-patchbay-object-name, .cm-patchbay-object-name *': {
+            color: 'rgb(253 224 171) !important'
+          },
+          '.cm-patchbay-object-assignment, .cm-patchbay-object-assignment *': {
+            color: 'rgb(224 231 255) !important'
+          },
+          '.cm-patchbay-object-keyword, .cm-patchbay-object-keyword *': {
+            color: 'rgb(255, 202, 105) !important'
+          },
+          '.cm-patchbay-role-error': {
+            color: 'rgb(252 165 165)',
+            textDecoration: 'underline wavy rgb(248 113 113)',
+            textDecorationThickness: '1px',
+            textUnderlineOffset: '3px'
           },
           '.cm-completion-hover': {
             boxSizing: 'border-box',
@@ -396,6 +499,7 @@
             paddingTop: '6px'
           }
         }),
+        inlineDecorationTheme,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const updatedValue = update.state.doc.toString();
@@ -466,6 +570,9 @@
 
   onDestroy(() => {
     editorElement?.removeEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
+    window.removeEventListener('keydown', setAltNavigationActive);
+    window.removeEventListener('keyup', setAltNavigationActive);
+    window.removeEventListener('blur', handleWindowBlur);
 
     if (valueWidgetRunTimeout) {
       clearTimeout(valueWidgetRunTimeout);
@@ -563,11 +670,23 @@
       effects: [setErrorLinesEffect.of(validErrorLines), setLineErrorsEffect.of(validLineErrors)]
     });
   });
+
+  $effect(() => {
+    if (!editorView) return;
+
+    editorView.dispatch({
+      effects: setInlineDecorationsEffect.of(inlineDecorations)
+    });
+  });
 </script>
 
 <div
   bind:this={editorElement}
-  class={['code-editor-container nodrag nopan nowheel outline-none', className]}
+  class={[
+    'code-editor-container nodrag nopan nowheel outline-none',
+    isAltNavigationActive && 'cm-alt-navigation-active',
+    className
+  ]}
   style:--patchies-code-editor-font-size={resolvedFontSize}
   style:--patchies-code-editor-font-family={resolvedFontFamily}
   {...restProps}
@@ -608,5 +727,18 @@
 
   :global(.code-editor-container .cm-cursor) {
     border-left-color: rgb(244 244 245) !important;
+  }
+
+  :global(
+    .code-editor-container.cm-alt-navigation-active
+      .cm-patchbay-channel-link.cm-alt-navigation-hover
+  ),
+  :global(
+    .code-editor-container.cm-alt-navigation-active .cm-patchbay-object-link.cm-alt-navigation-hover
+  ) {
+    cursor: pointer;
+    color: rgb(147 197 253);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 </style>

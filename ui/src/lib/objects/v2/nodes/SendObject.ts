@@ -38,6 +38,8 @@ export class SendObject implements TextObjectV2 {
   readonly nodeId: string;
   readonly context: ObjectContext;
   private channelRegistry: MessageChannelRegistry;
+  private currentChannel: string = '';
+  private unsubscribeParamsChange: (() => void) | null = null;
 
   constructor(nodeId: string, context: ObjectContext) {
     this.nodeId = nodeId;
@@ -48,6 +50,27 @@ export class SendObject implements TextObjectV2 {
   private getChannel(): string {
     const channel = this.context.getParam('channel');
     return typeof channel === 'string' && channel.length > 0 ? channel : 'foo';
+  }
+
+  create(): void {
+    this.registerChannel(this.getChannel());
+
+    this.unsubscribeParamsChange = this.context.onParamsChange(() => {
+      const channel = this.getChannel();
+
+      if (channel !== this.currentChannel) {
+        this.registerChannel(channel);
+      }
+    });
+  }
+
+  private registerChannel(channel: string): void {
+    if (this.currentChannel) {
+      this.channelRegistry.unregisterSender(this.currentChannel, this.nodeId);
+    }
+
+    this.channelRegistry.registerSender(channel, this.nodeId);
+    this.currentChannel = channel;
   }
 
   onMessage(data: unknown, meta: MessageMeta): void {
@@ -62,5 +85,16 @@ export class SendObject implements TextObjectV2 {
         }
       })
       .otherwise(() => {});
+  }
+
+  destroy(): void {
+    this.unsubscribeParamsChange?.();
+    this.unsubscribeParamsChange = null;
+
+    if (this.currentChannel) {
+      this.channelRegistry.unregisterSender(this.currentChannel, this.nodeId);
+    }
+
+    this.currentChannel = '';
   }
 }

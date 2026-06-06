@@ -164,6 +164,11 @@ export async function loadLanguageExtension(
 
       return extensions;
     })
+    .with('patchbay', async () => {
+      const { patchbay } = await import('$lib/codemirror/patchbay.codemirror');
+
+      return patchbay();
+    })
     .with('ruby', async () => {
       const [{ StreamLanguage }, { ruby }] = await Promise.all([
         import('@codemirror/language'),
