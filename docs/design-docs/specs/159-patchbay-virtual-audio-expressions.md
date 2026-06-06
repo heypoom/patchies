@@ -2,7 +2,8 @@
 
 ## Status
 
-Proposed future extension. Do not implement as part of the initial text patchbay object.
+Prototype extension for the text patchbay object. Implement after the initial text patchbay
+object is stable.
 
 ## Problem
 
@@ -18,7 +19,7 @@ Today this requires placing and wiring a visible `expr~` object. For quick patch
 
 - Add compact virtual `expr~` processors to audio patchbay routes.
 - Keep the syntax parallel with object aliases, using `Name = expr~ ...`.
-- Support a shorthand for simple one-source expressions.
+- Support a shorthand for simple one-source expressions. This is the main prototype workflow.
 - Reuse existing `expr~` expression semantics and audio processing where possible.
 - Keep virtual expressions scoped to `[Audio]`.
 - Avoid changing message and video routing semantics.
@@ -30,6 +31,8 @@ Today this requires placing and wiring a visible `expr~` object. For quick patch
 - Do not invent a new audio expression language.
 - Do not expose a visible `expr~` node on the canvas.
 - Do not require users to declare simple inline expressions before use.
+- Do not support multi-input binding syntax in the prototype.
+- Do not support selecting multiple outlets from a virtual expression in the prototype.
 
 ## DSL
 
@@ -58,9 +61,13 @@ Feed -> SoftClip -> Out
 
 The symbol `s` means the first signal entering the virtual expression processor.
 
-If multi-input virtual expressions are supported, later signals should be available as `s2`, `s3`, and so on, following the existing `expr~` signal naming style.
+In the prototype, the virtual expression has one signal inlet. Multiple upstream connections to
+the same virtual expression are mixed by the Web Audio graph and exposed as `s`.
 
-When multiple upstream routes feed the same virtual expression, `s` binds to the first compatible source signal according to the resolved route order. This keeps shorthand predictable enough for live patching while avoiding a new explicit inlet-binding syntax in the first version.
+If multi-input virtual expressions are supported later, later signals should be available as
+`s2`, `s3`, and so on, following the existing `expr~` signal naming style. That later version
+needs explicit inlet-binding syntax; resolved route order should not decide which source becomes
+`s`, `s2`, or `s3`.
 
 ## Shorthand
 
@@ -78,15 +85,46 @@ Feed -> expr~ s * 0.45 -> Reverb
 
 The left endpoint is the source signal. The inline expression operates on that source as `s`.
 
-Shorthand should stay conservative in the first version. It is best for simple scalar expressions:
+Shorthand is required in the prototype because it is the fastest path for common patchbay
+edits:
 
 ```text
-Feed * 0.45 -> Reverb
+Mic * 0.5 -> Out
 Feed / 2 -> Out
 Feed + 0.1 -> Out
 ```
 
-More complex processors should use the explicit alias form.
+The prototype should keep shorthand conservative. It should support simple binary expressions
+where the first token is a valid audio route source and the rest of the left side becomes an
+`expr~` body using that source as `s`.
+
+For example:
+
+```text
+Mic * 0.5 -> Out
+```
+
+normalizes to:
+
+```text
+Mic -> <anonymous expr~ "s * 0.5"> -> Out
+```
+
+More complex processors should use the explicit alias form:
+
+```text
+SoftClip = expr~ tanh(s * 2)
+Mic -> SoftClip -> Out
+```
+
+The prototype should not support full inline `expr~` segments such as:
+
+```text
+Mic -> expr~ s * 0.5 -> Out
+```
+
+That form is harder to parse clearly because route splitting sees `->` before expression
+boundaries. Keep it reserved for a later pass.
 
 ## Name Resolution
 
@@ -119,19 +157,85 @@ recv~ Feed -> expr~ "s * 0.45" -> send~ Reverb
 
 The virtual processor should not appear as a visible canvas node. It should be owned by the patchbay object and cleaned up when the patchbay code changes or the patchbay node is destroyed.
 
-Generated virtual processor ids should be stable across applies when the source code has not meaningfully changed. This avoids unnecessary audio graph churn while editing unrelated lines.
+Generated virtual processor ids should be stable across applies:
+
+- Named aliases use `${patchbayNodeId}:audio-expr:${aliasName}`.
+- Anonymous shorthand expressions use a stable route-local id derived from the normalized
+  route segment, for example `${patchbayNodeId}:audio-expr:inline:${hash(normalizedSegment)}`.
+
+The expression text can change without changing the node id. This lets the runtime update the
+existing hidden `expr~` node where possible instead of tearing down the whole route.
+
+For a channel-to-channel virtual expression:
+
+```text
+Mic * 0.5 -> Out
+```
+
+the runtime should expand to hidden audio edges equivalent to:
+
+```text
+recv~ Mic -> expr~ "s * 0.5" -> send~ Out
+```
+
+For object endpoints, the same virtual processor sits between the resolved source and target:
+
+```text
+obj mic-1 -> Gain -> obj out-2
+```
+
+expands conceptually to:
+
+```text
+obj mic-1 -> expr~ "s * 0.45" -> obj out-2
+```
+
+The patchbay runtime needs an explicit hidden-audio-node contract, not only edge
+registration. `PatchbayObject` should be able to create or update a hidden `expr~` node, register
+the edges around it, and destroy the hidden node when it is no longer referenced.
+
+Implementation can add this contract to the patchbay audio runtime, for example:
+
+```ts
+registerVirtualExpr(routeId, { nodeId, expression })
+unregisterVirtualExpr(routeId)
+```
+
+or an equivalent API on `AudioService` / `PatchbayAudioIntegration`. The important behavior is
+that hidden `expr~` nodes share the same audio graph update path as visible audio nodes.
+
+Audio routes that do not involve virtual expressions should keep using the existing patchbay
+audio route behavior.
 
 ## Parser Requirements
 
 The parser needs to recognize:
 
 - `Name = expr~ <expression>` declarations in `[Audio]`.
-- Inline `expr~ <expression>` route segments if full inline syntax is supported.
 - Shorthand expressions of the form `<source> <operator/expression> -> <target>`.
 
 Route splitting must avoid treating expression content as endpoints too early. Shorthand parsing should happen before ordinary endpoint validation so `Feed * 0.45` can be normalized into `Feed -> <anonymous expr~>`.
 
-The first version can limit shorthand to simple binary expressions where the first token is a valid source endpoint and the remainder is an expression using that source as `s`.
+The prototype can limit shorthand to simple binary expressions where the first token is a valid
+source endpoint and the remainder is an expression using that source as `s`.
+
+The parser/analyzer should expose virtual expressions as structured data, not only as rewritten
+channel strings. A useful shape is:
+
+```ts
+type PatchbayVirtualAudioExpression = {
+  id: string;
+  name?: string;
+  expression: string;
+  line: number;
+  anonymous: boolean;
+};
+```
+
+Audio routes can then reference a virtual expression endpoint, or the analyzer can emit an
+expanded audio-route graph plus the virtual expression table. Prefer the shape that keeps
+diagnostics line-aware and avoids re-parsing route strings in the runtime. The runtime must be
+able to deterministically create the hidden node and register both surrounding edges.
 
 ## Editor Requirements
 
@@ -154,25 +258,67 @@ The parser or runtime should report errors for:
 - Invalid `expr~` expressions.
 - Shorthand expressions that cannot be normalized safely.
 - Virtual expression aliases used in invalid source or target positions.
+- Full inline `expr~` route segments in the prototype.
+- Virtual expressions that produce multiple outlets.
 
 Expression compile errors should point to the `expr~` declaration or shorthand expression that caused them.
 
+Because the existing `expr~` worklet reports compile failures on the audio thread, the
+prototype should also validate expression syntax on the main thread before applying routes.
+Use the same expression parser semantics as `expr~` where practical. If validation succeeds on
+the main thread but the worklet still fails, surface a runtime diagnostic tied to the virtual
+expression line instead of only logging to the console.
+
 ## Open Questions
 
-- Should shorthand support only simple binary operations, or any expression after the first endpoint?
 - Should multi-input virtual expressions get explicit inlet-binding syntax later?
 - Should virtual `expr~` support multiple outlets, or should one alias always represent one output for patchbay clarity?
-- Should inline full syntax be allowed, such as `Feed -> expr~ s * 0.45 -> Reverb`, or should all named/full expressions require aliases?
+- Should inline full syntax be allowed later, such as `Feed -> expr~ s * 0.45 -> Reverb`, or should all named/full expressions require aliases?
 
-## Recommended First Slice
+## Prototype Slice
 
-Implement explicit aliases only:
+Implement explicit aliases and simple shorthand:
 
 ```text
 [Audio]
 
 Gain = expr~ s * 0.45
 Feed -> Gain -> Reverb
+
+Mic * 0.5 -> Out
 ```
 
-Defer shorthand until virtual expression aliases, lifecycle cleanup, expression diagnostics, and route resolution are solid.
+Defer full inline `expr~` route segments, explicit multi-input binding, and multi-outlet
+selection until virtual expression lifecycle cleanup, expression diagnostics, and route
+resolution are solid.
+
+Prototype rules:
+
+- Named virtual expressions resolve before object aliases and channels in `[Audio]`.
+- Simple shorthand normalizes into an anonymous virtual expression between the parsed source and
+  target.
+- The first source signal is available as `s`; multiple incoming sources are mixed by the Web
+  Audio connection model and still appear as `s`.
+- Virtual expressions expose one outlet in the patchbay prototype. If the expression body would
+  produce multiple outlets, reject it with a diagnostic.
+- Hidden virtual `expr~` nodes are owned by the patchbay node and destroyed when removed from the
+  applied patchbay program or when the patchbay node is destroyed.
+
+## Testing
+
+Parser/analyzer tests should cover:
+
+- Explicit `Name = expr~ ...` declarations in `[Audio]`.
+- Shorthand normalization for `Mic * 0.5 -> Out`.
+- Shorthand with object endpoints where practical, such as `obj mic-1 * 0.5 -> Out`.
+- Diagnostics for `expr~` declarations outside `[Audio]`.
+- Diagnostics for duplicate virtual expression aliases and alias/channel collisions.
+- Diagnostics for invalid expression syntax.
+- Diagnostics for unsupported full inline `expr~` route segments.
+
+Runtime tests should cover:
+
+- A channel-to-channel shorthand expression registers a hidden `expr~` node and two audio edges.
+- A named virtual expression reuses its stable hidden node id across expression updates.
+- Removed virtual expressions unregister edges and destroy hidden nodes.
+- Last valid routes stay active when edited code has virtual-expression diagnostics.
