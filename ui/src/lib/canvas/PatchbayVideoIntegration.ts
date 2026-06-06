@@ -30,6 +30,7 @@ export class PatchbayVideoIntegration {
     const sendId = `${routeId}:video-send:${to}`;
 
     this.routeNodeIds.set(routeId, { recvId, sendId });
+
     this.edges.set(routeId, {
       id: `${routeId}:video-edge:${from}->${to}`,
       source: recvId,
@@ -54,6 +55,7 @@ export class PatchbayVideoIntegration {
 
     this.edges.delete(routeId);
     this.routeNodeIds.delete(routeId);
+
     this.options.removeNode(nodeIds.recvId);
     this.options.removeNode(nodeIds.sendId);
     this.options.onGraphChanged();

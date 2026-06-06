@@ -8,6 +8,7 @@ describe('PatchbayVideoIntegration', () => {
     const upsertNode = vi.fn();
     const removeNode = vi.fn();
     const onGraphChanged = vi.fn();
+
     const integration = new PatchbayVideoIntegration({
       upsertNode,
       removeNode,
@@ -28,6 +29,7 @@ describe('PatchbayVideoIntegration', () => {
       { channel: 'Target' },
       { force: true }
     );
+
     expect(integration.getEdges()).toEqual([
       {
         id: 'route-1:video-edge:Source->Target',
@@ -37,6 +39,7 @@ describe('PatchbayVideoIntegration', () => {
         targetHandle: 'video-in-0'
       }
     ]);
+
     expect(onGraphChanged).toHaveBeenCalledTimes(1);
 
     integration.unregisterRoute('route-1');
@@ -51,6 +54,7 @@ describe('PatchbayVideoIntegration', () => {
     const registry = VideoChannelRegistry.getInstance();
     const channel = `patchbay-video-integration-${crypto.randomUUID()}`;
     const nodeId = `recv-video-${crypto.randomUUID()}`;
+
     const integration = new PatchbayVideoIntegration({
       upsertNode: vi.fn(),
       removeNode: vi.fn(),
