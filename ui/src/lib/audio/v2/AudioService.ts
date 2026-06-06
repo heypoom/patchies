@@ -16,23 +16,7 @@ import { hasSomeAudioNode } from '../../../stores/canvas.store';
 import { BufferBridgeService } from '$lib/audio/buffer-bridge';
 import { Transport } from '$lib/transport';
 import type { SettingsManager } from '$lib/settings';
-
-class PatchbayAudioEndpoint implements AudioNodeV2 {
-  static type = 'patchbay-audio-endpoint~';
-
-  readonly nodeId: string;
-  audioNode: GainNode;
-
-  constructor(nodeId: string, audioContext: AudioContext) {
-    this.nodeId = nodeId;
-    this.audioNode = audioContext.createGain();
-    this.audioNode.gain.value = 1;
-  }
-
-  destroy(): void {
-    this.audioNode.disconnect();
-  }
-}
+import { PatchbayAudioEndpoint } from './nodes/PatchbayAudioEndpointNode';
 
 /**
  * AudioService provides shared audio logic for the v2 audio system.
@@ -490,7 +474,9 @@ export class AudioService {
   private ensurePatchbayAudioEndpoint(nodeId: string): void {
     if (!this.isPatchbayAudioEndpointId(nodeId) || this.nodesById.has(nodeId)) return;
 
-    this.nodesById.set(nodeId, new PatchbayAudioEndpoint(nodeId, this.getAudioContext()));
+    const endpoint = new PatchbayAudioEndpoint(nodeId, this.getAudioContext());
+
+    this.nodesById.set(nodeId, endpoint);
   }
 
   private cleanupStalePatchbayAudioEndpoints(edges: Edge[]): void {
@@ -513,6 +499,7 @@ export class AudioService {
   static getInstance(): AudioService {
     if (AudioService.instance === null) {
       registerAudioNodes();
+
       AudioService.instance = new AudioService();
     }
 
