@@ -7,37 +7,30 @@ export type PatchbayVideoRuntime = {
   unregisterEdge(routeId: string): void;
 };
 
+const getGL = () => import('$lib/canvas/GLSystem').then(({ GLSystem }) => GLSystem.getInstance());
+
 const glSystemRuntime: PatchbayVideoRuntime = {
   registerRoute(routeId, from, to) {
-    void import('$lib/canvas/GLSystem').then(({ GLSystem }) => {
-      GLSystem.getInstance().registerPatchbayVideoRoute(routeId, from, to);
-    });
+    getGL().then((gl) => gl.registerPatchbayVideoRoute(routeId, from, to));
   },
   unregisterRoute(routeId) {
-    void import('$lib/canvas/GLSystem').then(({ GLSystem }) => {
-      GLSystem.getInstance().unregisterPatchbayVideoRoute(routeId);
-    });
+    getGL().then((gl) => gl.unregisterPatchbayVideoRoute(routeId));
   },
   registerEdge(routeId, edge) {
-    void import('$lib/canvas/GLSystem').then(({ GLSystem }) => {
-      GLSystem.getInstance().registerPatchbayVideoEdge(routeId, edge);
-    });
+    getGL().then((gl) => gl.registerPatchbayVideoEdge(routeId, edge));
   },
   unregisterEdge(routeId) {
-    void import('$lib/canvas/GLSystem').then(({ GLSystem }) => {
-      GLSystem.getInstance().unregisterPatchbayVideoEdge(routeId);
-    });
+    getGL().then((gl) => gl.unregisterPatchbayVideoEdge(routeId));
   }
 };
 
 let runtime: PatchbayVideoRuntime = glSystemRuntime;
 
-export function getPatchbayVideoRuntime(): PatchbayVideoRuntime {
-  return runtime;
-}
+export const getPatchbayVideoRuntime = (): PatchbayVideoRuntime => runtime;
 
 export function setPatchbayVideoRuntime(nextRuntime: PatchbayVideoRuntime): () => void {
   const previousRuntime = runtime;
+
   runtime = nextRuntime;
 
   return () => {
