@@ -6,6 +6,21 @@ function findShorthand(name: string) {
 }
 
 describe('slider/knob shorthand parsing', () => {
+  it('marks sv as the send.vdo shorthand for display', () => {
+    const { transform } = findShorthand('sv');
+    const result = transform('sv main', 'sv');
+
+    expect(result.nodeType).toBe('send.vdo');
+    expect(result.data).toMatchObject({ channel: 'main', shorthand: true });
+  });
+
+  it('does not mark full send.vdo usage as shorthand', () => {
+    const { transform } = findShorthand('send.vdo');
+    const result = transform('send.vdo main', 'send.vdo');
+
+    expect(result.data).toMatchObject({ channel: 'main', shorthand: false });
+  });
+
   it('marks rv as the recv.vdo shorthand for display', () => {
     const { transform } = findShorthand('rv');
     const result = transform('rv main', 'rv');

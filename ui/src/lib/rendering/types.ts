@@ -86,7 +86,7 @@ export type RenderNode = {
   | { type: 'img'; data: unknown }
   | { type: 'float.tex'; data: unknown }
   | { type: 'bg.out'; data: unknown }
-  | { type: 'send.vdo'; data: { channel: string } }
+  | { type: 'send.vdo'; data: { channel: string; shorthand?: boolean } }
   | { type: 'recv.vdo'; data: { channel: string; shorthand?: boolean } }
 );
 

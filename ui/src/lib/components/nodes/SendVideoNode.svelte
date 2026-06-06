@@ -10,7 +10,7 @@
 
   let node: {
     id: string;
-    data: { channel?: string };
+    data: { channel?: string; shorthand?: boolean };
     selected: boolean;
   } = $props();
 
@@ -19,6 +19,7 @@
   let messageContext: MessageContext;
 
   let channel = $derived(node.data.channel ?? 'foo');
+  const nodeLabel = $derived(node.data.shorthand ? 'sv' : 'send.vdo');
 
   const handleMessage: MessageCallbackFn = (m, { inlet }) => {
     // Channel inlet (inlet 1) - accepts string to change channel
@@ -50,7 +51,7 @@
 </script>
 
 <ObjectCommonLayout
-  nodeLabel="send.vdo"
+  {nodeLabel}
   {channel}
   selected={node.selected}
   onChannelChange={handleChannelChange}

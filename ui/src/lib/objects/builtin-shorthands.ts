@@ -165,7 +165,7 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     description: 'Send video to a named channel',
     transform: (expr, name) => ({
       nodeType: 'send.vdo',
-      data: { channel: expr.replace(name, '').trim() || 'foo' }
+      data: { channel: expr.replace(name, '').trim() || 'foo', shorthand: name === 'sv' }
     })
   },
   {
