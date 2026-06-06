@@ -34,43 +34,19 @@
     shouldRunOnValueWidgetChange,
     valueWidgetRunThrottleMs
   } from '$lib/codemirror/value-widget-events';
+  import {
+    getInlineDecorationTarget,
+    inlineDecorationExtensions,
+    inlineDecorationTheme,
+    setInlineDecorationsEffect,
+    type InlineDecoration
+  } from '$lib/codemirror/inline-decorations';
 
   // Effect to set error lines (supports multiple lines)
   const setErrorLinesEffect = StateEffect.define<number[] | null>();
 
   // Effect to set line errors with messages
   const setLineErrorsEffect = StateEffect.define<Record<number, string[]> | null>();
-
-  export type InlineDecoration = {
-    from: number;
-    to: number;
-    className: string;
-    data?: string;
-    hoverText?: string;
-  };
-
-  const setInlineDecorationsEffect = StateEffect.define<InlineDecoration[] | null>();
-
-  const inlineDecorationMetadataField = StateField.define<InlineDecoration[]>({
-    create() {
-      return [];
-    },
-    update(decorations, tr) {
-      for (let effect of tr.effects) {
-        if (effect.is(setInlineDecorationsEffect)) {
-          return effect.value ?? [];
-        }
-      }
-
-      if (!tr.docChanged) return decorations;
-
-      return decorations.map((decoration) => ({
-        ...decoration,
-        from: tr.changes.mapPos(decoration.from),
-        to: tr.changes.mapPos(decoration.to)
-      }));
-    }
-  });
 
   // StateField to store line errors for tooltip lookup
   const lineErrorsField = StateField.define<Record<number, string[]>>({
@@ -112,39 +88,6 @@
     provide: (f) => EditorView.decorations.from(f)
   });
 
-  const inlineDecorationField = StateField.define<DecorationSet>({
-    create() {
-      return Decoration.none;
-    },
-    update(decorations, tx) {
-      decorations = decorations.map(tx.changes);
-
-      for (let effect of tx.effects) {
-        if (effect.is(setInlineDecorationsEffect)) {
-          if (effect.value === null || effect.value.length === 0) {
-            decorations = Decoration.none;
-          } else {
-            const decor = effect.value
-              .filter(({ from, to }) => from < to && from >= 0 && to <= tx.state.doc.length)
-              .map(({ from, to, className, data }) =>
-                Decoration.mark({
-                  class: className,
-                  attributes: {
-                    ...(data ? { 'data-inline-decoration': data } : {})
-                  }
-                }).range(from, to)
-              );
-
-            decorations = Decoration.set(decor, true);
-          }
-        }
-      }
-
-      return decorations;
-    },
-    provide: (f) => EditorView.decorations.from(f)
-  });
-
   // Create hover tooltip for error lines
   const errorTooltip = hoverTooltip(
     (view, pos) => {
@@ -177,29 +120,6 @@
       } satisfies Tooltip;
     },
     { hoverTime: 100 }
-  );
-
-  const inlineDecorationTooltip = hoverTooltip(
-    (view, pos) => {
-      const decoration = view.state
-        .field(inlineDecorationMetadataField)
-        .find(({ from, to, hoverText }) => hoverText && from <= pos && pos <= to);
-      if (!decoration?.hoverText) return null;
-
-      return {
-        pos: decoration.from,
-        end: decoration.to,
-        above: true,
-        create() {
-          const dom = document.createElement('div');
-          dom.className = 'cm-inline-decoration-tooltip';
-          dom.textContent = decoration.hoverText ?? '';
-
-          return { dom };
-        }
-      } satisfies Tooltip;
-    },
-    { hoverTime: 150 }
   );
 
   let languageComp = new Compartment();
@@ -345,11 +265,6 @@
     altHoveredDecoration?.classList.add('cm-alt-navigation-hover');
   }
 
-  function getInlineDecorationTarget(event: Event) {
-    const target = event.target instanceof Element ? event.target : null;
-    return target?.closest('[data-inline-decoration]') ?? null;
-  }
-
   onMount(async () => {
     if (editorElement) {
       editorElement.addEventListener(VALUE_WIDGET_CHANGE_EVENT, handleValueWidgetChange);
@@ -405,11 +320,9 @@
         // Error line highlighting with hover tooltips
         tooltips({ parent: document.body }),
         errorLineField,
-        inlineDecorationField,
-        inlineDecorationMetadataField,
         lineErrorsField,
         errorTooltip,
-        inlineDecorationTooltip,
+        inlineDecorationExtensions,
 
         // Prevent wheel events from bubbling to XYFlow
         // Track focus/blur for undo commit
@@ -584,21 +497,9 @@
             borderTop: '1px solid rgb(63 63 70)',
             marginTop: '4px',
             paddingTop: '6px'
-          },
-          '.cm-inline-decoration-tooltip': {
-            backgroundColor: 'rgb(39 39 42)',
-            border: '1px solid rgb(63 63 70)',
-            borderRadius: '4px',
-            padding: '6px 10px',
-            maxWidth: '320px',
-            color: 'rgb(244 244 245)',
-            fontSize: '11px',
-            fontFamily: 'var(--font-mono)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word'
           }
         }),
+        inlineDecorationTheme,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const updatedValue = update.state.doc.toString();

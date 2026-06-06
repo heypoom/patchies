@@ -621,6 +621,7 @@ export function createShaderParkCompletionSource(patchiesContext?: PatchiesConte
 
     const typedText = context.state.doc.sliceString(word.from, word.to).toLowerCase();
     const isExpressionPosition = isExpressionCompletionPosition(context, word.from);
+
     const options = shaderParkCompletions.filter(
       (completion) =>
         (!typedText || completion.label.toLowerCase().startsWith(typedText)) &&
