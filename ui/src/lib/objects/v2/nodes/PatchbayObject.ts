@@ -18,9 +18,10 @@ import {
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet } from '../object-metadata';
 import type { MessageMeta, TextObjectV2 } from '../interfaces/text-objects';
-import type { Node } from '@xyflow/svelte';
+import type { Edge, Node } from '@xyflow/svelte';
 
 type RouteMap = Map<string, string[]>;
+
 type PatchbayObjectOptions = {
   getNodes?: () => Array<Pick<Node, 'id' | 'type' | 'data'>>;
 };
@@ -48,18 +49,24 @@ export class PatchbayObject implements TextObjectV2 {
   private channelRegistry = MessageChannelRegistry.getInstance();
   private audioChannelRegistry = AudioChannelRegistry.getInstance();
   private videoChannelRegistry = VideoChannelRegistry.getInstance();
+
   private activeMessageSubscriptions = new Map<string, Set<string>>();
   private activeMessageEdges = new Set<string>();
   private activeMessageEndpoints = new Set<string>();
+
   private activeAudioRoutes = new Map<string, PatchbayRoute>();
   private activeAudioEdges = new Set<string>();
-  private activeVideoRoutes = new Set<string>();
-  private activeVideoEdges = new Set<string>();
+
+  private activeVideoRoutes = new Map<string, { from: string; to: string }>();
+  private activeVideoEdges = new Map<string, string>();
+
   private currentDiagnostics: PatchbayDiagnostic[] = [];
+
   private unsubscribeRegistryChange: (() => void) | null = null;
   private unsubscribeAudioRegistryChange: (() => void) | null = null;
   private unsubscribeVideoRegistryChange: (() => void) | null = null;
   private unsubscribeParamsChange: (() => void) | null = null;
+
   private getNodes: () => Array<Pick<Node, 'id' | 'type' | 'data'>>;
   private lastAppliedSignature: string | null = null;
 
@@ -99,8 +106,8 @@ export class PatchbayObject implements TextObjectV2 {
 
   applyCode(): void {
     const objectPorts = getPatchbayObjectPorts(this.getNodes());
-
     const signature = this.getApplySignature(objectPorts);
+
     if (signature === this.lastAppliedSignature) {
       return;
     }
@@ -220,6 +227,7 @@ export class PatchbayObject implements TextObjectV2 {
     for (const route of routes) {
       if (route.fromEndpoint || route.toEndpoint) {
         this.applyAudioObjectRoute(route);
+
         continue;
       }
 
@@ -232,18 +240,62 @@ export class PatchbayObject implements TextObjectV2 {
   }
 
   private applyVideoRoutes(routes: PatchbayRoute[]): void {
-    this.clearVideoRoutes();
+    const desiredRoutes = new Map<string, { from: string; to: string }>();
+    const desiredEdges = new Map<string, Edge>();
 
     for (const route of routes) {
       if (route.fromEndpoint || route.toEndpoint) {
-        this.applyVideoObjectRoute(route);
+        this.collectVideoObjectRoute(route, desiredRoutes, desiredEdges);
+
         continue;
       }
 
       const routeId = this.getVideoRouteId(route);
-      getPatchbayVideoRuntime().registerRoute(routeId, route.from, route.to);
+      desiredRoutes.set(routeId, { from: route.from, to: route.to });
+    }
 
-      this.activeVideoRoutes.add(routeId);
+    this.reconcileVideoRoutes(desiredRoutes);
+    this.reconcileVideoEdges(desiredEdges);
+  }
+
+  private reconcileVideoRoutes(desiredRoutes: Map<string, { from: string; to: string }>): void {
+    const runtime = getPatchbayVideoRuntime();
+
+    for (const routeId of this.activeVideoRoutes.keys()) {
+      if (!desiredRoutes.has(routeId)) {
+        runtime.unregisterRoute(routeId);
+        this.activeVideoRoutes.delete(routeId);
+      }
+    }
+
+    for (const [routeId, route] of desiredRoutes) {
+      const activeRoute = this.activeVideoRoutes.get(routeId);
+
+      if (activeRoute?.from === route.from && activeRoute?.to === route.to) {
+        continue;
+      }
+
+      runtime.registerRoute(routeId, route.from, route.to);
+      this.activeVideoRoutes.set(routeId, route);
+    }
+  }
+
+  private reconcileVideoEdges(desiredEdges: Map<string, Edge>): void {
+    const runtime = getPatchbayVideoRuntime();
+
+    for (const routeId of this.activeVideoEdges.keys()) {
+      if (!desiredEdges.has(routeId)) {
+        runtime.unregisterEdge(routeId);
+        this.activeVideoEdges.delete(routeId);
+      }
+    }
+
+    for (const [routeId, edge] of desiredEdges) {
+      const signature = hash(edge);
+      if (this.activeVideoEdges.get(routeId) === signature) continue;
+
+      runtime.registerEdge(routeId, edge);
+      this.activeVideoEdges.set(routeId, signature);
     }
   }
 
@@ -313,9 +365,12 @@ export class PatchbayObject implements TextObjectV2 {
     }
   }
 
-  private applyVideoObjectRoute(route: PatchbayRoute): void {
+  private collectVideoObjectRoute(
+    route: PatchbayRoute,
+    desiredRoutes: Map<string, { from: string; to: string }>,
+    desiredEdges: Map<string, Edge>
+  ): void {
     const routeId = this.getVideoObjectRouteId(route);
-    const runtime = getPatchbayVideoRuntime();
 
     let sourceNodeId = route.fromEndpoint?.nodeId;
     let sourceHandle = route.fromEndpoint?.handle;
@@ -327,8 +382,7 @@ export class PatchbayObject implements TextObjectV2 {
       const sourceRouteId = `${routeId}:channel-source`;
       const syntheticChannel = `${sourceRouteId}:video-channel`;
 
-      runtime.registerRoute(sourceRouteId, route.from, syntheticChannel);
-      this.activeVideoRoutes.add(sourceRouteId);
+      desiredRoutes.set(sourceRouteId, { from: route.from, to: syntheticChannel });
 
       sourceNodeId = `${sourceRouteId}:video-send:${syntheticChannel}`;
       sourceHandle = 'video-out';
@@ -338,22 +392,19 @@ export class PatchbayObject implements TextObjectV2 {
       const targetRouteId = `${routeId}:channel-target`;
       const syntheticChannel = `${targetRouteId}:video-channel`;
 
-      runtime.registerRoute(targetRouteId, syntheticChannel, route.to);
-      this.activeVideoRoutes.add(targetRouteId);
+      desiredRoutes.set(targetRouteId, { from: syntheticChannel, to: route.to });
 
       targetNodeId = `${targetRouteId}:video-recv:${syntheticChannel}`;
       targetHandle = 'video-in-0';
     }
 
-    runtime.registerEdge(routeId, {
+    desiredEdges.set(routeId, {
       id: routeId,
       source: sourceNodeId!,
       target: targetNodeId!,
       sourceHandle,
       targetHandle
     });
-
-    this.activeVideoEdges.add(routeId);
   }
 
   private groupRoutesBySource(routes: PatchbayRoute[]): RouteMap {
@@ -421,13 +472,13 @@ export class PatchbayObject implements TextObjectV2 {
   private clearVideoRoutes(): void {
     const runtime = getPatchbayVideoRuntime();
 
-    for (const routeId of this.activeVideoEdges) {
+    for (const routeId of this.activeVideoEdges.keys()) {
       runtime.unregisterEdge(routeId);
     }
 
     this.activeVideoEdges.clear();
 
-    for (const routeId of this.activeVideoRoutes) {
+    for (const routeId of this.activeVideoRoutes.keys()) {
       runtime.unregisterRoute(routeId);
     }
 
