@@ -165,7 +165,7 @@ export async function loadLanguageExtension(
       return extensions;
     })
     .with('patchbay', async () => {
-      const { patchbay } = await import('$lib/codemirror/patchbay.codemirror');
+      const { patchbay } = await import('$lib/patchbay/codemirror/patchbay.codemirror');
 
       return patchbay();
     })

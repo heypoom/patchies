@@ -17,7 +17,7 @@
     getPatchbayObjectLinkRanges,
     getPatchbayObjectNameRanges,
     patchbayContextualCompletionSource
-  } from '$lib/codemirror/patchbay.codemirror';
+  } from '$lib/patchbay/codemirror/patchbay.codemirror';
   import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
   import { VideoChannelRegistry } from '$lib/canvas/VideoChannelRegistry';
   import { PatchbayObject } from '$lib/objects/v2/nodes/PatchbayObject';
