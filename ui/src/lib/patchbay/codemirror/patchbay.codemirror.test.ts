@@ -15,6 +15,10 @@ import {
   getPatchbayObjectKeywordRanges,
   getPatchbayObjectLinkRanges,
   getPatchbayObjectNameRanges,
+  getPatchbayVirtualExpressionAssignmentRanges,
+  getPatchbayVirtualExpressionKeywordRanges,
+  getPatchbayVirtualExpressionNameRanges,
+  getPatchbayVirtualExpressionOperatorRanges,
   tokenizePatchbayLine
 } from './patchbay.codemirror';
 
@@ -83,6 +87,15 @@ describe('tokenizePatchbayLine', () => {
       { text: '=', style: 'operator' },
       { text: 'obj', style: 'keyword' },
       { text: 'glsl-34', style: 'variableName' }
+    ]);
+
+    expect(tokenizePatchbayLine('Gainer = expr~ s * 0.8')).toEqual([
+      { text: 'Gainer', style: 'variableName' },
+      { text: '=', style: 'operator' },
+      { text: 'expr~', style: 'keyword' },
+      { text: 's', style: 'variableName' },
+      { text: '*', style: 'operator' },
+      { text: '0.8', style: 'variableName' }
     ]);
   });
 
@@ -390,6 +403,66 @@ Src -> Out`;
         from: 47,
         to: 54,
         className: 'cm-patchbay-object-id'
+      }
+    ]);
+  });
+
+  it('returns green syntax ranges for virtual expr aliases and keywords', () => {
+    const source = `[Audio]
+Gainer = expr~ s * 0.8
+Osc -> Gainer -> Out`;
+
+    expect(getPatchbayVirtualExpressionNameRanges(source)).toEqual([
+      {
+        from: 8,
+        to: 14,
+        className: 'cm-patchbay-virtual-expression-name'
+      },
+      {
+        from: 38,
+        to: 44,
+        className: 'cm-patchbay-virtual-expression-name'
+      }
+    ]);
+
+    expect(getPatchbayVirtualExpressionKeywordRanges(source)).toEqual([
+      {
+        from: 17,
+        to: 22,
+        className: 'cm-patchbay-virtual-expression-keyword'
+      }
+    ]);
+
+    expect(getPatchbayVirtualExpressionAssignmentRanges(source)).toEqual([
+      {
+        from: 15,
+        to: 16,
+        className: 'cm-patchbay-object-assignment'
+      }
+    ]);
+  });
+
+  it('returns purple operator ranges for virtual expr bodies and shorthand', () => {
+    const source = `[Audio]
+Gainer = expr~ s * 0.8
+Offset = expr~ s + 0.1
+Osc * 0.8 -> Out`;
+
+    expect(getPatchbayVirtualExpressionOperatorRanges(source)).toEqual([
+      {
+        from: 25,
+        to: 26,
+        className: 'cm-patchbay-virtual-expression-operator'
+      },
+      {
+        from: 48,
+        to: 49,
+        className: 'cm-patchbay-virtual-expression-operator'
+      },
+      {
+        from: 58,
+        to: 59,
+        className: 'cm-patchbay-virtual-expression-operator'
       }
     ]);
   });

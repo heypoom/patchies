@@ -1,6 +1,7 @@
 import type { Edge } from '@xyflow/svelte';
 
 import type { AudioNodeV2 } from './interfaces/audio-nodes';
+import { ExprNode } from './nodes/ExprNode';
 import { PatchbayAudioEndpoint } from './nodes/PatchbayAudioEndpointNode';
 
 type PatchbayAudioIntegrationOptions = {
@@ -12,6 +13,7 @@ type PatchbayAudioIntegrationOptions = {
 
 export class PatchbayAudioIntegration {
   private edges = new Map<string, Edge>();
+  private virtualExpressionNodeIds = new Map<string, string>();
 
   constructor(private options: PatchbayAudioIntegrationOptions) {}
 
@@ -22,6 +24,43 @@ export class PatchbayAudioIntegration {
 
   unregisterEdge(routeId: string): void {
     this.edges.delete(routeId);
+    this.options.onEdgesChanged();
+  }
+
+  registerVirtualExpression(
+    routeId: string,
+    expression: { nodeId: string; expression: string }
+  ): void {
+    const previousNodeId = this.virtualExpressionNodeIds.get(routeId);
+
+    if (previousNodeId && previousNodeId !== expression.nodeId) {
+      this.options.removeNodeById(previousNodeId);
+    }
+
+    this.virtualExpressionNodeIds.set(routeId, expression.nodeId);
+
+    const existingNode = this.options.nodesById.get(expression.nodeId);
+
+    if (existingNode) {
+      existingNode.send?.('expression', expression.expression);
+      this.options.onEdgesChanged();
+      return;
+    }
+
+    const node = new ExprNode(expression.nodeId, this.options.getAudioContext());
+    this.options.nodesById.set(node.nodeId, node);
+
+    Promise.resolve(node.create?.([null, expression.expression])).finally(() => {
+      this.options.onEdgesChanged();
+    });
+  }
+
+  unregisterVirtualExpression(routeId: string): void {
+    const nodeId = this.virtualExpressionNodeIds.get(routeId);
+    if (!nodeId) return;
+
+    this.options.removeNodeById(nodeId);
+    this.virtualExpressionNodeIds.delete(routeId);
     this.options.onEdgesChanged();
   }
 

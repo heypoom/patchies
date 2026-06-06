@@ -197,8 +197,8 @@ the edges around it, and destroy the hidden node when it is no longer referenced
 Implementation can add this contract to the patchbay audio runtime, for example:
 
 ```ts
-registerVirtualExpr(routeId, { nodeId, expression })
-unregisterVirtualExpr(routeId)
+registerVirtualExpr(routeId, { nodeId, expression });
+unregisterVirtualExpr(routeId);
 ```
 
 or an equivalent API on `AudioService` / `PatchbayAudioIntegration`. The important behavior is

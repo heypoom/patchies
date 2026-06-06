@@ -82,6 +82,30 @@ export type PatchbayObjectAliasHintRange = {
   hoverText: string;
 };
 
+export type PatchbayVirtualExpressionNameRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
+export type PatchbayVirtualExpressionKeywordRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
+export type PatchbayVirtualExpressionAssignmentRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
+export type PatchbayVirtualExpressionOperatorRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
 export type PatchbayChannelRoles = {
   senders: Set<string>;
   receivers: Set<string>;
@@ -479,6 +503,112 @@ export function getPatchbayObjectIdRanges(source: string): PatchbayObjectIdRange
   return getPatchbayObjectReferenceTokenRanges(source, 'id', 'cm-patchbay-object-id');
 }
 
+export function getPatchbayVirtualExpressionNameRanges(
+  source: string
+): PatchbayVirtualExpressionNameRange[] {
+  const lineStarts = getLineStarts(source);
+  const aliases = getPatchbayVirtualExpressionAliases(source);
+  const ranges = getPatchbayVirtualExpressionDeclarationTokenRanges(
+    source,
+    0,
+    'cm-patchbay-virtual-expression-name'
+  );
+  const seenRanges = new Set(ranges.map((range) => `${range.from}:${range.to}`));
+  let currentSection: PatchbaySection | undefined;
+
+  source.split(/\r?\n/).forEach((line, lineIndex) => {
+    const lineTokens = tokenizePatchbayLine(line);
+    if (isVirtualExpressionDeclarationTokens(lineTokens)) return;
+
+    let searchStart = 0;
+
+    for (const token of lineTokens) {
+      const column = line.indexOf(token.text, searchStart);
+      if (column === -1) continue;
+
+      searchStart = column + token.text.length;
+
+      const section = parseSectionToken(token);
+      if (section) {
+        currentSection = section;
+        continue;
+      }
+
+      if (token.style !== 'variableName') continue;
+      if (!currentSection) continue;
+      if (!aliases.has(getChannelKey(currentSection, token.text))) continue;
+
+      const from = lineStarts[lineIndex] + column;
+      const rangeKey = `${from}:${from + token.text.length}`;
+      if (seenRanges.has(rangeKey)) continue;
+
+      seenRanges.add(rangeKey);
+      ranges.push({
+        from,
+        to: from + token.text.length,
+        className: 'cm-patchbay-virtual-expression-name'
+      });
+    }
+  });
+
+  return ranges;
+}
+
+export function getPatchbayVirtualExpressionKeywordRanges(
+  source: string
+): PatchbayVirtualExpressionKeywordRange[] {
+  return getPatchbayVirtualExpressionDeclarationTokenRanges(
+    source,
+    2,
+    'cm-patchbay-virtual-expression-keyword'
+  );
+}
+
+export function getPatchbayVirtualExpressionAssignmentRanges(
+  source: string
+): PatchbayVirtualExpressionAssignmentRange[] {
+  return getPatchbayVirtualExpressionDeclarationTokenRanges(
+    source,
+    1,
+    'cm-patchbay-object-assignment'
+  );
+}
+
+export function getPatchbayVirtualExpressionOperatorRanges(
+  source: string
+): PatchbayVirtualExpressionOperatorRange[] {
+  const lineStarts = getLineStarts(source);
+  const ranges: PatchbayVirtualExpressionOperatorRange[] = [];
+  let currentSection: PatchbaySection | undefined;
+
+  source.split(/\r?\n/).forEach((line, lineIndex) => {
+    const tokens = tokenizePatchbayLine(line);
+    const section = parseSectionToken(tokens[0]);
+    if (section) {
+      currentSection = section;
+      return;
+    }
+
+    if (currentSection !== 'audio') return;
+
+    const expressionSpan = getVirtualExpressionOperatorSearchSpan(line, tokens);
+    if (!expressionSpan) return;
+
+    for (let column = expressionSpan.from; column < expressionSpan.to; column += 1) {
+      if (!'+-*/'.includes(line[column])) continue;
+
+      const from = lineStarts[lineIndex] + column;
+      ranges.push({
+        from,
+        to: from + 1,
+        className: 'cm-patchbay-virtual-expression-operator'
+      });
+    }
+  });
+
+  return ranges;
+}
+
 function getPatchbayObjectReferenceTokenRanges(
   source: string,
   tokenKind: 'keyword' | 'id',
@@ -537,6 +667,38 @@ function isObjectAliasDeclarationTokens(tokens: PatchbayLineToken[]): boolean {
   );
 }
 
+function isVirtualExpressionDeclarationTokens(tokens: PatchbayLineToken[]): boolean {
+  return (
+    tokens[0]?.style === 'variableName' &&
+    tokens[1]?.text === '=' &&
+    tokens[1]?.style === 'operator' &&
+    tokens[2]?.text === 'expr~' &&
+    tokens[2]?.style === 'keyword'
+  );
+}
+
+function getVirtualExpressionOperatorSearchSpan(
+  line: string,
+  tokens: PatchbayLineToken[]
+): { from: number; to: number } | null {
+  if (isVirtualExpressionDeclarationTokens(tokens)) {
+    const exprIndex = line.indexOf('expr~');
+    return exprIndex === -1 ? null : { from: exprIndex + 'expr~'.length, to: line.length };
+  }
+
+  if (!line.includes('->')) return null;
+  if (tokens[0]?.style !== 'variableName') return null;
+  if (tokens[1]?.style !== 'operator' || tokens[1].text === '->' || tokens[1].text === '=') {
+    return null;
+  }
+
+  const arrowIndex = line.indexOf('->');
+  const sourceIndex = line.indexOf(tokens[0].text);
+  if (sourceIndex === -1 || arrowIndex === -1 || sourceIndex > arrowIndex) return null;
+
+  return { from: sourceIndex + tokens[0].text.length, to: arrowIndex };
+}
+
 function getPatchbayObjectAliasTokenRanges(
   source: string,
   tokenIndex: 0 | 1 | 2 | 3,
@@ -575,6 +737,66 @@ function getPatchbayObjectAliasTokenRanges(
   });
 
   return ranges;
+}
+
+function getPatchbayVirtualExpressionDeclarationTokenRanges(
+  source: string,
+  tokenIndex: 0 | 1 | 2,
+  className: string
+): Array<{ from: number; to: number; className: string }> {
+  const lineStarts = getLineStarts(source);
+  const ranges: Array<{ from: number; to: number; className: string }> = [];
+  let currentSection: PatchbaySection | undefined;
+
+  source.split(/\r?\n/).forEach((line, lineIndex) => {
+    const tokens = tokenizePatchbayLine(line);
+    const section = parseSectionToken(tokens[0]);
+    if (section) {
+      currentSection = section;
+      return;
+    }
+
+    if (currentSection !== 'audio' || !isVirtualExpressionDeclarationTokens(tokens)) {
+      return;
+    }
+
+    const previousToken = tokenIndex > 0 ? tokens[tokenIndex - 1] : undefined;
+    const token = tokens[tokenIndex];
+    const searchStart = previousToken
+      ? line.indexOf(previousToken.text) + previousToken.text.length
+      : 0;
+    const column = line.indexOf(token.text, searchStart);
+    if (column === -1) return;
+
+    const from = lineStarts[lineIndex] + column;
+    ranges.push({
+      from,
+      to: from + token.text.length,
+      className
+    });
+  });
+
+  return ranges;
+}
+
+function getPatchbayVirtualExpressionAliases(source: string): Set<string> {
+  const aliases = new Set<string>();
+  let currentSection: PatchbaySection | undefined;
+
+  for (const line of source.split(/\r?\n/)) {
+    const tokens = tokenizePatchbayLine(line);
+    const section = parseSectionToken(tokens[0]);
+    if (section) {
+      currentSection = section;
+      continue;
+    }
+
+    if (currentSection && isVirtualExpressionDeclarationTokens(tokens)) {
+      aliases.add(getChannelKey(currentSection, tokens[0].text));
+    }
+  }
+
+  return aliases;
 }
 
 function getPatchbayObjectAliases(source: string): Map<string, string> {
@@ -671,11 +893,12 @@ function readPatchbayTokenFromText(text: string): PatchbayLineToken | null {
   const section = text.match(sectionPattern);
   if (section) return { text: section[0], style: 'typeName' };
 
-  const keyword = text.match(/^(chan|obj)\b/);
+  const keyword = text.match(/^(?:chan|obj)\b|^expr~(?=\s|$)/);
   if (keyword) return { text: keyword[0], style: 'keyword' };
 
   if (text.startsWith('->')) return { text: '->', style: 'operator' };
   if (text.startsWith('=')) return { text: '=', style: 'operator' };
+  if (/^[+\-*/]/.test(text)) return { text: text[0], style: 'operator' };
 
   const identifier = text.match(identifierPattern);
   if (identifier) return { text: identifier[0], style: 'variableName' };

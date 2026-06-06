@@ -273,6 +273,17 @@ export class AudioService {
     this.patchbay.unregisterEdge(routeId);
   }
 
+  registerPatchbayVirtualExpression(
+    routeId: string,
+    expression: { nodeId: string; expression: string }
+  ): void {
+    this.patchbay.registerVirtualExpression(routeId, expression);
+  }
+
+  unregisterPatchbayVirtualExpression(routeId: string): void {
+    this.patchbay.unregisterVirtualExpression(routeId);
+  }
+
   /**
    * Get output volume.
    */

@@ -169,6 +169,107 @@ describe('analyzePatchbay', () => {
     ]);
   });
 
+  it('normalizes audio shorthand into an anonymous virtual expression', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Mic * 0.5 -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        expression: 's * 0.5',
+        anonymous: true,
+        line: 3
+      })
+    ]);
+    expect(result.audioRoutes).toEqual([
+      {
+        from: 'Mic',
+        to: expect.stringContaining('expr~'),
+        toVirtualExpression: expect.objectContaining({
+          expression: 's * 0.5',
+          anonymous: true
+        })
+      },
+      {
+        from: expect.stringContaining('expr~'),
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({
+          expression: 's * 0.5',
+          anonymous: true
+        })
+      }
+    ]);
+  });
+
+  it('resolves explicit audio virtual expression aliases before channels', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Gain = expr~ s * 0.5
+      Mic -> Gain -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        name: 'Gain',
+        expression: 's * 0.5',
+        anonymous: false,
+        line: 3
+      })
+    ]);
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Mic',
+        to: 'Gain',
+        toVirtualExpression: expect.objectContaining({ name: 'Gain' })
+      }),
+      expect.objectContaining({
+        from: 'Gain',
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ name: 'Gain' })
+      })
+    ]);
+  });
+
+  it('reports invalid audio virtual expressions before applying routes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Gain = expr~ s *
+      Mic -> Gain -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.audioRoutes).toEqual([]);
+    expect(result.diagnostics).toMatchObject([
+      {
+        severity: 'error',
+        code: 'invalid-virtual-expression',
+        section: 'audio',
+        name: 'Gain',
+        line: 3
+      }
+    ]);
+  });
+
   it('rejects audio receiver-only channels as route sources', () => {
     const result = analyzePatchbay(
       `

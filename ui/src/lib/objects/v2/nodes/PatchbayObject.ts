@@ -56,6 +56,7 @@ export class PatchbayObject implements TextObjectV2 {
 
   private activeAudioRoutes = new Map<string, PatchbayRoute>();
   private activeAudioEdges = new Set<string>();
+  private activeAudioVirtualExpressions = new Set<string>();
 
   private activeVideoRoutes = new Map<string, { from: string; to: string }>();
   private activeVideoEdges = new Map<string, string>();
@@ -225,7 +226,12 @@ export class PatchbayObject implements TextObjectV2 {
     this.clearAudioRoutes();
 
     for (const route of routes) {
-      if (route.fromEndpoint || route.toEndpoint) {
+      if (
+        route.fromEndpoint ||
+        route.toEndpoint ||
+        route.fromVirtualExpression ||
+        route.toVirtualExpression
+      ) {
         this.applyAudioObjectRoute(route);
 
         continue;
@@ -338,31 +344,56 @@ export class PatchbayObject implements TextObjectV2 {
   private applyAudioObjectRoute(route: PatchbayRoute): void {
     const routeId = this.getAudioObjectRouteId(route);
 
+    if (route.fromVirtualExpression) {
+      this.registerAudioVirtualExpression(route.fromVirtualExpression);
+    }
+
+    if (route.toVirtualExpression) {
+      this.registerAudioVirtualExpression(route.toVirtualExpression);
+    }
+
     const sourceNodeId =
-      route.fromEndpoint?.nodeId ?? `${routeId}:audio-recv:${route.from}:audio-send:obj`;
+      route.fromEndpoint?.nodeId ??
+      route.fromVirtualExpression?.id ??
+      `${routeId}:audio-recv:${route.from}:audio-send:obj`;
 
     const targetNodeId =
-      route.toEndpoint?.nodeId ?? `${routeId}:audio-recv:obj:audio-send:${route.to}`;
+      route.toEndpoint?.nodeId ??
+      route.toVirtualExpression?.id ??
+      `${routeId}:audio-recv:obj:audio-send:${route.to}`;
 
     getPatchbayAudioRuntime().registerEdge(routeId, {
       id: routeId,
       source: sourceNodeId,
       target: targetNodeId,
       sourceHandle: route.fromEndpoint?.handle ?? 'audio-out',
-      targetHandle: route.toEndpoint?.handle ?? 'audio-in'
+      targetHandle:
+        route.toEndpoint?.handle ?? (route.toVirtualExpression ? 'audio-in-0' : 'audio-in')
     });
 
     this.activeAudioEdges.add(routeId);
 
-    if (!route.fromEndpoint) {
+    if (!route.fromEndpoint && !route.fromVirtualExpression) {
       this.audioChannelRegistry.subscribe(route.from, sourceNodeId, 'recv');
       this.activeAudioRoutes.set(sourceNodeId, route);
     }
 
-    if (!route.toEndpoint) {
+    if (!route.toEndpoint && !route.toVirtualExpression) {
       this.audioChannelRegistry.subscribe(route.to, targetNodeId, 'send');
       this.activeAudioRoutes.set(targetNodeId, route);
     }
+  }
+
+  private registerAudioVirtualExpression(
+    expression: NonNullable<PatchbayRoute['fromVirtualExpression']>
+  ): void {
+    if (this.activeAudioVirtualExpressions.has(expression.id)) return;
+
+    getPatchbayAudioRuntime().registerVirtualExpression?.(expression.id, {
+      nodeId: expression.id,
+      expression: expression.expression
+    });
+    this.activeAudioVirtualExpressions.add(expression.id);
   }
 
   private collectVideoObjectRoute(
@@ -467,6 +498,12 @@ export class PatchbayObject implements TextObjectV2 {
     }
 
     this.activeAudioRoutes.clear();
+
+    for (const routeId of this.activeAudioVirtualExpressions) {
+      getPatchbayAudioRuntime().unregisterVirtualExpression?.(routeId);
+    }
+
+    this.activeAudioVirtualExpressions.clear();
   }
 
   private clearVideoRoutes(): void {
