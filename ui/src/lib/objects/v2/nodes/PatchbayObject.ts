@@ -27,7 +27,7 @@ type PatchbayObjectOptions = {
 
 export class PatchbayObject implements TextObjectV2 {
   static type = 'patchbay';
-  static description = 'Route named message channels with a compact text patchbay';
+  static description = 'Route named channels with a compact text patchbay';
   static tags = ['control', 'routing', 'channel', 'wireless'];
 
   static inlets: ObjectInlet[] = [

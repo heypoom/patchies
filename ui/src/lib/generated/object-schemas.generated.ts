@@ -2460,7 +2460,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
   patchbay: {
     type: 'patchbay',
     category: 'control',
-    description: 'Route named message channels with a compact text patchbay',
+    description: 'Route named channels with a compact text patchbay',
     inlets: [
       {
         id: 'code',
