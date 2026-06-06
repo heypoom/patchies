@@ -5,27 +5,25 @@ export type PatchbayAudioRuntime = {
   unregisterEdge(routeId: string): void;
 };
 
+const getService = () =>
+  import('$lib/audio/v2/AudioService').then(({ AudioService }) => AudioService.getInstance());
+
 const audioServiceRuntime: PatchbayAudioRuntime = {
   registerEdge(routeId, edge) {
-    void import('$lib/audio/v2/AudioService').then(({ AudioService }) => {
-      AudioService.getInstance().registerPatchbayAudioEdge(routeId, edge);
-    });
+    getService().then((audio) => audio.registerPatchbayAudioEdge(routeId, edge));
   },
   unregisterEdge(routeId) {
-    void import('$lib/audio/v2/AudioService').then(({ AudioService }) => {
-      AudioService.getInstance().unregisterPatchbayAudioEdge(routeId);
-    });
+    getService().then((audio) => audio.unregisterPatchbayAudioEdge(routeId));
   }
 };
 
 let runtime: PatchbayAudioRuntime = audioServiceRuntime;
 
-export function getPatchbayAudioRuntime(): PatchbayAudioRuntime {
-  return runtime;
-}
+export const getPatchbayAudioRuntime = (): PatchbayAudioRuntime => runtime;
 
 export function setPatchbayAudioRuntime(nextRuntime: PatchbayAudioRuntime): () => void {
   const previousRuntime = runtime;
+
   runtime = nextRuntime;
 
   return () => {

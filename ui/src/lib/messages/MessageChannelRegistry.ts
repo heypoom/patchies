@@ -29,6 +29,7 @@ export class MessageChannelRegistry {
     }
 
     this.channels.get(channel)!.receivers.set(nodeId, callback);
+
     if (this.isRealNodeId(nodeId)) {
       this.notifyListeners();
     }
@@ -63,8 +64,8 @@ export class MessageChannelRegistry {
     if (!channelData) return;
 
     const hadSender = channelData.senders.delete(nodeId);
-
     this.deleteChannelIfEmpty(channel, channelData);
+
     if (hadSender) {
       this.notifyListeners();
     }
@@ -78,8 +79,8 @@ export class MessageChannelRegistry {
     if (!channelData) return;
 
     channelData.receivers.delete(nodeId);
-
     this.deleteChannelIfEmpty(channel, channelData);
+
     if (this.isRealNodeId(nodeId)) {
       this.notifyListeners();
     }

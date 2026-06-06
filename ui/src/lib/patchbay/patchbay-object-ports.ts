@@ -20,6 +20,7 @@ export function getPatchbayObjectPorts(nodes: MinimalNode[]): PatchbayObjectPort
 
   for (const node of nodes) {
     const type = getNodeObjectType(node);
+
     const schema = type ? objectSchemas[type] : undefined;
     if (!schema && node.type !== 'glsl') continue;
 
@@ -32,6 +33,7 @@ export function getPatchbayObjectPorts(nodes: MinimalNode[]): PatchbayObjectPort
 function getNodeObjectType(node: MinimalNode): string | undefined {
   if (node.type === 'object') {
     const name = (node.data as { name?: unknown } | undefined)?.name;
+
     return typeof name === 'string' ? name : undefined;
   }
 
@@ -69,9 +71,11 @@ function addDynamicVideoPorts(
   if (pattern?.handleType !== 'video') return;
 
   const count = getDynamicVideoPortCount(direction, data);
+
   for (let index = 0; index < count; index += 1) {
     const handle = pattern.template.replace('{index}', index.toString());
     const key = direction === 'inlet' ? 'inlets' : 'outlets';
+
     ports.video![key]!.push(handle);
   }
 }
@@ -81,6 +85,7 @@ function getDynamicVideoPortCount(
   data: MinimalNode['data'] | undefined
 ): number {
   const key = direction === 'inlet' ? 'videoInletCount' : 'videoOutletCount';
+
   const value = (data as Record<string, unknown> | undefined)?.[key];
   if (typeof value === 'number' && Number.isFinite(value)) return Math.max(0, Math.floor(value));
 
@@ -113,6 +118,7 @@ function addGlslUniformPorts(
 
   for (const { def, uniformIndex } of visibleUniformInletDefs(uniformDefs)) {
     const section: PatchbaySection = def.type === 'sampler2D' ? 'video' : 'message';
+
     ports[section]!.inlets!.push(
       deriveHandleId({
         port: 'inlet',
@@ -142,6 +148,7 @@ function getCompatibleSection(port: SchemaPort): PatchbaySection | undefined {
 
 function getPortHandle(direction: PortDirection, port: SchemaPort, index: number): string {
   const explicitHandle = port.handle;
+
   if (explicitHandle) {
     return deriveHandleId({
       port: direction,
@@ -161,5 +168,6 @@ function getHandleType(port: SchemaPort): HandleType | undefined {
   if (port.type === 'signal') return 'audio';
   if (port.type === 'video') return 'video';
   if (port.type === 'analysis') return 'analysis';
+
   return 'message';
 }
