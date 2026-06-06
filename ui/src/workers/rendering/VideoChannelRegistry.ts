@@ -1,9 +1,8 @@
+import {
+  VideoChannelMembership,
+  type VideoChannelRole
+} from '../../lib/video/VideoChannelMembership';
 import type { RenderEdge } from '../../lib/rendering/types';
-
-interface VideoChannelData {
-  senders: Set<string>; // nodeIds that send on this channel
-  receivers: Set<string>; // nodeIds that receive on this channel
-}
 
 /**
  * VideoChannelRegistry manages wireless video routing between send.vdo and recv.vdo nodes.
@@ -14,8 +13,7 @@ interface VideoChannelData {
  */
 export class VideoChannelRegistry {
   private static instance: VideoChannelRegistry | null = null;
-
-  private channels = new Map<string, VideoChannelData>();
+  private membership = new VideoChannelMembership();
 
   private constructor() {}
 
@@ -25,49 +23,22 @@ export class VideoChannelRegistry {
    * @param nodeId - The node ID
    * @param role - Whether this node sends or receives on this channel
    */
-  subscribe(channel: string, nodeId: string, role: 'send' | 'recv'): void {
-    let channelData = this.channels.get(channel);
-
-    if (!channelData) {
-      channelData = { senders: new Set(), receivers: new Set() };
-      this.channels.set(channel, channelData);
-    }
-
-    if (role === 'send') {
-      channelData.senders.add(nodeId);
-    } else {
-      channelData.receivers.add(nodeId);
-    }
+  subscribe(channel: string, nodeId: string, role: VideoChannelRole): void {
+    this.membership.subscribe(channel, nodeId, role);
   }
 
   /**
    * Unsubscribe a node from a video channel.
    */
   unsubscribe(channel: string, nodeId: string): void {
-    const channelData = this.channels.get(channel);
-    if (!channelData) return;
-
-    channelData.senders.delete(nodeId);
-    channelData.receivers.delete(nodeId);
-
-    // Clean up empty channels
-    if (channelData.senders.size === 0 && channelData.receivers.size === 0) {
-      this.channels.delete(channel);
-    }
+    this.membership.unsubscribe(channel, nodeId);
   }
 
   /**
    * Unsubscribe a node from all channels.
    */
   unsubscribeAll(nodeId: string): void {
-    for (const [channel, data] of this.channels) {
-      data.senders.delete(nodeId);
-      data.receivers.delete(nodeId);
-
-      if (data.senders.size === 0 && data.receivers.size === 0) {
-        this.channels.delete(channel);
-      }
-    }
+    this.membership.unsubscribeAll(nodeId);
   }
 
   /**
@@ -77,7 +48,7 @@ export class VideoChannelRegistry {
   getVirtualEdges(): RenderEdge[] {
     const edges: RenderEdge[] = [];
 
-    for (const [channel, data] of this.channels) {
+    for (const [channel, data] of this.membership.entries()) {
       // Connect each sender to each receiver on this channel
       for (const senderId of data.senders) {
         for (const receiverId of data.receivers) {
