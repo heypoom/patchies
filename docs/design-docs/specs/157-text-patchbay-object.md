@@ -14,6 +14,7 @@ We want a text-based patchbay object that lets users describe message, audio, an
 - Allow routes to use existing wireless channels from the patch graph without redeclaring them.
 - Highlight unknown channels in the editor and show clear hover diagnostics.
 - Reuse existing routing systems rather than introducing a second graph runtime.
+- Support editor affordances that make text routes navigable: autocomplete, hover hints, and Option-click jumping for channels and object references.
 
 ## Non-Goals
 
@@ -141,11 +142,11 @@ Both forms normalize to:
 Src -> obj glsl-34 -> Aber
 ```
 
-Lines starting with `->` continue the previous route chain in the same section. Lines ending with `->` continue on the next non-empty line. A single endpoint line starts a pending route chain. Comment lines are ignored and do not end the pending chain, so users can quickly comment out route legs while switching pipelines. Blank lines, declarations, and section headers end the pending chain; if the chain is still waiting for an endpoint, it is malformed.
+Lines starting with `->` continue the previous route chain in the same section. Lines ending with `->` continue on the next non-empty line. A single endpoint line starts a pending route chain. Comment lines starting with `//` or `# ` are ignored and do not end the pending chain, so users can quickly comment out route legs while switching pipelines. Blank lines, declarations, and section headers end the pending chain; if the chain is still waiting for an endpoint, it is malformed.
 
 ### Identifiers
 
-V1 identifiers are unquoted channel names. They may contain letters, numbers, underscores, dashes, dots, slashes, and tildes. They may not contain whitespace or `->`.
+V1 identifiers are unquoted channel names. They may contain letters, numbers, underscores, dashes, dots, slashes, colons, and tildes. They may not contain whitespace or `->`.
 
 Object references use the `obj` keyword followed by an object id, optionally with a zero-based compatible port index:
 
@@ -173,7 +174,14 @@ The patchbay object builds a known-channel set for each section:
 
 Resolution is type-specific. An audio section only sees audio channels, a video section only sees video channels, and a message section only sees message channels.
 
-If a route references a name that is not declared locally and is not an existing wireless channel of that type, the name is unresolved.
+Existing wireless channel roles are direction-aware:
+
+- A channel registered by a sender object (`send`, `send~`, `send.vdo`, or equivalent source-side registration) may be used as a route source.
+- A channel registered by a receiver object (`recv`, `recv~`, `recv.vdo`, or equivalent target-side registration) may be used as a route target.
+- A channel that has both roles may be used on either side.
+- A patchbay-local `chan` declaration is bidirectional and may be used as either source or target.
+
+If a route references a name that is not declared locally and is not an existing wireless channel of that type, the name is unresolved. If a route tries to use a receiver-only channel as a source, or a sender-only channel as a target, the route is invalid.
 
 Object references resolve against the current patch graph by object id. Resolution is section- and direction-specific:
 
@@ -233,7 +241,9 @@ Conceptually this behaves like:
 recv.vdo A -> send.vdo B
 ```
 
-Multiple video sources into the same channel follow the existing video channel behavior. If the current video system keeps only the latest sender for a channel, the patchbay should report a warning when the DSL creates obvious multiple-source video fan-in.
+Multiple video sources into the same channel follow the existing video channel behavior.
+
+Video channel routes are reconciled on apply. Unchanged patchbay-owned video routes remain registered so editing text does not briefly tear down hidden `recv.vdo` / `send.vdo` forwarding paths and flicker connected `recv.vdo` outputs.
 
 ## Cycles
 
@@ -253,17 +263,18 @@ Future versions can revisit explicit feedback routing if there is a clear user n
 
 ## Editor UX
 
-The patchbay object uses a CodeMirror editor with a small custom language mode.
+The patchbay object uses a CodeMirror editor with a small custom StreamLanguage mode and contextual extensions.
 
 Syntax highlighting:
 
 - Section headers: type color per section.
 - `chan`: keyword color.
-- `obj`: keyword color.
 - `=` and `->`: operator color.
 - Declared local channels: accent color.
 - Existing external wireless channels: normal resolved-channel color.
-- Object ids and object aliases: use the object-navigation affordance.
+- Object aliases: light object color.
+- `obj`: object keyword color.
+- Object ids: normal text color, with the object-navigation affordance when navigable.
 - Unknown channels: red highlight and diagnostic underline.
 
 Hover hints:
@@ -288,10 +299,16 @@ Diagnostics are shown inline through line highlighting, token underlines, and ho
 Autocomplete:
 
 - At the start of a section header, typing `[` suggests `[Audio]`, `[Video]`, and `[Message]`.
-- In endpoint positions, plain-word completions suggest channel names for the current section's data type. Suggestions include existing wireless channels from the matching registry and patchbay-local channels declared with `chan` in that section.
+- In endpoint positions, plain-word completions suggest channel names and aliases for the current section's data type. Suggestions include existing wireless channels from the matching registry, patchbay-local channels declared with `chan` in that section, and aliases declared in that section. Alias completions show the resolved object id in the completion detail.
 - In endpoint positions where `obj` can begin, typing `o` suggests the `obj` keyword.
 - After an `obj` keyword, completions suggest current patch graph object ids with compatible ports for the current section and route direction. Source positions require compatible outlets, target positions require compatible inlets, and endpoints that already have `->` on both sides require both.
 - In object alias declarations, `Name = obj ...` suggests objects with any compatible port in the current section because the alias direction is decided by where it is later used.
+
+Option navigation:
+
+- Holding Option marks the directly hovered navigable channel or object reference with an underline.
+- Option-click on a channel focuses the real sender/receiver nodes registered for that channel when possible.
+- Option-click on `obj node-id` or an object alias focuses the referenced node when possible.
 
 ## Diagnostics
 
@@ -302,17 +319,19 @@ Errors:
 - `chan` outside a section.
 - Invalid identifier.
 - Unknown channel.
+- Receiver-only channel used as a route source.
+- Sender-only channel used as a route target.
 - Unknown object id.
 - Object exists but has no compatible inlet or outlet for the current section and direction.
 - Object compatible port index is out of range.
 - Duplicate `chan` declaration in the same section.
+- Duplicate object alias, including alias/channel name collisions in the same section.
 - Cycle in a section.
 - Malformed route arrow or incomplete route.
 
 Warnings:
 
 - Declared channel is unused.
-- Obvious multiple-source fan-in for video channels when the runtime would choose only one source.
 - Repeated identical route in the same section.
 
 ## Object Behavior
@@ -345,7 +364,8 @@ Implement the feature as three separable pieces:
 2. Patchbay runtime adapter
    - Owns registrations for one patchbay node instance.
    - Applies resolved message, audio, and video routes to existing channel systems.
-   - Cleans up old registrations before applying new valid routes.
+   - Cleans up stale registrations when routes are removed.
+   - Reuses unchanged video registrations during valid edits to avoid transient video-channel flicker.
 
 3. Patchbay editor component
    - Svelte node UI plus CodeMirror language support.
@@ -371,10 +391,14 @@ Parser/analyzer tests:
 - Allows the same channel name in different sections.
 - Resolves declared local channels.
 - Resolves provided external channels by section type.
+- Rejects receiver-only channels as route sources and sender-only channels as route targets.
 - Reports unknown channels.
 - Reports duplicate declarations.
+- Reports duplicate aliases.
 - Reports cycles.
 - Expands chains into pairwise routes.
+- Expands multiline chains and preserves chains across comment lines.
+- Resolves object ids and section-local object aliases.
 
 Runtime tests:
 
@@ -383,11 +407,15 @@ Runtime tests:
 - Invalid edits keep the last valid active route set.
 - Deleting the object unregisters its routes.
 - Audio and video runtime adapters produce the expected forwarding registrations or virtual edges.
+- Reapplying unchanged video channel routes does not unregister and re-register hidden video forwarding routes.
 
 UI tests:
 
-- Unknown channels are highlighted and listed in diagnostics.
+- Unknown channels are highlighted with inline diagnostics and hover hints.
 - Hover hints distinguish local channels from existing external channels.
+- Hover hints show object alias definitions.
+- Contextual autocomplete suggests sections, channels, aliases, `obj`, and compatible object ids.
+- Option-click navigation focuses channel nodes and object-id endpoints when possible.
 - Valid edits clear diagnostics and apply routes.
 
 ## Future Ideas
