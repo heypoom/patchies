@@ -1,11 +1,11 @@
-# 93. OpenCyberdance Node
+# 93. No. 60 Node
 
 **Status**: Design Complete
 **Created**: 2026-03-07
 
 ## Overview
 
-A `cyberdancer` node that renders animated 3D dancer characters from the [OpenCyberdance](https://opencyberdance.pages.dev) project directly in the Patchies rendering pipeline. The node runs the Three.js character engine on the rendering worker, receives native Patchies messages to control animation parameters, and outputs native video frames into the FBO pipeline.
+A `no60` node that renders animated 3D dancer characters from Pichet Klunchun's [No.60](https://no60.pkdance.co) work directly in the Patchies rendering pipeline. The node uses the [OpenCyberDance](https://opencyberdance.pages.dev) Three.js character engine, receives native Patchies messages to control animation parameters, and outputs native video frames into the FBO pipeline.
 
 Assets (GLB models) are served remotely from `https://opencyberdance.pages.dev` — nothing is bundled into Patchies.
 
@@ -18,7 +18,7 @@ The node follows the exact same pattern as `ThreeRenderer`: Three.js runs inside
 ```
 Main Thread                     Rendering Worker
 ──────────────────────────────  ─────────────────────────────────────
-CyberdancerNode.svelte          CyberdancerRenderer
+No60Node.svelte                 No60Renderer
   │  sends messages ──────────► handleMessage()
   │                               │ routes to World / Character API
   │                               │
@@ -29,7 +29,7 @@ CyberdancerNode.svelte          CyberdancerRenderer
                                  FBORenderer (regl, WebGL2)
 ```
 
-The `CyberdancerRenderer` owns a stripped-down `World` instance managing the Three.js scene, camera, characters, and animation loop. It has no DOM, no GUI panel, no voice controller.
+The `No60Renderer` owns a stripped-down `World` instance managing the Three.js scene, camera, characters, and animation loop. It has no DOM, no GUI panel, no voice controller.
 
 ---
 
@@ -73,15 +73,6 @@ Loads the corresponding GLB model from `https://opencyberdance.pages.dev/v2-mode
 { type: 'reset' }
 ```
 
-#### Frame capture control
-
-```js
-{ type: 'frame:start', mode: 'locked' | number }  // 'locked' = every frame; number = target fps
-{ type: 'frame:stop' }
-```
-
-In Patchies the video outlet is always active (it outputs every frame from the FBO pipeline). `frame:start/stop` instead gates whether `frame` messages are additionally sent on the **message outlet** as `ImageBitmap` payloads, for use cases where downstream nodes want raw bitmaps.
-
 ### Outlets
 
 **Outlet 0 — video (video)**
@@ -96,22 +87,21 @@ Emits status events:
 { type: 'animation:started', dancer: string }  // fired after load or dancer:select completes
 { type: 'animation:stopped' }                  // fired on transport:pause
 { type: 'dancer:select',     dancer: string }  // fired whenever active dancer changes
-{ type: 'frame', bitmap: ImageBitmap, timestamp: number }  // only when frame:start is active
 ```
 
 ---
 
 ## Implementation
 
-### CyberdancerRenderer (rendering worker)
+### No60Renderer (rendering worker)
 
-New file: `src/workers/rendering/cyberdancerRenderer.ts`
+New file: `src/workers/rendering/no60Renderer.ts`
 
 Mirrors the structure of `ThreeRenderer`:
 
 ```ts
-export class CyberdancerRenderer {
-  public config: CyberdancerConfig;
+export class No60Renderer {
+  public config: No60Config;
   public renderer: FBORenderer;
   public framebuffer: regl.Framebuffer2D | null = null;
 
@@ -123,7 +113,7 @@ export class CyberdancerRenderer {
   // Opencyberdance engine (stripped World)
   private world: CyberdanceWorld | null = null;
 
-  static async create(config, framebuffer, renderer): Promise<CyberdancerRenderer>
+  static async create(config, framebuffer, renderer): Promise<No60Renderer>
 
   renderFrame(params: RenderParams): void
     // → world.tick(delta) → blit renderTarget → regl FBO (same as ThreeRenderer.blitToReglFramebuffer)
@@ -153,10 +143,6 @@ renderFrame(params: RenderParams) {
   this.threeWebGLRenderer.resetState();
   this.renderer.regl._refresh();
 
-  // Optional bitmap emit for frame:start mode
-  if (this.world.isCapturing) {
-    this.emitFrame();
-  }
 }
 ```
 
@@ -201,19 +187,19 @@ DRACO decoder stays on `https://www.gstatic.com/draco/v1/decoders/` (CDN, works 
 
 ```ts
 // In buildFBOs() match:
-.with({ type: 'cyberdancer' }, (node) => this.createCyberdancerRenderer(node, framebuffer))
+.with({ type: 'no60' }, (node) => this.createNo60Renderer(node, framebuffer))
 
 // New map:
-public cyberdancerByNode = new Map<string, CyberdancerRenderer | null>();
+public no60ByNode = new Map<string, No60Renderer | null>();
 
 // New method:
-async createCyberdancerRenderer(node: RenderNode, framebuffer): Promise<RenderFunction> {
-  const renderer = await CyberdancerRenderer.create(
+async createNo60Renderer(node: RenderNode, framebuffer): Promise<RenderFunction> {
+  const renderer = await No60Renderer.create(
     { nodeId: node.id },
     framebuffer,
     this
   );
-  this.cyberdancerByNode.set(node.id, renderer);
+  this.no60ByNode.set(node.id, renderer);
 
   return (params) => renderer.renderFrame(params);
 }
@@ -227,11 +213,11 @@ Add message handler for forwarding control messages into the renderer:
 .with('sendMessageToNode', () =>
   fboRenderer.sendMessageToNode(data.nodeId, data.message)
 )
-// already exists — no change needed; CyberdancerRenderer.handleMessage() is
+// already exists — no change needed; No60Renderer.handleMessage() is
 // called via fboRenderer.sendMessageToNode() → same path as Three/Canvas nodes
 ```
 
-### CyberdancerNode.svelte
+### No60Node.svelte
 
 Node component in `src/lib/components/nodes/`:
 
@@ -299,7 +285,7 @@ From `.references/opencyberdance-embed/src/`:
 | `perf.ts` | Keep `profile()` utility or delete |
 | `prompt.ts`, `prompts.ts` | **Delete** |
 | `store/*.ts` | Replace with plain fields on World |
-| `iframe-bridge.ts` | **Delete** — replaced by CyberdancerRenderer.handleMessage |
+| `iframe-bridge.ts` | **Delete** — replaced by No60Renderer.handleMessage |
 | `view/*.vue` | **Delete** |
 | `embed-params.ts` | **Delete** |
 | `main.ts` | **Delete** |
@@ -312,7 +298,7 @@ All ported files live in `src/workers/rendering/cyberdance/`.
 
 ```
 src/workers/rendering/
-├── cyberdancerRenderer.ts         # Main renderer class (mirrors threeRenderer.ts)
+├── no60Renderer.ts         # Main renderer class (mirrors threeRenderer.ts)
 └── cyberdance/
     ├── world.ts                   # Stripped World
     ├── character.ts
@@ -340,16 +326,16 @@ src/workers/rendering/
         └── ik.ts
 
 src/lib/components/nodes/
-└── CyberdancerNode.svelte
+└── No60Node.svelte
 
 static/content/objects/
-└── cyberdancer.md
+└── no60.md
 ```
 
 ## Files to Modify
 
-- `src/workers/rendering/fboRenderer.ts` — add `cyberdancerByNode`, `createCyberdancerRenderer()`, `{ type: 'cyberdancer' }` match arm
-- `src/lib/nodes/node-types.ts` — add `'cyberdancer'`
+- `src/workers/rendering/fboRenderer.ts` — add `no60ByNode`, `createNo60Renderer()`, `{ type: 'no60' }` match arm
+- `src/lib/nodes/node-types.ts` — add `'no60'`
 - `src/lib/nodes/defaultNodeData.ts` — default config `{ dancer: 'male:1' }`
 - `src/lib/components/object-browser/get-categorized-objects.ts` — add to Visual category
 - `src/lib/ai/object-descriptions-types.ts` — add to type list
@@ -369,6 +355,5 @@ static/content/objects/
 | Voice | Removed |
 | `reset` command | Resets params + reloads character; no voice/fade |
 | `config` message | `hideUI` / `cameraControl` → no-ops; `silenceDing` → no-op |
-| `frame:start/stop` | Gates bitmap messages on outlet 1; video outlet always live |
 | Event outlet | outlet 1 emits `animation:started`, `animation:stopped`, `dancer:select` |
 | Node UI | Dancer picker dropdown + play state indicator; no code editor |
