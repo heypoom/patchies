@@ -27,7 +27,7 @@ You can dynamically change the channel by sending a string to the second inlet:
 
 ## Aliases
 
-- `sv`
+- `sv <channel>`
 
 ## See Also
 

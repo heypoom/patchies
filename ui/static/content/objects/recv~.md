@@ -32,7 +32,7 @@ replacing Pure Data's `throw~`/`catch~` pattern.
 
 ## Aliases
 
-- `r~`
+- `r~ <channel>`
 
 ## See Also
 

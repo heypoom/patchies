@@ -32,7 +32,7 @@ Multiple `send.vdo` nodes on the same channel will have only the last sender's v
 
 ## Aliases
 
-- `rv`
+- `rv <channel>`
 
 ## See Also
 
