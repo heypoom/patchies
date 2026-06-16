@@ -245,6 +245,129 @@ describe('analyzePatchbay', () => {
     ]);
   });
 
+  it('resolves whitelisted audio effect aliases as virtual audio nodes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Filter = lowpass~ 1000 1
+      Mic -> Filter -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        name: 'Filter',
+        type: 'lowpass~',
+        rawArgs: ['1000', '1'],
+        params: [null, 1000, 1],
+        anonymous: false,
+        line: 3
+      })
+    ]);
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Mic',
+        to: 'Filter',
+        toVirtualExpression: expect.objectContaining({ name: 'Filter', type: 'lowpass~' })
+      }),
+      expect.objectContaining({
+        from: 'Filter',
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ name: 'Filter', type: 'lowpass~' })
+      })
+    ]);
+  });
+
+  it('resolves inline whitelisted audio effect route segments as anonymous virtual audio nodes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Mic -> gain~ 0.5 -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        type: 'gain~',
+        rawArgs: ['0.5'],
+        params: [null, 0.5],
+        anonymous: true,
+        line: 3
+      })
+    ]);
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Mic',
+        to: expect.stringContaining('gain~'),
+        toVirtualExpression: expect.objectContaining({ type: 'gain~', anonymous: true })
+      }),
+      expect.objectContaining({
+        from: expect.stringContaining('gain~'),
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ type: 'gain~', anonymous: true })
+      })
+    ]);
+  });
+
+  it('rejects unsupported audio nodes as virtual processors', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Space = convolver~ impulse.wav
+      Mic -> Space -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.audioRoutes).toEqual([]);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'unsupported-virtual-audio-node',
+        section: 'audio',
+        name: 'Space',
+        line: 3
+      })
+    );
+  });
+
+  it('rejects unsupported inline audio nodes as virtual processors', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Mic -> convolver~ impulse.wav -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.audioRoutes).toEqual([]);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'unsupported-virtual-audio-node',
+        section: 'audio',
+        name: 'convolver~',
+        line: 3
+      })
+    );
+  });
+
   it('reports invalid audio virtual expressions before applying routes', () => {
     const result = analyzePatchbay(
       `

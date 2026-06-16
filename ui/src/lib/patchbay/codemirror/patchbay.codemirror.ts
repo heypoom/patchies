@@ -134,6 +134,20 @@ const objCompletionOption: Completion = {
   type: 'keyword',
   detail: 'object endpoint'
 };
+const virtualAudioProcessorKeywords = new Set([
+  'expr~',
+  'gain~',
+  'lowpass~',
+  'highpass~',
+  'bandpass~',
+  'notch~',
+  'allpass~',
+  'lowshelf~',
+  'highshelf~',
+  'peaking~',
+  'compressor~',
+  'delay~'
+]);
 
 export function tokenizePatchbayLine(line: string): PatchbayLineToken[] {
   const tokens: PatchbayLineToken[] = [];
@@ -672,7 +686,7 @@ function isVirtualExpressionDeclarationTokens(tokens: PatchbayLineToken[]): bool
     tokens[0]?.style === 'variableName' &&
     tokens[1]?.text === '=' &&
     tokens[1]?.style === 'operator' &&
-    tokens[2]?.text === 'expr~' &&
+    virtualAudioProcessorKeywords.has(tokens[2]?.text ?? '') &&
     tokens[2]?.style === 'keyword'
   );
 }
@@ -893,8 +907,13 @@ function readPatchbayTokenFromText(text: string): PatchbayLineToken | null {
   const section = text.match(sectionPattern);
   if (section) return { text: section[0], style: 'typeName' };
 
-  const keyword = text.match(/^(?:chan|obj)\b|^expr~(?=\s|$)/);
-  if (keyword) return { text: keyword[0], style: 'keyword' };
+  const keyword = text.match(/^(?:chan|obj)\b|^[A-Za-z0-9_.~/:-]+(?=\s|$)/);
+  if (keyword && virtualAudioProcessorKeywords.has(keyword[0])) {
+    return { text: keyword[0], style: 'keyword' };
+  }
+  if (keyword && /^(?:chan|obj)$/.test(keyword[0])) {
+    return { text: keyword[0], style: 'keyword' };
+  }
 
   if (text.startsWith('->')) return { text: '->', style: 'operator' };
   if (text.startsWith('=')) return { text: '=', style: 'operator' };

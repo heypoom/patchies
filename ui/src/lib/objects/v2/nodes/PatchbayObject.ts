@@ -241,6 +241,7 @@ export class PatchbayObject implements TextObjectV2 {
 
       this.audioChannelRegistry.subscribe(route.from, endpointId, 'recv');
       this.audioChannelRegistry.subscribe(route.to, endpointId, 'send');
+
       this.activeAudioRoutes.set(endpointId, route);
     }
   }
@@ -389,9 +390,10 @@ export class PatchbayObject implements TextObjectV2 {
   ): void {
     if (this.activeAudioVirtualExpressions.has(expression.id)) return;
 
-    getPatchbayAudioRuntime().registerVirtualExpression?.(expression.id, {
+    getPatchbayAudioRuntime().registerVirtualAudioNode?.(expression.id, {
       nodeId: expression.id,
-      expression: expression.expression
+      type: expression.type,
+      params: expression.params
     });
 
     this.activeAudioVirtualExpressions.add(expression.id);
@@ -501,7 +503,7 @@ export class PatchbayObject implements TextObjectV2 {
     this.activeAudioRoutes.clear();
 
     for (const routeId of this.activeAudioVirtualExpressions) {
-      getPatchbayAudioRuntime().unregisterVirtualExpression?.(routeId);
+      getPatchbayAudioRuntime().unregisterVirtualAudioNode?.(routeId);
     }
 
     this.activeAudioVirtualExpressions.clear();

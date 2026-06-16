@@ -56,11 +56,11 @@ describe('PatchbayAudioIntegration', () => {
     expect(disconnect).toHaveBeenCalled();
   });
 
-  it('cleans up a virtual expr node when it is unregistered before async creation finishes', async () => {
+  it('cleans up a virtual audio node when it is unregistered before async creation finishes', async () => {
     let finishCreate!: () => void;
     const destroy = vi.fn();
     const node: AudioNodeV2 = {
-      nodeId: 'patchbay:audio-expr:inline:gain',
+      nodeId: 'patchbay:audio-virtual:inline:gain',
       audioNode: null,
       create: vi.fn(
         () =>
@@ -83,14 +83,15 @@ describe('PatchbayAudioIntegration', () => {
         nodesById.delete(nodeId);
       },
       onEdgesChanged: vi.fn(),
-      createVirtualExpressionNode: () => node
+      createVirtualAudioNode: () => node
     });
 
-    integration.registerVirtualExpression('route-1', {
+    integration.registerVirtualAudioNode('route-1', {
       nodeId: node.nodeId,
-      expression: 's * 0.1'
+      type: 'expr~',
+      params: [null, 's * 0.1']
     });
-    integration.unregisterVirtualExpression('route-1');
+    integration.unregisterVirtualAudioNode('route-1');
 
     expect(nodesById.has(node.nodeId)).toBe(false);
     expect(destroy).toHaveBeenCalledTimes(1);
@@ -100,5 +101,39 @@ describe('PatchbayAudioIntegration', () => {
 
     expect(nodesById.has(node.nodeId)).toBe(false);
     expect(destroy).toHaveBeenCalledTimes(2);
+  });
+
+  it('creates whitelisted virtual audio nodes with parsed params', async () => {
+    const create = vi.fn();
+    const node: AudioNodeV2 = {
+      nodeId: 'patchbay:audio-virtual:Filter',
+      audioNode: null,
+      create
+    };
+    const nodesById = new Map<string, AudioNodeV2>();
+
+    const integration = new PatchbayAudioIntegration({
+      getAudioContext: () => ({}) as unknown as AudioContext,
+      nodesById,
+      removeNodeById(nodeId) {
+        nodesById.delete(nodeId);
+      },
+      onEdgesChanged: vi.fn(),
+      createVirtualAudioNode: (_nodeId, type) => {
+        expect(type).toBe('lowpass~');
+        return node;
+      }
+    });
+
+    integration.registerVirtualAudioNode('route-1', {
+      nodeId: node.nodeId,
+      type: 'lowpass~',
+      params: [null, 1000, 1]
+    });
+
+    await Promise.resolve();
+
+    expect(nodesById.get(node.nodeId)).toBe(node);
+    expect(create).toHaveBeenCalledWith([null, 1000, 1]);
   });
 });

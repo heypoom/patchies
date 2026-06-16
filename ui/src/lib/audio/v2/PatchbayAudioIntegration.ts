@@ -3,18 +3,29 @@ import type { Edge } from '@xyflow/svelte';
 import type { AudioNodeV2 } from './interfaces/audio-nodes';
 import { ExprNode } from './nodes/ExprNode';
 import { PatchbayAudioEndpoint } from './nodes/PatchbayAudioEndpointNode';
+import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
 type PatchbayAudioIntegrationOptions = {
   getAudioContext: () => AudioContext;
   nodesById: Map<string, AudioNodeV2>;
   removeNodeById: (nodeId: string) => void;
   onEdgesChanged: () => void;
-  createVirtualExpressionNode?: (nodeId: string) => AudioNodeV2;
+  createVirtualAudioNode?: (nodeId: string, type: string) => AudioNodeV2;
+};
+
+type VirtualAudioNodeSpec = {
+  nodeId: string;
+  type: string;
+  params: unknown[];
 };
 
 export class PatchbayAudioIntegration {
+  private registry = AudioRegistry.getInstance();
+
   private edges = new Map<string, Edge>();
-  private virtualExpressionNodeIds = new Map<string, string>();
+
+  private virtualAudioNodeIds = new Map<string, string>();
+  private virtualAudioNodeTypes = new Map<string, string>();
 
   constructor(private options: PatchbayAudioIntegrationOptions) {}
 
@@ -28,37 +39,43 @@ export class PatchbayAudioIntegration {
     this.options.onEdgesChanged();
   }
 
-  registerVirtualExpression(
-    routeId: string,
-    expression: { nodeId: string; expression: string }
-  ): void {
-    const previousNodeId = this.virtualExpressionNodeIds.get(routeId);
+  registerVirtualAudioNode(routeId: string, spec: VirtualAudioNodeSpec): void {
+    const previousNodeId = this.virtualAudioNodeIds.get(routeId);
+    const previousType = this.virtualAudioNodeTypes.get(routeId);
 
-    if (previousNodeId && previousNodeId !== expression.nodeId) {
+    if (previousNodeId && (previousNodeId !== spec.nodeId || previousType !== spec.type)) {
       this.options.removeNodeById(previousNodeId);
     }
 
-    this.virtualExpressionNodeIds.set(routeId, expression.nodeId);
+    this.virtualAudioNodeIds.set(routeId, spec.nodeId);
+    this.virtualAudioNodeTypes.set(routeId, spec.type);
 
-    const existingNode = this.options.nodesById.get(expression.nodeId);
+    const existingNode = this.options.nodesById.get(spec.nodeId);
 
     if (existingNode) {
-      existingNode.send?.('expression', expression.expression);
+      if (spec.type === 'expr~') {
+        existingNode.send?.('expression', spec.params[1]);
+      }
+
       this.options.onEdgesChanged();
+
       return;
     }
 
     const node =
-      this.options.createVirtualExpressionNode?.(expression.nodeId) ??
-      new ExprNode(expression.nodeId, this.options.getAudioContext());
+      this.options.createVirtualAudioNode?.(spec.nodeId, spec.type) ??
+      this.createVirtualAudioNode(spec.nodeId, spec.type);
+
+    if (!node) return;
 
     this.options.nodesById.set(node.nodeId, node);
 
-    Promise.resolve(node.create?.([null, expression.expression])).finally(() => {
-      const activeNodeId = this.virtualExpressionNodeIds.get(routeId);
-      const activeNode = this.options.nodesById.get(expression.nodeId);
+    Promise.resolve(node.create?.(spec.params)).finally(() => {
+      const activeNodeId = this.virtualAudioNodeIds.get(routeId);
+      const activeType = this.virtualAudioNodeTypes.get(routeId);
+      const activeNode = this.options.nodesById.get(spec.nodeId);
 
-      if (activeNodeId !== expression.nodeId || activeNode !== node) {
+      if (activeNodeId !== spec.nodeId || activeType !== spec.type || activeNode !== node) {
         node.destroy?.();
         return;
       }
@@ -67,12 +84,13 @@ export class PatchbayAudioIntegration {
     });
   }
 
-  unregisterVirtualExpression(routeId: string): void {
-    const nodeId = this.virtualExpressionNodeIds.get(routeId);
+  unregisterVirtualAudioNode(routeId: string): void {
+    const nodeId = this.virtualAudioNodeIds.get(routeId);
     if (!nodeId) return;
 
     this.options.removeNodeById(nodeId);
-    this.virtualExpressionNodeIds.delete(routeId);
+    this.virtualAudioNodeIds.delete(routeId);
+    this.virtualAudioNodeTypes.delete(routeId);
     this.options.onEdgesChanged();
   }
 
@@ -84,7 +102,6 @@ export class PatchbayAudioIntegration {
     if (!this.isEndpointId(nodeId) || this.options.nodesById.has(nodeId)) return;
 
     const endpoint = new PatchbayAudioEndpoint(nodeId, this.options.getAudioContext());
-
     this.options.nodesById.set(nodeId, endpoint);
   }
 
@@ -100,5 +117,16 @@ export class PatchbayAudioIntegration {
 
   isEndpointId(nodeId: string): boolean {
     return nodeId.includes(':audio-recv:') || nodeId.includes(':audio-send:');
+  }
+
+  private createVirtualAudioNode(nodeId: string, type: string): AudioNodeV2 | null {
+    if (type === 'expr~') {
+      return new ExprNode(nodeId, this.options.getAudioContext());
+    }
+
+    const NodeClass = this.registry.get(type);
+    if (!NodeClass) return null;
+
+    return new NodeClass(nodeId, this.options.getAudioContext());
   }
 }

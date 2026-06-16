@@ -273,15 +273,15 @@ export class AudioService {
     this.patchbay.unregisterEdge(routeId);
   }
 
-  registerPatchbayVirtualExpression(
+  registerPatchbayVirtualAudioNode(
     routeId: string,
-    expression: { nodeId: string; expression: string }
+    node: { nodeId: string; type: string; params: unknown[] }
   ): void {
-    this.patchbay.registerVirtualExpression(routeId, expression);
+    this.patchbay.registerVirtualAudioNode(routeId, node);
   }
 
-  unregisterPatchbayVirtualExpression(routeId: string): void {
-    this.patchbay.unregisterVirtualExpression(routeId);
+  unregisterPatchbayVirtualAudioNode(routeId: string): void {
+    this.patchbay.unregisterVirtualAudioNode(routeId);
   }
 
   /**

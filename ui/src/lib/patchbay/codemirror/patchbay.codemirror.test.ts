@@ -97,6 +97,23 @@ describe('tokenizePatchbayLine', () => {
       { text: '*', style: 'operator' },
       { text: '0.8', style: 'variableName' }
     ]);
+
+    expect(tokenizePatchbayLine('Filter = lowpass~ 1000 1')).toEqual([
+      { text: 'Filter', style: 'variableName' },
+      { text: '=', style: 'operator' },
+      { text: 'lowpass~', style: 'keyword' },
+      { text: '1000', style: 'variableName' },
+      { text: '1', style: 'variableName' }
+    ]);
+
+    expect(tokenizePatchbayLine('Mic -> gain~ 0.5 -> Out')).toEqual([
+      { text: 'Mic', style: 'variableName' },
+      { text: '->', style: 'operator' },
+      { text: 'gain~', style: 'keyword' },
+      { text: '0.5', style: 'variableName' },
+      { text: '->', style: 'operator' },
+      { text: 'Out', style: 'variableName' }
+    ]);
   });
 
   it('returns inline ranges for unknown channel diagnostics', () => {

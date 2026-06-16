@@ -554,10 +554,10 @@ describe('PatchbayObject', () => {
     const destinationNodeId = `recv-audio-${suffix}`;
     const registry = AudioChannelRegistry.getInstance();
     const registeredEdges: Array<{ routeId: string; edge: unknown }> = [];
-    const unregisteredVirtualExpressions: string[] = [];
-    const registeredVirtualExpressions: Array<{
+    const unregisteredVirtualAudioNodes: string[] = [];
+    const registeredVirtualAudioNodes: Array<{
       routeId: string;
-      expression: { nodeId: string; expression: string };
+      node: { nodeId: string; type: string; params: unknown[] };
     }> = [];
 
     const audioRuntime: PatchbayAudioRuntime = {
@@ -565,11 +565,11 @@ describe('PatchbayObject', () => {
         registeredEdges.push({ routeId, edge });
       },
       unregisterEdge() {},
-      registerVirtualExpression(routeId, expression) {
-        registeredVirtualExpressions.push({ routeId, expression });
+      registerVirtualAudioNode(routeId, node) {
+        registeredVirtualAudioNodes.push({ routeId, node });
       },
-      unregisterVirtualExpression(routeId) {
-        unregisteredVirtualExpressions.push(routeId);
+      unregisterVirtualAudioNode(routeId) {
+        unregisteredVirtualAudioNodes.push(routeId);
       }
     };
     const restoreAudioRuntime = setPatchbayAudioRuntime(audioRuntime);
@@ -583,12 +583,13 @@ describe('PatchbayObject', () => {
     `);
 
     expect(object.diagnostics).toEqual([]);
-    expect(registeredVirtualExpressions).toEqual([
+    expect(registeredVirtualAudioNodes).toEqual([
       {
-        routeId: expect.stringContaining('audio-expr'),
-        expression: expect.objectContaining({
-          nodeId: expect.stringContaining(':audio-expr:inline:'),
-          expression: 's * 0.5'
+        routeId: expect.stringContaining('audio-virtual'),
+        node: expect.objectContaining({
+          nodeId: expect.stringContaining(':audio-virtual:inline:'),
+          type: 'expr~',
+          params: [null, 's * 0.5']
         })
       }
     ]);
@@ -596,7 +597,7 @@ describe('PatchbayObject', () => {
       {
         routeId: expect.stringContaining(`${source}->expr~`),
         edge: expect.objectContaining({
-          target: registeredVirtualExpressions[0].expression.nodeId,
+          target: registeredVirtualAudioNodes[0].node.nodeId,
           sourceHandle: 'audio-out',
           targetHandle: 'audio-in-0'
         })
@@ -604,15 +605,15 @@ describe('PatchbayObject', () => {
       {
         routeId: expect.stringContaining(`expr~`),
         edge: expect.objectContaining({
-          source: registeredVirtualExpressions[0].expression.nodeId,
+          source: registeredVirtualAudioNodes[0].node.nodeId,
           targetHandle: 'audio-in'
         })
       }
     ]);
 
     object.destroy();
-    expect(unregisteredVirtualExpressions).toEqual(
-      registeredVirtualExpressions.map(({ routeId }) => routeId)
+    expect(unregisteredVirtualAudioNodes).toEqual(
+      registeredVirtualAudioNodes.map(({ routeId }) => routeId)
     );
 
     restoreAudioRuntime();
