@@ -134,7 +134,7 @@ const objCompletionOption: Completion = {
   type: 'keyword',
   detail: 'object endpoint'
 };
-const virtualAudioProcessorKeywords = new Set([
+const virtualAudioProcessorKeywordLabels = [
   'expr~',
   'gain~',
   'lowpass~',
@@ -147,7 +147,15 @@ const virtualAudioProcessorKeywords = new Set([
   'peaking~',
   'compressor~',
   'delay~'
-]);
+] as const;
+const virtualAudioProcessorKeywords = new Set<string>(virtualAudioProcessorKeywordLabels);
+const virtualAudioProcessorCompletionOptions: Completion[] = virtualAudioProcessorKeywordLabels.map(
+  (label) => ({
+    label,
+    type: 'keyword',
+    detail: label === 'expr~' ? 'virtual expression' : 'virtual audio processor'
+  })
+);
 
 export function tokenizePatchbayLine(line: string): PatchbayLineToken[] {
   const tokens: PatchbayLineToken[] = [];
@@ -954,7 +962,10 @@ export function patchbaySectionCompletions(context: CompletionContext): Completi
   const sectionResult = getPatchbaySectionCompletion(line.from, linePrefix);
   if (sectionResult) return sectionResult;
 
-  return getPatchbayObjectKeywordCompletion(line.from, linePrefix);
+  return (
+    getPatchbayObjectKeywordCompletion(line.from, linePrefix) ??
+    getPatchbayVirtualAudioProcessorKeywordCompletion(context, line.from, linePrefix)
+  );
 }
 
 export function patchbayContextualCompletions(
@@ -1051,6 +1062,7 @@ function getPatchbayObjectIdCompletions(
       const sectionPorts = ports[context.section];
       const inletCount = sectionPorts?.inlets?.length ?? 0;
       const outletCount = sectionPorts?.outlets?.length ?? 0;
+
       const detail =
         inletCount > 0 && outletCount > 0
           ? `${context.section} in/out`
@@ -1087,6 +1099,7 @@ function getPatchbayChannelCompletions(
   const channels = new Map<string, Completion>();
   const localChannels = getPatchbayLocalChannelNames(context.source, context.section);
   const objectAliases = getPatchbayObjectAliasesForSection(context.source, context.section);
+
   const roles = data.channels?.[context.section];
 
   for (const channel of localChannels) {
@@ -1116,9 +1129,11 @@ function getPatchbayChannelCompletions(
   }
 
   const word = context.word.toLowerCase();
+
   const options = [...channels.values()].filter((option) =>
     option.label.toLowerCase().startsWith(word)
   );
+
   if (options.length === 0) return null;
 
   return {
@@ -1158,9 +1173,8 @@ function canCompleteChannelName(beforeWord: string, afterWord: string): boolean 
   return false;
 }
 
-function isObjectAliasCompletion(beforeWord: string): boolean {
-  return /^[^\s=]+\s*=\s*obj\s*$/.test(beforeWord.trim());
-}
+const isObjectAliasCompletion = (beforeWord: string): boolean =>
+  /^[^\s=]+\s*=\s*obj\s*$/.test(beforeWord.trim());
 
 function getEndpointCompletionRole(
   source: string,
@@ -1170,10 +1184,12 @@ function getEndpointCompletionRole(
 ): PatchbayEndpointCompletionRole {
   const hasArrowBefore =
     beforeWord.includes('->') || previousRouteLineWaitsForEndpoint(source, lineNumber);
+
   const hasArrowAfter = afterWord.trimStart().startsWith('->');
 
   if (hasArrowBefore && hasArrowAfter) return 'both';
   if (hasArrowBefore) return 'target';
+
   return 'source';
 }
 
@@ -1182,6 +1198,7 @@ function previousRouteLineWaitsForEndpoint(source: string, lineNumber: number): 
 
   for (let index = lineNumber - 2; index >= 0; index -= 1) {
     const text = lines[index]?.trim() ?? '';
+
     if (text === '' || text.startsWith('[') || text.startsWith('chan ')) return false;
     if (commentPrefixPattern.test(text)) continue;
 
@@ -1240,9 +1257,11 @@ function getPatchbaySectionCompletion(
   if (!match) return null;
 
   const typedText = match[2].toLowerCase();
+
   const options = sectionCompletionOptions.filter((option) =>
     option.label.toLowerCase().startsWith(typedText)
   );
+
   if (options.length === 0) return null;
 
   return {
@@ -1268,6 +1287,48 @@ function getPatchbayObjectKeywordCompletion(
     options: [objCompletionOption],
     validFor: /^obj?$/
   };
+}
+
+function getPatchbayVirtualAudioProcessorKeywordCompletion(
+  context: CompletionContext,
+  lineFrom: number,
+  linePrefix: string
+): CompletionResult | null {
+  const section = getSectionAtPosition(context.state.doc.toString(), context.pos);
+  if (section !== 'audio') return null;
+
+  const match = linePrefix.match(/(?:^|\s)([A-Za-z0-9_.~]*)$/);
+  if (!match) return null;
+
+  const typedText = match[1];
+  const typedStart = linePrefix.length - typedText.length;
+  const beforeTypedText = linePrefix.slice(0, typedStart);
+  const trimmedBefore = beforeTypedText.trimEnd();
+
+  if (!canStartVirtualAudioProcessorEndpoint(trimmedBefore)) return null;
+
+  const includeExpression = trimmedBefore.endsWith('=');
+
+  const options = virtualAudioProcessorCompletionOptions.filter((option) => {
+    if (option.label === 'expr~' && !includeExpression) return false;
+
+    return option.label.toLowerCase().startsWith(typedText.toLowerCase());
+  });
+
+  if (options.length === 0) return null;
+
+  return {
+    from: lineFrom + typedStart,
+    options,
+    validFor: /^[A-Za-z0-9_.~]*$/
+  };
+}
+
+function canStartVirtualAudioProcessorEndpoint(trimmedBefore: string): boolean {
+  if (trimmedBefore.endsWith('=')) return true;
+  if (trimmedBefore === '' || trimmedBefore.endsWith('->')) return true;
+
+  return false;
 }
 
 function canStartObjectEndpoint(linePrefix: string): boolean {

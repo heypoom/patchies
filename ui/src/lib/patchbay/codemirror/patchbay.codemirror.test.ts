@@ -590,6 +590,16 @@ describe('patchbaySectionCompletions', () => {
     expect(getPatchbayCompletionLabels('src obj =')).toEqual([]);
     expect(getPatchbayCompletionLabels('slider-43 obj ->')).toEqual([]);
   });
+
+  it('suggests audio processor keywords in audio declarations and route endpoints', () => {
+    expect(getPatchbayCompletionLabels('[Audio]\nGain = e')).toEqual(['expr~']);
+    expect(getPatchbayCompletionLabels('[Audio]\nGain = g')).toEqual(['gain~']);
+    expect(getPatchbayCompletionLabels('[Audio]\nMic -> lo')).toEqual(['lowpass~', 'lowshelf~']);
+    expect(getPatchbayCompletionLabels('[Audio]\nMic -> e')).toEqual([]);
+
+    expect(getPatchbayCompletionLabels('[Message]\nGain = g')).toEqual([]);
+    expect(getPatchbayCompletionLabels('[Video]\nSource -> g')).toEqual([]);
+  });
 });
 
 describe('patchbayContextualCompletions', () => {
