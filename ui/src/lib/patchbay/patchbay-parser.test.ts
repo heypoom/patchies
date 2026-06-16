@@ -14,6 +14,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.messageRoutes).toEqual([
       { from: 'A', to: 'B' },
       { from: 'B', to: 'C' }
@@ -54,6 +55,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.messageRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -76,6 +78,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.messageRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -98,6 +101,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.messageRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -163,9 +167,354 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.audioRoutes).toEqual([
       { from: 'Mic', to: 'Bus' },
       { from: 'Bus', to: 'Out' }
+    ]);
+  });
+
+  it('normalizes audio shorthand into an anonymous virtual expression', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Mic * 0.5 -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        expression: 's * 0.5',
+        anonymous: true,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      {
+        from: 'Mic',
+        to: expect.stringContaining('expr~'),
+        toVirtualExpression: expect.objectContaining({
+          expression: 's * 0.5',
+          anonymous: true
+        })
+      },
+      {
+        from: expect.stringContaining('expr~'),
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({
+          expression: 's * 0.5',
+          anonymous: true
+        })
+      }
+    ]);
+  });
+
+  it('resolves explicit audio virtual expression aliases before channels', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Gain = expr~ s * 0.5
+      Mic -> Gain -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        name: 'Gain',
+        expression: 's * 0.5',
+        anonymous: false,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Mic',
+        to: 'Gain',
+        toVirtualExpression: expect.objectContaining({ name: 'Gain' })
+      }),
+
+      expect.objectContaining({
+        from: 'Gain',
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ name: 'Gain' })
+      })
+    ]);
+  });
+
+  it('resolves whitelisted audio effect aliases as virtual audio nodes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Filter = lowpass~ 1000 1
+      Mic -> Filter -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        name: 'Filter',
+        type: 'lowpass~',
+        rawArgs: ['1000', '1'],
+        params: [null, 1000, 1],
+        anonymous: false,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Mic',
+        to: 'Filter',
+        toVirtualExpression: expect.objectContaining({ name: 'Filter', type: 'lowpass~' })
+      }),
+
+      expect.objectContaining({
+        from: 'Filter',
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ name: 'Filter', type: 'lowpass~' })
+      })
+    ]);
+  });
+
+  it('resolves inline whitelisted audio effect route segments as anonymous virtual audio nodes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Mic -> gain~ 0.5 -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        type: 'gain~',
+        rawArgs: ['0.5'],
+        params: [null, 0.5],
+        anonymous: true,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Mic',
+        to: expect.stringContaining('gain~'),
+        toVirtualExpression: expect.objectContaining({ type: 'gain~', anonymous: true })
+      }),
+
+      expect.objectContaining({
+        from: expect.stringContaining('gain~'),
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ type: 'gain~', anonymous: true })
+      })
+    ]);
+  });
+
+  it('resolves inline expr route segments as anonymous virtual audio nodes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Osc -> expr~ s * 0.2 -> Out
+      `,
+      {
+        audioSources: new Set(['Osc']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        type: 'expr~',
+        rawArgs: ['s', '*', '0.2'],
+        params: [null, 's * 0.2'],
+        expression: 's * 0.2',
+        anonymous: true,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Osc',
+        to: expect.stringContaining('expr~'),
+        toVirtualExpression: expect.objectContaining({ type: 'expr~', anonymous: true })
+      }),
+
+      expect.objectContaining({
+        from: expect.stringContaining('expr~'),
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ type: 'expr~', anonymous: true })
+      })
+    ]);
+  });
+
+  it('resolves whitelisted audio source aliases as virtual audio nodes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Osc = osc~ 440 sine 0
+      Osc -> Out
+      `,
+      {
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        name: 'Osc',
+        type: 'osc~',
+        rawArgs: ['440', 'sine', '0'],
+        params: [440, 'sine', 0],
+        anonymous: false,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Osc',
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ name: 'Osc', type: 'osc~' })
+      })
+    ]);
+  });
+
+  it('resolves inline whitelisted audio source route segments as anonymous virtual audio nodes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      osc~ 440 sine 0 -> Out
+      `,
+      {
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        type: 'osc~',
+        rawArgs: ['440', 'sine', '0'],
+        params: [440, 'sine', 0],
+        anonymous: true,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: expect.stringContaining('osc~'),
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ type: 'osc~', anonymous: true })
+      })
+    ]);
+  });
+
+  it('rejects unsupported audio nodes as virtual processors', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Space = convolver~ impulse.wav
+      Mic -> Space -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.audioRoutes).toEqual([]);
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'unsupported-virtual-audio-node',
+        section: 'audio',
+        name: 'Space',
+        line: 3
+      })
+    );
+  });
+
+  it('rejects unsupported inline audio nodes as virtual processors', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Mic -> convolver~ impulse.wav -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.audioRoutes).toEqual([]);
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'unsupported-virtual-audio-node',
+        section: 'audio',
+        name: 'convolver~',
+        line: 3
+      })
+    );
+  });
+
+  it('reports invalid audio virtual expressions before applying routes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Gain = expr~ s *
+      Mic -> Gain -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.audioRoutes).toEqual([]);
+
+    expect(result.diagnostics).toMatchObject([
+      {
+        severity: 'error',
+        code: 'invalid-virtual-expression',
+        section: 'audio',
+        name: 'Gain',
+        line: 3
+      }
     ]);
   });
 
@@ -182,6 +531,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.audioRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -206,6 +556,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.audioRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -230,6 +581,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       { from: 'Camera', to: 'Mix' },
       { from: 'Mix', to: 'Screen' }
@@ -249,6 +601,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.videoRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -273,6 +626,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.videoRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -319,6 +673,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       {
         from: 'Camera',
@@ -331,6 +686,7 @@ describe('analyzePatchbay', () => {
         }
       }
     ]);
+
     expect(result.messageRoutes).toEqual([
       {
         from: 'obj slider-1',
@@ -367,6 +723,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.audioRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -408,6 +765,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       {
         from: 'Src',
@@ -457,6 +815,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.messageRoutes).toEqual([
       {
         from: 'Src',
@@ -543,6 +902,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       {
         from: 'Src',
@@ -593,6 +953,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.messageRoutes).toEqual([
       {
         from: 'Src',
@@ -630,6 +991,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.messageRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -667,6 +1029,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       {
         from: 'Src',
@@ -746,6 +1109,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       {
         from: 'Src',
@@ -775,6 +1139,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.messageRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',

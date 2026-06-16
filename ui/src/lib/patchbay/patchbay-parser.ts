@@ -1,3 +1,21 @@
+import { hash } from 'ohash';
+import { Parser } from 'expr-eval';
+import { parseMultiOutletExpressions } from '$lib/utils/expr-parser';
+import { isUnmodifiableType, parseStringParamByType } from '$lib/objects/parse-object-param';
+import { AllpassNode } from '$lib/audio/v2/nodes/AllpassNode';
+import { BandpassNode } from '$lib/audio/v2/nodes/BandpassNode';
+import { CompressorNode } from '$lib/audio/v2/nodes/CompressorNode';
+import { DelayNodeV2 } from '$lib/audio/v2/nodes/DelayNode';
+import { GainNodeV2 } from '$lib/audio/v2/nodes/GainNode';
+import { HighpassNode } from '$lib/audio/v2/nodes/HighpassNode';
+import { HighshelfNode } from '$lib/audio/v2/nodes/HighshelfNode';
+import { LowpassNode } from '$lib/audio/v2/nodes/LowpassNode';
+import { LowshelfNode } from '$lib/audio/v2/nodes/LowshelfNode';
+import { NotchNode } from '$lib/audio/v2/nodes/NotchNode';
+import { OscNode } from '$lib/audio/v2/nodes/OscNode';
+import { PeakingNode } from '$lib/audio/v2/nodes/PeakingNode';
+import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
+
 export type PatchbaySection = 'message' | 'audio' | 'video';
 
 export type PatchbayRoute = {
@@ -5,6 +23,8 @@ export type PatchbayRoute = {
   to: string;
   fromEndpoint?: PatchbayResolvedObjectEndpoint;
   toEndpoint?: PatchbayResolvedObjectEndpoint;
+  fromVirtualExpression?: PatchbayVirtualAudioExpression;
+  toVirtualExpression?: PatchbayVirtualAudioExpression;
 };
 
 export type PatchbayDiagnosticSeverity = 'error' | 'warning';
@@ -24,7 +44,9 @@ export type PatchbayDiagnosticCode =
   | 'duplicate-alias'
   | 'unknown-object'
   | 'object-port-unavailable'
-  | 'object-port-out-of-range';
+  | 'object-port-out-of-range'
+  | 'invalid-virtual-expression'
+  | 'unsupported-virtual-audio-node';
 
 export type PatchbayDiagnostic = {
   severity: PatchbayDiagnosticSeverity;
@@ -62,6 +84,25 @@ export type PatchbayObjectEndpointRef = {
   line: number;
 };
 
+export type PatchbayVirtualAudioExpression = {
+  id: string;
+  name?: string;
+  type: string;
+  rawArgs: string[];
+  params: unknown[];
+  expression: string;
+  raw: string;
+  line: number;
+  anonymous: boolean;
+};
+
+export type PatchbayVirtualAudioExpressionEndpointRef = {
+  kind: 'virtual-audio-expression';
+  expression: PatchbayVirtualAudioExpression;
+  raw: string;
+  line: number;
+};
+
 export type PatchbayChannelEndpointRef = {
   kind: 'channel';
   name: string;
@@ -69,7 +110,10 @@ export type PatchbayChannelEndpointRef = {
   line: number;
 };
 
-export type PatchbayEndpointRef = PatchbayChannelEndpointRef | PatchbayObjectEndpointRef;
+export type PatchbayEndpointRef =
+  | PatchbayChannelEndpointRef
+  | PatchbayObjectEndpointRef
+  | PatchbayVirtualAudioExpressionEndpointRef;
 
 export type PatchbayResolvedObjectEndpoint = {
   kind: 'object';
@@ -83,6 +127,7 @@ export type PatchbayAnalysis = {
   messageRoutes: PatchbayRoute[];
   audioRoutes: PatchbayRoute[];
   videoRoutes: PatchbayRoute[];
+  virtualAudioExpressions: PatchbayVirtualAudioExpression[];
   channels: Record<PatchbaySection, Set<string>>;
 };
 
@@ -90,6 +135,8 @@ type SectionState = {
   declarations: Map<string, number>;
   declarationUseCount: Map<string, number>;
   aliases: Map<string, PatchbayObjectEndpointRef>;
+  virtualAudioExpressions: Map<string, PatchbayVirtualAudioExpression>;
+  anonymousVirtualAudioExpressions: PatchbayVirtualAudioExpression[];
   routes: Array<{ line: number; endpoints: PatchbayEndpointRef[] }>;
 };
 
@@ -114,11 +161,70 @@ const SECTION_NAMES: Record<string, PatchbaySection> = {
 
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9_.~/:-]+$/;
 const OBJECT_ID_PATTERN = /^[A-Za-z0-9_.~/-]+$/;
+const AUDIO_EXPRESSION_PARAMETER_NAMES = [
+  ...Array.from({ length: 9 }, (_, index) => `s${index + 1}`),
+  's',
+  'i',
+  't',
+  'channel',
+  'bufferSize',
+  'samples',
+  'input',
+  'inputs',
+  ...Array.from({ length: 9 }, (_, index) => `x${index + 1}`)
+];
+const VIRTUAL_AUDIO_PROCESSOR_TYPES = new Set([
+  'expr~',
+  'osc~',
+  'gain~',
+  'lowpass~',
+  'highpass~',
+  'bandpass~',
+  'notch~',
+  'allpass~',
+  'lowshelf~',
+  'highshelf~',
+  'peaking~',
+  'compressor~',
+  'delay~'
+]);
+const KNOWN_UNSUPPORTED_AUDIO_PROCESSOR_TYPES = new Set([
+  'biquad~',
+  'comb~',
+  'convolver~',
+  'mic~',
+  'out~',
+  'send~',
+  'recv~',
+  'soundfile~',
+  'sampler~',
+  'csound~',
+  'waveshaper~'
+]);
+
+const VIRTUAL_AUDIO_PROCESSOR_INLETS = new Map<string, ObjectInlet[]>(
+  [
+    AllpassNode,
+    BandpassNode,
+    CompressorNode,
+    DelayNodeV2,
+    GainNodeV2,
+    HighpassNode,
+    HighshelfNode,
+    LowpassNode,
+    LowshelfNode,
+    NotchNode,
+    OscNode,
+    PeakingNode
+  ].map((node) => [node.type, node.inlets ?? []])
+);
 
 const createSectionState = (): SectionState => ({
   declarations: new Map(),
   declarationUseCount: new Map(),
   aliases: new Map(),
+  virtualAudioExpressions: new Map(),
+  anonymousVirtualAudioExpressions: [],
   routes: []
 });
 
@@ -213,6 +319,146 @@ function parseAliasDeclaration(
   return { name, endpoint };
 }
 
+function parseVirtualAudioProcessorDeclaration(
+  raw: string,
+  line: number,
+  section: PatchbaySection,
+  patchbayIdSeed: string,
+  diagnostics: PatchbayDiagnostic[]
+): { name: string; expression: PatchbayVirtualAudioExpression } | null {
+  const match = raw.match(/^([^=\s]+)\s*=\s*([A-Za-z0-9_.~/:-]+)(?:\s+(.+))?$/);
+  if (!match) return null;
+
+  const name = match[1].trim();
+  const type = match[2].trim();
+  const rawArgs = splitVirtualAudioProcessorArgs(match[3] ?? '');
+  const expression = type === 'expr~' ? rawArgs.join(' ').trim() : '';
+
+  if (section !== 'audio') {
+    diagnostics.push(
+      createDiagnostic(
+        'error',
+        'invalid-virtual-expression',
+        line,
+        'Virtual audio processor declarations are only supported in [Audio].',
+        { section, name }
+      )
+    );
+
+    return null;
+  }
+
+  if (!IDENTIFIER_PATTERN.test(name)) {
+    diagnostics.push(
+      createDiagnostic('error', 'invalid-identifier', line, `Invalid alias name "${name}".`, {
+        section,
+        name
+      })
+    );
+
+    return null;
+  }
+
+  if (!isSupportedVirtualAudioProcessorType(type)) {
+    diagnostics.push(
+      createDiagnostic(
+        'error',
+        'unsupported-virtual-audio-node',
+        line,
+        `Unsupported virtual audio processor "${type}".`,
+        { section, name }
+      )
+    );
+
+    return null;
+  }
+
+  if (expression.length === 0) {
+    if (type === 'expr~') {
+      diagnostics.push(
+        createDiagnostic(
+          'error',
+          'invalid-virtual-expression',
+          line,
+          `Virtual expression "${name}" needs an expr~ body.`,
+          { section, name }
+        )
+      );
+
+      return null;
+    }
+  }
+
+  if (type === 'expr~') {
+    const validationError = validateVirtualAudioExpression(expression);
+
+    if (validationError) {
+      diagnostics.push(
+        createDiagnostic('error', 'invalid-virtual-expression', line, validationError, {
+          section,
+          name
+        })
+      );
+    }
+  }
+
+  return {
+    name,
+    expression: {
+      id: `${patchbayIdSeed}:audio-virtual:${name}`,
+      name,
+      type,
+      rawArgs,
+      params: parseVirtualAudioProcessorParams(type, rawArgs),
+      expression,
+      raw: name,
+      line,
+      anonymous: false
+    }
+  };
+}
+
+function splitVirtualAudioProcessorArgs(rawArgs: string): string[] {
+  return rawArgs.trim().length === 0 ? [] : rawArgs.trim().split(/\s+/);
+}
+
+function isSupportedVirtualAudioProcessorType(type: string): boolean {
+  return VIRTUAL_AUDIO_PROCESSOR_TYPES.has(type);
+}
+
+function isKnownUnsupportedAudioProcessorType(type: string): boolean {
+  return KNOWN_UNSUPPORTED_AUDIO_PROCESSOR_TYPES.has(type);
+}
+
+function parseVirtualAudioProcessorParams(type: string, rawArgs: string[]): unknown[] {
+  if (type === 'expr~') return [null, rawArgs.join(' ')];
+
+  const inlets = VIRTUAL_AUDIO_PROCESSOR_INLETS.get(type);
+  if (!inlets) return rawArgs;
+
+  const params: unknown[] = [];
+  let inputInletIndex = 0;
+
+  for (const inlet of inlets) {
+    const skipAsUnmodifiable = isUnmodifiableType(inlet.type) && !inlet.acceptsFloat;
+    if (skipAsUnmodifiable) {
+      params.push(null);
+      continue;
+    }
+
+    if (inputInletIndex >= rawArgs.length) {
+      params.push(inlet.defaultValue ?? null);
+      inputInletIndex += 1;
+      continue;
+    }
+
+    params.push(parseStringParamByType(inlet, rawArgs[inputInletIndex]));
+    inputInletIndex += 1;
+  }
+
+  return params;
+}
+
 function splitRouteContinuation(raw: string): string[] | null {
   if (!raw.startsWith('->')) return null;
 
@@ -229,11 +475,44 @@ function parseEndpointParts(
   parts: string[],
   line: number,
   section: PatchbaySection,
+  state: SectionState,
+  patchbayIdSeed: string,
   diagnostics: PatchbayDiagnostic[]
 ): PatchbayEndpointRef[] | null {
   const endpoints: PatchbayEndpointRef[] = [];
 
-  for (const rawEndpoint of parts) {
+  for (let index = 0; index < parts.length; index += 1) {
+    const rawEndpoint = parts[index];
+    const virtualProcessorEndpoint = parseVirtualAudioProcessorEndpoint(
+      rawEndpoint,
+      line,
+      section,
+      index,
+      state,
+      patchbayIdSeed,
+      diagnostics
+    );
+
+    if (virtualProcessorEndpoint) {
+      endpoints.push(virtualProcessorEndpoint);
+      continue;
+    }
+
+    const shorthandEndpoints = parseAudioShorthandEndpoint(
+      rawEndpoint,
+      line,
+      section,
+      index,
+      state,
+      patchbayIdSeed,
+      diagnostics
+    );
+
+    if (shorthandEndpoints) {
+      endpoints.push(...shorthandEndpoints);
+      continue;
+    }
+
     const endpoint = parseEndpoint(rawEndpoint, line);
 
     if (!endpoint || (endpoint.kind === 'channel' && !IDENTIFIER_PATTERN.test(endpoint.name))) {
@@ -254,6 +533,186 @@ function parseEndpointParts(
   }
 
   return endpoints;
+}
+
+function parseVirtualAudioProcessorEndpoint(
+  rawEndpoint: string,
+  line: number,
+  section: PatchbaySection,
+  routePartIndex: number,
+  state: SectionState,
+  patchbayIdSeed: string,
+  diagnostics: PatchbayDiagnostic[]
+): PatchbayVirtualAudioExpressionEndpointRef | null {
+  if (section !== 'audio') return null;
+  if (rawEndpoint.startsWith('obj ')) return null;
+
+  const match = rawEndpoint.match(/^([A-Za-z0-9_.~/:-]+)\s*(.*)$/);
+  if (!match) return null;
+
+  const type = match[1].trim();
+
+  if (!isSupportedVirtualAudioProcessorType(type)) {
+    if (isKnownUnsupportedAudioProcessorType(type) && /\s/.test(rawEndpoint)) {
+      diagnostics.push(
+        createDiagnostic(
+          'error',
+          'unsupported-virtual-audio-node',
+          line,
+          `Unsupported virtual audio processor "${type}".`,
+          { section, name: type }
+        )
+      );
+    }
+
+    return null;
+  }
+
+  const rawArgs = splitVirtualAudioProcessorArgs(match[2] ?? '');
+  const expression = type === 'expr~' ? rawArgs.join(' ').trim() : '';
+
+  if (type === 'expr~') {
+    if (expression.length === 0) return null;
+
+    const validationError = validateVirtualAudioExpression(expression);
+
+    if (validationError) {
+      diagnostics.push(
+        createDiagnostic('error', 'invalid-virtual-expression', line, validationError, {
+          section,
+          name: rawEndpoint
+        })
+      );
+    }
+  }
+
+  const id = `${patchbayIdSeed}:audio-virtual:inline:${hash({
+    line,
+    routePartIndex,
+    type,
+    rawArgs
+  })}`;
+
+  const virtualExpression: PatchbayVirtualAudioExpression = {
+    id,
+    type,
+    rawArgs,
+    params: parseVirtualAudioProcessorParams(type, rawArgs),
+    expression,
+    raw: rawEndpoint,
+    line,
+    anonymous: true
+  };
+
+  state.anonymousVirtualAudioExpressions.push(virtualExpression);
+
+  return {
+    kind: 'virtual-audio-expression',
+    expression: virtualExpression,
+    raw: virtualExpression.raw,
+    line
+  };
+}
+
+function parseAudioShorthandEndpoint(
+  rawEndpoint: string,
+  line: number,
+  section: PatchbaySection,
+  routePartIndex: number,
+  state: SectionState,
+  patchbayIdSeed: string,
+  diagnostics: PatchbayDiagnostic[]
+): PatchbayEndpointRef[] | null {
+  if (section !== 'audio') return null;
+  if (!/\s/.test(rawEndpoint)) return null;
+  if (rawEndpoint.startsWith('obj ')) return null;
+  if (rawEndpoint.startsWith('expr~ ')) return null;
+
+  const match = rawEndpoint.match(/^([A-Za-z0-9_.~/:-]+)\s+(.+)$/);
+  if (!match) return null;
+
+  const source = match[1].trim();
+  const expressionTail = match[2].trim();
+  if (!IDENTIFIER_PATTERN.test(source) || expressionTail.length === 0) return null;
+
+  const expression = `s ${expressionTail}`;
+  const validationError = validateVirtualAudioExpression(expression);
+
+  if (validationError) {
+    diagnostics.push(
+      createDiagnostic('error', 'invalid-virtual-expression', line, validationError, {
+        section,
+        name: rawEndpoint
+      })
+    );
+  }
+
+  const id = `${patchbayIdSeed}:audio-virtual:inline:${hash({
+    line,
+    routePartIndex,
+    source
+  })}`;
+
+  const virtualExpression: PatchbayVirtualAudioExpression = {
+    id,
+    type: 'expr~',
+    rawArgs: [expression],
+    params: parseVirtualAudioProcessorParams('expr~', [expression]),
+    expression,
+    raw: `expr~ ${expression}`,
+    line,
+    anonymous: true
+  };
+
+  state.anonymousVirtualAudioExpressions.push(virtualExpression);
+
+  return [
+    { kind: 'channel', name: source, raw: source, line },
+    {
+      kind: 'virtual-audio-expression',
+      expression: virtualExpression,
+      raw: virtualExpression.raw,
+      line
+    }
+  ];
+}
+
+function validateVirtualAudioExpression(expression: string): string | null {
+  const parsed = parseMultiOutletExpressions(expression);
+
+  if (parsed.outletExpressions.length > 1) {
+    return 'Virtual expr~ expressions in patchbay can only produce one outlet.';
+  }
+
+  try {
+    const parser = new Parser({
+      operators: {
+        add: true,
+        concatenate: true,
+        conditional: true,
+        divide: true,
+        factorial: true,
+        multiply: true,
+        power: true,
+        remainder: true,
+        subtract: true,
+        logical: true,
+        comparison: true,
+        in: true,
+        assignment: true
+      }
+    });
+
+    const renamedExpression = expression.replace(/\n/g, ';').replace(/\$(\d+)/g, 'x$1');
+    const parsedExpression = parser.parse(renamedExpression);
+    parsedExpression.toJSFunction(AUDIO_EXPRESSION_PARAMETER_NAMES.join(','));
+
+    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    return `Invalid expr~ expression: ${message}`;
+  }
 }
 
 function hasCycle(routes: PatchbayRoute[]): boolean {
@@ -302,11 +761,16 @@ function analyzeSection(
   const routes: PatchbayRoute[] = [];
   const routeKeys = new Set<string>();
 
-  let hasErrors = false;
+  let hasErrors = diagnostics.some(
+    (diagnostic) => diagnostic.severity === 'error' && diagnostic.section === section
+  );
 
   for (const route of state.routes) {
     for (const endpoint of route.endpoints) {
       const objectEndpoint = getObjectEndpointRef(endpoint, state);
+      const virtualExpressionEndpoint = getVirtualExpressionEndpointRef(endpoint, state);
+
+      if (virtualExpressionEndpoint) continue;
 
       if (objectEndpoint) {
         if (!objects?.has(objectEndpoint.nodeId)) {
@@ -355,6 +819,8 @@ function analyzeSection(
 
       const fromObjectRef = getObjectEndpointRef(fromEndpointRef, state);
       const toObjectRef = getObjectEndpointRef(toEndpointRef, state);
+      const fromVirtualExpression = getVirtualExpressionEndpointRef(fromEndpointRef, state);
+      const toVirtualExpression = getVirtualExpressionEndpointRef(toEndpointRef, state);
 
       const from = fromEndpointRef.raw;
       const to = toEndpointRef.raw;
@@ -379,6 +845,7 @@ function analyzeSection(
         roles &&
         fromEndpointRef.kind === 'channel' &&
         !state.aliases.has(fromEndpointRef.name) &&
+        !state.virtualAudioExpressions.has(fromEndpointRef.name) &&
         !state.declarations.has(fromEndpointRef.name) &&
         knownChannels.has(fromEndpointRef.name) &&
         !roles.sources.has(fromEndpointRef.name)
@@ -400,6 +867,7 @@ function analyzeSection(
         roles &&
         toEndpointRef.kind === 'channel' &&
         !state.aliases.has(toEndpointRef.name) &&
+        !state.virtualAudioExpressions.has(toEndpointRef.name) &&
         !state.declarations.has(toEndpointRef.name) &&
         knownChannels.has(toEndpointRef.name) &&
         !roles.targets.has(toEndpointRef.name)
@@ -440,7 +908,14 @@ function analyzeSection(
       }
 
       routeKeys.add(key);
-      routes.push({ from, to, fromEndpoint, toEndpoint });
+      routes.push({
+        from,
+        to,
+        fromEndpoint,
+        toEndpoint,
+        fromVirtualExpression,
+        toVirtualExpression
+      });
     }
   }
 
@@ -553,13 +1028,25 @@ function getObjectEndpointRef(
   state: SectionState
 ): PatchbayObjectEndpointRef | undefined {
   if (endpoint.kind === 'object') return endpoint;
+  if (endpoint.kind !== 'channel') return undefined;
 
   return state.aliases.get(endpoint.name);
 }
 
+function getVirtualExpressionEndpointRef(
+  endpoint: PatchbayEndpointRef,
+  state: SectionState
+): PatchbayVirtualAudioExpression | undefined {
+  if (endpoint.kind === 'virtual-audio-expression') return endpoint.expression;
+  if (endpoint.kind !== 'channel') return undefined;
+
+  return state.virtualAudioExpressions.get(endpoint.name);
+}
+
 export function analyzePatchbay(
   source: string,
-  knownChannels: PatchbayKnownChannels = {}
+  knownChannels: PatchbayKnownChannels = {},
+  patchbayIdSeed = 'patchbay'
 ): PatchbayAnalysis {
   const diagnostics: PatchbayDiagnostic[] = [];
 
@@ -671,7 +1158,11 @@ export function analyzePatchbay(
 
       const state = states[currentSection];
 
-      if (state.declarations.has(name) || state.aliases.has(name)) {
+      if (
+        state.declarations.has(name) ||
+        state.aliases.has(name) ||
+        state.virtualAudioExpressions.has(name)
+      ) {
         const duplicateChannelError = createDiagnostic(
           'error',
           'duplicate-channel',
@@ -694,6 +1185,52 @@ export function analyzePatchbay(
     if (/^[^=\s]+\s*=/.test(text)) {
       flushPendingRoute();
 
+      const processorDeclarationMatch = text.match(/^[^=\s]+\s*=\s*([A-Za-z0-9_.~/:-]+)/);
+      const processorType = processorDeclarationMatch?.[1];
+
+      if (
+        processorType &&
+        (isSupportedVirtualAudioProcessorType(processorType) ||
+          isKnownUnsupportedAudioProcessorType(processorType))
+      ) {
+        const virtualExpressionDeclaration = parseVirtualAudioProcessorDeclaration(
+          text,
+          line,
+          currentSection,
+          patchbayIdSeed,
+          diagnostics
+        );
+
+        if (!virtualExpressionDeclaration) return;
+
+        const state = states[currentSection];
+
+        if (
+          state.virtualAudioExpressions.has(virtualExpressionDeclaration.name) ||
+          state.aliases.has(virtualExpressionDeclaration.name) ||
+          state.declarations.has(virtualExpressionDeclaration.name)
+        ) {
+          diagnostics.push(
+            createDiagnostic(
+              'error',
+              'duplicate-alias',
+              line,
+              `Duplicate ${currentSection} virtual expression alias "${virtualExpressionDeclaration.name}".`,
+              { section: currentSection, name: virtualExpressionDeclaration.name }
+            )
+          );
+
+          return;
+        }
+
+        state.virtualAudioExpressions.set(
+          virtualExpressionDeclaration.name,
+          virtualExpressionDeclaration.expression
+        );
+
+        return;
+      }
+
       const aliasDeclaration = parseAliasDeclaration(text, line, currentSection, diagnostics);
       if (!aliasDeclaration) return;
 
@@ -701,6 +1238,7 @@ export function analyzePatchbay(
 
       if (
         state.aliases.has(aliasDeclaration.name) ||
+        state.virtualAudioExpressions.has(aliasDeclaration.name) ||
         state.declarations.has(aliasDeclaration.name)
       ) {
         const duplicateAliasError = createDiagnostic(
@@ -744,6 +1282,8 @@ export function analyzePatchbay(
         waitingForEndpoint ? continuationParts.slice(0, -1) : continuationParts,
         line,
         currentSection,
+        states[currentSection],
+        patchbayIdSeed,
         diagnostics
       );
 
@@ -793,7 +1333,14 @@ export function analyzePatchbay(
     const waitingForEndpoint = routeParts.at(-1) === '';
     const endpointParts = waitingForEndpoint ? routeParts.slice(0, -1) : routeParts;
 
-    const endpoints = parseEndpointParts(endpointParts, line, currentSection, diagnostics);
+    const endpoints = parseEndpointParts(
+      endpointParts,
+      line,
+      currentSection,
+      states[currentSection],
+      patchbayIdSeed,
+      diagnostics
+    );
     if (!endpoints) return;
 
     if (pendingRoute?.waitingForEndpoint && pendingRoute.section === currentSection) {
@@ -882,6 +1429,10 @@ export function analyzePatchbay(
     messageRoutes,
     audioRoutes,
     videoRoutes,
+    virtualAudioExpressions: [
+      ...states.audio.virtualAudioExpressions.values(),
+      ...states.audio.anonymousVirtualAudioExpressions
+    ],
     channels: {
       message: new Set(channels.message.keys()),
       audio: new Set(channels.audio.keys()),

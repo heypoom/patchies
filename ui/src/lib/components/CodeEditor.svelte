@@ -443,6 +443,15 @@
           '.cm-patchbay-object-keyword, .cm-patchbay-object-keyword *': {
             color: 'rgb(255, 202, 105) !important'
           },
+          '.cm-patchbay-virtual-expression-name, .cm-patchbay-virtual-expression-name *': {
+            color: 'rgb(156, 255, 192) !important'
+          },
+          '.cm-patchbay-virtual-expression-keyword, .cm-patchbay-virtual-expression-keyword *': {
+            color: 'rgb(81, 255, 144) !important'
+          },
+          '.cm-patchbay-virtual-expression-operator, .cm-patchbay-virtual-expression-operator *': {
+            color: 'rgb(196 181 253) !important'
+          },
           '.cm-patchbay-role-error': {
             color: 'rgb(252 165 165)',
             textDecoration: 'underline wavy rgb(248 113 113)',

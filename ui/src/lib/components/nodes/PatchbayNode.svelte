@@ -16,6 +16,10 @@
     getPatchbayObjectKeywordRanges,
     getPatchbayObjectLinkRanges,
     getPatchbayObjectNameRanges,
+    getPatchbayVirtualExpressionAssignmentRanges,
+    getPatchbayVirtualExpressionKeywordRanges,
+    getPatchbayVirtualExpressionNameRanges,
+    getPatchbayVirtualExpressionOperatorRanges,
     patchbayContextualCompletionSource
   } from '$lib/patchbay/codemirror/patchbay.codemirror';
   import { AudioChannelRegistry } from '$lib/audio/AudioChannelRegistry';
@@ -99,6 +103,10 @@
     ...getPatchbayObjectNameRanges(code),
     ...getPatchbayObjectAssignmentRanges(code),
     ...getPatchbayObjectKeywordRanges(code),
+    ...getPatchbayVirtualExpressionNameRanges(code),
+    ...getPatchbayVirtualExpressionAssignmentRanges(code),
+    ...getPatchbayVirtualExpressionKeywordRanges(code),
+    ...getPatchbayVirtualExpressionOperatorRanges(code),
     ...getPatchbayLocalChannelRanges(code),
     ...getPatchbayObjectAliasHintRanges(code),
     ...getPatchbayChannelLinkRanges(code, {

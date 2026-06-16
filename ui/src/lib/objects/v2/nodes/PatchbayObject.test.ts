@@ -10,6 +10,7 @@ import { setPatchbayVideoRuntime } from '$lib/patchbay/patchbay-video-runtime';
 import { PatchbayObject } from './PatchbayObject';
 
 import type { ObjectContext } from '../ObjectContext';
+import type { PatchbayAudioRuntime } from '$lib/patchbay/patchbay-audio-runtime';
 
 function createPatchbay(code: string) {
   const params = [code];
@@ -494,14 +495,15 @@ describe('PatchbayObject', () => {
     const registry = AudioChannelRegistry.getInstance();
     const registeredEdges: Array<{ routeId: string; edge: unknown }> = [];
     const unregisteredEdges: string[] = [];
-    const restoreAudioRuntime = setPatchbayAudioRuntime({
+    const audioRuntime: PatchbayAudioRuntime = {
       registerEdge(routeId, edge) {
         registeredEdges.push({ routeId, edge });
       },
       unregisterEdge(routeId) {
         unregisteredEdges.push(routeId);
       }
-    });
+    };
+    const restoreAudioRuntime = setPatchbayAudioRuntime(audioRuntime);
 
     registry.subscribe(source, sourceNodeId, 'send');
 
@@ -542,6 +544,183 @@ describe('PatchbayObject', () => {
     expect(unregisteredEdges).toEqual(registeredEdges.map(({ routeId }) => routeId));
     restoreAudioRuntime();
     registry.unsubscribe(source, sourceNodeId);
+  });
+
+  it('registers audio shorthand expressions as hidden expr nodes between channel endpoints', () => {
+    const suffix = crypto.randomUUID();
+    const source = `audio-source-${suffix}`;
+    const destination = `audio-destination-${suffix}`;
+    const sourceNodeId = `send-audio-${suffix}`;
+    const destinationNodeId = `recv-audio-${suffix}`;
+    const registry = AudioChannelRegistry.getInstance();
+    const registeredEdges: Array<{ routeId: string; edge: unknown }> = [];
+    const unregisteredVirtualAudioNodes: string[] = [];
+    const registeredVirtualAudioNodes: Array<{
+      routeId: string;
+      node: { nodeId: string; type: string; params: unknown[] };
+    }> = [];
+
+    const audioRuntime: PatchbayAudioRuntime = {
+      registerEdge(routeId, edge) {
+        registeredEdges.push({ routeId, edge });
+      },
+      unregisterEdge() {},
+      registerVirtualAudioNode(routeId, node) {
+        registeredVirtualAudioNodes.push({ routeId, node });
+      },
+      unregisterVirtualAudioNode(routeId) {
+        unregisteredVirtualAudioNodes.push(routeId);
+      }
+    };
+    const restoreAudioRuntime = setPatchbayAudioRuntime(audioRuntime);
+
+    registry.subscribe(source, sourceNodeId, 'send');
+    registry.subscribe(destination, destinationNodeId, 'recv');
+
+    const { object } = createPatchbay(`
+      [Audio]
+      ${source} * 0.5 -> ${destination}
+    `);
+
+    expect(object.diagnostics).toEqual([]);
+    expect(registeredVirtualAudioNodes).toEqual([
+      {
+        routeId: expect.stringContaining('audio-virtual'),
+        node: expect.objectContaining({
+          nodeId: expect.stringContaining(':audio-virtual:inline:'),
+          type: 'expr~',
+          params: [null, 's * 0.5']
+        })
+      }
+    ]);
+    expect(registeredEdges).toEqual([
+      {
+        routeId: expect.stringContaining(`${source}->expr~`),
+        edge: expect.objectContaining({
+          target: registeredVirtualAudioNodes[0].node.nodeId,
+          sourceHandle: 'audio-out',
+          targetHandle: 'audio-in-0'
+        })
+      },
+      {
+        routeId: expect.stringContaining(`expr~`),
+        edge: expect.objectContaining({
+          source: registeredVirtualAudioNodes[0].node.nodeId,
+          targetHandle: 'audio-in'
+        })
+      }
+    ]);
+
+    object.destroy();
+    expect(unregisteredVirtualAudioNodes).toEqual(
+      registeredVirtualAudioNodes.map(({ routeId }) => routeId)
+    );
+
+    restoreAudioRuntime();
+    registry.unsubscribe(source, sourceNodeId);
+    registry.unsubscribe(destination, destinationNodeId);
+  });
+
+  it('keeps unchanged virtual audio nodes alive when patchbay code reapplies', () => {
+    const suffix = crypto.randomUUID();
+    const destination = `audio-destination-${suffix}`;
+    const destinationNodeId = `recv-audio-${suffix}`;
+    const registry = AudioChannelRegistry.getInstance();
+    const registeredVirtualAudioNodes: Array<{
+      routeId: string;
+      node: { nodeId: string; type: string; params: unknown[] };
+    }> = [];
+    const unregisteredVirtualAudioNodes: string[] = [];
+
+    const audioRuntime: PatchbayAudioRuntime = {
+      registerEdge() {},
+      unregisterEdge() {},
+      registerVirtualAudioNode(routeId, node) {
+        registeredVirtualAudioNodes.push({ routeId, node });
+      },
+      unregisterVirtualAudioNode(routeId) {
+        unregisteredVirtualAudioNodes.push(routeId);
+      }
+    };
+    const restoreAudioRuntime = setPatchbayAudioRuntime(audioRuntime);
+
+    registry.subscribe(destination, destinationNodeId, 'recv');
+
+    const { object, params } = createPatchbay(`
+      [Audio]
+      Osc = osc~ 440 sine 0
+      Osc -> ${destination}
+    `);
+
+    params[0] = `
+      [Audio]
+      Osc = osc~ 440 sine 0
+      Osc -> ${destination}
+      // comment-only edit
+    `;
+    object.applyCode();
+
+    expect(registeredVirtualAudioNodes).toEqual([
+      {
+        routeId: expect.stringContaining('Osc'),
+        node: expect.objectContaining({
+          nodeId: expect.stringContaining('Osc'),
+          type: 'osc~',
+          params: [440, 'sine', 0]
+        })
+      }
+    ]);
+    expect(unregisteredVirtualAudioNodes).toEqual([]);
+
+    object.destroy();
+    expect(unregisteredVirtualAudioNodes).toEqual(
+      registeredVirtualAudioNodes.map(({ routeId }) => routeId)
+    );
+
+    restoreAudioRuntime();
+    registry.unsubscribe(destination, destinationNodeId);
+  });
+
+  it('unregisters virtual audio nodes removed from patchbay code', () => {
+    const suffix = crypto.randomUUID();
+    const destination = `audio-destination-${suffix}`;
+    const destinationNodeId = `recv-audio-${suffix}`;
+    const registry = AudioChannelRegistry.getInstance();
+    const registeredVirtualAudioNodes: string[] = [];
+    const unregisteredVirtualAudioNodes: string[] = [];
+
+    const audioRuntime: PatchbayAudioRuntime = {
+      registerEdge() {},
+      unregisterEdge() {},
+      registerVirtualAudioNode(routeId) {
+        registeredVirtualAudioNodes.push(routeId);
+      },
+      unregisterVirtualAudioNode(routeId) {
+        unregisteredVirtualAudioNodes.push(routeId);
+      }
+    };
+    const restoreAudioRuntime = setPatchbayAudioRuntime(audioRuntime);
+
+    registry.subscribe(destination, destinationNodeId, 'recv');
+
+    const { object, params } = createPatchbay(`
+      [Audio]
+      Osc = osc~ 440 sine 0
+      Osc -> ${destination}
+    `);
+
+    params[0] = `
+      [Audio]
+    `;
+    object.applyCode();
+
+    expect(unregisteredVirtualAudioNodes).toEqual(registeredVirtualAudioNodes);
+
+    object.destroy();
+    expect(unregisteredVirtualAudioNodes).toEqual(registeredVirtualAudioNodes);
+
+    restoreAudioRuntime();
+    registry.unsubscribe(destination, destinationNodeId);
   });
 
   it('registers video object endpoints as hidden video edges', () => {

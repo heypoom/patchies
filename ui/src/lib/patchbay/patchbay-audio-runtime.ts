@@ -3,6 +3,11 @@ import type { Edge } from '@xyflow/svelte';
 export type PatchbayAudioRuntime = {
   registerEdge(routeId: string, edge: Edge): void;
   unregisterEdge(routeId: string): void;
+  registerVirtualAudioNode?(
+    routeId: string,
+    node: { nodeId: string; type: string; params: unknown[] }
+  ): void;
+  unregisterVirtualAudioNode?(routeId: string): void;
 };
 
 const getService = () =>
@@ -14,6 +19,12 @@ const audioServiceRuntime: PatchbayAudioRuntime = {
   },
   unregisterEdge(routeId) {
     getService().then((audio) => audio.unregisterPatchbayAudioEdge(routeId));
+  },
+  registerVirtualAudioNode(routeId, node) {
+    getService().then((audio) => audio.registerPatchbayVirtualAudioNode(routeId, node));
+  },
+  unregisterVirtualAudioNode(routeId) {
+    getService().then((audio) => audio.unregisterPatchbayVirtualAudioNode(routeId));
   }
 };
 

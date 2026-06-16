@@ -17,6 +17,14 @@ interface InletValuesMessage {
   values: number[];
 }
 
+interface StopMessage {
+  type: 'stop';
+}
+
+interface StoppedMessage {
+  type: 'stopped';
+}
+
 // Function signature for the compiled expression
 // Parameters are passed positionally to avoid object allocation in the hot path
 type FExprDspFn = (
@@ -75,6 +83,7 @@ const MAX_SIGNAL_INLETS = 9;
 class FExprProcessor extends AudioWorkletProcessor {
   private evaluators: FExprDspFn[] = [];
   private inletValues: number[] = new Array(10).fill(0);
+  private stopped = false;
 
   // History buffers for input samples (one per inlet)
   // Circular buffer: historyIndex points to current sample position
@@ -117,7 +126,9 @@ class FExprProcessor extends AudioWorkletProcessor {
     this.rebuildOutputAccessors(1);
 
     this.port.onmessage = (
-      event: MessageEvent<ExpressionMessage | MultiExpressionMessage | InletValuesMessage>
+      event: MessageEvent<
+        ExpressionMessage | MultiExpressionMessage | InletValuesMessage | StopMessage
+      >
     ) => {
       if (event.data.type === 'set-expression') {
         this.setExpression(event.data.expression);
@@ -125,6 +136,10 @@ class FExprProcessor extends AudioWorkletProcessor {
         this.setExpressions(event.data.assignments, event.data.outletExpressions);
       } else if (event.data.type === 'set-inlet-values') {
         this.setInletValues(event.data.values);
+      } else if (event.data.type === 'stop') {
+        this.stopped = true;
+        this.evaluators = [];
+        this.port.postMessage({ type: 'stopped' } satisfies StoppedMessage);
       }
     };
   }
@@ -295,6 +310,8 @@ class FExprProcessor extends AudioWorkletProcessor {
   private static zeroAccessor = () => 0;
 
   process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+    if (this.stopped) return false;
+
     // Keep alive even without evaluators
     if (this.evaluators.length === 0) {
       for (const output of outputs) {

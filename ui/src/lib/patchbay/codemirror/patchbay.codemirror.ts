@@ -82,6 +82,30 @@ export type PatchbayObjectAliasHintRange = {
   hoverText: string;
 };
 
+export type PatchbayVirtualExpressionNameRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
+export type PatchbayVirtualExpressionKeywordRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
+export type PatchbayVirtualExpressionAssignmentRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
+export type PatchbayVirtualExpressionOperatorRange = {
+  from: number;
+  to: number;
+  className: string;
+};
+
 export type PatchbayChannelRoles = {
   senders: Set<string>;
   receivers: Set<string>;
@@ -96,20 +120,57 @@ export type PatchbayCompletionData = {
 
 type PatchbayEndpointCompletionRole = 'source' | 'target' | 'both' | 'any';
 
+const VIRTUAL_AUDIO_PROCESSOR_NODE_TYPES = [
+  'expr~',
+  'osc~',
+  'gain~',
+  'lowpass~',
+  'highpass~',
+  'bandpass~',
+  'notch~',
+  'allpass~',
+  'lowshelf~',
+  'highshelf~',
+  'peaking~',
+  'compressor~',
+  'delay~'
+] as const;
+
+const VALID_DIAGNOSTICS = [
+  'unknown-channel',
+  'receiver-as-source',
+  'sender-as-target',
+  'unknown-object',
+  'object-port-unavailable',
+  'object-port-out-of-range'
+];
+
 const commentLinePattern = /^\s*(?:#|\/\/).*/;
 const commentPrefixPattern = /^\s*(?:#|\/\/)/;
 const identifierPattern = /^[A-Za-z0-9_.~/:-]+/;
 const sectionPattern = /^\[(Message|Audio|Video)\]/i;
+
 const sectionCompletionOptions: Completion[] = [
   { label: '[Audio]', type: 'namespace', detail: 'Audio routes' },
   { label: '[Video]', type: 'namespace', detail: 'Video routes' },
   { label: '[Message]', type: 'namespace', detail: 'Message routes' }
 ];
+
 const objCompletionOption: Completion = {
   label: 'obj',
   type: 'keyword',
   detail: 'object endpoint'
 };
+
+const virtualAudioProcessorKeywords = new Set<string>(VIRTUAL_AUDIO_PROCESSOR_NODE_TYPES);
+
+const virtualAudioProcessorCompletionOptions: Completion[] = VIRTUAL_AUDIO_PROCESSOR_NODE_TYPES.map(
+  (label) => ({
+    label,
+    type: 'keyword',
+    detail: label === 'expr~' ? 'virtual expression' : 'virtual audio processor'
+  })
+);
 
 export function tokenizePatchbayLine(line: string): PatchbayLineToken[] {
   const tokens: PatchbayLineToken[] = [];
@@ -142,16 +203,7 @@ export function getPatchbayDiagnosticRanges(
 
   return diagnostics
     .filter(
-      (diagnostic) =>
-        diagnostic.severity === 'error' &&
-        [
-          'unknown-channel',
-          'receiver-as-source',
-          'sender-as-target',
-          'unknown-object',
-          'object-port-unavailable',
-          'object-port-out-of-range'
-        ].includes(diagnostic.code)
+      (diagnostic) => diagnostic.severity === 'error' && VALID_DIAGNOSTICS.includes(diagnostic.code)
     )
     .flatMap((diagnostic) => {
       if (!diagnostic.name) return [];
@@ -187,6 +239,7 @@ export function getPatchbayChannelLinkRanges(
   const objectAliases = getPatchbayObjectAliases(source);
   const rolesBySection = normalizeRolesBySection(registryChannels);
   const ranges: PatchbayChannelLinkRange[] = [];
+
   let currentSection: PatchbaySection | undefined;
 
   source.split(/\r?\n/).forEach((line, lineIndex) => {
@@ -214,10 +267,12 @@ export function getPatchbayChannelLinkRanges(
       }
 
       if (token.style !== 'variableName') continue;
+
       if (skipObjectId) {
         skipObjectId = false;
         continue;
       }
+
       if (!currentSection) continue;
       if (objectAliases.has(getChannelKey(currentSection, token.text))) continue;
       if (localChannels.has(getChannelKey(currentSection, token.text))) continue;
@@ -230,6 +285,7 @@ export function getPatchbayChannelLinkRanges(
       if (!isSender && !isReceiver) continue;
 
       const role = isSender && isReceiver ? 'both' : isSender ? 'sender' : 'receiver';
+
       const roleClass =
         role === 'both'
           ? 'cm-patchbay-bidirectional-channel'
@@ -238,6 +294,7 @@ export function getPatchbayChannelLinkRanges(
             : 'cm-patchbay-receiver-channel';
 
       const from = lineStarts[lineIndex] + column;
+
       ranges.push({
         from,
         to: from + token.text.length,
@@ -280,14 +337,17 @@ export function getPatchbayLocalChannelRanges(source: string): PatchbayLocalChan
       }
 
       if (token.style !== 'variableName') continue;
+
       if (skipObjectId) {
         skipObjectId = false;
         continue;
       }
+
       if (!currentSection) continue;
       if (!localChannels.has(getChannelKey(currentSection, token.text))) continue;
 
       const from = lineStarts[lineIndex] + column;
+
       ranges.push({
         from,
         to: from + token.text.length,
@@ -400,10 +460,12 @@ export function getPatchbayObjectNameRanges(source: string): PatchbayObjectNameR
       }
 
       if (token.style !== 'variableName') continue;
+
       if (skipObjectId) {
         skipObjectId = false;
         continue;
       }
+
       if (!currentSection) continue;
       if (!objectAliases.has(getChannelKey(currentSection, token.text))) continue;
 
@@ -412,6 +474,7 @@ export function getPatchbayObjectNameRanges(source: string): PatchbayObjectNameR
       if (seenRanges.has(rangeKey)) continue;
 
       seenRanges.add(rangeKey);
+
       ranges.push({
         from,
         to: from + token.text.length,
@@ -427,11 +490,13 @@ export function getPatchbayObjectAliasHintRanges(source: string): PatchbayObject
   const lineStarts = getLineStarts(source);
   const objectAliases = getPatchbayObjectAliases(source);
   const ranges: PatchbayObjectAliasHintRange[] = [];
+
   let currentSection: PatchbaySection | undefined;
 
   source.split(/\r?\n/).forEach((line, lineIndex) => {
     const lineTokens = tokenizePatchbayLine(line);
     const section = parseSectionToken(lineTokens[0]);
+
     if (section) {
       currentSection = section;
       return;
@@ -454,6 +519,7 @@ export function getPatchbayObjectAliasHintRanges(source: string): PatchbayObject
       }
 
       if (token.style !== 'variableName') continue;
+
       if (skipObjectId) {
         skipObjectId = false;
         continue;
@@ -463,6 +529,7 @@ export function getPatchbayObjectAliasHintRanges(source: string): PatchbayObject
       if (!nodeId) continue;
 
       const from = lineStarts[lineIndex] + column;
+
       ranges.push({
         from,
         to: from + token.text.length,
@@ -475,8 +542,112 @@ export function getPatchbayObjectAliasHintRanges(source: string): PatchbayObject
   return ranges;
 }
 
-export function getPatchbayObjectIdRanges(source: string): PatchbayObjectIdRange[] {
-  return getPatchbayObjectReferenceTokenRanges(source, 'id', 'cm-patchbay-object-id');
+export const getPatchbayObjectIdRanges = (source: string): PatchbayObjectIdRange[] =>
+  getPatchbayObjectReferenceTokenRanges(source, 'id', 'cm-patchbay-object-id');
+
+export function getPatchbayVirtualExpressionNameRanges(
+  source: string
+): PatchbayVirtualExpressionNameRange[] {
+  const lineStarts = getLineStarts(source);
+  const aliases = getPatchbayVirtualExpressionAliases(source);
+
+  const ranges = getPatchbayVirtualExpressionDeclarationTokenRanges(
+    source,
+    0,
+    'cm-patchbay-virtual-expression-name'
+  );
+
+  const seenRanges = new Set(ranges.map((range) => `${range.from}:${range.to}`));
+  let currentSection: PatchbaySection | undefined;
+
+  source.split(/\r?\n/).forEach((line, lineIndex) => {
+    const lineTokens = tokenizePatchbayLine(line);
+    if (isVirtualExpressionDeclarationTokens(lineTokens)) return;
+
+    let searchStart = 0;
+
+    for (const token of lineTokens) {
+      const column = line.indexOf(token.text, searchStart);
+      if (column === -1) continue;
+
+      searchStart = column + token.text.length;
+
+      const section = parseSectionToken(token);
+
+      if (section) {
+        currentSection = section;
+        continue;
+      }
+
+      if (token.style !== 'variableName') continue;
+      if (!currentSection) continue;
+      if (!aliases.has(getChannelKey(currentSection, token.text))) continue;
+
+      const from = lineStarts[lineIndex] + column;
+      const rangeKey = `${from}:${from + token.text.length}`;
+      if (seenRanges.has(rangeKey)) continue;
+
+      seenRanges.add(rangeKey);
+      ranges.push({
+        from,
+        to: from + token.text.length,
+        className: 'cm-patchbay-virtual-expression-name'
+      });
+    }
+  });
+
+  return ranges;
+}
+
+export const getPatchbayVirtualExpressionKeywordRanges = (
+  source: string
+): PatchbayVirtualExpressionKeywordRange[] =>
+  getPatchbayVirtualExpressionDeclarationTokenRanges(
+    source,
+    2,
+    'cm-patchbay-virtual-expression-keyword'
+  );
+
+export const getPatchbayVirtualExpressionAssignmentRanges = (
+  source: string
+): PatchbayVirtualExpressionAssignmentRange[] =>
+  getPatchbayVirtualExpressionDeclarationTokenRanges(source, 1, 'cm-patchbay-object-assignment');
+
+export function getPatchbayVirtualExpressionOperatorRanges(
+  source: string
+): PatchbayVirtualExpressionOperatorRange[] {
+  const lineStarts = getLineStarts(source);
+  const ranges: PatchbayVirtualExpressionOperatorRange[] = [];
+
+  let currentSection: PatchbaySection | undefined;
+
+  source.split(/\r?\n/).forEach((line, lineIndex) => {
+    const tokens = tokenizePatchbayLine(line);
+    const section = parseSectionToken(tokens[0]);
+
+    if (section) {
+      currentSection = section;
+      return;
+    }
+
+    if (currentSection !== 'audio') return;
+
+    const expressionSpan = getVirtualExpressionOperatorSearchSpan(line, tokens);
+    if (!expressionSpan) return;
+
+    for (let column = expressionSpan.from; column < expressionSpan.to; column += 1) {
+      if (!'+-*/'.includes(line[column])) continue;
+
+      const from = lineStarts[lineIndex] + column;
+      ranges.push({
+        from,
+        to: from + 1,
+        className: 'cm-patchbay-virtual-expression-operator'
+      });
+    }
+  });
+
+  return ranges;
 }
 
 function getPatchbayObjectReferenceTokenRanges(
@@ -537,6 +708,38 @@ function isObjectAliasDeclarationTokens(tokens: PatchbayLineToken[]): boolean {
   );
 }
 
+function isVirtualExpressionDeclarationTokens(tokens: PatchbayLineToken[]): boolean {
+  return (
+    tokens[0]?.style === 'variableName' &&
+    tokens[1]?.text === '=' &&
+    tokens[1]?.style === 'operator' &&
+    virtualAudioProcessorKeywords.has(tokens[2]?.text ?? '') &&
+    tokens[2]?.style === 'keyword'
+  );
+}
+
+function getVirtualExpressionOperatorSearchSpan(
+  line: string,
+  tokens: PatchbayLineToken[]
+): { from: number; to: number } | null {
+  if (isVirtualExpressionDeclarationTokens(tokens)) {
+    const exprIndex = line.indexOf('expr~');
+    return exprIndex === -1 ? null : { from: exprIndex + 'expr~'.length, to: line.length };
+  }
+
+  if (!line.includes('->')) return null;
+  if (tokens[0]?.style !== 'variableName') return null;
+  if (tokens[1]?.style !== 'operator' || tokens[1].text === '->' || tokens[1].text === '=') {
+    return null;
+  }
+
+  const arrowIndex = line.indexOf('->');
+  const sourceIndex = line.indexOf(tokens[0].text);
+  if (sourceIndex === -1 || arrowIndex === -1 || sourceIndex > arrowIndex) return null;
+
+  return { from: sourceIndex + tokens[0].text.length, to: arrowIndex };
+}
+
 function getPatchbayObjectAliasTokenRanges(
   source: string,
   tokenIndex: 0 | 1 | 2 | 3,
@@ -575,6 +778,66 @@ function getPatchbayObjectAliasTokenRanges(
   });
 
   return ranges;
+}
+
+function getPatchbayVirtualExpressionDeclarationTokenRanges(
+  source: string,
+  tokenIndex: 0 | 1 | 2,
+  className: string
+): Array<{ from: number; to: number; className: string }> {
+  const lineStarts = getLineStarts(source);
+  const ranges: Array<{ from: number; to: number; className: string }> = [];
+  let currentSection: PatchbaySection | undefined;
+
+  source.split(/\r?\n/).forEach((line, lineIndex) => {
+    const tokens = tokenizePatchbayLine(line);
+    const section = parseSectionToken(tokens[0]);
+    if (section) {
+      currentSection = section;
+      return;
+    }
+
+    if (currentSection !== 'audio' || !isVirtualExpressionDeclarationTokens(tokens)) {
+      return;
+    }
+
+    const previousToken = tokenIndex > 0 ? tokens[tokenIndex - 1] : undefined;
+    const token = tokens[tokenIndex];
+    const searchStart = previousToken
+      ? line.indexOf(previousToken.text) + previousToken.text.length
+      : 0;
+    const column = line.indexOf(token.text, searchStart);
+    if (column === -1) return;
+
+    const from = lineStarts[lineIndex] + column;
+    ranges.push({
+      from,
+      to: from + token.text.length,
+      className
+    });
+  });
+
+  return ranges;
+}
+
+function getPatchbayVirtualExpressionAliases(source: string): Set<string> {
+  const aliases = new Set<string>();
+  let currentSection: PatchbaySection | undefined;
+
+  for (const line of source.split(/\r?\n/)) {
+    const tokens = tokenizePatchbayLine(line);
+    const section = parseSectionToken(tokens[0]);
+    if (section) {
+      currentSection = section;
+      continue;
+    }
+
+    if (currentSection && isVirtualExpressionDeclarationTokens(tokens)) {
+      aliases.add(getChannelKey(currentSection, tokens[0].text));
+    }
+  }
+
+  return aliases;
 }
 
 function getPatchbayObjectAliases(source: string): Map<string, string> {
@@ -623,6 +886,7 @@ function getPatchbayLocalChannels(source: string): Set<string> {
     if (tokens[0]?.text !== 'chan') continue;
 
     const channel = tokens[1];
+
     if (currentSection && channel?.style === 'variableName') {
       channels.add(getChannelKey(currentSection, channel.text));
     }
@@ -671,11 +935,17 @@ function readPatchbayTokenFromText(text: string): PatchbayLineToken | null {
   const section = text.match(sectionPattern);
   if (section) return { text: section[0], style: 'typeName' };
 
-  const keyword = text.match(/^(chan|obj)\b/);
-  if (keyword) return { text: keyword[0], style: 'keyword' };
+  const keyword = text.match(/^(?:chan|obj)\b|^[A-Za-z0-9_.~/:-]+(?=\s|$)/);
+  if (keyword && virtualAudioProcessorKeywords.has(keyword[0])) {
+    return { text: keyword[0], style: 'keyword' };
+  }
+  if (keyword && /^(?:chan|obj)$/.test(keyword[0])) {
+    return { text: keyword[0], style: 'keyword' };
+  }
 
   if (text.startsWith('->')) return { text: '->', style: 'operator' };
   if (text.startsWith('=')) return { text: '=', style: 'operator' };
+  if (/^[+\-*/]/.test(text)) return { text: text[0], style: 'operator' };
 
   const identifier = text.match(identifierPattern);
   if (identifier) return { text: identifier[0], style: 'variableName' };
@@ -712,7 +982,10 @@ export function patchbaySectionCompletions(context: CompletionContext): Completi
   const sectionResult = getPatchbaySectionCompletion(line.from, linePrefix);
   if (sectionResult) return sectionResult;
 
-  return getPatchbayObjectKeywordCompletion(line.from, linePrefix);
+  return combineCompletionResults(
+    getPatchbayObjectKeywordCompletion(line.from, linePrefix),
+    getPatchbayVirtualAudioProcessorKeywordCompletion(context, line.from, linePrefix)
+  );
 }
 
 export function patchbayContextualCompletions(
@@ -809,6 +1082,7 @@ function getPatchbayObjectIdCompletions(
       const sectionPorts = ports[context.section];
       const inletCount = sectionPorts?.inlets?.length ?? 0;
       const outletCount = sectionPorts?.outlets?.length ?? 0;
+
       const detail =
         inletCount > 0 && outletCount > 0
           ? `${context.section} in/out`
@@ -845,6 +1119,7 @@ function getPatchbayChannelCompletions(
   const channels = new Map<string, Completion>();
   const localChannels = getPatchbayLocalChannelNames(context.source, context.section);
   const objectAliases = getPatchbayObjectAliasesForSection(context.source, context.section);
+
   const roles = data.channels?.[context.section];
 
   for (const channel of localChannels) {
@@ -874,9 +1149,11 @@ function getPatchbayChannelCompletions(
   }
 
   const word = context.word.toLowerCase();
+
   const options = [...channels.values()].filter((option) =>
     option.label.toLowerCase().startsWith(word)
   );
+
   if (options.length === 0) return null;
 
   return {
@@ -916,9 +1193,8 @@ function canCompleteChannelName(beforeWord: string, afterWord: string): boolean 
   return false;
 }
 
-function isObjectAliasCompletion(beforeWord: string): boolean {
-  return /^[^\s=]+\s*=\s*obj\s*$/.test(beforeWord.trim());
-}
+const isObjectAliasCompletion = (beforeWord: string): boolean =>
+  /^[^\s=]+\s*=\s*obj\s*$/.test(beforeWord.trim());
 
 function getEndpointCompletionRole(
   source: string,
@@ -928,10 +1204,12 @@ function getEndpointCompletionRole(
 ): PatchbayEndpointCompletionRole {
   const hasArrowBefore =
     beforeWord.includes('->') || previousRouteLineWaitsForEndpoint(source, lineNumber);
+
   const hasArrowAfter = afterWord.trimStart().startsWith('->');
 
   if (hasArrowBefore && hasArrowAfter) return 'both';
   if (hasArrowBefore) return 'target';
+
   return 'source';
 }
 
@@ -940,6 +1218,7 @@ function previousRouteLineWaitsForEndpoint(source: string, lineNumber: number): 
 
   for (let index = lineNumber - 2; index >= 0; index -= 1) {
     const text = lines[index]?.trim() ?? '';
+
     if (text === '' || text.startsWith('[') || text.startsWith('chan ')) return false;
     if (commentPrefixPattern.test(text)) continue;
 
@@ -998,9 +1277,11 @@ function getPatchbaySectionCompletion(
   if (!match) return null;
 
   const typedText = match[2].toLowerCase();
+
   const options = sectionCompletionOptions.filter((option) =>
     option.label.toLowerCase().startsWith(typedText)
   );
+
   if (options.length === 0) return null;
 
   return {
@@ -1026,6 +1307,62 @@ function getPatchbayObjectKeywordCompletion(
     options: [objCompletionOption],
     validFor: /^obj?$/
   };
+}
+
+function combineCompletionResults(
+  first: CompletionResult | null,
+  second: CompletionResult | null
+): CompletionResult | null {
+  if (!first) return second;
+  if (!second) return first;
+
+  return {
+    from: Math.min(first.from, second.from),
+    options: [...first.options, ...second.options],
+    validFor: first.validFor
+  };
+}
+
+function getPatchbayVirtualAudioProcessorKeywordCompletion(
+  context: CompletionContext,
+  lineFrom: number,
+  linePrefix: string
+): CompletionResult | null {
+  const section = getSectionAtPosition(context.state.doc.toString(), context.pos);
+  if (section !== 'audio') return null;
+
+  const match = linePrefix.match(/(?:^|\s)([A-Za-z0-9_.~]*)$/);
+  if (!match) return null;
+
+  const typedText = match[1];
+  const typedStart = linePrefix.length - typedText.length;
+  const beforeTypedText = linePrefix.slice(0, typedStart);
+  const trimmedBefore = beforeTypedText.trimEnd();
+
+  if (!canStartVirtualAudioProcessorEndpoint(trimmedBefore)) return null;
+
+  const includeExpression = trimmedBefore.endsWith('=');
+
+  const options = virtualAudioProcessorCompletionOptions.filter((option) => {
+    if (option.label === 'expr~' && !includeExpression) return false;
+
+    return option.label.toLowerCase().startsWith(typedText.toLowerCase());
+  });
+
+  if (options.length === 0) return null;
+
+  return {
+    from: lineFrom + typedStart,
+    options,
+    validFor: /^[A-Za-z0-9_.~]*$/
+  };
+}
+
+function canStartVirtualAudioProcessorEndpoint(trimmedBefore: string): boolean {
+  if (trimmedBefore.endsWith('=')) return true;
+  if (trimmedBefore === '' || trimmedBefore.endsWith('->')) return true;
+
+  return false;
 }
 
 function canStartObjectEndpoint(linePrefix: string): boolean {
