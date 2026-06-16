@@ -120,21 +120,7 @@ export type PatchbayCompletionData = {
 
 type PatchbayEndpointCompletionRole = 'source' | 'target' | 'both' | 'any';
 
-const commentLinePattern = /^\s*(?:#|\/\/).*/;
-const commentPrefixPattern = /^\s*(?:#|\/\/)/;
-const identifierPattern = /^[A-Za-z0-9_.~/:-]+/;
-const sectionPattern = /^\[(Message|Audio|Video)\]/i;
-const sectionCompletionOptions: Completion[] = [
-  { label: '[Audio]', type: 'namespace', detail: 'Audio routes' },
-  { label: '[Video]', type: 'namespace', detail: 'Video routes' },
-  { label: '[Message]', type: 'namespace', detail: 'Message routes' }
-];
-const objCompletionOption: Completion = {
-  label: 'obj',
-  type: 'keyword',
-  detail: 'object endpoint'
-};
-const virtualAudioProcessorKeywordLabels = [
+const VIRTUAL_AUDIO_PROCESSOR_NODE_TYPES = [
   'expr~',
   'gain~',
   'lowpass~',
@@ -148,8 +134,36 @@ const virtualAudioProcessorKeywordLabels = [
   'compressor~',
   'delay~'
 ] as const;
-const virtualAudioProcessorKeywords = new Set<string>(virtualAudioProcessorKeywordLabels);
-const virtualAudioProcessorCompletionOptions: Completion[] = virtualAudioProcessorKeywordLabels.map(
+
+const VALID_DIAGNOSTICS = [
+  'unknown-channel',
+  'receiver-as-source',
+  'sender-as-target',
+  'unknown-object',
+  'object-port-unavailable',
+  'object-port-out-of-range'
+];
+
+const commentLinePattern = /^\s*(?:#|\/\/).*/;
+const commentPrefixPattern = /^\s*(?:#|\/\/)/;
+const identifierPattern = /^[A-Za-z0-9_.~/:-]+/;
+const sectionPattern = /^\[(Message|Audio|Video)\]/i;
+
+const sectionCompletionOptions: Completion[] = [
+  { label: '[Audio]', type: 'namespace', detail: 'Audio routes' },
+  { label: '[Video]', type: 'namespace', detail: 'Video routes' },
+  { label: '[Message]', type: 'namespace', detail: 'Message routes' }
+];
+
+const objCompletionOption: Completion = {
+  label: 'obj',
+  type: 'keyword',
+  detail: 'object endpoint'
+};
+
+const virtualAudioProcessorKeywords = new Set<string>(VIRTUAL_AUDIO_PROCESSOR_NODE_TYPES);
+
+const virtualAudioProcessorCompletionOptions: Completion[] = VIRTUAL_AUDIO_PROCESSOR_NODE_TYPES.map(
   (label) => ({
     label,
     type: 'keyword',
@@ -188,16 +202,7 @@ export function getPatchbayDiagnosticRanges(
 
   return diagnostics
     .filter(
-      (diagnostic) =>
-        diagnostic.severity === 'error' &&
-        [
-          'unknown-channel',
-          'receiver-as-source',
-          'sender-as-target',
-          'unknown-object',
-          'object-port-unavailable',
-          'object-port-out-of-range'
-        ].includes(diagnostic.code)
+      (diagnostic) => diagnostic.severity === 'error' && VALID_DIAGNOSTICS.includes(diagnostic.code)
     )
     .flatMap((diagnostic) => {
       if (!diagnostic.name) return [];
@@ -233,6 +238,7 @@ export function getPatchbayChannelLinkRanges(
   const objectAliases = getPatchbayObjectAliases(source);
   const rolesBySection = normalizeRolesBySection(registryChannels);
   const ranges: PatchbayChannelLinkRange[] = [];
+
   let currentSection: PatchbaySection | undefined;
 
   source.split(/\r?\n/).forEach((line, lineIndex) => {
@@ -260,10 +266,12 @@ export function getPatchbayChannelLinkRanges(
       }
 
       if (token.style !== 'variableName') continue;
+
       if (skipObjectId) {
         skipObjectId = false;
         continue;
       }
+
       if (!currentSection) continue;
       if (objectAliases.has(getChannelKey(currentSection, token.text))) continue;
       if (localChannels.has(getChannelKey(currentSection, token.text))) continue;
@@ -276,6 +284,7 @@ export function getPatchbayChannelLinkRanges(
       if (!isSender && !isReceiver) continue;
 
       const role = isSender && isReceiver ? 'both' : isSender ? 'sender' : 'receiver';
+
       const roleClass =
         role === 'both'
           ? 'cm-patchbay-bidirectional-channel'
@@ -284,6 +293,7 @@ export function getPatchbayChannelLinkRanges(
             : 'cm-patchbay-receiver-channel';
 
       const from = lineStarts[lineIndex] + column;
+
       ranges.push({
         from,
         to: from + token.text.length,
@@ -326,14 +336,17 @@ export function getPatchbayLocalChannelRanges(source: string): PatchbayLocalChan
       }
 
       if (token.style !== 'variableName') continue;
+
       if (skipObjectId) {
         skipObjectId = false;
         continue;
       }
+
       if (!currentSection) continue;
       if (!localChannels.has(getChannelKey(currentSection, token.text))) continue;
 
       const from = lineStarts[lineIndex] + column;
+
       ranges.push({
         from,
         to: from + token.text.length,
@@ -446,10 +459,12 @@ export function getPatchbayObjectNameRanges(source: string): PatchbayObjectNameR
       }
 
       if (token.style !== 'variableName') continue;
+
       if (skipObjectId) {
         skipObjectId = false;
         continue;
       }
+
       if (!currentSection) continue;
       if (!objectAliases.has(getChannelKey(currentSection, token.text))) continue;
 
@@ -458,6 +473,7 @@ export function getPatchbayObjectNameRanges(source: string): PatchbayObjectNameR
       if (seenRanges.has(rangeKey)) continue;
 
       seenRanges.add(rangeKey);
+
       ranges.push({
         from,
         to: from + token.text.length,
@@ -473,11 +489,13 @@ export function getPatchbayObjectAliasHintRanges(source: string): PatchbayObject
   const lineStarts = getLineStarts(source);
   const objectAliases = getPatchbayObjectAliases(source);
   const ranges: PatchbayObjectAliasHintRange[] = [];
+
   let currentSection: PatchbaySection | undefined;
 
   source.split(/\r?\n/).forEach((line, lineIndex) => {
     const lineTokens = tokenizePatchbayLine(line);
     const section = parseSectionToken(lineTokens[0]);
+
     if (section) {
       currentSection = section;
       return;
@@ -500,6 +518,7 @@ export function getPatchbayObjectAliasHintRanges(source: string): PatchbayObject
       }
 
       if (token.style !== 'variableName') continue;
+
       if (skipObjectId) {
         skipObjectId = false;
         continue;
@@ -509,6 +528,7 @@ export function getPatchbayObjectAliasHintRanges(source: string): PatchbayObject
       if (!nodeId) continue;
 
       const from = lineStarts[lineIndex] + column;
+
       ranges.push({
         from,
         to: from + token.text.length,
@@ -521,20 +541,21 @@ export function getPatchbayObjectAliasHintRanges(source: string): PatchbayObject
   return ranges;
 }
 
-export function getPatchbayObjectIdRanges(source: string): PatchbayObjectIdRange[] {
-  return getPatchbayObjectReferenceTokenRanges(source, 'id', 'cm-patchbay-object-id');
-}
+export const getPatchbayObjectIdRanges = (source: string): PatchbayObjectIdRange[] =>
+  getPatchbayObjectReferenceTokenRanges(source, 'id', 'cm-patchbay-object-id');
 
 export function getPatchbayVirtualExpressionNameRanges(
   source: string
 ): PatchbayVirtualExpressionNameRange[] {
   const lineStarts = getLineStarts(source);
   const aliases = getPatchbayVirtualExpressionAliases(source);
+
   const ranges = getPatchbayVirtualExpressionDeclarationTokenRanges(
     source,
     0,
     'cm-patchbay-virtual-expression-name'
   );
+
   const seenRanges = new Set(ranges.map((range) => `${range.from}:${range.to}`));
   let currentSection: PatchbaySection | undefined;
 
@@ -551,6 +572,7 @@ export function getPatchbayVirtualExpressionNameRanges(
       searchStart = column + token.text.length;
 
       const section = parseSectionToken(token);
+
       if (section) {
         currentSection = section;
         continue;
@@ -576,36 +598,32 @@ export function getPatchbayVirtualExpressionNameRanges(
   return ranges;
 }
 
-export function getPatchbayVirtualExpressionKeywordRanges(
+export const getPatchbayVirtualExpressionKeywordRanges = (
   source: string
-): PatchbayVirtualExpressionKeywordRange[] {
-  return getPatchbayVirtualExpressionDeclarationTokenRanges(
+): PatchbayVirtualExpressionKeywordRange[] =>
+  getPatchbayVirtualExpressionDeclarationTokenRanges(
     source,
     2,
     'cm-patchbay-virtual-expression-keyword'
   );
-}
 
-export function getPatchbayVirtualExpressionAssignmentRanges(
+export const getPatchbayVirtualExpressionAssignmentRanges = (
   source: string
-): PatchbayVirtualExpressionAssignmentRange[] {
-  return getPatchbayVirtualExpressionDeclarationTokenRanges(
-    source,
-    1,
-    'cm-patchbay-object-assignment'
-  );
-}
+): PatchbayVirtualExpressionAssignmentRange[] =>
+  getPatchbayVirtualExpressionDeclarationTokenRanges(source, 1, 'cm-patchbay-object-assignment');
 
 export function getPatchbayVirtualExpressionOperatorRanges(
   source: string
 ): PatchbayVirtualExpressionOperatorRange[] {
   const lineStarts = getLineStarts(source);
   const ranges: PatchbayVirtualExpressionOperatorRange[] = [];
+
   let currentSection: PatchbaySection | undefined;
 
   source.split(/\r?\n/).forEach((line, lineIndex) => {
     const tokens = tokenizePatchbayLine(line);
     const section = parseSectionToken(tokens[0]);
+
     if (section) {
       currentSection = section;
       return;
@@ -867,6 +885,7 @@ function getPatchbayLocalChannels(source: string): Set<string> {
     if (tokens[0]?.text !== 'chan') continue;
 
     const channel = tokens[1];
+
     if (currentSection && channel?.style === 'variableName') {
       channels.add(getChannelKey(currentSection, channel.text));
     }
