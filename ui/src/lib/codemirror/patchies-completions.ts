@@ -255,6 +255,13 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'noOutput()'
   },
   {
+    label: 'createSurfaceCanvas',
+    type: 'function',
+    detail: '(renderer?: P2D | WEBGL) => p5.Renderer',
+    info: 'Create a p5 canvas sized for the transparent fullscreen surface overlay and enable the Expand action.',
+    apply: 'createSurfaceCanvas()'
+  },
+  {
     label: 'setMouseForwarding',
     type: 'function',
     detail: '(args?: { enabled?: boolean, only?: string[], except?: string[] }) => void',
@@ -547,6 +554,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   noPan: MOUSE_INTERACTION_JS_NODES,
   noWheel: MOUSE_INTERACTION_JS_NODES,
   noInteract: MOUSE_INTERACTION_JS_NODES,
+  createSurfaceCanvas: ['p5'],
   setMouseForwarding: ['surface'],
   noOutput: [
     'p5',

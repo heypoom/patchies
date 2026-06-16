@@ -35,6 +35,14 @@ describe('parseCanvasDimensions', () => {
     ).toBe(false);
   });
 
+  it('keeps preloaded canvas dimensions when code calls createSurfaceCanvas', () => {
+    expect(
+      shouldResetP5CanvasSize(`function setup() {
+			createSurfaceCanvas()
+		}`)
+    ).toBe(false);
+  });
+
   it('clears preloaded canvas dimensions when code no longer calls createCanvas', () => {
     expect(
       shouldResetP5CanvasSize(`function setup() {

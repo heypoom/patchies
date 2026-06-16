@@ -16,10 +16,12 @@ ${esmInstructions}
 - noWheel() - Disable XYFlow canvas wheel zoom when interacting
 - noInteract() - Disable all XYFlow canvas interactions (drag, pan, wheel)
 - noOutput() - Hide video output port (call this when the sketch is self-contained and does not need to feed video to other nodes)
+- createSurfaceCanvas(renderer?) - Create a transparent renderer-output-sized canvas and enable Expand so the p5 sketch can run as a fullscreen surface overlay. Do NOT also call createCanvas() when using this.
 - setPortCount(inlets, outlets) - Set inlet/outlet count (e.g. setPortCount(1, 0) if only an inlet is needed and no message outlet)
 
 **Default behaviors to apply unless there's a reason not to:**
 - Call noOutput() by default unless the sketch is explicitly meant to output video to another node.
+- For fullscreen transparent overlays over Hydra/GLSL/video output, call createSurfaceCanvas() in setup() instead of createCanvas(), and use clear() in draw() so visuals underneath show through.
 - Call noDrag() if the sketch uses mousePressed, mouseDragged, mouseX/mouseY interaction.
 - Call noWheel() if the sketch uses scroll or mouseWheel interaction.
 - Call setPortCount(1, 0) if the sketch only needs to receive messages (inlet) and does not send any output messages.
@@ -31,6 +33,7 @@ ${esmInstructions}
 
 **Canvas size:**
 - Default to 252x164 or similar sizes unless the user specifies a size. Keep canvases small as p5 is CPU-bound and large canvases cause lag.
+- For surface overlays, use createSurfaceCanvas() and do not provide fixed dimensions.
 - NEVER use windowWidth or windowHeight — the node is embedded in a canvas at a small size.
 - Acceptable size range: 200×150 minimum, 1000×1000 maximum. Prefer smaller when possible.
 

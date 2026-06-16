@@ -8,16 +8,20 @@
   import { GLSystem } from '$lib/canvas/GLSystem';
   import ObjectPreviewLayout from '$lib/components/ObjectPreviewLayout.svelte';
   import { shouldShowHandles } from '../../../stores/ui.store';
+  import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
+  import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { createCustomConsole } from '$lib/utils/createCustomConsole';
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
+  import type { ExtraMenuItem } from '$lib/components/object-preview-menu-actions';
   import { parseCanvasDimensions, shouldResetP5CanvasSize } from '$lib/p5/component-helpers';
   import { P5_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { Expand, Shrink } from '@lucide/svelte/icons';
 
   let consoleRef: VirtualConsole | null = $state(null);
 
@@ -36,13 +40,14 @@
       executeCode?: number;
       paused?: boolean;
       showConsole?: boolean;
+      surfaceMode?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
     };
     selected: boolean;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { getNodes, updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const viewport = useViewport();
 
@@ -65,6 +70,7 @@
   let videoOutputEnabled = $state(true);
   let errorMessage = $state<string | null>(null);
   let editorReady = $state(false);
+  let isSurfaceExpanded = $state(false);
 
   let previewContainerWidth = $state(0);
   const code = $derived(data.code || '');
@@ -78,6 +84,19 @@
   let preloadCanvasHeight = $state<number | undefined>(0);
   let clearDimensionsTimeout: ReturnType<typeof setTimeout> | null = null;
   let preservedFrameCanvas: HTMLCanvasElement | null = null;
+
+  const surfaceMenuItems: ExtraMenuItem[] = $derived(
+    data.surfaceMode
+      ? [
+          {
+            label: isSurfaceExpanded ? 'Exit surface' : 'Expand',
+            icon: isSurfaceExpanded ? Shrink : Expand,
+            onclick: () => (isSurfaceExpanded ? exitSurfaceMode() : enterSurfaceMode()),
+            variant: isSurfaceExpanded ? 'danger' : 'default'
+          }
+        ]
+      : []
+  );
 
   function setCanvasDimensionsFromCode(nextCode = code) {
     const dimensions = parseCanvasDimensions(nextCode);
@@ -148,6 +167,87 @@
     preservedFrameCanvas = canvas;
   }
 
+  function getSurfaceCanvasSize() {
+    const [width, height] = glSystem.outputSize;
+
+    return { width, height };
+  }
+
+  function styleSurfaceCanvas(canvas: HTMLCanvasElement) {
+    const { width, height } = getSurfaceCanvasSize();
+
+    if (isSurfaceExpanded) {
+      const scale = Math.max(window.innerWidth / width, window.innerHeight / height);
+      const displayWidth = width * scale;
+      const displayHeight = height * scale;
+
+      Object.assign(canvas.style, {
+        display: 'block',
+        position: 'absolute',
+        left: `${(window.innerWidth - displayWidth) / 2}px`,
+        top: `${(window.innerHeight - displayHeight) / 2}px`,
+        width: `${displayWidth}px`,
+        height: `${displayHeight}px`,
+        margin: '0',
+        objectFit: 'fill',
+        pointerEvents: 'auto'
+      });
+    } else {
+      Object.assign(canvas.style, {
+        display: 'block',
+        position: 'static',
+        left: '',
+        top: '',
+        width: `${width / PREVIEW_SCALE_FACTOR}px`,
+        height: `${height / PREVIEW_SCALE_FACTOR}px`,
+        margin: '0',
+        objectFit: 'fill',
+        pointerEvents: 'auto'
+      });
+    }
+
+    measureWidth(50);
+  }
+
+  function requestSurfaceOverlayMirrorFrame(canvas: HTMLCanvasElement) {
+    if (!isSurfaceExpanded) return;
+
+    glSystem.ipcSystem.requestSurfaceOverlayFrame(canvas);
+  }
+
+  function enterSurfaceMode() {
+    if (isSurfaceExpanded || !data.surfaceMode || !p5Manager) return;
+
+    isSurfaceExpanded = true;
+
+    const overlay = SurfaceOverlay.getInstance();
+    const nodes = getNodes().map((node) => ({ id: node.id, type: node.type }));
+    const presentation = glSystem.ipcSystem.hasConnectedOutputWindow() ? 'secondary' : 'main';
+
+    overlay.activate(nodeId, nodes, () => exitSurfaceMode(), {
+      presentation,
+      content: 'custom'
+    });
+
+    glSystem.ipcSystem.sendSurfaceOverlayState({ active: true });
+    p5Manager.setContainer(overlay.customHost);
+
+    void updateSketch();
+  }
+
+  function exitSurfaceMode() {
+    if (!isSurfaceExpanded) return;
+
+    isSurfaceExpanded = false;
+
+    SurfaceOverlay.getInstance().deactivate(nodeId);
+    glSystem.ipcSystem.sendSurfaceOverlayState(null);
+
+    p5Manager?.setContainer(containerElement);
+
+    void updateSketch();
+  }
+
   // Create custom console for routing output to VirtualConsole
   const customConsole = createCustomConsole(nodeId);
 
@@ -193,6 +293,10 @@
 
   onDestroy(() => {
     clearPreservedFrameCanvas();
+    if (isSurfaceExpanded) {
+      SurfaceOverlay.getInstance().deactivate(nodeId);
+      glSystem.ipcSystem.sendSurfaceOverlayState(null);
+    }
     p5Manager?.destroy();
     glSystem.removeNode(nodeId);
     messageContext?.destroy();
@@ -259,6 +363,7 @@
     enablePan = true;
     enableWheel = true;
     let nextVideoOutputEnabled = true;
+    let nextSurfaceModeEnabled = false;
 
     // Clear previous error state at the start of each run
     // If an error occurs during updateCode, it will be set again
@@ -273,6 +378,8 @@
     if (p5Manager && messageContext) {
       try {
         settingsManager.clearCallbacks();
+        p5Manager.shouldSendBitmap = true;
+
         await p5Manager.updateCode({
           code: nextCode,
           messageContext: {
@@ -305,14 +412,36 @@
           },
           settings: settingsAPI,
           pauseOnMount: onMount && !!data.paused,
+          useViewportMouseScale: !isSurfaceExpanded,
           customConsole,
           onRuntimeError: (error) => handleRuntimeError(error, nextCode),
-          onPreserveFrame: preserveFrameCanvas,
+          onPreserveFrame: isSurfaceExpanded ? undefined : preserveFrameCanvas,
           onFrameReady: () => {
             clearPreservedFrameCanvas();
             setVideoOutputEnabled(nextVideoOutputEnabled);
-          }
+          },
+          getSurfaceCanvasSize,
+          onSurfaceModeChange: (enabled) => {
+            nextSurfaceModeEnabled = enabled;
+
+            if (enabled) {
+              nextVideoOutputEnabled = false;
+              setVideoOutputEnabled(false);
+            }
+          },
+          onSurfaceCanvasCreated: styleSurfaceCanvas,
+          onSurfaceFrame: requestSurfaceOverlayMirrorFrame
         });
+
+        p5Manager.shouldSendBitmap = !nextSurfaceModeEnabled;
+
+        if (data.surfaceMode !== nextSurfaceModeEnabled) {
+          updateNodeData(nodeId, { surfaceMode: nextSurfaceModeEnabled });
+        }
+
+        if (!nextSurfaceModeEnabled && isSurfaceExpanded) {
+          exitSurfaceMode();
+        }
 
         measureWidth(100);
 
@@ -363,6 +492,7 @@
   settingsValues={data.settings ?? {}}
   onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
   onSettingsRevertAll={() => settingsManager.revertAll()}
+  displayExtraMenuItems={surfaceMenuItems}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index (index)}
