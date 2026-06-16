@@ -21,6 +21,11 @@ function draw() {
 
 `createSurfaceCanvas()` creates the p5 canvas at the current renderer output size. The user does not also call `createCanvas()`.
 
+Surface-mode p5 also exposes:
+
+- `hideExitButton()` to hide the overlay exit badge.
+- `setMouseForwarding({ enabled, only, except })` to forward p5 mouse and wheel interaction to mouse-aware render nodes while expanded.
+
 ## Preview And Expand Behavior
 
 - Before expansion, the node shows a scaled preview of the surface-sized p5 canvas.
@@ -39,3 +44,4 @@ If a secondary `/output` window is connected, frames may still be mirrored from 
 
 - `createSurfaceCanvas(WEBGL)` should remain possible by forwarding optional renderer arguments to p5.
 - The existing `p5` object remains the only object type; no `surface.p5` object is introduced.
+- Programmatic `activate()` / `deactivate()` is intentionally not part of the p5 surface-mode API for now because p5 setup and canvas creation timing make it less direct than on the `surface` object.

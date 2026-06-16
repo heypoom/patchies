@@ -17,11 +17,14 @@ ${esmInstructions}
 - noInteract() - Disable all XYFlow canvas interactions (drag, pan, wheel)
 - noOutput() - Hide video output port (call this when the sketch is self-contained and does not need to feed video to other nodes)
 - createSurfaceCanvas(renderer?) - Create a transparent renderer-output-sized canvas and enable Expand so the p5 sketch can run as a fullscreen surface overlay. Do NOT also call createCanvas() when using this.
+- hideExitButton() - In expanded p5 surface mode, hide the "Exit surface" badge.
+- setMouseForwarding({ enabled?: boolean, only?: string[], except?: string[] }) - In expanded p5 surface mode, forward p5 mouse/wheel interaction to render nodes. Use enabled: false or only: [] to disable.
 - setPortCount(inlets, outlets) - Set inlet/outlet count (e.g. setPortCount(1, 0) if only an inlet is needed and no message outlet)
 
 **Default behaviors to apply unless there's a reason not to:**
 - Call noOutput() by default unless the sketch is explicitly meant to output video to another node.
 - For fullscreen transparent overlays over Hydra/GLSL/video output, call createSurfaceCanvas() in setup() instead of createCanvas(), and use clear() in draw() so visuals underneath show through.
+- In p5 surface mode, use setMouseForwarding() when only some render nodes should receive mouse/wheel interaction, and setMouseForwarding({ enabled: false }) when p5 should consume interaction without driving Hydra/GLSL/Three.
 - Call noDrag() if the sketch uses mousePressed, mouseDragged, mouseX/mouseY interaction.
 - Call noWheel() if the sketch uses scroll or mouseWheel interaction.
 - Call setPortCount(1, 0) if the sketch only needs to receive messages (inlet) and does not send any output messages.

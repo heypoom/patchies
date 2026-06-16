@@ -555,7 +555,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   noWheel: MOUSE_INTERACTION_JS_NODES,
   noInteract: MOUSE_INTERACTION_JS_NODES,
   createSurfaceCanvas: ['p5'],
-  setMouseForwarding: ['surface'],
+  setMouseForwarding: ['surface', 'p5'],
   noOutput: [
     'p5',
     'canvas',
@@ -575,7 +575,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   redraw: ['surface'],
   activate: ['surface'],
   deactivate: ['surface'],
-  hideExitButton: ['surface'],
+  hideExitButton: ['surface', 'p5'],
   setAudioPortCount: ['dsp~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom'],
   setSize: ['dom', 'vue'],

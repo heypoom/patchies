@@ -115,6 +115,17 @@ describe('patchies completions', () => {
     );
   });
 
+  it('shows p5 surface mode helper completions without surface activation helpers', () => {
+    const labels = getCompletionLabels('p5', '');
+
+    expect(labels).toEqual(
+      expect.arrayContaining(['createSurfaceCanvas', 'hideExitButton', 'setMouseForwarding'])
+    );
+
+    expect(labels).not.toContain('activate');
+    expect(labels).not.toContain('deactivate');
+  });
+
   it('shows setSize completions for DOM and Vue nodes', () => {
     expect(getCompletionLabels('dom', 'setS')).toContain('setSize');
     expect(getCompletionLabels('vue', 'setS')).toContain('setSize');

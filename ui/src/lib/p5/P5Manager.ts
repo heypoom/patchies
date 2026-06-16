@@ -7,6 +7,7 @@ import type { Viewport } from '@xyflow/svelte';
 import { revokeObjectUrls } from '$lib/vfs';
 import { profiler } from '$lib/profiler';
 import type { SettingsAPI } from '$lib/settings';
+import type { SurfaceMouseForwardingRules } from '$lib/canvas/surfaceMouseForwarding';
 
 interface P5SketchConfig {
   code: string;
@@ -43,9 +44,22 @@ interface P5SketchConfig {
   onPreserveFrame?: (snapshot: P5CanvasSnapshot) => void;
   onFrameReady?: () => void;
   getSurfaceCanvasSize?: () => { width: number; height: number };
+
   onSurfaceModeChange?: (enabled: boolean) => void;
   onSurfaceCanvasCreated?: (canvas: HTMLCanvasElement) => void;
   onSurfaceFrame?: (canvas: HTMLCanvasElement) => void;
+  onSurfacePointer?: (x: number, y: number, buttons: number, type: string) => void;
+
+  onSurfaceWheel?: (event: {
+    x: number;
+    y: number;
+    deltaX: number;
+    deltaY: number;
+    deltaMode: number;
+  }) => void;
+
+  hideExitButton?: () => void;
+  setMouseForwarding?: (rules?: SurfaceMouseForwardingRules) => void;
   useViewportMouseScale?: boolean;
 }
 
@@ -252,11 +266,30 @@ export class P5Manager {
         const isMouseInCanvas = () =>
           p.mouseX >= 0 && p.mouseX <= p.width && p.mouseY >= 0 && p.mouseY <= p.height;
 
+        const dispatchSurfacePointer = (buttons: number, type: string) => {
+          if (!isMouseInCanvas() || p.width <= 0 || p.height <= 0) return;
+
+          config.onSurfacePointer?.(p.mouseX / p.width, p.mouseY / p.height, buttons, type);
+        };
+
+        const dispatchSurfaceWheel = (event: WheelEvent) => {
+          if (!isMouseInCanvas() || p.width <= 0 || p.height <= 0) return;
+
+          config.onSurfaceWheel?.({
+            x: p.mouseX / p.width,
+            y: p.mouseY / p.height,
+            deltaX: event.deltaX,
+            deltaY: event.deltaY,
+            deltaMode: event.deltaMode
+          });
+        };
+
         p.mousePressed = function (event: MouseEvent) {
           adjustMouseForZoom();
 
           if (isMouseInCanvas()) {
             userCode?.mousePressed?.call(p, event);
+            dispatchSurfacePointer(event.buttons || 1, 'down');
           }
         };
 
@@ -265,6 +298,7 @@ export class P5Manager {
 
           if (isMouseInCanvas()) {
             userCode?.mouseReleased?.call(p, event);
+            dispatchSurfacePointer(0, 'up');
           }
         };
 
@@ -281,6 +315,7 @@ export class P5Manager {
 
           if (isMouseInCanvas()) {
             userCode?.mouseMoved?.call(p, event);
+            dispatchSurfacePointer(event.buttons, 'move');
           }
         };
 
@@ -289,6 +324,7 @@ export class P5Manager {
 
           if (isMouseInCanvas()) {
             userCode?.mouseDragged?.call(p, event);
+            dispatchSurfacePointer(event.buttons, 'move');
           }
         };
 
@@ -297,6 +333,7 @@ export class P5Manager {
 
           if (isMouseInCanvas()) {
             userCode?.mouseWheel?.call(p, event);
+            dispatchSurfaceWheel(event);
           }
         };
 
@@ -426,7 +463,9 @@ export class P5Manager {
         noOutput: config.messageContext?.noOutput,
         setHidePorts: config.setHidePorts,
         settings: config.settings,
-        createSurfaceCanvas
+        createSurfaceCanvas,
+        hideExitButton: config.hideExitButton,
+        setMouseForwarding: config.setMouseForwarding
       }
     });
   }

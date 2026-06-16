@@ -2,6 +2,8 @@ import type { Node } from '@xyflow/svelte';
 import { Expand, Shrink } from '@lucide/svelte/icons';
 import { PREVIEW_SCALE_FACTOR } from '$lib/canvas/constants';
 import { SurfaceOverlay } from '$lib/canvas/SurfaceOverlay';
+import { SurfaceMouseForwarder } from '$lib/canvas/SurfaceMouseForwarder';
+import type { SurfaceMouseForwardingRules } from '$lib/canvas/surfaceMouseForwarding';
 import type { GLSystem } from '$lib/canvas/GLSystem';
 import type { ExtraMenuItem } from '$lib/components/object-preview-menu-actions';
 import type { P5Manager } from '$lib/p5/P5Manager';
@@ -19,6 +21,7 @@ type P5SurfaceModeOptions = {
 
 export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
   let isExpanded = $state(false);
+  const mouseForwarder = new SurfaceMouseForwarder(options.getNodes);
 
   const menuItems: ExtraMenuItem[] = $derived(
     options.isSurfaceModeEnabled()
@@ -81,6 +84,37 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
     options.getGlSystem().ipcSystem.requestSurfaceOverlayFrame(canvas);
   }
 
+  function hideExitButton() {
+    SurfaceOverlay.getInstance().hideBadge();
+  }
+
+  function setMouseForwarding(rules?: SurfaceMouseForwardingRules) {
+    mouseForwarder.setForwardingRules(rules);
+
+    if (isExpanded) {
+      mouseForwarder.forceHydraScope('local');
+      mouseForwarder.forceHydraScope('global');
+    }
+  }
+
+  function forwardPointer(x: number, y: number, buttons: number, type: string) {
+    if (!isExpanded) return;
+
+    mouseForwarder.forward(x, y, buttons, type);
+  }
+
+  function forwardWheel(event: {
+    x: number;
+    y: number;
+    deltaX: number;
+    deltaY: number;
+    deltaMode: number;
+  }) {
+    if (!isExpanded) return;
+
+    mouseForwarder.forwardWheel(event);
+  }
+
   function enter() {
     const p5Manager = options.getP5Manager();
 
@@ -101,16 +135,23 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
     glSystem.ipcSystem.sendSurfaceOverlayState({ active: true });
     p5Manager.setContainer(overlay.customHost);
 
+    mouseForwarder.refreshForwardingTargets();
+    mouseForwarder.forceHydraScope('global');
+
     options.updateSketch();
+  }
+
+  function deactivateMouse() {
+    SurfaceOverlay.getInstance().deactivate(options.nodeId);
+    options.getGlSystem().ipcSystem.sendSurfaceOverlayState(null);
+    mouseForwarder.forceHydraScope('local');
   }
 
   function exit() {
     if (!isExpanded) return;
 
     isExpanded = false;
-
-    SurfaceOverlay.getInstance().deactivate(options.nodeId);
-    options.getGlSystem().ipcSystem.sendSurfaceOverlayState(null);
+    deactivateMouse();
 
     options.getP5Manager()?.setContainer(options.getPreviewContainer());
 
@@ -118,10 +159,14 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
   }
 
   function cleanup() {
-    if (!isExpanded) return;
+    const wasExpanded = isExpanded;
+    isExpanded = false;
 
-    SurfaceOverlay.getInstance().deactivate(options.nodeId);
-    options.getGlSystem().ipcSystem.sendSurfaceOverlayState(null);
+    if (wasExpanded) {
+      deactivateMouse();
+    }
+
+    mouseForwarder.dispose();
   }
 
   return {
@@ -134,6 +179,10 @@ export function createP5SurfaceMode(options: P5SurfaceModeOptions) {
     getCanvasSize,
     styleCanvas,
     requestMirrorFrame,
+    hideExitButton,
+    setMouseForwarding,
+    forwardPointer,
+    forwardWheel,
     enter,
     exit,
     cleanup

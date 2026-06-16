@@ -289,6 +289,7 @@
       try {
         settingsManager.clearCallbacks();
         p5Manager.shouldSendBitmap = true;
+        surfaceMode.setMouseForwarding();
 
         await p5Manager.updateCode({
           code: nextCode,
@@ -340,7 +341,11 @@
             }
           },
           onSurfaceCanvasCreated: surfaceMode.styleCanvas,
-          onSurfaceFrame: surfaceMode.requestMirrorFrame
+          onSurfaceFrame: surfaceMode.requestMirrorFrame,
+          onSurfacePointer: surfaceMode.forwardPointer,
+          onSurfaceWheel: surfaceMode.forwardWheel,
+          hideExitButton: surfaceMode.hideExitButton,
+          setMouseForwarding: surfaceMode.setMouseForwarding
         });
 
         p5Manager.shouldSendBitmap = !nextSurfaceModeEnabled;
