@@ -1,7 +1,6 @@
 import type { Edge } from '@xyflow/svelte';
 
 import type { AudioNodeV2 } from './interfaces/audio-nodes';
-import { ExprNode } from './nodes/ExprNode';
 import { PatchbayAudioEndpoint } from './nodes/PatchbayAudioEndpointNode';
 import { AudioRegistry } from '$lib/registry/AudioRegistry';
 
@@ -120,10 +119,6 @@ export class PatchbayAudioIntegration {
   }
 
   private createVirtualAudioNode(nodeId: string, type: string): AudioNodeV2 | null {
-    if (type === 'expr~') {
-      return new ExprNode(nodeId, this.options.getAudioContext());
-    }
-
     const NodeClass = this.registry.get(type);
     if (!NodeClass) return null;
 
