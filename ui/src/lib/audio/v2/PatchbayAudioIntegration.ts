@@ -9,6 +9,7 @@ type PatchbayAudioIntegrationOptions = {
   nodesById: Map<string, AudioNodeV2>;
   removeNodeById: (nodeId: string) => void;
   onEdgesChanged: () => void;
+  createVirtualExpressionNode?: (nodeId: string) => AudioNodeV2;
 };
 
 export class PatchbayAudioIntegration {
@@ -47,10 +48,21 @@ export class PatchbayAudioIntegration {
       return;
     }
 
-    const node = new ExprNode(expression.nodeId, this.options.getAudioContext());
+    const node =
+      this.options.createVirtualExpressionNode?.(expression.nodeId) ??
+      new ExprNode(expression.nodeId, this.options.getAudioContext());
+
     this.options.nodesById.set(node.nodeId, node);
 
     Promise.resolve(node.create?.([null, expression.expression])).finally(() => {
+      const activeNodeId = this.virtualExpressionNodeIds.get(routeId);
+      const activeNode = this.options.nodesById.get(expression.nodeId);
+
+      if (activeNodeId !== expression.nodeId || activeNode !== node) {
+        node.destroy?.();
+        return;
+      }
+
       this.options.onEdgesChanged();
     });
   }

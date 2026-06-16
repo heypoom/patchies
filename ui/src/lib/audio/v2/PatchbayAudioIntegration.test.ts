@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PatchbayAudioIntegration } from './PatchbayAudioIntegration';
 
+import type { AudioNodeV2 } from './interfaces/audio-nodes';
+
 describe('PatchbayAudioIntegration', () => {
   it('stores patchbay audio edges and notifies when they change', () => {
     const onEdgesChanged = vi.fn();
@@ -52,5 +54,51 @@ describe('PatchbayAudioIntegration', () => {
     expect(removeNodeById).toHaveBeenCalledWith(endpointId);
     expect(nodesById.has(endpointId)).toBe(false);
     expect(disconnect).toHaveBeenCalled();
+  });
+
+  it('cleans up a virtual expr node when it is unregistered before async creation finishes', async () => {
+    let finishCreate!: () => void;
+    const destroy = vi.fn();
+    const node: AudioNodeV2 = {
+      nodeId: 'patchbay:audio-expr:inline:gain',
+      audioNode: null,
+      create: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finishCreate = () => {
+              node.audioNode = { disconnect: vi.fn() } as unknown as AudioNode;
+              resolve();
+            };
+          })
+      ),
+      destroy
+    };
+    const nodesById = new Map<string, AudioNodeV2>();
+
+    const integration = new PatchbayAudioIntegration({
+      getAudioContext: () => ({}) as unknown as AudioContext,
+      nodesById,
+      removeNodeById(nodeId) {
+        nodesById.get(nodeId)?.destroy?.();
+        nodesById.delete(nodeId);
+      },
+      onEdgesChanged: vi.fn(),
+      createVirtualExpressionNode: () => node
+    });
+
+    integration.registerVirtualExpression('route-1', {
+      nodeId: node.nodeId,
+      expression: 's * 0.1'
+    });
+    integration.unregisterVirtualExpression('route-1');
+
+    expect(nodesById.has(node.nodeId)).toBe(false);
+    expect(destroy).toHaveBeenCalledTimes(1);
+
+    finishCreate();
+    await Promise.resolve();
+
+    expect(nodesById.has(node.nodeId)).toBe(false);
+    expect(destroy).toHaveBeenCalledTimes(2);
   });
 });

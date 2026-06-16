@@ -393,6 +393,7 @@ export class PatchbayObject implements TextObjectV2 {
       nodeId: expression.id,
       expression: expression.expression
     });
+
     this.activeAudioVirtualExpressions.add(expression.id);
   }
 

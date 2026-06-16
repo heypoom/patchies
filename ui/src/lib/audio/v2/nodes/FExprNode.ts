@@ -4,6 +4,7 @@ import { logger } from '$lib/utils/logger';
 import { handleToPortIndex } from '$lib/utils/get-edge-types';
 import { parseMultiOutletExpressions } from '$lib/utils/expr-parser';
 import { match, P } from 'ts-pattern';
+import { destroyWorkletNode } from './destroy-worklet-node';
 import workletUrl from '../../../audio/fexpr-processor?worker&url';
 
 const MAX_SIGNAL_INLETS = 9;
@@ -74,8 +75,7 @@ export class FExprNode implements AudioNodeV2 {
 
   private async createWorklet(outletCount: number): Promise<void> {
     if (this.audioNode) {
-      this.audioNode.disconnect();
-      this.audioNode = null;
+      this.destroyWorklet();
     }
 
     try {
@@ -188,7 +188,15 @@ export class FExprNode implements AudioNodeV2 {
   }
 
   destroy(): void {
-    this.audioNode?.disconnect();
+    this.destroyWorklet();
+  }
+
+  private destroyWorklet(): void {
+    const worklet = this.audioNode as AudioWorkletNode | null;
+    if (!worklet) return;
+
+    destroyWorkletNode({ label: 'fexpr~', node: worklet });
+    this.audioNode = null;
   }
 
   private static moduleReady = false;

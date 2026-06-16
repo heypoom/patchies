@@ -16,6 +16,14 @@ interface InletValuesMessage {
   values: number[];
 }
 
+interface StopMessage {
+  type: 'stop';
+}
+
+interface StoppedMessage {
+  type: 'stopped';
+}
+
 type ExprDspFn = (
   // s1-s9: samples from each audio input (1-indexed to match $1-$9)
   s1: number,
@@ -55,6 +63,7 @@ type ExprDspFn = (
 class ExpressionProcessor extends AudioWorkletProcessor {
   private evaluators: ExprDspFn[] = [];
   private inletValues: number[] = new Array(10).fill(0);
+  private stopped = false;
 
   // Phasor state: up to 10 independent phasors per expression
   private phasorPhases: number[] = new Array(10).fill(0);
@@ -73,7 +82,9 @@ class ExpressionProcessor extends AudioWorkletProcessor {
     super();
 
     this.port.onmessage = (
-      event: MessageEvent<ExpressionMessage | MultiExpressionMessage | InletValuesMessage>
+      event: MessageEvent<
+        ExpressionMessage | MultiExpressionMessage | InletValuesMessage | StopMessage
+      >
     ) => {
       if (event.data.type === 'set-expression') {
         this.setExpression(event.data.expression);
@@ -81,6 +92,10 @@ class ExpressionProcessor extends AudioWorkletProcessor {
         this.setExpressions(event.data.assignments, event.data.outletExpressions);
       } else if (event.data.type === 'set-inlet-values') {
         this.setInletValues(event.data.values);
+      } else if (event.data.type === 'stop') {
+        this.stopped = true;
+        this.evaluators = [];
+        this.port.postMessage({ type: 'stopped' } satisfies StoppedMessage);
       }
     };
   }
@@ -245,6 +260,8 @@ class ExpressionProcessor extends AudioWorkletProcessor {
   }
 
   process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+    if (this.stopped) return false;
+
     // Keep the expression node alive even without evaluators
     if (this.evaluators.length === 0) {
       // Pass through silence on all outputs
