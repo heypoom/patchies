@@ -55,7 +55,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
     .with('object', () => ({ expr: '', name: '', params: [] }))
     .with('patchbay', () => ({
       code: '[Message]\nchan Clock\nchan Logger\nClock -> Logger',
-      runOnEdit: true,
+      runOnEdit: false,
       allowResize: true
     }))
     .with('js', () => ({ code: DEFAULT_JS_CODE, showConsole: true }))
