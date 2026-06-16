@@ -135,6 +135,11 @@ describe('patchies completions', () => {
     expect(labels).not.toContain('deactivate');
   });
 
+  it('shows p5 surface mode helper completions inside setup', () => {
+    expect(getCompletionLabels('p5', 'function setup() { setM')).toContain('setMouseForwarding');
+    expect(getCompletionLabels('p5', 'function setup() { hide')).toContain('hideExitButton');
+  });
+
   it('shows surface expansion helper completions inside callbacks', () => {
     expect(getCompletionLabels('surface', 'recv(() => { exp')).toContain('expandSurface');
     expect(getCompletionLabels('p5', 'function mousePressed() { col')).toContain('collapseSurface');

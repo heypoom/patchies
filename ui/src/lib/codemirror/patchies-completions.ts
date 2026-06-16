@@ -493,6 +493,14 @@ const topLevelOnlyFunctions = new Set([
   'setVideoCount'
 ]);
 
+const p5FunctionBodySurfaceHelpers = new Set(['hideExitButton', 'setMouseForwarding']);
+
+function isAllowedInFunctionBody(completion: Completion, patchiesContext?: PatchiesContext) {
+  if (!topLevelOnlyFunctions.has(completion.label)) return true;
+
+  return patchiesContext?.nodeType === 'p5' && p5FunctionBodySurfaceHelpers.has(completion.label);
+}
+
 const MOUSE_INTERACTION_JS_NODES = [
   'p5',
   'canvas',
@@ -1082,7 +1090,9 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
 
     // Filter out top-level only functions when inside a function body
     if (insideFunction) {
-      options = options.filter((completion) => !topLevelOnlyFunctions.has(completion.label));
+      options = options.filter((completion) =>
+        isAllowedInFunctionBody(completion, patchiesContext)
+      );
     }
 
     // Filter based on node type
