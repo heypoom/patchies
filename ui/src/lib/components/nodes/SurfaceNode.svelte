@@ -563,9 +563,10 @@
             }
           },
 
-          // Surface activation
-          activate: () => enterFullscreen(),
-          deactivate: () => exitSurface(),
+          // Surface expansion
+          expandSurface: () => enterFullscreen(),
+          collapseSurface: () => exitSurface(),
+
           hideExitButton: () => SurfaceOverlay.getInstance().hideBadge(),
           setMouseForwarding,
 

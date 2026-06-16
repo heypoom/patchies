@@ -107,23 +107,37 @@ describe('patchies completions', () => {
         'setDrawMode',
         'redraw',
         'setMouseForwarding',
-        'activate',
-        'deactivate',
+        'expandSurface',
+        'collapseSurface',
         'hideExitButton',
         'noOutput'
       ])
     );
+
+    expect(labels).not.toContain('activate');
+    expect(labels).not.toContain('deactivate');
   });
 
-  it('shows p5 surface mode helper completions without surface activation helpers', () => {
+  it('shows p5 surface mode helper completions with surface expansion helpers', () => {
     const labels = getCompletionLabels('p5', '');
 
     expect(labels).toEqual(
-      expect.arrayContaining(['createSurfaceCanvas', 'hideExitButton', 'setMouseForwarding'])
+      expect.arrayContaining([
+        'createSurfaceCanvas',
+        'hideExitButton',
+        'setMouseForwarding',
+        'expandSurface',
+        'collapseSurface'
+      ])
     );
 
     expect(labels).not.toContain('activate');
     expect(labels).not.toContain('deactivate');
+  });
+
+  it('shows surface expansion helper completions inside callbacks', () => {
+    expect(getCompletionLabels('surface', 'recv(() => { exp')).toContain('expandSurface');
+    expect(getCompletionLabels('p5', 'function mousePressed() { col')).toContain('collapseSurface');
   });
 
   it('shows setSize completions for DOM and Vue nodes', () => {

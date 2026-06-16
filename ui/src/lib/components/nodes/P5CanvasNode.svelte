@@ -345,7 +345,9 @@
           onSurfacePointer: surfaceMode.forwardPointer,
           onSurfaceWheel: surfaceMode.forwardWheel,
           hideExitButton: surfaceMode.hideExitButton,
-          setMouseForwarding: surfaceMode.setMouseForwarding
+          setMouseForwarding: surfaceMode.setMouseForwarding,
+          expandSurface: surfaceMode.enter,
+          collapseSurface: surfaceMode.exit
         });
 
         p5Manager.shouldSendBitmap = !nextSurfaceModeEnabled;

@@ -283,18 +283,18 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'redraw()'
   },
   {
-    label: 'activate',
+    label: 'expandSurface',
     type: 'function',
     detail: '() => void',
     info: 'Enter fullscreen surface mode.',
-    apply: 'activate()'
+    apply: 'expandSurface()'
   },
   {
-    label: 'deactivate',
+    label: 'collapseSurface',
     type: 'function',
     detail: '() => void',
     info: 'Exit fullscreen surface mode.',
-    apply: 'deactivate()'
+    apply: 'collapseSurface()'
   },
   {
     label: 'hideExitButton',
@@ -472,8 +472,6 @@ const topLevelOnlyFunctions = new Set([
   'onMessage',
   'onVideoFrame',
   'recv',
-  'activate',
-  'deactivate',
   'hideExitButton',
   'htmlCanvas.videoOutput',
   'htmlCanvas.canvasLayer',
@@ -573,8 +571,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   onTouch: ['surface'],
   setDrawMode: ['surface'],
   redraw: ['surface'],
-  activate: ['surface'],
-  deactivate: ['surface'],
+  expandSurface: ['surface', 'p5'],
+  collapseSurface: ['surface', 'p5'],
   hideExitButton: ['surface', 'p5'],
   setAudioPortCount: ['dsp~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom'],

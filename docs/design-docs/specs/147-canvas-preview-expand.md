@@ -37,8 +37,8 @@ The shared behavior should live in a small controller under `src/lib/canvas/`
 rather than duplicating surface-specific code in every node component.
 
 `surface` keeps its custom implementation because it draws directly into the
-overlay canvas and exposes surface-specific JavaScript APIs such as `activate()`,
-`deactivate()`, `onTouch()`, and `hideExitButton()`.
+overlay canvas and exposes surface-specific JavaScript APIs such as `expandSurface()`,
+`collapseSurface()`, `onTouch()`, and `hideExitButton()`.
 
 `ObjectPreviewLayout` should own the shared menu action because it already owns
 background-output pinning and the overflow/context menus used by

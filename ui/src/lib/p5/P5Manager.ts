@@ -60,6 +60,8 @@ interface P5SketchConfig {
 
   hideExitButton?: () => void;
   setMouseForwarding?: (rules?: SurfaceMouseForwardingRules) => void;
+  expandSurface?: () => void;
+  collapseSurface?: () => void;
   useViewportMouseScale?: boolean;
 }
 
@@ -465,7 +467,9 @@ export class P5Manager {
         settings: config.settings,
         createSurfaceCanvas,
         hideExitButton: config.hideExitButton,
-        setMouseForwarding: config.setMouseForwarding
+        setMouseForwarding: config.setMouseForwarding,
+        expandSurface: config.expandSurface,
+        collapseSurface: config.collapseSurface
       }
     });
   }
