@@ -388,6 +388,7 @@ function parseVirtualAudioProcessorDeclaration(
 
   if (type === 'expr~') {
     const validationError = validateVirtualAudioExpression(expression);
+
     if (validationError) {
       diagnostics.push(
         createDiagnostic('error', 'invalid-virtual-expression', line, validationError, {
@@ -567,7 +568,20 @@ function parseVirtualAudioProcessorEndpoint(
   const rawArgs = splitVirtualAudioProcessorArgs(match[2] ?? '');
   const expression = type === 'expr~' ? rawArgs.join(' ').trim() : '';
 
-  if (type === 'expr~') return null;
+  if (type === 'expr~') {
+    if (expression.length === 0) return null;
+
+    const validationError = validateVirtualAudioExpression(expression);
+
+    if (validationError) {
+      diagnostics.push(
+        createDiagnostic('error', 'invalid-virtual-expression', line, validationError, {
+          section,
+          name: rawEndpoint
+        })
+      );
+    }
+  }
 
   const id = `${patchbayIdSeed}:audio-virtual:inline:${hash({
     line,
@@ -620,6 +634,7 @@ function parseAudioShorthandEndpoint(
 
   const expression = `s ${expressionTail}`;
   const validationError = validateVirtualAudioExpression(expression);
+
   if (validationError) {
     diagnostics.push(
       createDiagnostic('error', 'invalid-virtual-expression', line, validationError, {

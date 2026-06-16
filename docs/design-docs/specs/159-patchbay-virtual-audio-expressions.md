@@ -122,16 +122,11 @@ Gain = gain~ 0.5
 Mic -> Gain -> Out
 
 Mic -> lowpass~ 1000 1 -> Out
-```
-
-The prototype should not support full inline `expr~` route segments such as:
-
-```text
 Mic -> expr~ s * 0.5 -> Out
 ```
 
-That form is harder to parse clearly because route splitting sees `->` before expression
-boundaries. Keep it reserved for a later pass.
+Inline `expr~` route segments are supported when the expression body does not contain `->`.
+Expressions that need more complex route-like syntax should use a named declaration.
 
 ## Name Resolution
 
@@ -310,7 +305,6 @@ instead of only logging to the console.
 
 - Should multi-input virtual expressions get explicit inlet-binding syntax later?
 - Should virtual `expr~` support multiple outlets, or should one alias always represent one output for patchbay clarity?
-- Should inline full syntax be allowed later, such as `Feed -> expr~ s * 0.45 -> Reverb`, or should all named/full expressions require aliases?
 - Should additional Audio Effects nodes be added after checking their port and side-effect behavior?
 
 ## Prototype Slice
@@ -326,19 +320,20 @@ Feed -> Gain -> Reverb
 Filter = lowpass~ 1000 1
 Feed -> Filter -> Reverb
 Feed -> gain~ 0.5 -> Out
+Feed -> expr~ s * 0.5 -> Out
 
 Mic * 0.5 -> Out
 ```
 
-Defer full inline `expr~` route segments, explicit multi-input binding, multi-outlet selection, and
-unlisted audio nodes until virtual processor lifecycle cleanup, diagnostics, and route resolution
-are solid.
+Defer explicit multi-input binding, multi-outlet selection, and unlisted audio nodes until virtual
+processor lifecycle cleanup, diagnostics, and route resolution are solid.
 
 Prototype rules:
 
 - Named virtual processors resolve before object aliases and channels in `[Audio]`.
 - Named virtual processors use only the explicit whitelist.
 - Explicit inline virtual processors use only the explicit whitelist.
+- Explicit inline `expr~` route segments are allowed.
 - Simple shorthand normalizes into an anonymous virtual `expr~` between the parsed source and target.
 - Shorthand remains `expr~`-only.
 - The first source signal is available as `s`; multiple incoming sources are mixed by the Web Audio
@@ -354,13 +349,13 @@ Parser/analyzer tests should cover:
 - Explicit `Name = expr~ ...` declarations in `[Audio]`.
 - Explicit `Name = lowpass~ 1000 1` declarations in `[Audio]`.
 - Inline explicit processor route segments such as `Mic -> gain~ 0.5 -> Out`.
+- Inline explicit expression route segments such as `Mic -> expr~ s * 0.5 -> Out`.
 - Diagnostics for unsupported audio nodes such as `convolver~`.
 - Shorthand normalization for `Mic * 0.5 -> Out`.
 - Shorthand with object endpoints where practical, such as `obj mic-1 * 0.5 -> Out`.
 - Diagnostics for virtual processor declarations outside `[Audio]`.
 - Diagnostics for duplicate virtual processor aliases and alias/channel collisions.
 - Diagnostics for invalid expression syntax.
-- Diagnostics for unsupported full inline `expr~` route segments.
 
 Runtime tests should cover:
 

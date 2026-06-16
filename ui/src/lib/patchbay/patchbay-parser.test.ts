@@ -14,6 +14,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.messageRoutes).toEqual([
       { from: 'A', to: 'B' },
       { from: 'B', to: 'C' }
@@ -54,6 +55,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.messageRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -76,6 +78,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.messageRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -98,6 +101,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.messageRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -163,6 +167,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.audioRoutes).toEqual([
       { from: 'Mic', to: 'Bus' },
       { from: 'Bus', to: 'Out' }
@@ -182,6 +187,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.virtualAudioExpressions).toEqual([
       expect.objectContaining({
         expression: 's * 0.5',
@@ -189,6 +195,7 @@ describe('analyzePatchbay', () => {
         line: 3
       })
     ]);
+
     expect(result.audioRoutes).toEqual([
       {
         from: 'Mic',
@@ -223,6 +230,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.virtualAudioExpressions).toEqual([
       expect.objectContaining({
         name: 'Gain',
@@ -231,12 +239,14 @@ describe('analyzePatchbay', () => {
         line: 3
       })
     ]);
+
     expect(result.audioRoutes).toEqual([
       expect.objectContaining({
         from: 'Mic',
         to: 'Gain',
         toVirtualExpression: expect.objectContaining({ name: 'Gain' })
       }),
+
       expect.objectContaining({
         from: 'Gain',
         to: 'Out',
@@ -259,6 +269,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.virtualAudioExpressions).toEqual([
       expect.objectContaining({
         name: 'Filter',
@@ -269,12 +280,14 @@ describe('analyzePatchbay', () => {
         line: 3
       })
     ]);
+
     expect(result.audioRoutes).toEqual([
       expect.objectContaining({
         from: 'Mic',
         to: 'Filter',
         toVirtualExpression: expect.objectContaining({ name: 'Filter', type: 'lowpass~' })
       }),
+
       expect.objectContaining({
         from: 'Filter',
         to: 'Out',
@@ -296,6 +309,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.virtualAudioExpressions).toEqual([
       expect.objectContaining({
         type: 'gain~',
@@ -305,16 +319,58 @@ describe('analyzePatchbay', () => {
         line: 3
       })
     ]);
+
     expect(result.audioRoutes).toEqual([
       expect.objectContaining({
         from: 'Mic',
         to: expect.stringContaining('gain~'),
         toVirtualExpression: expect.objectContaining({ type: 'gain~', anonymous: true })
       }),
+
       expect.objectContaining({
         from: expect.stringContaining('gain~'),
         to: 'Out',
         fromVirtualExpression: expect.objectContaining({ type: 'gain~', anonymous: true })
+      })
+    ]);
+  });
+
+  it('resolves inline expr route segments as anonymous virtual audio nodes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Osc -> expr~ s * 0.2 -> Out
+      `,
+      {
+        audioSources: new Set(['Osc']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        type: 'expr~',
+        rawArgs: ['s', '*', '0.2'],
+        params: [null, 's * 0.2'],
+        expression: 's * 0.2',
+        anonymous: true,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Osc',
+        to: expect.stringContaining('expr~'),
+        toVirtualExpression: expect.objectContaining({ type: 'expr~', anonymous: true })
+      }),
+
+      expect.objectContaining({
+        from: expect.stringContaining('expr~'),
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ type: 'expr~', anonymous: true })
       })
     ]);
   });
@@ -333,6 +389,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.audioRoutes).toEqual([]);
+
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: 'error',
@@ -357,6 +414,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.audioRoutes).toEqual([]);
+
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         severity: 'error',
@@ -382,6 +440,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.audioRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -406,6 +465,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.audioRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -430,6 +490,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.audioRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -454,6 +515,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       { from: 'Camera', to: 'Mix' },
       { from: 'Mix', to: 'Screen' }
@@ -473,6 +535,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.videoRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -497,6 +560,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.videoRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -543,6 +607,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       {
         from: 'Camera',
@@ -555,6 +620,7 @@ describe('analyzePatchbay', () => {
         }
       }
     ]);
+
     expect(result.messageRoutes).toEqual([
       {
         from: 'obj slider-1',
@@ -591,6 +657,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.audioRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -632,6 +699,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       {
         from: 'Src',
@@ -681,6 +749,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.messageRoutes).toEqual([
       {
         from: 'Src',
@@ -767,6 +836,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       {
         from: 'Src',
@@ -817,6 +887,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.messageRoutes).toEqual([
       {
         from: 'Src',
@@ -854,6 +925,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.messageRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
@@ -891,6 +963,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       {
         from: 'Src',
@@ -970,6 +1043,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
+
     expect(result.videoRoutes).toEqual([
       {
         from: 'Src',
@@ -999,6 +1073,7 @@ describe('analyzePatchbay', () => {
     );
 
     expect(result.messageRoutes).toEqual([]);
+
     expect(result.diagnostics).toMatchObject([
       {
         severity: 'error',
