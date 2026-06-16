@@ -12,6 +12,7 @@ import { HighshelfNode } from '$lib/audio/v2/nodes/HighshelfNode';
 import { LowpassNode } from '$lib/audio/v2/nodes/LowpassNode';
 import { LowshelfNode } from '$lib/audio/v2/nodes/LowshelfNode';
 import { NotchNode } from '$lib/audio/v2/nodes/NotchNode';
+import { OscNode } from '$lib/audio/v2/nodes/OscNode';
 import { PeakingNode } from '$lib/audio/v2/nodes/PeakingNode';
 import type { ObjectInlet } from '$lib/objects/v2/object-metadata';
 
@@ -174,6 +175,7 @@ const AUDIO_EXPRESSION_PARAMETER_NAMES = [
 ];
 const VIRTUAL_AUDIO_PROCESSOR_TYPES = new Set([
   'expr~',
+  'osc~',
   'gain~',
   'lowpass~',
   'highpass~',
@@ -212,6 +214,7 @@ const VIRTUAL_AUDIO_PROCESSOR_INLETS = new Map<string, ObjectInlet[]>(
     LowpassNode,
     LowshelfNode,
     NotchNode,
+    OscNode,
     PeakingNode
   ].map((node) => [node.type, node.inlets ?? []])
 );

@@ -122,6 +122,7 @@ type PatchbayEndpointCompletionRole = 'source' | 'target' | 'both' | 'any';
 
 const VIRTUAL_AUDIO_PROCESSOR_NODE_TYPES = [
   'expr~',
+  'osc~',
   'gain~',
   'lowpass~',
   'highpass~',
@@ -981,8 +982,8 @@ export function patchbaySectionCompletions(context: CompletionContext): Completi
   const sectionResult = getPatchbaySectionCompletion(line.from, linePrefix);
   if (sectionResult) return sectionResult;
 
-  return (
-    getPatchbayObjectKeywordCompletion(line.from, linePrefix) ??
+  return combineCompletionResults(
+    getPatchbayObjectKeywordCompletion(line.from, linePrefix),
     getPatchbayVirtualAudioProcessorKeywordCompletion(context, line.from, linePrefix)
   );
 }
@@ -1305,6 +1306,20 @@ function getPatchbayObjectKeywordCompletion(
     from: lineFrom + typedStart,
     options: [objCompletionOption],
     validFor: /^obj?$/
+  };
+}
+
+function combineCompletionResults(
+  first: CompletionResult | null,
+  second: CompletionResult | null
+): CompletionResult | null {
+  if (!first) return second;
+  if (!second) return first;
+
+  return {
+    from: Math.min(first.from, second.from),
+    options: [...first.options, ...second.options],
+    validFor: first.validFor
   };
 }
 

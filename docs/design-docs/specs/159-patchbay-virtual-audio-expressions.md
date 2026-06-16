@@ -1,9 +1,10 @@
-# 159. Patchbay Virtual Audio Processors
+# 159. Patchbay Virtual Audio Nodes
 
 ## Status
 
 Prototype extension for the text patchbay object. The initial slice supported virtual `expr~`;
-this revision broadens the same mechanism to a small explicit whitelist of virtual audio effects.
+this revision broadens the same mechanism to a small explicit whitelist of virtual audio sources
+and effects.
 
 ## Problem
 
@@ -19,7 +20,7 @@ possible to create simple virtual audio processors directly inside the `[Audio]`
 
 ## Goals
 
-- Add compact virtual audio processors to audio patchbay routes.
+- Add compact virtual audio nodes to audio patchbay routes.
 - Keep the syntax parallel with object aliases, using `Name = <audio-node> ...`.
 - Keep shorthand math as `expr~` sugar only.
 - Reuse existing audio node creation, object parameter parsing, and connection semantics where possible.
@@ -35,12 +36,12 @@ possible to create simple virtual audio processors directly inside the `[Audio]`
 - Do not require users to declare simple inline expressions before use.
 - Do not support multi-input binding syntax in the prototype.
 - Do not support selecting multiple outlets from a virtual processor in the prototype.
-- Do not support source, destination, channel, resource-loading, or UI-managed audio nodes as virtual processors.
+- Do not support destination, channel, resource-loading, or UI-managed audio nodes as virtual nodes.
 - Do not infer support from every object in the Audio Effects pack; support only the explicit whitelist below.
 
 ## DSL
 
-Virtual audio processors are declared with an alias name, `=`, a supported audio node type, and
+Virtual audio nodes are declared with an alias name, `=`, a supported audio node type, and
 creation arguments:
 
 ```text
@@ -51,15 +52,19 @@ Feed -> Gain -> Reverb
 
 Filter = lowpass~ 1000 1
 Mic -> Filter -> Out
+
+Osc = osc~ 440 sine 0
+Osc -> Out
 ```
 
-The alias resolves as a virtual audio processor, not as a channel. In a route chain, the signal
-flows through the hidden processor and then continues to the next endpoint.
+The alias resolves as a virtual audio node, not as a channel. In a route chain, the signal flows
+through the hidden node and then continues to the next endpoint.
 
 The prototype supports this explicit whitelist only:
 
 ```text
 expr~
+osc~
 gain~
 lowpass~
 highpass~
@@ -75,7 +80,7 @@ delay~
 
 Other audio nodes, including `mic~`, `out~`, `send~`, `recv~`, `soundfile~`, `sampler~`,
 `csound~`, `convolver~`, and `waveshaper~`, should be rejected as unsupported virtual audio
-processors.
+nodes.
 
 ## Expression Inputs
 
@@ -114,7 +119,7 @@ Feed / 2 -> Out
 Feed + 0.1 -> Out
 ```
 
-Shorthand applies only to `expr~`. Generic audio processors require either a named declaration or
+Shorthand applies only to `expr~`. Generic audio nodes require either a named declaration or
 an explicit route segment:
 
 ```text
@@ -123,6 +128,7 @@ Mic -> Gain -> Out
 
 Mic -> lowpass~ 1000 1 -> Out
 Mic -> expr~ s * 0.5 -> Out
+osc~ 440 sine 0 -> Out
 ```
 
 Inline `expr~` route segments are supported when the expression body does not contain `->`.
@@ -144,7 +150,20 @@ Virtual audio processor declarations are only active syntax in `[Audio]`. In `[M
 
 ## Runtime Semantics
 
-Each virtual processor compiles to a hidden audio node equivalent to a configured audio object.
+Each virtual audio node compiles to a hidden audio node equivalent to a configured audio object.
+
+For:
+
+```text
+Osc = osc~ 440 sine 0
+Osc -> Out
+```
+
+the runtime behaves conceptually like:
+
+```text
+osc~ 440 sine 0 -> send~ Out
+```
 
 For:
 
@@ -172,10 +191,10 @@ the runtime behaves conceptually like:
 recv~ Feed -> lowpass~ 1000 1 -> send~ Reverb
 ```
 
-Virtual processor params should use the same object argument parser as `ObjectNode`, so creation
+Virtual audio node params should use the same object argument parser as `ObjectNode`, so creation
 args match visible object behavior.
 
-The virtual processor should not appear as a visible canvas node. It should be owned by the
+The virtual audio node should not appear as a visible canvas node. It should be owned by the
 patchbay object and cleaned up when the patchbay code changes or the patchbay node is destroyed.
 
 Generated virtual processor ids should be stable across applies:
@@ -233,8 +252,9 @@ route behavior.
 The parser needs to recognize:
 
 - `Name = expr~ <expression>` declarations in `[Audio]`.
-- `Name = <whitelisted-audio-effect> <args...>` declarations in `[Audio]`.
-- Inline explicit whitelisted processor route segments such as `Mic -> lowpass~ 1000 1 -> Out`.
+- `Name = <whitelisted-audio-node> <args...>` declarations in `[Audio]`.
+- Inline explicit whitelisted node route segments such as `Mic -> lowpass~ 1000 1 -> Out`.
+- Inline explicit whitelisted source route segments such as `osc~ 440 sine 0 -> Out`.
 - Shorthand expressions of the form `<source> <operator/expression> -> <target>`.
 
 Route splitting must avoid treating expression content as endpoints too early. Shorthand parsing
@@ -270,8 +290,8 @@ create the hidden node and register both surrounding edges.
 The editor should distinguish:
 
 - `expr~` as an audio processor keyword.
-- Whitelisted virtual processor names as audio processor keywords.
-- Virtual processor alias names as a distinct audio symbol.
+- Whitelisted virtual audio node names as audio keywords.
+- Virtual audio node alias names as a distinct audio symbol.
 - Expression bodies using the same visual treatment as existing `expr~` expressions when practical.
 - Invalid uses of virtual processor syntax outside `[Audio]`.
 
@@ -282,9 +302,9 @@ hints. For example, hovering `* 0.45` could explain that it is treated as `expr~
 
 The parser or runtime should report errors for:
 
-- Virtual audio processor declarations outside `[Audio]`.
-- Unsupported virtual audio processor declarations or route segments.
-- Duplicate virtual processor aliases.
+- Virtual audio node declarations outside `[Audio]`.
+- Unsupported virtual audio node declarations or route segments.
+- Duplicate virtual audio node aliases.
 - Processor aliases that collide with `chan` declarations or object aliases.
 - Invalid `expr~` expressions.
 - Shorthand expressions that cannot be normalized safely.
@@ -309,7 +329,7 @@ instead of only logging to the console.
 
 ## Prototype Slice
 
-Implement explicit virtual processors and simple `expr~` shorthand:
+Implement explicit virtual audio nodes and simple `expr~` shorthand:
 
 ```text
 [Audio]
@@ -317,8 +337,12 @@ Implement explicit virtual processors and simple `expr~` shorthand:
 Gain = expr~ s * 0.45
 Feed -> Gain -> Reverb
 
+Osc = osc~ 440 sine 0
+Osc -> Out
+
 Filter = lowpass~ 1000 1
 Feed -> Filter -> Reverb
+osc~ 220 square 0 -> gain~ 0.5 -> Out
 Feed -> gain~ 0.5 -> Out
 Feed -> expr~ s * 0.5 -> Out
 
@@ -326,19 +350,19 @@ Mic * 0.5 -> Out
 ```
 
 Defer explicit multi-input binding, multi-outlet selection, and unlisted audio nodes until virtual
-processor lifecycle cleanup, diagnostics, and route resolution are solid.
+node lifecycle cleanup, diagnostics, and route resolution are solid.
 
 Prototype rules:
 
-- Named virtual processors resolve before object aliases and channels in `[Audio]`.
-- Named virtual processors use only the explicit whitelist.
-- Explicit inline virtual processors use only the explicit whitelist.
+- Named virtual audio nodes resolve before object aliases and channels in `[Audio]`.
+- Named virtual audio nodes use only the explicit whitelist.
+- Explicit inline virtual audio nodes use only the explicit whitelist.
 - Explicit inline `expr~` route segments are allowed.
 - Simple shorthand normalizes into an anonymous virtual `expr~` between the parsed source and target.
 - Shorthand remains `expr~`-only.
 - The first source signal is available as `s`; multiple incoming sources are mixed by the Web Audio
   connection model and still appear as `s`.
-- Virtual processors expose one outlet in the patchbay prototype.
+- Virtual audio nodes expose one outlet in the patchbay prototype.
 - Hidden virtual audio nodes are owned by the patchbay node and destroyed when removed from the
   applied patchbay program or when the patchbay node is destroyed.
 
@@ -348,7 +372,9 @@ Parser/analyzer tests should cover:
 
 - Explicit `Name = expr~ ...` declarations in `[Audio]`.
 - Explicit `Name = lowpass~ 1000 1` declarations in `[Audio]`.
+- Explicit `Name = osc~ 440 sine 0` declarations in `[Audio]`.
 - Inline explicit processor route segments such as `Mic -> gain~ 0.5 -> Out`.
+- Inline explicit source route segments such as `osc~ 440 sine 0 -> Out`.
 - Inline explicit expression route segments such as `Mic -> expr~ s * 0.5 -> Out`.
 - Diagnostics for unsupported audio nodes such as `convolver~`.
 - Shorthand normalization for `Mic * 0.5 -> Out`.
@@ -360,7 +386,7 @@ Parser/analyzer tests should cover:
 Runtime tests should cover:
 
 - A channel-to-channel shorthand expression registers a hidden `expr~` node and two audio edges.
-- A named virtual processor registers a hidden whitelisted audio node with parsed params.
+- A named virtual audio node registers a hidden whitelisted audio node with parsed params.
 - A named virtual expression reuses its stable hidden node id across expression updates.
 - Removed virtual processors unregister edges and destroy hidden nodes.
 - Last valid routes stay active when edited code has virtual processor diagnostics.

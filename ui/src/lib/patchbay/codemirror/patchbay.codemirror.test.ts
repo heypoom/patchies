@@ -593,7 +593,9 @@ describe('patchbaySectionCompletions', () => {
 
   it('suggests audio processor keywords in audio declarations and route endpoints', () => {
     expect(getPatchbayCompletionLabels('[Audio]\nGain = e')).toEqual(['expr~']);
+    expect(getPatchbayCompletionLabels('[Audio]\nOsc = o')).toEqual(['obj', 'osc~']);
     expect(getPatchbayCompletionLabels('[Audio]\nGain = g')).toEqual(['gain~']);
+    expect(getPatchbayCompletionLabels('[Audio]\no')).toEqual(['obj', 'osc~']);
     expect(getPatchbayCompletionLabels('[Audio]\nMic -> lo')).toEqual(['lowpass~', 'lowshelf~']);
     expect(getPatchbayCompletionLabels('[Audio]\nMic -> e')).toEqual([]);
 

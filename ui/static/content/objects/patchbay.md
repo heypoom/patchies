@@ -139,18 +139,21 @@ Mic -> Reverb -> Out
 
 Audio sent to `Mic` will pass through the virtual `Reverb` channel and arrive at `Out`.
 
-### Virtual Audio Processors
+### Virtual Audio Nodes
 
-In `[Audio]`, patchbay can create small hidden audio processors between an audio source and
-destination. The examples below assume `Osc` is an object alias and `Out` is an audio receiver
-channel:
+In `[Audio]`, patchbay can create small hidden audio nodes. The examples below use `Out` as an
+audio receiver channel.
+
+Use a named virtual source when you want patchbay to own the oscillator:
 
 ```text
 [Audio]
-Osc = obj object-30
+Osc = osc~ 440 sine 0
+
+Osc -> Out
 ```
 
-Use a named virtual processor when you want to reuse the same processor in multiple routes:
+You can still alias a visible object with `obj` and route it through named virtual processors:
 
 ```text
 [Audio]
@@ -163,12 +166,13 @@ Expr = expr~ s * 0.06
 Osc -> Expr -> Out
 ```
 
-Use an inline processor when the processor only belongs to one route:
+Use inline nodes when they only belong to one route:
 
 ```text
 [Audio]
 Osc = obj object-30
 
+osc~ 440 sine 0 -> Out
 Osc -> gain~ 0.06 -> Out
 Osc -> expr~ s * 0.06 -> Out
 Osc -> lowpass~ 80 1 -> Out

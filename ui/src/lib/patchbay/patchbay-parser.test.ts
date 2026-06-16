@@ -375,6 +375,72 @@ describe('analyzePatchbay', () => {
     ]);
   });
 
+  it('resolves whitelisted audio source aliases as virtual audio nodes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Osc = osc~ 440 sine 0
+      Osc -> Out
+      `,
+      {
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        name: 'Osc',
+        type: 'osc~',
+        rawArgs: ['440', 'sine', '0'],
+        params: [440, 'sine', 0],
+        anonymous: false,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Osc',
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ name: 'Osc', type: 'osc~' })
+      })
+    ]);
+  });
+
+  it('resolves inline whitelisted audio source route segments as anonymous virtual audio nodes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      osc~ 440 sine 0 -> Out
+      `,
+      {
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        type: 'osc~',
+        rawArgs: ['440', 'sine', '0'],
+        params: [440, 'sine', 0],
+        anonymous: true,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: expect.stringContaining('osc~'),
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ type: 'osc~', anonymous: true })
+      })
+    ]);
+  });
+
   it('rejects unsupported audio nodes as virtual processors', () => {
     const result = analyzePatchbay(
       `

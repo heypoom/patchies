@@ -67,10 +67,11 @@ export class OscNode implements AudioNodeV2 {
   }
 
   create(params: unknown[]): void {
-    const [freq, type] = params as [number, OscillatorType];
+    const [freq, type, detune] = params as [number, OscillatorType, number];
 
     this.audioNode.frequency.value = freq ?? 440;
     this.audioNode.type = type ?? 'sine';
+    this.audioNode.detune.value = detune ?? 0;
     this.audioNode.start(0);
   }
 
