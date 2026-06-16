@@ -1,6 +1,7 @@
 import { hash } from 'ohash';
 import { Parser } from 'expr-eval';
 import { parseMultiOutletExpressions } from '$lib/utils/expr-parser';
+import { transformFExprExpression } from '$lib/audio/fexpr-transform';
 import { isUnmodifiableType, parseStringParamByType } from '$lib/objects/parse-object-param';
 import { AllpassNode } from '$lib/audio/v2/nodes/AllpassNode';
 import { BandpassNode } from '$lib/audio/v2/nodes/BandpassNode';
@@ -173,8 +174,17 @@ const AUDIO_EXPRESSION_PARAMETER_NAMES = [
   'inputs',
   ...Array.from({ length: 9 }, (_, index) => `x${index + 1}`)
 ];
+const FILTER_AUDIO_EXPRESSION_PARAMETER_NAMES = [
+  ...Array.from({ length: 9 }, (_, index) => `x${index + 1}`),
+  ...Array.from({ length: 9 }, (_, index) => `s${index + 1}`),
+  ...Array.from({ length: 9 }, (_, index) => `y${index + 1}`),
+  'i',
+  't',
+  ...Array.from({ length: 9 }, (_, index) => `c${index + 1}`)
+];
 const VIRTUAL_AUDIO_PROCESSOR_TYPES = new Set([
   'expr~',
+  'fexpr~',
   'osc~',
   'gain~',
   'lowpass~',
@@ -332,7 +342,7 @@ function parseVirtualAudioProcessorDeclaration(
   const name = match[1].trim();
   const type = match[2].trim();
   const rawArgs = splitVirtualAudioProcessorArgs(match[3] ?? '');
-  const expression = type === 'expr~' ? rawArgs.join(' ').trim() : '';
+  const expression = isVirtualAudioExpressionType(type) ? rawArgs.join(' ').trim() : '';
 
   if (section !== 'audio') {
     diagnostics.push(
@@ -374,13 +384,13 @@ function parseVirtualAudioProcessorDeclaration(
   }
 
   if (expression.length === 0) {
-    if (type === 'expr~') {
+    if (isVirtualAudioExpressionType(type)) {
       diagnostics.push(
         createDiagnostic(
           'error',
           'invalid-virtual-expression',
           line,
-          `Virtual expression "${name}" needs an expr~ body.`,
+          `Virtual expression "${name}" needs a ${type} body.`,
           { section, name }
         )
       );
@@ -389,8 +399,8 @@ function parseVirtualAudioProcessorDeclaration(
     }
   }
 
-  if (type === 'expr~') {
-    const validationError = validateVirtualAudioExpression(expression);
+  if (isVirtualAudioExpressionType(type)) {
+    const validationError = validateVirtualAudioExpression(type, expression);
 
     if (validationError) {
       diagnostics.push(
@@ -430,8 +440,12 @@ function isKnownUnsupportedAudioProcessorType(type: string): boolean {
   return KNOWN_UNSUPPORTED_AUDIO_PROCESSOR_TYPES.has(type);
 }
 
+function isVirtualAudioExpressionType(type: string): type is 'expr~' | 'fexpr~' {
+  return type === 'expr~' || type === 'fexpr~';
+}
+
 function parseVirtualAudioProcessorParams(type: string, rawArgs: string[]): unknown[] {
-  if (type === 'expr~') return [null, rawArgs.join(' ')];
+  if (isVirtualAudioExpressionType(type)) return [null, rawArgs.join(' ')];
 
   const inlets = VIRTUAL_AUDIO_PROCESSOR_INLETS.get(type);
   if (!inlets) return rawArgs;
@@ -569,12 +583,12 @@ function parseVirtualAudioProcessorEndpoint(
   }
 
   const rawArgs = splitVirtualAudioProcessorArgs(match[2] ?? '');
-  const expression = type === 'expr~' ? rawArgs.join(' ').trim() : '';
+  const expression = isVirtualAudioExpressionType(type) ? rawArgs.join(' ').trim() : '';
 
-  if (type === 'expr~') {
+  if (isVirtualAudioExpressionType(type)) {
     if (expression.length === 0) return null;
 
-    const validationError = validateVirtualAudioExpression(expression);
+    const validationError = validateVirtualAudioExpression(type, expression);
 
     if (validationError) {
       diagnostics.push(
@@ -627,6 +641,7 @@ function parseAudioShorthandEndpoint(
   if (!/\s/.test(rawEndpoint)) return null;
   if (rawEndpoint.startsWith('obj ')) return null;
   if (rawEndpoint.startsWith('expr~ ')) return null;
+  if (rawEndpoint.startsWith('fexpr~ ')) return null;
 
   const match = rawEndpoint.match(/^([A-Za-z0-9_.~/:-]+)\s+(.+)$/);
   if (!match) return null;
@@ -636,7 +651,7 @@ function parseAudioShorthandEndpoint(
   if (!IDENTIFIER_PATTERN.test(source) || expressionTail.length === 0) return null;
 
   const expression = `s ${expressionTail}`;
-  const validationError = validateVirtualAudioExpression(expression);
+  const validationError = validateVirtualAudioExpression('expr~', expression);
 
   if (validationError) {
     diagnostics.push(
@@ -677,11 +692,14 @@ function parseAudioShorthandEndpoint(
   ];
 }
 
-function validateVirtualAudioExpression(expression: string): string | null {
+function validateVirtualAudioExpression(
+  type: 'expr~' | 'fexpr~',
+  expression: string
+): string | null {
   const parsed = parseMultiOutletExpressions(expression);
 
   if (parsed.outletExpressions.length > 1) {
-    return 'Virtual expr~ expressions in patchbay can only produce one outlet.';
+    return `Virtual ${type} expressions in patchbay can only produce one outlet.`;
   }
 
   try {
@@ -703,15 +721,22 @@ function validateVirtualAudioExpression(expression: string): string | null {
       }
     });
 
-    const renamedExpression = expression.replace(/\n/g, ';').replace(/\$(\d+)/g, 'x$1');
+    const renamedExpression =
+      type === 'fexpr~'
+        ? transformFExprExpression(expression.replace(/\n/g, ' '))
+        : expression.replace(/\n/g, ';').replace(/\$(\d+)/g, 'x$1');
+    const parameterNames =
+      type === 'fexpr~'
+        ? FILTER_AUDIO_EXPRESSION_PARAMETER_NAMES
+        : AUDIO_EXPRESSION_PARAMETER_NAMES;
     const parsedExpression = parser.parse(renamedExpression);
-    parsedExpression.toJSFunction(AUDIO_EXPRESSION_PARAMETER_NAMES.join(','));
+    parsedExpression.toJSFunction(parameterNames.join(','));
 
     return null;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
-    return `Invalid expr~ expression: ${message}`;
+    return `Invalid ${type} expression: ${message}`;
   }
 }
 

@@ -164,6 +164,9 @@ Osc -> Gain -> Out
 
 Expr = expr~ s * 0.06
 Osc -> Expr -> Out
+
+Smooth = fexpr~ x1 * 0.5 + x1[-1] * 0.5
+Osc -> Smooth -> Out
 ```
 
 Use inline nodes when they only belong to one route:
@@ -175,6 +178,7 @@ Osc = obj object-30
 osc~ 440 sine 0 -> Out
 Osc -> gain~ 0.06 -> Out
 Osc -> expr~ s * 0.06 -> Out
+Osc -> fexpr~ x1 * 0.5 + x1[-1] * 0.5 -> Out
 Osc -> lowpass~ 80 1 -> Out
 ```
 

@@ -122,6 +122,7 @@ type PatchbayEndpointCompletionRole = 'source' | 'target' | 'both' | 'any';
 
 const VIRTUAL_AUDIO_PROCESSOR_NODE_TYPES = [
   'expr~',
+  'fexpr~',
   'osc~',
   'gain~',
   'lowpass~',
@@ -168,7 +169,8 @@ const virtualAudioProcessorCompletionOptions: Completion[] = VIRTUAL_AUDIO_PROCE
   (label) => ({
     label,
     type: 'keyword',
-    detail: label === 'expr~' ? 'virtual expression' : 'virtual audio processor'
+    detail:
+      label === 'expr~' || label === 'fexpr~' ? 'virtual expression' : 'virtual audio processor'
   })
 );
 
@@ -723,8 +725,11 @@ function getVirtualExpressionOperatorSearchSpan(
   tokens: PatchbayLineToken[]
 ): { from: number; to: number } | null {
   if (isVirtualExpressionDeclarationTokens(tokens)) {
-    const exprIndex = line.indexOf('expr~');
-    return exprIndex === -1 ? null : { from: exprIndex + 'expr~'.length, to: line.length };
+    const keyword = tokens[2]?.text;
+    const keywordIndex = keyword ? line.indexOf(keyword) : -1;
+    return keywordIndex === -1 || !keyword
+      ? null
+      : { from: keywordIndex + keyword.length, to: line.length };
   }
 
   if (!line.includes('->')) return null;

@@ -255,6 +255,48 @@ describe('analyzePatchbay', () => {
     ]);
   });
 
+  it('resolves explicit audio fexpr aliases before channels', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Smooth = fexpr~ x1 * 0.5 + x1[-1] * 0.5
+      Mic -> Smooth -> Out
+      `,
+      {
+        audioSources: new Set(['Mic']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        name: 'Smooth',
+        type: 'fexpr~',
+        rawArgs: ['x1', '*', '0.5', '+', 'x1[-1]', '*', '0.5'],
+        params: [null, 'x1 * 0.5 + x1[-1] * 0.5'],
+        expression: 'x1 * 0.5 + x1[-1] * 0.5',
+        anonymous: false,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Mic',
+        to: 'Smooth',
+        toVirtualExpression: expect.objectContaining({ name: 'Smooth', type: 'fexpr~' })
+      }),
+
+      expect.objectContaining({
+        from: 'Smooth',
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ name: 'Smooth', type: 'fexpr~' })
+      })
+    ]);
+  });
+
   it('resolves whitelisted audio effect aliases as virtual audio nodes', () => {
     const result = analyzePatchbay(
       `
@@ -371,6 +413,46 @@ describe('analyzePatchbay', () => {
         from: expect.stringContaining('expr~'),
         to: 'Out',
         fromVirtualExpression: expect.objectContaining({ type: 'expr~', anonymous: true })
+      })
+    ]);
+  });
+
+  it('resolves inline fexpr route segments as anonymous virtual audio nodes', () => {
+    const result = analyzePatchbay(
+      `
+      [Audio]
+      Osc -> fexpr~ x1 * 0.5 + x1[-1] * 0.5 -> Out
+      `,
+      {
+        audioSources: new Set(['Osc']),
+        audioTargets: new Set(['Out'])
+      }
+    );
+
+    expect(result.diagnostics).toEqual([]);
+
+    expect(result.virtualAudioExpressions).toEqual([
+      expect.objectContaining({
+        type: 'fexpr~',
+        rawArgs: ['x1', '*', '0.5', '+', 'x1[-1]', '*', '0.5'],
+        params: [null, 'x1 * 0.5 + x1[-1] * 0.5'],
+        expression: 'x1 * 0.5 + x1[-1] * 0.5',
+        anonymous: true,
+        line: 3
+      })
+    ]);
+
+    expect(result.audioRoutes).toEqual([
+      expect.objectContaining({
+        from: 'Osc',
+        to: expect.stringContaining('fexpr~'),
+        toVirtualExpression: expect.objectContaining({ type: 'fexpr~', anonymous: true })
+      }),
+
+      expect.objectContaining({
+        from: expect.stringContaining('fexpr~'),
+        to: 'Out',
+        fromVirtualExpression: expect.objectContaining({ type: 'fexpr~', anonymous: true })
       })
     ]);
   });

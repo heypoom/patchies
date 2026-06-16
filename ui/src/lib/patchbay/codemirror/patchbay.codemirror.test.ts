@@ -427,7 +427,8 @@ Src -> Out`;
   it('returns green syntax ranges for virtual expr aliases and keywords', () => {
     const source = `[Audio]
 Gainer = expr~ s * 0.8
-Osc -> Gainer -> Out`;
+Filter = fexpr~ x1 * 0.5 + x1[-1] * 0.5
+Osc -> Gainer -> Filter -> Out`;
 
     expect(getPatchbayVirtualExpressionNameRanges(source)).toEqual([
       {
@@ -436,8 +437,18 @@ Osc -> Gainer -> Out`;
         className: 'cm-patchbay-virtual-expression-name'
       },
       {
-        from: 38,
-        to: 44,
+        from: 31,
+        to: 37,
+        className: 'cm-patchbay-virtual-expression-name'
+      },
+      {
+        from: 78,
+        to: 84,
+        className: 'cm-patchbay-virtual-expression-name'
+      },
+      {
+        from: 88,
+        to: 94,
         className: 'cm-patchbay-virtual-expression-name'
       }
     ]);
@@ -447,6 +458,11 @@ Osc -> Gainer -> Out`;
         from: 17,
         to: 22,
         className: 'cm-patchbay-virtual-expression-keyword'
+      },
+      {
+        from: 40,
+        to: 46,
+        className: 'cm-patchbay-virtual-expression-keyword'
       }
     ]);
 
@@ -454,6 +470,11 @@ Osc -> Gainer -> Out`;
       {
         from: 15,
         to: 16,
+        className: 'cm-patchbay-object-assignment'
+      },
+      {
+        from: 38,
+        to: 39,
         className: 'cm-patchbay-object-assignment'
       }
     ]);
@@ -593,6 +614,7 @@ describe('patchbaySectionCompletions', () => {
 
   it('suggests audio processor keywords in audio declarations and route endpoints', () => {
     expect(getPatchbayCompletionLabels('[Audio]\nGain = e')).toEqual(['expr~']);
+    expect(getPatchbayCompletionLabels('[Audio]\nFilter = f')).toEqual(['fexpr~']);
     expect(getPatchbayCompletionLabels('[Audio]\nOsc = o')).toEqual(['obj', 'osc~']);
     expect(getPatchbayCompletionLabels('[Audio]\nGain = g')).toEqual(['gain~']);
     expect(getPatchbayCompletionLabels('[Audio]\no')).toEqual(['obj', 'osc~']);

@@ -50,6 +50,9 @@ creation arguments:
 Gain = expr~ s * 0.45
 Feed -> Gain -> Reverb
 
+Smooth = fexpr~ x1 * 0.5 + x1[-1] * 0.5
+Mic -> Smooth -> Out
+
 Filter = lowpass~ 1000 1
 Mic -> Filter -> Out
 
@@ -64,6 +67,7 @@ The prototype supports this explicit whitelist only:
 
 ```text
 expr~
+fexpr~
 osc~
 gain~
 lowpass~
@@ -86,6 +90,9 @@ nodes.
 
 For virtual `expr~`, the symbol `s` means the first signal entering the virtual expression
 processor.
+
+For virtual `fexpr~`, the same explicit declaration and inline route forms are supported, but the
+expression uses `fexpr~` history syntax such as `x1[-1]`, `s[-1]`, and `y1[-1]`.
 
 In the prototype, a virtual processor has one main signal inlet and one signal outlet. Multiple
 upstream connections to the same virtual `expr~` are mixed by the Web Audio graph and exposed as
@@ -128,11 +135,12 @@ Mic -> Gain -> Out
 
 Mic -> lowpass~ 1000 1 -> Out
 Mic -> expr~ s * 0.5 -> Out
+Mic -> fexpr~ x1 * 0.5 + x1[-1] * 0.5 -> Out
 osc~ 440 sine 0 -> Out
 ```
 
-Inline `expr~` route segments are supported when the expression body does not contain `->`.
-Expressions that need more complex route-like syntax should use a named declaration.
+Inline `expr~` and `fexpr~` route segments are supported when the expression body does not contain
+`->`. Expressions that need more complex route-like syntax should use a named declaration.
 
 ## Name Resolution
 
