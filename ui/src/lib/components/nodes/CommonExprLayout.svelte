@@ -113,6 +113,7 @@
 
   let codeEditorRef: CodeEditor | null = $state(null);
   let originalExpr = expr; // Store original for escape functionality
+
   const isCodeEditorDetached = $derived(
     $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === dataKey
   );

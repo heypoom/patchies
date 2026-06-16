@@ -151,9 +151,11 @@
 
   const code = $derived(data.code || '');
   let previousExecuteCode = $state<number | undefined>(undefined);
+
   let isCodeEditorDetached = $derived(
     $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
   );
+
   const detachedSettings = $derived(
     settingsSchema && settingsSchema.length > 0
       ? {

@@ -1,5 +1,7 @@
 import { get, writable } from 'svelte/store';
+import type { Extension } from '@codemirror/state';
 import type { Snippet } from 'svelte';
+import type { InlineDecoration } from '$lib/codemirror/inline-decorations';
 import type { SupportedLanguage } from '$lib/codemirror/types';
 import type { SettingsSchema } from '$lib/settings';
 import { isSidebarOpen, sidebarView } from './ui.store';
@@ -23,6 +25,10 @@ export interface CodeEditorTarget {
   onchange?: (value: string) => void | Promise<void>;
   onrun?: (code?: string) => void;
   lineErrors?: Record<number, string[]>;
+  inlineDecorations?: InlineDecoration[];
+  extraExtensions?: Extension[];
+  onAltDecorationClick?: (data: string) => void;
+  lineWrap?: boolean;
   settings?: CodeEditorTargetSettings;
   console?: Snippet;
   customActions?: Snippet;
@@ -81,11 +87,13 @@ export function syncActiveCodeEditorTargetSettings({
 export function syncActiveCodeEditorTargetLineErrors({
   nodeId,
   dataKey,
-  lineErrors
+  lineErrors,
+  inlineDecorations
 }: {
   nodeId: string | undefined;
   dataKey: string;
   lineErrors?: Record<number, string[]>;
+  inlineDecorations?: InlineDecoration[];
 }): void {
   if (!nodeId) return;
 
@@ -94,13 +102,14 @@ export function syncActiveCodeEditorTargetLineErrors({
       return target;
     }
 
-    if (target.lineErrors === lineErrors) {
+    if (target.lineErrors === lineErrors && target.inlineDecorations === inlineDecorations) {
       return target;
     }
 
     return {
       ...target,
-      lineErrors
+      lineErrors,
+      inlineDecorations
     };
   });
 }

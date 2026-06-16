@@ -1,11 +1,17 @@
 <script lang="ts">
-  import { Play, Settings, X } from '@lucide/svelte/icons';
+  import { Expand, Play, Settings, X } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onDestroy, onMount } from 'svelte';
 
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useNodeDataTracker } from '$lib/history';
+  import {
+    activeCodeEditorTarget,
+    closeCodeEditorOverlay,
+    openCodeEditorOverlay,
+    syncActiveCodeEditorTargetLineErrors
+  } from '../../../stores/code-editor-layout.store';
   import { editorFontFamily } from '../../../stores/editor.store';
   import {
     getPatchbayChannelLinkRanges,
@@ -83,6 +89,11 @@
   const code = $derived(data.code ?? '');
   const runOnEdit = $derived(data.runOnEdit ?? true);
   const allowResize = $derived(data.allowResize ?? true);
+
+  const isCodeEditorDetached = $derived(
+    $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
+  );
+
   const lineErrors = $derived.by(() => {
     const errors: Record<number, string[]> = {};
 
@@ -177,6 +188,24 @@
     tracker.commit('allowResize', oldAllowResize, nextAllowResize);
   }
 
+  function openExpandedEditor() {
+    openCodeEditorOverlay({
+      nodeId,
+      dataKey: 'code',
+      language: 'patchbay',
+      nodeType: 'patchbay',
+      title: 'patchbay',
+      placeholder: '[Message]\nchan Logger\nClock -> Logger',
+      onchange: handleCodeChange,
+      onrun: applyPatchbayCode,
+      lineErrors,
+      inlineDecorations,
+      extraExtensions: patchbayCompletionExtensions,
+      onAltDecorationClick: focusPatchbayReference,
+      lineWrap: true
+    });
+  }
+
   function updateContentWidth() {
     if (!contentContainer) return;
     contentWidth = contentContainer.offsetWidth;
@@ -220,6 +249,15 @@
     applyPatchbayCodeIfRunOnEdit();
   });
 
+  $effect(() => {
+    syncActiveCodeEditorTargetLineErrors({
+      nodeId,
+      dataKey: 'code',
+      lineErrors,
+      inlineDecorations
+    });
+  });
+
   onMount(() => {
     patchbay = new PatchbayObject(nodeId, context, { getNodes });
     patchbay.create([]);
@@ -256,6 +294,11 @@
     unsubscribeAudioRegistryChange = null;
     unsubscribeVideoRegistryChange?.();
     unsubscribeVideoRegistryChange = null;
+
+    if (isCodeEditorDetached) {
+      closeCodeEditorOverlay();
+    }
+
     patchbay?.destroy();
     patchbay = null;
   });
@@ -291,6 +334,20 @@
         <Tooltip.Trigger>
           <button
             class="node-floating-button cursor-pointer"
+            onclick={openExpandedEditor}
+            type="button"
+            aria-label="Expand patchbay editor"
+          >
+            <Expand class="h-4 w-4 text-zinc-300" />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Expand Editor</Tooltip.Content>
+      </Tooltip.Root>
+
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <button
+            class="node-floating-button cursor-pointer"
             onclick={() => (showSettings = !showSettings)}
             type="button"
             aria-label={showSettings ? 'Close settings' : 'Open settings'}
@@ -312,21 +369,23 @@
     ]}
     style="width: {width ?? defaultWidth}px; height: {height ?? defaultHeight}px"
   >
-    <CodeEditor
-      value={code}
-      onchange={handleCodeChange}
-      language="patchbay"
-      placeholder={'[Message]\nchan Logger\nClock -> Logger'}
-      class="patchbay-editor min-h-0 w-full flex-1"
-      {nodeId}
-      dataKey="code"
-      {lineErrors}
-      {inlineDecorations}
-      extraExtensions={patchbayCompletionExtensions}
-      onrun={applyPatchbayCode}
-      onaltdecorationclick={focusPatchbayReference}
-      lineWrap
-    />
+    {#if !isCodeEditorDetached}
+      <CodeEditor
+        value={code}
+        onchange={handleCodeChange}
+        language="patchbay"
+        placeholder={'[Message]\nchan Logger\nClock -> Logger'}
+        class="patchbay-editor min-h-0 w-full flex-1"
+        {nodeId}
+        dataKey="code"
+        {lineErrors}
+        {inlineDecorations}
+        extraExtensions={patchbayCompletionExtensions}
+        onrun={applyPatchbayCode}
+        onaltdecorationclick={focusPatchbayReference}
+        lineWrap
+      />
+    {/if}
   </div>
 
   {#if showSettings}

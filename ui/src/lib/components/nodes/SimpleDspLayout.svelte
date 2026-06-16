@@ -76,9 +76,11 @@
   const messageInletCount = $derived(data.messageInletCount || 0);
   const messageOutletCount = $derived(data.messageOutletCount || 0);
   const displayTitle = $derived(data.title || nodeName);
+
   const isCodeEditorDetached = $derived(
     $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
   );
+
   const detachedSettings = $derived(
     settingsSchema && settingsSchema.length > 0
       ? {

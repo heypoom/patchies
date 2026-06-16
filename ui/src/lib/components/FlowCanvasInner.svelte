@@ -1235,6 +1235,10 @@
         nodeId={$activeCodeEditorTarget.nodeId}
         dataKey={$activeCodeEditorTarget.dataKey}
         lineErrors={$activeCodeEditorTarget.lineErrors}
+        inlineDecorations={$activeCodeEditorTarget.inlineDecorations}
+        extraExtensions={$activeCodeEditorTarget.extraExtensions}
+        onaltdecorationclick={$activeCodeEditorTarget.onAltDecorationClick}
+        lineWrap={$activeCodeEditorTarget.lineWrap}
         fontSize={`${$editorFullscreenFontSize}px`}
       />
     {/snippet}
