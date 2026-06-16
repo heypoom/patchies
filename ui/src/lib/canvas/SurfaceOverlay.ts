@@ -17,9 +17,11 @@ const DOM_RENDERER_TYPES = new Set(['p5', 'canvas.dom', 'textmode.dom', 'three.d
 export const isFullscreenActive = writable(false);
 
 export type SurfacePresentationMode = 'main' | 'secondary';
+export type SurfaceOverlayContentMode = 'canvas' | 'custom';
 
 export type SurfaceOverlayActivateOptions = {
   presentation?: SurfacePresentationMode;
+  content?: SurfaceOverlayContentMode;
 };
 
 export class SurfaceOverlay {
@@ -27,10 +29,12 @@ export class SurfaceOverlay {
 
   private _canvas: HTMLCanvasElement;
   private _ctx: CanvasRenderingContext2D;
+  private _customHost: HTMLDivElement;
   private _activeNodeId: string | null = null;
   private _frozenNodeIds: string[] = [];
   private _badge: HTMLButtonElement | null = null;
   private _secondarySurfaceVisible = false;
+  private _contentMode: SurfaceOverlayContentMode = 'canvas';
 
   private _onEscape: (e: KeyboardEvent) => void;
   private _onExit: (() => void) | null = null;
@@ -51,6 +55,12 @@ export class SurfaceOverlay {
 
     document.body.appendChild(this._canvas);
 
+    this._customHost = document.createElement('div');
+    this._customHost.style.cssText =
+      'position: fixed; inset: 0; display: none; z-index: 50; pointer-events: none; width: 100vw; height: 100vh; overflow: hidden;';
+
+    document.body.appendChild(this._customHost);
+
     this._ctx = this._canvas.getContext('2d')!;
     this._resize();
 
@@ -68,6 +78,10 @@ export class SurfaceOverlay {
 
   get canvas(): HTMLCanvasElement {
     return this._canvas;
+  }
+
+  get customHost(): HTMLDivElement {
+    return this._customHost;
   }
 
   get ctx(): CanvasRenderingContext2D {
@@ -106,7 +120,9 @@ export class SurfaceOverlay {
     options: SurfaceOverlayActivateOptions = {}
   ): void {
     const presentation = options.presentation ?? 'main';
+    const content = options.content ?? 'canvas';
     this._secondarySurfaceVisible = false;
+    this._contentMode = content;
 
     // Last activated wins — displace previous
     if (this._activeNodeId && this._activeNodeId !== nodeId) {
@@ -117,8 +133,12 @@ export class SurfaceOverlay {
 
     // Main presentation shows the overlay in this window. Secondary presentation keeps the
     // canvas as a hidden drawing target while the /output window owns the visible surface.
-    this._canvas.style.display = presentation === 'main' ? 'block' : 'none';
-    this._canvas.style.pointerEvents = presentation === 'main' ? 'all' : 'none';
+    const showInMainWindow = presentation === 'main';
+    this._canvas.style.display = showInMainWindow && content === 'canvas' ? 'block' : 'none';
+    this._canvas.style.pointerEvents = showInMainWindow && content === 'canvas' ? 'all' : 'none';
+    this._customHost.style.display = showInMainWindow && content === 'custom' ? 'block' : 'none';
+    this._customHost.style.pointerEvents =
+      showInMainWindow && content === 'custom' ? 'all' : 'none';
 
     this._frozenNodeIds = [];
 
@@ -162,9 +182,13 @@ export class SurfaceOverlay {
 
     this._activeNodeId = null;
     this._secondarySurfaceVisible = false;
+    this._contentMode = 'canvas';
 
     this._canvas.style.display = 'none';
     this._canvas.style.pointerEvents = 'none';
+
+    this._customHost.style.display = 'none';
+    this._customHost.style.pointerEvents = 'none';
 
     if (unfreeze) {
       const eventBus = PatchiesEventBus.getInstance();
@@ -270,8 +294,14 @@ export class SurfaceOverlay {
 
     button.addEventListener('click', () => {
       this._secondarySurfaceVisible = !this._secondarySurfaceVisible;
-      this._canvas.style.display = this._secondarySurfaceVisible ? 'block' : 'none';
-      this._canvas.style.pointerEvents = this._secondarySurfaceVisible ? 'all' : 'none';
+
+      const display = this._secondarySurfaceVisible ? 'block' : 'none';
+      const pointerEvents = this._secondarySurfaceVisible ? 'all' : 'none';
+      const target = this._contentMode === 'custom' ? this._customHost : this._canvas;
+
+      target.style.display = display;
+      target.style.pointerEvents = pointerEvents;
+
       syncButton();
     });
 

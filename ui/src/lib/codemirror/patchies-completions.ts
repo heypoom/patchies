@@ -255,6 +255,13 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'noOutput()'
   },
   {
+    label: 'createSurfaceCanvas',
+    type: 'function',
+    detail: '(renderer?: P2D | WEBGL) => p5.Renderer',
+    info: 'Create a p5 canvas sized for the transparent fullscreen surface overlay and enable the Expand action.',
+    apply: 'createSurfaceCanvas()'
+  },
+  {
     label: 'setMouseForwarding',
     type: 'function',
     detail: '(args?: { enabled?: boolean, only?: string[], except?: string[] }) => void',
@@ -276,18 +283,18 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'redraw()'
   },
   {
-    label: 'activate',
+    label: 'expandSurface',
     type: 'function',
     detail: '() => void',
     info: 'Enter fullscreen surface mode.',
-    apply: 'activate()'
+    apply: 'expandSurface()'
   },
   {
-    label: 'deactivate',
+    label: 'collapseSurface',
     type: 'function',
     detail: '() => void',
     info: 'Exit fullscreen surface mode.',
-    apply: 'deactivate()'
+    apply: 'collapseSurface()'
   },
   {
     label: 'hideExitButton',
@@ -465,8 +472,6 @@ const topLevelOnlyFunctions = new Set([
   'onMessage',
   'onVideoFrame',
   'recv',
-  'activate',
-  'deactivate',
   'hideExitButton',
   'htmlCanvas.videoOutput',
   'htmlCanvas.canvasLayer',
@@ -487,6 +492,14 @@ const topLevelOnlyFunctions = new Set([
   'setTextureFormat',
   'setVideoCount'
 ]);
+
+const p5FunctionBodySurfaceHelpers = new Set(['hideExitButton', 'setMouseForwarding']);
+
+function isAllowedInFunctionBody(completion: Completion, patchiesContext?: PatchiesContext) {
+  if (!topLevelOnlyFunctions.has(completion.label)) return true;
+
+  return patchiesContext?.nodeType === 'p5' && p5FunctionBodySurfaceHelpers.has(completion.label);
+}
 
 const MOUSE_INTERACTION_JS_NODES = [
   'p5',
@@ -547,7 +560,8 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   noPan: MOUSE_INTERACTION_JS_NODES,
   noWheel: MOUSE_INTERACTION_JS_NODES,
   noInteract: MOUSE_INTERACTION_JS_NODES,
-  setMouseForwarding: ['surface'],
+  createSurfaceCanvas: ['p5'],
+  setMouseForwarding: ['surface', 'p5'],
   noOutput: [
     'p5',
     'canvas',
@@ -565,9 +579,9 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   onTouch: ['surface'],
   setDrawMode: ['surface'],
   redraw: ['surface'],
-  activate: ['surface'],
-  deactivate: ['surface'],
-  hideExitButton: ['surface'],
+  expandSurface: ['surface', 'p5'],
+  collapseSurface: ['surface', 'p5'],
+  hideExitButton: ['surface', 'p5'],
   setAudioPortCount: ['dsp~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom'],
   setSize: ['dom', 'vue'],
@@ -1076,7 +1090,9 @@ export function createPatchiesCompletionSource(patchiesContext?: PatchiesContext
 
     // Filter out top-level only functions when inside a function body
     if (insideFunction) {
-      options = options.filter((completion) => !topLevelOnlyFunctions.has(completion.label));
+      options = options.filter((completion) =>
+        isAllowedInFunctionBody(completion, patchiesContext)
+      );
     }
 
     // Filter based on node type

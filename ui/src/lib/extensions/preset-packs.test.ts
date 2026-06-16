@@ -88,6 +88,14 @@ describe('built-in preset packs', () => {
     expect(missingPresetNames).toEqual([]);
   });
 
+  test('enables the p5 surface preset with the p5 demo pack', () => {
+    const p5Demos = BUILT_IN_PRESET_PACKS.find((pack) => pack.id === 'p5-demos');
+
+    expect(p5Demos?.requiredObjects).toEqual(['p5']);
+    expect(p5Demos && getPresetPackPresetNames(p5Demos)).toContain('surface.p5');
+    expect(BUILTIN_PRESETS['surface.p5']?.type).toBe('p5');
+  });
+
   test('groups built-in preset folders by preset pack name', () => {
     const folders = buildBuiltInPresetPackFolders(BUILTIN_PRESETS);
     const textureGenerators = folders['Texture Generators'];

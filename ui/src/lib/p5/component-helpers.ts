@@ -11,4 +11,4 @@ export function parseCanvasDimensions(code: string): { width: number; height: nu
 }
 
 export const shouldResetP5CanvasSize = (code: string): boolean =>
-  !/\bcreateCanvas\s*\(/.test(stripJavaScriptComments(code));
+  !/\b(?:createCanvas|createSurfaceCanvas)\s*\(/.test(stripJavaScriptComments(code));

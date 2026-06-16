@@ -14,7 +14,7 @@ Fullscreen interactive canvas overlay for live performance. Captures pointer/tou
 - setDrawMode('always'|'interact'|'manual') — control render loop
 - redraw() — trigger a draw in manual mode
 - setMouseForwarding({ enabled?: boolean, only?: string[], except?: string[] }) — enable/disable or restrict forwarded mouse events by node ID
-- activate() / deactivate() — enter/exit fullscreen from code
+- expandSurface() / collapseSurface() — enter/exit fullscreen from code
 - noOutput() — hide video output port
 
 **Coordinate system:**

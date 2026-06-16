@@ -199,12 +199,57 @@ function draw() {
   text(txt, width/2, height/2)
 }`;
 
-export const P5_PRESETS: Record<string, { type: string; data: { code: string } }> = {
+const SURFACE_P5 = `let hue = 0
+let points = []
+
+function setup() {
+  createSurfaceCanvas()
+
+  noDrag()
+  noStroke()
+}
+
+function draw() {
+  clear()
+
+  if (mouseIsPressed) {
+    points.push({
+      x: mouseX,
+      y: mouseY,
+      hue,
+      size: random(18, 54),
+      life: 1
+    })
+
+    hue = (hue + 4) % 360
+  }
+
+  colorMode(HSL, 360, 100, 100, 1)
+
+  for (const point of points) {
+    fill(point.hue, 90, 62, point.life * 0.8)
+    circle(point.x, point.y, point.size)
+    point.size *= 1.018
+    point.life -= 0.018
+  }
+
+  points = points.filter(point => point.life > 0)
+}`;
+
+export const P5_PRESETS: Record<
+  string,
+  { type: string; description?: string; data: { code: string } }
+> = {
   'traffic-light.p5': { type: 'p5', data: { code: TRAFFIC_LIGHT_P5.trim() } },
   'fft.p5': { type: 'p5', data: { code: AUDIO_FFT_FULL_P5.trim() } },
   'fft-sm.p5': { type: 'p5', data: { code: AUDIO_FFT_SMALL_P5.trim() } },
   'rms.p5': { type: 'p5', data: { code: AUDIO_FFT_RMS_NARROW_P5.trim() } },
   'rms-wide.p5': { type: 'p5', data: { code: AUDIO_FFT_RMS_WIDE_P5.trim() } },
   'bouncing-balls.p5': { type: 'p5', data: { code: BOUNCING_BALLS_P5.trim() } },
+  'surface.p5': {
+    type: 'p5',
+    description: 'Transparent fullscreen p5 drawing surface',
+    data: { code: SURFACE_P5.trim() }
+  },
   'text-banner.p5': { type: 'p5', data: { code: TEXT_BANNER_P5.trim() } }
 };

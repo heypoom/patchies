@@ -45,8 +45,8 @@ FBO-renderer nodes (`hydra`, `regl`, `glsl`, `swgl`, `canvas`, `three`, `textmod
 
 **State transitions:**
 
-- `preview` → `fullscreen`: click **Expand** button on node / send `bang` / send `{ type: 'expand' }` / call `activate()`
-- `fullscreen` → `preview`: press **Shift+Escape** / click floating exit badge / send `{ type: 'collapse' }` / call `deactivate()`
+- `preview` → `fullscreen`: click **Expand** button on node / send `bang` / send `{ type: 'expand' }` / call `expandSurface()`
+- `fullscreen` → `preview`: press **Shift+Escape** / click floating exit badge / send `{ type: 'collapse' }` / call `collapseSurface()`
 - `preview` ↔ `stopped`: click **Stop/Play** button on node (pause canvas to save CPU)
 
 Escape always returns to `preview`, never to `stopped`.
@@ -100,18 +100,18 @@ noOutput(); // disable CPU→GPU texture copy (default: enabled, same as canvas.
 CPU→GPU copy is expensive. Call `noOutput()` if you don't need to composite the overlay
 into the FBO pipeline.
 
-### Surface Activation
+### Surface Expansion
 
 ```js
-activate(); // enter fullscreen state: show overlay, hide XYFlow, freeze DOM-renderer nodes
-deactivate(); // return to preview state: remove overlay, restore XYFlow and frozen nodes
+expandSurface(); // enter fullscreen state: show overlay, hide XYFlow, freeze DOM-renderer nodes
+collapseSurface(); // return to preview state: remove overlay, restore XYFlow and frozen nodes
 ```
 
 Messages also trigger these:
 
 ```js
-// bang or { type: 'expand' }   → calls activate()
-// { type: 'collapse' }         → calls deactivate()
+// bang or { type: 'expand' }   → calls expandSurface()
+// { type: 'collapse' }         → calls collapseSurface()
 ```
 
 ### Browser Fullscreen (optional)
@@ -127,12 +127,12 @@ or combine with activation:
 ```js
 recv((msg) => {
   if (msg.type === "live") {
-    activate();
+    expandSurface();
     goFullscreen();
   }
 
   if (msg.type === "exit") {
-    deactivate();
+    collapseSurface();
     exitFullscreen();
   }
 });
@@ -268,7 +268,7 @@ Based on `CanvasDom.svelte` with these differences:
 - `setDrawMode()` added to `extraContext`
 - `onPointer()` / `onTouch()` added to `extraContext`
 - CodeMirror Patchies API completions should expose the documented surface JavaScript API:
-  `onPointer`, `onTouch`, `setDrawMode`, `redraw`, `activate`, `deactivate`,
+  `onPointer`, `onTouch`, `setDrawMode`, `redraw`, `expandSurface`, `collapseSurface`,
   `hideExitButton`, `onKeyDown`, `onKeyUp`, `setMouseForwarding`, and `noOutput`.
 - `pointer` and `touch` message outlets added
 - On mount: calls `SurfaceOverlay.activate(nodeId)`

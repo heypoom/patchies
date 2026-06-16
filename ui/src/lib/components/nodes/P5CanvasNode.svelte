@@ -14,6 +14,7 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
   import { parseCanvasDimensions, shouldResetP5CanvasSize } from '$lib/p5/component-helpers';
+  import { createP5SurfaceMode } from '$lib/p5/use-p5-surface-mode.svelte';
   import { P5_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
@@ -36,13 +37,14 @@
       executeCode?: number;
       paused?: boolean;
       showConsole?: boolean;
+      surfaceMode?: boolean;
       settingsSchema?: SettingsSchema;
       settings?: Record<string, unknown>;
     };
     selected: boolean;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { getNodes, updateNodeData } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const viewport = useViewport();
 
@@ -78,6 +80,17 @@
   let preloadCanvasHeight = $state<number | undefined>(0);
   let clearDimensionsTimeout: ReturnType<typeof setTimeout> | null = null;
   let preservedFrameCanvas: HTMLCanvasElement | null = null;
+
+  const surfaceMode = createP5SurfaceMode({
+    nodeId,
+    getNodes,
+    getGlSystem: () => glSystem,
+    getP5Manager: () => p5Manager,
+    getPreviewContainer: () => containerElement ?? null,
+    isSurfaceModeEnabled: () => data.surfaceMode,
+    measureWidth,
+    updateSketch: () => void updateSketch()
+  });
 
   function setCanvasDimensionsFromCode(nextCode = code) {
     const dimensions = parseCanvasDimensions(nextCode);
@@ -193,6 +206,7 @@
 
   onDestroy(() => {
     clearPreservedFrameCanvas();
+    surfaceMode.cleanup();
     p5Manager?.destroy();
     glSystem.removeNode(nodeId);
     messageContext?.destroy();
@@ -259,6 +273,7 @@
     enablePan = true;
     enableWheel = true;
     let nextVideoOutputEnabled = true;
+    let nextSurfaceModeEnabled = false;
 
     // Clear previous error state at the start of each run
     // If an error occurs during updateCode, it will be set again
@@ -273,6 +288,9 @@
     if (p5Manager && messageContext) {
       try {
         settingsManager.clearCallbacks();
+        p5Manager.shouldSendBitmap = true;
+        surfaceMode.setMouseForwarding();
+
         await p5Manager.updateCode({
           code: nextCode,
           messageContext: {
@@ -305,14 +323,42 @@
           },
           settings: settingsAPI,
           pauseOnMount: onMount && !!data.paused,
+          useViewportMouseScale: !surfaceMode.isExpanded,
           customConsole,
           onRuntimeError: (error) => handleRuntimeError(error, nextCode),
-          onPreserveFrame: preserveFrameCanvas,
+          onPreserveFrame: surfaceMode.isExpanded ? undefined : preserveFrameCanvas,
           onFrameReady: () => {
             clearPreservedFrameCanvas();
             setVideoOutputEnabled(nextVideoOutputEnabled);
-          }
+          },
+          getSurfaceCanvasSize: surfaceMode.getCanvasSize,
+          onSurfaceModeChange: (enabled) => {
+            nextSurfaceModeEnabled = enabled;
+
+            if (enabled) {
+              nextVideoOutputEnabled = false;
+              setVideoOutputEnabled(false);
+            }
+          },
+          onSurfaceCanvasCreated: surfaceMode.styleCanvas,
+          onSurfaceFrame: surfaceMode.requestMirrorFrame,
+          onSurfacePointer: surfaceMode.forwardPointer,
+          onSurfaceWheel: surfaceMode.forwardWheel,
+          hideExitButton: surfaceMode.hideExitButton,
+          setMouseForwarding: surfaceMode.setMouseForwarding,
+          expandSurface: surfaceMode.enter,
+          collapseSurface: surfaceMode.exit
         });
+
+        p5Manager.shouldSendBitmap = !nextSurfaceModeEnabled;
+
+        if (data.surfaceMode !== nextSurfaceModeEnabled) {
+          updateNodeData(nodeId, { surfaceMode: nextSurfaceModeEnabled });
+        }
+
+        if (!nextSurfaceModeEnabled && surfaceMode.isExpanded) {
+          surfaceMode.exit();
+        }
 
         measureWidth(100);
 
@@ -363,6 +409,7 @@
   settingsValues={data.settings ?? {}}
   onSettingsValueChange={(key, value) => settingsManager.setValue(key, value)}
   onSettingsRevertAll={() => settingsManager.revertAll()}
+  displayExtraMenuItems={surfaceMode.menuItems}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: inletCount }) as _, index (index)}

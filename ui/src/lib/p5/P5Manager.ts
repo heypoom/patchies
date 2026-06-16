@@ -7,6 +7,7 @@ import type { Viewport } from '@xyflow/svelte';
 import { revokeObjectUrls } from '$lib/vfs';
 import { profiler } from '$lib/profiler';
 import type { SettingsAPI } from '$lib/settings';
+import type { SurfaceMouseForwardingRules } from '$lib/canvas/surfaceMouseForwarding';
 
 interface P5SketchConfig {
   code: string;
@@ -42,6 +43,26 @@ interface P5SketchConfig {
 
   onPreserveFrame?: (snapshot: P5CanvasSnapshot) => void;
   onFrameReady?: () => void;
+  getSurfaceCanvasSize?: () => { width: number; height: number };
+
+  onSurfaceModeChange?: (enabled: boolean) => void;
+  onSurfaceCanvasCreated?: (canvas: HTMLCanvasElement) => void;
+  onSurfaceFrame?: (canvas: HTMLCanvasElement) => void;
+  onSurfacePointer?: (x: number, y: number, buttons: number, type: string) => void;
+
+  onSurfaceWheel?: (event: {
+    x: number;
+    y: number;
+    deltaX: number;
+    deltaY: number;
+    deltaMode: number;
+  }) => void;
+
+  hideExitButton?: () => void;
+  setMouseForwarding?: (rules?: SurfaceMouseForwardingRules) => void;
+  expandSurface?: () => void;
+  collapseSurface?: () => void;
+  useViewportMouseScale?: boolean;
 }
 
 interface P5CanvasSnapshot {
@@ -60,6 +81,7 @@ export class P5Manager {
 
   private container: HTMLElement | null = null;
   private viewport: { current: Viewport } | null = null;
+  private onSurfaceFrame: ((canvas: HTMLCanvasElement) => void) | null = null;
 
   private static compatLibsLoaded = false;
 
@@ -72,7 +94,13 @@ export class P5Manager {
     window[nodeId] = this;
   }
 
+  setContainer(container: HTMLElement | null) {
+    this.container = container;
+  }
+
   async updateCode(config: P5SketchConfig) {
+    this.onSurfaceFrame = config.onSurfaceFrame ?? null;
+
     if (this.p5) {
       // @ts-expect-error -- p5 exposes the live canvas at runtime.
       const canvas: HTMLCanvasElement | undefined = this.p5.canvas;
@@ -207,29 +235,32 @@ export class P5Manager {
           userCode?.preload?.call(p);
         };
 
-        // Helper to adjust mouse coordinates for zoom
+        // Inline p5 canvases live inside the zoomed XYFlow surface, so p5's
+        // browser coordinates need to be mapped back into node-local space.
+        // Expanded surface canvases are fixed DOM overlays and must not use
+        // XYFlow zoom for mouse coordinates.
         const adjustMouseForZoom = () => {
-          if (this.viewport) {
-            const zoom = this.viewport.current.zoom;
-            // Store original values
-            const originalMouseX = p.mouseX;
-            const originalMouseY = p.mouseY;
-            const originalPmouseX = p.pmouseX;
-            const originalPmouseY = p.pmouseY;
+          if (!this.viewport || config.useViewportMouseScale === false) return;
 
-            // !! Adjust for zoom
-            // @ts-expect-error -- we are hacking the p5 instance here
-            p.mouseX = originalMouseX / zoom;
+          const zoom = this.viewport.current.zoom;
+          // Store original values
+          const originalMouseX = p.mouseX;
+          const originalMouseY = p.mouseY;
+          const originalPmouseX = p.pmouseX;
+          const originalPmouseY = p.pmouseY;
 
-            // @ts-expect-error -- we are hacking the p5 instance here
-            p.mouseY = originalMouseY / zoom;
+          // !! Adjust for zoom
+          // @ts-expect-error -- we are hacking the p5 instance here
+          p.mouseX = originalMouseX / zoom;
 
-            // @ts-expect-error -- we are hacking the p5 instance here
-            p.pmouseX = originalPmouseX / zoom;
+          // @ts-expect-error -- we are hacking the p5 instance here
+          p.mouseY = originalMouseY / zoom;
 
-            // @ts-expect-error -- we are hacking the p5 instance here
-            p.pmouseY = originalPmouseY / zoom;
-          }
+          // @ts-expect-error -- we are hacking the p5 instance here
+          p.pmouseX = originalPmouseX / zoom;
+
+          // @ts-expect-error -- we are hacking the p5 instance here
+          p.pmouseY = originalPmouseY / zoom;
         };
 
         // Guard: only dispatch mouse events that originate within the canvas bounds.
@@ -237,11 +268,30 @@ export class P5Manager {
         const isMouseInCanvas = () =>
           p.mouseX >= 0 && p.mouseX <= p.width && p.mouseY >= 0 && p.mouseY <= p.height;
 
+        const dispatchSurfacePointer = (buttons: number, type: string) => {
+          if (!isMouseInCanvas() || p.width <= 0 || p.height <= 0) return;
+
+          config.onSurfacePointer?.(p.mouseX / p.width, p.mouseY / p.height, buttons, type);
+        };
+
+        const dispatchSurfaceWheel = (event: WheelEvent) => {
+          if (!isMouseInCanvas() || p.width <= 0 || p.height <= 0) return;
+
+          config.onSurfaceWheel?.({
+            x: p.mouseX / p.width,
+            y: p.mouseY / p.height,
+            deltaX: event.deltaX,
+            deltaY: event.deltaY,
+            deltaMode: event.deltaMode
+          });
+        };
+
         p.mousePressed = function (event: MouseEvent) {
           adjustMouseForZoom();
 
           if (isMouseInCanvas()) {
             userCode?.mousePressed?.call(p, event);
+            dispatchSurfacePointer(event.buttons || 1, 'down');
           }
         };
 
@@ -250,6 +300,7 @@ export class P5Manager {
 
           if (isMouseInCanvas()) {
             userCode?.mouseReleased?.call(p, event);
+            dispatchSurfacePointer(0, 'up');
           }
         };
 
@@ -266,6 +317,7 @@ export class P5Manager {
 
           if (isMouseInCanvas()) {
             userCode?.mouseMoved?.call(p, event);
+            dispatchSurfacePointer(event.buttons, 'move');
           }
         };
 
@@ -274,6 +326,7 @@ export class P5Manager {
 
           if (isMouseInCanvas()) {
             userCode?.mouseDragged?.call(p, event);
+            dispatchSurfacePointer(event.buttons, 'move');
           }
         };
 
@@ -282,6 +335,7 @@ export class P5Manager {
 
           if (isMouseInCanvas()) {
             userCode?.mouseWheel?.call(p, event);
+            dispatchSurfaceWheel(event);
           }
         };
 
@@ -363,6 +417,29 @@ export class P5Manager {
 
     (sketch as unknown as Record<string, unknown>)['p5'] = P5Constructor;
 
+    const createSurfaceCanvas = (...args: unknown[]) => {
+      config.onSurfaceModeChange?.(true);
+
+      const { width, height } = config.getSurfaceCanvasSize?.() ?? {
+        width: window.innerWidth,
+        height: window.innerHeight
+      };
+
+      const renderer = (
+        sketch as unknown as { createCanvas: (...args: unknown[]) => unknown }
+      ).createCanvas(width, height, ...args) as
+        | { canvas?: HTMLCanvasElement; elt?: HTMLCanvasElement }
+        | undefined;
+
+      const canvas = renderer?.canvas ?? renderer?.elt;
+
+      if (canvas) {
+        config.onSurfaceCanvasCreated?.(canvas);
+      }
+
+      return renderer;
+    };
+
     // P5.js wrapper code that returns the functions
     const codeWithWrapper = `
 			var setup, draw, preload, mousePressed, mouseReleased, mouseClicked, mouseMoved, mouseDragged, mouseWheel, doubleClicked, keyPressed, keyReleased, keyTyped, touchStarted, touchMoved, touchEnded, windowResized, deviceMoved, deviceTurned, deviceShaken;
@@ -387,7 +464,12 @@ export class P5Manager {
         noInteract: config.messageContext?.noInteract,
         noOutput: config.messageContext?.noOutput,
         setHidePorts: config.setHidePorts,
-        settings: config.settings
+        settings: config.settings,
+        createSurfaceCanvas,
+        hideExitButton: config.hideExitButton,
+        setMouseForwarding: config.setMouseForwarding,
+        expandSurface: config.expandSurface,
+        collapseSurface: config.collapseSurface
       }
     });
   }
@@ -442,6 +524,8 @@ export class P5Manager {
     // @ts-expect-error -- do not capture if bitmap is missing
     const canvas: HTMLCanvasElement = this.p5?.canvas;
     if (!canvas) return;
+
+    this.onSurfaceFrame?.(canvas);
 
     if (!this.shouldSendBitmap) return;
     if (!this.glSystem.hasOutgoingVideoConnections(this.nodeId)) return;

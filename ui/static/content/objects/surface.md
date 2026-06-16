@@ -166,13 +166,13 @@ function draw() {
 }
 ```
 
-## Activation API
+## Expansion API
 
 You can programmatically enter or exit fullscreen surface mode through JavaScript:
 
 ```javascript
-activate();    // Enter fullscreen surface mode
-deactivate();  // Exit fullscreen surface mode
+expandSurface();   // Enter fullscreen surface mode
+collapseSurface(); // Exit fullscreen surface mode
 ```
 
 Or, send messages to the inlet:
@@ -198,7 +198,7 @@ plus:
 - `setDrawMode('always'|'interact'|'manual')` — control render loop
 - `redraw()` — manually trigger a draw (manual mode)
 - `setMouseForwarding({ enabled, only, except })` — enable/disable or filter forwarded mouse events by node ID
-- `activate()` / `deactivate()` — enter/exit fullscreen
+- `expandSurface()` / `collapseSurface()` — enter/exit fullscreen
 - `hideExitButton()` — hide the "Exit surface (Shift+Esc)" badge
 - `noOutput()` — hide video output port
 
