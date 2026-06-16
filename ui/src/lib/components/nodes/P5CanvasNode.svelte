@@ -294,6 +294,7 @@
   onDestroy(() => {
     clearPreservedFrameCanvas();
     if (isSurfaceExpanded) {
+      isSurfaceExpanded = false;
       SurfaceOverlay.getInstance().deactivate(nodeId);
       glSystem.ipcSystem.sendSurfaceOverlayState(null);
     }
