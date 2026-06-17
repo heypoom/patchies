@@ -13,7 +13,11 @@
   import { handleCodeError } from '$lib/js-runner/handleCodeError';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent } from '$lib/eventbus/events';
-  import { parseCanvasDimensions, shouldResetP5CanvasSize } from '$lib/p5/component-helpers';
+  import {
+    parseCanvasDimensions,
+    shouldResetP5CanvasSize,
+    usesP5SurfaceCanvas
+  } from '$lib/p5/component-helpers';
   import { createP5SurfaceMode } from '$lib/p5/use-p5-surface-mode.svelte';
   import { P5_WRAPPER_OFFSET } from '$lib/constants/error-reporting-offsets';
   import { SettingsManager, createSettingsAPI } from '$lib/settings';
@@ -72,6 +76,7 @@
   const code = $derived(data.code || '');
   let inletCount = $derived(data.inletCount ?? 1);
   let outletCount = $derived(data.outletCount ?? 1);
+  let isSurfaceModeAvailable = $derived((data.surfaceMode ?? false) || usesP5SurfaceCanvas(code));
   let previousExecuteCode = $state<number | undefined>(undefined);
 
   // Local state for pre-parsed canvas dimensions (not persisted)
@@ -87,7 +92,7 @@
     getGlSystem: () => glSystem,
     getP5Manager: () => p5Manager,
     getPreviewContainer: () => containerElement ?? null,
-    isSurfaceModeEnabled: () => data.surfaceMode,
+    isSurfaceModeEnabled: () => isSurfaceModeAvailable,
     measureWidth,
     updateSketch: () => void updateSketch()
   });

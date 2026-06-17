@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseCanvasDimensions, shouldResetP5CanvasSize } from './component-helpers';
+import {
+  parseCanvasDimensions,
+  shouldResetP5CanvasSize,
+  usesP5SurfaceCanvas
+} from './component-helpers';
 
 describe('parseCanvasDimensions', () => {
   it('should extract width and height from createCanvas call', () => {
@@ -65,5 +69,24 @@ describe('parseCanvasDimensions', () => {
 			background(0)
 		}`)
     ).toBe(true);
+  });
+});
+
+describe('usesP5SurfaceCanvas', () => {
+  it('detects p5 surface canvas usage', () => {
+    expect(
+      usesP5SurfaceCanvas(`function setup() {
+        createSurfaceCanvas()
+      }`)
+    ).toBe(true);
+  });
+
+  it('ignores createSurfaceCanvas in comments', () => {
+    expect(
+      usesP5SurfaceCanvas(`function setup() {
+        // createSurfaceCanvas()
+        createCanvas(320, 180)
+      }`)
+    ).toBe(false);
   });
 });
