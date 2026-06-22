@@ -7,6 +7,7 @@ import {
 } from '$lib/codemirror/patchies-completions';
 import { createHydraCompletionSource } from '$lib/codemirror/hydra-completions';
 import { createShaderParkCompletionSource } from '$lib/codemirror/shaderpark-completions';
+import { createDeckGLCompletionSource } from '$lib/codemirror/deckgl-completions';
 
 function getCompletionLabels(nodeType: string, doc: string) {
   const state = EditorState.create({ doc });
@@ -20,6 +21,14 @@ function getShaderParkCompletionLabels(nodeType: string, doc: string) {
   const state = EditorState.create({ doc });
   const context = new CompletionContext(state, doc.length, true);
   const result = createShaderParkCompletionSource({ nodeType })(context);
+
+  return result?.options.map((option) => option.label) ?? [];
+}
+
+function getDeckGLCompletionLabels(nodeType: string, doc: string) {
+  const state = EditorState.create({ doc });
+  const context = new CompletionContext(state, doc.length, true);
+  const result = createDeckGLCompletionSource({ nodeType })(context);
 
   return result?.options.map((option) => option.label) ?? [];
 }
@@ -149,6 +158,52 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('dom', 'setS')).toContain('setSize');
     expect(getCompletionLabels('vue', 'setS')).toContain('setSize');
     expect(getCompletionLabels('js', 'setS')).not.toContain('setSize');
+  });
+
+  it('shows setViewState only for deckgl code', () => {
+    expect(getCompletionLabels('deckgl', 'setV')).toContain('setViewState');
+    expect(getCompletionLabels('three', 'setV')).not.toContain('setViewState');
+  });
+
+  it('shows deckgl camera helper completions only for deckgl code', () => {
+    expect(getCompletionLabels('deckgl', 'setV')).toContain('setViewState');
+    expect(getCompletionLabels('deckgl', 'setD')).toEqual(
+      expect.arrayContaining(['setDeckDebug', 'setDeckInteraction', 'setDeckPicking'])
+    );
+    expect(getCompletionLabels('three', 'setV')).not.toContain('setViewState');
+    expect(getCompletionLabels('three', 'setD')).not.toContain('setDeckInteraction');
+    expect(getCompletionLabels('three', 'setD')).not.toContain('setDeckPicking');
+    expect(getCompletionLabels('three', 'setD')).not.toContain('setDeckDebug');
+  });
+
+  it('shows deckgl picking helper completions only for deckgl code', () => {
+    expect(getCompletionLabels('deckgl', 'onDeck')).toEqual(
+      expect.arrayContaining(['onDeckHover', 'onDeckClick'])
+    );
+    expect(getCompletionLabels('three', 'onDeck')).toEqual([]);
+  });
+
+  it('shows deck.gl layer completions only for deckgl code', () => {
+    expect(getDeckGLCompletionLabels('deckgl', 'Tile')).toEqual(
+      expect.arrayContaining(['TileLayer', 'Tile3DLayer'])
+    );
+    expect(getDeckGLCompletionLabels('three', 'Tile')).toEqual([]);
+  });
+
+  it('includes common deck.gl layer completions', () => {
+    expect(getDeckGLCompletionLabels('deckgl', '')).toEqual(
+      expect.arrayContaining([
+        'ArcLayer',
+        'BitmapLayer',
+        'GeoJsonLayer',
+        'HexagonLayer',
+        'LineLayer',
+        'MVTLayer',
+        'ScatterplotLayer',
+        'TextLayer',
+        'TileLayer'
+      ])
+    );
   });
 
   it('shows Shader Park completions only for shaderpark code', () => {

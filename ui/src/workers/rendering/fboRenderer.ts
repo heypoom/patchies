@@ -27,6 +27,7 @@ import { CanvasRenderer } from './canvasRenderer';
 import { TextmodeRenderer } from './textmodeRenderer';
 import { ThreeRenderer } from './threeRenderer';
 import { ReglRenderer } from './reglRenderer';
+import { DeckGLRenderer } from './deckglRenderer';
 import { SwissGLRenderer } from './swglRenderer';
 import { createShaderParkDrawCommand, SHADERPARK_VIDEO_UNIFORM_COUNT } from './shaderParkRenderer';
 import { ShaderParkThreeRenderer } from './shaderParkThreeRenderer';
@@ -115,6 +116,7 @@ export class FBORenderer {
   public threeByNode = new Map<string, ThreeRenderer | null>();
   public shaderParkThreeByNode = new Map<string, ShaderParkThreeRenderer | null>();
   public reglByNode = new Map<string, ReglRenderer | null>();
+  public deckglByNode = new Map<string, DeckGLRenderer | null>();
   public projmapByNode = new Map<string, ProjectionMapRenderer | null>();
   public swglByNode = new Map<string, SwissGLRenderer | null>();
 
@@ -496,8 +498,9 @@ export class FBORenderer {
           node.data.renderMode === '3d' &&
           this.shaderParkThreeByNode.has(node.id);
         const isReusableThree = node.type === 'three' && this.threeByNode.has(node.id);
+        const isReusableDeckGL = node.type === 'deckgl' && this.deckglByNode.has(node.id);
 
-        if (!isHydra && !isShaderPark3D && !isReusableThree) {
+        if (!isHydra && !isShaderPark3D && !isReusableThree && !isReusableDeckGL) {
           existingFbo.cleanup?.();
         }
       } else {
@@ -512,8 +515,9 @@ export class FBORenderer {
             this.shaderParkThreeByNode.has(node.id);
 
           const isReusableThree = node.type === 'three' && this.threeByNode.has(node.id);
+          const isReusableDeckGL = node.type === 'deckgl' && this.deckglByNode.has(node.id);
 
-          if (!isHydra && !isShaderPark3D && !isReusableThree) {
+          if (!isHydra && !isShaderPark3D && !isReusableThree && !isReusableDeckGL) {
             existingFbo.cleanup?.();
           }
 
@@ -593,6 +597,7 @@ export class FBORenderer {
           .with({ type: 'three' }, (node) => this.createThreeRenderer(node, framebuffer))
           .with({ type: 'shaderpark' }, (node) => this.createShaderParkRenderer(node, framebuffer))
           .with({ type: 'regl' }, (node) => this.createReglRenderer(node, framebuffer))
+          .with({ type: 'deckgl' }, (node) => this.createDeckGLRenderer(node, framebuffer))
           .with({ type: 'projmap' }, (node) => this.createProjMapRenderer(node, framebuffer))
           .with({ type: 'img' }, () => this.createEmptyRenderer())
           .with({ type: 'float.tex' }, () => this.createEmptyRenderer())
@@ -1009,6 +1014,41 @@ export class FBORenderer {
     };
   }
 
+  async createDeckGLRenderer(
+    node: RenderNode,
+    framebuffer: regl.Framebuffer2D
+  ): Promise<{ render: RenderFunction; cleanup: () => void } | null> {
+    if (node.type !== 'deckgl') return null;
+
+    const existingRenderer = this.deckglByNode.get(node.id);
+    const runRevision = node.data._runRevision;
+    const config = { code: node.data.code, nodeId: node.id, runRevision };
+
+    if (existingRenderer) {
+      await existingRenderer.updateConfig(config, framebuffer);
+
+      return {
+        render: existingRenderer.renderFrame.bind(existingRenderer),
+        cleanup: () => {
+          existingRenderer.destroy();
+          this.deckglByNode.delete(node.id);
+        }
+      };
+    }
+
+    const deckglRenderer = await DeckGLRenderer.create(config, framebuffer, this);
+
+    this.deckglByNode.set(node.id, deckglRenderer);
+
+    return {
+      render: deckglRenderer.renderFrame.bind(deckglRenderer),
+      cleanup: () => {
+        deckglRenderer.destroy();
+        this.deckglByNode.delete(node.id);
+      }
+    };
+  }
+
   async createProjMapRenderer(
     node: RenderNode,
     framebuffer: regl.Framebuffer2D
@@ -1415,6 +1455,7 @@ export class FBORenderer {
       this.hydraByNode.get(nodeId),
       this.textmodeByNode.get(nodeId),
       this.threeByNode.get(nodeId),
+      this.deckglByNode.get(nodeId),
       this.swglByNode.get(nodeId)
     ];
 
@@ -1444,6 +1485,7 @@ export class FBORenderer {
     event: { x?: number; y?: number; deltaX?: number; deltaY: number; deltaMode?: number }
   ) {
     this.threeByNode.get(nodeId)?.handleWheelData(event);
+    this.deckglByNode.get(nodeId)?.handleWheelData(event);
   }
 
   resetThreeOrbitControls(nodeId: string) {
@@ -1625,6 +1667,7 @@ export class FBORenderer {
       node.type === 'hydra' ||
       node.type === 'three' ||
       node.type === 'regl' ||
+      node.type === 'deckgl' ||
       node.type === 'swgl' ||
       node.type === 'projmap'
     ) {
@@ -1638,8 +1681,9 @@ export class FBORenderer {
       userUniformParams = textureArray;
     }
 
-    // Get mouse data for this node (defaults to [0, 0, 0, 0])
-    const mouseData = this.mouseDataByNode.get(node.id) ?? [0, 0, 0, 0];
+    // Get mouse data for this node. Negative zw follows the Shadertoy-style
+    // "not pressed" convention used by CanvasMouseHandler.
+    const mouseData = this.mouseDataByNode.get(node.id) ?? [0, 0, -1, -1, 0];
 
     // Render to FBO
     // Use transport time if available, otherwise fall back to local time
@@ -2117,6 +2161,12 @@ export class FBORenderer {
 
         reglRenderer.handleMessage(message);
       })
+      .with('deckgl', () => {
+        const deckglRenderer = this.deckglByNode.get(nodeId);
+        if (!deckglRenderer) return;
+
+        deckglRenderer.handleMessage(message);
+      })
       .with(
         P.union(
           'glsl',
@@ -2153,6 +2203,9 @@ export class FBORenderer {
       })
       .with('regl', () => {
         this.reglByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
+      })
+      .with('deckgl', () => {
+        this.deckglByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
       })
       .with('swgl', () => {
         this.swglByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);

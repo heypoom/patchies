@@ -297,6 +297,36 @@ function render(time) {
   draw({ time })
 }`;
 
+export const DEFAULT_DECKGL_CODE = `noInteract()
+
+const data = [
+  { position: [-122.45, 37.78], color: [255, 90, 70] },
+  { position: [-122.42, 37.76], color: [80, 180, 255] },
+  { position: [-122.48, 37.74], color: [255, 210, 80] }
+]
+
+setViewState({
+  longitude: -122.44,
+  latitude: 37.76,
+  zoom: 11,
+  pitch: 0,
+  bearing: 0
+})
+
+function getLayers({ time }) {
+  return [
+    new ScatterplotLayer({
+      id: 'points',
+      data,
+      getPosition: d => d.position,
+      getRadius: 450 + Math.sin(time * 2) * 120,
+      getFillColor: d => d.color,
+      radiusUnits: 'meters',
+      pickable: true
+    })
+  ]
+}`;
+
 export const DEFAULT_SHADERPARK_CODE = `let sizeBase = input(0.5, 0.1, 1.2);
 let pulse = 0.08 * nsin(time * 2.0);
 

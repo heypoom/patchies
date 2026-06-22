@@ -112,6 +112,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'projmap',
       'shaderpark',
       'float.tex',
+      'deckgl',
       'regl',
       'swgl'
     ]

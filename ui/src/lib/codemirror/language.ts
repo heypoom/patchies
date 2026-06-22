@@ -50,8 +50,13 @@ export async function loadLanguageExtension(
         { patchiesCompletions },
         { shaderParkCompletionsSource },
         { hydraCompletionsSource },
+<<<<<<< HEAD
         { glslInJsCompletions },
         { javascriptMixedWrap },
+=======
+        { deckglCompletionsSource },
+        { glslInJsCompletions, glslInJsWrap },
+>>>>>>> 31751603 (feat(deckgl): add completion layers for deck.gl)
         { completionHoverHints },
         { glslIncludeHighlighter },
         { inlineValueWidgets }
@@ -62,6 +67,7 @@ export async function loadLanguageExtension(
         import('$lib/codemirror/patchies-completions'),
         import('$lib/codemirror/shaderpark-completions'),
         import('$lib/codemirror/hydra-completions'),
+        import('$lib/codemirror/deckgl-completions'),
         import('$lib/codemirror/glsl-in-js'),
         import('$lib/codemirror/javascript-mixed'),
         import('$lib/codemirror/hover-hints'),
@@ -84,6 +90,7 @@ export async function loadLanguageExtension(
               glslInJsCompletions,
               shaderParkCompletionsSource(context),
               hydraCompletionsSource(context),
+              deckglCompletionsSource(context),
               patchiesCompletions(context)
             ]
           })

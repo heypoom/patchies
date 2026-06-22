@@ -70,7 +70,7 @@ export class SurfaceMouseForwarder {
     const yFBShadertoy = (1 - y) * h; // Y-flip for GL origin (bottom-left)
 
     for (const node of renderNodes) {
-      if (node.type === 'three') {
+      if (node.type === 'three' || node.type === 'deckgl') {
         this.forwardShadertoy(node.nodeId, xFB, yFBSimple, type, _buttons);
       } else if (node.kind === 'shadertoy') {
         this.forwardShadertoy(node.nodeId, xFB, yFBShadertoy, type, _buttons);
@@ -93,7 +93,7 @@ export class SurfaceMouseForwarder {
     const yFB = event.y * h;
 
     for (const target of this.wheelTargets) {
-      if (target.kind === 'three') {
+      if (target.kind === 'three' || target.kind === 'deckgl') {
         this.glSystem.sendThreeWheelData(target.nodeId, {
           x: xFB,
           y: yFB,

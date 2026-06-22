@@ -83,6 +83,20 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'onWheel(({ x, y, deltaY }) => {\n  \n})'
   },
   {
+    label: 'onDeckHover',
+    type: 'function',
+    detail: '(callback: (info) => void) => () => void',
+    info: 'Register a callback for deckgl hover picking. Layers must set pickable: true. Receives null when leaving a picked object.',
+    apply: 'onDeckHover((info) => {\n  \n})'
+  },
+  {
+    label: 'onDeckClick',
+    type: 'function',
+    detail: '(callback: (info) => void) => () => void',
+    info: 'Register a callback for deckgl click picking. Layers must set pickable: true.',
+    apply: 'onDeckClick((info) => {\n  \n})'
+  },
+  {
     label: 'onVideoFrame',
     type: 'function',
     detail: '(callback: (frames, timestamp) => void) => void',
@@ -170,6 +184,35 @@ const patchiesAPICompletions: Completion[] = [
     detail: '(widthOrPreset: number | string, height?: number) => void',
     info: "Set output FBO resolution. Pass a number for square (256), two numbers for rectangular (512, 256), or a string fraction ('1/2', '1/4').",
     apply: 'setResolution(256)'
+  },
+  {
+    label: 'setViewState',
+    type: 'function',
+    detail: '(viewState: Partial<{ longitude, latitude, zoom, pitch, bearing }>) => void',
+    info: 'Set the deck.gl camera view state for deckgl nodes.',
+    apply:
+      'setViewState({\n  longitude: -122.44,\n  latitude: 37.76,\n  zoom: 11,\n  pitch: 0,\n  bearing: 0\n})'
+  },
+  {
+    label: 'setDeckInteraction',
+    type: 'function',
+    detail: '(enabled: boolean) => void',
+    info: 'Enable or disable Patchies-provided deckgl camera pan and zoom controls.',
+    apply: 'setDeckInteraction(false)'
+  },
+  {
+    label: 'setDeckPicking',
+    type: 'function',
+    detail: '(enabled: boolean) => void',
+    info: 'Enable or disable Patchies-provided deckgl hover/click picking.',
+    apply: 'setDeckPicking(false)'
+  },
+  {
+    label: 'setDeckDebug',
+    type: 'function',
+    detail: '(enabled?: boolean) => void',
+    info: 'Enable throttled deckgl worker diagnostics for frame stages, layer summaries, framebuffer size, and WebGL errors.',
+    apply: 'setDeckDebug(true)'
   },
   {
     label: 'setPrimaryButton',
@@ -508,6 +551,7 @@ const MOUSE_INTERACTION_JS_NODES = [
   'textmode',
   'textmode.dom',
   'three',
+  'deckgl',
   'three.dom',
   'vue',
   'dom',
@@ -534,6 +578,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode',
     'textmode.dom',
     'three',
+    'deckgl',
     'three.dom',
     'dom',
     'vue',
@@ -553,6 +598,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode',
     'textmode.dom',
     'three',
+    'deckgl',
     'three.dom',
     'tone~'
   ],
@@ -570,6 +616,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode',
     'textmode.dom',
     'three',
+    'deckgl',
     'three.dom',
     'surface'
   ],
@@ -595,6 +642,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode',
     'textmode.dom',
     'three',
+    'deckgl',
     'three.dom'
   ],
   setKeepAlive: ['dsp~'],
@@ -622,19 +670,26 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode',
     'textmode.dom',
     'three',
+    'deckgl',
     'three.dom'
   ],
   'htmlCanvas.videoOutput': ['dom', 'vue'],
   'htmlCanvas.canvasLayer': ['dom', 'vue'],
   'htmlCanvas.glslLayer': ['dom', 'vue'],
-  setTextureFormat: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
-  setResolution: ['hydra', 'canvas', 'three', 'regl', 'swgl', 'textmode'],
+  setTextureFormat: ['hydra', 'canvas', 'three', 'deckgl', 'regl', 'swgl', 'textmode'],
+  setResolution: ['hydra', 'canvas', 'three', 'deckgl', 'regl', 'swgl', 'textmode'],
+  setViewState: ['deckgl'],
+  setDeckInteraction: ['deckgl'],
+  setDeckPicking: ['deckgl'],
+  setDeckDebug: ['deckgl'],
   setPrimaryButton: ['js', 'worker', 'p5', 'hydra', 'canvas', 'regl', 'swgl', 'textmode', 'three'],
   setVideoCount: ['hydra', 'regl', 'swgl', 'three', 'worker'],
   getTexture: ['hydra', 'regl', 'swgl', 'three'],
   OrbitControls: ['three'],
   onPointerDrag: ['three'],
   onWheel: ['three'],
+  onDeckHover: ['deckgl'],
+  onDeckClick: ['deckgl'],
   onVideoFrame: ['worker'],
   getVideoFrames: ['worker'],
   getVfsUrl: [

@@ -18,6 +18,7 @@ import {
   DEFAULT_TEXTMODE_CODE,
   DEFAULT_THREE_CODE,
   DEFAULT_REGL_CODE,
+  DEFAULT_DECKGL_CODE,
   DEFAULT_SHADERPARK_CODE,
   DEFAULT_SURFACE_CODE,
   DEFAULT_DOM_CODE,
@@ -113,6 +114,13 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       messageInletCount: 1,
       messageOutletCount: 0,
       videoInletCount: 1,
+      videoOutletCount: 1
+    }))
+    .with('deckgl', () => ({
+      code: DEFAULT_DECKGL_CODE,
+      messageInletCount: 1,
+      messageOutletCount: 0,
+      videoInletCount: 0,
       videoOutletCount: 1
     }))
     .with('shaderpark', () => ({

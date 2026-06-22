@@ -19,7 +19,7 @@ export interface ShadertoyMouseConfig {
   outputWidth: number;
   outputHeight: number;
   wheelZoom?: boolean;
-  wheelTarget?: 'shaderparkOrbit' | 'threeInteraction';
+  wheelTarget?: 'shaderparkOrbit' | 'threeInteraction' | 'deckglInteraction';
   flipY?: boolean;
 }
 
@@ -399,6 +399,19 @@ export class CanvasMouseHandler {
             deltaMode: event.deltaMode
           });
         })
+        .with('deckglInteraction', () => {
+          const rect = config.canvas.getBoundingClientRect();
+          const screenX = event.clientX - rect.left;
+          const screenY = event.clientY - rect.top;
+
+          this.glSystem.sendThreeWheelData(config.nodeId, {
+            x: (screenX / rect.width) * config.outputWidth,
+            y: this.mapY(screenY, rect.height, config),
+            deltaX: event.deltaX,
+            deltaY: event.deltaY,
+            deltaMode: event.deltaMode
+          });
+        })
         .with('shaderparkOrbit', () =>
           this.glSystem.zoomShaderParkOrbit(config.nodeId, event.deltaY)
         )
@@ -489,6 +502,17 @@ export class CanvasMouseHandler {
 
     match(config.wheelTarget ?? 'shaderparkOrbit')
       .with('threeInteraction', () => {
+        const { x, y } = getFramebufferPosition(center.clientX, center.clientY);
+
+        this.glSystem.sendThreeWheelData(config.nodeId, {
+          x,
+          y,
+          deltaX: 0,
+          deltaY,
+          deltaMode: 0
+        });
+      })
+      .with('deckglInteraction', () => {
         const { x, y } = getFramebufferPosition(center.clientX, center.clientY);
 
         this.glSystem.sendThreeWheelData(config.nodeId, {

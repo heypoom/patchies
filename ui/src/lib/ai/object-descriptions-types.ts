@@ -54,6 +54,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - float.tex: Convert Float32Array or Float32Array[] channel data into a 32-bit float video texture for shaders
 - shaderpark: Shader Park SDF raymarching visuals for the video pipeline
 - three: Three.js 3D graphics (offscreen worker, video chaining, pointer drag/wheel interaction)
+- deckgl: deck.gl data visualization layers rendered into the video pipeline
 - regl: GPU renderer with regl draw commands (custom vertices, buffers, multi-pass, blend modes)
 - three.dom: Three.js 3D graphics (main thread, for keyboard/DOM interaction)
 - projmap: Projection mapper — warp video textures onto N-point polygon surfaces with built-in point editor and expand mode
@@ -151,6 +152,7 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - shaderpark: Shader Park — concise SDF/raymarched procedural 3D visuals
 - three: Three.js 3D graphics (offscreen worker) — meshes, lighting, cameras, 3D scenes, pointer drag/wheel interaction; for video chaining
 - three.dom: Three.js 3D graphics (main thread) — same as three but supports keyboard and DOM interaction
+- deckgl: deck.gl data visualization — maps, points, lines, arcs, polygons, and geospatial layers for video chaining
 - regl: Low-level GPU rendering — custom vertices, multi-pass, blend modes
 - canvas.dom: HTML5 Canvas (main thread) — supports mouse/keyboard, lower overhead than p5
 - projmap: Projection mapping — warp video onto surfaces with a built-in point editor

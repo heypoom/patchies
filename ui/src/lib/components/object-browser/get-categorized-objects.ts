@@ -22,7 +22,8 @@ export interface CategoryGroup {
  * Fallback descriptions for objects that don't have schemas
  */
 const FALLBACK_DESCRIPTIONS: Record<string, string> = {
-  bchrn: 'Butterchurn milkdrop visualizer with audio reactivity'
+  bchrn: 'Butterchurn milkdrop visualizer with audio reactivity',
+  deckgl: 'deck.gl data visualization renderer for the video pipeline'
 };
 
 /**

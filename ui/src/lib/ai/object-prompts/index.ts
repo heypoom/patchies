@@ -53,6 +53,7 @@ import { elemPrompt } from './elem~';
 import { labelPrompt } from './label';
 import { titlePrompt } from './title';
 import { vuePrompt } from './vue';
+import { deckglPrompt } from './deckgl';
 import { reglPrompt } from './regl';
 import { threePrompt } from './three';
 import { threeDomPrompt } from './three.dom';
@@ -123,6 +124,7 @@ export const objectPrompts: Record<string, string> = {
   'elem~': elemPrompt,
   label: labelPrompt,
   title: titlePrompt,
+  deckgl: deckglPrompt,
   regl: reglPrompt,
   three: threePrompt,
   'three.dom': threeDomPrompt,

@@ -29,6 +29,7 @@ import { SWGL_PRESETS } from './swgl.presets';
 import { SHADERPARK_PRESETS } from './shaderpark.presets';
 import { FLOAT_TEXTURE_PRESETS } from './float-texture.presets';
 import { SURFACE_PRESETS } from './surface.presets';
+import { DECKGL_PRESETS } from './deckgl.presets';
 
 // Re-export individual preset collections
 export {
@@ -59,7 +60,8 @@ export {
   SWGL_PRESETS,
   SHADERPARK_PRESETS,
   FLOAT_TEXTURE_PRESETS,
-  SURFACE_PRESETS
+  SURFACE_PRESETS,
+  DECKGL_PRESETS
 };
 
 /**
@@ -97,5 +99,6 @@ export const BUILTIN_PRESETS: Record<
   ...SWGL_PRESETS,
   ...SHADERPARK_PRESETS,
   ...FLOAT_TEXTURE_PRESETS,
-  ...SURFACE_PRESETS
+  ...SURFACE_PRESETS,
+  ...DECKGL_PRESETS
 };

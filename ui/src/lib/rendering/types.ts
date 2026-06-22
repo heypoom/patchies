@@ -82,6 +82,15 @@ export type RenderNode = {
         resolution?: FBOResolution;
       };
     }
+  | {
+      type: 'deckgl';
+      data: {
+        code: string;
+        fboFormat?: FBOFormat;
+        resolution?: FBOResolution;
+        _runRevision?: number;
+      };
+    }
   | { type: 'projmap'; data: { surfaces: import('$objects/projmap/types').ProjMapSurface[] } }
   | { type: 'img'; data: unknown }
   | { type: 'float.tex'; data: unknown }
@@ -371,6 +380,7 @@ export const FBO_COMPATIBLE_TYPES: RenderNode['type'][] = [
   'three',
   'shaderpark',
   'regl',
+  'deckgl',
   'projmap',
   'img',
   'float.tex',
