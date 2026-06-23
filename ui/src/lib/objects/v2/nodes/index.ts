@@ -13,6 +13,7 @@ import { KVObject } from './KVObject';
 import { LoadbangObject } from './LoadbangObject';
 import { MetroObject } from './MetroObject';
 import { MtofObject } from './MtofObject';
+import { AddObject, DivideObject, MultiplyObject, SubtractObject } from './NumericOperatorObject';
 import { PackObject } from './PackObject';
 import { PatchbayObject } from './PatchbayObject';
 import { SelectObject } from './SelectObject';
@@ -44,6 +45,10 @@ export const TEXT_OBJECTS = [
   LoadbangObject,
   MetroObject,
   MtofObject,
+  AddObject,
+  SubtractObject,
+  MultiplyObject,
+  DivideObject,
   PackObject,
   PatchbayObject,
   SelectObject,

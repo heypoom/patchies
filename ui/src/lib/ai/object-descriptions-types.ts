@@ -80,6 +80,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - python: Python code with Pyodide
 - peppermint: Peppermint data pipelines with input() and send()
 - expr: Mathematical expression evaluator
+- +, -, *, /: Simple numeric operators for control messages (+ 1, - 1, * 0.5, / 2)
 - scale: Remap a number from one range to another (scale inMin inMax outMin outMax)
 - clip: Clamp a number to a min/max range (clip min max)
 - pack: Collect float, symbol, and any inlet values into one list (pack f s a, pack 0 symbol any)

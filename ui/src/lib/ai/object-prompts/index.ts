@@ -23,6 +23,7 @@ import { hydraPrompt } from './hydra';
 import { jsPrompt } from './js';
 import { markdownPrompt } from './markdown';
 import { msgPrompt } from './msg';
+import { numericOperatorsPrompt } from './numeric-operators';
 import { objectPrompt } from './object';
 import { orcaPrompt } from './orca';
 import { p5Prompt } from './p5';
@@ -94,6 +95,10 @@ export const objectPrompts: Record<string, string> = {
   slider: sliderPrompt,
   js: jsPrompt,
   expr: exprPrompt,
+  '+': numericOperatorsPrompt,
+  '-': numericOperatorsPrompt,
+  '*': numericOperatorsPrompt,
+  '/': numericOperatorsPrompt,
   'expr~': exprTildePrompt,
   button: buttonPrompt,
   toggle: togglePrompt,
