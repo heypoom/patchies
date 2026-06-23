@@ -105,7 +105,6 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'Channel Mix',
       'Pack',
       'Limit',
-      'Remap',
       'Lookup',
       'RGB to HSV',
       'HSV to RGB',
@@ -135,6 +134,7 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
       'Mirror',
       'Tile',
       'Lens Distort',
+      'Remap',
       'Displace',
       'Noise Displace'
     ]
