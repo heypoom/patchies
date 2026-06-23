@@ -60,6 +60,7 @@ export * from './expr';
 export * from './filter';
 export * from './map';
 export * from './tap';
+export * from './tap-tilde';
 export * from './scan';
 export * from './uniq';
 export * from './peek';
@@ -158,6 +159,7 @@ import { exprSchema } from './expr';
 import { filterSchema } from './filter';
 import { mapSchema } from './map';
 import { tapSchema } from './tap';
+import { tapTildeSchema } from './tap-tilde';
 import { scanSchema } from './scan';
 import { uniqSchema } from './uniq';
 import { peekSchema } from './peek';
@@ -275,6 +277,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   filter: filterSchema,
   map: mapSchema,
   tap: tapSchema,
+  'tap~': tapTildeSchema,
   scan: scanSchema,
   uniq: uniqSchema,
   peek: peekSchema,

@@ -50,6 +50,18 @@ configurable via the settings panel on each preset.
   zero-crossings for stable scope-style frames. Disable it for
   continuous monitoring when you do not need waveform locking.
 
+## Messages
+
+`tap~` has a message inlet for changing settings while a patch is
+running. Numeric values are clamped to the supported range.
+
+```javascript
+send({ type: 'setMode', value: 'xy' })
+send({ type: 'setFpsLimit', value: 30 })
+send({ type: 'setZeroCrossing', value: false })
+send({ type: 'setSamples', value: 1024 })
+```
+
 ## Trigger Stability
 
 When zero-crossing detection is enabled, frames are trigger-synced

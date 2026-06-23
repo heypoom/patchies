@@ -18,10 +18,11 @@ The existing `scope~` visual node is **unchanged**.
 
 ### Inlets
 
-| #   | Name | Type   | Description                                          |
-| --- | ---- | ------ | ---------------------------------------------------- |
-| 0   | `in` | signal | Audio input (or X axis in XY mode)                   |
-| 1   | `y`  | signal | Y axis signal (XY mode only, visible when mode = xy) |
+| #   | Name      | Type    | Description                                          |
+| --- | --------- | ------- | ---------------------------------------------------- |
+| 0   | `in`      | signal  | Audio input (or X axis in XY mode)                   |
+| 1   | `y`       | signal  | Y axis signal (XY mode only, visible when mode = xy) |
+| 2   | `command` | message | Control messages for tap settings                    |
 
 ### Outlets
 
@@ -46,6 +47,17 @@ Float32Array  (length = bufferSize)
 When zero-crossing detection is enabled, the buffer is trigger-synced (rising
 zero-crossing on the X channel) with the same stability as `scope~`. When it is
 disabled, `tap~` continuously captures frames as soon as the FPS limit allows.
+
+### Command messages
+
+The message inlet updates the same settings as the panel:
+
+| Message                                       | Description                                       |
+| --------------------------------------------- | ------------------------------------------------- |
+| `{ type: 'setMode', value: 'wave' \| 'xy' }`  | Set capture mode                                  |
+| `{ type: 'setFpsLimit', value: number }`      | Set FPS limit, clamped to 0–120                   |
+| `{ type: 'setZeroCrossing', value: boolean }` | Enable or disable zero-crossing detection         |
+| `{ type: 'setSamples', value: number }`       | Set buffer length, rounded and clamped to 64–2048 |
 
 ### Settings
 

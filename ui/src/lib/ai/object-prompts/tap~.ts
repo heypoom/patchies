@@ -13,6 +13,7 @@ Node format:
 Inlets:
 - inlet 0: audio signal (X axis in XY mode)
 - inlet 1: Y axis signal (XY mode only)
+- inlet 2: message control inlet
 
 Output (outlet 0):
 - wave mode: Float32Array of audio samples
@@ -23,6 +24,12 @@ Settings:
 - mode: "wave" or "xy", default "wave"
 - fps: 0–120, default 0 (unlimited)
 - zeroCrossing: boolean, default true. Set false for continuous monitoring without scope-style trigger locking.
+
+Control messages:
+- { type: "setMode", value: "wave" | "xy" }
+- { type: "setFpsLimit", value: number } (clamped to 0–120)
+- { type: "setZeroCrossing", value: boolean }
+- { type: "setSamples", value: number } (rounded and clamped to 64–2048)
 
 Default data:
 \`\`\`json

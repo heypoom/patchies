@@ -1,15 +1,16 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { Settings, X, RotateCcw } from '@lucide/svelte/icons';
-  import { useEdges, useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import type { AudioNodeV2 } from '$lib/audio/v2/interfaces/audio-nodes';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import TapSettings from '$lib/components/settings/TapSettings.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
-  import { checkAudioConnections } from '$lib/composables/checkHandleConnections';
   import { useNodeDataTracker } from '$lib/history';
-  import { shouldShowHandles } from '../../../stores/ui.store';
+  import { MessageContext } from '$lib/messages/MessageContext';
+  import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { getTapTildeSettingsUpdate } from '$lib/objects/schemas';
   import { editorFontFamily } from '../../../stores/editor.store';
 
   type TapMode = 'wave' | 'xy';
@@ -35,28 +36,24 @@
 
   const { updateNodeData, getEdges, deleteElements } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-  const edges = useEdges();
   const tracker = useNodeDataTracker(node.id);
   const audioService = AudioService.getInstance();
 
   let showSettings = $state(false);
   let tapNode: AudioNodeV2 | null = $state(null);
+  let messageContext: MessageContext | null = null;
   let nodeButton: HTMLButtonElement | null = $state(null);
   let resizeObserver: ResizeObserver | null = null;
   let settingsOffset = $state(90);
   let mode = $state<TapMode>(node.data.mode ?? DEFAULTS.mode);
   let bufferSize = $state(node.data.bufferSize ?? DEFAULTS.bufferSize);
-  let sampleDigitCount = $state(String(bufferSize).length);
+  let sampleDigitCount = $state(String(node.data.bufferSize ?? DEFAULTS.bufferSize).length);
   let fps = $state(node.data.fps ?? DEFAULTS.fps);
   let zeroCrossing = $state(node.data.zeroCrossing ?? DEFAULTS.zeroCrossing);
 
-  const connections = $derived(checkAudioConnections(edges.current, node.id));
-  const inletCount = $derived(mode === 'xy' ? 2 : 1);
+  const audioInletCount = $derived(mode === 'xy' ? 2 : 1);
+  const topInletCount = $derived(audioInletCount + 1);
   const containerClass = $derived(node.selected ? 'object-container-selected' : 'object-container');
-  const HIDDEN_HANDLE_CLASS = 'opacity-30 group-hover:opacity-100 sm:opacity-0';
-  const handleInletClass = $derived(
-    node.selected || $shouldShowHandles || connections.hasInlet ? '' : HIDDEN_HANDLE_CLASS
-  );
 
   function sendSetting(key: string, value: unknown) {
     tapNode?.send?.(key, value);
@@ -96,35 +93,51 @@
     updateNodeData(node.id, updates);
   }
 
+  function applySettingsUpdate(updates: Partial<TapNodeData>) {
+    if (updates.mode !== undefined) {
+      mode = updates.mode;
+      sendSetting('mode', updates.mode);
+    }
+
+    if (updates.bufferSize !== undefined) {
+      bufferSize = updates.bufferSize;
+      sendSetting('bufferSize', updates.bufferSize);
+    }
+
+    if (updates.fps !== undefined) {
+      fps = updates.fps;
+      sendSetting('fps', updates.fps);
+    }
+
+    if (updates.zeroCrossing !== undefined) {
+      zeroCrossing = updates.zeroCrossing;
+      sendSetting('zeroCrossing', updates.zeroCrossing);
+    }
+
+    updateSettings(updates);
+  }
+
   function handleModeChange(value: TapMode) {
     const oldValue = mode;
-    mode = value;
-    updateSettings({ mode: value });
-    sendSetting('mode', value);
+    applySettingsUpdate({ mode: value });
     tracker.commit('mode', oldValue, value);
   }
 
   const bufferSizeTracker = tracker.track('bufferSize', () => node.data.bufferSize ?? 512);
 
   function handleBufferSizeChange(value: number) {
-    bufferSize = value;
-    updateSettings({ bufferSize: value });
-    sendSetting('bufferSize', value);
+    applySettingsUpdate({ bufferSize: value });
   }
 
   const fpsTracker = tracker.track('fps', () => node.data.fps ?? 0);
 
   function handleFpsChange(value: number) {
-    fps = value;
-    updateSettings({ fps: value });
-    sendSetting('fps', value);
+    applySettingsUpdate({ fps: value });
   }
 
   function handleZeroCrossingChange(value: boolean) {
     const oldValue = zeroCrossing;
-    zeroCrossing = value;
-    updateSettings({ zeroCrossing: value });
-    sendSetting('zeroCrossing', value);
+    applySettingsUpdate({ zeroCrossing: value });
     tracker.commit('zeroCrossing', oldValue, value);
   }
 
@@ -138,13 +151,19 @@
     zeroCrossing = DEFAULTS.zeroCrossing;
 
     updateSettings({ ...DEFAULTS });
-    sendSetting('bufferSize', DEFAULTS.bufferSize);
-    sendSetting('mode', DEFAULTS.mode);
-    sendSetting('fps', DEFAULTS.fps);
-    sendSetting('zeroCrossing', DEFAULTS.zeroCrossing);
+    applyAllSettings();
     tracker.commit('mode', oldMode, mode);
     tracker.commit('zeroCrossing', oldZeroCrossing, zeroCrossing);
   }
+
+  const handleMessage: MessageCallbackFn = (message, meta) => {
+    if (meta.inletKey !== undefined && meta.inletKey !== 'message-in-0') return;
+
+    const updates = getTapTildeSettingsUpdate(message);
+    if (!updates) return;
+
+    applySettingsUpdate(updates);
+  };
 
   let prevInletCount: number | null = null;
 
@@ -157,7 +176,7 @@
   });
 
   $effect(() => {
-    const count = inletCount;
+    const count = audioInletCount;
     updateNodeInternals(node.id);
 
     if (prevInletCount === null) {
@@ -178,6 +197,9 @@
   });
 
   onMount(async () => {
+    messageContext = new MessageContext(node.id);
+    messageContext.queue.addCallback(handleMessage);
+
     tapNode = await audioService.createNode(node.id, 'tap~', []);
     applyAllSettings();
 
@@ -191,6 +213,8 @@
 
   onDestroy(() => {
     resizeObserver?.disconnect();
+    messageContext?.queue.removeCallback(handleMessage);
+    messageContext?.destroy();
     audioService.removeNodeById(node.id);
   });
 </script>
@@ -225,10 +249,9 @@
       <TypedHandle
         port="inlet"
         spec={{ handleType: 'audio', handleId: '0' }}
-        total={inletCount}
+        total={topInletCount}
         index={0}
         title={mode === 'xy' ? 'X axis' : 'Audio input'}
-        class={handleInletClass}
         nodeId={node.id}
       />
 
@@ -236,13 +259,21 @@
         <TypedHandle
           port="inlet"
           spec={{ handleType: 'audio', handleId: '1' }}
-          total={inletCount}
+          total={topInletCount}
           index={1}
           title="Y axis"
-          class={handleInletClass}
           nodeId={node.id}
         />
       {/if}
+
+      <TypedHandle
+        port="inlet"
+        spec={{ handleType: 'message', handleId: '0' }}
+        total={topInletCount}
+        index={audioInletCount}
+        title="Control messages"
+        nodeId={node.id}
+      />
 
       <button
         bind:this={nodeButton}
