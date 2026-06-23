@@ -26,22 +26,51 @@
     onFpsChange: (value: number) => void;
     onZeroCrossingChange: (value: boolean) => void;
   } = $props();
+
+  function clampSamples(value: number) {
+    return Math.max(64, Math.min(2048, Math.round(value)));
+  }
+
+  function handleBufferSizeInput(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const parsed = Number(input.value);
+
+    if (!Number.isFinite(parsed)) {
+      input.value = String(bufferSize);
+      return;
+    }
+
+    const nextValue = clampSamples(parsed);
+    input.value = String(nextValue);
+    onBufferSizeChange(nextValue);
+  }
+
+  function handleBufferSizeBlur(event: FocusEvent) {
+    bufferSizeTracker.onBlur();
+
+    const input = event.currentTarget as HTMLInputElement;
+    if (input.value === '') {
+      input.value = String(bufferSize);
+    }
+  }
 </script>
 
 <div class="space-y-4">
   <div>
     <div class="mb-1 flex items-center justify-between">
       <span class="text-xs font-medium text-zinc-300">Samples</span>
-      <span class="text-xs text-zinc-500">{bufferSize}</span>
     </div>
 
-    <SettingsSlider
+    <input
+      type="number"
       min={64}
       max={2048}
+      step={1}
       value={bufferSize}
-      onchange={onBufferSizeChange}
-      onpointerdown={bufferSizeTracker.onFocus}
-      onpointerup={bufferSizeTracker.onBlur}
+      onfocus={bufferSizeTracker.onFocus}
+      onblur={handleBufferSizeBlur}
+      onchange={handleBufferSizeInput}
+      class="nodrag w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-500"
     />
   </div>
 
