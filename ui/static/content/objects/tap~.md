@@ -1,13 +1,12 @@
-Capture triggered audio frames and forward them as messages,
-enabling waveform data to flow into canvas, GLSL, or any
-downstream node.
+Capture audio frames and forward them as messages, enabling
+waveform data to flow into canvas, GLSL, or any downstream node.
 
 ## Overview
 
-`tap~` uses the same zero-crossing trigger as [scope~](/docs/objects/scope~)
-but outputs each captured buffer as a message rather than
-rendering it. Connect the outlet to a canvas preset or any
-node that can process sample data.
+`tap~` can use the same zero-crossing trigger as
+[scope~](/docs/objects/scope~), but it outputs each captured
+buffer as a message rather than rendering it. Connect the outlet
+to a canvas preset or any node that can process sample data.
 
 **Waveform mode** sends a `Float32Array` of audio samples.
 **XY mode** sends `{ type: 'xy', x: Float32Array, y: Float32Array }`.
@@ -45,15 +44,21 @@ configurable via the settings panel on each preset.
   capture more of the waveform per trigger.
 - **Mode** (waveform / xy): Waveform sends a single array; XY
   sends `{ x, y }` and uses both inlets.
-- **Refresh** (0–120 fps): Throttle how often the processor
-  triggers. 0 (default) means no limit.
+- **FPS Limit** (0–120 fps): Throttle how often the processor
+  captures. 0 (default) means no limit.
+- **Zero Crossing**: When enabled, captures start on rising
+  zero-crossings for stable scope-style frames. Disable it for
+  continuous monitoring when you do not need waveform locking.
 
 ## Trigger Stability
 
-Frames are trigger-synced on rising zero-crossings of the X
-(first) inlet signal, giving the same stable display as
-`scope~`. If no zero-crossing is found within 2048 samples,
-a capture is forced after 4096 samples to prevent stalling.
+When zero-crossing detection is enabled, frames are trigger-synced
+on rising zero-crossings of the X (first) inlet signal, giving the
+same stable display behavior as `scope~`. If no zero-crossing is
+found within 4096 samples, a capture is forced to prevent stalling.
+
+When zero-crossing detection is disabled, `tap~` continuously
+captures frames as soon as the FPS limit allows.
 
 ## See Also
 

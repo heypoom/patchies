@@ -219,6 +219,12 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       plotType: 'line',
       decay: 1
     }))
+    .with('tap~', () => ({
+      mode: 'wave',
+      bufferSize: 512,
+      fps: 0,
+      zeroCrossing: true
+    }))
     .with('keyboard', () => ({ keybind: '', mode: 'all', trigger: 'keydown', repeat: false }))
     .with('sampler~', () => ({
       hasRecording: false,

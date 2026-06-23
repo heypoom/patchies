@@ -6,9 +6,8 @@
 for responsiveness, but it has no outlet. This makes it impossible to route waveform
 data into video nodes (GLSL, Hydra, Three.js, etc.) or do any downstream processing.
 
-`tap~` solves this by separating the DSP from the display. It reuses the same
-`scope.processor` worklet with the same trigger logic (rising zero-crossing, maxWait
-fallback), but instead of rendering, it forwards each captured buffer as a message on
+`tap~` solves this by separating the DSP from the display. It captures audio
+frames in a native DSP worklet and forwards each captured buffer as a message on
 its outlet. Users pair it with canvas presets or any other downstream node.
 
 The existing `scope~` visual node is **unchanged**.
@@ -44,25 +43,27 @@ Float32Array  (length = bufferSize)
 { x: Float32Array, y: Float32Array }  (each length = bufferSize)
 ```
 
-The buffer is trigger-synced (rising zero-crossing on the X channel) — the same
-guarantee as `scope~`.
+When zero-crossing detection is enabled, the buffer is trigger-synced (rising
+zero-crossing on the X channel) with the same stability as `scope~`. When it is
+disabled, `tap~` continuously captures frames as soon as the FPS limit allows.
 
-### Settings (same as scope~)
+### Settings
 
-Exposed via the same `ScopeSettings.svelte` panel:
+Exposed via the `TapSettings.svelte` panel:
 
-| Setting              | Range         | Default  | Notes                                 |
-| -------------------- | ------------- | -------- | ------------------------------------- |
-| Samples (bufferSize) | 64–2048       | 512      | Controls buffer length sent per frame |
-| Mode                 | waveform / xy | waveform | Switches inlet count and output shape |
-| Refresh (fps)        | 0–120         | 0 (max)  | Throttles how often the worklet sends |
+| Setting              | Range     | Default | Notes                                            |
+| -------------------- | --------- | ------- | ------------------------------------------------ |
+| Samples (bufferSize) | 64–2048   | 512     | Controls buffer length sent per frame            |
+| Mode                 | wave / xy | wave    | Switches inlet count and output shape            |
+| FPS Limit (fps)      | 0–120     | 0 (max) | Throttles how often the worklet captures         |
+| Zero Crossing        | on / off  | on      | Starts captures on rising zero-crossings when on |
 
 X Scale, Y Scale, Plot Type, Decay, and Unipolar are **not** settings of `tap~` —
 they are rendering concerns owned by whichever canvas preset receives the data.
 
-The settings panel reuses `ScopeSettings.svelte` with only the relevant controls shown
-(Samples, Mode, Refresh + the Advanced accordion for Mode). X/Y scale, plot type,
-decay, and unipolar are hidden.
+The node UI itself stays compact and displays only the object name and sample
+count, for example `tap~ 512`. Mode and FPS are configured from settings, not
+shown on the node face.
 
 ---
 
@@ -107,14 +108,14 @@ from `tap~` in XY mode.
 
 **Settings:**
 
-| Setting         | Type                            | Description                            |
-| --------------- | ------------------------------- | -------------------------------------- |
-| xScale          | number                          | Horizontal zoom (default 1)            |
-| yScale          | number                          | Vertical zoom (default 1)              |
-| plotType        | `'line'`\|`'point'`\|`'bezier'` | Drawing style (default `'line'`)       |
-| decay           | number 0.01–1                   | Phosphor persistence (default 1)       |
-| foregroundColor | CSS color                       | Plot color (default `#22c55e`)         |
-| backgroundColor | CSS color                       | Clear/fade color (default `#080809`)   |
+| Setting         | Type                            | Description                          |
+| --------------- | ------------------------------- | ------------------------------------ |
+| xScale          | number                          | Horizontal zoom (default 1)          |
+| yScale          | number                          | Vertical zoom (default 1)            |
+| plotType        | `'line'`\|`'point'`\|`'bezier'` | Drawing style (default `'line'`)     |
+| decay           | number 0.01–1                   | Phosphor persistence (default 1)     |
+| foregroundColor | CSS color                       | Plot color (default `#22c55e`)       |
+| backgroundColor | CSS color                       | Clear/fade color (default `#080809`) |
 
 Drawing code is lifted directly from `ScopeNode.svelte:219–287` (`drawLissajous`).
 
@@ -128,39 +129,22 @@ Drawing code is lifted directly from `ScopeNode.svelte:219–287` (`drawLissajou
 component. `tap~` needs the opposite: push each buffer through the **message system**
 as soon as the worklet sends it.
 
-`tap~` is implemented as a **text object** (`TextObjectV2`) that owns its own
-`AudioWorkletNode` internally — it does not go through `AudioService.createNode()`.
-Instead, on `create()`:
-
-1. Ensures the `scope~` worklet module is loaded (reuse `ScopeAudioNode`'s module
-   registration to avoid double-loading the same worklet).
-2. Creates an `AudioWorkletNode` directly on the `AudioContext`.
-3. Sets `port.onmessage` to call `this.context.send(msg)` for each buffer received.
-
-This mirrors how `ScopeAudioNode` works but routes output to the message system
-instead of storing it.
+`tap~` is implemented as a dedicated Svelte node component backed by the native
+DSP audio node registered with `AudioService`. The component owns the compact UI
+and settings panel, while the native DSP worklet captures buffers and forwards
+them through `MessageSystem`.
 
 ### Audio connections
 
-Because `tap~` is a text object, `AudioService` won't wire up its audio connections
-automatically. It needs to implement `connectFrom()` (same logic as `ScopeAudioNode`)
-and register itself so the audio routing system can find its `AudioWorkletNode`.
-
-Pattern to follow: examine how hybrid audio/message nodes are handled in the codebase
-(e.g. `snapshot~`). If no clean pattern exists yet, `tap~` may need to expose its
-`audioNode` reference and hook into `AudioService` manually.
-
-> **Open question for implementation:** confirm the exact mechanism by which a text
-> object can participate in audio graph routing. This may require a small addition to
-> AudioService or a new interface.
+Because `tap~` is a dedicated node type, `AudioService` wires its audio inlets the
+same way it wires other native DSP nodes. The processor has two audio inputs and
+one message outlet.
 
 ---
 
 ## Files to Create
 
 ```
-ui/src/lib/audio/v2/nodes/TapAudioNode.ts          # AudioNodeV2 with message forwarding
-ui/src/lib/objects/v2/nodes/TapTildeObject.ts       # TextObjectV2 wrapper (owns audio node)
 ui/src/lib/presets/builtin/canvas.presets/scope.ts  # scope.canvas preset
 ui/src/lib/presets/builtin/canvas.presets/lissajous.ts  # scope-xy.canvas preset
 ui/static/content/objects/tap~.md                   # Object documentation
@@ -169,12 +153,14 @@ ui/static/content/objects/tap~.md                   # Object documentation
 ## Files to Modify
 
 ```
-ui/src/lib/audio/v2/nodes/index.ts                  # Register TapAudioNode
-ui/src/lib/objects/v2/nodes/index.ts                # Register TapTildeObject
+ui/src/lib/components/nodes/TapTildeNode.svelte     # Compact UI node
+ui/src/lib/components/settings/TapSettings.svelte   # tap~ settings panel
+ui/src/lib/audio/native-dsp/nodes/tap.node.ts       # Native DSP node metadata
+ui/src/lib/audio/native-dsp/processors/tap.processor.ts # Capture processor
 ui/src/lib/extensions/object-packs.ts               # Add tap~ to Audio pack
 ui/src/lib/presets/builtin/canvas.presets/index.ts  # Export scope.canvas + scope-xy.canvas
 ui/src/lib/extensions/preset-packs.ts               # Add presets to pack
-ui/src/lib/components/settings/ScopeSettings.svelte # Add props to hide irrelevant controls
+ui/src/lib/migration/migrations                     # Migrate old text-object tap~
 ```
 
 ---
@@ -195,7 +181,7 @@ ui/src/lib/components/settings/ScopeSettings.svelte # Add props to hide irreleva
 
 ## Out of Scope
 
-- `tap~` does not render anything itself — no canvas, no display.
+- `tap~` does not render waveforms itself — no canvas, no display.
 - The canvas presets do not emit data — they are sinks.
 - `scope~` (visual) is unchanged.
 - No changes to `scope.processor.ts` — it is shared as-is.
