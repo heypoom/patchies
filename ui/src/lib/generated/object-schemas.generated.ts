@@ -3751,13 +3751,25 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
           }
         ],
         handle: { handleType: 'message', handleId: 4 }
+      },
+      {
+        id: 'zeroCrossing',
+        type: 'bool',
+        description: 'Trigger captures on rising zero-crossings for stable scope-style frames',
+        messages: [
+          {
+            schema: Type.Boolean(),
+            description: 'Trigger captures on rising zero-crossings for stable scope-style frames'
+          }
+        ],
+        handle: { handleType: 'message', handleId: 5 }
       }
     ],
     outlets: [
       {
         id: 'out',
         type: 'message',
-        description: 'Captured buffer, trigger-synced on rising zero-crossing.',
+        description: 'Captured buffer.',
         messages: [
           { schema: Type.Unsafe({ type: 'Float32Array' }), description: 'Wave Mode' },
           {

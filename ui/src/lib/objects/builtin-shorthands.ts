@@ -4,6 +4,8 @@ import { normalizeMessageType } from '$lib/messages/message-types';
 import type { ObjectShorthand } from './v2/interfaces/shorthands';
 import { tableShorthandTransform } from '$objects/table/shorthand';
 
+type TapMode = 'wave' | 'xy';
+
 const createExprTransform = (nodeType: string, field: string) => (expr: string, name: string) => ({
   nodeType,
   data: {
@@ -116,6 +118,27 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     nodeType: 'tap',
     description: 'Execute side effects and pass through',
     transform: createExprTransform('tap', 'expr')
+  },
+  {
+    names: ['tap~'],
+    nodeType: 'tap~',
+    description: 'Capture audio frames and forward as messages',
+    transform: (expr, name) => {
+      const [bufferSizeArg, modeArg, fpsArg] = expr.replace(name, '').trim().split(/\s+/);
+      const bufferSize = parseTapBufferSize(bufferSizeArg);
+      const mode = parseTapMode(modeArg);
+      const fps = parseTapFps(fpsArg);
+
+      return {
+        nodeType: 'tap~',
+        data: {
+          ...getDefaultNodeData('tap~'),
+          bufferSize,
+          mode,
+          fps
+        }
+      };
+    }
   },
   {
     names: ['scan'],
@@ -319,6 +342,28 @@ export const BUILTIN_OBJECT_SHORTHANDS: ObjectShorthand[] = [
     }
   }
 ];
+
+function parseTapBufferSize(value: string | undefined): number {
+  if (!value) return 512;
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 64 || parsed > 2048) return 512;
+
+  return Math.round(parsed);
+}
+
+function parseTapMode(value: string | undefined): TapMode {
+  return value === 'xy' ? 'xy' : 'wave';
+}
+
+function parseTapFps(value: string | undefined): number {
+  if (!value) return 0;
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 120) return 0;
+
+  return parsed;
+}
 
 /**
  * Parse slider expression: "slider min max [default] [step]"

@@ -45,6 +45,12 @@ export const TapNode = createWorkletDspNode({
       defaultValue: 0,
       minNumber: 0,
       maxNumber: 120
+    },
+    {
+      name: 'zeroCrossing',
+      type: 'bool',
+      description: 'Trigger captures on rising zero-crossings for stable scope-style frames',
+      defaultValue: true
     }
   ],
 
@@ -52,7 +58,7 @@ export const TapNode = createWorkletDspNode({
     {
       name: 'out',
       type: 'message',
-      description: 'Captured buffer, trigger-synced on rising zero-crossing.',
+      description: 'Captured buffer.',
       messages: [
         {
           schema: Type.Unsafe<Float32Array>({ type: 'Float32Array' }),

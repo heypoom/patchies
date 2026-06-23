@@ -15,6 +15,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - out~: Audio output to speakers/headphones
 - meter~: Visual audio level meter
 - scope~: Oscilloscope display for audio signals
+- tap~: Headless audio frame capture for routing waveform data as messages
 - soundfile~: Load and play audio files
 - sampler~: Sample playback with triggering
 - pads~: 16-pad drum sampler triggered by MIDI noteOn/noteOff (GM drum map, note 36 = pad 1)
@@ -34,7 +35,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
   * Timing: beat~ (fire on beat subdivisions), bang~ (convert signal bang to message bang)
   * Routing: send (send messages to a named channel), recv (receive messages from a named channel), send~, recv~ (wireless audio routing)
   * Utility: bang, float, metro, loadbang, samplerate~, mtof (message-rate)
-  * Analysis: fft~ (FFT spectrum analyzer), tap~ (capture trigger-synced audio frames as messages)
+  * Analysis: fft~ (FFT spectrum analyzer)
   * IMPORTANT: Use type "object" with data containing THREE fields: expr (full string), name (first word only), params (array of values matching arguments)
   * data format: { "expr": "name arg1 arg2", "name": "name", "params": [arg1, arg2] }
   * Examples:
@@ -190,6 +191,7 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 ## Audio Analysis
 - fft~: FFT spectrum analyzer — frequency bands drive visuals or routing
 - scope~: Oscilloscope — visualise waveforms in real time
+- tap~: Headless audio frame capture — route waveform buffers to canvas or GLSL
 - meter~: Audio level meter
 
 ## Audio I/O

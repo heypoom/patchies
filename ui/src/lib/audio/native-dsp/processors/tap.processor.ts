@@ -1,4 +1,5 @@
 import { defineDSP } from '../define-dsp';
+import { shouldStartCapture } from './tap-trigger';
 
 defineDSP({
   name: 'tap~',
@@ -16,7 +17,8 @@ defineDSP({
     bufferSize: 512,
     maxWait: 4096,
     cooldownSamples: 0,
-    mode: 'wave' as 'wave' | 'xy'
+    mode: 'wave' as 'wave' | 'xy',
+    zeroCrossing: true
   }),
 
   recv(state, data, inlet) {
@@ -50,6 +52,14 @@ defineDSP({
           : 0;
       return;
     }
+
+    // inlet 5 = zeroCrossing (boolean)
+    if (inlet === 5 && typeof data === 'boolean') {
+      state.zeroCrossing = data;
+      state.phase = 'waiting';
+      state.writeIndex = 0;
+      return;
+    }
   },
 
   process(state, inputs, _outputs, send) {
@@ -71,7 +81,15 @@ defineDSP({
           continue;
         }
 
-        if ((state.prevSample <= 0 && sample > 0) || state.samplesSinceLastSend >= state.maxWait) {
+        if (
+          shouldStartCapture({
+            zeroCrossing: state.zeroCrossing,
+            prevSample: state.prevSample,
+            sample,
+            samplesSinceLastSend: state.samplesSinceLastSend,
+            maxWait: state.maxWait
+          })
+        ) {
           state.phase = 'filling';
           state.writeIndex = 0;
 

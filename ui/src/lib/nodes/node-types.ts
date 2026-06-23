@@ -89,6 +89,7 @@ import PostItNode from '$lib/components/nodes/PostItNode.svelte';
 import PatchbayNode from '$lib/components/nodes/PatchbayNode.svelte';
 import TitleNode from '$lib/components/nodes/TitleNode.svelte';
 import ScopeNode from '$lib/components/nodes/ScopeNode.svelte';
+import TapTildeNode from '$lib/components/nodes/TapTildeNode.svelte';
 import UiuaNode from '$lib/components/nodes/UiuaNode.svelte';
 import BytebeatNode from '$lib/components/nodes/BytebeatNode.svelte';
 import SequencerNode from '$lib/components/nodes/SequencerNode.svelte';
@@ -203,6 +204,7 @@ export const nodeTypes: Record<string, any> = {
   note: PostItNode,
   title: TitleNode,
   'scope~': ScopeNode,
+  'tap~': TapTildeNode,
   uiua: UiuaNode,
   'bytebeat~': BytebeatNode,
   sequencer: SequencerNode,
