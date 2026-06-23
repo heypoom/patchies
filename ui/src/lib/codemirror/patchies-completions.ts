@@ -622,7 +622,9 @@ const nodeSpecificFunctions: Record<string, string[]> = {
     'textmode',
     'textmode.dom',
     'three',
-    'three.dom'
+    'three.dom',
+    'dom',
+    'vue'
   ],
   'htmlCanvas.videoOutput': ['dom', 'vue'],
   'htmlCanvas.canvasLayer': ['dom', 'vue'],
