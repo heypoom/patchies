@@ -69,8 +69,11 @@ export function templateContentOverlay(node: SyntaxNodeRef): { from: number; to:
   return overlay;
 }
 
-function stringContentOverlay(node: SyntaxNodeRef): { from: number; to: number }[] {
-  return [{ from: node.from + 1, to: node.to - 1 }];
+export function stringContentOverlay(node: SyntaxNodeRef): { from: number; to: number }[] {
+  const from = node.from + 1;
+  const to = node.to - 1;
+
+  return from < to ? [{ from, to }] : [];
 }
 
 export const htmlInJsWrap = parseMixed((node, input) => {

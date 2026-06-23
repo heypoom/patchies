@@ -39,6 +39,13 @@ function getMixedLanguageInnerNodeNameAt(doc: string, searchText: string) {
 }
 
 describe('html in js mixed parsing', () => {
+  it('ignores empty HTML string overlays', () => {
+    const parser = javascriptLanguage.configure({ wrap: javascriptMixedWrap }).parser;
+
+    expect(() => parser.parse("createApp({ template: '' });")).not.toThrow();
+    expect(() => parser.parse("el.innerHTML = '';")).not.toThrow();
+  });
+
   it('detects html tagged template strings as HTML bodies', () => {
     expect(findTemplateStrings('const view = html`<main><h1>Hello</h1></main>`;')).toEqual([true]);
   });
