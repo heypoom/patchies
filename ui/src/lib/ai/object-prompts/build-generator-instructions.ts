@@ -9,6 +9,32 @@ import { UI_DESIGN_OBJECTS, UI_DESIGN_GUIDELINES } from './ui-design-guidelines'
 import { GLSL_IMPORT_OBJECTS, GLSL_IMPORTS_GUIDELINES } from './glsl-imports-guidelines';
 import { getObjectSpecificInstructions } from '../object-descriptions';
 
+function buildDeduplicatedObjectInstructions(
+  objectTypes: string[],
+  formatHeading: (types: string[]) => string
+): string {
+  const sectionsByInstructions = new Map<string, string[]>();
+
+  for (const type of objectTypes) {
+    const instructions = getObjectSpecificInstructions(type);
+    const types = sectionsByInstructions.get(instructions) ?? [];
+    sectionsByInstructions.set(instructions, [...types, type]);
+  }
+
+  return Array.from(sectionsByInstructions.entries())
+    .map(([instructions, types]) => `${formatHeading(types)}\n\n${instructions}`)
+    .join('\n\n---\n\n');
+}
+
+export function buildObjectInstructionSections(objectTypes: string[]): string {
+  const uniqueObjectTypes = [...new Set(objectTypes)];
+
+  return buildDeduplicatedObjectInstructions(
+    uniqueObjectTypes,
+    (types) => `### ${types.join(', ')}`
+  );
+}
+
 /**
  * Builds combined instruction sections for a single object type.
  * Conditionally includes JS runtime, UI design, GLSL imports, and object-specific docs.
@@ -59,8 +85,9 @@ export function buildMultiObjectInstructionParts(objectTypes: string[]): {
 
     glslImportInstructions: glslImportTypes.length > 0 ? GLSL_IMPORTS_GUIDELINES : '',
 
-    objectInstructions: uniqueObjectTypes
-      .map((type) => getObjectSpecificInstructions(type))
-      .join('\n\n---\n\n')
+    objectInstructions: buildDeduplicatedObjectInstructions(
+      uniqueObjectTypes,
+      (types) => `Applies to: ${types.join(', ')}`
+    )
   };
 }

@@ -4,21 +4,14 @@
  */
 
 import { getObjectSpecificInstructions } from '../object-prompts/index';
+import { buildObjectInstructionSections } from '../object-prompts/build-generator-instructions';
 
 /**
  * Gets detailed context/descriptions for a list of node types.
  * Returns a formatted string with all relevant object documentation.
  */
 export function getContextForTypes(nodeTypes: string[]): string {
-  const uniqueTypes = [...new Set(nodeTypes)];
-
-  const sections = uniqueTypes.map((type) => {
-    const instructions = getObjectSpecificInstructions(type);
-
-    return `### ${type}\n\n${instructions}`;
-  });
-
-  return sections.join('\n\n---\n\n');
+  return buildObjectInstructionSections(nodeTypes);
 }
 
 /**

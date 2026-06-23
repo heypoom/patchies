@@ -1,5 +1,9 @@
 /** Map of object types that need URL-safe slugs (e.g. `/~` can't be a route param). */
 const TYPE_TO_SLUG: Record<string, string> = {
+  '+': 'add',
+  '-': 'sub',
+  '*': 'mul',
+  '/': 'div',
   '/~': 'div~'
 };
 

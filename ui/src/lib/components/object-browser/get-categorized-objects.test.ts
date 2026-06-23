@@ -28,6 +28,7 @@ describe('getCategorizedObjects', () => {
       'kv',
       'loadbang',
       'metro',
+      'patchbay',
       'queue',
       'recv',
       'send',
@@ -38,6 +39,10 @@ describe('getCategorizedObjects', () => {
     ]);
 
     expect(getObjectNamesForCategory('Transforms')).toEqual([
+      '-',
+      '*',
+      '/',
+      '+',
       'clip',
       'expr',
       'filter',
