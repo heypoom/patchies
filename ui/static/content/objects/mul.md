@@ -2,7 +2,7 @@ Multiply incoming values by a number.
 
 ## Usage
 
-```
+```text
 * 0.5
 * 2
 ```

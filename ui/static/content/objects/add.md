@@ -2,7 +2,7 @@ Add a number to incoming values.
 
 ## Usage
 
-```
+```text
 + 1
 + 12
 ```

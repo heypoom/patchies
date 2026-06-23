@@ -30,6 +30,13 @@ describe('getContextForTypes', () => {
     expect(sliderMatches).toHaveLength(1);
   });
 
+  it('deduplicates shared context across different node types', () => {
+    const context = getContextForTypes(['+', '-', '*', '/']);
+
+    expect(context.match(/## Numeric Operator Object Instructions/g)).toHaveLength(1);
+    expect(context).toContain('### +, -, *, /');
+  });
+
   it('handles unknown node types gracefully', () => {
     const context = getContextForTypes(['unknown-type-xyz']);
 

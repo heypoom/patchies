@@ -2,7 +2,7 @@ Subtract a number from incoming values.
 
 ## Usage
 
-```
+```text
 - 1
 - 12
 ```

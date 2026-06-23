@@ -4,6 +4,7 @@ import { logger, getNodeErrors } from '$lib/utils/logger';
 import { getTextProvider } from '../providers';
 import type { ChatTurnMessage, ToolCall, ToolResult, ToolDeclaration } from '../providers/types';
 import { JS_ENABLED_OBJECTS, jsRunnerInstructions } from '../object-prompts/shared-jsrunner';
+import { buildObjectInstructionSections } from '../object-prompts/build-generator-instructions';
 import { toolNameToMode } from './canvas-tools';
 import { runModeResolver } from '../modes/run-resolver';
 import { getModeDescriptor, modeDescriptors } from '../modes/descriptors';
@@ -191,13 +192,7 @@ export async function streamChatMessage(
       systemInstruction += `\n\n## JSRunner Runtime Functions\n\n${jsRunnerInstructions}`;
     }
 
-    for (const nodeType of selectedTypes) {
-      const objectInstructions = getObjectSpecificInstructions(nodeType);
-
-      if (objectInstructions) {
-        systemInstruction += `\n\n## ${nodeType} Reference\n\n${objectInstructions}`;
-      }
-    }
+    systemInstruction += `\n\n## Selected Object References\n\n${buildObjectInstructionSections(selectedTypes)}`;
   }
 
   // Convert ChatMessage[] to ChatTurnMessage[] for the provider abstraction

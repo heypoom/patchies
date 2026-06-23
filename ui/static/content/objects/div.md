@@ -2,7 +2,7 @@ Divide incoming values by a number.
 
 ## Usage
 
-```
+```text
 / 2
 / 10
 ```
