@@ -41,9 +41,6 @@
 
   let showSettings = $state(false);
   let tapNode: AudioNodeV2 | null = $state(null);
-  let nodeButton: HTMLButtonElement | null = $state(null);
-  let resizeObserver: ResizeObserver | null = null;
-  let settingsOffset = $state(112);
   let mode = $state<TapMode>(node.data.mode ?? DEFAULTS.mode);
   let bufferSize = $state(node.data.bufferSize ?? DEFAULTS.bufferSize);
   let fps = $state(node.data.fps ?? DEFAULTS.fps);
@@ -59,12 +56,6 @@
 
   function sendSetting(key: string, value: unknown) {
     tapNode?.send?.(key, value);
-  }
-
-  function updateSettingsOffset() {
-    if (!nodeButton) return;
-
-    settingsOffset = nodeButton.offsetWidth + 10;
   }
 
   function applyAllSettings() {
@@ -153,16 +144,9 @@
   onMount(async () => {
     tapNode = await audioService.createNode(node.id, 'tap~', []);
     applyAllSettings();
-
-    updateSettingsOffset();
-    if (nodeButton && typeof ResizeObserver !== 'undefined') {
-      resizeObserver = new ResizeObserver(updateSettingsOffset);
-      resizeObserver.observe(nodeButton);
-    }
   });
 
   onDestroy(() => {
-    resizeObserver?.disconnect();
     audioService.removeNodeById(node.id);
   });
 </script>
@@ -187,6 +171,7 @@
             <Settings class="h-4 w-4 text-zinc-300" />
           </button>
         </Tooltip.Trigger>
+
         <Tooltip.Content>Settings</Tooltip.Content>
       </Tooltip.Root>
     </div>
@@ -214,11 +199,8 @@
         />
       {/if}
 
-      <button
-        bind:this={nodeButton}
-        class={['cursor-pointer rounded-lg border px-3 py-2', containerClass]}
-      >
-        <div class="tap-node-label text-xs text-zinc-300">tap~ {bufferSize}</div>
+      <button class={['w-34 cursor-pointer rounded-lg border px-3 py-2 text-left', containerClass]}>
+        <div class="tap-node-label text-xs whitespace-nowrap text-zinc-300">tap~ {bufferSize}</div>
       </button>
 
       <TypedHandle
@@ -235,11 +217,7 @@
   {#if showSettings}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="absolute z-20"
-      style:left={`${settingsOffset}px`}
-      onclick={(e) => e.stopPropagation()}
-    >
+    <div class="absolute left-[145px] z-20" onclick={(e) => e.stopPropagation()}>
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
         <Tooltip.Root>
           <Tooltip.Trigger>
@@ -268,7 +246,7 @@
         </Tooltip.Root>
       </div>
 
-      <div class="nodrag ml-2 w-48 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
+      <div class="nodrag w-48 rounded-md border border-zinc-600 bg-zinc-900 p-4 shadow-xl">
         <TapSettings
           {mode}
           {bufferSize}
