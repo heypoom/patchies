@@ -41,8 +41,12 @@
 
   let showSettings = $state(false);
   let tapNode: AudioNodeV2 | null = $state(null);
+  let nodeButton: HTMLButtonElement | null = $state(null);
+  let resizeObserver: ResizeObserver | null = null;
+  let settingsOffset = $state(90);
   let mode = $state<TapMode>(node.data.mode ?? DEFAULTS.mode);
   let bufferSize = $state(node.data.bufferSize ?? DEFAULTS.bufferSize);
+  let sampleDigitCount = $state(String(bufferSize).length);
   let fps = $state(node.data.fps ?? DEFAULTS.fps);
   let zeroCrossing = $state(node.data.zeroCrossing ?? DEFAULTS.zeroCrossing);
 
@@ -56,6 +60,29 @@
 
   function sendSetting(key: string, value: unknown) {
     tapNode?.send?.(key, value);
+  }
+
+  function updateSettingsOffset() {
+    if (!nodeButton) return;
+
+    settingsOffset = nodeButton.offsetWidth + 10;
+  }
+
+  function resetSampleDigitWidth() {
+    sampleDigitCount = String(bufferSize).length;
+  }
+
+  function closeSettings() {
+    showSettings = false;
+    resetSampleDigitWidth();
+  }
+
+  function toggleSettings() {
+    if (showSettings) {
+      closeSettings();
+    } else {
+      showSettings = true;
+    }
   }
 
   function applyAllSettings() {
@@ -120,6 +147,15 @@
   }
 
   let prevInletCount: number | null = null;
+
+  $effect(() => {
+    const digits = String(bufferSize).length;
+
+    if (digits > sampleDigitCount) {
+      sampleDigitCount = digits;
+    }
+  });
+
   $effect(() => {
     const count = inletCount;
     updateNodeInternals(node.id);
@@ -144,9 +180,17 @@
   onMount(async () => {
     tapNode = await audioService.createNode(node.id, 'tap~', []);
     applyAllSettings();
+
+    updateSettingsOffset();
+
+    if (nodeButton && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(updateSettingsOffset);
+      resizeObserver.observe(nodeButton);
+    }
   });
 
   onDestroy(() => {
+    resizeObserver?.disconnect();
     audioService.removeNodeById(node.id);
   });
 </script>
@@ -164,7 +208,8 @@
             onclick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              showSettings = !showSettings;
+
+              toggleSettings();
             }}
             aria-label="Configure tap"
           >
@@ -199,8 +244,17 @@
         />
       {/if}
 
-      <button class={['w-34 cursor-pointer rounded-lg border px-3 py-2 text-left', containerClass]}>
-        <div class="tap-node-label text-xs whitespace-nowrap text-zinc-300">tap~ {bufferSize}</div>
+      <button
+        bind:this={nodeButton}
+        class={['h-8.5 cursor-pointer rounded-lg border px-3 text-left', containerClass]}
+      >
+        <div
+          class="tap-node-label inline-flex items-center gap-2 text-xs whitespace-nowrap text-zinc-300"
+        >
+          <span>tap~</span>
+
+          <span class="tabular-nums" style:min-width={`${sampleDigitCount}ch`}>{bufferSize}</span>
+        </div>
       </button>
 
       <TypedHandle
@@ -217,7 +271,11 @@
   {#if showSettings}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="absolute left-[145px] z-20" onclick={(e) => e.stopPropagation()}>
+    <div
+      class="absolute z-20"
+      style:left={`${settingsOffset}px`}
+      onclick={(e) => e.stopPropagation()}
+    >
       <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
         <Tooltip.Root>
           <Tooltip.Trigger>
@@ -235,7 +293,7 @@
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button
-              onclick={() => (showSettings = false)}
+              onclick={closeSettings}
               class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
               aria-label="Close tap settings"
             >
