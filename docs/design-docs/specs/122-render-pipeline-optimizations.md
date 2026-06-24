@@ -205,8 +205,9 @@ The first implementation should be conservative:
 | `swgl`                           | `always` initially                                    | JS code can hide dependencies                                                      |
 | `canvas`                         | `always` initially                                    | User code may draw from timers, messages, or internal state                        |
 | `textmode`                       | `always` initially                                    | Stateful runtime                                                                   |
-| `img`, `float.tex`               | externally dirty                                      | Cook only when uploaded bitmap/texture data changes                                |
-| `send.vdo`, `recv.vdo`, `bg.out` | passthrough/empty                                     | No expensive cook, but downstream invalidation still matters                       |
+| `img`, `float.tex`               | `on-demand`, externally dirty                        | Cook only when uploaded bitmap/texture data changes                                |
+| `send.vdo`, `recv.vdo`, `bg.out` | `on-demand`, passthrough/empty                       | No expensive cook, but downstream invalidation still matters                       |
+| `projmap`                        | `on-demand`                                          | Cook when input or surface configuration changes                                   |
 
 Later, JS-based renderers can opt into `on-demand` through explicit APIs or directives such as `setCookMode('on-demand')`, `setStatic(true)`, or `// @static`. Until a renderer declares that it is safe to cache, keep it in `always` mode.
 
