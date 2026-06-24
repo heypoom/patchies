@@ -53,6 +53,7 @@ export class PreviewRenderer {
   // PBO async read state
   private pendingReads: PendingRead[] = [];
   private pendingNodeIds: Set<string> = new Set(); // Track nodes with in-flight reads
+  private dirtyPreviewNodeIds = new Set<string>();
 
   constructor(service: PixelReadbackService) {
     this.service = service;
@@ -60,7 +61,15 @@ export class PreviewRenderer {
   }
 
   setPreviewEnabled(nodeId: string, enabled: boolean): void {
+    const wasEnabled = this.previewState[nodeId] ?? false;
+
     this.previewState[nodeId] = enabled;
+
+    if (enabled && !wasEnabled) {
+      this.dirtyPreviewNodeIds.add(nodeId);
+    } else if (!enabled) {
+      this.dirtyPreviewNodeIds.delete(nodeId);
+    }
   }
 
   setPreviewFpsCap(fps: number): void {
@@ -101,6 +110,7 @@ export class PreviewRenderer {
     delete this.previewState[nodeId];
 
     this.pendingNodeIds.delete(nodeId);
+    this.dirtyPreviewNodeIds.delete(nodeId);
 
     // Clean up any pending reads for this node
     this.pendingReads = this.pendingReads.filter((p) => {
@@ -125,7 +135,8 @@ export class PreviewRenderer {
    */
   renderPreviewBitmaps(
     fboNodes: Map<string, FBONode>,
-    isOutputEnabled: boolean
+    isOutputEnabled: boolean,
+    freshNodeIds?: ReadonlySet<string>
   ): Map<string, ImageBitmap> {
     const results = this.frameResults;
     results.clear();
@@ -139,6 +150,10 @@ export class PreviewRenderer {
     // Step 1: Harvest any completed reads (non-blocking)
     this.harvestCompletedReads(results);
 
+    for (const nodeId of freshNodeIds ?? []) {
+      this.dirtyPreviewNodeIds.add(nodeId);
+    }
+
     // Step 2: Check if we should initiate new reads (frame rate limiting)
     const now = performance.now();
 
@@ -149,7 +164,9 @@ export class PreviewRenderer {
     this.lastPreviewTime = now;
 
     // Step 3: Initiate new batch of async reads
-    const enabledPreviews = this.getEnabledPreviews();
+    const enabledPreviews = this.getEnabledPreviews().filter((nodeId) =>
+      this.dirtyPreviewNodeIds.has(nodeId)
+    );
     if (enabledPreviews.length === 0) return results;
 
     const maxLimit = isOutputEnabled ? this.maxPreviewsPerFrame : this.maxPreviewsPerFrameNoOutput;
@@ -183,6 +200,7 @@ export class PreviewRenderer {
           : [previewWidth, previewHeight];
 
       this.initiateAsyncRead(nodeId, fboNode.framebuffer, readbackSize, fboSize);
+      this.dirtyPreviewNodeIds.delete(nodeId);
     }
 
     return results;

@@ -238,6 +238,14 @@ export type WorkerMessage =
 
 export type MouseScope = 'local' | 'global';
 
+export type RenderCookStatus = {
+  status: 'cooked' | 'cached' | 'paused';
+  cookedFrames: number;
+  cachedFrames: number;
+  lastCookTimeMs: number | null;
+  lastCookReasons: string[];
+};
+
 // Message types from render worker (worker -> main)
 export type RenderWorkerMessage =
   | { type: 'previewFrame'; nodeId: string; bitmap: ImageBitmap }
@@ -358,7 +366,8 @@ export type RenderWorkerMessage =
   | { type: 'settingsClear'; nodeId: string }
   | { type: 'includeProcessing'; nodeId: string; active: boolean }
   | { type: 'setTextureFormat'; nodeId: string; format: FBOFormat }
-  | { type: 'setResolution'; nodeId: string; resolution: FBOResolution };
+  | { type: 'setResolution'; nodeId: string; resolution: FBOResolution }
+  | ({ type: 'cookStatus'; nodeId: string } & RenderCookStatus);
 
 export type PreviewState = Record<string, boolean>;
 

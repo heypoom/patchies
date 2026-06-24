@@ -1,10 +1,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import CookDebugOverlay from './CookDebugOverlay.svelte';
   import ObjectPreviewLayout from './ObjectPreviewLayout.svelte';
   import type { SettingsSchema } from '$lib/settings';
   import type { ExtraMenuItem } from './object-preview-menu-actions';
   import { previewBackgroundColor } from '../../stores/renderer.store';
   import type { SupportedLanguage } from '$lib/codemirror/types';
+  import type { RenderCookStatus } from '$lib/rendering/types';
 
   let {
     title,
@@ -48,6 +50,9 @@
     displayExtraMenuItems = undefined,
     showBgOutputOption = true,
     showExpandOption = true,
+    showCookDebugOption = false,
+    cookDebugVisible = false,
+    cookStatus = undefined,
     class: className = ''
   }: {
     title: string;
@@ -91,6 +96,9 @@
     displayExtraMenuItems?: ExtraMenuItem[];
     showBgOutputOption?: boolean;
     showExpandOption?: boolean;
+    showCookDebugOption?: boolean;
+    cookDebugVisible?: boolean;
+    cookStatus?: RenderCookStatus;
     class?: string;
   } = $props();
 
@@ -138,23 +146,27 @@
   class={className}
 >
   {#snippet preview()}
-    <canvas
-      bind:this={previewCanvas}
-      class={[
-        'rounded-md border',
-        hasError
-          ? 'border-red-500/70'
-          : selected
-            ? 'shadow-glow-md border-zinc-300 [&>canvas]:rounded-[7px]'
-            : 'hover:shadow-glow-sm border-zinc-400 [&>canvas]:rounded-md',
-        interactionClass
-      ]}
-      {tabindex}
-      width={typeof width === 'number' ? width : undefined}
-      height={typeof height === 'number' ? height : undefined}
-      style={typeof width === 'number' && typeof height === 'number'
-        ? `width:${width}px;height:${height}px;background-color:${$previewBackgroundColor};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`
-        : `background-color:${$previewBackgroundColor};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`}
-    ></canvas>
+    <div class="relative">
+      <canvas
+        bind:this={previewCanvas}
+        class={[
+          'rounded-md border',
+          hasError
+            ? 'border-red-500/70'
+            : selected
+              ? 'shadow-glow-md border-zinc-300 [&>canvas]:rounded-[7px]'
+              : 'hover:shadow-glow-sm border-zinc-400 [&>canvas]:rounded-md',
+          interactionClass
+        ]}
+        {tabindex}
+        width={typeof width === 'number' ? width : undefined}
+        height={typeof height === 'number' ? height : undefined}
+        style={typeof width === 'number' && typeof height === 'number'
+          ? `width:${width}px;height:${height}px;background-color:${$previewBackgroundColor};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`
+          : `background-color:${$previewBackgroundColor};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`}
+      ></canvas>
+
+      <CookDebugOverlay enabled={showCookDebugOption} visible={cookDebugVisible} {cookStatus} />
+    </div>
   {/snippet}
 </ObjectPreviewLayout>

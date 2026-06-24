@@ -10,7 +10,7 @@ import type {
   FBOFormat,
   FBOResolution
 } from '../../lib/rendering/types';
-import type { ClockCommandMessage } from '$lib/transport/types';
+import type { ClockCommandMessage, ITransport, TransportState } from '$lib/transport/types';
 import {
   DEFAULT_OUTPUT_SIZE,
   WEBGL_EXTENSIONS,
@@ -57,6 +57,10 @@ import {
   toGLValue
 } from './glUniformUtils';
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
+import { CookStateManager, type CookPolicy } from './CookStateManager';
+import { createGlslCookPolicy } from './glslCookPolicy';
+
+type TransportTimeState = Pick<ITransport, keyof TransportState>;
 
 export const FBO_RENDERER_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
   alpha: true,
@@ -135,6 +139,8 @@ export class FBORenderer {
   private contextLossReported = false;
   private renderErrorKeysByNode = new Map<string, Set<string>>();
   private glErrorKeysByNode = new Map<string, Set<string>>();
+  private lastCookStatusSignatures = new Map<string, string>();
+  private cookStatsEnabled = false;
 
   /** Minimum interval between rendered frames (ms). 0 = unlimited. */
   private renderIntervalMs: number = 0;
@@ -142,18 +148,7 @@ export class FBORenderer {
   private lastRenderTime: number = 0;
 
   /** Transport time from main thread for synchronized timing */
-  public transportTime: {
-    seconds: number;
-    ticks: number;
-    bpm: number;
-    isPlaying: boolean;
-    beat: number;
-    phase: number;
-    bar: number;
-    beatsPerBar: number;
-    denominator: number;
-    ppq: number;
-  } | null = null;
+  public transportTime: TransportTimeState | null = null;
 
   /** Profiler for frame timing and regl.read() metrics */
   public profiler = new RenderingProfiler();
@@ -162,6 +157,8 @@ export class FBORenderer {
   public drawProfiler = new WorkerProfiler((nodeId, category, stats) => {
     self.postMessage({ type: 'drawStats', nodeId, category, stats });
   });
+
+  public cookState = new CookStateManager();
 
   /** Interval that flushes frame stats (fps, p50, p95, drops) every 500ms */
   private frameStatsInterval: ReturnType<typeof setInterval> | null = null;
@@ -377,6 +374,8 @@ export class FBORenderer {
         fboNode.cleanup?.();
 
         this.fboNodes.delete(nodeId);
+        this.cookState.removeNode(nodeId);
+        this.lastCookStatusSignatures.delete(nodeId);
 
         // Unsubscribe removed nodes from video channels
         this.videoChannelRegistry.unsubscribeAll(nodeId);
@@ -414,6 +413,13 @@ export class FBORenderer {
     this.renderGraph = mergedGraph;
     this.outputNodeId = mergedGraph.outputNodeId;
     this.outputOutletIndex = mergedGraph.outputOutletIndex;
+    this.cookState.setOutputsByNode(
+      new Map(mergedGraph.nodes.map((node) => [node.id, [...node.outputs]]))
+    );
+
+    for (const node of mergedGraph.nodes) {
+      this.cookState.registerNode(node.id, this.getCookPolicyForNode(node, mergedGraph));
+    }
 
     // Phase 1 (sync): allocate FBOs and collect nodes that need renderer creation
     type PendingNode = {
@@ -571,6 +577,8 @@ export class FBORenderer {
         }
       }
 
+      this.cookState.markDirty(node.id, existingFbo ? 'config' : 'first-frame');
+
       pending.push({
         node,
         colorAttachments,
@@ -615,6 +623,8 @@ export class FBORenderer {
 
         // Evict stale FBO entry so the old render function is not reused
         this.fboNodes.delete(node.id);
+        this.cookState.removeNode(node.id);
+        this.lastCookStatusSignatures.delete(node.id);
 
         // Always destroy GPU resources when evicting from the map, regardless of canReuseFbo
         framebuffer.destroy();
@@ -692,6 +702,19 @@ export class FBORenderer {
   // Some nodes are externally managed, e.g. the texture will be uploaded on it.
   createEmptyRenderer() {
     return { render: () => {}, cleanup: () => {} };
+  }
+
+  private getCookPolicyForNode(node: RenderNode, renderGraph: RenderGraph): CookPolicy {
+    const feedbackDependent =
+      renderGraph.feedbackNodes.has(node.id) || (node.backEdgeInlets?.size ?? 0) > 0;
+
+    return match(node)
+      .with({ type: 'glsl' }, (node) => ({
+        ...createGlslCookPolicy(node.data.code),
+        ...(feedbackDependent ? { feedbackDependent: true } : {})
+      }))
+      .with({ type: P.union('img', 'float.tex') }, () => ({ mode: 'on-demand' as const }))
+      .otherwise(() => ({ mode: 'always' as const }));
   }
 
   /**
@@ -1111,6 +1134,13 @@ export class FBORenderer {
       }
     }
 
+    this.cookState.registerNode(node.id, {
+      ...createGlslCookPolicy(code),
+      ...(this.renderGraph?.feedbackNodes.has(node.id) || (node.backEdgeInlets?.size ?? 0) > 0
+        ? { feedbackDependent: true }
+        : {})
+    });
+
     const renderCommand = createShaderToyDrawCommand({
       width,
       height,
@@ -1368,24 +1398,14 @@ export class FBORenderer {
     }
 
     this.uniformDataByNode.get(nodeId)!.set(uniformName, uniformValue);
+    this.cookState.markDirty(nodeId, 'uniform');
   }
 
   /**
    * Set transport time from main thread for synchronized timing.
    * Called at 60fps to keep GLSL/Hydra in sync with global transport.
    */
-  setTransportTime(state: {
-    seconds: number;
-    ticks: number;
-    bpm: number;
-    isPlaying: boolean;
-    beat: number;
-    phase: number;
-    bar: number;
-    beatsPerBar: number;
-    denominator: number;
-    ppq: number;
-  }) {
+  setTransportTime(state: TransportTimeState) {
     this.transportTime = state;
   }
 
@@ -1487,6 +1507,11 @@ export class FBORenderer {
     };
 
     this.clockScheduler.tick(clockState);
+    this.cookState.beginFrame({
+      transportTime: this.transportTime?.seconds ?? this.lastTime,
+      prevTransportTime: this.prevTransportTime,
+      isTransportPlaying: this.transportTime?.isPlaying ?? true
+    });
 
     // Render each node in topological order
     for (const nodeId of this.renderGraph.sortedNodes) {
@@ -1494,11 +1519,27 @@ export class FBORenderer {
 
       const node = this.renderGraph.nodes.find((n) => n.id === nodeId);
       const fboNode = this.fboNodes.get(nodeId);
-
       if (!node || !fboNode) continue;
 
+      const cookDecision = this.cookState.shouldCook(node.id);
+
+      if (!cookDecision.shouldCook) {
+        this.postCookStatusIfNeeded(node.id);
+        continue;
+      }
+
+      if (this.isNodePaused(node.id)) {
+        this.cookState.markPaused(node.id);
+        this.postCookStatusIfNeeded(node.id, true);
+        continue;
+      }
+
       try {
+        const cookStart = performance.now();
+
         this.renderFboNode(node, fboNode);
+        this.cookState.markCooked(node.id, cookDecision.reasons, performance.now() - cookStart);
+        this.postCookStatusIfNeeded(node.id, true);
       } catch (error) {
         this.reportNodeRenderError(node, error);
         this.refreshReglState();
@@ -1699,6 +1740,35 @@ export class FBORenderer {
     self.postMessage({ type: 'error', message });
   }
 
+  private postCookStatusIfNeeded(nodeId: string, force = false): void {
+    if (!this.cookStatsEnabled) return;
+
+    const status = this.cookState.getStatus(nodeId);
+    if (!status) return;
+
+    const cachedBucket = Math.floor(status.cachedFrames / 15);
+
+    const signature = JSON.stringify({
+      status: status.status,
+      cookedFrames: status.cookedFrames,
+      cachedBucket,
+      lastCookTimeMs: status.lastCookTimeMs,
+      lastCookReasons: status.lastCookReasons
+    });
+
+    if (!force && this.lastCookStatusSignatures.get(nodeId) === signature) return;
+
+    this.lastCookStatusSignatures.set(nodeId, signature);
+    self.postMessage({ type: 'cookStatus', nodeId, ...status });
+  }
+
+  setCookStatsEnabled(enabled: boolean): void {
+    if (this.cookStatsEnabled === enabled) return;
+
+    this.cookStatsEnabled = enabled;
+    this.lastCookStatusSignatures.clear();
+  }
+
   private refreshReglState() {
     const reglInstance = this.regl as regl.Regl & {
       _refresh?: () => void;
@@ -1715,7 +1785,11 @@ export class FBORenderer {
    * This introduces 1 frame of latency but eliminates GPU stalls (~3ms per read).
    */
   renderPreviewBitmaps(): Map<string, ImageBitmap> {
-    return this.previewRenderer.renderPreviewBitmaps(this.fboNodes, this.isOutputEnabled);
+    return this.previewRenderer.renderPreviewBitmaps(
+      this.fboNodes,
+      this.isOutputEnabled,
+      this.cookState.getCookedNodeIdsThisFrame()
+    );
   }
 
   /** Set which nodes are visible in the viewport for preview culling */
@@ -1943,6 +2017,10 @@ export class FBORenderer {
     // Rebuild FBOs at the new output dimensions
     if (this.renderGraph) {
       this.buildFBOs(this.renderGraph);
+
+      for (const node of this.renderGraph.nodes) {
+        this.cookState.markDirty(node.id, 'output-size');
+      }
     }
   }
 
@@ -1967,6 +2045,7 @@ export class FBORenderer {
    */
   setBitmap(nodeId: string, bitmap: ImageBitmap) {
     this.videoTextures.setBitmap(nodeId, bitmap);
+    this.cookState.markDirty(nodeId, 'bitmap');
   }
 
   setElementImage(nodeId: string, elementImage: ElementImageLike, width: number, height: number) {
@@ -1991,6 +2070,7 @@ export class FBORenderer {
     textureFormat: FBOFormat = 'rgba32f'
   ) {
     this.videoTextures.setFloatTexture(nodeId, width, height, data, textureFormat);
+    this.cookState.markDirty(nodeId, 'bitmap');
   }
 
   /**
@@ -2062,6 +2142,7 @@ export class FBORenderer {
       });
 
       textureByAnalyzer.set(payload.analysisType, nextTexture);
+      this.cookState.markDirty(payload.nodeId, 'fft');
 
       return;
     }
@@ -2073,6 +2154,7 @@ export class FBORenderer {
       format: texFormat,
       type: texType
     });
+    this.cookState.markDirty(payload.nodeId, 'fft');
   }
 
   /** Send message to nodes */

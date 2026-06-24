@@ -1,4 +1,5 @@
 import type { SendMessageOptions } from '$lib/messages/MessageContext';
+import type { RenderCookStatus } from '$lib/rendering/types';
 import type { Node } from '@xyflow/svelte';
 
 export type PatchiesEvent =
@@ -44,6 +45,7 @@ export type PatchiesEvent =
   | NodeSetPausedEvent
   | SurfaceMouseForwardingGraphChangedEvent
   | IncludeProcessingEvent
+  | CookStatusUpdateEvent
   | ScatterNodesEvent;
 
 export interface ConsoleOutputEvent {
@@ -79,6 +81,11 @@ export interface GLPreviewFrameCapturedEvent {
   requestId: string;
   success: boolean;
   bitmap?: ImageBitmap;
+}
+
+export interface CookStatusUpdateEvent extends RenderCookStatus {
+  type: 'cookStatus';
+  nodeId: string;
 }
 
 export interface NodePortCountUpdateEvent {

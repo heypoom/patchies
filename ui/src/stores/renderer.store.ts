@@ -37,6 +37,7 @@ export type FpsCap = (typeof FPS_CAP_OPTIONS)[number];
 
 const FPS_CAP_STORAGE_KEY = 'patchies:renderFpsCap';
 const PREVIEW_BACKGROUND_STORAGE_KEY = 'patchies:previewBackgroundColor';
+const SHOW_COOK_STATS_STORAGE_KEY = 'patchies:showCookStats';
 
 function loadFpsCap(): FpsCap {
   if (typeof localStorage === 'undefined') return 0;
@@ -56,6 +57,34 @@ export const renderFpsCap = writable<FpsCap>(loadFpsCap());
 renderFpsCap.subscribe((fps) => {
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(FPS_CAP_STORAGE_KEY, String(fps));
+  }
+});
+
+function loadBooleanSetting(key: string, fallback: boolean): boolean {
+  if (typeof localStorage === 'undefined') return fallback;
+
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored === null) return fallback;
+
+    return stored === 'true';
+  } catch {
+    return fallback;
+  }
+}
+
+/** Show cook status overlays on render node previews. */
+export const showCookStats = writable<boolean>(
+  loadBooleanSetting(SHOW_COOK_STATS_STORAGE_KEY, false)
+);
+
+showCookStats.subscribe((enabled) => {
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(SHOW_COOK_STATS_STORAGE_KEY, String(enabled));
+    } catch {
+      // Restricted-storage environments may expose localStorage but throw on access.
+    }
   }
 });
 

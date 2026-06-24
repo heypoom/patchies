@@ -18,7 +18,7 @@ import {
 import { get } from 'svelte/store';
 import { isBackgroundOutputCanvasEnabled, outputTarget } from '../../stores/canvas.store';
 import { currentPatchId } from '../../stores/ui.store';
-import { renderFpsCap } from '../../stores/renderer.store';
+import { renderFpsCap, showCookStats } from '../../stores/renderer.store';
 import { IpcSystem } from './IpcSystem';
 import { isExternalTextureNode } from './node-types';
 import { MessageSystem, type Message } from '$lib/messages/MessageSystem';
@@ -186,6 +186,12 @@ export class GLSystem {
     // Sync render FPS cap with render worker
     renderFpsCap.subscribe((fps) => {
       this.renderWorker.postMessage({ type: 'setRenderFpsCap', fps });
+    });
+
+    // Sync cook debug telemetry with render worker. Keep disabled by default so
+    // per-node cook status bookkeeping is opt-in.
+    showCookStats.subscribe((enabled) => {
+      this.renderWorker.postMessage({ type: 'setCookStatsEnabled', enabled });
     });
 
     // Sync output target preference
@@ -426,6 +432,9 @@ export class GLSystem {
       })
       .with({ type: 'previewFrameCaptured' }, (data) => {
         // @ts-expect-error -- fix me
+        this.eventBus.dispatch(data);
+      })
+      .with({ type: 'cookStatus' }, (data) => {
         this.eventBus.dispatch(data);
       })
       .with(P.union({ type: 'fftEnabled' }, { type: 'registerFFTRequest' }), (data) => {
