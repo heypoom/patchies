@@ -1,6 +1,5 @@
 [ChucK](https://chuck.cs.princeton.edu) is a programming language for
-real-time sound synthesis and music creation. Great for algorithmic composition and sound design.
-Runs via [WebChucK](https://chuck.cs.princeton.edu/webchuck).
+real-time sound synthesis and music creation. Runs via [WebChucK](https://chuck.cs.princeton.edu/webchuck).
 
 ![Patchies ChucK demo](/content/images/chuck-demo.webp)
 

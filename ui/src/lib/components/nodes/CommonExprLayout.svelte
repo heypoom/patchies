@@ -373,6 +373,7 @@
 
   .expr-display {
     font-family: var(--patchies-expr-preview-font-family, var(--font-mono));
+    line-height: var(--patchies-common-expr-line-height, 1.4);
     padding: var(--patchies-common-expr-padding-y, 0.5rem)
       var(--patchies-common-expr-padding-x, 0.75rem);
   }
@@ -382,13 +383,19 @@
     line-height: inherit;
   }
 
+  .expr-preview-display-prefix {
+    line-height: inherit;
+  }
+
   :global(.expr-editor-container .cm-editor) {
     border: 0 !important;
     box-shadow: none !important;
   }
 
+  :global(.expr-editor-container .cm-scroller),
+  :global(.expr-editor-container .cm-content),
   :global(.expr-editor-container .cm-line) {
-    line-height: inherit;
+    line-height: var(--patchies-common-expr-line-height, 1.4);
   }
 
   .expr-preview-code-line-wrap {
