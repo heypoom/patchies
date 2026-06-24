@@ -19,13 +19,25 @@
     showCookDebug = visible;
   });
 
+  const HIDDEN_COOK_REASONS = new Set(['first-frame', 'renderer-policy']);
+
   const cookStatusLabel = $derived(cookStatus?.status ?? 'cached');
-  const cookReasons = $derived.by(() => {
+  let lastVisibleCookReasons = $state<string[]>([]);
+
+  $effect(() => {
     const visibleReasons = (cookStatus?.lastCookReasons ?? []).filter(
-      (reason) => reason !== 'first-frame'
+      (reason) => !HIDDEN_COOK_REASONS.has(reason)
     );
 
-    return visibleReasons.join(', ') || 'none';
+    if (visibleReasons.length > 0) {
+      lastVisibleCookReasons = visibleReasons;
+    } else if (cookStatus?.status !== 'cooked') {
+      lastVisibleCookReasons = [];
+    }
+  });
+
+  const cookReasons = $derived.by(() => {
+    return lastVisibleCookReasons.join(', ') || 'none';
   });
   const cookTime = $derived(
     cookStatus?.lastCookTimeMs == null ? '--' : `${cookStatus.lastCookTimeMs.toFixed(2)}ms`

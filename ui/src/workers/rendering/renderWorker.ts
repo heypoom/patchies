@@ -163,7 +163,7 @@ self.onmessage = (event) => {
       fboRenderer.setTransportTime(data);
     })
     .with('setOverrideOutputNode', () => {
-      fboRenderer.overrideOutputNodeId = data.nodeId ?? null;
+      fboRenderer.setOverrideOutputNode(data.nodeId ?? null);
     })
     .with('channelMessage', () => {
       fboRenderer.sendChannelMessageToNode(data.nodeId, data.channel, data.data, data.sourceNodeId);

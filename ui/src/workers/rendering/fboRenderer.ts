@@ -721,6 +721,8 @@ export class FBORenderer {
         })
       );
     }
+
+    this.resumeViewportManagedRenderers();
   }
 
   // Some nodes are externally managed, e.g. the texture will be uploaded on it.
@@ -1470,6 +1472,18 @@ export class FBORenderer {
     return this.nodePausedMap.get(nodeId) ?? false;
   }
 
+  isNodeCookRequired(nodeId: string): boolean {
+    const effectiveOutputNodeId = this.getEffectiveOutputNodeId();
+    const requiredNodeIds = this.getViewportCookRequiredNodeIds(effectiveOutputNodeId);
+
+    return !shouldSkipCookForViewport({ node: { id: nodeId }, requiredNodeIds });
+  }
+
+  setOverrideOutputNode(nodeId: string | null) {
+    this.overrideOutputNodeId = nodeId;
+    this.resumeViewportManagedRenderers();
+  }
+
   /** Set mouse data for a node (Shadertoy iMouse format) */
   setMouseData(nodeId: string, x: number, y: number, z: number, w: number, buttons?: number) {
     const nextMouseData: MouseData = [x, y, z, w, buttons];
@@ -1815,6 +1829,7 @@ export class FBORenderer {
   setVisibleNodes(nodeIds: Set<string>) {
     this.visibleNodeIds = new Set(nodeIds);
     this.previewRenderer.setVisibleNodes(nodeIds);
+    this.resumeViewportManagedRenderers();
   }
 
   private getViewportCookRequiredNodeIds(effectiveOutputNodeId: string | null): Set<string> | null {
@@ -1848,6 +1863,12 @@ export class FBORenderer {
     };
 
     return requiredNodeIds;
+  }
+
+  private resumeViewportManagedRenderers() {
+    for (const renderer of this.canvasByNode.values()) {
+      renderer?.resumeAnimation();
+    }
   }
 
   /** Globally enable/disable all previews */
