@@ -386,13 +386,23 @@
 
 <style>
   :global(.chuck-node-preview-container) {
+    --patchies-common-expr-padding-x: 0.75rem;
+    --patchies-common-expr-padding-y: 0.5rem;
+  }
+
+  :global(.chuck-node-code-editor) {
+    --patchies-common-expr-padding-x: 0.35rem;
+    --patchies-common-expr-padding-y: 0.45rem;
+  }
+
+  :global(.chuck-node-preview-container) {
     width: fit-content;
     max-height: 500px;
     overflow-y: hidden;
   }
 
   :global(.chuck-node-code-editor .cm-content) {
-    padding: 6px 8px 7px 4px !important;
+    padding: var(--patchies-common-expr-padding-y) var(--patchies-common-expr-padding-x) !important;
   }
 
   :global(.chuck-node-container .expr-preview) {

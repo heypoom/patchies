@@ -321,7 +321,7 @@
               onmouseover={onPreviewMouseOver}
               onmouseout={onPreviewMouseOut}
               class={[
-                'expr-display cursor-pointer rounded-lg border px-3 py-2 text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
+                'expr-display cursor-pointer rounded-lg border text-start text-xs font-medium text-zinc-200 hover:bg-zinc-800',
                 containerClass,
                 previewContainerClass
               ]}
@@ -367,15 +367,28 @@
 
 <style>
   :global(.common-expr-node-code-editor .cm-content) {
-    padding: 7px 5px !important;
+    padding: var(--patchies-common-expr-padding-y, 0.5rem)
+      var(--patchies-common-expr-padding-x, 0.75rem) !important;
   }
 
   .expr-display {
     font-family: var(--patchies-expr-preview-font-family, var(--font-mono));
+    padding: var(--patchies-common-expr-padding-y, 0.5rem)
+      var(--patchies-common-expr-padding-x, 0.75rem);
   }
 
   .expr-preview-code {
     font-family: inherit;
+    line-height: inherit;
+  }
+
+  :global(.expr-editor-container .cm-editor) {
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  :global(.expr-editor-container .cm-line) {
+    line-height: inherit;
   }
 
   .expr-preview-code-line-wrap {
