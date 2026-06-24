@@ -109,6 +109,14 @@ export interface AudioNodeV2 {
   ): void;
 
   /**
+   * Clear custom input connection bookkeeping before AudioService rebuilds graph edges.
+   *
+   * Optional: used by nodes whose connectFrom implementation connects to an internal
+   * node instead of their public audioNode.
+   */
+  disconnectInputs?(): void;
+
+  /**
    * Cleanup resources and disconnect the node.
    *
    * Optional: if not implemented, AudioService will use the default implementation.

@@ -9,9 +9,15 @@ import { getChuckGlobalVariableArrayType, getChuckGlobalVariableType } from '../
 
 export interface ChuckShred {
   id: number;
+  chuckId: number;
   time: number;
   code: string;
 }
+
+const ADC_REBUILD_FADE_OUT_SECONDS = 0.18;
+const ADC_REBUILD_SILENCE_HOLD_SECONDS = 0.08;
+const ADC_REBUILD_DETACH_HOLD_SECONDS = 0.12;
+const ADC_REBUILD_FADE_IN_SECONDS = 0.2;
 
 /**
  * ChuckNode implements the chuck~ audio node.
@@ -51,12 +57,16 @@ export class ChuckNode implements AudioNodeV2 {
   // ChucK state
   private chuck: Chuck | null = null;
   private shreds: ChuckShred[] = [];
+  private nextShredRunId = 1;
   private ready = false;
-  private pendingInputConnections: AudioNode[] = [];
+  private inputConnections = new Set<AudioNode>();
   private eventListenerIds: Map<string, number> = new Map();
+  private errorMessage: string | null = null;
+  private chuckOutputConnected = false;
 
   /** Allows Svelte to subscribe to the shreds */
   public shredsStore = writable<ChuckShred[]>([]);
+  public onError: (error: string | null) => void = () => {};
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
@@ -221,7 +231,7 @@ export class ChuckNode implements AudioNodeV2 {
     if (!chuck) return;
 
     try {
-      const shredId = await chuck.runCode(code);
+      const shredId = await chuck.runCode(this.withKeepAlive(code));
       const now = await chuck.now();
 
       if (now === 0) {
@@ -231,14 +241,17 @@ export class ChuckNode implements AudioNodeV2 {
       }
 
       this.shreds.push({
-        id: shredId,
+        id: this.nextShredRunId++,
+        chuckId: shredId,
         time: now,
         code: code.trim()
       });
 
+      this.clearError();
       this.updateStore();
     } catch (error) {
       logger.error('chuck~ run error:', error);
+      this.setError(error, 'ChucK run error');
       throw error;
     }
   }
@@ -252,16 +265,25 @@ export class ChuckNode implements AudioNodeV2 {
         // if no shreds, just run the code.
         await this.addShredCode(code);
       } else {
-        await chuck.replaceCode(code);
-      }
+        const nextShreds = [...this.shreds];
+        nextShreds[nextShreds.length - 1] = {
+          ...nextShreds[nextShreds.length - 1],
+          code: code.trim()
+        };
 
-      // Update the most recent shred's code
-      if (this.shreds.length > 0) {
-        this.shreds[this.shreds.length - 1].code = code.trim();
-        this.updateStore();
+        const replacedShred = this.shreds.at(-1);
+        if (replacedShred && this.needsVmRebuild(replacedShred.code, code)) {
+          await this.rebuildChuckWithShreds(nextShreds);
+        } else {
+          await chuck.replaceCode(this.withKeepAlive(code));
+          this.shreds = nextShreds;
+          this.clearError();
+          this.updateStore();
+        }
       }
     } catch (error) {
       logger.error('chuck~ replace error:', error);
+      this.setError(error, 'ChucK replace error');
       throw error;
     }
   }
@@ -271,28 +293,42 @@ export class ChuckNode implements AudioNodeV2 {
     if (!chuck) return;
 
     try {
-      chuck.removeLastCode();
-
-      this.shreds.pop();
-      this.updateStore();
+      const shred = this.shreds.at(-1);
+      if (shred && this.needsVmRebuild(shred.code)) {
+        await this.rebuildChuckWithShreds(this.shreds.slice(0, -1));
+      } else {
+        await chuck.removeLastCode();
+        this.shreds.pop();
+        this.updateStore();
+      }
     } catch (error) {
-      logger.error('chuck~ remove error:', error);
-      throw error;
+      logger.warn('[chuck~] remove last shred failed; clearing ChucK instance instead:', error);
+      this.clearChuckInstance();
     }
   }
 
-  async removeShred(shredId: number): Promise<void> {
+  async removeShred(runId: number): Promise<void> {
     const chuck = await this.ensureChuck();
     if (!chuck) return;
 
-    try {
-      await chuck.removeShred(shredId);
-    } catch {
-      // Ignore errors
-    }
+    const shred = this.shreds.find((entry) => entry.id === runId);
+    if (!shred) return;
 
-    this.shreds = this.shreds.filter((shred) => shred.id !== shredId);
-    this.updateStore();
+    try {
+      if (this.needsVmRebuild(shred.code)) {
+        await this.rebuildChuckWithShreds(this.shreds.filter((entry) => entry.id !== runId));
+      } else {
+        await chuck.removeShred(shred.chuckId);
+        this.shreds = this.shreds.filter((entry) => entry.id !== runId);
+        this.updateStore();
+      }
+    } catch (error) {
+      logger.warn(
+        `[chuck~] remove shred run ${runId} / ChucK ID ${shred.chuckId} failed; clearing ChucK instance instead`,
+        error
+      );
+      this.clearChuckInstance();
+    }
   }
 
   async clearAll(): Promise<void> {
@@ -300,9 +336,9 @@ export class ChuckNode implements AudioNodeV2 {
     if (!chuck) throw new Error('chuck~ not initialized');
 
     try {
-      chuck.clearChuckInstance();
-      this.shreds = [];
-      this.updateStore();
+      await this.withOutputFade(async () => {
+        this.clearChuckInstance();
+      });
     } catch (error) {
       logger.error('chuck~ clear error:', error);
       throw error;
@@ -313,8 +349,161 @@ export class ChuckNode implements AudioNodeV2 {
     return [...this.shreds];
   }
 
+  getError(): string | null {
+    return this.errorMessage;
+  }
+
   private updateStore() {
     this.shredsStore.set([...this.shreds]);
+  }
+
+  private setError(error: unknown, fallback: string) {
+    const message = this.getErrorMessage(error, fallback);
+    this.errorMessage = message;
+
+    this.onError(message);
+  }
+
+  private getErrorMessage(error: unknown, fallback: string) {
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    if (error && typeof error === 'object' && 'type' in error && typeof error.type === 'string') {
+      return `${fallback}: ${error.type}`;
+    }
+
+    return fallback;
+  }
+
+  private clearError() {
+    this.errorMessage = null;
+    this.onError(null);
+  }
+
+  private clearChuckInstance() {
+    this.chuck?.clearChuckInstance();
+    this.shreds = [];
+    this.nextShredRunId = 1;
+    this.clearError();
+    this.updateStore();
+  }
+
+  private withKeepAlive(code: string) {
+    if (/=>\s*now\b/.test(code)) {
+      return code;
+    }
+
+    return `${code}\n\n// Keep immediate audio patches removable from Patchies.\nwhile (true) 1::day => now;`;
+  }
+
+  private needsVmRebuild(...codes: string[]) {
+    return codes.some((code) => /\badc\b/.test(code));
+  }
+
+  private async rebuildChuckWithShreds(shreds: ChuckShred[]) {
+    await this.withOutputFade(async () => {
+      await this.reloadChuck();
+
+      const nextShreds: ChuckShred[] = [];
+
+      for (const shred of shreds) {
+        const chuck = this.chuck;
+        if (!chuck) return;
+
+        const chuckId = await chuck.runCode(this.withKeepAlive(shred.code));
+        const time = await chuck.now();
+
+        nextShreds.push({
+          ...shred,
+          chuckId,
+          time
+        });
+      }
+
+      this.shreds = nextShreds;
+      this.clearError();
+      this.updateStore();
+    });
+  }
+
+  private async withOutputFade(action: () => void | Promise<void>) {
+    this.rampOutputGain(0, ADC_REBUILD_FADE_OUT_SECONDS);
+    await this.wait(ADC_REBUILD_FADE_OUT_SECONDS * 1000);
+    this.holdOutputSilence();
+    this.disconnectChuckInputs();
+    this.disconnectChuckOutput();
+    await this.wait(ADC_REBUILD_DETACH_HOLD_SECONDS * 1000);
+
+    try {
+      await action();
+      await this.wait(ADC_REBUILD_SILENCE_HOLD_SECONDS * 1000);
+    } finally {
+      this.connectChuckOutput();
+      this.rampOutputGain(1, ADC_REBUILD_FADE_IN_SECONDS, 0);
+    }
+  }
+
+  private connectChuckOutput() {
+    if (!this.chuck || this.chuckOutputConnected) return;
+
+    this.chuck.connect(this.audioNode);
+    this.chuckOutputConnected = true;
+  }
+
+  private disconnectChuckOutput() {
+    if (!this.chuck || !this.chuckOutputConnected) return;
+
+    try {
+      this.chuck.disconnect(this.audioNode);
+    } catch {
+      this.chuck.disconnect();
+    }
+
+    this.chuckOutputConnected = false;
+  }
+
+  private disconnectChuckInputs() {
+    if (!this.chuck) return;
+
+    for (const inputNode of this.inputConnections) {
+      try {
+        inputNode.disconnect(this.chuck);
+      } catch {
+        // The graph may already have been disconnected by AudioService.
+      }
+    }
+  }
+
+  private holdOutputSilence() {
+    const gain = this.audioNode.gain;
+    const now = this.audioContext.currentTime;
+
+    gain.cancelScheduledValues(now);
+    gain.setValueAtTime(0, now);
+    gain.value = 0;
+  }
+
+  private rampOutputGain(
+    value: number,
+    durationSeconds: number,
+    startValue = this.audioNode.gain.value
+  ) {
+    const gain = this.audioNode.gain;
+    const now = this.audioContext.currentTime;
+
+    gain.cancelScheduledValues(now);
+    gain.setValueAtTime(startValue, now);
+    gain.linearRampToValueAtTime(value, now + durationSeconds);
+    gain.value = value;
+  }
+
+  private wait(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   async ensureChuck(): Promise<Chuck | null> {
@@ -323,10 +512,15 @@ export class ChuckNode implements AudioNodeV2 {
     try {
       await this.reloadChuck();
       this.ready = true;
+      this.clearError();
 
       return this.chuck;
     } catch (error) {
-      logger.error('failed to initialize chuck~:', error);
+      if (!this.errorMessage) {
+        logger.error('failed to initialize chuck~:', error);
+        this.setError(error, 'Failed to initialize ChucK');
+      }
+
       return null;
     }
   }
@@ -337,15 +531,25 @@ export class ChuckNode implements AudioNodeV2 {
     if (this.chuck) {
       this.chuck.clearChuckInstance();
       this.chuck.clearGlobals();
+      this.disconnectChuckOutput();
     }
 
-    this.chuck = await Chuck.init(
-      [],
-      this.audioContext,
-      this.audioNode.channelCount,
-      './webchuck/'
-    );
-    this.chuck.connect(this.audioNode);
+    try {
+      this.chuck = await Chuck.init(
+        [],
+        this.audioContext,
+        this.audioNode.channelCount,
+        './webchuck/'
+      );
+    } catch (error) {
+      logger.error('chuck~ init error:', error);
+      this.setError(error, 'Failed to initialize ChucK');
+
+      throw error;
+    }
+
+    this.chuckOutputConnected = false;
+    this.connectChuckOutput();
 
     // Redirect ChucK print to message system
     this.chuck.chuckPrint = (message: string) => {
@@ -354,14 +558,13 @@ export class ChuckNode implements AudioNodeV2 {
 
     this.chuck.addEventListener('processorerror', (event) => {
       logger.error('chuck~ AudioWorkletProcessor error:', event);
+      this.setError(event, 'ChucK AudioWorkletProcessor error');
     });
 
-    // Connect any pending input connections
-    for (const inputNode of this.pendingInputConnections) {
+    // Reconnect audio inputs so `adc` keeps working after VM rebuilds.
+    for (const inputNode of this.inputConnections) {
       inputNode.connect(this.chuck);
     }
-
-    this.pendingInputConnections = [];
 
     logger.log('[chuck~] reloaded');
   }
@@ -373,14 +576,17 @@ export class ChuckNode implements AudioNodeV2 {
   connectFrom(source: AudioNodeV2): void {
     if (!source.audioNode) return;
 
+    this.inputConnections.add(source.audioNode);
+
     // Connect the source to the ChucK instance (not our output gain node)
     // This makes the audio available via `adc` in ChucK code
     if (this.chuck) {
       source.audioNode.connect(this.chuck);
-    } else {
-      // ChucK not ready yet - queue the connection
-      this.pendingInputConnections.push(source.audioNode);
     }
+  }
+
+  disconnectInputs(): void {
+    this.inputConnections.clear();
   }
 
   destroy(): void {
@@ -391,7 +597,8 @@ export class ChuckNode implements AudioNodeV2 {
       }
 
       try {
-        this.chuck.removeLastCode();
+        this.chuck.clearChuckInstance();
+        this.disconnectChuckOutput();
       } catch (error) {
         logger.error('failed to cleanup chuck~ during destroy:', error);
       }
@@ -399,9 +606,11 @@ export class ChuckNode implements AudioNodeV2 {
 
     this.audioNode.disconnect();
     this.shreds = [];
+    this.nextShredRunId = 1;
+    this.updateStore();
     this.chuck = null;
     this.ready = false;
-    this.pendingInputConnections = [];
+    this.inputConnections.clear();
     this.eventListenerIds.clear();
     this.messageContext.destroy();
   }

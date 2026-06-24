@@ -234,6 +234,7 @@ export class AudioService {
       for (const node of this.nodesById.values()) {
         try {
           node.audioNode?.disconnect();
+          node.disconnectInputs?.();
         } catch (error) {
           logger.warn(`cannot disconnect audio node ${node.nodeId}:`, error);
         }

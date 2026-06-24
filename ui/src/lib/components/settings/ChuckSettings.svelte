@@ -12,7 +12,7 @@
     showHeaderActions = true
   }: {
     shreds: ChuckShred[];
-    onRemoveShred: (shredId: number) => void;
+    onRemoveShred: (runId: number) => void;
     onStopAll: () => void;
     onClose?: () => void;
     showCloseButton?: boolean;
@@ -68,13 +68,15 @@
           <div class="text-xs text-zinc-500">No running shreds</div>
         {:else}
           <div class="space-y-2">
-            {#each shreds as shred, index (index)}
+            {#each shreds as shred (shred.id)}
               <div class="relative flex items-center justify-between">
                 <div class="flex-1">
-                  <div class="font-mono text-xs text-zinc-300">ID: {shred.id}</div>
+                  <div class="font-mono text-xs text-zinc-300">
+                    Shred {shred.id}
 
-                  <div class="text-xs text-zinc-500">
-                    {shred.time}
+                    {#if shred.id !== shred.chuckId}
+                      <span class="font-mono text-[10px] text-zinc-400">[id: {shred.chuckId}]</span>
+                    {/if}
                   </div>
 
                   <div class="mt-1 max-w-48 truncate font-mono text-xs text-zinc-400">
@@ -89,7 +91,7 @@
                         onclick={() => onRemoveShred(shred.id)}
                         class="ml-2 cursor-pointer rounded p-1 hover:bg-zinc-700"
                         type="button"
-                        aria-label={`Remove shred ${shred.id}`}
+                        aria-label={`Remove shred run ${shred.id}`}
                       >
                         <X class="h-3 w-3 text-red-400" />
                       </button>

@@ -30,8 +30,9 @@
   } = $props();
 
   let isEditing = $state(!data.expr);
-  let layoutRef = $state<any>();
+  let layoutRef = $state<ReturnType<typeof CommonExprLayout>>();
   let showSettings = $state(false);
+  let errorMessage = $state<string | null>(null);
 
   let messageContext: MessageContext;
   let audioService = AudioService.getInstance();
@@ -118,6 +119,12 @@
     const chuckNode = audioService.getNodeById(nodeId) as ChuckNode | undefined;
 
     if (chuckNode) {
+      errorMessage = chuckNode.getError();
+
+      chuckNode.onError = (error: string | null) => {
+        errorMessage = error;
+      };
+
       const unsubscribe = chuckNode.shredsStore.subscribe((newShreds) => {
         shreds = newShreds;
       });
@@ -361,6 +368,7 @@
           extraExtensions={chuckKeymaps}
           exitOnRun={false}
           onRun={handleReplace}
+          hasError={!!errorMessage}
           nodeType="chuck~"
           detachedEditorTitle="chuck~"
           detachedActions={detachedChuckActions}
@@ -369,6 +377,12 @@
 
         {@render chuckOutlets()}
       </div>
+
+      {#if errorMessage}
+        <div class="max-w-[300px] truncate text-xs text-red-400">
+          {errorMessage}
+        </div>
+      {/if}
     </div>
   </div>
 
