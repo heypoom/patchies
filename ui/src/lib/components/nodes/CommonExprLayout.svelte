@@ -272,7 +272,7 @@
                 containerClass
               ]}
               style={capturedSize
-                ? `min-width: ${capturedSize.width}px; min-height: ${capturedSize.height}px`
+                ? `width: ${capturedSize.width}px; min-height: ${capturedSize.height}px`
                 : undefined}
             >
               <CodeEditor
