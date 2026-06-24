@@ -23,8 +23,22 @@
     FLUSH_INTERVAL_OPTIONS,
     HOT_THRESHOLD_OPTIONS
   } from '../../../stores/profiler-settings.store';
+
   import type { ProfilerCategory, ProfilerSnapshot, TimingStats } from '$lib/profiler/types';
-  import { SvelteSet } from 'svelte/reactivity';
+
+  import {
+    PROFILER_CHART_HEIGHT as CH,
+    PROFILER_CHART_PADDING as CP,
+    PROFILER_CHART_WIDTH as CW,
+    buildActivePath,
+    buildInactivePath,
+    buildRenderPath,
+    getChartY,
+    getNodeActiveHistoryMax,
+    getNodeCategories,
+    getRenderHistoryMax,
+    isTimingActive
+  } from '$lib/profiler/profiler-chart-utils';
 
   // ─── Display stat helpers ──────────────────────────────────────────────────
 
@@ -59,10 +73,6 @@
     return fps.toFixed(1) + ' fps';
   }
 
-  function isTimingActive(t: TimingStats): boolean {
-    return t.callsPerSecond > 0;
-  }
-
   function timingTextClass(t: TimingStats, isSevere: boolean, isHot: boolean): string {
     if (!isTimingActive(t)) return 'text-zinc-700';
 
@@ -74,7 +84,6 @@
 
   // ─── Category metadata ───────────────────────────────────────────────────────
 
-  const ORDERED_CATEGORIES: ProfilerCategory[] = ['init', 'message', 'draw', 'interval', 'raf'];
   const MAIN_VIEW_CATEGORIES: ProfilerCategory[] = ['message', 'draw', 'interval', 'raf'];
 
   const CATEGORY_LABEL: Record<ProfilerCategory, string> = {
@@ -130,111 +139,7 @@
 
   // ─── Chart helpers ───────────────────────────────────────────────────────────
 
-  const CW = 240; // viewBox width
-  const CH = 52; // viewBox height
-  const CP = 3; // padding
-
   const COL_W = '2.8rem';
-
-  /** Categories that appear for a node across the entire history */
-  function nodeCats(nodeId: string, history: ProfilerSnapshot[]): ProfilerCategory[] {
-    const seen = new SvelteSet<ProfilerCategory>();
-
-    for (const snap of history) {
-      const entry = snap.entries.find((e) => e.nodeId === nodeId);
-      if (!entry) continue;
-
-      for (const cat of ORDERED_CATEGORIES) {
-        if (entry.timings[cat]) seen.add(cat);
-      }
-    }
-
-    return ORDERED_CATEGORIES.filter((c) => seen.has(c));
-  }
-
-  /** Max active avg across all categories for a node in the history */
-  function historyMax(nodeId: string, history: ProfilerSnapshot[]): number {
-    let max = 0.01;
-
-    for (const snap of history) {
-      const entry = snap.entries.find((e) => e.nodeId === nodeId);
-      if (!entry) continue;
-
-      for (const t of Object.values(entry.timings)) {
-        if (t && isTimingActive(t) && t.avg > max) {
-          max = t.avg;
-        }
-      }
-    }
-
-    return max;
-  }
-
-  /** Y coordinate for a value given a shared max */
-  function valY(v: number, maxVal: number): number {
-    return CH - CP - (v / maxVal) * (CH - CP * 2);
-  }
-
-  /** SVG path string for active samples in a category's avg history. */
-  function buildActivePath(
-    nodeId: string,
-    category: ProfilerCategory,
-    history: ProfilerSnapshot[],
-    maxVal: number
-  ): string {
-    const n = history.length;
-    if (n === 0) return '';
-
-    let path = '';
-    let penDown = false;
-
-    for (let i = 0; i < n; i++) {
-      const t = history[i].entries.find((e) => e.nodeId === nodeId)?.timings[category];
-      if (!t || !isTimingActive(t)) {
-        penDown = false;
-        continue;
-      }
-
-      const v = t.avg;
-      const x = n > 1 ? (i / (n - 1)) * (CW - CP * 2) + CP : CW / 2;
-      const y = valY(v, maxVal);
-
-      path += penDown ? `L${x.toFixed(1)} ${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
-      penDown = true;
-    }
-
-    return path;
-  }
-
-  /** SVG path string for inactive spans, rendered as a dim zero baseline. */
-  function buildInactivePath(
-    nodeId: string,
-    category: ProfilerCategory,
-    history: ProfilerSnapshot[],
-    maxVal: number
-  ): string {
-    const n = history.length;
-    if (n === 0) return '';
-
-    let path = '';
-    let penDown = false;
-
-    for (let i = 0; i < n; i++) {
-      const t = history[i].entries.find((e) => e.nodeId === nodeId)?.timings[category];
-      if (!t || isTimingActive(t)) {
-        penDown = false;
-        continue;
-      }
-
-      const x = n > 1 ? (i / (n - 1)) * (CW - CP * 2) + CP : CW / 2;
-      const y = valY(0, maxVal);
-
-      path += penDown ? `L${x.toFixed(1)} ${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
-      penDown = true;
-    }
-
-    return path;
-  }
 
   // ─── Renderer chart helpers ─────────────────────────────────────────────────
 
@@ -252,42 +157,6 @@
     { key: 'p95', label: 'p95', color: '#fb923c', get: (rf) => rf.p95Ms },
     { key: 'p99', label: 'p99', color: '#f87171', get: (rf) => rf.p99Ms }
   ];
-
-  function buildRenderPath(
-    metric: RenderMetric,
-    history: ProfilerSnapshot[],
-    maxVal: number
-  ): string {
-    const n = history.length;
-    if (n === 0) return '';
-    let path = '';
-    let penDown = false;
-    for (let i = 0; i < n; i++) {
-      const rf = history[i].renderFrame;
-      if (!rf) {
-        penDown = false;
-        continue;
-      }
-      const v = metric.get(rf);
-      const x = n > 1 ? (i / (n - 1)) * (CW - CP * 2) + CP : CW / 2;
-      const y = valY(v, maxVal);
-      path += penDown ? `L${x.toFixed(1)} ${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
-      penDown = true;
-    }
-    return path;
-  }
-
-  function renderHistoryMax(history: ProfilerSnapshot[], metrics: RenderMetric[]): number {
-    let max = 0.01;
-    for (const snap of history) {
-      if (!snap.renderFrame) continue;
-      for (const m of metrics) {
-        const v = m.get(snap.renderFrame);
-        if (v > max) max = v;
-      }
-    }
-    return max;
-  }
 
   // ─── Toggles ────────────────────────────────────────────────────────────────
   let showDevStats = $state(false);
@@ -439,9 +308,9 @@
         <!-- Expanded sparkline chart -->
         {#if isSelected}
           {@const history = $profilerHistory}
-          {@const cats = nodeCats(entry.nodeId, history)}
-          {@const maxMs = historyMax(entry.nodeId, history)}
-          {@const hotY = maxMs > hotThreshold ? valY(hotThreshold, maxMs) : null}
+          {@const cats = getNodeCategories(entry.nodeId, history)}
+          {@const maxMs = getNodeActiveHistoryMax(entry.nodeId, history)}
+          {@const hotY = maxMs > hotThreshold ? getChartY(hotThreshold, maxMs) : null}
           {@const histSpanSecs = ((history.length - 1) * 0.5).toFixed(0)}
 
           <div class="border-b border-zinc-800/50 bg-zinc-900/40 px-3 pt-1.5 pb-2">
@@ -508,7 +377,12 @@
                   {@const isLatestActive = latestTiming ? isTimingActive(latestTiming) : false}
 
                   {#if v != null && isLatestActive}
-                    <circle cx={CW - CP} cy={valY(v, maxMs)} r="2.5" fill={CATEGORY_COLOR[cat]} />
+                    <circle
+                      cx={CW - CP}
+                      cy={getChartY(v, maxMs)}
+                      r="2.5"
+                      fill={CATEGORY_COLOR[cat]}
+                    />
                   {/if}
                 {/each}
               </svg>
@@ -707,7 +581,7 @@
       {#if showDevStats}
         {@const rf = $profilerSnapshot?.renderFrame}
         {@const history = $profilerHistory}
-        {@const rMaxMs = renderHistoryMax(history, RENDER_METRICS)}
+        {@const rMaxMs = getRenderHistoryMax(history, RENDER_METRICS)}
         {@const rHistSpan = ((history.length - 1) * 0.5).toFixed(0)}
         <div class="mt-1.5 border-t border-zinc-800/60 pt-1.5">
           <div class="mb-1 font-mono font-light tracking-wide text-zinc-500">renderer</div>
@@ -741,7 +615,7 @@
                   {@const lastRf = history.at(-1)?.renderFrame}
                   {#if lastRf}
                     {@const v = metric.get(lastRf)}
-                    <circle cx={CW - CP} cy={valY(v, rMaxMs)} r="2.5" fill={metric.color} />
+                    <circle cx={CW - CP} cy={getChartY(v, rMaxMs)} r="2.5" fill={metric.color} />
                   {/if}
                 {/each}
               </svg>
