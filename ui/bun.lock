@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "patchies-web",
@@ -92,7 +91,7 @@
         "vite-plugin-bundle-audioworklet": "^0.1.1",
         "vite-plugin-static-copy": "^3.1.1",
         "vue": "^3.5.27",
-        "webchuck": "^1.2.10",
+        "webchuck": "^1.2.11",
         "webmidi": "^3.1.12",
       },
       "devDependencies": {
@@ -2855,7 +2854,7 @@
 
     "web-midi-api": ["web-midi-api@2.4.0", "", { "dependencies": { "jzz": "^1.9.5" } }, "sha512-tTfLdxa5LpOP1NgWByV458iYKgSLhlsIwqCpfbcJuyjProNtuf5UnX97K4JNyuQCqkR+6thQAIsk2BOMSrKaCA=="],
 
-    "webchuck": ["webchuck@1.2.10", "", {}, "sha512-zM0Ol//WkIv/wHsmyyKPpQY0Fs2gvcarMeezPP7xzV6Abx3UlCTWD4l0T8e70iga//jkPnHg9HLrsds3jc5SLw=="],
+    "webchuck": ["webchuck@1.2.11", "", {}, "sha512-ItjjGWWtkUaQ9OTbddOajdyjMuwbPXdZc3kpbB6W+UGbeHkcEeDQf30J+qLx08xcHF610KFWKRpNJOhWtjzvxw=="],
 
     "webidl-conversions": ["webidl-conversions@4.0.2", "", {}, "sha512-YQ+BmxuTgd6UXZW3+ICGfyqRyHXVlD5GtQr5+qjiNW7bF0cqrzX500HVXPBOvgXb5YnzDd+h0zqyv61KUD7+Sg=="],
 
