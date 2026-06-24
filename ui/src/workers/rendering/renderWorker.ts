@@ -115,6 +115,7 @@ self.onmessage = (event) => {
     .with('updateJSModule', () => fboRenderer.updateJSModule(data.moduleName, data.code))
     .with('profilerEnable', () => fboRenderer.setProfilingEnabled(data.enabled))
     .with('setRenderFpsCap', () => fboRenderer.setRenderFpsCap(data.fps))
+    .with('setCookStatsEnabled', () => fboRenderer.setCookStatsEnabled(data.enabled))
     .with('setMaxPreviewsPerFrame', () => {
       console.log('setMax::hasOutputNode', fboRenderer.isOutputEnabled);
 

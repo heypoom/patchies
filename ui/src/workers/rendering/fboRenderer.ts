@@ -140,6 +140,7 @@ export class FBORenderer {
   private renderErrorKeysByNode = new Map<string, Set<string>>();
   private glErrorKeysByNode = new Map<string, Set<string>>();
   private lastCookStatusSignatures = new Map<string, string>();
+  private cookStatsEnabled = false;
 
   /** Minimum interval between rendered frames (ms). 0 = unlimited. */
   private renderIntervalMs: number = 0;
@@ -1740,6 +1741,8 @@ export class FBORenderer {
   }
 
   private postCookStatusIfNeeded(nodeId: string, force = false): void {
+    if (!this.cookStatsEnabled) return;
+
     const status = this.cookState.getStatus(nodeId);
     if (!status) return;
 
@@ -1757,6 +1760,13 @@ export class FBORenderer {
 
     this.lastCookStatusSignatures.set(nodeId, signature);
     self.postMessage({ type: 'cookStatus', nodeId, ...status });
+  }
+
+  setCookStatsEnabled(enabled: boolean): void {
+    if (this.cookStatsEnabled === enabled) return;
+
+    this.cookStatsEnabled = enabled;
+    this.lastCookStatusSignatures.clear();
   }
 
   private refreshReglState() {

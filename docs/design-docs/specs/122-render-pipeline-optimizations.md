@@ -275,7 +275,7 @@ The overlay should show:
 - Last cook reason list, such as `uniform`, `input`, `time`, `feedback`, or `first-frame`
 - A compact cooked/cached frame count when profiling data is available
 
-Cook status must come from the render worker's cook state, not from the Svelte component guessing based on local UI events. `FBORenderer` should emit a lightweight cook-status message only when a node's displayed status changes, or at a throttled interval while profiling/debug overlay is enabled. This keeps the overlay cheap when hidden.
+Cook status must come from the render worker's cook state, not from the Svelte component guessing based on local UI events. `FBORenderer` should emit cook-status messages only while the debug overlay/profiling path is enabled, and then only when a node's displayed status changes or at a throttled interval. This keeps the overlay cheap when hidden by making status signature checks and worker messages opt-in.
 
 ### Testing
 
