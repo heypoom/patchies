@@ -59,7 +59,7 @@ import {
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { CookStateManager, type CookPolicy } from './CookStateManager';
 import { createGlslCookPolicy } from './cooking/glsl';
-import { createHydraCookPolicy } from './cooking/hydra';
+import { createRenderNodeCookPolicy } from './cooking/renderNode';
 
 type TransportTimeState = Pick<ITransport, keyof TransportState>;
 
@@ -711,20 +711,7 @@ export class FBORenderer {
   }
 
   private getCookPolicyForNode(node: RenderNode, renderGraph: RenderGraph): CookPolicy {
-    const feedbackDependent =
-      renderGraph.feedbackNodes.has(node.id) || (node.backEdgeInlets?.size ?? 0) > 0;
-
-    return match(node)
-      .with({ type: 'glsl' }, (node) => ({
-        ...createGlslCookPolicy(node.data.code),
-        ...(feedbackDependent ? { feedbackDependent: true } : {})
-      }))
-      .with({ type: 'hydra' }, (node) => ({
-        ...createHydraCookPolicy(node.data.code),
-        ...(feedbackDependent ? { feedbackDependent: true } : {})
-      }))
-      .with({ type: P.union('img', 'float.tex') }, () => ({ mode: 'on-demand' as const }))
-      .otherwise(() => ({ mode: 'always' as const }));
+    return createRenderNodeCookPolicy(node, renderGraph);
   }
 
   /**
@@ -1072,6 +1059,7 @@ export class FBORenderer {
 
   updateProjectionMap(nodeId: string, surfaces: import('$objects/projmap/types').ProjMapSurface[]) {
     this.projmapByNode.get(nodeId)?.updateSurfaces(surfaces);
+    this.cookState.markDirty(nodeId, 'config');
   }
 
   /**
