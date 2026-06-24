@@ -23,6 +23,29 @@ import { GLSystem } from './GLSystem';
 import { VideoChannelRegistry } from './VideoChannelRegistry';
 
 describe('GLSystem', () => {
+  it('sends connected video output node ids with render graph updates', () => {
+    const glSystem = new GLSystem();
+    const worker = glSystem.renderWorker as unknown as { postMessage: ReturnType<typeof vi.fn> };
+
+    glSystem.upsertNode('glsl-1', 'glsl', { code: '', glUniformDefs: [] });
+    worker.postMessage.mockClear();
+
+    glSystem.registerPatchbayVideoEdge('edge-1', {
+      id: 'edge-1',
+      source: 'glsl-1',
+      target: 'worker-1',
+      sourceHandle: 'video-out',
+      targetHandle: 'video-in-0'
+    });
+
+    expect(worker.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'buildRenderGraph',
+        connectedVideoOutputNodeIds: ['glsl-1']
+      })
+    );
+  });
+
   it('does not resubscribe unchanged video channel nodes', () => {
     const glSystem = new GLSystem();
     const registry = VideoChannelRegistry.getInstance();

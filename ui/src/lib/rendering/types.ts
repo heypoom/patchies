@@ -181,7 +181,11 @@ export interface FBONode {
 
 // Message types for worker communication (main -> worker)
 export type WorkerMessage =
-  | { type: 'buildRenderGraph'; nodes: RenderNode[]; edges: RenderEdge[] }
+  | {
+      type: 'buildRenderGraph';
+      graph: RenderGraph;
+      connectedVideoOutputNodeIds?: string[];
+    }
   | { type: 'startAnimation' }
   | { type: 'stopAnimation' }
   | { type: 'setPreviewEnabled'; nodeId: string; enabled: boolean }

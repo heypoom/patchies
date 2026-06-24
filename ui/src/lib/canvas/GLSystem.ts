@@ -9,6 +9,7 @@ import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-out
 import RenderWorker from '$workers/rendering/renderWorker?worker';
 
 import * as ohash from 'ohash';
+
 import {
   previewVisibleMap,
   isGlslPlaying,
@@ -53,6 +54,11 @@ import { Transport, type TransportState } from '$lib/transport';
 import { FloatTextureUploadBufferPool } from '$lib/float-texture/upload-buffer-pool';
 
 export type UserUniformValue = number | boolean | number[] | boolean[] | number[][];
+
+const isVideoRenderEdge = (edge: REdge): boolean =>
+  edge.sourceHandle?.startsWith('video-out') === true ||
+  edge.targetHandle?.startsWith('video-in') === true ||
+  /(video-out|video-in|sampler2D)/.test(edge.id);
 
 export class GLSystem {
   /** Web worker for offscreen rendering. */
@@ -915,9 +921,12 @@ export class GLSystem {
     if (!force && !this.hasFlowGraphChanged(this.nodes, edges)) return false;
 
     const graph = buildRenderGraph(this.nodes, edges);
-    if (!force && !this.hasHashChanged('graph', graph)) return false;
+    const connectedVideoOutputNodeIds = Array.from(this.getConnectedVideoOutputNodeIds(edges));
 
-    this.send('buildRenderGraph', { graph });
+    const graphPayload = { graph, connectedVideoOutputNodeIds };
+    if (!force && !this.hasHashChanged('graph', graphPayload)) return false;
+
+    this.send('buildRenderGraph', graphPayload);
     this.renderGraph = graph;
 
     // Expose feedback back-edges to UI for dashed edge styling
@@ -944,6 +953,16 @@ export class GLSystem {
 
   private getAllRenderEdges(): REdge[] {
     return [...this.edges, ...this.patchbay.getEdges()];
+  }
+
+  private getConnectedVideoOutputNodeIds(edges: REdge[]): Set<string> {
+    const nodeIds = new Set<string>();
+
+    for (const edge of edges) {
+      if (isVideoRenderEdge(edge)) nodeIds.add(edge.source);
+    }
+
+    return nodeIds;
   }
 
   private registerVideoChannelNode(
@@ -982,6 +1001,7 @@ export class GLSystem {
 
     this.outputSize = [outputWidth, outputHeight];
     this.hasExplicitOutputSize = true;
+
     outputSizeStore.set([outputWidth, outputHeight]);
 
     previewSizeStore.set(
@@ -1127,18 +1147,17 @@ export class GLSystem {
       return this.outgoingConnectionsCache.get(nodeId)!;
     }
 
+    const edges = this.getAllRenderEdges();
+
     // Check all edges (not just FBO-filtered ones) for video connections
     // This allows external texture nodes (webcam, img) to upload when connected
     // to non-FBO nodes like vdo.ninja.push
-    const hasOutgoingVideoEdges = this.getAllRenderEdges().some(
-      (edge) => edge.source === nodeId && /(video-out|video-in|sampler2D)/.test(edge.id)
-    );
+    const hasOutgoingVideoEdges = this.getConnectedVideoOutputNodeIds(edges).has(nodeId);
 
     const isOutputNode =
       this.renderGraph?.outputNodeId === nodeId || this.overrideOutputNodeId === nodeId;
 
     const hasConnections = hasOutgoingVideoEdges || isOutputNode;
-
     this.outgoingConnectionsCache.set(nodeId, hasConnections);
 
     return hasConnections;
