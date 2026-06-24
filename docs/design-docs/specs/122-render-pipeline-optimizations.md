@@ -128,6 +128,7 @@ type CookReason =
   | "force"
   | "config"
   | "uniform"
+  | "message"
   | "input"
   | "time"
   | "mouse"
@@ -194,18 +195,18 @@ This keeps cooking policy separate from renderer execution. Individual renderers
 
 The first implementation should be conservative:
 
-| Type                             | Initial cook mode                                     | Notes                                                        |
-| -------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------ |
-| `glsl`                           | `on-demand` when no dynamic dependencies are detected | First supported node type                                    |
-| `shaderpark`                     | `always` initially                                    | Can opt in after uniform/time/mouse handling is audited      |
-| `hydra`                          | `always` initially                                    | Hydra code is stateful and time-oriented                     |
-| `three`                          | `always` initially                                    | JS code can access time and mutate scenes implicitly         |
-| `regl`                           | `always` initially                                    | JS code can hide dependencies                                |
-| `swgl`                           | `always` initially                                    | JS code can hide dependencies                                |
-| `canvas`                         | `always` initially                                    | User code may draw from timers, messages, or internal state  |
-| `textmode`                       | `always` initially                                    | Stateful runtime                                             |
-| `img`, `float.tex`               | externally dirty                                      | Cook only when uploaded bitmap/texture data changes          |
-| `send.vdo`, `recv.vdo`, `bg.out` | passthrough/empty                                     | No expensive cook, but downstream invalidation still matters |
+| Type                             | Initial cook mode                                     | Notes                                                                              |
+| -------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `glsl`                           | `on-demand` when no dynamic dependencies are detected | First supported node type                                                          |
+| `shaderpark`                     | `always` initially                                    | Can opt in after uniform/time/mouse handling is audited                            |
+| `hydra`                          | `on-demand` for static/input-only code                | Animated generators, custom functions, callbacks, mouse, and datamosh stay dynamic |
+| `three`                          | `always` initially                                    | JS code can access time and mutate scenes implicitly                               |
+| `regl`                           | `always` initially                                    | JS code can hide dependencies                                                      |
+| `swgl`                           | `always` initially                                    | JS code can hide dependencies                                                      |
+| `canvas`                         | `always` initially                                    | User code may draw from timers, messages, or internal state                        |
+| `textmode`                       | `always` initially                                    | Stateful runtime                                                                   |
+| `img`, `float.tex`               | externally dirty                                      | Cook only when uploaded bitmap/texture data changes                                |
+| `send.vdo`, `recv.vdo`, `bg.out` | passthrough/empty                                     | No expensive cook, but downstream invalidation still matters                       |
 
 Later, JS-based renderers can opt into `on-demand` through explicit APIs or directives such as `setCookMode('on-demand')`, `setStatic(true)`, or `// @static`. Until a renderer declares that it is safe to cache, keep it in `always` mode.
 
@@ -247,7 +248,7 @@ for (const nodeId of sortedNodes) {
 }
 ```
 
-Uniform, mouse, FFT, bitmap, and float texture updates should mark the affected node dirty immediately when the worker receives the update message. Graph rebuilds and FBO reallocations should mark affected nodes dirty with `config`, `output-size`, or `first-frame`.
+Uniform, message, mouse, FFT, bitmap, and float texture updates should mark the affected node dirty immediately when the worker receives the update message. Graph rebuilds and FBO reallocations should mark affected nodes dirty with `config`, `output-size`, or `first-frame`.
 
 Preview readback should follow the same freshness signal. A node preview may harvest an already-started async read, but it should only initiate a new GPU readback for nodes that are dirty since their last preview read. Newly enabled previews should also start dirty so previews do not stay blank if the node cooked before the preview canvas was ready. After a preview read starts, cached nodes keep displaying the previous preview bitmap until their FBO changes again.
 

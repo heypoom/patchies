@@ -1,4 +1,4 @@
-import type { CookPolicy } from './CookStateManager';
+import type { CookPolicy } from '../CookStateManager';
 
 const TIME_PATTERN = /\biTime\b|\biTimeDelta\b/;
 const FRAME_PATTERN = /\biFrame\b/;
@@ -17,6 +17,5 @@ export function createGlslCookPolicy(code: string): CookPolicy {
   };
 }
 
-function stripGlslComments(code: string): string {
-  return code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-}
+const stripGlslComments = (code: string): string =>
+  code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');

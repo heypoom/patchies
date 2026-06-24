@@ -3,7 +3,7 @@
   import { onMount, onDestroy } from 'svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import { outputSize, previewSize } from '../../../stores/renderer.store';
+  import { outputSize, previewSize, showCookStats } from '../../../stores/renderer.store';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { match } from 'ts-pattern';
@@ -23,6 +23,7 @@
   import { SettingsManager, createWorkerSettingsCallbacks } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { useCookStatus } from '$lib/canvas/use-cook-status.svelte';
 
   let {
     id: nodeId,
@@ -66,6 +67,7 @@
   let consoleRef: VirtualConsole | null = $state(null);
   let lineErrors: Record<number, string[]> | undefined = $state(undefined);
   let previousExecuteCode = $state<number | undefined>(undefined);
+  const cookStatus = useCookStatus(nodeId);
 
   // Reactively update preview canvas dimensions when output size changes
   $effect(() => {
@@ -328,6 +330,9 @@
       glSystem.sendSettingsValueChanged(nodeId, key, value);
     }
   }}
+  showCookDebugOption={$showCookStats}
+  cookDebugVisible={$showCookStats}
+  cookStatus={cookStatus.status}
 >
   {#snippet topHandle()}
     {#each Array.from({ length: videoInletCount }) as _, index (index)}

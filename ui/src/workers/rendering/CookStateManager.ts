@@ -3,6 +3,7 @@ export type CookReason =
   | 'force'
   | 'config'
   | 'uniform'
+  | 'message'
   | 'input'
   | 'time'
   | 'mouse'

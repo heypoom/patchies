@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGlslCookPolicy } from './glslCookPolicy';
+import { createGlslCookPolicy } from './glsl';
 
 describe('createGlslCookPolicy', () => {
   it('allows static shaders to cook on demand', () => {
