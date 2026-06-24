@@ -23,8 +23,22 @@
     FLUSH_INTERVAL_OPTIONS,
     HOT_THRESHOLD_OPTIONS
   } from '../../../stores/profiler-settings.store';
+
   import type { ProfilerCategory, ProfilerSnapshot, TimingStats } from '$lib/profiler/types';
-  import { SvelteSet } from 'svelte/reactivity';
+
+  import {
+    PROFILER_CHART_HEIGHT as CH,
+    PROFILER_CHART_PADDING as CP,
+    PROFILER_CHART_WIDTH as CW,
+    buildActivePath,
+    buildInactivePath,
+    buildRenderPath,
+    getChartY,
+    getNodeActiveHistoryMax,
+    getNodeCategories,
+    getRenderHistoryMax,
+    isTimingActive
+  } from '$lib/profiler/profiler-chart-utils';
 
   // ─── Display stat helpers ──────────────────────────────────────────────────
 
@@ -59,9 +73,17 @@
     return fps.toFixed(1) + ' fps';
   }
 
+  function timingTextClass(t: TimingStats, isSevere: boolean, isHot: boolean): string {
+    if (!isTimingActive(t)) return 'text-zinc-700';
+
+    if (isSevere) return 'text-red-300';
+    if (isHot) return 'text-amber-300';
+
+    return 'text-zinc-400';
+  }
+
   // ─── Category metadata ───────────────────────────────────────────────────────
 
-  const ORDERED_CATEGORIES: ProfilerCategory[] = ['init', 'message', 'draw', 'interval', 'raf'];
   const MAIN_VIEW_CATEGORIES: ProfilerCategory[] = ['message', 'draw', 'interval', 'raf'];
 
   const CATEGORY_LABEL: Record<ProfilerCategory, string> = {
@@ -117,80 +139,7 @@
 
   // ─── Chart helpers ───────────────────────────────────────────────────────────
 
-  const CW = 240; // viewBox width
-  const CH = 52; // viewBox height
-  const CP = 3; // padding
-
   const COL_W = '2.8rem';
-
-  /** Categories that appear for a node across the entire history */
-  function nodeCats(nodeId: string, history: ProfilerSnapshot[]): ProfilerCategory[] {
-    const seen = new SvelteSet<ProfilerCategory>();
-
-    for (const snap of history) {
-      const entry = snap.entries.find((e) => e.nodeId === nodeId);
-      if (!entry) continue;
-
-      for (const cat of ORDERED_CATEGORIES) {
-        if (entry.timings[cat]) seen.add(cat);
-      }
-    }
-
-    return ORDERED_CATEGORIES.filter((c) => seen.has(c));
-  }
-
-  /** Max avg across all categories for a node in the history */
-  function historyMax(nodeId: string, history: ProfilerSnapshot[]): number {
-    let max = 0.01;
-
-    for (const snap of history) {
-      const entry = snap.entries.find((e) => e.nodeId === nodeId);
-      if (!entry) continue;
-
-      for (const t of Object.values(entry.timings)) {
-        if (t && t.avg > max) {
-          max = t.avg;
-        }
-      }
-    }
-
-    return max;
-  }
-
-  /** Y coordinate for a value given a shared max */
-  function valY(v: number, maxVal: number): number {
-    return CH - CP - (v / maxVal) * (CH - CP * 2);
-  }
-
-  /** SVG path string for a category's avg over the history window */
-  function buildPath(
-    nodeId: string,
-    category: ProfilerCategory,
-    history: ProfilerSnapshot[],
-    maxVal: number
-  ): string {
-    const n = history.length;
-    if (n === 0) return '';
-
-    let path = '';
-    let penDown = false;
-
-    for (let i = 0; i < n; i++) {
-      const v = history[i].entries.find((e) => e.nodeId === nodeId)?.timings[category]?.avg ?? null;
-      if (v === null) {
-        penDown = false;
-        continue;
-      }
-
-      const x = n > 1 ? (i / (n - 1)) * (CW - CP * 2) + CP : CW / 2;
-      const y = valY(v, maxVal);
-
-      path += penDown ? `L${x.toFixed(1)} ${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
-      penDown = true;
-    }
-
-    return path;
-  }
 
   // ─── Renderer chart helpers ─────────────────────────────────────────────────
 
@@ -208,42 +157,6 @@
     { key: 'p95', label: 'p95', color: '#fb923c', get: (rf) => rf.p95Ms },
     { key: 'p99', label: 'p99', color: '#f87171', get: (rf) => rf.p99Ms }
   ];
-
-  function buildRenderPath(
-    metric: RenderMetric,
-    history: ProfilerSnapshot[],
-    maxVal: number
-  ): string {
-    const n = history.length;
-    if (n === 0) return '';
-    let path = '';
-    let penDown = false;
-    for (let i = 0; i < n; i++) {
-      const rf = history[i].renderFrame;
-      if (!rf) {
-        penDown = false;
-        continue;
-      }
-      const v = metric.get(rf);
-      const x = n > 1 ? (i / (n - 1)) * (CW - CP * 2) + CP : CW / 2;
-      const y = valY(v, maxVal);
-      path += penDown ? `L${x.toFixed(1)} ${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
-      penDown = true;
-    }
-    return path;
-  }
-
-  function renderHistoryMax(history: ProfilerSnapshot[], metrics: RenderMetric[]): number {
-    let max = 0.01;
-    for (const snap of history) {
-      if (!snap.renderFrame) continue;
-      for (const m of metrics) {
-        const v = m.get(snap.renderFrame);
-        if (v > max) max = v;
-      }
-    }
-    return max;
-  }
 
   // ─── Toggles ────────────────────────────────────────────────────────────────
   let showDevStats = $state(false);
@@ -309,8 +222,9 @@
         {@const primaryTiming = entry.timings.message ?? entry.timings.draw}
         {@const primaryVal = primaryTiming ? getStatValue(primaryTiming) : 0}
         {@const isTimeStat = displayStat !== 'calls/s'}
+        {@const isActive = primaryTiming ? isTimingActive(primaryTiming) : false}
 
-        {@const isSevere = isTimeStat && primaryVal > hotThreshold * 5}
+        {@const isSevere = isActive && isTimeStat && primaryVal > hotThreshold * 5}
         {@const isHot = isTimeStat && entry.isHot}
         {@const barPct = Math.min(100, (primaryVal / maxStat) * 100)}
 
@@ -365,7 +279,9 @@
                   ? 'bg-red-500'
                   : isHot
                     ? 'bg-amber-500'
-                    : 'bg-zinc-500'}"
+                    : isActive
+                      ? 'bg-zinc-500'
+                      : 'bg-zinc-700'}"
                 style:width="{barPct}%"
               ></div>
             </div>
@@ -376,14 +292,12 @@
             {@const t = entry.timings[cat]}
             {#if t}
               {@const val = getStatValue(t)}
-              {@const catSevere = isTimeStat && val > hotThreshold * 5}
-              {@const catHot = isTimeStat && val > hotThreshold}
+              {@const catActive = isTimingActive(t)}
+              {@const catSevere = catActive && isTimeStat && val > hotThreshold * 5}
+              {@const catHot = catActive && isTimeStat && val > hotThreshold}
               <span
-                class="font-mono text-[10px] tabular-nums {catSevere
-                  ? 'text-red-300'
-                  : catHot
-                    ? 'text-amber-300'
-                    : 'text-zinc-400'}">{fmtStat(t)}</span
+                class="font-mono text-[10px] tabular-nums {timingTextClass(t, catSevere, catHot)}"
+                >{fmtStat(t)}</span
               >
             {:else}
               <span class="text-zinc-800 tabular-nums">—</span>
@@ -394,9 +308,9 @@
         <!-- Expanded sparkline chart -->
         {#if isSelected}
           {@const history = $profilerHistory}
-          {@const cats = nodeCats(entry.nodeId, history)}
-          {@const maxMs = historyMax(entry.nodeId, history)}
-          {@const hotY = maxMs > hotThreshold ? valY(hotThreshold, maxMs) : null}
+          {@const cats = getNodeCategories(entry.nodeId, history)}
+          {@const maxMs = getNodeActiveHistoryMax(entry.nodeId, history)}
+          {@const hotY = maxMs > hotThreshold ? getChartY(hotThreshold, maxMs) : null}
           {@const histSpanSecs = ((history.length - 1) * 0.5).toFixed(0)}
 
           <div class="border-b border-zinc-800/50 bg-zinc-900/40 px-3 pt-1.5 pb-2">
@@ -424,7 +338,21 @@
 
                 <!-- Category paths -->
                 {#each cats as cat (cat)}
-                  {@const d = buildPath(entry.nodeId, cat, history, maxMs)}
+                  {@const inactiveD = buildInactivePath(entry.nodeId, cat, history, maxMs)}
+
+                  {#if inactiveD}
+                    <path
+                      d={inactiveD}
+                      stroke="#3f3f46"
+                      stroke-width="1.25"
+                      stroke-opacity="0.7"
+                      fill="none"
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                    />
+                  {/if}
+
+                  {@const d = buildActivePath(entry.nodeId, cat, history, maxMs)}
 
                   {#if d}
                     <path
@@ -444,10 +372,17 @@
                     .at(-1)
                     ?.entries.find((e) => e.nodeId === entry.nodeId)}
 
-                  {@const v = lastEntry?.timings[cat]?.avg}
+                  {@const latestTiming = lastEntry?.timings[cat]}
+                  {@const v = latestTiming?.avg}
+                  {@const isLatestActive = latestTiming ? isTimingActive(latestTiming) : false}
 
-                  {#if v != null}
-                    <circle cx={CW - CP} cy={valY(v, maxMs)} r="2.5" fill={CATEGORY_COLOR[cat]} />
+                  {#if v != null && isLatestActive}
+                    <circle
+                      cx={CW - CP}
+                      cy={getChartY(v, maxMs)}
+                      r="2.5"
+                      fill={CATEGORY_COLOR[cat]}
+                    />
                   {/if}
                 {/each}
               </svg>
@@ -494,18 +429,19 @@
                   </span>
 
                   {#if t}
-                    {@const catSevere = t.avg > hotThreshold * 5}
-                    {@const catHot = t.avg > hotThreshold}
-                    {@const color = catSevere
-                      ? 'text-red-300'
-                      : catHot
-                        ? 'text-amber-300'
-                        : 'text-zinc-400'}
+                    {@const catActive = isTimingActive(t)}
+                    {@const catSevere = catActive && t.avg > hotThreshold * 5}
+                    {@const catHot = catActive && t.avg > hotThreshold}
+                    {@const color = timingTextClass(t, catSevere, catHot)}
                     <span class="text-right {color}">{fmt(t.avg)}</span>
                     <span class="text-right {color}">{fmt(t.max)}</span>
                     <span class="text-right {color}">{fmt(t.p95)}</span>
-                    <span class="text-right text-zinc-500">{fmt(t.last)}</span>
-                    <span class="text-right text-zinc-500">{t.callsPerSecond.toFixed(1)}</span>
+                    <span class="text-right {catActive ? 'text-zinc-500' : 'text-zinc-700'}"
+                      >{fmt(t.last)}</span
+                    >
+                    <span class="text-right {catActive ? 'text-zinc-500' : 'text-zinc-700'}"
+                      >{t.callsPerSecond.toFixed(1)}</span
+                    >
                   {:else}
                     <span class="text-right text-zinc-800">—</span>
                     <span class="text-right text-zinc-800">—</span>
@@ -645,7 +581,7 @@
       {#if showDevStats}
         {@const rf = $profilerSnapshot?.renderFrame}
         {@const history = $profilerHistory}
-        {@const rMaxMs = renderHistoryMax(history, RENDER_METRICS)}
+        {@const rMaxMs = getRenderHistoryMax(history, RENDER_METRICS)}
         {@const rHistSpan = ((history.length - 1) * 0.5).toFixed(0)}
         <div class="mt-1.5 border-t border-zinc-800/60 pt-1.5">
           <div class="mb-1 font-mono font-light tracking-wide text-zinc-500">renderer</div>
@@ -679,7 +615,7 @@
                   {@const lastRf = history.at(-1)?.renderFrame}
                   {#if lastRf}
                     {@const v = metric.get(lastRf)}
-                    <circle cx={CW - CP} cy={valY(v, rMaxMs)} r="2.5" fill={metric.color} />
+                    <circle cx={CW - CP} cy={getChartY(v, rMaxMs)} r="2.5" fill={metric.color} />
                   {/if}
                 {/each}
               </svg>

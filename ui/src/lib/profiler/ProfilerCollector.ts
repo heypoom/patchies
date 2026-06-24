@@ -18,6 +18,7 @@ export class ProfilerCollector {
   private count = 0;
   private messagesSinceFlush = 0;
   private lastFlushTime = performance.now();
+  private lastAvg = 0;
 
   constructor(capacity: number = DEFAULT_CAPACITY) {
     this.capacity = capacity;
@@ -75,6 +76,10 @@ export class ProfilerCollector {
       }
 
       avg = recentSum / recentCount;
+
+      this.lastAvg = avg;
+    } else {
+      avg = this.lastAvg;
     }
 
     return { avg, max, p95, last, callsPerSecond };
@@ -84,6 +89,8 @@ export class ProfilerCollector {
     this.head = 0;
     this.count = 0;
     this.messagesSinceFlush = 0;
+
     this.lastFlushTime = performance.now();
+    this.lastAvg = 0;
   }
 }

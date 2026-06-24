@@ -90,11 +90,11 @@ export class WorkerProfiler {
 
     for (const [key, collector] of this.collectors) {
       const stats = collector.flush(now);
-      if (stats.avg === 0 && stats.callsPerSecond === 0) continue;
 
-      const sep = key.lastIndexOf('|');
-      const nodeId = key.slice(0, sep);
-      const category = key.slice(sep + 1) as ProfilerCategory;
+      const separator = key.lastIndexOf('|');
+      const nodeId = key.slice(0, separator);
+      const category = key.slice(separator + 1) as ProfilerCategory;
+
       this.onFlush(nodeId, category, stats);
     }
   }

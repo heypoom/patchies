@@ -9,20 +9,19 @@ import type {
 
 const HISTORY_CAPACITY = 120; // ring buffer entries (adjusts with flush interval)
 
+type Collectors = [ProfilerCategory, ProfilerCollector][];
+type Timings = [ProfilerCategory, TimingStats][];
+
 export interface ProfilerConfig {
   /** Ring buffer capacity per collector (samples). Larger = spikes stay in max longer. */
   sampleCapacity: number;
+
   /** How often stats are flushed and the UI is updated (ms). */
   flushIntervalMs: number;
+
   /** Average ms above which a node is flagged as hot. */
   hotThresholdMs: number;
 }
-
-export const DEFAULT_CONFIG: ProfilerConfig = {
-  sampleCapacity: DEFAULT_CAPACITY,
-  flushIntervalMs: 500,
-  hotThresholdMs: 2
-};
 
 interface NodeCollectors {
   type: string;
@@ -36,6 +35,12 @@ interface NodeCollectors {
   /** Smoothed sort key (EMA) — prevents sort order from jumping between flushes */
   sortKey: number;
 }
+
+export const DEFAULT_CONFIG: ProfilerConfig = {
+  sampleCapacity: DEFAULT_CAPACITY,
+  flushIntervalMs: 500,
+  hotThresholdMs: 2
+};
 
 /**
  * Coordinates per-node timing data on the main thread.
@@ -97,7 +102,10 @@ export class ProfilerCoordinator {
     if (partial.flushIntervalMs && partial.flushIntervalMs !== prev.flushIntervalMs) {
       if (this.intervalId !== null) {
         clearInterval(this.intervalId);
-        this.intervalId = setInterval(() => this.flush(), this.config.flushIntervalMs);
+
+        this.intervalId = setInterval(() => {
+          this.flush();
+        }, this.config.flushIntervalMs);
       }
     }
   }
@@ -124,6 +132,7 @@ export class ProfilerCoordinator {
 
     if (!entry) {
       entry = { collectors: {}, type, workerStats: {}, sortKey: 0 };
+
       this.nodes.set(nodeId, entry);
     }
 
@@ -223,19 +232,20 @@ export class ProfilerCoordinator {
     for (const [nodeId, entry] of this.nodes) {
       const { collectors, type, workerStats } = entry;
       const timings: Partial<Record<ProfilerCategory, TimingStats>> = {};
+
       let hasActivity = false;
 
-      for (const [cat, collector] of Object.entries(collectors) as [
-        ProfilerCategory,
-        ProfilerCollector
-      ][]) {
+      for (const [cat, collector] of Object.entries(collectors) as Collectors) {
         if (!collector) continue;
 
         const stats = collector.flush(now);
 
-        if (stats.avg > 0 || stats.callsPerSecond > 0) {
+        if (stats.avg > 0 || stats.max > 0 || stats.p95 > 0 || stats.last > 0) {
           timings[cat] = stats;
-          hasActivity = true;
+
+          if (stats.callsPerSecond > 0) {
+            hasActivity = true;
+          }
         }
       }
 
@@ -243,9 +253,12 @@ export class ProfilerCoordinator {
       for (const [cat, stats] of Object.entries(workerStats) as [ProfilerCategory, TimingStats][]) {
         if (!stats) continue;
 
-        if (stats.avg > 0 || stats.callsPerSecond > 0) {
+        if (stats.avg > 0 || stats.max > 0 || stats.p95 > 0 || stats.last > 0) {
           timings[cat] = stats;
-          hasActivity = true;
+
+          if (stats.callsPerSecond > 0) {
+            hasActivity = true;
+          }
         }
       }
 
@@ -254,7 +267,7 @@ export class ProfilerCoordinator {
 
       // isHot if any non-init category exceeds threshold
       const isHot = hasActivity
-        ? (Object.entries(timings) as [ProfilerCategory, TimingStats][]).some(
+        ? (Object.entries(timings) as Timings).some(
             ([cat, t]) => cat !== 'init' && t.avg > hotThreshold
           )
         : false;
@@ -264,6 +277,7 @@ export class ProfilerCoordinator {
         timings.message?.avg ??
         timings.draw?.avg ??
         Math.max(...Object.values(timings).map((t) => t?.avg ?? 0), 0);
+
       entry.sortKey = entry.sortKey === 0 ? instantKey : entry.sortKey * 0.7 + instantKey * 0.3;
 
       // Always emit registered nodes for stable UI (empty timings = idle)
@@ -280,6 +294,7 @@ export class ProfilerCoordinator {
     const snapshot: ProfilerSnapshot = {
       timestamp: now,
       entries,
+
       ...(this.latestRenderFrame && {
         renderFrame: this.latestRenderFrame
       })
@@ -288,7 +303,10 @@ export class ProfilerCoordinator {
     // Push to history ring buffer
     this.history[this.historyHead] = snapshot;
     this.historyHead = (this.historyHead + 1) % HISTORY_CAPACITY;
-    if (this.historyCount < HISTORY_CAPACITY) this.historyCount++;
+
+    if (this.historyCount < HISTORY_CAPACITY) {
+      this.historyCount++;
+    }
 
     this.onSnapshot?.(snapshot);
   }
