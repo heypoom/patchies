@@ -40,6 +40,11 @@ const fmtVal = v => {
   return Number.isInteger(n) ? String(n) : parseFloat(n.toFixed(2)).toString();
 };
 
+const toChartValue = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+
 /**
  * Normalizes incoming data formats to {label, value}[]
  */
@@ -48,10 +53,13 @@ const normalizeData = (input) => {
 
   // Check if first element is an array [label, value]
   if (input.length > 0 && Array.isArray(input[0])) {
-    return input.map(item => ({ label: String(item[0]), value: Number(item[1]) }));
+    return input.map(item => ({ label: String(item[0]), value: toChartValue(item[1]) }));
   }
 
-  return input;
+  return input.map(item => ({
+    label: String(item.label),
+    value: toChartValue(item.value)
+  }));
 };
 
 const render = () => {
@@ -206,8 +214,9 @@ recv(msg => {
       data = normalizeData(msg.data);
     } else if (msg.type === 'update') {
       const entry = data.find(d => d.label === msg.label);
-      if (entry) entry.value = msg.value;
-      else data.push({ label: msg.label, value: msg.value });
+      const value = toChartValue(msg.value);
+      if (entry) entry.value = value;
+      else data.push({ label: String(msg.label), value });
     } else if (msg.type === 'clear') {
       data = [];
     }
