@@ -195,19 +195,19 @@ This keeps cooking policy separate from renderer execution. Individual renderers
 
 The first implementation should be conservative:
 
-| Type                             | Initial cook mode                                     | Notes                                                                              |
-| -------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `glsl`                           | `on-demand` when no dynamic dependencies are detected | First supported node type                                                          |
-| `shaderpark`                     | `on-demand` when no dynamic dependencies are detected | Time, mouse, 3D orbit, input, uniform, and feedback dependencies cook as needed     |
-| `hydra`                          | `on-demand` for static/input-only code                | Animated generators, custom functions, callbacks, mouse, and datamosh stay dynamic |
-| `three`                          | `always` initially                                    | JS code can access time and mutate scenes implicitly                               |
-| `regl`                           | `always` initially                                    | JS code can hide dependencies                                                      |
-| `swgl`                           | `on-demand` when no dynamic dependencies are detected | `t`, `fft()`, input, message, and feedback dependencies cook as needed             |
+| Type                             | Initial cook mode                                     | Notes                                                                                                   |
+| -------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `glsl`                           | `on-demand` when no dynamic dependencies are detected | First supported node type                                                                               |
+| `shaderpark`                     | `on-demand` when no dynamic dependencies are detected | Time, mouse, 3D orbit, input, uniform, and feedback dependencies cook as needed                         |
+| `hydra`                          | `on-demand` for static/input-only code                | Animated generators, custom functions, callbacks, mouse, and datamosh stay dynamic                      |
+| `three`                          | `always` initially                                    | Scene graph mutation can be dynamic without explicit time, mouse, or FFT reads                         |
+| `regl`                           | `on-demand` when no dynamic dependencies are detected | `render(time)`, mouse, FFT, input, message, and feedback dependencies cook as needed                    |
+| `swgl`                           | `on-demand` when no dynamic dependencies are detected | `t`, `fft()`, input, message, and feedback dependencies cook as needed                                  |
 | `canvas`                         | `on-demand` when no dynamic dependencies are detected | Time, mouse, FFT, input, message, and feedback dependencies cook as needed; timers and RAF stay dynamic |
-| `textmode`                       | `always` initially                                    | Stateful runtime                                                                   |
-| `img`, `float.tex`               | `on-demand`, externally dirty                        | Cook only when uploaded bitmap/texture data changes                                |
-| `send.vdo`, `recv.vdo`, `bg.out` | `on-demand`, passthrough/empty                       | No expensive cook, but downstream invalidation still matters                       |
-| `projmap`                        | `on-demand`                                          | Cook when input or surface configuration changes                                   |
+| `textmode`                       | `on-demand` when no dynamic dependencies are detected | Clock, frameCount/synth animation, FFT, input, message, and feedback dependencies cook as needed        |
+| `img`, `float.tex`               | `on-demand`, externally dirty                         | Cook only when uploaded bitmap/texture data changes                                                     |
+| `send.vdo`, `recv.vdo`, `bg.out` | `on-demand`, passthrough/empty                        | No expensive cook, but downstream invalidation still matters                                            |
+| `projmap`                        | `on-demand`                                           | Cook when input or surface configuration changes                                                        |
 
 Later, JS-based renderers can opt into `on-demand` through explicit APIs or directives such as `setCookMode('on-demand')`, `setStatic(true)`, or `// @static`. Until a renderer declares that it is safe to cache, keep it in `always` mode.
 

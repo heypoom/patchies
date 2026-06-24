@@ -7,8 +7,9 @@
   import { previewBackgroundColor, showCookStats } from '../../stores/renderer.store';
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import { useCookStatus } from '$lib/canvas/use-cook-status.svelte';
+  import { COOK_DEBUG_RENDER_NODE_TYPES } from '../../workers/rendering/cooking/policies';
 
-  const COOK_DEBUG_OBJECT_TYPES = new Set(['glsl', 'hydra', 'shaderpark', 'swgl']);
+  const COOK_DEBUG_OBJECT_TYPES = new Set<string>(COOK_DEBUG_RENDER_NODE_TYPES);
 
   let {
     title,
