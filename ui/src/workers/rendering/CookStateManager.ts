@@ -159,10 +159,6 @@ export class CookStateManager {
       reasons.add('time');
     }
 
-    if (state.policy.mouseDependent) {
-      reasons.add('mouse');
-    }
-
     if (state.policy.feedbackDependent) {
       reasons.add('feedback');
     }

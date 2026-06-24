@@ -198,7 +198,7 @@ The first implementation should be conservative:
 | Type                             | Initial cook mode                                     | Notes                                                                              |
 | -------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `glsl`                           | `on-demand` when no dynamic dependencies are detected | First supported node type                                                          |
-| `shaderpark`                     | `always` initially                                    | Can opt in after uniform/time/mouse handling is audited                            |
+| `shaderpark`                     | `on-demand` when no dynamic dependencies are detected | Time, mouse, 3D orbit, input, uniform, and feedback dependencies cook as needed     |
 | `hydra`                          | `on-demand` for static/input-only code                | Animated generators, custom functions, callbacks, mouse, and datamosh stay dynamic |
 | `three`                          | `always` initially                                    | JS code can access time and mutate scenes implicitly                               |
 | `regl`                           | `always` initially                                    | JS code can hide dependencies                                                      |
@@ -249,7 +249,7 @@ for (const nodeId of sortedNodes) {
 }
 ```
 
-Uniform, message, mouse, FFT, bitmap, and float texture updates should mark the affected node dirty immediately when the worker receives the update message. Graph rebuilds and FBO reallocations should mark affected nodes dirty with `config`, `output-size`, or `first-frame`.
+Uniform, message, mouse, FFT, bitmap, and float texture updates should mark the affected node dirty immediately when the worker receives the update message. `mouseDependent` means the node is eligible to cook from `mouse` dirty events; it should not force a cook every frame by itself. Graph rebuilds and FBO reallocations should mark affected nodes dirty with `config`, `output-size`, or `first-frame`.
 
 Preview readback should follow the same freshness signal. A node preview may harvest an already-started async read, but it should only initiate a new GPU readback for nodes that are dirty since their last preview read. Newly enabled previews should also start dirty so previews do not stay blank if the node cooked before the preview canvas was ready. After a preview read starts, cached nodes keep displaying the previous preview bitmap until their FBO changes again.
 

@@ -89,13 +89,17 @@ describe('CookStateManager', () => {
     });
   });
 
-  it('keeps mouse-dependent nodes cooking while active', () => {
+  it('cooks mouse-dependent nodes only after mouse input marks them dirty', () => {
     const manager = new CookStateManager();
 
     manager.registerNode('interactive-shader', { mode: 'on-demand', mouseDependent: true });
     manager.beginFrame({ transportTime: 0, prevTransportTime: 0, isTransportPlaying: false });
     manager.markCooked('interactive-shader', ['first-frame', 'mouse'], 0.3);
     manager.beginFrame({ transportTime: 0, prevTransportTime: 0, isTransportPlaying: false });
+
+    expect(manager.shouldCook('interactive-shader')).toEqual({ shouldCook: false, reasons: [] });
+
+    manager.markDirty('interactive-shader', 'mouse');
 
     expect(manager.shouldCook('interactive-shader')).toEqual({
       shouldCook: true,
