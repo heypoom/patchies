@@ -61,6 +61,7 @@ import { CookStateManager, type CookPolicy } from './CookStateManager';
 import { createGlslCookPolicy } from './cooking/glsl';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
+import { shouldSkipCookForViewport } from './renderEligibility';
 
 type TransportTimeState = Pick<ITransport, keyof TransportState>;
 
@@ -145,9 +146,11 @@ export class FBORenderer {
   private frameCount: number = 0;
   private contextLossReported = false;
   private renderErrorKeysByNode = new Map<string, Set<string>>();
-  private glErrorKeysByNode = new Map<string, Set<string>>();
+
   private lastCookStatusSignatures = new Map<string, string>();
   private cookStatsEnabled = false;
+  private visibleNodeIds: Set<string> | null = null;
+  private connectedVideoOutputNodeIds: Set<string> = new Set();
 
   /** Minimum interval between rendered frames (ms). 0 = unlimited. */
   private renderIntervalMs: number = 0;
@@ -355,7 +358,11 @@ export class FBORenderer {
   }
 
   /** Build FBOs for all nodes in the render graph */
-  async buildFBOs(renderGraph: RenderGraph) {
+  async buildFBOs(renderGraph: RenderGraph, connectedVideoOutputNodeIds?: Set<string>) {
+    if (connectedVideoOutputNodeIds) {
+      this.connectedVideoOutputNodeIds = new Set(connectedVideoOutputNodeIds);
+    }
+
     // Get the set of node IDs that will exist in the new graph
     const newNodeIds = new Set(renderGraph.nodes.map((n) => n.id));
 
@@ -1519,6 +1526,9 @@ export class FBORenderer {
       isTransportPlaying: this.transportTime?.isPlaying ?? true
     });
 
+    const isOverride = this.hasValidOutputOverride();
+    const effectiveOutputNodeId = this.getEffectiveOutputNodeId(isOverride);
+
     // Render each node in topological order
     for (const nodeId of this.renderGraph.sortedNodes) {
       if (!this.renderGraph) continue;
@@ -1526,6 +1536,15 @@ export class FBORenderer {
       const node = this.renderGraph.nodes.find((n) => n.id === nodeId);
       const fboNode = this.fboNodes.get(nodeId);
       if (!node || !fboNode) continue;
+
+      const shouldSkipCooking = shouldSkipCookForViewport({
+        node,
+        visibleNodeIds: this.visibleNodeIds,
+        connectedVideoOutputNodeIds: this.connectedVideoOutputNodeIds,
+        effectiveOutputNodeId
+      });
+
+      if (shouldSkipCooking) continue;
 
       const cookDecision = this.cookState.shouldCook(node.id);
 
@@ -1554,10 +1573,6 @@ export class FBORenderer {
 
     // Render the final result to the main canvas.
     // Use override if set and the node exists; otherwise fall back to bg.out.
-    const isOverride = this.overrideOutputNodeId && this.fboNodes.has(this.overrideOutputNodeId);
-
-    const effectiveOutputNodeId = isOverride ? this.overrideOutputNodeId : this.outputNodeId;
-
     // Override always uses attachment 0; bg.out respects the connected outlet index.
     const savedOutletIndex = this.outputOutletIndex;
     if (isOverride) this.outputOutletIndex = 0;
@@ -1783,6 +1798,14 @@ export class FBORenderer {
     reglInstance._refresh?.();
   }
 
+  private hasValidOutputOverride(): boolean {
+    return Boolean(this.overrideOutputNodeId && this.fboNodes.has(this.overrideOutputNodeId));
+  }
+
+  private getEffectiveOutputNodeId(isOverride = this.hasValidOutputOverride()): string | null {
+    return isOverride ? this.overrideOutputNodeId : this.outputNodeId;
+  }
+
   /**
    * Render previews for enabled nodes and return ImageBitmaps directly.
    * Uses async PBO reads - returns bitmaps from *previous* frame's reads
@@ -1800,6 +1823,7 @@ export class FBORenderer {
 
   /** Set which nodes are visible in the viewport for preview culling */
   setVisibleNodes(nodeIds: Set<string>) {
+    this.visibleNodeIds = new Set(nodeIds);
     this.previewRenderer.setVisibleNodes(nodeIds);
   }
 

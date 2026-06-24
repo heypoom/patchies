@@ -32,7 +32,9 @@ self.onmessage = (event) => {
     .with('setPatchId', () => {
       PatchStorageService.getInstance().setPatchId(data.patchId);
     })
-    .with('buildRenderGraph', () => handleBuildRenderGraph(data.graph))
+    .with('buildRenderGraph', () =>
+      handleBuildRenderGraph(data.graph, new Set(data.connectedVideoOutputNodeIds ?? []))
+    )
     .with('startAnimation', () => handleStartAnimation())
     .with('stopAnimation', () => handleStopAnimation())
     .with('setPreviewEnabled', () => handleSetPreviewEnabled(data.nodeId, data.enabled))
@@ -179,19 +181,26 @@ self.onmessage = (event) => {
 // the current build finishes. This prevents race conditions when setPortCount
 // messages trigger rebuilds during the initial build's async Phase 2.
 let buildInProgress = false;
-let pendingGraph: RenderGraph | null = null;
 
-async function handleBuildRenderGraph(graph: RenderGraph) {
+let pendingBuild: {
+  graph: RenderGraph;
+  connectedVideoOutputNodeIds: Set<string>;
+} | null = null;
+
+async function handleBuildRenderGraph(
+  graph: RenderGraph,
+  connectedVideoOutputNodeIds: Set<string> = new Set()
+) {
   if (buildInProgress) {
     // A build is running — queue the latest graph (drop any previously queued one)
-    pendingGraph = graph;
+    pendingBuild = { graph, connectedVideoOutputNodeIds };
     return;
   }
 
   buildInProgress = true;
 
   try {
-    await fboRenderer.buildFBOs(graph);
+    await fboRenderer.buildFBOs(graph, connectedVideoOutputNodeIds);
   } catch (error) {
     if (error instanceof Error) {
       self.postMessage({
@@ -203,11 +212,11 @@ async function handleBuildRenderGraph(graph: RenderGraph) {
     buildInProgress = false;
 
     // If a new graph was queued while we were building, build it now
-    if (pendingGraph) {
-      const next = pendingGraph;
+    if (pendingBuild) {
+      const next = pendingBuild;
 
-      pendingGraph = null;
-      handleBuildRenderGraph(next);
+      pendingBuild = null;
+      handleBuildRenderGraph(next.graph, next.connectedVideoOutputNodeIds);
     }
   }
 }
