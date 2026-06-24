@@ -38,6 +38,14 @@ export const BUILT_IN_PRESET_PACKS: PresetPack[] = [
     ]
   },
   {
+    id: 'charts',
+    name: 'Simple Charts',
+    description: 'Data visualization widgets for live values',
+    icon: 'ChartLine',
+    requiredObjects: ['dom'],
+    presets: ['Line Chart', 'Bar Chart', 'Pie Chart']
+  },
+  {
     id: 'hydra-operators',
     name: 'Hydra Operators',
     description: 'Video operators built with Hydra',

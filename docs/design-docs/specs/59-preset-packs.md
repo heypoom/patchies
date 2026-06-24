@@ -94,6 +94,7 @@ export const enabledPresets = derived(
 | **Animation**           | Frame-based animation helpers           | js, p5               | bang-every-frame.js, frame-counter.js, interval.js                 |
 | **Livecoding Examples** | Example patches for livecoding          | strudel, hydra, orca | (various strudel/orca presets)                                     |
 | **Canvas Widgets**      | Interactive canvas components           | canvas.dom           | XY Pad, hsla-picker.canvas, rgba-picker.canvas, plotter.canvas     |
+| **Simple Charts**       | Live data visualization widgets         | dom                  | Line Chart, Bar Chart, Pie Chart                                   |
 
 ### Preset Assignment (Draft)
 
