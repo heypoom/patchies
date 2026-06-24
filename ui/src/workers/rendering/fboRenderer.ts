@@ -10,7 +10,7 @@ import type {
   FBOFormat,
   FBOResolution
 } from '../../lib/rendering/types';
-import type { ClockCommandMessage } from '$lib/transport/types';
+import type { ClockCommandMessage, ITransport, TransportState } from '$lib/transport/types';
 import {
   DEFAULT_OUTPUT_SIZE,
   WEBGL_EXTENSIONS,
@@ -59,6 +59,8 @@ import {
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { CookStateManager, type CookPolicy } from './CookStateManager';
 import { createGlslCookPolicy } from './glslCookPolicy';
+
+type TransportTimeState = Pick<ITransport, keyof TransportState>;
 
 export const FBO_RENDERER_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
   alpha: true,
@@ -145,18 +147,7 @@ export class FBORenderer {
   private lastRenderTime: number = 0;
 
   /** Transport time from main thread for synchronized timing */
-  public transportTime: {
-    seconds: number;
-    ticks: number;
-    bpm: number;
-    isPlaying: boolean;
-    beat: number;
-    phase: number;
-    bar: number;
-    beatsPerBar: number;
-    denominator: number;
-    ppq: number;
-  } | null = null;
+  public transportTime: TransportTimeState | null = null;
 
   /** Profiler for frame timing and regl.read() metrics */
   public profiler = new RenderingProfiler();
@@ -1413,18 +1404,7 @@ export class FBORenderer {
    * Set transport time from main thread for synchronized timing.
    * Called at 60fps to keep GLSL/Hydra in sync with global transport.
    */
-  setTransportTime(state: {
-    seconds: number;
-    ticks: number;
-    bpm: number;
-    isPlaying: boolean;
-    beat: number;
-    phase: number;
-    bar: number;
-    beatsPerBar: number;
-    denominator: number;
-    ppq: number;
-  }) {
+  setTransportTime(state: TransportTimeState) {
     this.transportTime = state;
   }
 
