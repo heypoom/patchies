@@ -2,6 +2,7 @@ import {
   Box,
   ArrowRightLeft,
   Camera,
+  ChartLine,
   Clock,
   Palette,
   Shapes,
@@ -38,6 +39,7 @@ export function getPackIcon(iconName: string) {
     .with('Box', () => Box)
     .with('ArrowRightLeft', () => ArrowRightLeft)
     .with('Camera', () => Camera)
+    .with('ChartLine', () => ChartLine)
     .with('Clock', () => Clock)
     .with('Palette', () => Palette)
     .with('Shapes', () => Shapes)
