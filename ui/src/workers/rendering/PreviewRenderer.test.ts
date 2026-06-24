@@ -45,6 +45,38 @@ describe('PreviewRenderer', () => {
 
     expect(gl.readPixels).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps a cooked node eligible until its preview read starts', () => {
+    const now = vi.spyOn(performance, 'now');
+    now.mockReturnValue(1000);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const { service, gl } = createPreviewService();
+    const renderer = new PreviewRenderer(service);
+    const fboNodes = new Map<string, FBONode>([
+      ['stale-node', createFboNode('stale-node')],
+      ['fresh-node', createFboNode('fresh-node')]
+    ]);
+
+    renderer.setPreviewFpsCap(1000);
+    renderer.maxPreviewsPerFrameNoOutput = 2;
+    renderer.setPreviewEnabled('stale-node', true);
+    renderer.setPreviewEnabled('fresh-node', true);
+    renderer.renderPreviewBitmaps(fboNodes, false, new Set());
+
+    gl.clientWaitSync.mockReturnValue(gl.WAIT_FAILED);
+    now.mockReturnValue(2000);
+    renderer.renderPreviewBitmaps(fboNodes, false, new Set());
+
+    gl.readPixels.mockClear();
+    gl.clientWaitSync.mockReset();
+    renderer.maxPreviewsPerFrameNoOutput = 1;
+    now.mockReturnValue(3000);
+
+    renderer.renderPreviewBitmaps(fboNodes, false, new Set(['fresh-node']));
+
+    expect(gl.readPixels).toHaveBeenCalledTimes(1);
+  });
 });
 
 function createPreviewService() {
