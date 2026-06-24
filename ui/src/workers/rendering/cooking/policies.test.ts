@@ -3,7 +3,7 @@ import type { RenderGraph, RenderNode } from '$lib/rendering/types';
 import { createRenderNodeCookPolicy } from './policies';
 import { COOK_TEST_UTILS } from './test-utils';
 
-const { ON_DEMAND, TIME_DEPENDENT, FEEDBACK_DEPENDENT } = COOK_TEST_UTILS;
+const { ON_DEMAND, TIME_DEPENDENT, FFT_DEPENDENT, FEEDBACK_DEPENDENT } = COOK_TEST_UTILS;
 
 const baseGraph: RenderGraph = {
   nodes: [],
@@ -71,6 +71,13 @@ describe('createRenderNodeCookPolicy', () => {
         baseGraph
       )
     ).toEqual(TIME_DEPENDENT);
+
+    expect(
+      createRenderNodeCookPolicy(
+        renderNode('swgl', { code: 'function render() { shader({ amp: fft().a[0] }); }' }),
+        baseGraph
+      )
+    ).toEqual(FFT_DEPENDENT);
   });
 
   it('preserves feedback dependency for on-demand passthrough nodes', () => {

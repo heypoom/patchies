@@ -202,7 +202,7 @@ The first implementation should be conservative:
 | `hydra`                          | `on-demand` for static/input-only code                | Animated generators, custom functions, callbacks, mouse, and datamosh stay dynamic |
 | `three`                          | `always` initially                                    | JS code can access time and mutate scenes implicitly                               |
 | `regl`                           | `always` initially                                    | JS code can hide dependencies                                                      |
-| `swgl`                           | `on-demand` when no dynamic dependencies are detected | `t`, input, message, and feedback dependencies cook as needed                      |
+| `swgl`                           | `on-demand` when no dynamic dependencies are detected | `t`, `fft()`, input, message, and feedback dependencies cook as needed             |
 | `canvas`                         | `always` initially                                    | User code may draw from timers, messages, or internal state                        |
 | `textmode`                       | `always` initially                                    | Stateful runtime                                                                   |
 | `img`, `float.tex`               | `on-demand`, externally dirty                        | Cook only when uploaded bitmap/texture data changes                                |
