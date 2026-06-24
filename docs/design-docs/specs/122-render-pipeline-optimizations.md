@@ -84,7 +84,7 @@ const [width, height] = match(node.data.resolution ?? "full")
 
 FBO fingerprint must include resolution so FBOs are recreated when it changes.
 
-## 2. Cook-on-Demand Caching
+## 2. Cook-on-Demand Caching ✓
 
 ### Problem
 
@@ -95,6 +95,8 @@ Every node re-renders every frame. A static noise generator with fixed parameter
 Track whether a node's inputs changed since last frame. If nothing changed, skip the render and keep serving the cached FBO texture from the previous cook.
 
 This should be implemented as a reusable render-worker abstraction, not as GLSL-specific state in `FBORenderer`. GLSL is the first consumer because its dependencies are explicit, but the model should let Hydra, REGL, Three.js, SwissGL, Canvas, Textmode, and future renderers opt in later.
+
+**Status:** Done. The reusable cook-status path is wired through the render worker, dirty propagation, preview/debug reporting, and profiler stats. GLSL, Hydra, ShaderPark, REGL, SwissGL, Canvas, Textmode, `send.vdo`, `recv.vdo`, `bg.out`, and `projmap` now opt into conditional cooking where their dependency model is explicit; feedback and dynamic sources remain conservative so animated and feedback-driven patches keep advancing.
 
 Use TouchDesigner-style language in the implementation:
 
@@ -263,12 +265,12 @@ Conservatively, nodes in `renderGraph.feedbackNodes` and nodes with `backEdgeInl
 
 ### Implementation Phases
 
-1. Add the reusable cook state classes and wire them into `FBORenderer.renderFrame()`.
-2. Register all render nodes with conservative policies; most nodes start as `always`.
-3. Implement GLSL policy detection and dirty triggers for uniforms, sampler inputs, mouse, FFT, time, code/config, and first frame.
-4. Add downstream dirty propagation using the existing render graph outputs.
-5. Add debug/profiler counters: cooked frame count, cached frame count, and last cook reasons per node.
-6. Add opt-in support for another renderer only after its dependency model is explicit.
+1. ✓ Add the reusable cook state classes and wire them into `FBORenderer.renderFrame()`.
+2. ✓ Register all render nodes with conservative policies; most nodes start as `always`.
+3. ✓ Implement GLSL policy detection and dirty triggers for uniforms, sampler inputs, mouse, FFT, time, code/config, and first frame.
+4. ✓ Add downstream dirty propagation using the existing render graph outputs.
+5. ✓ Add debug/profiler counters: cooked frame count, cached frame count, and last cook reasons per node.
+6. ✓ Add opt-in support for another renderer only after its dependency model is explicit.
 
 ### Preview Debug Overlay
 
@@ -394,7 +396,7 @@ Most of these are changes to `GLSystem.ts` and the preview rendering path, not t
 | Preview toggle (4b)        | Quick win                      | Tiny   | ✓ Done                                        |
 | Preview zoom LOD (4a)      | Moderate                       | Small  | ✓ Done                                        |
 | Per-node resolution (1)    | Large for heavy nodes          | Small  | ✓ Done                                        |
-| Cook-on-demand caching (2) | Large for static-heavy patches | Medium | Phase 2 — biggest architectural change        |
+| Cook-on-demand caching (2) | Large for static-heavy patches | Medium | ✓ Done                                        |
 | Preview frame rate (4c)    | Moderate                       | Small  | Phase 2                                       |
 | Channel format (3)         | Small-moderate                 | Small  | Phase 3 — advanced optimization, low priority |
 
