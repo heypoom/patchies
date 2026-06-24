@@ -59,6 +59,22 @@ describe('CookStateManager', () => {
     expect(manager.shouldCook('time-shader')).toEqual({ shouldCook: false, reasons: [] });
   });
 
+  it('cooks a paused time-dependent node after a message marks it dirty', () => {
+    const manager = new CookStateManager();
+
+    manager.registerNode('hydra-1', { mode: 'on-demand', timeDependent: true });
+    manager.beginFrame({ transportTime: 1, prevTransportTime: 0, isTransportPlaying: true });
+    manager.markCooked('hydra-1', ['first-frame', 'time'], 0.8);
+
+    manager.beginFrame({ transportTime: 1, prevTransportTime: 1, isTransportPlaying: false });
+    manager.markDirty('hydra-1', 'message');
+
+    expect(manager.shouldCook('hydra-1')).toEqual({
+      shouldCook: true,
+      reasons: ['message']
+    });
+  });
+
   it('keeps always-mode nodes cooking every frame', () => {
     const manager = new CookStateManager();
 

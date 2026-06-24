@@ -9,7 +9,6 @@
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
   import { outputSize, previewWidth, previewHeight } from '../../../stores/renderer.store';
-  import { showCookStats } from '../../../stores/renderer.store';
   import { toGLValue } from '$workers/rendering/glUniformUtils';
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
   import {
@@ -28,7 +27,6 @@
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import type { ConsoleOutputEvent, PrimaryButton } from '$lib/eventbus/events';
   import type { FBOFormat, FBOResolution } from '$lib/rendering/types';
-  import { useCookStatus } from '$lib/canvas/use-cook-status.svelte';
 
   let {
     id: nodeId,
@@ -68,8 +66,6 @@
   let consoleRef = $state<{ clearConsole: () => void } | null>(null);
   let shaderName = $state<string | undefined>(parseShaderName(data.code || ''));
   let lineErrors: Record<number, string[]> | undefined = $state(undefined);
-  const cookStatus = useCookStatus(nodeId);
-
   const code = $derived(data.code || '');
   const uniformsSchema = $derived(uniformDefsToSettingsSchema(data.glUniformDefs ?? []));
   const visibleUniformInlets = $derived(visibleUniformInletDefs(data.glUniformDefs ?? []));
@@ -377,9 +373,6 @@
   settingsValues={uniformValues}
   onSettingsValueChange={handleUniformValueChange}
   onSettingsRevertAll={handleUniformRevertAll}
-  showCookDebugOption={$showCookStats}
-  cookDebugVisible={$showCookStats}
-  cookStatus={cookStatus.status}
 >
   {#snippet topHandle()}
     {#each visibleUniformInlets as { def, uniformIndex }, visibleIndex (uniformIndex)}

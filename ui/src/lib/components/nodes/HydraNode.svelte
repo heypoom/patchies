@@ -66,7 +66,6 @@
   let consoleRef: VirtualConsole | null = $state(null);
   let lineErrors: Record<number, string[]> | undefined = $state(undefined);
   let previousExecuteCode = $state<number | undefined>(undefined);
-
   // Reactively update preview canvas dimensions when output size changes
   $effect(() => {
     if (!previewCanvas) return;

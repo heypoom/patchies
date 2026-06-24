@@ -6,14 +6,29 @@ import type { RenderCookStatus } from '$lib/rendering/types';
  * Tracks worker-reported cook status for a render node.
  * Returns a reactive `status` getter.
  */
-export function useCookStatus(nodeId: string) {
+export function useCookStatus(
+  nodeId: string | undefined | (() => string | undefined),
+  enabled: boolean | (() => boolean) = true
+) {
   let status = $state<RenderCookStatus | undefined>(undefined);
 
   $effect(() => {
+    if (!getValue(enabled)) {
+      status = undefined;
+      return;
+    }
+
+    const currentNodeId = getValue(nodeId);
+
+    if (!currentNodeId) {
+      status = undefined;
+      return;
+    }
+
     const eventBus = PatchiesEventBus.getInstance();
 
     const handle = (event: CookStatusUpdateEvent) => {
-      if (event.nodeId !== nodeId) return;
+      if (event.nodeId !== currentNodeId) return;
 
       status = {
         status: event.status,
@@ -35,3 +50,6 @@ export function useCookStatus(nodeId: string) {
     }
   };
 }
+
+const getValue = <T>(value: T | (() => T)): T =>
+  typeof value === 'function' ? (value as () => T)() : value;

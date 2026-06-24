@@ -218,6 +218,18 @@ Instead, use `fft()` inside arrow functions to get the FFT data. Hydra **must** 
 osc(() => fft().getEnergy('bass')).out()
 ```
 
+## Cook Behavior
+
+Hydra previews use the same render cook system as other video objects. Static
+patches such as `solid(1, 0, 0).out()` or input-only chains such as
+`src(s0).out()` cook when their inputs or configuration change, then reuse the
+cached frame.
+
+Common animated generators such as `osc()`, `noise()`, `voronoi()`, and
+`gradient()` cook while transport time advances. Mouse, FFT, datamosh, and
+custom function code paths are treated conservatively so interactive or stateful
+patches keep updating.
+
 ## Resources
 
 - [Hydra Documentation](https://hydra.ojack.xyz/docs)

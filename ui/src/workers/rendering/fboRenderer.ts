@@ -58,9 +58,15 @@ import {
 } from './glUniformUtils';
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { CookStateManager, type CookPolicy } from './CookStateManager';
-import { createGlslCookPolicy } from './glslCookPolicy';
+import { createGlslCookPolicy } from './cooking/glsl';
+import { createHydraCookPolicy } from './cooking/hydra';
 
 type TransportTimeState = Pick<ITransport, keyof TransportState>;
+
+type MessageCapableRenderer = {
+  handleMessage(message: Message): void;
+  handleChannelMessage(channel: string, data: unknown, sourceNodeId: string): void;
+};
 
 export const FBO_RENDERER_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
   alpha: true,
@@ -711,6 +717,10 @@ export class FBORenderer {
     return match(node)
       .with({ type: 'glsl' }, (node) => ({
         ...createGlslCookPolicy(node.data.code),
+        ...(feedbackDependent ? { feedbackDependent: true } : {})
+      }))
+      .with({ type: 'hydra' }, (node) => ({
+        ...createHydraCookPolicy(node.data.code),
         ...(feedbackDependent ? { feedbackDependent: true } : {})
       }))
       .with({ type: P.union('img', 'float.tex') }, () => ({ mode: 'on-demand' as const }))
@@ -2159,86 +2169,33 @@ export class FBORenderer {
 
   /** Send message to nodes */
   sendMessageToNode(nodeId: string, message: Message) {
-    const node = this.renderGraph?.nodes.find((n) => n.id === nodeId);
-    if (!node) return;
+    const renderer = this.getMessageCapableRenderer(nodeId);
+    if (!renderer) return;
 
-    match(node.type)
-      .with('hydra', () => {
-        const hydraRenderer = this.hydraByNode.get(nodeId);
-        if (!hydraRenderer) return;
-
-        hydraRenderer.handleMessage(message);
-      })
-      .with('canvas', () => {
-        const canvasRenderer = this.canvasByNode.get(nodeId);
-        if (!canvasRenderer) return;
-
-        canvasRenderer.handleMessage(message);
-      })
-      .with('swgl', () => {
-        const swglRenderer = this.swglByNode.get(nodeId);
-        if (!swglRenderer) return;
-
-        swglRenderer.handleMessage(message);
-      })
-      .with('textmode', () => {
-        const textmodeRenderer = this.textmodeByNode.get(nodeId);
-        if (!textmodeRenderer) return;
-
-        textmodeRenderer.handleMessage(message);
-      })
-      .with('three', () => {
-        const threeRenderer = this.threeByNode.get(nodeId);
-        if (!threeRenderer) return;
-
-        threeRenderer.handleMessage(message);
-      })
-      .with('regl', () => {
-        const reglRenderer = this.reglByNode.get(nodeId);
-        if (!reglRenderer) return;
-
-        reglRenderer.handleMessage(message);
-      })
-      .with(
-        P.union(
-          'glsl',
-          'shaderpark',
-          'img',
-          'float.tex',
-          'bg.out',
-          'send.vdo',
-          'recv.vdo',
-          'projmap'
-        ),
-        () => {}
-      )
-      .exhaustive();
+    this.cookState.markDirty(nodeId, 'message');
+    renderer.handleMessage(message);
   }
 
   /** Route a channel message to the renderer for a given node. */
   sendChannelMessageToNode(nodeId: string, channel: string, data: unknown, sourceNodeId: string) {
-    const node = this.renderGraph?.nodes.find((n) => n.id === nodeId);
-    if (!node) return;
+    const renderer = this.getMessageCapableRenderer(nodeId);
+    if (!renderer) return;
 
-    match(node.type)
-      .with('hydra', () => {
-        this.hydraByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
-      })
-      .with('canvas', () => {
-        this.canvasByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
-      })
-      .with('textmode', () => {
-        this.textmodeByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
-      })
-      .with('three', () => {
-        this.threeByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
-      })
-      .with('regl', () => {
-        this.reglByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
-      })
-      .with('swgl', () => {
-        this.swglByNode.get(nodeId)?.handleChannelMessage(channel, data, sourceNodeId);
-      })
+    this.cookState.markDirty(nodeId, 'message');
+    renderer.handleChannelMessage(channel, data, sourceNodeId);
+  }
+
+  private getMessageCapableRenderer(nodeId: string): MessageCapableRenderer | null {
+    const node = this.renderGraph?.nodes.find((n) => n.id === nodeId);
+    if (!node) return null;
+
+    return match(node.type)
+      .with('hydra', () => this.hydraByNode.get(nodeId) ?? null)
+      .with('canvas', () => this.canvasByNode.get(nodeId) ?? null)
+      .with('swgl', () => this.swglByNode.get(nodeId) ?? null)
+      .with('textmode', () => this.textmodeByNode.get(nodeId) ?? null)
+      .with('three', () => this.threeByNode.get(nodeId) ?? null)
+      .with('regl', () => this.reglByNode.get(nodeId) ?? null)
       .with(
         P.union(
           'glsl',
@@ -2250,7 +2207,7 @@ export class FBORenderer {
           'recv.vdo',
           'projmap'
         ),
-        () => {}
+        () => null
       )
       .exhaustive();
   }
