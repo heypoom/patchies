@@ -20,7 +20,8 @@ export function createRenderNodeCookPolicy(node: RenderNode, renderGraph: Render
     .with(
       { type: P.union('img', 'float.tex', 'bg.out', 'send.vdo', 'recv.vdo', 'projmap') },
       () => ({
-        mode: 'on-demand' as const
+        mode: 'on-demand' as const,
+        ...(feedbackDependent ? { feedbackDependent: true } : {})
       })
     )
     .otherwise(() => ({ mode: 'always' as const }));

@@ -59,7 +59,7 @@ import {
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { CookStateManager, type CookPolicy } from './CookStateManager';
 import { createGlslCookPolicy } from './cooking/glsl';
-import { createRenderNodeCookPolicy } from './cooking/renderNode';
+import { createRenderNodeCookPolicy } from './cooking/policies';
 
 type TransportTimeState = Pick<ITransport, keyof TransportState>;
 

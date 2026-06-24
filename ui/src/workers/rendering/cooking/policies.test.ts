@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { RenderGraph, RenderNode } from '$lib/rendering/types';
-import { createRenderNodeCookPolicy } from './renderNode';
+import { createRenderNodeCookPolicy } from './policies';
+import { COOK_TEST_UTILS } from './test-utils';
+
+const { ON_DEMAND } = COOK_TEST_UTILS;
 
 const baseGraph: RenderGraph = {
   nodes: [],
@@ -28,21 +31,34 @@ describe('createRenderNodeCookPolicy', () => {
   it('lets video channel passthrough nodes cook on demand', () => {
     expect(
       createRenderNodeCookPolicy(renderNode('send.vdo', { channel: 'main' }), baseGraph)
-    ).toEqual({ mode: 'on-demand' });
+    ).toEqual(ON_DEMAND);
+
     expect(
       createRenderNodeCookPolicy(renderNode('recv.vdo', { channel: 'main' }), baseGraph)
-    ).toEqual({ mode: 'on-demand' });
+    ).toEqual(ON_DEMAND);
   });
 
   it('lets the background output node cook on demand', () => {
-    expect(createRenderNodeCookPolicy(renderNode('bg.out'), baseGraph)).toEqual({
-      mode: 'on-demand'
-    });
+    expect(createRenderNodeCookPolicy(renderNode('bg.out'), baseGraph)).toEqual(ON_DEMAND);
   });
 
   it('lets projection map nodes cook on demand', () => {
-    expect(createRenderNodeCookPolicy(renderNode('projmap', { surfaces: [] }), baseGraph)).toEqual({
-      mode: 'on-demand'
+    expect(createRenderNodeCookPolicy(renderNode('projmap', { surfaces: [] }), baseGraph)).toEqual(
+      ON_DEMAND
+    );
+  });
+
+  it('preserves feedback dependency for on-demand passthrough nodes', () => {
+    const node = renderNode('send.vdo', { channel: 'main' });
+
+    expect(
+      createRenderNodeCookPolicy(node, {
+        ...baseGraph,
+        feedbackNodes: new Set([node.id])
+      })
+    ).toEqual({
+      mode: 'on-demand',
+      feedbackDependent: true
     });
   });
 });
