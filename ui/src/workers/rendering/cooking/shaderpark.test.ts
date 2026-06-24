@@ -17,6 +17,7 @@ describe('createShaderParkCookPolicy', () => {
     expect(createShaderParkCookPolicy('sphere(length(mouseIntersection()) * 0.1);')).toEqual(
       MOUSE_DEPENDENT
     );
+
     expect(createShaderParkCookPolicy('color(vec3(mouse.x, mouse.y, 0.0));')).toEqual(
       MOUSE_DEPENDENT
     );

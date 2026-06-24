@@ -60,6 +60,7 @@ import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
 import { CookStateManager, type CookPolicy } from './CookStateManager';
 import { createGlslCookPolicy } from './cooking/glsl';
 import { createRenderNodeCookPolicy } from './cooking/policies';
+import { isSameMouseData, type MouseData } from './mouseData';
 
 type TransportTimeState = Pick<ITransport, keyof TransportState>;
 
@@ -114,7 +115,7 @@ export class FBORenderer {
   public nodePausedMap: Map<string, boolean> = new Map();
 
   /** Mapping of nodeID to mouse state (iMouse vec4: xy = current, zw = click) */
-  public mouseDataByNode: Map<string, [number, number, number, number, number?]> = new Map();
+  public mouseDataByNode: Map<string, MouseData> = new Map();
 
   /** Enable the WebGL workaround for iOS Safari */
   public usesMobileSafariWebGLWorkaround = false;
@@ -1454,7 +1455,13 @@ export class FBORenderer {
 
   /** Set mouse data for a node (Shadertoy iMouse format) */
   setMouseData(nodeId: string, x: number, y: number, z: number, w: number, buttons?: number) {
-    this.mouseDataByNode.set(nodeId, [x, y, z, w, buttons]);
+    const nextMouseData: MouseData = [x, y, z, w, buttons];
+    const previousMouseData = this.mouseDataByNode.get(nodeId);
+
+    if (isSameMouseData(previousMouseData, nextMouseData)) return;
+
+    this.mouseDataByNode.set(nodeId, nextMouseData);
+    this.cookState.markDirty(nodeId, 'mouse');
   }
 
   sendThreeWheelData(
@@ -1470,6 +1477,7 @@ export class FBORenderer {
 
   zoomShaderParkOrbit(nodeId: string, deltaY: number) {
     this.shaderParkThreeByNode.get(nodeId)?.zoom(deltaY);
+    this.cookState.markDirty(nodeId, 'mouse');
   }
 
   /** Get list of nodes with preview enabled */
