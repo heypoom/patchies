@@ -1,6 +1,7 @@
 import { match, P } from 'ts-pattern';
 import type { RenderGraph, RenderNode } from '$lib/rendering/types';
 import type { CookPolicy } from '../CookStateManager';
+import { createCanvasCookPolicy } from './canvas';
 import { createGlslCookPolicy } from './glsl';
 import { createHydraCookPolicy } from './hydra';
 import { createShaderParkCookPolicy } from './shaderpark';
@@ -25,6 +26,10 @@ export function createRenderNodeCookPolicy(node: RenderNode, renderGraph: Render
     }))
     .with({ type: 'swgl' }, (node) => ({
       ...createSwglCookPolicy(node.data.code),
+      ...(feedbackDependent ? { feedbackDependent: true } : {})
+    }))
+    .with({ type: 'canvas' }, (node) => ({
+      ...createCanvasCookPolicy(node.data.code),
       ...(feedbackDependent ? { feedbackDependent: true } : {})
     }))
     .with(

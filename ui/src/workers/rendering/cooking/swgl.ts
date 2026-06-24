@@ -1,17 +1,23 @@
-import { stripJavaScriptComments, stripJavaScriptStrings } from '$lib/utils/javascript-comments';
+import { stripJavaScriptComments } from '$lib/utils/javascript-comments';
 
 import type { CookPolicy } from '../CookStateManager';
+import { detectJavaScriptCookDependencies } from './javascript';
 
 const TIME_PATTERN = /\bt\b/;
-const FFT_PATTERN = /\bfft\s*\(/;
+const NEVER_PATTERN = /$^/;
 
 export function createSwglCookPolicy(code: string): CookPolicy {
   const source = stripJavaScriptComments(code);
-  const dependencySource = stripJavaScriptStrings(source);
+  const dependencies = detectJavaScriptCookDependencies(code, { timePattern: NEVER_PATTERN });
+
+  if (dependencies.always) {
+    return { mode: 'always' };
+  }
 
   return {
     mode: 'on-demand',
     ...(TIME_PATTERN.test(source) ? { timeDependent: true } : {}),
-    ...(FFT_PATTERN.test(dependencySource) ? { fftDependent: true } : {})
+    ...(dependencies.mouseDependent ? { mouseDependent: true } : {}),
+    ...(dependencies.fftDependent ? { fftDependent: true } : {})
   };
 }

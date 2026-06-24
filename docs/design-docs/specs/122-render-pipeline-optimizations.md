@@ -203,7 +203,7 @@ The first implementation should be conservative:
 | `three`                          | `always` initially                                    | JS code can access time and mutate scenes implicitly                               |
 | `regl`                           | `always` initially                                    | JS code can hide dependencies                                                      |
 | `swgl`                           | `on-demand` when no dynamic dependencies are detected | `t`, `fft()`, input, message, and feedback dependencies cook as needed             |
-| `canvas`                         | `always` initially                                    | User code may draw from timers, messages, or internal state                        |
+| `canvas`                         | `on-demand` when no dynamic dependencies are detected | Time, mouse, FFT, input, message, and feedback dependencies cook as needed; timers and RAF stay dynamic |
 | `textmode`                       | `always` initially                                    | Stateful runtime                                                                   |
 | `img`, `float.tex`               | `on-demand`, externally dirty                        | Cook only when uploaded bitmap/texture data changes                                |
 | `send.vdo`, `recv.vdo`, `bg.out` | `on-demand`, passthrough/empty                       | No expensive cook, but downstream invalidation still matters                       |
