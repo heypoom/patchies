@@ -59,6 +59,19 @@
     return fps.toFixed(1) + ' fps';
   }
 
+  function isTimingActive(t: TimingStats): boolean {
+    return t.callsPerSecond > 0;
+  }
+
+  function timingTextClass(t: TimingStats, isSevere: boolean, isHot: boolean): string {
+    if (!isTimingActive(t)) return 'text-zinc-700';
+
+    if (isSevere) return 'text-red-300';
+    if (isHot) return 'text-amber-300';
+
+    return 'text-zinc-400';
+  }
+
   // ─── Category metadata ───────────────────────────────────────────────────────
 
   const ORDERED_CATEGORIES: ProfilerCategory[] = ['init', 'message', 'draw', 'interval', 'raf'];
@@ -309,8 +322,9 @@
         {@const primaryTiming = entry.timings.message ?? entry.timings.draw}
         {@const primaryVal = primaryTiming ? getStatValue(primaryTiming) : 0}
         {@const isTimeStat = displayStat !== 'calls/s'}
+        {@const isActive = primaryTiming ? isTimingActive(primaryTiming) : false}
 
-        {@const isSevere = isTimeStat && primaryVal > hotThreshold * 5}
+        {@const isSevere = isActive && isTimeStat && primaryVal > hotThreshold * 5}
         {@const isHot = isTimeStat && entry.isHot}
         {@const barPct = Math.min(100, (primaryVal / maxStat) * 100)}
 
@@ -365,7 +379,9 @@
                   ? 'bg-red-500'
                   : isHot
                     ? 'bg-amber-500'
-                    : 'bg-zinc-500'}"
+                    : isActive
+                      ? 'bg-zinc-500'
+                      : 'bg-zinc-700'}"
                 style:width="{barPct}%"
               ></div>
             </div>
@@ -376,14 +392,12 @@
             {@const t = entry.timings[cat]}
             {#if t}
               {@const val = getStatValue(t)}
-              {@const catSevere = isTimeStat && val > hotThreshold * 5}
-              {@const catHot = isTimeStat && val > hotThreshold}
+              {@const catActive = isTimingActive(t)}
+              {@const catSevere = catActive && isTimeStat && val > hotThreshold * 5}
+              {@const catHot = catActive && isTimeStat && val > hotThreshold}
               <span
-                class="font-mono text-[10px] tabular-nums {catSevere
-                  ? 'text-red-300'
-                  : catHot
-                    ? 'text-amber-300'
-                    : 'text-zinc-400'}">{fmtStat(t)}</span
+                class="font-mono text-[10px] tabular-nums {timingTextClass(t, catSevere, catHot)}"
+                >{fmtStat(t)}</span
               >
             {:else}
               <span class="text-zinc-800 tabular-nums">—</span>
@@ -494,18 +508,19 @@
                   </span>
 
                   {#if t}
-                    {@const catSevere = t.avg > hotThreshold * 5}
-                    {@const catHot = t.avg > hotThreshold}
-                    {@const color = catSevere
-                      ? 'text-red-300'
-                      : catHot
-                        ? 'text-amber-300'
-                        : 'text-zinc-400'}
+                    {@const catActive = isTimingActive(t)}
+                    {@const catSevere = catActive && t.avg > hotThreshold * 5}
+                    {@const catHot = catActive && t.avg > hotThreshold}
+                    {@const color = timingTextClass(t, catSevere, catHot)}
                     <span class="text-right {color}">{fmt(t.avg)}</span>
                     <span class="text-right {color}">{fmt(t.max)}</span>
                     <span class="text-right {color}">{fmt(t.p95)}</span>
-                    <span class="text-right text-zinc-500">{fmt(t.last)}</span>
-                    <span class="text-right text-zinc-500">{t.callsPerSecond.toFixed(1)}</span>
+                    <span class="text-right {catActive ? 'text-zinc-500' : 'text-zinc-700'}"
+                      >{fmt(t.last)}</span
+                    >
+                    <span class="text-right {catActive ? 'text-zinc-500' : 'text-zinc-700'}"
+                      >{t.callsPerSecond.toFixed(1)}</span
+                    >
                   {:else}
                     <span class="text-right text-zinc-800">—</span>
                     <span class="text-right text-zinc-800">—</span>
