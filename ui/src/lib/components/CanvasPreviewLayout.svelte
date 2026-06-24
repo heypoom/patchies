@@ -4,9 +4,11 @@
   import ObjectPreviewLayout from './ObjectPreviewLayout.svelte';
   import type { SettingsSchema } from '$lib/settings';
   import type { ExtraMenuItem } from './object-preview-menu-actions';
-  import { previewBackgroundColor } from '../../stores/renderer.store';
+  import { previewBackgroundColor, showCookStats } from '../../stores/renderer.store';
   import type { SupportedLanguage } from '$lib/codemirror/types';
-  import type { RenderCookStatus } from '$lib/rendering/types';
+  import { useCookStatus } from '$lib/canvas/use-cook-status.svelte';
+
+  const COOK_DEBUG_OBJECT_TYPES = new Set(['glsl', 'hydra']);
 
   let {
     title,
@@ -50,9 +52,7 @@
     displayExtraMenuItems = undefined,
     showBgOutputOption = true,
     showExpandOption = true,
-    showCookDebugOption = false,
-    cookDebugVisible = false,
-    cookStatus = undefined,
+    showCookDebugOption = undefined,
     class: className = ''
   }: {
     title: string;
@@ -97,10 +97,17 @@
     showBgOutputOption?: boolean;
     showExpandOption?: boolean;
     showCookDebugOption?: boolean;
-    cookDebugVisible?: boolean;
-    cookStatus?: RenderCookStatus;
     class?: string;
   } = $props();
+
+  const cookDebugSupported = $derived(
+    showCookDebugOption ?? Boolean(objectType && COOK_DEBUG_OBJECT_TYPES.has(objectType))
+  );
+
+  const cookStatus = useCookStatus(
+    () => nodeId,
+    () => cookDebugSupported && $showCookStats
+  );
 
   // Build the interaction class string based on individual flags
   const interactionClass = $derived.by(() => {
@@ -166,7 +173,11 @@
           : `background-color:${$previewBackgroundColor};${pixelated ? 'image-rendering:pixelated;' : ''}${style}`}
       ></canvas>
 
-      <CookDebugOverlay enabled={showCookDebugOption} visible={cookDebugVisible} {cookStatus} />
+      <CookDebugOverlay
+        enabled={cookDebugSupported && $showCookStats}
+        visible={$showCookStats}
+        cookStatus={cookStatus.status}
+      />
     </div>
   {/snippet}
 </ObjectPreviewLayout>

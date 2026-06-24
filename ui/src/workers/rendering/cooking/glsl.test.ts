@@ -23,7 +23,7 @@ describe('createGlslCookPolicy', () => {
       }
     `);
 
-    expect(policy).toMatchObject(TIME_DEPENDENT);
+    expect(policy).toEqual(TIME_DEPENDENT);
   });
 
   it('ignores time builtins in comments', () => {
@@ -43,10 +43,10 @@ describe('createGlslCookPolicy', () => {
   it('treats iFrame and iDate as frame-time dependencies', () => {
     expect(
       createGlslCookPolicy('void mainImage(out vec4 c, in vec2 p) { c = vec4(iFrame); }')
-    ).toMatchObject(FRAME_DEPENDENT);
+    ).toEqual(FRAME_DEPENDENT);
 
-    expect(
-      createGlslCookPolicy('void mainImage(out vec4 c, in vec2 p) { c = iDate; }')
-    ).toMatchObject(DATE_DEPENDENT);
+    expect(createGlslCookPolicy('void mainImage(out vec4 c, in vec2 p) { c = iDate; }')).toEqual(
+      DATE_DEPENDENT
+    );
   });
 });
