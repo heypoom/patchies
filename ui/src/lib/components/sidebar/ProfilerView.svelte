@@ -152,7 +152,7 @@
     return ORDERED_CATEGORIES.filter((c) => seen.has(c));
   }
 
-  /** Max avg across all categories for a node in the history */
+  /** Max active avg across all categories for a node in the history */
   function historyMax(nodeId: string, history: ProfilerSnapshot[]): number {
     let max = 0.01;
 
@@ -161,7 +161,7 @@
       if (!entry) continue;
 
       for (const t of Object.values(entry.timings)) {
-        if (t && t.avg > max) {
+        if (t && isTimingActive(t) && t.avg > max) {
           max = t.avg;
         }
       }
@@ -175,8 +175,8 @@
     return CH - CP - (v / maxVal) * (CH - CP * 2);
   }
 
-  /** SVG path string for a category's avg over the history window */
-  function buildPath(
+  /** SVG path string for active samples in a category's avg history. */
+  function buildActivePath(
     nodeId: string,
     category: ProfilerCategory,
     history: ProfilerSnapshot[],
@@ -189,14 +189,45 @@
     let penDown = false;
 
     for (let i = 0; i < n; i++) {
-      const v = history[i].entries.find((e) => e.nodeId === nodeId)?.timings[category]?.avg ?? null;
-      if (v === null) {
+      const t = history[i].entries.find((e) => e.nodeId === nodeId)?.timings[category];
+      if (!t || !isTimingActive(t)) {
+        penDown = false;
+        continue;
+      }
+
+      const v = t.avg;
+      const x = n > 1 ? (i / (n - 1)) * (CW - CP * 2) + CP : CW / 2;
+      const y = valY(v, maxVal);
+
+      path += penDown ? `L${x.toFixed(1)} ${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
+      penDown = true;
+    }
+
+    return path;
+  }
+
+  /** SVG path string for inactive spans, rendered as a dim zero baseline. */
+  function buildInactivePath(
+    nodeId: string,
+    category: ProfilerCategory,
+    history: ProfilerSnapshot[],
+    maxVal: number
+  ): string {
+    const n = history.length;
+    if (n === 0) return '';
+
+    let path = '';
+    let penDown = false;
+
+    for (let i = 0; i < n; i++) {
+      const t = history[i].entries.find((e) => e.nodeId === nodeId)?.timings[category];
+      if (!t || isTimingActive(t)) {
         penDown = false;
         continue;
       }
 
       const x = n > 1 ? (i / (n - 1)) * (CW - CP * 2) + CP : CW / 2;
-      const y = valY(v, maxVal);
+      const y = valY(0, maxVal);
 
       path += penDown ? `L${x.toFixed(1)} ${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`;
       penDown = true;
@@ -438,7 +469,21 @@
 
                 <!-- Category paths -->
                 {#each cats as cat (cat)}
-                  {@const d = buildPath(entry.nodeId, cat, history, maxMs)}
+                  {@const inactiveD = buildInactivePath(entry.nodeId, cat, history, maxMs)}
+
+                  {#if inactiveD}
+                    <path
+                      d={inactiveD}
+                      stroke="#3f3f46"
+                      stroke-width="1.25"
+                      stroke-opacity="0.7"
+                      fill="none"
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                    />
+                  {/if}
+
+                  {@const d = buildActivePath(entry.nodeId, cat, history, maxMs)}
 
                   {#if d}
                     <path
@@ -458,9 +503,11 @@
                     .at(-1)
                     ?.entries.find((e) => e.nodeId === entry.nodeId)}
 
-                  {@const v = lastEntry?.timings[cat]?.avg}
+                  {@const latestTiming = lastEntry?.timings[cat]}
+                  {@const v = latestTiming?.avg}
+                  {@const isLatestActive = latestTiming ? isTimingActive(latestTiming) : false}
 
-                  {#if v != null}
+                  {#if v != null && isLatestActive}
                     <circle cx={CW - CP} cy={valY(v, maxMs)} r="2.5" fill={CATEGORY_COLOR[cat]} />
                   {/if}
                 {/each}
