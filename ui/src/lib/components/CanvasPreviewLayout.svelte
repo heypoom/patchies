@@ -8,7 +8,7 @@
   import type { SupportedLanguage } from '$lib/codemirror/types';
   import { useCookStatus } from '$lib/canvas/use-cook-status.svelte';
 
-  const COOK_DEBUG_OBJECT_TYPES = new Set(['glsl', 'hydra', 'shaderpark']);
+  const COOK_DEBUG_OBJECT_TYPES = new Set(['glsl', 'hydra', 'shaderpark', 'swgl']);
 
   let {
     title,
