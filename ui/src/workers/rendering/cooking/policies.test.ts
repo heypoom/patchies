@@ -3,7 +3,7 @@ import type { RenderGraph, RenderNode } from '$lib/rendering/types';
 import { createRenderNodeCookPolicy } from './policies';
 import { COOK_TEST_UTILS } from './test-utils';
 
-const { ON_DEMAND, TIME_DEPENDENT, FFT_DEPENDENT, FEEDBACK_DEPENDENT } = COOK_TEST_UTILS;
+const { ALWAYS, ON_DEMAND, TIME_DEPENDENT, FFT_DEPENDENT, FEEDBACK_DEPENDENT } = COOK_TEST_UTILS;
 
 const baseGraph: RenderGraph = {
   nodes: [],
@@ -96,6 +96,54 @@ describe('createRenderNodeCookPolicy', () => {
     ).toEqual(TIME_DEPENDENT);
   });
 
+  it('uses Regl dependency policies', () => {
+    expect(
+      createRenderNodeCookPolicy(
+        renderNode('regl', { code: 'function render(time) { draw(); }' }),
+        baseGraph
+      )
+    ).toEqual(ON_DEMAND);
+
+    expect(
+      createRenderNodeCookPolicy(
+        renderNode('regl', { code: 'function render(time) { draw({ time }); }' }),
+        baseGraph
+      )
+    ).toEqual(TIME_DEPENDENT);
+  });
+
+  it('uses the conservative fallback policy for Three', () => {
+    expect(
+      createRenderNodeCookPolicy(
+        renderNode('three', { code: 'function draw(time) { renderer.render(scene, camera); }' }),
+        baseGraph
+      )
+    ).toEqual(ALWAYS);
+
+    expect(
+      createRenderNodeCookPolicy(
+        renderNode('three', { code: 'const controls = new OrbitControls(camera, renderer);' }),
+        baseGraph
+      )
+    ).toEqual(ALWAYS);
+  });
+
+  it('uses Textmode dependency policies', () => {
+    expect(
+      createRenderNodeCookPolicy(
+        renderNode('textmode', { code: 't.draw(() => t.text("hi", 0, 0));' }),
+        baseGraph
+      )
+    ).toEqual(ON_DEMAND);
+
+    expect(
+      createRenderNodeCookPolicy(
+        renderNode('textmode', { code: 't.draw(() => t.text(fft().a[0], 0, 0));' }),
+        baseGraph
+      )
+    ).toEqual(FFT_DEPENDENT);
+  });
+
   it('preserves feedback dependency for on-demand passthrough nodes', () => {
     const node = renderNode('send.vdo', { channel: 'main' });
 
@@ -105,5 +153,16 @@ describe('createRenderNodeCookPolicy', () => {
         feedbackNodes: new Set([node.id])
       })
     ).toEqual(FEEDBACK_DEPENDENT);
+  });
+
+  it('does not add feedback dependency to always-cooked policies', () => {
+    const node = renderNode('hydra', { code: 'osc(() => Math.random()).out()' });
+
+    expect(
+      createRenderNodeCookPolicy(node, {
+        ...baseGraph,
+        feedbackNodes: new Set([node.id])
+      })
+    ).toEqual(ALWAYS);
   });
 });
