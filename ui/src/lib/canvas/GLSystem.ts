@@ -4,7 +4,13 @@ import {
   type REdge,
   type RNode
 } from '$lib/rendering/graphUtils';
-import type { FBOFormat, RenderGraph, RenderNode, RenderWorkerMessage } from '$lib/rendering/types';
+import {
+  isFBOCompatible,
+  type FBOFormat,
+  type RenderGraph,
+  type RenderNode,
+  type RenderWorkerMessage
+} from '$lib/rendering/types';
 import type { ElementImageLike } from '$lib/html-in-canvas/html-canvas-video-output';
 import RenderWorker from '$workers/rendering/renderWorker?worker';
 
@@ -921,7 +927,10 @@ export class GLSystem {
     if (!force && !this.hasFlowGraphChanged(this.nodes, edges)) return false;
 
     const graph = buildRenderGraph(this.nodes, edges);
-    const connectedVideoOutputNodeIds = Array.from(this.getConnectedVideoOutputNodeIds(edges));
+
+    const connectedVideoOutputNodeIds = Array.from(
+      this.getExternalConnectedVideoOutputNodeIds(edges)
+    );
 
     const graphPayload = { graph, connectedVideoOutputNodeIds };
     if (!force && !this.hasHashChanged('graph', graphPayload)) return false;
@@ -960,6 +969,22 @@ export class GLSystem {
 
     for (const edge of edges) {
       if (isVideoRenderEdge(edge)) nodeIds.add(edge.source);
+    }
+
+    return nodeIds;
+  }
+
+  private getExternalConnectedVideoOutputNodeIds(edges: REdge[]): Set<string> {
+    const nodeById = new Map(this.nodes.map((node) => [node.id, node]));
+    const nodeIds = new Set<string>();
+
+    for (const edge of edges) {
+      if (!isVideoRenderEdge(edge)) continue;
+
+      const targetType = nodeById.get(edge.target)?.type;
+      if (targetType && isFBOCompatible(targetType)) continue;
+
+      nodeIds.add(edge.source);
     }
 
     return nodeIds;

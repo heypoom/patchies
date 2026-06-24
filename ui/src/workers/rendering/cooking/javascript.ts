@@ -16,6 +16,7 @@ interface DetectJavaScriptCookDependenciesOptions {
 
 const ALWAYS_PATTERN =
   /\b(?:setInterval|setTimeout|requestAnimationFrame)\b|\b(?:Math\.random|Date\.|performance\.now)\b/;
+
 const TIME_PATTERN = /\b(?:clock\s*\.\s*)?time\b/;
 const MOUSE_PATTERN = /\bmouse\b/;
 const FFT_PATTERN = /\bfft\s*\(/;
