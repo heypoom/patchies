@@ -201,8 +201,7 @@
     </div>
   {:else if !$profilerSnapshot || $profilerSnapshot.entries.length === 0}
     <div class="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-      <p class="text-xs text-zinc-500">Waiting for messages…</p>
-      <p class="text-xs text-zinc-600">Send a message to a text object (metro, kv, etc.)</p>
+      <p class="text-xs text-zinc-500">Waiting for events…</p>
     </div>
   {:else}
     <div class="min-h-0 flex-1 overflow-y-auto">

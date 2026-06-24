@@ -97,6 +97,35 @@ export class CanvasRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
   // Canvas uses RAF internally, not the pipeline's renderFrame
   renderFrame() {}
 
+  private scheduleAnimationFrame(callback: FrameRequestCallback): number {
+    if (this.shouldSkipFrame()) {
+      this.animationId = null;
+      return -1;
+    }
+
+    this.animationId = requestAnimationFrame((ts) => {
+      this.animationId = null;
+
+      if (this.shouldSkipFrame()) return;
+
+      this.renderer.drawProfiler.measure(this.config.nodeId, 'draw', () => callback(ts));
+      this.drawCanvasToTexture();
+
+      if (this.animationId === null && this.pausedCallback === callback) {
+        this.pausedCallback = null;
+      }
+    });
+
+    return this.animationId;
+  }
+
+  private shouldSkipFrame() {
+    return (
+      this.renderer.isNodePaused(this.config.nodeId) ||
+      !this.renderer.isNodeCookRequired(this.config.nodeId)
+    );
+  }
+
   public async updateCode() {
     if (!this.ctx || !this.offscreenCanvas) return;
 
@@ -123,19 +152,7 @@ export class CanvasRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
         requestAnimationFrame: (callback: FrameRequestCallback) => {
           // Store callback for resume
           this.pausedCallback = callback;
-
-          // Don't schedule if paused
-          if (this.renderer.isNodePaused(this.config.nodeId)) {
-            return -1;
-          }
-
-          this.animationId = requestAnimationFrame((ts) => {
-            this.renderer.drawProfiler.measure(this.config.nodeId, 'draw', () => callback(ts));
-
-            this.drawCanvasToTexture();
-          });
-
-          return this.animationId;
+          return this.scheduleAnimationFrame(callback);
         },
 
         cancelAnimationFrame: (id: number) => {
@@ -167,15 +184,9 @@ export class CanvasRenderer extends BaseWorkerRenderer<BaseRendererConfig> {
 
   /** Resume animation loop after unpausing */
   resumeAnimation() {
-    if (this.pausedCallback && !this.renderer.isNodePaused(this.config.nodeId)) {
-      const callback = this.pausedCallback;
+    if (!this.pausedCallback || this.animationId !== null) return;
 
-      this.animationId = requestAnimationFrame(() => {
-        callback(performance.now());
-
-        this.drawCanvasToTexture();
-      });
-    }
+    this.scheduleAnimationFrame(this.pausedCallback);
   }
 
   setHidePorts(hidePorts: boolean) {
