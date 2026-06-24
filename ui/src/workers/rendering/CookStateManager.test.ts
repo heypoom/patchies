@@ -72,4 +72,30 @@ describe('CookStateManager', () => {
       reasons: ['renderer-policy']
     });
   });
+
+  it('keeps mouse-dependent nodes cooking while active', () => {
+    const manager = new CookStateManager();
+
+    manager.registerNode('interactive-shader', { mode: 'on-demand', mouseDependent: true });
+    manager.beginFrame({ transportTime: 0, prevTransportTime: 0, isTransportPlaying: false });
+    manager.markCooked('interactive-shader', ['first-frame', 'mouse'], 0.3);
+    manager.beginFrame({ transportTime: 0, prevTransportTime: 0, isTransportPlaying: false });
+
+    expect(manager.shouldCook('interactive-shader')).toEqual({
+      shouldCook: true,
+      reasons: ['mouse']
+    });
+  });
+
+  it('can report paused status without incrementing cooked frames', () => {
+    const manager = new CookStateManager();
+
+    manager.registerNode('paused-shader', { mode: 'always' });
+    manager.markPaused('paused-shader');
+
+    expect(manager.getStatus('paused-shader')).toMatchObject({
+      status: 'paused',
+      cookedFrames: 0
+    });
+  });
 });

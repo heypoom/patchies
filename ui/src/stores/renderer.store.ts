@@ -63,10 +63,14 @@ renderFpsCap.subscribe((fps) => {
 function loadBooleanSetting(key: string, fallback: boolean): boolean {
   if (typeof localStorage === 'undefined') return fallback;
 
-  const stored = localStorage.getItem(key);
-  if (stored === null) return fallback;
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored === null) return fallback;
 
-  return stored === 'true';
+    return stored === 'true';
+  } catch {
+    return fallback;
+  }
 }
 
 /** Show cook status overlays on render node previews. */
@@ -76,7 +80,11 @@ export const showCookStats = writable<boolean>(
 
 showCookStats.subscribe((enabled) => {
   if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(SHOW_COOK_STATS_STORAGE_KEY, String(enabled));
+    try {
+      localStorage.setItem(SHOW_COOK_STATS_STORAGE_KEY, String(enabled));
+    } catch {
+      // Restricted-storage environments may expose localStorage but throw on access.
+    }
   }
 });
 

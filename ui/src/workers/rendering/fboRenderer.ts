@@ -1142,6 +1142,13 @@ export class FBORenderer {
       }
     }
 
+    this.cookState.registerNode(node.id, {
+      ...createGlslCookPolicy(code),
+      ...(this.renderGraph?.feedbackNodes.has(node.id) || (node.backEdgeInlets?.size ?? 0) > 0
+        ? { feedbackDependent: true }
+        : {})
+    });
+
     const renderCommand = createShaderToyDrawCommand({
       width,
       height,
@@ -1531,12 +1538,18 @@ export class FBORenderer {
 
       const node = this.renderGraph.nodes.find((n) => n.id === nodeId);
       const fboNode = this.fboNodes.get(nodeId);
-
       if (!node || !fboNode) continue;
 
       const cookDecision = this.cookState.shouldCook(node.id);
+
       if (!cookDecision.shouldCook) {
         this.postCookStatusIfNeeded(node.id);
+        continue;
+      }
+
+      if (this.isNodePaused(node.id)) {
+        this.cookState.markPaused(node.id);
+        this.postCookStatusIfNeeded(node.id, true);
         continue;
       }
 
@@ -1751,6 +1764,7 @@ export class FBORenderer {
     if (!status) return;
 
     const cachedBucket = Math.floor(status.cachedFrames / 15);
+
     const signature = JSON.stringify({
       status: status.status,
       cookedFrames: status.cookedFrames,
@@ -1762,12 +1776,7 @@ export class FBORenderer {
     if (!force && this.lastCookStatusSignatures.get(nodeId) === signature) return;
 
     this.lastCookStatusSignatures.set(nodeId, signature);
-
-    self.postMessage({
-      type: 'cookStatus',
-      nodeId,
-      ...status
-    });
+    self.postMessage({ type: 'cookStatus', nodeId, ...status });
   }
 
   private refreshReglState() {

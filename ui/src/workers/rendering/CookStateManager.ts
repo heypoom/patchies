@@ -130,6 +130,13 @@ export class CookStateManager {
     state.cachedFrames += 1;
   }
 
+  markPaused(nodeId: string): void {
+    const state = this.nodes.get(nodeId);
+    if (!state) return;
+
+    state.status = 'paused';
+  }
+
   shouldCook(nodeId: string): CookDecision {
     const state = this.nodes.get(nodeId);
     if (!state) return { shouldCook: true, reasons: ['force'] };
@@ -146,6 +153,10 @@ export class CookStateManager {
 
     if (state.policy.frameDependent || state.policy.dateDependent) {
       reasons.add('time');
+    }
+
+    if (state.policy.mouseDependent) {
+      reasons.add('mouse');
     }
 
     if (state.policy.feedbackDependent) {

@@ -63,13 +63,22 @@ Downstream nodes read the texture via `texture(iChannel0, uv)` — WebGL's bilin
 **FBO creation** in `fboRenderer.ts`:
 
 ```typescript
+const resolutionMatchers = {
+  full: schema(Type.Literal("full")),
+  half: schema(Type.Literal("1/2")),
+  quarter: schema(Type.Literal("1/4")),
+  customSize: schema(Type.String()),
+  squareSize: schema(Type.Number()),
+  tupleSize: schema(Type.Array(Type.Number())),
+};
+
 const [width, height] = match(node.data.resolution ?? "full")
-  .with("full", () => [outputWidth, outputHeight])
-  .with("1/2", () => [outputWidth / 2, outputHeight / 2])
-  .with("1/4", () => [outputWidth / 4, outputHeight / 4])
-  .with(P.string, (s) => s.split("x").map(Number)) // e.g. '512x256'
-  .with(P.number, (size) => [size, size])
-  .with(P.array(P.number), ([w, h]) => [w, h])
+  .with(resolutionMatchers.full, () => [outputWidth, outputHeight])
+  .with(resolutionMatchers.half, () => [outputWidth / 2, outputHeight / 2])
+  .with(resolutionMatchers.quarter, () => [outputWidth / 4, outputHeight / 4])
+  .with(resolutionMatchers.customSize, (s) => s.split("x").map(Number)) // e.g. '512x256'
+  .with(resolutionMatchers.squareSize, (size) => [size, size])
+  .with(resolutionMatchers.tupleSize, ([w, h]) => [w, h])
   .exhaustive();
 ```
 
@@ -133,6 +142,8 @@ type CookMode = "always" | "on-demand";
 interface CookPolicy {
   mode: CookMode;
   timeDependent: boolean;
+  frameDependent?: boolean;
+  dateDependent?: boolean;
   mouseDependent: boolean;
   fftDependent: boolean;
   feedbackDependent: boolean;
@@ -156,12 +167,24 @@ interface CookDecision {
 `FBORenderer` should ask the manager whether to cook each node inside the existing topological render loop:
 
 ```typescript
+const frameContext = {
+  time,
+  timeDelta,
+  frame,
+  mouse,
+  transportRunning,
+};
+
+cookState.beginFrame(frameContext);
+
 for (const nodeId of sortedNodes) {
-  const decision = cookState.shouldCook(nodeId, frameContext);
+  const decision = cookState.shouldCook(nodeId);
   if (!decision.shouldCook) continue;
 
+  const cookStart = performance.now();
   renderFboNode(node, fboNode);
-  cookState.markCooked(nodeId, decision.reasons);
+  const cookTimeMs = performance.now() - cookStart;
+  cookState.markCooked(nodeId, decision.reasons, cookTimeMs);
 }
 ```
 
@@ -203,10 +226,24 @@ When a node cooks, mark all downstream render nodes dirty with the `input` reaso
 
 ```typescript
 // In the render loop
+const frameContext = {
+  time,
+  timeDelta,
+  frame,
+  mouse,
+  transportRunning,
+};
+
+cookState.beginFrame(frameContext);
+
 for (const nodeId of sortedNodes) {
-  if (!cookState.shouldCook(nodeId, frameContext).shouldCook) continue;
+  const decision = cookState.shouldCook(nodeId);
+  if (!decision.shouldCook) continue;
+
+  const cookStart = performance.now();
   renderNode(nodeId);
-  cookState.markCooked(nodeId);
+  const cookTimeMs = performance.now() - cookStart;
+  cookState.markCooked(nodeId, decision.reasons, cookTimeMs);
 }
 ```
 
