@@ -78,18 +78,6 @@ feed different Hydra chains into different parts of your patch simultaneously.
 > **Note**: The maximum is 8 inlets and 8 outlets, matching WebGL2's
 > hardware limit for simultaneous render targets.
 
-## Cook Behavior
-
-Hydra previews use the same render cook system as other video objects. Static
-patches such as `solid(1, 0, 0).out()` or input-only chains such as
-`src(s0).out()` cook when their inputs or configuration change, then reuse the
-cached frame.
-
-Common animated generators such as `osc()`, `noise()`, `voronoi()`, and
-`gradient()` cook while transport time advances. Mouse, FFT, datamosh, and
-custom function code paths are treated conservatively so interactive or stateful
-patches keep updating.
-
 ## Available Objects
 
 - Full Hydra synth is available as `h`
@@ -229,6 +217,18 @@ Instead, use `fft()` inside arrow functions to get the FFT data. Hydra **must** 
 ```javascript
 osc(() => fft().getEnergy('bass')).out()
 ```
+
+## Cook Behavior
+
+Hydra previews use the same render cook system as other video objects. Static
+patches such as `solid(1, 0, 0).out()` or input-only chains such as
+`src(s0).out()` cook when their inputs or configuration change, then reuse the
+cached frame.
+
+Common animated generators such as `osc()`, `noise()`, `voronoi()`, and
+`gradient()` cook while transport time advances. Mouse, FFT, datamosh, and
+custom function code paths are treated conservatively so interactive or stateful
+patches keep updating.
 
 ## Resources
 
