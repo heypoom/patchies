@@ -80,6 +80,22 @@ describe('createRenderNodeCookPolicy', () => {
     ).toEqual(FFT_DEPENDENT);
   });
 
+  it('uses Canvas dependency policies', () => {
+    expect(
+      createRenderNodeCookPolicy(
+        renderNode('canvas', { code: 'ctx.fillRect(0, 0, width, height);' }),
+        baseGraph
+      )
+    ).toEqual(ON_DEMAND);
+
+    expect(
+      createRenderNodeCookPolicy(
+        renderNode('canvas', { code: 'ctx.fillText(clock.time, 0, 20);' }),
+        baseGraph
+      )
+    ).toEqual(TIME_DEPENDENT);
+  });
+
   it('preserves feedback dependency for on-demand passthrough nodes', () => {
     const node = renderNode('send.vdo', { channel: 'main' });
 

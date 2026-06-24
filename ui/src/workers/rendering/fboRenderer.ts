@@ -61,14 +61,22 @@ import { CookStateManager, type CookPolicy } from './CookStateManager';
 import { createGlslCookPolicy } from './cooking/glsl';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
-import { shouldSkipCookForViewport } from './renderEligibility';
+import { getViewportCookRequiredNodeIds, shouldSkipCookForViewport } from './renderEligibility';
 
 type TransportTimeState = Pick<ITransport, keyof TransportState>;
 
-type MessageCapableRenderer = {
+interface MessageCapableRenderer {
   handleMessage(message: Message): void;
   handleChannelMessage(channel: string, data: unknown, sourceNodeId: string): void;
-};
+}
+
+interface ViewportCookCache {
+  renderGraph: RenderGraph;
+  visibleNodeIds: Set<string> | null;
+  connectedVideoOutputNodeIds: Set<string>;
+  effectiveOutputNodeId: string | null;
+  requiredNodeIds: Set<string> | null;
+}
 
 export const FBO_RENDERER_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
   alpha: true,
@@ -147,10 +155,12 @@ export class FBORenderer {
   private contextLossReported = false;
   private renderErrorKeysByNode = new Map<string, Set<string>>();
 
-  private lastCookStatusSignatures = new Map<string, string>();
-  private cookStatsEnabled = false;
   private visibleNodeIds: Set<string> | null = null;
   private connectedVideoOutputNodeIds: Set<string> = new Set();
+
+  private cookStatsEnabled = false;
+  private lastCookStatusSignatures = new Map<string, string>();
+  private viewportCookRequiredCache: ViewportCookCache | null = null;
 
   /** Minimum interval between rendered frames (ms). 0 = unlimited. */
   private renderIntervalMs: number = 0;
@@ -1528,6 +1538,7 @@ export class FBORenderer {
 
     const isOverride = this.hasValidOutputOverride();
     const effectiveOutputNodeId = this.getEffectiveOutputNodeId(isOverride);
+    const requiredNodeIds = this.getViewportCookRequiredNodeIds(effectiveOutputNodeId);
 
     // Render each node in topological order
     for (const nodeId of this.renderGraph.sortedNodes) {
@@ -1537,13 +1548,7 @@ export class FBORenderer {
       const fboNode = this.fboNodes.get(nodeId);
       if (!node || !fboNode) continue;
 
-      const shouldSkipCooking = shouldSkipCookForViewport({
-        node,
-        visibleNodeIds: this.visibleNodeIds,
-        connectedVideoOutputNodeIds: this.connectedVideoOutputNodeIds,
-        effectiveOutputNodeId
-      });
-
+      const shouldSkipCooking = shouldSkipCookForViewport({ node, requiredNodeIds });
       if (shouldSkipCooking) continue;
 
       const cookDecision = this.cookState.shouldCook(node.id);
@@ -1724,21 +1729,6 @@ export class FBORenderer {
     });
   }
 
-  private getWebGLErrorName(errorCode: number): string {
-    const gl = this.gl;
-
-    const errorNames = new Map<number, string>([
-      [gl.INVALID_ENUM, 'INVALID_ENUM'],
-      [gl.INVALID_VALUE, 'INVALID_VALUE'],
-      [gl.INVALID_OPERATION, 'INVALID_OPERATION'],
-      [gl.INVALID_FRAMEBUFFER_OPERATION, 'INVALID_FRAMEBUFFER_OPERATION'],
-      [gl.OUT_OF_MEMORY, 'OUT_OF_MEMORY'],
-      [gl.CONTEXT_LOST_WEBGL, 'CONTEXT_LOST_WEBGL']
-    ]);
-
-    return errorNames.get(errorCode) ?? `UNKNOWN_${errorCode}`;
-  }
-
   private reportNodeRenderError(node: RenderNode, error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     const errorKey = `${node.type}:${message}`;
@@ -1825,6 +1815,39 @@ export class FBORenderer {
   setVisibleNodes(nodeIds: Set<string>) {
     this.visibleNodeIds = new Set(nodeIds);
     this.previewRenderer.setVisibleNodes(nodeIds);
+  }
+
+  private getViewportCookRequiredNodeIds(effectiveOutputNodeId: string | null): Set<string> | null {
+    const cached = this.viewportCookRequiredCache;
+
+    if (
+      cached &&
+      cached.renderGraph === this.renderGraph &&
+      cached.visibleNodeIds === this.visibleNodeIds &&
+      cached.connectedVideoOutputNodeIds === this.connectedVideoOutputNodeIds &&
+      cached.effectiveOutputNodeId === effectiveOutputNodeId
+    ) {
+      return cached.requiredNodeIds;
+    }
+
+    if (!this.renderGraph) return null;
+
+    const requiredNodeIds = getViewportCookRequiredNodeIds({
+      nodes: this.renderGraph.nodes,
+      visibleNodeIds: this.visibleNodeIds,
+      connectedVideoOutputNodeIds: this.connectedVideoOutputNodeIds,
+      effectiveOutputNodeId
+    });
+
+    this.viewportCookRequiredCache = {
+      renderGraph: this.renderGraph,
+      visibleNodeIds: this.visibleNodeIds,
+      connectedVideoOutputNodeIds: this.connectedVideoOutputNodeIds,
+      effectiveOutputNodeId,
+      requiredNodeIds
+    };
+
+    return requiredNodeIds;
   }
 
   /** Globally enable/disable all previews */

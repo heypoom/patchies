@@ -46,6 +46,32 @@ describe('GLSystem', () => {
     );
   });
 
+  it('does not send internal FBO video edges as external output node ids', () => {
+    const glSystem = new GLSystem();
+    const worker = glSystem.renderWorker as unknown as { postMessage: ReturnType<typeof vi.fn> };
+
+    glSystem.upsertNode('hydra-1', 'hydra', { code: '' });
+    glSystem.upsertNode('glsl-1', 'glsl', { code: '', glUniformDefs: [] });
+    worker.postMessage.mockClear();
+
+    glSystem.updateEdges([
+      {
+        id: 'edge-1',
+        source: 'hydra-1',
+        target: 'glsl-1',
+        sourceHandle: 'video-out',
+        targetHandle: 'video-in-0'
+      }
+    ]);
+
+    expect(worker.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'buildRenderGraph',
+        connectedVideoOutputNodeIds: []
+      })
+    );
+  });
+
   it('does not resubscribe unchanged video channel nodes', () => {
     const glSystem = new GLSystem();
     const registry = VideoChannelRegistry.getInstance();
