@@ -48,6 +48,22 @@ describe('createRenderNodeCookPolicy', () => {
     );
   });
 
+  it('uses Shader Park dependency policies', () => {
+    expect(
+      createRenderNodeCookPolicy(renderNode('shaderpark', { code: 'sphere(0.7);' }), baseGraph)
+    ).toEqual(ON_DEMAND);
+
+    expect(
+      createRenderNodeCookPolicy(
+        renderNode('shaderpark', { code: 'sphere(0.5 + sin(time));' }),
+        baseGraph
+      )
+    ).toEqual({
+      mode: 'on-demand',
+      timeDependent: true
+    });
+  });
+
   it('preserves feedback dependency for on-demand passthrough nodes', () => {
     const node = renderNode('send.vdo', { channel: 'main' });
 

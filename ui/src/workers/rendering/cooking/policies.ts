@@ -3,6 +3,7 @@ import type { RenderGraph, RenderNode } from '$lib/rendering/types';
 import type { CookPolicy } from '../CookStateManager';
 import { createGlslCookPolicy } from './glsl';
 import { createHydraCookPolicy } from './hydra';
+import { createShaderParkCookPolicy } from './shaderpark';
 
 export function createRenderNodeCookPolicy(node: RenderNode, renderGraph: RenderGraph): CookPolicy {
   const feedbackDependent =
@@ -15,6 +16,10 @@ export function createRenderNodeCookPolicy(node: RenderNode, renderGraph: Render
     }))
     .with({ type: 'hydra' }, (node) => ({
       ...createHydraCookPolicy(node.data.code),
+      ...(feedbackDependent ? { feedbackDependent: true } : {})
+    }))
+    .with({ type: 'shaderpark' }, (node) => ({
+      ...createShaderParkCookPolicy(node.data.code, { renderMode: node.data.renderMode }),
       ...(feedbackDependent ? { feedbackDependent: true } : {})
     }))
     .with(

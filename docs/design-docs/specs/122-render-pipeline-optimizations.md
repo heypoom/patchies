@@ -198,7 +198,7 @@ The first implementation should be conservative:
 | Type                             | Initial cook mode                                     | Notes                                                                              |
 | -------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `glsl`                           | `on-demand` when no dynamic dependencies are detected | First supported node type                                                          |
-| `shaderpark`                     | `always` initially                                    | Can opt in after uniform/time/mouse handling is audited                            |
+| `shaderpark`                     | `on-demand` when no dynamic dependencies are detected | Time, mouse, 3D orbit, input, uniform, and feedback dependencies cook as needed     |
 | `hydra`                          | `on-demand` for static/input-only code                | Animated generators, custom functions, callbacks, mouse, and datamosh stay dynamic |
 | `three`                          | `always` initially                                    | JS code can access time and mutate scenes implicitly                               |
 | `regl`                           | `always` initially                                    | JS code can hide dependencies                                                      |
