@@ -428,6 +428,9 @@ export class GLSystem {
         // @ts-expect-error -- fix me
         this.eventBus.dispatch(data);
       })
+      .with({ type: 'cookStatus' }, (data) => {
+        this.eventBus.dispatch(data);
+      })
       .with(P.union({ type: 'fftEnabled' }, { type: 'registerFFTRequest' }), (data) => {
         // @ts-expect-error -- fix me
         this.audioAnalysis.handleRenderWorkerMessage(data);

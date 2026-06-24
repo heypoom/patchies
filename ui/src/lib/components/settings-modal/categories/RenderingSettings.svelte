@@ -6,6 +6,7 @@
   import {
     previewBackgroundColor,
     renderFpsCap,
+    showCookStats,
     type FpsCap
   } from '../../../../stores/renderer.store';
   import { useWebCodecs, showVideoStats } from '../../../../stores/video.store';
@@ -105,6 +106,10 @@
 
 <SettingRow title="Show video stats" description="Overlay video decoding statistics">
   <SettingToggle checked={$showVideoStats} onchange={(v) => showVideoStats.set(v)} />
+</SettingRow>
+
+<SettingRow title="Show cook stats" description="Overlay render cook status on video previews">
+  <SettingToggle checked={$showCookStats} onchange={(v) => showCookStats.set(v)} />
 </SettingRow>
 
 <SettingRow

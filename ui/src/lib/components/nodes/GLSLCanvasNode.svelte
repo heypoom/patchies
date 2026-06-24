@@ -9,6 +9,7 @@
   import { messages } from '$lib/objects/schemas/common';
   import { GLSystem, type UserUniformValue } from '$lib/canvas/GLSystem';
   import { outputSize, previewWidth, previewHeight } from '../../../stores/renderer.store';
+  import { showCookStats } from '../../../stores/renderer.store';
   import { toGLValue } from '$workers/rendering/glUniformUtils';
   import { CanvasMouseHandler } from '$lib/canvas/CanvasMouseHandler';
   import {
@@ -25,8 +26,13 @@
   import CanvasPreviewLayout from '$lib/components/CanvasPreviewLayout.svelte';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
-  import type { ConsoleOutputEvent, PrimaryButton } from '$lib/eventbus/events';
+  import type {
+    ConsoleOutputEvent,
+    CookStatusUpdateEvent,
+    PrimaryButton
+  } from '$lib/eventbus/events';
   import type { FBOFormat, FBOResolution } from '$lib/rendering/types';
+  import type { RenderCookStatus } from '$lib/rendering/types';
 
   let {
     id: nodeId,
@@ -66,6 +72,7 @@
   let consoleRef = $state<{ clearConsole: () => void } | null>(null);
   let shaderName = $state<string | undefined>(parseShaderName(data.code || ''));
   let lineErrors: Record<number, string[]> | undefined = $state(undefined);
+  let cookStatus = $state<RenderCookStatus | undefined>(undefined);
 
   const code = $derived(data.code || '');
   const uniformsSchema = $derived(uniformDefsToSettingsSchema(data.glUniformDefs ?? []));
@@ -325,6 +332,26 @@
     };
   });
 
+  $effect(() => {
+    const handleCookStatus = (event: CookStatusUpdateEvent) => {
+      if (event.nodeId !== nodeId) return;
+
+      cookStatus = {
+        status: event.status,
+        cookedFrames: event.cookedFrames,
+        cachedFrames: event.cachedFrames,
+        lastCookTimeMs: event.lastCookTimeMs,
+        lastCookReasons: event.lastCookReasons
+      };
+    };
+
+    eventBus.addEventListener('cookStatus', handleCookStatus);
+
+    return () => {
+      eventBus.removeEventListener('cookStatus', handleCookStatus);
+    };
+  });
+
   onMount(() => {
     glSystem = GLSystem.getInstance();
 
@@ -374,6 +401,9 @@
   settingsValues={uniformValues}
   onSettingsValueChange={handleUniformValueChange}
   onSettingsRevertAll={handleUniformRevertAll}
+  showCookDebugOption={$showCookStats}
+  cookDebugVisible={$showCookStats}
+  {cookStatus}
 >
   {#snippet topHandle()}
     {#each visibleUniformInlets as { def, uniformIndex }, visibleIndex (uniformIndex)}
