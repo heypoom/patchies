@@ -1785,7 +1785,11 @@ export class FBORenderer {
    * This introduces 1 frame of latency but eliminates GPU stalls (~3ms per read).
    */
   renderPreviewBitmaps(): Map<string, ImageBitmap> {
-    return this.previewRenderer.renderPreviewBitmaps(this.fboNodes, this.isOutputEnabled);
+    return this.previewRenderer.renderPreviewBitmaps(
+      this.fboNodes,
+      this.isOutputEnabled,
+      this.cookState.getCookedNodeIdsThisFrame()
+    );
   }
 
   /** Set which nodes are visible in the viewport for preview culling */

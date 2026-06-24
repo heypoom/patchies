@@ -53,6 +53,7 @@ export class PreviewRenderer {
   // PBO async read state
   private pendingReads: PendingRead[] = [];
   private pendingNodeIds: Set<string> = new Set(); // Track nodes with in-flight reads
+  private previewNeedsInitialRead = new Set<string>();
 
   constructor(service: PixelReadbackService) {
     this.service = service;
@@ -60,7 +61,15 @@ export class PreviewRenderer {
   }
 
   setPreviewEnabled(nodeId: string, enabled: boolean): void {
+    const wasEnabled = this.previewState[nodeId] ?? false;
+
     this.previewState[nodeId] = enabled;
+
+    if (enabled && !wasEnabled) {
+      this.previewNeedsInitialRead.add(nodeId);
+    } else if (!enabled) {
+      this.previewNeedsInitialRead.delete(nodeId);
+    }
   }
 
   setPreviewFpsCap(fps: number): void {
@@ -125,7 +134,8 @@ export class PreviewRenderer {
    */
   renderPreviewBitmaps(
     fboNodes: Map<string, FBONode>,
-    isOutputEnabled: boolean
+    isOutputEnabled: boolean,
+    freshNodeIds?: ReadonlySet<string>
   ): Map<string, ImageBitmap> {
     const results = this.frameResults;
     results.clear();
@@ -156,6 +166,9 @@ export class PreviewRenderer {
     const nodesToRead = this.selectNodesForFrame(enabledPreviews, maxLimit);
 
     for (const nodeId of nodesToRead) {
+      const needsInitialRead = this.previewNeedsInitialRead.has(nodeId);
+      if (freshNodeIds && !freshNodeIds.has(nodeId) && !needsInitialRead) continue;
+
       // Skip if this node already has a pending read
       if (this.pendingNodeIds.has(nodeId)) continue;
 
@@ -183,6 +196,7 @@ export class PreviewRenderer {
           : [previewWidth, previewHeight];
 
       this.initiateAsyncRead(nodeId, fboNode.framebuffer, readbackSize, fboSize);
+      this.previewNeedsInitialRead.delete(nodeId);
     }
 
     return results;

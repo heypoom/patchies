@@ -249,6 +249,8 @@ for (const nodeId of sortedNodes) {
 
 Uniform, mouse, FFT, bitmap, and float texture updates should mark the affected node dirty immediately when the worker receives the update message. Graph rebuilds and FBO reallocations should mark affected nodes dirty with `config`, `output-size`, or `first-frame`.
 
+Preview readback should follow the same freshness signal. A node preview may harvest an already-started async read, but it should only initiate a new GPU readback for nodes that cooked in the current frame. Newly enabled previews should also get one initial read so previews do not stay blank if the node cooked before the preview canvas was ready. After that, cached nodes keep displaying the previous preview bitmap until their FBO changes again.
+
 ### Feedback Loops
 
 Feedback nodes need special handling. A feedback loop can evolve even when the shader does not use `iTime`, because the previous-frame texture is itself state. If a node reads a back-edge input, mark it dirty when the source feedback texture advanced on the previous frame.

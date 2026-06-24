@@ -3,6 +3,7 @@ import { getHtmlCanvasRootClass, HtmlCanvasNodeOutput } from './html-canvas-node
 import type { HtmlCanvasNodeOutputState } from './html-canvas-node-output';
 import { HtmlGlslLayerNodeOutput } from './html-glsl-layer-node-output';
 import { HtmlLayerNodeOutput } from './html-layer-node-output';
+import { createMockWebGL2Context } from '$lib/test-utils/mockWebGL';
 
 describe('HtmlCanvasNodeOutput', () => {
   it('chooses root sizing classes for output and free modes', () => {
@@ -91,60 +92,10 @@ describe('HtmlGlslLayerNodeOutput', () => {
     const transform = { toString: () => 'matrix(1, 0, 0, 1, 0, 0)' };
     const calls: string[] = [];
 
-    const gl = {
-      TEXTURE_2D: 3553,
-      RGBA: 6408,
-      UNSIGNED_BYTE: 5121,
-      TRIANGLES: 4,
-      ARRAY_BUFFER: 34962,
-      STATIC_DRAW: 35044,
-      FLOAT: 5126,
-      TEXTURE0: 33984,
-      COLOR_BUFFER_BIT: 16384,
-      CLAMP_TO_EDGE: 33071,
-      LINEAR: 9729,
-      TEXTURE_MIN_FILTER: 10241,
-      TEXTURE_MAG_FILTER: 10240,
-      TEXTURE_WRAP_S: 10242,
-      TEXTURE_WRAP_T: 10243,
-      VERTEX_SHADER: 35633,
-      FRAGMENT_SHADER: 35632,
-      COMPILE_STATUS: true,
-      LINK_STATUS: true,
-      UNPACK_FLIP_Y_WEBGL: 37440,
-      createTexture: vi.fn(() => ({})),
-      bindTexture: vi.fn(),
-      texParameteri: vi.fn(),
-      pixelStorei: vi.fn(),
-      createShader: vi.fn(() => ({})),
-      shaderSource: vi.fn(),
-      compileShader: vi.fn(),
-      getShaderParameter: vi.fn(() => true),
-      getShaderInfoLog: vi.fn(() => ''),
-      createProgram: vi.fn(() => ({})),
-      attachShader: vi.fn(),
-      linkProgram: vi.fn(),
-      getProgramParameter: vi.fn(() => true),
-      getProgramInfoLog: vi.fn(() => ''),
-      createBuffer: vi.fn(() => ({})),
-      bindBuffer: vi.fn(),
-      bufferData: vi.fn(),
-      getAttribLocation: vi.fn(() => 0),
-      enableVertexAttribArray: vi.fn(),
-      vertexAttribPointer: vi.fn(),
-      getUniformLocation: vi.fn((_: unknown, name: string) => ({ name })),
-      viewport: vi.fn(),
-      clear: vi.fn(),
-      useProgram: vi.fn(),
-      activeTexture: vi.fn(),
-      uniform1i: vi.fn(),
-      uniform1f: vi.fn(),
-      uniform1ui: vi.fn(),
-      uniform3f: vi.fn(),
+    const gl = createMockWebGL2Context({
       drawArrays: vi.fn(() => calls.push('drawArrays')),
-      texElementImage2D: vi.fn(() => calls.push('texElementImage2D')),
-      getExtension: vi.fn()
-    };
+      texElementImage2D: vi.fn(() => calls.push('texElementImage2D'))
+    });
 
     const attributes = new Map<string, string>();
     const requestPaint = vi.fn();
@@ -235,58 +186,7 @@ describe('HtmlGlslLayerNodeOutput', () => {
   });
 
   it('resolves #include directives before compiling the GLSL layer shader', async () => {
-    const gl = {
-      TEXTURE_2D: 3553,
-      RGBA: 6408,
-      UNSIGNED_BYTE: 5121,
-      TRIANGLES: 4,
-      ARRAY_BUFFER: 34962,
-      STATIC_DRAW: 35044,
-      FLOAT: 5126,
-      TEXTURE0: 33984,
-      COLOR_BUFFER_BIT: 16384,
-      CLAMP_TO_EDGE: 33071,
-      LINEAR: 9729,
-      TEXTURE_MIN_FILTER: 10241,
-      TEXTURE_MAG_FILTER: 10240,
-      TEXTURE_WRAP_S: 10242,
-      TEXTURE_WRAP_T: 10243,
-      VERTEX_SHADER: 35633,
-      FRAGMENT_SHADER: 35632,
-      COMPILE_STATUS: true,
-      LINK_STATUS: true,
-      UNPACK_FLIP_Y_WEBGL: 37440,
-      createTexture: vi.fn(() => ({})),
-      bindTexture: vi.fn(),
-      texParameteri: vi.fn(),
-      pixelStorei: vi.fn(),
-      createShader: vi.fn(() => ({})),
-      shaderSource: vi.fn(),
-      compileShader: vi.fn(),
-      getShaderParameter: vi.fn(() => true),
-      getShaderInfoLog: vi.fn(() => ''),
-      createProgram: vi.fn(() => ({})),
-      attachShader: vi.fn(),
-      linkProgram: vi.fn(),
-      getProgramParameter: vi.fn(() => true),
-      getProgramInfoLog: vi.fn(() => ''),
-      createBuffer: vi.fn(() => ({})),
-      bindBuffer: vi.fn(),
-      bufferData: vi.fn(),
-      getAttribLocation: vi.fn(() => 0),
-      enableVertexAttribArray: vi.fn(),
-      vertexAttribPointer: vi.fn(),
-      getUniformLocation: vi.fn((_: unknown, name: string) => ({ name })),
-      viewport: vi.fn(),
-      clear: vi.fn(),
-      useProgram: vi.fn(),
-      activeTexture: vi.fn(),
-      uniform1i: vi.fn(),
-      uniform1f: vi.fn(),
-      uniform3f: vi.fn(),
-      drawArrays: vi.fn(),
-      texElementImage2D: vi.fn()
-    };
+    const gl = createMockWebGL2Context();
 
     const canvas = {
       width: 0,

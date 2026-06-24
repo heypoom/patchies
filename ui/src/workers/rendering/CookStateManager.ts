@@ -66,6 +66,7 @@ export class CookStateManager {
   private nodes = new Map<string, NodeState>();
   private outputsByNode = new Map<string, string[]>();
   private frameContext: CookFrameContext = DEFAULT_FRAME_CONTEXT;
+  private cookedNodeIdsThisFrame = new Set<string>();
 
   registerNode(nodeId: string, policy: CookPolicy): void {
     const existing = this.nodes.get(nodeId);
@@ -97,6 +98,7 @@ export class CookStateManager {
 
   beginFrame(context: CookFrameContext): void {
     this.frameContext = context;
+    this.cookedNodeIdsThisFrame.clear();
   }
 
   markDirty(nodeId: string, reason: CookReason): void {
@@ -116,6 +118,7 @@ export class CookStateManager {
     state.lastCookTimeMs = cookTimeMs;
     state.lastCookReasons = reasons;
     state.dirtyReasons.clear();
+    this.cookedNodeIdsThisFrame.add(nodeId);
 
     for (const downstreamNodeId of this.outputsByNode.get(nodeId) ?? []) {
       this.markDirty(downstreamNodeId, 'input');
@@ -182,6 +185,10 @@ export class CookStateManager {
       lastCookTimeMs: state.lastCookTimeMs,
       lastCookReasons: state.lastCookReasons
     };
+  }
+
+  getCookedNodeIdsThisFrame(): ReadonlySet<string> {
+    return this.cookedNodeIdsThisFrame;
   }
 
   private isTimeDependentCookNeeded(policy: CookPolicy): boolean {
