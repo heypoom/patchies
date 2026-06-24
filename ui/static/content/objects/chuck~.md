@@ -1,20 +1,27 @@
 [ChucK](https://chuck.cs.princeton.edu) is a programming language for
-real-time sound synthesis and music creation.
+real-time sound synthesis and music creation. Great for algorithmic composition and sound design.
+Runs via [WebChucK](https://chuck.cs.princeton.edu/webchuck).
 
 ![Patchies ChucK demo](/content/images/chuck-demo.webp)
 
 > Try this patch [in the app](/?id=2nyuznzjgbp2j0a)!
 > From @dtinth's [ChucK experiments](https://dt.in.th/ChucKSong4).
 
-Great for algorithmic composition and sound design. Runs via
-[WebChucK](https://chuck.cs.princeton.edu/webchuck/).
+## Getting Started
 
-## Presets
+Try this ChucK code for outputting oscillator with a low-pass filter.
 
-Enable the **ChucK Demos** preset pack to browse curated ChucK examples.
-The pack includes playable starting points for FM tones, Shepard tones,
-plucked strings, modal mallets, chorus pads, vocal synthesis, and noise
-textures.
+```chuck
+SinOsc osc => LPF filter => dac;
+
+220 => osc.freq;
+50 => filter.freq;
+1.0 => filter.Q;
+
+while (true) {
+  1::second => now;
+}
+```
 
 ## Actions
 
@@ -24,20 +31,25 @@ textures.
 - **Expand Editor**: opens the ChucK code in the detached overlay editor
 - **Gear button**: see running shreds, remove any with "x"
 
+## Console Output
+
+ChucK's `<<<` print statements are emitted as raw strings
+from the message outlet.
+
+## Presets
+
+Enable the **ChucK Demos** preset pack to browse curated ChucK examples.
+The pack includes playable starting points for FM tones, Shepard tones,
+plucked strings, modal mallets, chorus pads, vocal synthesis, and noise
+textures.
+
 ## Audio Input
 
-ChucK accepts audio input for processing:
+ChucK accepts audio input for processing and analysis:
 
 ```chuck
 adc => PitShift p => dac;
 ```
-
-## FFT Analysis
-
-![Patchies ChucK FFT demo](/content/images/chuck-fft.webp)
-
-Use ChucK for audio analysis and applying filters - it receives audio inputs
-and can emit events and global variables.
 
 ## Global Variables
 
@@ -47,10 +59,12 @@ variables let you control ChucK programs with Patchies messages.
 Declare variables with `global` (e.g. `global int bpm`) and re-compute
 dependent variables in a loop.
 
-## Console Output
+## FFT Analysis
 
-ChucK's `<<<` print statements are emitted as raw strings from the message
-outlet.
+![Patchies ChucK FFT demo](/content/images/chuck-fft.webp)
+
+Use ChucK for audio analysis and applying filters - it receives audio inputs
+and can emit events and global variables.
 
 ## See Also
 
