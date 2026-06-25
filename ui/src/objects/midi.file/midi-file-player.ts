@@ -51,7 +51,7 @@ export interface MidiFilePlayerOptions {
 export class MidiFilePlayer {
   private file: ParsedMidiFile | null = null;
   private timers = new Set<ReturnType<typeof setTimeout>>();
-  private activeNotes = new Map<string, { note: number; channel: number }>();
+  private activeNotes = new Map<string, { note: number; channel: number; count: number }>();
   private startedAtMs = 0;
   private startPositionSeconds = 0;
   private _positionSeconds = 0;
@@ -85,6 +85,7 @@ export class MidiFilePlayer {
       trackCount: file.trackCount,
       ppq: file.ppq
     });
+    this.sendPosition();
   }
 
   play(): void {
@@ -95,6 +96,7 @@ export class MidiFilePlayer {
     this.startPositionSeconds = this._positionSeconds;
     this._playState = 'playing';
     this.scheduleFrom(this._positionSeconds);
+    this.sendPosition();
   }
 
   pause(): void {
@@ -104,6 +106,7 @@ export class MidiFilePlayer {
     this._playState = 'paused';
     this.clearTimers();
     this.flushActiveNotes();
+    this.sendPosition();
   }
 
   stop(): void {
@@ -112,6 +115,7 @@ export class MidiFilePlayer {
     this._positionSeconds = 0;
     this.startPositionSeconds = 0;
     this._playState = 'stopped';
+    this.sendPosition();
   }
 
   seek(seconds: number): void {
@@ -125,6 +129,8 @@ export class MidiFilePlayer {
       this.startedAtMs = Date.now();
       this.scheduleFrom(this._positionSeconds);
     }
+
+    this.sendPosition();
   }
 
   destroy(): void {
@@ -170,15 +176,19 @@ export class MidiFilePlayer {
 
   private sendScheduledMessage(message: MidiFileOutputMessage): void {
     if (message.type === 'noteOn' && message.velocity > 0) {
-      this.activeNotes.set(noteKey(message.channel, message.note), {
+      const key = noteKey(message.channel, message.note);
+      const activeNote = this.activeNotes.get(key);
+
+      this.activeNotes.set(key, {
         channel: message.channel,
-        note: message.note
+        note: message.note,
+        count: (activeNote?.count ?? 0) + 1
       });
     } else if (
       message.type === 'noteOff' ||
       (message.type === 'noteOn' && message.velocity === 0)
     ) {
-      if ('note' in message) this.activeNotes.delete(noteKey(message.channel, message.note));
+      if ('note' in message) this.releaseActiveNote(message.channel, message.note);
     }
 
     this.options.send(message);
@@ -194,11 +204,13 @@ export class MidiFilePlayer {
       this.startedAtMs = Date.now();
       this.startPositionSeconds = 0;
       this.scheduleFrom(0);
+      this.sendPosition();
       return;
     }
 
     this._positionSeconds = this.file.durationSeconds;
     this._playState = 'stopped';
+    this.sendPosition();
     this.options.send({ type: 'ended' });
   }
 
@@ -210,10 +222,37 @@ export class MidiFilePlayer {
   }
 
   private flushActiveNotes(): void {
-    for (const { note, channel } of this.activeNotes.values()) {
-      this.options.send({ type: 'noteOff', note, velocity: 0, channel });
+    for (const { note, channel, count } of this.activeNotes.values()) {
+      for (let i = 0; i < count; i++) {
+        this.options.send({ type: 'noteOff', note, velocity: 0, channel });
+      }
     }
     this.activeNotes.clear();
+  }
+
+  private releaseActiveNote(channel: number, note: number): void {
+    const key = noteKey(channel, note);
+    const activeNote = this.activeNotes.get(key);
+
+    if (!activeNote) return;
+
+    if (activeNote.count <= 1) {
+      this.activeNotes.delete(key);
+      return;
+    }
+
+    this.activeNotes.set(key, { ...activeNote, count: activeNote.count - 1 });
+  }
+
+  private sendPosition(): void {
+    if (!this.file) return;
+
+    const seconds = this.positionSeconds;
+    this.options.send({
+      type: 'position',
+      seconds,
+      progress: this.file.durationSeconds > 0 ? seconds / this.file.durationSeconds : 0
+    });
   }
 }
 

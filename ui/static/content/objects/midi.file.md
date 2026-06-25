@@ -24,7 +24,7 @@ distinguished by their `type`.
 - **Apply tempo to transport** applies the file's initial tempo on playback from the start
 - **Apply time signature** applies the file's initial time signature on playback from the start
 - **Sync to transport** lets the global transport play, pause, and stop the node
-- **Emit meta events** sends tempo, time-signature, key, and track-name messages
+- **Emit meta events** sends `tempo`, `timeSignature`, `keySignature`, and `trackName` messages
 - **Loop** restarts playback at the end
 
 ## See Also

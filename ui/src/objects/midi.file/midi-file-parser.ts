@@ -212,6 +212,10 @@ function normalizeMidiChunks(bytes: Uint8Array): Uint8Array {
     throw new Error('Invalid MIDI file: missing MThd header');
   }
 
+  if (header.data.length < 6) {
+    throw new Error('Invalid MIDI file: malformed MThd header');
+  }
+
   const declaredTrackCount = readUint16(header.data, 2);
   const chunks: Array<{ id: string; data: Uint8Array }> = [{ id: header.id, data: header.data }];
 

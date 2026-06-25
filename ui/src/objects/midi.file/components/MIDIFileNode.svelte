@@ -11,6 +11,7 @@
   import { parseMidiFileLoadInput, type MidiFileLoadInput } from '../midi-file-load-input';
   import { parseMidiFile } from '../midi-file-parser';
   import { MidiFilePlayer, type ParsedMidiFile } from '../midi-file-player';
+  import { midiTicksToSeconds } from '../midi-file-time';
   import { midiFileSchema } from '../schema';
   import { Transport } from '$lib/transport';
   import { VirtualFilesystem } from '$lib/vfs';
@@ -36,11 +37,13 @@
   let {
     id: nodeId,
     data,
-    selected
+    selected,
+    class: className = ''
   }: {
     id: string;
     data: MidiFileNodeData;
     selected: boolean;
+    class?: string;
   } = $props();
 
   const { updateNodeData } = useSvelteFlow();
@@ -71,8 +74,8 @@
   const firstTempo = $derived(parsedFile?.tempos[0]?.bpm);
   const firstTimeSignature = $derived(parsedFile?.timeSignatures[0]);
   const borderColor = $derived.by(() => {
-    if (errorMessage) return 'border-red-500';
-    if (!hasFile) return 'border-amber-500';
+    if (errorMessage) return 'border-zinc-300';
+    if (!hasFile) return 'border-zinc-500';
     if (selected) return 'border-zinc-400';
     return 'border-zinc-600';
   });
@@ -80,7 +83,7 @@
   const handleMessage: MessageCallbackFn = async (message) => {
     const loadInput = parseMidiFileLoadInput(message);
     if (loadInput) {
-      await loadParsedInput(loadInput);
+      await loadParsedInput(loadInput).catch(handleError);
       return;
     }
 
@@ -105,9 +108,9 @@
       const beats = typeof message.beats === 'number' ? message.beats : undefined;
 
       if (seconds !== undefined) seek(seconds);
-      else if (ticks !== undefined && parsedFile) seek(ticksToSeconds(ticks, parsedFile));
+      else if (ticks !== undefined && parsedFile) seek(midiTicksToSeconds(ticks, parsedFile));
       else if (beats !== undefined && parsedFile)
-        seek(ticksToSeconds(beats * parsedFile.ppq, parsedFile));
+        seek(midiTicksToSeconds(beats * parsedFile.ppq, parsedFile));
       return;
     }
 
@@ -138,13 +141,15 @@
   }
 
   async function loadFile(file: File): Promise<void> {
-    const vfsPath = await vfs.storeFile(file);
-    updateNodeData(nodeId, { ...data, vfsPath, fileName: file.name, fileData: undefined });
-    await loadFromFile(file, { vfsPath });
+    try {
+      const vfsPath = await vfs.storeFile(file);
+      await loadFromFile(file, { vfsPath });
+    } catch (error) {
+      handleError(error);
+    }
   }
 
   async function loadFromVfsPath(vfsPath: string): Promise<void> {
-    updateNodeData(nodeId, { ...data, vfsPath, fileData: undefined });
     const fileOrBlob = await vfs.resolve(vfsPath);
     const file =
       fileOrBlob instanceof File
@@ -166,15 +171,19 @@
   }
 
   async function loadInlineBytes(fileName: string, bytes: Uint8Array): Promise<void> {
-    const parsed = parseMidiFile(bytes, fileName);
-    setParsedFile(parsed);
-    updateNodeData(nodeId, {
-      ...data,
-      fileName,
-      fileData: bytesToBase64(bytes),
-      vfsPath: undefined,
-      ...metadataForNode(parsed)
-    });
+    try {
+      const parsed = parseMidiFile(bytes, fileName);
+      setParsedFile(parsed);
+      updateNodeData(nodeId, {
+        ...data,
+        fileName,
+        fileData: bytesToBase64(bytes),
+        vfsPath: undefined,
+        ...metadataForNode(parsed)
+      });
+    } catch (error) {
+      handleError(error);
+    }
   }
 
   async function loadFromFile(file: File, source: { vfsPath?: string } = {}): Promise<void> {
@@ -250,6 +259,7 @@
   function syncStateFromPlayer(): void {
     positionSeconds = player.positionSeconds;
     playState = player.playState;
+    sendPosition();
     updateNodeData(nodeId, {
       ...data,
       positionSeconds,
@@ -262,6 +272,7 @@
     positionTimer = setInterval(() => {
       positionSeconds = player.positionSeconds;
       playState = player.playState;
+      sendPosition();
       if (playState !== 'playing') stopPositionTimer();
     }, 100);
   }
@@ -295,7 +306,7 @@
   async function handleFileSelect(event: Event): Promise<void> {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
-    await loadFile(file);
+    await loadFile(file).catch(handleError);
     (event.target as HTMLInputElement).value = '';
   }
 
@@ -314,12 +325,12 @@
 
     const vfsPath = event.dataTransfer?.getData('application/x-vfs-path');
     if (vfsPath) {
-      await loadFromVfsPath(vfsPath);
+      await loadFromVfsPath(vfsPath).catch(handleError);
       return;
     }
 
     const file = event.dataTransfer?.files?.[0];
-    if (file) await loadFile(file);
+    if (file) await loadFile(file).catch(handleError);
   }
 
   function handleError(error: unknown): void {
@@ -346,9 +357,14 @@
     };
   }
 
-  function ticksToSeconds(ticks: number, file: ParsedMidiFile): number {
-    const event = file.events.find((event) => event.ticks >= ticks);
-    return event?.seconds ?? file.durationSeconds;
+  function sendPosition(): void {
+    if (!parsedFile) return;
+
+    messageContext?.send({
+      type: 'position',
+      seconds: positionSeconds,
+      progress: parsedFile.durationSeconds > 0 ? positionSeconds / parsedFile.durationSeconds : 0
+    });
   }
 
   function bytesToBase64(bytes: Uint8Array): string {
@@ -395,7 +411,7 @@
   });
 </script>
 
-<div class="relative flex gap-x-3">
+<div class={['relative flex gap-x-3', className]}>
   <div class="group relative">
     <div class="flex flex-col gap-2">
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -433,7 +449,7 @@
               class={[
                 'flex w-[260px] flex-col gap-3 rounded-xl border bg-zinc-900/95 px-4 py-3 text-zinc-300 shadow-xl',
                 borderColor,
-                isDragging ? 'bg-blue-950/30' : '',
+                isDragging ? 'bg-zinc-800/80' : '',
                 selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
               ]}
               ondragover={handleDragOver}
@@ -508,7 +524,7 @@
               class={[
                 'flex w-full cursor-pointer flex-col items-center justify-center rounded-md border bg-zinc-900 px-3 py-2 text-zinc-300 hover:bg-zinc-800',
                 borderColor,
-                isDragging ? 'bg-blue-950/30' : '',
+                isDragging ? 'bg-zinc-800/80' : '',
                 selected ? 'shadow-glow-md' : 'hover:shadow-glow-sm'
               ]}
               onclick={openFileDialog}
@@ -519,13 +535,13 @@
               <Upload class="mb-1 h-4 w-4" />
 
               <div class="text-[10px]">
-                <span class="text-amber-400">Load MIDI</span>
+                <span class="text-zinc-300">Load MIDI</span>
               </div>
             </button>
           {/if}
 
           {#if errorMessage}
-            <div class="mt-2 rounded border border-red-700 bg-red-900/20 p-2 text-xs text-red-400">
+            <div class="mt-2 rounded border border-zinc-600 bg-zinc-800 p-2 text-xs text-zinc-300">
               {errorMessage}
             </div>
           {/if}
@@ -633,7 +649,7 @@
   }
 
   .midi-seek:focus-visible {
-    outline: 2px solid rgb(16 185 129);
+    outline: 2px solid rgb(161 161 170);
     outline-offset: 4px;
     border-radius: 999px;
   }

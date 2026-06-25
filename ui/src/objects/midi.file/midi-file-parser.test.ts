@@ -69,6 +69,14 @@ function midiFile(trackBodies: number[] | number[][]): Uint8Array {
 }
 
 describe('parseMidiFile', () => {
+  it('rejects malformed header chunks shorter than the MIDI header body', () => {
+    const bytes = new Uint8Array(chunk('MThd', [0x00, 0x00, 0x00, 0x01]));
+
+    expect(() => parseMidiFile(bytes, 'malformed.mid')).toThrow(
+      'Invalid MIDI file: malformed MThd header'
+    );
+  });
+
   it('normalizes channel and meta events from a standard MIDI file', () => {
     const bytes = midiFile(
       track([

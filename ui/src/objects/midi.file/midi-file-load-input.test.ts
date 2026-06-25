@@ -32,10 +32,21 @@ describe('parseMidiFileLoadInput', () => {
       bytes: new Uint8Array([0x4d, 0x54])
     });
 
-    expect(parseMidiFileLoadInput(new Float32Array([0x4d, 0x54]), 'typed.mid')).toEqual({
+    expect(parseMidiFileLoadInput(new Uint8Array([0x4d, 0x54]), 'typed.mid')).toEqual({
       type: 'bytes',
       fileName: 'typed.mid',
       bytes: new Uint8Array([0x4d, 0x54])
+    });
+  });
+
+  it('preserves raw bytes from non-8-bit typed array views', () => {
+    const source = new Uint16Array([0x4d54, 0x6864]);
+    const input = parseMidiFileLoadInput(source, 'typed.mid');
+
+    expect(input).toEqual({
+      type: 'bytes',
+      fileName: 'typed.mid',
+      bytes: new Uint8Array(source.buffer, source.byteOffset, source.byteLength)
     });
   });
 });

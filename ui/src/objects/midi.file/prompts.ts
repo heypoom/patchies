@@ -14,6 +14,7 @@ Messages:
 - stop: stop and reset, flushing active notes
 - {type: 'seek', seconds: number}: seek in seconds
 - {type: 'loop', value: boolean}: set looping
+- {type: 'set', applyTempoToTransport?: boolean, applyTimeSignatureToTransport?: boolean, syncTransport?: boolean, outputMetaEvents?: boolean}: update playback settings
 - 'user://...': load an existing VFS MIDI file
 - 'https://...': load a remote MIDI file through VFS
 - Uint8Array, ArrayBuffer, or number[]: load raw MIDI bytes inline

@@ -5,8 +5,6 @@ export type MidiFileLoadInput =
   | { type: 'vfsPath'; vfsPath: string }
   | { type: 'bytes'; fileName: string; bytes: Uint8Array };
 
-type NumericArrayBufferView = ArrayBufferView & ArrayLike<number>;
-
 export function parseMidiFileLoadInput(
   value: unknown,
   fileName = 'midi file'
@@ -26,15 +24,6 @@ export function parseMidiFileLoadInput(
   }
 
   if (ArrayBuffer.isView(value)) {
-    if ('length' in value && typeof value.length === 'number') {
-      const numericView = value as unknown as NumericArrayBufferView;
-      return {
-        type: 'bytes',
-        fileName,
-        bytes: new Uint8Array(Array.from(numericView))
-      };
-    }
-
     return {
       type: 'bytes',
       fileName,
