@@ -1,47 +1,14 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { Bang } from './common';
-
-// MIDI message type schemas
-const NoteOn = Type.Object({
-  type: Type.Literal('noteOn'),
-  note: Type.Number(),
-  velocity: Type.Number(),
-  channel: Type.Optional(Type.Number())
-});
-
-const NoteOff = Type.Object({
-  type: Type.Literal('noteOff'),
-  note: Type.Number(),
-  velocity: Type.Optional(Type.Number()),
-  channel: Type.Optional(Type.Number())
-});
-
-const ControlChange = Type.Object({
-  type: Type.Literal('controlChange'),
-  control: Type.Number(),
-  value: Type.Number(),
-  channel: Type.Optional(Type.Number())
-});
-
-const ProgramChange = Type.Object({
-  type: Type.Literal('programChange'),
-  program: Type.Number(),
-  channel: Type.Optional(Type.Number())
-});
-
-const PitchBend = Type.Object({
-  type: Type.Literal('pitchBend'),
-  value: Type.Number(),
-  channel: Type.Optional(Type.Number())
-});
-
-const Raw = Type.Object({
-  type: Type.Literal('raw'),
-  data: Type.Array(Type.Number()),
-  deviceId: Type.Optional(Type.String()),
-  channel: Type.Optional(Type.Number())
-});
+import {
+  MidiControlChange,
+  MidiNoteOff,
+  MidiNoteOn,
+  MidiPitchBend,
+  MidiProgramChange,
+  MidiRaw
+} from './midi-messages';
 
 const MidiOutputEvent = Type.Union([
   Type.Literal('noteOn'),
@@ -93,12 +60,12 @@ export const midiOutSchema: ObjectSchema = {
       handle: { handleType: 'message' },
       messages: [
         { schema: Bang, description: 'Send the currently configured MIDI message' },
-        { schema: NoteOn, description: 'Send MIDI note on' },
-        { schema: NoteOff, description: 'Send MIDI note off' },
-        { schema: ControlChange, description: 'Send MIDI control change' },
-        { schema: ProgramChange, description: 'Send MIDI program change' },
-        { schema: PitchBend, description: 'Send MIDI pitch bend' },
-        { schema: Raw, description: 'Send raw MIDI bytes' },
+        { schema: MidiNoteOn, description: 'Send MIDI note on' },
+        { schema: MidiNoteOff, description: 'Send MIDI note off' },
+        { schema: MidiControlChange, description: 'Send MIDI control change' },
+        { schema: MidiProgramChange, description: 'Send MIDI program change' },
+        { schema: MidiPitchBend, description: 'Send MIDI pitch bend' },
+        { schema: MidiRaw, description: 'Send raw MIDI bytes' },
         { schema: SetMidiOutputConfig, description: 'Update output configuration' },
         { schema: SendMidiOutputConfig, description: 'Send an explicit MIDI output configuration' }
       ]

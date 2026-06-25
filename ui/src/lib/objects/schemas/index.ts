@@ -2,6 +2,7 @@ export * from './types';
 export * from './utils';
 export * from './helpers';
 export * from './common';
+export * from './midi-messages';
 export * from './trigger';
 export * from './p5';
 export * from './hydra';

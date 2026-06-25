@@ -1,52 +1,15 @@
 import { Type } from '@sinclair/typebox';
 import { Bang, Pause, Play, Stop } from '$lib/objects/schemas/common';
+import {
+  MidiChannelPressure,
+  MidiControlChange,
+  MidiNoteOff,
+  MidiNoteOn,
+  MidiPitchBend,
+  MidiPolyPressure,
+  MidiProgramChange
+} from '$lib/objects/schemas/midi-messages';
 import type { ObjectSchema } from '$lib/objects/schemas/types';
-
-const NoteOn = Type.Object({
-  type: Type.Literal('noteOn'),
-  note: Type.Number(),
-  velocity: Type.Number(),
-  channel: Type.Number()
-});
-
-const NoteOff = Type.Object({
-  type: Type.Literal('noteOff'),
-  note: Type.Number(),
-  velocity: Type.Number(),
-  channel: Type.Number()
-});
-
-const ControlChange = Type.Object({
-  type: Type.Literal('controlChange'),
-  control: Type.Number(),
-  value: Type.Number(),
-  channel: Type.Number()
-});
-
-const ProgramChange = Type.Object({
-  type: Type.Literal('programChange'),
-  program: Type.Number(),
-  channel: Type.Number()
-});
-
-const PitchBend = Type.Object({
-  type: Type.Literal('pitchBend'),
-  value: Type.Number(),
-  channel: Type.Number()
-});
-
-const ChannelPressure = Type.Object({
-  type: Type.Literal('channelPressure'),
-  pressure: Type.Number(),
-  channel: Type.Number()
-});
-
-const PolyPressure = Type.Object({
-  type: Type.Literal('polyPressure'),
-  note: Type.Number(),
-  pressure: Type.Number(),
-  channel: Type.Number()
-});
 
 const Seek = Type.Object({
   type: Type.Literal('seek'),
@@ -146,13 +109,13 @@ export const midiFileSchema: ObjectSchema = {
       description: 'MIDI channel messages and playback/meta status',
       handle: { handleType: 'message' },
       messages: [
-        { schema: NoteOn, description: 'MIDI note on' },
-        { schema: NoteOff, description: 'MIDI note off' },
-        { schema: ControlChange, description: 'MIDI control change' },
-        { schema: ProgramChange, description: 'MIDI program change' },
-        { schema: PitchBend, description: 'MIDI pitch bend' },
-        { schema: ChannelPressure, description: 'MIDI channel pressure' },
-        { schema: PolyPressure, description: 'MIDI poly pressure' },
+        { schema: MidiNoteOn, description: 'MIDI note on' },
+        { schema: MidiNoteOff, description: 'MIDI note off' },
+        { schema: MidiControlChange, description: 'MIDI control change' },
+        { schema: MidiProgramChange, description: 'MIDI program change' },
+        { schema: MidiPitchBend, description: 'MIDI pitch bend' },
+        { schema: MidiChannelPressure, description: 'MIDI channel pressure' },
+        { schema: MidiPolyPressure, description: 'MIDI poly pressure' },
         { schema: Loaded, description: 'Sent when a MIDI file loads' },
         { schema: Position, description: 'Playback position status' },
         { schema: Ended, description: 'Sent when playback reaches the end' },

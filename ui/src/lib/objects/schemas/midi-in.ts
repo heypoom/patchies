@@ -1,41 +1,13 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { Bang, Stop } from './common';
-
-// MIDI message type schemas
-const NoteOn = Type.Object({
-  type: Type.Literal('noteOn'),
-  note: Type.Number(),
-  velocity: Type.Number(),
-  channel: Type.Number()
-});
-
-const NoteOff = Type.Object({
-  type: Type.Literal('noteOff'),
-  note: Type.Number(),
-  velocity: Type.Number(),
-  channel: Type.Number()
-});
-
-const ControlChange = Type.Object({
-  type: Type.Literal('controlChange'),
-  control: Type.Number(),
-  value: Type.Number(),
-  channel: Type.Number()
-});
-
-const ProgramChange = Type.Object({
-  type: Type.Literal('programChange'),
-  program: Type.Number(),
-  channel: Type.Number()
-});
-
-const PitchBend = Type.Object({
-  type: Type.Literal('pitchBend'),
-  value: Type.Number(),
-  control: Type.Number(),
-  channel: Type.Number()
-});
+import {
+  MidiControlChange,
+  MidiNoteOff,
+  MidiNoteOn,
+  MidiPitchBend,
+  MidiProgramChange
+} from './midi-messages';
 
 const MidiInputEventType = Type.Union([
   Type.Literal('noteOn'),
@@ -77,11 +49,11 @@ export const midiInSchema: ObjectSchema = {
       description: 'MIDI messages from connected devices',
       handle: { handleType: 'message' },
       messages: [
-        { schema: NoteOn, description: 'MIDI note on message' },
-        { schema: NoteOff, description: 'MIDI note off message' },
-        { schema: ControlChange, description: 'MIDI control change message' },
-        { schema: ProgramChange, description: 'MIDI program change message' },
-        { schema: PitchBend, description: 'MIDI pitch bend message' }
+        { schema: MidiNoteOn, description: 'MIDI note on message' },
+        { schema: MidiNoteOff, description: 'MIDI note off message' },
+        { schema: MidiControlChange, description: 'MIDI control change message' },
+        { schema: MidiProgramChange, description: 'MIDI program change message' },
+        { schema: MidiPitchBend, description: 'MIDI pitch bend message' }
       ]
     }
   ],
