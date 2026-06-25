@@ -20,7 +20,6 @@
   import { defaultEditorLayout } from '../../../stores/editor-layout-settings.store';
   import { openEditorLayout } from '$lib/code-editor/open-editor-layout';
   import { editorFontFamily } from '../../../stores/editor.store';
-  import { shouldShowSimpleDspAudioInput } from '$lib/audio/visible-audio-inputs';
 
   let {
     nodeId,
@@ -78,7 +77,7 @@
   const messageInletCount = $derived(data.messageInletCount || 0);
   const messageOutletCount = $derived(data.messageOutletCount || 0);
   const displayTitle = $derived(data.title || nodeName);
-  const showAudioInput = $derived(shouldShowSimpleDspAudioInput(data.showAudioInput, code));
+  const showAudioInput = $derived(data.showAudioInput ?? true);
   const visibleInletCount = $derived((showAudioInput ? 1 : 0) + messageInletCount);
 
   const isCodeEditorDetached = $derived(

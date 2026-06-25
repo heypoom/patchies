@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getInitialSimpleDspAudioInputVisibility,
+  getRunSimpleDspAudioInputVisibility,
   hasChuckAdcReference,
-  hasNoAudioInputDirective,
-  shouldShowSimpleDspAudioInput
+  hasNoAudioInputDirective
 } from './visible-audio-inputs';
 
 describe('visible audio input helpers', () => {
@@ -27,9 +28,15 @@ describe('visible audio input helpers', () => {
     expect(hasNoAudioInputDirective("const msg = 'noAudioInput()';")).toBe(false);
   });
 
-  it('prefers stored simple DSP audio input state over code-derived state', () => {
-    expect(shouldShowSimpleDspAudioInput(false, '')).toBe(false);
-    expect(shouldShowSimpleDspAudioInput(true, 'noAudioInput()')).toBe(true);
-    expect(shouldShowSimpleDspAudioInput(undefined, '')).toBe(true);
+  it('uses stored simple DSP audio input state during initialization when present', () => {
+    expect(getInitialSimpleDspAudioInputVisibility(false, '')).toBe(false);
+    expect(getInitialSimpleDspAudioInputVisibility(true, 'noAudioInput()')).toBe(true);
+  });
+
+  it('derives simple DSP audio input state from code only for initialization or run', () => {
+    expect(getInitialSimpleDspAudioInputVisibility(undefined, 'noAudioInput()')).toBe(false);
+    expect(getInitialSimpleDspAudioInputVisibility(undefined, '')).toBe(true);
+    expect(getRunSimpleDspAudioInputVisibility('noAudioInput()')).toBe(false);
+    expect(getRunSimpleDspAudioInputVisibility('')).toBe(true);
   });
 });

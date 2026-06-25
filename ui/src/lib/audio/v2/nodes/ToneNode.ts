@@ -179,7 +179,6 @@ export class ToneNode implements AudioNodeV2 {
       this.messageInletCount = 0;
       this.messageOutletCount = 0;
       this.recvCallback = null;
-      this.onSetAudioInputVisible(true);
 
       const jsRunner = JSRunner.getInstance();
 

@@ -167,7 +167,6 @@ export class ElementaryNode implements AudioNodeV2 {
       this.messageInletCount = 0;
       this.messageOutletCount = 0;
       this.recvCallback = null;
-      this.onSetAudioInputVisible(true);
 
       const settingsManager = AudioService.getInstance().getSettingsManager(this.nodeId);
       settingsManager?.clearCallbacks();

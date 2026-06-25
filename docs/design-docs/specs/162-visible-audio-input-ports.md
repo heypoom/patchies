@@ -11,7 +11,7 @@ Programmable audio objects should not show blue input handles when the current c
 
 ## Data Flow
 
-`tone~`, `sonic~`, and `elem~` store `showAudioInput` in node data. The shared layout uses that value when present, and otherwise derives an initial value from code that contains `noAudioInput()`. Runtime calls update node data after code runs.
+`tone~`, `sonic~`, and `elem~` store `showAudioInput` in node data. Each node wrapper derives an initial value from saved data or code on mount, then derives it again only when the user runs code. The shared layout reads the stored boolean without scanning code during render. Runtime `noAudioInput()` calls can still hide the inlet after code executes.
 
 `chuck~` derives visibility directly from the current ChucK expression. Its message inlet keeps its existing handle id, so existing control connections stay compatible even when the audio inlet is hidden.
 
