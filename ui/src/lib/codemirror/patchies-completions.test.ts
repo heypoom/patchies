@@ -151,6 +151,14 @@ describe('patchies completions', () => {
     expect(getCompletionLabels('js', 'setS')).not.toContain('setSize');
   });
 
+  it('shows showAudioInput completions only for simple DSP audio nodes', () => {
+    expect(getCompletionLabels('tone~', 'show')).toContain('showAudioInput');
+    expect(getCompletionLabels('sonic~', 'show')).toContain('showAudioInput');
+    expect(getCompletionLabels('elem~', 'show')).toContain('showAudioInput');
+    expect(getCompletionLabels('js', 'show')).not.toContain('showAudioInput');
+    expect(getCompletionLabels('tone~', 'noA')).not.toContain(`noAudioInput`);
+  });
+
   it('shows Shader Park completions only for shaderpark code', () => {
     expect(getShaderParkCompletionLabels('shaderpark', 'sp')).toContain('sphere');
     expect(getShaderParkCompletionLabels('shaderpark', 'setSpace(getS')).toContain('getSpace');

@@ -166,20 +166,27 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       code: DEFAULT_DSP_JS_CODE,
       messageInletCount: 0,
       messageOutletCount: 0,
-      audioInletCount: 1,
+      audioInletCount: 0,
       audioOutletCount: 1
     }))
     .with('tone~', () => ({
       code: DEFAULT_TONE_JS_CODE,
       messageInletCount: 1,
-      messageOutletCount: 0
+      messageOutletCount: 0,
+      showAudioInput: false
     }))
     .with('sonic~', () => ({
       code: DEFAULT_SONIC_CODE,
       messageInletCount: 1,
-      messageOutletCount: 0
+      messageOutletCount: 0,
+      showAudioInput: false
     }))
-    .with('elem~', () => ({ code: DEFAULT_ELEM_CODE, messageInletCount: 1, messageOutletCount: 0 }))
+    .with('elem~', () => ({
+      code: DEFAULT_ELEM_CODE,
+      messageInletCount: 1,
+      messageOutletCount: 0,
+      showAudioInput: false
+    }))
     .with('csound~', () => ({
       expr: DEFAULT_CSOUND_CODE,
       syncTransport: false

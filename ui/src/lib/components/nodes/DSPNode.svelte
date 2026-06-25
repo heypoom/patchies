@@ -14,6 +14,7 @@
   import { DspNode } from '$lib/audio/v2/nodes/DspNode';
   import VirtualConsole from '$lib/components/VirtualConsole.svelte';
   import { logger } from '$lib/utils/logger';
+  import { editorFontFamily } from '../../../stores/editor.store';
 
   let contentContainer: HTMLDivElement | null = null;
 
@@ -305,7 +306,7 @@
   });
 </script>
 
-<div class="relative flex gap-x-3">
+<div class="relative flex gap-x-3" style:--patchies-dsp-node-font-family={$editorFontFamily}>
   <div class="group relative">
     <div class="flex flex-col gap-2" bind:this={contentContainer}>
       <div class="absolute -top-7 left-0 flex w-full items-center justify-between">
@@ -389,7 +390,7 @@
           title="Double click to edit code"
         >
           <div class="flex items-center justify-center">
-            <div class="font-mono text-xs text-zinc-300">{data.title ?? 'dsp~'}</div>
+            <div class="dsp-node-label text-xs text-zinc-300">{data.title ?? 'dsp~'}</div>
           </div>
         </button>
 
@@ -485,3 +486,9 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .dsp-node-label {
+    font-family: var(--patchies-dsp-node-font-family, var(--font-mono));
+  }
+</style>

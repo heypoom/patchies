@@ -113,10 +113,11 @@ export class DspNode implements AudioNodeV2 {
     // Web Audio API requires at least 1 input or 1 output
     // For analysis-only DSPs with setAudioPortCount(1, 0), we need outputs=1 internally
     // but simply don't connect it to anything audible
+    const effectiveInputs = Math.max(1, this.audioInletCount);
     const effectiveOutputs = Math.max(1, this.audioOutletCount);
 
     this.workletNode = new AudioWorkletNode(this.audioContext, 'dsp-processor', {
-      numberOfInputs: this.audioInletCount,
+      numberOfInputs: effectiveInputs,
       numberOfOutputs: effectiveOutputs,
       processorOptions: { nodeId: this.nodeId }
     });

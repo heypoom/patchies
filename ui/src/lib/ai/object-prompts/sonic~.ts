@@ -9,9 +9,11 @@ SuperCollider synthesis via SuperSonic AudioWorklet.
 - \`SuperSonic\` — Static utilities (e.g., \`SuperSonic.osc.encodeMessage()\`)
 - \`on(event, callback)\` — Subscribe to SuperSonic events
 - \`outBus\` — Assigned output bus index for this node (number)
+- \`showAudioInput()\` — Force the visible audio input handle to show when input routing is indirect
 
 **Sonic-specific gotchas:**
 - fft() is NOT available (audio output node, not video)
+- Audio input is hidden by default and auto-shows when code references \`inputNode\`
 - By default, the Prophet synth is loaded
 - **CRITICAL**: Each sonic~ node has its own isolated output bus
   Always pass \`'out_bus', outBus\` when creating synths to route audio to the correct output.

@@ -13,6 +13,10 @@
   import { SettingsManager } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import {
+    getInitialSimpleDspAudioInputVisibility,
+    hasAudioInputUsage
+  } from '$lib/audio/visible-audio-inputs';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -25,6 +29,7 @@
       code: string;
       messageInletCount?: number;
       messageOutletCount?: number;
+      showAudioInput?: boolean;
       title?: string;
       executeCode?: number;
       showConsole?: boolean;
@@ -104,6 +109,13 @@
       toneNode.onSetTitle = (title: string) => {
         updateNodeData(nodeId, { title });
       };
+
+      toneNode.onSetAudioInputVisible = (showAudioInput: boolean) => {
+        updateNodeData(nodeId, { showAudioInput });
+        updateNodeInternals(nodeId);
+      };
+
+      updateNodeInternals(nodeId);
     }, 10);
   }
 
@@ -112,6 +124,11 @@
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
+    updateNodeData(nodeId, {
+      showAudioInput: hasAudioInputUsage('tone~', data.code)
+    });
+
+    updateNodeInternals(nodeId);
     updateAudioCode(data.code);
   }
 
@@ -121,6 +138,15 @@
 
   onMount(() => {
     audioService.registerSettingsManager(nodeId, settingsManager);
+
+    updateNodeData(nodeId, {
+      showAudioInput: getInitialSimpleDspAudioInputVisibility(
+        'tone~',
+        data.showAudioInput,
+        data.code
+      )
+    });
+
     audioService.createNode(nodeId, 'tone~', [null, data.code]);
     handleCodeChange(data.code);
     eventBus.addEventListener('consoleOutput', handleConsoleOutput);

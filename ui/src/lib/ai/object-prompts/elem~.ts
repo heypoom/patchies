@@ -15,9 +15,11 @@ Elementary Audio declarative DSP synthesis and processing.
 - inputNode: GainNode for audio input
 - outputNode: GainNode for audio output (IMPORTANT: render to this)
 - node: AudioWorkletNode for Web Audio connectivity
+- showAudioInput(): force the visible audio input handle to show when input routing is indirect
 
 **Elem-specific gotchas:**
 - fft() is NOT available (audio node, not video)
+- Audio input is hidden by default and auto-shows when code references inputNode or el.in()
 
 ${patcherLibraryInstructions}
 
@@ -28,7 +30,8 @@ Example - Sine oscillator:
 {
   "type": "elem~",
   "data": {
-    "code": "setTitle('osc~'); const graph = el.sine(440); core.render(el.mul(graph, 0.1), outputNode);"
+    "code": "setTitle('osc~'); const graph = el.sine(440); core.render(el.mul(graph, 0.1), outputNode);",
+    "showAudioInput": false
   }
 }
 \`\`\`
@@ -38,7 +41,8 @@ Example - Frequency control:
 {
   "type": "elem~",
   "data": {
-    "code": "setPortCount(1); let [freq, setFreq] = core.createRef('const', {value: 440}, []); recv(f => { if (typeof f === 'number') setFreq({value: f}); }); const graph = el.sine(freq); core.render(el.mul(graph, 0.1), outputNode);"
+    "code": "setPortCount(1); let [freq, setFreq] = core.createRef('const', {value: 440}, []); recv(f => { if (typeof f === 'number') setFreq({value: f}); }); const graph = el.sine(freq); core.render(el.mul(graph, 0.1), outputNode);",
+    "showAudioInput": false
   }
 }
 \`\`\``;

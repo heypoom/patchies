@@ -118,7 +118,9 @@ while (true) {
   120::ms => now;
 }`;
 
-export const DEFAULT_DSP_JS_CODE = `function process(inputs, outputs) {
+export const DEFAULT_DSP_JS_CODE = `setAudioPortCount(0, 1)
+
+function process(inputs, outputs) {
   outputs[0].forEach((channel) => {
     for (let i = 0; i < channel.length; i++) {
       let t = (currentFrame + i) / sampleRate
@@ -134,8 +136,7 @@ synth.connect(outputNode)
 
 recv(m => {
   synth.frequency.value = m;
-})
-`;
+})`;
 
 export const DEFAULT_ELEM_CODE = `setPortCount(1)
 

@@ -33,10 +33,20 @@ export const ELEMENTARY_PRESETS = {
   },
   'phasor.elem': {
     type: 'elem~',
-    data: { code: createRatePreset('phasor'), messageInletCount: 1, title: 'phasor~' }
+    data: {
+      code: createRatePreset('phasor'),
+      messageInletCount: 1,
+      title: 'phasor~',
+      showAudioInput: false
+    }
   },
   'train.elem': {
     type: 'elem~',
-    data: { code: createRatePreset('train'), messageInletCount: 1, title: 'train~' }
+    data: {
+      code: createRatePreset('train'),
+      messageInletCount: 1,
+      title: 'train~',
+      showAudioInput: false
+    }
   }
 };

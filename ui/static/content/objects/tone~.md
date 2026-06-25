@@ -9,6 +9,7 @@ The Tone.js context provides:
 - `Tone`: the Tone.js library
 - `inputNode`: GainNode for receiving audio input
 - `outputNode`: GainNode for sending audio output
+- `showAudioInput()`: show the blue audio input handle when automatic detection misses your input usage
 
 ## Messaging
 
@@ -47,6 +48,36 @@ filter.connect(outputNode);
 recv((m) => {
   filter.frequency.value = m;
 });
+```
+
+### Synth
+
+`tone~` hides its audio input handle by default. It automatically shows the
+handle when your code references `inputNode`; call `showAudioInput()` only when
+your input routing happens indirectly through another helper.
+
+```js
+setPortCount(1);
+
+const synth = new Tone.Synth().connect(outputNode);
+
+recv((m) => {
+  if (m?.type === 'bang') synth.triggerAttackRelease('C4', 0.25);
+});
+```
+
+### Manual audio input handle
+
+Use `showAudioInput()` when you want to force the audio input handle to appear.
+This is most useful when an effect uses incoming audio indirectly and automatic
+detection misses it.
+
+```js
+showAudioInput();
+
+const filter = new Tone.Filter(1000, 'lowpass');
+inputNode.connect(filter.input.input);
+filter.connect(outputNode);
 ```
 
 ### Reverb effect

@@ -20,6 +20,7 @@ The `sonic~` JavaScript context provides:
 - `inputNode`: Audio input GainNode
 - `outputNode`: Audio output GainNode
 - `outBus`: Assigned output bus index for this node (number)
+- `showAudioInput()`: show the blue audio input handle when automatic detection misses your input usage
 
 ## Audio Routing
 
@@ -48,6 +49,10 @@ Available events: `'ready'`, `'loading:start'`, `'loading:complete'`,
 Supports [Patchies JavaScript Runner](/docs/javascript-runner) functions
 (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
+`sonic~` hides its audio input handle by default. It automatically shows the
+handle when your code references `inputNode`; call `showAudioInput()` only when
+your input routing happens indirectly through another helper.
+
 ## Command Listener
 
 SuperSonic works by sending OSC (OpenSoundControl) messages to the synth engine.
@@ -72,6 +77,16 @@ recv((note) => {
   sonic.send('/s_new', 'sonic-pi-prophet', -1, 0, 0,
     'note', note, 'release', 2, 'out_bus', outBus);
 });
+```
+
+### Manual audio input handle
+
+Use `showAudioInput()` when you want to force the audio input handle to appear.
+This is most useful when incoming audio is used through SuperSonic routing that
+automatic detection cannot see.
+
+```js
+showAudioInput();
 ```
 
 ## Load and Play Samples

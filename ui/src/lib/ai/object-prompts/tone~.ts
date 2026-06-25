@@ -12,17 +12,20 @@ Tone.js synthesis and audio processing.
 - Tone: the Tone.js library
 - inputNode: GainNode for audio input (connect to it)
 - outputNode: GainNode for audio output (connect your nodes to this)
+- showAudioInput(): force the visible audio input handle to show when input routing is indirect
 
 **Tone-specific gotchas:**
 - fft() is NOT available (audio node, not video)
 - Use return { cleanup } instead of onCleanup for Tone.js disposal
+- Audio input is hidden by default and auto-shows when code references inputNode
 
 Example - Simple synth:
 \`\`\`json
 {
   "type": "tone~",
   "data": {
-    "code": "setPortCount(1); const synth = new Tone.Synth().connect(outputNode); recv(m => { if (m?.type === 'bang') synth.triggerAttackRelease('C4', 0.25); }); return { cleanup: () => synth.dispose() };"
+    "code": "setPortCount(1); const synth = new Tone.Synth().connect(outputNode); recv(m => { if (m?.type === 'bang') synth.triggerAttackRelease('C4', 0.25); }); return { cleanup: () => synth.dispose() };",
+    "showAudioInput": false
   }
 }
 \`\`\``;

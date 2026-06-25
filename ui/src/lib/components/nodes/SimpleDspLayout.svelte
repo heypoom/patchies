@@ -47,6 +47,7 @@
       code: string;
       messageInletCount?: number;
       messageOutletCount?: number;
+      showAudioInput?: boolean;
       title?: string;
     };
     selected: boolean;
@@ -76,6 +77,8 @@
   const messageInletCount = $derived(data.messageInletCount || 0);
   const messageOutletCount = $derived(data.messageOutletCount || 0);
   const displayTitle = $derived(data.title || nodeName);
+  const showAudioInput = $derived(data.showAudioInput ?? false);
+  const visibleInletCount = $derived((showAudioInput ? 1 : 0) + messageInletCount);
 
   const isCodeEditorDetached = $derived(
     $activeCodeEditorTarget?.nodeId === nodeId && $activeCodeEditorTarget.dataKey === 'code'
@@ -214,7 +217,7 @@
   let minContainerWidth = $derived.by(() => {
     const baseWidth = 20;
     let inletWidth = 20;
-    return baseWidth + (1 + messageInletCount) * inletWidth;
+    return baseWidth + visibleInletCount * inletWidth;
   });
 </script>
 
@@ -267,18 +270,19 @@
       </div>
 
       <div class="relative">
-        <!-- Total inlets = 1 audio inlet + message inlets -->
+        <!-- Total inlets = optional audio inlet + message inlets -->
         <div>
-          <!-- Audio input (always present) -->
-          <TypedHandle
-            port="inlet"
-            spec={{ handleType: 'audio' }}
-            title="Audio Input"
-            total={1 + messageInletCount}
-            index={0}
-            class="top-0"
-            {nodeId}
-          />
+          {#if showAudioInput}
+            <TypedHandle
+              port="inlet"
+              spec={{ handleType: 'audio' }}
+              title="Audio Input"
+              total={visibleInletCount}
+              index={0}
+              class="top-0"
+              {nodeId}
+            />
+          {/if}
 
           <!-- Message inlets (only show if messageInletCount > 0) -->
           {#if messageInletCount > 0}
@@ -287,8 +291,8 @@
                 port="inlet"
                 spec={{ handleType: 'message', handleId: index }}
                 title={`Message Inlet ${index + 1}`}
-                total={1 + messageInletCount}
-                index={1 + index}
+                total={visibleInletCount}
+                index={(showAudioInput ? 1 : 0) + index}
                 class="top-0"
                 {nodeId}
               />

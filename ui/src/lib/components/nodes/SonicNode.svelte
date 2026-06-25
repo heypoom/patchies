@@ -13,6 +13,10 @@
   import { SettingsManager } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import {
+    getInitialSimpleDspAudioInputVisibility,
+    hasAudioInputUsage
+  } from '$lib/audio/visible-audio-inputs';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -25,6 +29,7 @@
       code: string;
       messageInletCount?: number;
       messageOutletCount?: number;
+      showAudioInput?: boolean;
       title?: string;
       executeCode?: number;
       showConsole?: boolean;
@@ -103,6 +108,13 @@
       sonicNode.onSetTitle = (title: string) => {
         updateNodeData(nodeId, { title });
       };
+
+      sonicNode.onSetAudioInputVisible = (showAudioInput: boolean) => {
+        updateNodeData(nodeId, { showAudioInput });
+        updateNodeInternals(nodeId);
+      };
+
+      updateNodeInternals(nodeId);
     }, 10);
   }
 
@@ -111,6 +123,11 @@
     consoleRef?.clearConsole();
     lineErrors = undefined;
 
+    updateNodeData(nodeId, {
+      showAudioInput: hasAudioInputUsage('sonic~', data.code)
+    });
+
+    updateNodeInternals(nodeId);
     updateAudioCode(data.code);
   }
 
@@ -120,6 +137,15 @@
 
   onMount(() => {
     audioService.registerSettingsManager(nodeId, settingsManager);
+
+    updateNodeData(nodeId, {
+      showAudioInput: getInitialSimpleDspAudioInputVisibility(
+        'sonic~',
+        data.showAudioInput,
+        data.code
+      )
+    });
+
     audioService.createNode(nodeId, 'sonic~', [null, data.code]);
     handleCodeChange(data.code);
     eventBus.addEventListener('consoleOutput', handleConsoleOutput);

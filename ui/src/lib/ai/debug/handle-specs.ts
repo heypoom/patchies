@@ -291,7 +291,7 @@ const MANUAL_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
     inlets: {
       kind: 'dynamic',
       patterns: ['audio-in', 'message-in-{N}'],
-      note: 'audio-in (fixed), then message-in-{N} from setPortCount'
+      note: 'optional audio-in, then message-in-{N} from setPortCount'
     },
     outlets: {
       kind: 'dynamic',
@@ -303,7 +303,7 @@ const MANUAL_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
     inlets: {
       kind: 'dynamic',
       patterns: ['audio-in', 'audio-in-{N}', 'message-in-{N}'],
-      note: 'audio inlets (single=audio-in, multi=audio-in-{N}), then message-in-{N}'
+      note: 'optional audio inlets (single=audio-in, multi=audio-in-{N}), then message-in-{N}'
     },
     outlets: {
       kind: 'dynamic',
@@ -315,7 +315,7 @@ const MANUAL_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
     inlets: {
       kind: 'dynamic',
       patterns: ['audio-in', 'message-in-{N}'],
-      note: 'audio-in (fixed), then message-in-{N} from setPortCount'
+      note: 'optional audio-in, then message-in-{N} from setPortCount'
     },
     outlets: {
       kind: 'dynamic',
@@ -327,7 +327,7 @@ const MANUAL_HANDLE_SPECS: Record<string, NodeHandleSpec> = {
     inlets: {
       kind: 'dynamic',
       patterns: ['audio-in', 'message-in-{N}'],
-      note: 'audio-in (fixed), then message-in-{N}'
+      note: 'optional audio-in, then message-in-{N}'
     },
     outlets: {
       kind: 'dynamic',

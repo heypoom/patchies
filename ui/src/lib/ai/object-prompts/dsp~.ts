@@ -11,6 +11,7 @@ Low-level DSP audio processing. MUST implement process(inputs, outputs) function
 - setTitle(name), setPortCount(inlets, outlets), setAudioPortCount(inlets, outlets)
 - recv(callback), send(data, {to: outletIndex}?) - Message I/O
 - setKeepAlive(enabled) - Keep running when unconnected
+- setAudioPortCount(0, 1) hides the visible audio inlet for synth/generator DSPs
 
 **Context Variables (in process):**
 - counter, sampleRate, currentFrame, currentTime
