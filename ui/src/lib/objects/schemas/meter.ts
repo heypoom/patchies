@@ -7,7 +7,7 @@ import type { ObjectSchema } from './types';
 export const meterSchema: ObjectSchema = {
   type: 'meter~',
   category: 'audio',
-  description: 'Audio level meter display',
+  description: 'Multichannel audio level meter display',
   inlets: [
     {
       id: 'audio',
@@ -19,9 +19,11 @@ export const meterSchema: ObjectSchema = {
   outlets: [
     {
       id: 'level',
-      description: 'Current RMS level (0-1)',
+      description: 'Current RMS level of the loudest channel (0-1)',
       handle: { handleType: 'message' },
-      messages: [{ schema: Type.Number(), description: 'RMS amplitude level' }]
+      messages: [
+        { schema: Type.Number(), description: 'RMS amplitude level of the loudest channel' }
+      ]
     }
   ],
   tags: ['audio', 'meter', 'level', 'monitoring', 'visualization']

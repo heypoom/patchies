@@ -24,6 +24,7 @@ import { HighshelfNode } from './HighshelfNode';
 import { LowpassNode } from './LowpassNode';
 import { LowshelfNode } from './LowshelfNode';
 import { MergeNode } from './MergeNode';
+import { MeterAudioNode } from './MeterAudioNode';
 import { MicNode } from './MicNode';
 import { NotchNode } from './NotchNode';
 import { OscNode } from './OscNode';
@@ -113,6 +114,7 @@ export const AUDIO_NODES = [
   LowpassNode,
   LowshelfNode,
   MergeNode,
+  MeterAudioNode,
   MicNode,
   NotchNode,
   OscNode,
