@@ -137,12 +137,13 @@ const triAngle = clock.subdiv(3) / 3 * TAU;
 const quintAngle = clock.subdiv(5) / 5 * TAU;
 ```
 
-### Smooth Animation with subdivPhase
+### Animate on Subdivision Phase
 
 ```javascript
 // Pulse that breathes once per sixteenth note
 const t = clock.subdivPhase(4);
 const radius = 50 + 20 * Math.sin(t * Math.PI);
+
 circle(width/2, height/2, radius);
 ```
 
@@ -302,7 +303,7 @@ clock.every('4:0:0', () => {
 });
 ```
 
-### Manual Beat Detection (Alternative)
+### Manual Beat Detection
 
 If you prefer manual control over scheduling:
 
@@ -326,7 +327,7 @@ const secondsPerBar = (60 / clock.bpm) * clock.beatsPerBar;
 clock.seek(8 * secondsPerBar);
 ```
 
-## Audio-Rate Beat Sync (`beat~`)
+## Audio-Rate Beat Sync
 
 For **continuous** beat-synced signals in the audio graph, use the [beat~](/docs/objects/beat~) object. Unlike `clock.schedule` which fires discrete callbacks, `beat~` outputs a sample-by-sample 0→1 sawtooth ramp synchronized to the transport BPM.
 
