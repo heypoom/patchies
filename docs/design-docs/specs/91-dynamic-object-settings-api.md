@@ -325,7 +325,16 @@ If the field has `description` on options, wrap each button in `<Tooltip.Root>` 
 </div>
 ```
 
-If the field has no presets, fall back to a native `<input type="color">` wrapped in a swatch label (SequencerSettings track color pattern).
+If the field has no presets, fall back to the shared native color picker swatch component
+(SequencerSettings track color pattern). The actual `<input type="color">` is owned by a
+persistent helper rather than the settings panel DOM, because browser/OS color pickers can
+stay open after the panel closes.
+
+- Use `input` events for live value updates.
+- Use `change` events only for finalization such as undo tracking.
+- When a panel closes, blur the active picker input as a best-effort dismissal, but keep the
+  active callback alive so late native picker events can still update the setting if the
+  platform keeps the picker open.
 
 **String fields** — text input:
 
