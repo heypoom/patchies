@@ -26,6 +26,7 @@ import AiSpeechNode from '$lib/components/nodes/AiSpeechNode.svelte';
 import AiSttNode from '$lib/components/nodes/AiSttNode.svelte';
 import MIDIInputNode from '$lib/components/nodes/MIDIInputNode.svelte';
 import MIDIOutputNode from '$lib/components/nodes/MIDIOutputNode.svelte';
+import MIDIFileNode from '$objects/midi.file/components/MIDIFileNode.svelte';
 import ObjectNode from '$lib/components/nodes/ObjectNode.svelte';
 import SliderNode from '$lib/components/nodes/SliderNode.svelte';
 import KnobNode from '$lib/components/nodes/KnobNode.svelte';
@@ -146,6 +147,7 @@ export const nodeTypes: Record<string, any> = {
   'ai.stt': AiSttNode,
   'midi.in': MIDIInputNode,
   'midi.out': MIDIOutputNode,
+  'midi.file': MIDIFileNode,
   slider: SliderNode,
   knob: KnobNode,
   python: PythonNode,

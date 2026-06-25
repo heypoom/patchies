@@ -2,6 +2,7 @@ export * from './types';
 export * from './utils';
 export * from './helpers';
 export * from './common';
+export * from './midi-messages';
 export * from './trigger';
 export * from './p5';
 export * from './hydra';
@@ -46,6 +47,7 @@ export * from './ai-tts';
 export * from './ai-stt';
 export * from './midi-in';
 export * from './midi-out';
+export * from '$objects/midi.file/schema';
 export * from './vdo-ninja-push';
 export * from './vdo-ninja-pull';
 export * from './js';
@@ -144,6 +146,7 @@ import { aiTtsSchema } from './ai-tts';
 import { aiSttSchema } from './ai-stt';
 import { midiInSchema } from './midi-in';
 import { midiOutSchema } from './midi-out';
+import { midiFileSchema } from '$objects/midi.file/schema';
 import { vdoNinjaPushSchema } from './vdo-ninja-push';
 import { vdoNinjaPullSchema } from './vdo-ninja-pull';
 import { jsSchema } from './js';
@@ -262,6 +265,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'ai.stt': aiSttSchema,
   'midi.in': midiInSchema,
   'midi.out': midiOutSchema,
+  'midi.file': midiFileSchema,
   'vdo.ninja.push': vdoNinjaPushSchema,
   'vdo.ninja.pull': vdoNinjaPullSchema,
   js: jsSchema,

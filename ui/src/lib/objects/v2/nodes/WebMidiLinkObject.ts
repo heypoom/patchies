@@ -1,5 +1,14 @@
 import { Output } from 'webmidi';
 
+import {
+  MidiChannelPressure,
+  MidiControlChange,
+  MidiNoteOff,
+  MidiNoteOn,
+  MidiPitchBend,
+  MidiPolyPressure,
+  MidiProgramChange
+} from '$lib/objects/schemas/midi-messages';
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
@@ -10,7 +19,9 @@ type MidiEventData =
   | { type: 'noteOff'; note: number; velocity?: number; channel?: number }
   | { type: 'controlChange'; control: number; value: number; channel?: number }
   | { type: 'programChange'; program: number; channel?: number }
-  | { type: 'pitchBend'; value: number; channel?: number };
+  | { type: 'pitchBend'; value: number; channel?: number }
+  | { type: 'channelPressure'; pressure: number; channel?: number }
+  | { type: 'polyPressure'; note: number; pressure: number; channel?: number };
 
 /**
  * WebMidiLinkObject converts MIDI events to WebMidiLink format.
@@ -25,7 +36,16 @@ export class WebMidiLinkObject implements TextObjectV2 {
     {
       name: 'midi',
       type: 'message',
-      description: 'MIDI event (noteOn, noteOff, controlChange, programChange, pitchBend)'
+      description: 'MIDI message to convert',
+      messages: [
+        { schema: MidiNoteOn, description: 'Convert MIDI note on' },
+        { schema: MidiNoteOff, description: 'Convert MIDI note off' },
+        { schema: MidiControlChange, description: 'Convert MIDI control change' },
+        { schema: MidiProgramChange, description: 'Convert MIDI program change' },
+        { schema: MidiPitchBend, description: 'Convert MIDI pitch bend' },
+        { schema: MidiChannelPressure, description: 'Convert MIDI channel pressure' },
+        { schema: MidiPolyPressure, description: 'Convert MIDI poly pressure' }
+      ]
     }
   ];
 
@@ -76,6 +96,12 @@ export class WebMidiLinkObject implements TextObjectV2 {
       })
       .with({ type: 'pitchBend' }, (e) => {
         this.output.channels[channel].sendPitchBend(e.value);
+      })
+      .with({ type: 'channelPressure' }, (e) => {
+        this.output.channels[channel].sendChannelAftertouch(e.pressure, { rawValue: true });
+      })
+      .with({ type: 'polyPressure' }, (e) => {
+        this.output.channels[channel].sendKeyAftertouch(e.note, e.pressure, { rawValue: true });
       })
       .exhaustive();
   }

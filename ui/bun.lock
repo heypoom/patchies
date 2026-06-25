@@ -66,6 +66,7 @@
         "mediabunny": "^1.31.0",
         "memfs": "^4.39.0",
         "meyda": "^5.6.3",
+        "midi-file": "^1.2.4",
         "ml5": "^1.2.1",
         "mode-watcher": "^1.1.0",
         "mqtt": "^5.14.1",
@@ -2109,6 +2110,8 @@
     "meyda": ["meyda@5.6.3", "", { "dependencies": { "@rollup/plugin-node-resolve": "^15.2.3", "dct": "0.1.0", "fftjs": "0.0.4", "node-getopt": "^0.3.2", "wav": "^1.0.2" }, "bin": { "meyda": "bin/cli.js" } }, "sha512-fAdwfzIi1WDoL0idUQvCD7dZ7EN74FYH83G+jZQO3Nr9yOEBtzFvcMg2KLdLlu6psSP8XFlO0kYynG5o/E681Q=="],
 
     "micromatch": ["micromatch@4.0.8", "", { "dependencies": { "braces": "^3.0.3", "picomatch": "^2.3.1" } }, "sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA=="],
+
+    "midi-file": ["midi-file@1.2.4", "", {}, "sha512-B5SnBC6i2bwJIXTY9MElIydJwAmnKx+r5eJ1jknTLetzLflEl0GWveuBB6ACrQpecSRkOB6fhTx1PwXk2BVxnA=="],
 
     "mime": ["mime@3.0.0", "", { "bin": { "mime": "cli.js" } }, "sha512-jSCU7/VB1loIWBZe14aEYHU/+1UMEHoaO7qxCOVJOw9GgH72VAWppxNcjU+x9a2k3GSIBXNKxXQFqRvvZ7vr3A=="],
 

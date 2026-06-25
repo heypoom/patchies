@@ -1,26 +1,31 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
+import { Bang, Stop } from './common';
+import {
+  MidiChannelPressure,
+  MidiControlChange,
+  MidiNoteOff,
+  MidiNoteOn,
+  MidiPitchBend,
+  MidiPolyPressure,
+  MidiProgramChange
+} from './midi-messages';
 
-// MIDI message type schemas
-const NoteOn = Type.Object({
-  type: Type.Literal('noteOn'),
-  note: Type.Number(),
-  velocity: Type.Number(),
-  channel: Type.Number()
-});
+const MidiInputEventType = Type.Union([
+  Type.Literal('noteOn'),
+  Type.Literal('noteOff'),
+  Type.Literal('controlChange'),
+  Type.Literal('programChange'),
+  Type.Literal('pitchBend'),
+  Type.Literal('channelPressure'),
+  Type.Literal('polyPressure')
+]);
 
-const NoteOff = Type.Object({
-  type: Type.Literal('noteOff'),
-  note: Type.Number(),
-  velocity: Type.Number(),
-  channel: Type.Number()
-});
-
-const ControlChange = Type.Object({
-  type: Type.Literal('controlChange'),
-  control: Type.Number(),
-  value: Type.Number(),
-  channel: Type.Number()
+const SetMidiInputConfig = Type.Object({
+  type: Type.Literal('set'),
+  deviceId: Type.String(),
+  channel: Type.Number(),
+  events: Type.Array(MidiInputEventType)
 });
 
 /**
@@ -34,7 +39,12 @@ export const midiInSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
-      handle: { handleType: 'message' }
+      handle: { handleType: 'message' },
+      messages: [
+        { schema: Bang, description: 'Start listening for MIDI input' },
+        { schema: Stop, description: 'Stop listening for MIDI input' },
+        { schema: SetMidiInputConfig, description: 'Set device, channel, and event filter' }
+      ]
     }
   ],
   outlets: [
@@ -43,9 +53,13 @@ export const midiInSchema: ObjectSchema = {
       description: 'MIDI messages from connected devices',
       handle: { handleType: 'message' },
       messages: [
-        { schema: NoteOn, description: 'MIDI note on message' },
-        { schema: NoteOff, description: 'MIDI note off message' },
-        { schema: ControlChange, description: 'MIDI control change message' }
+        { schema: MidiNoteOn, description: 'MIDI note on message' },
+        { schema: MidiNoteOff, description: 'MIDI note off message' },
+        { schema: MidiControlChange, description: 'MIDI control change message' },
+        { schema: MidiProgramChange, description: 'MIDI program change message' },
+        { schema: MidiPitchBend, description: 'MIDI pitch bend message' },
+        { schema: MidiChannelPressure, description: 'MIDI channel pressure message' },
+        { schema: MidiPolyPressure, description: 'MIDI poly pressure message' }
       ]
     }
   ],

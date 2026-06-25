@@ -23,6 +23,7 @@ import { hydraPrompt } from './hydra';
 import { jsPrompt } from './js';
 import { markdownPrompt } from './markdown';
 import { msgPrompt } from './msg';
+import { midiFilePrompt } from '$objects/midi.file/prompts';
 import { numericOperatorsPrompt } from './numeric-operators';
 import { objectPrompt } from './object';
 import { orcaPrompt } from './orca';
@@ -102,6 +103,7 @@ export const objectPrompts: Record<string, string> = {
   'expr~': exprTildePrompt,
   button: buttonPrompt,
   toggle: togglePrompt,
+  'midi.file': midiFilePrompt,
   msg: msgPrompt,
   sheet: sheetPrompt,
   textbox: textboxPrompt,

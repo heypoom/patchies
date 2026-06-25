@@ -5,15 +5,18 @@
   import { midiInSchema } from '$lib/objects/schemas/midi-in';
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
-  import { MIDISystem, type MIDIInputConfig } from '$lib/canvas/MIDISystem';
+  import {
+    DEFAULT_MIDI_INPUT_EVENTS,
+    MIDISystem,
+    type MIDIInputConfig,
+    type MIDIInputEventType
+  } from '$lib/canvas/MIDISystem';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import { midiInputDevices } from '../../../stores/midi.store';
   import { match, P } from 'ts-pattern';
   import { messages } from '$lib/objects/schemas';
   import { useNodeDataTracker } from '$lib/history';
   import * as Tooltip from '$lib/components/ui/tooltip';
-
-  type EventType = 'noteOn' | 'noteOff' | 'controlChange' | 'programChange' | 'pitchBend';
 
   let {
     id: nodeId,
@@ -24,7 +27,7 @@
     data: {
       deviceId?: string;
       channel?: number;
-      events?: EventType[];
+      events?: MIDIInputEventType[];
     };
     selected: boolean;
   } = $props();
@@ -44,9 +47,7 @@
   const channel = $derived(data.channel || 0);
   const deviceName = $derived($midiInputDevices.find((d) => d.id === deviceId)?.name || 'Unknown');
 
-  const events: EventType[] = $derived(
-    data.events || ['noteOn', 'noteOff', 'controlChange', 'programChange', 'pitchBend']
-  );
+  const events: MIDIInputEventType[] = $derived(data.events || DEFAULT_MIDI_INPUT_EVENTS);
 
   const borderColor = $derived.by(() => {
     if (errorMessage) return 'border-red-500';
@@ -278,20 +279,18 @@
             <label class="mb-2 block text-xs font-medium text-zinc-300">Message Types</label>
 
             <div class="space-y-1">
-              {#each ['noteOn', 'noteOff', 'controlChange', 'programChange', 'pitchBend'] as msgType (msgType)}
-                {@const typedMsgType = msgType as EventType}
-
+              {#each DEFAULT_MIDI_INPUT_EVENTS as msgType (msgType)}
                 <label class="flex items-center">
                   <input
                     type="checkbox"
                     class="mr-2 h-3 w-3"
-                    checked={events.includes(typedMsgType)}
+                    checked={events.includes(msgType)}
                     onchange={(e) => {
                       const oldEvents = [...events];
                       const checked = (e.target as HTMLInputElement).checked;
                       const newTypes = checked
-                        ? [...events, typedMsgType]
-                        : events.filter((t) => t !== typedMsgType);
+                        ? [...events, msgType]
+                        : events.filter((t) => t !== msgType);
                       updateNodeData(nodeId, { events: newTypes });
                       tracker.commit('events', oldEvents, newTypes);
                     }}

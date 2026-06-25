@@ -150,6 +150,7 @@ EXAMPLES:
 - "polyphonic synth" → tone~
 - "fragment shader" → glsl
 - "play audio file" → soundfile~
+- "play MIDI file" → midi.file
 - "python script" → python
 - "visualize audio spectrum" → p5  (short, self-contained, good for learning)
 - "visualize audio spectrum fast" → canvas  (speed is priority, no interactivity needed → web worker)

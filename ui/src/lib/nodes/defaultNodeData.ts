@@ -138,6 +138,15 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       event: 'noteOn',
       data: { note: 60, velocity: 127 }
     }))
+    .with('midi.file', () => ({
+      playState: 'stopped',
+      positionSeconds: 0,
+      loop: false,
+      applyTempoToTransport: true,
+      applyTimeSignatureToTransport: true,
+      syncTransport: false,
+      outputMetaEvents: false
+    }))
     .with('markdown', () => ({ markdown: 'hello' }))
     .with('expr', () => ({ expr: '' }))
     .with('filter', () => ({ expr: '' }))

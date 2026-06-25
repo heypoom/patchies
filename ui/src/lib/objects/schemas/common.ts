@@ -1,6 +1,8 @@
 import { Type } from '@sinclair/typebox';
+
 import { schema } from './types';
 import { sym, msg } from './helpers';
+import { MidiNoteOff, MidiNoteOn } from './midi-messages';
 
 /**
  * Common message schemas used across many objects.
@@ -29,18 +31,6 @@ export const SetDefault = msg('setDefault', { value: Type.Number() });
 export const SetValue = msg('setValue', { value: Type.Number() });
 export const LoadBySrc = msg('load', { src: Type.String() });
 
-export const NoteOn = msg('noteOn', {
-  note: Type.Number(),
-  velocity: Type.Number(),
-  channel: Type.Optional(Type.Number())
-});
-
-export const NoteOff = msg('noteOff', {
-  note: Type.Number(),
-  velocity: Type.Optional(Type.Number()),
-  channel: Type.Optional(Type.Number())
-});
-
 /** All common schemas as an array, for building the common message type map. */
 export const COMMON_SCHEMAS = [
   Bang,
@@ -62,8 +52,8 @@ export const COMMON_SCHEMAS = [
   SetMax,
   SetDefault,
   SetValue,
-  NoteOn,
-  NoteOff
+  MidiNoteOn,
+  MidiNoteOff
 ];
 
 /**
@@ -90,6 +80,6 @@ export const messages = {
   setMax: schema(SetMax),
   setDefault: schema(SetDefault),
   setValue: schema(SetValue),
-  noteOn: schema(NoteOn),
-  noteOff: schema(NoteOff)
+  noteOn: schema(MidiNoteOn),
+  noteOff: schema(MidiNoteOff)
 };

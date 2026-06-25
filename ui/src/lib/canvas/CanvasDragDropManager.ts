@@ -387,6 +387,7 @@ export class CanvasDragDropManager {
       .with('rom', () => 'uxn')
       .with('csd', () => 'csound~')
       .with('ck', () => 'chuck~')
+      .with('mid', 'midi', () => 'midi.file')
       .otherwise(() => null);
   }
 
@@ -423,6 +424,10 @@ export class CanvasDragDropManager {
       .when(
         (t) => t === 'text/csv',
         () => 'sheet'
+      )
+      .when(
+        (t) => t === 'audio/midi' || t === 'audio/x-midi' || t === 'application/x-midi',
+        () => 'midi.file'
       )
       .when(
         (t) => t.startsWith('text/'),
@@ -474,7 +479,7 @@ export class CanvasDragDropManager {
       }
     }
 
-    if (['img', 'video', 'soundfile~', 'uxn'].includes(nodeType)) {
+    if (['img', 'video', 'soundfile~', 'midi.file', 'uxn'].includes(nodeType)) {
       return { ...getDefaultNodeData(nodeType), vfsPath };
     }
 
@@ -541,6 +546,15 @@ export class CanvasDragDropManager {
 
         return {
           ...getDefaultNodeData('soundfile~'),
+          vfsPath,
+          fileName: file.name
+        };
+      })
+      .with('midi.file', async () => {
+        const vfsPath = await vfs.storeFile(file, handle);
+
+        return {
+          ...getDefaultNodeData('midi.file'),
           vfsPath,
           fileName: file.name
         };

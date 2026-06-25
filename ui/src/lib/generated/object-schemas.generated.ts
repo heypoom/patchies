@@ -4117,11 +4117,68 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
       {
         id: 'midi',
         type: 'message',
-        description: 'MIDI event (noteOn, noteOff, controlChange, programChange, pitchBend)',
+        description: 'MIDI message to convert',
         messages: [
           {
-            schema: Type.Any(),
-            description: 'MIDI event (noteOn, noteOff, controlChange, programChange, pitchBend)'
+            schema: Type.Object({
+              type: Type.Literal('noteOn'),
+              note: Type.Number(),
+              velocity: Type.Number(),
+              channel: Type.Optional(Type.Number())
+            }),
+            description: 'Convert MIDI note on'
+          },
+          {
+            schema: Type.Object({
+              type: Type.Literal('noteOff'),
+              note: Type.Number(),
+              velocity: Type.Optional(Type.Number()),
+              channel: Type.Optional(Type.Number())
+            }),
+            description: 'Convert MIDI note off'
+          },
+          {
+            schema: Type.Object({
+              type: Type.Literal('controlChange'),
+              control: Type.Number(),
+              value: Type.Number(),
+              channel: Type.Optional(Type.Number())
+            }),
+            description: 'Convert MIDI control change'
+          },
+          {
+            schema: Type.Object({
+              type: Type.Literal('programChange'),
+              program: Type.Number(),
+              channel: Type.Optional(Type.Number())
+            }),
+            description: 'Convert MIDI program change'
+          },
+          {
+            schema: Type.Object({
+              type: Type.Literal('pitchBend'),
+              value: Type.Number(),
+              control: Type.Optional(Type.Number()),
+              channel: Type.Optional(Type.Number())
+            }),
+            description: 'Convert MIDI pitch bend'
+          },
+          {
+            schema: Type.Object({
+              type: Type.Literal('channelPressure'),
+              pressure: Type.Number(),
+              channel: Type.Optional(Type.Number())
+            }),
+            description: 'Convert MIDI channel pressure'
+          },
+          {
+            schema: Type.Object({
+              type: Type.Literal('polyPressure'),
+              note: Type.Number(),
+              pressure: Type.Number(),
+              channel: Type.Optional(Type.Number())
+            }),
+            description: 'Convert MIDI poly pressure'
           }
         ],
         handle: { handleType: 'message', handleId: 0 }
