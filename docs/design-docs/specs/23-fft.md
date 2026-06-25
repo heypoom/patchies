@@ -43,4 +43,10 @@ We want to create a system for audio analysis, for two reasons:
 
 ## Meter Handle Visibility
 
-`MeterNode` wraps an internal `fft~` analyser and should keep its audio inlet visible whenever an edge is connected to that inlet, even when the node is not selected and global handle visibility is off. This follows the same smart-handle visibility pattern used by control nodes such as `SliderNode` and `KnobNode`: read the current xyflow edges, derive audio inlet/outlet connection state, and only apply the hidden handle class when the relevant handle is unconnected.
+`MeterNode` owns an internal audio analysis node and should keep its audio inlet visible whenever an edge is connected to that inlet, even when the node is not selected and global handle visibility is off. This follows the same smart-handle visibility pattern used by control nodes such as `SliderNode` and `KnobNode`: read the current xyflow edges, derive audio inlet/outlet connection state, and only apply the hidden handle class when the relevant handle is unconnected.
+
+## Meter Channel Display
+
+`meter~` should meter the actual channel layout of its connected audio input. Mono signals render one bar, stereo signals render separate left and right bars, and wider multichannel signals render one bar per channel.
+
+The visual meter uses a `meter~` V2 audio node instead of creating an internal `fft~` node. The audio node owns a raw AudioWorklet analysis processor so it can observe the incoming block's real channel count before any main-thread analyser downmixing. The component keeps smoothing and peak-hold state per channel and continues to send a single message outlet value for compatibility: the current RMS level of the loudest channel.
