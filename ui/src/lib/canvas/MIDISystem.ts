@@ -13,11 +13,31 @@ import {
   updateMIDIOutputDevices,
   midiInitialized
 } from '../../stores/midi.store';
+import { toChannelPressureMessage, toPolyPressureMessage } from './midi-input-events';
+
+export type MIDIInputEventType =
+  | 'noteOn'
+  | 'noteOff'
+  | 'controlChange'
+  | 'programChange'
+  | 'pitchBend'
+  | 'channelPressure'
+  | 'polyPressure';
+
+const DEFAULT_MIDI_INPUT_EVENTS: MIDIInputEventType[] = [
+  'noteOn',
+  'noteOff',
+  'controlChange',
+  'programChange',
+  'pitchBend',
+  'channelPressure',
+  'polyPressure'
+];
 
 export interface MIDIInputConfig {
   deviceId?: string;
   channel?: number;
-  events?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange' | 'pitchBend')[];
+  events?: MIDIInputEventType[];
 }
 
 export type MIDIOutputConfig = {
@@ -30,6 +50,8 @@ export type MIDIOutputConfig = {
   | { event: 'controlChange'; control: number; value: number }
   | { event: 'programChange'; program: number }
   | { event: 'pitchBend'; control: number; value: number }
+  | { event: 'channelPressure'; pressure: number }
+  | { event: 'polyPressure'; note: number; pressure: number }
   | { event: 'raw'; data: number[] }
 );
 
@@ -39,6 +61,8 @@ interface NodeListeners {
   controlChange?: (e: ControlChangeMessageEvent) => void;
   programChange?: (e: MessageEvent) => void;
   pitchBend?: (e: MessageEvent) => void;
+  channelPressure?: (e: MessageEvent) => void;
+  polyPressure?: (e: NoteMessageEvent) => void;
   input?: Input;
   channel?: number | 'all';
 }
@@ -125,11 +149,7 @@ export class MIDISystem {
   startListening(nodeId: string, config: MIDIInputConfig) {
     this.stopListening(nodeId);
 
-    const {
-      deviceId,
-      channel,
-      events = ['noteOn', 'noteOff', 'controlChange', 'programChange', 'pitchBend']
-    } = config;
+    const { deviceId, channel, events = DEFAULT_MIDI_INPUT_EVENTS } = config;
 
     if (!deviceId) {
       console.warn('No MIDI device ID specified for input node:', nodeId);
@@ -222,6 +242,26 @@ export class MIDISystem {
       });
     }
 
+    if (events.includes('channelPressure')) {
+      listeners.channelPressure = (e: MessageEvent) => {
+        this.messageSystem.sendMessage(nodeId, toChannelPressureMessage(e));
+      };
+
+      input.addListener('channelaftertouch', listeners.channelPressure, {
+        channels: channelToUse === 'all' ? undefined : channelToUse
+      });
+    }
+
+    if (events.includes('polyPressure')) {
+      listeners.polyPressure = (e: NoteMessageEvent) => {
+        this.messageSystem.sendMessage(nodeId, toPolyPressureMessage(e));
+      };
+
+      input.addListener('keyaftertouch', listeners.polyPressure, {
+        channels: channelToUse === 'all' ? undefined : channelToUse
+      });
+    }
+
     this.inputListeners.set(nodeId, listeners);
   }
 
@@ -246,6 +286,14 @@ export class MIDISystem {
 
       if (listeners.pitchBend) {
         listeners.input.removeListener('pitchbend', listeners.pitchBend);
+      }
+
+      if (listeners.channelPressure) {
+        listeners.input.removeListener('channelaftertouch', listeners.channelPressure);
+      }
+
+      if (listeners.polyPressure) {
+        listeners.input.removeListener('keyaftertouch', listeners.polyPressure);
       }
 
       this.inputListeners.delete(nodeId);
@@ -291,6 +339,16 @@ export class MIDISystem {
         .with({ event: 'pitchBend' }, ({ value }) => {
           if (value !== undefined) {
             output.sendPitchBend(value, { channels: channel });
+          }
+        })
+        .with({ event: 'channelPressure' }, ({ pressure }) => {
+          if (pressure !== undefined) {
+            output.sendChannelAftertouch(pressure, { rawValue: true, channels: channel });
+          }
+        })
+        .with({ event: 'polyPressure' }, ({ note, pressure }) => {
+          if (note !== undefined && pressure !== undefined) {
+            output.sendKeyAftertouch(note, pressure, { rawValue: true, channels: channel });
           }
         })
         .with({ event: 'raw' }, ({ data }) => {

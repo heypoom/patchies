@@ -27,7 +27,7 @@ Node data for `midi.in` includes:
 
 - `deviceId: number`: The ID of the MIDI device to receive from
 - `channel: number`: The MIDI channel to listen to (1-16, or all channels)
-- `events: ('noteOn', 'noteOff', 'controlChange', 'programChange')[]`: The types of MIDI messages to listen to (note on, note off, control change, etc.)
+- `events: ('noteOn', 'noteOff', 'controlChange', 'programChange', 'pitchBend', 'channelPressure', 'polyPressure')[]`: The types of MIDI messages to listen to (note on, note off, control change, pitch bend, channel pressure, poly pressure, etc.)
 
 ### Messages for `midi.in`
 
@@ -35,7 +35,7 @@ The object listens to these messages:
 
 - `bang` - start listening to MIDI messages using the current configuration.
   - This should call the `MidiSystem` to start setting up the MIDI input.
-- `{ type: 'set', deviceId?: number, channel?: number, events?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange')[] }` - set the configuration for MID input. if any parameter is not provided, it should use the current configuration of the node.
+- `{ type: 'set', deviceId?: number, channel?: number, events?: ('noteOn' | 'noteOff' | 'controlChange' | 'programChange' | 'pitchBend' | 'channelPressure' | 'polyPressure')[] }` - set the configuration for MID input. if any parameter is not provided, it should use the current configuration of the node.
 
 The object emits these messages:
 
@@ -43,6 +43,9 @@ The object emits these messages:
 - `{ type: 'noteOff', note: 60, velocity: 0 }` - when a note off message is received
 - `{ type: 'controlChange', control: 1, value: 64 }` - when a control change message is received
 - `{ type: 'programChange', program: 10 }` - when a program change message is received
+- `{ type: 'pitchBend', value: 0.5 }` - when a pitch bend message is received
+- `{ type: 'channelPressure', pressure: 64 }` - when a channel pressure message is received
+- `{ type: 'polyPressure', note: 60, pressure: 64 }` - when a poly pressure message is received
 
 ## `midi.out`
 

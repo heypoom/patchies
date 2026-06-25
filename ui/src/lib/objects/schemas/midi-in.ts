@@ -2,10 +2,12 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { Bang, Stop } from './common';
 import {
+  MidiChannelPressure,
   MidiControlChange,
   MidiNoteOff,
   MidiNoteOn,
   MidiPitchBend,
+  MidiPolyPressure,
   MidiProgramChange
 } from './midi-messages';
 
@@ -14,7 +16,9 @@ const MidiInputEventType = Type.Union([
   Type.Literal('noteOff'),
   Type.Literal('controlChange'),
   Type.Literal('programChange'),
-  Type.Literal('pitchBend')
+  Type.Literal('pitchBend'),
+  Type.Literal('channelPressure'),
+  Type.Literal('polyPressure')
 ]);
 
 const SetMidiInputConfig = Type.Object({
@@ -53,7 +57,9 @@ export const midiInSchema: ObjectSchema = {
         { schema: MidiNoteOff, description: 'MIDI note off message' },
         { schema: MidiControlChange, description: 'MIDI control change message' },
         { schema: MidiProgramChange, description: 'MIDI program change message' },
-        { schema: MidiPitchBend, description: 'MIDI pitch bend message' }
+        { schema: MidiPitchBend, description: 'MIDI pitch bend message' },
+        { schema: MidiChannelPressure, description: 'MIDI channel pressure message' },
+        { schema: MidiPolyPressure, description: 'MIDI poly pressure message' }
       ]
     }
   ],
