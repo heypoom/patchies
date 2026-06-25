@@ -68,8 +68,6 @@ const SendMidiOutputRawConfig = Type.Object({
   data: Type.Array(Type.Number())
 });
 
-const SendMidiOutputConfig = Type.Union([SendMidiOutputChannelConfig, SendMidiOutputRawConfig]);
-
 /**
  * Schema for the midi.out (MIDI output) object.
  */
@@ -93,7 +91,11 @@ export const midiOutSchema: ObjectSchema = {
         { schema: MidiPolyPressure, description: 'Send MIDI poly pressure' },
         { schema: MidiRaw, description: 'Send raw MIDI bytes' },
         { schema: SetMidiOutputConfig, description: 'Update output configuration' },
-        { schema: SendMidiOutputConfig, description: 'Send an explicit MIDI output configuration' }
+        {
+          schema: SendMidiOutputChannelConfig,
+          description: 'Send MIDI output channel configuration'
+        },
+        { schema: SendMidiOutputRawConfig, description: 'Send MIDI output raw configuration' }
       ]
     }
   ],
