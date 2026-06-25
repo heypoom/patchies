@@ -196,7 +196,7 @@ export class ToneNode implements AudioNodeV2 {
         Tone,
         outputNode: this.audioNode,
         inputNode: this.inputNode,
-        noAudioInput: () => this.onSetAudioInputVisible(false),
+        showAudioInput: () => this.onSetAudioInputVisible(true),
         ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
       };
 

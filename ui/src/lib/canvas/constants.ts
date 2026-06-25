@@ -130,7 +130,6 @@ function process(inputs, outputs) {
 }`;
 
 export const DEFAULT_TONE_JS_CODE = `setPortCount(1)
-noAudioInput()
 
 const synth = new Tone.Oscillator(440, 'sine').start()
 synth.connect(outputNode)
@@ -140,7 +139,6 @@ recv(m => {
 })`;
 
 export const DEFAULT_ELEM_CODE = `setPortCount(1)
-noAudioInput()
 
 let [rate, setRate] = core.createRef("const", {
   value: 440
@@ -151,7 +149,6 @@ recv(freq => setRate({ value: freq }))
 core.render(el.cycle(rate), el.cycle(rate))`;
 
 export const DEFAULT_SONIC_CODE = `setPortCount(1);
-noAudioInput();
 
 const name = 'sonic-pi-beep';
 setTitle(name);

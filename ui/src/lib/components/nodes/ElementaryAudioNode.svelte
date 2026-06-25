@@ -15,7 +15,7 @@
   import type { SettingsSchema } from '$lib/settings';
   import {
     getInitialSimpleDspAudioInputVisibility,
-    getRunSimpleDspAudioInputVisibility
+    hasAudioInputUsage
   } from '$lib/audio/visible-audio-inputs';
 
   // Get node data from XY Flow - nodes receive their data as props
@@ -126,7 +126,7 @@
     lineErrors = undefined;
 
     updateNodeData(nodeId, {
-      showAudioInput: getRunSimpleDspAudioInputVisibility(data.code)
+      showAudioInput: hasAudioInputUsage('elem~', data.code)
     });
 
     updateNodeInternals(nodeId);
@@ -141,7 +141,11 @@
     audioService.registerSettingsManager(nodeId, settingsManager);
 
     updateNodeData(nodeId, {
-      showAudioInput: getInitialSimpleDspAudioInputVisibility(data.showAudioInput, data.code)
+      showAudioInput: getInitialSimpleDspAudioInputVisibility(
+        'elem~',
+        data.showAudioInput,
+        data.code
+      )
     });
 
     audioService.createNode(nodeId, 'elem~', [null, data.code]);

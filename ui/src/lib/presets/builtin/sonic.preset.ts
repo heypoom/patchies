@@ -18,7 +18,6 @@ export const SONIC_PRESETS = {
     type: 'sonic~',
     data: {
       code: `setPortCount(1)
-noAudioInput()
 setTitle('sonic-sample-loop')
 
 // Track loading state
@@ -47,7 +46,6 @@ recv(msg => {
     type: 'sonic~',
     data: {
       code: `setPortCount(1);
-noAudioInput();
 setTitle('sonic-multi-synth');
 
 const synths = ['sonic-pi-beep', 'sonic-pi-prophet', 'sonic-pi-saw'];

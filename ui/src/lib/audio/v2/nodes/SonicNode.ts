@@ -190,7 +190,7 @@ export class SonicNode implements AudioNodeV2 {
           outBus: this.busAllocation?.busIndex ?? 0,
           recv,
           send,
-          noAudioInput: () => this.onSetAudioInputVisible(false),
+          showAudioInput: () => this.onSetAudioInputVisible(true),
           ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
         }
       });

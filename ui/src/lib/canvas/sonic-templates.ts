@@ -8,7 +8,6 @@
  */
 export function synthdefTemplate(safeSynthdef: string): string {
   return `setPortCount(1);
-noAudioInput();
 
 const name = '${safeSynthdef}';
 setTitle(name);
@@ -58,7 +57,6 @@ onCleanup(() => {
  */
 export function scSampleTemplate(safeName: string): string {
   return `setPortCount(1);
-noAudioInput();
 setTitle("${safeName}");
 
 await sonic.loadSynthDef('sonic-pi-basic_stereo_player');

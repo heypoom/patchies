@@ -1,5 +1,4 @@
 const POLY_SYNTH_MIDI_JS = `setPortCount(1)
-noAudioInput()
 setTitle('synth~')
 
 const reverb = new Tone.Reverb({

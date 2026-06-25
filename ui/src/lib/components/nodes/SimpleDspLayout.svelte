@@ -77,7 +77,7 @@
   const messageInletCount = $derived(data.messageInletCount || 0);
   const messageOutletCount = $derived(data.messageOutletCount || 0);
   const displayTitle = $derived(data.title || nodeName);
-  const showAudioInput = $derived(data.showAudioInput ?? true);
+  const showAudioInput = $derived(data.showAudioInput ?? false);
   const visibleInletCount = $derived((showAudioInput ? 1 : 0) + messageInletCount);
 
   const isCodeEditorDetached = $derived(

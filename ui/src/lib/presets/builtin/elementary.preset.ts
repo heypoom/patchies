@@ -16,7 +16,6 @@ core.render(lpf, lpf)
 recv(freq => setCutoffFreq({value: freq}))`;
 
 const createRatePreset = (name: string) => `setPortCount(1)
-noAudioInput()
 setTitle('${name}~')
 
 let [rate, setRate] = core.createRef("const", {

@@ -206,7 +206,7 @@ export class ElementaryNode implements AudioNodeV2 {
           outputNode: this.audioNode,
           recv,
           send,
-          noAudioInput: () => this.onSetAudioInputVisible(false),
+          showAudioInput: () => this.onSetAudioInputVisible(true),
           ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
         }
       });

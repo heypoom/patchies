@@ -48,11 +48,11 @@ const patchiesAPICompletions: Completion[] = [
     apply: 'setAudioPortCount(0, 1)'
   },
   {
-    label: 'noAudioInput',
+    label: 'showAudioInput',
     type: 'function',
     detail: '() => void',
-    info: 'Hide the visible audio input handle in tone~, sonic~, and elem~ nodes',
-    apply: 'noAudioInput()'
+    info: 'Force the visible audio input handle to show in tone~, sonic~, and elem~ nodes',
+    apply: 'showAudioInput()'
   },
   {
     label: 'setVideoCount',
@@ -465,7 +465,7 @@ const patchiesAPICompletions: Completion[] = [
 // Setup functions that should only appear at top-level (not in function bodies)
 const topLevelOnlyFunctions = new Set([
   'noDrag',
-  'noAudioInput',
+  'showAudioInput',
   'noInteract',
   'noOutput',
   'noPan',
@@ -591,7 +591,7 @@ const nodeSpecificFunctions: Record<string, string[]> = {
   collapseSurface: ['surface', 'p5'],
   hideExitButton: ['surface', 'p5'],
   setAudioPortCount: ['dsp~'],
-  noAudioInput: ['tone~', 'sonic~', 'elem~'],
+  showAudioInput: ['tone~', 'sonic~', 'elem~'],
   setCanvasSize: ['canvas.dom', 'textmode.dom', 'three.dom'],
   setSize: ['dom', 'vue'],
   setHidePorts: [
