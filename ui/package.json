@@ -136,7 +136,7 @@
     "marked-highlight": "^2.2.3",
     "marked-katex-extension": "^5.1.7",
     "matter-js": "^0.20.0",
-    "mediabunny": "^1.31.0",
+    "mediabunny": "^1.49.0",
     "memfs": "^4.39.0",
     "meyda": "^5.6.3",
     "midi-file": "^1.2.4",

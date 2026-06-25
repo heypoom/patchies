@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Loader, OctagonX, Pause, Play, SkipBack, Upload, Video } from '@lucide/svelte/icons';
+  import { Loader, OctagonX, SkipBack, Upload, Video } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import { get } from 'svelte/store';
@@ -22,6 +22,13 @@
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
   import { VideoProfiler, type VideoStats } from '$lib/video';
   import { LatestVideoSeek } from '$lib/video/latest-video-seek';
+  import {
+    getVideoOverlayDisplayTime,
+    getVideoOverlayDuration,
+    VideoControlOverlayVisibility,
+    VIDEO_OVERLAY_IDLE_MS
+  } from '$lib/video/video-control-overlay';
+  import VideoControlOverlay from './VideoControlOverlay.svelte';
   import type {
     MediaBunnyMetadataEvent,
     MediaBunnyFirstFrameEvent,
@@ -84,7 +91,6 @@
   let isVideoLoaded = $state(false);
   let isPaused = $state(true);
   let errorMessage = $state<string | null>(null);
-  const PauseIcon = $derived(isPaused ? Play : Pause);
   const LoadingIcon = $derived(errorMessage ? OctagonX : Loader);
   let bitmapFrameId: number | undefined;
   let videoFrameCallbackId: number | undefined;
@@ -99,7 +105,14 @@
   let currentSourceUrl: string | undefined = undefined; // For URL streaming
   let webCodecsFirstFrameReceived = $state(false);
   let webCodecsTimeoutId: ReturnType<typeof setTimeout> | null = null;
-  let workerCurrentTime = 0; // Track time from worker for profiling
+  let workerCurrentTime = $state(0); // Track time from worker for profiling
+  let overlayCurrentTime = $state(0);
+  let overlayDuration = $state(0);
+  let overlaySeekTime = $state(0);
+  let isOverlayScrubbing = $state(false);
+  let showMediaOverlay = $state(false);
+  let mediaOverlayHideTimeout: ReturnType<typeof setTimeout> | null = null;
+  const mediaOverlayVisibility = new VideoControlOverlayVisibility();
   let showNativeSeekPreview = $state(false);
   const nativeSeekPreview = new LatestVideoSeek();
 
@@ -114,6 +127,20 @@
   let profiler: VideoProfiler | null = null;
   let videoStats = $state<VideoStats | null>(null);
   let statsIntervalId: ReturnType<typeof setInterval> | null = null;
+  const mediaOverlayTime = $derived.by(() => {
+    if (isOverlayScrubbing) {
+      return overlaySeekTime;
+    }
+
+    return getVideoOverlayDisplayTime({
+      workerTime: workerCurrentTime,
+      elementTime: overlayCurrentTime,
+      hasWorkerFrame: webCodecsFirstFrameReceived
+    });
+  });
+  const mediaOverlayProgress = $derived(
+    overlayDuration > 0 ? Math.min(100, Math.max(0, (mediaOverlayTime / overlayDuration) * 100)) : 0
+  );
 
   // Initialize bitmaprenderer context when canvas is bound
   $effect(() => {
@@ -165,6 +192,8 @@
 
     const safeTime = Math.max(0, time);
 
+    overlayCurrentTime = safeTime;
+    workerCurrentTime = safeTime;
     lastRecordedMediaTime = -1;
     seekNativeVideoPreview(safeTime);
 
@@ -173,6 +202,64 @@
     }
 
     audioService.send(nodeId, 'message', { type: 'seek', time: safeTime });
+  }
+
+  function showMediaControls() {
+    if (!isVideoLoaded) return;
+
+    mediaOverlayVisibility.show(performance.now());
+    showMediaOverlay = mediaOverlayVisibility.visible;
+    scheduleMediaOverlayHide();
+  }
+
+  function hideMediaControls() {
+    if (mediaOverlayHideTimeout !== null) {
+      clearTimeout(mediaOverlayHideTimeout);
+      mediaOverlayHideTimeout = null;
+    }
+
+    mediaOverlayVisibility.hide();
+    showMediaOverlay = mediaOverlayVisibility.visible;
+  }
+
+  function scheduleMediaOverlayHide() {
+    if (mediaOverlayHideTimeout !== null) {
+      clearTimeout(mediaOverlayHideTimeout);
+    }
+
+    mediaOverlayHideTimeout = setTimeout(() => {
+      if (mediaOverlayVisibility.shouldHide(performance.now())) {
+        mediaOverlayVisibility.hide();
+        showMediaOverlay = mediaOverlayVisibility.visible;
+      }
+
+      mediaOverlayHideTimeout = null;
+    }, VIDEO_OVERLAY_IDLE_MS);
+  }
+
+  function handleOverlaySeekStart() {
+    if (!isVideoLoaded) return;
+
+    isOverlayScrubbing = true;
+    overlaySeekTime = mediaOverlayTime;
+    mediaOverlayVisibility.startScrubbing();
+    showMediaOverlay = mediaOverlayVisibility.visible;
+  }
+
+  function handleOverlaySeekInput(time: number) {
+    if (!isVideoLoaded) return;
+
+    overlaySeekTime = time;
+    seekToTime(time);
+  }
+
+  function handleOverlaySeekEnd() {
+    if (!isOverlayScrubbing) return;
+
+    isOverlayScrubbing = false;
+    mediaOverlayVisibility.stopScrubbing(performance.now());
+    showMediaOverlay = mediaOverlayVisibility.visible;
+    scheduleMediaOverlayHide();
   }
 
   function seekNativeVideoPreview(time: number) {
@@ -239,6 +326,12 @@
 
           isVideoLoaded = true;
           isPaused = true;
+          overlayCurrentTime = 0;
+          workerCurrentTime = 0;
+          overlayDuration = getVideoOverlayDuration({
+            metadataDuration: undefined,
+            elementDuration: videoElement.duration
+          });
           errorMessage = null;
 
           // Send file to audio system
@@ -411,6 +504,7 @@
 
     // Get current time from appropriate source
     const currentTime = workerCurrentTime || videoElement?.currentTime || 0;
+    overlayCurrentTime = currentTime;
 
     if (isPaused) {
       audioService.send(nodeId, 'message', { type: 'play' });
@@ -493,6 +587,7 @@
     // Only record when mediaTime actually changes (deduplicate same-frame callbacks)
     if (metadata.mediaTime !== lastRecordedMediaTime) {
       lastRecordedMediaTime = metadata.mediaTime;
+      overlayCurrentTime = metadata.mediaTime;
       profiler?.recordFrame(metadata.mediaTime * 1_000_000, metadata.mediaTime);
 
       // Calculate actual frame rate from metadata (presentedFrames / mediaTime)
@@ -530,6 +625,7 @@
 
       if (currentMediaTime !== lastRecordedMediaTime) {
         lastRecordedMediaTime = currentMediaTime;
+        overlayCurrentTime = currentMediaTime;
 
         profiler?.recordFrame(currentMediaTime * 1_000_000, currentMediaTime);
       }
@@ -625,6 +721,7 @@
     }
 
     workerCurrentTime = mediaTime;
+    overlayCurrentTime = mediaTime;
     profiler?.recordFrame(mediaTime * 1_000_000, mediaTime);
 
     if (glSystem.hasOutgoingVideoConnections(nodeId)) {
@@ -652,6 +749,10 @@
       height: event.metadata.height,
       codec: event.metadata.codec
     });
+    overlayDuration = getVideoOverlayDuration({
+      metadataDuration: event.metadata.duration,
+      elementDuration: videoElement?.duration
+    });
   }
 
   function handleWorkerFirstFrame(event: MediaBunnyFirstFrameEvent) {
@@ -677,6 +778,8 @@
     }
 
     isPaused = true;
+    overlayCurrentTime = 0;
+    workerCurrentTime = 0;
 
     if (videoElement) {
       videoElement.pause();
@@ -694,6 +797,7 @@
     if (event.nodeId !== nodeId) return;
 
     workerCurrentTime = event.currentTime;
+    overlayCurrentTime = event.currentTime;
 
     if (
       showNativeSeekPreview &&
@@ -755,6 +859,11 @@
       statsIntervalId = null;
     }
 
+    if (mediaOverlayHideTimeout !== null) {
+      clearTimeout(mediaOverlayHideTimeout);
+      mediaOverlayHideTimeout = null;
+    }
+
     // Clean up worker MediaBunny player
     glSystem.destroyMediaBunnyPlayer(nodeId);
 
@@ -797,13 +906,6 @@
         <div></div>
         <div class="flex gap-1">
           {#if isVideoLoaded}
-            <button
-              title={isPaused ? 'Play video' : 'Pause video'}
-              class="node-floating-button"
-              onclick={togglePause}
-            >
-              <PauseIcon class="h-4 w-4 text-zinc-300" />
-            </button>
             <button title="Restart video" class="node-floating-button" onclick={restartVideo}>
               <SkipBack class="h-4 w-4 text-zinc-300" />
             </button>
@@ -832,7 +934,13 @@
           class={`rounded-lg border-1 ${selected ? 'shadow-glow-md border-zinc-400' : 'hover:shadow-glow-sm'}`}
         >
           {#if !errorMessage}
-            <div class="relative">
+            <div
+              class="relative"
+              role="presentation"
+              onmouseenter={showMediaControls}
+              onmousemove={showMediaControls}
+              onmouseleave={hideMediaControls}
+            >
               <!-- Canvas preview when MediaBunny is active (worker sends frames via bitmaprenderer) -->
               <canvas
                 bind:this={previewCanvas}
@@ -888,6 +996,22 @@
                     <div class="text-zinc-400">{videoStats.codec}</div>
                   {/if}
                 </div>
+              {/if}
+
+              {#if isVideoLoaded}
+                <VideoControlOverlay
+                  visible={showMediaOverlay}
+                  scrubbing={isOverlayScrubbing}
+                  paused={isPaused}
+                  currentTime={mediaOverlayTime}
+                  duration={overlayDuration}
+                  progress={mediaOverlayProgress}
+                  onTogglePause={togglePause}
+                  onShowControls={showMediaControls}
+                  onSeekStart={handleOverlaySeekStart}
+                  onSeekInput={handleOverlaySeekInput}
+                  onSeekEnd={handleOverlaySeekEnd}
+                />
               {/if}
             </div>
           {/if}
