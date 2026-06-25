@@ -82,6 +82,31 @@ export class VideoControlOverlayVisibility {
   }
 }
 
+export class VideoOverlaySeekPlaybackGate {
+  private active = false;
+  private resumeAfterSeek = false;
+
+  start({ paused }: { paused: boolean }): { shouldPause: boolean } {
+    if (this.active) {
+      return { shouldPause: false };
+    }
+
+    this.active = true;
+    this.resumeAfterSeek = !paused;
+
+    return { shouldPause: this.resumeAfterSeek };
+  }
+
+  stop(): { shouldResume: boolean } {
+    const shouldResume = this.resumeAfterSeek;
+
+    this.active = false;
+    this.resumeAfterSeek = false;
+
+    return { shouldResume };
+  }
+}
+
 function padClockPart(value: number): string {
   return value.toString().padStart(2, '0');
 }

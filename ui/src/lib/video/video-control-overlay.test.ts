@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   VIDEO_OVERLAY_IDLE_MS,
+  VideoOverlaySeekPlaybackGate,
   VideoControlOverlayVisibility,
   formatVideoOverlayTime,
   getVideoOverlayDisplayTime,
@@ -54,5 +55,16 @@ describe('video control overlay', () => {
     visibility.stopScrubbing(100 + VIDEO_OVERLAY_IDLE_MS);
 
     expect(visibility.shouldHide(100 + VIDEO_OVERLAY_IDLE_MS * 2)).toBe(true);
+  });
+
+  it('resumes playback after overlay scrubbing only when video was playing before', () => {
+    const gate = new VideoOverlaySeekPlaybackGate();
+
+    expect(gate.start({ paused: false })).toEqual({ shouldPause: true });
+    expect(gate.start({ paused: true })).toEqual({ shouldPause: false });
+    expect(gate.stop()).toEqual({ shouldResume: true });
+
+    expect(gate.start({ paused: true })).toEqual({ shouldPause: false });
+    expect(gate.stop()).toEqual({ shouldResume: false });
   });
 });

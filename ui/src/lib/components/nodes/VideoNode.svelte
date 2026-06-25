@@ -25,6 +25,7 @@
   import {
     getVideoOverlayDisplayTime,
     getVideoOverlayDuration,
+    VideoOverlaySeekPlaybackGate,
     VideoControlOverlayVisibility,
     VIDEO_OVERLAY_IDLE_MS
   } from '$lib/video/video-control-overlay';
@@ -113,6 +114,7 @@
   let showMediaOverlay = $state(false);
   let mediaOverlayHideTimeout: ReturnType<typeof setTimeout> | null = null;
   const mediaOverlayVisibility = new VideoControlOverlayVisibility();
+  const overlaySeekPlaybackGate = new VideoOverlaySeekPlaybackGate();
   let showNativeSeekPreview = $state(false);
   const nativeSeekPreview = new LatestVideoSeek();
 
@@ -240,6 +242,12 @@
   function handleOverlaySeekStart() {
     if (!isVideoLoaded) return;
 
+    const gate = overlaySeekPlaybackGate.start({ paused: isPaused });
+
+    if (gate.shouldPause) {
+      pauseVideoPlayback();
+    }
+
     isOverlayScrubbing = true;
     overlaySeekTime = mediaOverlayTime;
     mediaOverlayVisibility.startScrubbing();
@@ -260,6 +268,10 @@
     mediaOverlayVisibility.stopScrubbing(performance.now());
     showMediaOverlay = mediaOverlayVisibility.visible;
     scheduleMediaOverlayHide();
+
+    if (overlaySeekPlaybackGate.stop().shouldResume) {
+      playVideoPlayback();
+    }
   }
 
   function seekNativeVideoPreview(time: number) {
@@ -502,42 +514,58 @@
   function togglePause() {
     if (!isVideoLoaded) return;
 
+    if (isPaused) {
+      playVideoPlayback();
+    } else {
+      pauseVideoPlayback();
+    }
+  }
+
+  function playVideoPlayback() {
+    if (!isVideoLoaded || !isPaused) return;
+
     // Get current time from appropriate source
     const currentTime = workerCurrentTime || videoElement?.currentTime || 0;
     overlayCurrentTime = currentTime;
 
-    if (isPaused) {
-      audioService.send(nodeId, 'message', { type: 'play' });
+    audioService.send(nodeId, 'message', { type: 'play' });
 
-      if (webCodecsFirstFrameReceived) {
-        // Worker MediaBunny mode
-        glSystem.mediaBunnyPlay(nodeId);
-        showNativeSeekPreview = false;
-      } else if (videoElement) {
-        // Fallback mode - control HTMLVideoElement
-        videoElement.play();
-      }
-
-      // Mark playback start for accurate drop detection
-      profiler?.markPlaybackStart(currentTime);
-
-      isPaused = false;
-    } else {
-      // Mark playback stop before pausing (calculates drops)
-      profiler?.markPlaybackStop(currentTime);
-
-      audioService.send(nodeId, 'message', { type: 'pause' });
-
-      if (webCodecsFirstFrameReceived) {
-        // Worker MediaBunny mode
-        glSystem.mediaBunnyPause(nodeId);
-      } else if (videoElement) {
-        // Fallback mode - control HTMLVideoElement
-        videoElement.pause();
-      }
-
-      isPaused = true;
+    if (webCodecsFirstFrameReceived) {
+      // Worker MediaBunny mode
+      glSystem.mediaBunnyPlay(nodeId);
+      showNativeSeekPreview = false;
+    } else if (videoElement) {
+      // Fallback mode - control HTMLVideoElement
+      videoElement.play();
     }
+
+    // Mark playback start for accurate drop detection
+    profiler?.markPlaybackStart(currentTime);
+
+    isPaused = false;
+  }
+
+  function pauseVideoPlayback() {
+    if (!isVideoLoaded || isPaused) return;
+
+    // Get current time from appropriate source
+    const currentTime = workerCurrentTime || videoElement?.currentTime || 0;
+    overlayCurrentTime = currentTime;
+
+    // Mark playback stop before pausing (calculates drops)
+    profiler?.markPlaybackStop(currentTime);
+
+    audioService.send(nodeId, 'message', { type: 'pause' });
+
+    if (webCodecsFirstFrameReceived) {
+      // Worker MediaBunny mode
+      glSystem.mediaBunnyPause(nodeId);
+    } else if (videoElement) {
+      // Fallback mode - control HTMLVideoElement
+      videoElement.pause();
+    }
+
+    isPaused = true;
   }
 
   /**
