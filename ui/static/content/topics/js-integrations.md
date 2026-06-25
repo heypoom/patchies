@@ -33,15 +33,18 @@ See [Data Storage](/docs/data-storage) for more.
 
 ## Audio Reactivity
 
-Connect an `fft~` object to your js object and call `fft()` to read frequency data:
+Connect an `fft~` object to your js object and call `fft()` to read audio analysis data:
 
 ```javascript
-const data = fft(); // Float32Array of frequency values (0–255)
-const bass = data[2];
-const treble = data[data.length - 10];
+const analysis = fft({ type: "freq" });
+
+// returns normalized 0-1 float
+const bass = analysis.getEnergy("bass");
+const treble = analysis.getEnergy("treble");
+const firstBin = analysis.f[0];
 ```
 
-See [Audio Reactivity](/docs/audio-reactivity) for a full walkthrough.
+`fft()` returns an `FFTAnalysis` instance. See [Audio Reactivity](/docs/audio-reactivity) for waveform mode, raw bins, normalized bins, and the full walkthrough.
 
 ## Primary Button
 
