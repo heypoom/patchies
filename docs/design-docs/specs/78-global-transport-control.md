@@ -15,13 +15,13 @@ There is no way to keep visual and audio in perfect sync (beat-match) in Patchie
 
 ### Transport Controls
 
-| Control          | Behavior                                                                                                                                              |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Play/Pause**   | Toggle button. Pause freezes the clock at current position. Spacebar keyboard shortcut.                                                               |
-| **Stop**         | Resets clock to 0 and pauses.                                                                                                                         |
-| **BPM**          | Manual number input. Default: 120.                                                                                                                    |
+| Control          | Behavior                                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Play/Pause**   | Toggle button. Pause freezes the clock at current position. Spacebar keyboard shortcut.                                                              |
+| **Stop**         | Resets clock to 0 and pauses.                                                                                                                        |
+| **BPM**          | Manual number input. Default: 120.                                                                                                                   |
 | **Time Display** | Shows current position. Click to toggle formats: time (`02:35:42` = MM:SS:CS), bars (`001:1:01`), seconds (`00004.25`). Double-click to edit & seek. |
-| **DSP On/Off**   | Mute-style button. Red when DSP is off (AudioContext suspended).                                                                                      |
+| **DSP On/Off**   | Mute-style button. Red when DSP is off (AudioContext suspended).                                                                                     |
 
 ### UI
 
@@ -271,6 +271,7 @@ This design ensures:
 1. **Zero Tone.js in initial bundle** - Stub works standalone
 2. **Seamless upgrade** - BPM transfers when upgrading to full transport
 3. **Embed mode** - Skip upgrade entirely for lite embeds (future: add `disableUpgrade()` method)
+4. **Panel-independent settings sync** - persisted, loaded, or settings-panel BPM/time-signature updates in `transportStore` update the active `Transport` context even when `TransportPanel` is not mounted
 
 #### Auto-Sync All Time-Based Nodes
 
@@ -668,20 +669,20 @@ Completed: 2024-02-24
 
 ### Files Modified
 
-| File                                            | Changes                                                                                               |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `src/lib/js-runner/JSRunner.ts`                 | Added `clock` object to execution context with getters for `time`, `ticks`, `beat`, `phase`, `bpm` |
-| `src/lib/canvas/GLSystem.ts`                    | Added `startTransportSync()`, `stopTransportSync()`, `syncTransportTime()`. Transport syncs at 60fps  |
-| `src/workers/rendering/renderWorker.ts`         | Handles `syncTransportTime` message, passes to fboRenderer                                            |
-| `src/workers/rendering/fboRenderer.ts`          | Added `transportTime`, `setTransportTime()`, `defineWorkerGlobals()`, `createWorkerClock()`           |
-| `src/lib/canvas/shadertoy-draw.ts`              | Changed `iTime` uniform to use `props.transportTime` instead of regl's internal clock                 |
-| `src/workers/rendering/hydraRenderer.ts`        | Uses `params.transportTime` for synth.time, passes `createWorkerClock()` to extraContext              |
-| `src/workers/rendering/threeRenderer.ts`        | Passes `createWorkerClock()` to extraContext for Three.js code                                        |
-| `src/workers/rendering/canvasRenderer.ts`       | Passes `createWorkerClock()` to extraContext for Canvas code                                          |
-| `src/workers/rendering/textmodeRenderer.ts`     | Passes `createWorkerClock()` to extraContext for Textmode code                                        |
-| `src/lib/rendering/types.ts`                    | Added `transportTime: number` to `RenderParams` interface                                             |
-| `src/lib/components/BottomToolbar.svelte`       | Replaced VolumeControl with Popover containing TransportPanel. Added tooltips to all toolbar buttons  |
-| `src/lib/components/ObjectPreviewLayout.svelte` | Renamed individual node toggle to Pin/PinOff icons. All buttons now use Tooltip components            |
+| File                                            | Changes                                                                                              |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `src/lib/js-runner/JSRunner.ts`                 | Added `clock` object to execution context with getters for `time`, `ticks`, `beat`, `phase`, `bpm`   |
+| `src/lib/canvas/GLSystem.ts`                    | Added `startTransportSync()`, `stopTransportSync()`, `syncTransportTime()`. Transport syncs at 60fps |
+| `src/workers/rendering/renderWorker.ts`         | Handles `syncTransportTime` message, passes to fboRenderer                                           |
+| `src/workers/rendering/fboRenderer.ts`          | Added `transportTime`, `setTransportTime()`, `defineWorkerGlobals()`, `createWorkerClock()`          |
+| `src/lib/canvas/shadertoy-draw.ts`              | Changed `iTime` uniform to use `props.transportTime` instead of regl's internal clock                |
+| `src/workers/rendering/hydraRenderer.ts`        | Uses `params.transportTime` for synth.time, passes `createWorkerClock()` to extraContext             |
+| `src/workers/rendering/threeRenderer.ts`        | Passes `createWorkerClock()` to extraContext for Three.js code                                       |
+| `src/workers/rendering/canvasRenderer.ts`       | Passes `createWorkerClock()` to extraContext for Canvas code                                         |
+| `src/workers/rendering/textmodeRenderer.ts`     | Passes `createWorkerClock()` to extraContext for Textmode code                                       |
+| `src/lib/rendering/types.ts`                    | Added `transportTime: number` to `RenderParams` interface                                            |
+| `src/lib/components/BottomToolbar.svelte`       | Replaced VolumeControl with Popover containing TransportPanel. Added tooltips to all toolbar buttons |
+| `src/lib/components/ObjectPreviewLayout.svelte` | Renamed individual node toggle to Pin/PinOff icons. All buttons now use Tooltip components           |
 
 ### Key Implementation Details
 
@@ -707,7 +708,7 @@ Solution: All worker-based renderers override `clock` via `extraContext`:
 ```typescript
 // In each worker renderer (Hydra, Three.js, Canvas, Textmode):
 const extraContext = {
-  clock: this.renderer.createWorkerClock()
+  clock: this.renderer.createWorkerClock(),
 };
 ```
 

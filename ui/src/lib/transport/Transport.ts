@@ -14,6 +14,25 @@ class TransportManager implements ITransport {
   private toneUpgraded = false;
   private toneUpgradeDisabled = false;
 
+  constructor() {
+    this.syncTransportWithStore();
+  }
+
+  /** Syncs BPM and time signature with store */
+  private syncTransportWithStore() {
+    transportStore.subscribe(({ bpm, timeSignature }) => {
+      if (this.context.bpm !== bpm) {
+        this.context.setBpm(bpm);
+      }
+
+      const [beatsPerBar, denominator] = timeSignature;
+
+      if (this.context.beatsPerBar !== beatsPerBar || this.context.denominator !== denominator) {
+        this.context.setTimeSignature(beatsPerBar, denominator);
+      }
+    });
+  }
+
   // Proxy all reads to current implementation
   get seconds(): number {
     return this.context.seconds;
