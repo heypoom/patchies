@@ -23,7 +23,7 @@
   }
 
   onMount(() => {
-    bitmapContext = outputCanvasElement.getContext('bitmaprenderer')!;
+    bitmapContext = outputCanvasElement.getContext('bitmaprenderer', { alpha: true })!;
 
     glSystem.backgroundOutputCanvasContext = bitmapContext;
     // Call directly (no debounce) on mount so initial size is set immediately.

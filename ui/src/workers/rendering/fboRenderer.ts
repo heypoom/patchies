@@ -62,6 +62,7 @@ import { createGlslCookPolicy } from './cooking/glsl';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
 import { getViewportCookRequiredNodeIds, shouldSkipCookForViewport } from './renderEligibility';
+import { createFinalOutputPresentationCommand } from './finalOutputPresentation';
 
 interface MessageCapableRenderer {
   handleMessage(message: Message): void;
@@ -104,6 +105,9 @@ export class FBORenderer {
   public offscreenCanvas: OffscreenCanvas;
   public gl: WebGL2RenderingContext;
   public regl: regl.Regl;
+
+  // Draw command for outputting the final image
+  private drawFinalOutput: regl.DrawCommand;
 
   // Mapping of nodeId -> uniform key -> uniform value
   // example: {'glsl-0': {'sliderValue': 0.5}}
@@ -221,6 +225,10 @@ export class FBORenderer {
       extensions: WEBGL_EXTENSIONS,
       optionalExtensions: WEBGL_OPTIONAL_EXTENSIONS
     });
+
+    // Draw final output by pre-multiplying alpha channel
+    // Fixes alpha not being rendered in final output
+    this.drawFinalOutput = createFinalOutputPresentationCommand(this.regl);
 
     // Detect float FBO support
     this.colorBufferFloatSupported = !!this.gl.getExtension('EXT_color_buffer_float');
@@ -1951,6 +1959,7 @@ export class FBORenderer {
     const gl = this.regl._gl as WebGL2RenderingContext;
 
     let framebuffer: regl.Framebuffer2D | null = null;
+    let texture = node.colorAttachments[this.outputOutletIndex] ?? node.texture;
 
     // Source size comes from the node's FBO (not the background)
     let sourceWidth = node.texture.width;
@@ -1961,6 +1970,7 @@ export class FBORenderer {
 
       // Use cached FBO instead of creating new one every frame (fixes massive leak)
       framebuffer = this.videoTextures.getDestinationFBO(node.id) || null;
+      texture = tex;
       sourceWidth = tex.width;
       sourceHeight = tex.height;
     } else {
@@ -1970,11 +1980,6 @@ export class FBORenderer {
     if (!framebuffer) {
       return;
     }
-
-    gl.viewport(0, 0, outputWidth, outputHeight);
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, getFramebuffer(framebuffer));
-    gl.readBuffer(gl.COLOR_ATTACHMENT0 + this.outputOutletIndex);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
     // Cover-mode blit: crop the source to match the background's aspect ratio,
     // so the output fills the screen without stretching (spec 128).
@@ -2002,19 +2007,16 @@ export class FBORenderer {
       sourceY1 = Math.floor(offset + cropHeight);
     }
 
-    gl.blitFramebuffer(
-      sourceX0,
-      sourceY0,
-      sourceX1,
-      sourceY1,
-      0,
-      0,
-      outputWidth,
-      outputHeight,
-      gl.COLOR_BUFFER_BIT,
-      gl.LINEAR
-    );
+    gl.viewport(0, 0, outputWidth, outputHeight);
 
+    const sourceUvRect = [
+      sourceX0 / sourceWidth,
+      sourceY0 / sourceHeight,
+      sourceX1 / sourceWidth,
+      sourceY1 / sourceHeight
+    ];
+
+    this.drawFinalOutput({ texture, sourceUvRect });
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
