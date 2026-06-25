@@ -91,8 +91,8 @@
 
     resizeCanvases();
 
-    outputBitmapContext = outputCanvas.getContext('bitmaprenderer')!;
-    surfaceBitmapContext = surfaceCanvas.getContext('bitmaprenderer')!;
+    outputBitmapContext = outputCanvas.getContext('bitmaprenderer', { alpha: true })!;
+    surfaceBitmapContext = surfaceCanvas.getContext('bitmaprenderer', { alpha: true })!;
 
     const handleMessage = (event: MessageEvent<unknown>) => {
       if (event.origin !== expectedOrigin) return;

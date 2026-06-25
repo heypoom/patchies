@@ -13,21 +13,26 @@ Create the worker WebGL context with explicit alpha settings:
 - `alpha: true` so the drawing buffer has an alpha channel.
 - `premultipliedAlpha: false` because Patchies FBO content is straight alpha.
 
-The final blit still uses the existing GPU path:
+The final presentation pass converts internal straight-alpha node output into
+premultiplied-alpha pixels for the browser-visible `ImageBitmap`:
 
 ```typescript
-gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sourceFbo);
-gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-gl.blitFramebuffer(...);
+vec4 color = texture(sourceTexture, sourceUv);
+fragColor = vec4(color.rgb * color.a, color.a);
 ```
 
-This keeps output transfer zero-copy while making the background path match preview semantics.
+This keeps alpha transparent while preventing hidden RGB in fully transparent
+pixels from leaking through `bitmaprenderer` presentation. Internal FBOs and
+node-to-node video textures remain straight-alpha.
 
 ## Files affected
 
-| File                                   | Change                                      |
-| -------------------------------------- | ------------------------------------------- |
-| `src/workers/rendering/fboRenderer.ts` | Use explicit straight-alpha WebGL settings. |
+| File                                                        | Change                                      |
+| ----------------------------------------------------------- | ------------------------------------------- |
+| `ui/src/workers/rendering/fboRenderer.ts`                   | Use explicit straight-alpha WebGL settings. |
+| `ui/src/workers/rendering/finalOutputPresentation.ts`       | Premultiply final output pixels for presentation. |
+| `ui/src/lib/components/BackgroundOutputCanvas.svelte`       | Request an alpha-capable background bitmap renderer. |
+| `ui/src/routes/output/+page.svelte`                         | Request alpha-capable output-window bitmap renderers. |
 
 ## What does NOT change
 
