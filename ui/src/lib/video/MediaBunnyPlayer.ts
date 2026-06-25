@@ -39,8 +39,15 @@ interface BufferedFrame {
   timestamp: number; // seconds
 }
 
+interface CachedSeekFrame extends BufferedFrame {
+  key: number;
+}
+
 // How many frames to buffer ahead
 const FRAME_BUFFER_SIZE = 10;
+const SEEK_FRAME_CACHE_SIZE = 72;
+const SEEK_PREFETCH_RADIUS_SECONDS = 0.35;
+const SEEK_PREFETCH_MAX_FRAMES = 24;
 
 // Profiling
 const PROFILE_ENABLED = false;
@@ -80,6 +87,15 @@ export class MediaBunnyPlayer {
   private frameBuffer: BufferedFrame[] = [];
   private isBuffering = false;
   private bufferAbortController: AbortController | null = null;
+
+  // Seek coalescing. Random-access frame decoding can be slower than slider input,
+  // so keep only the newest pending target while one seek is active.
+  private activeSeekPromise: Promise<void> | null = null;
+  private pendingSeekTime: number | null = null;
+  private seekGeneration = 0;
+  private resumePlaybackAfterSeek = false;
+  private seekFrameCache = new Map<number, CachedSeekFrame>();
+  private seekPrefetchAbortController: AbortController | null = null;
 
   constructor(config: MediaBunnyPlayerConfig) {
     this.nodeId = config.nodeId;
@@ -174,8 +190,10 @@ export class MediaBunnyPlayer {
       // Reset all state to avoid stale values from a partial load
       this.input?.dispose();
       this.input = null;
+
       this.videoTrack = null;
       this.sink = null;
+
       this._isLoaded = false;
       this._metadata = null;
       this._currentTime = 0;
@@ -197,7 +215,7 @@ export class MediaBunnyPlayer {
    * Show a single frame at the specified time (for preview/seeking).
    * Uses getSample() which is slower but necessary for random access.
    */
-  private async showPreviewFrame(timeSeconds: number): Promise<void> {
+  private async showPreviewFrame(timeSeconds: number, seekGeneration?: number): Promise<void> {
     if (!this.sink) return;
 
     try {
@@ -207,13 +225,24 @@ export class MediaBunnyPlayer {
 
       // Cache timestamp before any operations that might close the sample
       const timestamp = sample.timestamp;
-      this._currentTime = timestamp;
+
+      if (seekGeneration !== undefined && seekGeneration !== this.seekGeneration) {
+        sample.close();
+        return;
+      }
 
       // Convert to ImageBitmap with guaranteed cleanup
       const videoFrame = sample.toVideoFrame();
       try {
         // Skip flipY here - let CSS/GL handle it (flipY in createImageBitmap is slow ~11ms)
         const bitmap = await createImageBitmap(videoFrame);
+
+        if (seekGeneration !== undefined && seekGeneration !== this.seekGeneration) {
+          bitmap.close();
+          return;
+        }
+
+        this._currentTime = timestamp;
 
         // Send to renderer
         this.onFrame(bitmap, timestamp * 1_000_000); // convert to microseconds
@@ -230,6 +259,116 @@ export class MediaBunnyPlayer {
     } catch (error) {
       console.error('[MediaBunnyPlayer] Error showing preview frame:', error);
     }
+  }
+
+  private async showSeekFrame(timeSeconds: number, seekGeneration: number): Promise<void> {
+    const cachedFrame = this.seekFrameCache.get(this.getSeekFrameKey(timeSeconds));
+
+    if (cachedFrame) {
+      await this.emitCachedSeekFrame(cachedFrame, seekGeneration);
+      return;
+    }
+
+    if (!this.sink) return;
+
+    try {
+      for await (const sample of this.sink.samplesAtTimestamps([timeSeconds])) {
+        if (!sample) return;
+
+        await this.cacheAndMaybeEmitSeekSample(sample, timeSeconds, seekGeneration);
+        return;
+      }
+    } catch (error) {
+      console.error('[MediaBunnyPlayer] Error showing seek frame:', error);
+    }
+  }
+
+  private async cacheAndMaybeEmitSeekSample(
+    sample: NonNullable<Awaited<ReturnType<VideoSampleSink['getSample']>>>,
+    requestedTime: number,
+    seekGeneration: number
+  ): Promise<void> {
+    const timestamp = sample.timestamp;
+
+    if (seekGeneration !== this.seekGeneration) {
+      sample.close();
+      return;
+    }
+
+    const videoFrame = sample.toVideoFrame();
+
+    try {
+      const bitmap = await createImageBitmap(videoFrame);
+
+      if (seekGeneration !== this.seekGeneration) {
+        bitmap.close();
+        return;
+      }
+
+      const cachedFrame = this.cacheSeekFrame(requestedTime, timestamp, bitmap);
+
+      await this.emitCachedSeekFrame(cachedFrame, seekGeneration);
+    } finally {
+      videoFrame.close();
+      sample.close();
+    }
+  }
+
+  private async emitCachedSeekFrame(
+    cachedFrame: CachedSeekFrame,
+    seekGeneration: number
+  ): Promise<void> {
+    if (seekGeneration !== this.seekGeneration) return;
+
+    const bitmap = await createImageBitmap(cachedFrame.bitmap);
+
+    if (seekGeneration !== this.seekGeneration) {
+      bitmap.close();
+      return;
+    }
+
+    this._currentTime = cachedFrame.timestamp;
+    this.onFrame(bitmap, cachedFrame.timestamp * 1_000_000);
+
+    if (!this.firstFrameSent) {
+      this.firstFrameSent = true;
+      this.onFirstFrame?.();
+    }
+
+    this.onTimeUpdate?.(this._currentTime);
+  }
+
+  private cacheSeekFrame(
+    requestedTime: number,
+    timestamp: number,
+    bitmap: ImageBitmap
+  ): CachedSeekFrame {
+    const key = this.getSeekFrameKey(requestedTime);
+    const existing = this.seekFrameCache.get(key);
+
+    if (existing) {
+      existing.bitmap.close();
+      this.seekFrameCache.delete(key);
+    }
+
+    const cachedFrame = { key, bitmap, timestamp };
+
+    this.seekFrameCache.set(key, cachedFrame);
+
+    while (this.seekFrameCache.size > SEEK_FRAME_CACHE_SIZE) {
+      const oldest = this.seekFrameCache.values().next().value;
+
+      if (!oldest) break;
+
+      oldest.bitmap.close();
+      this.seekFrameCache.delete(oldest.key);
+    }
+
+    return cachedFrame;
+  }
+
+  private getSeekFrameKey(timeSeconds: number): number {
+    return Math.round(timeSeconds * (this._metadata?.frameRate ?? 30));
   }
 
   /**
@@ -294,6 +433,7 @@ export class MediaBunnyPlayer {
           // Skip flipY here - let CSS/GL handle it (flipY in createImageBitmap is slow ~11ms)
           const bitmap = await createImageBitmap(videoFrame);
           const bitmapEnd = PROFILE_ENABLED ? performance.now() : 0;
+
           videoFrame.close();
 
           // Profile logging
@@ -308,6 +448,7 @@ export class MediaBunnyPlayer {
                   `toVideoFrame=${(profileTotalDecodeTime / profileFrameCount).toFixed(2)}ms, ` +
                   `createImageBitmap=${(profileTotalBitmapTime / profileFrameCount).toFixed(2)}ms`
               );
+
               profileFrameCount = 0;
               profileTotalDecodeTime = 0;
               profileTotalBitmapTime = 0;
@@ -315,10 +456,7 @@ export class MediaBunnyPlayer {
           }
 
           // Add to buffer
-          this.frameBuffer.push({
-            bitmap,
-            timestamp: sample.timestamp
-          });
+          this.frameBuffer.push({ bitmap, timestamp: sample.timestamp });
 
           sample.close();
         } catch (error) {
@@ -356,7 +494,21 @@ export class MediaBunnyPlayer {
     for (const frame of this.frameBuffer) {
       frame.bitmap.close();
     }
+
     this.frameBuffer = [];
+  }
+
+  private clearSeekFrameCache(): void {
+    for (const frame of this.seekFrameCache.values()) {
+      frame.bitmap.close();
+    }
+
+    this.seekFrameCache.clear();
+  }
+
+  private stopSeekPrefetch(): void {
+    this.seekPrefetchAbortController?.abort();
+    this.seekPrefetchAbortController = null;
   }
 
   /**
@@ -386,13 +538,16 @@ export class MediaBunnyPlayer {
         this.startBuffering(0);
       } else {
         this._paused = true;
+
         if (this.animationFrameId !== null) {
           cancelAnimationFrame(this.animationFrameId);
           this.animationFrameId = null;
         }
+
         this.stopBuffering();
         this.onEnded();
       }
+
       return;
     }
 
@@ -408,6 +563,7 @@ export class MediaBunnyPlayer {
 
     // Find frames that are at or before target time
     let bestFrameIndex = -1;
+
     for (let i = 0; i < this.frameBuffer.length; i++) {
       if (this.frameBuffer[i].timestamp <= targetTime) {
         bestFrameIndex = i;
@@ -425,13 +581,17 @@ export class MediaBunnyPlayer {
     for (let i = 0; i < bestFrameIndex; i++) {
       this.frameBuffer[i].bitmap.close();
     }
+
     this.frameBuffer.splice(0, bestFrameIndex);
 
     // Display the best frame
     const frame = this.frameBuffer.shift();
+
     if (frame) {
       this._currentTime = frame.timestamp;
-      this.onFrame(frame.bitmap, frame.timestamp * 1_000_000); // convert to microseconds
+
+      // convert to microseconds
+      this.onFrame(frame.bitmap, frame.timestamp * 1_000_000);
 
       // Notify first frame
       if (!this.firstFrameSent) {
@@ -448,6 +608,11 @@ export class MediaBunnyPlayer {
    * Pause playback.
    */
   pause(): void {
+    this.resumePlaybackAfterSeek = false;
+    this.pausePlaybackForSeek();
+  }
+
+  private pausePlaybackForSeek(): void {
     this._paused = true;
 
     if (this.animationFrameId !== null) {
@@ -465,9 +630,33 @@ export class MediaBunnyPlayer {
   async seek(timeSeconds: number): Promise<void> {
     if (!this._isLoaded) return;
 
-    const wasPlaying = !this._paused;
-    if (wasPlaying) {
-      this.pause();
+    this.pendingSeekTime = Math.max(0, timeSeconds);
+    this.seekGeneration += 1;
+    this.resumePlaybackAfterSeek ||= !this._paused;
+
+    if (!this.activeSeekPromise) {
+      this.activeSeekPromise = this.drainSeekQueue().finally(() => {
+        this.activeSeekPromise = null;
+      });
+    }
+
+    await this.activeSeekPromise;
+  }
+
+  private async drainSeekQueue(): Promise<void> {
+    while (this.pendingSeekTime !== null) {
+      const timeSeconds = this.pendingSeekTime;
+      const seekGeneration = this.seekGeneration;
+
+      this.pendingSeekTime = null;
+
+      await this.performSeek(timeSeconds, seekGeneration);
+    }
+  }
+
+  private async performSeek(timeSeconds: number, seekGeneration: number): Promise<void> {
+    if (!this._paused) {
+      this.pausePlaybackForSeek();
     }
 
     // Clear buffer for new position
@@ -475,19 +664,94 @@ export class MediaBunnyPlayer {
     this.clearBuffer();
 
     // Show preview frame at seek position
-    await this.showPreviewFrame(timeSeconds);
+    await this.showSeekFrame(timeSeconds, seekGeneration);
+
+    if (seekGeneration !== this.seekGeneration) {
+      return;
+    }
+
+    this.prefetchSeekFrames(timeSeconds, seekGeneration);
 
     // Force exact time when seeking to beginning (keyframe may not be at 0)
     if (timeSeconds === 0) {
       this._currentTime = 0;
     }
 
-    if (wasPlaying) {
+    if (this.resumePlaybackAfterSeek) {
+      this.resumePlaybackAfterSeek = false;
       this.playbackStartTime = performance.now();
       this.playbackStartVideoTime = this._currentTime;
       this._paused = false;
+
       this.startBuffering(this._currentTime);
       this.playbackLoop();
+    } else {
+      this.resumePlaybackAfterSeek = false;
+    }
+  }
+
+  private prefetchSeekFrames(centerTime: number, seekGeneration: number): void {
+    if (!this.sink || !this._metadata) return;
+
+    this.stopSeekPrefetch();
+
+    this.seekPrefetchAbortController = new AbortController();
+    const signal = this.seekPrefetchAbortController.signal;
+    const startTime = Math.max(0, centerTime - SEEK_PREFETCH_RADIUS_SECONDS);
+    const endTime = Math.min(this._metadata.duration, centerTime + SEEK_PREFETCH_RADIUS_SECONDS);
+
+    void this.prefetchSeekFramesInRange(startTime, endTime, seekGeneration, signal);
+  }
+
+  private async prefetchSeekFramesInRange(
+    startTime: number,
+    endTime: number,
+    seekGeneration: number,
+    signal: AbortSignal
+  ): Promise<void> {
+    if (!this.sink) return;
+
+    let frameCount = 0;
+
+    try {
+      for await (const sample of this.sink.samples(startTime, endTime)) {
+        if (signal.aborted || seekGeneration !== this.seekGeneration) {
+          sample.close();
+          break;
+        }
+
+        const key = this.getSeekFrameKey(sample.timestamp);
+
+        if (this.seekFrameCache.has(key)) {
+          sample.close();
+          continue;
+        }
+
+        const videoFrame = sample.toVideoFrame();
+
+        try {
+          const bitmap = await createImageBitmap(videoFrame);
+
+          if (signal.aborted || seekGeneration !== this.seekGeneration) {
+            bitmap.close();
+            break;
+          }
+
+          this.cacheSeekFrame(sample.timestamp, sample.timestamp, bitmap);
+          frameCount += 1;
+
+          if (frameCount >= SEEK_PREFETCH_MAX_FRAMES) {
+            break;
+          }
+        } finally {
+          videoFrame.close();
+          sample.close();
+        }
+      }
+    } catch (error) {
+      if (!signal.aborted) {
+        console.error('[MediaBunnyPlayer] Error prefetching seek frames:', error);
+      }
     }
   }
 
@@ -525,6 +789,8 @@ export class MediaBunnyPlayer {
 
     this.stopBuffering();
     this.clearBuffer();
+    this.stopSeekPrefetch();
+    this.clearSeekFrameCache();
 
     // Dispose Input to cancel ongoing reads, close decoders, and free resources
     this.input?.dispose();
@@ -540,6 +806,7 @@ export class MediaBunnyPlayer {
    */
   destroy(): void {
     this.cleanup();
+
     this._metadata = null;
     this._isLoaded = false;
   }

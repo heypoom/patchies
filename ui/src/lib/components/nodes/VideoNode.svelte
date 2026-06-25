@@ -21,6 +21,7 @@
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
   import { VideoProfiler, type VideoStats } from '$lib/video';
+  import { LatestVideoSeek } from '$lib/video/latest-video-seek';
   import type {
     MediaBunnyMetadataEvent,
     MediaBunnyFirstFrameEvent,
@@ -99,6 +100,8 @@
   let webCodecsFirstFrameReceived = $state(false);
   let webCodecsTimeoutId: ReturnType<typeof setTimeout> | null = null;
   let workerCurrentTime = 0; // Track time from worker for profiling
+  let showNativeSeekPreview = $state(false);
+  const nativeSeekPreview = new LatestVideoSeek();
 
   // Canvas preview
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
@@ -163,14 +166,29 @@
     const safeTime = Math.max(0, time);
 
     lastRecordedMediaTime = -1;
+    seekNativeVideoPreview(safeTime);
 
     if (webCodecsFirstFrameReceived) {
       glSystem.mediaBunnySeek(nodeId, safeTime);
-    } else if (videoElement) {
-      videoElement.currentTime = safeTime;
     }
 
     audioService.send(nodeId, 'message', { type: 'seek', time: safeTime });
+  }
+
+  function seekNativeVideoPreview(time: number) {
+    if (!videoElement) return;
+
+    const seekRequest = nativeSeekPreview.requestNativeSeek(time);
+
+    if (webCodecsFirstFrameReceived) {
+      showNativeSeekPreview = true;
+    }
+
+    if (!seekRequest.shouldStartSeek || videoElement.seeking) {
+      return;
+    }
+
+    videoElement.currentTime = time;
   }
 
   /**
@@ -400,6 +418,7 @@
       if (webCodecsFirstFrameReceived) {
         // Worker MediaBunny mode
         glSystem.mediaBunnyPlay(nodeId);
+        showNativeSeekPreview = false;
       } else if (videoElement) {
         // Fallback mode - control HTMLVideoElement
         videoElement.play();
@@ -572,6 +591,47 @@
     }
   }
 
+  function handleNativeVideoSeeked() {
+    if (!videoElement || !isVideoLoaded || !webCodecsFirstFrameReceived) return;
+
+    const element = videoElement;
+    const generation = nativeSeekPreview.currentGeneration;
+    const nextSeek = nativeSeekPreview.completeNativeSeek(element.currentTime);
+
+    if (nextSeek.shouldStartNextSeek) {
+      element.currentTime = nextSeek.targetTime;
+      return;
+    }
+
+    const requestVideoFrameCallback = (element as Partial<HTMLVideoElementWithRVFC>)
+      .requestVideoFrameCallback;
+
+    if (requestVideoFrameCallback) {
+      requestVideoFrameCallback.call(element, (_now, metadata) => {
+        void uploadNativeSeekPreview(generation, metadata.mediaTime);
+      });
+
+      return;
+    }
+
+    void uploadNativeSeekPreview(generation, element.currentTime);
+  }
+
+  async function uploadNativeSeekPreview(generation: number, mediaTime: number) {
+    if (!videoElement || !nativeSeekPreview.isLatest(generation)) return;
+
+    if (Math.abs(mediaTime - nativeSeekPreview.currentTargetTime) > 0.1) {
+      return;
+    }
+
+    workerCurrentTime = mediaTime;
+    profiler?.recordFrame(mediaTime * 1_000_000, mediaTime);
+
+    if (glSystem.hasOutgoingVideoConnections(nodeId)) {
+      await uploadFallbackVideoFrame();
+    }
+  }
+
   // Event handlers for worker MediaBunny
   function handleWorkerMetadata(event: MediaBunnyMetadataEvent) {
     if (event.nodeId !== nodeId) return;
@@ -634,6 +694,13 @@
     if (event.nodeId !== nodeId) return;
 
     workerCurrentTime = event.currentTime;
+
+    if (
+      showNativeSeekPreview &&
+      Math.abs(event.currentTime - nativeSeekPreview.currentTargetTime) <= 0.1
+    ) {
+      showNativeSeekPreview = false;
+    }
 
     // Notify profiler of frame delivery for FPS tracking
     // MediaBunnyPlayer sends timeUpdate for each displayed frame
@@ -773,7 +840,8 @@
                 height={data.height || $previewHeight}
                 class="rounded-lg {vfsMedia.hasVfsPath &&
                 isVideoLoaded &&
-                webCodecsFirstFrameReceived
+                webCodecsFirstFrameReceived &&
+                !showNativeSeekPreview
                   ? ''
                   : 'hidden'}"
                 style="width: {nodeWidth || $previewWidth}px; height: {nodeHeight ||
@@ -788,13 +856,14 @@
                 bind:this={videoElement}
                 class="rounded-lg object-cover {vfsMedia.hasVfsPath &&
                 isVideoLoaded &&
-                !webCodecsFirstFrameReceived
+                (!webCodecsFirstFrameReceived || showNativeSeekPreview)
                   ? ''
                   : 'hidden'}"
                 style="width: {nodeWidth || $previewWidth}px; height: {nodeHeight ||
                   $previewHeight}px"
                 muted
                 loop={data.loop ?? true}
+                onseeked={handleNativeVideoSeeked}
                 ondragover={vfsMedia.handleDragOver}
                 ondragleave={vfsMedia.handleDragLeave}
                 ondrop={vfsMedia.handleDrop}
