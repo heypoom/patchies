@@ -285,6 +285,19 @@ export class FBORenderer {
     return JSON.stringify(node.data);
   }
 
+  private computeNodeGraphSignature(node: RenderNode): string {
+    const inletMap = Array.from(node.inletMap.entries())
+      .map(([inletIndex, { sourceNodeId, outletIndex }]) => [inletIndex, sourceNodeId, outletIndex])
+      .sort(([a], [b]) => Number(a) - Number(b));
+
+    return JSON.stringify({
+      inputs: [...node.inputs].sort(),
+      outputs: [...node.outputs].sort(),
+      inletMap,
+      backEdgeInlets: [...node.backEdgeInlets].sort((a, b) => a - b)
+    });
+  }
+
   /** Resolve per-node resolution override to [width, height]. */
   private resolveNodeSize(resolution: FBOResolution | undefined): [number, number] {
     const [outputWidth, outputHeight] = this.outputSize;
@@ -437,13 +450,9 @@ export class FBORenderer {
     this.renderGraph = mergedGraph;
     this.outputNodeId = mergedGraph.outputNodeId;
     this.outputOutletIndex = mergedGraph.outputOutletIndex;
-    this.cookState.setOutputsByNode(
-      new Map(mergedGraph.nodes.map((node) => [node.id, [...node.outputs]]))
-    );
 
-    for (const node of mergedGraph.nodes) {
-      this.cookState.registerNode(node.id, this.getCookPolicyForNode(node, mergedGraph));
-    }
+    // Update frame cooking policies and states
+    this.rebuildCookingPolicies(mergedGraph);
 
     // Phase 1 (sync): allocate FBOs and collect nodes that need renderer creation
     type PendingNode = {
@@ -730,8 +739,18 @@ export class FBORenderer {
     return { render: () => {}, cleanup: () => {} };
   }
 
-  private getCookPolicyForNode(node: RenderNode, renderGraph: RenderGraph): CookPolicy {
-    return createRenderNodeCookPolicy(node, renderGraph);
+  private rebuildCookingPolicies(mergedGraph: RenderGraph) {
+    this.cookState.setOutputsByNode(
+      new Map(mergedGraph.nodes.map((node) => [node.id, [...node.outputs]]))
+    );
+
+    for (const node of mergedGraph.nodes) {
+      this.cookState.registerNode(node.id, createRenderNodeCookPolicy(node, mergedGraph));
+    }
+
+    this.cookState.setGraphSignatures(
+      new Map(mergedGraph.nodes.map((node) => [node.id, this.computeNodeGraphSignature(node)]))
+    );
   }
 
   /**
@@ -1544,6 +1563,7 @@ export class FBORenderer {
     };
 
     this.clockScheduler.tick(clockState);
+
     this.cookState.beginFrame({
       transportTime: this.transportTime?.seconds ?? this.lastTime,
       prevTransportTime: this.prevTransportTime,
@@ -2314,10 +2334,12 @@ export class FBORenderer {
    */
   capturePreviewBitmap(nodeId: string, customSize?: [number, number]): ImageBitmap | null {
     const fboNode = this.fboNodes.get(nodeId);
+
     const defaultPreview: [number, number] = [
       Math.floor(DEFAULT_OUTPUT_SIZE[0] / PREVIEW_SCALE_FACTOR),
       Math.floor(DEFAULT_OUTPUT_SIZE[1] / PREVIEW_SCALE_FACTOR)
     ];
+
     const fallbackSize = customSize ?? fboNode?.previewSize ?? defaultPreview;
 
     const externalTexture = this.videoTextures.getDestinationTexture(nodeId);

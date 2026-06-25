@@ -66,6 +66,7 @@ const DEFAULT_FRAME_CONTEXT: CookFrameContext = {
 export class CookStateManager {
   private nodes = new Map<string, NodeState>();
   private outputsByNode = new Map<string, string[]>();
+  private graphSignaturesByNode = new Map<string, string>();
   private frameContext: CookFrameContext = DEFAULT_FRAME_CONTEXT;
   private cookedNodeIdsThisFrame = new Set<string>();
 
@@ -91,10 +92,29 @@ export class CookStateManager {
 
   removeNode(nodeId: string): void {
     this.nodes.delete(nodeId);
+    this.graphSignaturesByNode.delete(nodeId);
   }
 
   setOutputsByNode(outputsByNode: Map<string, string[]>): void {
     this.outputsByNode = outputsByNode;
+  }
+
+  setGraphSignatures(signaturesByNode: Map<string, string>): void {
+    for (const nodeId of this.graphSignaturesByNode.keys()) {
+      if (!signaturesByNode.has(nodeId)) {
+        this.graphSignaturesByNode.delete(nodeId);
+      }
+    }
+
+    for (const [nodeId, signature] of signaturesByNode) {
+      const previousSignature = this.graphSignaturesByNode.get(nodeId);
+
+      this.graphSignaturesByNode.set(nodeId, signature);
+
+      if (previousSignature !== undefined && previousSignature !== signature) {
+        this.markDirty(nodeId, 'config');
+      }
+    }
   }
 
   beginFrame(context: CookFrameContext): void {

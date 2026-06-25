@@ -42,6 +42,25 @@ describe('CookStateManager', () => {
     });
   });
 
+  it('marks existing nodes dirty when their graph connections change', () => {
+    const manager = new CookStateManager();
+
+    manager.registerNode('source', { mode: 'on-demand' });
+    manager.setGraphSignatures(new Map([['source', 'outputs:']]));
+    manager.beginFrame({ transportTime: 0, prevTransportTime: 0, isTransportPlaying: false });
+    manager.markCooked('source', ['first-frame'], 0.5);
+
+    manager.beginFrame({ transportTime: 0, prevTransportTime: 0, isTransportPlaying: false });
+    expect(manager.shouldCook('source')).toEqual({ shouldCook: false, reasons: [] });
+
+    manager.setGraphSignatures(new Map([['source', 'outputs:effect']]));
+
+    expect(manager.shouldCook('source')).toEqual({
+      shouldCook: true,
+      reasons: ['config']
+    });
+  });
+
   it('cooks iTime-dependent nodes only while transport time changes', () => {
     const manager = new CookStateManager();
 
