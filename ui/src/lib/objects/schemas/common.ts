@@ -31,6 +31,10 @@ export const SetDefault = msg('setDefault', { value: Type.Number() });
 export const SetValue = msg('setValue', { value: Type.Number() });
 export const LoadBySrc = msg('load', { src: Type.String() });
 
+/** MIDI re-exports */
+export const NoteOn = MidiNoteOn;
+export const NoteOff = MidiNoteOff;
+
 /** All common schemas as an array, for building the common message type map. */
 export const COMMON_SCHEMAS = [
   Bang,
