@@ -157,7 +157,7 @@ fill(colors[clock.subdiv(5)]);
 
 Instead of manually tracking beat changes, use these scheduling methods for cleaner code. All scheduling callbacks receive a `time` argument — the precise transport time of the event.
 
-By default, callbacks fire **after** the event — ideal for visuals. Pass `{ audio: true }` as the last argument for **lookahead scheduling**, where callbacks fire ~100ms early with the precise time for Web Audio API scheduling.
+By default, callbacks fire **after** the event — ideal for visuals. Pass `{ audio: true }` as the last argument for **lookahead scheduling**, where callbacks fire ~100ms early with the precise time for Web Audio API scheduling. Audio `onBeat` and `every` callbacks can also receive `eventClock` as a second argument, with `time`, `beat`, and `phase` computed for the scheduled event instead of the current poll.
 
 ### onBeat
 
@@ -175,8 +175,11 @@ clock.onBeat([0, 2], () => snare()); // beats 1 and 3
 clock.onBeat('*', () => hihat());
 
 // Audio-precise scheduling — fires early with precise time
-clock.onBeat(0, (time) => {
+clock.onBeat(0, (time, eventClock) => {
   oscillator.start(time);
+
+  // eventClock.beat and eventClock.phase describe the future beat
+  send({ type: 'downbeat', beat: eventClock.beat, time: eventClock.time });
 }, { audio: true });
 ```
 
@@ -211,12 +214,13 @@ clock.every('0:1:0', () => pulse());    // every beat
 clock.every('0:0:1', () => tick());     // every sixteenth
 
 // Audio-precise repeating — fires early with grid-aligned time
-clock.every('0:1:0', (time) => {
+clock.every('0:1:0', (time, eventClock) => {
   send({
     type: 'trigger',
     values: { peak: 1, sustain: 0.7 },
     attack: 0.01,
     decay: 0.1,
+    beat: eventClock.beat,
     time
   });
 }, { audio: true });

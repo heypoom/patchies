@@ -70,11 +70,11 @@ export const jsRunnerInstructions = `
 - clock.play(), clock.pause(), clock.stop() - transport control
 - clock.setBpm(bpm), clock.setTimeSignature(num, denom), clock.seek(seconds)
 - clock.onPlayStateChange(cb) - fire when transport changes between 'playing', 'paused', and 'stopped'. cb receives (state, time)
-- clock.onBeat(beat, cb, opts?) - fire on beat (number, array, or '*' for all). cb receives (time). Pass { audio: true } for lookahead scheduling.
+- clock.onBeat(beat, cb, opts?) - fire on beat (number, array, or '*' for all). cb receives (time); with { audio: true }, cb can receive (time, eventClock) where eventClock is the future clock at the scheduled beat.
 - clock.schedule(time, cb, opts?) - One-shot at seconds or 'bar:beat:sixteenth' notation. Pass { audio: true } for audio-precise timing
 - clock.every(interval, cb, opts?) - Repeating at 'bar:beat:sixteenth' interval
   - e.g. '1:0:0' = every bar, '0:1:0' = every beat
-  - Pass { audio: true } for audio-precise timing
+  - Pass { audio: true } for audio-precise timing; cb can receive (time, eventClock) where eventClock is the future clock at the scheduled repeat
 - clock.cancel(id), clock.cancelAll() - Cancel scheduled callbacks
 - clock.setTimelineStyle({ color?, visible? }) - Customize this node's appearance in the timeline (color: CSS color string, visible: false to hide)
 - For full clock docs call get_doc_content({ kind: 'topic', slug: 'clock-api' })

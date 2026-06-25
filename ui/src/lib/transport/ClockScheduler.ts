@@ -12,9 +12,6 @@
  * - Workers (PollingClockScheduler): Frame-based polling (~16ms precision), audio flag accepted but no lookahead
  */
 
-/** Callback that receives the precise transport time of the event. */
-export type SchedulerCallback = (time: number) => void;
-
 /** Transport play state exposed to clock event listeners. */
 export type ClockPlayState = 'playing' | 'paused' | 'stopped';
 
@@ -35,6 +32,8 @@ export interface SchedulerOptions {
 /**
  * Clock scheduler interface for beat-synced callbacks.
  * All callbacks receive a `time` argument — the precise transport time of the event.
+ * Audio lookahead `onBeat` and `every` callbacks may also receive a future
+ * clock snapshot for the scheduled event as their second argument.
  */
 export interface ClockScheduler {
   /**
@@ -98,6 +97,12 @@ export interface ClockState {
   phase?: number;
   beatsPerBar?: number;
 }
+
+/**
+ * Callback that receives the precise transport time of the event.
+ * Audio lookahead callbacks may receive a future clock snapshot as context.
+ */
+export type SchedulerCallback = (time: number, clock?: ClockState) => void;
 
 type ClockWithScheduler = {
   readonly time: number;

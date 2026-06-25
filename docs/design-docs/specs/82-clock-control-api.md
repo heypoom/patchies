@@ -16,6 +16,8 @@ Extend the clock object with control methods, time signature support, and per-no
 
 Add control methods and play-state listeners to the clock object that work uniformly in main thread and workers. Subdivisions are computed **per-node** via `clock.subdiv(n)` and `clock.subdivPhase(n)` — no global state, so different nodes can use different subdivisions simultaneously.
 
+Audio lookahead `clock.onBeat()` and `clock.every()` callbacks can receive a second `eventClock` argument. It is computed for the scheduled future event time, so callback code can read `eventClock.beat` and `eventClock.phase` without accidentally using the scheduler's current polling clock.
+
 ## API Additions
 
 ### Time Signature

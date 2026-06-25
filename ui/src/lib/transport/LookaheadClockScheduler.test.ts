@@ -39,7 +39,43 @@ describe('LookaheadClockScheduler', () => {
     scheduler.stop();
 
     expect(callback).toHaveBeenCalledTimes(1);
-    expect(callback).toHaveBeenCalledWith(expect.closeTo(0.5, 6));
+    expect(callback).toHaveBeenCalledWith(expect.closeTo(0.5, 6), expect.any(Object));
+  });
+
+  it('passes the future clock to audio beat callbacks', () => {
+    vi.useFakeTimers();
+
+    const clock: ClockState = {
+      time: 0.41,
+      beat: 0,
+      bpm: 120,
+      phase: 0.82,
+      beatsPerBar: 4,
+      isPlaying: true,
+      playState: 'playing'
+    };
+
+    const callback = vi.fn();
+    const scheduler = new LookaheadClockScheduler(() => clock, 25, 0.1, { error: vi.fn() });
+
+    scheduler.onBeat('*', callback, { audio: true });
+    scheduler.start();
+    vi.advanceTimersByTime(25);
+    scheduler.stop();
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback).toHaveBeenCalledWith(
+      expect.closeTo(0.5, 6),
+      expect.objectContaining({
+        time: expect.closeTo(0.5, 6),
+        beat: 1,
+        bpm: 120,
+        phase: 0,
+        beatsPerBar: 4,
+        isPlaying: true,
+        playState: 'playing'
+      })
+    );
   });
 
   it('fires an audio beat callback again after transport rewinds before that beat', () => {
@@ -82,8 +118,8 @@ describe('LookaheadClockScheduler', () => {
     scheduler.stop();
 
     expect(callback).toHaveBeenCalledTimes(2);
-    expect(callback).toHaveBeenNthCalledWith(1, expect.closeTo(0.5, 6));
-    expect(callback).toHaveBeenNthCalledWith(2, expect.closeTo(0.5, 6));
+    expect(callback).toHaveBeenNthCalledWith(1, expect.closeTo(0.5, 6), expect.any(Object));
+    expect(callback).toHaveBeenNthCalledWith(2, expect.closeTo(0.5, 6), expect.any(Object));
   });
 
   it('fires an audio every callback once while polling before the scheduled time', () => {
@@ -117,7 +153,43 @@ describe('LookaheadClockScheduler', () => {
     scheduler.stop();
 
     expect(callback).toHaveBeenCalledTimes(1);
-    expect(callback).toHaveBeenCalledWith(expect.closeTo(0.5, 6));
+    expect(callback).toHaveBeenCalledWith(expect.closeTo(0.5, 6), expect.any(Object));
+  });
+
+  it('passes the future clock to audio every callbacks', () => {
+    vi.useFakeTimers();
+
+    const clock: ClockState = {
+      time: 0.05,
+      beat: 0,
+      bpm: 120,
+      phase: 0.1,
+      beatsPerBar: 4,
+      isPlaying: true,
+      playState: 'playing'
+    };
+
+    const callback = vi.fn();
+    const scheduler = new LookaheadClockScheduler(() => clock, 25, 0.1, { error: vi.fn() });
+
+    scheduler.every('0:0:1', callback, { audio: true });
+    scheduler.start();
+    vi.advanceTimersByTime(25);
+    scheduler.stop();
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback).toHaveBeenCalledWith(
+      expect.closeTo(0.125, 6),
+      expect.objectContaining({
+        time: expect.closeTo(0.125, 6),
+        beat: 0,
+        bpm: 120,
+        phase: 0.25,
+        beatsPerBar: 4,
+        isPlaying: true,
+        playState: 'playing'
+      })
+    );
   });
 
   it('fires play state change callbacks only when the play state changes', () => {

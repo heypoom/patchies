@@ -197,8 +197,10 @@ export class LookaheadClockScheduler implements ClockScheduler {
             item.beats === '*' || (Array.isArray(item.beats) && item.beats.includes(nextBeat));
 
           if (shouldFire && item.lastFiredBeatIndex !== nextBeatIndex) {
+            const futureClock = this.createFutureClock(clock, nextBeatTime);
+
             try {
-              item.callback(nextBeatTime);
+              item.callback(nextBeatTime, futureClock);
               this.recordFired(id, nextBeatTime);
             } catch (e) {
               this.nodeLog.error('[clock] onBeat audio callback error:', e);
@@ -259,7 +261,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
 
       // Audio precision: lookahead with grid-aligned fire time
       if (item.audio && fireTime <= horizon) {
-        this.fireEveryCallback(item, id, fireTime);
+        this.fireEveryCallback(item, id, fireTime, this.createFutureClock(clock, fireTime));
       }
 
       // Non-audio precision: fire after the event
@@ -301,9 +303,36 @@ export class LookaheadClockScheduler implements ClockScheduler {
     }
   }
 
-  private fireEveryCallback(item: RepeatCallback, id: string, time: number) {
+  private createFutureClock(clock: ClockState, time: number): ClockState {
+    const beatDuration = 60 / clock.bpm;
+    const beatsPerBar = clock.beatsPerBar ?? 4;
+
+    if (!Number.isFinite(beatDuration) || beatDuration <= 0 || beatsPerBar <= 0) {
+      return { ...clock, time };
+    }
+
+    const rawAbsoluteBeat = time / beatDuration;
+    const nearestBeat = Math.round(rawAbsoluteBeat);
+
+    const absoluteBeat =
+      Math.abs(rawAbsoluteBeat - nearestBeat) < 1e-9 ? nearestBeat : rawAbsoluteBeat;
+
+    const beatIndex = Math.floor(absoluteBeat);
+    const phase = absoluteBeat - beatIndex;
+    const beat = ((beatIndex % beatsPerBar) + beatsPerBar) % beatsPerBar;
+
+    return {
+      ...clock,
+      time,
+      beat,
+      phase: Math.abs(phase) < 1e-9 ? 0 : phase,
+      beatsPerBar
+    };
+  }
+
+  private fireEveryCallback(item: RepeatCallback, id: string, time: number, clock?: ClockState) {
     try {
-      item.callback(time);
+      item.callback(time, clock);
       this.recordFired(id, time);
     } catch (e) {
       this.nodeLog.error('[clock] every callback error:', e);
