@@ -7,10 +7,14 @@
  */
 import {
   generateId,
+  getClockPlayState,
   parseBarBeatSixteenth,
   type BeatCallback,
   type ClockScheduler,
+  type ClockPlayState,
   type ClockState,
+  type PlayStateCallback,
+  type PlayStateChangeCallback,
   type RepeatCallback,
   type ScheduleCallback,
   type SchedulerCallback,
@@ -27,11 +31,13 @@ export class LookaheadClockScheduler implements ClockScheduler {
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private lastBeat = -1;
   private lastClockTime = 0;
+  private lastPlayState: ClockPlayState | null = null;
   private currentBpm = 120;
 
   private beatCallbacks = new Map<string, BeatCallback>();
   private scheduleCallbacks = new Map<string, ScheduleCallback>();
   private repeatCallbacks = new Map<string, RepeatCallback>();
+  private playStateCallbacks = new Map<string, PlayStateChangeCallback>();
 
   /** Ring buffer of recently-fired events for timeline visualization. */
   private firedEvents: FiredEventRecord[] = [];
@@ -146,6 +152,8 @@ export class LookaheadClockScheduler implements ClockScheduler {
 
     const horizon = clock.time + this.scheduleAheadS;
     const didRewind = clock.time < this.lastClockTime;
+
+    this.processPlayStateChange(clock);
 
     if (didRewind) {
       this.resetAudioBeatFireTracking();
@@ -263,6 +271,27 @@ export class LookaheadClockScheduler implements ClockScheduler {
     this.lastClockTime = clock.time;
   }
 
+  private processPlayStateChange(clock: ClockState): void {
+    const playState = getClockPlayState(clock);
+
+    if (this.lastPlayState === null) {
+      this.lastPlayState = playState;
+      return;
+    }
+
+    if (playState === this.lastPlayState) return;
+
+    this.lastPlayState = playState;
+
+    for (const { callback } of this.playStateCallbacks.values()) {
+      try {
+        callback(playState, clock.time);
+      } catch (e) {
+        this.nodeLog.error('[clock] onPlayStateChange callback error:', e);
+      }
+    }
+  }
+
   private resetAudioBeatFireTracking(): void {
     for (const item of this.beatCallbacks.values()) {
       if (!item.audio) continue;
@@ -327,18 +356,29 @@ export class LookaheadClockScheduler implements ClockScheduler {
     return id;
   }
 
+  onPlayStateChange(callback: PlayStateCallback): string {
+    const id = generateId();
+
+    this.playStateCallbacks.set(id, { callback });
+
+    return id;
+  }
+
   cancel(id: string): void {
     this.beatCallbacks.delete(id);
     this.scheduleCallbacks.delete(id);
     this.repeatCallbacks.delete(id);
+    this.playStateCallbacks.delete(id);
   }
 
   cancelAll(): void {
     this.beatCallbacks.clear();
     this.scheduleCallbacks.clear();
     this.repeatCallbacks.clear();
+    this.playStateCallbacks.clear();
     this.lastBeat = -1;
     this.lastClockTime = 0;
+    this.lastPlayState = null;
     this._timelineStyle = {};
   }
 }

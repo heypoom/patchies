@@ -119,6 +119,7 @@ class TransportManager implements ITransport {
       ticks: this.ticks,
       bpm: this.bpm,
       isPlaying: this.isPlaying,
+      playState: this.isPlaying ? 'playing' : this.seconds === 0 ? 'stopped' : 'paused',
       beat: this.beat,
       phase: this.phase,
       bar: this.bar,

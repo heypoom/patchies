@@ -8,7 +8,7 @@ import { handleCodeError } from './handleCodeError';
 import { logger } from '$lib/utils/logger';
 import { createKVStore } from '$lib/storage';
 import { Transport } from '$lib/transport';
-import { LookaheadClockScheduler } from '$lib/transport/ClockScheduler';
+import { LookaheadClockScheduler, type ClockState } from '$lib/transport/ClockScheduler';
 import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
 import type { FBOFormat } from '$lib/rendering/types';
 
@@ -30,7 +30,7 @@ export interface JSRunnerOptions {
   /** Skip MessageContext setup - use when caller manages their own MessageContext */
   skipMessageContext?: boolean;
 
-  /** Called when clock.onBeat() or clock.every() is registered — used to show active indicator */
+  /** Called when clock scheduler listeners are registered — used to show active indicator */
   onSchedulerCallbackRegistered?: () => void;
 }
 
@@ -41,8 +41,9 @@ export class JSRunner {
 
   public moduleProviderUrl = `https://esm.sh/`;
   public modules: Map<string, string> = new Map();
+
   private messageContextMap: Map<string, MessageContext> = new Map();
-  private schedulerMap: Map<string, LookaheadClockScheduler> = new Map();
+  private lookaheadClockSchedulerMap: Map<string, LookaheadClockScheduler> = new Map();
 
   /** Avoid collision caused by multiple nodes having same library names. */
   private libraryNamesByNode: Map<string, string> = new Map();
@@ -264,31 +265,36 @@ export class JSRunner {
 
   /**
    * Get or create a look-ahead clock scheduler for a node.
+   *
    * Schedulers persist across code executions but are cleaned up when the node is destroyed.
    * Each scheduler self-ticks via setInterval (~25ms) — no external tick loop needed.
    */
-  getScheduler(nodeId: string): LookaheadClockScheduler {
-    if (!this.schedulerMap.has(nodeId)) {
+  getLookaheadClockScheduler(nodeId: string): LookaheadClockScheduler {
+    if (!this.lookaheadClockSchedulerMap.has(nodeId)) {
+      const clockStateProvider = (): ClockState => ({
+        time: Transport.seconds,
+        beat: Transport.beat,
+        bpm: Transport.bpm,
+        isPlaying: Transport.isPlaying,
+        playState: Transport.isPlaying ? 'playing' : Transport.seconds === 0 ? 'stopped' : 'paused',
+        phase: Transport.phase,
+        beatsPerBar: Transport.beatsPerBar
+      });
+
       const scheduler = new LookaheadClockScheduler(
-        () => ({
-          time: Transport.seconds,
-          beat: Transport.beat,
-          bpm: Transport.bpm,
-          phase: Transport.phase,
-          beatsPerBar: Transport.beatsPerBar
-        }),
+        clockStateProvider,
         25,
         0.1,
         logger.ofNode(nodeId)
       );
 
       scheduler.start();
-      this.schedulerMap.set(nodeId, scheduler);
 
+      this.lookaheadClockSchedulerMap.set(nodeId, scheduler);
       SchedulerRegistry.getInstance().register(nodeId, scheduler);
     }
 
-    return this.schedulerMap.get(nodeId)!;
+    return this.lookaheadClockSchedulerMap.get(nodeId)!;
   }
 
   destroy(nodeId: string): void {
@@ -308,11 +314,11 @@ export class JSRunner {
     this.messageContextMap.delete(nodeId);
 
     // Clean up scheduler (stops interval + cancels all callbacks)
-    const scheduler = this.schedulerMap.get(nodeId);
+    const scheduler = this.lookaheadClockSchedulerMap.get(nodeId);
     if (scheduler) {
       SchedulerRegistry.getInstance().unregister(nodeId);
       scheduler.dispose();
-      this.schedulerMap.delete(nodeId);
+      this.lookaheadClockSchedulerMap.delete(nodeId);
     }
 
     revokeObjectUrls(nodeId);
@@ -379,13 +385,14 @@ export class JSRunner {
     // Set up error handler for recv() callbacks
     if (!skipMessageContext) {
       const messageContext = this.getMessageContext(nodeId);
+
       messageContext.onCallbackError = (error) => {
         handleCodeError(error, code, nodeId, customConsole);
       };
     }
 
     // Set up clock scheduler - cancel previous callbacks before executing new code
-    const scheduler = this.getScheduler(nodeId);
+    const scheduler = this.getLookaheadClockScheduler(nodeId);
     scheduler.cancelAll();
 
     const functionParams = [
@@ -429,6 +436,9 @@ export class JSRunner {
       get bpm() {
         return Transport.bpm;
       },
+      get isPlaying() {
+        return Transport.isPlaying;
+      },
       get bar() {
         return Transport.bar;
       },
@@ -464,12 +474,19 @@ export class JSRunner {
       // Scheduling methods
       onBeat: (...args: Parameters<typeof scheduler.onBeat>) => {
         onSchedulerCallbackRegistered?.();
+
         return scheduler.onBeat(...args);
       },
       schedule: scheduler.schedule.bind(scheduler),
       every: (...args: Parameters<typeof scheduler.every>) => {
         onSchedulerCallbackRegistered?.();
+
         return scheduler.every(...args);
+      },
+      onPlayStateChange: (...args: Parameters<typeof scheduler.onPlayStateChange>) => {
+        onSchedulerCallbackRegistered?.();
+
+        return scheduler.onPlayStateChange(...args);
       },
       cancel: scheduler.cancel.bind(scheduler),
       cancelAll: scheduler.cancelAll.bind(scheduler),

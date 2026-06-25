@@ -15,6 +15,7 @@ The `clock` object is available in: [js](/docs/objects/js), [worker](/docs/objec
 | `clock.beat` | number | Current beat in measure (0 to beatsPerBar-1) |
 | `clock.phase` | number | Position within current beat (0.0 to 1.0) |
 | `clock.bpm` | number | Current tempo in BPM |
+| `clock.isPlaying` | boolean | Whether the global transport is currently playing |
 | `clock.bar` | number | Current bar (0-indexed) |
 | `clock.beatsPerBar` | number | Beats per bar (default: 4) |
 | `clock.timeSignature` | [number, number] | Time signature: [6, 8] is 6/8 |
@@ -34,6 +35,11 @@ circle(width/2, height/2, 50 * pulse);
 // Use clock.beat to change on each beat
 const colors = ['red', 'blue', 'green', 'yellow'];
 fill(colors[clock.beat]);
+
+// Gate animation while the transport is stopped
+if (clock.isPlaying) {
+  circle(width / 2, height / 2, 40 + clock.phase * 20);
+}
 ```
 
 ## Control Methods
@@ -48,6 +54,29 @@ Control the transport directly from your code:
 | `clock.setBpm(bpm)` | Set tempo |
 | `clock.setTimeSignature(n, d)` | Set time signature (e.g., `6, 8` for 6/8) |
 | `clock.seek(seconds)` | Seek to time in seconds |
+
+## Play State Events
+
+Use `clock.onPlayStateChange()` when your code needs to react once to play, pause, or stop instead of checking `clock.isPlaying` every frame.
+
+```javascript
+const id = clock.onPlayStateChange((state, time) => {
+  if (state === 'playing') {
+    send({ type: 'started', time });
+  }
+
+  if (state === 'paused') {
+    send({ type: 'paused', time });
+  }
+
+  if (state === 'stopped') {
+    send({ type: 'reset' });
+  }
+});
+
+// Remove the listener later if you no longer need it
+clock.cancel(id);
+```
 
 ### Transport Control Example
 

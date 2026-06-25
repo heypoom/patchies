@@ -785,6 +785,13 @@ const memberCompletions: Record<string, Completion[]> = {
       apply: 'bpm'
     },
     {
+      label: 'isPlaying',
+      type: 'property',
+      detail: 'boolean',
+      info: 'Whether the global transport is currently playing.',
+      apply: 'isPlaying'
+    },
+    {
       label: 'bar',
       type: 'property',
       detail: 'number',
@@ -869,6 +876,13 @@ const memberCompletions: Record<string, Completion[]> = {
       detail: '(time: number | string, callback, options?) => id',
       info: "Schedule a one-shot callback. Accepts seconds or 'bar:beat:sixteenth' notation (zero-indexed).",
       apply: "schedule('4:0:0', () => {\n  \n})"
+    },
+    {
+      label: 'onPlayStateChange',
+      type: 'method',
+      detail: "(callback: (state: 'playing' | 'paused' | 'stopped', time: number) => void) => id",
+      info: 'Subscribe to transport play state changes. Callback receives the new state and current transport time.',
+      apply: 'onPlayStateChange((state, time) => {\n  \n})'
     },
     {
       label: 'cancel',

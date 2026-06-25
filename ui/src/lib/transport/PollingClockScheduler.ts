@@ -4,10 +4,14 @@
  */
 import {
   generateId,
+  getClockPlayState,
   parseBarBeatSixteenth,
   type BeatCallback,
   type ClockScheduler,
   type ClockState,
+  type ClockPlayState,
+  type PlayStateChangeCallback,
+  type PlayStateCallback,
   type RepeatCallback,
   type ScheduleCallback,
   type SchedulerCallback,
@@ -16,17 +20,20 @@ import {
 
 export class PollingClockScheduler implements ClockScheduler {
   private lastBeat = -1;
+  private lastPlayState: ClockPlayState | null = null;
   private currentBpm = 120;
 
   private beatCallbacks = new Map<string, BeatCallback>();
   private scheduleCallbacks = new Map<string, ScheduleCallback>();
   private repeatCallbacks = new Map<string, RepeatCallback>();
+  private playStateCallbacks = new Map<string, PlayStateChangeCallback>();
 
   /**
    * Called each frame by the render loop to process scheduled callbacks.
    */
   tick(clock: ClockState): void {
     this.currentBpm = clock.bpm;
+    this.processPlayStateChange(clock);
 
     // Check beat changes
     if (clock.beat !== this.lastBeat) {
@@ -95,6 +102,27 @@ export class PollingClockScheduler implements ClockScheduler {
     }
   }
 
+  private processPlayStateChange(clock: ClockState): void {
+    const playState = getClockPlayState(clock);
+
+    if (this.lastPlayState === null) {
+      this.lastPlayState = playState;
+      return;
+    }
+
+    if (playState === this.lastPlayState) return;
+
+    this.lastPlayState = playState;
+
+    for (const { callback } of this.playStateCallbacks.values()) {
+      try {
+        callback(playState, clock.time);
+      } catch (e) {
+        console.error('[clock] onPlayStateChange callback error:', e);
+      }
+    }
+  }
+
   onBeat(
     beat: number | number[] | '*',
     callback: SchedulerCallback,
@@ -139,16 +167,27 @@ export class PollingClockScheduler implements ClockScheduler {
     return id;
   }
 
+  onPlayStateChange(callback: PlayStateCallback): string {
+    const id = generateId();
+
+    this.playStateCallbacks.set(id, { callback });
+
+    return id;
+  }
+
   cancel(id: string): void {
     this.beatCallbacks.delete(id);
     this.scheduleCallbacks.delete(id);
     this.repeatCallbacks.delete(id);
+    this.playStateCallbacks.delete(id);
   }
 
   cancelAll(): void {
     this.beatCallbacks.clear();
     this.scheduleCallbacks.clear();
     this.repeatCallbacks.clear();
+    this.playStateCallbacks.clear();
     this.lastBeat = -1;
+    this.lastPlayState = null;
   }
 }

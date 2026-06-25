@@ -61,6 +61,7 @@ export const jsRunnerInstructions = `
 - clock.beat - beat in measure (0 to beatsPerBar-1)
 - clock.phase - position within current beat (0.0 to 1.0)
 - clock.bpm - tempo in BPM
+- clock.isPlaying - whether the global transport is currently playing
 - clock.bar - 0-indexed bar
 - clock.beatsPerBar - beats per bar (numerator)
 - clock.timeSignature - [numerator, denominator] tuple (e.g. [4, 4], [6, 8])
@@ -68,6 +69,7 @@ export const jsRunnerInstructions = `
 - clock.subdivPhase(n) - progress within current subdivision (0.0 to 1.0)
 - clock.play(), clock.pause(), clock.stop() - transport control
 - clock.setBpm(bpm), clock.setTimeSignature(num, denom), clock.seek(seconds)
+- clock.onPlayStateChange(cb) - fire when transport changes between 'playing', 'paused', and 'stopped'. cb receives (state, time)
 - clock.onBeat(beat, cb, opts?) - fire on beat (number, array, or '*' for all). cb receives (time). Pass { audio: true } for lookahead scheduling.
 - clock.schedule(time, cb, opts?) - One-shot at seconds or 'bar:beat:sixteenth' notation. Pass { audio: true } for audio-precise timing
 - clock.every(interval, cb, opts?) - Repeating at 'bar:beat:sixteenth' interval

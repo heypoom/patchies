@@ -15,6 +15,12 @@
 /** Callback that receives the precise transport time of the event. */
 export type SchedulerCallback = (time: number) => void;
 
+/** Transport play state exposed to clock event listeners. */
+export type ClockPlayState = 'playing' | 'paused' | 'stopped';
+
+/** Callback that receives the new transport play state and current transport time. */
+export type PlayStateCallback = (state: ClockPlayState, time: number) => void;
+
 /** Options for scheduling methods. */
 export interface SchedulerOptions {
   /**
@@ -63,6 +69,13 @@ export interface ClockScheduler {
   every(interval: string, callback: SchedulerCallback, options?: SchedulerOptions): string;
 
   /**
+   * Subscribe to transport play state changes.
+   * @param callback - Function to call when play state changes. Receives (state, time).
+   * @returns ID for cancellation
+   */
+  onPlayStateChange(callback: PlayStateCallback): string;
+
+  /**
    * Cancel a scheduled callback by its ID.
    */
   cancel(id: string): void;
@@ -80,6 +93,8 @@ export interface ClockState {
   time: number;
   beat: number;
   bpm: number;
+  isPlaying?: boolean;
+  playState?: ClockPlayState;
   phase?: number;
   beatsPerBar?: number;
 }
@@ -90,9 +105,11 @@ type ClockWithScheduler = {
   readonly beat: number;
   readonly phase: number;
   readonly bpm: number;
+  readonly isPlaying: boolean;
   onBeat: ClockScheduler['onBeat'];
   schedule: ClockScheduler['schedule'];
   every: ClockScheduler['every'];
+  onPlayStateChange: ClockScheduler['onPlayStateChange'];
   cancel: ClockScheduler['cancel'];
   cancelAll: ClockScheduler['cancelAll'];
 };
@@ -125,10 +142,21 @@ export type RepeatCallback = {
   audio: boolean;
 };
 
+export type PlayStateChangeCallback = {
+  callback: PlayStateCallback;
+};
+
 let idCounter = 0;
 
 export function generateId(): string {
   return `sched_${++idCounter}_${Date.now()}`;
+}
+
+export function getClockPlayState(clock: ClockState): ClockPlayState {
+  if (clock.playState) return clock.playState;
+  if (clock.isPlaying) return 'playing';
+
+  return clock.time === 0 ? 'stopped' : 'paused';
 }
 
 /**
@@ -175,7 +203,8 @@ export const createClockWithScheduler = (
   getBeat: () => number,
   getPhase: () => number,
   getBpm: () => number,
-  scheduler: ClockScheduler
+  scheduler: ClockScheduler,
+  getIsPlaying: () => boolean = () => false
 ): ClockWithScheduler => ({
   get time() {
     return getTime();
@@ -192,9 +221,13 @@ export const createClockWithScheduler = (
   get bpm() {
     return getBpm();
   },
+  get isPlaying() {
+    return getIsPlaying();
+  },
   onBeat: scheduler.onBeat.bind(scheduler),
   schedule: scheduler.schedule.bind(scheduler),
   every: scheduler.every.bind(scheduler),
+  onPlayStateChange: scheduler.onPlayStateChange.bind(scheduler),
   cancel: scheduler.cancel.bind(scheduler),
   cancelAll: scheduler.cancelAll.bind(scheduler)
 });

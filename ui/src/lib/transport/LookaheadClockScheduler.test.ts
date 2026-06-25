@@ -119,4 +119,71 @@ describe('LookaheadClockScheduler', () => {
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledWith(expect.closeTo(0.5, 6));
   });
+
+  it('fires play state change callbacks only when the play state changes', () => {
+    vi.useFakeTimers();
+
+    let clock: ClockState = {
+      time: 0,
+      beat: 0,
+      bpm: 120,
+      isPlaying: false,
+      playState: 'stopped'
+    };
+
+    const callback = vi.fn();
+    const scheduler = new LookaheadClockScheduler(() => clock, 25, 0.1, { error: vi.fn() });
+
+    scheduler.onPlayStateChange(callback);
+    scheduler.start();
+
+    vi.advanceTimersByTime(25);
+
+    clock = { ...clock, time: 0.25, isPlaying: true, playState: 'playing' };
+    vi.advanceTimersByTime(25);
+
+    clock = { ...clock, time: 0.5 };
+    vi.advanceTimersByTime(25);
+
+    clock = { ...clock, time: 0.5, isPlaying: false, playState: 'paused' };
+    vi.advanceTimersByTime(25);
+
+    clock = { ...clock, time: 0, playState: 'stopped' };
+    vi.advanceTimersByTime(25);
+
+    scheduler.stop();
+
+    expect(callback).toHaveBeenCalledTimes(3);
+    expect(callback).toHaveBeenNthCalledWith(1, 'playing', 0.25);
+    expect(callback).toHaveBeenNthCalledWith(2, 'paused', 0.5);
+    expect(callback).toHaveBeenNthCalledWith(3, 'stopped', 0);
+  });
+
+  it('cancels play state change callbacks by id', () => {
+    vi.useFakeTimers();
+
+    let clock: ClockState = {
+      time: 0,
+      beat: 0,
+      bpm: 120,
+      isPlaying: false,
+      playState: 'stopped'
+    };
+
+    const callback = vi.fn();
+    const scheduler = new LookaheadClockScheduler(() => clock, 25, 0.1, { error: vi.fn() });
+    const id = scheduler.onPlayStateChange(callback);
+
+    scheduler.start();
+    vi.advanceTimersByTime(25);
+
+    scheduler.cancel(id);
+
+    clock = { ...clock, time: 0.25, isPlaying: true, playState: 'playing' };
+    vi.advanceTimersByTime(25);
+
+    scheduler.stop();
+
+    expect(callback).not.toHaveBeenCalled();
+  });
 });
