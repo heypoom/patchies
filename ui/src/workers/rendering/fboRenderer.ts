@@ -1931,6 +1931,10 @@ export class FBORenderer {
     }
   }
 
+  public get isProfilingEnabled(): boolean {
+    return this.profiler.isEnabled;
+  }
+
   /** Record frame time (call this at end of each frame) */
   public recordFrameTime() {
     this.profiler.recordFrameTime();

@@ -83,6 +83,7 @@ describe('profiler chart utils', () => {
           drops60: 0,
           gpuReadAvgMs: null,
           blitAvgMs: null,
+          finishAvgMs: null,
           transferAvgMs: null,
           previewAvgMs: null,
           videoAvgMs: null
@@ -100,6 +101,7 @@ describe('profiler chart utils', () => {
           drops60: 1,
           gpuReadAvgMs: null,
           blitAvgMs: null,
+          finishAvgMs: null,
           transferAvgMs: null,
           previewAvgMs: null,
           videoAvgMs: null

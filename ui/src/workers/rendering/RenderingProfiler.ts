@@ -18,6 +18,7 @@ export class RenderingProfiler {
   // Per-operation breakdown timings
   private opTimings: Record<RenderOp, number[]> = {
     blit: [],
+    finish: [],
     transfer: [],
     preview: [],
     video: []
@@ -40,7 +41,7 @@ export class RenderingProfiler {
       this.frameTimingIndex = 0;
       this.frameTimingCount = 0;
       this.gpuReadTimings = [];
-      this.opTimings = { blit: [], transfer: [], preview: [], video: [] };
+      this.opTimings = { blit: [], finish: [], transfer: [], preview: [], video: [] };
     }
   }
 
@@ -116,6 +117,7 @@ export class RenderingProfiler {
     };
 
     const blitAvgMs = opAvg('blit');
+    const finishAvgMs = opAvg('finish');
     const transferAvgMs = opAvg('transfer');
     const previewAvgMs = opAvg('preview');
     const videoAvgMs = opAvg('video');
@@ -124,7 +126,7 @@ export class RenderingProfiler {
     this.frameTimingIndex = 0;
     this.frameTimingCount = 0;
     this.gpuReadTimings = [];
-    this.opTimings = { blit: [], transfer: [], preview: [], video: [] };
+    this.opTimings = { blit: [], finish: [], transfer: [], preview: [], video: [] };
 
     return {
       fps: 1000 / avg,
@@ -135,6 +137,7 @@ export class RenderingProfiler {
       drops60,
       gpuReadAvgMs,
       blitAvgMs,
+      finishAvgMs,
       transferAvgMs,
       previewAvgMs,
       videoAvgMs

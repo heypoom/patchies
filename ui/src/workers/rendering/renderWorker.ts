@@ -242,6 +242,12 @@ function handleStartAnimation() {
     }
 
     if (fboRenderer.isOutputEnabled) {
+      // Profiler: forcibly forces gl sync to measure GL rendering time.
+      // Never do this outside of profiling, as it slows down rendering!
+      if (fboRenderer.isProfilingEnabled) {
+        fboRenderer.measureOp('finish', () => fboRenderer.gl.finish());
+      }
+
       const outputBitmap = fboRenderer.measureOp('transfer', () => fboRenderer.getOutputBitmap());
 
       if (outputBitmap) {

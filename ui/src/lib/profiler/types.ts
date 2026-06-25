@@ -31,12 +31,13 @@ export interface RenderFrameStats {
   // Per-operation breakdown (average ms per frame, null if no samples)
   gpuReadAvgMs: number | null;
   blitAvgMs: number | null;
+  finishAvgMs: number | null;
   transferAvgMs: number | null;
   previewAvgMs: number | null;
   videoAvgMs: number | null;
 }
 
-export type RenderOp = 'blit' | 'transfer' | 'preview' | 'video';
+export type RenderOp = 'blit' | 'finish' | 'transfer' | 'preview' | 'video';
 
 export interface ProfilerSnapshot {
   timestamp: number;

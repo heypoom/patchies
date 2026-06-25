@@ -646,12 +646,17 @@
             </div>
 
             <!-- Per-operation breakdown -->
-            {#if rf.blitAvgMs !== null || rf.transferAvgMs !== null || rf.previewAvgMs !== null || rf.videoAvgMs !== null}
+            {#if rf.blitAvgMs !== null || rf.finishAvgMs !== null || rf.transferAvgMs !== null || rf.previewAvgMs !== null || rf.videoAvgMs !== null}
               <div class="mt-0.5 font-mono">
                 <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] tabular-nums">
                   {#if rf.blitAvgMs !== null}
                     <span class="text-zinc-600">blit</span>
                     <span class="text-zinc-400">{fmt(rf.blitAvgMs)}</span>
+                  {/if}
+
+                  {#if rf.finishAvgMs !== null}
+                    <span class="text-zinc-600">gl.finish</span>
+                    <span class="text-zinc-400">{fmt(rf.finishAvgMs)}</span>
                   {/if}
 
                   {#if rf.transferAvgMs !== null}
