@@ -37,6 +37,7 @@ export interface TransportState {
   ticks: number;
   bpm: number;
   isPlaying: boolean;
+  playState: 'playing' | 'paused' | 'stopped';
   beat: number;
   phase: number;
   bar: number;

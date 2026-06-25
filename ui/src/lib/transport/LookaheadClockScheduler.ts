@@ -7,10 +7,14 @@
  */
 import {
   generateId,
+  getClockPlayState,
   parseBarBeatSixteenth,
   type BeatCallback,
   type ClockScheduler,
+  type ClockPlayState,
   type ClockState,
+  type PlayStateCallback,
+  type PlayStateChangeCallback,
   type RepeatCallback,
   type ScheduleCallback,
   type SchedulerCallback,
@@ -26,11 +30,14 @@ export interface NodeTimelineStyle {
 export class LookaheadClockScheduler implements ClockScheduler {
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private lastBeat = -1;
+  private lastClockTime = 0;
+  private lastPlayState: ClockPlayState | null = null;
   private currentBpm = 120;
 
   private beatCallbacks = new Map<string, BeatCallback>();
   private scheduleCallbacks = new Map<string, ScheduleCallback>();
   private repeatCallbacks = new Map<string, RepeatCallback>();
+  private playStateCallbacks = new Map<string, PlayStateChangeCallback>();
 
   /** Ring buffer of recently-fired events for timeline visualization. */
   private firedEvents: FiredEventRecord[] = [];
@@ -67,6 +74,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
   dispose(): void {
     this.stop();
     this.cancelAll();
+
     this.markers.clear();
     this.firedEvents = [];
     this._timelineStyle = {};
@@ -89,6 +97,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
   addMarker(time: number, color?: string): string {
     const id = generateId();
     this.markers.set(id, { time, color });
+
     return id;
   }
 
@@ -124,12 +133,14 @@ export class LookaheadClockScheduler implements ClockScheduler {
   drainFiredEvents(): FiredEventRecord[] {
     const events = this.firedEvents;
     this.firedEvents = [];
+
     return events;
   }
 
   /** Record that a callback fired (for timeline flash animation). */
   private recordFired(id: string, firedAt: number): void {
     this.firedEvents.push({ id, firedAt, wallTime: performance.now() });
+
     if (this.firedEvents.length > LookaheadClockScheduler.MAX_FIRED_BUFFER) {
       this.firedEvents.shift();
     }
@@ -140,11 +151,19 @@ export class LookaheadClockScheduler implements ClockScheduler {
     this.currentBpm = clock.bpm;
 
     const horizon = clock.time + this.scheduleAheadS;
+    const didRewind = clock.time < this.lastClockTime;
+
+    this.processPlayStateChange(clock);
+
+    if (didRewind) {
+      this.resetAudioBeatFireTracking();
+    }
 
     // --- onBeat: visual mode (fire after beat change) ---
     if (clock.beat !== this.lastBeat) {
       for (const [id, item] of this.beatCallbacks) {
         if (item.audio) continue;
+
         const shouldFire =
           item.beats === '*' || (Array.isArray(item.beats) && item.beats.includes(clock.beat));
 
@@ -165,23 +184,30 @@ export class LookaheadClockScheduler implements ClockScheduler {
     if (clock.phase != null && clock.beatsPerBar != null) {
       const beatDuration = 60 / clock.bpm;
       const timeUntilNextBeat = (1 - clock.phase) * beatDuration;
+
       const nextBeatTime = clock.time + timeUntilNextBeat;
+      const nextBeatIndex = Math.floor(clock.time / beatDuration) + 1;
       const nextBeat = (clock.beat + 1) % clock.beatsPerBar;
 
       if (nextBeatTime <= horizon) {
         for (const [id, item] of this.beatCallbacks) {
           if (!item.audio) continue;
+
           const shouldFire =
             item.beats === '*' || (Array.isArray(item.beats) && item.beats.includes(nextBeat));
 
-          if (shouldFire && item.lastFiredBeatTime !== nextBeatTime) {
+          if (shouldFire && item.lastFiredBeatIndex !== nextBeatIndex) {
+            const futureClock = this.createFutureClock(clock, nextBeatTime);
+
             try {
-              item.callback(nextBeatTime);
+              item.callback(nextBeatTime, futureClock);
               this.recordFired(id, nextBeatTime);
             } catch (e) {
               this.nodeLog.error('[clock] onBeat audio callback error:', e);
             }
+
             item.lastFiredBeatTime = nextBeatTime;
+            item.lastFiredBeatIndex = nextBeatIndex;
           }
         }
       }
@@ -194,6 +220,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
       // Recalculate time if BPM changed (only for musical notation times)
       if (item.bpm !== undefined && item.bpm !== clock.bpm) {
         const ratio = item.bpm / clock.bpm;
+
         item.time = item.time * ratio;
         item.bpm = clock.bpm;
       }
@@ -218,43 +245,100 @@ export class LookaheadClockScheduler implements ClockScheduler {
     // --- every ---
     for (const [id, item] of this.repeatCallbacks) {
       // Detect transport rewind (stop -> play from beginning)
-      if (clock.time < item.lastFired) {
+      if (didRewind) {
         item.lastFired = 0;
       }
 
       // Recalculate interval if BPM changed
       if (item.bpm !== clock.bpm) {
         const ratio = item.bpm / clock.bpm;
+
         item.interval = item.interval * ratio;
         item.bpm = clock.bpm;
       }
 
       const fireTime = item.lastFired + item.interval;
 
-      if (item.audio) {
-        // Audio mode: lookahead with grid-aligned fire time
-        if (fireTime <= horizon) {
-          try {
-            item.callback(fireTime);
-            this.recordFired(id, fireTime);
-          } catch (e) {
-            this.nodeLog.error('[clock] every callback error:', e);
-          }
-          item.lastFired = fireTime;
-        }
-      } else {
-        // Visual mode: fire after the event
-        if (clock.time >= fireTime) {
-          try {
-            item.callback(clock.time);
-            this.recordFired(id, clock.time);
-          } catch (e) {
-            this.nodeLog.error('[clock] every callback error:', e);
-          }
-          item.lastFired = clock.time;
-        }
+      // Audio precision: lookahead with grid-aligned fire time
+      if (item.audio && fireTime <= horizon) {
+        this.fireEveryCallback(item, id, fireTime, this.createFutureClock(clock, fireTime));
+      }
+
+      // Non-audio precision: fire after the event
+      if (!item.audio && clock.time >= fireTime) {
+        this.fireEveryCallback(item, id, clock.time);
       }
     }
+
+    this.lastClockTime = clock.time;
+  }
+
+  private processPlayStateChange(clock: ClockState): void {
+    const playState = getClockPlayState(clock);
+
+    if (this.lastPlayState === null) {
+      this.lastPlayState = playState;
+      return;
+    }
+
+    if (playState === this.lastPlayState) return;
+
+    this.lastPlayState = playState;
+
+    for (const { callback } of this.playStateCallbacks.values()) {
+      try {
+        callback(playState, clock.time);
+      } catch (e) {
+        this.nodeLog.error('[clock] onPlayStateChange callback error:', e);
+      }
+    }
+  }
+
+  private resetAudioBeatFireTracking(): void {
+    for (const item of this.beatCallbacks.values()) {
+      if (!item.audio) continue;
+
+      item.lastFiredBeatTime = undefined;
+      item.lastFiredBeatIndex = undefined;
+    }
+  }
+
+  private createFutureClock(clock: ClockState, time: number): ClockState {
+    const beatDuration = 60 / clock.bpm;
+    const beatsPerBar = clock.beatsPerBar ?? 4;
+
+    if (!Number.isFinite(beatDuration) || beatDuration <= 0 || beatsPerBar <= 0) {
+      return { ...clock, time };
+    }
+
+    const rawAbsoluteBeat = time / beatDuration;
+    const nearestBeat = Math.round(rawAbsoluteBeat);
+
+    const absoluteBeat =
+      Math.abs(rawAbsoluteBeat - nearestBeat) < 1e-9 ? nearestBeat : rawAbsoluteBeat;
+
+    const beatIndex = Math.floor(absoluteBeat);
+    const phase = absoluteBeat - beatIndex;
+    const beat = ((beatIndex % beatsPerBar) + beatsPerBar) % beatsPerBar;
+
+    return {
+      ...clock,
+      time,
+      beat,
+      phase: Math.abs(phase) < 1e-9 ? 0 : phase,
+      beatsPerBar
+    };
+  }
+
+  private fireEveryCallback(item: RepeatCallback, id: string, time: number, clock?: ClockState) {
+    try {
+      item.callback(time, clock);
+      this.recordFired(id, time);
+    } catch (e) {
+      this.nodeLog.error('[clock] every callback error:', e);
+    }
+
+    item.lastFired = time;
   }
 
   onBeat(
@@ -264,7 +348,9 @@ export class LookaheadClockScheduler implements ClockScheduler {
   ): string {
     const id = generateId();
     const beats = typeof beat === 'number' ? [beat] : beat;
+
     this.beatCallbacks.set(id, { beats, callback, audio: options?.audio ?? false });
+
     return id;
   }
 
@@ -299,17 +385,29 @@ export class LookaheadClockScheduler implements ClockScheduler {
     return id;
   }
 
+  onPlayStateChange(callback: PlayStateCallback): string {
+    const id = generateId();
+
+    this.playStateCallbacks.set(id, { callback });
+
+    return id;
+  }
+
   cancel(id: string): void {
     this.beatCallbacks.delete(id);
     this.scheduleCallbacks.delete(id);
     this.repeatCallbacks.delete(id);
+    this.playStateCallbacks.delete(id);
   }
 
   cancelAll(): void {
     this.beatCallbacks.clear();
     this.scheduleCallbacks.clear();
     this.repeatCallbacks.clear();
+    this.playStateCallbacks.clear();
     this.lastBeat = -1;
+    this.lastClockTime = 0;
+    this.lastPlayState = null;
     this._timelineStyle = {};
   }
 }

@@ -12,8 +12,11 @@
  * - Workers (PollingClockScheduler): Frame-based polling (~16ms precision), audio flag accepted but no lookahead
  */
 
-/** Callback that receives the precise transport time of the event. */
-export type SchedulerCallback = (time: number) => void;
+/** Transport play state exposed to clock event listeners. */
+export type ClockPlayState = 'playing' | 'paused' | 'stopped';
+
+/** Callback that receives the new transport play state and current transport time. */
+export type PlayStateCallback = (state: ClockPlayState, time: number) => void;
 
 /** Options for scheduling methods. */
 export interface SchedulerOptions {
@@ -29,6 +32,8 @@ export interface SchedulerOptions {
 /**
  * Clock scheduler interface for beat-synced callbacks.
  * All callbacks receive a `time` argument — the precise transport time of the event.
+ * Audio lookahead `onBeat` and `every` callbacks may also receive a future
+ * clock snapshot for the scheduled event as their second argument.
  */
 export interface ClockScheduler {
   /**
@@ -63,6 +68,13 @@ export interface ClockScheduler {
   every(interval: string, callback: SchedulerCallback, options?: SchedulerOptions): string;
 
   /**
+   * Subscribe to transport play state changes.
+   * @param callback - Function to call when play state changes. Receives (state, time).
+   * @returns ID for cancellation
+   */
+  onPlayStateChange(callback: PlayStateCallback): string;
+
+  /**
    * Cancel a scheduled callback by its ID.
    */
   cancel(id: string): void;
@@ -80,9 +92,17 @@ export interface ClockState {
   time: number;
   beat: number;
   bpm: number;
+  isPlaying?: boolean;
+  playState?: ClockPlayState;
   phase?: number;
   beatsPerBar?: number;
 }
+
+/**
+ * Callback that receives the precise transport time of the event.
+ * Audio lookahead callbacks may receive a future clock snapshot as context.
+ */
+export type SchedulerCallback = (time: number, clock?: ClockState) => void;
 
 type ClockWithScheduler = {
   readonly time: number;
@@ -90,21 +110,26 @@ type ClockWithScheduler = {
   readonly beat: number;
   readonly phase: number;
   readonly bpm: number;
+  readonly isPlaying: boolean;
   onBeat: ClockScheduler['onBeat'];
   schedule: ClockScheduler['schedule'];
   every: ClockScheduler['every'];
+  onPlayStateChange: ClockScheduler['onPlayStateChange'];
   cancel: ClockScheduler['cancel'];
   cancelAll: ClockScheduler['cancelAll'];
 };
 
 // Shared internal types used by both scheduler implementations
-export type BeatCallback = {
+export interface BeatCallback {
   beats: number[] | '*';
   callback: SchedulerCallback;
   audio: boolean;
+
   lastFiredBeatTime?: number;
-};
-export type ScheduleCallback = {
+  lastFiredBeatIndex?: number;
+}
+
+export interface ScheduleCallback {
   time: number;
   callback: SchedulerCallback;
   fired: boolean;
@@ -112,7 +137,8 @@ export type ScheduleCallback = {
 
   /** BPM at registration time (set when time came from bar:beat:sixteenth notation). */
   bpm?: number;
-};
+}
+
 export type RepeatCallback = {
   interval: number;
   lastFired: number;
@@ -121,10 +147,21 @@ export type RepeatCallback = {
   audio: boolean;
 };
 
+export type PlayStateChangeCallback = {
+  callback: PlayStateCallback;
+};
+
 let idCounter = 0;
 
 export function generateId(): string {
   return `sched_${++idCounter}_${Date.now()}`;
+}
+
+export function getClockPlayState(clock: ClockState): ClockPlayState {
+  if (clock.playState) return clock.playState;
+  if (clock.isPlaying) return 'playing';
+
+  return clock.time === 0 ? 'stopped' : 'paused';
 }
 
 /**
@@ -171,7 +208,8 @@ export const createClockWithScheduler = (
   getBeat: () => number,
   getPhase: () => number,
   getBpm: () => number,
-  scheduler: ClockScheduler
+  scheduler: ClockScheduler,
+  getIsPlaying: () => boolean = () => false
 ): ClockWithScheduler => ({
   get time() {
     return getTime();
@@ -188,9 +226,13 @@ export const createClockWithScheduler = (
   get bpm() {
     return getBpm();
   },
+  get isPlaying() {
+    return getIsPlaying();
+  },
   onBeat: scheduler.onBeat.bind(scheduler),
   schedule: scheduler.schedule.bind(scheduler),
   every: scheduler.every.bind(scheduler),
+  onPlayStateChange: scheduler.onPlayStateChange.bind(scheduler),
   cancel: scheduler.cancel.bind(scheduler),
   cancelAll: scheduler.cancelAll.bind(scheduler)
 });

@@ -10,7 +10,7 @@ import type {
   FBOFormat,
   FBOResolution
 } from '../../lib/rendering/types';
-import type { ClockCommandMessage, ITransport, TransportState } from '$lib/transport/types';
+import type { ClockCommandMessage, TransportState } from '$lib/transport/types';
 import {
   DEFAULT_OUTPUT_SIZE,
   WEBGL_EXTENSIONS,
@@ -57,13 +57,11 @@ import {
   toGLValue
 } from './glUniformUtils';
 import type { WorkerSettingsProxy } from '../shared/workerSettingsProxy';
-import { CookStateManager, type CookPolicy } from './CookStateManager';
+import { CookStateManager } from './CookStateManager';
 import { createGlslCookPolicy } from './cooking/glsl';
 import { createRenderNodeCookPolicy } from './cooking/policies';
 import { isSameMouseData, type MouseData } from './mouseData';
 import { getViewportCookRequiredNodeIds, shouldSkipCookForViewport } from './renderEligibility';
-
-type TransportTimeState = Pick<ITransport, keyof TransportState>;
 
 interface MessageCapableRenderer {
   handleMessage(message: Message): void;
@@ -168,7 +166,7 @@ export class FBORenderer {
   private lastRenderTime: number = 0;
 
   /** Transport time from main thread for synchronized timing */
-  public transportTime: TransportTimeState | null = null;
+  public transportTime: TransportState | null = null;
 
   /** Profiler for frame timing and regl.read() metrics */
   public profiler = new RenderingProfiler();
@@ -1442,7 +1440,7 @@ export class FBORenderer {
    * Set transport time from main thread for synchronized timing.
    * Called at 60fps to keep GLSL/Hydra in sync with global transport.
    */
-  setTransportTime(state: TransportTimeState) {
+  setTransportTime(state: TransportState) {
     this.transportTime = state;
   }
 
@@ -1559,7 +1557,9 @@ export class FBORenderer {
     const clockState: ClockState = {
       time: this.transportTime?.seconds ?? this.lastTime,
       beat: this.transportTime?.beat ?? -1,
-      bpm: this.transportTime?.bpm ?? 120
+      bpm: this.transportTime?.bpm ?? 120,
+      isPlaying: this.transportTime?.isPlaying ?? true,
+      playState: this.transportTime?.playState ?? 'playing'
     };
 
     this.clockScheduler.tick(clockState);
@@ -2469,6 +2469,9 @@ export class FBORenderer {
       get bpm() {
         return renderer.transportTime?.bpm ?? 120;
       },
+      get isPlaying() {
+        return renderer.transportTime?.isPlaying ?? true;
+      },
       get bar() {
         return renderer.transportTime?.bar ?? 0;
       },
@@ -2510,6 +2513,7 @@ export class FBORenderer {
       onBeat: scheduler.onBeat.bind(scheduler),
       schedule: scheduler.schedule.bind(scheduler),
       every: scheduler.every.bind(scheduler),
+      onPlayStateChange: scheduler.onPlayStateChange.bind(scheduler),
       cancel: scheduler.cancel.bind(scheduler),
       cancelAll: scheduler.cancelAll.bind(scheduler)
     };

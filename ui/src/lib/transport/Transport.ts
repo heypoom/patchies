@@ -10,9 +10,34 @@ import { transportStore } from '../../stores/transport.store';
  */
 class TransportManager implements ITransport {
   private context: ITransport = new DefaultTransport();
+  private unsubscribeStore: (() => void) | null = null;
 
   private toneUpgraded = false;
   private toneUpgradeDisabled = false;
+
+  constructor() {
+    this.syncTransportWithStore();
+  }
+
+  /** Syncs BPM and time signature with store */
+  private syncTransportWithStore() {
+    this.unsubscribeStore = transportStore.subscribe(({ bpm, timeSignature }) => {
+      if (this.context.bpm !== bpm) {
+        this.context.setBpm(bpm);
+      }
+
+      const [beatsPerBar, denominator] = timeSignature;
+
+      if (this.context.beatsPerBar !== beatsPerBar || this.context.denominator !== denominator) {
+        this.context.setTimeSignature(beatsPerBar, denominator);
+      }
+    });
+  }
+
+  destroy(): void {
+    this.unsubscribeStore?.();
+    this.unsubscribeStore = null;
+  }
 
   // Proxy all reads to current implementation
   get seconds(): number {
@@ -100,6 +125,7 @@ class TransportManager implements ITransport {
       ticks: this.ticks,
       bpm: this.bpm,
       isPlaying: this.isPlaying,
+      playState: this.isPlaying ? 'playing' : this.seconds === 0 ? 'stopped' : 'paused',
       beat: this.beat,
       phase: this.phase,
       bar: this.bar,

@@ -10,40 +10,50 @@ Extend the clock object with control methods, time signature support, and per-no
 2. **No subdivision support**: Can't easily work with triplets, quintuplets, etc.
 3. **Read-only clock**: Can't control transport from within code (play/pause/setBpm)
 4. **Worker limitation**: Workers receive state but can't send commands back
+5. **Play state requires polling**: Code has to manually compare transport state to react to play/pause/stop changes
 
 ## Solution
 
-Add control methods to the clock object that work uniformly in main thread and workers. Subdivisions are computed **per-node** via `clock.subdiv(n)` and `clock.subdivPhase(n)` — no global state, so different nodes can use different subdivisions simultaneously.
+Add control methods and play-state listeners to the clock object that work uniformly in main thread and workers. Subdivisions are computed **per-node** via `clock.subdiv(n)` and `clock.subdivPhase(n)` — no global state, so different nodes can use different subdivisions simultaneously.
+
+Audio lookahead `clock.onBeat()` and `clock.every()` callbacks can receive a second `eventClock` argument. It is computed for the scheduled future event time, so callback code can read `eventClock.beat` and `eventClock.phase` without accidentally using the scheduler's current polling clock.
 
 ## API Additions
 
 ### Time Signature
 
-| Property          | Type   | Description                |
-| ----------------- | ------ | -------------------------- |
-| `clock.bar`       | number | Current bar (0-indexed)    |
-| `clock.beatsPerBar` | number | Beats per bar (default: 4) |
-| `clock.denominator` | number | Note value that gets one beat (default: 4 = quarter note) |
+| Property            | Type    | Description                                               |
+| ------------------- | ------- | --------------------------------------------------------- |
+| `clock.bar`         | number  | Current bar (0-indexed)                                   |
+| `clock.beatsPerBar` | number  | Beats per bar (default: 4)                                |
+| `clock.denominator` | number  | Note value that gets one beat (default: 4 = quarter note) |
+| `clock.isPlaying`   | boolean | Whether the transport is currently playing                |
 
 ### Per-Node Subdivisions
 
-| Method                  | Return | Description                                        |
-| ----------------------- | ------ | -------------------------------------------------- |
-| `clock.subdiv(n)`       | number | Current subdivision index (0 to n-1) within beat   |
-| `clock.subdivPhase(n)`  | number | Progress within current subdivision (0.0 to 1.0)   |
+| Method                 | Return | Description                                      |
+| ---------------------- | ------ | ------------------------------------------------ |
+| `clock.subdiv(n)`      | number | Current subdivision index (0 to n-1) within beat |
+| `clock.subdivPhase(n)` | number | Progress within current subdivision (0.0 to 1.0) |
 
 These are pure computations from `ticks` and `ppq` — no global state, no syncing needed. Each node picks its own `n`.
 
 ### Control Methods
 
-| Method                                | Description                          |
-| ------------------------------------- | ------------------------------------ |
-| `clock.play()`                        | Start transport                      |
-| `clock.pause()`                       | Pause transport                      |
-| `clock.stop()`                        | Stop and reset to 0                  |
-| `clock.setBpm(bpm)`                   | Set tempo                            |
+| Method                                               | Description                               |
+| ---------------------------------------------------- | ----------------------------------------- |
+| `clock.play()`                                       | Start transport                           |
+| `clock.pause()`                                      | Pause transport                           |
+| `clock.stop()`                                       | Stop and reset to 0                       |
+| `clock.setBpm(bpm)`                                  | Set tempo                                 |
 | `clock.setTimeSignature(numerator, denominator = 4)` | Set time signature (e.g., `6, 8` for 6/8) |
-| `clock.seek(time)`                    | Seek to time in seconds              |
+| `clock.seek(time)`                                   | Seek to time in seconds                   |
+
+### Play State Events
+
+| Method                              | Description                                                                                                |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `clock.onPlayStateChange(callback)` | Fires when transport changes between `playing`, `paused`, and `stopped`; callback receives `(state, time)` |
 
 ## Implementation
 
@@ -97,6 +107,7 @@ export interface TransportState {
   ticks: number;
   bpm: number;
   isPlaying: boolean;
+  playState: "playing" | "paused" | "stopped";
   beat: number;
   phase: number;
   bar: number;
@@ -168,7 +179,7 @@ const angle = (clock.subdiv(5) / 5) * Math.PI * 2;
 
 ```javascript
 // Node A: triplets
-const triColor = ['red', 'green', 'blue'][clock.subdiv(3)];
+const triColor = ["red", "green", "blue"][clock.subdiv(3)];
 
 // Node B: quintuplets (simultaneously, no conflict)
 const quintAngle = (clock.subdiv(5) / 5) * TAU;
@@ -180,7 +191,7 @@ const quintAngle = (clock.subdiv(5) / 5) * TAU;
 // Pulse that breathes once per sixteenth note
 const t = clock.subdivPhase(4);
 const radius = 50 + 20 * Math.sin(t * Math.PI);
-circle(width/2, height/2, radius);
+circle(width / 2, height / 2, radius);
 ```
 
 ### Transport Control from Code
@@ -199,6 +210,23 @@ recv((data) => {
 clock.play();
 ```
 
+### Play State Listener
+
+```javascript
+const id = clock.onPlayStateChange((state, time) => {
+  if (state === "playing") {
+    send({ type: "transport-started", time });
+  }
+
+  if (state === "stopped") {
+    send({ type: "transport-stopped" });
+  }
+});
+
+// Later, remove the listener
+clock.cancel(id);
+```
+
 ### Seek to Bar
 
 ```javascript
@@ -208,21 +236,22 @@ clock.seek(8 * secondsPerBar);
 
 ## Files Modified
 
-| File                                   | Changes                                              |
-| -------------------------------------- | ---------------------------------------------------- |
-| `src/lib/transport/types.ts`           | Remove global subdivision, add `ppq` to state        |
-| `src/lib/transport/constants.ts`       | Remove `DEFAULT_SUBDIVISIONS_PER_BEAT`               |
-| `src/lib/transport/DefaultTransport.ts`| Remove subdivision state, expose `ppq`               |
-| `src/lib/transport/ToneTransport.ts`   | Remove subdivision state, expose `ppq`               |
-| `src/lib/transport/Transport.ts`       | Remove subdivision proxies, add `ppq`                |
-| `src/lib/canvas/GLSystem.ts`           | Remove `setSubdivisions` from clockCommand handler   |
-| `src/workers/rendering/fboRenderer.ts` | Replace subdivision getters with `subdiv`/`subdivPhase` |
-| `src/lib/js-runner/JSRunner.ts`        | Replace subdivision getters with `subdiv`/`subdivPhase` |
-| `src/stores/transport.store.ts`        | Remove `subdivisionsPerBeat` persistence             |
+| File                                    | Changes                                                 |
+| --------------------------------------- | ------------------------------------------------------- |
+| `src/lib/transport/types.ts`            | Remove global subdivision, add `ppq` to state           |
+| `src/lib/transport/constants.ts`        | Remove `DEFAULT_SUBDIVISIONS_PER_BEAT`                  |
+| `src/lib/transport/DefaultTransport.ts` | Remove subdivision state, expose `ppq`                  |
+| `src/lib/transport/ToneTransport.ts`    | Remove subdivision state, expose `ppq`                  |
+| `src/lib/transport/Transport.ts`        | Remove subdivision proxies, add `ppq`                   |
+| `src/lib/canvas/GLSystem.ts`            | Remove `setSubdivisions` from clockCommand handler      |
+| `src/workers/rendering/fboRenderer.ts`  | Replace subdivision getters with `subdiv`/`subdivPhase` |
+| `src/lib/js-runner/JSRunner.ts`         | Replace subdivision getters with `subdiv`/`subdivPhase` |
+| `src/stores/transport.store.ts`         | Remove `subdivisionsPerBeat` persistence                |
 
 ## Tick Math
 
 The denominator determines `ticksPerBeat = ppq * (4 / denominator)`:
+
 - 4/4: `192 * (4/4) = 192` ticks/beat (quarter note beats)
 - 6/8: `192 * (4/8) = 96` ticks/beat (eighth note beats)
 - 3/2: `192 * (4/2) = 384` ticks/beat (half note beats)

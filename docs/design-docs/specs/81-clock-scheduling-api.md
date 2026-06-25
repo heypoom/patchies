@@ -25,6 +25,8 @@ This is tedious and requires boilerplate in every node.
 
 Add scheduling methods to the `clock` object that work uniformly across all environments. By default, callbacks fire **after** the event (visual-friendly). Pass `{ audio: true }` for lookahead scheduling where callbacks fire early with the precise transport time for Web Audio API scheduling.
 
+For audio lookahead `onBeat` and `every`, callbacks may also receive a second `eventClock` argument. This is a future clock snapshot for the scheduled event time, so `eventClock.time`, `eventClock.beat`, and `eventClock.phase` describe when the event actually lands rather than the scheduler's current polling time.
+
 ## API
 
 ### `clock.onBeat(beat, callback, options?)` - Beat Change Subscription
@@ -60,9 +62,13 @@ clock.schedule("4:0:0", () => breakdown()); // bar 4, beat 0
 clock.schedule("8:2:0", () => buildUp()); // bar 8, beat 2
 
 // Audio-precise — fires early with precise time
-clock.schedule("4:0:0", (time) => {
-  send({ type: 'set', value: 880, time });
-}, { audio: true });
+clock.schedule(
+  "4:0:0",
+  (time) => {
+    send({ type: "set", value: 880, time });
+  },
+  { audio: true },
+);
 
 // Returns ID for cleanup
 const id = clock.schedule("16:0:0", () => finale());
@@ -80,9 +86,13 @@ clock.every("0:1:0", () => pulse()); // every beat
 clock.every("0:0:1", () => tick()); // every sixteenth
 
 // Audio-precise repeating
-clock.every("0:1:0", (time) => {
-  send({ type: 'trigger', ... });
-}, { audio: true });
+clock.every(
+  "0:1:0",
+  (time, eventClock) => {
+    send({ type: "trigger", beat: eventClock.beat, time });
+  },
+  { audio: true },
+);
 
 // Returns ID for cleanup
 const id = clock.every("4:0:0", () => transition());
@@ -119,9 +129,24 @@ interface SchedulerOptions {
 }
 
 interface ClockScheduler {
-  onBeat(beat: number | number[] | "*", callback: (time: number) => void, options?: SchedulerOptions): string;
-  schedule(time: number | string, callback: (time: number) => void, options?: SchedulerOptions): string;
-  every(interval: string, callback: (time: number) => void, options?: SchedulerOptions): string;
+  onBeat(
+    beat: number | number[] | "*",
+    callback: (time: number, clock?: ClockState) => void,
+    options?: SchedulerOptions,
+  ): string;
+  
+  schedule(
+    time: number | string,
+    callback: (time: number, clock?: ClockState) => void,
+    options?: SchedulerOptions,
+  ): string;
+  
+  every(
+    interval: string,
+    callback: (time: number, clock?: ClockState) => void,
+    options?: SchedulerOptions,
+  ): string;
+  
   cancel(id: string): void;
   cancelAll(): void;
 }
@@ -341,12 +366,14 @@ function parseBarBeatSixteenth(notation: string, bpm: number): number {
 
 **Default (visual):** Callbacks fire **after** the event — ~25ms main thread, ~16ms workers. Imperceptible for visual sync.
 
-**`{ audio: true }` (lookahead):** Main thread only. Callbacks fire **before** the event within a ~100ms lookahead window. The `time` argument contains the precise transport time for Web Audio API scheduling.
+**`{ audio: true }` (lookahead):** Main thread only. Callbacks fire **before** the event within a ~100ms lookahead window. The `time` argument contains the precise transport time for Web Audio API scheduling. For `onBeat` and `every`, the optional second `eventClock` argument is derived for that future event time.
 
-| Environment | Visual precision    | Audio lookahead   |
-| ----------- | ------------------- | ----------------- |
-| Main Thread | Poll-based (~25ms)  | ~100ms ahead      |
-| Worker      | Frame-based (~16ms) | Not available     |
+Audio lookahead beat callbacks must dedupe by logical beat index, not by the predicted floating-point event time. The scheduler polls repeatedly inside the lookahead window, and tiny clock/phase rounding differences can produce slightly different timestamps for the same upcoming beat.
+
+| Environment | Visual precision    | Audio lookahead |
+| ----------- | ------------------- | --------------- |
+| Main Thread | Poll-based (~25ms)  | ~100ms ahead    |
+| Worker      | Frame-based (~16ms) | Not available   |
 
 ## Examples
 

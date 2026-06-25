@@ -785,6 +785,13 @@ const memberCompletions: Record<string, Completion[]> = {
       apply: 'bpm'
     },
     {
+      label: 'isPlaying',
+      type: 'property',
+      detail: 'boolean',
+      info: 'Whether the global transport is currently playing.',
+      apply: 'isPlaying'
+    },
+    {
       label: 'bar',
       type: 'property',
       detail: 'number',
@@ -853,15 +860,15 @@ const memberCompletions: Record<string, Completion[]> = {
       label: 'onBeat',
       type: 'method',
       detail: "(beat: number | number[] | '*', callback, options?) => id",
-      info: "Subscribe to beat changes. beat can be index, array of indices, or '*' for every beat.",
-      apply: 'onBeat(0, () => {\n  \n})'
+      info: 'Subscribe to beat changes. With { audio: true }, callback can receive (time, eventClock) for the future beat.',
+      apply: 'onBeat(0, (time) => {\n  \n})'
     },
     {
       label: 'every',
       type: 'method',
       detail: "('bar:beat:sixteenth', callback, options?) => id",
-      info: "Schedule a repeating callback at a musical interval. E.g. '1:0:0' = every bar, '0:1:0' = every beat.",
-      apply: "every('0:1:0', () => {\n  \n})"
+      info: 'Schedule a repeating callback at a musical interval. With { audio: true }, callback can receive (time, eventClock) for the future repeat.',
+      apply: "every('0:1:0', (time) => {\n  \n})"
     },
     {
       label: 'schedule',
@@ -869,6 +876,13 @@ const memberCompletions: Record<string, Completion[]> = {
       detail: '(time: number | string, callback, options?) => id',
       info: "Schedule a one-shot callback. Accepts seconds or 'bar:beat:sixteenth' notation (zero-indexed).",
       apply: "schedule('4:0:0', () => {\n  \n})"
+    },
+    {
+      label: 'onPlayStateChange',
+      type: 'method',
+      detail: "(callback: (state: 'playing' | 'paused' | 'stopped', time: number) => void) => id",
+      info: 'Subscribe to transport play state changes. Callback receives the new state and current transport time.',
+      apply: 'onPlayStateChange((state, time) => {\n  \n})'
     },
     {
       label: 'cancel',
