@@ -24,6 +24,19 @@ const ControlChange = Type.Object({
   channel: Type.Number()
 });
 
+const ProgramChange = Type.Object({
+  type: Type.Literal('programChange'),
+  program: Type.Number(),
+  channel: Type.Number()
+});
+
+const PitchBend = Type.Object({
+  type: Type.Literal('pitchBend'),
+  value: Type.Number(),
+  control: Type.Number(),
+  channel: Type.Number()
+});
+
 const MidiInputEventType = Type.Union([
   Type.Literal('noteOn'),
   Type.Literal('noteOff'),
@@ -66,7 +79,9 @@ export const midiInSchema: ObjectSchema = {
       messages: [
         { schema: NoteOn, description: 'MIDI note on message' },
         { schema: NoteOff, description: 'MIDI note off message' },
-        { schema: ControlChange, description: 'MIDI control change message' }
+        { schema: ControlChange, description: 'MIDI control change message' },
+        { schema: ProgramChange, description: 'MIDI program change message' },
+        { schema: PitchBend, description: 'MIDI pitch bend message' }
       ]
     }
   ],
