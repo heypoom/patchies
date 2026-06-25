@@ -7,6 +7,7 @@
   import { useNodeDataTracker } from '$lib/history';
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
+  import { isMidiFileMessageType, isMidiFilePlayMessage } from '../midi-file-command';
   import { parseMidiFileLoadInput, type MidiFileLoadInput } from '../midi-file-load-input';
   import { parseMidiFile } from '../midi-file-parser';
   import { MidiFilePlayer, type ParsedMidiFile } from '../midi-file-player';
@@ -83,22 +84,22 @@
       return;
     }
 
-    if (message === 'bang' || message === 'play' || isMessageType(message, 'play')) {
+    if (isMidiFilePlayMessage(message)) {
       play();
       return;
     }
 
-    if (message === 'pause' || isMessageType(message, 'pause')) {
+    if (message === 'pause' || isMidiFileMessageType(message, 'pause')) {
       pause();
       return;
     }
 
-    if (message === 'stop' || isMessageType(message, 'stop')) {
+    if (message === 'stop' || isMidiFileMessageType(message, 'stop')) {
       stop();
       return;
     }
 
-    if (isMessageType(message, 'seek')) {
+    if (isMidiFileMessageType(message, 'seek')) {
       const seconds = typeof message.seconds === 'number' ? message.seconds : undefined;
       const ticks = typeof message.ticks === 'number' ? message.ticks : undefined;
       const beats = typeof message.beats === 'number' ? message.beats : undefined;
@@ -110,13 +111,13 @@
       return;
     }
 
-    if (isMessageType(message, 'loop')) {
+    if (isMidiFileMessageType(message, 'loop')) {
       const next = typeof message.value === 'boolean' ? message.value : !data.loop;
       updateTracked('loop', next);
       return;
     }
 
-    if (isMessageType(message, 'set')) {
+    if (isMidiFileMessageType(message, 'set')) {
       for (const key of [
         'applyTempoToTransport',
         'applyTimeSignatureToTransport',
@@ -332,14 +333,6 @@
     const safeSeconds = Math.max(0, Math.floor(seconds ?? 0));
     const minutes = Math.floor(safeSeconds / 60);
     return `${minutes}:${String(safeSeconds % 60).padStart(2, '0')}`;
-  }
-
-  function isMessageType(message: unknown, type: string): message is Record<string, unknown> {
-    return (
-      typeof message === 'object' &&
-      message !== null &&
-      (message as { type?: unknown }).type === type
-    );
   }
 
   function metadataForNode(file: ParsedMidiFile): Partial<MidiFileNodeData> {

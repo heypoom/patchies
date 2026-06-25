@@ -1,3 +1,6 @@
+import { parseMidi, type MidiEvent } from 'midi-file';
+import { match } from 'ts-pattern';
+
 import type {
   MidiFileOutputMessage,
   ParsedMidiFile,
@@ -15,54 +18,81 @@ interface TempoPoint {
   bpm: number;
 }
 
+const MAJOR_NOTES = [
+  'Cb',
+  'Gb',
+  'Db',
+  'Ab',
+  'Eb',
+  'Bb',
+  'F',
+  'C',
+  'G',
+  'D',
+  'A',
+  'E',
+  'B',
+  'F#',
+  'C#'
+];
+
+const MINOR_NOTES = [
+  'Abm',
+  'Ebm',
+  'Bbm',
+  'Fm',
+  'Cm',
+  'Gm',
+  'Dm',
+  'Am',
+  'Em',
+  'Bm',
+  'F#m',
+  'C#m',
+  'G#m',
+  'D#m',
+  'A#m'
+];
+
 export function parseMidiFile(
   bytes: ArrayBuffer | Uint8Array,
   fileName = 'midi file'
 ): ParsedMidiFile {
-  const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  const reader = new MidiReader(data);
+  const data = normalizeMidiChunks(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes));
+  const parsed = parseMidi(data);
 
-  if (reader.readAscii(4) !== 'MThd') {
-    throw new Error('Invalid MIDI file: missing MThd header');
-  }
-
-  const headerLength = reader.readUint32();
-  const format = reader.readUint16();
-  const declaredTrackCount = reader.readUint16();
-  const division = reader.readUint16();
-
-  if ((division & 0x8000) !== 0) {
+  if (parsed.header.ticksPerBeat === undefined) {
     throw new Error('SMPTE time division is not supported');
   }
 
-  if (format > 2) {
-    throw new Error(`Unsupported MIDI file format: ${format}`);
+  if (parsed.header.format > 2) {
+    throw new Error(`Unsupported MIDI file format: ${parsed.header.format}`);
   }
 
-  const ppq = division;
-  reader.skip(headerLength - 6);
-
+  const ppq = parsed.header.ticksPerBeat;
   const rawEvents: RawEvent[] = [];
   const tempoPoints: TempoPoint[] = [];
-  let parsedTrackCount = 0;
 
-  while (reader.remaining >= 8 && parsedTrackCount < declaredTrackCount) {
-    const chunkType = reader.readAscii(4);
-    const chunkLength = reader.readUint32();
+  parsed.tracks.forEach((trackEvents, trackIndex) => {
+    let ticks = 0;
 
-    if (chunkType === 'MTrk') {
-      parseTrack(reader, parsedTrackCount, chunkLength, rawEvents, tempoPoints);
-      parsedTrackCount += 1;
-    } else {
-      reader.skip(chunkLength);
+    for (const event of trackEvents) {
+      ticks += event.deltaTime;
+
+      const message = parseEvent(event, ticks, trackIndex, tempoPoints);
+
+      if (message) {
+        rawEvents.push({ ticks, track: trackIndex, message });
+      }
     }
-  }
+  });
 
-  if (parsedTrackCount === 0) {
+  if (parsed.tracks.length === 0) {
     throw new Error('Invalid MIDI file: missing MTrk header');
   }
 
   tempoPoints.sort((a, b) => a.tick - b.tick);
+
   if (!tempoPoints.some((tempo) => tempo.tick === 0)) {
     tempoPoints.unshift({ tick: 0, bpm: 120 });
   }
@@ -102,144 +132,171 @@ export function parseMidiFile(
     ppq,
     durationSeconds,
     durationTicks,
-    trackCount: parsedTrackCount,
+    trackCount: parsed.tracks.length,
     events,
     tempos,
     timeSignatures
   };
 }
 
-function parseTrack(
-  reader: MidiReader,
-  track: number,
-  length: number,
-  events: RawEvent[],
-  tempoPoints: TempoPoint[]
-): void {
-  const end = reader.position + length;
-  let ticks = 0;
-  let runningStatus: number | null = null;
-
-  while (reader.position < end) {
-    ticks += reader.readVlq();
-    let status = reader.readUint8();
-
-    if (status < 0x80) {
-      if (runningStatus === null) {
-        throw new Error('Invalid MIDI file: running status without previous status');
-      }
-      reader.unread();
-      status = runningStatus;
-    } else if (status < 0xf0) {
-      runningStatus = status;
-    }
-
-    if (status === 0xff) {
-      const metaType = reader.readUint8();
-      const length = reader.readVlq();
-      const payload = reader.readBytes(length);
-      const message = parseMetaEvent(metaType, payload, ticks, track, tempoPoints);
-      if (message) events.push({ ticks, track, message });
-      if (metaType === 0x2f) break;
-      continue;
-    }
-
-    if (status === 0xf0 || status === 0xf7) {
-      reader.skip(reader.readVlq());
-      continue;
-    }
-
-    const message = parseChannelEvent(status, reader);
-    if (message) events.push({ ticks, track, message });
-  }
-
-  reader.position = end;
-}
-
-function parseMetaEvent(
-  type: number,
-  payload: Uint8Array,
+const parseEvent = (
+  event: MidiEvent,
   tick: number,
   track: number,
   tempoPoints: TempoPoint[]
-): MidiFileOutputMessage | null {
-  if (type === 0x03) {
-    return { type: 'trackName', name: new TextDecoder().decode(payload), track };
-  }
-
-  if (type === 0x51 && payload.length >= 3) {
-    const microsPerQuarter = (payload[0] << 16) | (payload[1] << 8) | payload[2];
-    const bpm = 60_000_000 / microsPerQuarter;
-    tempoPoints.push({ tick, bpm });
-    return { type: 'tempo', bpm, tick };
-  }
-
-  if (type === 0x58 && payload.length >= 2) {
-    return {
+): MidiFileOutputMessage | null =>
+  match<MidiEvent, MidiFileOutputMessage | null>(event)
+    .with({ type: 'trackName' }, (event) => ({ type: 'trackName', name: event.text, track }))
+    .with({ type: 'setTempo' }, (event) => {
+      const bpm = 60_000_000 / event.microsecondsPerBeat;
+      tempoPoints.push({ tick, bpm });
+      return { type: 'tempo', bpm, tick };
+    })
+    .with({ type: 'timeSignature' }, (event) => ({
       type: 'timeSignature',
-      numerator: payload[0],
-      denominator: 2 ** payload[1],
+      numerator: event.numerator,
+      denominator: event.denominator,
       tick
-    };
+    }))
+    .with({ type: 'keySignature' }, (event) => ({
+      type: 'keySignature',
+      key: keySignatureName(event.key, event.scale),
+      tick
+    }))
+    .with({ type: 'noteOn' }, (event) => ({
+      type: 'noteOn',
+      note: event.noteNumber,
+      velocity: event.velocity,
+      channel: midiChannel(event)
+    }))
+    .with({ type: 'noteOff' }, (event) => ({
+      type: 'noteOff',
+      note: event.noteNumber,
+      velocity: event.velocity,
+      channel: midiChannel(event)
+    }))
+    .with({ type: 'controller' }, (event) => ({
+      type: 'controlChange',
+      control: event.controllerType,
+      value: event.value,
+      channel: midiChannel(event)
+    }))
+    .with({ type: 'programChange' }, (event) => ({
+      type: 'programChange',
+      program: event.programNumber,
+      channel: midiChannel(event)
+    }))
+    .with({ type: 'pitchBend' }, (event) => ({
+      type: 'pitchBend',
+      value: event.value / 8192,
+      channel: midiChannel(event)
+    }))
+    .with({ type: 'channelAftertouch' }, (event) => ({
+      type: 'channelPressure',
+      pressure: event.amount,
+      channel: midiChannel(event)
+    }))
+    .with({ type: 'noteAftertouch' }, (event) => ({
+      type: 'polyPressure',
+      note: event.noteNumber,
+      pressure: event.amount,
+      channel: midiChannel(event)
+    }))
+    .otherwise(() => null);
+
+const midiChannel = (event: MidiEvent & { channel: number }): number => event.channel + 1;
+
+function normalizeMidiChunks(bytes: Uint8Array): Uint8Array {
+  const header = readChunk(bytes, 0);
+  if (!header || header.id !== 'MThd') {
+    throw new Error('Invalid MIDI file: missing MThd header');
   }
 
-  if (type === 0x59 && payload.length >= 2) {
-    return { type: 'keySignature', key: keySignatureName(payload[0], payload[1]), tick };
+  const declaredTrackCount = readUint16(header.data, 2);
+  const chunks: Array<{ id: string; data: Uint8Array }> = [{ id: header.id, data: header.data }];
+
+  let position = header.nextPosition;
+  let trackCount = 0;
+
+  while (position + 8 <= bytes.length && trackCount < declaredTrackCount) {
+    const chunk = readChunk(bytes, position);
+    if (!chunk) break;
+
+    if (chunk.id === 'MTrk') {
+      chunks.push({ id: chunk.id, data: chunk.data });
+      trackCount += 1;
+    }
+
+    position = chunk.nextPosition;
   }
 
-  return null;
+  if (trackCount === 0) {
+    throw new Error('Invalid MIDI file: missing MTrk header');
+  }
+
+  const normalizedHeader = header.data.slice();
+  normalizedHeader[2] = (trackCount >> 8) & 0xff;
+  normalizedHeader[3] = trackCount & 0xff;
+
+  chunks[0] = { id: header.id, data: normalizedHeader };
+
+  return writeChunks(chunks);
 }
 
-function parseChannelEvent(status: number, reader: MidiReader): MidiFileOutputMessage | null {
-  const eventType = status & 0xf0;
-  const channel = (status & 0x0f) + 1;
+function readChunk(
+  bytes: Uint8Array,
+  position: number
+): { id: string; data: Uint8Array; nextPosition: number } | null {
+  if (position + 8 > bytes.length) return null;
 
-  if (eventType === 0x80) {
-    return { type: 'noteOff', note: reader.readUint8(), velocity: reader.readUint8(), channel };
+  const id = new TextDecoder().decode(bytes.slice(position, position + 4));
+  const length = readUint32(bytes, position + 4);
+
+  const dataStart = position + 8;
+  const dataEnd = dataStart + length;
+
+  if (dataEnd > bytes.length) {
+    throw new Error('Unexpected end of MIDI file');
   }
 
-  if (eventType === 0x90) {
-    const note = reader.readUint8();
-    const velocity = reader.readUint8();
-    return velocity === 0
-      ? { type: 'noteOff', note, velocity: 0, channel }
-      : { type: 'noteOn', note, velocity, channel };
+  return { id, data: bytes.slice(dataStart, dataEnd), nextPosition: dataEnd };
+}
+
+function writeChunks(chunks: Array<{ id: string; data: Uint8Array }>): Uint8Array {
+  const length = chunks.reduce((sum, chunk) => sum + 8 + chunk.data.length, 0);
+  const bytes = new Uint8Array(length);
+
+  let position = 0;
+
+  for (const chunk of chunks) {
+    for (let i = 0; i < 4; i++) {
+      bytes[position + i] = chunk.id.charCodeAt(i);
+    }
+
+    writeUint32(bytes, position + 4, chunk.data.length);
+
+    bytes.set(chunk.data, position + 8);
+    position += 8 + chunk.data.length;
   }
 
-  if (eventType === 0xa0) {
-    return {
-      type: 'polyPressure',
-      note: reader.readUint8(),
-      pressure: reader.readUint8(),
-      channel
-    };
-  }
+  return bytes;
+}
 
-  if (eventType === 0xb0) {
-    return {
-      type: 'controlChange',
-      control: reader.readUint8(),
-      value: reader.readUint8(),
-      channel
-    };
-  }
+const readUint16 = (bytes: Uint8Array, position: number): number =>
+  (bytes[position] << 8) | bytes[position + 1];
 
-  if (eventType === 0xc0) {
-    return { type: 'programChange', program: reader.readUint8(), channel };
-  }
+const readUint32 = (bytes: Uint8Array, position: number): number =>
+  ((bytes[position] << 24) |
+    (bytes[position + 1] << 16) |
+    (bytes[position + 2] << 8) |
+    bytes[position + 3]) >>>
+  0;
 
-  if (eventType === 0xd0) {
-    return { type: 'channelPressure', pressure: reader.readUint8(), channel };
-  }
-
-  if (eventType === 0xe0) {
-    const lsb = reader.readUint8();
-    const msb = reader.readUint8();
-    const raw = (msb << 7) | lsb;
-    return { type: 'pitchBend', value: (raw - 8192) / 8192, channel };
-  }
-
-  return null;
+function writeUint32(bytes: Uint8Array, position: number, value: number): void {
+  bytes[position] = (value >> 24) & 0xff;
+  bytes[position + 1] = (value >> 16) & 0xff;
+  bytes[position + 2] = (value >> 8) & 0xff;
+  bytes[position + 3] = value & 0xff;
 }
 
 function tickToSeconds(tick: number, ppq: number, tempos: TempoPoint[]): number {
@@ -249,7 +306,9 @@ function tickToSeconds(tick: number, ppq: number, tempos: TempoPoint[]): number 
 
   for (const tempo of tempos) {
     if (tempo.tick > tick) break;
+
     seconds += ticksToSeconds(tempo.tick - previousTick, ppq, currentBpm);
+
     previousTick = tempo.tick;
     currentBpm = tempo.bpm;
   }
@@ -257,88 +316,8 @@ function tickToSeconds(tick: number, ppq: number, tempos: TempoPoint[]): number 
   return seconds + ticksToSeconds(tick - previousTick, ppq, currentBpm);
 }
 
-function ticksToSeconds(ticks: number, ppq: number, bpm: number): number {
-  return (ticks / ppq) * (60 / bpm);
-}
+const ticksToSeconds = (ticks: number, ppq: number, bpm: number): number =>
+  (ticks / ppq) * (60 / bpm);
 
-function keySignatureName(sfByte: number, mi: number): string {
-  const sf = sfByte > 127 ? sfByte - 256 : sfByte;
-  const major = ['Cb', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F', 'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'];
-  const minor = [
-    'Abm',
-    'Ebm',
-    'Bbm',
-    'Fm',
-    'Cm',
-    'Gm',
-    'Dm',
-    'Am',
-    'Em',
-    'Bm',
-    'F#m',
-    'C#m',
-    'G#m',
-    'D#m',
-    'A#m'
-  ];
-  return (mi === 1 ? minor : major)[sf + 7] ?? 'C';
-}
-
-class MidiReader {
-  position = 0;
-
-  constructor(private bytes: Uint8Array) {}
-
-  get remaining(): number {
-    return this.bytes.length - this.position;
-  }
-
-  readAscii(length: number): string {
-    return new TextDecoder().decode(this.readBytes(length));
-  }
-
-  readUint8(): number {
-    if (this.position >= this.bytes.length) throw new Error('Unexpected end of MIDI file');
-    return this.bytes[this.position++];
-  }
-
-  readUint16(): number {
-    return (this.readUint8() << 8) | this.readUint8();
-  }
-
-  readUint32(): number {
-    return (
-      ((this.readUint8() << 24) |
-        (this.readUint8() << 16) |
-        (this.readUint8() << 8) |
-        this.readUint8()) >>>
-      0
-    );
-  }
-
-  readVlq(): number {
-    let value = 0;
-    for (let i = 0; i < 4; i++) {
-      const byte = this.readUint8();
-      value = (value << 7) | (byte & 0x7f);
-      if ((byte & 0x80) === 0) return value;
-    }
-    throw new Error('Invalid MIDI file: VLQ is too long');
-  }
-
-  readBytes(length: number): Uint8Array {
-    if (this.position + length > this.bytes.length) throw new Error('Unexpected end of MIDI file');
-    const value = this.bytes.slice(this.position, this.position + length);
-    this.position += length;
-    return value;
-  }
-
-  skip(length: number): void {
-    this.position += length;
-    if (this.position > this.bytes.length) throw new Error('Unexpected end of MIDI file');
-  }
-
-  unread(): void {
-    this.position -= 1;
-  }
-}
+const keySignatureName = (sf: number, mi: number): string =>
+  (mi === 1 ? MINOR_NOTES : MAJOR_NOTES)[sf + 7] ?? 'C';
