@@ -343,6 +343,8 @@ function parseBarBeatSixteenth(notation: string, bpm: number): number {
 
 **`{ audio: true }` (lookahead):** Main thread only. Callbacks fire **before** the event within a ~100ms lookahead window. The `time` argument contains the precise transport time for Web Audio API scheduling.
 
+Audio lookahead beat callbacks must dedupe by logical beat index, not by the predicted floating-point event time. The scheduler polls repeatedly inside the lookahead window, and tiny clock/phase rounding differences can produce slightly different timestamps for the same upcoming beat.
+
 | Environment | Visual precision    | Audio lookahead   |
 | ----------- | ------------------- | ----------------- |
 | Main Thread | Poll-based (~25ms)  | ~100ms ahead      |

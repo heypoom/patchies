@@ -67,6 +67,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
   dispose(): void {
     this.stop();
     this.cancelAll();
+
     this.markers.clear();
     this.firedEvents = [];
     this._timelineStyle = {};
@@ -89,6 +90,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
   addMarker(time: number, color?: string): string {
     const id = generateId();
     this.markers.set(id, { time, color });
+
     return id;
   }
 
@@ -124,12 +126,14 @@ export class LookaheadClockScheduler implements ClockScheduler {
   drainFiredEvents(): FiredEventRecord[] {
     const events = this.firedEvents;
     this.firedEvents = [];
+
     return events;
   }
 
   /** Record that a callback fired (for timeline flash animation). */
   private recordFired(id: string, firedAt: number): void {
     this.firedEvents.push({ id, firedAt, wallTime: performance.now() });
+
     if (this.firedEvents.length > LookaheadClockScheduler.MAX_FIRED_BUFFER) {
       this.firedEvents.shift();
     }
@@ -145,6 +149,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
     if (clock.beat !== this.lastBeat) {
       for (const [id, item] of this.beatCallbacks) {
         if (item.audio) continue;
+
         const shouldFire =
           item.beats === '*' || (Array.isArray(item.beats) && item.beats.includes(clock.beat));
 
@@ -165,23 +170,28 @@ export class LookaheadClockScheduler implements ClockScheduler {
     if (clock.phase != null && clock.beatsPerBar != null) {
       const beatDuration = 60 / clock.bpm;
       const timeUntilNextBeat = (1 - clock.phase) * beatDuration;
+
       const nextBeatTime = clock.time + timeUntilNextBeat;
+      const nextBeatIndex = Math.floor(clock.time / beatDuration) + 1;
       const nextBeat = (clock.beat + 1) % clock.beatsPerBar;
 
       if (nextBeatTime <= horizon) {
         for (const [id, item] of this.beatCallbacks) {
           if (!item.audio) continue;
+
           const shouldFire =
             item.beats === '*' || (Array.isArray(item.beats) && item.beats.includes(nextBeat));
 
-          if (shouldFire && item.lastFiredBeatTime !== nextBeatTime) {
+          if (shouldFire && item.lastFiredBeatIndex !== nextBeatIndex) {
             try {
               item.callback(nextBeatTime);
               this.recordFired(id, nextBeatTime);
             } catch (e) {
               this.nodeLog.error('[clock] onBeat audio callback error:', e);
             }
+
             item.lastFiredBeatTime = nextBeatTime;
+            item.lastFiredBeatIndex = nextBeatIndex;
           }
         }
       }
@@ -194,6 +204,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
       // Recalculate time if BPM changed (only for musical notation times)
       if (item.bpm !== undefined && item.bpm !== clock.bpm) {
         const ratio = item.bpm / clock.bpm;
+
         item.time = item.time * ratio;
         item.bpm = clock.bpm;
       }
@@ -225,36 +236,34 @@ export class LookaheadClockScheduler implements ClockScheduler {
       // Recalculate interval if BPM changed
       if (item.bpm !== clock.bpm) {
         const ratio = item.bpm / clock.bpm;
+
         item.interval = item.interval * ratio;
         item.bpm = clock.bpm;
       }
 
       const fireTime = item.lastFired + item.interval;
 
-      if (item.audio) {
-        // Audio mode: lookahead with grid-aligned fire time
-        if (fireTime <= horizon) {
-          try {
-            item.callback(fireTime);
-            this.recordFired(id, fireTime);
-          } catch (e) {
-            this.nodeLog.error('[clock] every callback error:', e);
-          }
-          item.lastFired = fireTime;
-        }
-      } else {
-        // Visual mode: fire after the event
-        if (clock.time >= fireTime) {
-          try {
-            item.callback(clock.time);
-            this.recordFired(id, clock.time);
-          } catch (e) {
-            this.nodeLog.error('[clock] every callback error:', e);
-          }
-          item.lastFired = clock.time;
-        }
+      // Audio precision: lookahead with grid-aligned fire time
+      if (item.audio && fireTime <= horizon) {
+        this.fireEveryCallback(item, id, fireTime);
+      }
+
+      // Non-audio precision: fire after the event
+      if (!item.audio && clock.time >= fireTime) {
+        this.fireEveryCallback(item, id, clock.time);
       }
     }
+  }
+
+  fireEveryCallback(item: RepeatCallback, id: string, time: number) {
+    try {
+      item.callback(time);
+      this.recordFired(id, time);
+    } catch (e) {
+      this.nodeLog.error('[clock] every callback error:', e);
+    }
+
+    item.lastFired = time;
   }
 
   onBeat(
@@ -264,7 +273,9 @@ export class LookaheadClockScheduler implements ClockScheduler {
   ): string {
     const id = generateId();
     const beats = typeof beat === 'number' ? [beat] : beat;
+
     this.beatCallbacks.set(id, { beats, callback, audio: options?.audio ?? false });
+
     return id;
   }
 

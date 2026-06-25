@@ -98,13 +98,16 @@ type ClockWithScheduler = {
 };
 
 // Shared internal types used by both scheduler implementations
-export type BeatCallback = {
+export interface BeatCallback {
   beats: number[] | '*';
   callback: SchedulerCallback;
   audio: boolean;
+
   lastFiredBeatTime?: number;
-};
-export type ScheduleCallback = {
+  lastFiredBeatIndex?: number;
+}
+
+export interface ScheduleCallback {
   time: number;
   callback: SchedulerCallback;
   fired: boolean;
@@ -112,7 +115,8 @@ export type ScheduleCallback = {
 
   /** BPM at registration time (set when time came from bar:beat:sixteenth notation). */
   bpm?: number;
-};
+}
+
 export type RepeatCallback = {
   interval: number;
   lastFired: number;
