@@ -15,6 +15,7 @@ messages that other MIDI-aware objects already understand.
   `pitchBend`, and additional channel/meta messages where useful.
 - Optionally apply the MIDI file's tempo and time signature metadata to the global transport when
   playback starts.
+- Support immediate canvas drag/drop for `.mid` and `.midi` files.
 - Follow the existing compact MIDI node style and the standard floating settings panel pattern.
 
 ## Non-Goals
@@ -41,7 +42,8 @@ It belongs in the MIDI object pack next to:
 ```typescript
 interface MidiFileNodeData {
   fileName?: string;
-  fileData?: string; // base64-encoded MIDI bytes, persisted with the patch
+  vfsPath?: string; // preferred source for local files, URLs, and larger files
+  fileData?: string; // optional base64 fallback for inline/imported bytes
   durationSeconds?: number;
   durationTicks?: number;
   ppq?: number;
@@ -53,7 +55,7 @@ interface MidiFileNodeData {
 
   applyTempoToTransport: boolean;
   applyTimeSignatureToTransport: boolean;
-  followTransport: boolean;
+  syncTransport: boolean;
   outputMetaEvents: boolean;
 }
 ```
@@ -67,13 +69,15 @@ Defaults:
   loop: false,
   applyTempoToTransport: true,
   applyTimeSignatureToTransport: true,
-  followTransport: false,
+  syncTransport: false,
   outputMetaEvents: false
 }
 ```
 
-`fileData` is stored in node data so saved patches remain portable. If this proves too heavy for
-large files, move the bytes to the VFS in a later spec and keep a VFS path in node data.
+`vfsPath` is the preferred source, matching the `soundfile~` pattern: the VFS can resolve local
+files, linked-folder files, and URL-backed files without forcing large bytes into node data.
+`fileData` is still accepted for pasted/imported bytes and small self-contained patches. When both
+are present, `vfsPath` wins.
 
 ## Inlets And Outlets
 
@@ -81,10 +85,9 @@ large files, move the bytes to the VFS in a later spec and keep a VFS path in no
 | --- | ------- | ------- | ------------------------------------------------ |
 | 0   | command | message | Playback, seek, file-load, and settings commands |
 
-| #   | Name | Type    | Description                               |
-| --- | ---- | ------- | ----------------------------------------- |
-| 0   | midi | message | MIDI channel messages during playback     |
-| 1   | meta | message | Optional playback/meta/status information |
+| #   | Name | Type    | Description                                |
+| --- | ---- | ------- | ------------------------------------------ |
+| 0   | out  | message | MIDI channel, playback, and meta messages  |
 
 The node has no audio or video ports.
 
@@ -109,11 +112,13 @@ type MidiFileCommand =
       type: 'set';
       applyTempoToTransport?: boolean;
       applyTimeSignatureToTransport?: boolean;
-      followTransport?: boolean;
+      syncTransport?: boolean;
       outputMetaEvents?: boolean;
       loop?: boolean;
     }
   | { type: 'load'; fileName: string; data: ArrayBuffer | Uint8Array | number[] | string }
+  | { type: 'load'; vfsPath: string }
+  | { type: 'load'; url: string }
 ```
 
 Behavior:
@@ -124,7 +129,8 @@ Behavior:
 - `seek` moves the playback cursor and emits note-offs for notes that were active before the seek.
 - `loop` toggles or sets looping.
 - `set` updates persistent node settings using `useNodeDataTracker`.
-- `load` replaces the current file and resets playback.
+- `load` replaces the current file and resets playback. `vfsPath` and `url` loads should route
+  through the VFS, while `data` loads may store inline `fileData`.
 
 ## Emitted MIDI Messages
 
@@ -145,8 +151,9 @@ Additional supported messages:
 { type: 'polyPressure', note: number, pressure: number, channel: number }
 ```
 
-Meta/status messages are emitted from outlet 1. The node emits playback status even when
-`outputMetaEvents` is false, and emits parsed MIDI meta events only when it is true:
+Meta/status messages are emitted from the same outlet. Consumers can discriminate by `type`. The
+node emits playback status even when `outputMetaEvents` is false, and emits parsed MIDI meta events
+only when it is true:
 
 ```typescript
 { type: 'loaded', fileName: string, durationSeconds: number, trackCount: number, ppq: number }
@@ -186,13 +193,13 @@ where practical. The scheduler must:
 Many MIDI files include tempo and time-signature meta events. `midi.file` exposes these settings in
 its floating settings panel:
 
-| Setting                  | Default | Behavior                                      |
-| ------------------------ | ------- | --------------------------------------------- |
-| Apply tempo to transport | on      | On play from `0`, set transport BPM           |
+| Setting                  | Default | Behavior                                       |
+| ------------------------ | ------- | ---------------------------------------------- |
+| Apply tempo to transport | on      | On play from `0`, set transport BPM            |
 | Apply time signature     | on      | On play from `0`, set transport time signature |
-| Follow global transport  | off     | Transport play/pause/stop controls playback   |
-| Emit meta events         | off     | Send tempo, time-signature, key, and track-name messages from meta outlet |
-| Loop                     | off     | Restart at `0` when the file reaches the end  |
+| Sync to transport        | off     | Transport play/pause/stop controls playback    |
+| Emit meta events         | off     | Send tempo, time-signature, key, and track-name messages |
+| Loop                     | off     | Restart at `0` when the file reaches the end   |
 
 Transport application is intentionally explicit:
 
@@ -243,9 +250,10 @@ Fields:
 - File picker / replace file button.
 - Apply tempo to transport toggle.
 - Apply time signature toggle.
-- Follow global transport toggle.
+- Sync to transport toggle.
 - Emit meta events toggle.
 - Loop toggle.
+- Source summary: VFS path, URL, or inline bytes.
 - Read-only metadata summary: tracks, duration, PPQ, first tempo, first time signature.
 
 The file picker may live in the settings panel and the empty-node state. Both should call a shared
@@ -257,13 +265,22 @@ Supported sources:
 
 - File picker on the node.
 - Dragging `.mid` or `.midi` files onto the canvas to create a `midi.file` node.
-- Incoming `{ type: 'load', fileName, data }` command.
+- VFS path from the file browser, linked local folders, or saved local files.
+- URL-backed VFS entries for remote MIDI files.
+- Incoming `{ type: 'load', fileName, data }`, `{ type: 'load', vfsPath }`, or
+  `{ type: 'load', url }` command.
 
-When adding drag/drop support:
+Implementation should reuse the VFS media loading pattern used by `soundfile~` where practical:
+
+- local file picker/drop stores the file in VFS and writes `vfsPath` to node data;
+- URL loads register a URL-backed VFS entry and write `vfsPath` to node data;
+- VFS path drops write the dropped path to node data and resolve it through VFS;
+- inline `data` loads parse bytes directly and may persist `fileData`.
+
+Canvas drag/drop support is part of v1:
 
 - Add `.mid` and `.midi` MIME/extension handling in VFS path utilities.
 - Map MIDI files to `midi.file` in `CanvasDragDropManager`.
-- Store the loaded bytes in node data as base64 for v1 portability.
 
 ## Parser Boundary
 
@@ -293,6 +310,8 @@ Implementation should update:
 - `ui/src/lib/components/nodes/MIDIFileNode.svelte`
 - `ui/src/lib/midi/midi-file-parser.ts`
 - `ui/src/lib/midi/midi-file-player.ts`
+- `ui/src/lib/vfs/useVfsMedia.svelte.ts` or a MIDI-specific sibling if MIME-prefix matching is
+  too media-specific
 - `ui/src/lib/nodes/node-types.ts`
 - `ui/src/lib/nodes/defaultNodeData.ts`
 - `ui/src/lib/extensions/object-packs.ts`
@@ -303,16 +322,13 @@ Implementation should update:
 - `ui/src/lib/ai/object-prompts/midi.file.ts`
 - `ui/src/lib/ai/object-prompts/index.ts`
 - `ui/static/content/objects/midi.file.md`
-
-If drag/drop is included in the same implementation pass, also update:
-
 - `ui/src/lib/vfs/path-utils.ts`
 - `ui/src/lib/canvas/CanvasDragDropManager.ts`
 
 ## Error Handling
 
 - Invalid or unsupported files show an inline node error and emit
-  `{ type: 'error', message: string }` from the meta outlet.
+  `{ type: 'error', message: string }` from the output.
 - Loading a new file stops the current one and flushes active notes.
 - Playback controls are disabled when no valid file is loaded.
 - If the browser cannot read the selected file, keep the previous file loaded.
@@ -327,12 +343,14 @@ Unit tests:
 - Player schedules events in order from a non-zero seek position.
 - Stop/seek/destroy flushes active notes.
 - Loop restarts playback and does not duplicate active notes.
+- VFS, URL, and inline byte loads all parse into the same normalized file model.
 
 Component tests:
 
 - Empty state opens file picker / settings.
 - UI play, pause, stop, and seek call the same playback methods as message commands.
 - Settings toggles persist through `updateNodeData` and use undo/redo tracking.
+- Dragging `.mid` / `.midi` onto the canvas creates a `midi.file` node with a VFS source.
 
 Manual verification:
 
@@ -342,4 +360,5 @@ Manual verification:
 - Send `play`, `pause`, `seek`, and `stop` messages from another object.
 - Enable transport metadata settings and verify playback from `0` applies BPM and time signature.
 - Disable transport metadata settings and verify global transport remains unchanged.
+- Enable Sync to transport and verify transport play/pause/stop controls the node.
 - Stop mid-note and confirm no stuck notes remain.
