@@ -29,6 +29,7 @@ const SetMidiFileConfig = Type.Object({
   applyTimeSignatureToTransport: Type.Optional(Type.Boolean()),
   syncTransport: Type.Optional(Type.Boolean()),
   outputMetaEvents: Type.Optional(Type.Boolean()),
+  sendPositionEvents: Type.Optional(Type.Boolean()),
   loop: Type.Optional(Type.Boolean())
 });
 

@@ -45,6 +45,7 @@ export interface ParsedMidiFile {
 export interface MidiFilePlayerOptions {
   send: (message: MidiFileOutputMessage) => void;
   outputMetaEvents?: () => boolean;
+  sendPositionEvents?: () => boolean;
   loop?: () => boolean;
 }
 
@@ -61,6 +62,7 @@ export class MidiFilePlayer {
 
   get positionSeconds(): number {
     if (this._playState !== 'playing') return this._positionSeconds;
+
     return Math.min(
       this.file?.durationSeconds ?? Number.POSITIVE_INFINITY,
       this.startPositionSeconds + (Date.now() - this.startedAtMs) / 1000
@@ -78,6 +80,7 @@ export class MidiFilePlayer {
   load(file: ParsedMidiFile): void {
     this.stop();
     this.file = file;
+
     this.options.send({
       type: 'loaded',
       fileName: file.fileName,
@@ -85,6 +88,7 @@ export class MidiFilePlayer {
       trackCount: file.trackCount,
       ppq: file.ppq
     });
+
     this.sendPosition();
   }
 
@@ -95,6 +99,7 @@ export class MidiFilePlayer {
     this.startedAtMs = Date.now();
     this.startPositionSeconds = this._positionSeconds;
     this._playState = 'playing';
+
     this.scheduleFrom(this._positionSeconds);
     this.sendPosition();
   }
@@ -104,6 +109,7 @@ export class MidiFilePlayer {
 
     this._positionSeconds = this.positionSeconds;
     this._playState = 'paused';
+
     this.clearTimers();
     this.flushActiveNotes();
     this.sendPosition();
@@ -112,16 +118,20 @@ export class MidiFilePlayer {
   stop(): void {
     this.clearTimers();
     this.flushActiveNotes();
+
     this._positionSeconds = 0;
     this.startPositionSeconds = 0;
     this._playState = 'stopped';
+
     this.sendPosition();
   }
 
   seek(seconds: number): void {
     const wasPlaying = this._playState === 'playing';
+
     this.clearTimers();
     this.flushActiveNotes();
+
     this._positionSeconds = Math.max(0, Math.min(seconds, this.file?.durationSeconds ?? seconds));
     this.startPositionSeconds = this._positionSeconds;
 
@@ -155,10 +165,12 @@ export class MidiFilePlayer {
         this.timers.delete(timer);
         this.sendScheduledMessage(event.message);
       }, delayMs);
+
       this.timers.add(timer);
     }
 
     const endDelayMs = Math.max(0, (this.file.durationSeconds - positionSeconds) * 1000);
+
     const endTimer = setTimeout(() => {
       this.timers.delete(endTimer);
       this.handleEnd();
@@ -168,9 +180,11 @@ export class MidiFilePlayer {
 
   private shouldEmit(message: MidiFileOutputMessage): boolean {
     if (isChannelMessage(message)) return true;
+
     if (message.type === 'loaded' || message.type === 'position' || message.type === 'ended') {
       return true;
     }
+
     return this.options.outputMetaEvents?.() === true;
   }
 
@@ -188,7 +202,9 @@ export class MidiFilePlayer {
       message.type === 'noteOff' ||
       (message.type === 'noteOn' && message.velocity === 0)
     ) {
-      if ('note' in message) this.releaseActiveNote(message.channel, message.note);
+      if ('note' in message) {
+        this.releaseActiveNote(message.channel, message.note);
+      }
     }
 
     this.options.send(message);
@@ -205,11 +221,13 @@ export class MidiFilePlayer {
       this.startPositionSeconds = 0;
       this.scheduleFrom(0);
       this.sendPosition();
+
       return;
     }
 
     this._positionSeconds = this.file.durationSeconds;
     this._playState = 'stopped';
+
     this.sendPosition();
     this.options.send({ type: 'ended' });
   }
@@ -218,6 +236,7 @@ export class MidiFilePlayer {
     for (const timer of this.timers) {
       clearTimeout(timer);
     }
+
     this.timers.clear();
   }
 
@@ -227,6 +246,7 @@ export class MidiFilePlayer {
         this.options.send({ type: 'noteOff', note, velocity: 0, channel });
       }
     }
+
     this.activeNotes.clear();
   }
 
@@ -246,8 +266,10 @@ export class MidiFilePlayer {
 
   private sendPosition(): void {
     if (!this.file) return;
+    if (this.options.sendPositionEvents?.() !== true) return;
 
     const seconds = this.positionSeconds;
+
     this.options.send({
       type: 'position',
       seconds,
@@ -256,18 +278,13 @@ export class MidiFilePlayer {
   }
 }
 
-function isChannelMessage(message: MidiFileOutputMessage): message is MidiFileChannelMessage {
-  return (
-    message.type === 'noteOn' ||
-    message.type === 'noteOff' ||
-    message.type === 'controlChange' ||
-    message.type === 'programChange' ||
-    message.type === 'pitchBend' ||
-    message.type === 'channelPressure' ||
-    message.type === 'polyPressure'
-  );
-}
+const isChannelMessage = (message: MidiFileOutputMessage): message is MidiFileChannelMessage =>
+  message.type === 'noteOn' ||
+  message.type === 'noteOff' ||
+  message.type === 'controlChange' ||
+  message.type === 'programChange' ||
+  message.type === 'pitchBend' ||
+  message.type === 'channelPressure' ||
+  message.type === 'polyPressure';
 
-function noteKey(channel: number, note: number): string {
-  return `${channel}:${note}`;
-}
+const noteKey = (channel: number, note: number): string => `${channel}:${note}`;

@@ -32,6 +32,7 @@
     applyTimeSignatureToTransport?: boolean;
     syncTransport?: boolean;
     outputMetaEvents?: boolean;
+    sendPositionEvents?: boolean;
   };
 
   let {
@@ -65,6 +66,7 @@
   const player = new MidiFilePlayer({
     send: (message) => messageContext?.send(message),
     outputMetaEvents: () => data.outputMetaEvents === true,
+    sendPositionEvents: () => data.sendPositionEvents === true,
     loop: () => data.loop === true
   });
 
@@ -126,6 +128,7 @@
         'applyTimeSignatureToTransport',
         'syncTransport',
         'outputMetaEvents',
+        'sendPositionEvents',
         'loop'
       ] as const) {
         if (typeof message[key] === 'boolean') updateTracked(key, message[key]);
@@ -292,7 +295,12 @@
   }
 
   function settingChecked(key: keyof MidiFileNodeData): boolean {
-    if (key === 'loop' || key === 'syncTransport' || key === 'outputMetaEvents') {
+    if (
+      key === 'loop' ||
+      key === 'syncTransport' ||
+      key === 'outputMetaEvents' ||
+      key === 'sendPositionEvents'
+    ) {
       return data[key] === true;
     }
 
@@ -359,6 +367,7 @@
 
   function sendPosition(): void {
     if (!parsedFile) return;
+    if (data.sendPositionEvents !== true) return;
 
     messageContext?.send({
       type: 'position',
@@ -580,7 +589,7 @@
           </button>
 
           <div class="space-y-2">
-            {#each [['applyTempoToTransport', 'Apply tempo to transport'], ['applyTimeSignatureToTransport', 'Apply time signature'], ['syncTransport', 'Sync to transport'], ['outputMetaEvents', 'Emit meta events'], ['loop', 'Loop']] as [key, label]}
+            {#each [['applyTempoToTransport', 'Apply tempo to transport'], ['applyTimeSignatureToTransport', 'Apply time signature'], ['syncTransport', 'Sync to transport'], ['outputMetaEvents', 'Emit meta events'], ['sendPositionEvents', 'Send position events'], ['loop', 'Loop']] as [key, label]}
               <label class="flex items-center gap-2 text-xs text-zinc-300">
                 <input
                   class="h-3 w-3 cursor-pointer"

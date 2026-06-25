@@ -121,6 +121,7 @@ type MidiFileCommand =
       applyTimeSignatureToTransport?: boolean;
       syncTransport?: boolean;
       outputMetaEvents?: boolean;
+      sendPositionEvents?: boolean;
       loop?: boolean;
     };
 ```
@@ -156,8 +157,9 @@ Additional supported messages:
 ```
 
 Meta/status messages are emitted from the same outlet. Consumers can discriminate by `type`. The
-node emits playback status even when `outputMetaEvents` is false, and emits parsed MIDI meta events
-only when it is true:
+node emits loaded and ended status events even when `outputMetaEvents` is false, emits `position`
+events only when `sendPositionEvents` is true, and emits parsed MIDI meta events only when
+`outputMetaEvents` is true:
 
 ```typescript
 { type: 'loaded', fileName: string, durationSeconds: number, trackCount: number, ppq: number }
@@ -203,6 +205,7 @@ its floating settings panel:
 | Apply time signature     | on      | On play from `0`, set transport time signature           |
 | Sync to transport        | off     | Transport play/pause/stop controls playback              |
 | Emit meta events         | off     | Send tempo, time-signature, key, and track-name messages |
+| Send position events     | off     | Send playback position/progress messages                 |
 | Loop                     | off     | Restart at `0` when the file reaches the end             |
 
 Transport application is intentionally explicit:

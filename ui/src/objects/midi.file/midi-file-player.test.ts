@@ -44,7 +44,7 @@ describe('MidiFilePlayer', () => {
       expect(send).toHaveBeenCalledWith({ type: 'noteOff', note: 60, velocity: 0, channel: 1 });
 
       vi.advanceTimersByTime(1000);
-      expect(send.mock.calls.filter(([message]) => message.type !== 'position')).toHaveLength(2);
+      expect(send).toHaveBeenCalledTimes(2);
       expect(player.positionSeconds).toBe(0);
       expect(player.playState).toBe('stopped');
     } finally {
@@ -100,5 +100,28 @@ describe('MidiFilePlayer', () => {
       player.destroy();
       vi.useRealTimers();
     }
+  });
+
+  it('emits position messages only when enabled', () => {
+    const send = vi.fn();
+    const quietPlayer = new MidiFilePlayer({ send });
+
+    quietPlayer.load(parsed);
+    quietPlayer.seek(0.5);
+
+    expect(send.mock.calls.some(([message]) => message.type === 'position')).toBe(false);
+    quietPlayer.destroy();
+
+    send.mockClear();
+    const reportingPlayer = new MidiFilePlayer({
+      send,
+      sendPositionEvents: () => true
+    });
+
+    reportingPlayer.load(parsed);
+    reportingPlayer.seek(0.5);
+
+    expect(send).toHaveBeenCalledWith({ type: 'position', seconds: 0.5, progress: 0.5 });
+    reportingPlayer.destroy();
   });
 });
