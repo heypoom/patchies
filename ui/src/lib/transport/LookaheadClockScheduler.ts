@@ -145,8 +145,9 @@ export class LookaheadClockScheduler implements ClockScheduler {
     this.currentBpm = clock.bpm;
 
     const horizon = clock.time + this.scheduleAheadS;
+    const didRewind = clock.time < this.lastClockTime;
 
-    if (clock.time < this.lastClockTime) {
+    if (didRewind) {
       this.resetAudioBeatFireTracking();
     }
 
@@ -234,7 +235,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
     // --- every ---
     for (const [id, item] of this.repeatCallbacks) {
       // Detect transport rewind (stop -> play from beginning)
-      if (clock.time < item.lastFired) {
+      if (didRewind) {
         item.lastFired = 0;
       }
 
