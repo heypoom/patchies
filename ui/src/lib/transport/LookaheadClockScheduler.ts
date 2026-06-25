@@ -26,6 +26,7 @@ export interface NodeTimelineStyle {
 export class LookaheadClockScheduler implements ClockScheduler {
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private lastBeat = -1;
+  private lastClockTime = 0;
   private currentBpm = 120;
 
   private beatCallbacks = new Map<string, BeatCallback>();
@@ -145,6 +146,10 @@ export class LookaheadClockScheduler implements ClockScheduler {
 
     const horizon = clock.time + this.scheduleAheadS;
 
+    if (clock.time < this.lastClockTime) {
+      this.resetAudioBeatFireTracking();
+    }
+
     // --- onBeat: visual mode (fire after beat change) ---
     if (clock.beat !== this.lastBeat) {
       for (const [id, item] of this.beatCallbacks) {
@@ -253,9 +258,20 @@ export class LookaheadClockScheduler implements ClockScheduler {
         this.fireEveryCallback(item, id, clock.time);
       }
     }
+
+    this.lastClockTime = clock.time;
   }
 
-  fireEveryCallback(item: RepeatCallback, id: string, time: number) {
+  private resetAudioBeatFireTracking(): void {
+    for (const item of this.beatCallbacks.values()) {
+      if (!item.audio) continue;
+
+      item.lastFiredBeatTime = undefined;
+      item.lastFiredBeatIndex = undefined;
+    }
+  }
+
+  private fireEveryCallback(item: RepeatCallback, id: string, time: number) {
     try {
       item.callback(time);
       this.recordFired(id, time);
@@ -321,6 +337,7 @@ export class LookaheadClockScheduler implements ClockScheduler {
     this.scheduleCallbacks.clear();
     this.repeatCallbacks.clear();
     this.lastBeat = -1;
+    this.lastClockTime = 0;
     this._timelineStyle = {};
   }
 }
