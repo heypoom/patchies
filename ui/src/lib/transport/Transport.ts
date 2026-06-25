@@ -10,6 +10,7 @@ import { transportStore } from '../../stores/transport.store';
  */
 class TransportManager implements ITransport {
   private context: ITransport = new DefaultTransport();
+  private unsubscribeStore: (() => void) | null = null;
 
   private toneUpgraded = false;
   private toneUpgradeDisabled = false;
@@ -20,7 +21,7 @@ class TransportManager implements ITransport {
 
   /** Syncs BPM and time signature with store */
   private syncTransportWithStore() {
-    transportStore.subscribe(({ bpm, timeSignature }) => {
+    this.unsubscribeStore = transportStore.subscribe(({ bpm, timeSignature }) => {
       if (this.context.bpm !== bpm) {
         this.context.setBpm(bpm);
       }
@@ -31,6 +32,11 @@ class TransportManager implements ITransport {
         this.context.setTimeSignature(beatsPerBar, denominator);
       }
     });
+  }
+
+  destroy(): void {
+    this.unsubscribeStore?.();
+    this.unsubscribeStore = null;
   }
 
   // Proxy all reads to current implementation

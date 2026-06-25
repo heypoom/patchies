@@ -47,4 +47,16 @@ describe('Transport', () => {
     expect(Transport.beatsPerBar).toBe(5);
     expect(Transport.denominator).toBe(4);
   });
+
+  it('stops syncing transport store settings after destroy', async () => {
+    const { Transport } = await import('./Transport');
+    const { transportStore } = await import('../../stores/transport.store');
+
+    Transport.destroy();
+    transportStore.setBpm(150);
+    transportStore.setTimeSignature(3, 4);
+
+    expect(Transport.bpm).not.toBe(150);
+    expect(Transport.beatsPerBar).not.toBe(3);
+  });
 });
