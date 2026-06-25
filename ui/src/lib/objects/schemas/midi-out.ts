@@ -12,16 +12,6 @@ import {
   MidiRaw
 } from './midi-messages';
 
-const MidiOutputChannelEvent = Type.Union([
-  Type.Literal('noteOn'),
-  Type.Literal('noteOff'),
-  Type.Literal('controlChange'),
-  Type.Literal('programChange'),
-  Type.Literal('pitchBend'),
-  Type.Literal('channelPressure'),
-  Type.Literal('polyPressure')
-]);
-
 const MidiOutputEvent = Type.Union([
   Type.Literal('noteOn'),
   Type.Literal('noteOff'),
@@ -48,26 +38,6 @@ const SetMidiOutputConfig = Type.Object({
   data: Type.Optional(Type.Array(Type.Number()))
 });
 
-const SendMidiOutputChannelConfig = Type.Object({
-  type: Type.Literal('send'),
-  deviceId: Type.String(),
-  channel: Type.Number(),
-  event: MidiOutputChannelEvent,
-  note: Type.Optional(Type.Number()),
-  velocity: Type.Optional(Type.Number()),
-  control: Type.Optional(Type.Number()),
-  value: Type.Optional(Type.Number()),
-  program: Type.Optional(Type.Number()),
-  pressure: Type.Optional(Type.Number())
-});
-
-const SendMidiOutputRawConfig = Type.Object({
-  type: Type.Literal('send'),
-  deviceId: Type.String(),
-  event: Type.Literal('raw'),
-  data: Type.Array(Type.Number())
-});
-
 /**
  * Schema for the midi.out (MIDI output) object.
  */
@@ -90,12 +60,7 @@ export const midiOutSchema: ObjectSchema = {
         { schema: MidiChannelPressure, description: 'Send MIDI channel pressure' },
         { schema: MidiPolyPressure, description: 'Send MIDI poly pressure' },
         { schema: MidiRaw, description: 'Send raw MIDI bytes' },
-        { schema: SetMidiOutputConfig, description: 'Update output configuration' },
-        {
-          schema: SendMidiOutputChannelConfig,
-          description: 'Send MIDI output channel configuration'
-        },
-        { schema: SendMidiOutputRawConfig, description: 'Send MIDI output raw configuration' }
+        { schema: SetMidiOutputConfig, description: 'Update output configuration' }
       ]
     }
   ],

@@ -64,9 +64,6 @@ Node data for `midi.out` includes:
 
 - `bang` - send the MIDI message using the current configuration.
   - This should call the `MidiSystem` to send the MIDI message.
-- `{ type: 'send', deviceId?: number, channel?: number, event?: 'noteOn' | 'noteOff' | 'controlChange' | 'programChange', data?: any }` - send a MIDI message with the specified parameters.
-  - if any parameter is not provided, it should use the current configuration of the node.
-  - for example, if only `data` is provided, it should send a note on message with the specified data on the current device and channel.
 - `{ type: 'set', deviceId?: number, channel?: number, event?: 'noteOn' | 'noteOff' | 'controlChange' | 'programChange', data?: any }` - set the configuration for MIDI output for the parameters that are provided.
   - for example, `{type: 'set', deviceId: 1, channel: 1}` should set the device and channel for the MIDI output, but keep the current message type and data.
 

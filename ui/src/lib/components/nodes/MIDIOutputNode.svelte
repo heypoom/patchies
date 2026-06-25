@@ -69,7 +69,6 @@
 
   type MidiOutMessage =
     | { type: 'bang' }
-    | ({ type: 'send' } & MIDIOutputConfig)
     | ({ type: 'set' } & MIDIOutputConfig)
     | ({ type: MIDIOutputConfig['event'] } & Exclude<MIDIOutputConfig, 'event'>);
 
@@ -108,21 +107,7 @@
         })
         .with({ type: 'set' }, (md) => {
           updateNodeData(nodeId, { ...md });
-        })
-        .with(
-          { type: 'send', deviceId: P.string, channel: P.optional(P.number), event: P.string },
-          (md) => {
-            const config = {
-              ...data,
-              ...md,
-              deviceId: md.deviceId ?? data.deviceId,
-              channel: typeof md.channel === 'number' ? md.channel : data.channel,
-              event: md.event ?? data.event
-            };
-
-            sendMidiMessage(config as MIDIOutputConfig);
-          }
-        );
+        });
     } catch (error) {
       errorMessage = error instanceof Error ? error.message : String(error);
     }
