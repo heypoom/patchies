@@ -48,6 +48,7 @@ const FRAME_BUFFER_SIZE = 10;
 const SEEK_FRAME_CACHE_SIZE = 72;
 const SEEK_PREFETCH_RADIUS_SECONDS = 0.35;
 const SEEK_PREFETCH_MAX_FRAMES = 24;
+const SEEK_PLAYBACK_RESUME_DELAY_MS = 150;
 
 // Profiling
 const PROFILE_ENABLED = false;
@@ -94,6 +95,7 @@ export class MediaBunnyPlayer {
   private pendingSeekTime: number | null = null;
   private seekGeneration = 0;
   private resumePlaybackAfterSeek = false;
+  private seekPlaybackResumeTimeout: ReturnType<typeof setTimeout> | null = null;
   private seekFrameCache = new Map<number, CachedSeekFrame>();
   private seekPrefetchAbortController: AbortController | null = null;
 
@@ -609,6 +611,7 @@ export class MediaBunnyPlayer {
    */
   pause(): void {
     this.resumePlaybackAfterSeek = false;
+    this.clearSeekPlaybackResumeTimeout();
     this.pausePlaybackForSeek();
   }
 
@@ -633,6 +636,10 @@ export class MediaBunnyPlayer {
     this.pendingSeekTime = Math.max(0, timeSeconds);
     this.seekGeneration += 1;
     this.resumePlaybackAfterSeek ||= !this._paused;
+
+    if (this.resumePlaybackAfterSeek) {
+      this.clearSeekPlaybackResumeTimeout();
+    }
 
     if (!this.activeSeekPromise) {
       this.activeSeekPromise = this.drainSeekQueue().finally(() => {
@@ -678,15 +685,32 @@ export class MediaBunnyPlayer {
     }
 
     if (this.resumePlaybackAfterSeek) {
+      this.scheduleSeekPlaybackResume();
+    }
+  }
+
+  private scheduleSeekPlaybackResume(): void {
+    this.clearSeekPlaybackResumeTimeout();
+
+    this.seekPlaybackResumeTimeout = setTimeout(() => {
+      this.seekPlaybackResumeTimeout = null;
       this.resumePlaybackAfterSeek = false;
+
+      if (!this._isLoaded || !this._paused) return;
+
       this.playbackStartTime = performance.now();
       this.playbackStartVideoTime = this._currentTime;
       this._paused = false;
 
       this.startBuffering(this._currentTime);
       this.playbackLoop();
-    } else {
-      this.resumePlaybackAfterSeek = false;
+    }, SEEK_PLAYBACK_RESUME_DELAY_MS);
+  }
+
+  private clearSeekPlaybackResumeTimeout(): void {
+    if (this.seekPlaybackResumeTimeout !== null) {
+      clearTimeout(this.seekPlaybackResumeTimeout);
+      this.seekPlaybackResumeTimeout = null;
     }
   }
 
@@ -791,6 +815,7 @@ export class MediaBunnyPlayer {
     this.clearBuffer();
     this.stopSeekPrefetch();
     this.clearSeekFrameCache();
+    this.clearSeekPlaybackResumeTimeout();
 
     // Dispose Input to cancel ongoing reads, close decoders, and free resources
     this.input?.dispose();

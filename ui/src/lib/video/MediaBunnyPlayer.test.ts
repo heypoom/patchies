@@ -31,6 +31,7 @@ function nextTick() {
 describe('MediaBunnyPlayer', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it('ignores stale preview frames from overlapping seeks', async () => {
@@ -178,6 +179,61 @@ describe('MediaBunnyPlayer', () => {
 
     expect(emittedFrames).toEqual([1, 1]);
     expect(samplesAtTimestamps).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps playback paused while seek messages are still arriving', async () => {
+    vi.useFakeTimers();
+
+    const samples = new Map<number, Promise<ReturnType<typeof createSample>>>([
+      [1, Promise.resolve(createSample(1))],
+      [2, Promise.resolve(createSample(2))]
+    ]);
+    const samplesAtTimestamps = vi.fn((times: Iterable<number>) => samplesForTimes(times, samples));
+
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 1)
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn((frame: { timestamp: number }) =>
+        Promise.resolve({ close: vi.fn(), timestamp: frame.timestamp })
+      )
+    );
+
+    const player = new MediaBunnyPlayer({
+      nodeId: 'video-1',
+      onFrame: vi.fn(),
+      onMetadata: vi.fn(),
+      onEnded: vi.fn(),
+      onError: vi.fn()
+    });
+
+    Object.assign(player as unknown as { _isLoaded: boolean; _metadata: unknown; sink: unknown }, {
+      _isLoaded: true,
+      _metadata: { frameRate: 30, duration: 10 },
+      sink: {
+        samplesAtTimestamps,
+        samples: async function* () {}
+      }
+    });
+
+    player.play();
+
+    await player.seek(1);
+
+    expect(player.paused).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(100);
+    await player.seek(2);
+    await vi.advanceTimersByTimeAsync(149);
+
+    expect(player.paused).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(player.paused).toBe(false);
   });
 });
 
