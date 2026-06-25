@@ -1,5 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
+import { Bang, Stop } from './common';
 
 // MIDI message type schemas
 const NoteOn = Type.Object({
@@ -23,6 +24,21 @@ const ControlChange = Type.Object({
   channel: Type.Number()
 });
 
+const MidiInputEventType = Type.Union([
+  Type.Literal('noteOn'),
+  Type.Literal('noteOff'),
+  Type.Literal('controlChange'),
+  Type.Literal('programChange'),
+  Type.Literal('pitchBend')
+]);
+
+const SetMidiInputConfig = Type.Object({
+  type: Type.Literal('set'),
+  deviceId: Type.String(),
+  channel: Type.Number(),
+  events: Type.Array(MidiInputEventType)
+});
+
 /**
  * Schema for the midi.in (MIDI input) object.
  */
@@ -34,7 +50,12 @@ export const midiInSchema: ObjectSchema = {
     {
       id: 'message',
       description: 'Control messages',
-      handle: { handleType: 'message' }
+      handle: { handleType: 'message' },
+      messages: [
+        { schema: Bang, description: 'Start listening for MIDI input' },
+        { schema: Stop, description: 'Stop listening for MIDI input' },
+        { schema: SetMidiInputConfig, description: 'Set device, channel, and event filter' }
+      ]
     }
   ],
   outlets: [

@@ -108,6 +108,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 ## MIDI & Network Objects
 - midi.in: MIDI input from devices
 - midi.out: MIDI output to devices
+- midi.file: MIDI file player that emits noteOn/noteOff/CC/program/pitch messages
 - netsend: Network message sender (WebRTC)
 - netrecv: Network message receiver (WebRTC)
 - serial: WebSerial port — send/receive strings, Uint8Array, or number[] to hardware devices (Arduino, etc.)
@@ -201,7 +202,7 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - pads~: 16-pad drum sampler (GM drum map)
 
 ## MIDI
-- midi.in, midi.out: MIDI controller input/output
+- midi.in, midi.out, midi.file: MIDI controller input/output and file playback
 
 # Serial
 - serial: WebSerial — communicate with Arduino, sensors, any serial device

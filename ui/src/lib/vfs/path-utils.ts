@@ -172,6 +172,8 @@ export function guessMimeType(filename: string): string | undefined {
     '.aac': 'audio/aac',
     '.m4a': 'audio/mp4',
     '.aiff': 'audio/aiff',
+    '.mid': 'audio/midi',
+    '.midi': 'audio/midi',
 
     // Code
     '.js': 'application/javascript',

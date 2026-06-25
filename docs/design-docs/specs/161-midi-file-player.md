@@ -49,7 +49,7 @@ interface MidiFileNodeData {
   ppq?: number;
   trackCount?: number;
 
-  playState: 'stopped' | 'playing' | 'paused';
+  playState: "stopped" | "playing" | "paused";
   positionSeconds: number;
   loop: boolean;
 
@@ -85,9 +85,9 @@ are present, `vfsPath` wins.
 | --- | ------- | ------- | ------------------------------------------------ |
 | 0   | command | message | Playback, seek, file-load, and settings commands |
 
-| #   | Name | Type    | Description                                |
-| --- | ---- | ------- | ------------------------------------------ |
-| 0   | out  | message | MIDI channel, playback, and meta messages  |
+| #   | Name | Type    | Description                               |
+| --- | ---- | ------- | ----------------------------------------- |
+| 0   | out  | message | MIDI channel, playback, and meta messages |
 
 The node has no audio or video ports.
 
@@ -97,28 +97,32 @@ Incoming commands:
 
 ```typescript
 type MidiFileCommand =
-  | 'bang'
-  | 'play'
-  | 'pause'
-  | 'stop'
-  | { type: 'play' }
-  | { type: 'pause' }
-  | { type: 'stop' }
-  | { type: 'seek'; seconds: number }
-  | { type: 'seek'; beats: number }
-  | { type: 'seek'; ticks: number }
-  | { type: 'loop'; value?: boolean }
+  | "bang"
+  | "play"
+  | "pause"
+  | "stop"
+  | "https://example.com/file.mid"
+  | "http://example.com/file.mid"
+  | "user://Samples/file.mid"
+  | "obj://midi.file-1/file.mid"
+  | ArrayBuffer
+  | Uint8Array
+  | number[]
+  | { type: "play" }
+  | { type: "pause" }
+  | { type: "stop" }
+  | { type: "seek"; seconds: number }
+  | { type: "seek"; beats: number }
+  | { type: "seek"; ticks: number }
+  | { type: "loop"; value?: boolean }
   | {
-      type: 'set';
+      type: "set";
       applyTempoToTransport?: boolean;
       applyTimeSignatureToTransport?: boolean;
       syncTransport?: boolean;
       outputMetaEvents?: boolean;
       loop?: boolean;
-    }
-  | { type: 'load'; fileName: string; data: ArrayBuffer | Uint8Array | number[] | string }
-  | { type: 'load'; vfsPath: string }
-  | { type: 'load'; url: string }
+    };
 ```
 
 Behavior:
@@ -193,13 +197,13 @@ where practical. The scheduler must:
 Many MIDI files include tempo and time-signature meta events. `midi.file` exposes these settings in
 its floating settings panel:
 
-| Setting                  | Default | Behavior                                       |
-| ------------------------ | ------- | ---------------------------------------------- |
-| Apply tempo to transport | on      | On play from `0`, set transport BPM            |
-| Apply time signature     | on      | On play from `0`, set transport time signature |
-| Sync to transport        | off     | Transport play/pause/stop controls playback    |
+| Setting                  | Default | Behavior                                                 |
+| ------------------------ | ------- | -------------------------------------------------------- |
+| Apply tempo to transport | on      | On play from `0`, set transport BPM                      |
+| Apply time signature     | on      | On play from `0`, set transport time signature           |
+| Sync to transport        | off     | Transport play/pause/stop controls playback              |
 | Emit meta events         | off     | Send tempo, time-signature, key, and track-name messages |
-| Loop                     | off     | Restart at `0` when the file reaches the end   |
+| Loop                     | off     | Restart at `0` when the file reaches the end             |
 
 Transport application is intentionally explicit:
 
@@ -215,20 +219,23 @@ Transport application is intentionally explicit:
 
 ## UI
 
-The compact node should visually match `midi.in` / `midi.out`:
+The unloaded node should visually match `midi.in` / `midi.out`, while the loaded state should behave
+like a compact media player:
 
 - Title: `midi.file`
 - Main body:
   - no file loaded: prominent "Load MIDI" state
-  - file loaded: file name, duration, current position, and a small progress bar
-  - status border: amber for no file, emerald for playing, zinc for idle, red for parse/playback error
+  - file loaded: a compact media-player surface with file name, current position, duration, seek
+    rail, and integrated play/pause + stop media controls inside the node body
+  - status border: amber for no file, red for parse/playback error, otherwise neutral zinc; playback
+    state should be shown by the media controls rather than a bright panel border
 - Header controls:
-  - play/pause toggle
-  - stop
-  - settings gear
-- Optional compact seek affordance:
-  - clicking or dragging the progress bar seeks
-  - keyboard-accessible range input if implemented as a native control
+  - settings gear only, so playback does not depend on hard-to-hit floating controls
+- Seek affordance:
+  - use a keyboard-accessible range input
+  - clicking or dragging the rail seeks
+  - seeking emits note-offs for active notes before repositioning playback
+- Transport controls should feel like media-player glyphs, not separate boxed node action buttons.
 
 Button rules:
 
@@ -267,8 +274,10 @@ Supported sources:
 - Dragging `.mid` or `.midi` files onto the canvas to create a `midi.file` node.
 - VFS path from the file browser, linked local folders, or saved local files.
 - URL-backed VFS entries for remote MIDI files.
-- Incoming `{ type: 'load', fileName, data }`, `{ type: 'load', vfsPath }`, or
-  `{ type: 'load', url }` command.
+- Incoming bare string URL messages such as `'https://example.com/file.mid'`.
+- Incoming bare VFS path messages such as `'user://Samples/file.mid'` or
+  `'obj://midi.file-1/file.mid'`.
+- Incoming raw MIDI bytes as `ArrayBuffer`, `Uint8Array`, typed arrays, or number arrays.
 
 Implementation should reuse the VFS media loading pattern used by `soundfile~` where practical:
 
@@ -295,7 +304,12 @@ interface ParsedMidiFile {
   trackCount: number;
   events: ScheduledMidiFileEvent[];
   tempos: Array<{ tick: number; seconds: number; bpm: number }>;
-  timeSignatures: Array<{ tick: number; seconds: number; numerator: number; denominator: number }>;
+  timeSignatures: Array<{
+    tick: number;
+    seconds: number;
+    numerator: number;
+    denominator: number;
+  }>;
 }
 ```
 
@@ -307,19 +321,17 @@ require component code to depend on that package directly.
 
 Implementation should update:
 
-- `ui/src/lib/components/nodes/MIDIFileNode.svelte`
-- `ui/src/lib/midi/midi-file-parser.ts`
-- `ui/src/lib/midi/midi-file-player.ts`
-- `ui/src/lib/vfs/useVfsMedia.svelte.ts` or a MIDI-specific sibling if MIME-prefix matching is
-  too media-specific
+- `ui/src/objects/midi.file/components/MIDIFileNode.svelte`
+- `ui/src/objects/midi.file/midi-file-parser.ts`
+- `ui/src/objects/midi.file/midi-file-player.ts`
+- `ui/src/objects/midi.file/schema.ts`
+- `ui/src/objects/midi.file/prompts.ts`
 - `ui/src/lib/nodes/node-types.ts`
 - `ui/src/lib/nodes/defaultNodeData.ts`
 - `ui/src/lib/extensions/object-packs.ts`
 - `ui/src/lib/components/object-browser/get-categorized-objects.ts`
-- `ui/src/lib/objects/schemas/midi-file.ts`
 - `ui/src/lib/objects/schemas/index.ts`
 - `ui/src/lib/ai/object-descriptions-types.ts`
-- `ui/src/lib/ai/object-prompts/midi.file.ts`
 - `ui/src/lib/ai/object-prompts/index.ts`
 - `ui/static/content/objects/midi.file.md`
 - `ui/src/lib/vfs/path-utils.ts`

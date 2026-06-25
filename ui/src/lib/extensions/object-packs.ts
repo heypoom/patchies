@@ -158,7 +158,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     name: 'MIDI',
     description: 'MIDI input and output',
     icon: 'Piano',
-    objects: ['midi.in', 'midi.out', 'webmidilink', 'mtof']
+    objects: ['midi.in', 'midi.out', 'midi.file', 'webmidilink', 'mtof']
   },
   {
     id: 'networking',
