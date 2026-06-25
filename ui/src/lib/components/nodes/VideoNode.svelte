@@ -95,6 +95,7 @@
   const LoadingIcon = $derived(errorMessage ? OctagonX : Loader);
   let bitmapFrameId: number | undefined;
   let videoFrameCallbackId: number | undefined;
+  let nativeSeekPreviewFrameCallbackId: number | undefined;
   let useVideoFrameCallback = false;
   let lastRecordedMediaTime = -1;
 
@@ -602,6 +603,15 @@
     }
   }
 
+  function stopNativeSeekPreviewFrameCallback() {
+    if (nativeSeekPreviewFrameCallbackId === undefined || !videoElement) return;
+
+    (videoElement as HTMLVideoElementWithRVFC).cancelVideoFrameCallback(
+      nativeSeekPreviewFrameCallbackId
+    );
+    nativeSeekPreviewFrameCallbackId = undefined;
+  }
+
   /**
    * Handle video frame callback - called when a new video frame is presented.
    * This is more efficient than requestAnimationFrame as it syncs with actual video frames.
@@ -731,9 +741,14 @@
       .requestVideoFrameCallback;
 
     if (requestVideoFrameCallback) {
-      requestVideoFrameCallback.call(element, (_now, metadata) => {
-        void uploadNativeSeekPreview(generation, metadata.mediaTime);
-      });
+      stopNativeSeekPreviewFrameCallback();
+      nativeSeekPreviewFrameCallbackId = requestVideoFrameCallback.call(
+        element,
+        (_now, metadata) => {
+          nativeSeekPreviewFrameCallbackId = undefined;
+          void uploadNativeSeekPreview(generation, metadata.mediaTime);
+        }
+      );
 
       return;
     }
@@ -874,6 +889,7 @@
   onDestroy(() => {
     // Clean up frame loop (handles both requestVideoFrameCallback and requestAnimationFrame)
     stopFallbackFrameLoop();
+    stopNativeSeekPreviewFrameCallback();
 
     // Clean up WebCodecs timeout
     if (webCodecsTimeoutId !== null) {

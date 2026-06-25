@@ -297,9 +297,10 @@ export class MediaBunnyPlayer {
       return;
     }
 
-    const videoFrame = sample.toVideoFrame();
+    let videoFrame: VideoFrame | null = null;
 
     try {
+      videoFrame = sample.toVideoFrame();
       const bitmap = await createImageBitmap(videoFrame);
 
       if (seekGeneration !== this.seekGeneration) {
@@ -311,7 +312,7 @@ export class MediaBunnyPlayer {
 
       await this.emitCachedSeekFrame(cachedFrame, seekGeneration);
     } finally {
-      videoFrame.close();
+      videoFrame?.close();
       sample.close();
     }
   }
@@ -662,6 +663,10 @@ export class MediaBunnyPlayer {
   }
 
   private async performSeek(timeSeconds: number, seekGeneration: number): Promise<void> {
+    if (seekGeneration !== this.seekGeneration) {
+      return;
+    }
+
     if (!this._paused) {
       this.pausePlaybackForSeek();
     }
@@ -751,9 +756,10 @@ export class MediaBunnyPlayer {
           continue;
         }
 
-        const videoFrame = sample.toVideoFrame();
+        let videoFrame: VideoFrame | null = null;
 
         try {
+          videoFrame = sample.toVideoFrame();
           const bitmap = await createImageBitmap(videoFrame);
 
           if (signal.aborted || seekGeneration !== this.seekGeneration) {
@@ -768,7 +774,7 @@ export class MediaBunnyPlayer {
             break;
           }
         } finally {
-          videoFrame.close();
+          videoFrame?.close();
           sample.close();
         }
       }
@@ -806,6 +812,11 @@ export class MediaBunnyPlayer {
    * Clean up internal resources.
    */
   private cleanup(): void {
+    this.seekGeneration += 1;
+    this.pendingSeekTime = null;
+    this.activeSeekPromise = null;
+    this.resumePlaybackAfterSeek = false;
+
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;

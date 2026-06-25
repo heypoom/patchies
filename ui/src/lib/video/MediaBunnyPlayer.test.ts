@@ -24,6 +24,16 @@ function createSample(timestamp: number) {
   };
 }
 
+function createThrowingSample(timestamp: number) {
+  return {
+    timestamp,
+    toVideoFrame: vi.fn(() => {
+      throw new Error('toVideoFrame failed');
+    }),
+    close: vi.fn()
+  };
+}
+
 function nextTick() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
@@ -234,6 +244,97 @@ describe('MediaBunnyPlayer', () => {
     await vi.advanceTimersByTimeAsync(1);
 
     expect(player.paused).toBe(false);
+  });
+
+  it('closes a seek sample when converting it to a video frame fails', async () => {
+    const sample = createThrowingSample(1);
+    const samples = new Map<number, Promise<typeof sample>>([[1, Promise.resolve(sample)]]);
+
+    const player = new MediaBunnyPlayer({
+      nodeId: 'video-1',
+      onFrame: vi.fn(),
+      onMetadata: vi.fn(),
+      onEnded: vi.fn(),
+      onError: vi.fn()
+    });
+
+    Object.assign(player as unknown as { _isLoaded: boolean; sink: unknown }, {
+      _isLoaded: true,
+      sink: {
+        samplesAtTimestamps: (times: Iterable<number>) => samplesForTimes(times, samples),
+        samples: async function* () {}
+      }
+    });
+
+    await player.seek(1);
+
+    expect(sample.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes a prefetched seek sample when converting it to a video frame fails', async () => {
+    const sample = createThrowingSample(1);
+
+    const player = new MediaBunnyPlayer({
+      nodeId: 'video-1',
+      onFrame: vi.fn(),
+      onMetadata: vi.fn(),
+      onEnded: vi.fn(),
+      onError: vi.fn()
+    });
+
+    Object.assign(player as unknown as { _isLoaded: boolean; _metadata: unknown; sink: unknown }, {
+      _isLoaded: true,
+      _metadata: { frameRate: 30, duration: 10 },
+      sink: {
+        samplesAtTimestamps: async function* () {},
+        samples: async function* () {
+          yield sample;
+        }
+      }
+    });
+
+    await player.seek(1);
+    await nextTick();
+
+    expect(sample.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not emit a seek frame after the player is destroyed', async () => {
+    const seek = deferred<ReturnType<typeof createSample>>();
+    const samples = new Map<number, Promise<ReturnType<typeof createSample>>>([[1, seek.promise]]);
+    const onFrame = vi.fn();
+
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn((frame: { timestamp: number }) =>
+        Promise.resolve({ close: vi.fn(), timestamp: frame.timestamp })
+      )
+    );
+
+    const player = new MediaBunnyPlayer({
+      nodeId: 'video-1',
+      onFrame,
+      onMetadata: vi.fn(),
+      onEnded: vi.fn(),
+      onError: vi.fn()
+    });
+
+    Object.assign(player as unknown as { _isLoaded: boolean; sink: unknown; input: unknown }, {
+      _isLoaded: true,
+      input: { dispose: vi.fn() },
+      sink: {
+        samplesAtTimestamps: (times: Iterable<number>) => samplesForTimes(times, samples),
+        samples: async function* () {}
+      }
+    });
+
+    const seekPromise = player.seek(1);
+
+    player.destroy();
+    seek.resolve(createSample(1));
+    await seekPromise;
+
+    expect(onFrame).not.toHaveBeenCalled();
   });
 });
 
