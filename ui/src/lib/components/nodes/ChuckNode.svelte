@@ -33,6 +33,7 @@
   let isEditing = $state(!data.expr);
   let layoutRef = $state<any>();
   let showSettings = $state(false);
+  let expressionInternalsTimeout: ReturnType<typeof setTimeout> | undefined;
 
   let messageContext: MessageContext;
   let audioService = AudioService.getInstance();
@@ -104,7 +105,15 @@
 
   const handleExpressionChange = (newExpr: string) => {
     updateNodeData(nodeId, { expr: newExpr });
-    setTimeout(() => updateNodeInternals(nodeId), 5);
+
+    if (expressionInternalsTimeout) {
+      clearTimeout(expressionInternalsTimeout);
+    }
+
+    expressionInternalsTimeout = setTimeout(() => {
+      expressionInternalsTimeout = undefined;
+      updateNodeInternals(nodeId);
+    }, 5);
   };
 
   const handleAddShred = () => {
@@ -163,6 +172,10 @@
   });
 
   onDestroy(() => {
+    if (expressionInternalsTimeout) {
+      clearTimeout(expressionInternalsTimeout);
+    }
+
     messageContext.queue.removeCallback(handleMessage);
     messageContext.destroy();
 
