@@ -1,10 +1,12 @@
 import { Output } from 'webmidi';
 
 import {
+  MidiChannelPressure,
   MidiControlChange,
   MidiNoteOff,
   MidiNoteOn,
   MidiPitchBend,
+  MidiPolyPressure,
   MidiProgramChange
 } from '$lib/objects/schemas/midi-messages';
 import type { ObjectContext } from '../ObjectContext';
@@ -17,7 +19,9 @@ type MidiEventData =
   | { type: 'noteOff'; note: number; velocity?: number; channel?: number }
   | { type: 'controlChange'; control: number; value: number; channel?: number }
   | { type: 'programChange'; program: number; channel?: number }
-  | { type: 'pitchBend'; value: number; channel?: number };
+  | { type: 'pitchBend'; value: number; channel?: number }
+  | { type: 'channelPressure'; pressure: number; channel?: number }
+  | { type: 'polyPressure'; note: number; pressure: number; channel?: number };
 
 /**
  * WebMidiLinkObject converts MIDI events to WebMidiLink format.
@@ -38,7 +42,9 @@ export class WebMidiLinkObject implements TextObjectV2 {
         { schema: MidiNoteOff, description: 'Convert MIDI note off' },
         { schema: MidiControlChange, description: 'Convert MIDI control change' },
         { schema: MidiProgramChange, description: 'Convert MIDI program change' },
-        { schema: MidiPitchBend, description: 'Convert MIDI pitch bend' }
+        { schema: MidiPitchBend, description: 'Convert MIDI pitch bend' },
+        { schema: MidiChannelPressure, description: 'Convert MIDI channel pressure' },
+        { schema: MidiPolyPressure, description: 'Convert MIDI poly pressure' }
       ]
     }
   ];
@@ -90,6 +96,12 @@ export class WebMidiLinkObject implements TextObjectV2 {
       })
       .with({ type: 'pitchBend' }, (e) => {
         this.output.channels[channel].sendPitchBend(e.value);
+      })
+      .with({ type: 'channelPressure' }, (e) => {
+        this.output.channels[channel].sendChannelAftertouch(e.pressure, { rawValue: true });
+      })
+      .with({ type: 'polyPressure' }, (e) => {
+        this.output.channels[channel].sendKeyAftertouch(e.note, e.pressure, { rawValue: true });
       })
       .exhaustive();
   }

@@ -6,6 +6,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import {
+    DEFAULT_MIDI_INPUT_EVENTS,
     MIDISystem,
     type MIDIInputConfig,
     type MIDIInputEventType
@@ -16,16 +17,6 @@
   import { messages } from '$lib/objects/schemas';
   import { useNodeDataTracker } from '$lib/history';
   import * as Tooltip from '$lib/components/ui/tooltip';
-
-  const MIDI_INPUT_EVENT_TYPES: MIDIInputEventType[] = [
-    'noteOn',
-    'noteOff',
-    'controlChange',
-    'programChange',
-    'pitchBend',
-    'channelPressure',
-    'polyPressure'
-  ];
 
   let {
     id: nodeId,
@@ -56,7 +47,7 @@
   const channel = $derived(data.channel || 0);
   const deviceName = $derived($midiInputDevices.find((d) => d.id === deviceId)?.name || 'Unknown');
 
-  const events: MIDIInputEventType[] = $derived(data.events || MIDI_INPUT_EVENT_TYPES);
+  const events: MIDIInputEventType[] = $derived(data.events || DEFAULT_MIDI_INPUT_EVENTS);
 
   const borderColor = $derived.by(() => {
     if (errorMessage) return 'border-red-500';
@@ -288,7 +279,7 @@
             <label class="mb-2 block text-xs font-medium text-zinc-300">Message Types</label>
 
             <div class="space-y-1">
-              {#each MIDI_INPUT_EVENT_TYPES as msgType (msgType)}
+              {#each DEFAULT_MIDI_INPUT_EVENTS as msgType (msgType)}
                 <label class="flex items-center">
                   <input
                     type="checkbox"

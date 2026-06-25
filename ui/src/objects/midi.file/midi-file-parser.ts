@@ -6,16 +6,12 @@ import type {
   ParsedMidiFile,
   ScheduledMidiFileEvent
 } from './midi-file-player';
+import { midiTempoTicksToSeconds, type MidiTempoPoint } from './midi-file-time';
 
 interface RawEvent {
   ticks: number;
   track: number;
   message: MidiFileOutputMessage;
-}
-
-interface TempoPoint {
-  tick: number;
-  bpm: number;
 }
 
 const MAJOR_NOTES = [
@@ -71,7 +67,7 @@ export function parseMidiFile(
 
   const ppq = parsed.header.ticksPerBeat;
   const rawEvents: RawEvent[] = [];
-  const tempoPoints: TempoPoint[] = [];
+  const tempoPoints: MidiTempoPoint[] = [];
 
   parsed.tracks.forEach((trackEvents, trackIndex) => {
     let ticks = 0;
@@ -143,7 +139,7 @@ const parseEvent = (
   event: MidiEvent,
   tick: number,
   track: number,
-  tempoPoints: TempoPoint[]
+  tempoPoints: MidiTempoPoint[]
 ): MidiFileOutputMessage | null =>
   match<MidiEvent, MidiFileOutputMessage | null>(event)
     .with({ type: 'trackName' }, (event) => ({ type: 'trackName', name: event.text, track }))
@@ -216,13 +212,12 @@ function normalizeMidiChunks(bytes: Uint8Array): Uint8Array {
     throw new Error('Invalid MIDI file: malformed MThd header');
   }
 
-  const declaredTrackCount = readUint16(header.data, 2);
   const chunks: Array<{ id: string; data: Uint8Array }> = [{ id: header.id, data: header.data }];
 
   let position = header.nextPosition;
   let trackCount = 0;
 
-  while (position + 8 <= bytes.length && trackCount < declaredTrackCount) {
+  while (position + 8 <= bytes.length) {
     const chunk = readChunk(bytes, position);
     if (!chunk) break;
 
@@ -286,9 +281,6 @@ function writeChunks(chunks: Array<{ id: string; data: Uint8Array }>): Uint8Arra
   return bytes;
 }
 
-const readUint16 = (bytes: Uint8Array, position: number): number =>
-  (bytes[position] << 8) | bytes[position + 1];
-
 const readUint32 = (bytes: Uint8Array, position: number): number =>
   ((bytes[position] << 24) |
     (bytes[position + 1] << 16) |
@@ -303,25 +295,8 @@ function writeUint32(bytes: Uint8Array, position: number, value: number): void {
   bytes[position + 3] = value & 0xff;
 }
 
-function tickToSeconds(tick: number, ppq: number, tempos: TempoPoint[]): number {
-  let seconds = 0;
-  let previousTick = 0;
-  let currentBpm = 120;
-
-  for (const tempo of tempos) {
-    if (tempo.tick > tick) break;
-
-    seconds += ticksToSeconds(tempo.tick - previousTick, ppq, currentBpm);
-
-    previousTick = tempo.tick;
-    currentBpm = tempo.bpm;
-  }
-
-  return seconds + ticksToSeconds(tick - previousTick, ppq, currentBpm);
-}
-
-const ticksToSeconds = (ticks: number, ppq: number, bpm: number): number =>
-  (ticks / ppq) * (60 / bpm);
+const tickToSeconds = (tick: number, ppq: number, tempos: MidiTempoPoint[]): number =>
+  midiTempoTicksToSeconds(tick, ppq, tempos);
 
 const keySignatureName = (sf: number, mi: number): string =>
   (mi === 1 ? MINOR_NOTES : MAJOR_NOTES)[sf + 7] ?? 'C';

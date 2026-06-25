@@ -167,6 +167,19 @@
     tracker.commit('event', oldEvent, newMessageType);
   }
 
+  function midiNumberValue(value: unknown, fallback: number): number {
+    return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+  }
+
+  function handleMidiNumberChange(key: string, fallback: number, event: Event) {
+    const newValue = Number.parseInt((event.target as HTMLInputElement).value, 10);
+    if (!Number.isFinite(newValue)) return;
+
+    const oldValue = midiNumberValue(midiData[key], fallback);
+    updateNodeData(nodeId, { [key]: newValue });
+    tracker.commit(key, oldValue, newValue);
+  }
+
   onMount(async () => {
     messageContext = new MessageContext(nodeId);
     messageContext.queue.addCallback(handleMessage);
@@ -333,13 +346,8 @@
                     min="0"
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                    value={(midiData.note as number) || 60}
-                    onchange={(e) => {
-                      const oldNote = (midiData.note as number) || 60;
-                      const newNote = parseInt((e.target as HTMLInputElement).value);
-                      updateNodeData(nodeId, { note: newNote });
-                      tracker.commit('note', oldNote, newNote);
-                    }}
+                    value={midiNumberValue(midiData.note, 60)}
+                    onchange={(e) => handleMidiNumberChange('note', 60, e)}
                   />
                 </div>
 
@@ -352,13 +360,8 @@
                     min="0"
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                    value={(midiData.velocity as number) || 127}
-                    onchange={(e) => {
-                      const oldVelocity = (midiData.velocity as number) || 127;
-                      const newVelocity = parseInt((e.target as HTMLInputElement).value);
-                      updateNodeData(nodeId, { velocity: newVelocity });
-                      tracker.commit('velocity', oldVelocity, newVelocity);
-                    }}
+                    value={midiNumberValue(midiData.velocity, 127)}
+                    onchange={(e) => handleMidiNumberChange('velocity', 127, e)}
                   />
                 </div>
               </div>
@@ -373,13 +376,8 @@
                     min="0"
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                    value={(midiData.control as number) || 1}
-                    onchange={(e) => {
-                      const oldControl = (midiData.control as number) || 1;
-                      const newControl = parseInt((e.target as HTMLInputElement).value);
-                      updateNodeData(nodeId, { control: newControl });
-                      tracker.commit('control', oldControl, newControl);
-                    }}
+                    value={midiNumberValue(midiData.control, 1)}
+                    onchange={(e) => handleMidiNumberChange('control', 1, e)}
                   />
                 </div>
 
@@ -392,13 +390,8 @@
                     min="0"
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                    value={(midiData.value as number) || 64}
-                    onchange={(e) => {
-                      const oldValue = (midiData.value as number) || 64;
-                      const newValue = parseInt((e.target as HTMLInputElement).value);
-                      updateNodeData(nodeId, { value: newValue });
-                      tracker.commit('value', oldValue, newValue);
-                    }}
+                    value={midiNumberValue(midiData.value, 64)}
+                    onchange={(e) => handleMidiNumberChange('value', 64, e)}
                   />
                 </div>
               </div>
@@ -412,13 +405,8 @@
                   min="0"
                   max="127"
                   class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                  value={(midiData.program as number) || 1}
-                  onchange={(e) => {
-                    const oldProgram = (midiData.program as number) || 1;
-                    const newProgram = parseInt((e.target as HTMLInputElement).value);
-                    updateNodeData(nodeId, { program: newProgram });
-                    tracker.commit('program', oldProgram, newProgram);
-                  }}
+                  value={midiNumberValue(midiData.program, 1)}
+                  onchange={(e) => handleMidiNumberChange('program', 1, e)}
                 />
               </div>
             {:else if dataFieldType === 'pressure'}
@@ -431,13 +419,8 @@
                   min="0"
                   max="127"
                   class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                  value={(midiData.pressure as number) || 64}
-                  onchange={(e) => {
-                    const oldPressure = (midiData.pressure as number) || 64;
-                    const newPressure = parseInt((e.target as HTMLInputElement).value);
-                    updateNodeData(nodeId, { pressure: newPressure });
-                    tracker.commit('pressure', oldPressure, newPressure);
-                  }}
+                  value={midiNumberValue(midiData.pressure, 64)}
+                  onchange={(e) => handleMidiNumberChange('pressure', 64, e)}
                 />
               </div>
             {:else if dataFieldType === 'polyPressure'}
@@ -451,13 +434,8 @@
                     min="0"
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                    value={(midiData.note as number) || 60}
-                    onchange={(e) => {
-                      const oldNote = (midiData.note as number) || 60;
-                      const newNote = parseInt((e.target as HTMLInputElement).value);
-                      updateNodeData(nodeId, { note: newNote });
-                      tracker.commit('note', oldNote, newNote);
-                    }}
+                    value={midiNumberValue(midiData.note, 60)}
+                    onchange={(e) => handleMidiNumberChange('note', 60, e)}
                   />
                 </div>
 
@@ -470,13 +448,8 @@
                     min="0"
                     max="127"
                     class="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-100"
-                    value={(midiData.pressure as number) || 64}
-                    onchange={(e) => {
-                      const oldPressure = (midiData.pressure as number) || 64;
-                      const newPressure = parseInt((e.target as HTMLInputElement).value);
-                      updateNodeData(nodeId, { pressure: newPressure });
-                      tracker.commit('pressure', oldPressure, newPressure);
-                    }}
+                    value={midiNumberValue(midiData.pressure, 64)}
+                    onchange={(e) => handleMidiNumberChange('pressure', 64, e)}
                   />
                 </div>
               </div>

@@ -24,7 +24,7 @@ export type MIDIInputEventType =
   | 'channelPressure'
   | 'polyPressure';
 
-const DEFAULT_MIDI_INPUT_EVENTS: MIDIInputEventType[] = [
+export const DEFAULT_MIDI_INPUT_EVENTS: MIDIInputEventType[] = [
   'noteOn',
   'noteOff',
   'controlChange',

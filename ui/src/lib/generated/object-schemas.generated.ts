@@ -4162,6 +4162,23 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
               channel: Type.Optional(Type.Number())
             }),
             description: 'Convert MIDI pitch bend'
+          },
+          {
+            schema: Type.Object({
+              type: Type.Literal('channelPressure'),
+              pressure: Type.Number(),
+              channel: Type.Optional(Type.Number())
+            }),
+            description: 'Convert MIDI channel pressure'
+          },
+          {
+            schema: Type.Object({
+              type: Type.Literal('polyPressure'),
+              note: Type.Number(),
+              pressure: Type.Number(),
+              channel: Type.Optional(Type.Number())
+            }),
+            description: 'Convert MIDI poly pressure'
           }
         ],
         handle: { handleType: 'message', handleId: 0 }

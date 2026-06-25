@@ -45,7 +45,7 @@ function chunk(type: string, body: number[]): number[] {
   ];
 }
 
-function midiFile(trackBodies: number[] | number[][]): Uint8Array {
+function midiFile(trackBodies: number[] | number[][], declaredTrackCount?: number): Uint8Array {
   const tracks = Array.isArray(trackBodies[0])
     ? (trackBodies as number[][])
     : [trackBodies as number[]];
@@ -61,7 +61,7 @@ function midiFile(trackBodies: number[] | number[][]): Uint8Array {
     0x00,
     0x00,
     0x00,
-    tracks.length,
+    declaredTrackCount ?? tracks.length,
     0x01,
     0xe0,
     ...tracks.flat()
@@ -131,6 +131,30 @@ describe('parseMidiFile', () => {
     ]);
 
     const parsed = parseMidiFile(bytes, 'extra-chunk.mid');
+
+    expect(parsed.trackCount).toBe(2);
+    expect(parsed.events.map((event) => event.message)).toEqual([
+      { type: 'noteOn', note: 60, velocity: 100, channel: 1 },
+      { type: 'noteOn', note: 64, velocity: 100, channel: 1 }
+    ]);
+  });
+
+  it('collects every physical track even when the header track count is wrong', () => {
+    const bytes = midiFile(
+      [
+        track([
+          [0x00, 0x90, 0x3c, 0x64],
+          [0x00, 0xff, 0x2f, 0x00]
+        ]),
+        track([
+          [0x00, 0x90, 0x40, 0x64],
+          [0x00, 0xff, 0x2f, 0x00]
+        ])
+      ],
+      1
+    );
+
+    const parsed = parseMidiFile(bytes, 'wrong-count.mid');
 
     expect(parsed.trackCount).toBe(2);
     expect(parsed.events.map((event) => event.message)).toEqual([

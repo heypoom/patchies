@@ -25,4 +25,15 @@ describe('midiTicksToSeconds', () => {
   it('converts exact tick positions without snapping to the next event', () => {
     expect(midiTicksToSeconds(240, file)).toBe(0.25);
   });
+
+  it('walks tempo changes with the same default tempo as the parser', () => {
+    const tempoFile: ParsedMidiFile = {
+      ...file,
+      durationSeconds: 4,
+      durationTicks: 960,
+      tempos: [{ tick: 480, seconds: 0.5, bpm: 60 }]
+    };
+
+    expect(midiTicksToSeconds(960, tempoFile)).toBe(1.5);
+  });
 });
