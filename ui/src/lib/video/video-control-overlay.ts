@@ -20,12 +20,18 @@ export function formatVideoOverlayTime(timeSeconds: number): string {
 export function getVideoOverlayDisplayTime({
   workerTime,
   elementTime,
-  hasWorkerFrame
+  hasWorkerFrame,
+  pendingSeekTime
 }: {
   workerTime: number;
   elementTime: number | undefined;
   hasWorkerFrame: boolean;
+  pendingSeekTime?: number | null;
 }): number {
+  if (Number.isFinite(pendingSeekTime)) {
+    return Math.max(0, pendingSeekTime ?? 0);
+  }
+
   if (hasWorkerFrame && Number.isFinite(workerTime)) {
     return Math.max(0, workerTime);
   }
@@ -49,6 +55,44 @@ export function getVideoOverlayDuration({
   }
 
   return 0;
+}
+
+export function getRangePointerTime({
+  clientX,
+  left,
+  width,
+  min,
+  max
+}: {
+  clientX: number;
+  left: number;
+  width: number;
+  min: number;
+  max: number;
+}): number {
+  if (!Number.isFinite(width) || width <= 0) {
+    return min;
+  }
+
+  const progress = Math.min(1, Math.max(0, (clientX - left) / width));
+
+  return min + (max - min) * progress;
+}
+
+export function isPendingSeekComplete({
+  pendingSeekTime,
+  currentTime,
+  tolerance = 0.1
+}: {
+  pendingSeekTime: number | null;
+  currentTime: number;
+  tolerance?: number;
+}): boolean {
+  return (
+    Number.isFinite(pendingSeekTime) &&
+    Number.isFinite(currentTime) &&
+    Math.abs(currentTime - (pendingSeekTime ?? 0)) <= tolerance
+  );
 }
 
 export class VideoControlOverlayVisibility {
@@ -104,6 +148,22 @@ export class VideoOverlaySeekPlaybackGate {
     this.resumeAfterSeek = false;
 
     return { shouldResume };
+  }
+}
+
+export class VideoOverlayPointerFocusGate {
+  private pointerSeekStarted = false;
+
+  startPointerSeek(): void {
+    this.pointerSeekStarted = true;
+  }
+
+  shouldStartSeekOnFocus(): boolean {
+    return !this.pointerSeekStarted;
+  }
+
+  endPointerSeek(): void {
+    this.pointerSeekStarted = false;
   }
 }
 

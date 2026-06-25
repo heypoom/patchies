@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import {
   VIDEO_OVERLAY_IDLE_MS,
+  VideoOverlayPointerFocusGate,
   VideoOverlaySeekPlaybackGate,
   VideoControlOverlayVisibility,
   formatVideoOverlayTime,
+  getRangePointerTime,
+  isPendingSeekComplete,
   getVideoOverlayDisplayTime,
   getVideoOverlayDuration
 } from './video-control-overlay';
@@ -24,6 +27,23 @@ describe('video control overlay', () => {
     expect(
       getVideoOverlayDisplayTime({ workerTime: 0, elementTime: 3, hasWorkerFrame: false })
     ).toBe(3);
+  });
+
+  it('keeps an optimistic seek target visible until the worker catches up', () => {
+    expect(
+      getVideoOverlayDisplayTime({
+        workerTime: 5,
+        elementTime: 5,
+        hasWorkerFrame: true,
+        pendingSeekTime: 20
+      })
+    ).toBe(20);
+  });
+
+  it('treats a pending seek as complete only when playback time reaches the target', () => {
+    expect(isPendingSeekComplete({ pendingSeekTime: 20, currentTime: 19.95 })).toBe(true);
+    expect(isPendingSeekComplete({ pendingSeekTime: 20, currentTime: 5 })).toBe(false);
+    expect(isPendingSeekComplete({ pendingSeekTime: null, currentTime: 5 })).toBe(false);
   });
 
   it('uses metadata duration before falling back to the native element duration', () => {
@@ -66,5 +86,50 @@ describe('video control overlay', () => {
 
     expect(gate.start({ paused: true })).toEqual({ shouldPause: false });
     expect(gate.stop()).toEqual({ shouldResume: false });
+  });
+
+  it('skips focus-triggered seek start immediately after pointer seek start', () => {
+    const gate = new VideoOverlayPointerFocusGate();
+
+    gate.startPointerSeek();
+
+    expect(gate.shouldStartSeekOnFocus()).toBe(false);
+
+    gate.endPointerSeek();
+
+    expect(gate.shouldStartSeekOnFocus()).toBe(true);
+  });
+
+  it('maps a range pointer position to the clicked video time', () => {
+    expect(
+      getRangePointerTime({
+        clientX: 75,
+        left: 50,
+        width: 100,
+        min: 0,
+        max: 44
+      })
+    ).toBe(11);
+  });
+
+  it('clamps range pointer seek times to the range bounds', () => {
+    expect(
+      getRangePointerTime({
+        clientX: 10,
+        left: 50,
+        width: 100,
+        min: 2,
+        max: 10
+      })
+    ).toBe(2);
+    expect(
+      getRangePointerTime({
+        clientX: 200,
+        left: 50,
+        width: 100,
+        min: 2,
+        max: 10
+      })
+    ).toBe(10);
   });
 });

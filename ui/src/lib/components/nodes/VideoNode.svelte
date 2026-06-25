@@ -22,9 +22,11 @@
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
   import { VideoProfiler, type VideoStats } from '$lib/video';
   import { LatestVideoSeek } from '$lib/video/latest-video-seek';
+  import { getVideoNodeDisplaySize } from '$lib/video/video-node-size';
   import {
     getVideoOverlayDisplayTime,
     getVideoOverlayDuration,
+    isPendingSeekComplete,
     VideoOverlaySeekPlaybackGate,
     VideoControlOverlayVisibility,
     VIDEO_OVERLAY_IDLE_MS
@@ -103,7 +105,6 @@
   let resizerCtx: OffscreenCanvasRenderingContext2D | null = null;
 
   // MediaBunny player runs in render worker for zero main thread blocking
-  let currentFile: File | null = null;
   let currentSourceUrl: string | undefined = undefined; // For URL streaming
   let webCodecsFirstFrameReceived = $state(false);
   let webCodecsTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -111,6 +112,8 @@
   let overlayCurrentTime = $state(0);
   let overlayDuration = $state(0);
   let overlaySeekTime = $state(0);
+  let pendingOverlaySeekTime = $state<number | null>(null);
+  let resumeOverlayPlaybackAfterPendingSeek = false;
   let isOverlayScrubbing = $state(false);
   let showMediaOverlay = $state(false);
   let mediaOverlayHideTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -130,6 +133,7 @@
   let profiler: VideoProfiler | null = null;
   let videoStats = $state<VideoStats | null>(null);
   let statsIntervalId: ReturnType<typeof setInterval> | null = null;
+
   const mediaOverlayTime = $derived.by(() => {
     if (isOverlayScrubbing) {
       return overlaySeekTime;
@@ -138,9 +142,11 @@
     return getVideoOverlayDisplayTime({
       workerTime: workerCurrentTime,
       elementTime: overlayCurrentTime,
-      hasWorkerFrame: webCodecsFirstFrameReceived
+      hasWorkerFrame: webCodecsFirstFrameReceived,
+      pendingSeekTime: pendingOverlaySeekTime
     });
   });
+
   const mediaOverlayProgress = $derived(
     overlayDuration > 0 ? Math.min(100, Math.max(0, (mediaOverlayTime / overlayDuration) * 100)) : 0
   );
@@ -240,7 +246,7 @@
     }, VIDEO_OVERLAY_IDLE_MS);
   }
 
-  function handleOverlaySeekStart() {
+  function handleOverlaySeekStart(time?: number) {
     if (!isVideoLoaded) return;
 
     const gate = overlaySeekPlaybackGate.start({ paused: isPaused });
@@ -250,9 +256,14 @@
     }
 
     isOverlayScrubbing = true;
-    overlaySeekTime = mediaOverlayTime;
+    overlaySeekTime = Number.isFinite(time) ? Math.max(0, time ?? 0) : mediaOverlayTime;
+    pendingOverlaySeekTime = null;
     mediaOverlayVisibility.startScrubbing();
     showMediaOverlay = mediaOverlayVisibility.visible;
+
+    if (Number.isFinite(time)) {
+      seekToTime(overlaySeekTime);
+    }
   }
 
   function handleOverlaySeekInput(time: number) {
@@ -266,13 +277,31 @@
     if (!isOverlayScrubbing) return;
 
     isOverlayScrubbing = false;
+    pendingOverlaySeekTime = overlaySeekTime;
     mediaOverlayVisibility.stopScrubbing(performance.now());
     showMediaOverlay = mediaOverlayVisibility.visible;
     scheduleMediaOverlayHide();
 
     if (overlaySeekPlaybackGate.stop().shouldResume) {
+      resumeOverlayPlaybackAfterPendingSeek = true;
+    }
+  }
+
+  function completePendingOverlaySeek(currentTime: number) {
+    if (!isPendingSeekComplete({ pendingSeekTime: pendingOverlaySeekTime, currentTime })) {
+      return false;
+    }
+
+    pendingOverlaySeekTime = null;
+    workerCurrentTime = currentTime;
+    overlayCurrentTime = currentTime;
+
+    if (resumeOverlayPlaybackAfterPendingSeek) {
+      resumeOverlayPlaybackAfterPendingSeek = false;
       playVideoPlayback();
     }
+
+    return true;
   }
 
   function seekNativeVideoPreview(time: number) {
@@ -302,7 +331,6 @@
         return;
       }
 
-      currentFile = file;
       currentSourceUrl = sourceUrl; // Store for MediaBunny streaming
 
       const objectUrl = URL.createObjectURL(file);
@@ -312,40 +340,31 @@
           const videoWidth = videoElement.videoWidth;
           const videoHeight = videoElement.videoHeight;
 
-          // Scale down for preview while maintaining aspect ratio
-          const aspectRatio = videoWidth / videoHeight;
-
-          const previewWidthValue = get(previewWidth);
-          const previewHeightValue = get(previewHeight);
-
-          let scaledW = previewWidthValue;
-          let scaledH = previewWidthValue / aspectRatio;
-
-          if (scaledH > previewHeightValue) {
-            scaledH = previewHeightValue;
-            scaledW = previewHeightValue * aspectRatio;
-          }
+          const displaySize = getVideoNodeDisplaySize({
+            nodeWidth,
+            nodeHeight,
+            videoWidth,
+            videoHeight,
+            previewWidth: get(previewWidth),
+            previewHeight: get(previewHeight)
+          });
 
           updateNode(nodeId, {
-            width: Math.round(scaledW),
-            height: Math.round(scaledH),
-            data: {
-              ...data,
-              fileName: file.name,
-              width: videoWidth,
-              height: videoHeight
-            }
+            width: displaySize.width,
+            height: displaySize.height,
+            data: { ...data, fileName: file.name, width: videoWidth, height: videoHeight }
           });
 
           isVideoLoaded = true;
           isPaused = true;
           overlayCurrentTime = 0;
           workerCurrentTime = 0;
+          errorMessage = null;
+
           overlayDuration = getVideoOverlayDuration({
             metadataDuration: undefined,
             elementDuration: videoElement.duration
           });
-          errorMessage = null;
 
           // Send file to audio system
           audioService.send(nodeId, 'file', file);
@@ -609,6 +628,7 @@
     (videoElement as HTMLVideoElementWithRVFC).cancelVideoFrameCallback(
       nativeSeekPreviewFrameCallbackId
     );
+
     nativeSeekPreviewFrameCallbackId = undefined;
   }
 
@@ -717,11 +737,11 @@
 
         // Create flipped ImageBitmap to match pipeline orientation
         const bitmap = await createImageBitmap(resizerCanvas);
-        await glSystem.setBitmap(nodeId, bitmap);
+        glSystem.setBitmap(nodeId, bitmap);
       }
     } else {
       // Video is already small enough, upload directly
-      await glSystem.setBitmapSource(nodeId, videoElement);
+      glSystem.setBitmapSource(nodeId, videoElement);
     }
   }
 
@@ -746,7 +766,7 @@
         element,
         (_now, metadata) => {
           nativeSeekPreviewFrameCallbackId = undefined;
-          void uploadNativeSeekPreview(generation, metadata.mediaTime);
+          uploadNativeSeekPreview(generation, metadata.mediaTime);
         }
       );
 
@@ -762,6 +782,8 @@
     if (Math.abs(mediaTime - nativeSeekPreview.currentTargetTime) > 0.1) {
       return;
     }
+
+    completePendingOverlaySeek(mediaTime);
 
     workerCurrentTime = mediaTime;
     overlayCurrentTime = mediaTime;
@@ -792,6 +814,7 @@
       height: event.metadata.height,
       codec: event.metadata.codec
     });
+
     overlayDuration = getVideoOverlayDuration({
       metadataDuration: event.metadata.duration,
       elementDuration: videoElement?.duration
@@ -823,6 +846,8 @@
     isPaused = true;
     overlayCurrentTime = 0;
     workerCurrentTime = 0;
+    pendingOverlaySeekTime = null;
+    resumeOverlayPlaybackAfterPendingSeek = false;
 
     if (videoElement) {
       videoElement.pause();
@@ -838,6 +863,11 @@
 
   function handleWorkerTimeUpdate(event: MediaBunnyTimeUpdateEvent) {
     if (event.nodeId !== nodeId) return;
+
+    if (pendingOverlaySeekTime !== null && !completePendingOverlaySeek(event.currentTime)) {
+      profiler?.recordFrame(event.currentTime * 1_000_000, event.currentTime);
+      return;
+    }
 
     workerCurrentTime = event.currentTime;
     overlayCurrentTime = event.currentTime;
@@ -953,6 +983,7 @@
             <button title="Restart video" class="node-floating-button" onclick={restartVideo}>
               <SkipBack class="h-4 w-4 text-zinc-300" />
             </button>
+
             <button
               title="Change video"
               class="node-floating-button"
@@ -1033,9 +1064,11 @@
                   >
                     {videoStats.pipeline === 'webcodecs' ? 'MEDIABUNNY' : 'FALLBACK'}
                   </div>
+
                   <div>{videoStats.fps}/{Math.round(videoStats.targetFps)} FPS</div>
                   <div>Dropped: {videoStats.droppedFrames}</div>
                   <div>{videoStats.width}x{videoStats.height}</div>
+
                   {#if videoStats.codec !== 'unknown'}
                     <div class="text-zinc-400">{videoStats.codec}</div>
                   {/if}

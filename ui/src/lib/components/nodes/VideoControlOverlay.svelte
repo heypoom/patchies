@@ -1,6 +1,10 @@
 <script lang="ts">
   import { Pause, Play } from '@lucide/svelte/icons';
-  import { formatVideoOverlayTime } from '$lib/video/video-control-overlay';
+  import {
+    formatVideoOverlayTime,
+    getRangePointerTime,
+    VideoOverlayPointerFocusGate
+  } from '$lib/video/video-control-overlay';
 
   let {
     visible,
@@ -23,7 +27,7 @@
     progress: number;
     onTogglePause: () => void;
     onShowControls: () => void;
-    onSeekStart: () => void;
+    onSeekStart: (time?: number) => void;
     onSeekInput: (time: number) => void;
     onSeekEnd: () => void;
   } = $props();
@@ -32,6 +36,7 @@
   const currentTimeLabel = $derived(formatVideoOverlayTime(currentTime));
   const durationLabel = $derived(formatVideoOverlayTime(duration));
   const rangeValue = $derived(Math.min(currentTime, duration || currentTime));
+  const pointerFocusGate = new VideoOverlayPointerFocusGate();
 
   function handleSeekInput(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
@@ -40,6 +45,34 @@
     if (!Number.isFinite(time)) return;
 
     onSeekInput(time);
+  }
+
+  function handleSeekPointerDown(event: PointerEvent) {
+    const input = event.currentTarget as HTMLInputElement;
+    const rect = input.getBoundingClientRect();
+    const time = getRangePointerTime({
+      clientX: event.clientX,
+      left: rect.left,
+      width: rect.width,
+      min: Number(input.min),
+      max: Number(input.max)
+    });
+
+    pointerFocusGate.startPointerSeek();
+    onSeekStart(time);
+  }
+
+  function handleSeekFocus() {
+    if (pointerFocusGate.shouldStartSeekOnFocus()) {
+      onSeekStart();
+    }
+
+    onShowControls();
+  }
+
+  function handleSeekEnd() {
+    pointerFocusGate.endPointerSeek();
+    onSeekEnd();
   }
 
   function handlePause() {
@@ -81,16 +114,13 @@
       class="video-overlay-seek h-1 min-w-0 flex-1 cursor-pointer"
       style={`--video-overlay-progress: ${progress}%`}
       disabled={duration <= 0}
-      onpointerdown={onSeekStart}
-      onpointerup={onSeekEnd}
-      onpointercancel={onSeekEnd}
-      onfocus={() => {
-        onSeekStart();
-        onShowControls();
-      }}
-      onblur={onSeekEnd}
+      onpointerdown={handleSeekPointerDown}
+      onpointerup={handleSeekEnd}
+      onpointercancel={handleSeekEnd}
+      onfocus={handleSeekFocus}
+      onblur={handleSeekEnd}
       oninput={handleSeekInput}
-      onchange={onSeekEnd}
+      onchange={handleSeekEnd}
     />
 
     <div class="w-8 shrink-0 font-mono text-[7px] leading-none text-zinc-300">
