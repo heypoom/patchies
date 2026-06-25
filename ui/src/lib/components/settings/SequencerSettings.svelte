@@ -2,6 +2,7 @@
   import type { ContinuousTracker } from '$lib/history';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
+  import NativeColorPicker from '$lib/components/settings/NativeColorPicker.svelte';
   import { Plus, Trash2 } from '@lucide/svelte/icons';
   import type { TrackData } from '$lib/nodes/sequencer-constants';
 
@@ -262,18 +263,13 @@
         {#each tracks as track, trackIdx (trackIdx)}
           <div class="flex items-center gap-1.5">
             <!-- Color swatch / native color picker -->
-            <label class="relative cursor-pointer">
-              <div
-                class="h-5 w-5 rounded border border-zinc-600"
-                style:background-color={track.color}
-              ></div>
-              <input
-                type="color"
-                value={track.color}
-                onchange={(e) => onUpdateTrackColor(trackIdx, (e.target as HTMLInputElement).value)}
-                class="absolute inset-0 h-0 w-0 opacity-0"
-              />
-            </label>
+            <NativeColorPicker
+              value={track.color}
+              ariaLabel="Track color"
+              class="h-5 w-5 cursor-pointer rounded border border-zinc-600 p-0"
+              swatchClass="block h-full w-full rounded"
+              onInput={(value) => onUpdateTrackColor(trackIdx, value)}
+            />
 
             <!-- Name -->
             <input

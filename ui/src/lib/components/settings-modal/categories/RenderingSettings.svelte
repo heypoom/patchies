@@ -2,6 +2,7 @@
   import SettingRow from '../SettingRow.svelte';
   import SettingToggle from '../SettingToggle.svelte';
   import SettingDropdown from '../SettingDropdown.svelte';
+  import NativeColorPicker from '$lib/components/settings/NativeColorPicker.svelte';
   import { isFpsMonitorVisible } from '../../../../stores/ui.store';
   import {
     previewBackgroundColor,
@@ -61,9 +62,9 @@
       .otherwise(() => previewBackgroundColor.set(customPreviewBackgroundColor));
   }
 
-  function handlePreviewBackgroundColorChange(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const color = target.value as `#${string}`;
+  function handlePreviewBackgroundColorInput(value: string) {
+    const color = value as `#${string}`;
+
     customPreviewBackgroundColor = color;
     previewBackgroundColor.set(color);
   }
@@ -89,12 +90,12 @@
     />
 
     {#if previewBackgroundMode === 'color'}
-      <input
-        type="color"
+      <NativeColorPicker
         value={customPreviewBackgroundColor}
-        onchange={handlePreviewBackgroundColorChange}
         class="h-7 w-9 cursor-pointer rounded border border-white/10 bg-white/5 p-0.5"
-        aria-label="Preview background color"
+        swatchClass="block h-full w-full rounded-sm"
+        ariaLabel="Preview background color"
+        onInput={handlePreviewBackgroundColorInput}
       />
     {/if}
   </div>

@@ -88,7 +88,7 @@ Each section header in the sidebar has a small label: `PER-USER` or `PER-PATCH` 
 | Setting | Control | Store | Notes |
 |---------|---------|-------|-------|
 | Render FPS cap | Dropdown (Unlimited/30/60) | `renderFpsCap` (renderer.store) | |
-| Preview background | Color + transparent option | `previewBackgroundColor` (renderer.store) | Per-user; transparent by default; applied as CSS behind preview canvases |
+| Preview background | Color + transparent option | `previewBackgroundColor` (renderer.store) | Per-user; transparent by default; applied as CSS behind preview canvases. Native color picker changes update on `input`, not only `change`, so the live setting continues to respond while the browser/OS picker is open. |
 | Show FPS monitor | Toggle | `isFpsMonitorVisible` (ui.store) | |
 | Show video stats | Toggle | `showVideoStats` (video.store) | |
 | MediaBunny (WebCodecs) | Toggle | `useWebCodecs` (video.store) | Shows browser support note |
@@ -183,6 +183,14 @@ Standard layout for every setting row:
 ```
 
 Renders as a horizontal row: label + description on the left, control on the right. Consistent spacing and alignment across all categories.
+
+### Native Color Picker Lifecycle
+
+Native browser/OS color pickers can outlive the Svelte settings panel that opened them, and there is no reliable standard API to force-close an already-open picker. Settings-modal color controls therefore use the shared persistent native color picker helper instead of owning the `<input type="color">` directly in the panel subtree.
+
+- Color values update from the picker `input` event so changes apply continuously.
+- The picker `change` event is reserved for finalization such as undo tracking.
+- Closing the settings modal blurs the active native color input as a best-effort dismissal, but the active callback remains wired so late picker events can still update the setting when the platform keeps the picker open.
 
 ### Reuse of Existing Controls
 

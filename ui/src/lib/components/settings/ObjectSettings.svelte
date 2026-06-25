@@ -1,9 +1,11 @@
 <script lang="ts">
   import { RotateCcw, X } from '@lucide/svelte/icons';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
+  import NativeColorPicker from '$lib/components/settings/NativeColorPicker.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useNodeDataTracker } from '$lib/history';
   import type { SettingsField, SettingsSchema } from '$lib/settings/types';
+  import { dismissActiveNativeColorPicker } from './native-color-picker';
 
   let {
     nodeId,
@@ -71,6 +73,11 @@
     if (persistence === 'node') {
       tracker.commit(trackingKey(field.key), oldValue, newValue);
     }
+  }
+
+  function handleClose() {
+    dismissActiveNativeColorPicker();
+    onClose();
   }
 
   // For slider/string/number: track focus→blur for undo (node-persistence only)
@@ -153,7 +160,7 @@
     {/if}
     {#if showCloseButton}
       <button
-        onclick={onClose}
+        onclick={handleClose}
         class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
       >
         <X class="h-4 w-4" />
@@ -390,23 +397,16 @@
             <!-- Native color picker fallback -->
             {@const colorTracker = makeTracker(field)}
 
-            <label class="flex cursor-pointer items-center gap-2">
-              <span
-                class="h-6 w-6 rounded border border-zinc-600"
-                style="background-color: {(getCurrentValue(field) as string) ?? '#ffffff'};"
-              ></span>
+            {@const currentColor = (getCurrentValue(field) as string) ?? '#ffffff'}
 
-              <input
-                type="color"
-                value={(getCurrentValue(field) as string) ?? '#ffffff'}
-                class="sr-only"
-                onfocus={colorTracker.onFocus}
-                oninput={(e) => onValueChange(field.key, (e.target as HTMLInputElement).value)}
-                onchange={colorTracker.onBlur}
-              />
-
-              <span class="text-xs text-zinc-400">{(getCurrentValue(field) as string) ?? ''}</span>
-            </label>
+            <NativeColorPicker
+              value={currentColor}
+              ariaLabel={field.label}
+              showValue
+              onOpen={colorTracker.onFocus}
+              onInput={(value) => onValueChange(field.key, value)}
+              onChange={() => colorTracker.onBlur()}
+            />
           {/if}
         </div>
       {:else if field.type === 'vec2'}
