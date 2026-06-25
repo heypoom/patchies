@@ -1,5 +1,12 @@
 import { Output } from 'webmidi';
 
+import {
+  MidiControlChange,
+  MidiNoteOff,
+  MidiNoteOn,
+  MidiPitchBend,
+  MidiProgramChange
+} from '$lib/objects/schemas/midi-messages';
 import type { ObjectContext } from '../ObjectContext';
 import type { ObjectInlet, ObjectOutlet } from '../object-metadata';
 import type { TextObjectV2, MessageMeta } from '../interfaces/text-objects';
@@ -25,7 +32,14 @@ export class WebMidiLinkObject implements TextObjectV2 {
     {
       name: 'midi',
       type: 'message',
-      description: 'MIDI event (noteOn, noteOff, controlChange, programChange, pitchBend)'
+      description: 'MIDI message to convert',
+      messages: [
+        { schema: MidiNoteOn, description: 'Convert MIDI note on' },
+        { schema: MidiNoteOff, description: 'Convert MIDI note off' },
+        { schema: MidiControlChange, description: 'Convert MIDI control change' },
+        { schema: MidiProgramChange, description: 'Convert MIDI program change' },
+        { schema: MidiPitchBend, description: 'Convert MIDI pitch bend' }
+      ]
     }
   ];
 
