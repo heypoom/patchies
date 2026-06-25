@@ -20,6 +20,7 @@ The `sonic~` JavaScript context provides:
 - `inputNode`: Audio input GainNode
 - `outputNode`: Audio output GainNode
 - `outBus`: Assigned output bus index for this node (number)
+- `noAudioInput()`: hide the blue audio input handle when code does not use incoming audio
 
 ## Audio Routing
 
@@ -48,6 +49,10 @@ Available events: `'ready'`, `'loading:start'`, `'loading:complete'`,
 Supports [Patchies JavaScript Runner](/docs/javascript-runner) functions
 (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
+Call `noAudioInput()` for synths and sample players that only generate sound or
+respond to messages. The internal `inputNode` remains available, but the node
+does not show a blue input handle.
+
 ## Command Listener
 
 SuperSonic works by sending OSC (OpenSoundControl) messages to the synth engine.
@@ -65,6 +70,7 @@ recv(msg => sonic.send(...msg))
 
 ```js
 setPortCount(1);
+noAudioInput();
 
 await sonic.loadSynthDef('sonic-pi-prophet');
 

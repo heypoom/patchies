@@ -10,16 +10,22 @@ The `elem~` context provides:
 - `node`: the AudioWorkletNode
 - `inputNode`: GainNode for audio input
 - `outputNode`: GainNode for audio output
+- `noAudioInput()`: hide the blue audio input handle when code does not use incoming audio
 
 ## Messaging
 
 Supports [Patchies JavaScript Runner](/docs/javascript-runner) functions
 (`send`, `recv`, `setPortCount`, `onCleanup`, etc.).
 
+Call `noAudioInput()` for generators that only synthesize sound or respond to
+messages. The internal `inputNode` remains available, but the node does not show
+a blue input handle.
+
 ## Example
 
 ```js
 setPortCount(1);
+noAudioInput();
 
 let [rate, setRate] = core.createRef('const', { value: 440 }, []);
 

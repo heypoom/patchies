@@ -9,9 +9,11 @@ SuperCollider synthesis via SuperSonic AudioWorklet.
 - \`SuperSonic\` — Static utilities (e.g., \`SuperSonic.osc.encodeMessage()\`)
 - \`on(event, callback)\` — Subscribe to SuperSonic events
 - \`outBus\` — Assigned output bus index for this node (number)
+- \`noAudioInput()\` — Hide the visible audio input handle for synth-only code
 
 **Sonic-specific gotchas:**
 - fft() is NOT available (audio output node, not video)
+- Call \`noAudioInput()\` when code does not use \`inputNode\`
 - By default, the Prophet synth is loaded
 - **CRITICAL**: Each sonic~ node has its own isolated output bus
   Always pass \`'out_bus', outBus\` when creating synths to route audio to the correct output.
@@ -106,6 +108,7 @@ recv(m => {
 Example — MIDI-controlled synth with note management:
 \`\`\`js
 setPortCount(1);
+noAudioInput();
 await sonic.loadSynthDef('sonic-pi-beep');
 
 const activeNotes = new Map();

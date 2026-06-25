@@ -14,6 +14,7 @@ import { createSettingsAPI } from '$lib/settings/create-settings-api';
 type RecvCallback = (message: unknown, meta: unknown) => void;
 type OnSetPortCount = (inletCount: number, outletCount: number) => void;
 type OnSetTitle = (title: string) => void;
+type OnSetAudioInputVisible = (visible: boolean) => void;
 
 /**
  * SonicNode implements the sonic~ audio node.
@@ -63,6 +64,7 @@ export class SonicNode implements AudioNodeV2 {
 
   public onSetPortCount: OnSetPortCount = () => {};
   public onSetTitle: OnSetTitle = () => {};
+  public onSetAudioInputVisible: OnSetAudioInputVisible = () => {};
 
   // Custom console for routing output to VirtualConsole
   private customConsole;
@@ -143,6 +145,7 @@ export class SonicNode implements AudioNodeV2 {
       this.messageInletCount = 0;
       this.messageOutletCount = 0;
       this.recvCallback = null;
+      this.onSetAudioInputVisible(true);
 
       const settingsManager = AudioService.getInstance().getSettingsManager(this.nodeId);
       settingsManager?.clearCallbacks();
@@ -188,6 +191,7 @@ export class SonicNode implements AudioNodeV2 {
           outBus: this.busAllocation?.busIndex ?? 0,
           recv,
           send,
+          noAudioInput: () => this.onSetAudioInputVisible(false),
           ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
         }
       });

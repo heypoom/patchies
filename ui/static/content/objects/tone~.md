@@ -9,6 +9,7 @@ The Tone.js context provides:
 - `Tone`: the Tone.js library
 - `inputNode`: GainNode for receiving audio input
 - `outputNode`: GainNode for sending audio output
+- `noAudioInput()`: hide the blue audio input handle when code does not use incoming audio
 
 ## Messaging
 
@@ -46,6 +47,23 @@ filter.connect(outputNode);
 
 recv((m) => {
   filter.frequency.value = m;
+});
+```
+
+### Synth without audio input
+
+Call `noAudioInput()` when a `tone~` node only generates sound or responds to
+messages. The internal `inputNode` still exists, but the node does not show a
+blue input handle.
+
+```js
+setPortCount(1);
+noAudioInput();
+
+const synth = new Tone.Synth().connect(outputNode);
+
+recv((m) => {
+  if (m?.type === 'bang') synth.triggerAttackRelease('C4', 0.25);
 });
 ```
 

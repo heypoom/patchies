@@ -60,6 +60,10 @@ const process = (inputs, outputs) => {
 - `setTitle(title)` - custom object title
 - `setKeepAlive(enabled)` - keep worklet active when disconnected
 
+Use `setAudioPortCount(0, 1)` for synths and generators that do not need incoming
+audio. This hides the blue audio inlet on the node while keeping the worklet's
+internal input available.
+
 ## Multiple Audio Ports
 
 Use `setAudioPortCount(inputs, outputs)` to configure multiple audio ports.

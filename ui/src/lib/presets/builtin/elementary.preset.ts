@@ -16,6 +16,7 @@ core.render(lpf, lpf)
 recv(freq => setCutoffFreq({value: freq}))`;
 
 const createRatePreset = (name: string) => `setPortCount(1)
+noAudioInput()
 setTitle('${name}~')
 
 let [rate, setRate] = core.createRef("const", {
@@ -33,10 +34,20 @@ export const ELEMENTARY_PRESETS = {
   },
   'phasor.elem': {
     type: 'elem~',
-    data: { code: createRatePreset('phasor'), messageInletCount: 1, title: 'phasor~' }
+    data: {
+      code: createRatePreset('phasor'),
+      messageInletCount: 1,
+      title: 'phasor~',
+      showAudioInput: false
+    }
   },
   'train.elem': {
     type: 'elem~',
-    data: { code: createRatePreset('train'), messageInletCount: 1, title: 'train~' }
+    data: {
+      code: createRatePreset('train'),
+      messageInletCount: 1,
+      title: 'train~',
+      showAudioInput: false
+    }
   }
 };

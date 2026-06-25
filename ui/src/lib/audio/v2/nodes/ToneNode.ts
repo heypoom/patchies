@@ -14,6 +14,7 @@ type RecvCallback = (message: unknown, meta: unknown) => void;
 
 type OnSetPortCount = (inletCount: number, outletCount: number) => void;
 type OnSetTitle = (title: string) => void;
+type OnSetAudioInputVisible = (visible: boolean) => void;
 
 /**
  * ToneNode implements the tone~ audio node.
@@ -60,6 +61,7 @@ export class ToneNode implements AudioNodeV2 {
 
   public onSetPortCount: OnSetPortCount = () => {};
   public onSetTitle: OnSetTitle = () => {};
+  public onSetAudioInputVisible: OnSetAudioInputVisible = () => {};
 
   // Custom console for routing output to VirtualConsole
   private customConsole;
@@ -177,6 +179,7 @@ export class ToneNode implements AudioNodeV2 {
       this.messageInletCount = 0;
       this.messageOutletCount = 0;
       this.recvCallback = null;
+      this.onSetAudioInputVisible(true);
 
       const jsRunner = JSRunner.getInstance();
 
@@ -194,6 +197,7 @@ export class ToneNode implements AudioNodeV2 {
         Tone,
         outputNode: this.audioNode,
         inputNode: this.inputNode,
+        noAudioInput: () => this.onSetAudioInputVisible(false),
         ...(settingsManager ? { settings: createSettingsAPI(settingsManager) } : {})
       };
 

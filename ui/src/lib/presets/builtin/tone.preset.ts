@@ -1,4 +1,5 @@
 const POLY_SYNTH_MIDI_JS = `setPortCount(1)
+noAudioInput()
 setTitle('synth~')
 
 const reverb = new Tone.Reverb({
@@ -93,7 +94,12 @@ onCleanup(() => {
 export const TONE_JS_PRESETS = {
   'poly-synth-midi.tone': {
     type: 'tone~',
-    data: { code: POLY_SYNTH_MIDI_JS, messageInletCount: 1, title: 'synth~' }
+    data: {
+      code: POLY_SYNTH_MIDI_JS,
+      messageInletCount: 1,
+      title: 'synth~',
+      showAudioInput: false
+    }
   },
   'tone>': {
     type: 'tone~',

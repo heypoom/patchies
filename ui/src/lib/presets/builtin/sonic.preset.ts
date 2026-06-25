@@ -5,7 +5,8 @@ const createPreset = (synthdef: string) => ({
   data: {
     code: synthdefTemplate(synthdef),
     title: synthdef,
-    messageInletCount: 1
+    messageInletCount: 1,
+    showAudioInput: false
   }
 });
 
@@ -17,6 +18,7 @@ export const SONIC_PRESETS = {
     type: 'sonic~',
     data: {
       code: `setPortCount(1)
+noAudioInput()
 setTitle('sonic-sample-loop')
 
 // Track loading state
@@ -37,13 +39,15 @@ recv(msg => {
   }
 })`,
       messageInletCount: 1,
-      title: 'sonic-sample-loop'
+      title: 'sonic-sample-loop',
+      showAudioInput: false
     }
   },
   'sonic-multi-synth': {
     type: 'sonic~',
     data: {
       code: `setPortCount(1);
+noAudioInput();
 setTitle('sonic-multi-synth');
 
 const synths = ['sonic-pi-beep', 'sonic-pi-prophet', 'sonic-pi-saw'];
@@ -87,7 +91,8 @@ onCleanup(() => {
   activeNotes.clear();
 });`,
       messageInletCount: 1,
-      title: 'sonic-multi-synth'
+      title: 'sonic-multi-synth',
+      showAudioInput: false
     }
   }
 };

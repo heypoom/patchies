@@ -13,6 +13,7 @@
   import { SettingsManager } from '$lib/settings';
   import { createKVStore } from '$lib/storage';
   import type { SettingsSchema } from '$lib/settings';
+  import { hasNoAudioInputDirective } from '$lib/audio/visible-audio-inputs';
 
   // Get node data from XY Flow - nodes receive their data as props
   let {
@@ -25,6 +26,7 @@
       code: string;
       messageInletCount?: number;
       messageOutletCount?: number;
+      showAudioInput?: boolean;
       title?: string;
       executeCode?: number;
       showConsole?: boolean;
@@ -86,7 +88,10 @@
   const updateAudioCode = (code: string) => audioService.send(nodeId, 'code', code);
 
   function handleCodeChange(newCode: string) {
-    updateNodeData(nodeId, { code: newCode });
+    updateNodeData(nodeId, {
+      code: newCode,
+      showAudioInput: !hasNoAudioInputDirective(newCode)
+    });
 
     setTimeout(() => {
       const elemNode = audioService.getNodeById(nodeId) as ElementaryNode | undefined;
@@ -105,6 +110,13 @@
       elemNode.onSetTitle = (title: string) => {
         updateNodeData(nodeId, { title });
       };
+
+      elemNode.onSetAudioInputVisible = (showAudioInput: boolean) => {
+        updateNodeData(nodeId, { showAudioInput });
+        updateNodeInternals(nodeId);
+      };
+
+      updateNodeInternals(nodeId);
     }, 10);
   }
 

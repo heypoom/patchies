@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CirclePlus, Delete, Expand, Replace, Settings } from '@lucide/svelte/icons';
-  import { useSvelteFlow } from '@xyflow/svelte';
+  import { useSvelteFlow, useUpdateNodeInternals } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import TypedHandle from '$lib/components/TypedHandle.svelte';
   import { chuckSchema } from '$lib/objects/schemas/chuck';
@@ -15,6 +15,7 @@
   import { useAudioOutletWarning } from '$lib/composables/useAudioOutletWarning';
   import ChuckSettings from '$lib/components/settings/ChuckSettings.svelte';
   import * as Tooltip from '$lib/components/ui/tooltip';
+  import { hasChuckAdcReference } from '$lib/audio/visible-audio-inputs';
 
   let contentContainer: HTMLDivElement | null = null;
   let contentWidth = $state(100);
@@ -37,6 +38,7 @@
   let audioService = AudioService.getInstance();
 
   const { updateNodeData } = useSvelteFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
   const { warnIfNoOutletConnection } = useAudioOutletWarning(nodeId);
 
   const handleMessage: MessageCallbackFn = (message) => {
@@ -100,7 +102,10 @@
     ])
   ];
 
-  const handleExpressionChange = (newExpr: string) => updateNodeData(nodeId, { expr: newExpr });
+  const handleExpressionChange = (newExpr: string) => {
+    updateNodeData(nodeId, { expr: newExpr });
+    setTimeout(() => updateNodeInternals(nodeId), 5);
+  };
 
   const handleAddShred = () => {
     warnIfNoOutletConnection();
@@ -165,26 +170,29 @@
   });
 
   const isReplaceDisabled = $derived(!data.expr.trim() || shreds.length === 0);
+  const showAudioInput = $derived(hasChuckAdcReference(data.expr ?? ''));
+  const inletCount = $derived((showAudioInput ? 1 : 0) + 1);
 </script>
 
 {#snippet chuckHandles()}
-  <!-- Audio input (accessible via adc in ChucK code) -->
-  <TypedHandle
-    port="inlet"
-    spec={chuckSchema.inlets[0].handle!}
-    title="Audio Input (accessible via adc in ChucK code)"
-    total={2}
-    index={0}
-    {nodeId}
-  />
+  {#if showAudioInput}
+    <TypedHandle
+      port="inlet"
+      spec={chuckSchema.inlets[0].handle!}
+      title="Audio Input (accessible via adc in ChucK code)"
+      total={inletCount}
+      index={0}
+      {nodeId}
+    />
+  {/if}
 
   <!-- Control inlet for messages and code -->
   <TypedHandle
     port="inlet"
     spec={chuckSchema.inlets[1].handle!}
     title="Control Input (code, bang, stop)"
-    total={2}
-    index={1}
+    total={inletCount}
+    index={showAudioInput ? 1 : 0}
     {nodeId}
   />
 {/snippet}

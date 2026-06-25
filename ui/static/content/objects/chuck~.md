@@ -50,6 +50,9 @@ ChucK accepts audio input for processing and analysis:
 adc => PitShift p => dac;
 ```
 
+The blue audio inlet appears when your code references `adc`. Synth-only ChucK
+code hides the inlet to keep the node compact.
+
 ## Global Variables
 
 The [demo patch](/?id=2nyuznzjgbp2j0a) shows how global
