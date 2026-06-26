@@ -89,6 +89,7 @@ export class SamplerNode implements AudioNodeV2 {
   private mediaRecorder: MediaRecorder | null = null;
   private sourceNode: AudioBufferSourceNode | null = null;
   private scheduledSources = new Set<AudioBufferSourceNode>();
+  private activeSources = new Set<AudioBufferSourceNode>();
   private sourceGains = new WeakMap<AudioBufferSourceNode, GainNode>();
   private noteSources = new Map<number, Set<AudioBufferSourceNode>>();
   private loopStart: number = 0;
@@ -169,6 +170,12 @@ export class SamplerNode implements AudioNodeV2 {
             source.loopStart = value;
           }
         }
+
+        for (const source of this.activeSources) {
+          if (source.loop) {
+            source.loopStart = value;
+          }
+        }
       })
       .with({ type: 'setEnd', value: P.number }, ({ value }) => {
         this.loopEnd = value;
@@ -178,6 +185,12 @@ export class SamplerNode implements AudioNodeV2 {
         }
 
         for (const source of this.scheduledSources) {
+          if (source.loop) {
+            source.loopEnd = value;
+          }
+        }
+
+        for (const source of this.activeSources) {
           if (source.loop) {
             source.loopEnd = value;
           }
@@ -193,6 +206,10 @@ export class SamplerNode implements AudioNodeV2 {
         for (const source of this.scheduledSources) {
           source.playbackRate.value = value;
         }
+
+        for (const source of this.activeSources) {
+          source.playbackRate.value = value;
+        }
       })
       .with({ type: 'setDetune', value: P.number }, ({ value }) => {
         this.detune = value;
@@ -202,6 +219,10 @@ export class SamplerNode implements AudioNodeV2 {
         }
 
         for (const source of this.scheduledSources) {
+          source.detune.value = value;
+        }
+
+        for (const source of this.activeSources) {
           source.detune.value = value;
         }
       })
@@ -268,11 +289,13 @@ export class SamplerNode implements AudioNodeV2 {
       this.scheduledSources.add(newSource);
     } else {
       this.sourceNode = newSource;
+      this.activeSources.add(newSource);
     }
 
     newSource.onended = () => {
       this.disconnectSource(newSource);
       this.scheduledSources.delete(newSource);
+      this.activeSources.delete(newSource);
 
       if (this.sourceNode === newSource) {
         this.sourceNode = null;
@@ -328,13 +351,15 @@ export class SamplerNode implements AudioNodeV2 {
     if (!sources) return;
 
     const time = getNonNegativeNumber(message.time);
+    const isFutureStop = time !== undefined && time > this.audioContext.currentTime;
 
-    for (const source of sources) {
+    for (const source of [...sources]) {
       this.stopSource(source, time);
-      this.scheduledSources.delete(source);
     }
 
-    this.noteSources.delete(note);
+    if (!isFutureStop) {
+      this.noteSources.delete(note);
+    }
   }
 
   private async handleRecord(): Promise<void> {
@@ -404,10 +429,15 @@ export class SamplerNode implements AudioNodeV2 {
       this.sourceNode = newSource;
     }
 
+    if (!isFutureScheduled) {
+      this.activeSources.add(newSource);
+    }
+
     // Clean up when playback ends naturally
     newSource.onended = () => {
       this.disconnectSource(newSource);
       this.scheduledSources.delete(newSource);
+      this.activeSources.delete(newSource);
       this.removeSourceFromNotes(newSource);
 
       if (this.sourceNode === newSource) {
@@ -443,6 +473,8 @@ export class SamplerNode implements AudioNodeV2 {
 
       source.stop();
       this.disconnectSource(source);
+      this.scheduledSources.delete(source);
+      this.activeSources.delete(source);
       this.removeSourceFromNotes(source);
     } catch {
       // Ignore errors if node already stopped
@@ -459,22 +491,27 @@ export class SamplerNode implements AudioNodeV2 {
   private stopPlayback(): void {
     this.stopImmediatePlayback();
 
-    const noteSources = new Set<AudioBufferSourceNode>();
-    for (const sources of this.noteSources.values()) {
-      for (const source of sources) {
-        noteSources.add(source);
+    const sources = new Set<AudioBufferSourceNode>();
+    for (const noteSet of this.noteSources.values()) {
+      for (const source of noteSet) {
+        sources.add(source);
       }
     }
 
-    for (const source of noteSources) {
-      this.stopSource(source);
+    for (const source of this.activeSources) {
+      sources.add(source);
     }
 
     for (const source of this.scheduledSources) {
+      sources.add(source);
+    }
+
+    for (const source of sources) {
       this.stopSource(source);
     }
 
     this.scheduledSources.clear();
+    this.activeSources.clear();
     this.noteSources.clear();
   }
 

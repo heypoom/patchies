@@ -2531,6 +2531,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
               type: Type.Literal('noteOn'),
               note: Type.Number(),
               velocity: Type.Number(),
+              time: Type.Optional(Type.Number()),
               channel: Type.Optional(Type.Number())
             }),
             description: 'Trigger pad by MIDI note'
@@ -2540,6 +2541,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
               type: Type.Literal('noteOff'),
               note: Type.Number(),
               velocity: Type.Optional(Type.Number()),
+              time: Type.Optional(Type.Number()),
               channel: Type.Optional(Type.Number())
             }),
             description: 'Release pad'
@@ -4147,6 +4149,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
               type: Type.Literal('noteOn'),
               note: Type.Number(),
               velocity: Type.Number(),
+              time: Type.Optional(Type.Number()),
               channel: Type.Optional(Type.Number())
             }),
             description: 'Convert MIDI note on'
@@ -4156,6 +4159,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
               type: Type.Literal('noteOff'),
               note: Type.Number(),
               velocity: Type.Optional(Type.Number()),
+              time: Type.Optional(Type.Number()),
               channel: Type.Optional(Type.Number())
             }),
             description: 'Convert MIDI note off'

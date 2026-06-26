@@ -87,6 +87,7 @@
     VfsPathRenamedEvent,
     CodeCommitEvent,
     NodeDataCommitEvent,
+    NodeDataBatchCommitEvent,
     ObjectDataCommitEvent
   } from '$lib/eventbus/events';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
@@ -211,6 +212,21 @@
       eventBus.dispatch({ type: 'nodeSetPaused', nodeId: e.nodeId, paused: true });
       pausedByViewport.add(e.nodeId);
     }
+  };
+
+  const handleNodeDataBatchCommit = (e: NodeDataBatchCommitEvent) => {
+    const commands = e.changes.map(
+      (change) =>
+        new UpdateNodeDataCommand(
+          e.nodeId,
+          change.dataKey,
+          change.oldValue,
+          change.newValue,
+          canvasAccessors
+        )
+    );
+
+    historyManager.record(new BatchCommand(commands, e.description));
   };
 
   // Keyboard shortcut manager (created lazily in onMount to access component functions)
@@ -830,6 +846,7 @@
     eventBus.addEventListener('objectDataCommit', handleObjectDataCommit);
     eventBus.addEventListener('codeCommit', handleCodeCommit);
     eventBus.addEventListener('nodeDataCommit', handleNodeDataCommit);
+    eventBus.addEventListener('nodeDataBatchCommit', handleNodeDataBatchCommit);
 
     autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
@@ -861,6 +878,7 @@
     eventBus.removeEventListener('objectDataCommit', handleObjectDataCommit);
     eventBus.removeEventListener('codeCommit', handleCodeCommit);
     eventBus.removeEventListener('nodeDataCommit', handleNodeDataCommit);
+    eventBus.removeEventListener('nodeDataBatchCommit', handleNodeDataBatchCommit);
 
     // Clean up autosave interval
     if (autosaveInterval) {

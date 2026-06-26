@@ -453,7 +453,7 @@
   }
 
   function resetSettings() {
-    updateNodeData(node.id, {
+    const nextSettings = {
       ...node.data,
       loopStart: 0,
       loopEnd: recordingDuration,
@@ -462,7 +462,27 @@
       playbackRate: 1,
       detune: 0,
       noteOffMode: 'one-shot'
-    });
+    };
+
+    tracker.commitMany('Reset sampler settings', [
+      { dataKey: 'loopStart', oldValue: node.data.loopStart, newValue: nextSettings.loopStart },
+      { dataKey: 'loopEnd', oldValue: node.data.loopEnd, newValue: nextSettings.loopEnd },
+      { dataKey: 'loop', oldValue: node.data.loop, newValue: nextSettings.loop },
+      { dataKey: 'gain', oldValue: node.data.gain, newValue: nextSettings.gain },
+      {
+        dataKey: 'playbackRate',
+        oldValue: node.data.playbackRate,
+        newValue: nextSettings.playbackRate
+      },
+      { dataKey: 'detune', oldValue: node.data.detune, newValue: nextSettings.detune },
+      {
+        dataKey: 'noteOffMode',
+        oldValue: node.data.noteOffMode,
+        newValue: nextSettings.noteOffMode
+      }
+    ]);
+
+    updateNodeData(node.id, nextSettings);
 
     // Update AudioService
     audioService.send(node.id, 'message', { type: 'setStart', value: 0 });

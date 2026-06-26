@@ -192,6 +192,40 @@ describe('SamplerNode', () => {
     expect(source.stop).toHaveBeenCalledOnce();
   });
 
+  it('updates playback parameters on active note voices', () => {
+    const source = createFakeSource();
+    const audioContext = createFakeAudioContext([source]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'noteOn', note: 60, velocity: 127 });
+    node.send('message', { type: 'setPlaybackRate', value: 1.5 });
+    node.send('message', { type: 'setDetune', value: 1200 });
+
+    expect(source.playbackRate.value).toBe(1.5);
+    expect(source.detune.value).toBe(1200);
+  });
+
+  it('keeps future noteOff voices tracked until they end', () => {
+    const source = createFakeSource();
+    const audioContext = createFakeAudioContext([source]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'setNoteOffMode', value: 'held' });
+    node.send('message', { type: 'noteOn', note: 60, velocity: 127, time: 12.5 });
+    node.send('message', { type: 'noteOff', note: 60, time: 13 });
+    node.send('message', { type: 'setPlaybackRate', value: 1.5 });
+
+    expect(source.stop).toHaveBeenCalledWith(13);
+    expect(source.playbackRate.value).toBe(1.5);
+
+    source.onended?.();
+    node.send('message', { type: 'setPlaybackRate', value: 2 });
+
+    expect(source.playbackRate.value).toBe(1.5);
+  });
+
   it('schedules loop messages with time, offset, and duration', () => {
     const source = createFakeSource();
     const audioContext = createFakeAudioContext([source]);

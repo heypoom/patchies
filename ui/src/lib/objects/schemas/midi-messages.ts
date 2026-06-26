@@ -7,6 +7,7 @@ export const MidiNoteOn = Type.Object({
   type: Type.Literal('noteOn'),
   note: Type.Number(),
   velocity: Type.Number(),
+  time: Type.Optional(Type.Number()),
   channel: Type.Optional(Type.Number())
 });
 
@@ -14,6 +15,7 @@ export const MidiNoteOff = Type.Object({
   type: Type.Literal('noteOff'),
   note: Type.Number(),
   velocity: Type.Optional(Type.Number()),
+  time: Type.Optional(Type.Number()),
   channel: Type.Optional(Type.Number())
 });
 

@@ -31,7 +31,12 @@
     detuneTracker: ContinuousTracker;
   };
 
+  type PropsWithClass = Props & {
+    class?: string;
+  };
+
   let {
+    class: className = '',
     loopStart,
     loopEnd,
     recordingDuration,
@@ -55,10 +60,10 @@
     gainTracker,
     playbackRateTracker,
     detuneTracker
-  }: Props = $props();
+  }: PropsWithClass = $props();
 </script>
 
-<div class="relative">
+<div class={['relative', className]}>
   <div class="absolute -top-7 left-0 flex w-full justify-end gap-1">
     <button onclick={onReset} class="rounded p-1 hover:bg-zinc-700" title="Reset all settings">
       <RefreshCcw class="h-4 w-4 text-zinc-300" />
@@ -175,6 +180,7 @@
 
           <div class="flex flex-col gap-1">
             <button
+              aria-pressed={loopEnabled}
               class="flex cursor-pointer items-center gap-1.5 transition-colors"
               onclick={() => {
                 const oldValue = loopEnabled;
@@ -199,6 +205,7 @@
 
             <button
               type="button"
+              aria-pressed={noteOffMode === 'held'}
               class="flex cursor-pointer items-center gap-1.5 transition-colors"
               onclick={() => onNoteOffModeChange(noteOffMode === 'held' ? 'one-shot' : 'held')}
             >
