@@ -65,6 +65,7 @@ When a group is resized smaller, direct children whose centers are outside the r
 - Do not require command palette actions or keyboard shortcuts for grouping.
 - The visible frame and resize handles must overlap exactly.
 - Empty space inside a group behaves like empty canvas space for canvas insertion and selection clearing.
+- Drag-select gestures that start inside a group select objects inside the group without selecting the group frame itself.
 - Users select or drag a group by its border, resize handles, or title pill, not by the transparent interior.
 - The title pill follows the small `node-title-drag-handle` visual convention used by other visual nodes.
 - A settings button at the top-right opens predefined color swatches for the group frame. The settings panel opens outside the group frame so it does not cover grouped objects.

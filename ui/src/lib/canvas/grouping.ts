@@ -21,17 +21,13 @@ interface Rect {
   height: number;
 }
 
-function getNodeWidth(node: Node): number {
-  return node.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH;
-}
+const getNodeWidth = (node: Node): number =>
+  node.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH;
 
-function getNodeHeight(node: Node): number {
-  return node.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT;
-}
+const getNodeHeight = (node: Node): number =>
+  node.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT;
 
-function isGroupNode(node: Node): boolean {
-  return node.type === 'group';
-}
+const isGroupNode = (node: Node): boolean => node.type === 'group';
 
 function getAbsolutePosition(node: Node, nodeById: Map<string, Node>): { x: number; y: number } {
   if (!node.parentId) return node.position;
@@ -40,6 +36,7 @@ function getAbsolutePosition(node: Node, nodeById: Map<string, Node>): { x: numb
   if (!parent) return node.position;
 
   const parentPosition = getAbsolutePosition(parent, nodeById);
+
   return {
     x: parentPosition.x + node.position.x,
     y: parentPosition.y + node.position.y
@@ -48,6 +45,7 @@ function getAbsolutePosition(node: Node, nodeById: Map<string, Node>): { x: numb
 
 function getAbsoluteRect(node: Node, nodeById: Map<string, Node>): Rect {
   const position = getAbsolutePosition(node, nodeById);
+
   return {
     x: position.x,
     y: position.y,
@@ -56,25 +54,19 @@ function getAbsoluteRect(node: Node, nodeById: Map<string, Node>): Rect {
   };
 }
 
-function getCenter(rect: Rect): { x: number; y: number } {
-  return {
-    x: rect.x + rect.width / 2,
-    y: rect.y + rect.height / 2
-  };
-}
+const getCenter = (rect: Rect): { x: number; y: number } => ({
+  x: rect.x + rect.width / 2,
+  y: rect.y + rect.height / 2
+});
 
-function containsPoint(rect: Rect, point: { x: number; y: number }): boolean {
-  return (
-    point.x >= rect.x &&
-    point.x <= rect.x + rect.width &&
-    point.y >= rect.y &&
-    point.y <= rect.y + rect.height
-  );
-}
+const containsPoint = (rect: Rect, point: { x: number; y: number }): boolean =>
+  point.x >= rect.x &&
+  point.x <= rect.x + rect.width &&
+  point.y >= rect.y &&
+  point.y <= rect.y + rect.height;
 
-function samePosition(a: { x: number; y: number }, b: { x: number; y: number }): boolean {
-  return a.x === b.x && a.y === b.y;
-}
+const samePosition = (a: { x: number; y: number }, b: { x: number; y: number }): boolean =>
+  a.x === b.x && a.y === b.y;
 
 function orderParentsBeforeChildren(nodes: Node[]): Node[] {
   const childrenByParent = new Map<string, Node[]>();
@@ -105,7 +97,9 @@ function orderParentsBeforeChildren(nodes: Node[]): Node[] {
   }
 
   for (const node of nodes) {
-    if (!emitted.has(node.id)) ordered.push(node);
+    if (!emitted.has(node.id)) {
+      ordered.push(node);
+    }
   }
 
   return ordered;
@@ -129,6 +123,42 @@ function pickContainingGroup(
     .sort((a, b) => a.rect.width * a.rect.height - b.rect.width * b.rect.height)[0]?.id;
 }
 
+export function getVisualGroupIdsContainingPoint(
+  nodes: Node[],
+  point: { x: number; y: number }
+): string[] {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+
+  return nodes
+    .filter(isGroupNode)
+    .filter((node) => containsPoint(getAbsoluteRect(node, nodeById), point))
+    .map((node) => node.id);
+}
+
+export function clearVisualGroupSelections(
+  nodes: Node[],
+  groupIds: string[]
+): { nodes: Node[]; changed: boolean } {
+  if (groupIds.length === 0) {
+    return { nodes, changed: false };
+  }
+
+  const groupIdSet = new Set(groupIds);
+  let changed = false;
+
+  const nextNodes = nodes.map((node) => {
+    if (!node.selected || !groupIdSet.has(node.id) || !isGroupNode(node)) {
+      return node;
+    }
+
+    changed = true;
+
+    return { ...node, selected: false };
+  });
+
+  return { nodes: changed ? nextNodes : nodes, changed };
+}
+
 export function syncVisualGroupMembership(
   nodes: Node[],
   options: VisualGroupSyncOptions
@@ -145,13 +175,19 @@ export function syncVisualGroupMembership(
 
   for (const id of activeNodeIds) {
     const node = nodeById.get(id);
-    if (node && !isGroupNode(node)) candidateNodeIds.add(id);
+
+    if (node && !isGroupNode(node)) {
+      candidateNodeIds.add(id);
+    }
   }
 
   for (const groupId of activeGroupIds) {
     for (const node of nodes) {
       if (isGroupNode(node)) continue;
-      if (!node.parentId || node.parentId === groupId) candidateNodeIds.add(node.id);
+
+      if (!node.parentId || node.parentId === groupId) {
+        candidateNodeIds.add(node.id);
+      }
     }
   }
 
@@ -177,6 +213,7 @@ export function syncVisualGroupMembership(
       }
 
       changedNodeIds.push(node.id);
+
       return {
         ...node,
         parentId: nextParentId,
@@ -191,15 +228,10 @@ export function syncVisualGroupMembership(
     const { parentId, extent, ...rest } = node;
     void parentId;
     void extent;
+
     changedNodeIds.push(node.id);
 
-    return {
-      ...rest,
-      position: {
-        x: absoluteRect.x,
-        y: absoluteRect.y
-      }
-    };
+    return { ...rest, position: { x: absoluteRect.x, y: absoluteRect.y } };
   });
 
   return {

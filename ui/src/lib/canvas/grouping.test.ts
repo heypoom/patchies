@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import type { Node } from '@xyflow/svelte';
 
-import { syncVisualGroupMembership } from './grouping';
+import {
+  clearVisualGroupSelections,
+  getVisualGroupIdsContainingPoint,
+  syncVisualGroupMembership
+} from './grouping';
 
 function node(
   id: string,
@@ -127,5 +131,46 @@ describe('syncVisualGroupMembership', () => {
 
     expect(result.changed).toBe(false);
     expect(result.nodes.find((n) => n.id === 'a')?.parentId).toBeUndefined();
+  });
+});
+
+describe('getVisualGroupIdsContainingPoint', () => {
+  test('finds a group whose frame contains a selection start point', () => {
+    const nodes = [
+      group('group-1', { x: 100, y: 100 }, { width: 200, height: 160 }),
+      group('group-2', { x: 400, y: 100 }, { width: 200, height: 160 })
+    ];
+
+    expect(getVisualGroupIdsContainingPoint(nodes, { x: 150, y: 140 })).toEqual(['group-1']);
+  });
+
+  test('does not match points outside group frames', () => {
+    expect(
+      getVisualGroupIdsContainingPoint([group('group-1', { x: 100, y: 100 })], { x: 20, y: 20 })
+    ).toEqual([]);
+  });
+});
+
+describe('clearVisualGroupSelections', () => {
+  test('clears selection on groups that contained the selection start point', () => {
+    const nodes = [
+      group('group-1', { x: 100, y: 100 }, { selected: true }),
+      node('child', 'js', { x: 20, y: 20 }, { parentId: 'group-1', selected: true })
+    ];
+
+    const result = clearVisualGroupSelections(nodes, ['group-1']);
+
+    expect(result.changed).toBe(true);
+    expect(result.nodes.find((item) => item.id === 'group-1')?.selected).toBe(false);
+    expect(result.nodes.find((item) => item.id === 'child')?.selected).toBe(true);
+  });
+
+  test('leaves groups selected when they did not contain the selection start point', () => {
+    const nodes = [group('group-1', { x: 100, y: 100 }, { selected: true })];
+
+    expect(clearVisualGroupSelections(nodes, ['group-2'])).toEqual({
+      nodes,
+      changed: false
+    });
   });
 });

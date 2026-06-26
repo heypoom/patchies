@@ -98,7 +98,11 @@
   import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
   import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
-  import { syncVisualGroupMembership } from '$lib/canvas/grouping';
+  import {
+    clearVisualGroupSelections,
+    getVisualGroupIdsContainingPoint,
+    syncVisualGroupMembership
+  } from '$lib/canvas/grouping';
   import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
   import { useSecondaryOutputCodeOverlay } from '$lib/canvas/use-secondary-output-code-overlay.svelte';
 
@@ -365,6 +369,7 @@
 
   let selectedNodeIds = $state.raw<string[]>([]);
   let selectedEdgeIds = $state.raw<string[]>([]);
+  let visualGroupSelectionStartIds = $state.raw<string[]>([]);
 
   // Track node positions at drag start for undo/redo
   let dragStartNodes: Node[] | null = null;
@@ -395,6 +400,20 @@
         node.measured?.height !== next.measured?.height
       );
     });
+  }
+
+  function handleSelectionStart(event: PointerEvent) {
+    const point = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+    visualGroupSelectionStartIds = getVisualGroupIdsContainingPoint(nodes, point);
+  }
+
+  function handleSelectionEnd() {
+    const result = clearVisualGroupSelections(nodes, visualGroupSelectionStartIds);
+    visualGroupSelectionStartIds = [];
+
+    if (result.changed) {
+      nodes = result.nodes;
+    }
   }
 
   let isLoadingFromUrl = $state(false);
@@ -1566,6 +1585,8 @@
         }}
         onconnectstart={(event, params) => handleConnectStart(params)}
         onconnectend={handleConnectEnd}
+        onselectionstart={handleSelectionStart}
+        onselectionend={handleSelectionEnd}
         onclickconnectstart={(event, params) => handleConnectStart(params)}
         onclickconnectend={(event, connectionState) => {
           handleConnectEnd();
