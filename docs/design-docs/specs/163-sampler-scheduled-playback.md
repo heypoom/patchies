@@ -1,13 +1,10 @@
 # 163. sampler~ scheduled playback
 
-Allow `sampler~` to play buffers at a target Web Audio time by accepting timed
-`bang` messages and optional `time`, `offset`, and `duration` fields on the
-`play` message:
+Allow `sampler~` to play buffers at a target Web Audio time by accepting
+`bang` messages with optional playback fields:
 
 ```ts
-{ type: 'bang', time?: number }
-{ type: 'play', time?: number, offset?: number, duration?: number, gain?: number }
-{ type: 'set', time: number, value: number }
+{ type: 'bang', time?: number, offset?: number, duration?: number, value?: number }
 { type: 'noteOn', note: number, velocity: number, time?: number }
 { type: 'noteOff', note: number, time?: number }
 { type: 'setGain', value: number }
@@ -17,7 +14,7 @@ number // play immediately with gain multiplier
 
 ## Behavior
 
-- Bare `{ type: 'bang' }` and `{ type: 'play' }` keep the current behavior.
+- Bare `{ type: 'bang' }` keeps the current one-shot playback behavior.
 - Bare non-negative numbers trigger playback with per-voice gain: `0` is silent,
   `1` is normal amplitude, and `2` is twice the amplitude.
 - `noteOn` triggers pitched playback. Note `60` plays the sample at original
@@ -34,20 +31,20 @@ number // play immediately with gain multiplier
 - `offset` is the position in the sample buffer to start playback from, in
   seconds.
 - `duration` is the amount of source-buffer audio to play, in seconds.
-- `gain` is a per-playback amplitude multiplier.
-- Scheduled `set` messages trigger playback with `value` as per-playback gain.
-  This lets sequencer value output drive sampler velocity without a mapper.
-  Untimed `set` messages are ignored by `sampler~`.
+- `value` is a per-playback amplitude multiplier. This lets sequencer value
+  output drive sampler velocity without a mapper.
+- `sampler~` does not treat `set` messages as triggers; `set` remains reserved
+  for value-setting semantics.
 - `setGain` sets the sampler's built-in output gain. It scales all playback
   voices after per-trigger gain, number gain, and MIDI velocity gain.
 - Missing `offset`/`duration` fall back to the sampler's configured start/end
-  points. Missing `gain` uses normal amplitude.
+  points. Missing `value` uses normal amplitude.
 - Negative values are ignored instead of being passed to Web Audio, because
   `AudioBufferSourceNode.start()` throws for negative time parameters.
 
 ## Implementation
 
-- Update the V2 `SamplerNode` bang/play handler to read the optional fields and
+- Update the V2 `SamplerNode` bang handler to read the optional fields and
   pass them to `AudioBufferSourceNode.start(time, offset, duration)`.
 - Route each playback through a per-voice gain node so number-triggered playback
   can scale amplitude without changing other active voices.

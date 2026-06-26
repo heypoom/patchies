@@ -19,39 +19,37 @@ Drop an audio file into the sampler to load it.
 
 ## Playback Messages
 
-Send `{ type: "bang" }` or `{ type: "play" }` to play immediately. For
-sample-accurate triggering from sequencers and clocks, send a timed bang:
+Send `{ type: "bang" }` to play immediately. For sample-accurate triggering
+from sequencers and clocks, include `time`:
 
 ```js
 { type: "bang", time: audioContextTime }
 ```
 
-For explicit sample playback control, `play` also accepts optional Web Audio
-timing and gain fields:
+`bang` also accepts optional playback fields:
 
 ```js
-{ type: "play", time: audioContextTime, offset: 0, duration: 0.25, gain: 0.5 }
+{ type: "bang", time: audioContextTime, offset: 0, duration: 0.25, value: 0.5 }
 ```
 
 - `time` schedules playback at an absolute `AudioContext.currentTime` timestamp
 - `offset` starts from a position in the sample buffer, in seconds
 - `duration` plays a specific amount of source-buffer audio, in seconds
-- `gain` scales this playback voice's amplitude
+- `value` scales this playback voice's amplitude
 
 All four fields are optional. When omitted, playback uses the sampler's current
 start/end settings and normal gain.
 
-`sampler~` also treats scheduled `set` messages as playback triggers with
-`value` as gain. This matches the sequencer's audio lookahead value output:
+Sequencer value output with **Audio lookahead** sends timed `bang` messages
+with `value`, so it can drive sampler velocity directly:
 
 ```js
-{ type: "set", time: audioContextTime, value: 0.75 }
+{ type: "bang", time: audioContextTime, value: 0.75 }
 ```
 
-Untimed `set` messages are ignored.
-
-Use `setGain` to set the sampler's built-in output level. This scales all
-voices after per-trigger gain and MIDI velocity:
+`set` messages are not playback triggers. Use `setGain` to set the sampler's
+built-in output level. This scales all voices after per-trigger value and MIDI
+velocity:
 
 ```js
 { type: "setGain", value: 0.75 }

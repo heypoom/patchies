@@ -19,18 +19,22 @@ outletMode?: 'multi' | 'single';  // default: 'multi'
 ### Output modes per outlet mode
 
 **Multi outlet** (`outletMode: 'multi'`, default): existing behavior unchanged.
+
 - bang: `{type: 'bang'}`
 - value: velocity number (0–1)
-- audio: `{type: 'set', time, value}`
+- audio value: `{type: 'bang', time, value}`
 
 **Single outlet** (`outletMode: 'single'`): new output format, one outlet.
+
 - **index**: sends track index as a number (0–N)
 - **midi**: sends `{type: 'noteOn', note: BASE_NOTE + trackIndex, index: trackIndex, velocity: 0–127}`
-- **audio**: sends `{type: 'noteOn', note: BASE_NOTE + trackIndex, index: trackIndex, velocity: 0–127, time}`
+- **audio index**: sends `{type: 'bang', index: trackIndex, value, time}`
+- **audio midi**: sends `{type: 'noteOn', note: BASE_NOTE + trackIndex, index: trackIndex, velocity: 0–127, time}`
 
 `note` uses GM drum mapping (BASE_NOTE = 36, same as pads~). `velocity` is standard MIDI 0–127 (converted from internal 0–1). `index` is the raw track index.
 
 The `outputMode` field changes meaning based on `outletMode`:
+
 - When `multi`: `'bang' | 'value' | 'audio'` (existing)
 - When `single`: `'index' | 'midi' | 'audio'`
 
@@ -63,7 +67,7 @@ When a step fires in single-outlet mode, for each active track at that step, a m
 // index mode
 fireAtStep(step, time) → send(trackIndex, { to: 0 })
 
-// midi mode  
+// midi mode
 fireAtStep(step, time) → send({type: 'noteOn', note: BASE_NOTE + trackIndex, index: trackIndex, velocity: round(v * 127)}, { to: 0 })
 
 // audio mode

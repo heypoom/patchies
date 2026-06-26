@@ -52,10 +52,10 @@ describe('sequencer output payloads', () => {
         velocity: 0.75,
         time: 12.5
       })
-    ).toEqual({ type: 'set', time: 12.5, value: 0.75 });
+    ).toEqual({ type: 'bang', time: 12.5, value: 0.75 });
   });
 
-  it('adds scheduled set metadata to single index output when audio lookahead is enabled', () => {
+  it('adds scheduled bang metadata to single index output when audio lookahead is enabled', () => {
     const options = {
       outletMode: 'single' as const,
       outputMode: 'index' as const,
@@ -66,7 +66,7 @@ describe('sequencer output payloads', () => {
 
     expect(createSequencerPayload({ ...options, audioRate: false })).toBe(2);
     expect(createSequencerPayload({ ...options, audioRate: true })).toEqual({
-      type: 'set',
+      type: 'bang',
       index: 2,
       value: 0.75,
       time: 12.5

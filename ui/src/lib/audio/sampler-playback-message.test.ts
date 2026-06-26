@@ -24,7 +24,7 @@ describe('createSamplerPlaybackMessage', () => {
   it('preserves scheduled trigger fields when loop playback is enabled', () => {
     expect(
       createSamplerPlaybackMessage(
-        { type: 'play', time: 12.5, offset: 0.25, duration: 1.5, gain: 0.75 },
+        { type: 'bang', time: 12.5, offset: 0.25, duration: 1.5, value: 0.75 },
         { hasRecording: true, loopEnabled: true, loopStart: 0.1, loopEnd: 0.9 }
       )
     ).toEqual({
@@ -34,7 +34,7 @@ describe('createSamplerPlaybackMessage', () => {
       time: 12.5,
       offset: 0.25,
       duration: 1.5,
-      gain: 0.75
+      value: 0.75
     });
   });
 });

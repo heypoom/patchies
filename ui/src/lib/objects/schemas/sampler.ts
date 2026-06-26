@@ -3,22 +3,14 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg, sym } from './helpers';
-import { Bang, Stop, LoadBySrc, NoteOn, NoteOff, messages } from './common';
+import { Stop, LoadBySrc, NoteOn, NoteOff, messages } from './common';
 
 // Sampler-specific message schemas
-const Play = sym('play');
-const BangScheduled = msg('bang', { time: Type.Number() });
-
-const PlayScheduled = msg('play', {
+const BangTrigger = msg('bang', {
   time: Type.Optional(Type.Number()),
+  value: Type.Optional(Type.Number({ minimum: 0 })),
   offset: Type.Optional(Type.Number()),
-  duration: Type.Optional(Type.Number()),
-  gain: Type.Optional(Type.Number({ minimum: 0 }))
-});
-
-const SetScheduled = msg('set', {
-  time: Type.Number(),
-  value: Type.Number({ minimum: 0 })
+  duration: Type.Optional(Type.Number())
 });
 
 const Record = sym('record');
@@ -65,10 +57,7 @@ const Float32ArraySamples = Type.Unsafe<Float32Array>({ type: 'Float32Array' });
 /** Pre-wrapped matchers for use with ts-pattern */
 export const samplerMessages = {
   ...messages,
-  bangScheduled: schema(BangScheduled),
-  play: schema(Play),
-  playScheduled: schema(PlayScheduled),
-  setScheduled: schema(SetScheduled),
+  bang: schema(BangTrigger),
   record: schema(Record),
   end: schema(End),
   loop: schema(Loop),
@@ -109,12 +98,8 @@ export const samplerSchema: ObjectSchema = {
       handle: { handleType: 'message' },
       messages: [
         {
-          schema: Bang,
-          description: 'Play the sample'
-        },
-        {
-          schema: BangScheduled,
-          description: 'Schedule playback of the recorded sample'
+          schema: BangTrigger,
+          description: 'Trigger sample playback with optional time, gain, offset, and duration'
         },
         {
           schema: Type.Number({ minimum: 0 }),
@@ -129,17 +114,8 @@ export const samplerSchema: ObjectSchema = {
           description: 'Stop active sampler voices when Note Off mode is held'
         },
         {
-          schema: PlayScheduled,
-          description:
-            'Play the sample with optional gain, audio time, buffer offset, duration (seconds)'
-        },
-        {
           schema: Stop,
           description: 'Stop playback'
-        },
-        {
-          schema: SetScheduled,
-          description: 'Schedule playback with gain'
         },
         {
           schema: Record,

@@ -14,9 +14,9 @@ export type SamplerNoteOffMessage = {
 };
 
 type SamplerNotePlayMessage = {
-  type: 'play';
+  type: 'bang';
   time?: unknown;
-  gain: number;
+  value: number;
   playbackRate: number;
   replaceImmediate: false;
 };
@@ -70,9 +70,9 @@ export class SamplerNoteVoiceManager {
 
     const playbackRateMultiplier = noteToPlaybackRate(note);
     const source = this.play({
-      type: 'play',
+      type: 'bang',
       time: message.time,
-      gain: velocity / 127,
+      value: velocity / 127,
       playbackRate: this.getBasePlaybackRate() * playbackRateMultiplier,
       replaceImmediate: false
     });

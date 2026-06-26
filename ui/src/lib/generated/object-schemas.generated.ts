@@ -3074,12 +3074,12 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         id: 'message',
         type: 'message',
         description:
-          'Control messages: record, play, stop, loop, loopOff, setStart, setEnd, playbackRate, detune. Also accepts Float32Array directly to set buffer.',
+          'Control messages: record, bang, stop, loop, loopOff, setStart, setEnd, playbackRate, detune. Also accepts Float32Array directly to set buffer.',
         messages: [
           {
             schema: Type.Any(),
             description:
-              'Control messages: record, play, stop, loop, loopOff, setStart, setEnd, playbackRate, detune. Also accepts Float32Array directly to set buffer.'
+              'Control messages: record, bang, stop, loop, loopOff, setStart, setEnd, playbackRate, detune. Also accepts Float32Array directly to set buffer.'
           }
         ],
         handle: { handleType: 'message', handleId: 0 }

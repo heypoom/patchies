@@ -77,7 +77,7 @@ describe('SamplerNode', () => {
     expect(node.audioNode.gain.value).toBe(0.25);
   });
 
-  it('plays scheduled set messages as gain-scaled triggers', () => {
+  it('plays bang value messages as gain-scaled triggers', () => {
     const source = createFakeSource();
     const outputGain = createFakeGain();
     const voiceGain = createFakeGain();
@@ -85,24 +85,24 @@ describe('SamplerNode', () => {
     const node = new SamplerNode('sampler-1', audioContext);
 
     node.audioBuffer = { duration: 4 } as AudioBuffer;
-    node.send('message', { type: 'set', time: 12.5, value: 0.75 });
+    node.send('message', { type: 'bang', time: 12.5, value: 0.75 });
 
     expect(voiceGain.gain.value).toBe(0.75);
     expect(source.start).toHaveBeenCalledWith(12.5, 0, undefined);
   });
 
-  it('ignores scheduled set messages with invalid gain', () => {
+  it('ignores bang messages with invalid value gain', () => {
     const source = createFakeSource();
     const audioContext = createFakeAudioContext([source]);
     const node = new SamplerNode('sampler-1', audioContext);
 
     node.audioBuffer = { duration: 4 } as AudioBuffer;
-    node.send('message', { type: 'set', time: 12.5, value: -1 });
+    node.send('message', { type: 'bang', time: 12.5, value: -1 });
 
     expect(source.start).not.toHaveBeenCalled();
   });
 
-  it('ignores untimed set messages', () => {
+  it('ignores scheduled set messages', () => {
     const source = createFakeSource();
     const audioContext = createFakeAudioContext([source]);
     const node = new SamplerNode('sampler-1', audioContext);
@@ -124,7 +124,7 @@ describe('SamplerNode', () => {
     expect(source.start).toHaveBeenCalledWith(12.5, 0, undefined);
   });
 
-  it('schedules play messages with time, offset, duration, and gain', () => {
+  it('schedules bang messages with time, offset, duration, and value gain', () => {
     const source = createFakeSource();
     const outputGain = createFakeGain();
     const voiceGain = createFakeGain();
@@ -132,7 +132,7 @@ describe('SamplerNode', () => {
     const node = new SamplerNode('sampler-1', audioContext);
 
     node.audioBuffer = { duration: 4 } as AudioBuffer;
-    node.send('message', { type: 'play', time: 12.5, offset: 0.25, duration: 1.5, gain: 0.5 });
+    node.send('message', { type: 'bang', time: 12.5, offset: 0.25, duration: 1.5, value: 0.5 });
 
     expect(voiceGain.gain.value).toBe(0.5);
     expect(source.start).toHaveBeenCalledWith(12.5, 0.25, 1.5);

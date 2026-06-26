@@ -170,7 +170,7 @@
     }
 
     if (typeof message === 'number' && Number.isFinite(message) && message >= 0) {
-      playRecording({ type: 'play', gain: message });
+      playRecording({ type: 'bang', value: message });
       return;
     }
 
@@ -178,7 +178,6 @@
       .with(samplerMessages.record, () => startRecording())
       .with(samplerMessages.end, () => stopRecording())
       .with(samplerMessages.bang, (msg) => playRecording(msg))
-      .with(samplerMessages.play, (msg) => playRecording(msg))
       .with(samplerMessages.stop, () => stopPlayback())
       .with(samplerMessages.loopWithOptionalPoints, (msg) => {
         updateNodeData(node.id, {
@@ -333,7 +332,7 @@
     console.error('Failed to retrieve audio buffer after recording');
   }
 
-  function playRecording(trigger: SamplerPlaybackTrigger = { type: 'play' }) {
+  function playRecording(trigger: SamplerPlaybackTrigger = { type: 'bang' }) {
     const message = createSamplerPlaybackMessage(trigger, {
       hasRecording,
       loopEnabled,

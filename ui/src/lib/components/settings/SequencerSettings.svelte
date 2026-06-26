@@ -179,7 +179,7 @@
             </button>
           </Tooltip.Trigger>
 
-          <Tooltip.Content>Add Web Audio time to output messages</Tooltip.Content>
+          <Tooltip.Content>Add audio time to output messages</Tooltip.Content>
         </Tooltip.Root>
       </div>
     </div>
