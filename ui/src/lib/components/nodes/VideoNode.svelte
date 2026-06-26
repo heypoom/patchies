@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Loader, OctagonX, Pause, Play, SkipBack, Upload, Video } from '@lucide/svelte/icons';
+  import { Loader, OctagonX, SkipBack, Upload, Video } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { onMount, onDestroy } from 'svelte';
   import { get } from 'svelte/store';
@@ -21,6 +21,17 @@
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay, VfsDropZone } from '$lib/vfs/components';
   import { VideoProfiler, type VideoStats } from '$lib/video';
+  import { LatestVideoSeek } from '$lib/video/latest-video-seek';
+  import { getVideoNodeDisplaySize } from '$lib/video/video-node-size';
+  import {
+    getVideoOverlayDisplayTime,
+    getVideoOverlayDuration,
+    isPendingSeekComplete,
+    VideoOverlaySeekPlaybackGate,
+    VideoControlOverlayVisibility,
+    VIDEO_OVERLAY_IDLE_MS
+  } from '$lib/video/video-control-overlay';
+  import VideoControlOverlay from './VideoControlOverlay.svelte';
   import type {
     MediaBunnyMetadataEvent,
     MediaBunnyFirstFrameEvent,
@@ -83,10 +94,10 @@
   let isVideoLoaded = $state(false);
   let isPaused = $state(true);
   let errorMessage = $state<string | null>(null);
-  const PauseIcon = $derived(isPaused ? Play : Pause);
   const LoadingIcon = $derived(errorMessage ? OctagonX : Loader);
   let bitmapFrameId: number | undefined;
   let videoFrameCallbackId: number | undefined;
+  let nativeSeekPreviewFrameCallbackId: number | undefined;
   let useVideoFrameCallback = false;
   let lastRecordedMediaTime = -1;
 
@@ -94,11 +105,22 @@
   let resizerCtx: OffscreenCanvasRenderingContext2D | null = null;
 
   // MediaBunny player runs in render worker for zero main thread blocking
-  let currentFile: File | null = null;
   let currentSourceUrl: string | undefined = undefined; // For URL streaming
   let webCodecsFirstFrameReceived = $state(false);
   let webCodecsTimeoutId: ReturnType<typeof setTimeout> | null = null;
-  let workerCurrentTime = 0; // Track time from worker for profiling
+  let workerCurrentTime = $state(0); // Track time from worker for profiling
+  let overlayCurrentTime = $state(0);
+  let overlayDuration = $state(0);
+  let overlaySeekTime = $state(0);
+  let pendingOverlaySeekTime = $state<number | null>(null);
+  let resumeOverlayPlaybackAfterPendingSeek = false;
+  let isOverlayScrubbing = $state(false);
+  let showMediaOverlay = $state(false);
+  let mediaOverlayHideTimeout: ReturnType<typeof setTimeout> | null = null;
+  const mediaOverlayVisibility = new VideoControlOverlayVisibility();
+  const overlaySeekPlaybackGate = new VideoOverlaySeekPlaybackGate();
+  let showNativeSeekPreview = $state(false);
+  const nativeSeekPreview = new LatestVideoSeek();
 
   // Canvas preview
   let previewCanvas = $state<HTMLCanvasElement | undefined>();
@@ -111,6 +133,23 @@
   let profiler: VideoProfiler | null = null;
   let videoStats = $state<VideoStats | null>(null);
   let statsIntervalId: ReturnType<typeof setInterval> | null = null;
+
+  const mediaOverlayTime = $derived.by(() => {
+    if (isOverlayScrubbing) {
+      return overlaySeekTime;
+    }
+
+    return getVideoOverlayDisplayTime({
+      workerTime: workerCurrentTime,
+      elementTime: overlayCurrentTime,
+      hasWorkerFrame: webCodecsFirstFrameReceived,
+      pendingSeekTime: pendingOverlaySeekTime
+    });
+  });
+
+  const mediaOverlayProgress = $derived(
+    overlayDuration > 0 ? Math.min(100, Math.max(0, (mediaOverlayTime / overlayDuration) * 100)) : 0
+  );
 
   // Initialize bitmaprenderer context when canvas is bound
   $effect(() => {
@@ -162,15 +201,123 @@
 
     const safeTime = Math.max(0, time);
 
+    overlayCurrentTime = safeTime;
+    workerCurrentTime = safeTime;
     lastRecordedMediaTime = -1;
+    seekNativeVideoPreview(safeTime);
 
     if (webCodecsFirstFrameReceived) {
       glSystem.mediaBunnySeek(nodeId, safeTime);
-    } else if (videoElement) {
-      videoElement.currentTime = safeTime;
     }
 
     audioService.send(nodeId, 'message', { type: 'seek', time: safeTime });
+  }
+
+  function showMediaControls() {
+    if (!isVideoLoaded) return;
+
+    mediaOverlayVisibility.show(performance.now());
+    showMediaOverlay = mediaOverlayVisibility.visible;
+    scheduleMediaOverlayHide();
+  }
+
+  function hideMediaControls() {
+    if (mediaOverlayHideTimeout !== null) {
+      clearTimeout(mediaOverlayHideTimeout);
+      mediaOverlayHideTimeout = null;
+    }
+
+    mediaOverlayVisibility.hide();
+    showMediaOverlay = mediaOverlayVisibility.visible;
+  }
+
+  function scheduleMediaOverlayHide() {
+    if (mediaOverlayHideTimeout !== null) {
+      clearTimeout(mediaOverlayHideTimeout);
+    }
+
+    mediaOverlayHideTimeout = setTimeout(() => {
+      if (mediaOverlayVisibility.shouldHide(performance.now())) {
+        mediaOverlayVisibility.hide();
+        showMediaOverlay = mediaOverlayVisibility.visible;
+      }
+
+      mediaOverlayHideTimeout = null;
+    }, VIDEO_OVERLAY_IDLE_MS);
+  }
+
+  function handleOverlaySeekStart(time?: number) {
+    if (!isVideoLoaded) return;
+
+    const gate = overlaySeekPlaybackGate.start({ paused: isPaused });
+
+    if (gate.shouldPause) {
+      pauseVideoPlayback();
+    }
+
+    isOverlayScrubbing = true;
+    overlaySeekTime = Number.isFinite(time) ? Math.max(0, time ?? 0) : mediaOverlayTime;
+    pendingOverlaySeekTime = null;
+    mediaOverlayVisibility.startScrubbing();
+    showMediaOverlay = mediaOverlayVisibility.visible;
+
+    if (Number.isFinite(time)) {
+      seekToTime(overlaySeekTime);
+    }
+  }
+
+  function handleOverlaySeekInput(time: number) {
+    if (!isVideoLoaded) return;
+
+    overlaySeekTime = time;
+    seekToTime(time);
+  }
+
+  function handleOverlaySeekEnd() {
+    if (!isOverlayScrubbing) return;
+
+    isOverlayScrubbing = false;
+    pendingOverlaySeekTime = overlaySeekTime;
+    mediaOverlayVisibility.stopScrubbing(performance.now());
+    showMediaOverlay = mediaOverlayVisibility.visible;
+    scheduleMediaOverlayHide();
+
+    if (overlaySeekPlaybackGate.stop().shouldResume) {
+      resumeOverlayPlaybackAfterPendingSeek = true;
+    }
+  }
+
+  function completePendingOverlaySeek(currentTime: number) {
+    if (!isPendingSeekComplete({ pendingSeekTime: pendingOverlaySeekTime, currentTime })) {
+      return false;
+    }
+
+    pendingOverlaySeekTime = null;
+    workerCurrentTime = currentTime;
+    overlayCurrentTime = currentTime;
+
+    if (resumeOverlayPlaybackAfterPendingSeek) {
+      resumeOverlayPlaybackAfterPendingSeek = false;
+      playVideoPlayback();
+    }
+
+    return true;
+  }
+
+  function seekNativeVideoPreview(time: number) {
+    if (!videoElement) return;
+
+    const seekRequest = nativeSeekPreview.requestNativeSeek(time);
+
+    if (webCodecsFirstFrameReceived) {
+      showNativeSeekPreview = true;
+    }
+
+    if (!seekRequest.shouldStartSeek || videoElement.seeking) {
+      return;
+    }
+
+    videoElement.currentTime = time;
   }
 
   /**
@@ -184,7 +331,6 @@
         return;
       }
 
-      currentFile = file;
       currentSourceUrl = sourceUrl; // Store for MediaBunny streaming
 
       const objectUrl = URL.createObjectURL(file);
@@ -194,34 +340,31 @@
           const videoWidth = videoElement.videoWidth;
           const videoHeight = videoElement.videoHeight;
 
-          // Scale down for preview while maintaining aspect ratio
-          const aspectRatio = videoWidth / videoHeight;
-
-          const previewWidthValue = get(previewWidth);
-          const previewHeightValue = get(previewHeight);
-
-          let scaledW = previewWidthValue;
-          let scaledH = previewWidthValue / aspectRatio;
-
-          if (scaledH > previewHeightValue) {
-            scaledH = previewHeightValue;
-            scaledW = previewHeightValue * aspectRatio;
-          }
+          const displaySize = getVideoNodeDisplaySize({
+            nodeWidth,
+            nodeHeight,
+            videoWidth,
+            videoHeight,
+            previewWidth: get(previewWidth),
+            previewHeight: get(previewHeight)
+          });
 
           updateNode(nodeId, {
-            width: Math.round(scaledW),
-            height: Math.round(scaledH),
-            data: {
-              ...data,
-              fileName: file.name,
-              width: videoWidth,
-              height: videoHeight
-            }
+            width: displaySize.width,
+            height: displaySize.height,
+            data: { ...data, fileName: file.name, width: videoWidth, height: videoHeight }
           });
 
           isVideoLoaded = true;
           isPaused = true;
+          overlayCurrentTime = 0;
+          workerCurrentTime = 0;
           errorMessage = null;
+
+          overlayDuration = getVideoOverlayDuration({
+            metadataDuration: undefined,
+            elementDuration: videoElement.duration
+          });
 
           // Send file to audio system
           audioService.send(nodeId, 'file', file);
@@ -391,40 +534,58 @@
   function togglePause() {
     if (!isVideoLoaded) return;
 
+    if (isPaused) {
+      playVideoPlayback();
+    } else {
+      pauseVideoPlayback();
+    }
+  }
+
+  function playVideoPlayback() {
+    if (!isVideoLoaded || !isPaused) return;
+
     // Get current time from appropriate source
     const currentTime = workerCurrentTime || videoElement?.currentTime || 0;
+    overlayCurrentTime = currentTime;
 
-    if (isPaused) {
-      audioService.send(nodeId, 'message', { type: 'play' });
+    audioService.send(nodeId, 'message', { type: 'play' });
 
-      if (webCodecsFirstFrameReceived) {
-        // Worker MediaBunny mode
-        glSystem.mediaBunnyPlay(nodeId);
-      } else if (videoElement) {
-        // Fallback mode - control HTMLVideoElement
-        videoElement.play();
-      }
-
-      // Mark playback start for accurate drop detection
-      profiler?.markPlaybackStart(currentTime);
-
-      isPaused = false;
-    } else {
-      // Mark playback stop before pausing (calculates drops)
-      profiler?.markPlaybackStop(currentTime);
-
-      audioService.send(nodeId, 'message', { type: 'pause' });
-
-      if (webCodecsFirstFrameReceived) {
-        // Worker MediaBunny mode
-        glSystem.mediaBunnyPause(nodeId);
-      } else if (videoElement) {
-        // Fallback mode - control HTMLVideoElement
-        videoElement.pause();
-      }
-
-      isPaused = true;
+    if (webCodecsFirstFrameReceived) {
+      // Worker MediaBunny mode
+      glSystem.mediaBunnyPlay(nodeId);
+      showNativeSeekPreview = false;
+    } else if (videoElement) {
+      // Fallback mode - control HTMLVideoElement
+      videoElement.play();
     }
+
+    // Mark playback start for accurate drop detection
+    profiler?.markPlaybackStart(currentTime);
+
+    isPaused = false;
+  }
+
+  function pauseVideoPlayback() {
+    if (!isVideoLoaded || isPaused) return;
+
+    // Get current time from appropriate source
+    const currentTime = workerCurrentTime || videoElement?.currentTime || 0;
+    overlayCurrentTime = currentTime;
+
+    // Mark playback stop before pausing (calculates drops)
+    profiler?.markPlaybackStop(currentTime);
+
+    audioService.send(nodeId, 'message', { type: 'pause' });
+
+    if (webCodecsFirstFrameReceived) {
+      // Worker MediaBunny mode
+      glSystem.mediaBunnyPause(nodeId);
+    } else if (videoElement) {
+      // Fallback mode - control HTMLVideoElement
+      videoElement.pause();
+    }
+
+    isPaused = true;
   }
 
   /**
@@ -461,6 +622,16 @@
     }
   }
 
+  function stopNativeSeekPreviewFrameCallback() {
+    if (nativeSeekPreviewFrameCallbackId === undefined || !videoElement) return;
+
+    (videoElement as HTMLVideoElementWithRVFC).cancelVideoFrameCallback(
+      nativeSeekPreviewFrameCallbackId
+    );
+
+    nativeSeekPreviewFrameCallbackId = undefined;
+  }
+
   /**
    * Handle video frame callback - called when a new video frame is presented.
    * This is more efficient than requestAnimationFrame as it syncs with actual video frames.
@@ -474,6 +645,7 @@
     // Only record when mediaTime actually changes (deduplicate same-frame callbacks)
     if (metadata.mediaTime !== lastRecordedMediaTime) {
       lastRecordedMediaTime = metadata.mediaTime;
+      overlayCurrentTime = metadata.mediaTime;
       profiler?.recordFrame(metadata.mediaTime * 1_000_000, metadata.mediaTime);
 
       // Calculate actual frame rate from metadata (presentedFrames / mediaTime)
@@ -511,6 +683,7 @@
 
       if (currentMediaTime !== lastRecordedMediaTime) {
         lastRecordedMediaTime = currentMediaTime;
+        overlayCurrentTime = currentMediaTime;
 
         profiler?.recordFrame(currentMediaTime * 1_000_000, currentMediaTime);
       }
@@ -564,11 +737,60 @@
 
         // Create flipped ImageBitmap to match pipeline orientation
         const bitmap = await createImageBitmap(resizerCanvas);
-        await glSystem.setBitmap(nodeId, bitmap);
+        glSystem.setBitmap(nodeId, bitmap);
       }
     } else {
       // Video is already small enough, upload directly
-      await glSystem.setBitmapSource(nodeId, videoElement);
+      glSystem.setBitmapSource(nodeId, videoElement);
+    }
+  }
+
+  function handleNativeVideoSeeked() {
+    if (!videoElement || !isVideoLoaded || !webCodecsFirstFrameReceived) return;
+
+    const element = videoElement;
+    const generation = nativeSeekPreview.currentGeneration;
+    const nextSeek = nativeSeekPreview.completeNativeSeek(element.currentTime);
+
+    if (nextSeek.shouldStartNextSeek) {
+      element.currentTime = nextSeek.targetTime;
+      return;
+    }
+
+    const requestVideoFrameCallback = (element as Partial<HTMLVideoElementWithRVFC>)
+      .requestVideoFrameCallback;
+
+    if (requestVideoFrameCallback) {
+      stopNativeSeekPreviewFrameCallback();
+      nativeSeekPreviewFrameCallbackId = requestVideoFrameCallback.call(
+        element,
+        (_now, metadata) => {
+          nativeSeekPreviewFrameCallbackId = undefined;
+          uploadNativeSeekPreview(generation, metadata.mediaTime);
+        }
+      );
+
+      return;
+    }
+
+    void uploadNativeSeekPreview(generation, element.currentTime);
+  }
+
+  async function uploadNativeSeekPreview(generation: number, mediaTime: number) {
+    if (!videoElement || !nativeSeekPreview.isLatest(generation)) return;
+
+    if (Math.abs(mediaTime - nativeSeekPreview.currentTargetTime) > 0.1) {
+      return;
+    }
+
+    completePendingOverlaySeek(mediaTime);
+
+    workerCurrentTime = mediaTime;
+    overlayCurrentTime = mediaTime;
+    profiler?.recordFrame(mediaTime * 1_000_000, mediaTime);
+
+    if (glSystem.hasOutgoingVideoConnections(nodeId)) {
+      await uploadFallbackVideoFrame();
     }
   }
 
@@ -591,6 +813,11 @@
       width: event.metadata.width,
       height: event.metadata.height,
       codec: event.metadata.codec
+    });
+
+    overlayDuration = getVideoOverlayDuration({
+      metadataDuration: event.metadata.duration,
+      elementDuration: videoElement?.duration
     });
   }
 
@@ -617,6 +844,10 @@
     }
 
     isPaused = true;
+    overlayCurrentTime = 0;
+    workerCurrentTime = 0;
+    pendingOverlaySeekTime = null;
+    resumeOverlayPlaybackAfterPendingSeek = false;
 
     if (videoElement) {
       videoElement.pause();
@@ -633,7 +864,20 @@
   function handleWorkerTimeUpdate(event: MediaBunnyTimeUpdateEvent) {
     if (event.nodeId !== nodeId) return;
 
+    if (pendingOverlaySeekTime !== null && !completePendingOverlaySeek(event.currentTime)) {
+      profiler?.recordFrame(event.currentTime * 1_000_000, event.currentTime);
+      return;
+    }
+
     workerCurrentTime = event.currentTime;
+    overlayCurrentTime = event.currentTime;
+
+    if (
+      showNativeSeekPreview &&
+      Math.abs(event.currentTime - nativeSeekPreview.currentTargetTime) <= 0.1
+    ) {
+      showNativeSeekPreview = false;
+    }
 
     // Notify profiler of frame delivery for FPS tracking
     // MediaBunnyPlayer sends timeUpdate for each displayed frame
@@ -675,6 +919,7 @@
   onDestroy(() => {
     // Clean up frame loop (handles both requestVideoFrameCallback and requestAnimationFrame)
     stopFallbackFrameLoop();
+    stopNativeSeekPreviewFrameCallback();
 
     // Clean up WebCodecs timeout
     if (webCodecsTimeoutId !== null) {
@@ -686,6 +931,11 @@
     if (statsIntervalId) {
       clearInterval(statsIntervalId);
       statsIntervalId = null;
+    }
+
+    if (mediaOverlayHideTimeout !== null) {
+      clearTimeout(mediaOverlayHideTimeout);
+      mediaOverlayHideTimeout = null;
     }
 
     // Clean up worker MediaBunny player
@@ -730,16 +980,10 @@
         <div></div>
         <div class="flex gap-1">
           {#if isVideoLoaded}
-            <button
-              title={isPaused ? 'Play video' : 'Pause video'}
-              class="node-floating-button"
-              onclick={togglePause}
-            >
-              <PauseIcon class="h-4 w-4 text-zinc-300" />
-            </button>
             <button title="Restart video" class="node-floating-button" onclick={restartVideo}>
               <SkipBack class="h-4 w-4 text-zinc-300" />
             </button>
+
             <button
               title="Change video"
               class="node-floating-button"
@@ -765,7 +1009,13 @@
           class={`rounded-lg border-1 ${selected ? 'shadow-glow-md border-zinc-400' : 'hover:shadow-glow-sm'}`}
         >
           {#if !errorMessage}
-            <div class="relative">
+            <div
+              class="relative"
+              role="presentation"
+              onmouseenter={showMediaControls}
+              onmousemove={showMediaControls}
+              onmouseleave={hideMediaControls}
+            >
               <!-- Canvas preview when MediaBunny is active (worker sends frames via bitmaprenderer) -->
               <canvas
                 bind:this={previewCanvas}
@@ -773,7 +1023,8 @@
                 height={data.height || $previewHeight}
                 class="rounded-lg {vfsMedia.hasVfsPath &&
                 isVideoLoaded &&
-                webCodecsFirstFrameReceived
+                webCodecsFirstFrameReceived &&
+                !showNativeSeekPreview
                   ? ''
                   : 'hidden'}"
                 style="width: {nodeWidth || $previewWidth}px; height: {nodeHeight ||
@@ -788,13 +1039,14 @@
                 bind:this={videoElement}
                 class="rounded-lg object-cover {vfsMedia.hasVfsPath &&
                 isVideoLoaded &&
-                !webCodecsFirstFrameReceived
+                (!webCodecsFirstFrameReceived || showNativeSeekPreview)
                   ? ''
                   : 'hidden'}"
                 style="width: {nodeWidth || $previewWidth}px; height: {nodeHeight ||
                   $previewHeight}px"
                 muted
                 loop={data.loop ?? true}
+                onseeked={handleNativeVideoSeeked}
                 ondragover={vfsMedia.handleDragOver}
                 ondragleave={vfsMedia.handleDragLeave}
                 ondrop={vfsMedia.handleDrop}
@@ -812,13 +1064,31 @@
                   >
                     {videoStats.pipeline === 'webcodecs' ? 'MEDIABUNNY' : 'FALLBACK'}
                   </div>
+
                   <div>{videoStats.fps}/{Math.round(videoStats.targetFps)} FPS</div>
                   <div>Dropped: {videoStats.droppedFrames}</div>
                   <div>{videoStats.width}x{videoStats.height}</div>
+
                   {#if videoStats.codec !== 'unknown'}
                     <div class="text-zinc-400">{videoStats.codec}</div>
                   {/if}
                 </div>
+              {/if}
+
+              {#if isVideoLoaded}
+                <VideoControlOverlay
+                  visible={showMediaOverlay}
+                  scrubbing={isOverlayScrubbing}
+                  paused={isPaused}
+                  currentTime={mediaOverlayTime}
+                  duration={overlayDuration}
+                  progress={mediaOverlayProgress}
+                  onTogglePause={togglePause}
+                  onShowControls={showMediaControls}
+                  onSeekStart={handleOverlaySeekStart}
+                  onSeekInput={handleOverlaySeekInput}
+                  onSeekEnd={handleOverlaySeekEnd}
+                />
               {/if}
             </div>
           {/if}
