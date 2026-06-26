@@ -16,7 +16,7 @@ Add a `group` object that visually frames related canvas objects and updates mem
 ## Non-Goals
 
 - No nested group authoring beyond preserving existing parent relationships where possible.
-- No collapse/expand, labels, colors, or locking controls in the first pass.
+- No collapse/expand, editable labels, or locking controls in the first pass.
 - No new message, audio, or video behavior.
 - No automatic group deletion when it becomes empty.
 
@@ -65,6 +65,8 @@ When a group is resized smaller, direct children whose centers are outside the r
 - Empty space inside a group behaves like empty canvas space for canvas insertion and selection clearing.
 - Users select or drag a group by its border, resize handles, or title pill, not by the transparent interior.
 - The title pill follows the small `node-title-drag-handle` visual convention used by other visual nodes.
+- A settings button at the top-right opens predefined color swatches for the group frame.
+- Group color is optional. Omitting `node.data.color` uses the default gray frame; choosing a swatch stores `node.data.color` and supports undo/redo as a discrete node data change.
 
 ## Testing
 
@@ -76,5 +78,6 @@ Pure tests cover:
 - preserving parent-before-child node order after membership changes
 - not sweeping unrelated objects into a group when the group itself is dragged
 - keeping the group interior pointer-transparent while border/title hit zones stay pointer-active
+- deriving group frame styles from the selected predefined color
 
 Focused Svelte/type checks should cover component wiring and object registration.

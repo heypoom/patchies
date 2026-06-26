@@ -1,28 +1,64 @@
 <script lang="ts">
-  import { NodeResizer } from '@xyflow/svelte';
+  import { Settings, X } from '@lucide/svelte/icons';
+  import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import {
+    DEFAULT_GROUP_COLOR,
+    GROUP_COLOR_PRESETS,
     GROUP_BORDER_HIT_ZONES,
     getGroupTitleClasses,
-    getGroupVisualFrameClasses
+    getGroupVisualFrameClasses,
+    getGroupVisualFrameStyle
   } from '$lib/canvas/group-hit-zones';
+  import { useNodeDataTracker } from '$lib/history';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let node: {
     id: string;
+    data: {
+      color?: string;
+    };
     selected: boolean;
     width?: number;
     height?: number;
   } = $props();
 
+  const { updateNodeData } = useSvelteFlow();
   const eventBus = PatchiesEventBus.getInstance();
+  const tracker = useNodeDataTracker(node.id);
+
+  let showSettings = $state(false);
+
   const width = $derived(node.width ?? 360);
   const height = $derived(node.height ?? 240);
+  const color = $derived(node.data.color ?? DEFAULT_GROUP_COLOR);
   const frameStyle = $derived(
     node.width !== undefined && node.height !== undefined
       ? 'width: 100%; height: 100%;'
       : `width: ${width}px; height: ${height}px;`
   );
   const visualFrameClasses = $derived(getGroupVisualFrameClasses(node.selected));
+  const visualFrameStyle = $derived(getGroupVisualFrameStyle(color, node.selected));
+
+  function updateConfig(updates: Partial<typeof node.data>) {
+    updateNodeData(node.id, { ...node.data, ...updates });
+  }
+
+  function toggleSettings(event: MouseEvent) {
+    event.stopPropagation();
+    showSettings = !showSettings;
+  }
+
+  function closeSettings(event: MouseEvent) {
+    event.stopPropagation();
+    showSettings = false;
+  }
+
+  function handleColorChange(nextColor: string) {
+    const oldColor = color;
+    updateConfig({ color: nextColor });
+    tracker.commit('color', oldColor, nextColor);
+  }
 
   function handleResizeEnd() {
     eventBus.dispatch({ type: 'visualGroupSyncRequested', groupId: node.id });
@@ -48,11 +84,77 @@
     <div class="font-mono text-xs font-medium text-zinc-400">group</div>
   </div>
 
-  <div class={visualFrameClasses} aria-hidden="true"></div>
+  <div class="pointer-events-auto absolute -top-7 right-0 z-10 flex gap-x-1">
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <button
+          class={[
+            'cursor-pointer rounded bg-zinc-900/80 p-1 transition-colors hover:bg-zinc-700',
+            showSettings && 'bg-zinc-700'
+          ]}
+          onclick={toggleSettings}
+          aria-label={showSettings ? 'Close group settings' : 'Open group settings'}
+          aria-pressed={showSettings}
+        >
+          <Settings class="h-4 w-4 text-zinc-300" />
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>{showSettings ? 'Close Settings' : 'Settings'}</Tooltip.Content>
+    </Tooltip.Root>
+  </div>
+
+  <div class={visualFrameClasses} style={visualFrameStyle} aria-hidden="true"></div>
 
   {#each GROUP_BORDER_HIT_ZONES as zone (zone.id)}
     <div class={zone.className} aria-label={zone.ariaLabel}></div>
   {/each}
+
+  {#if showSettings}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="nodrag pointer-events-auto absolute top-0 right-0 z-20 w-44 rounded-md border border-zinc-700 bg-zinc-900 p-3 shadow-xl"
+      onclick={(event) => event.stopPropagation()}
+    >
+      <div class="mb-3 flex items-center justify-between gap-2">
+        <div class="text-xs font-medium text-zinc-300">Group Color</div>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              onclick={closeSettings}
+              aria-label="Close group settings"
+            >
+              <X class="h-3.5 w-3.5" />
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Close</Tooltip.Content>
+        </Tooltip.Root>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        {#each GROUP_COLOR_PRESETS as preset (preset.name)}
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <button
+                onclick={() => handleColorChange(preset.value)}
+                class={[
+                  'h-6 w-6 cursor-pointer rounded-full border-2 transition-all',
+                  color === preset.value
+                    ? 'scale-110 border-white shadow-md'
+                    : 'border-zinc-700 hover:scale-105 hover:border-zinc-400'
+                ]}
+                style="background-color: {preset.value};"
+                aria-label={preset.name}
+              ></button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>{preset.name}</Tooltip.Content>
+          </Tooltip.Root>
+        {/each}
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>

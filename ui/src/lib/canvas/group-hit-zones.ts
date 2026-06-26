@@ -1,3 +1,17 @@
+export const DEFAULT_GROUP_COLOR = '#71717a';
+
+export const GROUP_COLOR_PRESETS = [
+  { name: 'Gray', value: DEFAULT_GROUP_COLOR },
+  { name: 'Sky', value: '#38bdf8' },
+  { name: 'Violet', value: '#8b5cf6' },
+  { name: 'Rose', value: '#f43f5e' },
+  { name: 'Amber', value: '#f59e0b' },
+  { name: 'Emerald', value: '#10b981' },
+  { name: 'Cyan', value: '#06b6d4' },
+  { name: 'Lime', value: '#84cc16' },
+  { name: 'Slate', value: '#94a3b8' }
+] as const;
+
 export const GROUP_BORDER_HIT_ZONES = [
   {
     id: 'top',
@@ -21,6 +35,29 @@ export const GROUP_BORDER_HIT_ZONES = [
   }
 ] as const;
 
+export function getGroupColorPreset(color: string | undefined): { name: string; value: string } {
+  if (!color) return GROUP_COLOR_PRESETS[0];
+
+  return (
+    GROUP_COLOR_PRESETS.find((preset) => preset.value === color) ?? { name: 'Custom', value: color }
+  );
+}
+
+function hexToRgb(hexColor: string): { r: number; g: number; b: number } {
+  const normalized = hexColor.replace('#', '');
+
+  return {
+    r: parseInt(normalized.slice(0, 2), 16),
+    g: parseInt(normalized.slice(2, 4), 16),
+    b: parseInt(normalized.slice(4, 6), 16)
+  };
+}
+
+function rgba(hexColor: string, alpha: number): string {
+  const { r, g, b } = hexToRgb(hexColor);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function getGroupTitleClasses(): string {
   return [
     'node-title-drag-handle',
@@ -40,9 +77,20 @@ export function getGroupTitleClasses(): string {
 
 export function getGroupVisualFrameClasses(selected: boolean): string[] {
   return [
-    'pointer-events-none h-full w-full rounded border border-dashed bg-zinc-500/6 transition-colors',
-    selected
-      ? 'border-sky-300/80 bg-sky-500/8 shadow-[0_0_0_1px_rgba(125,211,252,0.35)]'
-      : 'border-zinc-500/70'
+    'pointer-events-none h-full w-full rounded border border-dashed transition-colors',
+    selected ? 'shadow-[0_0_0_1px_var(--group-glow-color)]' : ''
   ];
+}
+
+export function getGroupVisualFrameStyle(color: string | undefined, selected: boolean): string {
+  const resolvedColor = getGroupColorPreset(color).value;
+  const borderAlpha = selected ? 0.85 : 0.55;
+  const backgroundAlpha = selected ? 0.12 : 0.08;
+  const glowAlpha = selected ? 0.35 : 0;
+
+  return [
+    `border-color: ${rgba(resolvedColor, borderAlpha)};`,
+    `background-color: ${rgba(resolvedColor, backgroundAlpha)};`,
+    `--group-glow-color: ${rgba(resolvedColor, glowAlpha)};`
+  ].join(' ');
 }

@@ -6,7 +6,7 @@ Use group when the user asks to organize, frame, cluster, or move several object
 
 Properties:
 - type: "group"
-- data: {}
+- data: { color?: string } where color is an optional hex frame color; omit it for the default gray frame
 - width/height: set to cover the objects being organized
 
 Grouping behavior:
