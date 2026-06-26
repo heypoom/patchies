@@ -55,7 +55,7 @@ describe('sequencer output payloads', () => {
     ).toEqual({ type: 'set', time: 12.5, value: 0.75 });
   });
 
-  it('keeps single index output untimed', () => {
+  it('adds scheduled set metadata to single index output when audio lookahead is enabled', () => {
     const options = {
       outletMode: 'single' as const,
       outputMode: 'index' as const,
@@ -65,7 +65,12 @@ describe('sequencer output payloads', () => {
     };
 
     expect(createSequencerPayload({ ...options, audioRate: false })).toBe(2);
-    expect(createSequencerPayload({ ...options, audioRate: true })).toBe(2);
+    expect(createSequencerPayload({ ...options, audioRate: true })).toEqual({
+      type: 'set',
+      index: 2,
+      value: 0.75,
+      time: 12.5
+    });
   });
 
   it('adds time to single midi output only when audio lookahead is enabled', () => {
@@ -95,8 +100,8 @@ describe('sequencer output payloads', () => {
   it('identifies which outputs can carry timing', () => {
     expect(sequencerOutputCarriesTiming('multi', 'bang')).toBe(true);
     expect(sequencerOutputCarriesTiming('multi', 'value')).toBe(true);
+    expect(sequencerOutputCarriesTiming('single', 'index')).toBe(true);
     expect(sequencerOutputCarriesTiming('single', 'midi')).toBe(true);
-    expect(sequencerOutputCarriesTiming('single', 'index')).toBe(false);
   });
 
   it('converts scheduled transport time to AudioContext time', () => {

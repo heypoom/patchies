@@ -34,7 +34,7 @@ export function sequencerOutputCarriesTiming(
 ): boolean {
   return (
     (outletMode === 'multi' && (outputMode === 'bang' || outputMode === 'value')) ||
-    (outletMode === 'single' && outputMode === 'midi')
+    (outletMode === 'single' && (outputMode === 'index' || outputMode === 'midi'))
   );
 }
 
@@ -64,7 +64,7 @@ export function createSequencerPayload({
           };
     }
 
-    return trackIndex;
+    return audioRate ? { type: 'set', index: trackIndex, value: velocity, time } : trackIndex;
   }
 
   if (outputMode === 'value') {

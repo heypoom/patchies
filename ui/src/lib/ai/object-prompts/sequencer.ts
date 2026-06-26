@@ -19,7 +19,7 @@ OUTPUT MODES (multi outlet):
 OUTPUT MODES (single outlet):
 - \`"index"\` (default): sends track index as number (0–N)
 - \`"midi"\`: sends \`{type:"noteOn", note, index, velocity}\` — note uses GM drum mapping (36=kick), velocity is MIDI 0–127
-- With \`audioRate: true\`, midi sends \`{type:"noteOn", note, index, velocity, time}\` for Web Audio scheduling
+- With \`audioRate: true\`, index sends \`{type:"set", index, value, time}\` and midi sends \`{type:"noteOn", note, index, velocity, time}\` for Web Audio scheduling
 
 Use single outlet + midi mode to connect directly to pads~ with one wire. Enable \`audioRate\` when scheduled Web Audio time is needed.
 

@@ -76,6 +76,12 @@ const SetSchedule = msg('set', {
   value: Type.Number({ minimum: 0, maximum: 1 })
 });
 
+const SetIndexedSchedule = msg('set', {
+  index: Type.Number({ minimum: 0 }),
+  time: Type.Number(),
+  value: Type.Number({ minimum: 0, maximum: 1 })
+});
+
 // Single-outlet output schemas
 const NoteOn = msg('noteOn', {
   note: Type.Number(),
@@ -215,6 +221,11 @@ export const sequencerSchema: ObjectSchema = {
         {
           schema: Type.Number({ minimum: 0 }),
           description: 'Single/index: track index (0–N)'
+        },
+        {
+          schema: SetIndexedSchedule,
+          description:
+            'Single/index + audio lookahead: scheduled set event with track index, velocity, and Web Audio time'
         },
         {
           schema: NoteOn,
