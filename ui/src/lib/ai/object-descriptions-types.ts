@@ -9,6 +9,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - textbox: Text input and display
 - curve: Breakpoint curve editor
 - sheet: Editable spreadsheet-style grid that outputs a 2D array by default
+- group: Visual frame for explicitly grouping and moving related canvas objects together
 
 ## Audio I/O (Dedicated node types)
 - mic~: Audio input from microphone
@@ -102,6 +103,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - sheet: Editable spreadsheet-style grid; bang outputs a 2D array with headers first, optional row-object output
 - keyboard: Keyboard input controller
 - label: Text label for annotations
+- group: Visual frame for organizing related objects; use parentId for grouped child nodes
 - link: Clickable link button
 - sequencer: Multi-track step sequencer synced to transport clock (drum machine style; one outlet per track)
 

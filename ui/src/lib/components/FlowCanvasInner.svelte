@@ -88,7 +88,9 @@
     CodeCommitEvent,
     NodeDataCommitEvent,
     NodeDataBatchCommitEvent,
-    ObjectDataCommitEvent
+    ObjectDataCommitEvent,
+    VisualGroupResizeStartedEvent,
+    VisualGroupSyncRequestedEvent
   } from '$lib/eventbus/events';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
   import { MediaPipeNodeSystem } from '$objects/mediapipe/MediaPipeNodeSystem';
@@ -96,6 +98,7 @@
   import { WorkletDirectChannelService } from '$lib/audio/WorkletDirectChannelService';
   import { buildAudioSourceConnections } from '$lib/composables/checkHandleConnections';
   import { getSurfaceMouseForwardingKey } from '$lib/canvas/surfaceMouseForwarding';
+  import { syncVisualGroupMembership } from '$lib/canvas/grouping';
   import { useDetachedCodeEditorOverlay } from '$lib/canvas/use-detached-code-editor-overlay.svelte';
   import { useSecondaryOutputCodeOverlay } from '$lib/canvas/use-secondary-output-code-overlay.svelte';
 
@@ -117,7 +120,7 @@
     HistoryManager,
     AddNodeCommand,
     DeleteNodesCommand,
-    MoveNodesCommand,
+    ReplaceNodesCommand,
     UpdateNodeDataCommand,
     UpdateObjectDataCommand,
     AddEdgeCommand,
@@ -364,7 +367,35 @@
   let selectedEdgeIds = $state.raw<string[]>([]);
 
   // Track node positions at drag start for undo/redo
-  let dragStartPositions: Map<string, { x: number; y: number }> | null = null;
+  let dragStartNodes: Node[] | null = null;
+  let groupResizeStartNodes: Node[] | null = null;
+
+  function cloneNodesForHistory(source: Node[]): Node[] {
+    return source.map((node) => ({
+      ...node,
+      position: { ...node.position }
+    }));
+  }
+
+  function haveNodesChangedForHistory(before: Node[], after: Node[]): boolean {
+    if (before.length !== after.length) return true;
+
+    return before.some((node, index) => {
+      const next = after[index];
+      if (!next) return true;
+
+      return (
+        node.id !== next.id ||
+        node.parentId !== next.parentId ||
+        node.position.x !== next.position.x ||
+        node.position.y !== next.position.y ||
+        node.width !== next.width ||
+        node.height !== next.height ||
+        node.measured?.width !== next.measured?.width ||
+        node.measured?.height !== next.measured?.height
+      );
+    });
+  }
 
   let isLoadingFromUrl = $state(false);
   let urlLoadError = $state<string | null>(null);
@@ -564,6 +595,38 @@
       return false;
     }
     return true;
+  }
+
+  function handleVisualGroupResizeStarted(event: VisualGroupResizeStartedEvent) {
+    if (!nodes.some((node) => node.id === event.groupId && node.type === 'group')) return;
+    groupResizeStartNodes = cloneNodesForHistory(nodes);
+  }
+
+  async function handleVisualGroupSyncRequested(event: VisualGroupSyncRequestedEvent) {
+    await tick();
+
+    const beforeSyncNodes = cloneNodesForHistory(nodes);
+    const oldNodes = groupResizeStartNodes ?? beforeSyncNodes;
+    groupResizeStartNodes = null;
+
+    const result = syncVisualGroupMembership(nodes, { activeGroupIds: [event.groupId] });
+    const nextNodes = result.changed ? result.nodes : nodes;
+
+    if (result.changed) {
+      nodes = nextNodes;
+    }
+
+    const nextSnapshot = cloneNodesForHistory(nextNodes);
+    if (!haveNodesChangedForHistory(oldNodes, nextSnapshot)) return;
+
+    historyManager.record(
+      new ReplaceNodesCommand(
+        oldNodes,
+        nextSnapshot,
+        canvasAccessors,
+        result.changed ? 'Resize and group objects' : 'Resize group'
+      )
+    );
   }
 
   function onGeminiApiKeySaved() {
@@ -854,6 +917,8 @@
     eventBus.addEventListener('codeCommit', handleCodeCommit);
     eventBus.addEventListener('nodeDataCommit', handleNodeDataCommit);
     eventBus.addEventListener('nodeDataBatchCommit', handleNodeDataBatchCommit);
+    eventBus.addEventListener('visualGroupResizeStarted', handleVisualGroupResizeStarted);
+    eventBus.addEventListener('visualGroupSyncRequested', handleVisualGroupSyncRequested);
 
     autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
@@ -886,6 +951,8 @@
     eventBus.removeEventListener('codeCommit', handleCodeCommit);
     eventBus.removeEventListener('nodeDataCommit', handleNodeDataCommit);
     eventBus.removeEventListener('nodeDataBatchCommit', handleNodeDataBatchCommit);
+    eventBus.removeEventListener('visualGroupResizeStarted', handleVisualGroupResizeStarted);
+    eventBus.removeEventListener('visualGroupSyncRequested', handleVisualGroupSyncRequested);
 
     // Clean up autosave interval
     if (autosaveInterval) {
@@ -1456,27 +1523,33 @@
         proOptions={{ hideAttribution: true }}
         clickConnect={$isConnectionMode}
         {isValidConnection}
-        onnodedragstart={(event) => {
-          // Capture starting positions of all dragged nodes
-          dragStartPositions = new Map(event.nodes.map((n) => [n.id, { ...n.position }]));
+        onnodedragstart={() => {
+          dragStartNodes = cloneNodesForHistory(nodes);
         }}
         onnodedragstop={(event) => {
-          if (!dragStartPositions) return;
+          if (!dragStartNodes) return;
 
-          // Only record if positions actually changed
-          const hasChanged = event.nodes.some((n) => {
-            const start = dragStartPositions?.get(n.id);
-            return start && (start.x !== n.position.x || start.y !== n.position.y);
-          });
+          const draggedNodeIds = event.nodes.map((node) => node.id);
+          const result = syncVisualGroupMembership(nodes, { activeNodeIds: draggedNodeIds });
+          const nextNodes = result.changed ? result.nodes : nodes;
 
-          if (hasChanged) {
-            const newPositions = new Map(event.nodes.map((n) => [n.id, { ...n.position }]));
+          if (result.changed) {
+            nodes = nextNodes;
+          }
+
+          const nextSnapshot = cloneNodesForHistory(nextNodes);
+          if (haveNodesChangedForHistory(dragStartNodes, nextSnapshot)) {
             historyManager.record(
-              new MoveNodesCommand(dragStartPositions, newPositions, canvasAccessors)
+              new ReplaceNodesCommand(
+                dragStartNodes,
+                nextSnapshot,
+                canvasAccessors,
+                result.changed ? 'Move and group objects' : 'Move nodes'
+              )
             );
           }
 
-          dragStartPositions = null;
+          dragStartNodes = null;
         }}
         onconnect={(connection) => {
           // XYFlow already added the edge, we just need to record it for undo

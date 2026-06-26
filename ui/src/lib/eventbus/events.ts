@@ -44,6 +44,8 @@ export type PatchiesEvent =
   | NodeDataBatchCommitEvent
   | ObjectDataCommitEvent
   | NodeSetPausedEvent
+  | VisualGroupResizeStartedEvent
+  | VisualGroupSyncRequestedEvent
   | SurfaceMouseForwardingGraphChangedEvent
   | IncludeProcessingEvent
   | CookStatusUpdateEvent
@@ -158,6 +160,16 @@ export interface NodeReplaceEvent {
 
   /** Maps old handle IDs to new handle IDs for edge reconnection */
   handleMapping?: Record<string, string>;
+}
+
+export interface VisualGroupSyncRequestedEvent {
+  type: 'visualGroupSyncRequested';
+  groupId: string;
+}
+
+export interface VisualGroupResizeStartedEvent {
+  type: 'visualGroupResizeStarted';
+  groupId: string;
 }
 
 export interface IframePostMessageEvent {

@@ -19,6 +19,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'textbox',
       'peek',
       'label',
+      'group',
       'note',
       'title'
     ]
