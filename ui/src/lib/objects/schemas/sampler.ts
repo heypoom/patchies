@@ -99,7 +99,7 @@ export const samplerSchema: ObjectSchema = {
       messages: [
         {
           schema: BangTrigger,
-          description: 'Trigger sample playback with optional time, gain, offset, and duration'
+          description: 'Trigger sample playback with optional time, value, offset, and duration'
         },
         {
           schema: Type.Number({ minimum: 0 }),

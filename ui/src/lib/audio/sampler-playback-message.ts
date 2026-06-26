@@ -23,6 +23,9 @@ type SamplerLoopPlaybackMessage = {
   value?: unknown;
 };
 
+const isNonNegativeFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0;
+
 export function createSamplerPlaybackMessage(
   trigger: SamplerPlaybackTrigger,
   { hasRecording, loopEnabled, loopStart, loopEnd }: SamplerPlaybackState
@@ -39,7 +42,9 @@ export function createSamplerPlaybackMessage(
     if ('time' in trigger) loopMessage.time = trigger.time;
     if ('offset' in trigger) loopMessage.offset = trigger.offset;
     if ('duration' in trigger) loopMessage.duration = trigger.duration;
-    if ('value' in trigger) loopMessage.value = trigger.value;
+    if ('value' in trigger && isNonNegativeFiniteNumber(trigger.value)) {
+      loopMessage.value = trigger.value;
+    }
 
     return loopMessage;
   }

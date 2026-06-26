@@ -37,4 +37,20 @@ describe('createSamplerPlaybackMessage', () => {
       value: 0.75
     });
   });
+
+  it('drops invalid trigger values when loop playback is enabled', () => {
+    const state = { hasRecording: true, loopEnabled: true, loopStart: 0.1, loopEnd: 0.9 };
+
+    expect(createSamplerPlaybackMessage({ type: 'bang', value: -1 }, state)).toEqual({
+      type: 'loop',
+      start: 0.1,
+      end: 0.9
+    });
+
+    expect(createSamplerPlaybackMessage({ type: 'bang', value: Number.NaN }, state)).toEqual({
+      type: 'loop',
+      start: 0.1,
+      end: 0.9
+    });
+  });
 });

@@ -18,25 +18,30 @@ outletMode?: 'multi' | 'single';  // default: 'multi'
 
 ### Output modes per outlet mode
 
-**Multi outlet** (`outletMode: 'multi'`, default): existing behavior unchanged.
+**Multi outlet** (`outletMode: 'multi'`, default): one outlet per track.
 
 - bang: `{type: 'bang'}`
 - value: velocity number (0–1)
-- audio value: `{type: 'bang', time, value}`
 
 **Single outlet** (`outletMode: 'single'`): new output format, one outlet.
 
 - **index**: sends track index as a number (0–N)
 - **midi**: sends `{type: 'noteOn', note: BASE_NOTE + trackIndex, index: trackIndex, velocity: 0–127}`
-- **audio index**: sends `{type: 'bang', index: trackIndex, value, time}`
-- **audio midi**: sends `{type: 'noteOn', note: BASE_NOTE + trackIndex, index: trackIndex, velocity: 0–127, time}`
+
+`audioRate?: boolean` is independent from output mode. When enabled, timed
+payloads include absolute Web Audio time:
+
+- multi/bang: `{type: 'bang', time}`
+- multi/value: `{type: 'bang', time, value}`
+- single/index: `{type: 'bang', index: trackIndex, value, time}`
+- single/midi: `{type: 'noteOn', note: BASE_NOTE + trackIndex, index: trackIndex, velocity: 0–127, time}`
 
 `note` uses GM drum mapping (BASE_NOTE = 36, same as pads~). `velocity` is standard MIDI 0–127 (converted from internal 0–1). `index` is the raw track index.
 
 The `outputMode` field changes meaning based on `outletMode`:
 
-- When `multi`: `'bang' | 'value' | 'audio'` (existing)
-- When `single`: `'index' | 'midi' | 'audio'`
+- When `multi`: `'bang' | 'value'`
+- When `single`: `'index' | 'midi'`
 
 When switching `outletMode`, `outputMode` resets to the first option of the new mode (multi→bang, single→index).
 
@@ -70,7 +75,10 @@ fireAtStep(step, time) → send(trackIndex, { to: 0 })
 // midi mode
 fireAtStep(step, time) → send({type: 'noteOn', note: BASE_NOTE + trackIndex, index: trackIndex, velocity: round(v * 127)}, { to: 0 })
 
-// audio mode
+// index mode + audioRate
+fireAtStep(step, time) → send({type: 'bang', index: trackIndex, value: v, time}, { to: 0 })
+
+// midi mode + audioRate
 fireAtStep(step, time) → send({type: 'noteOn', note: BASE_NOTE + trackIndex, index: trackIndex, velocity: round(v * 127), time}, { to: 0 })
 ```
 

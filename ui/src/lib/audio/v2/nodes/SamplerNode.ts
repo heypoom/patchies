@@ -41,7 +41,7 @@ export class SamplerNode implements AudioNodeV2 {
       name: 'message',
       type: 'message',
       description:
-        'Control messages: record, bang, stop, loop, loopOff, setStart, setEnd, playbackRate, detune. Also accepts Float32Array directly to set buffer.'
+        'Control messages: record, end, bang, stop, loop, loopOff, setStart, setEnd, setGain, setPlaybackRate, setDetune, noteOn, noteOff, setNoteOffMode. Also accepts Float32Array directly to set buffer.'
     }
   ];
 
