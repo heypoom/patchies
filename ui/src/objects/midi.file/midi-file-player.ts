@@ -96,6 +96,11 @@ export class MidiFilePlayer {
     if (!this.file || this._playState === 'playing') return;
 
     this.clearTimers();
+
+    if (this._positionSeconds >= this.file.durationSeconds) {
+      this._positionSeconds = 0;
+    }
+
     this.startedAtMs = Date.now();
     this.startPositionSeconds = this._positionSeconds;
     this._playState = 'playing';

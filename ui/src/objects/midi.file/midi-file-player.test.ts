@@ -124,4 +124,33 @@ describe('MidiFilePlayer', () => {
     expect(send).toHaveBeenCalledWith({ type: 'position', seconds: 0.5, progress: 0.5 });
     reportingPlayer.destroy();
   });
+
+  it('restarts from the beginning when played again after reaching the end', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    const send = vi.fn();
+    const player = new MidiFilePlayer({ send });
+
+    try {
+      player.load(parsed);
+      send.mockClear();
+
+      player.play();
+      vi.advanceTimersByTime(1000);
+
+      expect(player.playState).toBe('stopped');
+      expect(player.positionSeconds).toBe(1);
+
+      send.mockClear();
+      vi.setSystemTime(1000);
+      player.play();
+
+      expect(player.playState).toBe('playing');
+      expect(player.positionSeconds).toBe(0);
+      expect(send).toHaveBeenCalledWith({ type: 'noteOn', note: 60, velocity: 100, channel: 1 });
+    } finally {
+      player.destroy();
+      vi.useRealTimers();
+    }
+  });
 });
