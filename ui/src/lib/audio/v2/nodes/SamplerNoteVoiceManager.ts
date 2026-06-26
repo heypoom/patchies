@@ -23,6 +23,7 @@ type SamplerNotePlayMessage = {
 
 type SamplerNoteVoiceManagerOptions = {
   currentTime: () => number;
+  getBasePlaybackRate: () => number;
   play: (message: SamplerNotePlayMessage) => AudioBufferSourceNode | null;
   stop: (source: AudioBufferSourceNode, time?: number) => void;
 };
@@ -36,13 +37,16 @@ const noteToPlaybackRate = (note: number): number => 2 ** ((note - ROOT_NOTE) / 
 
 export class SamplerNoteVoiceManager {
   private readonly currentTime: () => number;
+  private readonly getBasePlaybackRate: () => number;
   private readonly play: (message: SamplerNotePlayMessage) => AudioBufferSourceNode | null;
   private readonly stop: (source: AudioBufferSourceNode, time?: number) => void;
   private readonly noteSources = new Map<number, Set<AudioBufferSourceNode>>();
+  private readonly playbackRateMultipliers = new Map<AudioBufferSourceNode, number>();
   private noteOffMode: SamplerNoteOffMode = 'one-shot';
 
-  constructor({ currentTime, play, stop }: SamplerNoteVoiceManagerOptions) {
+  constructor({ currentTime, getBasePlaybackRate, play, stop }: SamplerNoteVoiceManagerOptions) {
     this.currentTime = currentTime;
+    this.getBasePlaybackRate = getBasePlaybackRate;
     this.play = play;
     this.stop = stop;
   }
@@ -64,11 +68,12 @@ export class SamplerNoteVoiceManager {
       return;
     }
 
+    const playbackRateMultiplier = noteToPlaybackRate(note);
     const source = this.play({
       type: 'play',
       time: message.time,
       gain: velocity / 127,
-      playbackRate: noteToPlaybackRate(note),
+      playbackRate: this.getBasePlaybackRate() * playbackRateMultiplier,
       replaceImmediate: false
     });
 
@@ -76,6 +81,7 @@ export class SamplerNoteVoiceManager {
 
     const sources = this.noteSources.get(note) ?? new Set<AudioBufferSourceNode>();
     sources.add(source);
+    this.playbackRateMultipliers.set(source, playbackRateMultiplier);
 
     this.noteSources.set(note, sources);
   }
@@ -102,6 +108,8 @@ export class SamplerNoteVoiceManager {
   }
 
   removeSource(source: AudioBufferSourceNode): void {
+    this.playbackRateMultipliers.delete(source);
+
     for (const [note, sources] of this.noteSources) {
       sources.delete(source);
 
@@ -123,7 +131,14 @@ export class SamplerNoteVoiceManager {
     return sources;
   }
 
+  updatePlaybackRates(basePlaybackRate: number): void {
+    for (const [source, multiplier] of this.playbackRateMultipliers) {
+      source.playbackRate.value = basePlaybackRate * multiplier;
+    }
+  }
+
   clear(): void {
     this.noteSources.clear();
+    this.playbackRateMultipliers.clear();
   }
 }

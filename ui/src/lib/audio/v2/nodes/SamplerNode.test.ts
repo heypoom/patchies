@@ -91,6 +91,17 @@ describe('SamplerNode', () => {
     expect(source.start).toHaveBeenCalledWith(12.5, 0, undefined);
   });
 
+  it('ignores scheduled set messages with invalid gain', () => {
+    const source = createFakeSource();
+    const audioContext = createFakeAudioContext([source]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'set', time: 12.5, value: -1 });
+
+    expect(source.start).not.toHaveBeenCalled();
+  });
+
   it('ignores untimed set messages', () => {
     const source = createFakeSource();
     const audioContext = createFakeAudioContext([source]);
@@ -204,6 +215,22 @@ describe('SamplerNode', () => {
 
     expect(source.playbackRate.value).toBe(1.5);
     expect(source.detune.value).toBe(1200);
+  });
+
+  it('preserves note pitch multiplier when updating playback rate', () => {
+    const source = createFakeSource();
+    const audioContext = createFakeAudioContext([source]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'setPlaybackRate', value: 1.5 });
+    node.send('message', { type: 'noteOn', note: 72, velocity: 127 });
+
+    expect(source.playbackRate.value).toBe(3);
+
+    node.send('message', { type: 'setPlaybackRate', value: 2 });
+
+    expect(source.playbackRate.value).toBe(4);
   });
 
   it('keeps future noteOff voices tracked until they end', () => {

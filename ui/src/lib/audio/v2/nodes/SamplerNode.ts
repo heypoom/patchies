@@ -2,6 +2,7 @@ import { match, P } from 'ts-pattern';
 
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import { SamplerNoteVoiceManager } from './SamplerNoteVoiceManager';
+import { samplerMessages } from '$lib/objects/schemas';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 type PlayMessage = {
@@ -85,6 +86,7 @@ export class SamplerNode implements AudioNodeV2 {
     this.recordingDestination = audioContext.createMediaStreamDestination();
     this.noteVoices = new SamplerNoteVoiceManager({
       currentTime: () => this.audioContext.currentTime,
+      getBasePlaybackRate: () => this.playbackRate,
       play: (message) => this.handlePlay(message),
       stop: (source, time) => this.stopSource(source, time)
     });
@@ -124,15 +126,17 @@ export class SamplerNode implements AudioNodeV2 {
       })
       .with({ type: 'bang' }, this.handlePlay.bind(this))
       .with({ type: 'play' }, this.handlePlay.bind(this))
-      .with({ type: 'set', time: P.number, value: P.number }, this.handleScheduledSet.bind(this))
-      .with({ type: 'noteOn', note: P.number, velocity: P.number }, (message) => {
+      .with(samplerMessages.setScheduled, this.handleScheduledSet.bind(this))
+      .with(samplerMessages.noteOn, (message) => {
         this.noteVoices.handleNoteOn(message);
       })
-      .with({ type: 'noteOff', note: P.number }, (message) => {
+      .with(samplerMessages.noteOff, (message) => {
         this.noteVoices.handleNoteOff(message);
       })
-      .with({ type: 'setNoteOffMode', value: P.union('one-shot', 'held') }, ({ value }) => {
-        this.noteVoices.setNoteOffMode(value);
+      .with(samplerMessages.setNoteOffMode, ({ value }) => {
+        if (value === 'one-shot' || value === 'held') {
+          this.noteVoices.setNoteOffMode(value);
+        }
       })
       .with({ type: 'stop' }, this.stopPlayback.bind(this))
       .with({ type: 'loop', start: P.number, end: P.number }, this.handleLoop.bind(this))
@@ -193,6 +197,8 @@ export class SamplerNode implements AudioNodeV2 {
         for (const source of this.activeSources) {
           source.playbackRate.value = value;
         }
+
+        this.noteVoices.updatePlaybackRates(value);
       })
       .with({ type: 'setDetune', value: P.number }, ({ value }) => {
         this.detune = value;
@@ -289,10 +295,13 @@ export class SamplerNode implements AudioNodeV2 {
   }
 
   private handleScheduledSet(message: ScheduledSetMessage): void {
+    const gain = getNonNegativeNumber(message.value);
+    if (gain === undefined) return;
+
     this.handlePlay({
       type: 'play',
       time: message.time,
-      gain: message.value
+      gain
     });
   }
 
