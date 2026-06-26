@@ -164,6 +164,11 @@
       return;
     }
 
+    if (typeof message === 'number' && Number.isFinite(message) && message >= 0) {
+      playRecording({ type: 'play', gain: message });
+      return;
+    }
+
     match(message)
       .with(samplerMessages.record, () => startRecording())
       .with(samplerMessages.end, () => stopRecording())

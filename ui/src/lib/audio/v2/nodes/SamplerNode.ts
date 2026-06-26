@@ -10,6 +10,7 @@ type PlayMessage = {
   time?: unknown;
   offset?: unknown;
   duration?: unknown;
+  gain?: unknown;
 };
 
 type LoopMessage = {
@@ -20,6 +21,7 @@ type LoopMessage = {
   time?: unknown;
   offset?: unknown;
   duration?: unknown;
+  gain?: unknown;
 };
 
 const getNonNegativeNumber = (value: unknown): number | undefined =>
@@ -55,6 +57,7 @@ export class SamplerNode implements AudioNodeV2 {
   private mediaRecorder: MediaRecorder | null = null;
   private sourceNode: AudioBufferSourceNode | null = null;
   private scheduledSources = new Set<AudioBufferSourceNode>();
+  private sourceGains = new WeakMap<AudioBufferSourceNode, GainNode>();
   private loopStart: number = 0;
   private loopEnd: number = 0;
   private playbackRate: number = 1;
@@ -81,6 +84,14 @@ export class SamplerNode implements AudioNodeV2 {
     // Handle Float32Array directly - set as audio buffer
     if (message instanceof Float32Array) {
       this.setBufferFromFloats(message);
+      return;
+    }
+
+    if (typeof message === 'number') {
+      const gain = getNonNegativeNumber(message);
+      if (gain !== undefined) {
+        this.handlePlay({ type: 'play', gain });
+      }
       return;
     }
 
@@ -186,6 +197,7 @@ export class SamplerNode implements AudioNodeV2 {
     const time = getNonNegativeNumber(message.time) ?? 0;
     const offset = getNonNegativeNumber(message.offset) ?? start;
     const duration = getNonNegativeNumber(message.duration);
+    const gain = getNonNegativeNumber(message.gain) ?? 1;
     const isFutureScheduled = time > this.audioContext.currentTime;
 
     if (!isFutureScheduled) {
@@ -204,7 +216,7 @@ export class SamplerNode implements AudioNodeV2 {
     newSource.playbackRate.value = this.playbackRate;
     newSource.detune.value = this.detune;
     newSource.loop = true;
-    newSource.connect(this.audioNode);
+    this.connectSource(newSource, gain);
 
     if (isFutureScheduled) {
       this.scheduledSources.add(newSource);
@@ -213,7 +225,7 @@ export class SamplerNode implements AudioNodeV2 {
     }
 
     newSource.onended = () => {
-      newSource.disconnect();
+      this.disconnectSource(newSource);
       this.scheduledSources.delete(newSource);
 
       if (this.sourceNode === newSource) {
@@ -272,10 +284,10 @@ export class SamplerNode implements AudioNodeV2 {
     newSource.buffer = this.audioBuffer;
     newSource.playbackRate.value = this.playbackRate;
     newSource.detune.value = this.detune;
-    newSource.connect(this.audioNode);
 
     const time = getNonNegativeNumber(message.time) ?? 0;
     const offset = getNonNegativeNumber(message.offset) ?? this.loopStart;
+    const gain = getNonNegativeNumber(message.gain) ?? 1;
 
     const duration =
       getNonNegativeNumber(message.duration) ??
@@ -292,7 +304,7 @@ export class SamplerNode implements AudioNodeV2 {
 
     // Clean up when playback ends naturally
     newSource.onended = () => {
-      newSource.disconnect();
+      this.disconnectSource(newSource);
       this.scheduledSources.delete(newSource);
 
       if (this.sourceNode === newSource) {
@@ -300,13 +312,28 @@ export class SamplerNode implements AudioNodeV2 {
       }
     };
 
+    this.connectSource(newSource, gain);
     newSource.start(time, offset, duration);
+  }
+
+  private connectSource(source: AudioBufferSourceNode, gainValue: number): void {
+    const gainNode = this.audioContext.createGain();
+    gainNode.gain.value = gainValue;
+    source.connect(gainNode);
+    gainNode.connect(this.audioNode);
+    this.sourceGains.set(source, gainNode);
+  }
+
+  private disconnectSource(source: AudioBufferSourceNode): void {
+    source.disconnect();
+    this.sourceGains.get(source)?.disconnect();
+    this.sourceGains.delete(source);
   }
 
   private stopSource(source: AudioBufferSourceNode): void {
     try {
       source.stop();
-      source.disconnect();
+      this.disconnectSource(source);
     } catch {
       // Ignore errors if node already stopped
     }

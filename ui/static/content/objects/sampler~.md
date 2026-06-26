@@ -27,18 +27,28 @@ sample-accurate triggering from sequencers and clocks, send a timed bang:
 ```
 
 For explicit sample playback control, `play` also accepts optional Web Audio
-timing fields:
+timing and gain fields:
 
 ```js
-{ type: "play", time: audioContextTime, offset: 0, duration: 0.25 }
+{ type: "play", time: audioContextTime, offset: 0, duration: 0.25, gain: 0.5 }
 ```
 
 - `time` schedules playback at an absolute `AudioContext.currentTime` timestamp
 - `offset` starts from a position in the sample buffer, in seconds
 - `duration` plays a specific amount of source-buffer audio, in seconds
+- `gain` scales this playback voice's amplitude
 
-All three fields are optional. When omitted, playback uses the sampler's current
-start/end settings.
+All four fields are optional. When omitted, playback uses the sampler's current
+start/end settings and normal gain.
+
+You can also send a non-negative number to trigger playback with that gain
+multiplier:
+
+```js
+0.5  // half amplitude
+1.0  // normal amplitude
+2.0  // twice the amplitude
+```
 
 ## Float32Array Input
 

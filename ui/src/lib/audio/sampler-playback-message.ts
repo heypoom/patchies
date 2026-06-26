@@ -4,6 +4,7 @@ export type SamplerPlaybackTrigger = {
   time?: unknown;
   offset?: unknown;
   duration?: unknown;
+  gain?: unknown;
 };
 
 type SamplerPlaybackState = {
@@ -20,6 +21,7 @@ type SamplerLoopPlaybackMessage = {
   time?: unknown;
   offset?: unknown;
   duration?: unknown;
+  gain?: unknown;
 };
 
 export function createSamplerPlaybackMessage(
@@ -38,6 +40,7 @@ export function createSamplerPlaybackMessage(
     if ('time' in trigger) loopMessage.time = trigger.time;
     if ('offset' in trigger) loopMessage.offset = trigger.offset;
     if ('duration' in trigger) loopMessage.duration = trigger.duration;
+    if ('gain' in trigger) loopMessage.gain = trigger.gain;
 
     return loopMessage;
   }

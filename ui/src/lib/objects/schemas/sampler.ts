@@ -10,7 +10,8 @@ const BangScheduled = msg('bang', { time: Type.Number() });
 const PlayScheduled = msg('play', {
   time: Type.Optional(Type.Number()),
   offset: Type.Optional(Type.Number()),
-  duration: Type.Optional(Type.Number())
+  duration: Type.Optional(Type.Number()),
+  gain: Type.Optional(Type.Number({ minimum: 0 }))
 });
 const Record = sym('record');
 const End = sym('end');
@@ -90,6 +91,10 @@ export const samplerSchema: ObjectSchema = {
           description: 'Play the recorded sample'
         },
         {
+          schema: Type.Number({ minimum: 0 }),
+          description: 'Play the recorded sample with gain multiplier (0 = silent, 1 = normal)'
+        },
+        {
           schema: BangScheduled,
           description: 'Schedule playback of the recorded sample'
         },
@@ -100,7 +105,7 @@ export const samplerSchema: ObjectSchema = {
         {
           schema: PlayScheduled,
           description:
-            'Play the recorded sample with optional Web Audio time, buffer offset, and duration in seconds'
+            'Play the recorded sample with optional audio time, buffer offset, duration in seconds and gain'
         },
         {
           schema: Record,
