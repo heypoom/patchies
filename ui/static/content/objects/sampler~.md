@@ -11,7 +11,7 @@ control.
 
 - **Record** (circle): Start recording
 - **Play**: Play the sample
-- **Settings** (gear): Configure start/end, loop, rate, detune
+- **Settings** (gear): Configure start/end, gain, rate, detune, loop, and note-off behavior
 
 ## Loading Samples
 
@@ -41,6 +41,22 @@ timing and gain fields:
 All four fields are optional. When omitted, playback uses the sampler's current
 start/end settings and normal gain.
 
+`sampler~` also treats scheduled `set` messages as playback triggers with
+`value` as gain. This matches the sequencer's audio lookahead value output:
+
+```js
+{ type: "set", time: audioContextTime, value: 0.75 }
+```
+
+Untimed `set` messages are ignored.
+
+Use `setGain` to set the sampler's built-in output level. This scales all
+voices after per-trigger gain and MIDI velocity:
+
+```js
+{ type: "setGain", value: 0.75 }
+```
+
 You can also send a non-negative number to trigger playback with that gain
 multiplier:
 
@@ -49,6 +65,21 @@ multiplier:
 1.0  // normal amplitude
 2.0  // twice the amplitude
 ```
+
+`sampler~` also accepts MIDI-style note messages:
+
+```js
+{ type: "noteOn", note: 60, velocity: 127 }
+{ type: "noteOff", note: 60 }
+{ type: "setNoteOffMode", value: "held" }
+```
+
+- `note` maps to playback rate, with note `60` playing the sample at original
+  pitch. Each semitone changes playback rate by `2 ** (1 / 12)`.
+- `velocity` maps to gain as `velocity / 127`.
+- `noteOff` is ignored by default for one-shot sampler behavior.
+- Set Note Off mode to `held` when you want `noteOff` to stop active voices for
+  the matching note.
 
 ## Float32Array Input
 

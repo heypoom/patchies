@@ -170,9 +170,8 @@ export class AudioService {
 
       if (audioParam && this.timeScheduler) {
         this.timeScheduler.processMessage(audioParam, message);
+        return;
       }
-
-      return;
     }
 
     if (node.send) {

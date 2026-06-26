@@ -1,20 +1,22 @@
 import { match, P } from 'ts-pattern';
 
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
+import { SamplerNoteVoiceManager } from './SamplerNoteVoiceManager';
+import { samplerMessages } from '$lib/objects/schemas';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 type PlayMessage = {
-  [key: string]: unknown;
   type: 'bang' | 'play';
 
   time?: unknown;
   offset?: unknown;
   duration?: unknown;
   gain?: unknown;
+  playbackRate?: unknown;
+  replaceImmediate?: boolean;
 };
 
 type LoopMessage = {
-  [key: string]: unknown;
   type: 'loop';
   start: number;
   end: number;
@@ -22,6 +24,12 @@ type LoopMessage = {
   offset?: unknown;
   duration?: unknown;
   gain?: unknown;
+};
+
+type ScheduledSetMessage = {
+  type: 'set';
+  time: number;
+  value: number;
 };
 
 const getNonNegativeNumber = (value: unknown): number | undefined =>
@@ -57,7 +65,9 @@ export class SamplerNode implements AudioNodeV2 {
   private mediaRecorder: MediaRecorder | null = null;
   private sourceNode: AudioBufferSourceNode | null = null;
   private scheduledSources = new Set<AudioBufferSourceNode>();
+  private activeSources = new Set<AudioBufferSourceNode>();
   private sourceGains = new WeakMap<AudioBufferSourceNode, GainNode>();
+  private noteVoices: SamplerNoteVoiceManager;
   private loopStart: number = 0;
   private loopEnd: number = 0;
   private playbackRate: number = 1;
@@ -74,6 +84,12 @@ export class SamplerNode implements AudioNodeV2 {
     // Create MediaStreamDestination for recording input
     // This captures audio into a MediaStream for the MediaRecorder
     this.recordingDestination = audioContext.createMediaStreamDestination();
+    this.noteVoices = new SamplerNoteVoiceManager({
+      currentTime: () => this.audioContext.currentTime,
+      getBasePlaybackRate: () => this.playbackRate,
+      play: (message) => this.handlePlay(message),
+      stop: (source, time) => this.stopSource(source, time)
+    });
   }
 
   send(key: string, message: unknown): void {
@@ -110,6 +126,18 @@ export class SamplerNode implements AudioNodeV2 {
       })
       .with({ type: 'bang' }, this.handlePlay.bind(this))
       .with({ type: 'play' }, this.handlePlay.bind(this))
+      .with(samplerMessages.setScheduled, this.handleScheduledSet.bind(this))
+      .with(samplerMessages.noteOn, (message) => {
+        this.noteVoices.handleNoteOn(message);
+      })
+      .with(samplerMessages.noteOff, (message) => {
+        this.noteVoices.handleNoteOff(message);
+      })
+      .with(samplerMessages.setNoteOffMode, ({ value }) => {
+        if (value === 'one-shot' || value === 'held') {
+          this.noteVoices.setNoteOffMode(value);
+        }
+      })
       .with({ type: 'stop' }, this.stopPlayback.bind(this))
       .with({ type: 'loop', start: P.number, end: P.number }, this.handleLoop.bind(this))
       .with({ type: 'loopOff' }, () => {
@@ -129,6 +157,12 @@ export class SamplerNode implements AudioNodeV2 {
             source.loopStart = value;
           }
         }
+
+        for (const source of this.activeSources) {
+          if (source.loop) {
+            source.loopStart = value;
+          }
+        }
       })
       .with({ type: 'setEnd', value: P.number }, ({ value }) => {
         this.loopEnd = value;
@@ -138,6 +172,12 @@ export class SamplerNode implements AudioNodeV2 {
         }
 
         for (const source of this.scheduledSources) {
+          if (source.loop) {
+            source.loopEnd = value;
+          }
+        }
+
+        for (const source of this.activeSources) {
           if (source.loop) {
             source.loopEnd = value;
           }
@@ -153,6 +193,12 @@ export class SamplerNode implements AudioNodeV2 {
         for (const source of this.scheduledSources) {
           source.playbackRate.value = value;
         }
+
+        for (const source of this.activeSources) {
+          source.playbackRate.value = value;
+        }
+
+        this.noteVoices.updatePlaybackRates(value);
       })
       .with({ type: 'setDetune', value: P.number }, ({ value }) => {
         this.detune = value;
@@ -163,6 +209,16 @@ export class SamplerNode implements AudioNodeV2 {
 
         for (const source of this.scheduledSources) {
           source.detune.value = value;
+        }
+
+        for (const source of this.activeSources) {
+          source.detune.value = value;
+        }
+      })
+      .with({ type: 'setGain', value: P.number }, ({ value }) => {
+        const gain = getNonNegativeNumber(value);
+        if (gain !== undefined) {
+          this.audioNode.gain.value = gain;
         }
       });
   }
@@ -222,11 +278,13 @@ export class SamplerNode implements AudioNodeV2 {
       this.scheduledSources.add(newSource);
     } else {
       this.sourceNode = newSource;
+      this.activeSources.add(newSource);
     }
 
     newSource.onended = () => {
       this.disconnectSource(newSource);
       this.scheduledSources.delete(newSource);
+      this.activeSources.delete(newSource);
 
       if (this.sourceNode === newSource) {
         this.sourceNode = null;
@@ -234,6 +292,17 @@ export class SamplerNode implements AudioNodeV2 {
     };
 
     newSource.start(time, offset, duration);
+  }
+
+  private handleScheduledSet(message: ScheduledSetMessage): void {
+    const gain = getNonNegativeNumber(message.value);
+    if (gain === undefined) return;
+
+    this.handlePlay({
+      type: 'play',
+      time: message.time,
+      gain
+    });
   }
 
   private async handleRecord(): Promise<void> {
@@ -274,15 +343,15 @@ export class SamplerNode implements AudioNodeV2 {
     this.mediaRecorder = recorder;
   }
 
-  private handlePlay(message: PlayMessage): void {
+  private handlePlay(message: PlayMessage): AudioBufferSourceNode | null {
     if (!this.audioBuffer) {
-      return;
+      return null;
     }
 
     // Create new source node
     const newSource = this.audioContext.createBufferSource();
     newSource.buffer = this.audioBuffer;
-    newSource.playbackRate.value = this.playbackRate;
+    newSource.playbackRate.value = getNonNegativeNumber(message.playbackRate) ?? this.playbackRate;
     newSource.detune.value = this.detune;
 
     const time = getNonNegativeNumber(message.time) ?? 0;
@@ -294,18 +363,25 @@ export class SamplerNode implements AudioNodeV2 {
       (this.loopEnd > offset ? this.loopEnd - offset : undefined);
 
     const isFutureScheduled = time > this.audioContext.currentTime;
+    const replaceImmediate = message.replaceImmediate ?? true;
 
     if (isFutureScheduled) {
       this.scheduledSources.add(newSource);
-    } else {
+    } else if (replaceImmediate) {
       this.stopImmediatePlayback();
       this.sourceNode = newSource;
+    }
+
+    if (!isFutureScheduled) {
+      this.activeSources.add(newSource);
     }
 
     // Clean up when playback ends naturally
     newSource.onended = () => {
       this.disconnectSource(newSource);
       this.scheduledSources.delete(newSource);
+      this.activeSources.delete(newSource);
+      this.noteVoices.removeSource(newSource);
 
       if (this.sourceNode === newSource) {
         this.sourceNode = null;
@@ -314,6 +390,7 @@ export class SamplerNode implements AudioNodeV2 {
 
     this.connectSource(newSource, gain);
     newSource.start(time, offset, duration);
+    return newSource;
   }
 
   private connectSource(source: AudioBufferSourceNode, gainValue: number): void {
@@ -330,10 +407,18 @@ export class SamplerNode implements AudioNodeV2 {
     this.sourceGains.delete(source);
   }
 
-  private stopSource(source: AudioBufferSourceNode): void {
+  private stopSource(source: AudioBufferSourceNode, time?: number): void {
     try {
+      if (time !== undefined && time > this.audioContext.currentTime) {
+        source.stop(time);
+        return;
+      }
+
       source.stop();
       this.disconnectSource(source);
+      this.scheduledSources.delete(source);
+      this.activeSources.delete(source);
+      this.noteVoices.removeSource(source);
     } catch {
       // Ignore errors if node already stopped
     }
@@ -349,11 +434,23 @@ export class SamplerNode implements AudioNodeV2 {
   private stopPlayback(): void {
     this.stopImmediatePlayback();
 
+    const sources = this.noteVoices.getSources();
+
+    for (const source of this.activeSources) {
+      sources.add(source);
+    }
+
     for (const source of this.scheduledSources) {
+      sources.add(source);
+    }
+
+    for (const source of sources) {
       this.stopSource(source);
     }
 
     this.scheduledSources.clear();
+    this.activeSources.clear();
+    this.noteVoices.clear();
   }
 
   private trimSilence(buffer: AudioBuffer, threshold = 0.01): AudioBuffer {

@@ -1,5 +1,4 @@
 export type SamplerPlaybackTrigger = {
-  [key: string]: unknown;
   type: 'bang' | 'play';
   time?: unknown;
   offset?: unknown;

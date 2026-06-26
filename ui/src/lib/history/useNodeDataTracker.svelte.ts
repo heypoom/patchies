@@ -40,6 +40,21 @@ export function useNodeDataTracker(nodeId: string) {
     });
   }
 
+  function commitMany(
+    description: string,
+    changes: Array<{ dataKey: string; oldValue: unknown; newValue: unknown }>
+  ): void {
+    const changed = changes.filter(({ oldValue, newValue }) => oldValue !== newValue);
+    if (changed.length === 0) return;
+
+    eventBus.dispatch({
+      type: 'nodeDataBatchCommit',
+      nodeId,
+      description,
+      changes: changed
+    });
+  }
+
   /**
    * Create a tracker for continuous input (text fields, sliders).
    * Call onFocus when input gains focus, onBlur when it loses focus.
@@ -77,6 +92,7 @@ export function useNodeDataTracker(nodeId: string) {
 
   return {
     commit,
+    commitMany,
     track,
     tracked
   };

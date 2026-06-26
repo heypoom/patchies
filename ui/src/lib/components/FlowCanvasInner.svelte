@@ -87,6 +87,7 @@
     VfsPathRenamedEvent,
     CodeCommitEvent,
     NodeDataCommitEvent,
+    NodeDataBatchCommitEvent,
     ObjectDataCommitEvent
   } from '$lib/eventbus/events';
   import { WorkerNodeSystem } from '$lib/js-runner/WorkerNodeSystem';
@@ -187,30 +188,52 @@
     );
   };
 
+  const syncViewportPausedCommit = (nodeId: string, dataKey: string, newValue: unknown): void => {
+    // Viewport-pause edge cases: keep pausedByViewport consistent when the user
+    // toggles pause on a DOM-backed node while it's offscreen.
+    if (dataKey !== 'paused') return;
+
+    const node = getNode(nodeId);
+    if (!node?.type || !cullableDomTypeSet.has(node.type)) return;
+
+    // Pause-while-offscreen: user takes ownership; drop our claim.
+    if (newValue === true && pausedByViewport.has(nodeId)) {
+      pausedByViewport.delete(nodeId);
+      return;
+    }
+
+    // Unpause-while-offscreen: re-pause ourselves so it doesn't waste CPU.
+    if (newValue === false && !prevVisibleDom.has(nodeId)) {
+      eventBus.dispatch({ type: 'nodeSetPaused', nodeId, paused: true });
+      pausedByViewport.add(nodeId);
+    }
+  };
+
   // Event handler for generic node data commit (undo tracking for non-code fields)
   const handleNodeDataCommit = (e: NodeDataCommitEvent) => {
     historyManager.record(
       new UpdateNodeDataCommand(e.nodeId, e.dataKey, e.oldValue, e.newValue, canvasAccessors)
     );
+    syncViewportPausedCommit(e.nodeId, e.dataKey, e.newValue);
+  };
 
-    // Viewport-pause edge cases: keep pausedByViewport consistent when the user
-    // toggles pause on a DOM-backed node while it's offscreen.
-    if (e.dataKey !== 'paused') return;
-
-    const node = getNode(e.nodeId);
-    if (!node?.type || !cullableDomTypeSet.has(node.type)) return;
-
-    // Pause-while-offscreen: user takes ownership; drop our claim.
-    if (e.newValue === true && pausedByViewport.has(e.nodeId)) {
-      pausedByViewport.delete(e.nodeId);
-      return;
+  const handleNodeDataBatchCommit = (e: NodeDataBatchCommitEvent) => {
+    for (const change of e.changes) {
+      syncViewportPausedCommit(e.nodeId, change.dataKey, change.newValue);
     }
 
-    // Unpause-while-offscreen: re-pause ourselves so it doesn't waste CPU.
-    if (e.newValue === false && !prevVisibleDom.has(e.nodeId)) {
-      eventBus.dispatch({ type: 'nodeSetPaused', nodeId: e.nodeId, paused: true });
-      pausedByViewport.add(e.nodeId);
-    }
+    const commands = e.changes.map(
+      (change) =>
+        new UpdateNodeDataCommand(
+          e.nodeId,
+          change.dataKey,
+          change.oldValue,
+          change.newValue,
+          canvasAccessors
+        )
+    );
+
+    historyManager.record(new BatchCommand(commands, e.description));
   };
 
   // Keyboard shortcut manager (created lazily in onMount to access component functions)
@@ -830,6 +853,7 @@
     eventBus.addEventListener('objectDataCommit', handleObjectDataCommit);
     eventBus.addEventListener('codeCommit', handleCodeCommit);
     eventBus.addEventListener('nodeDataCommit', handleNodeDataCommit);
+    eventBus.addEventListener('nodeDataBatchCommit', handleNodeDataBatchCommit);
 
     autosaveInterval = setInterval(performAutosave, AUTOSAVE_INTERVAL);
 
@@ -861,6 +885,7 @@
     eventBus.removeEventListener('objectDataCommit', handleObjectDataCommit);
     eventBus.removeEventListener('codeCommit', handleCodeCommit);
     eventBus.removeEventListener('nodeDataCommit', handleNodeDataCommit);
+    eventBus.removeEventListener('nodeDataBatchCommit', handleNodeDataBatchCommit);
 
     // Clean up autosave interval
     if (autosaveInterval) {

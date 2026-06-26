@@ -41,6 +41,7 @@ export type PatchiesEvent =
   | QuickAddCancelledEvent
   | CodeCommitEvent
   | NodeDataCommitEvent
+  | NodeDataBatchCommitEvent
   | ObjectDataCommitEvent
   | NodeSetPausedEvent
   | SurfaceMouseForwardingGraphChangedEvent
@@ -374,6 +375,17 @@ export interface NodeDataCommitEvent {
   dataKey: string;
   oldValue: unknown;
   newValue: unknown;
+}
+
+export interface NodeDataBatchCommitEvent {
+  type: 'nodeDataBatchCommit';
+  nodeId: string;
+  description: string;
+  changes: Array<{
+    dataKey: string;
+    oldValue: unknown;
+    newValue: unknown;
+  }>;
 }
 
 /**
