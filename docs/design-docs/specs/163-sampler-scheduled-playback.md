@@ -7,6 +7,7 @@ Allow `sampler~` to play buffers at a target Web Audio time by accepting timed
 ```ts
 { type: 'bang', time?: number }
 { type: 'play', time?: number, offset?: number, duration?: number, gain?: number }
+{ type: 'set', time: number, value: number }
 { type: 'noteOn', note: number, velocity: number, time?: number }
 { type: 'noteOff', note: number, time?: number }
 { type: 'setGain', value: number }
@@ -34,6 +35,9 @@ number // play immediately with gain multiplier
   seconds.
 - `duration` is the amount of source-buffer audio to play, in seconds.
 - `gain` is a per-playback amplitude multiplier.
+- Scheduled `set` messages trigger playback with `value` as per-playback gain.
+  This lets sequencer value output drive sampler velocity without a mapper.
+  Untimed `set` messages are ignored by `sampler~`.
 - `setGain` sets the sampler's built-in output gain. It scales all playback
   voices after per-trigger gain, number gain, and MIDI velocity gain.
 - Missing `offset`/`duration` fall back to the sampler's configured start/end

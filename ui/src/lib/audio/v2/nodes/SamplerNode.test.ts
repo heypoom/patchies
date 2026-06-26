@@ -77,6 +77,31 @@ describe('SamplerNode', () => {
     expect(node.audioNode.gain.value).toBe(0.25);
   });
 
+  it('plays scheduled set messages as gain-scaled triggers', () => {
+    const source = createFakeSource();
+    const outputGain = createFakeGain();
+    const voiceGain = createFakeGain();
+    const audioContext = createFakeAudioContext([source], [outputGain, voiceGain]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'set', time: 12.5, value: 0.75 });
+
+    expect(voiceGain.gain.value).toBe(0.75);
+    expect(source.start).toHaveBeenCalledWith(12.5, 0, undefined);
+  });
+
+  it('ignores untimed set messages', () => {
+    const source = createFakeSource();
+    const audioContext = createFakeAudioContext([source]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'set', value: 0.75 });
+
+    expect(source.start).not.toHaveBeenCalled();
+  });
+
   it('schedules bang messages with time', () => {
     const source = createFakeSource();
     const audioContext = createFakeAudioContext([source]);

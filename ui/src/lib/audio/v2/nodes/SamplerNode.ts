@@ -26,6 +26,13 @@ type LoopMessage = {
   gain?: unknown;
 };
 
+type ScheduledSetMessage = {
+  [key: string]: unknown;
+  type: 'set';
+  time: number;
+  value: number;
+};
+
 type NoteOnMessage = {
   [key: string]: unknown;
   type: 'noteOn';
@@ -137,6 +144,7 @@ export class SamplerNode implements AudioNodeV2 {
       })
       .with({ type: 'bang' }, this.handlePlay.bind(this))
       .with({ type: 'play' }, this.handlePlay.bind(this))
+      .with({ type: 'set', time: P.number, value: P.number }, this.handleScheduledSet.bind(this))
       .with({ type: 'noteOn', note: P.number, velocity: P.number }, this.handleNoteOn.bind(this))
       .with({ type: 'noteOff', note: P.number }, this.handleNoteOff.bind(this))
       .with({ type: 'setNoteOffMode', value: P.union('one-shot', 'held') }, ({ value }) => {
@@ -272,6 +280,14 @@ export class SamplerNode implements AudioNodeV2 {
     };
 
     newSource.start(time, offset, duration);
+  }
+
+  private handleScheduledSet(message: ScheduledSetMessage): void {
+    this.handlePlay({
+      type: 'play',
+      time: message.time,
+      gain: message.value
+    });
   }
 
   private handleNoteOn(message: NoteOnMessage): void {

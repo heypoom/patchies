@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox';
+
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg, sym } from './helpers';
@@ -7,41 +8,55 @@ import { Bang, Stop, LoadBySrc, NoteOn, NoteOff, messages } from './common';
 // Sampler-specific message schemas
 const Play = sym('play');
 const BangScheduled = msg('bang', { time: Type.Number() });
+
 const PlayScheduled = msg('play', {
   time: Type.Optional(Type.Number()),
   offset: Type.Optional(Type.Number()),
   duration: Type.Optional(Type.Number()),
   gain: Type.Optional(Type.Number({ minimum: 0 }))
 });
+
+const SetScheduled = msg('set', {
+  time: Type.Number(),
+  value: Type.Number({ minimum: 0 })
+});
+
 const Record = sym('record');
 const End = sym('end');
 const Loop = sym('loop');
 const LoopOn = sym('loopOn');
 const LoopOff = sym('loopOff');
+
 const LoopWithPoints = msg('loop', {
   start: Type.Number(),
   end: Type.Number()
 });
+
 const LoopWithOptionalPoints = msg('loop', {
   start: Type.Optional(Type.Number()),
   end: Type.Optional(Type.Number())
 });
+
 const LoopOnWithPoints = msg('loopOn', {
   start: Type.Number(),
   end: Type.Number()
 });
+
 const LoopOnWithOptionalPoints = msg('loopOn', {
   start: Type.Optional(Type.Number()),
   end: Type.Optional(Type.Number())
 });
+
 const SetStart = msg('setStart', { value: Type.Number() });
 const SetEnd = msg('setEnd', { value: Type.Number() });
 const SetGain = msg('setGain', { value: Type.Number({ minimum: 0 }) });
 const SetPlaybackRate = msg('setPlaybackRate', { value: Type.Number() });
 const SetDetune = msg('setDetune', { value: Type.Number() });
+
 const SetNoteOffMode = msg('setNoteOffMode', {
   value: Type.String({ enum: ['one-shot', 'held'] })
 });
+
 const Download = msg('download', { name: Type.Optional(Type.String()) });
 
 // Float32Array for direct buffer setting (from uiua node, etc.)
@@ -53,6 +68,7 @@ export const samplerMessages = {
   bangScheduled: schema(BangScheduled),
   play: schema(Play),
   playScheduled: schema(PlayScheduled),
+  setScheduled: schema(SetScheduled),
   record: schema(Record),
   end: schema(End),
   loop: schema(Loop),
@@ -94,24 +110,36 @@ export const samplerSchema: ObjectSchema = {
       messages: [
         {
           schema: Bang,
-          description: 'Play the recorded sample'
-        },
-        {
-          schema: Type.Number({ minimum: 0 }),
-          description: 'Play the recorded sample with gain multiplier (0 = silent, 1 = normal)'
+          description: 'Play the sample'
         },
         {
           schema: BangScheduled,
           description: 'Schedule playback of the recorded sample'
         },
         {
-          schema: Play,
-          description: 'Play the recorded sample'
+          schema: Type.Number({ minimum: 0 }),
+          description: 'Play the sample with gain multiplier (0 = silent, 1 = normal)'
+        },
+        {
+          schema: NoteOn,
+          description: 'Play the sample as pitched MIDI note (60 = original pitch, velocity = gain)'
+        },
+        {
+          schema: NoteOff,
+          description: 'Stop active sampler voices when Note Off mode is held'
         },
         {
           schema: PlayScheduled,
           description:
-            'Play the recorded sample with optional audio time, buffer offset, duration in seconds and gain'
+            'Play the sample with optional gain, audio time, buffer offset, duration (seconds)'
+        },
+        {
+          schema: Stop,
+          description: 'Stop playback'
+        },
+        {
+          schema: SetScheduled,
+          description: 'Schedule playback with gain'
         },
         {
           schema: Record,
@@ -120,19 +148,6 @@ export const samplerSchema: ObjectSchema = {
         {
           schema: End,
           description: 'Stop recording'
-        },
-        {
-          schema: Stop,
-          description: 'Stop playback'
-        },
-        {
-          schema: NoteOn,
-          description:
-            'Play the sample as a pitched MIDI note (note 60 = original pitch, velocity controls gain)'
-        },
-        {
-          schema: NoteOff,
-          description: 'Stop active sampler voices for the MIDI note when Note Off mode is held'
         },
         {
           schema: SetNoteOffMode,

@@ -41,6 +41,15 @@ timing and gain fields:
 All four fields are optional. When omitted, playback uses the sampler's current
 start/end settings and normal gain.
 
+`sampler~` also treats scheduled `set` messages as playback triggers with
+`value` as gain. This matches the sequencer's audio lookahead value output:
+
+```js
+{ type: "set", time: audioContextTime, value: 0.75 }
+```
+
+Untimed `set` messages are ignored.
+
 Use `setGain` to set the sampler's built-in output level. This scales all
 voices after per-trigger gain and MIDI velocity:
 
