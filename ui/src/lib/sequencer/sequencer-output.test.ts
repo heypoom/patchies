@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { createSequencerPayload, transportTimeToAudioContextTime } from './sequencer-output';
+import {
+  createSequencerPayload,
+  sequencerOutputCarriesTiming,
+  transportTimeToAudioContextTime
+} from './sequencer-output';
 
 describe('sequencer output payloads', () => {
   it('adds time to bang output only when audio lookahead is enabled', () => {
@@ -49,6 +53,50 @@ describe('sequencer output payloads', () => {
         time: 12.5
       })
     ).toEqual({ type: 'set', time: 12.5, value: 0.75 });
+  });
+
+  it('keeps single index output untimed', () => {
+    const options = {
+      outletMode: 'single' as const,
+      outputMode: 'index' as const,
+      trackIndex: 2,
+      velocity: 0.75,
+      time: 12.5
+    };
+
+    expect(createSequencerPayload({ ...options, audioRate: false })).toBe(2);
+    expect(createSequencerPayload({ ...options, audioRate: true })).toBe(2);
+  });
+
+  it('adds time to single midi output only when audio lookahead is enabled', () => {
+    expect(
+      createSequencerPayload({
+        outletMode: 'single',
+        outputMode: 'midi',
+        audioRate: false,
+        trackIndex: 2,
+        velocity: 0.75,
+        time: 12.5
+      })
+    ).toEqual({ type: 'noteOn', note: 38, index: 2, velocity: 95 });
+
+    expect(
+      createSequencerPayload({
+        outletMode: 'single',
+        outputMode: 'midi',
+        audioRate: true,
+        trackIndex: 2,
+        velocity: 0.75,
+        time: 12.5
+      })
+    ).toEqual({ type: 'noteOn', note: 38, index: 2, velocity: 95, time: 12.5 });
+  });
+
+  it('identifies which outputs can carry timing', () => {
+    expect(sequencerOutputCarriesTiming('multi', 'bang')).toBe(true);
+    expect(sequencerOutputCarriesTiming('multi', 'value')).toBe(true);
+    expect(sequencerOutputCarriesTiming('single', 'midi')).toBe(true);
+    expect(sequencerOutputCarriesTiming('single', 'index')).toBe(false);
   });
 
   it('converts scheduled transport time to AudioContext time', () => {

@@ -8,6 +8,7 @@
   import { SequencerScheduler } from '../../sequencer/sequencer-scheduler';
   import {
     createSequencerPayload,
+    sequencerOutputCarriesTiming,
     transportTimeToAudioContextTime
   } from '$lib/sequencer/sequencer-output';
   import { type TrackData, DEFAULT_TRACKS, TRACK_COLORS } from '$lib/nodes/sequencer-constants';
@@ -66,6 +67,9 @@
   const outletMode = $derived(data.outletMode ?? 'multi');
   const outputMode = $derived(data.outputMode ?? (outletMode === 'single' ? 'index' : 'bang'));
   const audioRate = $derived(data.audioRate ?? false);
+  const sendsTimedOutput = $derived(
+    audioRate && sequencerOutputCarriesTiming(outletMode, outputMode)
+  );
   const clockMode = $derived(data.clockMode ?? 'auto');
 
   const showVelocity = $derived(data.showVelocity ?? false);
@@ -82,7 +86,7 @@
     const mode = outputMode;
     const outlet = outletMode;
 
-    const payloadTime = audioRate
+    const payloadTime = sendsTimedOutput
       ? transportTimeToAudioContextTime({
           scheduledTransportTime: time,
           currentTransportTime: Transport.seconds,
@@ -99,7 +103,7 @@
       const payload = createSequencerPayload({
         outletMode: outlet,
         outputMode: mode,
-        audioRate,
+        audioRate: sendsTimedOutput,
         trackIndex: t,
         velocity,
         time: payloadTime
@@ -299,7 +303,7 @@
 
   // Re-setup scheduler when output mode, lookahead mode, or clock mode changes
   $effect(() => {
-    void audioRate;
+    void sendsTimedOutput;
     void clockMode;
 
     schedulerHandle?.setup();
@@ -318,7 +322,7 @@
 
     schedulerHandle = new SequencerScheduler(
       nodeId,
-      () => ({ clockMode, audioRate, steps, swing }),
+      () => ({ clockMode, audioRate: sendsTimedOutput, steps, swing }),
       fireAtStep,
       (step) => {
         if (!(data.showInTimeline ?? true) || (data.muted ?? false)) return [];

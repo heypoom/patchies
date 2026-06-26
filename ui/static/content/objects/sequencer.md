@@ -41,6 +41,10 @@ Enable **Audio lookahead** to include precise Web Audio timing:
   sample-accurate triggering with `sampler~`.
 - **value + Audio lookahead** — sends `{type: "set", time, value}` for
   parameter automation and custom `dsp~` nodes.
+- **single outlet midi + Audio lookahead** — sends
+  `{type: "noteOn", note, index, velocity, time}` for scheduled drum-pad or MIDI
+  triggering. `note` follows the GM drum map from 36 upward, `index` is the
+  track number, and `velocity` is MIDI `0` to `127`.
 
 ## Velocity Lane
 

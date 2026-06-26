@@ -7,11 +7,23 @@ import { Bang, Stop, LoadBySrc, messages } from './common';
 // Sampler-specific message schemas
 const Play = sym('play');
 const BangScheduled = msg('bang', { time: Type.Number() });
-const PlayScheduled = msg('play', {
-  time: Type.Optional(Type.Number()),
-  offset: Type.Optional(Type.Number()),
-  duration: Type.Optional(Type.Number())
-});
+const PlayScheduled = Type.Union([
+  msg('play', {
+    time: Type.Number(),
+    offset: Type.Optional(Type.Number()),
+    duration: Type.Optional(Type.Number())
+  }),
+  msg('play', {
+    time: Type.Optional(Type.Number()),
+    offset: Type.Number(),
+    duration: Type.Optional(Type.Number())
+  }),
+  msg('play', {
+    time: Type.Optional(Type.Number()),
+    offset: Type.Optional(Type.Number()),
+    duration: Type.Number()
+  })
+]);
 const Record = sym('record');
 const End = sym('end');
 const Loop = sym('loop');

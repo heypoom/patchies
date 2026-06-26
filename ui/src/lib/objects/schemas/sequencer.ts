@@ -80,13 +80,13 @@ const SetSchedule = msg('set', {
 const NoteOn = msg('noteOn', {
   note: Type.Number(),
   index: Type.Number(),
-  velocity: Type.Number({ minimum: 0, maximum: 1 })
+  velocity: Type.Number({ minimum: 0, maximum: 127 })
 });
 
 const NoteOnScheduled = msg('noteOn', {
   note: Type.Number(),
   index: Type.Number(),
-  velocity: Type.Number({ minimum: 0, maximum: 1 }),
+  velocity: Type.Number({ minimum: 0, maximum: 127 }),
   time: Type.Number()
 });
 
@@ -218,12 +218,12 @@ export const sequencerSchema: ObjectSchema = {
         },
         {
           schema: NoteOn,
-          description: 'Single/midi: noteOn with note (= track index), index, and velocity'
+          description: 'Single/midi: noteOn with GM note, track index, and MIDI velocity 0–127'
         },
         {
           schema: NoteOnScheduled,
           description:
-            'Single/midi + audio lookahead: noteOn with note, index, velocity, and Web Audio time'
+            'Single/midi + audio lookahead: noteOn with GM note, track index, MIDI velocity 0–127, and Web Audio time'
         }
       ]
     }

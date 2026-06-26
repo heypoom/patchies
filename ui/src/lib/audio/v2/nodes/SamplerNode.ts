@@ -44,6 +44,7 @@ export class SamplerNode implements AudioNodeV2 {
   private recordingDestination: MediaStreamAudioDestinationNode;
   private mediaRecorder: MediaRecorder | null = null;
   private sourceNode: AudioBufferSourceNode | null = null;
+  private scheduledSources = new Set<AudioBufferSourceNode>();
   private loopStart: number = 0;
   private loopEnd: number = 0;
   private playbackRate: number = 1;
@@ -219,28 +220,12 @@ export class SamplerNode implements AudioNodeV2 {
       return;
     }
 
-    // Stop existing playback
-    this.stopPlayback();
-
     // Create new source node
     const newSource = this.audioContext.createBufferSource();
     newSource.buffer = this.audioBuffer;
     newSource.playbackRate.value = this.playbackRate;
     newSource.detune.value = this.detune;
     newSource.connect(this.audioNode);
-
-    // Store reference before setting up callback
-    this.sourceNode = newSource;
-
-    // Clean up when playback ends naturally
-    newSource.onended = () => {
-      // Only clean up if this is still the active source
-      if (this.sourceNode === newSource) {
-        newSource.disconnect();
-
-        this.sourceNode = null;
-      }
-    };
 
     const time = getNonNegativeNumber(message.time) ?? 0;
     const offset = getNonNegativeNumber(message.offset) ?? this.loopStart;
@@ -249,19 +234,52 @@ export class SamplerNode implements AudioNodeV2 {
       getNonNegativeNumber(message.duration) ??
       (this.loopEnd > offset ? this.loopEnd - offset : undefined);
 
+    const isFutureScheduled = time > this.audioContext.currentTime;
+
+    if (isFutureScheduled) {
+      this.scheduledSources.add(newSource);
+    } else {
+      this.stopImmediatePlayback();
+      this.sourceNode = newSource;
+    }
+
+    // Clean up when playback ends naturally
+    newSource.onended = () => {
+      newSource.disconnect();
+      this.scheduledSources.delete(newSource);
+
+      if (this.sourceNode === newSource) {
+        this.sourceNode = null;
+      }
+    };
+
     newSource.start(time, offset, duration);
   }
 
-  private stopPlayback(): void {
-    if (!this.sourceNode) return;
-
+  private stopSource(source: AudioBufferSourceNode): void {
     try {
-      this.sourceNode.stop();
-      this.sourceNode.disconnect();
-      this.sourceNode = null;
+      source.stop();
+      source.disconnect();
     } catch {
       // Ignore errors if node already stopped
     }
+  }
+
+  private stopImmediatePlayback(): void {
+    if (!this.sourceNode) return;
+
+    this.stopSource(this.sourceNode);
+    this.sourceNode = null;
+  }
+
+  private stopPlayback(): void {
+    this.stopImmediatePlayback();
+
+    for (const source of this.scheduledSources) {
+      this.stopSource(source);
+    }
+
+    this.scheduledSources.clear();
   }
 
   private trimSilence(buffer: AudioBuffer, threshold = 0.01): AudioBuffer {

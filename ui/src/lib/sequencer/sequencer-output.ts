@@ -28,6 +28,16 @@ export function transportTimeToAudioContextTime({
   return audioContextTime + Math.max(0, scheduledTransportTime - currentTransportTime);
 }
 
+export function sequencerOutputCarriesTiming(
+  outletMode: OutletMode,
+  outputMode: SequencerOutputMode
+): boolean {
+  return (
+    (outletMode === 'multi' && (outputMode === 'bang' || outputMode === 'value')) ||
+    (outletMode === 'single' && outputMode === 'midi')
+  );
+}
+
 export function createSequencerPayload({
   outletMode,
   outputMode,
