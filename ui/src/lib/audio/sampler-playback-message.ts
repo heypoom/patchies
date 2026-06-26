@@ -13,14 +13,33 @@ type SamplerPlaybackState = {
   loopEnd: number;
 };
 
+type SamplerLoopPlaybackMessage = {
+  type: 'loop';
+  start: number;
+  end: number;
+  time?: unknown;
+  offset?: unknown;
+  duration?: unknown;
+};
+
 export function createSamplerPlaybackMessage(
   trigger: SamplerPlaybackTrigger,
   { hasRecording, loopEnabled, loopStart, loopEnd }: SamplerPlaybackState
-): SamplerPlaybackTrigger | { type: 'loop'; start: number; end: number } | null {
+): SamplerPlaybackTrigger | SamplerLoopPlaybackMessage | null {
   if (!hasRecording) return null;
 
   if (loopEnabled && loopEnd > loopStart) {
-    return { type: 'loop', start: loopStart, end: loopEnd };
+    const loopMessage: SamplerLoopPlaybackMessage = {
+      type: 'loop',
+      start: loopStart,
+      end: loopEnd
+    };
+
+    if ('time' in trigger) loopMessage.time = trigger.time;
+    if ('offset' in trigger) loopMessage.offset = trigger.offset;
+    if ('duration' in trigger) loopMessage.duration = trigger.duration;
+
+    return loopMessage;
   }
 
   return trigger;

@@ -6,13 +6,20 @@ export type SingleOutputMode = 'index' | 'midi';
 export type SequencerOutputMode = MultiOutputMode | SingleOutputMode;
 
 type CreateSequencerPayloadOptions = {
-  outletMode: OutletMode;
-  outputMode: SequencerOutputMode;
   audioRate: boolean;
   trackIndex: number;
   velocity: number;
   time: number;
-};
+} & (
+  | {
+      outletMode: 'multi';
+      outputMode: MultiOutputMode;
+    }
+  | {
+      outletMode: 'single';
+      outputMode: SingleOutputMode;
+    }
+);
 
 type TransportTimeToAudioContextTimeOptions = {
   scheduledTransportTime: number;
@@ -64,12 +71,24 @@ export function createSequencerPayload({
           };
     }
 
-    return audioRate ? { type: 'set', index: trackIndex, value: velocity, time } : trackIndex;
+    if (outputMode === 'index') {
+      return audioRate ? { type: 'set', index: trackIndex, value: velocity, time } : trackIndex;
+    }
+
+    throw new Error(`Invalid sequencer output mode "${outputMode}" for single outlet mode`);
   }
 
-  if (outputMode === 'value') {
-    return audioRate ? { type: 'set', time, value: velocity } : velocity;
+  if (outletMode === 'multi') {
+    if (outputMode === 'value') {
+      return audioRate ? { type: 'set', time, value: velocity } : velocity;
+    }
+
+    if (outputMode === 'bang') {
+      return audioRate ? { type: 'bang', time } : { type: 'bang' };
+    }
+
+    throw new Error(`Invalid sequencer output mode "${outputMode}" for multi outlet mode`);
   }
 
-  return audioRate ? { type: 'bang', time } : { type: 'bang' };
+  throw new Error(`Invalid sequencer outlet mode "${outletMode}"`);
 }

@@ -100,17 +100,37 @@
 
       const velocity = track.stepValues[stepIndex] ?? 1.0;
 
-      const payload = createSequencerPayload({
-        outletMode: outlet,
-        outputMode: mode,
-        audioRate: sendsTimedOutput,
-        trackIndex: t,
-        velocity,
-        time: payloadTime
-      });
+      const payload =
+        outlet === 'single'
+          ? createSequencerPayload({
+              outletMode: 'single',
+              outputMode: assertSingleOutputMode(mode),
+              audioRate: sendsTimedOutput,
+              trackIndex: t,
+              velocity,
+              time: payloadTime
+            })
+          : createSequencerPayload({
+              outletMode: 'multi',
+              outputMode: assertMultiOutputMode(mode),
+              audioRate: sendsTimedOutput,
+              trackIndex: t,
+              velocity,
+              time: payloadTime
+            });
 
       messageContext.send(payload, { to: outlet === 'single' ? 0 : t });
     }
+  }
+
+  function assertSingleOutputMode(mode: OutputMode): SingleOutputMode {
+    if (mode === 'index' || mode === 'midi') return mode;
+    throw new Error(`Invalid sequencer output mode "${mode}" for single outlet mode`);
+  }
+
+  function assertMultiOutputMode(mode: OutputMode): MultiOutputMode {
+    if (mode === 'bang' || mode === 'value') return mode;
+    throw new Error(`Invalid sequencer output mode "${mode}" for multi outlet mode`);
   }
 
   function setNodeData<T extends keyof NodeData>(key: T, value: NodeData[T]): void {

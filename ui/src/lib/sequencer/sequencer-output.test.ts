@@ -104,6 +104,30 @@ describe('sequencer output payloads', () => {
     expect(sequencerOutputCarriesTiming('single', 'midi')).toBe(true);
   });
 
+  it('rejects invalid outlet/output mode combinations', () => {
+    expect(() =>
+      createSequencerPayload({
+        outletMode: 'multi',
+        outputMode: 'index',
+        audioRate: false,
+        trackIndex: 2,
+        velocity: 0.75,
+        time: 12.5
+      } as never)
+    ).toThrow('Invalid sequencer output mode');
+
+    expect(() =>
+      createSequencerPayload({
+        outletMode: 'single',
+        outputMode: 'value',
+        audioRate: false,
+        trackIndex: 2,
+        velocity: 0.75,
+        time: 12.5
+      } as never)
+    ).toThrow('Invalid sequencer output mode');
+  });
+
   it('converts scheduled transport time to AudioContext time', () => {
     expect(
       transportTimeToAudioContextTime({

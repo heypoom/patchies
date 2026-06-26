@@ -19,6 +19,7 @@
   import { VfsRelinkOverlay } from '$lib/vfs/components';
   import { useNodeDataTracker } from '$lib/history';
   import SamplerSettings from '$lib/components/settings/SamplerSettings.svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let node: NodeProps & {
     data: {
@@ -537,13 +538,14 @@
 
           <!-- Play Button -->
           {#if hasRecording && !isRecording}
-            <button
-              title="Play Recording"
-              class="node-floating-button"
-              onclick={() => playRecording()}
-            >
-              <Play class="h-4 w-4 text-zinc-300" />
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button class="node-floating-button" onclick={() => playRecording()}>
+                  <Play class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Play Recording</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
 
           <button
