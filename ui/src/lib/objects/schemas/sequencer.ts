@@ -49,11 +49,12 @@ const SetOutputMode = msg('setOutputMode', {
   value: Type.Union([
     Type.Literal('bang'),
     Type.Literal('value'),
-    Type.Literal('audio'),
     Type.Literal('index'),
     Type.Literal('midi')
   ])
 });
+
+const SetAudioRate = msg('setAudioRate', { value: Type.Boolean() });
 
 const SetOutletMode = msg('setOutletMode', {
   value: Type.Union([Type.Literal('multi'), Type.Literal('single')])
@@ -66,6 +67,10 @@ const SetClockMode = msg('setClockMode', {
 const SetStepCount = msg('setStepCount', { value: Type.Number() });
 
 // --- Output (for outlet schema doc) ---
+const BangScheduled = msg('bang', {
+  time: Type.Number()
+});
+
 const SetSchedule = msg('set', {
   time: Type.Number(),
   value: Type.Number({ minimum: 0, maximum: 1 })
@@ -111,6 +116,7 @@ export const sequencerMessages = {
   rotate: schema(Rotate),
   setSwing: schema(SetSwing),
   setOutputMode: schema(SetOutputMode),
+  setAudioRate: schema(SetAudioRate),
   setOutletMode: schema(SetOutletMode),
   setClockMode: schema(SetClockMode),
   setStepCount: schema(SetStepCount)
@@ -138,7 +144,11 @@ export const sequencerSchema: ObjectSchema = {
         { schema: SetSwing, description: 'Set swing amount (0–100)' },
         {
           schema: SetOutputMode,
-          description: 'Set output mode (multi: bang/value/audio, single: index/midi/audio)'
+          description: 'Set output mode (multi: bang/value, single: index/midi)'
+        },
+        {
+          schema: SetAudioRate,
+          description: 'Enable or disable Web Audio lookahead timestamps on output'
         },
         {
           schema: SetOutletMode,
@@ -190,12 +200,17 @@ export const sequencerSchema: ObjectSchema = {
           description: 'Multi/bang: fired on active step'
         },
         {
+          schema: BangScheduled,
+          description: 'Multi/bang + audio lookahead: fired with Web Audio time'
+        },
+        {
           schema: Type.Number({ minimum: 0, maximum: 1 }),
           description: 'Multi/value: velocity value 0–1'
         },
         {
           schema: SetSchedule,
-          description: 'Multi/audio: lookahead-scheduled event with Web Audio time and velocity'
+          description:
+            'Multi/value + audio lookahead: scheduled set event with Web Audio time and velocity'
         },
         {
           schema: Type.Number({ minimum: 0 }),
@@ -207,7 +222,8 @@ export const sequencerSchema: ObjectSchema = {
         },
         {
           schema: NoteOnScheduled,
-          description: 'Single/audio: noteOn with note, index, velocity, and Web Audio time'
+          description:
+            'Single/midi + audio lookahead: noteOn with note, index, velocity, and Web Audio time'
         }
       ]
     }

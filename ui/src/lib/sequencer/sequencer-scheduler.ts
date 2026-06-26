@@ -4,7 +4,7 @@ import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
 
 export interface SequencerConfig {
   clockMode: 'auto' | 'manual';
-  outputMode: string;
+  audioRate: boolean;
   steps: number;
   swing: number;
 }
@@ -40,7 +40,7 @@ export class SequencerScheduler {
   }
 
   private scheduleBar(barTime: number): void {
-    const { steps, swing, outputMode } = this.getConfig();
+    const { steps, swing, audioRate } = this.getConfig();
 
     // Cancel any leftover step schedules and markers from the previous bar
     for (const id of this.stepScheduleIds) this.scheduler.cancel(id);
@@ -62,7 +62,7 @@ export class SequencerScheduler {
       const stepTime = barTime + i * stepInterval + swingOffset;
 
       const id = this.scheduler.schedule(stepTime, (t) => this.onFire(i, t), {
-        audio: outputMode === 'audio'
+        audio: audioRate
       });
 
       this.stepScheduleIds.push(id);
@@ -75,7 +75,7 @@ export class SequencerScheduler {
 
   /** Re-subscribe to the bar clock, respecting current clockMode. */
   setup(): void {
-    const { clockMode, outputMode } = this.getConfig();
+    const { clockMode, audioRate } = this.getConfig();
 
     if (this.barSubId) {
       this.scheduler.cancel(this.barSubId);
@@ -90,7 +90,7 @@ export class SequencerScheduler {
     if (clockMode === 'manual') return;
 
     this.barSubId = this.scheduler.onBeat(0, (barTime) => this.scheduleBar(barTime), {
-      audio: outputMode === 'audio'
+      audio: audioRate
     });
   }
 

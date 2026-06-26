@@ -3,6 +3,18 @@ import { match, P } from 'ts-pattern';
 import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
+type PlayMessage = {
+  [key: string]: unknown;
+  type: 'bang' | 'play';
+
+  time?: unknown;
+  offset?: unknown;
+  duration?: unknown;
+};
+
+const getNonNegativeNumber = (value: unknown): number | undefined =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
+
 export class SamplerNode implements AudioNodeV2 {
   static type = 'sampler~';
   static group: AudioNodeGroup = 'processors';
@@ -74,6 +86,7 @@ export class SamplerNode implements AudioNodeV2 {
           this.mediaRecorder.stop();
         }
       })
+      .with({ type: 'bang' }, this.handlePlay.bind(this))
       .with({ type: 'play' }, this.handlePlay.bind(this))
       .with({ type: 'stop' }, this.stopPlayback.bind(this))
       .with({ type: 'loop', start: P.number, end: P.number }, ({ start, end }) => {
@@ -201,7 +214,7 @@ export class SamplerNode implements AudioNodeV2 {
     this.mediaRecorder = recorder;
   }
 
-  private handlePlay(): void {
+  private handlePlay(message: PlayMessage): void {
     if (!this.audioBuffer) {
       return;
     }
@@ -224,16 +237,19 @@ export class SamplerNode implements AudioNodeV2 {
       // Only clean up if this is still the active source
       if (this.sourceNode === newSource) {
         newSource.disconnect();
+
         this.sourceNode = null;
       }
     };
 
-    // Use stored loop points
-    const startTime = this.loopStart ?? 0;
-    const duration =
-      this.loopEnd !== undefined && this.loopEnd > startTime ? this.loopEnd - startTime : undefined;
+    const time = getNonNegativeNumber(message.time) ?? 0;
+    const offset = getNonNegativeNumber(message.offset) ?? this.loopStart;
 
-    newSource.start(0, startTime, duration);
+    const duration =
+      getNonNegativeNumber(message.duration) ??
+      (this.loopEnd > offset ? this.loopEnd - offset : undefined);
+
+    newSource.start(time, offset, duration);
   }
 
   private stopPlayback(): void {

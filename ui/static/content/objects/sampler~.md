@@ -17,6 +17,29 @@ control.
 
 Drop an audio file into the sampler to load it.
 
+## Playback Messages
+
+Send `{ type: "bang" }` or `{ type: "play" }` to play immediately. For
+sample-accurate triggering from sequencers and clocks, send a timed bang:
+
+```js
+{ type: "bang", time: audioContextTime }
+```
+
+For explicit sample playback control, `play` also accepts optional Web Audio
+timing fields:
+
+```js
+{ type: "play", time: audioContextTime, offset: 0, duration: 0.25 }
+```
+
+- `time` schedules playback at an absolute `AudioContext.currentTime` timestamp
+- `offset` starts from a position in the sample buffer, in seconds
+- `duration` plays a specific amount of source-buffer audio, in seconds
+
+All three fields are optional. When omitted, playback uses the sampler's current
+start/end settings.
+
 ## Float32Array Input
 
 The sampler can receive audio samples directly as a `Float32Array` via its
