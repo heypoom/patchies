@@ -30,6 +30,7 @@
       loop?: boolean;
       playbackRate?: number;
       detune?: number;
+      noteOffMode?: 'one-shot' | 'held';
 
       // Used when converting from soundfile~
       vfsPath?: string;
@@ -152,6 +153,7 @@
   const loopEnabled = $derived(node.data.loop || false);
   const playbackRate = $derived(node.data.playbackRate || 1);
   const detune = $derived(node.data.detune || 0);
+  const noteOffMode = $derived(node.data.noteOffMode ?? 'one-shot');
 
   // Use node dimensions if available, otherwise use defaults
   const width = $derived(node.width || 190);
@@ -216,6 +218,10 @@
       })
       .with(samplerMessages.setDetune, (msg) => {
         updateNodeData(node.id, { ...node.data, detune: msg.value });
+        audioService.send(node.id, 'message', msg);
+      })
+      .with(samplerMessages.setNoteOffMode, (msg) => {
+        updateNodeData(node.id, { ...node.data, noteOffMode: msg.value });
         audioService.send(node.id, 'message', msg);
       })
       .with(samplerMessages.download, (msg) => downloadBuffer(msg.name))
@@ -423,6 +429,13 @@
     audioService.send(node.id, 'message', { type: 'setDetune', value });
   }
 
+  function updateNoteOffMode(value: 'one-shot' | 'held') {
+    const oldValue = noteOffMode;
+    updateNodeData(node.id, { ...node.data, noteOffMode: value });
+    audioService.send(node.id, 'message', { type: 'setNoteOffMode', value });
+    tracker.commit('noteOffMode', oldValue, value);
+  }
+
   function downloadBuffer(name?: string) {
     if (audioBuffer) downloadAsWav(audioBuffer, name);
   }
@@ -434,7 +447,8 @@
       loopEnd: recordingDuration,
       loop: false,
       playbackRate: 1,
-      detune: 0
+      detune: 0,
+      noteOffMode: 'one-shot'
     });
 
     // Update AudioService
@@ -443,6 +457,7 @@
     audioService.send(node.id, 'message', { type: 'loopOff' });
     audioService.send(node.id, 'message', { type: 'setPlaybackRate', value: 1 });
     audioService.send(node.id, 'message', { type: 'setDetune', value: 0 });
+    audioService.send(node.id, 'message', { type: 'setNoteOffMode', value: 'one-shot' });
   }
 
   onMount(async () => {
@@ -467,6 +482,11 @@
       if (node.data.detune) {
         audioService.send(node.id, 'message', { type: 'setDetune', value: node.data.detune });
       }
+
+      audioService.send(node.id, 'message', {
+        type: 'setNoteOffMode',
+        value: node.data.noteOffMode ?? 'one-shot'
+      });
 
       // Get audio buffer if it exists
       if (v2Node.audioBuffer) {
@@ -661,10 +681,12 @@
         {loopEnabled}
         {playbackRate}
         {detune}
+        {noteOffMode}
         onLoopStartChange={updateLoopStart}
         onLoopEndChange={updateLoopEnd}
         onPlaybackRateChange={updatePlaybackRate}
         onDetuneChange={updateDetune}
+        onNoteOffModeChange={updateNoteOffMode}
         onToggleLoop={toggleLoop}
         onReset={resetSettings}
         onClose={() => (showSettings = false)}

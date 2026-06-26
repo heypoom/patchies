@@ -92,6 +92,71 @@ describe('SamplerNode', () => {
     expect(source.start).toHaveBeenCalledWith(12.5, 0.25, 1.5);
   });
 
+  it('maps noteOn note to playback rate and velocity to gain', () => {
+    const source = createFakeSource();
+    const outputGain = createFakeGain();
+    const voiceGain = createFakeGain();
+    const audioContext = createFakeAudioContext([source], [outputGain, voiceGain]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'noteOn', note: 72, velocity: 64, time: 12.5 });
+
+    expect(source.playbackRate.value).toBe(2);
+    expect(voiceGain.gain.value).toBeCloseTo(64 / 127);
+    expect(source.start).toHaveBeenCalledWith(12.5, 0, undefined);
+  });
+
+  it('ignores noteOff in one-shot mode', () => {
+    const first = createFakeSource();
+    const second = createFakeSource();
+    const audioContext = createFakeAudioContext([first, second]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'noteOn', note: 60, velocity: 127 });
+    node.send('message', { type: 'noteOn', note: 62, velocity: 127 });
+
+    expect(first.stop).not.toHaveBeenCalled();
+
+    node.send('message', { type: 'noteOff', note: 60 });
+
+    expect(first.stop).not.toHaveBeenCalled();
+    expect(second.stop).not.toHaveBeenCalled();
+  });
+
+  it('stops active note voices on noteOff in held mode', () => {
+    const first = createFakeSource();
+    const second = createFakeSource();
+    const audioContext = createFakeAudioContext([first, second]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'setNoteOffMode', value: 'held' });
+    node.send('message', { type: 'noteOn', note: 60, velocity: 127 });
+    node.send('message', { type: 'noteOn', note: 62, velocity: 127 });
+
+    expect(first.stop).not.toHaveBeenCalled();
+
+    node.send('message', { type: 'noteOff', note: 60 });
+
+    expect(first.stop).toHaveBeenCalledOnce();
+    expect(second.stop).not.toHaveBeenCalled();
+  });
+
+  it('treats noteOn velocity 0 as noteOff in held mode', () => {
+    const source = createFakeSource();
+    const audioContext = createFakeAudioContext([source]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    node.audioBuffer = { duration: 4 } as AudioBuffer;
+    node.send('message', { type: 'setNoteOffMode', value: 'held' });
+    node.send('message', { type: 'noteOn', note: 60, velocity: 127 });
+    node.send('message', { type: 'noteOn', note: 60, velocity: 0 });
+
+    expect(source.stop).toHaveBeenCalledOnce();
+  });
+
   it('schedules loop messages with time, offset, and duration', () => {
     const source = createFakeSource();
     const audioContext = createFakeAudioContext([source]);

@@ -11,6 +11,9 @@ Messages:
 - string: load sample from URL
 - bang: trigger sample playback
 - number: trigger sample playback with gain multiplier (0=silent, 1=normal, 2=twice as loud)
+- {type: 'noteOn', note, velocity}: trigger pitched playback (note 60=original pitch, velocity 0-127 controls gain)
+- {type: 'noteOff', note}: stop active voices for that note when note-off mode is held
+- {type: 'setNoteOffMode', value: 'one-shot' | 'held'}: set whether noteOff is ignored for one-shots or stops held voices
 - {type: 'load', url: '...'}: load sample
 
 Example - Drum Sample:

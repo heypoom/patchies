@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { ObjectSchema } from './types';
 import { schema } from './types';
 import { msg, sym } from './helpers';
-import { Bang, Stop, LoadBySrc, messages } from './common';
+import { Bang, Stop, LoadBySrc, NoteOn, NoteOff, messages } from './common';
 
 // Sampler-specific message schemas
 const Play = sym('play');
@@ -38,6 +38,9 @@ const SetStart = msg('setStart', { value: Type.Number() });
 const SetEnd = msg('setEnd', { value: Type.Number() });
 const SetPlaybackRate = msg('setPlaybackRate', { value: Type.Number() });
 const SetDetune = msg('setDetune', { value: Type.Number() });
+const SetNoteOffMode = msg('setNoteOffMode', {
+  value: Type.String({ enum: ['one-shot', 'held'] })
+});
 const Download = msg('download', { name: Type.Optional(Type.String()) });
 
 // Float32Array for direct buffer setting (from uiua node, etc.)
@@ -62,6 +65,7 @@ export const samplerMessages = {
   setEnd: schema(SetEnd),
   setPlaybackRate: schema(SetPlaybackRate),
   setDetune: schema(SetDetune),
+  setNoteOffMode: schema(SetNoteOffMode),
   download: schema(Download),
   load: schema(LoadBySrc),
   float32Array: schema(Float32ArraySamples)
@@ -118,6 +122,19 @@ export const samplerSchema: ObjectSchema = {
         {
           schema: Stop,
           description: 'Stop playback'
+        },
+        {
+          schema: NoteOn,
+          description:
+            'Play the sample as a pitched MIDI note (note 60 = original pitch, velocity controls gain)'
+        },
+        {
+          schema: NoteOff,
+          description: 'Stop active sampler voices for the MIDI note when Note Off mode is held'
+        },
+        {
+          schema: SetNoteOffMode,
+          description: 'Set MIDI noteOff behavior to one-shot or held'
         },
         {
           schema: Loop,

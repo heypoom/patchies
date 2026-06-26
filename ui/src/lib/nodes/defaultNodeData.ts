@@ -249,7 +249,8 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       loopEnd: 0,
       loop: false,
       playbackRate: 1,
-      detune: 0
+      detune: 0,
+      noteOffMode: 'one-shot'
     }))
     .with('anupars', () => ({
       cols: 80,

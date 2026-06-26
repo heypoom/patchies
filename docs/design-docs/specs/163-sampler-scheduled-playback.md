@@ -7,6 +7,9 @@ Allow `sampler~` to play buffers at a target Web Audio time by accepting timed
 ```ts
 { type: 'bang', time?: number }
 { type: 'play', time?: number, offset?: number, duration?: number, gain?: number }
+{ type: 'noteOn', note: number, velocity: number, time?: number }
+{ type: 'noteOff', note: number, time?: number }
+{ type: 'setNoteOffMode', value: 'one-shot' | 'held' }
 number // play immediately with gain multiplier
 ```
 
@@ -15,6 +18,15 @@ number // play immediately with gain multiplier
 - Bare `{ type: 'bang' }` and `{ type: 'play' }` keep the current behavior.
 - Bare non-negative numbers trigger playback with per-voice gain: `0` is silent,
   `1` is normal amplitude, and `2` is twice the amplitude.
+- `noteOn` triggers pitched playback. Note `60` plays the sample at original
+  pitch; each semitone maps to `2 ** ((note - 60) / 12)` playback rate.
+- `noteOn.velocity` maps to gain as `velocity / 127`.
+- The default note-off mode is `one-shot`: `noteOff` is ignored, and velocity
+  `0` note-on messages do not trigger playback.
+- In `held` mode, `noteOff` stops active voices for the matching note and
+  velocity `0` behaves like `noteOff`.
+- `noteOffMode?: 'one-shot' | 'held'` is persisted as node data and can be set
+  from the sampler settings UI or with `setNoteOffMode`.
 - `time` is an absolute `AudioContext.currentTime` timestamp, matching
   scheduled messages emitted by audio-mode sequencers.
 - `offset` is the position in the sample buffer to start playback from, in

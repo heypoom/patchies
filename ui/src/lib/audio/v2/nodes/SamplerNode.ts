@@ -11,6 +11,8 @@ type PlayMessage = {
   offset?: unknown;
   duration?: unknown;
   gain?: unknown;
+  playbackRate?: unknown;
+  replaceImmediate?: boolean;
 };
 
 type LoopMessage = {
@@ -24,8 +26,31 @@ type LoopMessage = {
   gain?: unknown;
 };
 
+type NoteOnMessage = {
+  [key: string]: unknown;
+  type: 'noteOn';
+  note: number;
+  velocity: number;
+  time?: unknown;
+};
+
+type NoteOffMessage = {
+  [key: string]: unknown;
+  type: 'noteOff';
+  note: number;
+  time?: unknown;
+};
+
+type NoteOffMode = 'one-shot' | 'held';
+
 const getNonNegativeNumber = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
+
+const ROOT_NOTE = 60;
+
+function noteToPlaybackRate(note: number): number {
+  return 2 ** ((note - ROOT_NOTE) / 12);
+}
 
 export class SamplerNode implements AudioNodeV2 {
   static type = 'sampler~';
@@ -58,10 +83,12 @@ export class SamplerNode implements AudioNodeV2 {
   private sourceNode: AudioBufferSourceNode | null = null;
   private scheduledSources = new Set<AudioBufferSourceNode>();
   private sourceGains = new WeakMap<AudioBufferSourceNode, GainNode>();
+  private noteSources = new Map<number, Set<AudioBufferSourceNode>>();
   private loopStart: number = 0;
   private loopEnd: number = 0;
   private playbackRate: number = 1;
   private detune: number = 0;
+  private noteOffMode: NoteOffMode = 'one-shot';
 
   constructor(nodeId: string, audioContext: AudioContext) {
     this.nodeId = nodeId;
@@ -110,6 +137,11 @@ export class SamplerNode implements AudioNodeV2 {
       })
       .with({ type: 'bang' }, this.handlePlay.bind(this))
       .with({ type: 'play' }, this.handlePlay.bind(this))
+      .with({ type: 'noteOn', note: P.number, velocity: P.number }, this.handleNoteOn.bind(this))
+      .with({ type: 'noteOff', note: P.number }, this.handleNoteOff.bind(this))
+      .with({ type: 'setNoteOffMode', value: P.union('one-shot', 'held') }, ({ value }) => {
+        this.noteOffMode = value;
+      })
       .with({ type: 'stop' }, this.stopPlayback.bind(this))
       .with({ type: 'loop', start: P.number, end: P.number }, this.handleLoop.bind(this))
       .with({ type: 'loopOff' }, () => {
@@ -236,6 +268,53 @@ export class SamplerNode implements AudioNodeV2 {
     newSource.start(time, offset, duration);
   }
 
+  private handleNoteOn(message: NoteOnMessage): void {
+    const note = getNonNegativeNumber(message.note);
+    const velocity = getNonNegativeNumber(message.velocity);
+
+    if (note === undefined || velocity === undefined) return;
+
+    if (velocity === 0) {
+      if (this.noteOffMode === 'held') {
+        this.handleNoteOff({ type: 'noteOff', note, time: message.time });
+      }
+      return;
+    }
+
+    const source = this.handlePlay({
+      type: 'play',
+      time: message.time,
+      gain: velocity / 127,
+      playbackRate: noteToPlaybackRate(note),
+      replaceImmediate: false
+    });
+
+    if (!source) return;
+
+    const sources = this.noteSources.get(note) ?? new Set<AudioBufferSourceNode>();
+    sources.add(source);
+    this.noteSources.set(note, sources);
+  }
+
+  private handleNoteOff(message: NoteOffMessage): void {
+    if (this.noteOffMode !== 'held') return;
+
+    const note = getNonNegativeNumber(message.note);
+    if (note === undefined) return;
+
+    const sources = this.noteSources.get(note);
+    if (!sources) return;
+
+    const time = getNonNegativeNumber(message.time);
+
+    for (const source of sources) {
+      this.stopSource(source, time);
+      this.scheduledSources.delete(source);
+    }
+
+    this.noteSources.delete(note);
+  }
+
   private async handleRecord(): Promise<void> {
     if (this.mediaRecorder) {
       return;
@@ -274,15 +353,15 @@ export class SamplerNode implements AudioNodeV2 {
     this.mediaRecorder = recorder;
   }
 
-  private handlePlay(message: PlayMessage): void {
+  private handlePlay(message: PlayMessage): AudioBufferSourceNode | null {
     if (!this.audioBuffer) {
-      return;
+      return null;
     }
 
     // Create new source node
     const newSource = this.audioContext.createBufferSource();
     newSource.buffer = this.audioBuffer;
-    newSource.playbackRate.value = this.playbackRate;
+    newSource.playbackRate.value = getNonNegativeNumber(message.playbackRate) ?? this.playbackRate;
     newSource.detune.value = this.detune;
 
     const time = getNonNegativeNumber(message.time) ?? 0;
@@ -294,10 +373,11 @@ export class SamplerNode implements AudioNodeV2 {
       (this.loopEnd > offset ? this.loopEnd - offset : undefined);
 
     const isFutureScheduled = time > this.audioContext.currentTime;
+    const replaceImmediate = message.replaceImmediate ?? true;
 
     if (isFutureScheduled) {
       this.scheduledSources.add(newSource);
-    } else {
+    } else if (replaceImmediate) {
       this.stopImmediatePlayback();
       this.sourceNode = newSource;
     }
@@ -306,6 +386,7 @@ export class SamplerNode implements AudioNodeV2 {
     newSource.onended = () => {
       this.disconnectSource(newSource);
       this.scheduledSources.delete(newSource);
+      this.removeSourceFromNotes(newSource);
 
       if (this.sourceNode === newSource) {
         this.sourceNode = null;
@@ -314,6 +395,7 @@ export class SamplerNode implements AudioNodeV2 {
 
     this.connectSource(newSource, gain);
     newSource.start(time, offset, duration);
+    return newSource;
   }
 
   private connectSource(source: AudioBufferSourceNode, gainValue: number): void {
@@ -330,10 +412,16 @@ export class SamplerNode implements AudioNodeV2 {
     this.sourceGains.delete(source);
   }
 
-  private stopSource(source: AudioBufferSourceNode): void {
+  private stopSource(source: AudioBufferSourceNode, time?: number): void {
     try {
+      if (time !== undefined && time > this.audioContext.currentTime) {
+        source.stop(time);
+        return;
+      }
+
       source.stop();
       this.disconnectSource(source);
+      this.removeSourceFromNotes(source);
     } catch {
       // Ignore errors if node already stopped
     }
@@ -349,11 +437,33 @@ export class SamplerNode implements AudioNodeV2 {
   private stopPlayback(): void {
     this.stopImmediatePlayback();
 
+    const noteSources = new Set<AudioBufferSourceNode>();
+    for (const sources of this.noteSources.values()) {
+      for (const source of sources) {
+        noteSources.add(source);
+      }
+    }
+
+    for (const source of noteSources) {
+      this.stopSource(source);
+    }
+
     for (const source of this.scheduledSources) {
       this.stopSource(source);
     }
 
     this.scheduledSources.clear();
+    this.noteSources.clear();
+  }
+
+  private removeSourceFromNotes(source: AudioBufferSourceNode): void {
+    for (const [note, sources] of this.noteSources) {
+      sources.delete(source);
+
+      if (sources.size === 0) {
+        this.noteSources.delete(note);
+      }
+    }
   }
 
   private trimSilence(buffer: AudioBuffer, threshold = 0.01): AudioBuffer {
