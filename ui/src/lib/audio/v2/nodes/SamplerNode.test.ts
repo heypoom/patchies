@@ -67,6 +67,16 @@ describe('SamplerNode', () => {
     expect(source.start).not.toHaveBeenCalled();
   });
 
+  it('sets built-in output gain', () => {
+    const outputGain = createFakeGain();
+    const audioContext = createFakeAudioContext([], [outputGain]);
+    const node = new SamplerNode('sampler-1', audioContext);
+
+    node.send('message', { type: 'setGain', value: 0.25 });
+
+    expect(node.audioNode.gain.value).toBe(0.25);
+  });
+
   it('schedules bang messages with time', () => {
     const source = createFakeSource();
     const audioContext = createFakeAudioContext([source]);

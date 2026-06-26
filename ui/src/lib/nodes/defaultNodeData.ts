@@ -248,6 +248,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       loopStart: 0,
       loopEnd: 0,
       loop: false,
+      gain: 1,
       playbackRate: 1,
       detune: 0,
       noteOffMode: 'one-shot'

@@ -196,6 +196,12 @@ export class SamplerNode implements AudioNodeV2 {
         for (const source of this.scheduledSources) {
           source.detune.value = value;
         }
+      })
+      .with({ type: 'setGain', value: P.number }, ({ value }) => {
+        const gain = getNonNegativeNumber(value);
+        if (gain !== undefined) {
+          this.audioNode.gain.value = gain;
+        }
       });
   }
 

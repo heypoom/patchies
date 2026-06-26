@@ -10,11 +10,13 @@
     loopEnd: number;
     recordingDuration: number;
     loopEnabled: boolean;
+    gain: number;
     playbackRate: number;
     detune: number;
     noteOffMode: NoteOffMode;
     onLoopStartChange: (value: number) => void;
     onLoopEndChange: (value: number) => void;
+    onGainChange: (value: number) => void;
     onPlaybackRateChange: (value: number) => void;
     onDetuneChange: (value: number) => void;
     onNoteOffModeChange: (value: NoteOffMode) => void;
@@ -24,6 +26,7 @@
     tracker: NodeDataTracker;
     loopStartTracker: ContinuousTracker;
     loopEndTracker: ContinuousTracker;
+    gainTracker: ContinuousTracker;
     playbackRateTracker: ContinuousTracker;
     detuneTracker: ContinuousTracker;
   };
@@ -33,11 +36,13 @@
     loopEnd,
     recordingDuration,
     loopEnabled,
+    gain,
     playbackRate,
     detune,
     noteOffMode,
     onLoopStartChange,
     onLoopEndChange,
+    onGainChange,
     onPlaybackRateChange,
     onDetuneChange,
     onNoteOffModeChange,
@@ -47,6 +52,7 @@
     tracker,
     loopStartTracker,
     loopEndTracker,
+    gainTracker,
     playbackRateTracker,
     detuneTracker
   }: Props = $props();
@@ -108,7 +114,25 @@
 
         <!-- Playback Rate -->
         <div class="mb-3">
-          <div class="mb-2 text-xs font-medium text-zinc-300">Pitch & Speed</div>
+          <div class="mb-2 text-xs font-medium text-zinc-300">Playback</div>
+
+          <div class="mb-3">
+            <div class="mb-1 flex items-center justify-between">
+              <!-- svelte-ignore a11y_label_has_associated_control -->
+              <label class="text-xs text-zinc-400">Gain</label>
+              <span class="font-mono text-xs text-zinc-300">{gain.toFixed(2)}</span>
+            </div>
+
+            <SettingsSlider
+              min={0}
+              max={2}
+              step={0.01}
+              value={gain}
+              onchange={onGainChange}
+              onpointerdown={gainTracker.onFocus}
+              onpointerup={gainTracker.onBlur}
+            />
+          </div>
 
           <div class="mb-1 flex items-center justify-between">
             <!-- svelte-ignore a11y_label_has_associated_control -->

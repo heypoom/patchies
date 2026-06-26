@@ -9,6 +9,7 @@ Allow `sampler~` to play buffers at a target Web Audio time by accepting timed
 { type: 'play', time?: number, offset?: number, duration?: number, gain?: number }
 { type: 'noteOn', note: number, velocity: number, time?: number }
 { type: 'noteOff', note: number, time?: number }
+{ type: 'setGain', value: number }
 { type: 'setNoteOffMode', value: 'one-shot' | 'held' }
 number // play immediately with gain multiplier
 ```
@@ -33,6 +34,8 @@ number // play immediately with gain multiplier
   seconds.
 - `duration` is the amount of source-buffer audio to play, in seconds.
 - `gain` is a per-playback amplitude multiplier.
+- `setGain` sets the sampler's built-in output gain. It scales all playback
+  voices after per-trigger gain, number gain, and MIDI velocity gain.
 - Missing `offset`/`duration` fall back to the sampler's configured start/end
   points. Missing `gain` uses normal amplitude.
 - Negative values are ignored instead of being passed to Web Audio, because

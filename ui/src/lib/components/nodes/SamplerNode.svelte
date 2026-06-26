@@ -28,6 +28,7 @@
       loopStart?: number;
       loopEnd?: number;
       loop?: boolean;
+      gain?: number;
       playbackRate?: number;
       detune?: number;
       noteOffMode?: 'one-shot' | 'held';
@@ -43,6 +44,7 @@
   const tracker = useNodeDataTracker(node.id);
   const loopStartTracker = tracker.track('loopStart', () => node.data.loopStart ?? 0);
   const loopEndTracker = tracker.track('loopEnd', () => node.data.loopEnd ?? recordingDuration);
+  const gainTracker = tracker.track('gain', () => node.data.gain ?? 1);
   const playbackRateTracker = tracker.track('playbackRate', () => node.data.playbackRate ?? 1);
   const detuneTracker = tracker.track('detune', () => node.data.detune ?? 0);
 
@@ -151,6 +153,7 @@
   const loopStart = $derived(node.data.loopStart || 0);
   const loopEnd = $derived(node.data.loopEnd || recordingDuration);
   const loopEnabled = $derived(node.data.loop || false);
+  const gain = $derived(node.data.gain ?? 1);
   const playbackRate = $derived(node.data.playbackRate || 1);
   const detune = $derived(node.data.detune || 0);
   const noteOffMode = $derived(node.data.noteOffMode ?? 'one-shot');
@@ -210,6 +213,10 @@
       })
       .with(samplerMessages.setEnd, (msg) => {
         updateNodeData(node.id, { ...node.data, loopEnd: msg.value });
+        audioService.send(node.id, 'message', msg);
+      })
+      .with(samplerMessages.setGain, (msg) => {
+        updateNodeData(node.id, { ...node.data, gain: msg.value });
         audioService.send(node.id, 'message', msg);
       })
       .with(samplerMessages.setPlaybackRate, (msg) => {
@@ -419,6 +426,11 @@
     audioService.send(node.id, 'message', { type: 'setEnd', value: newLoopEnd });
   }
 
+  function updateGain(value: number) {
+    updateNodeData(node.id, { ...node.data, gain: value });
+    audioService.send(node.id, 'message', { type: 'setGain', value });
+  }
+
   function updatePlaybackRate(value: number) {
     updateNodeData(node.id, { ...node.data, playbackRate: value });
     audioService.send(node.id, 'message', { type: 'setPlaybackRate', value });
@@ -446,6 +458,7 @@
       loopStart: 0,
       loopEnd: recordingDuration,
       loop: false,
+      gain: 1,
       playbackRate: 1,
       detune: 0,
       noteOffMode: 'one-shot'
@@ -455,6 +468,7 @@
     audioService.send(node.id, 'message', { type: 'setStart', value: 0 });
     audioService.send(node.id, 'message', { type: 'setEnd', value: recordingDuration });
     audioService.send(node.id, 'message', { type: 'loopOff' });
+    audioService.send(node.id, 'message', { type: 'setGain', value: 1 });
     audioService.send(node.id, 'message', { type: 'setPlaybackRate', value: 1 });
     audioService.send(node.id, 'message', { type: 'setDetune', value: 0 });
     audioService.send(node.id, 'message', { type: 'setNoteOffMode', value: 'one-shot' });
@@ -471,6 +485,10 @@
 
     // Initialize with playbackRate and detune from node.data
     if (v2Node) {
+      if (node.data.gain !== undefined) {
+        audioService.send(node.id, 'message', { type: 'setGain', value: node.data.gain });
+      }
+
       // Send initialization messages for playbackRate and detune
       if (node.data.playbackRate) {
         audioService.send(node.id, 'message', {
@@ -679,11 +697,13 @@
         {loopEnd}
         {recordingDuration}
         {loopEnabled}
+        {gain}
         {playbackRate}
         {detune}
         {noteOffMode}
         onLoopStartChange={updateLoopStart}
         onLoopEndChange={updateLoopEnd}
+        onGainChange={updateGain}
         onPlaybackRateChange={updatePlaybackRate}
         onDetuneChange={updateDetune}
         onNoteOffModeChange={updateNoteOffMode}
@@ -693,6 +713,7 @@
         {tracker}
         {loopStartTracker}
         {loopEndTracker}
+        {gainTracker}
         {playbackRateTracker}
         {detuneTracker}
       />

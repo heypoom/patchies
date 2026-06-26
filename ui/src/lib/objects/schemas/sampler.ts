@@ -36,6 +36,7 @@ const LoopOnWithOptionalPoints = msg('loopOn', {
 });
 const SetStart = msg('setStart', { value: Type.Number() });
 const SetEnd = msg('setEnd', { value: Type.Number() });
+const SetGain = msg('setGain', { value: Type.Number({ minimum: 0 }) });
 const SetPlaybackRate = msg('setPlaybackRate', { value: Type.Number() });
 const SetDetune = msg('setDetune', { value: Type.Number() });
 const SetNoteOffMode = msg('setNoteOffMode', {
@@ -63,6 +64,7 @@ export const samplerMessages = {
   loopOff: schema(LoopOff),
   setStart: schema(SetStart),
   setEnd: schema(SetEnd),
+  setGain: schema(SetGain),
   setPlaybackRate: schema(SetPlaybackRate),
   setDetune: schema(SetDetune),
   setNoteOffMode: schema(SetNoteOffMode),
@@ -163,6 +165,10 @@ export const samplerSchema: ObjectSchema = {
         {
           schema: SetEnd,
           description: 'Set playback end position (seconds)'
+        },
+        {
+          schema: SetGain,
+          description: 'Set built-in output gain (1.0 = normal, 2.0 = double)'
         },
         {
           schema: SetPlaybackRate,

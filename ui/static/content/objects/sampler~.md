@@ -11,7 +11,7 @@ control.
 
 - **Record** (circle): Start recording
 - **Play**: Play the sample
-- **Settings** (gear): Configure start/end, loop, rate, detune, and note-off behavior
+- **Settings** (gear): Configure start/end, gain, rate, detune, loop, and note-off behavior
 
 ## Loading Samples
 
@@ -40,6 +40,13 @@ timing and gain fields:
 
 All four fields are optional. When omitted, playback uses the sampler's current
 start/end settings and normal gain.
+
+Use `setGain` to set the sampler's built-in output level. This scales all
+voices after per-trigger gain and MIDI velocity:
+
+```js
+{ type: "setGain", value: 0.75 }
+```
 
 You can also send a non-negative number to trigger playback with that gain
 multiplier:
