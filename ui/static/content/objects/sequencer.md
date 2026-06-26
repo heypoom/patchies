@@ -34,9 +34,20 @@ Set via **Output** in the settings panel:
 - **bang** (default) — sends `{type: "bang"}` on each active step. Works with
   `sampler~`, `trigger`, and most nodes that expect a trigger signal.
 - **value** — sends the step's velocity as a number from `0.0` to `1.0`.
-- **audio** — sends `{type: "set", time, value}` with the precise Web Audio
-  lookahead time. Use this for sample-accurate scheduling with `sampler~` or
-  custom `dsp~` nodes.
+
+Enable **Audio lookahead** to include precise Web Audio timing:
+
+- **bang + Audio lookahead** — sends `{type: "bang", time}` for
+  sample-accurate triggering with `sampler~`.
+- **value + Audio lookahead** — sends `{type: "set", time, value}` for
+  parameter automation and custom `dsp~` nodes.
+- **single outlet index + Audio lookahead** — sends
+  `{type: "set", index, value, time}` for scheduled parameter automation with
+  track routing metadata.
+- **single outlet midi + Audio lookahead** — sends
+  `{type: "noteOn", note, index, velocity, time}` for scheduled drum-pad or MIDI
+  triggering. `note` follows the GM drum map from 36 upward, `index` is the
+  track number, and `velocity` is MIDI `0` to `127`.
 
 ## Velocity Lane
 

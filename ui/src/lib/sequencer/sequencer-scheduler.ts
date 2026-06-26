@@ -4,7 +4,7 @@ import { SchedulerRegistry } from '$lib/transport/SchedulerRegistry';
 
 export interface SequencerConfig {
   clockMode: 'auto' | 'manual';
-  outputMode: string;
+  audioRate: boolean;
   steps: number;
   swing: number;
 }
@@ -16,6 +16,7 @@ export interface SequencerConfig {
 export class SequencerScheduler {
   private scheduler: LookaheadClockScheduler;
   private barSubId: string | null = null;
+  private playStateSubId: string | null = null;
   private stepScheduleIds: string[] = [];
   private stepMarkerIds: string[] = [];
 
@@ -31,7 +32,9 @@ export class SequencerScheduler {
       beat: Transport.beat,
       bpm: Transport.bpm,
       phase: Transport.phase,
-      beatsPerBar: Transport.beatsPerBar
+      beatsPerBar: Transport.beatsPerBar,
+      isPlaying: Transport.isPlaying,
+      playState: Transport.isPlaying ? 'playing' : Transport.seconds === 0 ? 'stopped' : 'paused'
     }));
 
     // Hide callback-derived markers (onBeat bar subscription, per-step schedules).
@@ -40,7 +43,7 @@ export class SequencerScheduler {
   }
 
   private scheduleBar(barTime: number): void {
-    const { steps, swing, outputMode } = this.getConfig();
+    const { steps, swing, audioRate } = this.getConfig();
 
     // Cancel any leftover step schedules and markers from the previous bar
     for (const id of this.stepScheduleIds) this.scheduler.cancel(id);
@@ -62,7 +65,7 @@ export class SequencerScheduler {
       const stepTime = barTime + i * stepInterval + swingOffset;
 
       const id = this.scheduler.schedule(stepTime, (t) => this.onFire(i, t), {
-        audio: outputMode === 'audio'
+        audio: audioRate
       });
 
       this.stepScheduleIds.push(id);
@@ -73,13 +76,26 @@ export class SequencerScheduler {
     }
   }
 
+  private scheduleCurrentBar(): void {
+    const beatDuration = (60 / Transport.bpm) * (4 / Transport.denominator);
+    const barDuration = beatDuration * Transport.beatsPerBar;
+    const barTime = Math.floor(Transport.seconds / barDuration) * barDuration;
+
+    this.scheduleBar(barTime);
+  }
+
   /** Re-subscribe to the bar clock, respecting current clockMode. */
   setup(): void {
-    const { clockMode, outputMode } = this.getConfig();
+    const { clockMode, audioRate } = this.getConfig();
 
     if (this.barSubId) {
       this.scheduler.cancel(this.barSubId);
       this.barSubId = null;
+    }
+
+    if (this.playStateSubId) {
+      this.scheduler.cancel(this.playStateSubId);
+      this.playStateSubId = null;
     }
 
     for (const id of this.stepScheduleIds) this.scheduler.cancel(id);
@@ -89,9 +105,19 @@ export class SequencerScheduler {
 
     if (clockMode === 'manual') return;
 
-    this.barSubId = this.scheduler.onBeat(0, (barTime) => this.scheduleBar(barTime), {
-      audio: outputMode === 'audio'
+    this.playStateSubId = this.scheduler.onPlayStateChange((state) => {
+      if (state === 'playing') {
+        this.scheduleCurrentBar();
+      }
     });
+
+    this.barSubId = this.scheduler.onBeat(0, (barTime) => this.scheduleBar(barTime), {
+      audio: audioRate
+    });
+
+    if (Transport.isPlaying) {
+      this.scheduleCurrentBar();
+    }
   }
 
   /** Initial setup + start the internal scheduler + register with SchedulerRegistry. */

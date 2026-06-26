@@ -10,7 +10,7 @@ CRITICAL RULES:
 Messages:
 - string: load sample from URL
 - bang: trigger sample playback
-- number: set playback rate/pitch
+- number: trigger sample playback with gain multiplier (0=silent, 1=normal, 2=twice as loud)
 - {type: 'load', url: '...'}: load sample
 
 Example - Drum Sample:

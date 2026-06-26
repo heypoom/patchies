@@ -4,7 +4,13 @@
   import { useSvelteFlow, useUpdateNodeInternals, useStore, type NodeProps } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import { AudioService } from '$lib/audio/v2/AudioService';
+  import { Transport } from '$lib/transport';
   import { SequencerScheduler } from '../../sequencer/sequencer-scheduler';
+  import {
+    createSequencerPayload,
+    sequencerOutputCarriesTiming,
+    transportTimeToAudioContextTime
+  } from '$lib/sequencer/sequencer-output';
   import { type TrackData, DEFAULT_TRACKS, TRACK_COLORS } from '$lib/nodes/sequencer-constants';
   import { useNodeDataTracker } from '$lib/history';
   import { sequencerMessages } from '$lib/objects/schemas';
@@ -14,11 +20,10 @@
   import * as Tooltip from '$lib/components/ui/tooltip';
   import SequencerSettings from '$lib/components/settings/SequencerSettings.svelte';
   import { Settings, VolumeX, X } from '@lucide/svelte/icons';
-  import { BASE_NOTE } from '$objects/pads/constants';
 
   type OutletMode = 'multi' | 'single';
-  type MultiOutputMode = 'bang' | 'value' | 'audio';
-  type SingleOutputMode = 'index' | 'midi' | 'audio';
+  type MultiOutputMode = 'bang' | 'value';
+  type SingleOutputMode = 'index' | 'midi';
   type OutputMode = MultiOutputMode | SingleOutputMode;
 
   type NodeData = {
@@ -27,6 +32,7 @@
     swing?: number;
     outletMode?: OutletMode;
     outputMode?: OutputMode;
+    audioRate?: boolean;
     clockMode?: 'auto' | 'manual';
     showVelocity?: boolean;
     showInTimeline?: boolean;
@@ -60,6 +66,10 @@
   const swing = $derived(data.swing ?? 0);
   const outletMode = $derived(data.outletMode ?? 'multi');
   const outputMode = $derived(data.outputMode ?? (outletMode === 'single' ? 'index' : 'bang'));
+  const audioRate = $derived(data.audioRate ?? false);
+  const sendsTimedOutput = $derived(
+    audioRate && sequencerOutputCarriesTiming(outletMode, outputMode)
+  );
   const clockMode = $derived(data.clockMode ?? 'auto');
 
   const showVelocity = $derived(data.showVelocity ?? false);
@@ -76,41 +86,51 @@
     const mode = outputMode;
     const outlet = outletMode;
 
+    const payloadTime = sendsTimedOutput
+      ? transportTimeToAudioContextTime({
+          scheduledTransportTime: time,
+          currentTransportTime: Transport.seconds,
+          audioContextTime: AudioService.getInstance().getAudioContext().currentTime
+        })
+      : time;
+
     for (let t = 0; t < currentTracks.length; t++) {
       const track = currentTracks[t];
       if (!(track?.stepOn[stepIndex] ?? false)) continue;
 
       const velocity = track.stepValues[stepIndex] ?? 1.0;
 
-      if (outlet === 'single') {
-        const payload = match(mode)
-          .with('index', () => t)
-          .with('midi', () => ({
-            type: 'noteOn',
-            note: BASE_NOTE + t,
-            index: t,
-            velocity: Math.round(velocity * 127)
-          }))
-          .with('audio', () => ({
-            type: 'noteOn',
-            note: BASE_NOTE + t,
-            index: t,
-            velocity: Math.round(velocity * 127),
-            time
-          }))
-          .otherwise(() => t);
+      const payload =
+        outlet === 'single'
+          ? createSequencerPayload({
+              outletMode: 'single',
+              outputMode: assertSingleOutputMode(mode),
+              audioRate: sendsTimedOutput,
+              trackIndex: t,
+              velocity,
+              time: payloadTime
+            })
+          : createSequencerPayload({
+              outletMode: 'multi',
+              outputMode: assertMultiOutputMode(mode),
+              audioRate: sendsTimedOutput,
+              trackIndex: t,
+              velocity,
+              time: payloadTime
+            });
 
-        messageContext.send(payload, { to: 0 });
-      } else {
-        const payload = match(mode)
-          .with('audio', () => ({ type: 'set', time, value: velocity }))
-          .with('value', () => velocity)
-          .with('bang', () => ({ type: 'bang' }))
-          .otherwise(() => ({ type: 'bang' }));
-
-        messageContext.send(payload, { to: t });
-      }
+      messageContext.send(payload, { to: outlet === 'single' ? 0 : t });
     }
+  }
+
+  function assertSingleOutputMode(mode: OutputMode): SingleOutputMode {
+    if (mode === 'index' || mode === 'midi') return mode;
+    throw new Error(`Invalid sequencer output mode "${mode}" for single outlet mode`);
+  }
+
+  function assertMultiOutputMode(mode: OutputMode): MultiOutputMode {
+    if (mode === 'bang' || mode === 'value') return mode;
+    throw new Error(`Invalid sequencer output mode "${mode}" for multi outlet mode`);
   }
 
   function setNodeData<T extends keyof NodeData>(key: T, value: NodeData[T]): void {
@@ -132,8 +152,7 @@
         if (clockMode !== 'manual') return;
         const step = manualStep;
 
-        const audioTime =
-          outputMode === 'audio' ? AudioService.getInstance().getAudioContext().currentTime : 0;
+        const audioTime = audioRate ? AudioService.getInstance().getAudioContext().currentTime : 0;
 
         fireAtStep(step, audioTime);
 
@@ -261,7 +280,7 @@
         setNodeData('swing', clamped);
       })
       .with(sequencerMessages.setOutputMode, ({ value }) => {
-        // Infer outletMode from unambiguous output modes (audio is valid in both)
+        // Infer outletMode from unambiguous output modes
         const inferredOutlet = match(value)
           .with('index', 'midi', () => 'single' as const)
           .with('bang', 'value', () => 'multi' as const)
@@ -280,9 +299,7 @@
         setStepCount(value);
       })
       .with(sequencerMessages.setOutletMode, ({ value }) => {
-        // Reset outputMode unless current mode is audio (valid in both)
-        const newOutput =
-          outputMode === 'audio' ? outputMode : value === 'single' ? 'index' : 'bang';
+        const newOutput = value === 'single' ? 'index' : 'bang';
 
         const oldData = { outletMode, outputMode };
         const newData = { outletMode: value, outputMode: newOutput };
@@ -304,9 +321,9 @@
     setTimeout(() => updateNodeInternals(nodeId), 0);
   });
 
-  // Re-setup scheduler when outputMode or clockMode changes
+  // Re-setup scheduler when output mode, lookahead mode, or clock mode changes
   $effect(() => {
-    void outputMode;
+    void sendsTimedOutput;
     void clockMode;
 
     schedulerHandle?.setup();
@@ -325,7 +342,7 @@
 
     schedulerHandle = new SequencerScheduler(
       nodeId,
-      () => ({ clockMode, outputMode, steps, swing }),
+      () => ({ clockMode, audioRate: sendsTimedOutput, steps, swing }),
       fireAtStep,
       (step) => {
         if (!(data.showInTimeline ?? true) || (data.muted ?? false)) return [];
@@ -605,6 +622,7 @@
         {swing}
         {outletMode}
         {outputMode}
+        {audioRate}
         {clockMode}
         {showVelocity}
         {showInTimeline}
@@ -613,8 +631,7 @@
         onSetStepCount={setStepCount}
         onSetSwing={(v) => updateNodeData(nodeId, { ...data, swing: v })}
         onSetOutletMode={(v: OutletMode) => {
-          const newOutput =
-            outputMode !== 'audio' ? (v === 'single' ? 'index' : 'bang') : outputMode;
+          const newOutput = v === 'single' ? 'index' : 'bang';
 
           const oldData = { outletMode, outputMode };
           const newData = { outletMode: v, outputMode: newOutput };
@@ -622,6 +639,7 @@
           tracker.commit('outletMode', oldData, newData);
         }}
         onSetOutputMode={(v: string) => setNodeData('outputMode', v as OutputMode)}
+        onSetAudioRate={(v) => setNodeData('audioRate', v)}
         onSetClockMode={(v) => setNodeData('clockMode', v)}
         onSetShowVelocity={(v) => setNodeData('showVelocity', v)}
         onSetShowInTimeline={(v) => setNodeData('showInTimeline', v)}

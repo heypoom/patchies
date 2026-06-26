@@ -10,11 +10,16 @@
   import { samplerMessages } from '$lib/objects/schemas';
   import { AudioService } from '$lib/audio/v2/AudioService';
   import { downloadAsWav } from '$lib/audio/wav-encoder';
+  import {
+    createSamplerPlaybackMessage,
+    type SamplerPlaybackTrigger
+  } from '$lib/audio/sampler-playback-message';
   import type { SamplerNode as SamplerNodeV2 } from '$lib/audio/v2/nodes/SamplerNode';
   import { useVfsMedia } from '$lib/vfs';
   import { VfsRelinkOverlay } from '$lib/vfs/components';
   import { useNodeDataTracker } from '$lib/history';
   import SamplerSettings from '$lib/components/settings/SamplerSettings.svelte';
+  import * as Tooltip from '$lib/components/ui/tooltip';
 
   let node: NodeProps & {
     data: {
@@ -159,11 +164,16 @@
       return;
     }
 
+    if (typeof message === 'number' && Number.isFinite(message) && message >= 0) {
+      playRecording({ type: 'play', gain: message });
+      return;
+    }
+
     match(message)
       .with(samplerMessages.record, () => startRecording())
       .with(samplerMessages.end, () => stopRecording())
-      .with(samplerMessages.bang, () => playRecording())
-      .with(samplerMessages.play, () => playRecording())
+      .with(samplerMessages.bang, (msg) => playRecording(msg))
+      .with(samplerMessages.play, (msg) => playRecording(msg))
       .with(samplerMessages.stop, () => stopPlayback())
       .with(samplerMessages.loopWithOptionalPoints, (msg) => {
         updateNodeData(node.id, {
@@ -188,25 +198,25 @@
           ...(msg.end !== undefined ? { end: msg.end } : {})
         });
       })
-      .with(samplerMessages.loopOff, () => {
+      .with(samplerMessages.loopOff, (msg) => {
         updateNodeData(node.id, { ...node.data, loop: false });
-        audioService.send(node.id, 'message', { type: 'loopOff' });
+        audioService.send(node.id, 'message', msg);
       })
       .with(samplerMessages.setStart, (msg) => {
         updateNodeData(node.id, { ...node.data, loopStart: msg.value });
-        audioService.send(node.id, 'message', { type: 'setStart', value: msg.value });
+        audioService.send(node.id, 'message', msg);
       })
       .with(samplerMessages.setEnd, (msg) => {
         updateNodeData(node.id, { ...node.data, loopEnd: msg.value });
-        audioService.send(node.id, 'message', { type: 'setEnd', value: msg.value });
+        audioService.send(node.id, 'message', msg);
       })
       .with(samplerMessages.setPlaybackRate, (msg) => {
         updateNodeData(node.id, { ...node.data, playbackRate: msg.value });
-        audioService.send(node.id, 'message', { type: 'setPlaybackRate', value: msg.value });
+        audioService.send(node.id, 'message', msg);
       })
       .with(samplerMessages.setDetune, (msg) => {
         updateNodeData(node.id, { ...node.data, detune: msg.value });
-        audioService.send(node.id, 'message', { type: 'setDetune', value: msg.value });
+        audioService.send(node.id, 'message', msg);
       })
       .with(samplerMessages.download, (msg) => downloadBuffer(msg.name))
       .with(samplerMessages.load, ({ src }) => vfsMedia.loadFromPath(src))
@@ -310,14 +320,17 @@
     console.error('Failed to retrieve audio buffer after recording');
   }
 
-  function playRecording() {
-    if (!hasRecording) return;
+  function playRecording(trigger: SamplerPlaybackTrigger = { type: 'play' }) {
+    const message = createSamplerPlaybackMessage(trigger, {
+      hasRecording,
+      loopEnabled,
+      loopStart,
+      loopEnd
+    });
 
-    if (loopEnabled && loopEnd > loopStart) {
-      audioService.send(node.id, 'message', { type: 'loop', start: loopStart, end: loopEnd });
-    } else {
-      audioService.send(node.id, 'message', { type: 'play' });
-    }
+    if (!message) return;
+
+    audioService.send(node.id, 'message', message);
 
     startPlaybackProgressBar();
   }
@@ -530,9 +543,14 @@
 
           <!-- Play Button -->
           {#if hasRecording && !isRecording}
-            <button title="Play Recording" class="node-floating-button" onclick={playRecording}>
-              <Play class="h-4 w-4 text-zinc-300" />
-            </button>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <button class="node-floating-button" onclick={() => playRecording()}>
+                  <Play class="h-4 w-4 text-zinc-300" />
+                </button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Play Recording</Tooltip.Content>
+            </Tooltip.Root>
           {/if}
 
           <button

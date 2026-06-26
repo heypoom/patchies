@@ -14,14 +14,14 @@ OUTLET MODES:
 OUTPUT MODES (multi outlet):
 - \`"bang"\` (default): sends \`{type:"bang"}\`
 - \`"value"\`: sends velocity as number (0–1)
-- \`"audio"\`: sends \`{type:"set", time, value}\` for Web Audio scheduling
+- With \`audioRate: true\`, bang sends \`{type:"bang", time}\` and value sends \`{type:"set", time, value}\` for Web Audio scheduling
 
 OUTPUT MODES (single outlet):
 - \`"index"\` (default): sends track index as number (0–N)
-- \`"midi"\`: sends \`{type:"noteOn", note, index, velocity}\` — note uses GM drum mapping (36=kick), velocity is 0–127
-- \`"audio"\`: sends \`{type:"noteOn", note, index, velocity, time}\` — same as midi with Web Audio time
+- \`"midi"\`: sends \`{type:"noteOn", note, index, velocity}\` — note uses GM drum mapping (36=kick), velocity is MIDI 0–127
+- With \`audioRate: true\`, index sends \`{type:"set", index, value, time}\` and midi sends \`{type:"noteOn", note, index, velocity, time}\` for Web Audio scheduling
 
-Use single outlet + midi/audio mode to connect directly to pads~ with one wire.
+Use single outlet + midi mode to connect directly to pads~ with one wire. Enable \`audioRate\` when scheduled Web Audio time is needed.
 
 Node data shape:
 \`\`\`json
@@ -36,6 +36,7 @@ Node data shape:
   "swing": 0,
   "outletMode": "multi",
   "outputMode": "bang",
+  "audioRate": false,
   "showVelocity": false
 }
 \`\`\`

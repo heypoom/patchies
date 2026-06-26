@@ -6,6 +6,13 @@ import { Bang, Stop, LoadBySrc, messages } from './common';
 
 // Sampler-specific message schemas
 const Play = sym('play');
+const BangScheduled = msg('bang', { time: Type.Number() });
+const PlayScheduled = msg('play', {
+  time: Type.Optional(Type.Number()),
+  offset: Type.Optional(Type.Number()),
+  duration: Type.Optional(Type.Number()),
+  gain: Type.Optional(Type.Number({ minimum: 0 }))
+});
 const Record = sym('record');
 const End = sym('end');
 const Loop = sym('loop');
@@ -39,7 +46,9 @@ const Float32ArraySamples = Type.Unsafe<Float32Array>({ type: 'Float32Array' });
 /** Pre-wrapped matchers for use with ts-pattern */
 export const samplerMessages = {
   ...messages,
+  bangScheduled: schema(BangScheduled),
   play: schema(Play),
+  playScheduled: schema(PlayScheduled),
   record: schema(Record),
   end: schema(End),
   loop: schema(Loop),
@@ -82,8 +91,21 @@ export const samplerSchema: ObjectSchema = {
           description: 'Play the recorded sample'
         },
         {
+          schema: Type.Number({ minimum: 0 }),
+          description: 'Play the recorded sample with gain multiplier (0 = silent, 1 = normal)'
+        },
+        {
+          schema: BangScheduled,
+          description: 'Schedule playback of the recorded sample'
+        },
+        {
           schema: Play,
           description: 'Play the recorded sample'
+        },
+        {
+          schema: PlayScheduled,
+          description:
+            'Play the recorded sample with optional audio time, buffer offset, duration in seconds and gain'
         },
         {
           schema: Record,
