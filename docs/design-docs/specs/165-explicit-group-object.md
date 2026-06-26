@@ -26,6 +26,8 @@ Add a `group` object that visually frames related canvas objects and updates mem
 
 Creating a `group` object from the object browser inserts an empty resizable frame. It does not capture objects until the user releases a resize or moves objects into it.
 
+New group nodes store their default frame size as top-level `width` and `height` immediately. The first resize therefore starts from the same dimensions the user sees, even before the group has ever been manually resized.
+
 ### Add Objects To A Group
 
 When a top-level non-group object is released with its center inside a group frame, it becomes a child of that group.
@@ -65,8 +67,10 @@ When a group is resized smaller, direct children whose centers are outside the r
 - Empty space inside a group behaves like empty canvas space for canvas insertion and selection clearing.
 - Users select or drag a group by its border, resize handles, or title pill, not by the transparent interior.
 - The title pill follows the small `node-title-drag-handle` visual convention used by other visual nodes.
-- A settings button at the top-right opens predefined color swatches for the group frame.
+- A settings button at the top-right opens predefined color swatches for the group frame. The settings panel opens outside the group frame so it does not cover grouped objects.
 - Group color is optional. Omitting `node.data.color` uses the default gray frame; choosing a swatch stores `node.data.color` and supports undo/redo as a discrete node data change.
+- The rendered group frame uses explicit pixel dimensions from `node.width` and `node.height` so resize observation cannot collapse the group back to its content size.
+- The Svelte Flow group wrapper must override the library's built-in group-node width so first resize measurement comes from the Patchies frame, not the default 150px XYFlow group style.
 
 ## Testing
 
@@ -79,5 +83,6 @@ Pure tests cover:
 - not sweeping unrelated objects into a group when the group itself is dragged
 - keeping the group interior pointer-transparent while border/title hit zones stay pointer-active
 - deriving group frame styles from the selected predefined color
+- preserving resized group dimensions even when measured dimensions lag behind explicit node dimensions
 
 Focused Svelte/type checks should cover component wiring and object registration.

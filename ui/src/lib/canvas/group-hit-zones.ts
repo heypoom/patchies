@@ -9,7 +9,8 @@ export const GROUP_COLOR_PRESETS = [
   { name: 'Emerald', value: '#10b981' },
   { name: 'Cyan', value: '#06b6d4' },
   { name: 'Lime', value: '#84cc16' },
-  { name: 'Slate', value: '#94a3b8' }
+  { name: 'Slate', value: '#94a3b8' },
+  { name: 'Indigo', value: '#6366f1' }
 ] as const;
 
 export const GROUP_BORDER_HIT_ZONES = [
@@ -73,6 +74,32 @@ export function getGroupTitleClasses(): string {
     'px-2',
     'py-1'
   ].join(' ');
+}
+
+export function getGroupSettingsPanelClasses(): string {
+  return [
+    'nodrag',
+    'pointer-events-auto',
+    'absolute',
+    'top-0',
+    'left-[calc(100%+0.5rem)]',
+    'z-20',
+    'w-44',
+    'rounded-md',
+    'border',
+    'border-zinc-700',
+    'bg-zinc-900',
+    'p-3',
+    'shadow-xl'
+  ].join(' ');
+}
+
+export function getGroupColorGridClasses(): string {
+  return 'grid grid-cols-5 gap-2';
+}
+
+export function getGroupFrameStyle(width: number, height: number): string {
+  return `width: ${width}px; height: ${height}px;`;
 }
 
 export function getGroupVisualFrameClasses(selected: boolean): string[] {

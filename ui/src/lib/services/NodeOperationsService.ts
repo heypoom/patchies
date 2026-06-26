@@ -1,5 +1,6 @@
 import type { Node } from '@xyflow/svelte';
 import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
+import { getDefaultNodeDimensions } from '$lib/nodes/defaultNodeDimensions';
 import { nodeTypes } from '$lib/nodes/node-types';
 import { PRESETS } from '$lib/presets/presets';
 import { ObjectShorthandRegistry } from '$lib/registry/ObjectShorthandRegistry';
@@ -47,6 +48,7 @@ export class NodeOperationsService {
       id,
       type,
       position,
+      ...getDefaultNodeDimensions(type),
       data: (customData as Record<string, unknown>) ?? getDefaultNodeData(type)
     };
 
@@ -119,6 +121,7 @@ export class NodeOperationsService {
       id: newId,
       type: newType,
       position: oldNode.position,
+      ...getDefaultNodeDimensions(newType),
       data: newData
     };
 

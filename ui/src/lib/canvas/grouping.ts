@@ -22,11 +22,11 @@ interface Rect {
 }
 
 function getNodeWidth(node: Node): number {
-  return node.measured?.width ?? node.width ?? DEFAULT_NODE_WIDTH;
+  return node.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH;
 }
 
 function getNodeHeight(node: Node): number {
-  return node.measured?.height ?? node.height ?? DEFAULT_NODE_HEIGHT;
+  return node.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT;
 }
 
 function isGroupNode(node: Node): boolean {

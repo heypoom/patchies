@@ -5,6 +5,9 @@ import {
   GROUP_COLOR_PRESETS,
   GROUP_BORDER_HIT_ZONES,
   getGroupColorPreset,
+  getGroupColorGridClasses,
+  getGroupFrameStyle,
+  getGroupSettingsPanelClasses,
   getGroupTitleClasses,
   getGroupVisualFrameStyle,
   getGroupVisualFrameClasses
@@ -24,6 +27,7 @@ describe('group hit zones', () => {
   });
 
   test('exposes predefined group colors with a default selected color', () => {
+    expect(GROUP_COLOR_PRESETS).toHaveLength(10);
     expect(GROUP_COLOR_PRESETS.some((preset) => preset.value === DEFAULT_GROUP_COLOR)).toBe(true);
     expect(getGroupColorPreset(undefined).value).toBe(DEFAULT_GROUP_COLOR);
     expect(getGroupColorPreset(undefined).name).toBe('Gray');
@@ -35,5 +39,20 @@ describe('group hit zones', () => {
 
     expect(style).toContain('border-color: rgba(244, 63, 94, 0.55);');
     expect(style).toContain('background-color: rgba(244, 63, 94, 0.08);');
+  });
+
+  test('uses explicit pixel dimensions for the group frame', () => {
+    expect(getGroupFrameStyle(420, 260)).toBe('width: 420px; height: 260px;');
+  });
+
+  test('anchors the settings panel outside the group frame', () => {
+    const classes = getGroupSettingsPanelClasses();
+
+    expect(classes).toContain('left-[calc(100%+0.5rem)]');
+    expect(classes).not.toContain('right-0');
+  });
+
+  test('lays out group colors as two rows of five swatches', () => {
+    expect(getGroupColorGridClasses()).toContain('grid-cols-5');
   });
 });

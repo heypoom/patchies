@@ -6,10 +6,14 @@
     DEFAULT_GROUP_COLOR,
     GROUP_COLOR_PRESETS,
     GROUP_BORDER_HIT_ZONES,
+    getGroupColorGridClasses,
+    getGroupFrameStyle,
+    getGroupSettingsPanelClasses,
     getGroupTitleClasses,
     getGroupVisualFrameClasses,
     getGroupVisualFrameStyle
   } from '$lib/canvas/group-hit-zones';
+  import { DEFAULT_GROUP_HEIGHT, DEFAULT_GROUP_WIDTH } from '$lib/nodes/defaultNodeDimensions';
   import { useNodeDataTracker } from '$lib/history';
   import * as Tooltip from '$lib/components/ui/tooltip';
 
@@ -29,14 +33,10 @@
 
   let showSettings = $state(false);
 
-  const width = $derived(node.width ?? 360);
-  const height = $derived(node.height ?? 240);
+  const width = $derived(node.width ?? DEFAULT_GROUP_WIDTH);
+  const height = $derived(node.height ?? DEFAULT_GROUP_HEIGHT);
   const color = $derived(node.data.color ?? DEFAULT_GROUP_COLOR);
-  const frameStyle = $derived(
-    node.width !== undefined && node.height !== undefined
-      ? 'width: 100%; height: 100%;'
-      : `width: ${width}px; height: ${height}px;`
-  );
+  const frameStyle = $derived(getGroupFrameStyle(width, height));
   const visualFrameClasses = $derived(getGroupVisualFrameClasses(node.selected));
   const visualFrameStyle = $derived(getGroupVisualFrameStyle(color, node.selected));
 
@@ -112,10 +112,7 @@
   {#if showSettings}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="nodrag pointer-events-auto absolute top-0 right-0 z-20 w-44 rounded-md border border-zinc-700 bg-zinc-900 p-3 shadow-xl"
-      onclick={(event) => event.stopPropagation()}
-    >
+    <div class={getGroupSettingsPanelClasses()} onclick={(event) => event.stopPropagation()}>
       <div class="mb-3 flex items-center justify-between gap-2">
         <div class="text-xs font-medium text-zinc-300">Group Color</div>
 
@@ -133,7 +130,7 @@
         </Tooltip.Root>
       </div>
 
-      <div class="flex flex-wrap gap-2">
+      <div class={getGroupColorGridClasses()}>
         {#each GROUP_COLOR_PRESETS as preset (preset.name)}
           <Tooltip.Root>
             <Tooltip.Trigger>
@@ -160,6 +157,10 @@
 <style>
   :global(.svelte-flow__node-group) {
     pointer-events: none !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
     padding: 0 !important;
     border: 0 !important;
     background: transparent !important;

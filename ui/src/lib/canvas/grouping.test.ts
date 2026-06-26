@@ -98,6 +98,25 @@ describe('syncVisualGroupMembership', () => {
     expect(result.nodes.find((n) => n.id === 'leaving')?.parentId).toBeUndefined();
   });
 
+  test('resizing a group uses explicit node dimensions over stale measured dimensions', () => {
+    const nodes = [
+      node('incoming', 'js', { x: 280, y: 120 }, { width: 40, height: 40 }),
+      group(
+        'group-1',
+        { x: 100, y: 100 },
+        { width: 240, height: 120, measured: { width: 80, height: 80 } }
+      )
+    ];
+
+    const result = syncVisualGroupMembership(nodes, { activeGroupIds: ['group-1'] });
+
+    expect(result.changed).toBe(true);
+    expect(result.nodes.find((n) => n.id === 'incoming')).toMatchObject({
+      parentId: 'group-1',
+      position: { x: 180, y: 20 }
+    });
+  });
+
   test('does not sweep top-level objects into a group when only the group was moved', () => {
     const nodes = [
       group('group-1', { x: 100, y: 100 }),
