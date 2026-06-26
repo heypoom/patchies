@@ -4,8 +4,12 @@
   import { useSvelteFlow, useUpdateNodeInternals, useStore, type NodeProps } from '@xyflow/svelte';
   import { MessageContext } from '$lib/messages/MessageContext';
   import { AudioService } from '$lib/audio/v2/AudioService';
+  import { Transport } from '$lib/transport';
   import { SequencerScheduler } from '../../sequencer/sequencer-scheduler';
-  import { createSequencerPayload } from '$lib/sequencer/sequencer-output';
+  import {
+    createSequencerPayload,
+    transportTimeToAudioContextTime
+  } from '$lib/sequencer/sequencer-output';
   import { type TrackData, DEFAULT_TRACKS, TRACK_COLORS } from '$lib/nodes/sequencer-constants';
   import { useNodeDataTracker } from '$lib/history';
   import { sequencerMessages } from '$lib/objects/schemas';
@@ -78,6 +82,14 @@
     const mode = outputMode;
     const outlet = outletMode;
 
+    const payloadTime = audioRate
+      ? transportTimeToAudioContextTime({
+          scheduledTransportTime: time,
+          currentTransportTime: Transport.seconds,
+          audioContextTime: AudioService.getInstance().getAudioContext().currentTime
+        })
+      : time;
+
     for (let t = 0; t < currentTracks.length; t++) {
       const track = currentTracks[t];
       if (!(track?.stepOn[stepIndex] ?? false)) continue;
@@ -90,7 +102,7 @@
         audioRate,
         trackIndex: t,
         velocity,
-        time
+        time: payloadTime
       });
 
       messageContext.send(payload, { to: outlet === 'single' ? 0 : t });

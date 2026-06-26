@@ -20,5 +20,9 @@ Separate sequencer payload choice from Web Audio lookahead timing.
 - Store lookahead as `audioRate?: boolean` on sequencer node data.
 - Keep `outputMode` for payload selection only.
 - Drive the lookahead scheduler from `audioRate`, not from `outputMode`.
+- Seed the current bar when the auto-clock transport enters `playing`; the
+  first bar must emit events instead of waiting for the next beat-0 boundary.
+- Convert scheduled transport time to absolute `AudioContext.currentTime`
+  coordinates before writing `time` into audio-lookahead payloads.
 - Use a shared helper to create sequencer payloads so docs, schemas, and UI
   behavior do not drift.

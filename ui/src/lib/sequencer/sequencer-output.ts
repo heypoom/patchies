@@ -14,6 +14,20 @@ type CreateSequencerPayloadOptions = {
   time: number;
 };
 
+type TransportTimeToAudioContextTimeOptions = {
+  scheduledTransportTime: number;
+  currentTransportTime: number;
+  audioContextTime: number;
+};
+
+export function transportTimeToAudioContextTime({
+  scheduledTransportTime,
+  currentTransportTime,
+  audioContextTime
+}: TransportTimeToAudioContextTimeOptions): number {
+  return audioContextTime + Math.max(0, scheduledTransportTime - currentTransportTime);
+}
+
 export function createSequencerPayload({
   outletMode,
   outputMode,
