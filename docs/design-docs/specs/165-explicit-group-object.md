@@ -67,9 +67,10 @@ When a group is resized smaller, direct children whose centers are outside the r
 - Empty space inside a group behaves like empty canvas space for canvas insertion and selection clearing.
 - Drag-select gestures that start inside a group select objects inside the group without selecting the group frame itself.
 - Users select or drag a group by its border, resize handles, or title pill, not by the transparent interior.
-- The title pill follows the small `node-title-drag-handle` visual convention used by other visual nodes.
-- A settings button at the top-right opens predefined color swatches for the group frame. The settings panel opens outside the group frame so it does not cover grouped objects.
+- The title pill follows the small `node-title-drag-handle` visual convention used by other visual nodes and displays `node.data.title` with `group` as the fallback title.
+- A settings button at the top-right opens a title input and predefined color swatches for the group frame. The settings panel opens outside the group frame so it does not cover grouped objects.
 - Group color is optional. Omitting `node.data.color` uses the default gray frame; choosing a swatch stores `node.data.color` and supports undo/redo as a discrete node data change.
+- Group title is optional. Editing it stores `node.data.title` and supports undo/redo as a continuous node data change on blur.
 - The rendered group frame uses explicit pixel dimensions from `node.width` and `node.height` so resize observation cannot collapse the group back to its content size.
 - The Svelte Flow group wrapper must override the library's built-in group-node width so first resize measurement comes from the Patchies frame, not the default 150px XYFlow group style.
 

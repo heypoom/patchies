@@ -8,6 +8,7 @@ import {
   getGroupColorGridClasses,
   getGroupFrameStyle,
   getGroupSettingsPanelClasses,
+  getGroupTitle,
   getGroupTitleClasses,
   getGroupVisualFrameStyle,
   getGroupVisualFrameClasses
@@ -24,6 +25,12 @@ describe('group hit zones', () => {
     expect(
       GROUP_BORDER_HIT_ZONES.every((zone) => zone.className.includes('pointer-events-auto'))
     ).toBe(true);
+  });
+
+  test('uses a custom group title with a default fallback', () => {
+    expect(getGroupTitle(undefined)).toBe('group');
+    expect(getGroupTitle('')).toBe('group');
+    expect(getGroupTitle('  visuals  ')).toBe('visuals');
   });
 
   test('exposes predefined group colors with a default selected color', () => {

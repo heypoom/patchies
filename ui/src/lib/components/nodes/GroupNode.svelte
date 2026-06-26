@@ -9,6 +9,7 @@
     getGroupColorGridClasses,
     getGroupFrameStyle,
     getGroupSettingsPanelClasses,
+    getGroupTitle,
     getGroupTitleClasses,
     getGroupVisualFrameClasses,
     getGroupVisualFrameStyle
@@ -21,6 +22,7 @@
     id: string;
     data: {
       color?: string;
+      title?: string;
     };
     selected: boolean;
     width?: number;
@@ -30,12 +32,14 @@
   const { updateNodeData } = useSvelteFlow();
   const eventBus = PatchiesEventBus.getInstance();
   const tracker = useNodeDataTracker(node.id);
+  const titleTracker = tracker.track('title', () => node.data.title ?? '');
 
   let showSettings = $state(false);
 
   const width = $derived(node.width ?? DEFAULT_GROUP_WIDTH);
   const height = $derived(node.height ?? DEFAULT_GROUP_HEIGHT);
   const color = $derived(node.data.color ?? DEFAULT_GROUP_COLOR);
+  const title = $derived(getGroupTitle(node.data.title));
   const frameStyle = $derived(getGroupFrameStyle(width, height));
   const visualFrameClasses = $derived(getGroupVisualFrameClasses(node.selected));
   const visualFrameStyle = $derived(getGroupVisualFrameStyle(color, node.selected));
@@ -60,6 +64,11 @@
     tracker.commit('color', oldColor, nextColor);
   }
 
+  function handleTitleInput(event: Event) {
+    const nextTitle = (event.target as HTMLInputElement).value;
+    updateConfig({ title: nextTitle });
+  }
+
   function handleResizeEnd() {
     eventBus.dispatch({ type: 'visualGroupSyncRequested', groupId: node.id });
   }
@@ -81,7 +90,7 @@
   />
 
   <div class={getGroupTitleClasses()} aria-label="Select group">
-    <div class="font-mono text-xs font-medium text-zinc-400">group</div>
+    <div class="max-w-56 truncate font-mono text-xs font-medium text-zinc-400">{title}</div>
   </div>
 
   <div class="pointer-events-auto absolute -top-7 right-0 z-10 flex gap-x-1">
@@ -114,7 +123,7 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class={getGroupSettingsPanelClasses()} onclick={(event) => event.stopPropagation()}>
       <div class="mb-3 flex items-center justify-between gap-2">
-        <div class="text-xs font-medium text-zinc-300">Group Color</div>
+        <div class="text-xs font-medium text-zinc-300">Group Settings</div>
 
         <Tooltip.Root>
           <Tooltip.Trigger>
@@ -129,6 +138,23 @@
           <Tooltip.Content>Close</Tooltip.Content>
         </Tooltip.Root>
       </div>
+
+      <label class="mb-3 block">
+        <span class="mb-1 block text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+          Title
+        </span>
+        <input
+          class="nodrag w-full rounded border border-zinc-700 bg-zinc-950 px-2 py-1 text-xs text-zinc-200 transition-colors outline-none placeholder:text-zinc-600 focus:border-zinc-500"
+          value={node.data.title ?? ''}
+          placeholder="group"
+          oninput={handleTitleInput}
+          onfocus={titleTracker.onFocus}
+          onblur={titleTracker.onBlur}
+          aria-label="Group title"
+        />
+      </label>
+
+      <div class="mb-2 text-[10px] font-medium tracking-wide text-zinc-500 uppercase">Color</div>
 
       <div class={getGroupColorGridClasses()}>
         {#each GROUP_COLOR_PRESETS as preset (preset.name)}

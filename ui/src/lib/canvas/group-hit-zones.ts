@@ -44,6 +44,10 @@ export function getGroupColorPreset(color: string | undefined): { name: string; 
   );
 }
 
+export function getGroupTitle(title: string | undefined): string {
+  return title?.trim() || 'group';
+}
+
 function hexToRgb(hexColor: string): { r: number; g: number; b: number } {
   const normalized = hexColor.replace('#', '');
 
