@@ -4,7 +4,6 @@ import type { AudioNodeV2, AudioNodeGroup } from '../interfaces/audio-nodes';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
 type PlayMessage = {
-  [key: string]: unknown;
   type: 'bang' | 'play';
 
   time?: unknown;
@@ -16,7 +15,6 @@ type PlayMessage = {
 };
 
 type LoopMessage = {
-  [key: string]: unknown;
   type: 'loop';
   start: number;
   end: number;
@@ -27,14 +25,12 @@ type LoopMessage = {
 };
 
 type ScheduledSetMessage = {
-  [key: string]: unknown;
   type: 'set';
   time: number;
   value: number;
 };
 
 type NoteOnMessage = {
-  [key: string]: unknown;
   type: 'noteOn';
   note: number;
   velocity: number;
@@ -42,7 +38,6 @@ type NoteOnMessage = {
 };
 
 type NoteOffMessage = {
-  [key: string]: unknown;
   type: 'noteOff';
   note: number;
   time?: unknown;

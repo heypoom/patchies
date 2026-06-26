@@ -168,11 +168,8 @@ export class AudioService {
     if (isScheduledMessage(message)) {
       const audioParam = this.getAudioParamByNode(node, key);
 
-      if (audioParam) {
-        if (this.timeScheduler) {
-          this.timeScheduler.processMessage(audioParam, message);
-        }
-
+      if (audioParam && this.timeScheduler) {
+        this.timeScheduler.processMessage(audioParam, message);
         return;
       }
     }

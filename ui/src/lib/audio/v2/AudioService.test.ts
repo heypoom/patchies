@@ -30,4 +30,21 @@ describe('AudioService', () => {
 
     expect(node.send).toHaveBeenCalledWith('message', message);
   });
+
+  it('forwards scheduled messages to node send when scheduler has not started', () => {
+    const service = new AudioService();
+    const audioParam = { value: 0 } as AudioParam;
+    const node: AudioNodeV2 = {
+      nodeId: 'node-1',
+      audioNode: null,
+      send: vi.fn(),
+      getAudioParam: () => audioParam
+    };
+    const message = { type: 'set', time: 12.5, value: 0.75 };
+
+    registerFakeNode(service, node);
+    service.send(node.nodeId, 'gain', message);
+
+    expect(node.send).toHaveBeenCalledWith('gain', message);
+  });
 });
