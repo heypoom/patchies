@@ -67,33 +67,17 @@ const SetClockMode = msg('setClockMode', {
 const SetStepCount = msg('setStepCount', { value: Type.Number() });
 
 // --- Output (for outlet schema doc) ---
-const BangScheduled = msg('bang', {
-  time: Type.Number()
+const BangOutput = msg('bang', {
+  time: Type.Optional(Type.Number()),
+  value: Type.Optional(Type.Number({ minimum: 0, maximum: 1 })),
+  index: Type.Optional(Type.Number({ minimum: 0 }))
 });
 
-const SetSchedule = msg('set', {
-  time: Type.Number(),
-  value: Type.Number({ minimum: 0, maximum: 1 })
-});
-
-const SetIndexedSchedule = msg('set', {
-  index: Type.Number({ minimum: 0 }),
-  time: Type.Number(),
-  value: Type.Number({ minimum: 0, maximum: 1 })
-});
-
-// Single-outlet output schemas
-const NoteOn = msg('noteOn', {
-  note: Type.Number(),
-  index: Type.Number(),
-  velocity: Type.Number({ minimum: 0, maximum: 127 })
-});
-
-const NoteOnScheduled = msg('noteOn', {
+const NoteOnOutput = msg('noteOn', {
   note: Type.Number(),
   index: Type.Number(),
   velocity: Type.Number({ minimum: 0, maximum: 127 }),
-  time: Type.Number()
+  time: Type.Optional(Type.Number())
 });
 
 /**
@@ -154,7 +138,7 @@ export const sequencerSchema: ObjectSchema = {
         },
         {
           schema: SetAudioRate,
-          description: 'Enable or disable Web Audio lookahead timestamps on output'
+          description: 'Enable or disable audio lookahead timestamps on output'
         },
         {
           schema: SetOutletMode,
@@ -202,39 +186,19 @@ export const sequencerSchema: ObjectSchema = {
         'Multi-outlet mode: per-track trigger outlet (one per track, numbered 0–7). Single-outlet mode: one merged outlet.',
       messages: [
         {
-          schema: Bang,
-          description: 'Multi/bang: fired on active step'
-        },
-        {
-          schema: BangScheduled,
-          description: 'Multi/bang + audio lookahead: fired with Web Audio time'
-        },
-        {
-          schema: Type.Number({ minimum: 0, maximum: 1 }),
-          description: 'Multi/value: velocity value 0–1'
-        },
-        {
-          schema: SetSchedule,
+          schema: BangOutput,
           description:
-            'Multi/value + audio lookahead: scheduled set event with Web Audio time and velocity'
+            'Bang output. Audio lookahead adds time; value mode adds velocity; single/index mode also adds track index.'
         },
         {
           schema: Type.Number({ minimum: 0 }),
-          description: 'Single/index: track index (0–N)'
-        },
-        {
-          schema: SetIndexedSchedule,
           description:
-            'Single/index + audio lookahead: scheduled set event with track index, velocity, and Web Audio time'
+            'Number output: multi/value sends velocity 0–1; single/index sends track index.'
         },
         {
-          schema: NoteOn,
-          description: 'Single/midi: noteOn with GM note, track index, and MIDI velocity 0–127'
-        },
-        {
-          schema: NoteOnScheduled,
+          schema: NoteOnOutput,
           description:
-            'Single/midi + audio lookahead: noteOn with GM note, track index, MIDI velocity 0–127, and Web Audio time'
+            'Single/midi output. Audio lookahead adds time; velocity is MIDI 0–127 and note follows the GM drum map.'
         }
       ]
     }

@@ -9,12 +9,12 @@ Separate sequencer payload choice from Web Audio lookahead timing.
   - `value` sends the step velocity number
 - **Audio lookahead** is an independent boolean setting:
   - `bang` + lookahead sends `{ type: 'bang', time }`
-  - `value` + lookahead sends `{ type: 'set', time, value }`
+  - `value` + lookahead sends `{ type: 'bang', time, value }`
 - Single-outlet mode keeps `index` and `midi`; with audio lookahead enabled,
-  `index` sends `{ type: 'set', index, value, time }` and `midi` sends
+  `index` sends `{ type: 'bang', index, value, time }` and `midi` sends
   `{ type: 'noteOn', note, index, velocity, time }`.
-- `sampler~` accepts timed `bang`, so a sequencer in `bang` + lookahead mode can
-  trigger samples directly without a mapper.
+- `sampler~` accepts timed `bang` with optional `value`, so sequencer
+  bang/value lookahead modes can trigger samples directly without a mapper.
 
 ## Implementation
 

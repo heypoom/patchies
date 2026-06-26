@@ -72,7 +72,7 @@ export function createSequencerPayload({
     }
 
     if (outputMode === 'index') {
-      return audioRate ? { type: 'set', index: trackIndex, value: velocity, time } : trackIndex;
+      return audioRate ? { type: 'bang', index: trackIndex, value: velocity, time } : trackIndex;
     }
 
     throw new Error(`Invalid sequencer output mode "${outputMode}" for single outlet mode`);
@@ -80,7 +80,7 @@ export function createSequencerPayload({
 
   if (outletMode === 'multi') {
     if (outputMode === 'value') {
-      return audioRate ? { type: 'set', time, value: velocity } : velocity;
+      return audioRate ? { type: 'bang', time, value: velocity } : velocity;
     }
 
     if (outputMode === 'bang') {

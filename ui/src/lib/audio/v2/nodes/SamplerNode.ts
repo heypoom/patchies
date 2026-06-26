@@ -5,13 +5,13 @@ import { SamplerNoteVoiceManager } from './SamplerNoteVoiceManager';
 import { samplerMessages } from '$lib/objects/schemas';
 import type { ObjectInlet, ObjectOutlet } from '$lib/objects/v2/object-metadata';
 
-type PlayMessage = {
-  type: 'bang' | 'play';
+type BangMessage = {
+  type: 'bang';
 
   time?: unknown;
   offset?: unknown;
   duration?: unknown;
-  gain?: unknown;
+  value?: unknown;
   playbackRate?: unknown;
   replaceImmediate?: boolean;
 };
@@ -23,13 +23,7 @@ type LoopMessage = {
   time?: unknown;
   offset?: unknown;
   duration?: unknown;
-  gain?: unknown;
-};
-
-type ScheduledSetMessage = {
-  type: 'set';
-  time: number;
-  value: number;
+  value?: unknown;
 };
 
 const getNonNegativeNumber = (value: unknown): number | undefined =>
@@ -47,7 +41,7 @@ export class SamplerNode implements AudioNodeV2 {
       name: 'message',
       type: 'message',
       description:
-        'Control messages: record, play, stop, loop, loopOff, setStart, setEnd, playbackRate, detune. Also accepts Float32Array directly to set buffer.'
+        'Control messages: record, bang, stop, loop, loopOff, setStart, setEnd, playbackRate, detune. Also accepts Float32Array directly to set buffer.'
     }
   ];
 
@@ -87,7 +81,7 @@ export class SamplerNode implements AudioNodeV2 {
     this.noteVoices = new SamplerNoteVoiceManager({
       currentTime: () => this.audioContext.currentTime,
       getBasePlaybackRate: () => this.playbackRate,
-      play: (message) => this.handlePlay(message),
+      play: (message) => this.handleBang(message),
       stop: (source, time) => this.stopSource(source, time)
     });
   }
@@ -106,7 +100,7 @@ export class SamplerNode implements AudioNodeV2 {
     if (typeof message === 'number') {
       const gain = getNonNegativeNumber(message);
       if (gain !== undefined) {
-        this.handlePlay({ type: 'play', gain });
+        this.handleBang({ type: 'bang', value: gain });
       }
       return;
     }
@@ -124,9 +118,7 @@ export class SamplerNode implements AudioNodeV2 {
           this.mediaRecorder.stop();
         }
       })
-      .with({ type: 'bang' }, this.handlePlay.bind(this))
-      .with({ type: 'play' }, this.handlePlay.bind(this))
-      .with(samplerMessages.setScheduled, this.handleScheduledSet.bind(this))
+      .with(samplerMessages.bang, this.handleBang.bind(this))
       .with(samplerMessages.noteOn, (message) => {
         this.noteVoices.handleNoteOn(message);
       })
@@ -253,7 +245,7 @@ export class SamplerNode implements AudioNodeV2 {
     const time = getNonNegativeNumber(message.time) ?? 0;
     const offset = getNonNegativeNumber(message.offset) ?? start;
     const duration = getNonNegativeNumber(message.duration);
-    const gain = getNonNegativeNumber(message.gain) ?? 1;
+    const gain = getNonNegativeNumber(message.value) ?? 1;
     const isFutureScheduled = time > this.audioContext.currentTime;
 
     if (!isFutureScheduled) {
@@ -294,17 +286,6 @@ export class SamplerNode implements AudioNodeV2 {
     newSource.start(time, offset, duration);
   }
 
-  private handleScheduledSet(message: ScheduledSetMessage): void {
-    const gain = getNonNegativeNumber(message.value);
-    if (gain === undefined) return;
-
-    this.handlePlay({
-      type: 'play',
-      time: message.time,
-      gain
-    });
-  }
-
   private async handleRecord(): Promise<void> {
     if (this.mediaRecorder) {
       return;
@@ -343,7 +324,7 @@ export class SamplerNode implements AudioNodeV2 {
     this.mediaRecorder = recorder;
   }
 
-  private handlePlay(message: PlayMessage): AudioBufferSourceNode | null {
+  private handleBang(message: BangMessage): AudioBufferSourceNode | null {
     if (!this.audioBuffer) {
       return null;
     }
@@ -356,7 +337,11 @@ export class SamplerNode implements AudioNodeV2 {
 
     const time = getNonNegativeNumber(message.time) ?? 0;
     const offset = getNonNegativeNumber(message.offset) ?? this.loopStart;
-    const gain = getNonNegativeNumber(message.gain) ?? 1;
+    if ('value' in message && getNonNegativeNumber(message.value) === undefined) {
+      return null;
+    }
+
+    const gain = getNonNegativeNumber(message.value) ?? 1;
 
     const duration =
       getNonNegativeNumber(message.duration) ??
