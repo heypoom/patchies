@@ -46,17 +46,7 @@ export function getGroupColorPreset(color: string | undefined): { name: string; 
   );
 }
 
-export function getGroupTitle(title: string | undefined): string {
-  return title?.trim() || 'group';
-}
-
-export function getGroupCanResize(canResize: boolean | undefined): boolean {
-  return canResize ?? true;
-}
-
-export function getGroupIsLocked(locked: boolean | undefined): boolean {
-  return locked ?? false;
-}
+export const getGroupTitle = (title: string | undefined): string => title?.trim() || 'group';
 
 function hexToRgb(hexColor: string): { r: number; g: number; b: number } {
   const normalized = getGroupColorPreset(hexColor).value.slice(1);
@@ -70,57 +60,8 @@ function hexToRgb(hexColor: string): { r: number; g: number; b: number } {
 
 function rgba(hexColor: string, alpha: number): string {
   const { r, g, b } = hexToRgb(hexColor);
+
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-export function getGroupTitleClasses(): string {
-  return [
-    'node-title-drag-handle',
-    'pointer-events-auto',
-    'absolute',
-    '-top-7',
-    'left-0',
-    'z-10',
-    'w-fit',
-    'cursor-move',
-    'rounded-lg',
-    'bg-zinc-900',
-    'px-2',
-    'py-1'
-  ].join(' ');
-}
-
-export function getGroupSettingsPanelClasses(): string {
-  return [
-    'nodrag',
-    'pointer-events-auto',
-    'absolute',
-    'top-0',
-    'left-[calc(100%+0.5rem)]',
-    'z-20',
-    'w-44',
-    'rounded-md',
-    'border',
-    'border-zinc-700',
-    'bg-zinc-900',
-    'p-3',
-    'shadow-xl'
-  ].join(' ');
-}
-
-export function getGroupColorGridClasses(): string {
-  return 'grid grid-cols-5 gap-2';
-}
-
-export function getGroupFrameStyle(width: number, height: number): string {
-  return `width: ${width}px; height: ${height}px;`;
-}
-
-export function getGroupVisualFrameClasses(selected: boolean): string[] {
-  return [
-    'pointer-events-none h-full w-full rounded border border-dashed transition-colors',
-    selected ? 'shadow-[0_0_0_1px_var(--group-glow-color)]' : ''
-  ];
 }
 
 export function getGroupVisualFrameStyle(color: string | undefined, selected: boolean): string {

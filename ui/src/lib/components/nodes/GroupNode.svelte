@@ -6,14 +6,7 @@
     DEFAULT_GROUP_COLOR,
     GROUP_COLOR_PRESETS,
     GROUP_BORDER_HIT_ZONES,
-    getGroupColorGridClasses,
-    getGroupCanResize,
-    getGroupFrameStyle,
-    getGroupIsLocked,
-    getGroupSettingsPanelClasses,
     getGroupTitle,
-    getGroupTitleClasses,
-    getGroupVisualFrameClasses,
     getGroupVisualFrameStyle
   } from '$lib/canvas/group-hit-zones';
   import { DEFAULT_GROUP_HEIGHT, DEFAULT_GROUP_WIDTH } from '$lib/nodes/defaultNodeDimensions';
@@ -46,10 +39,8 @@
   const height = $derived(node.height ?? DEFAULT_GROUP_HEIGHT);
   const color = $derived(node.data.color ?? DEFAULT_GROUP_COLOR);
   const title = $derived(getGroupTitle(node.data.title));
-  const canResize = $derived(getGroupCanResize(node.data.canResize));
-  const isLocked = $derived(getGroupIsLocked(node.data.locked));
-  const frameStyle = $derived(getGroupFrameStyle(width, height));
-  const visualFrameClasses = $derived(getGroupVisualFrameClasses(node.selected));
+  const canResize = $derived(node.data.canResize ?? true);
+  const isLocked = $derived(node.data.locked ?? false);
   const visualFrameStyle = $derived(getGroupVisualFrameStyle(color, node.selected));
 
   $effect(() => {
@@ -109,7 +100,10 @@
   }
 </script>
 
-<div class={['pointer-events-none relative', node.class]} style={frameStyle}>
+<div
+  class={['pointer-events-none relative', node.class]}
+  style="width: {width}px; height: {height}px;"
+>
   <NodeResizer
     class="pointer-events-auto z-1"
     isVisible={node.selected && canResize && !isLocked}
@@ -120,7 +114,10 @@
     onResizeEnd={handleResizeEnd}
   />
 
-  <div class={getGroupTitleClasses()} aria-label="Select group">
+  <div
+    class="node-title-drag-handle pointer-events-auto absolute -top-7 left-0 z-10 w-fit cursor-move rounded-lg bg-zinc-900 px-2 py-1"
+    aria-label="Select group"
+  >
     <div class="max-w-56 truncate font-mono text-xs font-medium text-zinc-400">{title}</div>
   </div>
 
@@ -143,7 +140,14 @@
     </Tooltip.Root>
   </div>
 
-  <div class={visualFrameClasses} style={visualFrameStyle} aria-hidden="true"></div>
+  <div
+    class={[
+      'pointer-events-none h-full w-full rounded border border-dashed transition-colors',
+      node.selected && 'shadow-[0_0_0_1px_var(--group-glow-color)]'
+    ]}
+    style={visualFrameStyle}
+    aria-hidden="true"
+  ></div>
 
   {#each GROUP_BORDER_HIT_ZONES as zone (zone.id)}
     <div class={zone.className} aria-label={zone.ariaLabel}></div>
@@ -152,25 +156,26 @@
   {#if showSettings}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class={getGroupSettingsPanelClasses()} onclick={(event) => event.stopPropagation()}>
-      <div class="mb-3 flex items-center justify-between gap-2">
-        <div class="text-xs font-medium text-zinc-300">Group Settings</div>
-
+    <div
+      class="nodrag pointer-events-auto absolute top-0 left-[calc(100%+0.5rem)] z-20 w-44 rounded-md border border-zinc-700 bg-zinc-900 p-3 shadow-xl"
+      onclick={(event) => event.stopPropagation()}
+    >
+      <div class="absolute -top-7 left-0 flex w-full justify-end gap-x-1">
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button
               class={[
-                'cursor-pointer rounded p-1 hover:bg-zinc-800',
-                isLocked ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-200'
+                'h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 hover:bg-zinc-700',
+                isLocked ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
               ]}
               onclick={toggleLocked}
               aria-label={isLocked ? 'Unlock group' : 'Lock group'}
               aria-pressed={isLocked}
             >
               {#if isLocked}
-                <Lock class="h-3.5 w-3.5" />
+                <Lock class="h-4 w-4" />
               {:else}
-                <LockOpen class="h-3.5 w-3.5" />
+                <LockOpen class="h-4 w-4" />
               {/if}
             </button>
           </Tooltip.Trigger>
@@ -180,16 +185,18 @@
         <Tooltip.Root>
           <Tooltip.Trigger>
             <button
-              class="cursor-pointer rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              class="h-6 w-6 cursor-pointer rounded bg-zinc-950 p-1 text-zinc-300 hover:bg-zinc-700"
               onclick={closeSettings}
               aria-label="Close group settings"
             >
-              <X class="h-3.5 w-3.5" />
+              <X class="h-4 w-4" />
             </button>
           </Tooltip.Trigger>
           <Tooltip.Content>Close</Tooltip.Content>
         </Tooltip.Root>
       </div>
+
+      <div class="mb-3 text-xs font-medium text-zinc-300">Group Settings</div>
 
       <label class="mb-3 block">
         <span class="mb-1 block text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
@@ -208,7 +215,7 @@
 
       <div class="mb-2 text-[10px] font-medium tracking-wide text-zinc-500 uppercase">Color</div>
 
-      <div class={getGroupColorGridClasses()}>
+      <div class="grid grid-cols-5 gap-2">
         {#each GROUP_COLOR_PRESETS as preset (preset.name)}
           <Tooltip.Root>
             <Tooltip.Trigger>
@@ -229,13 +236,19 @@
         {/each}
       </div>
 
-      <label class="mt-3 flex items-center justify-between gap-3 border-t border-zinc-800 pt-3">
+      <label
+        class={[
+          'mt-3 flex items-center justify-between gap-3 border-t border-zinc-800 pt-3',
+          isLocked && 'opacity-50'
+        ]}
+      >
         <span class="text-xs font-medium text-zinc-300">Can Resize</span>
         <input
           type="checkbox"
-          class="h-4 w-4 cursor-pointer accent-zinc-200"
+          class="h-4 w-4 cursor-pointer accent-zinc-200 disabled:cursor-not-allowed"
           checked={canResize}
           onchange={handleCanResizeChange}
+          disabled={isLocked}
           aria-label="Can resize group"
         />
       </label>

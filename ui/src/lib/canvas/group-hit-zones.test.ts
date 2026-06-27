@@ -5,24 +5,12 @@ import {
   GROUP_COLOR_PRESETS,
   GROUP_BORDER_HIT_ZONES,
   getGroupColorPreset,
-  getGroupColorGridClasses,
-  getGroupFrameStyle,
-  getGroupCanResize,
-  getGroupIsLocked,
-  getGroupSettingsPanelClasses,
   getGroupTitle,
-  getGroupTitleClasses,
-  getGroupVisualFrameStyle,
-  getGroupVisualFrameClasses
+  getGroupVisualFrameStyle
 } from './group-hit-zones';
 
 describe('group hit zones', () => {
-  test('keeps the visual frame transparent to pointer events', () => {
-    expect(getGroupVisualFrameClasses(false).join(' ')).toContain('pointer-events-none');
-  });
-
-  test('keeps title and border strips available for selecting and dragging the group', () => {
-    expect(getGroupTitleClasses()).toContain('pointer-events-auto');
+  test('keeps border strips available for selecting and dragging the group', () => {
     expect(GROUP_BORDER_HIT_ZONES).toHaveLength(4);
     expect(
       GROUP_BORDER_HIT_ZONES.every((zone) => zone.className.includes('pointer-events-auto'))
@@ -33,13 +21,6 @@ describe('group hit zones', () => {
     expect(getGroupTitle(undefined)).toBe('group');
     expect(getGroupTitle('')).toBe('group');
     expect(getGroupTitle('  visuals  ')).toBe('visuals');
-  });
-
-  test('uses default group interaction settings', () => {
-    expect(getGroupCanResize(undefined)).toBe(true);
-    expect(getGroupCanResize(false)).toBe(false);
-    expect(getGroupIsLocked(undefined)).toBe(false);
-    expect(getGroupIsLocked(true)).toBe(true);
   });
 
   test('exposes predefined group colors with a default selected color', () => {
@@ -64,20 +45,5 @@ describe('group hit zones', () => {
     expect(style).not.toContain('NaN');
     expect(style).toContain('border-color: rgba(113, 113, 122, 0.55);');
     expect(style).toContain('background-color: rgba(113, 113, 122, 0.08);');
-  });
-
-  test('uses explicit pixel dimensions for the group frame', () => {
-    expect(getGroupFrameStyle(420, 260)).toBe('width: 420px; height: 260px;');
-  });
-
-  test('anchors the settings panel outside the group frame', () => {
-    const classes = getGroupSettingsPanelClasses();
-
-    expect(classes).toContain('left-[calc(100%+0.5rem)]');
-    expect(classes).not.toContain('right-0');
-  });
-
-  test('lays out group colors as two rows of five swatches', () => {
-    expect(getGroupColorGridClasses()).toContain('grid-cols-5');
   });
 });
