@@ -1,9 +1,13 @@
 export type SettingsPersistence = 'none' | 'node' | 'kv';
 
-export type SettingsVisibilityCondition = {
-  key: string;
-  equals: unknown;
-};
+export type SettingsVisibilityCondition =
+  | {
+      key: string;
+      equals: unknown;
+    }
+  | {
+      all: SettingsVisibilityCondition[];
+    };
 
 interface SettingsFieldBase {
   key: string;

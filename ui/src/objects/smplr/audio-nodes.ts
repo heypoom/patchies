@@ -1,6 +1,8 @@
 import { createSmplrAudioNodeClass } from './SmplrInstrumentAudioNode';
 import { smplrDescriptors } from './descriptors';
+import { GmAudioNode } from './GmAudioNode';
 
+export { GmAudioNode };
 export const SoundfontAudioNode = createSmplrAudioNodeClass(smplrDescriptors['soundfont~']);
 export const Soundfont2AudioNode = createSmplrAudioNodeClass(smplrDescriptors['soundfont2~']);
 export const PianoAudioNode = createSmplrAudioNodeClass(smplrDescriptors['piano~']);
@@ -12,6 +14,7 @@ export const VersilianAudioNode = createSmplrAudioNodeClass(smplrDescriptors['ve
 export const SmolkenAudioNode = createSmplrAudioNodeClass(smplrDescriptors['smolken~']);
 
 export const SMPLR_AUDIO_NODES = [
+  GmAudioNode,
   SoundfontAudioNode,
   Soundfont2AudioNode,
   PianoAudioNode,

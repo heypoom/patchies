@@ -121,3 +121,59 @@ export const malletSchema = createSmplrSchema('mallet~');
 export const mellotronSchema = createSmplrSchema('mellotron~');
 export const versilianSchema = createSmplrSchema('versilian~');
 export const smolkenSchema = createSmplrSchema('smolken~');
+
+export const gmSchema: ObjectSchema = {
+  type: 'gm~',
+  category: 'audio',
+  description: 'Multi-channel General MIDI sampled instrument for MIDI files',
+  inlets: [
+    {
+      id: 'message',
+      description: 'Channel-aware MIDI messages',
+      handle: { handleType: 'message' },
+      messages: [
+        {
+          schema: BangTrigger,
+          description: 'Trigger the default piano note on channel 1'
+        },
+        {
+          schema: Type.Number({ minimum: 0 }),
+          description: 'Trigger the default piano note on channel 1 with a gain multiplier'
+        },
+        {
+          schema: NoteOn,
+          description: 'Start a note on the addressed MIDI channel'
+        },
+        {
+          schema: NoteOff,
+          description: 'Stop a note on the addressed MIDI channel'
+        },
+        {
+          schema: MidiControlChange,
+          description: 'Forward a MIDI control-change message to the addressed channel'
+        },
+        {
+          schema: MidiProgramChange,
+          description: 'Change the General MIDI program for the addressed channel'
+        },
+        {
+          schema: SetGain,
+          description: 'Set output volume for all active channels'
+        },
+        {
+          schema: Stop,
+          description: 'Stop active voices on all loaded channels'
+        }
+      ]
+    }
+  ],
+  outlets: [
+    {
+      id: 'out',
+      type: 'signal',
+      description: 'Mixed instrument audio output',
+      handle: { handleType: 'audio' }
+    }
+  ],
+  tags: ['audio', 'midi', 'sample', 'instrument', 'general-midi', 'smplr']
+};

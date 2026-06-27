@@ -169,6 +169,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
     objects: [
       'pads~',
       'sampler~',
+      'gm~',
       'soundfont~',
       'soundfont2~',
       'piano~',

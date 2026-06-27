@@ -30,6 +30,7 @@ distinguished by their `type`.
 
 ## See Also
 
+- [gm~](/docs/objects/gm~) - play multi-channel MIDI files with sampled instruments
 - [midi.out](/docs/objects/midi.out) - send MIDI messages to hardware
 - [tone~](/docs/objects/tone~) - synthesize MIDI messages
 - [sonic~](/docs/objects/sonic~) - SuperCollider-based MIDI synth

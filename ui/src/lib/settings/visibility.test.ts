@@ -35,4 +35,43 @@ describe('settings field visibility', () => {
   it('hides fields when the dependency value does not match', () => {
     expect(isSettingsFieldVisible(schema, { kit: 'Built In' }, schema[1])).toBe(false);
   });
+
+  it('supports fields that require multiple dependency values', () => {
+    const multiConditionSchema: SettingsSchema = [
+      {
+        key: 'source',
+        label: 'Source',
+        type: 'select',
+        options: ['Soundfont', 'Soundfont2'],
+        default: 'Soundfont'
+      },
+      ...schema,
+      {
+        key: 'instrumentUrl',
+        label: 'Instrument URL',
+        type: 'string',
+        visibleWhen: {
+          all: [
+            { key: 'source', equals: 'Soundfont' },
+            { key: 'kit', equals: 'Custom' }
+          ]
+        }
+      }
+    ];
+
+    expect(
+      isSettingsFieldVisible(
+        multiConditionSchema,
+        { source: 'Soundfont', kit: 'Custom' },
+        multiConditionSchema[3]
+      )
+    ).toBe(true);
+    expect(
+      isSettingsFieldVisible(
+        multiConditionSchema,
+        { source: 'Soundfont2', kit: 'Custom' },
+        multiConditionSchema[3]
+      )
+    ).toBe(false);
+  });
 });

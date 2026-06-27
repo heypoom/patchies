@@ -4,6 +4,9 @@ Use `soundfont2~` when you have a custom SF2 file hosted at a URL. Set the URL
 in the settings panel, then choose the instrument name after the file loads.
 Connect the audio outlet to `out~`.
 
+For full Standard MIDI files with multiple channels, use `gm~` with Source set
+to `Soundfont2`.
+
 ## Settings
 
 Open the settings panel to set:
@@ -29,6 +32,7 @@ exposes instrument names.
 
 ## See Also
 
+- [gm~](/docs/objects/gm~) - multi-channel General MIDI file playback
 - [soundfont~](/docs/objects/soundfont~) - built-in General MIDI Soundfont
 - [midi.file](/docs/objects/midi.file) - play MIDI files as messages
 - [out~](/docs/objects/out~) - audio output

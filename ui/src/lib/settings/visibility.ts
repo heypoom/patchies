@@ -1,4 +1,4 @@
-import type { SettingsField, SettingsSchema } from './types';
+import type { SettingsField, SettingsSchema, SettingsVisibilityCondition } from './types';
 
 export function getSettingsFieldValue(
   schema: SettingsSchema,
@@ -19,9 +19,21 @@ export function isSettingsFieldVisible(
 ): boolean {
   if (!field.visibleWhen) return true;
 
+  return isVisibilityConditionMet(schema, values, field.visibleWhen);
+}
+
+function isVisibilityConditionMet(
+  schema: SettingsSchema,
+  values: Record<string, unknown>,
+  condition: SettingsVisibilityCondition
+): boolean {
+  if ('all' in condition) {
+    return condition.all.every((child) => isVisibilityConditionMet(schema, values, child));
+  }
+
   return settingsValueEquals(
-    getSettingsFieldValue(schema, values, field.visibleWhen.key),
-    field.visibleWhen.equals
+    getSettingsFieldValue(schema, values, condition.key),
+    condition.equals
   );
 }
 

@@ -44,6 +44,7 @@ import {
   DEFAULT_DMX_DATA
 } from '$objects/serial/constants';
 import { DEFAULT_SHEET_DATA } from '$objects/sheet/constants';
+import { GM_DEFAULT_SETTINGS, GM_SETTINGS_SCHEMA } from '$objects/smplr/gm-settings';
 import { smplrDescriptors, type SmplrObjectType } from '$objects/smplr/descriptors';
 
 // TODO: make this type-safe!
@@ -383,6 +384,10 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       outletCount: 1
     }))
     .with('sheet', () => DEFAULT_SHEET_DATA)
+    .with('gm~', () => ({
+      settings: structuredClone(GM_DEFAULT_SETTINGS),
+      settingsSchema: GM_SETTINGS_SCHEMA
+    }))
     .with(
       'soundfont~',
       'soundfont2~',

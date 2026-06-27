@@ -9,19 +9,32 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import type { SettingsSchema } from '$lib/settings';
-  import type { SmplrInstrumentAudioNode, SmplrRuntimeStatus } from './SmplrInstrumentAudioNode';
+  import type { SmplrRuntimeStatus } from './SmplrInstrumentAudioNode';
+  import type { GmRuntimeStatus } from './GmAudioNode';
   import type { SmplrInstrumentDescriptor } from './descriptors';
+
+  type SmplrLayoutDescriptor = Pick<
+    SmplrInstrumentDescriptor,
+    'title' | 'defaultSettings' | 'settingsSchema' | 'getDisplayName'
+  > & {
+    type: string;
+  };
+
+  type SmplrLayoutRuntime = {
+    onStatusChange?: (status: SmplrRuntimeStatus | GmRuntimeStatus) => void;
+    onSettingsPatch?: (patch: Record<string, unknown>) => void;
+  };
 
   type SmplrNodeData = {
     settings?: Record<string, unknown>;
-    settingsSchema?: SmplrInstrumentDescriptor['settingsSchema'];
+    settingsSchema?: SettingsSchema;
   };
 
   let {
     descriptor,
     node
   }: {
-    descriptor: SmplrInstrumentDescriptor;
+    descriptor: SmplrLayoutDescriptor;
     node: NodeProps & { data: SmplrNodeData };
   } = $props();
 
@@ -29,8 +42,8 @@
   const audioService = AudioService.getInstance();
 
   let messageContext: MessageContext | null = null;
-  let runtimeNode: SmplrInstrumentAudioNode | null = null;
-  let status = $state<SmplrRuntimeStatus>({ state: 'idle' });
+  let runtimeNode: SmplrLayoutRuntime | null = null;
+  let status = $state<SmplrRuntimeStatus | GmRuntimeStatus>({ state: 'idle' });
   let showSettings = $state(false);
 
   const settings = $derived({ ...descriptor.defaultSettings, ...(node.data.settings ?? {}) });
@@ -38,7 +51,11 @@
   const instrumentName = $derived(descriptor.getDisplayName(settings));
   const loadingText = $derived.by(() => {
     if (status.state === 'loading') {
-      return status.total > 0 ? `loading ${status.loaded}/${status.total}` : 'loading';
+      if ('total' in status) {
+        return status.total > 0 ? `loading ${status.loaded}/${status.total}` : 'loading';
+      }
+
+      return `ch ${status.channel} program ${status.program}`;
     }
 
     if (status.state === 'error') return status.message;
@@ -74,7 +91,7 @@
   }
 
   function createSettingsSchema(
-    descriptor: SmplrInstrumentDescriptor,
+    descriptor: SmplrLayoutDescriptor,
     settings: Record<string, unknown>
   ): SettingsSchema {
     if (descriptor.type !== 'soundfont2~') return descriptor.settingsSchema;
@@ -111,12 +128,16 @@
     }
 
     await audioService.createNode(node.id, descriptor.type, []);
-    runtimeNode = audioService.getNodeById(node.id) as SmplrInstrumentAudioNode | null;
+    runtimeNode = audioService.getNodeById(node.id) as SmplrLayoutRuntime | null;
 
     if (runtimeNode) {
       runtimeNode.onStatusChange = (nextStatus) => {
         status = nextStatus;
-        if (nextStatus.state === 'ready' && nextStatus.instrumentNames?.length) {
+        if (
+          nextStatus.state === 'ready' &&
+          'instrumentNames' in nextStatus &&
+          nextStatus.instrumentNames?.length
+        ) {
           const current = node.data.settings ?? {};
           persistSettings({ ...current, instrumentNames: nextStatus.instrumentNames });
         }

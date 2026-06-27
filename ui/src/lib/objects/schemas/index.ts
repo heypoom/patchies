@@ -201,6 +201,7 @@ import { sheetSchema } from '$objects/sheet/schema';
 import { curveSchema } from '$objects/curve/schema';
 import { serialSchema, serialTermSchema, dmxSchema } from '$objects/serial/schema';
 import {
+  gmSchema,
   soundfontSchema,
   soundfont2Schema,
   pianoSchema,
@@ -330,6 +331,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   serial: serialSchema,
   'serial.term': serialTermSchema,
   'serial.dmx': dmxSchema,
+  'gm~': gmSchema,
   'soundfont~': soundfontSchema,
   'soundfont2~': soundfont2Schema,
   'piano~': pianoSchema,

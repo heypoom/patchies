@@ -20,6 +20,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - soundfile~: Load and play audio files
 - sampler~: Sample playback with triggering
 - pads~: 16-pad drum sampler triggered by MIDI noteOn/noteOff (GM drum map, note 36 = pad 1)
+- gm~: Multi-channel General MIDI sampled instrument for midi.file playback
 - soundfont~: General MIDI Soundfont sampled instrument driven by noteOn/noteOff/programChange messages
 - soundfont2~: Load a SoundFont2 SF2 file as a sampled MIDI instrument
 - split~: Split multi-channel audio into separate mono channels.
@@ -211,7 +212,8 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - soundfile~: Load and play audio files
 - sampler~: Sample playback with pitch and trigger control
 - pads~: 16-pad drum sampler (GM drum map)
-- soundfont~, soundfont2~: Sampled MIDI instruments
+- gm~: Multi-channel sampled General MIDI instrument
+- soundfont~, soundfont2~: Single-instrument sampled MIDI instruments
 - piano~, epiano~, drums~, mallet~, mellotron~, versilian~, smolken~: Ready-to-play sampled instruments
 
 ## MIDI

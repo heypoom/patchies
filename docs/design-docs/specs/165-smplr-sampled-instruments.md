@@ -11,6 +11,7 @@ runtime:
 
 - `soundfont~`
 - `soundfont2~`
+- `gm~`
 - `piano~`
 - `epiano~`
 - `drums~`
@@ -35,6 +36,8 @@ mean adding a descriptor, object docs, AI prompt text, and pack registration.
 - Lazy load `smplr`, `soundfont2`, and other heavy parser/runtime code so the
   base Patchies bundle does not pay the cost until these objects are used.
 - Reuse implementation aggressively across all smplr-backed objects.
+- Provide a dedicated multi-channel sampled synth for Standard MIDI files
+  without changing single-instrument `soundfont~` semantics.
 
 ## Non-goals
 
@@ -61,6 +64,11 @@ The objects belong primarily in the Samplers & Tables pack, alongside `sampler~`
 and `pads~`, because they are sample-backed playback instruments rather than
 synthesis engines. They can still be discovered from MIDI workflows through
 search and object docs.
+
+`soundfont~` and `soundfont2~` are single-instrument objects. They ignore MIDI
+channel for notes and treat `programChange` as a change to the one active
+instrument. `gm~` is the multi-channel object for Standard MIDI file playback:
+it preserves independent channel state and routes notes by MIDI channel.
 
 ## Shared Descriptor Architecture
 
@@ -120,6 +128,24 @@ The shared Audio V2 implementation should:
 - log unsupported or malformed messages through Patchies' existing debug/logging
   path instead of failing silently for non-trivial cases.
 
+`gm~` uses a separate runtime from the descriptor-driven single-instrument
+objects. It still follows the same Audio V2 shape, lazy-loading requirement, and
+SettingsPanel pattern, but owns 16 channels of instrument/program state.
+
+`gm~` is visual by default instead of using the compact shared smplr card. Its
+node body should show a 16-channel monitor for Standard MIDI debugging:
+
+- channel number;
+- current program number;
+- resolved instrument name or custom source label;
+- loading/error state;
+- active note count;
+- recent note/control activity as a short-lived visual pulse.
+
+The visual state should be delivered through a runtime callback on the Audio V2
+node, not as Patchies messages. This keeps MIDI/audio routing semantics clean
+while still giving the Svelte node live debugging telemetry.
+
 The shared Svelte layout should own common display state:
 
 - title and current instrument name;
@@ -169,6 +195,10 @@ number
 { type: 'stop', time?: number }
 ```
 
+`gm~` additionally treats `channel` as meaningful on channel messages. Patchies
+MIDI channels are 1-based (`1..16`) because `midi.file` normalizes Standard MIDI
+channel numbers that way.
+
 Message behavior:
 
 - `noteOn` calls `instrument.start({ note, velocity, time, duration })`.
@@ -176,6 +206,9 @@ Message behavior:
 - `noteOff` calls `instrument.stop({ stopId: note, time })`.
 - `controlChange` calls `instrument.setCC(control, value)`.
 - `programChange` delegates to the descriptor's program-change handler.
+- For `gm~`, `programChange` updates only the addressed channel. Later
+  `noteOn`, `noteOff`, and `controlChange` messages route to that channel's
+  current instrument. Missing channels default to channel `1`.
 - `setGain` maps to `instrument.output.volume` using smplr's MIDI-scale volume
   convention where possible.
 - `setDetune` calls `instrument.setDetune(value)`.
@@ -235,17 +268,18 @@ Common fields:
 
 Descriptor-specific fields:
 
-| Object        | Fields                                                                      |
-| ------------- | --------------------------------------------------------------------------- |
-| `soundfont~`  | `instrument`, `kit`, `instrumentUrl` when `kit` is `Custom`, `loadLoopData` |
-| `soundfont2~` | `url`, `instrument`                                                         |
-| `piano~`      | `decayTime`; later `notesToLoad` if needed                                  |
-| `epiano~`     | `instrument`                                                                |
-| `drums~`      | `instrument`                                                                |
-| `mallet~`     | `instrument`                                                                |
-| `mellotron~`  | `instrument`                                                                |
-| `versilian~`  | `instrument`                                                                |
-| `smolken~`    | `instrument`                                                                |
+| Object        | Fields                                                                               |
+| ------------- | ------------------------------------------------------------------------------------ |
+| `soundfont~`  | `instrument`, `kit`, `instrumentUrl` when `kit` is `Custom`, `loadLoopData`          |
+| `soundfont2~` | `url`, `instrument`                                                                  |
+| `gm~`         | `source`, `kit`, `instrumentUrl` when `kit` is `Custom`, `url`, `volume`, `velocity` |
+| `piano~`      | `decayTime`; later `notesToLoad` if needed                                           |
+| `epiano~`     | `instrument`                                                                         |
+| `drums~`      | `instrument`                                                                         |
+| `mallet~`     | `instrument`                                                                         |
+| `mellotron~`  | `instrument`                                                                         |
+| `versilian~`  | `instrument`                                                                         |
+| `smolken~`    | `instrument`                                                                         |
 
 Settings listed in `reloadsOnSettings` recreate/reload the smplr instrument.
 Live settings such as volume, detune, reverse, and pan should update the current
@@ -269,6 +303,18 @@ Required v1 mappings:
 - `soundfont2~`: map program numbers to parsed SF2 presets/instruments where
   the file exposes bank/program metadata. If the parser only exposes an ordered
   instrument list, use that order and document the limitation.
+- `gm~`: preserve one program value per channel. With the built-in `soundfont`
+  source, map General MIDI program numbers to smplr soundfont instrument names.
+  When that source uses `kit: Custom`, pass `instrumentUrl` through to smplr and
+  ignore General MIDI instrument names because the custom URL chooses the
+  sampled instrument.
+  With the `soundfont2` source, map program numbers by SF2 instrument-list
+  order because smplr's `Soundfont2` wrapper exposes names but not reliable
+  bank/program metadata.
+
+`gm~` v1 does not promise full General MIDI drum-channel behavior. Channel `10`
+is preserved as an independent channel, but true GM percussion mapping should be
+handled in a follow-up once Patchies has a clear sampled percussion source.
 
 Other objects may opt in only when the mapping is stable and musically clear.
 Otherwise, ignore the message with a debug log. Do not invent General MIDI
@@ -297,6 +343,11 @@ internal expectations, the adapter callback owns that translation.
 
 See `ui/src/objects/smplr/descriptors.ts` for the complete soundfont2~
 descriptor implementation.
+
+`gm~` may use the same `Soundfont2` wrapper for SF2 sources. Because that wrapper
+loads one current instrument per smplr instance, `gm~` creates per-channel
+instances as needed instead of trying to mutate one shared SF2 instrument across
+all channels.
 
 ## Documentation And AI Prompts
 
@@ -332,6 +383,9 @@ Focused tests should cover:
 - `noteOff` calls targeted stop with scheduled time;
 - `controlChange` calls `setCC`;
 - `programChange` updates settings for `soundfont~` and `soundfont2~` mappings;
+- `gm~` keeps program changes scoped to their MIDI channel;
+- `gm~` queues first notes while the target channel's instrument is loading
+  rather than dropping them;
 - `bang` and number inputs map to descriptor default notes and velocities;
 - settings changes reload only when descriptor says they should;
 - stale async loads do not replace a newer instrument;
@@ -340,6 +394,7 @@ Focused tests should cover:
 Integration/manual checks:
 
 - connect `midi.file -> soundfont~ -> out~`;
+- connect a multi-channel `midi.file -> gm~ -> out~`;
 - connect `sequencer` in MIDI/audio-lookahead mode to `drums~`;
 - use `midi.in` or a virtual MIDI keyboard to play `piano~`;
 - load an SF2 URL into `soundfont2~` and switch instruments via settings and

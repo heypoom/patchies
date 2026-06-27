@@ -44,6 +44,19 @@ describe('slider/knob shorthand parsing', () => {
     expect(result.data).toMatchObject({ keybind: 'a', mode: 'filtered' });
   });
 
+  it('transforms gm~ into the dedicated visual node', () => {
+    const { transform } = findShorthand('gm~');
+    const result = transform('gm~', 'gm~');
+
+    expect(result.nodeType).toBe('gm~');
+    expect(result.data).toMatchObject({
+      settings: expect.objectContaining({
+        source: 'soundfont',
+        kit: 'MusyngKite'
+      })
+    });
+  });
+
   it('treats single arg as max (min defaults to 0)', () => {
     const { transform } = findShorthand('knob');
     const result = transform('knob 880', 'knob');

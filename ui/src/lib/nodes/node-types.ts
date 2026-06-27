@@ -112,6 +112,7 @@ import AnuparsNode from '$objects/anupars/components/AnuparsNode.svelte';
 import SurfaceNode from '$lib/components/nodes/SurfaceNode.svelte';
 import SheetNode from '$objects/sheet/SheetNode.svelte';
 import GroupNode from '$lib/components/nodes/GroupNode.svelte';
+import GmNode from '$objects/smplr/GmNode.svelte';
 import SoundfontNode from '$objects/smplr/SoundfontNode.svelte';
 import Soundfont2Node from '$objects/smplr/Soundfont2Node.svelte';
 import PianoNode from '$objects/smplr/PianoNode.svelte';
@@ -238,6 +239,7 @@ export const nodeTypes: Record<string, any> = {
   surface: SurfaceNode,
   sheet: SheetNode,
   group: GroupNode,
+  'gm~': GmNode,
   'soundfont~': SoundfontNode,
   'soundfont2~': Soundfont2Node,
   'piano~': PianoNode,
