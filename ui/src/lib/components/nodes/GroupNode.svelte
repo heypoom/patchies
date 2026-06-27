@@ -6,6 +6,7 @@
     DEFAULT_GROUP_COLOR,
     GROUP_COLOR_PRESETS,
     GROUP_BORDER_HIT_ZONES,
+    getGroupColorPreset,
     getGroupTitle,
     getGroupVisualFrameStyle
   } from '$lib/canvas/group-hit-zones';
@@ -41,6 +42,7 @@
   const title = $derived(getGroupTitle(node.data.title));
   const canResize = $derived(node.data.canResize ?? true);
   const isLocked = $derived(node.data.locked ?? false);
+  const resolvedColor = $derived(getGroupColorPreset(color).value);
   const visualFrameStyle = $derived(getGroupVisualFrameStyle(color, node.selected));
 
   $effect(() => {
@@ -110,6 +112,7 @@
     minWidth={160}
     minHeight={120}
     keepAspectRatio={false}
+    color={resolvedColor}
     onResizeStart={handleResizeStart}
     onResizeEnd={handleResizeEnd}
   />
