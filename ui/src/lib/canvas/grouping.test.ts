@@ -194,4 +194,17 @@ describe('clearVisualGroupSelections', () => {
       changed: false
     });
   });
+
+  test('clears selection on locked groups even when selection started outside them', () => {
+    const nodes = [
+      group('group-1', { x: 100, y: 100 }, { selected: true, data: { locked: true } }),
+      node('child', 'js', { x: 20, y: 20 }, { parentId: 'group-1', selected: true })
+    ];
+
+    const result = clearVisualGroupSelections(nodes, []);
+
+    expect(result.changed).toBe(true);
+    expect(result.nodes.find((item) => item.id === 'group-1')?.selected).toBe(false);
+    expect(result.nodes.find((item) => item.id === 'child')?.selected).toBe(true);
+  });
 });

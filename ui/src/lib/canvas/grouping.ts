@@ -28,6 +28,8 @@ const getNodeHeight = (node: Node): number =>
   node.height ?? node.measured?.height ?? DEFAULT_NODE_HEIGHT;
 
 const isGroupNode = (node: Node): boolean => node.type === 'group';
+const isLockedGroupNode = (node: Node): boolean =>
+  isGroupNode(node) && (node.data as { locked?: boolean }).locked === true;
 
 function getAbsolutePosition(node: Node, nodeById: Map<string, Node>): { x: number; y: number } {
   if (!node.parentId) return node.position;
@@ -144,15 +146,15 @@ export function clearVisualGroupSelections(
   nodes: Node[],
   groupIds: string[]
 ): { nodes: Node[]; changed: boolean } {
-  if (groupIds.length === 0) {
-    return { nodes, changed: false };
-  }
-
   const groupIdSet = new Set(groupIds);
   let changed = false;
 
   const nextNodes = nodes.map((node) => {
-    if (!node.selected || !groupIdSet.has(node.id) || !isGroupNode(node)) {
+    if (!node.selected || !isGroupNode(node)) {
+      return node;
+    }
+
+    if (!groupIdSet.has(node.id) && !isLockedGroupNode(node)) {
       return node;
     }
 

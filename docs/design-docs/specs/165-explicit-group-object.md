@@ -72,7 +72,7 @@ When a group is resized smaller, direct children whose centers are outside the r
 - Group color is optional. Omitting `node.data.color` uses the default gray frame; choosing a swatch stores `node.data.color` and supports undo/redo as a discrete node data change.
 - Group title is optional. Editing it stores `node.data.title` and supports undo/redo as a continuous node data change on blur.
 - Group resize can be disabled with `node.data.canResize: false`; resizing is enabled when the value is absent.
-- Group locking stores `node.data.locked` and disables movement of the group frame itself by setting the node-level `draggable` state.
+- Group locking stores `node.data.locked`, disables movement of the group frame itself by setting the node-level `draggable` state, and excludes the group frame from drag-selection results.
 - The rendered group frame uses explicit pixel dimensions from `node.width` and `node.height` so resize observation cannot collapse the group back to its content size.
 - The Svelte Flow group wrapper must override the library's built-in group-node width so first resize measurement comes from the Patchies frame, not the default 150px XYFlow group style.
 
