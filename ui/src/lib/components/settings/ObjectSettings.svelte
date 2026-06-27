@@ -35,24 +35,37 @@
     showRevertButton?: boolean;
   } = $props();
 
+  const createComboboxOpenState = (schema: SettingsSchema): Record<string, boolean> =>
+    Object.fromEntries(
+      schema.filter((field) => field.type === 'combobox').map((field) => [field.key, false])
+    );
+
+  const createComboboxQueryState = (schema: SettingsSchema): Record<string, string> =>
+    Object.fromEntries(
+      schema.filter((field) => field.type === 'combobox').map((field) => [field.key, ''])
+    );
+
   const VECTOR_AXES = ['x', 'y'] as const;
+
   const tracker = useNodeDataTracker(nodeId);
-  const comboboxOpen = $state<Record<string, boolean>>({});
-  const comboboxQuery = $state<Record<string, string>>({});
+  const comboboxOpen = $state(createComboboxOpenState(schema));
+  const comboboxQuery = $state(createComboboxQueryState(schema));
 
   function trackingKey(key: string): string {
     return settingsPrefix ? `${settingsPrefix}.${key}` : key;
   }
 
   function getCurrentValue(field: SettingsField): unknown {
-    const val = values[field.key];
-    if (val !== undefined) return val;
+    const value = values[field.key];
+    if (value !== undefined) return value;
+
     return 'default' in field ? field.default : undefined;
   }
 
   function hasDirtyValues(): boolean {
     return schema.some((field) => {
       if (!('default' in field) || field.default === undefined) return false;
+
       return !settingsValueEquals(getCurrentValue(field), field.default);
     });
   }
@@ -395,13 +408,7 @@
             <span class="mb-1 block text-xs font-medium text-zinc-300">{field.label}</span>
           {/if}
 
-          <Popover.Root
-            open={comboboxOpen[field.key] ?? false}
-            onOpenChange={(open) => {
-              comboboxOpen[field.key] = open;
-              if (!open) comboboxQuery[field.key] = '';
-            }}
-          >
+          <Popover.Root bind:open={comboboxOpen[field.key]}>
             <Popover.Trigger
               class="flex w-full cursor-pointer items-center justify-between gap-2 rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-left font-mono text-xs text-zinc-200 hover:bg-zinc-700"
             >
