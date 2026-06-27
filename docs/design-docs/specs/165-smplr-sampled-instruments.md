@@ -57,13 +57,10 @@ All v1 smplr-backed objects share the same port shape:
 | --- | ---- | ------ | ----------------- |
 | 0   | out  | signal | Instrument output |
 
-The objects belong primarily in the Music and Audio Samples/Buffers packs, with
-MIDI discoverability where useful:
-
-- `soundfont~`, `soundfont2~`, and `drums~` should be easy to find from
-  MIDI workflows.
-- `piano~`, `epiano~`, `mallet~`, `mellotron~`, `versilian~`, and `smolken~`
-  should be easy to find from music/instrument workflows.
+The objects belong primarily in the Buffers & Tables pack, alongside `sampler~`
+and `pads~`, because they are sample-backed playback instruments rather than
+synthesis engines. They can still be discovered from MIDI workflows through
+search and object docs.
 
 ## Shared Descriptor Architecture
 
