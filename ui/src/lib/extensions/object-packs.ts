@@ -141,7 +141,7 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'soundfont2~',
       'piano~',
       'epiano~',
-      'drum-machine~',
+      'drums~',
       'mallet~',
       'mellotron~',
       'versilian~',

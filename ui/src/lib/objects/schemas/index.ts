@@ -334,7 +334,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'soundfont2~': soundfont2Schema,
   'piano~': pianoSchema,
   'epiano~': epianoSchema,
-  'drum-machine~': drumMachineSchema,
+  'drums~': drumMachineSchema,
   'mallet~': malletSchema,
   'mellotron~': mellotronSchema,
   'versilian~': versilianSchema,

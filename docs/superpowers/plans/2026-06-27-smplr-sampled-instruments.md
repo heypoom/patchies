@@ -125,7 +125,7 @@ Add descriptors for:
 - `soundfont2~`
 - `piano~`
 - `epiano~`
-- `drum-machine~`
+- `drums~`
 - `mallet~`
 - `mellotron~`
 - `versilian~`
@@ -246,7 +246,7 @@ Expected: PASS or only unrelated existing failures.
 - Modify: `ui/src/lib/extensions/object-packs.ts`
 - Modify: `ui/src/lib/ai/object-descriptions-types.ts`
 - Modify: `ui/src/lib/ai/object-prompts/index.ts`
-- Create: `ui/static/content/objects/{soundfont~,soundfont2~,piano~,epiano~,drum-machine~,mallet~,mellotron~,versilian~,smolken~}.md`
+- Create: `ui/static/content/objects/{soundfont~,soundfont2~,piano~,epiano~,drums~,mallet~,mellotron~,versilian~,smolken~}.md`
 
 - [ ] **Step 1: Add schemas**
 

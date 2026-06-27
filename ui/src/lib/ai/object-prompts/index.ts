@@ -128,7 +128,7 @@ export const objectPrompts: Record<string, string> = {
   'soundfont2~': smplrInstrumentPrompt,
   'piano~': smplrInstrumentPrompt,
   'epiano~': smplrInstrumentPrompt,
-  'drum-machine~': smplrInstrumentPrompt,
+  'drums~': smplrInstrumentPrompt,
   'mallet~': smplrInstrumentPrompt,
   'mellotron~': smplrInstrumentPrompt,
   'versilian~': smplrInstrumentPrompt,

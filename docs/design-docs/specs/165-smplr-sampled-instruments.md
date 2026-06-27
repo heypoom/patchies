@@ -13,7 +13,7 @@ runtime:
 - `soundfont2~`
 - `piano~`
 - `epiano~`
-- `drum-machine~`
+- `drums~`
 - `mallet~`
 - `mellotron~`
 - `versilian~`
@@ -60,7 +60,7 @@ All v1 smplr-backed objects share the same port shape:
 The objects belong primarily in the Music and Audio Samples/Buffers packs, with
 MIDI discoverability where useful:
 
-- `soundfont~`, `soundfont2~`, and `drum-machine~` should be easy to find from
+- `soundfont~`, `soundfont2~`, and `drums~` should be easy to find from
   MIDI workflows.
 - `piano~`, `epiano~`, `mallet~`, `mellotron~`, `versilian~`, and `smolken~`
   should be easy to find from music/instrument workflows.
@@ -238,17 +238,17 @@ Common fields:
 
 Descriptor-specific fields:
 
-| Object          | Fields                                     |
-| --------------- | ------------------------------------------ |
-| `soundfont~`    | `instrument`, `kit`, `loadLoopData`        |
-| `soundfont2~`   | `url`, `instrument`                        |
-| `piano~`        | `decayTime`; later `notesToLoad` if needed |
-| `epiano~`       | `instrument`                               |
-| `drum-machine~` | `instrument`                               |
-| `mallet~`       | `instrument`                               |
-| `mellotron~`    | `instrument`                               |
-| `versilian~`    | `instrument`                               |
-| `smolken~`      | `instrument`                               |
+| Object        | Fields                                     |
+| ------------- | ------------------------------------------ |
+| `soundfont~`  | `instrument`, `kit`, `loadLoopData`        |
+| `soundfont2~` | `url`, `instrument`                        |
+| `piano~`      | `decayTime`; later `notesToLoad` if needed |
+| `epiano~`     | `instrument`                               |
+| `drums~`      | `instrument`                               |
+| `mallet~`     | `instrument`                               |
+| `mellotron~`  | `instrument`                               |
+| `versilian~`  | `instrument`                               |
+| `smolken~`    | `instrument`                               |
 
 Settings listed in `reloadsOnSettings` recreate/reload the smplr instrument.
 Live settings such as volume, detune, reverse, and pan should update the current
@@ -286,7 +286,7 @@ const { SoundFont2 } = await import("soundfont2");
 const instrument = module.Soundfont2(context, {
   ...commonOptions(destination, settings, onLoadProgress),
   url,
-  createSoundfont: (data) => new SoundFont2(data)
+  createSoundfont: (data) => new SoundFont2(data),
 });
 ```
 
@@ -341,7 +341,7 @@ Focused tests should cover:
 Integration/manual checks:
 
 - connect `midi.file -> soundfont~ -> out~`;
-- connect `sequencer` in MIDI/audio-lookahead mode to `drum-machine~`;
+- connect `sequencer` in MIDI/audio-lookahead mode to `drums~`;
 - use `midi.in` or a virtual MIDI keyboard to play `piano~`;
 - load an SF2 URL into `soundfont2~` and switch instruments via settings and
   `programChange`;

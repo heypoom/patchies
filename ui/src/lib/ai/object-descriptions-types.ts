@@ -75,7 +75,7 @@ export const OBJECT_TYPE_LIST = `## Basic Control & UI
 - bytebeat~: Bytebeat algorithmic synthesis with t-based expressions
 - piano~: Splendid Grand Piano sampled instrument driven by MIDI messages
 - epiano~: Electric piano sampled instrument driven by MIDI messages
-- drum-machine~: Classic drum machine sampled instrument driven by MIDI messages
+- drums~: Classic drum machine sampled instrument driven by MIDI messages
 - mallet~: Mallet sampled instrument driven by MIDI messages
 - mellotron~: Mellotron sampled instrument driven by MIDI messages
 - versilian~: Versilian Community Sample Library instrument driven by MIDI messages
@@ -212,7 +212,7 @@ export const SPARKS_OBJECT_LIST = `## Visuals
 - sampler~: Sample playback with pitch and trigger control
 - pads~: 16-pad drum sampler (GM drum map)
 - soundfont~, soundfont2~: Sampled MIDI instruments
-- piano~, epiano~, drum-machine~, mallet~, mellotron~, versilian~, smolken~: Ready-to-play sampled instruments
+- piano~, epiano~, drums~, mallet~, mellotron~, versilian~, smolken~: Ready-to-play sampled instruments
 
 ## MIDI
 - midi.in, midi.out, midi.file: MIDI controller input/output and file playback

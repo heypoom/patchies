@@ -10,7 +10,7 @@ export const SMPLR_OBJECT_TYPES = [
   'soundfont2~',
   'piano~',
   'epiano~',
-  'drum-machine~',
+  'drums~',
   'mallet~',
   'mellotron~',
   'versilian~',
@@ -301,8 +301,8 @@ export const smplrDescriptors: Record<SmplrObjectType, SmplrInstrumentDescriptor
     'CP80',
     (module, context, options) => module.ElectricPiano(context, options)
   ),
-  'drum-machine~': selectableInstrumentDescriptor(
-    'drum-machine~',
+  'drums~': selectableInstrumentDescriptor(
+    'drums~',
     'Classic drum machine sampled instrument',
     drumMachines,
     'TR-808',

@@ -388,7 +388,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       'soundfont2~',
       'piano~',
       'epiano~',
-      'drum-machine~',
+      'drums~',
       'mallet~',
       'mellotron~',
       'versilian~',

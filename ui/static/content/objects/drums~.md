@@ -1,6 +1,6 @@
 Classic drum machine sampled instrument.
 
-Use `drum-machine~` for sampled drum machines such as the TR-808. It responds to
+Use `drums~` for sampled drum machines such as the TR-808. It responds to
 MIDI note messages, with note `36` as the default trigger note. Connect the
 audio outlet to `out~`.
 

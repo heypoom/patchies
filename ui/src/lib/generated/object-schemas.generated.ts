@@ -1321,8 +1321,8 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
     tags: ['audio', 'delay', 'buffer', 'write', 'effect']
   },
 
-  'drum-machine~': {
-    type: 'drum-machine~',
+  'drums~': {
+    type: 'drums~',
     category: 'audio',
     description: 'Classic drum machine sampled instrument',
     inlets: [
@@ -1342,7 +1342,7 @@ export const generatedObjectSchemas: ObjectSchemaRegistry = {
         handle: { handleType: 'audio', handleId: 0 }
       }
     ],
-    tags: ['processors', 'audio', 'drum-machine']
+    tags: ['processors', 'audio', 'drums']
   },
 
   'dsp~': {

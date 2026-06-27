@@ -6,4 +6,4 @@
   let node: NodeProps = $props();
 </script>
 
-<SmplrNodeLayout descriptor={smplrDescriptors['drum-machine~']} {node} />
+<SmplrNodeLayout descriptor={smplrDescriptors['drums~']} {node} />

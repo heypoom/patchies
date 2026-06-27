@@ -242,7 +242,7 @@ export const nodeTypes: Record<string, any> = {
   'soundfont2~': Soundfont2Node,
   'piano~': PianoNode,
   'epiano~': ElectricPianoNode,
-  'drum-machine~': DrumMachineNode,
+  'drums~': DrumMachineNode,
   'mallet~': MalletNode,
   'mellotron~': MellotronNode,
   'versilian~': VersilianNode,
