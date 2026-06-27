@@ -57,7 +57,7 @@ All v1 smplr-backed objects share the same port shape:
 | --- | ---- | ------ | ----------------- |
 | 0   | out  | signal | Instrument output |
 
-The objects belong primarily in the Buffers & Tables pack, alongside `sampler~`
+The objects belong primarily in the Samplers & Tables pack, alongside `sampler~`
 and `pads~`, because they are sample-backed playback instruments rather than
 synthesis engines. They can still be discovered from MIDI workflows through
 search and object docs.
