@@ -353,7 +353,7 @@
     if (saved) {
       try {
         savedPatches = JSON.parse(saved);
-      } catch (e) {
+      } catch {
         savedPatches = [];
       }
     }
@@ -676,42 +676,6 @@
     };
 
     input.click();
-  }
-
-  function loadFromLocalStorage(patchName: string) {
-    const patchData = localStorage.getItem(`patchies-patch-${patchName}`);
-    if (patchData) {
-      try {
-        const data = JSON.parse(patchData);
-        loadPatchData(data);
-        onCancel();
-      } catch (error) {
-        console.error('Error loading patch from storage:', error);
-      }
-    }
-  }
-
-  function loadPatchData(patchSave: PatchSaveFormat) {
-    try {
-      if (!patchSave || !patchSave.nodes || !patchSave.edges) {
-        throw new Error('Invalid patch data format');
-      }
-
-      // Apply migrations to upgrade old patch formats
-      const migrated = migratePatch(patchSave) as PatchSaveFormat;
-
-      setNodes(migrated.nodes);
-      setEdges(migrated.edges);
-
-      console.log(`[load] found ${migrated.nodes.length} nodes and ${migrated.edges.length} edges`);
-
-      AudioService.getInstance().getAudioContext().resume();
-
-      patchName = migrated.name || 'Untitled';
-    } catch (error) {
-      console.error('Error deserializing patch data:', error);
-      throw error;
-    }
   }
 
   function deleteFromLocalStorage(patchName: string) {

@@ -311,6 +311,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       bordered: false,
       font: 'default'
     }))
+    .with('group', () => ({}))
     .with('uiua', () => ({
       expr: `Life ← ↥∩=₃⟜+⊸(/+↻⊂A₂C₂)
 ⁅×0.6 gen⊙⚂ ˙⊟30 # Init

@@ -85,6 +85,7 @@ export * from './bg-out';
 export * from './send-vdo';
 export * from './recv-vdo';
 export * from './note';
+export * from './group';
 export * from './label';
 export * from './title';
 export * from './link';
@@ -185,6 +186,7 @@ import { bgOutSchema } from './bg-out';
 import { sendVdoSchema } from './send-vdo';
 import { recvVdoSchema } from './recv-vdo';
 import { noteSchema } from './note';
+import { groupSchema } from './group';
 import { labelSchema } from './label';
 import { titleSchema } from './title';
 import { linkSchema } from './link';
@@ -304,6 +306,7 @@ export const objectSchemas: ObjectSchemaRegistry = {
   'send.vdo': sendVdoSchema,
   'recv.vdo': recvVdoSchema,
   note: noteSchema,
+  group: groupSchema,
   label: labelSchema,
   title: titleSchema,
   link: linkSchema,

@@ -99,11 +99,11 @@ export class CanvasContext {
       return;
     }
 
-    const lastNodeId = parseInt(nodes.at(-1)?.id.match(/.*-(\d+)$/)?.[1] ?? '');
-    if (isNaN(lastNodeId)) {
+    const nodeIds = nodes.map((node) => parseInt(node.id.match(/.*-(\d+)$/)?.[1] ?? ''));
+    if (nodeIds.some((id) => isNaN(id))) {
       throw new Error('corrupted save - cannot get last node id');
     }
 
-    this._nodeIdCounter = lastNodeId + 1;
+    this._nodeIdCounter = Math.max(...nodeIds) + 1;
   }
 }

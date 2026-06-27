@@ -111,6 +111,7 @@ import NgeaNode from '$objects/ngea/components/NgeaNode.svelte';
 import AnuparsNode from '$objects/anupars/components/AnuparsNode.svelte';
 import SurfaceNode from '$lib/components/nodes/SurfaceNode.svelte';
 import SheetNode from '$objects/sheet/SheetNode.svelte';
+import GroupNode from '$lib/components/nodes/GroupNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -226,7 +227,8 @@ export const nodeTypes: Record<string, any> = {
   ngea: NgeaNode,
   anupars: AnuparsNode,
   surface: SurfaceNode,
-  sheet: SheetNode
+  sheet: SheetNode,
+  group: GroupNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

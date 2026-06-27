@@ -1,5 +1,6 @@
 import type { Node, Edge } from '@xyflow/svelte';
 import { getDefaultNodeData } from '$lib/nodes/defaultNodeData';
+import { getDefaultNodeDimensions } from '$lib/nodes/defaultNodeDimensions';
 import { shaderCodeToUniformDefs } from '$lib/canvas/shader-code-to-uniform-def';
 import type { AiObjectNode, SimplifiedEdge } from './types';
 import { validateEdgeHandles } from './validate-edge-handles';
@@ -105,6 +106,7 @@ export async function handleMultiObjectInsert(
       id,
       type: objNode.type,
       position,
+      ...getDefaultNodeDimensions(objNode.type),
       data: nodeData
     };
 

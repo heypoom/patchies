@@ -19,6 +19,7 @@ import { exprPrompt } from './expr';
 import { exprTildePrompt } from './expr~';
 import { glslPrompt } from './glsl';
 import { floatTexPrompt } from './float.tex';
+import { groupPrompt } from './group';
 import { hydraPrompt } from './hydra';
 import { jsPrompt } from './js';
 import { markdownPrompt } from './markdown';
@@ -88,6 +89,7 @@ export const objectPrompts: Record<string, string> = {
   p5: p5Prompt,
   hydra: hydraPrompt,
   glsl: glslPrompt,
+  group: groupPrompt,
   'float.tex': floatTexPrompt,
   shaderpark: shaderparkPrompt,
   'canvas.dom': canvasDomPrompt,

@@ -5,6 +5,7 @@ import { AddNodeCommand } from './add-node.command';
 import { AddNodesCommand } from './add-nodes.command';
 import { DeleteNodesCommand } from './delete-nodes.command';
 import { MoveNodesCommand } from './move-nodes.command';
+import { ReplaceNodesCommand } from './replace-nodes.command';
 
 function createMockAccessors(
   initialNodes: Node[] = [],
@@ -104,5 +105,21 @@ describe('MoveNodesCommand', () => {
     cmd.undo();
     expect(accessors.getNodes()[0].position).toEqual({ x: 0, y: 0 });
     expect(accessors.getNodes()[1].position).toEqual({ x: 10, y: 10 });
+  });
+});
+
+describe('ReplaceNodesCommand', () => {
+  test('execute replaces all nodes, undo restores previous nodes', () => {
+    const oldNodes = [createNode('1', 0, 0), createNode('2', 10, 10)];
+    const newNodes = [createNode('group-1', 0, 0), createNode('1', 20, 20)];
+    const accessors = createMockAccessors(oldNodes);
+
+    const cmd = new ReplaceNodesCommand(oldNodes, newNodes, accessors, 'Group selection');
+
+    cmd.execute();
+    expect(accessors.getNodes().map((n) => n.id)).toEqual(['group-1', '1']);
+
+    cmd.undo();
+    expect(accessors.getNodes().map((n) => n.id)).toEqual(['1', '2']);
   });
 });

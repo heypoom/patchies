@@ -4,6 +4,7 @@ import { toast } from 'svelte-sonner';
 import type { CanvasContext } from './CanvasContext';
 import type { NodeOperationsService } from './NodeOperationsService';
 import type { AiObjectNode, SimplifiedEdge } from '$lib/ai/types';
+import { getDefaultNodeDimensions } from '$lib/nodes/defaultNodeDimensions';
 import {
   AddNodeCommand,
   AddNodesCommand,
@@ -170,6 +171,7 @@ export class AiOperationsService {
       id: newNodeId,
       type: newType,
       position,
+      ...getDefaultNodeDimensions(newType),
       data: newData
     };
     const addNodeCmd = new AddNodeCommand(newNode, this.ctx.canvasAccessors);
