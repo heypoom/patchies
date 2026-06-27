@@ -112,6 +112,15 @@ import AnuparsNode from '$objects/anupars/components/AnuparsNode.svelte';
 import SurfaceNode from '$lib/components/nodes/SurfaceNode.svelte';
 import SheetNode from '$objects/sheet/SheetNode.svelte';
 import GroupNode from '$lib/components/nodes/GroupNode.svelte';
+import SoundfontNode from '$objects/smplr/SoundfontNode.svelte';
+import Soundfont2Node from '$objects/smplr/Soundfont2Node.svelte';
+import PianoNode from '$objects/smplr/PianoNode.svelte';
+import ElectricPianoNode from '$objects/smplr/ElectricPianoNode.svelte';
+import DrumMachineNode from '$objects/smplr/DrumMachineNode.svelte';
+import MalletNode from '$objects/smplr/MalletNode.svelte';
+import MellotronNode from '$objects/smplr/MellotronNode.svelte';
+import VersilianNode from '$objects/smplr/VersilianNode.svelte';
+import SmolkenNode from '$objects/smplr/SmolkenNode.svelte';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const nodeTypes: Record<string, any> = {
@@ -228,7 +237,16 @@ export const nodeTypes: Record<string, any> = {
   anupars: AnuparsNode,
   surface: SurfaceNode,
   sheet: SheetNode,
-  group: GroupNode
+  group: GroupNode,
+  'soundfont~': SoundfontNode,
+  'soundfont2~': Soundfont2Node,
+  'piano~': PianoNode,
+  'epiano~': ElectricPianoNode,
+  'drum-machine~': DrumMachineNode,
+  'mallet~': MalletNode,
+  'mellotron~': MellotronNode,
+  'versilian~': VersilianNode,
+  'smolken~': SmolkenNode
 } as const;
 
 export const nodeNames = Object.keys(nodeTypes) as (keyof typeof nodeTypes)[];

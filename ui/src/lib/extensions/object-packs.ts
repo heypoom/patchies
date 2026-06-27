@@ -137,6 +137,15 @@ export const BUILT_IN_PACKS: ExtensionPack[] = [
       'csound~',
       'tone~',
       'bytebeat~',
+      'soundfont~',
+      'soundfont2~',
+      'piano~',
+      'epiano~',
+      'drum-machine~',
+      'mallet~',
+      'mellotron~',
+      'versilian~',
+      'smolken~',
       'ngea'
     ]
   },

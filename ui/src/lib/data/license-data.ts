@@ -351,6 +351,18 @@ export const dependencies: ProjectLicense[] = [
     url: 'https://npmjs.com/package/shader-park-core'
   },
   {
+    name: 'smplr',
+    version: '^1.0.0',
+    license: 'MIT',
+    url: 'https://npmjs.com/package/smplr'
+  },
+  {
+    name: 'soundfont2',
+    version: '^0.5.0',
+    license: 'MIT',
+    url: 'https://npmjs.com/package/soundfont2'
+  },
+  {
     name: 'stats.js',
     version: '^0.17.0',
     license: 'MIT',

@@ -44,6 +44,7 @@ import {
   DEFAULT_DMX_DATA
 } from '$objects/serial/constants';
 import { DEFAULT_SHEET_DATA } from '$objects/sheet/constants';
+import { smplrDescriptors, type SmplrObjectType } from '$objects/smplr/descriptors';
 
 // TODO: make this type-safe!
 export type NodeData = {
@@ -382,5 +383,20 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       outletCount: 1
     }))
     .with('sheet', () => DEFAULT_SHEET_DATA)
+    .with(
+      'soundfont~',
+      'soundfont2~',
+      'piano~',
+      'epiano~',
+      'drum-machine~',
+      'mallet~',
+      'mellotron~',
+      'versilian~',
+      'smolken~',
+      (type) => ({
+        settings: smplrDescriptors[type as SmplrObjectType].defaultSettings,
+        settingsSchema: smplrDescriptors[type as SmplrObjectType].settingsSchema
+      })
+    )
     .otherwise(() => ({}));
 }

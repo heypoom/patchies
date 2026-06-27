@@ -96,6 +96,7 @@ export * from './projmap';
 export * from '$objects/ngea/schema';
 export * from '$objects/anupars/schema';
 export * from '$objects/sheet/schema';
+export * from '$objects/smplr/schema';
 export * from './from-v2-node';
 export * from '$objects/mediapipe/schemas';
 
@@ -199,6 +200,17 @@ import { anuparsSchema } from '$objects/anupars/schema';
 import { sheetSchema } from '$objects/sheet/schema';
 import { curveSchema } from '$objects/curve/schema';
 import { serialSchema, serialTermSchema, dmxSchema } from '$objects/serial/schema';
+import {
+  soundfontSchema,
+  soundfont2Schema,
+  pianoSchema,
+  epianoSchema,
+  drumMachineSchema,
+  malletSchema,
+  mellotronSchema,
+  versilianSchema,
+  smolkenSchema
+} from '$objects/smplr/schema';
 import {
   visionHandSchema,
   visionBodySchema,
@@ -318,6 +330,15 @@ export const objectSchemas: ObjectSchemaRegistry = {
   serial: serialSchema,
   'serial.term': serialTermSchema,
   'serial.dmx': dmxSchema,
+  'soundfont~': soundfontSchema,
+  'soundfont2~': soundfont2Schema,
+  'piano~': pianoSchema,
+  'epiano~': epianoSchema,
+  'drum-machine~': drumMachineSchema,
+  'mallet~': malletSchema,
+  'mellotron~': mellotronSchema,
+  'versilian~': versilianSchema,
+  'smolken~': smolkenSchema,
   'vision.hand': visionHandSchema,
   'vision.body': visionBodySchema,
   'vision.face': visionFaceSchema,

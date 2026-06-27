@@ -1,10 +1,13 @@
 <script lang="ts">
-  import { RotateCcw, X } from '@lucide/svelte/icons';
+  import { Check, ChevronsUpDown, RotateCcw, X } from '@lucide/svelte/icons';
   import SettingsSlider from '$lib/components/SettingsSlider.svelte';
   import NativeColorPicker from '$lib/components/settings/NativeColorPicker.svelte';
+  import * as Command from '$lib/components/ui/command';
+  import * as Popover from '$lib/components/ui/popover';
   import * as Tooltip from '$lib/components/ui/tooltip';
   import { useNodeDataTracker } from '$lib/history';
   import type { SettingsField, SettingsSchema } from '$lib/settings/types';
+  import { filterSettingsOptions, normalizeSettingsOptions } from '$lib/settings/options';
   import { dismissActiveNativeColorPicker } from './native-color-picker';
 
   let {
@@ -34,6 +37,8 @@
 
   const VECTOR_AXES = ['x', 'y'] as const;
   const tracker = useNodeDataTracker(nodeId);
+  const comboboxOpen = $state<Record<string, boolean>>({});
+  const comboboxQuery = $state<Record<string, string>>({});
 
   function trackingKey(key: string): string {
     return settingsPrefix ? `${settingsPrefix}.${key}` : key;
@@ -78,17 +83,6 @@
   function handleClose() {
     dismissActiveNativeColorPicker();
     onClose();
-  }
-
-  // For slider/string/number: track focus→blur for undo (node-persistence only)
-  function normalizeOptions(
-    options: { label: string; value: string; description?: string }[] | string[]
-  ): { label: string; value: string; description?: string }[] {
-    if (options.length === 0 || typeof options[0] !== 'string') {
-      return options as { label: string; value: string; description?: string }[];
-    }
-
-    return (options as string[]).map((s) => ({ label: s, value: s }));
   }
 
   function makeTracker(field: SettingsField) {
@@ -139,6 +133,26 @@
         input.value = v != null ? String(v) : '';
       }
     });
+  }
+
+  function getSelectedOptionLabel(field: Extract<SettingsField, { type: 'combobox' }>): string {
+    const value = getCurrentValue(field);
+    const selected = normalizeSettingsOptions(field.options).find(
+      (option) => option.value === value
+    );
+
+    if (selected) return selected.label;
+    if (typeof value === 'string' && value !== '') return value;
+    return field.placeholder ?? 'Select...';
+  }
+
+  function selectComboboxOption(
+    field: Extract<SettingsField, { type: 'combobox' }>,
+    value: string
+  ) {
+    handleDiscreteChange(field, value);
+    comboboxOpen[field.key] = false;
+    comboboxQuery[field.key] = '';
   }
 </script>
 
@@ -324,7 +338,7 @@
           {/if}
 
           <div class="flex flex-wrap gap-1">
-            {#each normalizeOptions(field.options) as option, index (index)}
+            {#each normalizeSettingsOptions(field.options) as option, index (index)}
               {@const isSelected = getCurrentValue(field) === option.value}
 
               {#if option.description}
@@ -359,6 +373,77 @@
               {/if}
             {/each}
           </div>
+        </div>
+      {:else if field.type === 'combobox'}
+        {@const comboboxOptions = normalizeSettingsOptions(field.options)}
+        {@const filteredOptions = filterSettingsOptions(
+          comboboxOptions,
+          comboboxQuery[field.key] ?? '',
+          field.maxVisibleOptions ?? 80
+        )}
+        <div>
+          {#if field.description}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <span class="mb-1 block cursor-default text-xs font-medium text-zinc-300"
+                  >{field.label}</span
+                >
+              </Tooltip.Trigger>
+              <Tooltip.Content>{field.description}</Tooltip.Content>
+            </Tooltip.Root>
+          {:else}
+            <span class="mb-1 block text-xs font-medium text-zinc-300">{field.label}</span>
+          {/if}
+
+          <Popover.Root
+            open={comboboxOpen[field.key] ?? false}
+            onOpenChange={(open) => {
+              comboboxOpen[field.key] = open;
+              if (!open) comboboxQuery[field.key] = '';
+            }}
+          >
+            <Popover.Trigger class="w-full">
+              <button
+                type="button"
+                class="flex w-full cursor-pointer items-center justify-between gap-2 rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-left font-mono text-xs text-zinc-200 hover:bg-zinc-700"
+              >
+                <span class="min-w-0 truncate">{getSelectedOptionLabel(field)}</span>
+                <ChevronsUpDown class="h-3 w-3 shrink-0 text-zinc-500" />
+              </button>
+            </Popover.Trigger>
+
+            <Popover.Content class="w-72 p-0" align="start" sideOffset={6}>
+              <Command.Root shouldFilter={false}>
+                <Command.Input
+                  placeholder={field.searchPlaceholder ?? `Search ${field.label.toLowerCase()}...`}
+                  bind:value={comboboxQuery[field.key]}
+                />
+                <Command.List class="max-h-64">
+                  <Command.Empty>{field.emptyMessage ?? 'No options found.'}</Command.Empty>
+                  <Command.Group>
+                    {#each filteredOptions as option (option.value)}
+                      {@const isSelected = getCurrentValue(field) === option.value}
+                      <Command.Item
+                        value={`${option.label} ${option.value}`}
+                        onSelect={() => selectComboboxOption(field, option.value)}
+                        class="cursor-pointer"
+                      >
+                        <Check class={['h-3 w-3', isSelected ? 'opacity-100' : 'opacity-0']} />
+                        <div class="min-w-0">
+                          <div class="truncate font-mono text-xs">{option.label}</div>
+                          {#if option.description}
+                            <div class="truncate text-[10px] text-zinc-500">
+                              {option.description}
+                            </div>
+                          {/if}
+                        </div>
+                      </Command.Item>
+                    {/each}
+                  </Command.Group>
+                </Command.List>
+              </Command.Root>
+            </Popover.Content>
+          </Popover.Root>
         </div>
       {:else if field.type === 'color'}
         <div>
