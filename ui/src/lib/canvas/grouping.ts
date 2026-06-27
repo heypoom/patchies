@@ -83,22 +83,27 @@ function orderParentsBeforeChildren(nodes: Node[]): Node[] {
   const emitted = new Set<string>();
   const ordered: Node[] = [];
 
-  for (const node of nodes) {
-    if (emitted.has(node.id)) continue;
-    if (node.parentId && nodeIds.has(node.parentId)) continue;
+  const emitNodeAndDescendants = (node: Node) => {
+    if (emitted.has(node.id)) return;
 
     ordered.push(node);
     emitted.add(node.id);
 
     for (const child of childrenByParent.get(node.id) ?? []) {
-      ordered.push(child);
-      emitted.add(child.id);
+      emitNodeAndDescendants(child);
     }
+  };
+
+  for (const node of nodes) {
+    if (emitted.has(node.id)) continue;
+    if (node.parentId && nodeIds.has(node.parentId)) continue;
+
+    emitNodeAndDescendants(node);
   }
 
   for (const node of nodes) {
     if (!emitted.has(node.id)) {
-      ordered.push(node);
+      emitNodeAndDescendants(node);
     }
   }
 

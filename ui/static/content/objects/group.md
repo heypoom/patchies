@@ -8,6 +8,7 @@ A resizable frame for organizing related objects on the canvas.
 - **Spatial membership**: Move objects into the frame to add them, or outside to remove them
 - **Click-through interior**: Empty space inside the group still behaves like canvas space
 - **Color presets**: Use the settings button to change the frame color
+- **Custom title**: Use the settings button to rename the group title
 
 ## Usage
 
@@ -15,7 +16,7 @@ A resizable frame for organizing related objects on the canvas.
 2. Move objects into the group frame, or resize the group around them
 3. Drag the group border or `group` title to move grouped objects together
 4. Move an object outside the group frame to remove it from the group
-5. Use the settings button at the top-right to choose a group color
+5. Use the settings button at the top-right to choose a group color or rename the group
 
 ## See Also
 

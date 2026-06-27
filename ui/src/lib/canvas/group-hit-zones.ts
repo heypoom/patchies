@@ -13,6 +13,8 @@ export const GROUP_COLOR_PRESETS = [
   { name: 'Indigo', value: '#6366f1' }
 ] as const;
 
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+
 export const GROUP_BORDER_HIT_ZONES = [
   {
     id: 'top',
@@ -37,7 +39,7 @@ export const GROUP_BORDER_HIT_ZONES = [
 ] as const;
 
 export function getGroupColorPreset(color: string | undefined): { name: string; value: string } {
-  if (!color) return GROUP_COLOR_PRESETS[0];
+  if (!color || !HEX_COLOR_PATTERN.test(color)) return GROUP_COLOR_PRESETS[0];
 
   return (
     GROUP_COLOR_PRESETS.find((preset) => preset.value === color) ?? { name: 'Custom', value: color }
@@ -48,8 +50,16 @@ export function getGroupTitle(title: string | undefined): string {
   return title?.trim() || 'group';
 }
 
+export function getGroupCanResize(canResize: boolean | undefined): boolean {
+  return canResize ?? true;
+}
+
+export function getGroupIsLocked(locked: boolean | undefined): boolean {
+  return locked ?? false;
+}
+
 function hexToRgb(hexColor: string): { r: number; g: number; b: number } {
-  const normalized = hexColor.replace('#', '');
+  const normalized = getGroupColorPreset(hexColor).value.slice(1);
 
   return {
     r: parseInt(normalized.slice(0, 2), 16),

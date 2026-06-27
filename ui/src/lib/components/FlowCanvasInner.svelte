@@ -376,10 +376,7 @@
   let groupResizeStartNodes: Node[] | null = null;
 
   function cloneNodesForHistory(source: Node[]): Node[] {
-    return source.map((node) => ({
-      ...node,
-      position: { ...node.position }
-    }));
+    return structuredClone(source);
   }
 
   function haveNodesChangedForHistory(before: Node[], after: Node[]): boolean {

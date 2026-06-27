@@ -7,6 +7,8 @@ import {
   getGroupColorPreset,
   getGroupColorGridClasses,
   getGroupFrameStyle,
+  getGroupCanResize,
+  getGroupIsLocked,
   getGroupSettingsPanelClasses,
   getGroupTitle,
   getGroupTitleClasses,
@@ -33,6 +35,13 @@ describe('group hit zones', () => {
     expect(getGroupTitle('  visuals  ')).toBe('visuals');
   });
 
+  test('uses default group interaction settings', () => {
+    expect(getGroupCanResize(undefined)).toBe(true);
+    expect(getGroupCanResize(false)).toBe(false);
+    expect(getGroupIsLocked(undefined)).toBe(false);
+    expect(getGroupIsLocked(true)).toBe(true);
+  });
+
   test('exposes predefined group colors with a default selected color', () => {
     expect(GROUP_COLOR_PRESETS).toHaveLength(10);
     expect(GROUP_COLOR_PRESETS.some((preset) => preset.value === DEFAULT_GROUP_COLOR)).toBe(true);
@@ -46,6 +55,15 @@ describe('group hit zones', () => {
 
     expect(style).toContain('border-color: rgba(244, 63, 94, 0.55);');
     expect(style).toContain('background-color: rgba(244, 63, 94, 0.08);');
+  });
+
+  test('falls back to the default color for malformed persisted colors', () => {
+    const style = getGroupVisualFrameStyle('not-a-color', false);
+
+    expect(getGroupColorPreset('not-a-color').value).toBe(DEFAULT_GROUP_COLOR);
+    expect(style).not.toContain('NaN');
+    expect(style).toContain('border-color: rgba(113, 113, 122, 0.55);');
+    expect(style).toContain('background-color: rgba(113, 113, 122, 0.08);');
   });
 
   test('uses explicit pixel dimensions for the group frame', () => {

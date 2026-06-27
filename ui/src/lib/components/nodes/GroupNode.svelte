@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Settings, X } from '@lucide/svelte/icons';
+  import { Lock, LockOpen, Settings, X } from '@lucide/svelte/icons';
   import { NodeResizer, useSvelteFlow } from '@xyflow/svelte';
   import { PatchiesEventBus } from '$lib/eventbus/PatchiesEventBus';
   import {
@@ -7,7 +7,9 @@
     GROUP_COLOR_PRESETS,
     GROUP_BORDER_HIT_ZONES,
     getGroupColorGridClasses,
+    getGroupCanResize,
     getGroupFrameStyle,
+    getGroupIsLocked,
     getGroupSettingsPanelClasses,
     getGroupTitle,
     getGroupTitleClasses,
@@ -23,13 +25,17 @@
     data: {
       color?: string;
       title?: string;
+      canResize?: boolean;
+      locked?: boolean;
     };
     selected: boolean;
     width?: number;
     height?: number;
+    draggable?: boolean;
+    class?: string;
   } = $props();
 
-  const { updateNodeData } = useSvelteFlow();
+  const { updateNode, updateNodeData } = useSvelteFlow();
   const eventBus = PatchiesEventBus.getInstance();
   const tracker = useNodeDataTracker(node.id);
   const titleTracker = tracker.track('title', () => node.data.title ?? '');
@@ -40,9 +46,18 @@
   const height = $derived(node.height ?? DEFAULT_GROUP_HEIGHT);
   const color = $derived(node.data.color ?? DEFAULT_GROUP_COLOR);
   const title = $derived(getGroupTitle(node.data.title));
+  const canResize = $derived(getGroupCanResize(node.data.canResize));
+  const isLocked = $derived(getGroupIsLocked(node.data.locked));
   const frameStyle = $derived(getGroupFrameStyle(width, height));
   const visualFrameClasses = $derived(getGroupVisualFrameClasses(node.selected));
   const visualFrameStyle = $derived(getGroupVisualFrameStyle(color, node.selected));
+
+  $effect(() => {
+    const nextDraggable = isLocked ? false : true;
+    if (node.draggable !== nextDraggable) {
+      updateNode(node.id, { draggable: nextDraggable });
+    }
+  });
 
   function updateConfig(updates: Partial<typeof node.data>) {
     updateNodeData(node.id, { ...node.data, ...updates });
@@ -69,6 +84,22 @@
     updateConfig({ title: nextTitle });
   }
 
+  function handleCanResizeChange(event: Event) {
+    const oldCanResize = canResize;
+    const nextCanResize = (event.target as HTMLInputElement).checked;
+    updateConfig({ canResize: nextCanResize });
+    tracker.commit('canResize', oldCanResize, nextCanResize);
+  }
+
+  function toggleLocked() {
+    const oldLocked = isLocked;
+    const nextLocked = !oldLocked;
+
+    updateNode(node.id, { draggable: !nextLocked });
+    updateConfig({ locked: nextLocked });
+    tracker.commit('locked', oldLocked, nextLocked);
+  }
+
   function handleResizeEnd() {
     eventBus.dispatch({ type: 'visualGroupSyncRequested', groupId: node.id });
   }
@@ -78,10 +109,10 @@
   }
 </script>
 
-<div class="pointer-events-none relative" style={frameStyle}>
+<div class={['pointer-events-none relative', node.class]} style={frameStyle}>
   <NodeResizer
     class="pointer-events-auto z-1"
-    isVisible={node.selected}
+    isVisible={node.selected && canResize && !isLocked}
     minWidth={160}
     minHeight={120}
     keepAspectRatio={false}
@@ -124,6 +155,27 @@
     <div class={getGroupSettingsPanelClasses()} onclick={(event) => event.stopPropagation()}>
       <div class="mb-3 flex items-center justify-between gap-2">
         <div class="text-xs font-medium text-zinc-300">Group Settings</div>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <button
+              class={[
+                'cursor-pointer rounded p-1 hover:bg-zinc-800',
+                isLocked ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-200'
+              ]}
+              onclick={toggleLocked}
+              aria-label={isLocked ? 'Unlock group' : 'Lock group'}
+              aria-pressed={isLocked}
+            >
+              {#if isLocked}
+                <Lock class="h-3.5 w-3.5" />
+              {:else}
+                <LockOpen class="h-3.5 w-3.5" />
+              {/if}
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>{isLocked ? 'Unlock Group' : 'Lock Group'}</Tooltip.Content>
+        </Tooltip.Root>
 
         <Tooltip.Root>
           <Tooltip.Trigger>
@@ -176,6 +228,17 @@
           </Tooltip.Root>
         {/each}
       </div>
+
+      <label class="mt-3 flex items-center justify-between gap-3 border-t border-zinc-800 pt-3">
+        <span class="text-xs font-medium text-zinc-300">Can Resize</span>
+        <input
+          type="checkbox"
+          class="h-4 w-4 cursor-pointer accent-zinc-200"
+          checked={canResize}
+          onchange={handleCanResizeChange}
+          aria-label="Can resize group"
+        />
+      </label>
     </div>
   {/if}
 </div>
@@ -196,8 +259,13 @@
 
   :global(.svelte-flow__node-group.selectable:hover),
   :global(.svelte-flow__node-group.selectable.selected),
-  :global(.svelte-flow__node-group.selectable:focus),
+  :global(.svelte-flow__node-group.selectable:focus) {
+    box-shadow: none !important;
+  }
+
   :global(.svelte-flow__node-group.selectable:focus-visible) {
+    outline: 2px solid rgb(96 165 250 / 0.95) !important;
+    outline-offset: 4px !important;
     box-shadow: none !important;
   }
 </style>

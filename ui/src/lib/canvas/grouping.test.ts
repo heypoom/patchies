@@ -121,6 +121,27 @@ describe('syncVisualGroupMembership', () => {
     });
   });
 
+  test('orders nested descendants after each ancestor when membership changes', () => {
+    const nodes = [
+      group('group-1', { x: 100, y: 100 }),
+      node('intermediate', 'js', { x: 10, y: 10 }, { parentId: 'group-1', width: 80, height: 80 }),
+      node('grandchild', 'js', { x: 4, y: 4 }, { parentId: 'child', width: 20, height: 20 }),
+      node('child', 'js', { x: 8, y: 8 }, { parentId: 'intermediate', width: 40, height: 40 }),
+      node('incoming', 'js', { x: 120, y: 120 }, { width: 40, height: 40 })
+    ];
+
+    const result = syncVisualGroupMembership(nodes, { activeGroupIds: ['group-1'] });
+
+    expect(result.changed).toBe(true);
+    expect(result.nodes.map((n) => n.id)).toEqual([
+      'group-1',
+      'intermediate',
+      'child',
+      'grandchild',
+      'incoming'
+    ]);
+  });
+
   test('does not sweep top-level objects into a group when only the group was moved', () => {
     const nodes = [
       group('group-1', { x: 100, y: 100 }),
