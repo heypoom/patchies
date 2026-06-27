@@ -85,23 +85,24 @@ interface SmplrInstrumentDescriptor {
   defaultSettings: Record<string, unknown>;
   settingsSchema: SettingsSchema;
   defaultBangNote: number | string;
-  load(
-    module: typeof import("smplr"),
-    context: AudioContext,
-    settings: Record<string, unknown>,
-  ): Promise<SmplrInstrument>;
+  defaultVelocity: number;
+  getDisplayName(settings: Record<string, unknown>): string;
+  loadInstrument(args: {
+    module: SmplrModule;
+    context: AudioContext;
+    destination: AudioNode;
+    settings: Record<string, unknown>;
+    onLoadProgress: (progress: SmplrLoadStatus) => void;
+  }): Promise<SmplrInstrument>;
   reloadsOnSettings: string[];
-  updateLiveSetting?: (
-    instrument: SmplrInstrument,
-    key: string,
-    value: unknown,
-  ) => void;
   handleProgramChange?: (
     program: number,
     settings: Record<string, unknown>,
   ) => Record<string, unknown> | null;
 }
 ```
+
+> **Note**: This is a simplified view for documentation purposes. For the authoritative descriptor interface, see `ui/src/objects/smplr/descriptors.ts`.
 
 The exact TypeScript names can change, but the boundary should stay the same:
 descriptor files know which smplr factory to call, while the shared runtime owns
@@ -276,19 +277,27 @@ semantics for non-GM instrument families.
 
 ## soundfont2 Parser
 
-`soundfont2~` uses the `soundfont2` package as the SF2 parser. It must be lazy
-loaded and wrapped in a local adapter:
+`soundfont2~` uses the `soundfont2` package as the SF2 parser. The parser is
+lazy loaded and integrated via a closure-based adapter pattern that makes the
+implementation API-evolution resistant:
 
 ```ts
-async function createSoundfont2(data: Uint8Array) {
-  const { SoundFont2 } = await import("soundfont2");
-  return new SoundFont2(data);
-}
+const { SoundFont2 } = await import("soundfont2");
+const instrument = module.Soundfont2(context, {
+  ...commonOptions(destination, settings, onLoadProgress),
+  url,
+  createSoundfont: (data) => new SoundFont2(data)
+});
 ```
 
-The adapter should convert the parser output into the shape expected by
-`smplr`'s `Soundfont2` factory. If the parser shape differs from smplr's
-internal expectations, the adapter owns that translation.
+Rather than calling `new SoundFont2()` directly in descriptor code, the parser
+construction is wrapped in a `createSoundfont` callback passed to
+`module.Soundfont2()`. This indirection layer protects against future API
+changes in the `soundfont2` package. If the parser shape differs from smplr's
+internal expectations, the adapter callback owns that translation.
+
+See `ui/src/objects/smplr/descriptors.ts` for the complete soundfont2~
+descriptor implementation.
 
 ## Documentation And AI Prompts
 

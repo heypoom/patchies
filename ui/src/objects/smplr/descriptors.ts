@@ -237,13 +237,13 @@ export const smplrDescriptors: Record<SmplrObjectType, SmplrInstrumentDescriptor
     ],
     reloadsOnSettings: ['url', 'instrument'],
     getDisplayName: (settings) => stringSetting(settings.instrument, 'SF2 instrument'),
-    loadInstrument: async ({ module, context, destination, settings }) => {
+    loadInstrument: async ({ module, context, destination, settings, onLoadProgress }) => {
       const url = stringSetting(settings.url, '');
       if (!url) throw new Error('Set an SF2 URL in settings');
 
       const { SoundFont2 } = await import('soundfont2');
       const instrument = module.Soundfont2(context, {
-        ...commonOptions(destination, settings, () => {}),
+        ...commonOptions(destination, settings, onLoadProgress),
         url,
         createSoundfont: (data) => new SoundFont2(data)
       });

@@ -402,14 +402,11 @@
               if (!open) comboboxQuery[field.key] = '';
             }}
           >
-            <Popover.Trigger class="w-full">
-              <button
-                type="button"
-                class="flex w-full cursor-pointer items-center justify-between gap-2 rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-left font-mono text-xs text-zinc-200 hover:bg-zinc-700"
-              >
-                <span class="min-w-0 truncate">{getSelectedOptionLabel(field)}</span>
-                <ChevronsUpDown class="h-3 w-3 shrink-0 text-zinc-500" />
-              </button>
+            <Popover.Trigger
+              class="flex w-full cursor-pointer items-center justify-between gap-2 rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-left font-mono text-xs text-zinc-200 hover:bg-zinc-700"
+            >
+              <span class="min-w-0 truncate">{getSelectedOptionLabel(field)}</span>
+              <ChevronsUpDown class="h-3 w-3 shrink-0 text-zinc-500" />
             </Popover.Trigger>
 
             <Popover.Content class="w-72 p-0" align="start" sideOffset={6}>

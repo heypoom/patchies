@@ -394,7 +394,7 @@ export function getDefaultNodeData(nodeType: string): NodeData {
       'versilian~',
       'smolken~',
       (type) => ({
-        settings: smplrDescriptors[type as SmplrObjectType].defaultSettings,
+        settings: structuredClone(smplrDescriptors[type as SmplrObjectType].defaultSettings),
         settingsSchema: smplrDescriptors[type as SmplrObjectType].settingsSchema
       })
     )
