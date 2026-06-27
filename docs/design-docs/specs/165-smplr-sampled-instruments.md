@@ -235,17 +235,17 @@ Common fields:
 
 Descriptor-specific fields:
 
-| Object        | Fields                                     |
-| ------------- | ------------------------------------------ |
-| `soundfont~`  | `instrument`, `kit`, `loadLoopData`        |
-| `soundfont2~` | `url`, `instrument`                        |
-| `piano~`      | `decayTime`; later `notesToLoad` if needed |
-| `epiano~`     | `instrument`                               |
-| `drums~`      | `instrument`                               |
-| `mallet~`     | `instrument`                               |
-| `mellotron~`  | `instrument`                               |
-| `versilian~`  | `instrument`                               |
-| `smolken~`    | `instrument`                               |
+| Object        | Fields                                                                      |
+| ------------- | --------------------------------------------------------------------------- |
+| `soundfont~`  | `instrument`, `kit`, `instrumentUrl` when `kit` is `Custom`, `loadLoopData` |
+| `soundfont2~` | `url`, `instrument`                                                         |
+| `piano~`      | `decayTime`; later `notesToLoad` if needed                                  |
+| `epiano~`     | `instrument`                                                                |
+| `drums~`      | `instrument`                                                                |
+| `mallet~`     | `instrument`                                                                |
+| `mellotron~`  | `instrument`                                                                |
+| `versilian~`  | `instrument`                                                                |
+| `smolken~`    | `instrument`                                                                |
 
 Settings listed in `reloadsOnSettings` recreate/reload the smplr instrument.
 Live settings such as volume, detune, reverse, and pan should update the current
@@ -263,7 +263,9 @@ provide a stable ordered program list.
 Required v1 mappings:
 
 - `soundfont~`: map General MIDI program numbers to smplr soundfont instrument
-  names.
+  names when using a built-in kit. Ignore `programChange` when `kit` is
+  `Custom`, because smplr ignores the named instrument while `instrumentUrl` is
+  active.
 - `soundfont2~`: map program numbers to parsed SF2 presets/instruments where
   the file exposes bank/program metadata. If the parser only exposes an ordered
   instrument list, use that order and document the limitation.

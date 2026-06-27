@@ -1,10 +1,16 @@
 export type SettingsPersistence = 'none' | 'node' | 'kv';
 
+export type SettingsVisibilityCondition = {
+  key: string;
+  equals: unknown;
+};
+
 interface SettingsFieldBase {
   key: string;
   label: string;
   description?: string;
   persistence?: SettingsPersistence;
+  visibleWhen?: SettingsVisibilityCondition;
 }
 
 export type SettingsOption = {

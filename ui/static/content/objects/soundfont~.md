@@ -10,8 +10,14 @@ to `out~`.
 Open the settings panel to choose the General MIDI instrument, Soundfont kit,
 volume, velocity, pan, default note, detune, and reverse playback.
 
+Choose `Custom` as the kit to reveal `Instrument URL` and load a MIDI.js
+soundfont file from a URL. Custom URLs use smplr's `instrumentUrl` option, so
+the built-in kit and General MIDI instrument setting are ignored while a custom
+URL is active. Use `soundfont2~` instead for `.sf2` files.
+
 `programChange` messages map to the General MIDI instrument list. Program `0`
 selects `acoustic_grand_piano`, program `40` selects `violin`, and so on.
+Program changes are ignored while `Custom` is selected.
 
 ## Messages
 

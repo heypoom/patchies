@@ -89,7 +89,8 @@ const commonSettings: SettingsSchema = [
 ];
 
 const soundfontInstruments = [...GENERAL_MIDI_SOUNDFONT_PROGRAMS];
-const soundfontKits = ['MusyngKite', 'FluidR3_GM'];
+const SOUNDFONT_CUSTOM_KIT = 'Custom';
+const soundfontKits = ['MusyngKite', 'FluidR3_GM', SOUNDFONT_CUSTOM_KIT];
 const electricPianos = ['CP80', 'PianetT', 'WurlitzerEP200', 'TX81Z'];
 const drumMachines = ['TR-808', 'Casio-RZ1', 'LM-2', 'MFB-512', 'Roland CR-8000'];
 const mallets = [
@@ -159,6 +160,7 @@ export const smplrDescriptors: Record<SmplrObjectType, SmplrInstrumentDescriptor
     defaultSettings: {
       instrument: 'acoustic_grand_piano',
       kit: 'MusyngKite',
+      instrumentUrl: '',
       loadLoopData: false,
       volume: 100,
       velocity: 100,
@@ -178,22 +180,45 @@ export const smplrDescriptors: Record<SmplrObjectType, SmplrInstrumentDescriptor
         emptyMessage: 'No instrument found.'
       },
       { key: 'kit', label: 'Kit', type: 'select', options: soundfontKits, default: 'MusyngKite' },
+      {
+        key: 'instrumentUrl',
+        label: 'Instrument URL',
+        type: 'string',
+        default: '',
+        placeholder: 'https://example.com/piano-mp3.js',
+        description: 'Used when Kit is Custom. Expects a MIDI.js soundfont file URL.',
+        visibleWhen: { key: 'kit', equals: SOUNDFONT_CUSTOM_KIT }
+      },
       { key: 'loadLoopData', label: 'Load Loop Data', type: 'boolean', default: false },
       ...commonSettings
     ],
-    reloadsOnSettings: ['instrument', 'kit', 'loadLoopData'],
-    getDisplayName: (settings) => stringSetting(settings.instrument, 'acoustic_grand_piano'),
+    reloadsOnSettings: ['instrument', 'kit', 'instrumentUrl', 'loadLoopData'],
+    getDisplayName: (settings) => getSoundfontDisplayName(settings),
     loadInstrument: async ({ module, context, destination, settings, onLoadProgress }) => {
+      const kit = stringSetting(settings.kit, 'MusyngKite');
+      const instrumentUrl = stringSetting(settings.instrumentUrl, '').trim();
+      if (kit === SOUNDFONT_CUSTOM_KIT && !instrumentUrl) {
+        throw new Error('Set an Instrument URL when Kit is Custom');
+      }
+
+      const customOptions = kit === SOUNDFONT_CUSTOM_KIT ? { instrumentUrl } : {};
       const instrument = module.Soundfont(context, {
         ...commonOptions(destination, settings, onLoadProgress),
-        instrument: stringSetting(settings.instrument, 'acoustic_grand_piano'),
-        kit: stringSetting(settings.kit, 'MusyngKite'),
+        ...customOptions,
+        ...(kit === SOUNDFONT_CUSTOM_KIT
+          ? {}
+          : {
+              instrument: stringSetting(settings.instrument, 'acoustic_grand_piano'),
+              kit
+            }),
         loadLoopData: booleanSetting(settings.loadLoopData, false)
       });
       await instrument.ready;
       return instrument;
     },
-    handleProgramChange: (program) => {
+    handleProgramChange: (program, settings) => {
+      if (stringSetting(settings.kit, 'MusyngKite') === SOUNDFONT_CUSTOM_KIT) return null;
+
       const instrument = getGeneralMidiProgramName(program);
       return instrument ? { instrument } : null;
     }
@@ -404,4 +429,15 @@ function numberSetting(value: unknown, fallback: number): number {
 
 function booleanSetting(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
+}
+
+function getSoundfontDisplayName(settings: Record<string, unknown>): string {
+  const kit = stringSetting(settings.kit, 'MusyngKite');
+  const instrumentUrl = stringSetting(settings.instrumentUrl, '').trim();
+  if (kit !== SOUNDFONT_CUSTOM_KIT || !instrumentUrl) {
+    return stringSetting(settings.instrument, 'acoustic_grand_piano');
+  }
+
+  const lastPathPart = instrumentUrl.split(/[/?#]/).filter(Boolean).at(-1);
+  return lastPathPart || 'Custom Soundfont';
 }

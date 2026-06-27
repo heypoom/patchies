@@ -7,6 +7,7 @@ CRITICAL RULES:
 2. Trigger notes with Patchies MIDI messages from midi.in, midi.file, sequencer, js, msg, or worker.
 3. Use the settings panel for instrument selection, volume, pan, default note, detune, and reverse playback.
 4. soundfont~ and soundfont2~ support programChange for General MIDI-style program selection.
+5. soundfont~ can load a custom MIDI.js soundfont file by setting kit to "Custom" and instrumentUrl to the file URL; use soundfont2~ for .sf2 files.
 
 Messages:
 - {type: 'noteOn', note, velocity, time?, duration?}: start a note. note can be a MIDI number or instrument-specific note name.
@@ -34,7 +35,8 @@ Example - General MIDI Soundfont:
   "type": "soundfont~",
   "data": {
     "settings": {
-      "instrument": "electric_piano_1"
+      "instrument": "electric_piano_1",
+      "kit": "MusyngKite"
     }
   }
 }
