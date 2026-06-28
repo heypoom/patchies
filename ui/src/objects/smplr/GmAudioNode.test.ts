@@ -18,7 +18,7 @@ function createFakeAudioContext(gains: GainNode[] = [createFakeGain()]) {
   } as unknown as AudioContext;
 }
 
-function createInstrument(name: string): SmplrInstrument {
+function createInstrument(): SmplrInstrument {
   return {
     ready: Promise.resolve(),
     start: vi.fn(),
@@ -37,11 +37,14 @@ describe('GmAudioNode', () => {
   it('keeps program changes scoped to the addressed MIDI channel', async () => {
     const instruments = new Map<string, SmplrInstrument>();
     const soundfontCalls: Array<Record<string, unknown>> = [];
+
     const module = {
       Soundfont: (_context: AudioContext, options: Record<string, unknown>) => {
         soundfontCalls.push(options);
-        const instrument = createInstrument(String(options.instrument));
+
+        const instrument = createInstrument();
         instruments.set(String(options.instrument), instrument);
+
         return instrument;
       }
     } as unknown as SmplrModule;
@@ -64,12 +67,66 @@ describe('GmAudioNode', () => {
     });
   });
 
+  it('routes General MIDI channel 10 to the configured drum machine', async () => {
+    const drums = createInstrument();
+    const soundfont = vi.fn(() => createInstrument());
+    const drumMachineCalls: Array<Record<string, unknown>> = [];
+
+    const drumMachine = vi.fn((_context: AudioContext, options: Record<string, unknown>) => {
+      void _context;
+      drumMachineCalls.push(options);
+
+      return drums;
+    });
+
+    const module = {
+      Soundfont: soundfont,
+      DrumMachine: drumMachine
+    } as unknown as SmplrModule;
+
+    const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
+
+    await node.create([
+      {
+        source: 'soundfont',
+        kit: 'MusyngKite',
+        drumInstrument: 'LM-2',
+        volume: 100,
+        velocity: 100
+      }
+    ]);
+    await node.send('message', { type: 'programChange', program: 8, channel: 10 });
+    await node.send('message', { type: 'noteOn', note: 36, velocity: 100, channel: 10 });
+
+    expect(soundfont).not.toHaveBeenCalled();
+
+    expect(drumMachine).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        destination: expect.anything(),
+        instrument: 'LM-2'
+      })
+    );
+
+    expect(drumMachineCalls[0]).toMatchObject({ instrument: 'LM-2' });
+
+    expect(drums.start).toHaveBeenCalledWith({ note: 36, velocity: 100 });
+
+    expect(node.getMonitorSnapshot().channels[9]).toMatchObject({
+      channel: 10,
+      program: 8,
+      instrumentName: '(D) Room',
+      status: 'ready'
+    });
+  });
+
   it('maps soundfont2 programs by parsed instrument order', async () => {
     const loadInstrument = vi.fn(async () => {});
+
     const module = {
       Soundfont2: () =>
         ({
-          ...createInstrument('sf2'),
+          ...createInstrument(),
           ready: Promise.resolve(),
           instrumentNames: ['Piano', 'Organ', 'Strings'],
           loadInstrument
@@ -81,10 +138,53 @@ describe('GmAudioNode', () => {
     await node.create([
       { source: 'soundfont2', url: 'https://example.test/gm.sf2', volume: 100, velocity: 100 }
     ]);
+
     await node.send('message', { type: 'programChange', program: 1, channel: 3 });
     await node.send('message', { type: 'noteOn', note: 67, velocity: 80, channel: 3 });
 
     expect(loadInstrument).toHaveBeenCalledWith('Organ');
+  });
+
+  it('maps SoundFont2 channel 10 programs by drum kit names when available', async () => {
+    const loadInstrument = vi.fn(async () => {});
+
+    const module = {
+      Soundfont2: () =>
+        ({
+          ...createInstrument(),
+          ready: Promise.resolve(),
+          instrumentNames: [
+            'Piano',
+            'Bright Piano',
+            'Electric Piano',
+            'Honky Tonk',
+            'Electric Piano 1',
+            'Electric Piano 2',
+            'Harpsichord',
+            'Clavinet',
+            'Celesta',
+            '(D) Room'
+          ],
+          loadInstrument
+        }) satisfies SmplrInstrument
+    } as unknown as SmplrModule;
+
+    const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
+
+    await node.create([
+      { source: 'soundfont2', url: 'https://example.test/gm.sf2', volume: 100, velocity: 100 }
+    ]);
+    await node.send('message', { type: 'programChange', program: 8, channel: 10 });
+    await node.send('message', { type: 'noteOn', note: 36, velocity: 100, channel: 10 });
+
+    expect(loadInstrument).toHaveBeenCalledWith('(D) Room');
+    expect(loadInstrument).not.toHaveBeenCalledWith('Celesta');
+    expect(node.getMonitorSnapshot().channels[9]).toMatchObject({
+      channel: 10,
+      program: 8,
+      instrumentName: '(D) Room',
+      status: 'ready'
+    });
   });
 
   it('uses custom MIDI.js soundfont URLs for soundfont source channels', async () => {
@@ -92,7 +192,7 @@ describe('GmAudioNode', () => {
     const module = {
       Soundfont: (_context: AudioContext, options: Record<string, unknown>) => {
         soundfontCalls.push(options);
-        return createInstrument('custom');
+        return createInstrument();
       }
     } as unknown as SmplrModule;
 
@@ -118,7 +218,7 @@ describe('GmAudioNode', () => {
   });
 
   it('keeps custom MIDI.js soundfont URLs loaded across program changes', async () => {
-    const instrument = createInstrument('custom');
+    const instrument = createInstrument();
     const soundfont = vi.fn(() => instrument);
     const module = { Soundfont: soundfont } as unknown as SmplrModule;
     const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
@@ -142,7 +242,7 @@ describe('GmAudioNode', () => {
 
   it('publishes channel monitor snapshots for program and note activity', async () => {
     const module = {
-      Soundfont: () => createInstrument('soundfont')
+      Soundfont: () => createInstrument()
     } as unknown as SmplrModule;
     const snapshots: Array<ReturnType<GmAudioNode['getMonitorSnapshot']>> = [];
     const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
@@ -168,13 +268,18 @@ describe('GmAudioNode', () => {
 
   it('preloads channel instruments from midi.file loaded program metadata', async () => {
     const instruments = new Map<string, SmplrInstrument>();
-    const soundfont = vi.fn((_context: AudioContext, options: Record<string, unknown>) =>
-      createInstrument(String(options.instrument))
-    );
+    const soundfontCalls: Array<Record<string, unknown>> = [];
+    const soundfont = vi.fn((_context: AudioContext, options: Record<string, unknown>) => {
+      void _context;
+      soundfontCalls.push(options);
+      return createInstrument();
+    });
     const module = { Soundfont: soundfont } as unknown as SmplrModule;
     const node = new GmAudioNode('gm-1', createFakeAudioContext(), async () => module);
     soundfont.mockImplementation((_context: AudioContext, options: Record<string, unknown>) => {
-      const instrument = createInstrument(String(options.instrument));
+      void _context;
+      soundfontCalls.push(options);
+      const instrument = createInstrument();
       instruments.set(String(options.instrument), instrument);
       return instrument;
     });
@@ -198,7 +303,7 @@ describe('GmAudioNode', () => {
     await node.send('message', { type: 'noteOn', note: 65, velocity: 90, channel: 2 });
 
     expect(soundfont).toHaveBeenCalledTimes(3);
-    expect(soundfont.mock.calls.map((call) => call[1].instrument)).toEqual([
+    expect(soundfontCalls.map((call) => call.instrument)).toEqual([
       'violin',
       'marimba',
       'french_horn'

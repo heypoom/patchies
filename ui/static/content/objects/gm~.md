@@ -21,6 +21,7 @@ by mid-file program changes.
 
 - **Source** chooses between built-in Soundfont kits and a custom SoundFont2 file
 - **Soundfont Kit** chooses the built-in MIDI.js kit when Source is `Soundfont`
+- **Drum Instrument** chooses the sampled drum machine used for channel 10
 - **Instrument URL** loads a MIDI.js soundfont file when Soundfont Kit is `Custom`
 - **SF2 URL** loads a `.sf2` file when Source is `Soundfont2`
 - **Volume** sets the mixed output volume for all loaded channels
@@ -40,18 +41,22 @@ by mid-file program changes.
 Channels are 1-based. If `channel` is omitted, `gm~` uses channel 1.
 
 For built-in Soundfont mode, `programChange` uses the General MIDI program
-list. Program `0` selects `acoustic_grand_piano`, program `40` selects
-`violin`, and so on.
+list on melodic channels. Program `0` selects `acoustic_grand_piano`, program
+`40` selects `violin`, and so on.
+
+Channel 10 is the General MIDI percussion channel. On channel 10, program
+changes select drum-kit labels such as `(D) Standard` and `(D) Room` instead of
+melodic instruments. Built-in Soundfont mode plays those notes with the selected
+Drum Instrument, using the same smplr drum machines as `drums~`.
 
 When Soundfont Kit is `Custom`, `gm~` passes `Instrument URL` to smplr and uses
 that custom sampled instrument for loaded channels. General MIDI program names
 are ignored in this mode because the URL chooses the instrument.
 
 For SoundFont2 mode, `programChange` maps the program number to the matching
-instrument index reported by the loaded SF2 file.
-
-> **Note**: Channel 10 is preserved as a normal MIDI channel, but `gm~` does
-> not yet implement special General MIDI drum-kit note mapping.
+instrument index reported by the loaded SF2 file on melodic channels. On
+channel 10, `gm~` looks for drum-kit preset names such as `(D) Room` when the
+SF2 exposes them.
 
 ## See Also
 

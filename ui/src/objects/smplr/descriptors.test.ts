@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { SmplrInstrument, SmplrModule } from './descriptors';
 import { SMPLR_OBJECT_TYPES, getSmplrDescriptor, smplrDescriptors } from './descriptors';
-import { getGeneralMidiProgramName, getSoundfont2ProgramName } from './programs';
+import {
+  getGeneralMidiDrumKitName,
+  getGeneralMidiProgramName,
+  getSoundfont2DrumKitName,
+  getSoundfont2ProgramName
+} from './programs';
 
 describe('smplr descriptors', () => {
   it('exports descriptors for every v1 object type', () => {
@@ -115,6 +120,11 @@ describe('smplr descriptors', () => {
         instrumentNames: ['Piano', 'Organ', 'Strings']
       })
     ).toEqual({ instrument: 'Organ' });
+  });
+
+  it('maps General MIDI drum-kit programs for percussion channels', () => {
+    expect(getGeneralMidiDrumKitName(8)).toBe('(D) Room');
+    expect(getSoundfont2DrumKitName(8, ['Celesta', '(D) Room'])).toBe('(D) Room');
   });
 
   it('keeps heavyweight runtime loading behind descriptor loader functions', () => {

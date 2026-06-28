@@ -1,9 +1,11 @@
 import type { SettingsSchema } from '$lib/settings';
 import type { GmProgramSource } from './gm-channel-state';
+import { DRUM_MACHINE_INSTRUMENTS } from './descriptors';
 
 export const GM_DEFAULT_SETTINGS = {
   source: 'soundfont' satisfies GmProgramSource,
   kit: 'MusyngKite',
+  drumInstrument: 'TR-808',
   instrumentUrl: '',
   url: '',
   volume: 100,
@@ -42,6 +44,15 @@ export const GM_SETTINGS_SCHEMA: SettingsSchema = [
         { key: 'kit', equals: 'Custom' }
       ]
     }
+  },
+  {
+    key: 'drumInstrument',
+    label: 'Drum Instrument',
+    type: 'select',
+    options: DRUM_MACHINE_INSTRUMENTS,
+    default: GM_DEFAULT_SETTINGS.drumInstrument,
+    description: 'Used for channel 10 percussion when Source is Soundfont and Kit is not Custom.',
+    visibleWhen: { key: 'source', equals: 'soundfont' }
   },
   {
     key: 'url',

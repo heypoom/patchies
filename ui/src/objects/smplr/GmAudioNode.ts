@@ -6,10 +6,16 @@ import {
   createGmChannelState,
   getChannelProgram,
   normalizeMidiChannel,
-  resolveGmProgramInstrument,
   setChannelProgram,
   type GmProgramSource
 } from './gm-channel-state';
+import {
+  getGeneralMidiDrumKitName,
+  getGeneralMidiProgramName,
+  getSoundfont2DrumKitName,
+  getSoundfont2ProgramName
+} from './programs';
+import { DRUM_MACHINE_INSTRUMENTS } from './descriptors';
 
 type Soundfont2Constructor = (typeof import('soundfont2'))['SoundFont2'];
 const CUSTOM_SOUNDFONT_KIT = 'Custom';
@@ -17,6 +23,7 @@ const CUSTOM_SOUNDFONT_KIT = 'Custom';
 export type GmSettings = {
   source?: GmProgramSource;
   kit?: string;
+  drumInstrument?: string;
   instrumentUrl?: string;
   url?: string;
   volume?: number;
@@ -62,6 +69,8 @@ type LoadedProgramMetadata = {
   programs: ProgramRequest[];
   preloadPrograms: ProgramRequest[];
 };
+
+const GM_PERCUSSION_CHANNEL = 10;
 
 export class GmAudioNode implements AudioNodeV2 {
   static type = 'gm~';
@@ -148,6 +157,7 @@ export class GmAudioNode implements AudioNodeV2 {
     const reload =
       this.settings.source !== nextSettings.source ||
       this.settings.kit !== nextSettings.kit ||
+      this.settings.drumInstrument !== nextSettings.drumInstrument ||
       this.settings.instrumentUrl !== nextSettings.instrumentUrl ||
       this.settings.url !== nextSettings.url;
 
@@ -208,7 +218,7 @@ export class GmAudioNode implements AudioNodeV2 {
         setChannelProgram(this.channelState, channel, command.program);
         this.updateMonitorChannel(channel, {
           program: command.program,
-          instrumentName: this.getMonitorInstrumentName(command.program),
+          instrumentName: this.getMonitorInstrumentName(channel, command.program),
           status: this.channels.has(channel) ? 'ready' : 'idle',
           error: undefined
         });
@@ -251,7 +261,7 @@ export class GmAudioNode implements AudioNodeV2 {
     updateMonitor: boolean
   ): Promise<SmplrInstrument | null> {
     const source = readSource(this.settings.source);
-    const instrumentName = resolveGmProgramInstrument(source, program, this.soundfont2Names);
+    const instrumentName = this.resolveProgramInstrument(channel, program);
     if (!instrumentName && source === 'soundfont') return null;
 
     const key = this.getChannelKey(channel, program, instrumentName);
@@ -284,7 +294,7 @@ export class GmAudioNode implements AudioNodeV2 {
       setChannelProgram(this.channelState, channel, program);
       this.updateMonitorChannel(channel, {
         program,
-        instrumentName: this.getMonitorInstrumentName(program),
+        instrumentName: this.getMonitorInstrumentName(channel, program),
         status: this.channels.has(channel) ? 'ready' : 'idle',
         error: undefined
       });
@@ -338,7 +348,7 @@ export class GmAudioNode implements AudioNodeV2 {
       this.onStatusChange?.({ state: 'loading', channel, program });
       this.updateMonitorChannel(channel, {
         program,
-        instrumentName: this.getMonitorInstrumentName(program),
+        instrumentName: this.getMonitorInstrumentName(channel, program),
         status: 'loading',
         error: undefined
       });
@@ -349,8 +359,8 @@ export class GmAudioNode implements AudioNodeV2 {
       const source = readSource(this.settings.source);
       const instrument =
         source === 'soundfont2'
-          ? await this.createSoundfont2Instrument(module, program)
-          : await this.createSoundfontInstrument(module, program);
+          ? await this.createSoundfont2Instrument(module, channel, program)
+          : await this.createSoundfontInstrument(module, channel, program);
 
       if (token !== this.loadToken) {
         disposeInstrument(instrument);
@@ -362,7 +372,7 @@ export class GmAudioNode implements AudioNodeV2 {
 
       if (updateMonitor) {
         this.updateMonitorChannel(channel, {
-          instrumentName: this.getMonitorInstrumentName(program),
+          instrumentName: this.getMonitorInstrumentName(channel, program),
           status: 'ready',
           error: undefined
         });
@@ -384,12 +394,16 @@ export class GmAudioNode implements AudioNodeV2 {
 
   private async createSoundfontInstrument(
     module: SmplrModule,
+    channel: number,
     program: number
   ): Promise<SmplrInstrument> {
-    const instrumentName =
-      resolveGmProgramInstrument('soundfont', program, this.soundfont2Names) ??
-      'acoustic_grand_piano';
     const instrumentUrl = readString(this.settings.instrumentUrl, '').trim();
+    if (this.isSoundfontPercussionChannel(channel) && !this.isCustomSoundfont()) {
+      return await this.createSoundfontDrumInstrument(module);
+    }
+
+    const instrumentName =
+      this.resolveProgramInstrument(channel, program) ?? 'acoustic_grand_piano';
     const customOptions =
       readKit(this.settings.kit) === CUSTOM_SOUNDFONT_KIT
         ? { instrumentUrl }
@@ -409,8 +423,20 @@ export class GmAudioNode implements AudioNodeV2 {
     return instrument;
   }
 
+  private async createSoundfontDrumInstrument(module: SmplrModule): Promise<SmplrInstrument> {
+    const instrument = module.DrumMachine(this.audioContext, {
+      destination: this.audioNode,
+      instrument: readDrumInstrument(this.settings.drumInstrument),
+      volume: readNumber(this.settings.volume, 100),
+      velocity: readNumber(this.settings.velocity, 100)
+    });
+    await instrument.ready;
+    return instrument;
+  }
+
   private async createSoundfont2Instrument(
     module: SmplrModule,
+    channel: number,
     program: number
   ): Promise<SmplrInstrument> {
     const url = readString(this.settings.url, '').trim();
@@ -427,7 +453,7 @@ export class GmAudioNode implements AudioNodeV2 {
 
     await instrument.ready;
     this.soundfont2Names = instrument.instrumentNames ?? this.soundfont2Names;
-    const instrumentName = resolveGmProgramInstrument('soundfont2', program, this.soundfont2Names);
+    const instrumentName = this.resolveProgramInstrument(channel, program);
     if (instrumentName) await instrument.loadInstrument?.(instrumentName);
     return instrument;
   }
@@ -435,7 +461,11 @@ export class GmAudioNode implements AudioNodeV2 {
   private getChannelKey(channel: number, program: number, instrumentName: string | null): string {
     const source = readSource(this.settings.source);
     const programKey = this.isCustomSoundfont() ? 'custom' : program;
-    const instrumentKey = this.isCustomSoundfont() ? 'custom' : (instrumentName ?? '');
+    const instrumentKey = this.isCustomSoundfont()
+      ? 'custom'
+      : source === 'soundfont2'
+        ? 'program'
+        : (instrumentName ?? '');
 
     return [
       source,
@@ -450,7 +480,7 @@ export class GmAudioNode implements AudioNodeV2 {
 
   private getProgramKey(channel: number, program: number): string | null {
     const source = readSource(this.settings.source);
-    const instrumentName = resolveGmProgramInstrument(source, program, this.soundfont2Names);
+    const instrumentName = this.resolveProgramInstrument(channel, program);
     if (!instrumentName && source === 'soundfont') return null;
 
     return this.getChannelKey(channel, program, instrumentName);
@@ -462,13 +492,34 @@ export class GmAudioNode implements AudioNodeV2 {
     );
   }
 
-  private getMonitorInstrumentName(program: number): string {
-    const source = readSource(this.settings.source);
+  private getMonitorInstrumentName(channel: number, program: number): string {
     if (this.isCustomSoundfont()) return 'Custom Soundfont';
+    if (this.isPercussionChannel(channel)) return getGeneralMidiDrumKitName(program);
 
-    return (
-      resolveGmProgramInstrument(source, program, this.soundfont2Names) ?? `program ${program}`
-    );
+    return this.resolveProgramInstrument(channel, program) ?? `program ${program}`;
+  }
+
+  private resolveProgramInstrument(channel: number, program: number): string | null {
+    const source = readSource(this.settings.source);
+    if (this.isSoundfontPercussionChannel(channel)) return getGeneralMidiDrumKitName(program);
+    if (this.isSoundfont2PercussionChannel(channel)) {
+      return getSoundfont2DrumKitName(program, this.soundfont2Names) ?? null;
+    }
+    if (source === 'soundfont') return getGeneralMidiProgramName(program) ?? null;
+
+    return getSoundfont2ProgramName(program, this.soundfont2Names) ?? null;
+  }
+
+  private isPercussionChannel(channel: number): boolean {
+    return normalizeMidiChannel(channel) === GM_PERCUSSION_CHANNEL;
+  }
+
+  private isSoundfontPercussionChannel(channel: number): boolean {
+    return readSource(this.settings.source) === 'soundfont' && this.isPercussionChannel(channel);
+  }
+
+  private isSoundfont2PercussionChannel(channel: number): boolean {
+    return readSource(this.settings.source) === 'soundfont2' && this.isPercussionChannel(channel);
   }
 
   private applyLiveSettings(): void {
@@ -520,7 +571,7 @@ export class GmAudioNode implements AudioNodeV2 {
       return {
         ...channel,
         program,
-        instrumentName: this.getMonitorInstrumentName(program)
+        instrumentName: this.getMonitorInstrumentName(channel.channel, program)
       };
     });
   }
@@ -557,7 +608,8 @@ function createInitialMonitorChannels(): GmChannelMonitorState[] {
   return Array.from({ length: 16 }, (_, index) => ({
     channel: index + 1,
     program: 0,
-    instrumentName: 'acoustic_grand_piano',
+    instrumentName:
+      index + 1 === GM_PERCUSSION_CHANNEL ? getGeneralMidiDrumKitName(0) : 'acoustic_grand_piano',
     activeNotes: 0,
     status: 'idle',
     activity: 0
@@ -610,6 +662,11 @@ function readSource(value: unknown): GmProgramSource {
 
 function readKit(value: unknown): string {
   return readString(value, 'MusyngKite');
+}
+
+function readDrumInstrument(value: unknown): string {
+  if (typeof value === 'string' && DRUM_MACHINE_INSTRUMENTS.includes(value)) return value;
+  return DRUM_MACHINE_INSTRUMENTS[0];
 }
 
 function readString(value: unknown, fallback: string): string {

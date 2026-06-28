@@ -309,17 +309,18 @@ Required v1 mappings:
   the file exposes bank/program metadata. If the parser only exposes an ordered
   instrument list, use that order and document the limitation.
 - `gm~`: preserve one program value per channel. With the built-in `soundfont`
-  source, map General MIDI program numbers to smplr soundfont instrument names.
+  source, map General MIDI program numbers to smplr soundfont instrument names
+  for melodic channels. Treat channel `10` as the General MIDI percussion
+  channel: program numbers select drum-kit labels such as `(D) Standard` and
+  `(D) Room`, and playback uses the configured smplr drum-machine instrument
+  instead of the melodic soundfont table.
   When that source uses `kit: Custom`, pass `instrumentUrl` through to smplr and
   ignore General MIDI instrument names because the custom URL chooses the
   sampled instrument.
   With the `soundfont2` source, map program numbers by SF2 instrument-list
-  order because smplr's `Soundfont2` wrapper exposes names but not reliable
-  bank/program metadata.
-
-`gm~` v1 does not promise full General MIDI drum-channel behavior. Channel `10`
-is preserved as an independent channel, but true GM percussion mapping should be
-handled in a follow-up once Patchies has a clear sampled percussion source.
+  order for melodic channels. For channel `10`, prefer SF2 preset names that
+  match General MIDI drum-kit labels when available, because smplr's
+  `Soundfont2` wrapper exposes names but not reliable bank/program metadata.
 
 Other objects may opt in only when the mapping is stable and musically clear.
 Otherwise, ignore the message with a debug log. Do not invent General MIDI

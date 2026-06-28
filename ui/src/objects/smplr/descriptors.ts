@@ -92,7 +92,13 @@ const soundfontInstruments = [...GENERAL_MIDI_SOUNDFONT_PROGRAMS];
 const SOUNDFONT_CUSTOM_KIT = 'Custom';
 const soundfontKits = ['MusyngKite', 'FluidR3_GM', SOUNDFONT_CUSTOM_KIT];
 const electricPianos = ['CP80', 'PianetT', 'WurlitzerEP200', 'TX81Z'];
-const drumMachines = ['TR-808', 'Casio-RZ1', 'LM-2', 'MFB-512', 'Roland CR-8000'];
+export const DRUM_MACHINE_INSTRUMENTS = [
+  'TR-808',
+  'Casio-RZ1',
+  'LM-2',
+  'MFB-512',
+  'Roland CR-8000'
+];
 const mallets = [
   'Balafon - Hard Mallet',
   'Balafon - Keyswitch',
@@ -329,7 +335,7 @@ export const smplrDescriptors: Record<SmplrObjectType, SmplrInstrumentDescriptor
   'drums~': selectableInstrumentDescriptor(
     'drums~',
     'Classic drum machine sampled instrument',
-    drumMachines,
+    DRUM_MACHINE_INSTRUMENTS,
     'TR-808',
     (module, context, options) => module.DrumMachine(context, options),
     '36'

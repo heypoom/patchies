@@ -129,20 +129,58 @@ export const GENERAL_MIDI_SOUNDFONT_PROGRAMS = [
   'gunshot'
 ] as const;
 
+const GENERAL_MIDI_DRUM_KIT_PROGRAMS = new Map<number, string>([
+  [0, '(D) Standard'],
+  [8, '(D) Room'],
+  [16, '(D) Power'],
+  [24, '(D) Electronic'],
+  [25, '(D) TR-808'],
+  [32, '(D) Jazz'],
+  [40, '(D) Brush'],
+  [48, '(D) Orchestra'],
+  [56, '(D) SFX']
+]);
+
 export function getGeneralMidiProgramName(program: number): string | undefined {
   return GENERAL_MIDI_SOUNDFONT_PROGRAMS[normalizeProgram(program)];
 }
 
-export function getSoundfont2ProgramName(
+export function getGeneralMidiDrumKitName(program: number): string {
+  const normalizedProgram = normalizeProgram(program);
+
+  return GENERAL_MIDI_DRUM_KIT_PROGRAMS.get(normalizedProgram) ?? `(D) Kit ${normalizedProgram}`;
+}
+
+export function getSoundfont2DrumKitName(
   program: number,
   instrumentNames: readonly string[]
 ): string | undefined {
-  return instrumentNames[normalizeProgram(program)];
+  const kitName = getGeneralMidiDrumKitName(program);
+  const target = normalizeInstrumentName(kitName.replace('(D)', ''));
+  const exact = instrumentNames.find((name) => normalizeInstrumentName(name) === target);
+  if (exact) return exact;
+
+  return instrumentNames.find((name) => {
+    const normalized = normalizeInstrumentName(name);
+    return normalized.includes(target) && /(^| )(d|drum|kit|percussion)( |$)/.test(normalized);
+  });
 }
+
+export const getSoundfont2ProgramName = (
+  program: number,
+  instrumentNames: readonly string[]
+): string | undefined => instrumentNames[normalizeProgram(program)];
+
+const normalizeInstrumentName = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 
 function normalizeProgram(program: number): number {
   if (!Number.isFinite(program)) return 0;
 
   const rounded = Math.round(program);
+
   return Math.max(0, Math.min(127, rounded));
 }
