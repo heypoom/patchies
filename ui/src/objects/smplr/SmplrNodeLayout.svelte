@@ -9,6 +9,7 @@
   import { MessageContext } from '$lib/messages/MessageContext';
   import type { MessageCallbackFn } from '$lib/messages/MessageSystem';
   import type { SettingsSchema } from '$lib/settings';
+
   import type { SmplrRuntimeStatus } from './SmplrInstrumentAudioNode';
   import type { GmRuntimeStatus } from './GmAudioNode';
   import type { SmplrInstrumentDescriptor } from './descriptors';
@@ -49,6 +50,7 @@
   const settings = $derived({ ...descriptor.defaultSettings, ...(node.data.settings ?? {}) });
   const settingsSchema = $derived.by(() => createSettingsSchema(descriptor, settings));
   const instrumentName = $derived(descriptor.getDisplayName(settings));
+
   const loadingText = $derived.by(() => {
     if (status.state === 'loading') {
       if ('total' in status) {
@@ -63,9 +65,8 @@
     return instrumentName;
   });
 
-  const handleMessage: MessageCallbackFn = (message) => {
+  const handleMessage: MessageCallbackFn = (message) =>
     audioService.send(node.id, 'message', message);
-  };
 
   function persistSettings(nextSettings: Record<string, unknown>) {
     updateNodeData(node.id, {
@@ -77,7 +78,8 @@
   async function updateSetting(key: string, value: unknown) {
     const nextSettings = { ...settings, [key]: value };
     persistSettings(nextSettings);
-    await audioService.send(node.id, 'settings', nextSettings);
+
+    audioService.send(node.id, 'settings', nextSettings);
   }
 
   async function applySettingsPatch(patch: Record<string, unknown>) {
@@ -100,7 +102,9 @@
       ? settings.instrumentNames.filter((name): name is string => typeof name === 'string')
       : [];
 
-    if (instrumentNames.length === 0) return descriptor.settingsSchema;
+    if (instrumentNames.length === 0) {
+      return descriptor.settingsSchema;
+    }
 
     return descriptor.settingsSchema.map((field) =>
       field.key === 'instrument'
@@ -133,6 +137,7 @@
     if (runtimeNode) {
       runtimeNode.onStatusChange = (nextStatus) => {
         status = nextStatus;
+
         if (
           nextStatus.state === 'ready' &&
           'instrumentNames' in nextStatus &&
@@ -143,11 +148,11 @@
         }
       };
       runtimeNode.onSettingsPatch = (patch) => {
-        void applySettingsPatch(patch);
+        applySettingsPatch(patch);
       };
     }
 
-    await audioService.send(node.id, 'settings', settings);
+    audioService.send(node.id, 'settings', settings);
   });
 
   onDestroy(() => {
@@ -176,6 +181,7 @@
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <div class="font-mono text-xs font-medium text-zinc-200">{descriptor.title}</div>
+
         <div
           class={[
             'mt-1 max-w-40 truncate text-[11px]',
@@ -197,6 +203,7 @@
             <Settings class="h-4 w-4" />
           </button>
         </Tooltip.Trigger>
+
         <Tooltip.Content>Settings</Tooltip.Content>
       </Tooltip.Root>
     </div>
