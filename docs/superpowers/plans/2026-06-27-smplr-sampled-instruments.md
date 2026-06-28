@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Dependencies And Spec Baseline
+## Task 1: Dependencies And Spec Baseline
 
 **Files:**
 
@@ -38,7 +38,7 @@ bun install --frozen-lockfile
 
 Expected: install succeeds with no dependency mismatch.
 
-### Task 2: Shared Message Mapping
+## Task 2: Shared Message Mapping
 
 **Files:**
 
@@ -88,7 +88,7 @@ bun run test:unit src/objects/smplr/messages.test.ts
 
 Expected: PASS.
 
-### Task 3: Descriptors And Program Mapping
+## Task 3: Descriptors And Program Mapping
 
 **Files:**
 
@@ -143,7 +143,7 @@ bun run test:unit src/objects/smplr/descriptors.test.ts
 
 Expected: PASS.
 
-### Task 4: Shared Audio Runtime
+## Task 4: Shared Audio Runtime
 
 **Files:**
 
@@ -198,7 +198,7 @@ bun run test:unit src/objects/smplr/SmplrInstrumentAudioNode.test.ts
 
 Expected: PASS.
 
-### Task 5: Shared Svelte Layout And Node Components
+## Task 5: Shared Svelte Layout And Node Components
 
 **Files:**
 
@@ -236,7 +236,7 @@ bun run check
 
 Expected: PASS or only unrelated existing failures.
 
-### Task 6: Schemas, Packs, Docs, And AI Prompts
+## Task 6: Schemas, Packs, Docs, And AI Prompts
 
 **Files:**
 
@@ -275,7 +275,7 @@ bun run check
 
 Expected: PASS or only unrelated existing failures.
 
-### Task 7: Final Verification
+## Task 7: Final Verification
 
 **Files:**
 

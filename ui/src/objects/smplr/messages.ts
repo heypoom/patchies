@@ -137,7 +137,7 @@ export function normalizeSmplrMessage(
   }
 
   if (msg.type === 'controlChange' && isFiniteNumber(msg.control) && isFiniteNumber(msg.value)) {
-    return { type: 'cc', control: msg.control, value: clampMidi(msg.value) };
+    return { type: 'cc', control: clampMidi(msg.control), value: clampMidi(msg.value) };
   }
 
   if (msg.type === 'programChange' && isFiniteNumber(msg.program)) {

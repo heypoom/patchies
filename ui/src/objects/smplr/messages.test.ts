@@ -53,6 +53,10 @@ describe('smplr message mapping', () => {
       normalizeSmplrMessage({ type: 'controlChange', control: 64, value: 127 }, descriptor)
     ).toEqual({ type: 'cc', control: 64, value: 127 });
 
+    expect(
+      normalizeSmplrMessage({ type: 'controlChange', control: 200, value: -10 }, descriptor)
+    ).toEqual({ type: 'cc', control: 127, value: 0 });
+
     expect(normalizeSmplrMessage({ type: 'programChange', program: 10 }, descriptor)).toEqual({
       type: 'program',
       program: 10
